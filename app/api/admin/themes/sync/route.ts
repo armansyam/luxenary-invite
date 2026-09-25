@@ -115,7 +115,7 @@ export async function POST() {
           sortOrder: existing?.sortOrder ?? (i + 1),
           description: existing?.description || defaultDesc,
           thumbnail: existing?.thumbnail || demoData?.sidebarPhotoUrl || demoData?.landingCoverUrl || null,
-          isPremium: cat === "premium",
+          isPremium: existing ? existing.isPremium : (cat === "minimalist" || cat === "premium"),
           ...(existing ? {} : { isActive: true }),
         },
         create: {
@@ -125,7 +125,7 @@ export async function POST() {
           series: d.series,
           description: defaultDesc,
           thumbnail: demoData?.sidebarPhotoUrl || demoData?.landingCoverUrl || null,
-          isPremium: cat === "premium",
+          isPremium: cat === "minimalist" || cat === "premium",
           sortOrder: i + 1,
           isActive: true,
         },

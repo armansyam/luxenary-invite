@@ -41,13 +41,13 @@
     /* 2. DESIGN SYSTEM & DYNAMIC PALETTE (GOLDEN STANDARD)                */
     /* =================================================================== */
     :root {
-      --primary: {{colorPrimary}};
-      --secondary: {{colorSecondary}};
-      --accent: {{colorAccent}};
-      --bg-light: {{colorBgLight}};
-      --bg-dark: {{colorBgDark}};
-      --text-main: {{colorTextDark}};
-      --text-muted: color-mix(in srgb, {{colorTextDark}} 70%, transparent);
+      --primary: #54192b;
+      --secondary: #7a253f;
+      --accent: #d4a373;
+      --bg-light: #faf2f4;
+      --bg-dark: #1c070e;
+      --text-main: #2c0e17;
+      --text-muted: color-mix(in srgb, #2c0e17 70%, transparent);
       --radius-sm: 8px;
       --radius-md: 16px;
       --radius-lg: 28px;
@@ -108,7 +108,6 @@
     }
 
     /* Headings & Scripts */
-    .font-vidaloka,
     .vidaloka,
     h1, h2, h3, h4,
     .sec-main-title {
@@ -121,7 +120,6 @@
       letter-spacing: 0.15em;
     }
 
-    .font-script,
     .script-accent {
       font-family: "Imperial Script", cursive;
       font-weight: 400;
@@ -217,7 +215,6 @@
       text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
     }
 
-    .app-container,
     .main-scroll-panel {
       width: 100%;
       min-height: 100vh;
@@ -230,7 +227,6 @@
       .sidebar-desktop {
         display: block;
       }
-      .app-container,
       .main-scroll-panel {
         width: 460px;
         margin-left: auto;
@@ -808,7 +804,6 @@
       width: 100%;
     }
 
-    .event-card-item,
     .event-block-item {
       background: var(--glass-bg);
       border: 1px solid var(--glass-border);
@@ -819,7 +814,6 @@
       position: relative;
     }
 
-    .event-badge,
     .ev-cat {
       display: inline-block;
       padding: 5px 16px;
@@ -835,7 +829,6 @@
       background: color-mix(in srgb, var(--accent) 25%, transparent);
     }
 
-    .event-title,
     .ev-name {
       font-size: 1.6rem;
       font-family: "Vidaloka", Georgia, serif;
@@ -844,7 +837,6 @@
       font-weight: 500;
     }
 
-    .event-time,
     .ev-time {
       font-size: 0.88rem;
       color: var(--secondary);
@@ -880,8 +872,6 @@
       margin-bottom: 0.5rem;
     }
 
-    .event-venue,
-    .ev-venue-unified,
     .ev-venue {
       font-size: 1.15rem;
       font-family: "Vidaloka", Georgia, serif;
@@ -890,8 +880,6 @@
       font-weight: 600;
     }
 
-    .event-address,
-    .ev-addr-unified,
     .ev-addr {
       font-size: 0.84rem;
       color: var(--text-muted);

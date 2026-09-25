@@ -10,29 +10,6 @@ import { getPlanDisplayName } from "@/lib/planUtils";
 // Pilihan tema dimuat secara dinamis dari API /api/public/themes untuk menjamin sinkronisasi status aktif
 
 
-const COLOR_PALETTES = [
-  // Palet Universal & Modern
-  { id: "champagne", name: "Royal Champagne Gold", hex: "#a67c52", desc: "Elegan, netral, universal mewah" },
-  { id: "emerald", name: "Emerald Green & Gold", hex: "#1b4332", desc: "Nuansa agung khas Bugis-Makassar / Islami" },
-  { id: "burgundy", name: "Burgundy & Rose Gold", hex: "#54192b", desc: "Megah, klasik, dan romantis berani" },
-  { id: "sage", name: "Botanical Sage Green", hex: "#4a5d4e", desc: "Segar, earthy, dan organik kekinian" },
-  { id: "terracotta", name: "Warm Terracotta & Sand", hex: "#8c583a", desc: "Hangat, rustic modern, dan estetik" },
-  { id: "monochrome", name: "Monochrome Dark & Silver", hex: "#262626", desc: "Minimalis editorial hitam-putih" },
-  { id: "rose", name: "Dusty Rose & Blush", hex: "#9d5c63", desc: "Lembut, romantis, feminin pastel" },
-  { id: "midnight", name: "Midnight Navy & Gold", hex: "#1c2d42", desc: "Klasik megah, biru malam & aksen emas" },
-  // Palet Warisan Adat Bugis, Makassar & Toraja
-  { id: "toraja", name: "Toraja Crimson & Bamboo Gold", hex: "#750b0a", desc: "Adat Toraja agung, merah marun & emas bambu" },
-  { id: "bugis", name: "Bugis Royal Maroon & Gold", hex: "#5a0b10", desc: "Adat Bugis bangsawan, marun tua & emas megah" },
-  { id: "makassar", name: "Makassar Phinisi Navy & Gold", hex: "#0a192f", desc: "Adat Makassar maritim, biru phinisi & emas" },
-  { id: "bone", name: "Bugis Bone Royal Saoraja", hex: "#46060a", desc: "Adat Bone Saoraja, marun mendalam & emas kerajaan" },
-  { id: "wajo", name: "Bugis Wajo Sutera Sengkang", hex: "#5e091e", desc: "Adat Wajo Sutera, merah fuchsia sutera & emas" },
-  { id: "soppeng", name: "Bugis Soppeng Latemmamala", hex: "#480b18", desc: "Adat Soppeng Latemmamala, merah marun klasik & emas" },
-  { id: "gowa", name: "Makassar Gowa Balla Lompoa", hex: "#08162b", desc: "Adat Gowa Balla Lompoa, biru navy agung & emas" },
-  { id: "maros", name: "Makassar Maros Salewangang", hex: "#081f26", desc: "Adat Maros Salewangang, teal gelap karst & emas" },
-  { id: "takalar", name: "Makassar Takalar Sanrobone", hex: "#061a33", desc: "Adat Takalar Sanrobone, biru pesisir & aksen emas" },
-  { id: "bulukumba", name: "Makassar Bulukumba Panrita Lopi", hex: "#0c1420", desc: "Adat Bulukumba Panrita Lopi, maritim samudra & emas pinisi" },
-];
-
 // Preset Palet Busana Pernikahan Populer (1-Klik untuk Pengguna Awam)
 const WEDDING_DRESSCODE_PRESETS = [
   {
@@ -164,7 +141,6 @@ export default function EditInvitation() {
   const [upgrading, setUpgrading] = useState(false);
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
   const [isDeploying, setIsDeploying] = useState(false);
-  const [showLivePalette, setShowLivePalette] = useState(false);
   const [studioNotification, setStudioNotification] = useState<{ type: "error" | "success"; message: string } | null>(null);
 
   useEffect(() => {
@@ -735,61 +711,6 @@ export default function EditInvitation() {
     broadcastToAllLiveIframes({ type: "LUX_REMOTE_EDIT_CHANGE", field: key, value });
   };
 
-  const applyPaletteToIframe = useCallback((paletteId: string) => {
-    const palTokens: Record<string, { primary: string; secondary: string; accent: string; bgLight: string; bgDark: string }> = {
-      champagne: { primary: "#a67c52", secondary: "#7a5430", accent: "#b38b4d", bgLight: "#faf7f2", bgDark: "#1a1614" },
-      emerald: { primary: "#1b4332", secondary: "#2d6a4f", accent: "#c9a227", bgLight: "#f2f7f4", bgDark: "#0b1c14" },
-      burgundy: { primary: "#54192b", secondary: "#7a253f", accent: "#d4a373", bgLight: "#faf2f4", bgDark: "#1c070e" },
-      sage: { primary: "#4a5d4e", secondary: "#627d68", accent: "#b89f81", bgLight: "#f1f5f2", bgDark: "#141c16" },
-      terracotta: { primary: "#8c583a", secondary: "#a86b47", accent: "#c99a57", bgLight: "#fdf8f4", bgDark: "#1c120c" },
-      monochrome: { primary: "#262626", secondary: "#404040", accent: "#737373", bgLight: "#f8f8f8", bgDark: "#121212" },
-    };
-    const t = palTokens[paletteId] || palTokens.champagne;
-
-    const applyToDoc = (iframeEl: HTMLIFrameElement | null) => {
-      if (!iframeEl) return;
-      try {
-        if (iframeEl.contentDocument) {
-          const doc = iframeEl.contentDocument;
-          const targets = [doc.body, doc.documentElement].filter(Boolean);
-          targets.forEach((el) => {
-            el.style.setProperty("--gold", t.primary);
-            el.style.setProperty("--gold-dim", t.secondary);
-            el.style.setProperty("--gold-pale", t.bgLight);
-            el.style.setProperty("--primary", t.primary);
-            el.style.setProperty("--secondary", t.secondary);
-            el.style.setProperty("--accent", t.accent);
-            el.style.setProperty("--bg-light", t.bgLight);
-            el.style.setProperty("--bg-dark", t.bgDark);
-          });
-        }
-      } catch {}
-
-      try {
-        if (iframeEl.contentWindow) {
-          iframeEl.contentWindow.postMessage(
-            {
-              type: "LUX_PALETTE_CHANGED",
-              paletteId,
-              palette: t,
-            },
-            "*"
-          );
-        }
-      } catch {}
-    };
-
-    applyToDoc(liveMobileIframeRef.current);
-    applyToDoc(liveDesktopIframeRef.current);
-    applyToDoc(liveFallbackIframeRef.current);
-    applyToDoc(liveSingleIframeRef.current);
-  }, []);
-
-  const handleSelectPalette = (paletteId: string) => {
-    updateFeatureSetting("colorPalette", paletteId);
-    applyPaletteToIframe(paletteId);
-  };
-
   const getFeatureSetting = (key: string, fallback: any = "") => {
     if (!invitation?.featureSettings) return fallback;
     try {
@@ -940,10 +861,9 @@ export default function EditInvitation() {
       };
     }
 
-    // Sec 1: Tema, Warna & Tagline
+    // Sec 1: Tema & Tagline
     const dirty1 = (
       invitation.themeId !== savedSnapshot.invitation?.themeId ||
-      getFeatureSetting("colorPalette", "champagne") !== getSavedFeatureSetting("colorPalette", "champagne") ||
       getFeatureSetting("weddingTagline", "THE WEDDING OF") !== getSavedFeatureSetting("weddingTagline", "THE WEDDING OF")
     );
 
@@ -1265,9 +1185,7 @@ export default function EditInvitation() {
   const currentThemeId = invitation.themeId === "kila" ? "kalandra" : (invitation.themeId || "");
   const selectedThemeObj = currentThemeId ? (themesList.find((t) => t.id === currentThemeId) || null) : null;
   const activeBlueprint = getThemeBlueprint(currentThemeId || "kalandra");
-  const currentPalette = getFeatureSetting("colorPalette", activeBlueprint.defaultPalette || "champagne");
   const displayOrder = getFeatureSetting("displayOrder", "BRIDE_FIRST");
-  const selectedPaletteObj = COLOR_PALETTES.find((p) => p.id === currentPalette) || COLOR_PALETTES[0];
 
   const planType = invitation.order?.planType || "";
   const packageConfig = platformSettings?.packages?.find((p: any) => p.id === planType);
@@ -1366,9 +1284,9 @@ export default function EditInvitation() {
     {
       id: "sec1",
       num: "1",
-      title: "Pilihan Seri Desain & Palet Warna",
-      shortTitle: "Tema & Warna",
-      summary: selectedThemeObj ? `${selectedThemeObj.name} (${selectedPaletteObj.name})` : "Belum memilih tema",
+      title: "Pilihan Desain Tema",
+      shortTitle: "Pilihan Tema",
+      summary: selectedThemeObj ? selectedThemeObj.name : "Belum memilih tema",
       isUrgent: !invitation?.themeId,
     },
     {
@@ -1622,10 +1540,6 @@ export default function EditInvitation() {
                   <strong className="text-rose-700 font-bold bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">Belum Memilih Tema</strong>
                 )}
               </span>
-              <span className="text-stone-300">•</span>
-              <span className="text-xs text-stone-500">
-                Nuansa: <strong className="text-stone-800 font-bold">{selectedPaletteObj.name}</strong>
-              </span>
               {planType && (
                 <>
                   <span className="text-stone-300">•</span>
@@ -1768,31 +1682,6 @@ export default function EditInvitation() {
           {/* Controls di Tab Live Editor */}
           {activeStudioTab === "live" && (
             <div className="flex items-center justify-end gap-2 pr-1">
-              <button
-                type="button"
-                onClick={() => setShowLivePalette((prev) => !prev)}
-                className={`h-9 px-2.5 rounded-xl border text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-2xs ${
-                  showLivePalette
-                    ? "bg-stone-900 text-white border-stone-900"
-                    : "bg-white text-stone-700 border-stone-200 hover:border-stone-300 hover:bg-stone-50"
-                }`}
-                title={`Palet: ${selectedPaletteObj.name} (Klik untuk ${showLivePalette ? "menutup" : "mengubah"})`}
-                aria-label={`Palet: ${selectedPaletteObj.name}`}
-              >
-                <svg className="w-3.5 h-3.5 opacity-75 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 3a9 9 0 00-9 9c0 4.97 4.03 9 9 9 1.1 0 2-.9 2-2 0-.46-.17-.89-.46-1.22-.29-.33-.46-.76-.46-1.22 0-1.1.9-2 2-2h2.5c3.59 0 6.5-2.91 6.5-6.5C21 6.48 16.97 3 12 3z" />
-                  <circle cx="7.5" cy="10.5" r="1" fill="currentColor" />
-                  <circle cx="12" cy="7.5" r="1" fill="currentColor" />
-                  <circle cx="16.5" cy="10.5" r="1" fill="currentColor" />
-                </svg>
-                <span
-                  className="w-3 h-3 rounded-full border border-black/15 shadow-xs flex-shrink-0"
-                  style={{ backgroundColor: selectedPaletteObj.hex }}
-                />
-                <svg className={`w-3 h-3 transition-transform duration-200 ${showLivePalette ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
 
               <div className="hidden sm:flex items-center bg-stone-100 p-0.5 rounded-xl border border-stone-200 text-xs">
                 <button
@@ -1889,7 +1778,7 @@ export default function EditInvitation() {
             <div>
               <h2 className="text-sm font-bold text-amber-950">Tahap Wajib: Pilih Desain Tema Undangan</h2>
               <p className="text-xs text-amber-800 mt-0.5">
-                Undangan Anda saat ini belum memiliki tema terpilih. Silakan buka <strong>Seksi 1 (Tema Desain &amp; Palet Warna)</strong> untuk memilih desain yang diinginkan sebelum mempublikasikan undangan.
+                Undangan Anda saat ini belum memiliki tema terpilih. Silakan buka <strong>Seksi 1 (Pilihan Desain Tema)</strong> untuk memilih desain yang diinginkan sebelum mempublikasikan undangan.
               </p>
             </div>
           </div>
@@ -1911,72 +1800,6 @@ export default function EditInvitation() {
         style={{ display: activeStudioTab === "live" ? "" : "none" }}
       >
         <div className="space-y-2.5 sm:space-y-3">
-          {/* Palet Warna Sync Bar di Atas Live View (Collapsed by Default) */}
-          {showLivePalette && (
-            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-stone-200 shadow-xs">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                <div>
-                  <label className="block text-xs font-bold text-stone-800 uppercase tracking-wider">
-                    Pilih Nuansa Warna Utama:
-                  </label>
-                  <p className="text-[11px] text-stone-500 mt-0.5">
-                    Ubah nuansa warna secara instan tanpa perlu berpindah tab. Warna otomatis tersinkronisasi dua arah dengan form data undangan.
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 self-start sm:self-auto">
-                  {isDirty.sec1 && (
-                    <>
-                      <span className="text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-full flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse"></span>
-                        Palet belum disimpan
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => saveSection("sec1")}
-                        disabled={saving}
-                        className="px-3 py-1 bg-stone-900 hover:bg-stone-800 text-white rounded-lg text-xs font-semibold transition"
-                      >
-                        {saving && savingSec === "sec1" ? "Menyimpan..." : "Simpan Palet"}
-                      </button>
-                    </>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setShowLivePalette(false)}
-                    className="p-1 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition"
-                    title="Tutup Palet"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
-                  </button>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {COLOR_PALETTES.map((pal) => {
-                  const isSelected = currentPalette === pal.id;
-                  return (
-                    <div
-                      key={pal.id}
-                      onClick={() => handleSelectPalette(pal.id)}
-                      className={`p-3 rounded-xl border cursor-pointer flex items-center gap-3 transition ${
-                        isSelected
-                          ? "border-amber-800 bg-amber-50/50 ring-2 ring-amber-800/20 shadow-xs"
-                          : "border-stone-200 hover:border-stone-300 bg-white"
-                      }`}
-                    >
-                      <span
-                        className="w-7 h-7 rounded-full shadow-inner border border-black/10 flex-shrink-0"
-                        style={{ backgroundColor: pal.hex }}
-                      ></span>
-                      <div className="min-w-0">
-                        <h4 className="text-xs font-bold text-stone-900 truncate">{pal.name}</h4>
-                        <p className="text-[10px] text-stone-500 line-clamp-1">{pal.desc}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
           {/* ==========================================================================
              LIVE VISUAL INLINE EDITOR CANVAS (CANVA / NOTION STYLE)
@@ -2077,7 +1900,6 @@ export default function EditInvitation() {
                         key={`m-${liveIframeKey}`}
                         ref={liveMobileIframeRef}
                         src={`/api/client/invitations/${invitationId}/preview?mode=edit&audio=0&view=mobile&v=${liveIframeKey}`}
-                        onLoad={() => applyPaletteToIframe(currentPalette)}
                         className="w-full h-full border-0 bg-stone-900"
                         title="Live Visual Editor Mobile"
                       />
@@ -2102,7 +1924,6 @@ export default function EditInvitation() {
                         key={`d-${liveIframeKey}`}
                         ref={liveDesktopIframeRef}
                         src={`/api/client/invitations/${invitationId}/preview?mode=edit&view=desktop&v=${liveIframeKey}`}
-                        onLoad={() => applyPaletteToIframe(currentPalette)}
                         className="w-full h-full border-0 bg-stone-900"
                         title="Live Visual Editor Desktop"
                       />
@@ -2119,7 +1940,6 @@ export default function EditInvitation() {
                       key={`fallback-${liveIframeKey}`}
                       ref={liveFallbackIframeRef}
                       src={`/api/client/invitations/${invitationId}/preview?mode=edit&view=mobile&v=${liveIframeKey}`}
-                      onLoad={() => applyPaletteToIframe(currentPalette)}
                       className="w-full h-full border-0 bg-stone-900"
                       title="Live Visual Editor Fallback"
                     />
@@ -2143,7 +1963,6 @@ export default function EditInvitation() {
                   key={`single-${liveIframeKey}`}
                   ref={liveSingleIframeRef}
                   src={`/api/client/invitations/${invitationId}/preview?mode=edit&view=${previewDevice}&v=${liveIframeKey}`}
-                  onLoad={() => applyPaletteToIframe(currentPalette)}
                   className="w-full h-full border-0 bg-stone-900"
                   title="Live Visual Editor"
                 />
@@ -2278,7 +2097,7 @@ export default function EditInvitation() {
           {/* ── RIGHT COLUMN: ACTIVE SECTION DETAIL FORM ── */}
           <main className="w-full flex-1 min-w-0 space-y-4 pb-24 sm:pb-0">
 
-      {/* 1. SEKSI TEMA & PALET WARNA (SEC1) */}
+      {/* 1. SEKSI PILIHAN DESAIN TEMA (SEC1) */}
       {(activeSectionTab === "sec1") && (
       <section id="section-sec1" className="bg-white rounded-none sm:rounded-3xl shadow-none sm:shadow-xs border-y sm:border border-stone-200 overflow-hidden transition-all duration-200">
         <div
@@ -2291,16 +2110,12 @@ export default function EditInvitation() {
         >
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-sm sm:text-base font-bold text-stone-900">1. Pilihan Seri Desain &amp; Palet Warna</h2>
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">1. Pilihan Desain Tema</h2>
               {collapsed.sec1 && (
                 <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
                   <span className="text-stone-300">•</span>
                   {selectedThemeObj ? (
-                    <>
-                      <span className="font-medium text-stone-700">{selectedThemeObj.name}</span>
-                      <span className="inline-block w-2.5 h-2.5 rounded-full border border-black/10 shadow-2xs" style={{ backgroundColor: selectedPaletteObj.hex }}></span>
-                      <span className="text-stone-500">({selectedPaletteObj.name})</span>
-                    </>
+                    <span className="font-medium text-stone-700">{selectedThemeObj.name}</span>
                   ) : (
                     <span className="font-semibold text-rose-600">Belum memilih tema</span>
                   )}
@@ -2308,7 +2123,7 @@ export default function EditInvitation() {
               )}
             </div>
             {!collapsed.sec1 && (
-              <p className="text-xs text-stone-500 mt-0.5">Pilih tema utama dan nuansa warna undangan pernikahan Anda.</p>
+              <p className="text-xs text-stone-500 mt-0.5">Pilih tema desain undangan pernikahan Anda.</p>
             )}
           </div>
           <div onClick={(e) => e.stopPropagation()}>
@@ -2331,9 +2146,9 @@ export default function EditInvitation() {
               const availableThemes = themesList;
 
               // Dapatkan daftar kategori unik sesuai paket klien
-              const CATEGORY_ORDER = ["PREMIUM", "MODERN", "TRADITIONAL"];
+              const CATEGORY_ORDER = ["MINIMALIST", "MODERN", "TRADITIONAL"];
               const CATEGORY_LABELS: Record<string, string> = {
-                PREMIUM: "Premium",
+                MINIMALIST: "Minimalis",
                 MODERN: "Modern",
                 TRADITIONAL: "Traditional",
               };
@@ -2523,33 +2338,6 @@ export default function EditInvitation() {
               );
             })()}
 
-            {/* Color Palette Grid */}
-            <div>
-              <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2.5">Pilih Nuansa Warna Utama:</label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {COLOR_PALETTES.map((pal) => {
-                  const isSelected = currentPalette === pal.id;
-                  return (
-                    <div
-                      key={pal.id}
-                      onClick={() => handleSelectPalette(pal.id)}
-                      className={`p-3 rounded-xl border cursor-pointer flex items-center gap-3 transition ${
-                        isSelected
-                          ? "border-amber-800 bg-amber-50/50 ring-2 ring-amber-800/20"
-                          : "border-stone-200 hover:border-stone-300"
-                      }`}
-                    >
-                      <span className="w-7 h-7 rounded-full shadow-inner border border-black/10 flex-shrink-0" style={{ backgroundColor: pal.hex }}></span>
-                      <div>
-                        <h4 className="text-xs font-bold text-stone-900">{pal.name}</h4>
-                        <p className="text-[10px] text-stone-500">{pal.desc}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
             {/* Tagline / Judul Header Undangan */}
             <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-2.5">
               <div>
@@ -2591,7 +2379,7 @@ export default function EditInvitation() {
                 }`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                <span>{!isDirty.sec1 ? "Tersimpan" : "Simpan Tema & Warna"}</span>
+                <span>{!isDirty.sec1 ? "Tersimpan" : "Simpan Tema"}</span>
               </button>
             </div>
             {renderSectionNavFooter("sec1")}

@@ -9,7 +9,6 @@
 
 import fs from "fs";
 import path from "path";
-import { COLOR_PALETTES } from "@/lib/colorPalettes";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { escapeHtml } from "@/lib/escapeHtml";
 
@@ -17,7 +16,7 @@ export interface DemoThemeData {
   themeId: string;
   themeName: string;
   series: string;
-  category: "premium" | "modern" | "traditional";
+  category: "minimalist" | "modern" | "traditional";
   tagline: string;
   
   // Couple Profile
@@ -94,8 +93,8 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
   kalandra: {
     themeId: "kalandra",
     themeName: "Kalandra",
-    series: "Premium",
-    category: "premium",
+    series: "Minimalist",
+    category: "minimalist",
     tagline: "THE WEDDING OF",
     groomName: "Raditya",
     brideName: "Alana",
@@ -185,8 +184,8 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
   valente: {
     themeId: "valente",
     themeName: "Valente",
-    series: "Premium",
-    category: "premium",
+    series: "Minimalist",
+    category: "minimalist",
     tagline: "A CELEBRATION OF LOVE",
     groomName: "Julian",
     brideName: "Valerie",
@@ -275,8 +274,8 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
   aurelia: {
     themeId: "aurelia",
     themeName: "Aurelia",
-    series: "Premium",
-    category: "premium",
+    series: "Minimalist",
+    category: "minimalist",
     tagline: "ROYAL LUXURY CELEBRATION",
     groomName: "Arjuna",
     brideName: "Aurelia",
@@ -520,8 +519,8 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
   artisan: {
     themeId: "artisan",
     themeName: "Artisan",
-    series: "Premium",
-    category: "premium",
+    series: "Minimalist",
+    category: "minimalist",
     tagline: "HANDCRAFTED IN LOVE",
     groomName: "Dimas",
     brideName: "Kiara",
@@ -2472,15 +2471,12 @@ function appendDemoAssetVersion(url?: string | null, v?: number | string): strin
 // Master composer to build ALL sections for the HTML templates
 export function composeDemoTemplateData(
   themeId: string,
-  paletteKey?: string,
   customData?: Partial<DemoThemeData>,
   cacheVersion?: number | string
 ) {
   const baseDemo = getDemoThemeData(themeId);
   const demo: DemoThemeData = customData ? { ...baseDemo, ...customData } : baseDemo;
   const blueprint = getThemeBlueprint(themeId, customData);
-  const resolvedPalette = paletteKey || customData?.defaultPalette || (customData as any)?.colorPalette || blueprint.defaultPalette || demo.defaultPalette || "champagne";
-  const palette = COLOR_PALETTES[resolvedPalette] || COLOR_PALETTES.champagne;
 
   const v = cacheVersion || (customData as any)?.cacheVersion || undefined;
   const withV = (url?: string | null) => appendDemoAssetVersion(url, v);
@@ -3503,13 +3499,6 @@ export function composeDemoTemplateData(
       }
     </script>
     `,
-    
-    colorPrimary: palette.primary,
-    colorSecondary: palette.secondary,
-    colorAccent: palette.accent,
-    colorBgLight: palette.bgLight,
-    colorBgDark: palette.bgDark,
-    colorTextDark: palette.textDark || "#1a1a1a",
 
     // Custom Labels (Theme-Specific Blueprint Defaults)
     customLabels: {

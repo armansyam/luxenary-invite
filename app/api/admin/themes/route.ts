@@ -78,15 +78,9 @@ export async function GET() {
       const customEntry = themeCustomDataMap[themeKey];
       const customData = customEntry?.data;
 
-      const demoThemeDir = path.join(process.cwd(), "public", "demo", themeKey);
-      const hasMobileThumb = fs.existsSync(path.join(demoThemeDir, "thumbnail_mobile.webp"));
-      const hasDesktopThumb = fs.existsSync(path.join(demoThemeDir, "thumbnail_desktop.webp"));
-      const hasCoverDesktop = fs.existsSync(path.join(demoThemeDir, "cover_desktop.webp"));
       const defaultCoverFallback = t.thumbnail || `/demo/${themeKey}/cover.webp`;
-      const desktopFallback = customData?.landingCoverDesktopUrl || (hasCoverDesktop ? `/demo/${themeKey}/cover_desktop.webp` : defaultCoverFallback);
-
-      const rawThumbMobile = customData?.thumbnailMobileUrl || (hasMobileThumb ? `/demo/${themeKey}/thumbnail_mobile.webp` : defaultCoverFallback);
-      const rawThumbDesktop = customData?.thumbnailDesktopUrl || (hasDesktopThumb ? `/demo/${themeKey}/thumbnail_desktop.webp` : desktopFallback);
+      const rawThumbMobile = customData?.thumbnailMobileUrl || `/demo/${themeKey}/thumbnail_mobile.webp`;
+      const rawThumbDesktop = customData?.thumbnailDesktopUrl || customData?.landingCoverDesktopUrl || `/demo/${themeKey}/thumbnail_desktop.webp`;
 
       return {
         ...t,
@@ -116,6 +110,7 @@ export async function POST(req: NextRequest) {
     let isPremium = false;
     let isActive = true;
     let sortOrder = 99;
+    let defaultMusicUrl = "";
     let file: File | null = null;
 
     const contentType = req.headers.get("content-type") || "";
@@ -129,6 +124,7 @@ export async function POST(req: NextRequest) {
       isPremium = formData.get("isPremium") === "true";
       isActive = formData.get("isActive") === null ? true : formData.get("isActive") === "true";
       sortOrder = Number(formData.get("sortOrder") || 99);
+      if (formData.has("defaultMusicUrl")) defaultMusicUrl = (formData.get("defaultMusicUrl") as string) || "";
       const rawFile = formData.get("file");
       if (rawFile && typeof rawFile === "object" && "arrayBuffer" in rawFile) {
         file = rawFile as File;
@@ -143,6 +139,7 @@ export async function POST(req: NextRequest) {
       isPremium = Boolean(body.isPremium);
       isActive = body.isActive !== false;
       sortOrder = Number(body.sortOrder || 99);
+      if (body.defaultMusicUrl !== undefined) defaultMusicUrl = body.defaultMusicUrl || "";
     }
 
     if (!id || !name) {
@@ -168,7 +165,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Tema dengan ID "${cleanId}" sudah ada.` }, { status: 409 });
     }
 
-    const cat = category.toLowerCase() as "minimalist" | "premium" | "modern" | "traditional";
+    const rawCat = category.toLowerCase();
+    const cat = (rawCat === "premium" || rawCat === "minimalist" ? "minimalist" : rawCat === "traditional" ? "traditional" : "modern") as "minimalist" | "modern" | "traditional";
     const fs = await import("fs/promises");
     const path = await import("path");
 
@@ -188,10 +186,11 @@ export async function POST(req: NextRequest) {
         name: name.trim(),
         category: cat,
         description: description || "",
-        series: series || (cat === "traditional" ? "Traditional" : (cat === "minimalist" || cat === "premium") ? "Minimalist" : "Modern"),
-        isPremium: Boolean(isPremium || cat === "minimalist" || cat === "premium"),
+        series: series || (cat === "traditional" ? "Traditional" : cat === "minimalist" ? "Minimalist" : "Modern"),
+        isPremium: Boolean(isPremium || cat === "minimalist"),
         isActive: isActive !== false,
         sortOrder: Number(sortOrder || 99),
+        defaultMusicUrl: defaultMusicUrl || null,
       },
     });
 
@@ -235,6 +234,7 @@ export async function PUT(req: NextRequest) {
     let isPremium: boolean | undefined;
     let isActive: boolean | undefined;
     let sortOrder: number | undefined;
+    let defaultMusicUrl: string | undefined;
     let file: File | null = null;
 
     const contentType = req.headers.get("content-type") || "";
@@ -248,6 +248,7 @@ export async function PUT(req: NextRequest) {
       if (formData.has("isPremium")) isPremium = formData.get("isPremium") === "true";
       if (formData.has("isActive")) isActive = formData.get("isActive") === "true";
       if (formData.has("sortOrder")) sortOrder = Number(formData.get("sortOrder"));
+      if (formData.has("defaultMusicUrl")) defaultMusicUrl = (formData.get("defaultMusicUrl") as string) || "";
       const rawFile = formData.get("file");
       if (rawFile && typeof rawFile === "object" && "arrayBuffer" in rawFile) {
         file = rawFile as File;
@@ -262,6 +263,7 @@ export async function PUT(req: NextRequest) {
       if (body.isPremium !== undefined) isPremium = Boolean(body.isPremium);
       if (body.isActive !== undefined) isActive = Boolean(body.isActive);
       if (body.sortOrder !== undefined) sortOrder = Number(body.sortOrder);
+      if (body.defaultMusicUrl !== undefined) defaultMusicUrl = body.defaultMusicUrl || "";
     }
 
     if (!id) {
@@ -276,7 +278,8 @@ export async function PUT(req: NextRequest) {
 
     const fs = await import("fs/promises");
     const path = await import("path");
-    const targetCat = (category || existing.category).toLowerCase();
+    const rawTargetCat = (category || existing.category).toLowerCase();
+    const targetCat = (rawTargetCat === "premium" || rawTargetCat === "minimalist" ? "minimalist" : rawTargetCat === "traditional" ? "traditional" : "modern");
 
     // Jika ada file master baru yang diunggah
     if (file) {
@@ -311,15 +314,13 @@ export async function PUT(req: NextRequest) {
         ...(isPremium !== undefined && { isPremium: Boolean(isPremium) }),
         ...(isActive !== undefined && { isActive: Boolean(isActive) }),
         ...(sortOrder !== undefined && { sortOrder: Number(sortOrder) }),
+        ...(defaultMusicUrl !== undefined && { defaultMusicUrl: defaultMusicUrl || null }),
       },
     });
 
     const { revalidatePath } = await import("next/cache");
-    revalidatePath("/demo");
-    revalidatePath("/demo/[theme]", "page");
     revalidatePath("/api/public/themes");
-    revalidatePath("/admin");
-    revalidatePath("/");
+    revalidatePath("/demo");
 
     return NextResponse.json({
       success: true,
@@ -355,10 +356,15 @@ export async function DELETE(req: NextRequest) {
       where: { id }
     });
 
+    // 2. Remove any custom demo settings associated with this theme from admin_settings
+    await prisma.adminSetting.deleteMany({
+      where: { key: `theme_demo_${id.toLowerCase()}` },
+    });
+
     const { promises: fs } = await import("fs");
     const path = await import("path");
 
-    // Remove the master HTML file physically from the themes/ folder
+    // 3. Remove the master HTML file physically from the themes/ folder
     try {
       const categoryDir = existingTheme.category.toLowerCase();
       const masterPath = path.join(process.cwd(), "themes", categoryDir, `${id.toLowerCase()}.html`);
@@ -367,13 +373,17 @@ export async function DELETE(req: NextRequest) {
       // Ignore if master file is already gone
     }
 
-    // Also remove the compiled static demo directory so it no longer appears in catalog
+    // 4. Also remove the compiled static demo directory so it no longer appears in catalog
     try {
       const demoDir = path.join(process.cwd(), "public", "demo", id.toLowerCase());
       await fs.rm(demoDir, { recursive: true, force: true });
     } catch {
       // Non-fatal: demo dir may not exist yet
     }
+
+    const { revalidatePath } = await import("next/cache");
+    revalidatePath("/demo");
+    revalidatePath("/api/public/themes");
 
     return NextResponse.json({ success: true, message: `Tema ${id} beserta file masternya berhasil dihapus permanen (Hard Delete)` });
   } catch (error: any) {

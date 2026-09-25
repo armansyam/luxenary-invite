@@ -734,6 +734,7 @@ export default function AdminPage() {
     sortOrder: 1,
     isActive: true,
     isPremium: true,
+    defaultMusicUrl: "",
   });
   const [themeSaving, setThemeSaving] = useState(false);
   const [themeSyncing, setThemeSyncing] = useState(false);
@@ -1335,6 +1336,9 @@ export default function AdminPage() {
 
   // Theme actions
   const handleOpenNewTheme = () => {
+    if (systemMusics.length === 0) {
+      fetchSystemMusics();
+    }
     setEditingTheme(null);
     setThemeFile(null);
     setThemeForm({
@@ -1346,12 +1350,16 @@ export default function AdminPage() {
       sortOrder: (themes.length + 1),
       isActive: true,
       isPremium: true,
+      defaultMusicUrl: "",
     });
     setThemeError(null);
     setShowThemeModal(true);
   };
 
   const handleOpenEditTheme = (th: any) => {
+    if (systemMusics.length === 0) {
+      fetchSystemMusics();
+    }
     setEditingTheme(th);
     setThemeFile(null);
     setThemeForm({
@@ -1363,6 +1371,7 @@ export default function AdminPage() {
       sortOrder: th.sortOrder || 1,
       isActive: th.isActive !== false,
       isPremium: Boolean(th.isPremium),
+      defaultMusicUrl: th.defaultMusicUrl || "",
     });
     setThemeError(null);
     setShowThemeModal(true);
@@ -1397,6 +1406,7 @@ export default function AdminPage() {
       formData.append("sortOrder", String(themeForm.sortOrder));
       formData.append("isActive", String(themeForm.isActive));
       formData.append("isPremium", String(themeForm.isPremium));
+      formData.append("defaultMusicUrl", themeForm.defaultMusicUrl || "");
       if (themeFile) {
         formData.append("file", themeFile);
       }
@@ -1411,7 +1421,18 @@ export default function AdminPage() {
       }
       setShowThemeModal(false);
       setThemeFile(null);
-      loadOverviewData();
+      if (editingTheme && data.theme) {
+        setThemes((prev) => prev.map((t) => (t.id === data.theme.id ? { ...t, ...data.theme } : t)));
+        showAdminToast(`Tema "${data.theme.name}" berhasil diperbarui`, true);
+      } else if (data.theme) {
+        setThemes((prev) => [...prev, data.theme]);
+        showAdminToast(`Tema baru "${data.theme.name}" berhasil ditambahkan`, true);
+      } else {
+        // Fallback jika response tidak menyertakan payload tema
+        fetch("/api/admin/themes").then((r) => r.json()).then((d) => {
+          if (d.success && Array.isArray(d.themes)) setThemes(d.themes);
+        }).catch(() => {});
+      }
     } catch (err: any) {
       setThemeError(err.message);
     } finally {
@@ -1423,8 +1444,8 @@ export default function AdminPage() {
     try {
       const res = await fetch(`/api/admin/themes?id=${themeId}`, { method: "DELETE" });
       if (res.ok) {
+        setThemes((prev) => prev.filter((t) => t.id !== themeId));
         showAdminToast(`Tema "${themeName}" berhasil dihapus`, true);
-        loadOverviewData();
       } else {
         const d = await res.json();
         showAdminToast("Error: " + d.error, false);
@@ -1435,15 +1456,27 @@ export default function AdminPage() {
   };
 
   const handleToggleThemeStatus = async (th: any) => {
+    const newActive = th.isActive === false ? true : false;
+    // Optimistic update instan tanpa beban reload overview
+    setThemes((prev) =>
+      prev.map((t) => (t.id === th.id ? { ...t, isActive: newActive } : t))
+    );
     try {
-      await fetch("/api/admin/themes", {
+      const res = await fetch("/api/admin/themes", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: th.id, isActive: !th.isActive }),
+        body: JSON.stringify({ id: th.id, isActive: newActive }),
       });
-      showAdminToast(`Status tema "${th.name}" diperbarui`, true);
-      loadOverviewData();
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Gagal mengubah status tema");
+      }
+      showAdminToast(`Status tema "${th.name}" diubah ke ${newActive ? "Aktif" : "Nonaktif"}`, true);
     } catch (err: any) {
+      // Revert status jika gagal
+      setThemes((prev) =>
+        prev.map((t) => (t.id === th.id ? { ...t, isActive: !newActive } : t))
+      );
       showAdminToast("Gagal: " + err.message, false);
     }
   };
@@ -2962,37 +2995,31 @@ export default function AdminPage() {
                                             ? "bg-amber-950/85 text-amber-200 border-amber-600/40"
                                             : cat === "modern"
                                             ? "bg-slate-950/85 text-slate-200 border-slate-600/40"
-                                            : "bg-purple-950/85 text-purple-200 border-purple-600/40"
+                                            : "bg-stone-950/85 text-amber-100 border-stone-600/40"
                                         }`}
                                       >
-                                        {cat === "traditional" ? "Traditional" : cat === "modern" ? "Modern" : "Premium"}
+                                        {cat === "traditional" ? "Tradisional" : cat === "modern" ? "Modern" : "Minimalis"}
                                       </span>
                                     </div>
 
-                                    {/* Floating Active Status Badge */}
-                                    <div className="absolute top-5 left-5 z-20">
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleToggleThemeStatus(theme);
-                                        }}
-                                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1.5 shadow-xs backdrop-blur-md border cursor-pointer transition ${
+                                    {/* Floating Active Status Indicator */}
+                                    <div className="absolute top-5 left-5 z-20 pointer-events-none">
+                                      <span
+                                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1.5 shadow-xs backdrop-blur-md border ${
                                           theme.isActive !== false
-                                            ? "bg-emerald-950/85 text-emerald-300 border-emerald-600/50 hover:bg-emerald-900"
-                                            : "bg-stone-950/85 text-stone-300 border-stone-600/50 hover:bg-stone-900"
+                                            ? "bg-emerald-950/85 text-emerald-300 border-emerald-600/50"
+                                            : "bg-stone-950/85 text-stone-400 border-stone-700/50"
                                         }`}
-                                        title={theme.isActive !== false ? "Tema Aktif (Klik untuk non-aktifkan)" : "Tema Non-aktif (Klik untuk aktifkan)"}
                                       >
                                         <span
                                           className={`w-1.5 h-1.5 rounded-full ${
                                             theme.isActive !== false
                                               ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]"
-                                              : "bg-stone-400"
+                                              : "bg-stone-500"
                                           }`}
                                         />
                                         <span>{theme.isActive !== false ? "Aktif" : "Nonaktif"}</span>
-                                      </button>
+                                      </span>
                                     </div>
                                   </div>
                                 </div>
@@ -3036,7 +3063,31 @@ export default function AdminPage() {
                                     </button>
                                   </div>
 
-                                  <div className="flex items-center gap-1">
+                                  <div className="flex items-center gap-1.5">
+                                    {/* Toggle Aktif / Nonaktif — tombol luar pengganti tombol hapus */}
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleToggleThemeStatus(theme);
+                                      }}
+                                      className={`px-2.5 py-1 text-xs font-semibold rounded-xl border transition inline-flex items-center gap-1.5 cursor-pointer shadow-2xs ${
+                                        theme.isActive !== false
+                                          ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                                          : "bg-stone-100 text-stone-500 border-stone-200 hover:bg-stone-200"
+                                      }`}
+                                      title={theme.isActive !== false ? "Tema Aktif — Klik untuk nonaktifkan" : "Tema Nonaktif — Klik untuk aktifkan"}
+                                    >
+                                      <span
+                                        className={`w-1.5 h-1.5 rounded-full ${
+                                          theme.isActive !== false
+                                            ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]"
+                                            : "bg-stone-400"
+                                        }`}
+                                      />
+                                      <span>{theme.isActive !== false ? "Aktif" : "Nonaktif"}</span>
+                                    </button>
+
                                     <button
                                       type="button"
                                       onClick={() => handleOpenEditTheme(theme)}
@@ -3045,16 +3096,6 @@ export default function AdminPage() {
                                     >
                                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                      </svg>
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleDeleteTheme(theme.id, theme.name)}
-                                      className="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition cursor-pointer"
-                                      title="Hapus Tema"
-                                    >
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                       </svg>
                                     </button>
                                   </div>
@@ -6862,33 +6903,66 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 pt-1">
-                <label className="flex items-center gap-2 text-xs font-medium text-gray-800 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={themeForm.isActive}
-                    onChange={(e) => setThemeForm({ ...themeForm, isActive: e.target.checked })}
-                    className="rounded text-amber-600 focus:ring-amber-500"
-                  />
-                  Status Aktif (Tampil di Katalog)
+              {/* Musik Default Tema — pilih dari Pustaka Musik Sistem */}
+              <div className="space-y-1.5 pt-1">
+                <label className="block text-xs font-bold text-gray-800">
+                  Musik Default Tema
+                  <span className="ml-1.5 text-[10px] font-normal text-gray-400">(Opsional — dipakai otomatis saat klien belum upload musik sendiri)</span>
                 </label>
+                <select
+                  value={themeForm.defaultMusicUrl}
+                  onChange={(e) => setThemeForm({ ...themeForm, defaultMusicUrl: e.target.value })}
+                  className="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+                >
+                  <option value="">— Tidak ada (pakai fallback sistem) —</option>
+                  {systemMusics.map((m: any) => (
+                    <option key={m.id} value={m.url}>
+                      {m.title}{m.composer ? ` — ${m.composer}` : ""}
+                    </option>
+                  ))}
+                </select>
+                {themeForm.defaultMusicUrl && (
+                  <p className="text-[10px] text-stone-400 font-mono truncate" title={themeForm.defaultMusicUrl}>
+                    {themeForm.defaultMusicUrl}
+                  </p>
+                )}
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
-                <button
-                  type="button"
-                  onClick={() => setShowThemeModal(false)}
-                  className="px-4 py-2 border border-gray-200 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-50"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={themeSaving}
-                  className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition disabled:opacity-60 flex items-center gap-1.5"
-                >
-                  {themeSaving ? "Menyimpan..." : "Simpan Tema"}
-                </button>
+              <div className="flex items-center justify-between gap-2 pt-3 border-t border-gray-100">
+                {/* Tombol Hapus — hanya muncul saat edit tema yang ada */}
+                {editingTheme ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm(`Hapus tema "${editingTheme.name}" secara permanen? Tindakan ini tidak dapat dibatalkan.`)) {
+                        setShowThemeModal(false);
+                        handleDeleteTheme(editingTheme.id, editingTheme.name);
+                      }
+                    }}
+                    className="px-3 py-2 border border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Hapus Tema
+                  </button>
+                ) : <div />}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowThemeModal(false)}
+                    className="px-4 py-2 border border-gray-200 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-50"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={themeSaving}
+                    className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition disabled:opacity-60 flex items-center gap-1.5"
+                  >
+                    {themeSaving ? "Menyimpan..." : "Simpan Tema"}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -7168,128 +7242,6 @@ export default function AdminPage() {
                         </div>
                       </div>
 
-                      {/* Showroom & Baseline Color Palette Selector */}
-                      <div className="p-4 bg-white border border-stone-200 rounded-2xl space-y-3.5">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                          <div>
-                            <h4 className="font-bold text-stone-900 text-xs uppercase tracking-wider">
-                              Palet Warna Bawaan &amp; Showroom Demo
-                            </h4>
-                            <p className="text-[11px] text-stone-500 mt-0.5">
-                              Pilih palet warna resmi untuk tema ini. Palet ini menjadi standar bawaan otomatis saat klien membuat undangan baru dan diterapkan pada pratinjau showroom publik (/demo/{demoStudioTheme.id}).
-                            </p>
-                          </div>
-                          {(() => {
-                            const activeBp = getThemeBlueprint(demoStudioTheme.id);
-                            const currentPal = demoStudioData.defaultPalette || demoStudioData.colorPalette || activeBp.defaultPalette || "champagne";
-                            return (
-                              <span className="self-start sm:self-auto text-[10px] font-bold px-2.5 py-1 rounded bg-stone-100 text-stone-700 capitalize border border-stone-200 shrink-0">
-                                Aktif: {currentPal}
-                              </span>
-                            );
-                          })()}
-                        </div>
-
-                        {/* Palet Universal */}
-                        <div className="space-y-1.5">
-                          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">
-                            Palet Universal &amp; Editorial Modern (8 Palet)
-                          </p>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-2">
-                            {[
-                              { id: "champagne", name: "Champagne Gold", hex: "#a67c52" },
-                              { id: "emerald", name: "Royal Emerald", hex: "#1b4332" },
-                              { id: "burgundy", name: "Burgundy Wine", hex: "#54192b" },
-                              { id: "sage", name: "Botanical Sage", hex: "#4a5d4e" },
-                              { id: "terracotta", name: "Warm Terracotta", hex: "#8c583a" },
-                              { id: "monochrome", name: "Monochrome Dark", hex: "#262626" },
-                              { id: "rose", name: "Dusty Rose", hex: "#9d5c63" },
-                              { id: "midnight", name: "Midnight Navy", hex: "#1c2d42" },
-                            ].map((pal) => {
-                              const activeBp = getThemeBlueprint(demoStudioTheme.id);
-                              const currentPal = demoStudioData.defaultPalette || demoStudioData.colorPalette || activeBp.defaultPalette || "champagne";
-                              const isSelected = currentPal === pal.id;
-                              return (
-                                <button
-                                  key={pal.id}
-                                  type="button"
-                                  onClick={() => {
-                                    setDemoStudioData((prev: any) => ({
-                                      ...prev,
-                                      defaultPalette: pal.id,
-                                      colorPalette: pal.id,
-                                    }));
-                                  }}
-                                  className={`p-2 rounded-xl border text-left flex items-center gap-2.5 transition cursor-pointer ${
-                                    isSelected
-                                      ? "border-amber-800 bg-amber-50/70 ring-2 ring-amber-800/30 shadow-xs"
-                                      : "border-stone-200 hover:border-stone-300 bg-white"
-                                  }`}
-                                >
-                                  <span
-                                    className="w-5 h-5 rounded-full shadow-inner border border-black/10 shrink-0"
-                                    style={{ backgroundColor: pal.hex }}
-                                  />
-                                  <div className="min-w-0">
-                                    <p className="text-[11px] font-bold text-stone-900 truncate">{pal.name}</p>
-                                  </div>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        {/* Palet Warisan Tradisional Bugis, Makassar & Toraja */}
-                        <div className="space-y-1.5 pt-1">
-                          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">
-                            Palet Warisan Tradisional Bugis, Makassar &amp; Toraja (10 Palet)
-                          </p>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-                            {[
-                              { id: "toraja", name: "Toraja Crimson", hex: "#750b0a" },
-                              { id: "bugis", name: "Bugis Maroon", hex: "#5a0b10" },
-                              { id: "makassar", name: "Makassar Phinisi", hex: "#0a192f" },
-                              { id: "bone", name: "Bugis Bone Saoraja", hex: "#46060a" },
-                              { id: "wajo", name: "Bugis Wajo Sutera", hex: "#5e091e" },
-                              { id: "soppeng", name: "Bugis Soppeng Latemmamala", hex: "#480b18" },
-                              { id: "gowa", name: "Makassar Gowa Balla Lompoa", hex: "#08162b" },
-                              { id: "maros", name: "Makassar Maros Salewangang", hex: "#081f26" },
-                              { id: "takalar", name: "Makassar Takalar Sanrobone", hex: "#061a33" },
-                              { id: "bulukumba", name: "Makassar Bulukumba Panrita Lopi", hex: "#0c1420" },
-                            ].map((pal) => {
-                              const activeBp = getThemeBlueprint(demoStudioTheme.id);
-                              const currentPal = demoStudioData.defaultPalette || demoStudioData.colorPalette || activeBp.defaultPalette || "champagne";
-                              const isSelected = currentPal === pal.id;
-                              return (
-                                <button
-                                  key={pal.id}
-                                  type="button"
-                                  onClick={() => {
-                                    setDemoStudioData((prev: any) => ({
-                                      ...prev,
-                                      defaultPalette: pal.id,
-                                      colorPalette: pal.id,
-                                    }));
-                                  }}
-                                  className={`p-2 rounded-xl border text-left flex items-center gap-2.5 transition cursor-pointer ${
-                                    isSelected
-                                      ? "border-amber-800 bg-amber-50/70 ring-2 ring-amber-800/30 shadow-xs"
-                                      : "border-stone-200 hover:border-stone-300 bg-white"
-                                  }`}
-                                >
-                                  <span
-                                    className="w-5 h-5 rounded-full shadow-inner border border-black/10 shrink-0"
-                                    style={{ backgroundColor: pal.hex }}
-                                  />
-                                  <div className="min-w-0">
-                                    <p className="text-[11px] font-bold text-stone-900 truncate">{pal.name}</p>
-                                  </div>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </div>
 
                       {/* Main Cover & Hero Slots Grid */}
                       <div>

@@ -29,7 +29,7 @@ export async function GET(
 
     const dbTheme = await prisma.theme.findUnique({
       where: { id: themeId },
-      select: { name: true, category: true, series: true },
+      select: { name: true, category: true, series: true, defaultMusicUrl: true },
     });
 
     const { getThemeBlueprint } = await import("@/lib/themeDefaults");
@@ -93,8 +93,8 @@ export async function GET(
     if (!resolvedData.openingQuoteRef) resolvedData.openingQuoteRef = blueprint.openingQuoteRef;
     if (!resolvedData.closingQuote) resolvedData.closingQuote = blueprint.closingQuote;
     if (!resolvedData.closingSub) resolvedData.closingSub = blueprint.closingSub;
-    if (!resolvedData.audioUrl && blueprint.defaultMusicUrl) {
-      resolvedData.audioUrl = blueprint.defaultMusicUrl;
+    if (!resolvedData.audioUrl) {
+      resolvedData.audioUrl = dbTheme?.defaultMusicUrl || blueprint.defaultMusicUrl || "";
     }
 
     return NextResponse.json({

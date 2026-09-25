@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import fs from "fs";
-import path from "path";
 
 export const dynamic = "force-dynamic";
 
@@ -95,17 +93,10 @@ export async function GET() {
       const themeKey = t.id.toLowerCase();
       const customEntry = themeCustomDataMap[themeKey];
       const customData = customEntry?.data;
-      const v = customEntry?.updatedAt || 1;
 
-      const demoThemeDir = path.join(process.cwd(), "public", "demo", themeKey);
-      const hasMobileThumb = fs.existsSync(path.join(demoThemeDir, "thumbnail_mobile.webp"));
-      const hasDesktopThumb = fs.existsSync(path.join(demoThemeDir, "thumbnail_desktop.webp"));
-      const hasCoverDesktop = fs.existsSync(path.join(demoThemeDir, "cover_desktop.webp"));
       const defaultCoverFallback = t.thumbnail || `/demo/${themeKey}/cover.webp`;
-      const desktopFallback = customData?.landingCoverDesktopUrl || (hasCoverDesktop ? `/demo/${themeKey}/cover_desktop.webp` : defaultCoverFallback);
-
-      const rawThumbMobile = customData?.thumbnailMobileUrl || (hasMobileThumb ? `/demo/${themeKey}/thumbnail_mobile.webp` : defaultCoverFallback);
-      const rawThumbDesktop = customData?.thumbnailDesktopUrl || (hasDesktopThumb ? `/demo/${themeKey}/thumbnail_desktop.webp` : desktopFallback);
+      const rawThumbMobile = customData?.thumbnailMobileUrl || `/demo/${themeKey}/thumbnail_mobile.webp`;
+      const rawThumbDesktop = customData?.thumbnailDesktopUrl || customData?.landingCoverDesktopUrl || `/demo/${themeKey}/thumbnail_desktop.webp`;
 
       return {
         ...t,

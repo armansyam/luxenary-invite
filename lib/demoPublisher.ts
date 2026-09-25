@@ -33,8 +33,7 @@ export async function compileAndSaveStaticDemo(
   } catch {}
 
   const version = forcedVersion || settingUpdatedAt || Date.now();
-  const chosenPalette = resolvedData?.defaultPalette || resolvedData?.colorPalette;
-  const data = composeDemoTemplateData(cleanId, chosenPalette, resolvedData, version);
+  const data = composeDemoTemplateData(cleanId, resolvedData, version);
 
   // Construct absolute OpenGraph meta tags for rich WhatsApp & social share previews
   const demoHost = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");

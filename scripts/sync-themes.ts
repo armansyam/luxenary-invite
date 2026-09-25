@@ -6,7 +6,7 @@ import path from "path";
 async function main() {
   const themesDir = path.join(process.cwd(), "themes");
   const folders = [
-    { name: "premium", category: "premium", series: "Premium" },
+    { name: "minimalist", category: "minimalist", series: "Minimalist" },
     { name: "modern", category: "modern", series: "Modern" },
     { name: "traditional", category: "traditional", series: "Traditional" },
     { name: "", category: "modern", series: "Modern" },
@@ -51,6 +51,7 @@ async function main() {
         category: d.category,
         series: d.series,
         sortOrder: i + 1,
+        isPremium: existing ? existing.isPremium : d.category === "minimalist",
         ...(existing ? {} : { isActive: true }),
       },
       create: {
@@ -58,6 +59,7 @@ async function main() {
         name: d.name,
         category: d.category,
         series: d.series,
+        isPremium: d.category === "minimalist",
         sortOrder: i + 1,
         isActive: true,
       },

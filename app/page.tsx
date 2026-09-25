@@ -338,18 +338,7 @@ export default async function Home() {
                     </div>
                   </div>
 
-                  {/* Palette Selector Bar */}
-                  <div className="studio-palette-row">
-                    <span className="palette-label">NUANSA WARNA:</span>
-                    <div className="palette-chip active">
-                      <span className="palette-dot dot-gold"></span>
-                      <span>Royal Champagne Gold</span>
-                    </div>
-                    <div className="palette-chip">
-                      <span className="palette-dot dot-emerald"></span>
-                      <span>Emerald Green</span>
-                    </div>
-                  </div>
+
                 </div>
               </div>
             </div>
@@ -428,7 +417,7 @@ export default async function Home() {
             {/* Mobile Dashboard Layer 0: Tema & Warna */}
             <div className="studio-phone-layer active" id="studio-phone-0">
               <div className="phone-db-content">
-                <div className="phone-section-chip">1. Tema &amp; Nuansa (1/13)</div>
+                <div className="phone-section-chip">1. Pilihan Tema (1/13)</div>
                 <div className="phone-theme-preview">
                   <span className="phone-theme-badge">TRADITIONAL</span>
                   <span className="phone-theme-check">✓</span>
@@ -438,10 +427,7 @@ export default async function Home() {
                     <span className="phone-theme-status">Terpilih</span>
                   </div>
                 </div>
-                <div className="phone-palette-pill">
-                  <span className="phone-palette-dot dot-gold" style={{ background: "#d4af37" }}></span>
-                  <span>Royal Champagne Gold</span>
-                </div>
+
               </div>
             </div>
 

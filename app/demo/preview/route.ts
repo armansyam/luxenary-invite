@@ -8,7 +8,6 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const invitationId = searchParams.get("id");
   const themeParam = searchParams.get("theme");
-  const paletteKey = searchParams.get("palette") || undefined;
 
   if (invitationId) {
     try {
@@ -33,7 +32,7 @@ export async function GET(req: Request) {
   }
 
   const selectedTheme = (themeParam || "kalandra").toLowerCase();
-  const data = composeDemoTemplateData(selectedTheme, paletteKey);
+  const data = composeDemoTemplateData(selectedTheme);
   const html = await renderTemplateFile(selectedTheme, data);
 
   return new NextResponse(html, {

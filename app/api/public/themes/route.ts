@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { DEMO_REGISTRY } from "@/lib/demoRegistry";
-import fs from "fs";
-import path from "path";
 
 export const dynamic = "force-dynamic";
 export async function GET() {
@@ -22,7 +20,7 @@ export async function GET() {
         series: demo.series,
         description: demo.tagline || `${demo.themeName} Series`,
         previewUrl: `/demo/${demo.themeId.toLowerCase()}`,
-        isPremium: demo.category.toLowerCase() === "premium",
+        isPremium: demo.category.toLowerCase() === "minimalist" || demo.category.toLowerCase() === "premium",
         isActive: true,
         sortOrder: idx + 1,
       }));
@@ -71,28 +69,23 @@ export async function GET() {
       const source = customData || registryData;
 
       const tagline = t.description || source?.tagline || "";
+      const catLower = t.category.toLowerCase();
       const series =
         t.series ||
-        (t.category.toLowerCase() === "premium"
-          ? "Premium"
-          : t.category.toLowerCase() === "traditional"
+        (catLower === "minimalist" || catLower === "premium"
+          ? "Minimalist"
+          : catLower === "traditional"
           ? "Traditional"
           : "Modern");
 
-      // Verify if specific thumbnail files actually exist on disk to prevent 404 cascade
-      const demoThemeDir = path.join(process.cwd(), "public", "demo", themeKey);
-      const hasMobileThumb = fs.existsSync(path.join(demoThemeDir, "thumbnail_mobile.webp"));
-      const hasDesktopThumb = fs.existsSync(path.join(demoThemeDir, "thumbnail_desktop.webp"));
-      const hasCoverDesktop = fs.existsSync(path.join(demoThemeDir, "cover_desktop.webp"));
       const defaultCoverFallback = source?.landingCoverUrl || `/demo/${themeKey}/cover.webp`;
-      const desktopFallback = customData?.landingCoverDesktopUrl || (hasCoverDesktop ? `/demo/${themeKey}/cover_desktop.webp` : defaultCoverFallback);
-
-      const rawThumbMobile = customData?.thumbnailMobileUrl || (hasMobileThumb ? `/demo/${themeKey}/thumbnail_mobile.webp` : defaultCoverFallback);
-      const rawThumbDesktop = customData?.thumbnailDesktopUrl || (hasDesktopThumb ? `/demo/${themeKey}/thumbnail_desktop.webp` : desktopFallback);
+      const desktopFallback = customData?.landingCoverDesktopUrl || `/demo/${themeKey}/cover_desktop.webp`;
+      const rawThumbMobile = customData?.thumbnailMobileUrl || `/demo/${themeKey}/thumbnail_mobile.webp`;
+      const rawThumbDesktop = customData?.thumbnailDesktopUrl || desktopFallback;
 
       const thumbMobile = rawThumbMobile;
       const thumbDesktop = rawThumbDesktop;
-      const rawCoverUrl = source?.landingCoverUrl || `/demo/${themeKey}/cover.webp`;
+      const rawCoverUrl = defaultCoverFallback;
       const coverUrl = rawCoverUrl;
 
       return {

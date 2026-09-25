@@ -14,12 +14,12 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 const themes: Prisma.ThemeCreateInput[] = [
-  // Premium Series (4)
+  // Minimalist Series (4)
   {
     id: 'kalandra',
     name: 'Kalandra',
-    category: 'premium',
-    series: 'Premium',
+    category: 'minimalist',
+    series: 'Minimalist',
     description: 'THE WEDDING OF — Modern, Elegan & Minimalis Editorial',
     previewUrl: '/demo/kalandra',
     isPremium: true,
@@ -29,8 +29,8 @@ const themes: Prisma.ThemeCreateInput[] = [
   {
     id: 'valente',
     name: 'Valente',
-    category: 'premium',
-    series: 'Premium',
+    category: 'minimalist',
+    series: 'Minimalist',
     description: 'A CELEBRATION OF LOVE — Elegan, Mewah & Berkelas',
     previewUrl: '/demo/valente',
     isPremium: true,
@@ -40,8 +40,8 @@ const themes: Prisma.ThemeCreateInput[] = [
   {
     id: 'aurelia',
     name: 'Aurelia',
-    category: 'premium',
-    series: 'Premium',
+    category: 'minimalist',
+    series: 'Minimalist',
     description: 'ROYAL LUXURY CELEBRATION — Sentuhan Emas & Kemegahan Kerajaan',
     previewUrl: '/demo/aurelia',
     isPremium: true,
@@ -51,8 +51,8 @@ const themes: Prisma.ThemeCreateInput[] = [
   {
     id: 'artisan',
     name: 'Artisan',
-    category: 'premium',
-    series: 'Premium',
+    category: 'minimalist',
+    series: 'Minimalist',
     description: 'HANDCRAFTED IN LOVE — Sentuhan Artistik & Tipografi Organik',
     previewUrl: '/demo/artisan',
     isPremium: true,

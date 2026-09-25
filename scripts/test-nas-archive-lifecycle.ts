@@ -46,12 +46,17 @@ async function runTest() {
 
     // 2. Cari atau buat dummy invitation dengan status PUBLISHED
     console.log("\n[Step 2] Menyiapkan data undangan uji coba...");
-    let user = await prisma.user.findFirst({ where: { role: "ADMIN" } });
+    let user = await prisma.user.findFirst();
+    let isEphemeralUser = false;
     if (!user) {
-      user = await prisma.user.findFirst();
-    }
-    if (!user) {
-      throw new Error("Tidak ada user di database untuk pengujian.");
+      user = await prisma.user.create({
+        data: {
+          name: "Test Vault User",
+          email: `test-vault-${Date.now()}@example.com`,
+          role: "CLIENT",
+        },
+      });
+      isEphemeralUser = true;
     }
 
     // Buat file dummy cover di public/uploads
@@ -149,6 +154,9 @@ async function runTest() {
     console.log("\n[Step 7] Membersihkan data uji coba...");
     await purgeNasArchive(testSlug);
     await prisma.invitation.delete({ where: { id: testInv.id } });
+    if (isEphemeralUser) {
+      await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
+    }
     if (fs.existsSync(dummyUploadDir)) {
       await fs.promises.rm(dummyUploadDir, { recursive: true, force: true });
     }

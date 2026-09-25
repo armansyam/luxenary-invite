@@ -7,7 +7,7 @@ export interface PortfolioGalleryItem {
   id: string;
   coupleName: string;
   themeId: string;
-  category: "minimalist" | "premium" | "traditional" | "modern" | string;
+  category: "minimalist" | "traditional" | "modern" | string;
   coverImage: string;
   publicUrl: string;
 }

@@ -22,7 +22,6 @@ export function HowItWorksInteractive({ activeDomain }: { activeDomain: string }
   const [typedTitle, setTypedTitle] = useState("Eka & Putri");
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"synced" | "saving">("synced");
-  const [selectedPalette, setSelectedPalette] = useState<"gold" | "emerald">("gold");
   const [cursorPos, setCursorPos] = useState({ x: 25, y: 70, clicking: false, visible: true });
   const [selectedTheme, setSelectedTheme] = useState<"dillalucky" | "candani" | "badrika">("dillalucky");
   const [tab1Cursor, setTab1Cursor] = useState({ x: 25, y: 35, clicking: false, visible: true, label: "Melihat Koleksi Seri" });
@@ -134,10 +133,9 @@ export function HowItWorksInteractive({ activeDomain }: { activeDomain: string }
     };
 
     const runTab1Sim = () => {
-      // Step 1: Initial state (Dillalucky & Gold)
+      // Step 1: Initial state (Dillalucky)
       setTab1Cursor({ x: 22, y: 38, clicking: false, visible: true, label: "Melihat Koleksi Desain" });
       setSelectedTheme("dillalucky");
-      setSelectedPalette("gold");
 
       // Step 2: Glides to Candani card
       schedule(() => {
@@ -154,15 +152,15 @@ export function HowItWorksInteractive({ activeDomain }: { activeDomain: string }
         setTab1Cursor((prev) => ({ ...prev, clicking: false }));
       }, 3100);
 
-      // Step 4: Glides down to Emerald Green palette
+      // Step 4: Glides to Badrika card
       schedule(() => {
-        setTab1Cursor({ x: 78, y: 88, clicking: false, visible: true, label: "Ganti Nuansa Emerald..." });
+        setTab1Cursor({ x: 80, y: 42, clicking: false, visible: true, label: "Pilih Tema Badrika..." });
       }, 4500);
 
-      // Step 5: Clicks Emerald Green palette
+      // Step 5: Clicks Badrika card
       schedule(() => {
-        setTab1Cursor({ x: 78, y: 88, clicking: true, visible: true, label: "Nuansa Emerald Aktif ✓" });
-        setSelectedPalette("emerald");
+        setTab1Cursor({ x: 80, y: 42, clicking: true, visible: true, label: "Tema Badrika Terpilih ✓" });
+        setSelectedTheme("badrika");
       }, 5700);
 
       schedule(() => {
@@ -467,7 +465,7 @@ export function HowItWorksInteractive({ activeDomain }: { activeDomain: string }
 
                 <div className="space-y-1.5 text-xs">
                   <div className="p-2.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-200 flex items-center justify-between">
-                    <span className="font-semibold">1. Tema &amp; Nuansa Warna</span>
+                    <span className="font-semibold">1. Pilihan Desain Tema</span>
                     <span className="text-[10px] text-amber-400">Aktif</span>
                   </div>
                   <div className="p-2.5 rounded-xl bg-stone-900/60 border border-stone-800/80 text-stone-400 flex items-center justify-between">
@@ -489,24 +487,27 @@ export function HowItWorksInteractive({ activeDomain }: { activeDomain: string }
                 </div>
               </div>
 
-              {/* Main Content: Theme Cards & Palette (Autonomous Showcase - Tanpa Gangguan Klik) */}
+              {/* Main Content: Theme Cards Showcase (Autonomous Showcase - Tanpa Gangguan Klik) */}
               <div className="relative flex-1 p-5 sm:p-8 flex flex-col justify-between overflow-hidden pointer-events-none select-none">
                 <div>
                   <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
                     <div>
                       <h4 className="text-base sm:text-lg font-serif text-white font-bold">
-                        1. Pilihan Seri Desain &amp; Palet Warna
+                        1. Pilihan Desain Tema Eksklusif
                       </h4>
                       <p className="text-xs text-stone-400 mt-0.5">
-                        Pilih tema utama dan nuansa warna undangan pernikahan Anda.
+                        Pilih tema berkarakter dari koleksi Minimalis, Modern, atau Tradisional.
                       </p>
                     </div>
                     <div className="flex gap-2">
                       <span className="px-3 py-1 rounded-full bg-stone-800 text-stone-400 text-xs font-semibold">
-                        Modern (6)
+                        Minimalis (6)
+                      </span>
+                      <span className="px-3 py-1 rounded-full bg-stone-800 text-stone-400 text-xs font-semibold">
+                        Modern (13)
                       </span>
                       <span className="px-3 py-1 rounded-full bg-amber-600/30 border border-amber-500/50 text-amber-300 text-xs font-semibold">
-                        Traditional (6)
+                        Tradisional (15)
                       </span>
                     </div>
                   </div>
@@ -599,32 +600,24 @@ export function HowItWorksInteractive({ activeDomain }: { activeDomain: string }
                   </div>
                 </div>
 
-                {/* Color Palette Row */}
+                {/* Theme Persona & Smart Audio Info Banner */}
                 <div className="p-4 rounded-xl bg-stone-900/90 border border-stone-800 flex flex-wrap items-center justify-between gap-3 text-xs">
-                  <span className="font-bold text-stone-300 uppercase tracking-wider text-[11px]">
-                    NUANSA WARNA UTAMA:
-                  </span>
-                  <div className="flex gap-2">
-                    <div
-                      className={`px-3 py-1.5 rounded-full flex items-center gap-2 border transition duration-300 ${
-                        selectedPalette === "gold"
-                          ? "bg-amber-950/60 border-amber-400 text-amber-300 ring-1 ring-amber-400/40"
-                          : "border-stone-800 text-stone-400"
-                      }`}
-                    >
-                      <span className="w-3 h-3 rounded-full bg-[#d4af37]"></span>
-                      <span>Royal Champagne Gold</span>
-                    </div>
-                    <div
-                      className={`px-3 py-1.5 rounded-full flex items-center gap-2 border transition duration-300 ${
-                        selectedPalette === "emerald"
-                          ? "bg-emerald-950/60 border-emerald-400 text-emerald-300 ring-1 ring-emerald-400/40"
-                          : "border-stone-800 text-stone-400"
-                      }`}
-                    >
-                      <span className="w-3 h-3 rounded-full bg-[#059669]"></span>
-                      <span>Emerald Green &amp; Gold</span>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                    <span className="font-bold text-stone-300 uppercase tracking-wider text-[11px]">
+                      CIRI KHAS DESAIN TEMA:
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-stone-300 text-[11px]">
+                    <span className="px-3 py-1 rounded-full bg-stone-800 border border-stone-700/80 text-amber-300 font-medium">
+                      {selectedTheme === "dillalucky" && "Tradisional Jawa Klasik • Batik Solo"}
+                      {selectedTheme === "candani" && "Modern Botanical Floral • Terakota Sand"}
+                      {selectedTheme === "badrika" && "Kemegahan Adat Bugis • Saoraja Royal"}
+                    </span>
+                    <span className="px-3 py-1 rounded-full bg-stone-800/80 border border-stone-700/80 text-stone-400 hidden sm:inline-flex items-center gap-1.5">
+                      <svg className="w-3 h-3 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z"/></svg>
+                      Lagu Resmi Tersemat
+                    </span>
                   </div>
                 </div>
 

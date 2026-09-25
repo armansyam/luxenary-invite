@@ -61,16 +61,15 @@ Mesin render [lib/renderTemplate.ts](file:///Users/armansyam/Documents/Project%2
 - `{{openingQuote}}`: Teks kutipan doa atau ayat suci.
 - `{{openingQuoteRef}}`: Sumber rujukan ayat (contoh: "QS. Ar-Rum: 21").
 
-### C. Token Media & Warna Dinamis
+### C. Token Media
 - `{{landingCoverUrl}}`: URL foto/video pembuka sampul depan.
 - `{{homePhotoUrl}}`: URL foto pembuka hero setelah sampul dibuka.
 - `{{groomPhotoUrl}}`: URL foto mempelai pria.
 - `{{bridePhotoUrl}}`: URL foto mempelai wanita.
 - `{{sidebarPhotoUrl}}`: URL foto wallpaper desktop panel kiri.
 - `{{musicUrl}}`: URL file audio musik latar pengantin.
-- `{{colorPrimary}}`: Kode warna dominan (contoh: `#D4AF37` atau `#8A624A`).
-- `{{colorSecondary}}`: Kode warna sekunder tema.
-- `{{colorAccent}}`: Kode warna aksen ornamen.
+
+> ⚠️ **CATATAN ARSITEKTUR WARNA:** Token `{{colorPrimary}}`, `{{colorSecondary}}`, dan `{{colorAccent}}` **sudah dihapus permanen** dari engine. Engine TIDAK LAGI menginjeksi warna ke tema. Setiap tema WAJIB mendefinisikan warna identitasnya sendiri secara **hardcode di dalam blok `:root { }` HTML master tema**. Ini menjamin ciri khas visual tema tidak berubah saat digunakan oleh siapapun.
 
 ### D. Token Interaksi & Tamu
 - `{{guestName}}`: Nama tamu yang sedang membuka undangan (dari `?to=...`).

@@ -32,7 +32,7 @@ function escapeHtmlAttr(str: string): string {
   return escapeHtmlSafe(str);
 }
 
-const THEME_MAP: Record<string, { file: string; folder: "minimalist" | "premium" | "traditional" | "modern" }> = {
+const THEME_MAP: Record<string, { file: string; folder: "minimalist" | "traditional" | "modern" }> = {
   // Minimalist Series
   "kalandra": { file: "kalandra.html", folder: "minimalist" },
   "valente": { file: "valente.html", folder: "minimalist" },
@@ -736,23 +736,10 @@ const INLINE_LIVE_EDITOR_SCRIPT = `
     }
   };
 
-  // Live Palette & Remote Dual-View Synchronization Listener
+  // Remote Dual-View Synchronization Listener
   window.addEventListener('message', function(e) {
     if (!e.data || typeof e.data !== 'object') return;
-    if (e.data.type === 'LUX_PALETTE_CHANGED' && e.data.palette) {
-      const p = e.data.palette;
-      const targets = [document.body, document.documentElement].filter(Boolean);
-      targets.forEach(function(el) {
-        if (p.primary) el.style.setProperty('--gold', p.primary);
-        if (p.secondary) el.style.setProperty('--gold-dim', p.secondary);
-        if (p.bgLight) el.style.setProperty('--gold-pale', p.bgLight);
-        if (p.primary) el.style.setProperty('--primary', p.primary);
-        if (p.secondary) el.style.setProperty('--secondary', p.secondary);
-        if (p.accent) el.style.setProperty('--accent', p.accent);
-        if (p.bgLight) el.style.setProperty('--bg-light', p.bgLight);
-        if (p.bgDark) el.style.setProperty('--bg-dark', p.bgDark);
-      });
-    } else if (e.data.type === 'LUX_REMOTE_OPEN_INVITATION') {
+    if (e.data.type === 'LUX_REMOTE_OPEN_INVITATION') {
       executeUniversalOpenInvitation(true);
     } else if (e.data.type === 'LUX_PAUSE_AUDIO') {
       try {
@@ -1239,23 +1226,9 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
     initHomeDockGuard();
   });
 
-  // Universal PostMessage Dispatcher (Live Palette Sync & Section Smooth Scroll)
+  // Universal PostMessage Dispatcher (Section Smooth Scroll)
   window.addEventListener('message', function(e) {
     if (!e.data || typeof e.data !== 'object') return;
-    if (e.data.type === 'LUX_PALETTE_CHANGED' && e.data.palette) {
-      var p = e.data.palette;
-      var targets = [document.body, document.documentElement].filter(Boolean);
-      targets.forEach(function(el) {
-        if (p.primary) el.style.setProperty('--gold', p.primary);
-        if (p.secondary) el.style.setProperty('--gold-dim', p.secondary);
-        if (p.bgLight) el.style.setProperty('--gold-pale', p.bgLight);
-        if (p.primary) el.style.setProperty('--primary', p.primary);
-        if (p.secondary) el.style.setProperty('--secondary', p.secondary);
-        if (p.accent) el.style.setProperty('--accent', p.accent);
-        if (p.bgLight) el.style.setProperty('--bg-light', p.bgLight);
-        if (p.bgDark) el.style.setProperty('--bg-dark', p.bgDark);
-      });
-    }
     if (e.data.type === 'LUX_SCROLL_TO_SECTION' && e.data.sectionId) {
       var sid = e.data.sectionId;
       if (sid === 'cover' || sid === 'coverOverlay') {
@@ -1346,7 +1319,6 @@ export async function renderTemplateFile(
   if (!draftFound) {
     if (!(await fileExists(tplPath))) {
       const minimalistCheck = path.join(process.cwd(), "themes", "minimalist", `${templateName}.html`);
-      const premiumCheck = path.join(process.cwd(), "themes", "premium", `${templateName}.html`);
       const traditionalCheck = path.join(process.cwd(), "themes", "traditional", `${templateName}.html`);
       const modernLegacyCheck = path.join(process.cwd(), "themes", "modern", `${templateName}.html`);
       const rootThemesCheck = path.join(process.cwd(), "themes", `${templateName}.html`);
@@ -1357,8 +1329,6 @@ export async function renderTemplateFile(
         tplPath = traditionalCheck;
       } else if (await fileExists(modernLegacyCheck)) {
         tplPath = modernLegacyCheck;
-      } else if (await fileExists(premiumCheck)) {
-        tplPath = premiumCheck;
       } else if (await fileExists(rootThemesCheck)) {
         tplPath = rootThemesCheck;
       } else {

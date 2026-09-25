@@ -9,7 +9,7 @@ interface ThemeItem {
   id: string;
   name: string;
   series: string;
-  category: "minimalist" | "premium" | "traditional" | "modern" | string;
+  category: "minimalist" | "traditional" | "modern" | string;
   desc: string;
   thumbnailMobile?: string;
   thumbnailDesktop?: string;
@@ -50,7 +50,7 @@ export default function CatalogGridShowcase() {
             data.map((t: any) => ({
               id: t.id,
               name: t.name,
-              series: t.series || (t.category === "PREMIUM" ? "Premium" : t.category === "TRADITIONAL" ? "Traditional" : "Modern"),
+              series: t.series || (t.category?.toUpperCase() === "MINIMALIST" ? "Minimalis" : t.category?.toUpperCase() === "TRADITIONAL" ? "Traditional" : "Modern"),
               category: (t.category || "modern").toLowerCase(),
               desc: t.tagline || t.desc || `Desain eksklusif ${platformName}`,
               thumbnailMobile: t.thumbnailMobile || `/demo/${t.id}/thumbnail_mobile.webp`,

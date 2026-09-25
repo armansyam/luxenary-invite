@@ -218,11 +218,11 @@ export async function POST(req: Request) {
     }
   } catch {}
 
-  let themeMeta: { name: string; category: string; series: string | null } | null = null;
+  let themeMeta: { name: string; category: string; series: string | null; defaultMusicUrl?: string | null } | null = null;
   try {
     themeMeta = await prisma.theme.findUnique({
       where: { id: chosenTheme.toLowerCase() },
-      select: { name: true, category: true, series: true },
+      select: { name: true, category: true, series: true, defaultMusicUrl: true },
     });
   } catch {}
 
@@ -282,8 +282,7 @@ export async function POST(req: Request) {
       vendorSubtitle: blueprint.vendorSubtitle || "Rasa terima kasih dan penghargaan setulusnya kepada seluruh vendor yang telah membantu menyempurnakan hari bahagia kami.",
     };
 
-    const initialPalette = customDemoData?.defaultPalette || customDemoData?.colorPalette || blueprint.defaultPalette || "champagne";
-    const initialMusicUrl = customDemoData?.audioUrl || customDemoData?.defaultMusicUrl || blueprint.defaultMusicUrl || "";
+    const initialMusicUrl = customDemoData?.audioUrl || customDemoData?.defaultMusicUrl || themeMeta?.defaultMusicUrl || blueprint.defaultMusicUrl || "";
 
     invitation = await prisma.$transaction(async (tx) => {
       if (existingDraft) {
@@ -294,10 +293,14 @@ export async function POST(req: Request) {
           } catch {}
         }
 
+        const isThemeChanged = Boolean(themeId?.trim() && themeId.trim().toLowerCase() !== existingDraft.themeId?.toLowerCase());
+        const effectiveMusicUrl = isThemeChanged
+          ? (initialMusicUrl || existingDraft.musicUrl || undefined)
+          : (existingDraft.musicUrl || initialMusicUrl || undefined);
+
         const mergedFs = {
           weddingTagline: existingFs.weddingTagline || blueprint.coverBadge || "THE WEDDING OF",
-          colorPalette: existingFs.colorPalette || initialPalette,
-          musicUrl: existingFs.musicUrl || existingDraft.musicUrl || initialMusicUrl || undefined,
+          musicUrl: isThemeChanged ? (initialMusicUrl || existingFs.musicUrl || undefined) : (existingFs.musicUrl || existingDraft.musicUrl || initialMusicUrl || undefined),
           showStory: existingFs.showStory !== undefined ? existingFs.showStory : true,
           showGallery: existingFs.showGallery !== undefined ? existingFs.showGallery : true,
           showGift: existingFs.showGift !== undefined ? existingFs.showGift : true,
@@ -322,7 +325,7 @@ export async function POST(req: Request) {
             invitationSlug: (finalGroomNick || finalBrideNick) ? invitationSlug : existingDraft.invitationSlug,
             subdomain: finalSubdomain !== null ? finalSubdomain : existingDraft.subdomain,
             themeId: themeId?.trim() ? themeId.trim() : (existingDraft.themeId || ""),
-            musicUrl: existingDraft.musicUrl || initialMusicUrl || undefined,
+            musicUrl: effectiveMusicUrl,
             openingQuote: blueprint.openingQuote || existingDraft.openingQuote,
             openingQuoteRef: blueprint.openingQuoteRef || existingDraft.openingQuoteRef,
             eventData: initialEvents.length > 0 ? JSON.stringify(initialEvents) : existingDraft.eventData,
@@ -351,7 +354,6 @@ export async function POST(req: Request) {
             eventData: JSON.stringify(initialEvents),
             featureSettings: JSON.stringify({
               weddingTagline: blueprint.coverBadge || "THE WEDDING OF",
-              colorPalette: initialPalette,
               musicUrl: initialMusicUrl || undefined,
               showStory: true,
               showGallery: true,

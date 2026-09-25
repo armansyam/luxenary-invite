@@ -46,22 +46,22 @@ Sistem memisahkan secara tegas antara aset bawaan tema dan wadah unggahan person
    - **Cakupan:** `COVER_PHOTO` (`{{homePhotoUrl}}`), `LANDING_COVER_DESKTOP` (`{{sidebarPhotoUrl}}`), `GLOBAL_FIXED_BG` (`{{globalBgUrl}}`), `GROOM_PHOTO` (`{{firstPhotoUrl}}`), `BRIDE_PHOTO` (`{{secondPhotoUrl}}`), `CLOSING_COVER` (`{{closingBgStyle}}`), dan `BACKGROUND_MUSIC`.
    - **Implementasi:** Disuntikkan runtime secara dinamis melalui kurung kurawal ganda `{{token}}`.
 
-### E. Pewarisan Palet Dinamis & Larangan Mutlak Fallback Hex (Zero Hex Fallback in CSS)
-Setiap tema master memiliki **identitas warna bawaan (default palette)** yang tercatat di `lib/themeDefaults.ts` dan tabel `Theme` di database (`Theme.defaultPalette`):
-- Saat klien memilih tema, sistem secara otomatis menginjeksi palet ke dalam `:root` via token template:
+### E. Standar Palet Warna Mandiri Tema (Theme-Locked Standalone Palette)
+Setiap tema master mengontrol dan mendefinisikan warna identitasnya secara **mandiri di dalam blok `:root { }` HTML master tema**:
+- Engine **TIDAK LAGI menyuntikkan token warna dinamis** (`{{colorPrimary}}`, `{{colorSecondary}}`, `{{colorAccent}}`, `{{colorBgDark}}`, dll.). Setiap tema wajib menentukan palet warnanya secara mandiri di `:root` agar ciri khas dan keanggunan desainnya terjaga 100%:
   ```css
   :root {
-    --primary: {{colorPrimary}};
-    --secondary: {{colorSecondary}};
-    --accent: {{colorAccent}};
-    --bg-light: {{colorBgLight}};
-    --bg-dark: {{colorBgDark}};
-    --text-main: {{colorTextDark}};
-    --text-muted: color-mix(in srgb, {{colorTextDark}} 70%, transparent);
+    --primary: #b5833c;       /* Warna utama (dominant brand) */
+    --secondary: #785725;     /* Warna sekunder (subtle dark) */
+    --accent: #d9b47e;        /* Warna aksen (highlight, gold, jewel) */
+    --bg-light: #fbfaf7;      /* Background terang (mobile open view) */
+    --bg-dark: #1a1816;       /* Background gelap (cover, desktop) */
+    --text-main: #1a1a1a;     /* Teks utama di bg-light */
+    --text-muted: color-mix(in srgb, #1a1a1a 70%, transparent);
   }
   ```
-- **DILARANG KERAS MENYISIPKAN FALLBACK HEX DI DALAM `var()`:**
-  Di seluruh file CSS tema, gunakan token murni: `var(--primary)`, `var(--bg-dark)`, `var(--text-main)`. Jangan pernah menulis `var(--primary, #hex)` atau `var(--bg-dark, #hex)`. Nilai hex statis di dalam CSS membatalkan fleksibilitas palet dinamis.
+- **KONSISTENSI PENGGUNAAN TOKEN CSS:**
+  Di seluruh file CSS tema, gunakan token CSS: `var(--primary)`, `var(--secondary)`, `var(--accent)`, `var(--bg-dark)`, `var(--bg-light)`, `var(--text-main)`. Hindari hardcode hex berulang di setiap selector child agar pembaruan warna tema cukup dilakukan di satu tempat (`:root`).
 
 ### F. Kontrak Mutlak 100% Kustomisasi via CustomLabels (Zero-Edit HTML Contract)
 Tema master yang telah selesai dibangun **TIDAK BOLEH MEMERLUKAN PERUBAHAN KODE HTML LAGI** oleh klien ataupun admin:

@@ -31,7 +31,7 @@ export async function getNasArchivePath(): Promise<string> {
     targetPath = process.env.NAS_ARCHIVE_PATH || "./data/archives";
   }
 
-  return path.isAbsolute(targetPath) ? targetPath : path.resolve(process.cwd(), targetPath);
+  return path.isAbsolute(targetPath) ? targetPath : path.resolve(/*turbopackIgnore: true*/ process.cwd(), targetPath);
 }
 
 /**

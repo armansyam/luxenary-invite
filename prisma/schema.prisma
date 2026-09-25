@@ -244,19 +244,20 @@ model AdminSetting {
 }
 
 model Theme {
-  id          String   @id
-  name        String
-  description String?
-  thumbnail   String?
-  category    String   @default("luxury")
-  series      String?
-  previewUrl  String?
-  isPremium   Boolean  @default(false)
-  isActive    Boolean  @default(true)
-  isFeatured  Boolean  @default(false)
-  sortOrder   Int      @default(0)
-  price       Decimal  @default(0)
-  createdAt   DateTime @default(now())
+  id               String   @id
+  name             String
+  description      String?
+  thumbnail        String?
+  category         String   @default("minimalist")
+  series           String?
+  previewUrl       String?
+  isPremium        Boolean  @default(false)
+  isActive         Boolean  @default(true)
+  isFeatured       Boolean  @default(false)
+  sortOrder        Int      @default(0)
+  price            Decimal  @default(0)
+  defaultMusicUrl  String?  @map("default_music_url")
+  createdAt        DateTime @default(now())
 
   @@map("themes")
 }

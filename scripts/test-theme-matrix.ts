@@ -1,7 +1,6 @@
 import "dotenv/config";
 import { renderTemplateFile } from "../lib/renderTemplate";
 import { prisma } from "../lib/prisma";
-import { COLOR_PALETTES } from "../lib/colorPalettes";
 
 interface ThemeTestResult {
   themeId: string;
@@ -84,10 +83,6 @@ async function runThemeMatrixTest() {
       storyItemsHtml: `<div class="story-card"><p>Pertemuan Pertama</p></div>`,
       bankAccountsHtml: `<div class="bank-card"><p>BCA 1234567890</p></div>`,
       galleryHtml: `<div class="gallery-item"><img src="https://r2.luxenary.id/demo/1.webp" /></div>`,
-      colorPrimary: "#b5833c",
-      colorSecondary: "#785725",
-      colorAccent: "#d9b47e",
-      colorBgDark: "#1a1816",
     };
 
     try {
@@ -168,29 +163,16 @@ async function runThemeMatrixTest() {
       result.errors.push(`Minimal render error: ${e.message}`);
     }
 
-    // 4. PALETTE ROTATION (Uji 3 Palet Berbeda: Emerald, Terracotta, Midnight)
+    // 4. THEME-LOCKED CSS VARIABLES AUDIT (Uji keberadaan CSS Variables :root)
     try {
-      const testPalettes = ["emerald", "terracotta", "midnight"];
-      let allPalettesOk = true;
-      for (const pKey of testPalettes) {
-        const pal = COLOR_PALETTES[pKey];
-        if (!pal) continue;
-        const palData = {
-          ...normalData,
-          colorPrimary: pal.primary,
-          colorSecondary: pal.secondary,
-          colorAccent: pal.accent,
-          colorBgDark: pal.bgDark,
-        };
-        const htmlPal = await renderTemplateFile(theme.id, palData);
-        if (!htmlPal.includes(pal.primary) && !htmlPal.includes(pal.bgDark)) {
-          // Warning jika variabel warna sama sekali tidak terinjeksi
-          allPalettesOk = false;
-        }
+      const htmlMaster = await renderTemplateFile(theme.id, normalData);
+      const hasCssTokens = (htmlMaster.includes("--primary") || htmlMaster.includes("--gold") || htmlMaster.includes("--accent")) && htmlMaster.includes(":root");
+      result.scenarios.palettes = hasCssTokens;
+      if (!hasCssTokens) {
+        result.errors.push("Theme-locked audit: Template tidak memuat CSS variables :root (--primary, --gold, atau --accent)");
       }
-      result.scenarios.palettes = allPalettesOk;
     } catch (e: any) {
-      result.errors.push(`Palette render error: ${e.message}`);
+      result.errors.push(`Theme-locked audit error: ${e.message}`);
     }
 
     // Evaluasi status tema
@@ -203,7 +185,7 @@ async function runThemeMatrixTest() {
       result.errors.length === 0;
 
     if (passed) {
-      console.log(`  ✅ [PASS] ${theme.name}: Semua 4 skenario render lolos, XSS tertangani, palet dinamis aktif.`);
+      console.log(`  ✅ [PASS] ${theme.name}: Semua 4 skenario render lolos, XSS tertangani, token CSS mandiri terverifikasi.`);
       if (result.unparsedPlaceholders.length > 0) {
         console.log(`     ⚠️ Note placeholder tersisa: ${result.unparsedPlaceholders.slice(0, 5).join(", ")}`);
       }

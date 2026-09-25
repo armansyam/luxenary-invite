@@ -539,12 +539,10 @@ export async function PUT(
     // --- ARSITEKTUR PIRING: Hapus piring draft lama jika tema berubah ---
     if (body.themeId !== undefined && body.themeId !== currentInv.themeId) {
       try {
-        const fs = await import("fs");
+        const { promises: fs } = await import("fs");
         const path = await import("path");
         const draftPath = path.join(process.cwd(), "data", "drafts", `${id}.html`);
-        if (fs.existsSync(draftPath)) {
-          await fs.promises.unlink(draftPath);
-        }
+        await fs.unlink(draftPath).catch(() => {});
       } catch (err) {
         console.error("Failed to delete old draft plate:", err);
       }

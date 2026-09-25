@@ -53,13 +53,13 @@
     /* 2. DESIGN SYSTEM & DYNAMIC PALETTE (GOLDEN STANDARD)                */
     /* =================================================================== */
     :root {
-      --primary: {{colorPrimary}};
-      --secondary: {{colorSecondary}};
-      --accent: {{colorAccent}};
-      --bg-light: {{colorBgLight}};
-      --bg-dark: {{colorBgDark}};
-      --text-main: {{colorTextDark}};
-      --text-muted: color-mix(in srgb, {{colorTextDark}} 70%, transparent);
+      --primary: #7d3549;
+      --secondary: #a05068;
+      --accent: #e8b4c0;
+      --bg-light: #fdf5f7;
+      --bg-dark: #231416;
+      --text-main: #3d1a22;
+      --text-muted: color-mix(in srgb, #3d1a22 70%, transparent);
       --radius-sm: 10px;
       --radius-md: 18px;
       --radius-lg: 28px;
@@ -111,7 +111,6 @@
     }
 
     /* Headings & Scripts */
-    .font-script,
     .script-title {
       font-family: "Just Sunday", "Great Vibes", cursive;
       font-weight: 400;
@@ -856,15 +855,12 @@
       margin-bottom: 0.4rem;
     }
 
-    .ev-venue-unified,
     .ev-venue {
       font-size: 1.2rem;
       color: var(--text-main);
       margin-bottom: 0.4rem;
     }
 
-    .ev-address-unified,
-    .ev-addr-unified,
     .ev-addr {
       font-size: 0.84rem;
       color: var(--text-muted);
@@ -1051,7 +1047,7 @@
       width: 38px;
       height: 38px;
       border-radius: 50%;
-      border: 2px solid #ffffff;
+      border: 2px solid var(--bg-light);
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
       transition: transform 0.25s ease;
     }
@@ -1092,7 +1088,7 @@
       padding: 10px 14px;
       border-radius: var(--radius-sm);
       border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
-      background: #ffffff;
+      background: var(--bg-light);
       color: var(--text-main);
       font-size: 0.88rem;
       font-family: inherit;
@@ -1337,7 +1333,7 @@
       height: 32px;
       border-radius: 50%;
       border: 1px solid rgba(0, 0, 0, 0.1);
-      background: #ffffff;
+      background: var(--bg-light);
       color: #333;
       font-size: 14px;
       cursor: pointer;

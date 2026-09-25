@@ -1,5 +1,5 @@
 # S-Invitation: Luxenary Invite System Architecture & Master Specification
-> **Versi: 6.1.0 | Diperbarui: 23 September 2026**
+> **Versi: 6.2.0 | Diperbarui: 24 September 2026**
 
 ## 1. Executive Summary & Core Philosophy
 **Luxenary Invite** adalah platform ekosistem undangan pernikahan digital modern berbasis Next.js 16 (App Router + Turbopack) yang menghadirkan pengalaman visual mewah (*haute couture*), kecepatan muat instan (<0.8 detik), self-service dashboard mandiri bagi klien, dan integrasi cloud edge caching.
@@ -67,7 +67,7 @@ Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan 
 7. **Badrika (`themes/modern/badrika.html`)**
    - Garis lengkung arsitektural mewah (*Architectural Arch Portals*) dengan palet emerald mendalam dan aksen emas kontemporer. Murni estetika modern tanpa ornamen adat.
 8. **Candani (`themes/modern/candani.html`)**
-   - Modern Botanical Floral berpadu palet warna bumi (*terracotta, sand, warm gold*), serta dukungan penuh palet dinamis sistem (`{{colorPrimary}}`, `{{colorSecondary}}`, `{{colorAccent}}`, `{{colorBgDark}}`).
+   - Modern Botanical Floral berpadu palet warna bumi (*terracotta, sand, warm gold*) yang terkunci mandiri di `:root` tema master.
    - Arsitektur Desktop Split 460px presisi: `.sidebar-desktop .left-hero` dinamis (`calc(100% - 460px)`), panel undangan terisolasi 460px, serta kanvas `.fixed-bg-layer` fokus 460px di desktop dan 100% di mobile.
    - Home Section dinamis murni tanpa card (`#home` berpadu *optical center typography* dengan ritme vertikal kompak sehingga teks doa & countdown menyatu leluasa dengan kanvas latar belakang).
    - Profil Mempelai Card-less Staggered (`.couple-staggered-container`): Menghilangkan kotak card tebal, mempertahankan bingkai kubah melengkung berbayangan mewah (*luxury layered shadow*), First (Pria) berposisi di kiri dengan inisial huruf pertama bergradasi (*watermark gradient*) di sisi kanannya, Second (Wanita) di kanan dengan inisial di sisi kirinya, terhubung oleh ampersand puitis `&`, serta bebas dari efek loncat hover/scroll yang mengganggu.
@@ -90,22 +90,12 @@ Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan 
     - Tipografi mewah dual font lokal: *Geraldo Island* (display serif berkelas untuk nama mempelai) & *Romland* (signature accent script untuk sub-judul & floating monogram).
     - Ornamen visual khas: *Midnight Baroque Mirror Oval Frame* (`midnight-icon.webp`) sebagai wadah lencana cover & hero photo, serta aksen *Watercolor Yellow Florals with Mint Ribbon Bow* (`couple-frame-1.webp` & `couple-frame-2.webp`).
     - Kepatuhan penuh Standar Emas Blueprint: desktop split 460px, 3-layer background stack, discrete parents architecture, universal audio & RSVP handling, countdown timer hari H, dan dynamic CSS tokens tanpa hex mati.
-12. **Minimalist Elegant (`themes/modern/minimalist-elegant.html`)**
-    - High-End Contemporary Editorial berpadu palet hangat champagne sand & deep charcoal (`--primary`, `--secondary`, `--accent`, `--bg-light`).
-    - Tipografi editorial prestisius: *Playfair Display*, *Cormorant Garamond*, *The Nautigal* (`public/fonts/minimalist-elegant/TheNautigal.woff2`), dan *Gloriousity Two*.
-    - Visual framing asimetris arsitektural (*Asymmetric Arch Framing*): lengkung sudut diagonal 100px pada wadah hero dan bingkai foto mempelai.
-    - Kepatuhan penuh Standar Emas Blueprint: desktop split 460px, 3-layer background stack, discrete parents architecture, countdown timer hari H, interactive inline RSVP feed, dan dynamic CSS tokens 100% bebas hardcode.
-13. **Minimalist Elegant 04 (`themes/modern/minimalist-elegant-04.html`)**
-    - Contemporary Monochrome & Charcoal Luxury berpadu tipografi khas *Yaqoote Script* (`public/fonts/minimalist-elegant-04/YaqooteScript.woff2`) dan *Cormorant Garamond*.
-    - Nuansa warna modern minimalis berbalut slate grey, charcoal black, dan off-white.
-    - Visual asymmetric arch framing (100px) pada foto hero pembuka dan foto profil mempelai.
-    - Kepatuhan penuh Standar Emas Blueprint: desktop split 460px, 3-layer background stack, discrete parents architecture, countdown timer hari H, interactive inline RSVP feed, dan dynamic CSS tokens 100% bebas hardcode.
-14. **Burgundy Royale (`themes/modern/burgundy-royale.html`)**
+12. **Burgundy Royale (`themes/modern/burgundy-royale.html`)**
     - Opulent Vintage Burgundy Royale berpadu tipografi prestisius *Iskry Regular* (`public/fonts/burgundy-royale/Iskry-Regular.woff2`), *Vidaloka* (Bodoni serif), *Cinzel* (Roman capitals), dan *Imperial Script*.
     - Nuansa warna burgundy merah tua anggur mewah (`--primary`), rose wine (`--secondary`), dan sampanye antik hangat (`--accent`).
     - Ornamen visual khas: lukisan cat minyak mawar burgundy mewah (`bunga-burgundy-royale.png`) di sudut-sudut kartu, ornamen pemisah simetris vintage, dan bingkai kubah katedral romanesque (*Cathedral Romanesque Arch Framing* `border-radius: 500px 500px 0 0`).
     - Kepatuhan penuh Standar Emas Blueprint: desktop split 460px, 3-layer background stack, discrete parents architecture, universal countdown timer hari H, interactive inline RSVP & ucapan live feed, dan dynamic CSS tokens 100% bebas hardcode.
-15. **Vintage Forest (`themes/modern/vintage-forest.html`)**
+13. **Vintage Forest (`themes/modern/vintage-forest.html`)**
     - Botanical Vintage Elegance berpadu tipografi khas *Mea Culpa* (kaligrafi skrip romantis), *Caudex* (serif klasik), *Cinzel* (kapital megah), dan *Aboreto* (huruf ukir geometris).
     - Nuansa warna hijau botani mendalam (`--primary`), sage olive green (`--secondary`), dan aksen emas antik / pasir hangat (`--accent`).
     - Ornamen visual khas: dedaunan eukaliptus botani rimbun (`bunga-botani2.png`) yang mengambang anggun di sudut kartu cover, hero arch, dan footer penutup, dipadukan bingkai kubah arsitektural (*Romanesque Arch Framing* `border-radius: 350px 350px 0 0`).
@@ -234,10 +224,9 @@ Sistem Studio Editor Klien (`/dashboard/invitation/[id]`) menyediakan kendali kr
    - **Smart Sync Tema:** Sekali klik `✨ Samakan Tema` untuk menyinkronkan warna busana dengan palet bawaan tema fisik yang sedang aktif.
    - **Live Guest Preview:** Pratinjau instan tampilan kartu busana yang akan dilihat oleh tamu undangan.
    - **Mode Lanjutan:** Opsi input teks manual kode hex dengan sinkronisasi dua arah (*two-way sync*).
-4.1. **Live View Real-Time Palette Synchronizer (Two-Way Sync):**
-   - **Panel 6 Palet Warna di Atas Kanvas Live View:** Klien dapat langsung mengganti nuansa tema utama di tab Live View tanpa harus bolak-balik ke tab form edit data.
-   - **Injeksi CSS Seketika & PostMessage:** Perubahan warna diaplikasikan instan ke preview iframe melalui manipulasi token CSS (`--gold`, `--primary`, dll.) dan pesan `LUX_PALETTE_CHANGED`.
-   - **Sinkronisasi Otomatis dengan Seksi 1:** Tetap mempertahankan pemilih palet warna di Seksi 1 formulir data dengan status aktif dan penyimpanan yang selalu sinkron.
+4.1. **Live View Real-Time Preview Sync:**
+   - **Injeksi Data Instan via PostMessage:** Setiap perubahan input form (nama mempelai, kutipan, label UI, data acara) langsung dipancarkan ke kedua iframe pratinjau (mobile dan desktop) melalui `postMessage` tanpa perlu simpan atau reload.
+   - **Persistent DOM Mounting:** Berpindah antara tab Form Data dan Live Editor tidak me-reload iframe; posisi scroll, state amplop, dan input sementara tetap dipertahankan.
 4.2. **Ultra-Slim Exclusive Accordion & Clean Preview Routing:**
    - **Exclusive Single-Expanded Mode:** Membuka salah satu seksi formulir secara otomatis menutup seluruh seksi lainnya (`single-expanded exclusive accordion`), membebaskan klien dari kelelahan *scrolling* panjang pada 15 seksi formulir.
    - **Header Ultra-Slim (~48px) & Eliminasi Blok Redundan:** Menghilangkan blok preview sekunder yang berulang di bawah kartu seksi, memangkas tinggi halaman formulir tertutup dari **4.101px** menjadi **~750px** (pas dalam 1 layar desktop penuh). Dilengkapi ringkasan *muted inline summary snippet* di samping judul seksi dan *full-row clickability*.
@@ -296,7 +285,7 @@ Sistem Studio Editor Klien (`/dashboard/invitation/[id]`) menyediakan kendali kr
 - Grid e-commerce 4 kolom responsif.
 - Setiap kartu memiliki **Jendela Mockup Browser** dengan *traffic light dots* (🔴 🟡 🟢) dan live scaled iframe.
 - Label promo `NEW`, `50%`, dan tombol aksi kembar (`PREVIEW` & `PILIH TEMA`).
-- Filter kategori: Semua Tema, Premium Series, Heritage Series, Moody Series.
+- Filter kategori: Semua Tema, Minimalis, Modern, Tradisional.
 
 ---
 
@@ -598,10 +587,10 @@ Sistem pengiriman email otomatis menggunakan **Nodemailer** yang membaca kredens
    - **Formulir Interaktif Dinamis:** Admin dapat menambah dan menghapus rangkaian acara (`events`), bab kisah cinta (`stories`), dan rekening bank (`banks`) demo secara langsung tanpa batasan statis.
    - **6 Sub-Panel Narasi Tema:** Meliputi seluruh seksi undangan (Sampul & Pembuka, Mempelai & Acara, Kisah Cinta & Galeri, Dress Code & Streaming, Tanda Kasih & Turut Mengundang, Doa Penutup & RSVP).
    - **Harmonisasi Tipografi Casing (Anti-Collision Parisienne):** Menghindari huruf kapital semua (*ALL-CAPS*) pada font kaligrafi bersambung seperti di tema Candani, menyajikan Title Case anggun (`Dress Code`, `Live Streaming`, `Love Story`, `Our Moments`, `Turut Mengundang`) yang terbaca jernih.
-   - **Pemilih Palet Warna Bawaan Tema (18 Palet):** Admin dapat menentukan palet warna resmi untuk setiap tema (8 Palet Universal + 10 Palet Warisan Adat Bugis, Makassar, Toraja). Pilihan ini disimpan ke tabel `AdminSetting` (`theme_demo_${themeId}`) dan langsung tampil pada showroom publik (`/demo/${themeId}`).
-   - **Pewarisan Otomatis ke Undangan Klien (Smart Inheritance):** Saat klien membuat undangan baru via `POST /api/client/invitations/create`, sistem secara dinamis mewariskan palet default tema serta seluruh label dan narasi yang telah disempurnakan admin di database (`theme_demo_${themeId}`) atau `ThemeBlueprint`.
-   - **Sintesis Arketipe Kategori Otomatis (Zero-Config untuk Tema Baru):** Saat Admin mengunggah file tema baru, sistem secara cerdas mendeteksi kategori dan memetakannya ke arketipe default (`DEFAULT_TRADITIONAL_BLUEPRINT`, `DEFAULT_MODERN_BLUEPRINT`, atau `DEFAULT_PREMIUM_BLUEPRINT`). Seluruh formulir di Demo Studio otomatis terisi lengkap tanpa ada input kosong.
-   - **Pewarisan Musik Default Tema (Theme Default Music Architecture):** Setiap tema memiliki musik latar bawaan mandiri (Traditional: `/music/bermuara.mp3`, Modern & Premium: `/music/canon-in-d.ogg`) yang dapat dikustomisasi oleh Admin di Tab *Themes* -> *Studio* (`audioUrl` tersimpan di `AdminSetting.theme_demo_${themeId}`). Saat klien membuat undangan via `POST /api/client/invitations/create`, lagu bawaan tema ini otomatis terwariskan ke `invitation.musicUrl` dan `featureSettings.musicUrl`, serta diprioritaskan oleh Theme Engine saat merender audio player universal.
+   - **Palet Warna Bawaan Tema (Theme-Locked Palette):** Setiap tema memiliki identitas palet warna tersendiri yang dikurasi langsung di file master HTML/CSS tema. Pilihan ini tidak dapat diubah oleh klien — menjaga keaslian karakter visual setiap tema. Saat Admin mengelola Demo Studio, perubahan token CSS (`--primary`, `--accent`, `--bg-dark`) disimpan ke `AdminSetting` (`theme_demo_${themeId}`) dan tampil di showroom publik (`/demo/${themeId}`).
+   - **Pewarisan Otomatis ke Undangan Klien (Smart Inheritance):** Saat klien membuat undangan baru via `POST /api/client/invitations/create`, sistem secara dinamis mewariskan narasi dan label yang telah disempurnakan admin di database (`theme_demo_${themeId}`) atau `ThemeBlueprint`.
+   - **Sintesis Arketipe Kategori Otomatis (Zero-Config untuk Tema Baru):** Saat Admin mengunggah file tema baru, sistem secara cerdas mendeteksi kategori dan memetakannya ke arketipe default (`DEFAULT_TRADITIONAL_BLUEPRINT`, `DEFAULT_MODERN_BLUEPRINT`, atau `DEFAULT_MINIMALIST_BLUEPRINT`). Seluruh formulir di Demo Studio otomatis terisi lengkap tanpa ada input kosong.
+   - **Pewarisan Musik Default Tema (Theme Default Music Architecture):** Setiap tema memiliki musik latar bawaan mandiri (Traditional: `/music/bermuara.mp3`, Modern & Minimalist: `/music/canon-in-d.ogg`) yang dapat dikustomisasi oleh Admin di Tab *Themes* -> *Studio* (`audioUrl` tersimpan di `AdminSetting.theme_demo_${themeId}`). Saat klien membuat undangan via `POST /api/client/invitations/create`, lagu bawaan tema ini otomatis terwariskan ke `invitation.musicUrl` dan `featureSettings.musicUrl`, serta diprioritaskan oleh Theme Engine saat merender audio player universal.
    - **Standarisasi 5-Layer Master Stacking Hierarchy:** Pemisahan kanvas visual tema menjadi 5 lapisan independen: Lapisan 1 (Palet `body`), Lapisan 2 (Media Slot Background `.fixed-bg-layer`), Lapisan 3 (Kanvas Scrim `.scrim-canvas` 15%–45%), Lapisan 4 (Konten Undangan `.layout-wrapper`), Lapisan 5 (Cover Pembuka `#coverScreen`).
    - **Pembersihan Aset Ornamen (Zero Bulky PNG):** Seluruh berkas mentah `.png` di `public/assets/ornaments/` (39 berkas) telah dikonversi menjadi `.webp` ringan dan dihapus tuntas, menghemat beban lalu lintas data mobile.
 
@@ -678,8 +667,8 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 2. **Skalabilitas Tipografi Split Desktop (Panel Kanan 460px):**
    - Seluruh elemen judul utama (`.sec-heading`, `.sec-main-title`) dibatasi maksimal `2.1rem !important` dengan `overflow-wrap: break-word` untuk mencegah teks meluap (*overflow*) saat dibuka di layar lebar.
 3. **All-Access Themes & Tab Kategori Navigasi Dasbor Klien:**
-   - Seksi 1 (*Pilihan Seri Desain & Palet Warna*) mengadopsi arsitektur **All-Access Themes**: seluruh 19 tema fisik aktif bebas dipilih oleh klien di seluruh tier paket (**Serenade**, **Symphony**, maupun **Eternity**).
-   - Menampilkan bilah tab kategori estetika (`[Semua]`, `[Modern]`, `[Traditional]`, `[Premium]`) dengan badge counter dan auto-focus pada tema aktif, memudahkan calon pengantin mengeksplorasi nuansa desain tanpa membatasi hak pilih mereka.
+   - Seksi 1 (*Pilihan Desain Tema*) mengadopsi arsitektur **All-Access Themes**: seluruh tema fisik aktif bebas dipilih oleh klien di seluruh tier paket (**Serenade**, **Symphony**, maupun **Eternity**).
+   - Menampilkan bilah tab kategori estetika (`[Minimalist]`, `[Modern]`, `[Traditional]`) dengan badge counter dan auto-focus pada tema aktif, memudahkan calon pengantin mengeksplorasi nuansa desain tanpa membatasi hak pilih mereka.
    - Seksi 14 (*Galeri Kenangan Tamu & Virtual Disposable Camera*) menerapkan lencana total kuota foto acara dari Admin Setting (`Kapasitas Acara: X / Y Foto Terkumpul`) dan membebaskan pengantin membagi alokasi roll per tamu dengan hard-clamping otomatis di level server.
 4. **Standarisasi Viewport & Safe-Area Mobile iOS/Android (`viewport-fit=cover`):**
    - Meta viewport wajib menggunakan `width=device-width, initial-scale=1.0, viewport-fit=cover` tanpa mematikan zoom (`user-scalable=no` dilarang demi kepatuhan WCAG 1.4.4).
@@ -745,7 +734,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 8. **Isolasi Transaksi & Order-Level Payment Method Lock di `/checkout`:**
    - Menyelesaikan celah saat admin beralih dari mode Transfer Manual ke Gateway. Halaman `/checkout` mengunci tampilan berdasarkan status pesanan: order yang berstatus `MANUAL_TRANSFER` atau telah memiliki `proofImageUrl` tetap mengunci tampilan pada alur transfer manual dan kotak verifikasi struk, tanpa tertutup oleh tombol QRIS gateway.
 9. **Theme-Specific Blueprint Architecture & Kamus Narasi Bawaan per Tema:**
-   - Menggantikan teks generic hardcoded dengan registri cetak biru khusus tema (`lib/themeDefaults.ts`) yang mencakup 15 tema tradisional, modern editorial, dan premium.
+   - Menggantikan teks generic hardcoded dengan registri cetak biru khusus tema (`lib/themeDefaults.ts`) yang mencakup 15 tema tradisional, modern editorial, dan minimalist.
    - Dilengkapi tab ke-4 di Demo Studio (*"Teks Seksi & Narasi Bawaan"*) sehingga teks bawaan per tema dapat diedit langsung di panel Admin dan diwariskan secara cerdas (*smart inheritance*) ke formulir undangan klien di dashboard.
 10. **Theme Freedom Architecture & Conditional Blocks (`{{#if}}`):**
    - **Independensi Markup:** Tema master tidak lagi dipaksa menggunakan template seksi seragam yang dicetak mati oleh Engine. Tema dapat merancang sendiri layout HTML-nya di dalam file template master (`themes/**/*.html`).
@@ -865,8 +854,8 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 
 ## 22. Purifikasi Sistem, Eliminasi Stale Logic & Dynamic Background Token (September 2026)
 
-1. **Dynamic Dark Canvas Injection:**
-   - Seluruh 8 template tema fisik (`dillalucky.html`, `kalandra.html`, `ameera.html`, `wave.html`, `prameswari.html`, `papercut.html`, `artisan.html`, `aurelia.html`) telah dikalibrasi untuk menyuntikkan `--bg-dark: {{colorBgDark}};` pada inline style tag `<body>`. Kanvas latar gelap kini 100% responsif terhadap perubahan palet tema di Studio Editor (seperti Burgundy, Emerald, Midnight).
+1. **Standar Palet Warna Mandiri Tema (Theme-Locked Standalone Palette):**
+   - Seluruh template tema master mengunci nilai warna dan latar belakangnya secara mandiri pada `:root` CSS masing-masing template, menjamin keutuhan dan ciri khas estetika tema tanpa risiko distorsi injeksi token eksternal.
 
 2. **Daur Ulang Subdomain Selaras (Subdomain Recycling Invariant):**
    - Jalur pembaruan subdomain di Studio Editor (`app/api/client/invitations/[id]/route.ts`) kini 100% selaras dengan endpoint validasi `subdomain/check` dan pembuatan awal `invitations/create`. Jika masa aktif acara pemilik subdomain lama telah lewat 7 hari (`isSubdomainExpired(..., 7)`), subdomain lama secara otomatis di-recycle (`subdomain: null`) sehingga klien baru dapat menyimpannya tanpa tabrakan validasi.
@@ -996,7 +985,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Seluruh 16 master template tema dan cetakan draft aktif dibebaskan dari wrapper usang `<div class="reveal">` yang sebelumnya mengunci seksi vendor pada `opacity: 0` di tema bertipe `.reveal-on-scroll` (Candani, Solaria, Lumina, Badrika, Mayang, Chronicle).
    - Inisialisasi IntersectionObserver scroll pada seluruh tema distandarisasi mengamati varian reveal lengkap (`.reveal-on-scroll, .reveal, .reveal-up, .reveal-zoom, .reveal-fade`).
    - `public/css/modules.css` diselaraskan agar mendukung pemicu kelas ganda (`.reveal.active, .reveal.is-visible`).
-   - Registry `lib/themeDefaults.ts` diperbarui menyertakan narasi bawaan vendor (`vendorTitle`, `vendorEyebrow`, `vendorSubtitle`) untuk seluruh arketipe tema (Candani, Traditional, Modern, dan Premium).
+   - Registry `lib/themeDefaults.ts` diperbarui menyertakan narasi bawaan vendor (`vendorTitle`, `vendorEyebrow`, `vendorSubtitle`) untuk seluruh arketipe tema (Candani, Traditional, Modern, dan Minimalist).
 
 ---
 
@@ -1064,7 +1053,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
     - **Narasi Adat Puitis (Toraja Wedding Lore):**
       * Pepatah adat: *"Misa' kada dipotuo, pantan kada dipomate"* (Bersatu kita teguh, bercerai kita runtuh).
       * Salam penutup: *"Kurresumanga'"* (Terima kasih mendalam atas restu dan kehadiran).
-    - **Palet Warna Etnik Dinamis (`lib/colorPalettes.ts`):**
+    - **Palet Warna Etnik Mandiri (Theme-Locked Standalone Palette):**
       * `primary`: `#750b0a` (Merah Tua Toraja).
       * `accent`: `#f1d17e` (Kuning Emas Toraja).
       * `bgDark`: `#1a0404` (Obsidian Deep Brown Toraja).
@@ -1091,7 +1080,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
       * *Tekstur Marun Sakral:* Latar belakang tekstur marun bergradasi halus (`bg-maroon.webp`).
    - **Tipografi Luhur:** Kombinasi `Cinzel` (judul sakral), `Great Vibes` (aksen nama), `Cormorant Garamond` (kutipan doa), dan `Plus Jakarta Sans` (informasi acara).
    - **Narasi Adat Puitis (Bugis Wedding Lore):** Petuah luhur *"Sipakatau, sipakalebbi, sipakainge"* dan ungkapan syukur *"Kurru Sumanga'"*.
-   - **Palet Warna Etnik Dinamis (`lib/colorPalettes.ts`):**
+   - **Palet Warna Etnik Mandiri (Theme-Locked Standalone Palette):**
      * `primary`: `#5a0b10` (Bugis Royal Maroon).
      * `accent`: `#dfb76c` (Bugis Gold).
      * `bgDark`: `#140204` (Obsidian Maroon).
@@ -1105,7 +1094,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
      * *4 Sudut Bunga Emas:* Ornamen bunga sudut WebP transparan presisi (`flower-tl/tr/bl/br.webp`).
    - **Tipografi Luhur:** Kombinasi `Cinzel`, `Great Vibes`, `Cormorant Garamond`, dan `Plus Jakarta Sans`.
    - **Narasi Adat Puitis (Makassar Wedding Lore):** Filosofi sakral *"Siri' na Pacce"* dan petuah *"Bajiki passiriki, sombere' na malabbiri"*, serta ucapan *"Tarima kasi' lompo"*.
-   - **Palet Warna Etnik Dinamis (`lib/colorPalettes.ts`):**
+   - **Palet Warna Etnik Mandiri (Theme-Locked Standalone Palette):**
      * `primary`: `#0a192f` (Makassar Royal Navy).
      * `accent`: `#dfb76c` (Makassar Gold).
      * `bgDark`: `#030914` (Obsidian Navy).
@@ -1130,7 +1119,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - **Tipografi Luhur & Narasi Adat:**
      * Kombinasi font sakral `Cinzel`, `Great Vibes`, `Cormorant Garamond`, dan `Plus Jakarta Sans`.
      * Petuah leluhur *"Misa' kada dipotuo, pantan kada dipomate"* (Bersatu kita teguh, bercerai kita runtuh) dan ucapan syukur *"Kurresumanga'"*.
-   - **Palet Warna Etnik Dinamis (`lib/colorPalettes.ts`):**
+   - **Palet Warna Etnik Mandiri (Theme-Locked Standalone Palette):**
      * `primary`: `#6b1414` (Toraja Crimson Marun).
      * `accent`: `#d4af37` (Toraja Bambu Gold).
      * `bgDark`: `#1a0404` (Obsidian Marun).
@@ -1155,7 +1144,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - **Tipografi Luhur & Narasi Adat:**
      * Kombinasi font sakral `Cinzel`, `Great Vibes`, `Cormorant Garamond`, dan `Plus Jakarta Sans`.
      * Petuah leluhur *"Misa' kada dipotuo, pantan kada dipomate"* dan ucapan syukur *"Kurresumanga'"*.
-   - **Palet Warna Etnik Dinamis (`lib/colorPalettes.ts`):**
+   - **Palet Warna Etnik Mandiri (Theme-Locked Standalone Palette):**
      * `primary`: `#750b0a` (Toraja Earth Crimson).
      * `accent`: `#f1d17e` (Toraja Tongkonan Gold).
      * `bgDark`: `#1a0404` (Obsidian Marun).

@@ -7,7 +7,7 @@
 export interface ThemeBlueprint {
   themeId: string;
   themeName: string;
-  series: "traditional" | "modern" | "premium";
+  series: "traditional" | "modern" | "minimalist" | string;
   defaultPalette?: string;
   defaultMusicUrl?: string;
   openingQuote: string;
@@ -1193,11 +1193,11 @@ export const THEME_BLUEPRINTS: Record<string, ThemeBlueprint> = {
     vendorSubtitle: "Thank you to the extraordinary vendors and friends behind this day.",
   },
 
-  // ── PREMIUM EXCLUSIVE SERIES ──
+  // ── MINIMALIST EXCLUSIVE SERIES ──
   artisan: {
     themeId: "artisan",
     themeName: "Artisan",
-    series: "premium",
+    series: "minimalist",
     defaultPalette: "terracotta",
     openingQuote: "True art is love made visible. We are profoundly honored to share this sacred milestone with you.",
     openingQuoteRef: "THE ARTISAN VOWS",
@@ -1244,7 +1244,7 @@ export const THEME_BLUEPRINTS: Record<string, ThemeBlueprint> = {
   aurelia: {
     themeId: "aurelia",
     themeName: "Aurelia",
-    series: "premium",
+    series: "minimalist",
     defaultPalette: "champagne",
     openingQuote: "Love is golden when crowned with sincerity, reverence, and unconditional devotion.",
     openingQuoteRef: "AURELIA GOLDEN ARCHIVE",
@@ -1291,7 +1291,7 @@ export const THEME_BLUEPRINTS: Record<string, ThemeBlueprint> = {
   kalandra: {
     themeId: "kalandra",
     themeName: "Kalandra",
-    series: "premium",
+    series: "minimalist",
     defaultPalette: "champagne",
     openingQuote: "Two lives, two hearts, joined together in friendship, united forever in love.",
     openingQuoteRef: "THE WEDDING CELEBRATION",
@@ -1338,7 +1338,7 @@ export const THEME_BLUEPRINTS: Record<string, ThemeBlueprint> = {
   valente: {
     themeId: "valente",
     themeName: "Valente",
-    series: "premium",
+    series: "minimalist",
     defaultPalette: "burgundy",
     openingQuote: "To love and to be loved is to feel the sun from both sides. We invite you to witness our eternal promise.",
     openingQuoteRef: "DAVID VISCOTT",
@@ -1477,10 +1477,10 @@ export const DEFAULT_MODERN_BLUEPRINT: ThemeBlueprint = {
   vendorSubtitle: "Heartfelt gratitude to our exceptional vendors who made our dream wedding come to life.",
 };
 
-export const DEFAULT_PREMIUM_BLUEPRINT: ThemeBlueprint = {
-  themeId: "generic_premium",
-  themeName: "Premium Exclusive",
-  series: "premium",
+export const DEFAULT_MINIMALIST_BLUEPRINT: ThemeBlueprint = {
+  themeId: "generic_minimalist",
+  themeName: "Minimalist Exclusive",
+  series: "minimalist",
   defaultMusicUrl: "/music/canon-in-d.ogg",
   openingQuote: "True love is timeless, noble, and crowned with devotion. We request the honor of your distinguished presence as we begin our lifelong commitment.",
   openingQuoteRef: "SACRED VOWS & BLESSINGS",
@@ -1548,7 +1548,8 @@ export function getThemeBlueprint(
       customData?.series ||
       customData?.category ||
       (cleanId.includes("modern") ? "modern" : "") ||
-      (cleanId.includes("premium") ? "premium" : "") ||
+      (cleanId.includes("minimalist") ? "minimalist" : "") ||
+      (cleanId.includes("premium") ? "minimalist" : "") ||
       "traditional"
     ).toLowerCase();
 
@@ -1560,10 +1561,10 @@ export function getThemeBlueprint(
         themeId: cleanId || "modern",
         themeName: derivedName,
       };
-    } else if (rawSeries.includes("premium")) {
+    } else if (rawSeries.includes("minimalist") || rawSeries.includes("premium")) {
       base = {
-        ...DEFAULT_PREMIUM_BLUEPRINT,
-        themeId: cleanId || "premium",
+        ...DEFAULT_MINIMALIST_BLUEPRINT,
+        themeId: cleanId || "minimalist",
         themeName: derivedName,
       };
     } else {

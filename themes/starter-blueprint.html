@@ -30,16 +30,18 @@
 
   <style>
     /* =================================================================== */
-    /* 2. DESIGN SYSTEM & DYNAMIC PALETTE                                   */
+    /* 2. DESIGN SYSTEM — TEMA WAJIB HARDCODE WARNA SENDIRI                 */
+    /* GANTI nilai hex di bawah ini dengan identitas warna tema kamu.       */
+    /* Engine TIDAK LAGI menyuntikkan warna — semua dikontrol di sini.      */
     /* =================================================================== */
     :root {
-      --primary: {{colorPrimary}};
-      --secondary: {{colorSecondary}};
-      --accent: {{colorAccent}};
-      --bg-light: {{colorBgLight}};
-      --bg-dark: {{colorBgDark}};
-      --text-main: {{colorTextDark}};
-      --text-muted: color-mix(in srgb, {{colorTextDark}} 70%, transparent);
+      --primary: #000000;       /* Warna utama (dominant brand) */
+      --secondary: #333333;     /* Warna sekunder (subtle dark) */
+      --accent: #888888;        /* Warna aksen (highlight, gold, jewel) */
+      --bg-light: #ffffff;      /* Background terang (mobile open view) */
+      --bg-dark: #111111;       /* Background gelap (cover, desktop) */
+      --text-main: #1a1a1a;     /* Teks utama di bg-light */
+      --text-muted: color-mix(in srgb, #1a1a1a 70%, transparent);
       --radius-sm: 8px;
       --radius-md: 16px;
       --radius-lg: 24px;

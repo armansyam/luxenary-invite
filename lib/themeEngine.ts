@@ -3,9 +3,7 @@ import { getGoogleDriveFolderPhotos } from "@/lib/driveHelper";
 import { escapeHtml } from "@/lib/escapeHtml";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { getAdminSetting } from "@/lib/settings";
-import { COLOR_PALETTES, type ColorPalette } from "@/lib/colorPalettes";
 
-export { COLOR_PALETTES, type ColorPalette };
 
 function nl2br(str: string): string {
   if (!str) return "";
@@ -121,8 +119,16 @@ export async function composeTemplateData(invitationId: string) {
 
   const blueprint = getThemeBlueprint(inv.themeId || "kalandra", customDemoData || undefined);
 
-  const activePaletteId = featureSettings.colorPalette || blueprint.defaultPalette || "champagne";
-  const palette = COLOR_PALETTES[activePaletteId] || COLOR_PALETTES.champagne;
+  // Baca defaultMusicUrl dari DB Theme record (prioritas tertinggi setelah client upload)
+  let dbThemeDefaultMusic = "";
+  try {
+    const dbTheme = await prisma.theme.findUnique({
+      where: { id: (inv.themeId || "kalandra").toLowerCase() },
+      select: { defaultMusicUrl: true },
+    });
+    if (dbTheme?.defaultMusicUrl) dbThemeDefaultMusic = dbTheme.defaultMusicUrl;
+  } catch {}
+
 
   const showStory = featureSettings.showStory !== undefined ? Boolean(featureSettings.showStory) : true;
   const showGallery = featureSettings.showGallery !== undefined ? Boolean(featureSettings.showGallery) : true;
@@ -886,7 +892,10 @@ export async function composeTemplateData(invitationId: string) {
   // 6.5. Section: Universal Audio Player
   let fallbackMusicUrl = "";
   if (!inv.musicUrl && !featureSettings.musicUrl && featureSettings.showMusic !== false) {
-    if (blueprint.defaultMusicUrl) {
+    // Prioritas: DB theme.defaultMusicUrl → blueprint.defaultMusicUrl → musicPreset aktif
+    if (dbThemeDefaultMusic) {
+      fallbackMusicUrl = dbThemeDefaultMusic;
+    } else if (blueprint.defaultMusicUrl) {
       fallbackMusicUrl = blueprint.defaultMusicUrl;
     } else {
       try {
@@ -1929,14 +1938,6 @@ export async function composeTemplateData(invitationId: string) {
     galleryTitle: gallerySectionTitle,
     giftTitle: giftSectionTitle,
     wishesTitle: wishesSectionTitle,
-
-    // Palette Tokens
-    colorPrimary: palette.primary,
-    colorSecondary: palette.secondary,
-    colorAccent: palette.accent,
-    colorBgLight: palette.bgLight,
-    colorBgDark: palette.bgDark,
-    colorTextDark: palette.textDark,
 
     // Dynamic OpenGraph & Meta Tags Default
     metaTagsHtml: `
