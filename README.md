@@ -467,7 +467,7 @@ NEXT_PUBLIC_ROOT_DOMAIN="localhost:3000"
 npx prisma db push
 npx prisma db seed
 
-# Untuk Deployment Produksi (VPS) — 12 migrasi terverifikasi
+# Untuk Deployment Produksi (VPS) — Baseline init terverifikasi
 npx prisma migrate deploy
 npx prisma db seed
 ```
