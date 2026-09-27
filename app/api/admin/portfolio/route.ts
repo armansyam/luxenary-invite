@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import fs from "fs";
 import path from "path";
 import { uploadPortfolioFile, listPortfolioSlugs, deletePortfolio } from "@/lib/storage";
+import { hasAdminPermission } from "@/lib/adminPermissions";
 
 // Helper for file existence
 async function fileExists(filePath: string): Promise<boolean> {
@@ -19,9 +20,8 @@ async function fileExists(filePath: string): Promise<boolean> {
 export async function GET(req: NextRequest) {
   try {
     const session = await auth();
-    const role = (session?.user as any)?.role;
-    if (!session || role !== "SUPER_ADMIN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session || !hasAdminPermission(session.user as any, "portfolio")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     const portfolios = await listPortfolioSlugs();
@@ -36,9 +36,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
-    const role = (session?.user as any)?.role;
-    if (!session || role !== "SUPER_ADMIN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session || !hasAdminPermission(session.user as any, "portfolio")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     const { invitationId } = await req.json();
@@ -246,9 +245,8 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const session = await auth();
-    const role = (session?.user as any)?.role;
-    if (!session || role !== "SUPER_ADMIN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session || !hasAdminPermission(session.user as any, "portfolio")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);

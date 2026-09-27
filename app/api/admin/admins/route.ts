@@ -6,10 +6,10 @@ import bcrypt from "bcryptjs";
 export async function GET() {
   try {
     const session = await auth();
-    const role = (session?.user as any)?.role;
+    const { hasAdminPermission } = await import("@/lib/adminPermissions");
     
     // Hanya Super Admin yang boleh melihat daftar admin
-    if (!session?.user || !(session.user as any).isAdmin || role !== "SUPER_ADMIN") {
+    if (!session?.user || !hasAdminPermission(session.user as any, "team")) {
       return NextResponse.json({ error: "Forbidden. Hanya Super Admin yang dapat mengakses data ini." }, { status: 403 });
     }
 
@@ -20,6 +20,7 @@ export async function GET() {
         email: true,
         name: true,
         role: true,
+        permissions: true,
         lastLoginAt: true,
         createdAt: true,
       },
@@ -29,21 +30,21 @@ export async function GET() {
     return NextResponse.json({ admins });
   } catch (error: any) {
     console.error("Error fetching admins:", error);
-    return NextResponse.json({ error: "Gagal mengambil data admin." }, { status: 500 });
+    return NextResponse.json({ error: `Gagal mengambil data admin: ${error?.message || "Internal error"}` }, { status: 500 });
   }
 }
 
 export async function POST(req: Request) {
   try {
     const session = await auth();
-    const role = (session?.user as any)?.role;
+    const { hasAdminPermission } = await import("@/lib/adminPermissions");
     
     // Hanya Super Admin yang boleh menambah admin baru
-    if (!session?.user || !(session.user as any).isAdmin || role !== "SUPER_ADMIN") {
+    if (!session?.user || !hasAdminPermission(session.user as any, "team")) {
       return NextResponse.json({ error: "Forbidden. Hanya Super Admin yang dapat menambah admin baru." }, { status: 403 });
     }
 
-    const { username, email, name, role: newRole, password } = await req.json();
+    const { username, email, name, role: newRole, password, permissions } = await req.json();
 
     if (!username || !email || !name || !newRole || !password) {
       return NextResponse.json({ error: "Semua kolom wajib diisi." }, { status: 400 });
@@ -64,6 +65,8 @@ export async function POST(req: Request) {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
+    const { resolveAdminPermissions } = await import("@/lib/adminPermissions");
+    const effectivePermissions = newRole === "SUPER_ADMIN" ? [] : resolveAdminPermissions(newRole, permissions);
 
     const newAdmin = await prisma.admin.create({
       data: {
@@ -71,6 +74,7 @@ export async function POST(req: Request) {
         email,
         name,
         role: newRole,
+        permissions: effectivePermissions,
         passwordHash,
       },
       select: {
@@ -79,6 +83,7 @@ export async function POST(req: Request) {
         email: true,
         name: true,
         role: true,
+        permissions: true,
         createdAt: true,
       }
     });

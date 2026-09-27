@@ -49,6 +49,7 @@ export const authConfig = {
         token.id = user.id;
         (token as any).role = (user as any).role || "CLIENT";
         (token as any).isAdmin = (user as any).isAdmin || false;
+        (token as any).permissions = (user as any).permissions || [];
       }
       return token;
     },
@@ -57,6 +58,7 @@ export const authConfig = {
         (session.user as any).id = token.id || token.sub;
         (session.user as any).role = (token as any).role || "CLIENT";
         (session.user as any).isAdmin = (token as any).isAdmin || false;
+        (session.user as any).permissions = (token as any).permissions || [];
       }
       return session;
     },

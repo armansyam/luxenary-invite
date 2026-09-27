@@ -79,6 +79,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: admin.name,
           email: admin.email,
           role: admin.role || "SUPER_ADMIN",
+          permissions: admin.permissions || [],
           isAdmin: true,
         };
       },
@@ -139,6 +140,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.id = user.id;
         (token as any).role = (user as any).role || "CLIENT";
         (token as any).isAdmin = (user as any).isAdmin || false;
+        (token as any).permissions = (user as any).permissions || [];
       }
       if (account?.provider === "google" && profile?.sub) {
         try {
@@ -158,6 +160,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         (session.user as any).id = token.id || token.sub;
         (session.user as any).role = (token as any).role || "CLIENT";
         (session.user as any).isAdmin = (token as any).isAdmin || false;
+        (session.user as any).permissions = (token as any).permissions || [];
+
+        // Untuk akun Admin: Sinkronkan role dan permissions terbaru dari database agar perubahan instan
+        if ((token as any).isAdmin && (token.id || (session.user as any).id)) {
+          try {
+            const { prisma } = await import("@/lib/prisma");
+            const adminId = (token.id || (session.user as any).id) as string;
+            const dbAdmin = await prisma.admin.findUnique({
+              where: { id: adminId },
+              select: { role: true, permissions: true },
+            });
+            if (dbAdmin) {
+              (session.user as any).role = dbAdmin.role;
+              (session.user as any).permissions = dbAdmin.permissions || [];
+            }
+          } catch (err) {
+            console.error("Gagal sinkronisasi admin permissions:", err);
+          }
+        }
 
         // Untuk akun klien: Pastikan session.user.id selalu tersinkronisasi faktual dengan tabel User di database
         if (!(token as any).isAdmin && session.user.email) {

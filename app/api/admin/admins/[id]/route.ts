@@ -6,9 +6,9 @@ import bcrypt from "bcryptjs";
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> | { id: string } }) {
   try {
     const session = await auth();
-    const role = (session?.user as any)?.role;
+    const { hasAdminPermission } = await import("@/lib/adminPermissions");
     
-    if (!session?.user || !(session.user as any).isAdmin || role !== "SUPER_ADMIN") {
+    if (!session?.user || !hasAdminPermission(session.user as any, "team")) {
       return NextResponse.json({ error: "Forbidden." }, { status: 403 });
     }
 
@@ -16,15 +16,19 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const id = resolvedParams?.id;
     if (!id) return NextResponse.json({ error: "ID wajib disertakan." }, { status: 400 });
 
-    const { name, email, username, role: newRole, password } = await req.json();
+    const { name, email, username, role: newRole, password, permissions } = await req.json();
 
     const existing = await prisma.admin.findUnique({ where: { id } });
     if (!existing) {
       return NextResponse.json({ error: "Admin tidak ditemukan." }, { status: 404 });
     }
 
-    // Prevent modifying the main super admin if it's the last one or something (optional guard)
-    // For now, just allow Super Admins to edit any admin.
+    // Cegah Super Admin men-downgrade akunnya sendiri agar tidak terkunci
+    if (existing.role === "SUPER_ADMIN" && newRole && newRole !== "SUPER_ADMIN" && existing.id === (session.user as any).id) {
+      return NextResponse.json({ error: "Anda tidak dapat menurunkan hak akses Super Admin pada akun Anda sendiri." }, { status: 400 });
+    }
+
+    const { resolveAdminPermissions } = await import("@/lib/adminPermissions");
 
     const updateData: any = {};
     if (name) updateData.name = name;
@@ -32,6 +36,13 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     if (username) updateData.username = username;
     if (newRole) updateData.role = newRole;
     
+    const targetRole = newRole || existing.role;
+    if (targetRole === "SUPER_ADMIN") {
+      updateData.permissions = [];
+    } else if (Array.isArray(permissions)) {
+      updateData.permissions = resolveAdminPermissions(targetRole, permissions);
+    }
+
     if (password) {
       updateData.passwordHash = await bcrypt.hash(password, 10);
     }
@@ -45,6 +56,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         email: true,
         name: true,
         role: true,
+        permissions: true,
       }
     });
 
@@ -66,9 +78,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> | { id: string } }) {
   try {
     const session = await auth();
-    const role = (session?.user as any)?.role;
+    const { hasAdminPermission } = await import("@/lib/adminPermissions");
     
-    if (!session?.user || !(session.user as any).isAdmin || role !== "SUPER_ADMIN") {
+    if (!session?.user || !hasAdminPermission(session.user as any, "team")) {
       return NextResponse.json({ error: "Forbidden." }, { status: 403 });
     }
 

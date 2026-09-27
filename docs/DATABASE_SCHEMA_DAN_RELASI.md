@@ -139,9 +139,11 @@ Menyimpan kredensial tim pengelola platform:
 - `email` (String, Unique): Email pemulihan dan verifikasi.
 - `passwordHash` (String, Nullable): Hash password terenkripsi (Argon2 / BCrypt).
 - `role` (Enum `AdminRole`):
-  - `SUPER_ADMIN`: Hak akses mutlak (konfigurasi sistem, database, tim).
-  - `FINANCE`: Khusus rekonsiliasi invoice, refund, dan laporan omset.
-  - `SUPPORT`: Khusus bantuan pelanggan dan pengelolaan tema.
+  - `SUPER_ADMIN`: Hak akses mutlak (seluruh 13 modul sistem, konfigurasi platform, database, tim).
+  - `ADMIN`: Template operasional harian (undangan, klien, tema, portofolio, custom domain, transaksi).
+  - `FINANCE`: Template staf keuangan (arus kas, transaksi, verifikasi manual, omzet).
+  - `SUPPORT`: Template customer service (asistensi klien, proyek undangan, custom domain).
+- `permissions` (`String[]`, Default `[]`): Array daftar ID modul dinamis yang diizinkan untuk staf. Jika kosong, sistem otomatis fallback ke default template role masing-masing (backward compatible). Modul sensitif (`settings`, `database`, `team`) terlindungi mutlak hanya untuk `SUPER_ADMIN`.
 
 #### 3. Tabel `admin_audit_logs`
 Mencatat seluruh aksi operasional administrator untuk kepatuhan audit keamanan (*Security & Compliance*):

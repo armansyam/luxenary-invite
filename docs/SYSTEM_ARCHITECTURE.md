@@ -970,17 +970,23 @@ HTML standalone lengkap (self-contained, inline CSS/JS)
 **File:** `auth.ts`, `auth.config.ts`, `middleware.ts`
 
 ```
-Peran (role):
-  SUPER_ADMIN → Akses mutlak semua 13 modul sistem (Ringkasan, Pesanan, Klien, Undangan, Portofolio, Custom Domain, Tema & Musik, Pengaturan, Database, Monitoring, Tim & Hak Akses, Pemasaran & Afiliasi, Finance)
-  ADMIN       → Akses operasional harian (Ringkasan, Pesanan, Klien, Undangan, Portofolio, Custom Domain, Tema & Musik). Terkunci dari pemasaran, keuangan, platform settings, DB, monitoring, & tim.
-  FINANCE     → Akses finansial & kas (Ringkasan Finansial, Pesanan & Transaksi, Daftar Klien, Finance & Pembukuan)
-  SUPPORT     → Akses customer care & darurat (Klien & Remote Dasbor, Projek Undangan & Buka Kunci Darurat, Custom Domain)
-  CLIENT/USER → Akses /dashboard/** (klien biasa pemilik undangan)
+Peran (role) & Matriks Hak Akses Granular Dinamis (lib/adminPermissions.ts):
+  SUPER_ADMIN → Akses mutlak semua 13 modul sistem (Ringkasan, Pesanan, Klien, Undangan, Portofolio, Custom Domain, Tema & Musik, Pengaturan, Database, Monitoring, Tim & Hak Akses, Pemasaran & Afiliasi, Finance). Memiliki wewenang eksklusif mengelola tim, pengaturan platform, dan manipulasi database.
+  ADMIN       → Akses operasional harian default (Ringkasan, Pesanan, Klien, Undangan, Portofolio, Custom Domain, Tema & Musik). Dapat diberikan izin kustom tambahan secara granular oleh Super Admin.
+  FINANCE     → Akses finansial & kas (Ringkasan Finansial, Pesanan & Transaksi, Daftar Klien, Finance & Pembukuan). Terisolasi mutlak dari pengelolaan konten tema & kustomisasi domain.
+  SUPPORT     → Akses customer care & darurat (Klien & Remote Dasbor, Projek Undangan & Buka Kunci Darurat Studio, Custom Domain). Terisolasi mutlak dari pembukuan keuangan & pengaturan platform.
+  CLIENT/USER → Akses /dashboard/** (klien biasa pemilik undangan, diblokir total dari seluruh modul /api/admin/**)
+
+Matriks Izin Tim Dinamis (Admin.permissions String[]):
+  - Setiap akun staf (ADMIN, FINANCE, SUPPORT) memiliki array `permissions` dinamis di database.
+  - Otoritas tunggal divalidasi oleh `hasAdminPermission(user, moduleKey)` di server backend & client UI.
+  - Modul sensitif tingkat tinggi (`settings`, `database`, `team`) di-sandbox secara ketat dan hanya dapat diakses oleh SUPER_ADMIN untuk mencegah eskalasi hak istimewa (privilege escalation).
+  - Dilengkapi proteksi anti-self-delete dan anti-self-downgrade bagi akun Super Admin aktif.
 
 Guard di middleware & layout:
   /admin/**     → Hanya akun terautentikasi dengan role SUPER_ADMIN, ADMIN, FINANCE, atau SUPPORT
   /dashboard/** → Klien biasa (atau Admin dalam sesi Remote Klien yang sah)
-  /api/admin/** → Server-side check via auth()
+  /api/admin/** → Server-side check via auth() & hasAdminPermission()
   /api/client/** → Server-side check via auth() + userId match (atau impersonated userId pada mode remote)
 
 Persistensi Navigasi Admin (Tab Memory Persistence):
@@ -1124,7 +1130,7 @@ STATUS WARISAN / DEPRECATED:
 ```
 Model Utama:
   User           → Akun user (client, role: CLIENT | ADMIN)
-  Admin          → Akun admin terpisah dari User (role: SUPER_ADMIN | ADMIN | FINANCE | SUPPORT)
+  Admin          → Akun admin terpisah dari User (role: SUPER_ADMIN | ADMIN | FINANCE | SUPPORT, permissions: String[] untuk kustomisasi izin granular)
   Order          → Pesanan paket undangan & perpanjangan galeri
   Invitation     → Inti undangan (DRAFT | PUBLISHED | EVENT_FINISHED | TAKEN_DOWN | ARCHIVED)
   Theme          → Katalog tema fisik (id, name, eventType: EventType, category, series, parentTheme, previewUrl, isActive, isPremium, price)

@@ -8,19 +8,10 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   try {
     const session = await auth();
-    const role = (session?.user as any)?.role;
     const isRemote = (session?.user as any)?.isRemote === true;
-    // Jika Admin sedang dalam mode remote (isRemote), identitasnya sudah di-override ke CLIENT
-    // Jangan izinkan akses endpoint admin dalam kondisi remote — harus keluar dari remote terlebih dahulu
-    const isAdmin =
-      !isRemote &&
-      ((session?.user as any)?.isAdmin === true ||
-       role === "SUPER_ADMIN" ||
-       role === "ADMIN" ||
-       role === "SUPPORT" ||
-       role === "FINANCE");
+    const { hasAdminPermission } = await import("@/lib/adminPermissions");
 
-    if (!session?.user || !isAdmin) {
+    if (!session?.user || isRemote || !hasAdminPermission(session.user as any, "users")) {
       return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
     }
 

@@ -12,10 +12,9 @@ export async function POST(
 ) {
   try {
     const session = await auth();
-    const role = (session?.user as any)?.role;
-    const isAdmin = (session?.user as any)?.isAdmin === true || role === "ADMIN" || role === "SUPER_ADMIN";
+    const { hasAdminPermission } = await import("@/lib/adminPermissions");
 
-    if (!session || !isAdmin) {
+    if (!session || !hasAdminPermission(session.user as any, "invitations")) {
       return NextResponse.json({ error: "Unauthorized: Akses dibatasi hanya untuk Administrator." }, { status: 401 });
     }
 

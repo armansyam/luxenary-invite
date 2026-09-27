@@ -7,15 +7,13 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
-    const adminUser = session?.user as any;
-    const isAdmin =
-      adminUser?.isAdmin === true ||
-      adminUser?.role === "SUPER_ADMIN" ||
-      adminUser?.role === "ADMIN";
+    const { hasAdminPermission } = await import("@/lib/adminPermissions");
 
-    if (!session?.user || !isAdmin) {
+    if (!session?.user || !hasAdminPermission(session.user as any, "custom_domains")) {
       return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
     }
+
+    const adminUser = session.user as any;
 
     const body = await req.json().catch(() => ({}));
     const { orderId } = body;

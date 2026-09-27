@@ -17,8 +17,8 @@ export async function POST(
 ) {
   try {
     const session = await auth();
-    const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
-    if (!session?.user || !isAdmin) {
+    const { hasAdminPermission } = await import("@/lib/adminPermissions");
+    if (!session?.user || !hasAdminPermission(session.user as any, "invitations")) {
       return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
     }
 

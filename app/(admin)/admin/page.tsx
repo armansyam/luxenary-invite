@@ -20,6 +20,7 @@ import { startRemoteSession } from "./actions/remote";
 import { compressImageToWebP } from "@/lib/clientImageCompressor";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { resolveInvitationDisplayName, buildCanonicalPath } from "@/lib/invitationUtils";
+import { hasAdminPermission } from "@/lib/adminPermissions";
 
 const tabs = [
   {
@@ -404,29 +405,19 @@ export default function AdminPage() {
 
   const rawRole = (session?.user as any)?.originalRole || (session?.user as any)?.role;
   const userRole = rawRole === "CLIENT" && (session?.user as any)?.isAdmin ? "ADMIN" : (rawRole || "CLIENT");
+  const userPermissions = (session?.user as any)?.permissions || [];
   const filteredTabs = useMemo(() => {
     return tabs.filter(tab => {
-      if (userRole === "SUPER_ADMIN") return true;
-      if (userRole === "ADMIN") {
-        return [
-          "overview",
-          "orders",
-          "users",
-          "invitations",
-          "portfolio",
-          "custom_domains",
-          "themes",
-        ].includes(tab.id);
-      }
-      if (userRole === "FINANCE") {
-        return ["overview", "orders", "users", "finance"].includes(tab.id);
-      }
-      if (userRole === "SUPPORT") {
-        return ["users", "invitations", "custom_domains"].includes(tab.id);
-      }
-      return false;
+      return hasAdminPermission(
+        {
+          role: userRole,
+          isAdmin: (session?.user as any)?.isAdmin,
+          permissions: userPermissions,
+        },
+        tab.id
+      );
     });
-  }, [userRole]);
+  }, [userRole, userPermissions, (session?.user as any)?.isAdmin]);
 
   // Otomatis arahkan ke tab pertama yang sah jika tab aktif saat ini di luar izin role
   useEffect(() => {

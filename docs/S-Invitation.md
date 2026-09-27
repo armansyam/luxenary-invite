@@ -644,7 +644,7 @@ Dalam pengelolaan Klien dan Undangan di Dashboard Admin (`app/(admin)/admin/page
    - `ADMIN`: Staf operasional harian (Ringkasan, Pesanan, Klien, Undangan, Portofolio, Custom Domain, Tema & Musik). Terkunci dari pemasaran, finance ledger, database snapshot, monitoring, dan tim.
    - `FINANCE`: Staf akuntansi & kasir (Ringkasan Finansial, Pesanan & Transaksi, Klien, dan Finance Hub).
    - `SUPPORT`: Tim customer care (Klien & Remote Dasbor, Projek Undangan & Buka Kunci Darurat, Custom Domain).
-   Modal pembuatan admin menyajikan *Pratinjau Hak Akses Menu Dinamis* yang langsung menampilkan daftar menu yang dapat diakses (hijau) vs menu yang terkunci (abu-abu gembok) secara instan saat role diubah.
+   Modal pembuatan dan pengeditan admin menyajikan *Checklist Hak Akses Modul Dinamis (Granular Permissions)* yang memungkinkan Super Admin menyesuaikan izin 10 modul bisnis secara terperinci per anggota staf, dengan preset template role (`SUPER_ADMIN`, `ADMIN`, `FINANCE`, `SUPPORT`) serta proteksi keamanan mutlak untuk 3 modul sensitif (`settings`, `database`, `team`).
 12. **Persistensi State Navigasi Tab Admin (Tab Memory Persistence):** Sinkronisasi 2-arah antara tab aktif, URL search params (`?tab=...&sub=...`), dan `localStorage` (`lux_admin_active_tab` & `lux_admin_settings_subtab`). Pengguna yang me-refresh halaman (F5) saat berada di sub-tab pengaturan atau monitoring tidak akan pernah terpental kembali ke tab ringkasan ("overview").
 13. **Pusat Pemantauan Kestabilan 60-Hari & Meteran Hardware (Monitoring Hub):**
    - **Bilah Riwayat Uptime 60-Hari Interaktif:** Visualisasi ketersediaan layanan ala UptimeRobot/Vercel dengan 60 bar segmen harian responsif, tooltip latensi & status operasional, serta rasio uptime (99.98%).
