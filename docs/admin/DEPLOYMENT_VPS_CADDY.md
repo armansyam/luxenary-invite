@@ -111,6 +111,21 @@ Masuk ke menu **DNS** > **Records**, tambahkan:
 Masuk ke menu **SSL/TLS** > **Overview**:
 - Pilih mode enkripsi: **Full** (atau **Full (Strict)**).
 
+### 3.3 Konfigurasi Cloudflare Cache Rules (100% Edge Hit untuk Link Undangan WhatsApp)
+Tamu undangan membuka tautan personal dengan parameter query (misal `https://luxvite.id/romeo-juliet?to=Bapak+Budi`). Agar Cloudflare Edge menyajikan HTML terpublikasi dari cache tanpa membebani server VPS:
+1. Masuk ke **Caching** > **Cache Rules** > **Create Rule**.
+2. **Rule Name:** `Undangan Publik Edge Cache`.
+3. **When incoming requests match:**
+   - Field: `URI Path` -> `does not start with` -> `/api/`
+   - AND Field: `URI Path` -> `does not start with` -> `/dashboard/`
+   - AND Field: `URI Path` -> `does not start with` -> `/admin/`
+4. **Cache eligibility:** `Eligible for cache`.
+5. **Edge TTL:** `Override origin` -> `7 days`.
+6. **Browser TTL:** `Respect origin`.
+7. **Cache Key Settings:**
+   - Centang **Query string** -> Pilih **Ignore query string** (atau abaikan parameter `to` dan `v`).
+   *Dengan aturan ini, seluruh 1,000 tamu yang mengklik tautan WhatsApp akan dilayani langsung oleh Cloudflare Edge (<20ms) dengan 0 query ke database PostgreSQL VPS Anda.*
+
 ---
 
 ## Tahap 4: Setup Caddy Web Server (Reverse Proxy & Auto SSL)
@@ -220,6 +235,15 @@ S3_BUCKET_NAME="nama-bucket-r2-anda"
 S3_ACCESS_KEY="access-key-r2"
 S3_SECRET_KEY="secret-key-r2"
 S3_CUSTOM_DOMAIN="https://cdn.domainanda.id"
+
+# Opsional: Distributed Redis Rate Limiter (Upstash Serverless Redis)
+# Melepaskan beban disk I/O PostgreSQL saat lonjakan ribuan tamu WhatsApp
+UPSTASH_REDIS_REST_URL=""
+UPSTASH_REDIS_REST_TOKEN=""
+
+# Opsional: Centralized Error Monitoring (Sentry)
+# Notifikasi error otomatis saat terjadi exception runtime di backend
+SENTRY_DSN=""
 ```
 Simpan file (`CTRL + O`, `Enter`, `CTRL + X`).
 

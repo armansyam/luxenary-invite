@@ -6,7 +6,6 @@ import { promisify } from "util";
 
 const execFileAsync = promisify(execFile);
 
-// Helper to check file existence asynchronously
 async function fileExists(filePath: string): Promise<boolean> {
   try {
     await fs.promises.access(filePath);
@@ -32,7 +31,6 @@ async function getFfprobePath(): Promise<string> {
   return "ffprobe";
 }
 
-// Helper to determine input video duration
 async function getVideoDuration(filePath: string, ffprobePath: string): Promise<number | null> {
   try {
     const { stdout } = await execFileAsync(ffprobePath, [

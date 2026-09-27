@@ -3678,7 +3678,7 @@ export default function AdminPage() {
                             <div className="mt-1.5 flex items-center gap-1.5">
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-300">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                {(settingsMap["active_payment_gateway"] || "ipaymu").toUpperCase()}
+                                {(settingsMap["active_payment_gateway"] || "midtrans").toUpperCase()}
                               </span>
                             </div>
                           </div>

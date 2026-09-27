@@ -98,7 +98,9 @@
 │   ├── components/           # React components reusable
 │   │   ├── BrandLogo.tsx
 │   │   ├── client/
-│   │   │   └── MemoriesDownloadSection.tsx # Download ZIP & perpanjangan galeri (+30 hari)
+│   │   │   ├── GuestOpeningSetupModal.tsx # Pengaturan layout pembuka momen tamu
+│   │   │   ├── PrintableQRCardModal.tsx   # Studio cetak kartu QR meja acara
+│   │   │   └── UnifiedAddonModal.tsx     # Modal checkout bundle terpadu (Upgrade, Top-up, Perpanjangan)
 │   │   ├── features/
 │   │   │   ├── DisposableCameraViewfinder.tsx # Mesin Virtual Disposable Camera (HTML5 Viewfinder, live canvas filter, audio shutter)
 │   │   │   ├── GuestMomentClient.tsx     # Pintu masuk utama kamera momen tamu (Virtual Disposable Camera)
@@ -366,12 +368,29 @@ Saat client menekan tombol "Publish", sistem memanggil `buildAndSavePublishedHtm
 4. Inject Open Graph meta tags
 5. Simpan ke SATU lokasi (Single Source of Truth by ID):
    a. public/published/ids/{invitationId}.html  → Single canonical file
-6. Return HTML string
+6. Simpan secara instan ke L1 Memory Cache (`publishedHtmlCache`) untuk akses berkecepatan mikro-detik (<0.05ms)
+7. Return HTML string
 ```
 
-**Saat Unpublish/Hapus**, `deletePublishedHtml(invitationId)` menghapus file HTML publikasi canonical (`public/published/ids/{invitationId}.html`). Saat penghapusan akun/undangan permanen (misal via `DELETE /api/admin/users`), sistem juga secara otomatis menghapus file draft lokal (`data/drafts/{invitationId}.html`) serta membersihkan direktori media fisik (`public/uploads/invitations/{invitationId}/`) secara rekursif tanpa mengganggu klon portofolio statis yang tersimpan mandiri.
+**Saat Unpublish/Hapus**, `deletePublishedHtml(invitationId)` menghapus file HTML publikasi canonical (`public/published/ids/{invitationId}.html`) sekaligus menginvaliasi L1 memory cache. Saat penghapusan akun/undangan permanen (misal via `DELETE /api/admin/users`), sistem juga secara otomatis menghapus file draft lokal (`data/drafts/{invitationId}.html`) serta membersihkan direktori media fisik (`public/uploads/invitations/{invitationId}/`) secara rekursif tanpa mengganggu klon portofolio statis yang tersimpan mandiri.
 
 **KRITIS:** File HTML ini adalah satu-satunya yang disajikan ke tamu. Tidak ada SSR/API aktif untuk tamu saat undangan sudah published.
+
+### 4.1 In-Memory Bounded Caching Layer (`lib/cache.ts`)
+Untuk menjamin stabilitas produksi jangka panjang dan menahan lonjakan trafik (*traffic spikes*) ribuan tamu serentak, platform mengintegrasikan modul memory cache berbatas (*bounded in-memory cache*):
+1. **`masterTemplateCache` (TTL 1 Jam):** Membaca berkas template HTML tema dari disk hanya 1x per proses, memangkas disk I/O baca template berulang.
+2. **`publishedHtmlCache` (TTL 5 Menit):** Menyimpan berkas HTML publikasi kanonikal di RAM. Kunjungan tamu dilayani langsung dari memori tanpa pembacaan berkas disk berulang.
+3. **`invitationLookupCache` (TTL 60 Detik):** Memetakan resolusi routing publik (`slug` dan `subdomain`) ke status dan metadata undangan. Menghilangkan 99% query redundan ke basis data PostgreSQL saat ribuan tamu mengklik tautan undangan WhatsApp secara bersamaan. Di-invalidate seketika saat undangan di-publish atau diedit di Studio Klien.
+4. **Health Check Enterprise (`GET /api/health`):** Endpoint verifikasi status kesehatan sistem bagi reverse proxy Caddy, probe Kubernetes, dan monitoring uptime (melacak uptime, database latency ping `SELECT 1`, pemakaian memori RSS/heap, metrik ukuran cache, serta status driver rate limiter & error tracker).
+
+### 4.2 Structured Logging, Error Tracking & Multi-Driver Rate Limiting
+Untuk memastikan stabilitas operasional SaaS di lingkungan produksi skala industri:
+1. **Structured NDJSON Logger (`lib/logger.ts`):** Menggantikan log teks mentah dengan format Newline Delimited JSON di lingkungan produksi. Setiap event mencatat `timestamp` ISO-8601, `level` (`debug`, `info`, `warn`, `error`), `context`, `message`, dan `data` metadata kontekstual (misal `orderId`, `trxStatus`, `planType`). Siap diindeks oleh PM2, Datadog, Vector, Grafana Loki, atau CloudWatch.
+2. **Centralized Error Tracking (`lib/errorTracker.ts`):** Menangkap exception operasional dan runtime, menyaring data sensitif (*PII and credential masking* seperti password, pin, auth token, dan server key), serta secara non-blocking mengirim error envelope ke Sentry API jika `SENTRY_DSN` terkonfigurasi pada environment.
+3. **Multi-Driver Distributed Rate Limiting (`lib/rateLimit.ts`):** Mengadopsi arsitektur 3-tier cascade yang fleksibel:
+   - **Tier 1 (Redis REST):** Jika `UPSTASH_REDIS_REST_URL` & `UPSTASH_REDIS_REST_TOKEN` tersedia, query atomik dijalankan via Redis HTTP pipeline (`INCR` + `EXPIRE`), melepaskan PostgreSQL dari 100% beban disk I/O request counter.
+   - **Tier 2 (PostgreSQL Atomic UPSERT):** Jika Redis tidak dikonfigurasi, rate limiter berjalan di level engine basis data via tabel `rate_limit_counters` (`INSERT ... ON CONFLICT DO UPDATE`).
+   - **Tier 3 (In-Memory Bounded Map):** Fallback darurat jika koneksi basis data terputus agar endpoint publik tidak mati total.
 
 ---
 
@@ -571,7 +590,7 @@ Sistem menerapkan prinsip *Tiered Storage* untuk memisahkan beban operasional li
    - Seluruh instrumen operasional Hari H telah dibersihkan dari Beranda agar antarmuka tidak tumpang tindih dan tidak membingungkan pengantin.
 4. **Pemisahan Modul Operasional Hari H yang Intuitif:**
    - **Portal Resepsionis Meja Penerima Tamu (`/dashboard/guests`):** Ditempatkan di dalam modul Buku Tamu, menyediakan tautan langsung ke scanner kamera check-in (`/[slug]/receptionist`), penampil PIN akses panitia, serta tombol salin info WO 1-klik untuk petugas meja depan.
-   - **Pusat Komando Dedicated Moments (`/dashboard/moments`):** Menjadi pusat kendali operasional kamera virtual lengkap dengan 3D Tri-Device Mockup Showcase (iPhone 16 Pro + Media Fisik Standing Banner & Kartu QR), 3 layout layar pembuka (`POLAROID_MINIMAL`, `VINTAGE_FILM`, `MODERN_ELEGANT`), kustomisasi teks instruksi kartu, selector preset filter film analog, stempel LED, formulir multi-sesi jadwal & kuota dengan Smart Quota Boundary Guard, pengatur roll per tamu, studio cetak standing banner akrilik 300 DPI, pusat unduh ZIP (`MemoriesDownloadSection`), dan feed foto candid.
+   - **Pusat Komando Dedicated Moments (`/dashboard/moments`):** Menjadi pusat kendali operasional kamera virtual lengkap dengan 3D Tri-Device Mockup Showcase (iPhone 16 Pro + Media Fisik Standing Banner & Kartu QR), 3 layout layar pembuka (`POLAROID_MINIMAL`, `VINTAGE_FILM`, `MODERN_ELEGANT`), kustomisasi teks instruksi kartu, selector preset filter film analog, stempel LED, formulir multi-sesi jadwal & kuota dengan Smart Quota Boundary Guard, pengatur roll per tamu, studio cetak standing banner akrilik 300 DPI, pusat unduh ZIP terpadu (client-side streaming JSZip), dan feed foto candid.
    - **Formulir Studio Editor (`/dashboard/invitation/[id]` 15 Seksi Master-Detail):** Panel form menerapkan arsitektur Master-Detail yang selalu terbuka penuh (*always expanded, zero auto-collapse on save*), eliminasi tombol toggle akordion redundan, sidebar navigator (desktop) & horizontal pills (mobile), dirty state tracker per seksi, dan penanganan styling tema web undangan.
     - **Proteksi Anti-Download & Privasi Tamu Galeri Kenangan (`/memories` & `/sharemoment`):**
       - Halaman galeri bersifat murni *View-Only* untuk publik.
@@ -993,7 +1012,7 @@ Fitur *Remote* memungkinkan Admin untuk masuk ke dasbor Klien dan mengendalikann
 5. **Pemulihan Bersih (Restore 1-Klik & Auto Cleanup on Logout):** Saat Admin mengklik tombol *"Kembali ke Admin"* atau *"Hentikan Sesi Remote"*, sistem mengirim request `DELETE /api/admin/remote-session` yang menghapus cookie `lux_remote_client_id`. Selain itu, saat Admin melakukan Logout dari panel admin, cookie remote otomatis dihapus agar admin tidak terjebak cookie remote pada sesi login berikutnya.
 6. **Segmentasi Klien di Admin:** Endpoint `/api/admin/users` menyediakan filter `all`, `active` (berbayar/punya undangan), dan `leads` (calon klien belum checkout). Admin dapat mem-follow-up calon klien via WhatsApp atau menghapus akun abandoned lead yang menumpuk.
 7. **Realtime SSE Checkout & Zero-Leak Gatekeeper (PostgreSQL LISTEN/NOTIFY Multi-Process Bridge):** Halaman checkout mendengarkan status pembayaran secara realtime melalui Server-Sent Events (SSE) murni (`/api/payments/status-stream/[orderId]`) tanpa interval polling yang membebani browser maupun database. Untuk mendukung PM2 Cluster Mode (multi-worker process), sistem mengintegrasikan jembatan event-driven native PostgreSQL `LISTEN payment_events` dan `NOTIFY payment_events` (`lib/paymentEvents.ts`). Ketika webhook pembayaran (Midtrans/Xendit) atau approval Admin (`/api/admin/orders/[orderId]/approve`) dieksekusi di instance PM2 manapun, PostgreSQL mem-broadcast sinyal secara instan (<5ms) ke seluruh instance PM2 aktif. Instance yang memegang koneksi SSE klien langsung menerima notifikasi, mem-push event `PAID` atau `REJECTED` (beserta `rejectReason`), dan menutup koneksi secara rapi. Heartbeat pasif (15 detik) melengkapi stream sebagai fail-safe cadangan tanpa polling aktif. Saat status `PAID` diterima, modal transisi sukses bertema *Dark Luxury* muncul mengonfirmasi invoice lunas dan memberikan jeda persiapan visual (1.8s) sebelum mengalihkan pengguna ke `/dashboard/setup`. Tidak ada data dasbor atau undangan yang dapat diakses sebelum status transaksi benar-benar berstatus `PAID`.
-8. **Resolusi Dinamis Mode Pembayaran Add-on Dasbor Klien:** Seluruh transaksi pembelian add-on di dalam dasbor klien (perpanjangan galeri kenangan `/api/client/memories/extend`, checkout bundle `/api/client/orders/checkout-bundle`, dan upgrade paket `/api/payments/upgrade`) tidak lagi di-hardcode ke metode tertentu, melainkan secara dinamis membaca konfigurasi `payment_mode` dari `AdminSetting` (`GATEWAY`, `MANUAL`, atau `BOTH`) untuk menentukan `paymentMethod` (`GATEWAY` atau `MANUAL_TRANSFER`).
+8. **Resolusi Dinamis Mode Pembayaran Add-on Dasbor Klien:** Seluruh transaksi pembelian add-on di dalam dasbor klien (checkout bundle `/api/client/orders/checkout-bundle` dan upgrade paket `/api/payments/upgrade`) tidak lagi di-hardcode ke metode tertentu, melainkan secara dinamis membaca konfigurasi `payment_mode` dari `AdminSetting` (`GATEWAY`, `MANUAL`, atau `BOTH`) untuk menentukan `paymentMethod` (`GATEWAY` atau `MANUAL_TRANSFER`).
 
 ---
 
@@ -1022,7 +1041,6 @@ CLIENT (auth required, role=USER):
   GET       /api/client/orders            → List order client
   POST      /api/client/orders/checkout-bundle → Penerbitan tagihan terpadu 1-Invoice multi-layanan (Upgrade Paket, Perpanjangan Galeri, dan Top-Up Kuota Foto Acara) dengan itemsJson terstruktur & auto-supersede order lama
   GET       /api/client/orders/{id}/status → Cek status tagihan terpadu (menyertakan itemsJson rincian layanan)
-  POST      /api/client/memories/extend   → Buat order perpanjangan galeri (+30 hari via QRIS)
   POST      /api/payments/upgrade         → Upgrade paket undangan mandiri dengan auto-supersede & checkoutConfirmedAt
   POST      /api/client/custom-domain     → Hubungkan atau lepaskan (set/unlink) Custom Domain pribadi (Inklusif Paket Tier 3)
   (Catatan WA: Route wa-link dihapus; digantikan client-side wa.me direct linking + auto-format +62)

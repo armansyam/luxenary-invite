@@ -524,7 +524,6 @@ export default function GuestsPage() {
     }
   };
 
-  // Helper to render customized text for a guest
   const renderWaText = (guestName: string, guestLimit: number = 2, sessionInfo: string = "Akad & Resepsi", qrToken?: string) => {
     const isWedding = !invitationData?.eventType || invitationData.eventType === "WEDDING";
     const groom = invitationData?.groomNickname || invitationData?.groomName || "Mempelai Pria";

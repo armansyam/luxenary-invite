@@ -5,6 +5,7 @@ import { composeTemplateData } from "@/lib/themeEngine";
 import { renderTemplateFile } from "@/lib/renderTemplate";
 import { getAdminSetting } from "@/lib/settings";
 import { resolveInvitationDisplayName, buildCalendarTitle } from "@/lib/invitationUtils";
+import { publishedHtmlCache } from "@/lib/cache";
 
 const PUBLISHED_DIR = path.join(process.cwd(), "public", "published");
 
@@ -49,10 +50,16 @@ export async function hasPublishedHtml(invitationId: string, _category?: string)
  * Reads the standalone published HTML file content.
  */
 export async function getPublishedHtml(invitationId: string, _category?: string): Promise<string | null> {
+  // L1 Memory Cache: respons instan <0.05ms tanpa I/O disk saat lonjakan tamu
+  const cached = publishedHtmlCache.get(invitationId);
+  if (cached) return cached;
+
   const p = path.join(PUBLISHED_DIR, "ids", `${invitationId}.html`);
   try {
     await fs.promises.access(p);
-    return await fs.promises.readFile(p, "utf-8");
+    const content = await fs.promises.readFile(p, "utf-8");
+    publishedHtmlCache.set(invitationId, content);
+    return content;
   } catch {
     return null;
   }
@@ -124,6 +131,9 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
   const masterPath = path.join(PUBLISHED_DIR, "ids", `${invitation.id}.html`);
   await fs.promises.writeFile(masterPath, standaloneHtml, "utf-8");
 
+  // Sinkronkan ke L1 Memory Cache secara instan
+  publishedHtmlCache.set(invitation.id, standaloneHtml);
+
   console.log(`[Static Publisher] HTML baked (Single Source of Truth): ${masterPath} | size=${(standaloneHtml.length / 1024).toFixed(1)}KB`);
 
   // Sinkronisasi non-blocking ke arsip NAS jika fitur diaktifkan
@@ -141,6 +151,9 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
  */
 export async function deletePublishedHtml(invitationId: string): Promise<boolean> {
   let deleted = false;
+
+  // Invalidate dari L1 Memory Cache
+  publishedHtmlCache.delete(invitationId);
 
   // Hapus file ID master (Single Source of Truth)
   const idPath = path.join(PUBLISHED_DIR, "ids", `${invitationId}.html`);

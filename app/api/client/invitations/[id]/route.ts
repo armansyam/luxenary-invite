@@ -5,6 +5,7 @@ import { encryptPin, decryptPin, isPinEncrypted } from "@/lib/pinEncryption";
 import { isReservedSubdomain, isSubdomainExpired, getLatestEventDate } from "@/lib/domainUtils";
 import { getPlanMemoriesQuota } from "@/lib/settings";
 import { VALID_MEDIA_SLOTS } from "@/lib/mediaSlots";
+import { invalidateInvitationLookup } from "@/lib/cache";
 
 
 export function getInvitationLockStatus(inv: any) {
@@ -212,6 +213,9 @@ export async function PUT(
             adminUnlockedUntil: null,
           },
         });
+
+        // Invalidate L1 memory lookup cache
+        invalidateInvitationLookup(currentInv.invitationSlug, currentInv.subdomain);
 
         // Otomatis bersihkan (purge) edge cache Cloudflare untuk URL spesifik undangan ini (Anti-Stale Cache)
         try {
@@ -709,6 +713,9 @@ export async function PATCH(
         media: true,
       },
     });
+
+    // Invalidate L1 memory lookup cache
+    invalidateInvitationLookup(updated.invitationSlug, updated.subdomain);
 
     return NextResponse.json({
       success: true,

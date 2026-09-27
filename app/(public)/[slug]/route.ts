@@ -6,6 +6,7 @@ import { renderTemplateFile } from "@/lib/renderTemplate";
 
 import { STORAGE_PROVIDER, s3Client } from "@/lib/storage";
 import { HeadObjectCommand } from "@aws-sdk/client-s3";
+import { invitationLookupCache } from "@/lib/cache";
 import fs from "fs";
 import path from "path";
 
@@ -32,13 +33,24 @@ async function hasPortfolio(slug: string): Promise<boolean> {
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  const isPreview = req.nextUrl.searchParams.get("preview") === "true";
 
-  const invitation = await prisma.invitation.findUnique({
-    where: { invitationSlug: slug },
-    include: {
-      order: { select: { planType: true } },
-    },
-  });
+  // L1 Memory Cache: Hilangkan query basis data redundant saat lonjakan ribuan tamu
+  const cacheKey = `slug:${slug}`;
+  let invitation = !isPreview ? invitationLookupCache.get(cacheKey) : null;
+
+  if (!invitation) {
+    invitation = await prisma.invitation.findUnique({
+      where: { invitationSlug: slug },
+      include: {
+        order: { select: { planType: true } },
+      },
+    });
+
+    if (invitation && !isPreview && invitation.status === "PUBLISHED") {
+      invitationLookupCache.set(cacheKey, invitation, 60_000);
+    }
+  }
 
   if (!invitation) {
     return new NextResponse("Not Found", { status: 404 });
@@ -48,7 +60,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
 
   // Jika undangan masih berstatus DRAFT (belum dipublikasikan)
   if (invitation.status === "DRAFT") {
-    const isPreview = req.nextUrl.searchParams.get("preview") === "true";
     if (!isPreview) {
       const unreleasedHtml = `<!DOCTYPE html>
 <html lang="id">
@@ -153,8 +164,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
   }
 
   let html: string | null = null;
-  const isPreview = req.nextUrl.searchParams.get("preview") === "true";
-
   if (invitation.status === "DRAFT" || isPreview) {
     // Mode DRAFT / Preview: Selalu render data mutakhir langsung dari DB (Dynamic Live Preview)
     const data = await composeTemplateData(invitation.id);

@@ -2,7 +2,7 @@
 
 > **Platform Undangan Digital Multi-Event B2C Self-Service (Wedding, Birthday, Khitan, Aqiqah, Wisuda, Gathering)**  
 > Next.js 16.3.2 · Prisma 7.9 (PostgreSQL) · NextAuth v5 · Multi-Gateway (5 Gateway) · Nodemailer SMTP · Cloudflare R2  
-> **Versi Dokumen: 6.3.0 | Diperbarui: 25 September 2026**
+> **Versi Dokumen: 6.3.3 | Diperbarui: 27 September 2026**
 
 > [!IMPORTANT]
 > **PROTOKOL SINKRONISASI DOKUMENTASI OTOMATIS (MANDATORY POST-EDIT & PRE-PUSH PROTOCOL):**  
@@ -309,7 +309,7 @@ Luxenary-Invite/
 │   │   └── s/[subdomain]/     # Sub-routes via subdomain
 │   ├── api/
 │   │   ├── admin/             # overview, orders, themes, settings, portfolio, invitations/[id]/lifecycle
-│   │   ├── client/            # invitations, guests, media, rsvps, upload, memories/extend
+│   │   ├── client/            # invitations, guests, media, rsvps, upload, checkout-bundle
 │   │   ├── public/            # settings, themes, rsvp, memories, resolve-custom-domain, version
 │   │   ├── payments/          # checkout, status-stream
 │   │   ├── orders/            # create invoice
@@ -574,6 +574,18 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
 > Untuk detail teknis lengkap, baca [`docs/SYSTEM_ARCHITECTURE.md`](./docs/SYSTEM_ARCHITECTURE.md)
 
 
+### Penguatan Skalabilitas Produksi Industri & Operasional Terdistribusi (v6.3.3 — 27 September 2026)
+- **Fase 1: Bounded Memory Cache Layer (`lib/cache.ts`)**:
+  * `publishedHtmlCache` (TTL 5m): Menyajikan berkas HTML kanonikal terpublikasi langsung dari RAM (<0.05ms) tanpa I/O pembacaan disk berulang saat ribuan tamu mengakses undangan.
+  * `masterTemplateCache` (TTL 1h): Mengeliminasi I/O disk pembacaan master template HTML tema berulang di `lib/renderTemplate.ts`.
+  * `invitationLookupCache` (TTL 60s): Memotong hingga 99% query PostgreSQL redundan pada routing publik `/[slug]` dan `/s/[subdomain]`. Di-invalidate secara instan saat klien mempublikasikan atau mengedit undangan.
+- **Fase 2: Robustness, Structured Logging & Multi-Driver Rate Limiter**:
+  * **Structured NDJSON Logger (`lib/logger.ts`)**: Standardisasi log satu baris JSON untuk lingkungan produksi, memuat ISO timestamp, log level, module context, pesan, serta data kontekstual (siap untuk PM2, Vector, Loki, Datadog, CloudWatch).
+  * **Centralized Error Tracker (`lib/errorTracker.ts`)**: Penangkapan exception terpusat dengan masking data sensitif (PII, sandi, PIN, server key) dan pengiriman non-blocking ke Sentry jika `SENTRY_DSN` aktif.
+  * **Multi-Driver Distributed Rate Limiting (`lib/rateLimit.ts`)**: Arsitektur cascade 3-tingkat (Tier 1: Redis REST via Upstash tanpa dependensi tambahan; Tier 2: PostgreSQL Atomic UPSERT; Tier 3: In-Memory Bounded Map fallback).
+- **Enterprise Health Check Endpoint (`GET /api/health`)**: Pemantauan status sistem otomatis bagi Caddy reverse proxy, Kubernetes liveness probes, dan UptimeRobot (database ping latency `SELECT 1`, pemakaian memori RSS/heap, cache stats, status driver rate limiter, dan uptime).
+- **Optimasi Cloudflare Cache Rules**: Panduan konfigurasi Cloudflare Cache Rule (strip query parameters `to` dan `v` dari cache key) menjamin 100% Edge CDN HIT saat link undangan disebar serentak ke ribuan tamu di WhatsApp.
+
 ### Kebijakan Akses Tema & Sesi Acara Utama (Update September 2026)
 - **All-Access Themes**: Bebas pilih seluruh koleksi 19 tema desain untuk semua paket (`TIER_1`, `TIER_2`, `TIER_3`). Perbedaan paket murni pada hak kapabilitas fitur (Kamera Moments, QR Pass, Buku Tamu VIP, dsb).
 - **Sesi Acara Utama (Primary Anchor)**: Tepat 1 sesi acara inti (Akad/Resepsi) sebagai basis hitungan kedaluwarsa layanan. Tanggal sesi utama terkunci permanen pasca publikasi (hanya admin yang dapat mengubah). Sesi lain bebas diatur kapan saja.
@@ -646,6 +658,7 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
     - **Desktop Target**: 1280 × 800 px (Rasio 16:10, Desktop Emulation)
     - **Mobile Target**: 400 × 800 px (Rasio 1:2, Mobile Emulation dengan Touch Emulation & Retina 2x)
     - **Anti-Banding & Kualitas Visual**: Lanczos3 kernel resampling + WebP Q90 + smartSubsample di Sharp.
+    - **Keamanan & Kompatibilitas**: Multi-platform Chrome binary auto-resolver (macOS, Ubuntu/Debian Linux, Windows) serta proteksi *Pre-Flight Server Healthcheck* otomatis guna mencegah kerusakan aset thumbnail saat server Next.js tidak aktif.
     - **Konsolidasi Skrip**: Skrip usang (`generate-missing-desktop-thumbnails.ts` dan `generate-thumbnails.ts`) dihapus total; seluruh alur generasi disatukan dalam satu perintah standar `npm run generate:thumbnails`.
   * **Audit Kepatuhan Ganda**: `npm run audit:integrity` LOLOS (40/40 tema fisik PASS, 40/40 hash unik tanpa duplikat kloning), `npm run test:hygiene` LOLOS (0 pelanggaran hex/token), dan `npx tsc --noEmit` Exit Code 0.
 

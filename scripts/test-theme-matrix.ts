@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { renderTemplateFile } from "../lib/renderTemplate";
-import { prisma } from "../lib/prisma";
+import { prisma, pool } from "../lib/prisma";
 
 interface ThemeTestResult {
   themeId: string;
@@ -18,7 +18,7 @@ interface ThemeTestResult {
 
 async function runThemeMatrixTest() {
   console.log("================================================================================");
-  console.log("🎨 [THEME MATRIX STRESS TEST] PENGUJIAN MENYELURUH 18 TEMA FISIK & DATA EKSTREM 🎨");
+  console.log("🎨 [THEME MATRIX STRESS TEST] PENGUJIAN MENYELURUH TEMA FISIK & DATA EKSTREM 🎨");
   console.log("================================================================================\n");
 
   const themes = await prisma.theme.findMany({
@@ -208,12 +208,13 @@ async function runThemeMatrixTest() {
   console.log(`❌ Gagal: ${totalFailures} / ${themes.length}`);
 
   await prisma.$disconnect();
+  await pool.end();
 
   if (totalFailures > 0) {
     console.error(`\n⚠️ TERDAPAT ${totalFailures} TEMA DENGAN TEMUAN GAGAL!`);
     process.exit(1);
   } else {
-    console.log("\n🎉 SELURUH 18 TEMA MASTER 100% LOLOS PENGUJIAN STRESS TEST!");
+    console.log(`\n🎉 SELURUH ${themes.length} TEMA MASTER 100% LOLOS PENGUJIAN STRESS TEST!`);
     process.exit(0);
   }
 }
@@ -221,5 +222,6 @@ async function runThemeMatrixTest() {
 runThemeMatrixTest().catch(async (err) => {
   console.error("Fatal test runner error:", err);
   await prisma.$disconnect();
+  await pool.end();
   process.exit(1);
 });

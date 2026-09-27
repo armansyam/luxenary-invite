@@ -142,3 +142,11 @@ Aturan ini **HARGA MATI** dan tidak boleh dilanggar dalam kondisi apapun untuk m
 ## 3. ASUMSI UNCOMMITTED WORK
 - Selalu asumsikan bahwa codebase lokal user saat ini memiliki modifikasi kritis yang belum tersimpan di Git.
 - Hormati status *file* tersebut. Jangan menimpa ulang seluruh fungsi, hanya ubah bagian spesifik (1-5 baris) yang benar-benar bermasalah.
+
+# 🚫 PROTOKOL ANTI-AI-SLOP (STRICT ZERO-TOLERANCE)
+Aturan ini diatur secara mendalam dalam `.agents/rules/anti-ai-slop.md` dan wajib dipatuhi:
+1. **Zero Code Slop:** Dilarang narasi komentar remeh (obvious comments), dilarang wrapper spekulatif/over-engineering, dilarang fallback palsu penutup bug, dilarang komentar zombi/TODO mati.
+2. **Zero UI/UX Slop:** Dilarang gradien ungu klise AI, dilarang copy filler generic ("unlock your potential"), dilarang perusakan CSS cascade/token dinamis, dilarang OS emojis di antarmuka profesional.
+3. **Zero Chat Slop:** Dilarang basa-basi/sycophancy, dilarang apology loops berlebihan, dilarang klaim sukses tanpa bukti log terminal riil.
+4. **Zero Execution Slop:** Wajib surgical edits (`replace_file_content`), dilarang full-file overwrite (`write_to_file`) pada berkas eksisting, dan dilarang scope creep.
+

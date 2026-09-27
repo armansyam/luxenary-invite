@@ -32,6 +32,7 @@ Pusat kendali pengujian kesiapan industri (*enterprise-grade / production-ready*
 |---|---|---|
 | [`industrial-qa-suite.ts`](./industrial-qa-suite.ts) | Menjalankan pengujian 7 domain industri: Keamanan, Finansial, Konkurensi, Lifecycle & NAS Vault, Render Tema, Indeks DB, dan Fault Tolerance. | `npm run test:all` / `npm run test:industrial` |
 | [`audit-code-hygiene.ts`](./audit-code-hygiene.ts) | Audit kebersihan kode: parsing AST CSS tema untuk mendeteksi dead selectors yang tidak terpakai di HTML/JS, larangan nilai heksadesimal mentah (Zero Hardcode Policy), dan zombie comments. | `npm run test:hygiene` |
+| [`audit-theme-integrity.ts`](./audit-theme-integrity.ts) | Audit integritas tema empiris: memvalidasi ketersediaan berkas fisik thumbnail desktop (>5KB) & mobile (>3KB) untuk seluruh 40 tema, verifikasi status HTTP 200/206 API publik, serta proteksi kebocoran teks wedding & monogram pada tema non-wedding. | `npm run audit:integrity` |
 | [`clean-test-artifacts.ts`](./clean-test-artifacts.ts) | Memindai dan memusnahkan seluruh entitas uji di PostgreSQL serta berkas fisik yatim (*orphaned drafts, published HTML, uploads*) tanpa menyisakan disk leak. | `npm run test:clean` |
 
 **Opsi Modular CLI:**
@@ -63,7 +64,7 @@ Skrip pengujian mendalam yang berfokus menguji area teknis tertentu secara ekste
 | [`complete-system-audit.ts`](./complete-system-audit.ts) | **Audit Alur Bisnis 14 Langkah Hulu-ke-Hilir:** Registrasi klien, idempotensi order, anti-collision subdomain, autosave draft, publikasi HTML kanonikal, tiket QR tamu, batas kuota katering RSVP, capabilities tier guard, PIN & token HMAC resepsionis, memories foto, addon, upgrade & anti-downgrade, hingga cascade clean. | `npm run test:audit` |
 | [`test-security-penetration.ts`](./test-security-penetration.ts) | **Pengujian Penetrasi & Keamanan:** Burst rate limiter PostgreSQL (20+ hit simultan), proteksi reserved subdomains, sanitasi path traversal & SQL injection identifier, dan idempotensi replay webhook. | `npm run test:security` |
 | [`master-e2e-stress-test.ts`](./master-e2e-stress-test.ts) | **Uji Ketahanan Beban & Konkurensi:** Simulasi lonjakan submisi RSVP simultan, pembatasan katering pax, dan idempotensi pembayaran paralel. | `npm run test:stress` |
-| [`test-theme-matrix.ts`](./test-theme-matrix.ts) | **Matriks Kompatibilitas 18+ Tema Fisik:** Menguji seluruh tema aktif di database terhadap dataset normal, ekstrem (nama 250+ karakter), minimalis, palet warna, payload injeksi XSS, dan deteksi unparsed placeholder `{{variable}}`. | `npm run test:themes` |
+| [`test-theme-matrix.ts`](./test-theme-matrix.ts) | **Matriks Kompatibilitas 40 Tema Fisik Master (Multi-Event):** Menguji seluruh tema aktif di database terhadap dataset normal, ekstrem (nama 250+ karakter), minimalis, palet warna, payload injeksi XSS, dan deteksi unparsed placeholder `{{variable}}`. | `npm run test:themes` |
 | [`test-nas-archive-lifecycle.ts`](./test-nas-archive-lifecycle.ts) | **Siklus Hidup Cold Storage NAS Archive (Luxenary Vault):** Menguji dual-bake arsip mandiri, rewriting URL aset relatif `/archives/${slug}/assets/...`, endpoint stream media HTTP 206, verifikasi status berkas fisik, dan pembersihan permanen (*purge*). | `npm run test:nas` / `npx tsx scripts/test-nas-archive-lifecycle.ts` |
 
 ---
@@ -86,10 +87,10 @@ Skrip operasional produksi dan pemeliharaan server (bukan untuk pengujian):
 
 | Berkas | Fungsi & Peruntukan | Perintah |
 |---|---|---|
-| [`generate-all-thumbnails.ts`](./generate-all-thumbnails.ts) | Menghasilkan thumbnail retina otentik (Mobile 400x800 & Desktop 1280x800) untuk seluruh 40 tema via Chrome DevTools Protocol (`Page.captureScreenshot`). | `npm run generate:thumbnails` / `npx tsx scripts/generate-all-thumbnails.ts` |
-| `compress_example_images.mjs` | Kompresi aset gambar showroom / demo ke format WebP teroptimasi. | `node scripts/compress_example_images.mjs` |
+| [`cron-cleanup.ts`](./cron-cleanup.ts) | Skrip pemeliharaan berkala (Cron Job): auto-transisi status EVENT_FINISHED, pengarsipan otomatis Cold Storage NAS, pembersihan foto candid tamu H+14, purge media R2, daur ulang subdomain, dan pembersihan pesanan expired. | `npm run cron:cleanup` / `npx tsx scripts/cron-cleanup.ts` |
+| [`sync-themes.ts`](./sync-themes.ts) | Pemindaian direktori fisik `themes/` multi-event dan sinkronisasi otomatis status katalog tema & demo blueprint ke database PostgreSQL. | `npm run themes:sync` / `npx tsx scripts/sync-themes.ts` |
+| [`generate-all-thumbnails.ts`](./generate-all-thumbnails.ts) | Menghasilkan thumbnail retina otentik (Mobile 400x800 & Desktop 1280x800) untuk seluruh 40 tema via Chrome DevTools Protocol (`Page.captureScreenshot`). Dilengkapi pre-flight server check & multi-platform Chrome auto-resolver. | `npm run generate:thumbnails` / `npx tsx scripts/generate-all-thumbnails.ts` |
 | `download_local_fonts.mjs` | Mengunduh font Google Fonts ke direktori lokal VPS untuk kemandirian aset. | `node scripts/download_local_fonts.mjs` |
-| `setup_demo_assets.mjs` | Menyiapkan aset placeholder demo tema. | `node scripts/setup_demo_assets.mjs` |
 | `use_local_fonts.mjs` | Mengonfigurasi template agar memprioritaskan font lokal daripada CDN eksternal. | `node scripts/use_local_fonts.mjs` |
 
 ---

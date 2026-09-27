@@ -45,6 +45,7 @@ Endpoint berikut dapat diakses oleh publik (tamu undangan, browser pengunjung, d
 | `GET` | `/api/public/memories/{invitationId}` | Mengambil feed foto kenangan tamu untuk galeri publik. |
 | `GET` | `/api/sse/memories` | *Server-Sent Events* stream untuk notifikasi real-time momen baru di galeri kenangan tamu. |
 | `GET` | `/api/public/version` | Mengambil versi sistem rilis aktif platform. |
+| `GET` | `/api/health` | Enterprise health check endpoint untuk Caddy, Kubernetes, dan Uptime probes (status DB, memori, cache). |
 | `POST` | `/api/public/promo/validate` | Validasi kode promo secara real-time di kasir, pengecekan kuota, masa berlaku, dan kalkulasi diskon. |
 
 ---
@@ -89,12 +90,11 @@ Memerlukan sesi aktif klien (`role: CLIENT` atau Admin Remote Session):
 | | `GET` | `/api/client/memories/download` | Mengunduh seluruh foto kenangan tamu dalam satu berkas `.zip`. |
 | | `GET` | `/api/client/memories/download-urls` | Mengambil daftar URL unduh langsung untuk batch downloader resolusi tinggi. |
 | | `POST` | `/api/client/memories/lock` | Mengunci unggahan momen tamu setelah acara selesai. |
-| | `POST` | `/api/client/memories/extend` | Membuat invoice perpanjangan masa aktif galeri (+30 hari). |
 | **Pesanan** | `GET` | `/api/client/orders` | Mengambil riwayat transaksi pesanan paket atau add-on. |
 | | `GET` | `/api/client/orders/{id}/status` | Mengecek status pelunasan transaksi pesanan secara spesifik. |
 | | `POST` | `/api/client/orders/{id}/cancel` | Membatalkan tagihan pesanan berstatus pending. |
 | | `POST` | `/api/client/orders/{id}/upload-proof` | Klien mengunggah gambar slip bukti transfer bank manual. |
-| | `POST` | `/api/client/orders/checkout-bundle` | Checkout pesanan bundle add-on atau kuota tambahan. |
+| | `POST` | `/api/client/orders/checkout-bundle` | Penerbitan tagihan terpadu 1-Invoice multi-layanan (Upgrade Paket, Perpanjangan Galeri, dan Top-Up Kuota Foto Acara). |
 
 ---
 
@@ -102,7 +102,7 @@ Memerlukan sesi aktif klien (`role: CLIENT` atau Admin Remote Session):
 
 | Metode | Endpoint | Deskripsi |
 |:---:|---|---|
-| `POST` | `/api/payments/checkout` | Membuat tagihan baru (Snap Token Midtrans, QRIS iPaymu, Duitku, TriPay, Xendit, atau transfer manual). |
+| `POST` | `/api/payments/checkout` | Membuat tagihan baru (Snap Token Midtrans QRIS/VA, Xendit Invoice, atau transfer manual). |
 | `POST` | `/api/payments/checkout/confirm` | Mengonfirmasi pesanan dan mengunci diskon kupon promo (reservasi PromoHold 15 menit). |
 | `POST` | `/api/payments/qris/regenerate` | Me-regenerasi sesi invoice QRIS baru jika 15 menit kedaluwarsa tanpa mereset pesanan atau diskon. |
 | `POST` | `/api/payments/upgrade` | Menghitung selisih harga dan membuat invoice kenaikan paket langganan. |

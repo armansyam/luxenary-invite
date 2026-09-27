@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { rateLimitDb } from "../lib/rateLimit";
-import { prisma } from "../lib/prisma";
+import { prisma, pool } from "../lib/prisma";
 import path from "path";
 
 interface PenTestResult {
@@ -180,6 +180,7 @@ async function runPenetrationTests() {
   }
 
   await prisma.$disconnect();
+  await pool.end();
 
   if (allPass) {
     console.log("\n🎉 SELURUH SKENARIO PENETRATION TESTING 100% LOLOS & AMAN!");
@@ -193,5 +194,6 @@ async function runPenetrationTests() {
 runPenetrationTests().catch(async (err) => {
   console.error("Fatal test runner error:", err);
   await prisma.$disconnect();
+  await pool.end();
   process.exit(1);
 });

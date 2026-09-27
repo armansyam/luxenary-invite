@@ -11,7 +11,7 @@
 import "dotenv/config";
 import fs from "fs";
 import path from "path";
-import { prisma } from "../lib/prisma";
+import { prisma, pool } from "../lib/prisma";
 
 const DEMO_DIR = path.join(process.cwd(), "public/demo");
 const API_BASE = process.env.TEST_API_BASE || "http://localhost:3000";
@@ -194,16 +194,19 @@ async function main() {
       }
     }
     await prisma.$disconnect();
+    await pool.end();
     process.exit(1);
   }
 
   console.log(`✨ INTEGRITY GATE PASSED: All ${themes.length} themes verified 100% compliant without bypasses!`);
   await prisma.$disconnect();
+  await pool.end();
   process.exit(0);
 }
 
 main().catch(async (e) => {
   console.error("Fatal audit error:", e);
   await prisma.$disconnect();
+  await pool.end();
   process.exit(1);
 });

@@ -77,6 +77,13 @@ async function runTest03() {
       await prisma.invitation.delete({
         where: { id: inv.id }
       });
+
+      // Hapus order terkait user uji agar tidak menyisakan data yatim
+      if (inv.userId) {
+        await prisma.order.deleteMany({
+          where: { userId: inv.userId }
+        });
+      }
       deletedCount++;
     }
 

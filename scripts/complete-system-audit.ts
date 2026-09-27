@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { prisma } from "../lib/prisma";
+import { prisma, pool } from "../lib/prisma";
 import { applyUpgradePlan } from "../lib/upgradeHelper";
 import { buildAndSavePublishedHtml, deletePublishedHtml } from "../lib/staticPublisher";
 import { hasPlanCapability } from "../lib/settings";
@@ -571,6 +571,7 @@ async function runCompleteSystemAudit() {
   console.log("================================================================================");
 
   await prisma.$disconnect();
+  await pool.end();
   return allPassed;
 }
 

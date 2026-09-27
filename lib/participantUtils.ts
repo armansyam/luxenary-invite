@@ -76,27 +76,3 @@ export function safeParseParticipants(raw: string | null | undefined): Record<st
     return {};
   }
 }
-
-/**
- * Returns the primary human-readable display title/subject for an invitation based on eventType.
- */
-export function getEventSubject(eventType: string | undefined | null, rawJson: string | null | undefined, fallbackCouple?: string): string {
-  const p = safeParseParticipants(rawJson);
-  const type = (eventType || "WEDDING").toUpperCase();
-
-  switch (type) {
-    case "BIRTHDAY":
-      return p.person?.name || p.person?.nickname || "Ulang Tahun";
-    case "KHITAN":
-      return p.child?.name || p.child?.nickname || "Walimatul Khitan";
-    case "AQIQAH":
-      return p.baby?.name || p.baby?.nickname || "Tasyakuran Aqiqah";
-    case "WISUDA":
-      return p.graduate?.name || p.graduate?.nickname || "Wisuda";
-    case "GATHERING":
-      return p.event?.title || "Gathering";
-    case "WEDDING":
-    default:
-      return fallbackCouple || "Mempelai";
-  }
-}

@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { prisma } from "../lib/prisma";
+import { prisma, pool } from "../lib/prisma";
 import { applyUpgradePlan } from "../lib/upgradeHelper";
 import { buildAndSavePublishedHtml, deletePublishedHtml } from "../lib/staticPublisher";
 import fs from "fs";
@@ -66,7 +66,7 @@ async function main() {
       data: {
         userId: testUser.id,
         orderId: testOrder.id,
-        themeId: "aruna",
+        themeId: "candani",
         invitationSlug: `qa-wedding-${Date.now()}`,
         subdomain: `qa-sub-${Date.now()}`,
         groomName: "Dimas Pratama",
@@ -308,8 +308,13 @@ async function main() {
 
   } catch (err: any) {
     console.error("❌ Terjadi kesalahan tak terduga selama stress test:", err);
+    results["UNEXPECTED_EXCEPTION"] = {
+      pass: false,
+      detail: `Fatal error: ${err?.message || String(err)}`,
+    };
   } finally {
     await prisma.$disconnect();
+    await pool.end();
   }
 
   console.log("\n================================================================================");

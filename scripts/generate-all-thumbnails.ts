@@ -4,9 +4,57 @@ import fs from "fs";
 import path from "path";
 import sharp from "sharp";
 
-const PORT = 9333;
-const CHROME_PATH = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+const PORT = Number(process.env.CDP_PORT) || 9333;
+const BASE_URL = process.env.APP_URL || process.env.TEST_API_BASE || "http://localhost:3000";
 const DEMO_DIR = path.join(process.cwd(), "public/demo");
+
+function resolveChromePath(): string {
+  if (process.env.CHROME_PATH && fs.existsSync(process.env.CHROME_PATH)) {
+    return process.env.CHROME_PATH;
+  }
+  const candidates = [
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/Applications/Chromium.app/Contents/MacOS/Chromium",
+    "/usr/bin/google-chrome",
+    "/usr/bin/google-chrome-stable",
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  throw new Error(
+    "Chrome / Chromium binary not found. Please install Chrome or set the CHROME_PATH environment variable."
+  );
+}
+
+async function checkServerRunning(baseUrl: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    try {
+      const url = new URL(baseUrl);
+      const req = http.get(
+        {
+          hostname: url.hostname,
+          port: url.port ? Number(url.port) : 80,
+          path: "/",
+          timeout: 3000,
+        },
+        (res) => {
+          resolve(res.statusCode !== undefined && res.statusCode < 500);
+        }
+      );
+      req.on("error", () => resolve(false));
+      req.on("timeout", () => {
+        req.destroy();
+        resolve(false);
+      });
+    } catch {
+      resolve(false);
+    }
+  });
+}
 
 async function waitPortReady(retries = 30, delayMs = 300): Promise<any> {
   for (let i = 0; i < retries; i++) {
@@ -33,11 +81,19 @@ async function main() {
   console.log("   Mode Mobile  : 400 × 800 px (True DevTools Mobile Emulation)");
   console.log("   Mode Desktop : 1280 × 800 px (True DevTools Desktop Emulation)");
   console.log("   API Engine   : Page.captureScreenshot (DevTools Native Menu)");
+  console.log(`   Target Server: ${BASE_URL}`);
   console.log("==================================================================");
 
-  if (!fs.existsSync(CHROME_PATH)) {
-    throw new Error(`Chrome binary not found at: ${CHROME_PATH}`);
+  // Pre-flight check: ensure Next.js dev server is reachable
+  const isServerUp = await checkServerRunning(BASE_URL);
+  if (!isServerUp) {
+    console.error(`\n❌ ERROR: Target web server is not reachable at: ${BASE_URL}`);
+    console.error("   Capturing screenshots while the server is down will corrupt theme thumbnails with browser error pages.");
+    console.error("   👉 Please start your Next.js server in a separate terminal with: npm run dev\n");
+    process.exit(1);
   }
+
+  const chromePath = resolveChromePath();
 
   const args = process.argv.slice(2);
   const isDesktopOnly = args.includes("--desktop-only") || args.includes("--desktop");
@@ -55,7 +111,7 @@ async function main() {
   console.log(`Found ${allThemes.length} theme(s) to process: ${allThemes.join(", ")}`);
 
   const tempProfile = `/tmp/lux_cdp_profile_${Date.now()}`;
-  const chromeProc = spawn(CHROME_PATH, [
+  const chromeProc = spawn(chromePath, [
     "--headless=new",
     "--disable-gpu",
     "--hide-scrollbars",
@@ -100,10 +156,14 @@ async function main() {
     await new Promise((resolve) => (ws.onopen = resolve));
 
     let count = 0;
+    let mobileSuccess = 0;
+    let desktopSuccess = 0;
+    const failedThemes: { id: string; error: string }[] = [];
+
     for (const themeId of allThemes) {
       count++;
       console.log(`\n[${count}/${allThemes.length}] Processing "${themeId}"...`);
-      const themeDemoUrl = `http://localhost:3000/demo/${themeId}`;
+      const themeDemoUrl = `${BASE_URL}/demo/${themeId}`;
 
       const mobileDest = path.join(DEMO_DIR, themeId, "thumbnail_mobile.webp");
       const desktopDest = path.join(DEMO_DIR, themeId, "thumbnail_desktop.webp");
@@ -158,9 +218,11 @@ async function main() {
               .toFile(mobileDest);
 
             const mStat = fs.statSync(mobileDest);
+            mobileSuccess++;
             console.log(`   📱 Mobile (400x800): Saved (${Math.round(mStat.size / 1024)} KB)`);
           } catch (err: any) {
             console.error(`   ❌ Mobile error: ${err.message}`);
+            failedThemes.push({ id: `${themeId} (mobile)`, error: err.message });
           }
         }
 
@@ -190,13 +252,16 @@ async function main() {
               .toFile(desktopDest);
 
             const dStat = fs.statSync(desktopDest);
+            desktopSuccess++;
             console.log(`   💻 Desktop (1280x800): Saved (${Math.round(dStat.size / 1024)} KB)`);
           } catch (err: any) {
             console.error(`   ❌ Desktop error: ${err.message}`);
+            failedThemes.push({ id: `${themeId} (desktop)`, error: err.message });
           }
         }
       } catch (err: any) {
         console.error(`   ❌ Target error for ${themeId}: ${err.message}`);
+        failedThemes.push({ id: themeId, error: err.message });
       } finally {
         if (targetId) {
           try {
@@ -208,7 +273,15 @@ async function main() {
 
     ws.close();
     console.log("\n==================================================================");
-    console.log("✨ ALL 40 THEMES SUCCESSFULLY PROCESSED VIA DEVTOOLS SCREENSHOT!");
+    console.log(`✨ THUMBNAIL GENERATION COMPLETED: ${allThemes.length} THEME(S) PROCESSED`);
+    console.log(`   📱 Mobile Thumbnails  : ${mobileSuccess} saved`);
+    console.log(`   💻 Desktop Thumbnails : ${desktopSuccess} saved`);
+    if (failedThemes.length > 0) {
+      console.log(`   ⚠️ Failed Targets     : ${failedThemes.length} errors recorded:`);
+      failedThemes.forEach((f) => console.log(`      - ${f.id}: ${f.error}`));
+    } else {
+      console.log(`   ✅ All ${allThemes.length} theme(s) successfully captured via DevTools Screenshot!`);
+    }
     console.log("==================================================================");
   } finally {
     chromeProc.kill();

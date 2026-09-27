@@ -3550,7 +3550,6 @@ export function getDemoThemeData(themeId: string): DemoThemeData {
   return demo;
 }
 
-// Helper to ensure clean canonical local demo asset URLs
 function appendDemoAssetVersion(url?: string | null, v?: number | string): string {
   if (!url) return "";
   return url;

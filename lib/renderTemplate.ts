@@ -1,5 +1,15 @@
 import fs from "fs";
 import path from "path";
+import { masterTemplateCache } from "@/lib/cache";
+
+/** Helper pembacaan master template dengan memory cache untuk meminimalkan I/O disk */
+async function readMasterTemplate(filePath: string): Promise<string> {
+  const cached = masterTemplateCache.get(filePath);
+  if (cached) return cached;
+  const content = await fs.promises.readFile(filePath, "utf-8");
+  masterTemplateCache.set(filePath, content);
+  return content;
+}
 
 /** Sanitasi URL agar hanya mengizinkan karakter aman untuk digunakan di CSS url() */
 function sanitizeCssUrl(url: string): string {
@@ -1314,7 +1324,6 @@ export async function renderTemplateFile(
     }
   }
 
-  // Helper to check file existence asynchronously
   async function fileExists(p: string): Promise<boolean> {
     try {
       await fs.promises.access(p);
@@ -1392,7 +1401,7 @@ export async function renderTemplateFile(
     if (options?.invitationId) {
       const draftPath = path.join(process.cwd(), "data", "drafts", `${options.invitationId}.html`);
       try {
-        const masterContent = await fs.promises.readFile(tplPath, "utf-8");
+        const masterContent = await readMasterTemplate(tplPath);
         const currentEvent = (options?.eventType || data?.eventType || info.eventType || "WEDDING").toUpperCase();
         const headerTags = `<!-- lux-theme:${templateName} -->\n<!-- lux-event:${currentEvent} -->\n`;
         const cleanedMaster = masterContent
@@ -1407,7 +1416,10 @@ export async function renderTemplateFile(
     }
   }
 
-  let tpl = await fs.promises.readFile(tplPath, "utf-8");
+  // Jika berupa berkas master tema, gunakan cache in-memory. Jika piring draft klien, baca langsung.
+  let tpl = tplPath.includes("/data/drafts/")
+    ? await fs.promises.readFile(tplPath, "utf-8")
+    : await readMasterTemplate(tplPath);
 
   // Standarisasi banner kepemilikan dan proteksi Luxenary (Zero Hardcode & Identitas Publik Resmi)
   if (tpl.startsWith("<!--")) {

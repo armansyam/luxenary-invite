@@ -38,12 +38,11 @@ export async function uploadFile(buffer: Buffer, relativePath: string, mimeType:
       Key: relativePath,
       Body: buffer,
       ContentType: mimeType,
-      CacheControl: "public, max-age=31536000, immutable"
+      CacheControl: "public, max-age=31536000, immutable",
     });
 
     await s3Client.send(command);
 
-    // Return the public URL
     const publicUrl = (process.env.S3_CUSTOM_DOMAIN || process.env.S3_PUBLIC_URL)?.replace(/\/$/, "");
     return `${publicUrl}/${relativePath}`;
   } 
@@ -232,7 +231,6 @@ export async function syncDraftToR2(invitationId: string): Promise<void> {
       ".mp3": "audio/mpeg",
     };
 
-    // Helper to sync single file
     const syncSingleUrl = async (url: string | null): Promise<string | null> => {
       if (!url || !url.startsWith("/uploads/")) return url;
       

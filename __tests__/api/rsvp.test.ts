@@ -148,7 +148,7 @@ describe("POST /api/public/rsvp — validasi input", () => {
       guestCount: 2,
       message: null,
     };
-    mockTransaction.mockImplementation(async (fn: Function) => {
+    mockTransaction.mockImplementation(async (fn: (tx: any) => Promise<any> | any) => {
       // Simulasi: tidak ada guest terdaftar, tidak ada RSVP existing
       const tx = {
         $executeRaw: vi.fn().mockResolvedValue(1),

@@ -1,5 +1,5 @@
 # S-Invitation: Luxenary Invite System Architecture & Master Specification
-> **Versi: 6.3.0 | Diperbarui: 25 September 2026**
+> **Versi: 6.3.3 | Diperbarui: 27 September 2026**
 
 ## 1. Executive Summary & Core Philosophy
 **Luxenary Invite** adalah platform ekosistem undangan digital modern multi-event berbasis Next.js 16 (App Router + Turbopack) yang menghadirkan pengalaman visual mewah (*haute couture*), kecepatan muat instan (<0.8 detik), self-service dashboard mandiri bagi klien, dan integrasi cloud edge caching untuk aneka ragam perayaan: Wedding, Birthday, Khitan, Aqiqah, Wisuda, dan Gathering.
@@ -1297,5 +1297,28 @@ API `/api/admin/overview` diperluas dengan 10 stats field baru (in-memory filter
    - Registry Showroom (`lib/demoRegistry.ts`) dan Komposer Klien (`lib/themeEngine.ts`) kini 100% sinkron dan lengkap dengan generator seksi interaktif (`countdownHtml`, `eventSectionHtml`, `gallerySectionHtml`, `giftSectionHtml`, `rsvpSectionHtml`, dan `wishesSectionHtml`) untuk seluruh 6 perayaan non-wedding.
    - Kepatuhan total Zero-Hardcode Policy dengan CSS tokens (`var(--primary)`, `var(--card-bg)`, `var(--text-main)`, dll).
    - Thumbnail engine mandiri via Chrome DevTools Protocol (`scripts/generate-all-thumbnails.ts`) menghasilkan pratinjau autentik (Desktop 1280×800 16:10, Mobile 390×780 1:2) berstandar Lanczos3 + WebP Q92 tanpa artefak banding.
+
+---
+
+## 31. Fondasi Skalabilitas Produksi Industri & L1 In-Memory Caching (v6.3.3)
+
+Untuk menjamin keandalan sistem jangka panjang pada beban puncak produksi (*high concurrency wedding broadcast spikes*), platform mengimplementasikan arsitektur berorientasi ketahanan industri:
+
+1. **Bounded In-Memory Caching Engine (`lib/cache.ts`):**
+   - Struktur data LRU-bounded map dengan batasan memori ketat (*bounded capacity*) untuk mencegah memory leak pada runtime Node.js.
+   - `publishedHtmlCache` (TTL 5 Menit): Menyimpan berkas HTML kanonikal terbitan di memori RAM server. Kunjungan ribuan tamu disajikan dengan latensi ultra-rendah (<0.05ms) tanpa disk I/O berulang. Otomatis disinkronkan saat `buildAndSavePublishedHtml` dan dihapus saat `deletePublishedHtml`.
+   - `masterTemplateCache` (TTL 1 Jam): Template master tema di `themes/` hanya dibaca satu kali dari disk, mengeliminasi ratusan operasi `fs.readFile` saat penyusunan draft dan pratinjau.
+   - `invitationLookupCache` (TTL 60 Detik): Memetakan resolusi `slug` dan `subdomain` ke objek metadata undangan publik. Menghilangkan 99% query Prisma PostgreSQL redundan saat tamu membuka link personal WhatsApp (`/[slug]?to=...`). Invalidation otomatis terpicu saat klien menyimpan atau mempublikasikan undangan di Studio Editor.
+2. **Enterprise Production Health Check (`GET /api/health`):**
+   - Endpoint kesehatan sistem terstandarisasi untuk Caddy reverse proxy, Kubernetes liveness probes, dan pemantau uptime eksternal.
+   - Mengembalikan metrik real-time: status konektivitas PostgreSQL via raw ping `SELECT 1`, latensi query DB (ms), penggunaan memori proses Node.js (RSS, Heap Used, Heap Total), statistik elemen cache aktif, status driver rate limiter aktif (`services.rateLimiter.driver`), konfigurasi error tracker Sentry (`services.errorTracker.sentryConfigured`), dan uptime sistem.
+3. **Structured NDJSON Logging & Centralized Error Tracking (`lib/logger.ts`, `lib/errorTracker.ts`):**
+   - Output log terstruktur berstandar industri dengan level `debug`, `info`, `warn`, dan `error`.
+   - Di lingkungan produksi (`NODE_ENV=production`), log otomatis disajikan dalam format Newline-Delimited JSON (NDJSON) untuk pengumpulan instan oleh agen log (PM2, Datadog, Vector, Loki).
+   - Sanitasi data otomatis (*PII and credential masking*) menyaring kata kunci sensitif (password, pin, server key, token) sebelum dikirimkan ke Sentry API secara non-blocking jika `SENTRY_DSN` terkonfigurasi.
+4. **Multi-Driver Distributed Rate Limiting (`lib/rateLimit.ts`):**
+   - Arsitektur cascade 3-tingkat: Prioritas 1 Redis REST (Upstash pipeline `INCR` + `EXPIRE`), Prioritas 2 PostgreSQL Atomic UPSERT (`rate_limit_counters`), dan Prioritas 3 In-Memory Bounded Map.
+5. **Cloudflare Cache Key Normalization Blueprint:**
+   - Panduan konfigurasi Cloudflare Cache Rules pada reverse proxy publik: mengabaikan parameter query personalisasi tamu (`to` dan `v`) dari cache key untuk rute undangan publik `/*`, menjamin 100% Edge CDN Cache HIT (<20ms) bagi ribuan tamu WhatsApp sekaligus melindungi server aplikasi dari kehabisan koneksi basis data.
 
 

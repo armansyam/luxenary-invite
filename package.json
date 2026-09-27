@@ -18,6 +18,7 @@
     "test:hygiene": "npx tsx scripts/audit-code-hygiene.ts",
     "cron:cleanup": "npx tsx scripts/cron-cleanup.ts",
     "audit:integrity": "npx tsx scripts/audit-theme-integrity.ts",
+    "themes:sync": "npx tsx scripts/sync-themes.ts",
     "generate:thumbnails": "npx tsx scripts/generate-all-thumbnails.ts",
     "test:unit": "vitest run --reporter=verbose",
     "test:unit:watch": "vitest --reporter=verbose",

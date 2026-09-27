@@ -50,8 +50,15 @@ function PendingContent() {
         <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-6 text-sm text-stone-400">
           <div className="flex items-center justify-between mb-2">
             <span>Status Pembayaran</span>
-            <span className={`font-bold ${orderStatus === "PAID" ? "text-emerald-400" : "text-amber-400"}`}>
-              {orderStatus === "PAID" ? "✓ LUNAS" : "⏳ MENUNGGU"}
+            <span className={`font-bold inline-flex items-center gap-1.5 ${orderStatus === "PAID" ? "text-emerald-400" : "text-amber-400"}`}>
+              {orderStatus === "PAID" ? (
+                <span>✓ LUNAS</span>
+              ) : (
+                <>
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                  <span>MENUNGGU</span>
+                </>
+              )}
             </span>
           </div>
           <div className="flex items-center justify-between">

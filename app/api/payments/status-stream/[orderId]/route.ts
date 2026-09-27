@@ -65,7 +65,7 @@ export async function GET(
     });
   }
 
-  // Buka SSE stream — tunggu event dari webhook iPaymu
+  // Buka SSE stream — tunggu event dari webhook pembayaran (Midtrans/Xendit/Transfer)
   const stream = new ReadableStream({
     start(controller) {
       const encoder = new TextEncoder();

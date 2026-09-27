@@ -154,6 +154,17 @@ async function runTest() {
     console.log("\n[Step 7] Membersihkan data uji coba...");
     await purgeNasArchive(testSlug);
     await prisma.invitation.delete({ where: { id: testInv.id } });
+
+    // Hapus draft dan published HTML uji jika ada (Zero Disk Leak)
+    const draftPath = path.join(process.cwd(), "data", "drafts", `${testInv.id}.html`);
+    if (fs.existsSync(draftPath)) {
+      try { await fs.promises.unlink(draftPath); } catch {}
+    }
+    const pubPath = path.join(process.cwd(), "public", "published", "ids", `${testInv.id}.html`);
+    if (fs.existsSync(pubPath)) {
+      try { await fs.promises.unlink(pubPath); } catch {}
+    }
+
     if (isEphemeralUser) {
       await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
     }

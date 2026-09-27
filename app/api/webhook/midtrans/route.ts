@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { applyUpgradePlan } from "@/lib/upgradeHelper";
 import { paymentEmitter } from "@/lib/paymentEvents";
 import { processOrderPaidMarketing, releaseOrderPromoHold } from "@/lib/marketing";
+import { logger } from "@/lib/logger";
+import { captureException } from "@/lib/errorTracker";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -131,7 +133,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Validasi Gateway Ownership — tolak jika order sudah dipindah ke gateway lain
-    // Contoh: admin switch dari Midtrans ke iPaymu, lalu Midtrans kirim webhook telat
+    // Contoh: admin switch dari Midtrans ke Xendit, lalu Midtrans kirim webhook telat
     const orderGatewayId = (order as any).gatewayId as string | null;
     if (orderGatewayId && orderGatewayId !== "midtrans") {
       console.warn(`[Midtrans Webhook] Order ${orderId} gatewayId=${orderGatewayId}, bukan midtrans — diabaikan.`);
@@ -183,6 +185,12 @@ export async function POST(req: NextRequest) {
       // Push notifikasi real-time ke browser klien via SSE
       paymentEmitter.emit(orderId, { status: "PAID", planType: order.planType });
 
+      logger.info("MidtransWebhook", `Order ${orderId} settlement processed.`, {
+        orderId,
+        planType: order.planType,
+        trxStatus,
+      });
+
     } else if (trxStatus === "expire" || trxStatus === "cancel" || trxStatus === "deny") {
       await prisma.order.updateMany({
         where: { id: orderId, status: "PENDING" },
@@ -194,11 +202,16 @@ export async function POST(req: NextRequest) {
 
       // Push notifikasi real-time ke browser klien via SSE
       paymentEmitter.emit(orderId, { status: "EXPIRED", planType: order.planType });
+
+      logger.warn("MidtransWebhook", `Order ${orderId} marked as EXPIRED/CANCELLED (${trxStatus}).`, {
+        orderId,
+        trxStatus,
+      });
     }
 
     return NextResponse.json({ status: "ok" });
   } catch (error: any) {
-    console.error("[Midtrans Webhook Error]", error);
+    captureException(error, { path: "/api/webhook/midtrans", method: "POST" });
     return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Internal server error" : (error.message || "Internal server error") }, { status: 500 });
   }
 }

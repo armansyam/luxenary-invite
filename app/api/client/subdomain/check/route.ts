@@ -59,7 +59,9 @@ export async function GET(req: Request) {
             eventDateToTest = parsed[0].date;
           }
         }
-      } catch {}
+      } catch (err) {
+        console.warn(`[SubdomainCheck] Failed to parse eventData for invitation ${existing.id}:`, err);
+      }
 
       // If holding invitation has expired (> 7 days post event), it can be recycled!
       const isExpired = eventDateToTest ? (new Date(eventDateToTest).getTime() + 7 * 24 * 60 * 60 * 1000 < Date.now()) : false;

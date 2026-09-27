@@ -57,23 +57,76 @@ export function rateLimit(ip: string, limit: number, windowMs: number): boolean 
 }
 
 /**
- * Rate Limiter berbasis PostgreSQL UPSERT Atomik (Cross-Process / PM2 Cluster Safe).
+ * Driver Status Rate Limiter Aktif
+ */
+export function getActiveRateLimitDriver(): "redis" | "postgresql" | "memory" {
+  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    return "redis";
+  }
+  return "postgresql";
+}
+
+/**
+ * Driver 1: Upstash Redis REST API Driver (Zero NPM Dependencies)
+ * Eksekusi atomik <10ms yang membebaskan basis data PostgreSQL dari I/O hitungan request.
+ */
+async function rateLimitRedis(key: string, limit: number, windowMs: number): Promise<boolean | null> {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return null;
+
+  const windowSec = Math.ceil(windowMs / 1000);
+  const redisKey = `rl:${key}`;
+
+  try {
+    const res = await fetch(`${url}/pipeline`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify([
+        ["INCR", redisKey],
+        ["EXPIRE", redisKey, windowSec, "NX"],
+      ]),
+      signal: AbortSignal.timeout(1500),
+    });
+
+    if (!res.ok) return null;
+    const json = await res.json();
+    const currentCount = json[0]?.result;
+    if (typeof currentCount === "number") {
+      return currentCount <= limit;
+    }
+    return null;
+  } catch {
+    return null; // Graceful fallback ke PostgreSQL
+  }
+}
+
+/**
+ * Rate Limiter Multi-Driver Terdistribusi (Cascade: Redis -> PostgreSQL -> Memory)
  *
- * Aman digunakan di lingkungan PM2 multi-worker karena state tersimpan di DB,
- * bukan di memori proses Node.js. Gunakan untuk endpoint publik sensitif
- * (RSVP, memories upload, scan resepsionis) yang paling berisiko dari serangan
- * lintas worker.
- *
- * Menggunakan tabel sementara `rate_limit_counters` dengan INSERT ... ON CONFLICT DO UPDATE
- * untuk jaminan atomisitas di level engine PostgreSQL. Expired rows dibersihkan secara
- * lazy saat INSERT (tidak perlu cron terpisah).
+ * Aman digunakan di lingkungan PM2 multi-worker maupun kluster container.
+ * 1. Prioritas 1: Redis REST (Zero disk I/O, ultra-cepat).
+ * 2. Prioritas 2: PostgreSQL UPSERT Atomik (State tersimpan di tabel rate_limit_counters).
+ * 3. Prioritas 3: In-Memory Fallback jika basis data sedang dalam pemeliharaan.
  *
  * @param key   Identifier unik (misal "rsvp:192.168.1.1" atau "scan:10.0.0.2")
  * @param limit Batas maksimal request yang diizinkan dalam window
  * @param windowMs Jendela waktu dalam milidetik
- * @returns true jika diizinkan, false jika rate limited — async karena akses DB
+ * @returns true jika diizinkan, false jika rate limited
  */
 export async function rateLimitDb(key: string, limit: number, windowMs: number): Promise<boolean> {
+  // 1. Coba driver Redis jika dikonfigurasi
+  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    const redisResult = await rateLimitRedis(key, limit, windowMs);
+    if (redisResult !== null) {
+      return redisResult;
+    }
+  }
+
+  // 2. Driver PostgreSQL Atomik UPSERT
   try {
     const { pool } = await import("@/lib/prisma");
     const windowSec = Math.ceil(windowMs / 1000);
@@ -101,8 +154,7 @@ export async function rateLimitDb(key: string, limit: number, windowMs: number):
     const newCount = parseInt(result.rows[0]?.new_count ?? "1", 10);
     return newCount <= limit;
   } catch (err) {
-    // Fallback ke in-memory jika tabel belum ada atau DB sedang tidak tersedia
-    // agar endpoint tidak mati total karena masalah rate limiter
+    // 3. Fallback ke in-memory jika basis data tidak tersedia
     console.warn("[rateLimitDb] DB rate limit error, falling back to in-memory:", (err as Error).message);
     return rateLimit(key, limit, windowMs);
   }

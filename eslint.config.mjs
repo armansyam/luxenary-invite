@@ -27,6 +27,7 @@ const eslintConfig = defineConfig([
     "scripts/**",
     ".vscode_history_backup/**",
     ".claude/**",
+    "public/**",
   ]),
 ]);
 

@@ -12,7 +12,7 @@
  * - xendit   → Xendit (Invoice API)
  */
 
-import { PaymentGateway, GATEWAY_CATALOG, GatewayMeta } from "@/lib/gateways/types";
+import { PaymentGateway } from "@/lib/gateways/types";
 import { prisma } from "@/lib/prisma";
 
 /** Lazy import masing-masing gateway untuk menghindari bundle bloat */
@@ -77,20 +77,4 @@ export async function getActiveGateway(): Promise<PaymentGateway> {
  */
 export async function getGatewayById(gatewayId: string): Promise<PaymentGateway> {
   return loadGateway(gatewayId);
-}
-
-/**
- * Daftar semua gateway yang tersedia beserta metadata-nya.
- * Digunakan oleh Admin UI untuk menampilkan pilihan gateway.
- */
-export function getAllGateways(): GatewayMeta[] {
-  return GATEWAY_CATALOG;
-}
-
-/**
- * Metadata gateway aktif (untuk tampilan admin).
- */
-export async function getActiveGatewayMeta(): Promise<GatewayMeta | null> {
-  const id = await getActiveGatewayId();
-  return GATEWAY_CATALOG.find((g) => g.id === id) || null;
 }

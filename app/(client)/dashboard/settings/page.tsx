@@ -1795,9 +1795,9 @@ export default function SettingsPage() {
 
         {!canUseCustomDomain && !invitation?.customDomain ? (
           /* Mode Terkunci: Memerlukan kapabilitas Custom Domain */
-          <div className="p-5 rounded-2xl border border-violet-200 bg-violet-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="p-5 rounded-2xl border border-amber-200/80 bg-amber-50/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-violet-100 text-violet-800 flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-900 flex items-center justify-center shrink-0">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
@@ -1812,7 +1812,7 @@ export default function SettingsPage() {
             <div className="shrink-0">
               <a
                 href={invitation?.id ? `/dashboard/invitation/${invitation.id}` : "#"}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-violet-700 to-indigo-700 hover:from-violet-800 hover:to-indigo-800 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
                 <span>Upgrade ke Paket {tier3Name}</span>
