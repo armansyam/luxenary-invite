@@ -69,6 +69,7 @@ Dokumentasi ini mencakup seluruh instrumen pengelolaan bisnis, keuangan, 40 tema
 | **08** | [DEPLOYMENT_VPS_CADDY.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/DEPLOYMENT_VPS_CADDY.md) | **Infrastruktur Produksi**: Panduan komprehensif setup VPS Ubuntu dari nol, Swap 2 GB, Node.js 20, PostgreSQL, Caddy auto-SSL, PM2 cluster, dan skalabilitas multi-server shared storage NFS. |
 | **09** | [MANAJEMEN_FINANCE_DAN_PEMBUKUAN.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/MANAJEMEN_FINANCE_DAN_PEMBUKUAN.md) | **Finance & Kas Terpusat**: Continuous Editorial Canvas, 3 model grafik SVG 60 FPS (Dual Bar, Smooth Area, Net Flow Baseline Rp 0), buku kas keluar OPEX, audit-safe Tutup Buku bulanan, dan rekapitulasi PPh Final 0,5% siap SPT. |
 | **10** | [MANAJEMEN_MARKETING_DAN_AFILIASI.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/MANAJEMEN_MARKETING_DAN_AFILIASI.md) | **Marketing & Afiliasi**: Manajemen kupon diskon (persen/nominal), proteksi kasir 15 menit PromoHold, kemitraan referral B2B (WO/Vendor), komisi otomatis, dan integrasi pencairan komisi ke buku kas keuangan. |
+| **11** | [AGENT_HERMES_VPS_MONITORING.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/AGENT_HERMES_VPS_MONITORING.md) | **Sentinel Monitoring & Watchdog**: Mandat otonom Agent Hermes, 5 pos pengawasan kritis (PM2 liveness, PostgreSQL latency, Caddy/Cloudflare, resource disk/RAM, dan verifikasi backup harian 03:00). |
 
 ---
 
