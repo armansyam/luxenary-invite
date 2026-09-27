@@ -20,6 +20,28 @@ Sistem undangan platform **Luxenary Invite** menggunakan arsitektur **100% Nativ
 
 ---
 
+## 1.1. Inventaris Faktual 40 Tema Platform (Multi-Event)
+
+Saat ini platform memiliki **40 tema fisik mandiri** yang terdaftar di database dan disk, mencakup 6 jenis acara:
+
+| Jenis Acara (`eventType`) | Total Tema | Daftar Tema Aktif di Disk & Database |
+|:---|:---:|:---|
+| **WEDDING** | **34 Tema** | • **Minimalist (5):** `artisan`, `aurelia`, `kalandra`, `minimalist-elegant`, `minimalist-elegant-04`, `valente`<br>• **Modern (14):** `ameera`, `badrika`, `burgundy-royale`, `candani`, `chronicle`, `lumina`, `mayang`, `papercut`, `pink-castle`, `solaria`, `starlit-dreams`, `vintage-forest`, `wave`<br>• **Traditional (15):** `bone`, `bugis`, `bulukumba`, `dillalucky`, `gowa`, `lagaligo`, `makale`, `makassar`, `maros`, `prameswari`, `rantepao`, `soppeng`, `takalar`, `toraja`, `wajo` |
+| **BIRTHDAY** | **2 Tema** | • `kalandra-birthday` (Minimalist)<br>• `festivo` (Modern) |
+| **KHITAN** | **1 Tema** | • `al-fariz` (Traditional) |
+| **AQIQAH** | **1 Tema** | • `al-khalid` (Minimalist) |
+| **WISUDA** | **1 Tema** | • `cendekia` (Modern) |
+| **GATHERING** | **1 Tema** | • `sinergi` (Modern) |
+| **TOTAL** | **40 Tema** | **Tersinkronisasi 100% via `npm run themes:sync`** |
+
+### Sistem Thumbnail Ganda Beresolusi Tinggi (Retina DevTools)
+Setiap tema di direktori `public/demo/{themeId}/` wajib dilengkapi oleh dua berkas thumbnail WebP kompresi tajam:
+1. `thumbnail_mobile.webp`: Resolusi **400 × 800 px** (emulasi viewport smartphone, rasio 1:2).
+2. `thumbnail_desktop.webp`: Resolusi **1280 × 800 px** (emulasi viewport layar desktop/laptop, rasio 16:10).
+- Skrip generator otomatis: `npm run generate:thumbnails` ([`scripts/generate-all-thumbnails.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/scripts/generate-all-thumbnails.ts)) memanfaatkan Chrome DevTools Protocol (CDP) headless native screenshot.
+
+---
+
 ## 2. Alur Penambahan Tema Baru (*Upload & Auto-Compile*)
 
 Mulai versi ini, Admin dapat menambahkan tema baru secara langsung dari Dashboard Admin tanpa perlu menyalin file secara manual melalui server console/VS Code.

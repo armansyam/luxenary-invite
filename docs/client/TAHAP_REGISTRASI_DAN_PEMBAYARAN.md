@@ -83,18 +83,23 @@ flowchart TD
 
 ---
 
-### TAHAP 2: Pengecekan Keaktifan Akun (Onboarding Hub)
+### TAHAP 2: Pengecekan Keaktifan Akun (Onboarding Hub & Hard Payment Barrier)
 * **Halaman UI:** [`app/onboarding/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/onboarding/page.tsx)
 * **API Backend:** `GET /api/client/onboarding-state` ([`app/api/client/onboarding-state/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/onboarding-state/route.ts))
+* **Prinsip Gerbang Mutlak (*Hard Payment Barrier*):**
+  Pengguna yang belum memiliki pesanan `PAID` **mustahil** dapat mengakses `/dashboard` atau membuat draf undangan baru. Jika membuka rute dashboard secara langsung, pengguna akan dicegat dan diarahkan ke rute yang sesuai di bawah.
 * **Logika Keputusan:**
   1. Cek apakah ada record di tabel `Invitation` untuk user ini:
-     - Jika **ADA** ➔ Return `redirectUrl: "/dashboard"`.
-  2. Cek apakah ada record transaksi di tabel `Order`:
-     - Jika **TIDAK ADA SAMA SEKALI** (Akun belum aktif) ➔ Return **`redirectUrl: "/packages"`**.
-     - Jika ada transaksi `PAID` tapi belum isi setup ➔ Return `redirectUrl: "/dashboard/setup?order=ID&plan=PLAN"`.
-     - Jika ada transaksi masih `PENDING` ➔ Return `redirectUrl: "/checkout?order=ID"`.
+     - Jika **ADA** ➔ Return `redirectUrl: "/dashboard"`, `hasPaidOrder: true`.
+  2. Cek apakah ada record transaksi `PAID` di tabel `Order` (belum selesai setup):
+     - Jika **ADA** ➔ Return `redirectUrl: "/dashboard/setup?order=ID&plan=PLAN"`, `hasPaidOrder: true`.
+  3. Cek apakah ada record transaksi di tabel `Order`:
+     - Jika **TIDAK ADA SAMA SEKALI** (Akun baru belum bayar) ➔ Return **`redirectUrl: "/packages"`**, `hasPaidOrder: false`.
+     - Jika ada transaksi masih `PENDING`:
+       - Jika checkout sudah dikonfirmasi (`checkoutConfirmedAt`) ➔ Return `redirectUrl: "/payment?order=ID"`, `hasPaidOrder: false`.
+       - Jika checkout baru terbit ➔ Return `redirectUrl: "/checkout?order=ID"`, `hasPaidOrder: false`.
      - Jika ada transaksi `FAILED` karena ditolak admin (`rejectReason`) ➔ Tetap return `redirectUrl: "/checkout?order=ID"` agar klien melihat alasan penolakan dan mengunggah ulang bukti pembayaran pada tagihan yang sama.
-     - Jika ada transaksi `EXPIRED` (QRIS kedaluwarsa) ➔ Return `redirectUrl: "/checkout?plan=PLAN&msg=qris_expired"` untuk pembuatan sesi pembayaran baru.
+     - Jika ada transaksi `EXPIRED` (QRIS kedaluwarsa) ➔ Return `redirectUrl: "/checkout?plan=PLAN&msg=order_expired"` untuk pembuatan sesi pembayaran baru.
 
 ---
 

@@ -77,47 +77,112 @@ flowchart TD
 
 ### 2. Logika Penentu Rute
 *   **File:** [`app/api/client/onboarding-state/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/onboarding-state/route.ts)
-*   **Hirarki Keputusan (Decision Tree):**
+*   **Hirarki Keputusan (Decision Tree Faktual):**
     ```typescript
     // 1. Cek apakah user sudah memiliki undangan di database
     const existingInvitation = await prisma.invitation.findFirst({
-      where: { userId: session.user.id },
+      where: { userId: targetUserId },
       orderBy: { createdAt: "desc" },
     });
     if (existingInvitation) {
-      return NextResponse.json({ route: "/dashboard" });
+      return NextResponse.json({
+        step: "COMPLETED",
+        invitation: existingInvitation,
+        redirectUrl: "/dashboard",
+        hasPaidOrder: true,
+      });
     }
 
-    // 2. Ambil transaksi order terakhir pengguna
+    // 2. Cek apakah user sudah bayar lunas (PAID) tapi belum setup undangan
+    // Sesuai aturan: Yang sudah bayar langsung masuk ke dashboard setup studio
+    const paidOrder = await prisma.order.findFirst({
+      where: { userId: targetUserId, status: "PAID" },
+      orderBy: { createdAt: "desc" },
+    });
+    if (paidOrder) {
+      return NextResponse.json({
+        step: "PAID_NEED_SETUP",
+        orderId: paidOrder.id,
+        planType: paidOrder.planType,
+        redirectUrl: `/dashboard/setup?order=${paidOrder.id}&plan=${paidOrder.planType}`,
+        hasPaidOrder: true,
+      });
+    }
+
+    // 3. Ambil transaksi order terakhir pengguna
     const latestOrder = await prisma.order.findFirst({
-      where: { userId: session.user.id },
+      where: { userId: targetUserId },
       orderBy: { createdAt: "desc" },
     });
 
-    // 3. Jika belum pernah order sama sekali -> kirim ke katalog paket
+    // 4. Jika belum pernah order sama sekali -> kirim ke katalog paket
     if (!latestOrder) {
-      return NextResponse.json({ route: "/packages" });
-    }
-
-    // 4. Jika order sudah LUNAS (PAID) tapi belum memiliki undangan -> kirim ke setup wizard
-    if (latestOrder.status === "PAID") {
       return NextResponse.json({
-        route: `/dashboard/setup?order=${latestOrder.id}&plan=${latestOrder.planType}`,
+        step: "NO_ORDER",
+        redirectUrl: "/packages",
+        hasPaidOrder: false,
       });
     }
 
-    // 5. Jika order masih PENDING (Menunggu Pembayaran) -> kirim ke kasir untuk bayar
+    // 5. Kasus Order masih PENDING (Menunggu Pembayaran)
     if (latestOrder.status === "PENDING") {
+      const redirectUrl = latestOrder.checkoutConfirmedAt
+        ? `/payment?order=${latestOrder.id}`
+        : `/checkout?order=${latestOrder.id}`;
+
       return NextResponse.json({
-        route: `/checkout?order=${latestOrder.id}`,
+        step: "ORDER_PENDING",
+        orderId: latestOrder.id,
+        invoiceNumber: latestOrder.invoiceNumber,
+        planType: latestOrder.planType,
+        amount: Number(latestOrder.amount),
+        redirectUrl,
+        hasPaidOrder: false,
       });
     }
 
-    // 6. Jika order EXPIRED atau FAILED -> arahkan checkout ulang dengan notifikasi
+    // 6. Jika order FAILED karena ditolak admin -> kembali ke kasir dengan catatan penolakan
+    if (latestOrder.status === "FAILED") {
+      return NextResponse.json({
+        step: "ORDER_FAILED",
+        orderId: latestOrder.id,
+        invoiceNumber: latestOrder.invoiceNumber,
+        rejectReason: (latestOrder as any).rejectReason || null,
+        redirectUrl: `/checkout?order=${latestOrder.id}`,
+        hasPaidOrder: false,
+      });
+    }
+
+    // 7. Jika order EXPIRED -> buat order baru di katalog
     return NextResponse.json({
-      route: `/checkout?plan=${latestOrder.planType}&msg=order_expired`,
+      step: "ORDER_EXPIRED",
+      redirectUrl: `/checkout?plan=${latestOrder.planType}&msg=order_expired`,
+      hasPaidOrder: false,
     });
     ```
+
+### 3. Proteksi Mutlak: Klien Belum Bayar Dilarang Buka Dashboard
+- **Di Sisi UI Dashboard ([`app/(client)/dashboard/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/%28client%29/dashboard/page.tsx#L98-L110)):**
+  Jika pengguna yang belum memiliki undangan berstatus bayar mencoba mengakses `/dashboard`, komponen `useEffect` otomatis memanggil `/api/client/onboarding-state`. Ketika `redirectUrl` diterima (`/packages` atau `/payment`), router seketika mengeksekusi `router.replace(redirectUrl)`. Tidak ada celah bagi pengguna belum bayar untuk melihat isi antarmuka dashboard.
+- **Di Sisi Backend API ([`app/api/client/invitations/create/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/invitations/create/route.ts#L106-L130)):**
+  Sebelum mengeksekusi pembuatan draf, API memeriksa tabel `Order` milik user:
+  ```typescript
+  const paidOrder = await prisma.order.findFirst({
+    where: {
+      userId: userId,
+      status: "PAID",
+      OR: [{ invitation: null }, { invitation: { status: "DRAFT" } }],
+    },
+    orderBy: { paidAt: "desc" },
+  });
+  if (!paidOrder && !existingDraft) {
+    return NextResponse.json(
+      { error: "Anda belum memiliki paket yang aktif. Silakan selesaikan pembayaran terlebih dahulu." },
+      { status: 403 }
+    );
+  }
+  ```
+  Permintaan pembuatan draf tanpa order berstatus `PAID` dipastikan **gagal mutlak dengan HTTP 403 Forbidden**.
 
 ---
 
@@ -127,28 +192,31 @@ flowchart TD
 *   **File:** [`app/packages/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/packages/page.tsx)
 *   **Logika Dinamis:** Paket tidak di-hardcode. Halaman melakukan fetch ke `GET /api/public/settings` untuk mengambil konfigurasi paket dari database (`AdminSetting: platform_packages`).
 *   **Tingkatan Tier Paket:**
-    *   **TIER_1 (Serenade):** Paket esensial intim, undangan online berkelas, pemutar musik, RSVP & seluruh 19 tema terbuka.
-    *   **TIER_2 (Symphony):** Seluruh fitur Tier 1 + Resepsionis QR Check-In Scanner + Kamera Momen Tamu (200 Foto).
-    *   **TIER_3 (Eternity):** Seluruh fitur Tier 2 + Custom Domain Pribadi (.com/.id) inklusif + Kuota Momen Tamu Maksimal (500 Foto).
+    *   **TIER_1 (Serenade):** Paket esensial intim, undangan online berkelas, pemutar musik, galeri foto, RSVP & seluruh tema terbuka.
+    *   **TIER_2 (Symphony):** Seluruh fitur Tier 1 + Resepsionis QR Check-In Scanner + Kamera Momen Tamu.
+    *   **TIER_3 (Eternity):** Seluruh fitur Tier 2 + Custom Domain Pribadi (.com/.id) inklusif + Kuota Momen Tamu Maksimal.
 *   **Aksi:** Tombol "Pilih Paket" mengarahkan pengguna ke:
     `/checkout?plan=${packageId}`
 
 ---
 
-## Fase 4: Checkout & Kasir Pembayaran Multi-Gateway
+## Fase 4: Checkout & Kasir Pembayaran (Kontrol Penuh Admin)
 
-### 1. Antarmuka Kasir
-*   **File:** [`app/checkout/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/checkout/page.tsx)
-*   **Komponen Inti:**
-    *   Pembuat Order Otomatis: Memanggil `POST /api/orders/create` untuk menerbitkan ID Order unik berformat `INV-YYMMDD-XXXX`.
-    *   Kalkulator Diskon & Kode Promo: Memverifikasi kode voucher via database.
-    *   Pemilih Gateway: Menampilkan QRIS (Midtrans, iPaymu, Duitku, TriPay, Xendit) atau Transfer Manual (BCA, Mandiri, BRI, BNI).
+### 1. Antarmuka Kasir & Logika Saluran Pembayaran
+*   **File:** [`app/checkout/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/checkout/page.tsx) & [`app/payment/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/payment/page.tsx)
+*   **Aturan Saluran Pembayaran (*Zero Client Decision*):**
+    Klien **tidak memiliki pilihan** untuk memilih metode pembayaran sendiri. Saluran ditentukan 100% oleh Admin melalui `AdminSetting` key `payment_mode`:
+    - **Mode `GATEWAY`:** Kasir hanya memunculkan saluran QRIS otomatis (Midtrans/Xendit). Form transfer manual disembunyikan secara total.
+    - **Mode `MANUAL`:** Kasir hanya menampilkan nomor rekening bank admin dan form unggah foto bukti transfer. Gateway dinonaktifkan.
+*   **Alur Tagihan Terbit:**
+    1. Klien memilih paket $\rightarrow$ API `POST /api/orders/create` menerbitkan order `PENDING` dengan format invoice `INV-YYMMDD-XXXX`.
+    2. Jika checkout dikonfirmasi $\rightarrow$ status `checkoutConfirmedAt` dicatat, dan klien diarahkan ke halaman pembayaran aktif: `/payment?order=${order.id}`.
 
 ### 2. Penanganan Pembayaran Real-Time
 *   **File Stream SSE:** [`app/api/payments/status-stream/[id]/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/payments/status-stream/%5Bid%5D/route.ts)
 *   **Alur:**
     1. Klien membuka koneksi Server-Sent Events (SSE) saat kode QRIS ditampilkan di layar.
-    2. Saat pembeli memindai QRIS dan membayar via GoPay/OVO/BCA/ShopeePay, gateway mengirim Webhook HTTP POST ke:
+    2. Saat pembeli memindai QRIS dan membayar via m-Banking/e-Wallet, gateway mengirim Webhook HTTP POST ke:
        `app/api/payments/webhook/[provider]/route.ts`.
     3. Handler webhook memvalidasi checksum/signature, lalu mengupdate database:
        ```typescript

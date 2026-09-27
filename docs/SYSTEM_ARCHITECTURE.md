@@ -1,5 +1,5 @@
 # PLATFORM UNDANGAN (WHITE-LABEL) — DOKUMENTASI ARSITEKTUR SISTEM
-## Versi: 6.3.0 | Diperbarui: 25 September 2026
+## Versi: 6.3.3 | Diperbarui: 27 September 2026
 
 > **SUMBER KEBENARAN TUNGGAL** untuk semua developer dan AI Agent yang bekerja di repositori ini.  
 > Dokumen ini WAJIB dibaca sebelum melakukan perubahan apapun pada kode.  
@@ -2816,6 +2816,44 @@ Luxenary-Invite dielevasi dari sistem undangan pernikahan murni menjadi platform
 3. **Pintu Gerbang Kepatuhan Terpadu:**
    - `npm run audit:integrity`: Memverifikasi 100% dari 40 tema di disk memiliki file `thumbnail_desktop.webp` dan `thumbnail_mobile.webp`, merespons HTTP 200, bebas duplikasi hash, dan bersih dari kebocoran teks pernikahan.
    - `npm run test:hygiene`: Menguji ketiadaan kode hex mati (Zero-Hardcode Policy) pada tema dan komponen dinamis.
+
+---
+
+## 24. INVARIAN BISNIS MUTLAK, PAYMENT BARRIER & VPS INFRASTRUKTUR (v6.3.3)
+
+### 24.1 Gerbang Pembayaran Mutlak (*Hard Payment Barrier*)
+1. **Aturan Akses Dasbor Klien:**
+   - Akses ke `/dashboard`, `/dashboard/invitation/[id]`, `/dashboard/guests`, `/dashboard/rsvp`, `/dashboard/moments`, dan `/dashboard/settings` **DIBLOKIR MUTLAK** bagi pengguna yang belum menyelesaikan transaksi (`status: PAID`).
+   - Penanganan pada level client component ([`app/(client)/dashboard/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/%28client%29/dashboard/page.tsx)) dan endpoint state ([`app/api/client/onboarding-state/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/onboarding-state/route.ts)):
+     - Pengguna tanpa pesanan $\rightarrow$ dialihkan otomatis ke `/packages`.
+     - Pengguna dengan pesanan `PENDING` $\rightarrow$ dialihkan ke `/payment` (jika checkout terkonfirmasi) atau `/checkout`.
+     - Hanya pengguna dengan pesanan `PAID` yang diizinkan masuk ke `/dashboard/setup` lalu ke `/dashboard`.
+2. **Aturan Backend Pembuatan Draf ([`app/api/client/invitations/create/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/invitations/create/route.ts)):**
+   - API memverifikasi kepemilikan record `Order` dengan `status: "PAID"`.
+   - Jika order berbayar tidak ditemukan, request pembuatan draf langsung dibatalkan dengan **HTTP 403 Forbidden**. Tidak ada celah bagi pengguna belum bayar untuk membuat draf undangan.
+
+### 24.2 Kontrol Saluran Pembayaran (*100% Admin Controlled*)
+1. **Zero Client Decision:**
+   - Klien tidak dapat memilih sendiri apakah ingin mentransfer manual atau membayar via gateway.
+   - Mode ditentukan tunggal oleh Admin via database `AdminSetting` key `payment_mode`:
+     - `"GATEWAY"`: Menampilkan QRIS otomatis Midtrans/Xendit. Saluran manual transfer disembunyikan secara total.
+     - `"MANUAL"`: Menampilkan nomor rekening bank admin & form unggah bukti bayar. Saluran gateway dinonaktifkan.
+
+### 24.3 Multi-Tier In-Memory Caching (v6.3.3)
+1. **L1 RAM Cache (`publishedHtmlCache` di `lib/cache.ts`):**
+   - Menghasilkan respon HTML undangan terbit dalam waktu < 0.05ms tanpa menyiksa database atau I/O disk saat lonjakan ribuan tamu undangan membuka tautan secara bersamaan.
+   - Invalidation otomatis terjadi saat klien menekan tombol *Simpan Perubahan* atau *Publikasi*.
+2. **Rate Limiting 3-Tier (`lib/rateLimiter.ts`):**
+   - Membatasi serangan brute-force dan spam pada endpoint publik (RSVP, upload kenangan, scanner check-in) menggunakan token bucket algoritma sliding-window.
+
+### 24.4 Infrastruktur VPS Produksi (`amsdev@103.150.92.238`)
+1. **Domain:** `https://luxvite.id` via Reverse Proxy Caddy On-Demand TLS + Cloudflare DNS/Proxy.
+2. **Process Management:** Cluster PM2 2-instance port 3001, node environment `production`, zero-downtime reloads.
+3. **Gembok Registrasi Publik:** Kunci `serviceStatus.mode = "COMING_SOON"` (`isOpen: false`), menjamin sistem terlindungi dari pendaftaran publik sembarangan hingga Admin mengaktifkannya ke `OPEN`.
+4. **Maintenance Automation (OS Crontab Linux):**
+   - 02:00 WIB: Pembersihan file draf dan data sementara (`/api/cron/cleanup`).
+   - 03:00 WIB: Pencadangan otomatis database PostgreSQL (`/api/cron/backup`).
+
 
 
 

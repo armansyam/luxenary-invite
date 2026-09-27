@@ -188,8 +188,10 @@ Menyimpan riwayat callback / IPN dari payment gateway untuk idempotency dan debu
 
 #### 1. Tabel `invitations`
 Entitas pusat platform yang menyimpan konfigurasi undangan:
+- **Invarian Relasi Kritis (*Hard Payment Barrier*):** Record `invitations` hanya dapat dibuat jika `userId` pemilik memiliki pesanan terkait di tabel `orders` yang berstatus `PAID`. Klien tanpa order `PAID` dilarang membuat draf (HTTP 403 Forbidden) dan dilarang mengakses Dashboard.
 - `id` (UUID, Primary Key): Identitas unik undangan.
 - `userId` (UUID, Foreign Key): Pemilik undangan (`onDelete: Cascade`).
+- `orderId` (UUID, Foreign Key, Nullable): Relasi ke invoice pembelian paket berstatus `PAID`.
 - `eventType` (Enum `EventType` — 6 Nilai Resmi):
   - `WEDDING`: Pernikahan sakral tradisional & modern (default).
   - `BIRTHDAY`: Perayaan ulang tahun anak & dewasa.
