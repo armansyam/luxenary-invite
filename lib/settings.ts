@@ -211,12 +211,40 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
       rawList.push(`Guest Camera — Kamera Saku Tamu (Kapasitas Total ${totalPhotos} Foto — Aktif 1 bulan setelah acara)`);
     }
 
+    // Pisahkan dan selaraskan masa aktif undangan (1 tahun archive) dan retensi galeri foto tamu (30 hari)
+    const separatedList: string[] = [];
+    let hasInvitationDuration = false;
+    let hasGalleryRetention = false;
+
+    for (const item of rawList) {
+      if (/masa\s*aktif\s*undangan/i.test(item)) {
+        hasInvitationDuration = true;
+        separatedList.push("Masa aktif undangan 1 tahun (archive)");
+        if (/galeri/i.test(item) && caps.includes("guest_memories")) {
+          hasGalleryRetention = true;
+          separatedList.push("Penyimpanan galeri foto tamu 30 hari (unduh ZIP)");
+        }
+      } else if (/penyimpanan\s*galeri\s*(foto\s*tamu|momen)/i.test(item)) {
+        hasGalleryRetention = true;
+        separatedList.push("Penyimpanan galeri foto tamu 30 hari (unduh ZIP)");
+      } else {
+        separatedList.push(item);
+      }
+    }
+
+    if (!hasInvitationDuration) {
+      separatedList.push("Masa aktif undangan 1 tahun (archive)");
+    }
+    if (caps.includes("guest_memories") && !hasGalleryRetention) {
+      separatedList.push("Penyimpanan galeri foto tamu 30 hari (unduh ZIP)");
+    }
+
     const isLocalDevDomain = !activeDomain || activeDomain.includes("localhost") || activeDomain.includes("127.0.0.1") || activeDomain.includes("192.168.") || activeDomain.includes(":");
     const targetDomain = isLocalDevDomain ? "domainanda.id" : activeDomain;
     const nameTier1 = map["name_tier1"] || "Serenade";
     const nameTier2 = map["name_tier2"] || "Symphony";
 
-    return rawList.map(item => {
+    return separatedList.map(item => {
       let resolvedItem = item;
       if (resolvedItem.includes(".luxvite.id")) {
         resolvedItem = resolvedItem.replace(/\.luxvite\.id/g, `.${targetDomain}`);
