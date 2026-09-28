@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-09-27T08:56:03.532Z",
-  "durationMs": 135.03,
+  "timestamp": "2026-09-28T18:39:27.151Z",
+  "durationMs": 144.49,
   "database": {
     "usersDeleted": 0,
     "ordersDeleted": 0,
@@ -9,9 +9,12 @@
     "promoHoldsDeleted": 0
   },
   "filesystem": {
-    "orphanedDraftsDeleted": 0,
-    "orphanedPublishedHtmlDeleted": 0,
+    "orphanedDraftsDeleted": 1,
+    "orphanedPublishedHtmlDeleted": 1,
     "orphanedUploadDirsDeleted": 0,
-    "deletedFilesList": []
+    "deletedFilesList": [
+      "data/drafts/undefined.html",
+      "public/published/ids/undefined.html"
+    ]
   }
 }
