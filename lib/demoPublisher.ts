@@ -4,6 +4,7 @@ import { renderTemplateFile } from "./renderTemplate";
 import { composeDemoTemplateData } from "./demoRegistry";
 import { prisma } from "./prisma";
 import { getAdminSetting } from "./settings";
+import { masterTemplateCache } from "./cache";
 
 /**
  * Compiles a single theme demo into a standalone static HTML file in public/demo/[themeId]/index.html
@@ -13,6 +14,7 @@ export async function compileAndSaveStaticDemo(
   customDemoData?: any,
   forcedVersion?: number | string
 ): Promise<string> {
+  masterTemplateCache.clear();
   const cleanId = themeId.toLowerCase().trim();
   let resolvedData = customDemoData;
   let settingUpdatedAt: number = Date.now();
@@ -122,6 +124,9 @@ export async function compileAndSaveStaticDemo(
  * Triggered automatically when Admin clicks "Sync & Pembaruan Cache" or modifies Demo Studio.
  */
 export async function compileAllStaticDemos(): Promise<number> {
+  // Purge in-memory template cache before compiling all static demos so changes are always fresh
+  masterTemplateCache.clear();
+
   const themes = await prisma.theme.findMany({
     where: { isActive: true },
     select: { id: true },

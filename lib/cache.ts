@@ -100,3 +100,11 @@ export function invalidateInvitationLookup(invitationSlug?: string | null, subdo
     invitationLookupCache.delete(`subdomain:${subdomain}`);
   }
 }
+
+/**
+ * Invalidate cache master template HTML ketika tema diperbarui atau disinkronkan
+ */
+export function invalidateMasterTemplateCache(): void {
+  masterTemplateCache.clear();
+}
+

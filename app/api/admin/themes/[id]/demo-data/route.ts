@@ -142,6 +142,10 @@ export async function POST(
     });
 
     const version = updatedSetting.updatedAt ? new Date(updatedSetting.updatedAt).getTime() : Date.now();
+    // Invalidate in-memory template cache so fresh template is used
+    const { masterTemplateCache } = await import("@/lib/cache");
+    masterTemplateCache.clear();
+
     // Re-compile static demo HTML file instantly
     const { compileAndSaveStaticDemo } = await import("@/lib/demoPublisher");
     await compileAndSaveStaticDemo(themeId, body, version);

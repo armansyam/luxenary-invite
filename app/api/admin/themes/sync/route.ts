@@ -208,6 +208,10 @@ export async function POST() {
       },
     });
 
+    // Invalidate in-memory template cache so fresh disk content is always read
+    const { masterTemplateCache } = await import("@/lib/cache");
+    masterTemplateCache.clear();
+
     // Pre-compile all demo themes into static index.html files
     const { compileAllStaticDemos } = await import("@/lib/demoPublisher");
     const precompiledCount = await compileAllStaticDemos();

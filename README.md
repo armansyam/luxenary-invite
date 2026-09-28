@@ -579,7 +579,7 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
 ### Penguatan Skalabilitas Produksi Industri & Operasional Terdistribusi (v6.3.3 — 27 September 2026)
 - **Fase 1: Bounded Memory Cache Layer (`lib/cache.ts`)**:
   * `publishedHtmlCache` (TTL 5m): Menyajikan berkas HTML kanonikal terpublikasi langsung dari RAM (<0.05ms) tanpa I/O pembacaan disk berulang saat ribuan tamu mengakses undangan.
-  * `masterTemplateCache` (TTL 1h): Mengeliminasi I/O disk pembacaan master template HTML tema berulang di `lib/renderTemplate.ts`.
+  * `masterTemplateCache` (TTL 1h): Mengeliminasi I/O disk pembacaan master template HTML tema berulang di `lib/renderTemplate.ts` pada mode produksi. Bypass otomatis di dev mode dan auto-purge via `invalidateMasterTemplateCache()` saat sync tema atau kompilasi demo.
   * `invitationLookupCache` (TTL 60s): Memotong hingga 99% query PostgreSQL redundan pada routing publik `/[slug]` dan `/s/[subdomain]`. Di-invalidate secara instan saat klien mempublikasikan atau mengedit undangan.
 - **Fase 2: Robustness, Structured Logging & Multi-Driver Rate Limiter**:
   * **Structured NDJSON Logger (`lib/logger.ts`)**: Standardisasi log satu baris JSON untuk lingkungan produksi, memuat ISO timestamp, log level, module context, pesan, serta data kontekstual (siap untuk PM2, Vector, Loki, Datadog, CloudWatch).

@@ -1326,7 +1326,7 @@ Untuk menjamin keandalan sistem jangka panjang pada beban puncak produksi (*high
 1. **Bounded In-Memory Caching Engine (`lib/cache.ts`):**
    - Struktur data LRU-bounded map dengan batasan memori ketat (*bounded capacity*) untuk mencegah memory leak pada runtime Node.js.
    - `publishedHtmlCache` (TTL 5 Menit): Menyimpan berkas HTML kanonikal terbitan di memori RAM server. Kunjungan ribuan tamu disajikan dengan latensi ultra-rendah (<0.05ms) tanpa disk I/O berulang. Otomatis disinkronkan saat `buildAndSavePublishedHtml` dan dihapus saat `deletePublishedHtml`.
-   - `masterTemplateCache` (TTL 1 Jam): Template master tema di `themes/` hanya dibaca satu kali dari disk, mengeliminasi ratusan operasi `fs.readFile` saat penyusunan draft dan pratinjau.
+   - `masterTemplateCache` (TTL 1 Jam): Template master tema di `themes/` dibaca satu kali dari disk di mode produksi untuk mengeliminasi disk I/O. Di mode development, sistem membypass cache dan membaca langsung dari disk secara real-time. Sinkronisasi tema (`/api/admin/themes/sync`) dan kompilasi Demo Studio secara otomatis membersihkan cache via `invalidateMasterTemplateCache()` sebelum kompilasi file statis.
    - `invitationLookupCache` (TTL 60 Detik): Memetakan resolusi `slug` dan `subdomain` ke objek metadata undangan publik. Menghilangkan 99% query Prisma PostgreSQL redundan saat tamu membuka link personal WhatsApp (`/[slug]?to=...`). Invalidation otomatis terpicu saat klien menyimpan atau mempublikasikan undangan di Studio Editor.
 2. **Enterprise Production Health Check (`GET /api/health`):**
    - Endpoint kesehatan sistem terstandarisasi untuk Caddy reverse proxy, Kubernetes liveness probes, dan pemantau uptime eksternal.

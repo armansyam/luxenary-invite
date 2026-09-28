@@ -4,6 +4,10 @@ import { masterTemplateCache } from "@/lib/cache";
 
 /** Helper pembacaan master template dengan memory cache untuk meminimalkan I/O disk */
 async function readMasterTemplate(filePath: string): Promise<string> {
+  // Di mode development, selalu baca file fisik langsung dari disk agar perubahan template instan tanpa tertahan memori
+  if (process.env.NODE_ENV !== "production") {
+    return await fs.promises.readFile(filePath, "utf-8");
+  }
   const cached = masterTemplateCache.get(filePath);
   if (cached) return cached;
   const content = await fs.promises.readFile(filePath, "utf-8");

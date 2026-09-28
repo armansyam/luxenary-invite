@@ -378,7 +378,7 @@ Saat client menekan tombol "Publish", sistem memanggil `buildAndSavePublishedHtm
 
 ### 4.1 In-Memory Bounded Caching Layer (`lib/cache.ts`)
 Untuk menjamin stabilitas produksi jangka panjang dan menahan lonjakan trafik (*traffic spikes*) ribuan tamu serentak, platform mengintegrasikan modul memory cache berbatas (*bounded in-memory cache*):
-1. **`masterTemplateCache` (TTL 1 Jam):** Membaca berkas template HTML tema dari disk hanya 1x per proses, memangkas disk I/O baca template berulang.
+1. **`masterTemplateCache` (TTL 1 Jam):** Membaca berkas template HTML tema dari disk hanya 1x per proses di mode produksi. Di mode development (`NODE_ENV !== "production"`), pembacaan selalu langsung ke disk. Selain itu, sinkronisasi tema (`/api/admin/themes/sync`) dan kompilasi Demo Studio secara otomatis memanggil `masterTemplateCache.clear()` untuk menjamin file demo statis selalu mencerminkan revisi template master terbaru.
 2. **`publishedHtmlCache` (TTL 5 Menit):** Menyimpan berkas HTML publikasi kanonikal di RAM. Kunjungan tamu dilayani langsung dari memori tanpa pembacaan berkas disk berulang.
 3. **`invitationLookupCache` (TTL 60 Detik):** Memetakan resolusi routing publik (`slug` dan `subdomain`) ke status dan metadata undangan. Menghilangkan 99% query redundan ke basis data PostgreSQL saat ribuan tamu mengklik tautan undangan WhatsApp secara bersamaan. Di-invalidate seketika saat undangan di-publish atau diedit di Studio Klien.
 4. **Health Check Enterprise (`GET /api/health`):** Endpoint verifikasi status kesehatan sistem bagi reverse proxy Caddy, probe Kubernetes, dan monitoring uptime (melacak uptime, database latency ping `SELECT 1`, pemakaian memori RSS/heap, metrik ukuran cache, serta status driver rate limiter & error tracker).
