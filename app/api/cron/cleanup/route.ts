@@ -101,20 +101,81 @@ export async function POST(req: NextRequest) {
       select: {
         id: true,
         eventData: true,
+        featureSettings: true,
         galleryExpiresAt: true,
         invitationSlug: true,
         customDomain: true,
         subdomain: true,
+        groomName: true,
+        brideName: true,
+        user: {
+          select: {
+            email: true,
+            name: true,
+          },
+        },
       }
     });
 
     let cleanedCount = 0;
     let recycledSubdomainCount = 0;
+    let retentionWarningsSentCount = 0;
 
     for (const inv of finishedInvs) {
       const latestDate = getLatestEventDate(inv.eventData);
       const effectiveExpiry = inv.galleryExpiresAt || (latestDate ? new Date(latestDate.getTime() + (cleanupDays * 24 * 60 * 60 * 1000)) : null);
 
+      // ── 2A. PERINGATAN RETENSI (H-3 Hari Sebelum Cleanup) ──
+      if (effectiveExpiry && effectiveExpiry > now) {
+        const diffMs = effectiveExpiry.getTime() - now.getTime();
+        const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
+
+        if (diffMs <= threeDaysMs && inv.user?.email) {
+          let featObj: Record<string, any> = {};
+          try {
+            featObj = typeof inv.featureSettings === "string" ? JSON.parse(inv.featureSettings) : (inv.featureSettings || {});
+          } catch {}
+
+          if (!featObj.retentionWarningSentAt) {
+            const daysRemaining = Math.max(1, Math.ceil(diffMs / (24 * 60 * 60 * 1000)));
+            const expiryDateFormatted = effectiveExpiry.toLocaleDateString("id-ID", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            });
+            const totalPhotos = await prisma.guestMemory.count({ where: { invitationId: inv.id } });
+            const coupleNames = (inv.groomName && inv.brideName) ? `${inv.groomName} & ${inv.brideName}` : (inv.user.name || "Mempelai");
+
+            try {
+              const { sendRetentionExpiryAlertEmail } = await import("@/lib/mailer");
+              const mailRes = await sendRetentionExpiryAlertEmail({
+                invitationId: inv.id,
+                invitationSlug: inv.invitationSlug,
+                coupleNames,
+                daysRemaining,
+                expiryDateFormatted,
+                totalPhotos,
+                recipientEmail: inv.user.email,
+                recipientName: inv.user.name || coupleNames,
+              });
+
+              if (mailRes.success) {
+                featObj.retentionWarningSentAt = now.toISOString();
+                await prisma.invitation.update({
+                  where: { id: inv.id },
+                  data: { featureSettings: JSON.stringify(featObj) },
+                });
+                retentionWarningsSentCount++;
+                console.log(`[Cron Cleanup] Peringatan retensi (H-${daysRemaining}) terkirim ke ${inv.user.email} (inv: ${inv.id})`);
+              }
+            } catch (err: any) {
+              console.warn(`[Cron Cleanup] Gagal mengirim email peringatan retensi (inv: ${inv.id}):`, err.message);
+            }
+          }
+        }
+      }
+
+      // ── 2B. EKSEKUSI PEMBERSIHAN RETENSI (Saat Expired) ──
       if (effectiveExpiry && now > effectiveExpiry) {
         // 1. Hapus published HTML & draft lokal agar tidak ada disk leak di VPS
         await deletePublishedHtml(inv.id);
@@ -231,8 +292,9 @@ export async function POST(req: NextRequest) {
       transitionedInvitations: transitionCount,
       recycledSubdomains: recycledSubdomainCount,
       cleanedInvitations: cleanedCount,
+      retentionWarningsSent: retentionWarningsSentCount,
       deletedOrders: deletedOrdersCount.count,
-      message: `Pembersihan selesai: ${transitionCount} undangan ditransisikan ke selesai, ${recycledSubdomainCount} subdomain didaur ulang, ${cleanedCount} berkas foto/media kedaluwarsa dibersihkan.`,
+      message: `Pembersihan selesai: ${transitionCount} undangan ditransisikan ke selesai, ${retentionWarningsSentCount} peringatan retensi terkirim, ${recycledSubdomainCount} subdomain didaur ulang, ${cleanedCount} berkas foto/media kedaluwarsa dibersihkan.`,
     });
   } catch (error: any) {
     console.error("[Cleanup Cron Error]", error);

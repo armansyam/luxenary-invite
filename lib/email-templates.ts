@@ -33,6 +33,18 @@ export interface MemoriesQuotaAlertOptions {
   appUrl?: string;
 }
 
+export interface RetentionExpiryAlertOptions {
+  invitationId: string;
+  invitationSlug?: string;
+  coupleNames: string;
+  daysRemaining: number;
+  expiryDateFormatted: string;
+  totalPhotos: number;
+  recipientEmail: string;
+  recipientName?: string;
+  appUrl?: string;
+}
+
 export interface TestSmtpOptions {
   fromName: string;
   smtpHost: string;
@@ -376,9 +388,105 @@ export function buildTestSmtpHtml(opts: TestSmtpOptions): { subject: string; htm
 }
 
 /**
+ * 4. Template Peringatan Masa Aktif Galeri / Retensi Berakhir (H-3 / H-7)
+ */
+export function buildRetentionExpiryHtml(
+  opts: RetentionExpiryAlertOptions,
+  settings?: {
+    platformName?: string;
+    appUrl?: string;
+  }
+): { subject: string; html: string } {
+  const platformName = settings?.platformName || "LUXVITE";
+  const baseUrl = opts.appUrl || (typeof window !== "undefined" ? window.location.origin : process.env.NEXTAUTH_URL) || "https://luxvite.id";
+
+  const extendUrl = `${baseUrl}/dashboard/moments`;
+  const downloadUrl = `${baseUrl}/dashboard/moments`;
+
+  const subject = `[PENTING] Masa Simpan Galeri Foto Tamu Berakhir dalam ${opts.daysRemaining} Hari — ${opts.coupleNames}`;
+
+  const html = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${subject}</title>
+  <style>
+    body { margin: 0; padding: 0; background-color: #F7F5F0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #1C1917; -webkit-font-smoothing: antialiased; }
+    .container { max-width: 580px; margin: 0 auto; padding: 36px 16px; }
+    .card { background-color: #FFFFFF; border: 1px solid #EAE4D9; border-radius: 20px; padding: 34px 30px; box-shadow: 0 10px 30px rgba(44, 34, 20, 0.05); }
+    .header { text-align: center; border-bottom: 1px solid #EAE4D9; padding-bottom: 22px; margin-bottom: 24px; }
+    .brand { font-family: 'Cinzel', Georgia, serif; font-size: 16px; font-weight: 800; letter-spacing: 2.5px; text-transform: uppercase; color: #B45309; margin-bottom: 8px; }
+    .title { font-size: 18px; font-weight: 700; color: #1C1917; margin: 0 0 10px 0; letter-spacing: -0.2px; }
+    .badge { display: inline-block; padding: 5px 14px; border-radius: 9999px; font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; background-color: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+    .message-box { background-color: #FAF7F0; border-left: 4px solid #B45309; border-radius: 8px; padding: 18px; margin: 22px 0; font-size: 13px; line-height: 1.6; color: #44403C; }
+    .table-box { width: 100%; border-collapse: collapse; background-color: #FAF7F0; border: 1px solid #EAE4D9; border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
+    .table-box td { padding: 14px 16px; font-size: 12px; }
+    .cta-container { text-align: center; margin: 28px 0 20px 0; }
+    .btn-primary { display: inline-block; background: linear-gradient(135deg, #C9A227 0%, #A88218 100%); color: #FFFFFF !important; text-decoration: none; padding: 14px 28px; border-radius: 12px; font-weight: 700; font-size: 13px; letter-spacing: 0.3px; box-shadow: 0 8px 20px rgba(180, 83, 9, 0.22); }
+    .btn-secondary { display: inline-block; background: #FAF7F0; color: #78716C !important; text-decoration: none; padding: 12px 24px; border-radius: 12px; font-weight: 600; font-size: 12px; border: 1px solid #EAE4D9; margin-top: 10px; }
+    .footer { text-align: center; font-size: 11px; color: #8C827A; line-height: 1.6; border-top: 1px solid #EAE4D9; padding-top: 20px; margin-top: 24px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <div class="brand">${platformName}</div>
+        <h1 class="title">MASA SIMPAN FOTO TAMU SEGERA BERAKHIR</h1>
+        <span class="badge">TERAKHIR ${opts.daysRemaining} HARI LAGI</span>
+      </div>
+
+      <div class="message-box">
+        <p style="margin: 0 0 10px 0; font-weight: 700; color: #1C1917;">Halo ${opts.recipientName || opts.coupleNames},</p>
+        <p style="margin: 0; line-height: 1.6;">
+          Masa aktif penyimpanan foto kenangan momen pernikahan Anda di cloud storage akan berakhir pada <strong>${opts.expiryDateFormatted}</strong> (tersisa <strong>${opts.daysRemaining} hari lagi</strong>). Sesuai kebijakan retensi sistem, seluruh foto candid yang diunggah para tamu akan diarsipkan dan dibersihkan dari server demi menjaga privasi dan efisiensi penyimpanan data.
+        </p>
+      </div>
+
+      <table class="table-box">
+        <tr>
+          <td style="color: #78716C; border-bottom: 1px solid #F0ECE4;">Total Foto Kenangan Tamu:</td>
+          <td style="font-weight: 700; color: #1C1917; text-align: right; border-bottom: 1px solid #F0ECE4;"><strong>${opts.totalPhotos} Foto</strong></td>
+        </tr>
+        <tr>
+          <td style="color: #78716C;">Batas Waktu Pengunduhan / Perpanjangan:</td>
+          <td style="font-weight: 700; color: #DC2626; text-align: right;"><strong>${opts.expiryDateFormatted}</strong></td>
+        </tr>
+      </table>
+
+      <p style="font-size: 12px; color: #78716C; text-align: center; line-height: 1.6; margin: 0 0 18px 0;">
+        Silakan amankan dokumentasi pernikahan Anda sekarang atau perpanjang masa aktifnya:
+      </p>
+
+      <div class="cta-container">
+        <div>
+          <a href="${extendUrl}" class="btn-primary" target="_blank">
+            Perpanjang Masa Simpan (+30 Hari) &rarr;
+          </a>
+        </div>
+        <div>
+          <a href="${downloadUrl}" class="btn-secondary" target="_blank">
+            Unduh Semua Foto Kenangan (ZIP)
+          </a>
+        </div>
+      </div>
+
+      <div class="footer">
+        <p>Pemberitahuan resmi ini dikirimkan otomatis oleh sistem <strong>${platformName}</strong> untuk menjaga keamanan dokumentasi berharga pernikahan Anda.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  return { subject, html };
+}
+
+/**
  * ─────────────────────────────────────────────────────────────────────────────
  * EMAIL TEMPLATES CATALOGUE
- * Definisi 6 varian lengkap untuk pratinjau dan pengujian di /admin/emails
+ * Definisi 7 varian lengkap untuk pratinjau dan pengujian di /admin/emails
  * ─────────────────────────────────────────────────────────────────────────────
  */
 export const EMAIL_TEMPLATE_CATALOG: EmailTemplateMeta[] = [
@@ -574,6 +682,37 @@ export const EMAIL_TEMPLATE_CATALOG: EmailTemplateMeta[] = [
         ...overrides,
       };
       return buildTestSmtpHtml(merged);
+    },
+  },
+  {
+    key: "RETENTION_EXPIRY_WARNING",
+    name: "Peringatan Masa Simpan Galeri Berakhir (H-3)",
+    category: "PERINGATAN",
+    badgeText: "Tersisa 3 Hari",
+    description: "Peringatan penting bagi mempelai saat masa simpan foto roll tamu tersisa 3 hari sebelum diarsipkan dan dibersihkan dari cloud storage.",
+    triggerEvent: "Cron harian mendeteksi effectiveExpiry berada di rentang H-3 hari pasca acara",
+    recipientTarget: "Mempelai / Pemilik Undangan",
+    samplePayload: {
+      invitationId: "inv_demo_retention",
+      coupleNames: "Sarah & Dimas",
+      daysRemaining: 3,
+      expiryDateFormatted: "1 Oktober 2026",
+      totalPhotos: 84,
+      recipientEmail: "sarah.dimas@gmail.com",
+      recipientName: "Sarah & Dimas",
+    },
+    render: (overrides = {}, settings = {}) => {
+      const merged = {
+        invitationId: "inv_demo_retention",
+        coupleNames: "Sarah & Dimas",
+        daysRemaining: 3,
+        expiryDateFormatted: "1 Oktober 2026",
+        totalPhotos: 84,
+        recipientEmail: "sarah.dimas@gmail.com",
+        recipientName: "Sarah & Dimas",
+        ...overrides,
+      };
+      return buildRetentionExpiryHtml(merged, settings);
     },
   },
 ];

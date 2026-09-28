@@ -1822,18 +1822,20 @@ Sistem membaca konfigurasi server email secara real-time:
 ### 16.2 — Sistem Template Email Editorial Mewah (Warm White Cream & Royal Amber Gold)
 - **Palet Editorial Warm White Cream:** Menggunakan kanvas krem hangat (`#F7F5F0`), kartu putih bersih (`#FFFFFF`), border halus (`#EAE4D9`), tipografi elegan, dan aksen emas bangsawan (`#B45309`, `#C9A227`). Menghilangkan mode gelap gulita agar email tampil lebih ramah, hangat, dan konsisten di berbagai email client (Gmail, Apple Mail, Outlook).
 - **Modul Murni (`lib/email-templates.ts`):** Terisolasi penuh dari dependensi Node.js / `nodemailer`, sehingga aman diimpor di Client Component (Galeri Pratinjau), API Route, maupun Server Mailer.
-- **Katalog 6 Varian Lengkap (`EMAIL_TEMPLATE_CATALOG`):**
+- **Katalog 7 Varian Lengkap (`EMAIL_TEMPLATE_CATALOG`):**
   1. `PAID_INVITATION`: Kuitansi lunas resmi aktivasi paket undangan digital.
   2. `UNPAID_INVOICE`: Faktur tagihan baru menunggu pembayaran via QRIS / Payment Gateway.
   3. `PAID_EXTENSION`: Kuitansi konfirmasi perpanjangan retensi penyimpanan galeri tamu (+30 hari).
   4. `QUOTA_50`: Peringatan santun kuota roll kamera tamu terisi 50%.
   5. `QUOTA_100`: Peringatan kritis kuota roll kamera tamu 100% penuh.
-  6. `SMTP_DIAGNOSTIC`: Hasil uji coba koneksi handshake server SMTP admin.
+  6. `RETENTION_EXPIRY_WARNING`: Peringatan penting bagi mempelai saat masa simpan foto roll tamu tersisa 3 hari (H-3) sebelum diarsipkan dan dibersihkan dari cloud storage, dilengkapi tautan langsung download ZIP dan perpanjang masa simpan (+30 hari).
+  7. `SMTP_DIAGNOSTIC`: Hasil uji coba koneksi handshake server SMTP admin.
 - **Halaman Galeri & Pratinjau Interaktif (`/admin/emails`):**
-  - Switcher 6 template dengan filter kategori (Transaksi, Peringatan, Sistem).
+  - Switcher 7 template dengan filter kategori (Transaksi, Peringatan, Sistem).
   - Tampilan responsif ganda: Desktop (640px) vs Mobile (375px) via iframe terisolasi (`srcDoc`).
   - Pengujian live (*Live Test Send*) ke email administrator via endpoint `POST /api/admin/emails/preview-send`.
   - Penampil kode sumber HTML mentah dan tombol salin clipboard.
+- **Otomatisasi Cron Cleanup (`app/api/cron/cleanup/route.ts`):** Peringatan retensi dikirimkan secara otomatis pada jadwal cron harian bagi undangan pasca-acara yang mendekati tenggat (H-3) dengan tracking idempoten via `featureSettings.retentionWarningSentAt`.
 - Bebas dari emoji default OS untuk menjaga citra SaaS profesional.
 - Pengiriman email invoice dijalankan secara asynchronous non-blocking di dalam `applyUpgradePlan` setelah status order berubah menjadi `PAID`.
 

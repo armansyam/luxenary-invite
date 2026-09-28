@@ -133,7 +133,7 @@ export default function AdminEmailPreviewPage() {
         <div className="flex items-center gap-2">
           <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-800/60 border border-stone-700/50 text-xs text-stone-300">
             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span>6 Template Terpasang</span>
+            <span>7 Template Terpasang</span>
           </div>
           <Link
             href="/admin?tab=settings&sub=integrations"

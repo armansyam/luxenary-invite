@@ -4961,7 +4961,7 @@ export default function AdminPage() {
                         <div className="p-3.5 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                           <div>
                             <div className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
-                              <span>Galeri Template Email Transaksional (6 Varian)</span>
+                              <span>Galeri Template Email Transaksional (7 Varian)</span>
                               <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
                                 Warm White Cream
                               </span>
