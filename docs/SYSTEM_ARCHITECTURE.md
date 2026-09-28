@@ -1065,6 +1065,7 @@ ADMIN (auth required, role=ADMIN/SUPER_ADMIN):
   POST /api/admin/cache/purge         → Purge Next.js ISR & Cloudflare Edge CDN Cache (homepage, sitemap, packages, demo, public themes)
   POST /api/admin/settings            → Update platform settings
   POST /api/admin/test-smtp           → Uji coba handshake live email SMTP & pengiriman pesan diagnostik
+  POST /api/admin/emails/preview-send → Pengiriman live sampel template email tertentu ke inbox administrator
   POST /api/admin/test-storage        → Uji coba penulisan & pengukuran latensi cloud storage Cloudflare R2/S3
   GET  /api/admin/monitoring/health   → Metrik proses (CPU/RAM), kapasitas disk root VPS, kuota & ukuran riil Cloudflare R2 (ListObjectsV2), latensi database PostgreSQL, status SMTP
   POST /api/admin/custom-domains/check-dns → Live DNS resolver evaluator untuk A record & CNAME
@@ -1818,13 +1819,23 @@ Sistem membaca konfigurasi server email secara real-time:
 - `smtp_from_email`, `smtp_from_name`
 - **Graceful Non-Blocking Fallback:** Jika SMTP belum diisi oleh Admin, sistem mencatat pesan log aman dan proses aktivasi order/webhook tetap berjalan sukses 100% tanpa error fatal.
 
-### 16.2 — Generator Faktur Mewah (Dark-Luxury Responsive)
-- Desain template email HTML berpalet gelap eksklusif (*rich dark mode* `#0c0a09` dan `#1c1917`) dengan aksen emas tembaga (`#d97706`).
+### 16.2 — Sistem Template Email Editorial Mewah (Warm White Cream & Royal Amber Gold)
+- **Palet Editorial Warm White Cream:** Menggunakan kanvas krem hangat (`#F7F5F0`), kartu putih bersih (`#FFFFFF`), border halus (`#EAE4D9`), tipografi elegan, dan aksen emas bangsawan (`#B45309`, `#C9A227`). Menghilangkan mode gelap gulita agar email tampil lebih ramah, hangat, dan konsisten di berbagai email client (Gmail, Apple Mail, Outlook).
+- **Modul Murni (`lib/email-templates.ts`):** Terisolasi penuh dari dependensi Node.js / `nodemailer`, sehingga aman diimpor di Client Component (Galeri Pratinjau), API Route, maupun Server Mailer.
+- **Katalog 6 Varian Lengkap (`EMAIL_TEMPLATE_CATALOG`):**
+  1. `PAID_INVITATION`: Kuitansi lunas resmi aktivasi paket undangan digital.
+  2. `UNPAID_INVOICE`: Faktur tagihan baru menunggu pembayaran via QRIS / Payment Gateway.
+  3. `PAID_EXTENSION`: Kuitansi konfirmasi perpanjangan retensi penyimpanan galeri tamu (+30 hari).
+  4. `QUOTA_50`: Peringatan santun kuota roll kamera tamu terisi 50%.
+  5. `QUOTA_100`: Peringatan kritis kuota roll kamera tamu 100% penuh.
+  6. `SMTP_DIAGNOSTIC`: Hasil uji coba koneksi handshake server SMTP admin.
+- **Halaman Galeri & Pratinjau Interaktif (`/admin/emails`):**
+  - Switcher 6 template dengan filter kategori (Transaksi, Peringatan, Sistem).
+  - Tampilan responsif ganda: Desktop (640px) vs Mobile (375px) via iframe terisolasi (`srcDoc`).
+  - Pengujian live (*Live Test Send*) ke email administrator via endpoint `POST /api/admin/emails/preview-send`.
+  - Penampil kode sumber HTML mentah dan tombol salin clipboard.
 - Bebas dari emoji default OS untuk menjaga citra SaaS profesional.
-- **Kategori Dinamis:**
-  - **Aktivasi Paket (`NEW` / `UPGRADE`):** Tombol CTA mengarah ke Studio Undangan Klien.
-  - **Perpanjangan Galeri (`GALLERY_EXTENSION`):** Rincian penambahan +30 hari masa aktif penyimpanan foto dengan tombol CTA ke Galeri Momen.
-- Pengiriman email dijalankan secara asynchronous non-blocking di dalam `applyUpgradePlan` setelah status order berubah menjadi `PAID`.
+- Pengiriman email invoice dijalankan secara asynchronous non-blocking di dalam `applyUpgradePlan` setelah status order berubah menjadi `PAID`.
 
 ### 16.3 — Arsitektur Favicon & SEO Standar Google Search Central
 Untuk memenuhi spesifikasi Google Search agar logo/favicon muncul pada SERP:

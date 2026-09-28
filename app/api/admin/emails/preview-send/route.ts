@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import nodemailer from "nodemailer";
 import { getPublicPlatformSettings } from "@/lib/settings";
-import { buildTestSmtpHtml } from "@/lib/email-templates";
+import { EMAIL_TEMPLATE_CATALOG } from "@/lib/email-templates";
 
 export const dynamic = "force-dynamic";
 
@@ -19,17 +19,25 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const recipientEmail = (body.recipientEmail || session.user.email || "").trim();
+    const { templateKey, recipientEmail: customRecipient, customOverrides } = body;
 
+    const recipientEmail = (customRecipient || session.user.email || "").trim();
     if (!recipientEmail || !recipientEmail.includes("@")) {
       return NextResponse.json({ error: "Alamat email penerima tidak valid." }, { status: 400 });
+    }
+
+    const template = EMAIL_TEMPLATE_CATALOG.find((t) => t.key === templateKey);
+    if (!template) {
+      return NextResponse.json({ error: `Template email '${templateKey}' tidak ditemukan.` }, { status: 404 });
     }
 
     const settings = await getPublicPlatformSettings();
 
     if (!settings.smtpHost || !settings.smtpUser) {
       return NextResponse.json(
-        { error: "Kredensial SMTP belum lengkap di Pengaturan (Host & User wajib diisi)." },
+        {
+          error: "Server SMTP belum dikonfigurasi di Pengaturan Admin (Host & User wajib diisi).",
+        },
         { status: 400 }
       );
     }
@@ -46,43 +54,41 @@ export async function POST(req: NextRequest) {
         pass: settings.smtpPassword || "",
       },
       tls: {
-        rejectUnauthorized: false,
+        rejectUnauthorized: process.env.NODE_ENV === "production",
       },
     });
 
-    // 1. Verifikasi handshake koneksi SMTP
-    await transporter.verify();
+    const overrides = {
+      ...(template.samplePayload || {}),
+      recipientEmail,
+      ...(customOverrides || {}),
+    };
+
+    const { subject, html } = template.render(overrides, {
+      platformName: settings.platformName || "LUXVITE",
+      paymentGatewayFeePercent: settings.paymentGatewayFeePercent,
+      paymentGatewayFeePayer: settings.paymentGatewayFeePayer,
+    });
 
     const fromAddress = settings.smtpFromEmail || settings.smtpUser;
     const fromName = settings.smtpFromName || settings.platformName || "Platform Undangan";
-    const timestamp = new Date().toLocaleString("id-ID", { dateStyle: "full", timeStyle: "medium" });
 
-    const { subject, html } = buildTestSmtpHtml({
-      fromName,
-      smtpHost: settings.smtpHost,
-      port,
-      isSecure,
-      smtpUser: settings.smtpUser,
-      timestamp,
-    });
-
-    // 2. Kirim email uji coba
     await transporter.sendMail({
       from: `"${fromName}" <${fromAddress}>`,
       to: recipientEmail,
-      subject,
+      subject: `[LIVE TEST] ${subject}`,
       html,
     });
 
     return NextResponse.json({
       success: true,
-      message: `Email uji coba berhasil dikirim ke ${recipientEmail}. Handshake SMTP berfungsi normal.`,
+      message: `Sampel "${template.name}" berhasil dikirim ke ${recipientEmail}.`,
     });
   } catch (error: any) {
-    console.error("POST /api/admin/test-smtp error:", error);
+    console.error("POST /api/admin/emails/preview-send error:", error);
     return NextResponse.json(
       {
-        error: error.message || "Gagal menghubungi server SMTP. Periksa kembali host, port, dan kata sandi aplikasi.",
+        error: error.message || "Gagal mengirim sampel email. Periksa koneksi SMTP Anda.",
       },
       { status: 400 }
     );

@@ -562,12 +562,22 @@ Sistem pengiriman email otomatis menggunakan **Nodemailer** yang membaca kredens
 1. **Konfigurasi SMTP Mandiri**:
    - `smtp_host`, `smtp_port`, `smtp_user`, `smtp_password`, `smtp_from_email`, `smtp_from_name`.
    - *Graceful non-blocking*: Jika SMTP belum dikonfigurasi, sistem mencatat log aman tanpa mengganggu transaksi pembayaran.
-2. **Template Email Responsif & Mewah**:
-   - Desain dark-luxury berkelas tinggi tanpa emoji default OS.
-   - Branding dinamis mengikuti `{platformName}`.
-   - Membedakan jenis invoice secara otomatis:
-     - **Aktivasi Paket Undangan** (`NEW_INVITATION` / `UPGRADE`): Tombol CTA langsung menuju Studio Undangan.
-     - **Perpanjangan Galeri Tamu** (`GALLERY_EXTENSION`): Penambahan masa aktif +30 hari dengan tombol CTA ke Galeri Momen.
+2. **Template Email Responsif & Mewah (Warm White Cream & Royal Amber Gold)**:
+   - Desain editorial elegan berpalet krem hangat (`#F7F5F0`), kartu putih (`#FFFFFF`), border halus (`#EAE4D9`), dan aksen emas bangsawan (`#B45309`, `#C9A227`). Menghindari mode gelap pekat agar lebih ramah dibaca dan konsisten di seluruh klien email.
+   - Tanpa emoji default OS untuk menjaga citra SaaS profesional.
+   - Branding dinamis mengikuti `{platformName}` dan fee setting aplikasi.
+   - **Katalog 6 Varian Lengkap (`EMAIL_TEMPLATE_CATALOG`)**:
+     - `PAID_INVITATION`: Kuitansi lunas resmi aktivasi paket undangan digital.
+     - `UNPAID_INVOICE`: Faktur tagihan baru menunggu pembayaran via QRIS / Bank Transfer.
+     - `PAID_EXTENSION`: Kuitansi perpanjangan retensi penyimpanan galeri tamu (+30 hari).
+     - `QUOTA_50`: Peringatan santun progres roll kamera momen tamu mencapai 50%.
+     - `QUOTA_100`: Peringatan kritis roll kamera momen tamu telah terisi penuh 100%.
+     - `SMTP_DIAGNOSTIC`: Diagnostik pengujian handshake port dan kredensial server SMTP admin.
+   - **Galeri & Pratinjau Interaktif (`/admin/emails`)**:
+     - Switcher 6 template dengan filter kategori (Transaksi, Peringatan, Sistem).
+     - Pratinjau iframe terisolasi (`srcDoc`) dengan toggle Desktop (640px) vs Mobile (375px).
+     - Pengiriman sampel nyata (*Live Test Send*) ke inbox email administrator via `POST /api/admin/emails/preview-send`.
+     - Penampil kode HTML mentah dengan tombol salin.
 3. **Sinkronisasi Tab Browser & Identitas Visual Real-Time**:
    - Dynamic metadata SSR (`force-dynamic` dan `revalidate = 0`) pada root layout (`app/layout.tsx`) dan admin layout (`app/(admin)/layout.tsx`) menjamin judul tab browser selalu membaca nama platform teranyar dari database `admin_settings`.
    - Reaktivitas hook `useEffect` pada antarmuka admin (`/admin`), login admin (`/admin/login`), dasbor klien (`/dashboard`), dan login klien (`/login`) memperbarui `document.title` seketika saat pengaturan platform disimpan tanpa perlu me-reload halaman.

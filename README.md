@@ -251,7 +251,7 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 | **Image Processing** | `sharp` — WebP, resize, compress |
 | **Video Processing** | `FFmpeg` — H.264, auto-trim 20s, no audio loop, 30fps cap, +faststart streaming |
 | **Payment** | Gateway 2-Arah (Midtrans Core API QRIS & Xendit Invoice) + Transfer Bank Manual dengan transmisi profil pembeli lengkap (Nama, Email, WhatsApp/HP, Alamat, Item Branding, & Metadata) |
-| **Mailer** | Nodemailer dengan kredensial SMTP dinamis via `admin_settings` |
+| **Mailer & Email Engine** | Nodemailer dengan kredensial SMTP dinamis via `admin_settings`, template HTML editorial Warm White Cream & Royal Amber Gold, serta Galeri Pratinjau 6 Varian di `/admin/emails` |
 | **Cron** | `POST /api/cron/cleanup` — retensi & cleanup otomatis |
 | **Manajemen Proses** | PM2 (VPS) |
 
@@ -333,7 +333,8 @@ Luxenary-Invite/
 │   ├── staticPublisher.ts     # ⭐ Bake HTML statis saat Publish (CORE)
 │   ├── renderTemplate.ts      # Injeksi data, mapping tema, runtime script, Smart Dock Home Zone Guard & Hybrid Preloader Engine
 │   ├── storage.ts             # Upload/delete media (R2 / S3 / Local switch)
-│   ├── mailer.ts              # ⭐ Nodemailer transactional & invoice email generator
+│   ├── mailer.ts              # ⭐ Nodemailer transactional & invoice email dispatcher
+│   ├── email-templates.ts     # ⭐ Mesin builder template email Warm White Cream (6 varian) & katalog pratinjau
 │   ├── driveHelper.ts         # Fetch foto Google Drive API v3
 │   ├── settings.ts            # Single source of truth admin_settings dari DB
 │   ├── planUtils.ts           # ⭐ Single source of truth nama komersial paket (Serenade, Symphony, Eternity)

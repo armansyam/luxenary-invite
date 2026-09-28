@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { getApexRootDomain, getInvitationPublicUrl } from "@/lib/domainUtils";
@@ -4955,6 +4956,30 @@ export default function AdminPage() {
                             ? "Klien akan menerima faktur invoice HTML otomatis setiap kali checkout dan setelah pembayaran QRIS lunas."
                             : "Server email belum diatur. Transaksi tetap berjalan normal via QRIS, dan pengiriman email otomatis dilewati secara aman."}
                         </p>
+
+                        {/* Dedicated Email Templates Preview Link */}
+                        <div className="p-3.5 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                          <div>
+                            <div className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                              <span>Galeri Template Email Transaksional (6 Varian)</span>
+                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                                Warm White Cream
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-gray-500 mt-0.5">
+                              Lihat pratinjau responsif (Desktop & Mobile) kuitansi lunas, tagihan invoice, perpanjangan galeri, dan notifikasi roll kamera.
+                            </p>
+                          </div>
+                          <Link
+                            href="/admin/emails"
+                            className="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold transition shrink-0 inline-flex items-center gap-1.5 shadow-sm"
+                          >
+                            <span>Buka Pratinjau Email</span>
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
+                          </Link>
+                        </div>
 
                         {/* Inline Test Handshake SMTP */}
                         {settingsMap["smtp_host"] && settingsMap["smtp_user"] && (
