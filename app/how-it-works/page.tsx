@@ -13,7 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const brandName = settings.platformName || "Sistem Undangan";
   return {
     title: `Cara Kerja Studio Mandiri — ${brandName}`,
-    description: `Pelajari betapa mudah dan menyenangkannya merancang undangan pernikahan digital eksklusif di ${brandName}. Kendali penuh, live preview instan, dan sebar link personal seketika.`,
+    description: `Pelajari betapa mudah dan menyenangkannya merancang undangan digital eksklusif di ${brandName}. Kendali penuh, live preview instan, dan sebar link personal seketika.`,
   };
 }
 

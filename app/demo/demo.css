@@ -33,9 +33,12 @@
 /* ── Device pair scene ────────────────────── */
 .demo-catalog-root .device-pair-scene {
   position: relative;
+  display: block;
+  text-decoration: none;
   width: 100%;
   padding-bottom: 2.5rem;  /* space for phone overflow */
   margin-bottom: 1.25rem;
+  cursor: pointer;
 }
 
 /* ── Tablet / Desktop frame ───────────────── */
@@ -187,39 +190,6 @@
   z-index: 3;
 }
 
-/* ── Hover overlay CTA ────────────────────── */
-.demo-catalog-root .dm-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(11,10,9,0.48);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 20;
-}
-
-.demo-catalog-root .catalog-item:hover .dm-overlay {
-  opacity: 1;
-}
-
-.demo-catalog-root .dm-overlay-btn {
-  padding: 8px 20px;
-  background: #fff;
-  color: #1c1917;
-  font-size: 0.65rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  border-radius: 999px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-  transform: translateY(6px);
-  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.demo-catalog-root .catalog-item:hover .dm-overlay-btn {
-  transform: translateY(0);
-}
 
 /* ── Theme info below device pair ─────────── */
 .demo-catalog-root .catalog-info {
@@ -361,8 +331,5 @@
     top: 4px;
     border-radius: 4px;
   }
-  .demo-catalog-root .dm-overlay {
-    opacity: 0;
-    pointer-events: none;
-  }
 }
+

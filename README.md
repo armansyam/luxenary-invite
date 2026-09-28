@@ -2,7 +2,7 @@
 
 > **Platform Undangan Digital Multi-Event B2C Self-Service (Wedding, Birthday, Khitan, Aqiqah, Wisuda, Gathering)**  
 > Next.js 16.3.2 · Prisma 7.9 (PostgreSQL) · NextAuth v5 · Multi-Gateway (5 Gateway) · Nodemailer SMTP · Cloudflare R2  
-> **Versi Dokumen: 6.3.3 | Diperbarui: 27 September 2026**
+> **Versi Dokumen: 6.3.4 | Diperbarui: 28 September 2026**
 
 > [!IMPORTANT]
 > **PROTOKOL SINKRONISASI DOKUMENTASI OTOMATIS (MANDATORY POST-EDIT & PRE-PUSH PROTOCOL):**  
@@ -115,7 +115,7 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
    - **Studio Desain Kartu Cetak QR & Standing Banner (A3, A4, A5, 4R):** Generator kartu cetak interaktif siap pakai di Dasbor Klien dengan 4 model format standar percetakan, kustomisasi judul dan petunjuk tamu mandiri, serta ekspor resolusi tinggi 300 DPI (PNG) siap cetak.
    - Monitoring & moderasi kiriman foto tamu di Pusat Komando Moments (`/dashboard/moments`) & dasbor utama dengan grid navigasi cepat 3-kolom bersih (Studio Editor, Buku Tamu, RSVP) tanpa kartu duplikat.
    - Custom Domain Pribadi: Tersedia gratis dan opsional khusus Paket Premium (diatur langsung lewat Dasbor Pengaturan Klien tanpa biaya tambahan).
-   - Arsitektur URL Bersih & Mandiri: Halaman web undangan (`/[slug]` atau `/s/[subdomain]`) selalu dapat diakses penuh secara konsisten sepanjang masa aktif layanan; Galeri Momen (`/memories`) dan Kamera Disposable (`/sharemoment`) memiliki rute terdedikasi dengan navigasi kembali ke undangan yang jelas.
+   - Arsitektur URL Bersih & Pengalihan Mode Pasca-Acara: Halaman web undangan (`/[slug]` atau `/s/[subdomain]`) dan Custom Domain mendukung pengalihan mode otomatis pasca-acara (`EVENT_FINISHED`) ke Galeri Kenangan Tamu (`/memories`) serta kontrol manual fleksibel via tombol switch di Dasbor Klien (`/dashboard` & `/dashboard/moments`), dengan dukungan parameter `?view=invitation` bagi tamu yang ingin melihat kembali web undangan asli.
    - Siklus Hidup Terpadu (H+14 Pasca-Acara): Subdomain, custom domain, foto candid tamu R2/lokal, dan RSVP dibersihkan secara bersamaan dalam 1 fase cron cleanup tunggal.
    - Dasbor Memorial 1 Halaman & Vault Undangan Abadi (Saat ARCHIVED): Klien disajikan surat apresiasi penutup, kartu Luxenary Vault Undangan Kenangan (membuka kembali undangan digital yang tersimpan mandiri di Cold Storage NAS), 4 metrik ringkasan eksekutif, dan Pusat Unduhan Arsip Digital (.CSV Doa Restu & .CSV Kehadiran Tamu). Akun klien disimpan abadi tanpa penghapusan.
    - Arsitektur Penyimpanan Bertingkat (Tiered Storage): Hot Storage Cloudflare R2 untuk event aktif (H-30 s/d H+14), dan Cold Storage NAS Standby (Luxenary Vault) untuk arsip mandiri 1 tahun pasca retensi galeri tamu berakhir. Dilengkapi sistem Plug-and-Play dormant-ready di `.env` (`NAS_ARCHIVE_ENABLED=false`).

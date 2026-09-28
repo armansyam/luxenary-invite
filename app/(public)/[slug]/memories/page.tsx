@@ -55,7 +55,8 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
 
   const memories: any[] = invitation.guestMemories || [];
   const coupleName = resolveInvitationDisplayName(invitation);
-  const invitationUrl = `/${slug}`;
+  const invitationUrl = `/${slug}?view=invitation`;
+  const shareMomentUrl = `/${slug}/sharemoment`;
 
   // ── 1. PARSE FEATURE SETTINGS & DELAYED REVEAL STATUS ──
   const fs = (() => {
@@ -163,7 +164,7 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
               <span>Kembali ke Undangan</span>
             </Link>
             <Link
-              href={`${invitationUrl}/sharemoment`}
+              href={shareMomentUrl}
               className="px-3.5 py-1.5 rounded-full bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs flex items-center gap-1.5 transition"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg>
@@ -210,7 +211,7 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
 
             <div className="pt-2">
               <Link
-                href={`${invitationUrl}/sharemoment`}
+                href={shareMomentUrl}
                 className="inline-flex items-center justify-center gap-2 w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold rounded-xl text-xs tracking-wider uppercase transition shadow-lg shadow-amber-900/30 cursor-pointer"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg>
@@ -240,7 +241,7 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
             <span>Kembali ke Undangan</span>
           </Link>
           <Link
-            href={`${invitationUrl}/sharemoment`}
+            href={shareMomentUrl}
             className="px-3.5 py-1.5 rounded-full bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -325,7 +326,7 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
               &quot;Jadilah orang pertama yang mengabadikan tawa, senyum, dan kebahagiaan di hari istimewa ini.&quot;
             </p>
             <Link
-              href={`${invitationUrl}/sharemoment`}
+              href={shareMomentUrl}
               className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-sm tracking-wide shadow-lg shadow-amber-900/30 transition-all cursor-pointer"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -450,7 +451,7 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
       {rollStacks.length > 0 && (
         <div className="fixed bottom-6 right-6 z-40 sm:hidden">
           <Link
-            href={`${invitationUrl}/sharemoment`}
+            href={shareMomentUrl}
             className="px-4 py-3 rounded-full bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs flex items-center gap-2 shadow-2xl shadow-amber-950/60 transition cursor-pointer"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

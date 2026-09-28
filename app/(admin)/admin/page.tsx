@@ -6185,7 +6185,7 @@ export default function AdminPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
                             <span className="text-xs text-gray-500 block font-medium">Tagline Hero (Halaman Utama)</span>
-                            <span className="text-xs font-semibold text-gray-800 mt-0.5 inline-block">{settingsMap["hero_tagline"] || "Undangan Pernikahan Digital Elegan, Hangat & Berkelas"}</span>
+                            <span className="text-xs font-semibold text-gray-800 mt-0.5 inline-block">{settingsMap["hero_tagline"] || "Undangan Digital Elegan, Hangat & Berkelas"}</span>
                           </div>
                           <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
                             <span className="text-xs text-gray-500 block font-medium">Deskripsi Subtitle Hero</span>
@@ -6240,7 +6240,7 @@ export default function AdminPage() {
                     <FieldRow label="Tagline Hero (Headline Besar Halaman Utama)">
                       <input
                         type="text"
-                        value={settingsMap["hero_tagline"] || "Undangan Pernikahan Digital Elegan, Hangat & Berkelas"}
+                        value={settingsMap["hero_tagline"] || "Undangan Digital Elegan, Hangat & Berkelas"}
                         onChange={(e) => setSetting("hero_tagline", e.target.value)}
                         className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
                       />
@@ -7993,7 +7993,7 @@ export default function AdminPage() {
                             type="text"
                             value={demoStudioData.tagline || ""}
                             onChange={(e) => setDemoStudioData({ ...demoStudioData, tagline: e.target.value })}
-                            placeholder="THE WEDDING OF"
+                            placeholder={demoStudioTheme?.eventType && demoStudioTheme.eventType !== "WEDDING" ? "EXCLUSIVE INVITATION" : "THE WEDDING OF"}
                             className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
                           />
                         </div>
@@ -8896,7 +8896,7 @@ export default function AdminPage() {
                                 customLabels.giftTitle = e.target.value;
                                 setDemoStudioData({ ...demoStudioData, customLabels });
                               }}
-                              placeholder="Tanda Kasih / Wedding Gift"
+                              placeholder="Tanda Kasih / Digital Gift"
                               className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
                             />
                           </div>
@@ -8910,7 +8910,7 @@ export default function AdminPage() {
                                 customLabels.giftEyebrow = e.target.value;
                                 setDemoStudioData({ ...demoStudioData, customLabels });
                               }}
-                              placeholder="Wedding Gift / Kirim Hadiah"
+                              placeholder="Digital Gift / Kirim Hadiah"
                               className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
                             />
                           </div>
@@ -9119,7 +9119,7 @@ export default function AdminPage() {
                                 customLabels.vendorTitle = e.target.value;
                                 setDemoStudioData({ ...demoStudioData, customLabels, vendorTitle: e.target.value });
                               }}
-                              placeholder="Vendor / Wedding Vendors"
+                              placeholder="Vendor / Event Partners"
                               className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
                             />
                           </div>

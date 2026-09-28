@@ -49,14 +49,14 @@ export default async function TermsPage() {
           <section>
             <h2 className="text-lg font-semibold text-stone-800 mb-2">2. Layanan {platformName}</h2>
             <p>
-              {platformName} menyediakan platform mandiri berbasis web bagi pengguna (Klien) untuk membuat, mengelola, dan mendistribusikan undangan pernikahan digital. Fitur dan batasan tema bergantung pada paket langganan yang Anda pilih.
+              {platformName} menyediakan platform mandiri berbasis web bagi pengguna (Klien) untuk membuat, mengelola, dan mendistribusikan undangan digital. Fitur dan batasan tema bergantung pada paket langganan yang Anda pilih.
             </p>
           </section>
 
           <section>
             <h2 className="text-lg font-semibold text-stone-800 mb-2">3. Masa Aktif Layanan & Kebijakan Retensi Data</h2>
             <p>
-              Kami memahami pentingnya setiap momen pernikahan Anda. Agar tidak terjadi kesalahpahaman, berikut adalah rincian lengkap mengenai masa aktif undangan dan penyimpanan data di platform {platformName}:
+              Kami memahami pentingnya setiap momen perayaan Anda. Agar tidak terjadi kesalahpahaman, berikut adalah rincian lengkap mengenai masa aktif undangan dan penyimpanan data di platform {platformName}:
             </p>
             <div className="mt-4 space-y-3">
               <div className="p-4 rounded-xl bg-stone-50 border border-stone-200/80 space-y-1">
@@ -97,10 +97,10 @@ export default async function TermsPage() {
 
               <div className="p-4 rounded-xl bg-stone-50 border border-stone-200/80 space-y-1">
                 <h3 className="font-bold text-xs uppercase tracking-wider text-amber-900">
-                  5. Layanan Custom Domain Pribadi (Aktif 1 Tahun Penuh)
+                  5. Layanan Custom Domain Pribadi
                 </h3>
                 <p className="text-xs text-stone-600 leading-relaxed">
-                  Bagi klien yang memilih layanan integrasi Custom Domain pribadi (seperti <em>namakamu.com</em>), website undangan beserta galeri foto kenangan Anda dijamin aktif dan dapat diakses publik selama <strong>1 tahun penuh (365 hari)</strong> sejak aktivasi.
+                  Bagi klien yang memilih layanan integrasi Custom Domain pribadi (seperti <em>namakamu.com</em>), domain Anda terhubung langsung ke website undangan dan galeri foto selama masa aktif acara ({galleryDays} hari pasca acara), dan selanjutnya tetap terhubung ke arsip mandiri undangan pernikahan Anda selama masa sewa domain aktif.
                 </p>
               </div>
             </div>

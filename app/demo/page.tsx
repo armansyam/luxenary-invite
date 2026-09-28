@@ -144,10 +144,7 @@ export default function CatalogGridShowcase() {
 
         {mainTab === "themes" ? (
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-widest text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
-              Official Design Catalog
-            </span>
-            <h2 className="text-2xl sm:text-4xl font-serif font-normal text-stone-900 mt-3 mb-2">
+            <h2 className="text-2xl sm:text-4xl font-serif font-normal text-stone-900 mt-2 mb-2">
               Pilih Desain Tema Eksklusif Anda
             </h2>
             <p className="text-xs sm:text-sm text-stone-600 max-w-2xl mx-auto">
@@ -216,27 +213,10 @@ export default function CatalogGridShowcase() {
                 </button>
               ))}
             </div>
-
-            {/* Device pair indicator */}
-            <div className="flex items-center justify-center mt-5 gap-2">
-              <span className="inline-flex items-center gap-1.5 text-[11px] text-stone-500 font-medium">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2" strokeWidth="1.75"/><line x1="2" y1="9" x2="22" y2="9" strokeWidth="1.75"/></svg>
-                Desktop
-              </span>
-              <span className="w-1 h-1 rounded-full bg-stone-300"></span>
-              <span className="inline-flex items-center gap-1.5 text-[11px] text-stone-500 font-medium">
-                <svg className="w-2.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" strokeWidth="1.75"/><line x1="12" y1="18" x2="12" y2="18" strokeWidth="2.5" strokeLinecap="round"/></svg>
-                Mobile
-              </span>
-
-            </div>
           </div>
         ) : (
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-widest text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
-              Day-of-Event Ecosystem Tech
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-serif font-normal text-stone-900 mt-3 mb-2">
+            <h2 className="text-3xl sm:text-4xl font-serif font-normal text-stone-900 mt-2 mb-2">
               Sistem Operasional Hari-H Pernikahan
             </h2>
             <p className="text-xs sm:text-sm text-stone-600 max-w-2xl mx-auto">
@@ -263,8 +243,13 @@ export default function CatalogGridShowcase() {
               {filteredThemes.map((theme) => (
                 <div key={theme.id} className="catalog-item">
 
-                  {/* ── Device Pair Scene ── */}
-                  <div className="device-pair-scene">
+                  {/* ── Device Pair Scene (Direct Interactive Link) ── */}
+                  <Link
+                    href={`/demo/${theme.id}`}
+                    target="_blank"
+                    className="device-pair-scene"
+                    aria-label={`Lihat Demo ${theme.name}`}
+                  >
                     {/* Tablet frame */}
                     <div className="dm-tablet">
                       <div className="dm-tablet-topbar">
@@ -285,16 +270,6 @@ export default function CatalogGridShowcase() {
                         />
                         <div className="dm-glare"></div>
                       </div>
-
-                      {/* Hover overlay — inside dm-tablet, covers tablet only */}
-                      <Link
-                        href={`/demo/${theme.id}`}
-                        target="_blank"
-                        className="dm-overlay"
-                        aria-label={`Preview ${theme.name}`}
-                      >
-                        <span className="dm-overlay-btn">BUKA PREVIEW</span>
-                      </Link>
                     </div>
 
                     {/* Phone frame — overlap bottom-left */}
@@ -308,7 +283,7 @@ export default function CatalogGridShowcase() {
                         <div className="dm-glare"></div>
                       </div>
                     </div>
-                  </div>
+                  </Link>
 
                   {/* ── Theme Info ── */}
                   <div className="catalog-info">

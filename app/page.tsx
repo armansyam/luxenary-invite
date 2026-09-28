@@ -1208,7 +1208,7 @@ export default async function Home() {
       Your day deserves<br />a beautiful beginning.
     </h2>
     <p className="cta-desc reveal reveal-delay-2">
-      Buat undangan pernikahan digital Anda sekarang dan mulai bercerita dengan cara yang paling indah.
+      Buat undangan digital Anda sekarang dan mulai bercerita dengan cara yang paling indah.
     </p>
     <Link href="/login" className="btn-cta reveal reveal-delay-3" id="cta-main-btn">
       Mulai Kisahmu
@@ -1225,7 +1225,7 @@ export default async function Home() {
         <div className="footer-row-top">
           <div>
             <div className="footer-brand">{brand}</div>
-            <div className="footer-tagline">Digital Wedding Invitation</div>
+            <div className="footer-tagline">Digital Invitation</div>
           </div>
           <ul className="footer-links-nav" role="list">
             <li><Link href="/demo">Koleksi</Link></li>

@@ -128,7 +128,7 @@ export async function getServiceAvailability(): Promise<ServiceStatusSettings> {
     OPEN: "Pendaftaran akun baru dan pembuatan pesanan undangan dibuka normal.",
     CLOSED_ORDER: "Mohon maaf, kuota pemesanan undangan baru saat ini telah penuh demi menjaga standar kualitas dan ketepatan pengerjaan. Klien terdaftar tetap dapat masuk dan mengelola undangan seperti biasa.",
     MAINTENANCE: "Kami sedang melakukan pemeliharaan berkala untuk meningkatkan stabilitas sistem. Pendaftaran akun baru ditangguhkan sementara.",
-    COMING_SOON: "Platform undangan pernikahan digital mewah sedang mempersiapkan perilisan versi terbaru. Pantau terus pembaruan kami.",
+    COMING_SOON: "Platform undangan digital mewah sedang mempersiapkan perilisan versi terbaru. Pantau terus pembaruan kami.",
   };
 
   return {
@@ -243,7 +243,7 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
 
   return {
     platformName: map["platform_name"] || "Sistem Undangan",
-    heroTagline: map["hero_tagline"] || "Undangan Pernikahan Digital Elegan, Hangat & Berkelas",
+    heroTagline: map["hero_tagline"] || "Undangan Digital Elegan, Hangat & Berkelas",
     heroSubtitle:
       map["hero_subtitle"] ||
       "Didesain khusus dengan sentuhan estetika mewah dan eksklusif. Hadirkan pengalaman berkesan dengan layout split desktop, custom subdomain, buku tamu real-time, dan video booth ucapan.",
@@ -340,7 +340,7 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
       message: (map["service_status_message"] || "").trim() || (
         map["service_status_mode"] === "CLOSED_ORDER" ? "Mohon maaf, kuota pemesanan undangan baru saat ini telah penuh demi menjaga standar kualitas dan ketepatan pengerjaan. Klien terdaftar tetap dapat masuk dan mengelola undangan seperti biasa." :
         map["service_status_mode"] === "MAINTENANCE" ? "Kami sedang melakukan pemeliharaan berkala untuk meningkatkan stabilitas sistem. Pendaftaran akun baru ditangguhkan sementara." :
-        map["service_status_mode"] === "COMING_SOON" ? "Platform undangan pernikahan digital mewah sedang mempersiapkan perilisan versi terbaru. Pantau terus pembaruan kami." : "Pendaftaran akun baru dan pembuatan pesanan undangan dibuka normal."
+        map["service_status_mode"] === "COMING_SOON" ? "Platform undangan digital mewah sedang mempersiapkan perilisan versi terbaru. Pantau terus pembaruan kami." : "Pendaftaran akun baru dan pembuatan pesanan undangan dibuka normal."
       ),
       reopenDate: (map["service_status_reopen_date"] || "").trim() || undefined,
       contactWa: (map["service_status_contact_wa"] || "").trim() || undefined,

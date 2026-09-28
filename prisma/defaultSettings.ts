@@ -89,7 +89,7 @@ export const defaultSettings: DefaultSettingItem[] = [
   {
     "id": "c1f7a01a-8e2b-4d5c-9a1f-3b7c8d9e0f12",
     "key": "nas_archive_enabled",
-    "value": "false",
+    "value": "true",
     "label": "Aktifkan Cold Storage Arsip NAS",
     "group": "backup",
     "updatedAt": "2026-09-23T06:00:00.000Z"
@@ -265,7 +265,7 @@ export const defaultSettings: DefaultSettingItem[] = [
   {
     "id": "c28b65cc-6e51-404b-81e8-edf081442671",
     "key": "hero_tagline",
-    "value": "Undangan Pernikahan Digital Elegan, Hangat & Berkelas",
+    "value": "Undangan Digital Elegan, Hangat & Berkelas",
     "label": "Tagline Hero",
     "group": "platform",
     "updatedAt": "2026-09-16T06:28:32.993Z"

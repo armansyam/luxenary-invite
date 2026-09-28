@@ -1,5 +1,5 @@
 # PLATFORM UNDANGAN (WHITE-LABEL) — DOKUMENTASI ARSITEKTUR SISTEM
-## Versi: 6.3.3 | Diperbarui: 27 September 2026
+## Versi: 6.3.4 | Diperbarui: 28 September 2026
 
 > **SUMBER KEBENARAN TUNGGAL** untuk semua developer dan AI Agent yang bekerja di repositori ini.  
 > Dokumen ini WAJIB dibaca sebelum melakukan perubahan apapun pada kode.  
@@ -1037,6 +1037,7 @@ PUBLIC (tanpa auth):
 
 CLIENT (auth required, role=USER):
   GET/PUT/PATCH /api/client/invitations/{id}    → Detail, update penuh, atau update parsial setting operasional (featureSettings, staffPin terdekripsi otomatis di respons)
+  POST      /api/client/invitations/{id}/gallery-mode → Pengalihan manual mode tampilan URL utama antara PUBLISHED (Web Undangan) & EVENT_FINISHED (Mode Galeri Kenangan Tamu) dengan validasi kapabilitas paket (guest_memories) dan re-bake HTML otomatis
   GET/DELETE/PATCH /api/client/invitations/{id}/memories → List, hapus foto momen, atau atur konfigurasi kamera tamu (memoriesOpeningLayout, memoriesCardInstruction, memoriesFilter, memoriesDateStamp, shotsQuota 1-30, dan jadwal memoriesSessions dengan Smart Quota Boundary Guard)
   GET       /api/client/invitations         → List undangan client (termasuk status retensi, lock memori & staffPin terdekripsi)
   POST      /api/client/invitations/create  → Buat undangan baru

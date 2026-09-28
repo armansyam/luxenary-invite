@@ -30,8 +30,8 @@ export async function generateMetadata(): Promise<Metadata> {
     getDynamicServerAppUrl(),
   ]);
   const brandName = settings.platformName || "Sistem Undangan";
-  const tagline = settings.heroTagline || "Undangan Pernikahan Digital Elegan, Hangat & Berkelas";
-  const desc = settings.heroSubtitle || "Platform undangan pernikahan digital self-service dengan desain estetika mewah dan eksklusif.";
+  const tagline = settings.heroTagline || "Undangan Digital Elegan, Hangat & Berkelas";
+  const desc = settings.heroSubtitle || "Platform undangan digital self-service dengan desain estetika mewah dan eksklusif.";
 
   return {
     metadataBase: new URL(siteUrl),
@@ -65,9 +65,8 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     keywords: [
       brandName,
-      "Undangan Pernikahan Digital",
       "Undangan Digital",
-      "Wedding Invitation Digital",
+      "Digital Invitation",
       "Undangan Website",
       "Undangan Online",
     ],
@@ -119,7 +118,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     getDynamicServerAppUrl(),
   ]);
   const brandName = settings.platformName || "Sistem Undangan";
-  const tagline = settings.heroTagline || "Undangan Pernikahan Digital Elegan, Hangat & Berkelas";
+  const tagline = settings.heroTagline || "Undangan Digital Elegan, Hangat & Berkelas";
 
   return (
     <html

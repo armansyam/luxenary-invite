@@ -1112,7 +1112,7 @@ export function AdminMarketingTab() {
                   type="text"
                   value={couponForm.description}
                   onChange={(e) => setCouponForm({ ...couponForm, description: e.target.value })}
-                  placeholder="Contoh: Diskon Kemitraan Wedding Organizer Berkah"
+                  placeholder="Contoh: Diskon Kemitraan Event Organizer / Mitra Berkah"
                   className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white focus:outline-none focus:border-amber-500"
                 />
               </div>
@@ -1415,7 +1415,7 @@ export function AdminMarketingTab() {
                   rows={2}
                   value={partnerForm.notes}
                   onChange={(e) => setPartnerForm({ ...partnerForm, notes: e.target.value })}
-                  placeholder="Kemitraan wedding fair, kuota fleksibel, dll."
+                  placeholder="Kemitraan event expo, kuota fleksibel, dll."
                   className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white focus:outline-none focus:border-amber-500"
                 />
               </div>

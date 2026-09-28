@@ -23,7 +23,7 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group
   { key: "server_public_ip", value: "", label: "IP Public Server (Record A)", group: "setup" },
   { key: "cname_target", value: "", label: "Host Target CNAME (Custom Domain)", group: "setup" },
   { key: "custom_domain_enabled", value: "true", label: "Aktifkan Fitur Custom Domain Klien", group: "setup" },
-  { key: "hero_tagline", value: "Undangan Pernikahan Digital Elegan, Hangat & Berkelas", label: "Tagline Hero", group: "platform" },
+  { key: "hero_tagline", value: "Undangan Digital Elegan, Hangat & Berkelas", label: "Tagline Hero", group: "platform" },
   { key: "hero_subtitle", value: "Didesain khusus dengan sentuhan estetika mewah dan eksklusif. Hadirkan pengalaman berkesan dengan layout split desktop, custom subdomain, buku tamu real-time, dan video booth ucapan.", label: "Deskripsi Hero", group: "platform" },
   { key: "service_status_mode", value: "OPEN", label: "Status Layanan & Pendaftaran (OPEN/CLOSED_ORDER/MAINTENANCE/COMING_SOON)", group: "platform" },
   { key: "service_status_title", value: "", label: "Judul Pengumuman Status Layanan", group: "platform" },

@@ -9,7 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const platformName = settings.platformName || "Platform Undangan";
   return {
     title: "Hubungi Kami",
-    description: `Hubungi tim layanan dan dukungan pelanggan ${platformName}. Kami siap membantu kebutuhan undangan pernikahan digital Anda.`,
+    description: `Hubungi tim layanan dan dukungan pelanggan ${platformName}. Kami siap membantu kebutuhan undangan digital Anda.`,
   };
 }
 
@@ -154,7 +154,7 @@ export default async function ContactPage() {
               <div>
                 <p className="font-semibold text-stone-800 mb-0.5">Berapa lama masa aktif undangan digital saya?</p>
                 <p>
-                  Website undangan Anda <strong>aktif penuh tanpa batas waktu</strong> sejak pertama kali dibuat hingga hari pernikahan Anda selesai dilaksanakan. Setelah acara selesai, tautan subdomain tetap aktif melayani tamu selama {graceDays} hari pasca-acara. Khusus Paket {tier3Name}, halaman galeri foto momen candid tamu dapat diakses aktif selama {galleryDurationLabel} pasca-acara (atau 1 tahun penuh jika menggunakan Custom Domain), dan Anda dapat mengunduh seluruh foto resolusi penuh (ZIP) ke perangkat pribadi untuk disimpan selamanya.
+                  Website undangan Anda <strong>aktif penuh tanpa batas waktu</strong> sejak pertama kali dibuat hingga hari pernikahan Anda selesai dilaksanakan. Setelah acara selesai, tautan subdomain tetap aktif melayani tamu selama {graceDays} hari pasca-acara. Khusus Paket {tier3Name}, halaman galeri foto momen candid tamu dapat diakses aktif selama {galleryDurationLabel} pasca-acara, dan Anda dapat mengunduh seluruh foto resolusi penuh (ZIP) ke perangkat pribadi untuk disimpan selamanya. Pasca retensi, undangan tetap diabadikan dalam bentuk arsip mandiri.
                 </p>
               </div>
               <div>

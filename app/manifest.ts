@@ -8,7 +8,7 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
   return {
     name: appName,
     short_name: shortName,
-    description: 'Platform Undangan Pernikahan Digital Elegan',
+    description: 'Platform Undangan Digital Elegan',
     start_url: '/dashboard',
     display: 'standalone',
     background_color: '#1c1917',

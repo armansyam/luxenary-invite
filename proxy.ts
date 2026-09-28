@@ -238,9 +238,10 @@ export const proxy = auth(async (req) => {
       if (slug) {
         const isFinished = resolution.status === "EVENT_FINISHED";
         const isArchived = resolution.status === "ARCHIVED";
+        const viewInvitation = req.nextUrl.searchParams.get("view") === "invitation";
 
         if (pathname === "/" || pathname === "") {
-          if (isFinished) {
+          if (isFinished && !viewInvitation) {
             return NextResponse.rewrite(new URL(`/${slug}/memories${req.nextUrl.search}`, req.url));
           }
           const rewriteUrl = new URL(`/${slug}`, req.url);
@@ -262,7 +263,7 @@ export const proxy = auth(async (req) => {
         // Guest param routing
         const segments = pathname.split('/').filter(Boolean);
         if (segments.length === 1) {
-          if (isFinished) {
+          if (isFinished && !viewInvitation) {
             return NextResponse.rewrite(new URL(`/${slug}/memories${req.nextUrl.search}`, req.url));
           }
           const rewriteUrl = new URL(`/${slug}`, req.url);

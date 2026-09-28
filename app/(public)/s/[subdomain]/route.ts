@@ -5,6 +5,7 @@ import { getPublishedHtml, buildAndSavePublishedHtml } from "@/lib/staticPublish
 import { composeTemplateData } from "@/lib/themeEngine";
 import { renderTemplateFile } from "@/lib/renderTemplate";
 import { invitationLookupCache } from "@/lib/cache";
+import { hasPlanCapability } from "@/lib/settings";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ subdomain: string }> }) {
   const { subdomain } = await params;
@@ -28,7 +29,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
       },
     });
 
-    if (invitation && !isPreview && invitation.status === "PUBLISHED") {
+    if (invitation && !isPreview && (invitation.status === "PUBLISHED" || invitation.status === "EVENT_FINISHED")) {
       invitationLookupCache.set(cacheKey, invitation, 60_000);
     }
   }
@@ -102,6 +103,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
         status: 403,
         headers: { "Content-Type": "text/html; charset=utf-8" },
       });
+    }
+  }
+
+  // Jika undangan berstatus EVENT_FINISHED (Mode Galeri Kenangan Pasca-Acara Aktif)
+  if (invitation.status === "EVENT_FINISHED" && !isPreview) {
+    const viewInvitation = req.nextUrl.searchParams.get("view") === "invitation";
+    if (!viewInvitation) {
+      const canAccessMemories = await hasPlanCapability(invitation.order?.planType, "guest_memories");
+      if (canAccessMemories) {
+        const search = req.nextUrl.search;
+        const redirectUrl = new URL(`/memories${search}`, req.url);
+        return NextResponse.redirect(redirectUrl, 307);
+      }
     }
   }
 

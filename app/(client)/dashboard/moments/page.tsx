@@ -262,6 +262,36 @@ export default function MomentsSetupPage() {
     }
   };
 
+  const [isTogglingGalleryMode, setIsTogglingGalleryMode] = useState(false);
+  const handleToggleGalleryMode = async () => {
+    if (!invitation?.id || isTogglingGalleryMode) return;
+    const currentStatus = invitation.status;
+    const targetMode = currentStatus === "PUBLISHED" ? "EVENT_FINISHED" : "PUBLISHED";
+    setIsTogglingGalleryMode(true);
+    try {
+      const res = await fetch(`/api/client/invitations/${invitation.id}/gallery-mode`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetMode }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Gagal mengalihkan mode tampilan");
+      }
+      setInvitation((prev: any) => ({
+        ...prev,
+        status: data.status,
+      }));
+      setStatusToast(data.message || "Mode berhasil dialihkan.");
+      setTimeout(() => setStatusToast(null), 3500);
+    } catch (err: any) {
+      setStatusToast(`Gagal: ${err.message}`);
+      setTimeout(() => setStatusToast(null), 3500);
+    } finally {
+      setIsTogglingGalleryMode(false);
+    }
+  };
+
   const handleDeletePhoto = async (memoryId: string) => {
     if (!confirm("Hapus foto candid ini dari galeri kenangan?") || !invitation?.id) return;
     try {
@@ -671,6 +701,73 @@ export default function MomentsSetupPage() {
           </button>
         </div>
       </div>
+
+      {/* ── MODE TAMPILAN URL UTAMA (UNDANGAN VS GALERI KENANGAN) ── */}
+      {hasAccess && (invitation?.status === "PUBLISHED" || invitation?.status === "EVENT_FINISHED") && (
+        <div className="bg-white p-5 sm:p-6 rounded-2xl sm:rounded-3xl border border-stone-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-stone-500 bg-stone-100 border border-stone-200 px-2 py-0.5 rounded-md">
+                Pintu Utama Domain &amp; Slug
+              </span>
+              <span className="text-stone-300">•</span>
+              {invitation.status === "EVENT_FINISHED" ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-800 border border-purple-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-600" />
+                  Mode Galeri Kenangan Aktif
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                  Mode Web Undangan Aktif
+                </span>
+              )}
+            </div>
+            <h2 className="text-sm sm:text-base font-bold text-stone-900">
+              Pengalihan Tampilan Alamat Utama
+            </h2>
+            <p className="text-xs text-stone-500 max-w-xl leading-relaxed">
+              {invitation.status === "EVENT_FINISHED"
+                ? "Acara telah ditandai selesai. Setiap tamu yang membuka link utama undangan otomatis diarahkan ke Galeri Foto Kenangan Tamu (/memories)."
+                : "Acara sedang berjalan. Link utama saat ini menampilkan Web Undangan resmi. Jika resepsi telah usai, Anda dapat beralih ke Mode Galeri secara instan."}
+            </p>
+          </div>
+
+          <div className="shrink-0 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleToggleGalleryMode}
+              disabled={isTogglingGalleryMode}
+              className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition cursor-pointer shadow-xs disabled:opacity-50 ${
+                invitation.status === "EVENT_FINISHED"
+                  ? "bg-white hover:bg-stone-50 text-stone-800 border border-stone-300"
+                  : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-purple-600/20"
+              }`}
+            >
+              {isTogglingGalleryMode ? (
+                <>
+                  <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  <span>Memproses...</span>
+                </>
+              ) : invitation.status === "EVENT_FINISHED" ? (
+                <>
+                  <svg className="w-4 h-4 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                  </svg>
+                  <span>Kembalikan ke Mode Undangan</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span>Beralih ke Mode Galeri Pasca-Acara</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Dynamic Alert Banner: Roll Penuh (100%+) atau Peringatan Kuota (80%+) */}
       {memoriesQuota && memoriesQuota.maxTotalPhotos > 0 && (memoriesQuota.usedPhotos / memoriesQuota.maxTotalPhotos) >= 0.8 && (() => {

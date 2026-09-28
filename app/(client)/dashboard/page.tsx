@@ -145,6 +145,28 @@ function DashboardHomeContent() {
     }
   };
 
+  const [togglingGallery, setTogglingGallery] = useState(false);
+  const handleToggleGalleryMode = async () => {
+    if (!invitation?.id || togglingGallery) return;
+    const targetMode = invitation.status === "PUBLISHED" ? "EVENT_FINISHED" : "PUBLISHED";
+    setTogglingGallery(true);
+    try {
+      const res = await fetch(`/api/client/invitations/${invitation.id}/gallery-mode`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetMode }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setInvitation((prev: any) => ({ ...prev, status: data.status }));
+      }
+    } catch (e) {
+      console.error("Failed to toggle gallery mode:", e);
+    } finally {
+      setTogglingGallery(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -155,6 +177,9 @@ function DashboardHomeContent() {
       </div>
     );
   }
+
+  const retentionDays = Number(platformSettings?.retentionCleanupDays) || 30;
+  const baseRetentionDays = retentionDays;
 
   // === 1-PAGE EVENT CLOSING STATEMENT & FINAL SUMMARY (ARCHIVED STATUS) ===
   if (invitation?.status === "ARCHIVED") {
@@ -189,7 +214,7 @@ function DashboardHomeContent() {
               Terima kasih telah mempercayakan perayaan momen berharga Anda kepada platform kami. Rangkaian acara Anda telah terlaksana dengan indah dan penuh kebahagiaan.
             </p>
             <p className="text-xs text-stone-500 leading-relaxed">
-              Sesuai standar retensi privasi sistem terpadu (14 hari pasca acara), file foto candid tamu serta tautan subdomain dan custom domain telah didaur ulang secara aman. Seluruh catatan doa restu serta rekapitulasi kehadiran tamu tetap tersimpan abadi dan dapat Anda unduh kapan saja.
+              Sesuai standar retensi privasi sistem terpadu ({baseRetentionDays} hari pasca acara), tautan subdomain publik serta galeri foto candid tamu telah ditutup secara aman. Seluruh catatan doa restu serta rekapitulasi kehadiran tamu tetap tersimpan aman di akun Anda dan dapat diunduh kapan saja.
             </p>
           </div>
         </div>
@@ -201,13 +226,13 @@ function DashboardHomeContent() {
             <div className="space-y-2 z-10">
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/15 border border-amber-500/30 text-amber-300 rounded-full text-[11px] font-bold uppercase tracking-wider">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                <span>Cold Vault &bull; Tersimpan Abadi (1 Tahun)</span>
+                <span>Arsip Mandiri &bull; Tautan Kanonikal</span>
               </div>
               <h2 className="text-lg sm:text-xl font-serif font-bold text-white tracking-tight">
-                Undangan Pernikahan Tetap Aktif
+                Undangan Telah Diarsipkan
               </h2>
               <p className="text-xs sm:text-sm text-stone-300 max-w-xl leading-relaxed">
-                Undangan digital pernikahan Anda tersimpan mandiri di Cold Storage kami dan tetap dapat Anda nikmati kembali kapan saja melalui tautan kanonikal abadi.
+                Tautan publik subdomain dan galeri foto candid tamu telah ditutup sesuai kebijakan retensi privasi. Undangan Anda tetap diarsipkan secara mandiri dan dapat diakses melalui tautan kanonikal serta Custom Domain pribadi Anda.
               </p>
               <div className="pt-1 flex items-center gap-2 text-xs font-mono text-amber-200/90 truncate">
                 <svg className="w-3.5 h-3.5 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -223,7 +248,7 @@ function DashboardHomeContent() {
                 rel="noopener noreferrer"
                 className="flex-1 sm:flex-initial py-2.5 px-5 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-bold rounded-xl text-xs transition text-center shadow-xs flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>Buka Undangan</span>
+                <span>Lihat Arsip</span>
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
@@ -405,7 +430,6 @@ function DashboardHomeContent() {
 
   const editorUrl = invitation ? `/dashboard/invitation/${invitation.id}` : "/dashboard/invitation";
 
-  const retentionDays = Number(platformSettings?.retentionCleanupDays) || 30;
   const latestEventDate = getLatestEventDate(invitation?.eventData);
   const effectiveExpiry = invitation?.galleryExpiresAt
     ? new Date(invitation.galleryExpiresAt)
@@ -418,7 +442,7 @@ function DashboardHomeContent() {
     : null;
 
   const currentPlan = normalizePlanType(invitation?.order?.planType || "TIER_1");
-  const baseRetentionDays = retentionDays;
+  const hasMemories = currentPlan === "TIER_2" || currentPlan === "TIER_3";
   const extraGalleryDays = Number(featureSettings?.extraGalleryDays) || 0;
   const hasExtended = extraGalleryDays >= 30;
   const isRenewalWindow = daysRemaining !== null && daysRemaining <= 7 && daysRemaining > 0;
@@ -481,15 +505,43 @@ function DashboardHomeContent() {
                 Undangan Pernikahan
               </span>
               {invitation?.status === 'PUBLISHED' ? (
-                <span className="px-2.5 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] sm:text-[11px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
-                  AKTIF
-                </span>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="px-2.5 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] sm:text-[11px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                    AKTIF (UNDANGAN)
+                  </span>
+                  {hasMemories && (
+                    <button
+                      type="button"
+                      onClick={handleToggleGalleryMode}
+                      disabled={togglingGallery}
+                      className="px-2.5 py-0.5 bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200/80 rounded-full text-[10px] font-bold transition flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                      title="Beralih ke Mode Galeri Kenangan Pasca-Acara"
+                    >
+                      <span>{togglingGallery ? "..." : "Beralih ke Galeri"}</span>
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                  )}
+                </div>
               ) : invitation?.status === 'EVENT_FINISHED' ? (
-                <span className="px-2.5 py-0.5 bg-purple-50 border border-purple-200 text-purple-800 text-[10px] sm:text-[11px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-600"></span>
-                  SELESAI
-                </span>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="px-2.5 py-0.5 bg-purple-50 border border-purple-200 text-purple-800 text-[10px] sm:text-[11px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-600"></span>
+                    SELESAI (MODE GALERI)
+                  </span>
+                  {hasMemories && (
+                    <button
+                      type="button"
+                      onClick={handleToggleGalleryMode}
+                      disabled={togglingGallery}
+                      className="px-2.5 py-0.5 bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-300 rounded-full text-[10px] font-bold transition flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                      title="Kembalikan ke Mode Web Undangan"
+                    >
+                      <span>{togglingGallery ? "..." : "Mode Undangan"}</span>
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
+                    </button>
+                  )}
+                </div>
               ) : (
                 <span className="px-2.5 py-0.5 bg-amber-50 border border-amber-200 text-amber-800 text-[10px] sm:text-[11px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
@@ -778,7 +830,7 @@ function DashboardHomeContent() {
             </div>
             <h3 className="text-sm font-bold text-stone-900">Studio Editor Undangan</h3>
             <p className="text-xs text-stone-500 leading-relaxed">
-              Atur susunan multi-acara, foto prewedding, video YouTube, dan rekening bank.
+              Atur susunan multi-acara, foto galeri momen, video YouTube, dan rekening bank.
             </p>
           </div>
           <Link

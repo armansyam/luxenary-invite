@@ -2845,7 +2845,7 @@ export default function EditInvitation() {
                         updateField("musicUrl", e.target.value);
                         updateFeatureSetting("musicUrl", e.target.value);
                       }}
-                      placeholder="https://domain.com/audio/wedding-song.mp3 atau https://youtube.com/watch?v=..."
+                      placeholder="https://domain.com/audio/background-music.mp3 atau https://youtube.com/watch?v=..."
                       className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs text-stone-900 font-mono focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                     />
                   </div>
@@ -4183,7 +4183,7 @@ export default function EditInvitation() {
                     type="url"
                     value={getFeatureSetting("galleryDriveFolderUrl", "")}
                     onChange={(e) => updateFeatureSetting("galleryDriveFolderUrl", e.target.value)}
-                    placeholder="Masukkan URL drive Prewedding galery kamu"
+                    placeholder="Masukkan URL Google Drive galeri foto kamu"
                     className="w-full p-2.5 bg-white border border-stone-300 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30 font-mono"
                   />
                   <div className="p-2.5 bg-blue-50/60 rounded-xl border border-blue-100 text-[11px] text-blue-900">
@@ -5070,9 +5070,9 @@ export default function EditInvitation() {
                 />
                 <Input
                   label="Subjudul Sampul (Cover Subtitle)"
-                  value={getCustomLabel("coverSubtitle", "UNDANGAN PERNIKAHAN")}
+                  value={getCustomLabel("coverSubtitle", (!invitation?.eventType || invitation?.eventType === "WEDDING") ? "UNDANGAN PERNIKAHAN" : "UNDANGAN RESMI")}
                   onChange={(v) => updateCustomLabel("coverSubtitle", v)}
-                  placeholder="UNDANGAN PERNIKAHAN / WEDDING INVITATION"
+                  placeholder="UNDANGAN RESMI / DIGITAL INVITATION"
                 />
               </div>
             </div>
@@ -5160,13 +5160,13 @@ export default function EditInvitation() {
                   label="Judul Seksi Tanda Kasih / Kado"
                   value={getCustomLabel("giftTitle", activeBlueprint?.giftSectionTitle || "Tanda Kasih")}
                   onChange={(v) => updateCustomLabel("giftTitle", v)}
-                  placeholder={activeBlueprint?.giftSectionTitle || "Tanda Kasih / Wedding Gift"}
+                  placeholder={activeBlueprint?.giftSectionTitle || "Tanda Kasih / Digital Gift"}
                 />
                 <Input
                   label="Eyebrow Tanda Kasih"
-                  value={getCustomLabel("giftEyebrow", activeBlueprint?.giftSectionEyebrow || "WEDDING GIFT")}
+                  value={getCustomLabel("giftEyebrow", activeBlueprint?.giftSectionEyebrow || "TANDA KASIH")}
                   onChange={(v) => updateCustomLabel("giftEyebrow", v)}
-                  placeholder={activeBlueprint?.giftSectionEyebrow || "WEDDING GIFT / KADO DIGITAL"}
+                  placeholder={activeBlueprint?.giftSectionEyebrow || "DIGITAL GIFT / TANDA KASIH"}
                 />
                 <Input
                   label="Judul Turut Mengundang"
@@ -5229,7 +5229,7 @@ export default function EditInvitation() {
         >
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-sm sm:text-base font-bold text-stone-900">16. Mitra &amp; Vendor Pernikahan (Wedding Credits)</h2>
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">{(!invitation?.eventType || invitation?.eventType === "WEDDING") ? "16. Mitra & Vendor Pernikahan (Wedding Credits)" : "16. Mitra & Vendor Acara (Credits)"}</h2>
               {collapsed.sec16 && (
                 <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
                   <span className="text-stone-300">•</span>
@@ -5240,7 +5240,7 @@ export default function EditInvitation() {
               )}
             </div>
             {!collapsed.sec16 && (
-              <p className="text-xs text-stone-500 mt-0.5">Daftar logo dan nama vendor pernikahan (fotografer, MUA, dekorasi, busana) yang tampil bersih tanpa bingkai kartu di atas footer.</p>
+              <p className="text-xs text-stone-500 mt-0.5">Daftar logo dan nama mitra vendor acara (fotografer, dokumentasi, dekorasi, busana) yang tampil bersih tanpa bingkai kartu di atas footer.</p>
             )}
           </div>
           <div onClick={(e) => e.stopPropagation()}>
@@ -5278,7 +5278,7 @@ export default function EditInvitation() {
                     label="Judul Section"
                     value={getCustomLabel("vendorTitle", "Vendor")}
                     onChange={(v) => updateCustomLabel("vendorTitle", v)}
-                    placeholder="Vendor / Wedding Vendors"
+                    placeholder="Vendor / Event Partners"
                   />
                   <Input
                     label="Teks Subtitle / Catatan (Opsional)"

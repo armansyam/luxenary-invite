@@ -102,7 +102,7 @@ export async function GET(req: Request) {
 
       let primaryName = source?.groomDisplayName || source?.groomName || "Pengantin Pria";
       let secondaryName = source?.brideDisplayName || source?.brideName || "Pengantin Wanita";
-      let eyebrow = source?.tagline || tagline || "Wedding Invitation";
+      let eyebrow = source?.tagline || tagline || "Digital Invitation";
 
       if (evTypeUpper === "BIRTHDAY") {
         primaryName = (source as any)?.personName || (source as any)?.personNickname || "Birthday";

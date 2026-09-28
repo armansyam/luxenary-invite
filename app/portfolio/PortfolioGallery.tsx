@@ -59,7 +59,7 @@ export function PortfolioGallery({ items }: PortfolioGalleryProps) {
           Belum Ada Undangan yang Diterbitkan
         </h3>
         <p className="text-xs text-stone-600 leading-relaxed">
-          Jadilah pasangan pertama yang menerbitkan mahakarya undangan pernikahan digital eksklusif bersama {platformName}.
+          Jadilah yang pertama menerbitkan mahakarya undangan digital eksklusif bersama {platformName}.
         </p>
         <div className="pt-2">
           <Link
