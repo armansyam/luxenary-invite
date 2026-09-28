@@ -12,6 +12,7 @@ export default async function Home() {
     platformName,
     heroTagline,
     heroSubtitle,
+    pricingSubtitle,
     packages: pricingPackages,
     retentionInvitationGraceDays,
     retentionGalleryDefaultDays,
@@ -1147,7 +1148,7 @@ export default async function Home() {
               Pilih Paket yang Sesuai dengan Cerita Anda
             </h2>
             <p className="harga-desc reveal reveal-delay-2">
-              Biaya satu kali bayar dengan masa aktif undangan 1 tahun (archive), penyimpanan galeri foto tamu 30 hari, dan portofolio resmi permanen.
+              {pricingSubtitle || "Biaya satu kali bayar dengan masa aktif undangan 1 tahun (archive), penyimpanan galeri foto tamu 30 hari, dan portofolio resmi permanen."}
             </p>
             <Link href="/demo?tab=features" className="harga-detail-link reveal reveal-delay-3">
               Lihat Detail Fitur

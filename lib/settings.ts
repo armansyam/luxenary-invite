@@ -30,6 +30,7 @@ export interface PublicPlatformSettings {
   platformName: string;
   heroTagline: string;
   heroSubtitle: string;
+  pricingSubtitle?: string;
   supportEmail: string;
   supportWhatsapp: string;
   packages: PricingPackageItem[];
@@ -211,32 +212,17 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
       rawList.push(`Guest Camera — Kamera Saku Tamu (Kapasitas Total ${totalPhotos} Foto — Aktif 1 bulan setelah acara)`);
     }
 
-    // Pisahkan dan selaraskan masa aktif undangan (1 tahun archive) dan retensi galeri foto tamu (30 hari)
+    // Hanya tangani string lama yang masih menggabungkan 1 baris (legacy combined) jika ada
     const separatedList: string[] = [];
-    let hasInvitationDuration = false;
-    let hasGalleryRetention = false;
-
     for (const item of rawList) {
-      if (/masa\s*aktif\s*undangan/i.test(item)) {
-        hasInvitationDuration = true;
+      if (/masa\s*aktif\s*undangan.*galeri.*(cold\s*storage|nas)/i.test(item)) {
         separatedList.push("Masa aktif undangan 1 tahun (archive)");
-        if (/galeri/i.test(item) && caps.includes("guest_memories")) {
-          hasGalleryRetention = true;
+        if (caps.includes("guest_memories")) {
           separatedList.push("Penyimpanan galeri foto tamu 30 hari (unduh ZIP)");
         }
-      } else if (/penyimpanan\s*galeri\s*(foto\s*tamu|momen)/i.test(item)) {
-        hasGalleryRetention = true;
-        separatedList.push("Penyimpanan galeri foto tamu 30 hari (unduh ZIP)");
       } else {
         separatedList.push(item);
       }
-    }
-
-    if (!hasInvitationDuration) {
-      separatedList.push("Masa aktif undangan 1 tahun (archive)");
-    }
-    if (caps.includes("guest_memories") && !hasGalleryRetention) {
-      separatedList.push("Penyimpanan galeri foto tamu 30 hari (unduh ZIP)");
     }
 
     const isLocalDevDomain = !activeDomain || activeDomain.includes("localhost") || activeDomain.includes("127.0.0.1") || activeDomain.includes("192.168.") || activeDomain.includes(":");
@@ -275,6 +261,9 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     heroSubtitle:
       map["hero_subtitle"] ||
       "Didesain khusus dengan sentuhan estetika mewah dan eksklusif. Hadirkan pengalaman berkesan dengan layout split desktop, custom subdomain, buku tamu real-time, dan video booth ucapan.",
+    pricingSubtitle:
+      map["pricing_subtitle"] ||
+      "Biaya satu kali bayar dengan masa aktif undangan 1 tahun (archive), penyimpanan galeri foto tamu 30 hari, dan portofolio resmi permanen.",
     supportEmail: map["support_email"] || "",
     supportWhatsapp: map["support_whatsapp"] || "",
     paymentMode: ((map["payment_mode"] === "MANUAL" ? "MANUAL" : "GATEWAY") as "GATEWAY" | "MANUAL"),

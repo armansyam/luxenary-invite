@@ -4238,6 +4238,7 @@ export default function AdminPage() {
                   {/* Pricing Settings */}
                   {(() => {
                     const PRICING_KEYS = [
+                      "pricing_subtitle",
                       "name_tier1", "name_tier2", "name_tier3",
                       "price_tier1", "price_tier2", "price_tier3",
                       "desc_tier1", "desc_tier2", "desc_tier3",
@@ -4260,7 +4261,12 @@ export default function AdminPage() {
                         saveSuccess={settingsSaved["pricing"]}
                         saveSuccessMessage="Harga, kapabilitas, dan kuota paket berhasil diperbarui"
                         viewContent={
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                          <div className="space-y-3.5">
+                            <div className="p-3.5 bg-stone-50 rounded-xl border border-stone-200">
+                              <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Subjudul Section Harga (Homepage)</span>
+                              <p className="text-xs text-gray-700 leading-relaxed">{settingsMap["pricing_subtitle"] || "Biaya satu kali bayar dengan masa aktif undangan 1 tahun (archive), penyimpanan galeri foto tamu 30 hari, dan portofolio resmi permanen."}</p>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
                             <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-2">
                               <div className="flex items-center justify-between mb-1">
                                 <div className="flex items-center gap-1.5">
@@ -4319,9 +4325,21 @@ export default function AdminPage() {
                               </div>
                             </div>
                           </div>
+                          </div>
                         }
                       >
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                    <div className="space-y-4">
+                      <div className="p-3.5 bg-stone-50 rounded-xl border border-stone-200">
+                        <FieldRow label="Subjudul Section Harga (Homepage)" description="Kalimat penjelasan tepat di bawah judul 'Pilih Paket yang Sesuai dengan Cerita Anda' di halaman beranda.">
+                          <input
+                            type="text"
+                            value={settingsMap["pricing_subtitle"] ?? "Biaya satu kali bayar dengan masa aktif undangan 1 tahun (archive), penyimpanan galeri foto tamu 30 hari, dan portofolio resmi permanen."}
+                            onChange={(e) => setSetting("pricing_subtitle", e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
+                          />
+                        </FieldRow>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
                       {/* Tier 1 */}
                       <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-3">
                         <div className="flex items-center gap-2">
@@ -4556,6 +4574,7 @@ export default function AdminPage() {
                         )}
                       </div>
                     </div>
+                  </div>
                   </SettingsCard>
                     );
                   })()}

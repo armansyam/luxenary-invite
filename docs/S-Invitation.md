@@ -581,6 +581,9 @@ Sistem pengiriman email otomatis menggunakan **Nodemailer** yang membaca kredens
 6. **Proteksi Subdomain Cadangan Sistem & CDN R2 (`RESERVED_SUBDOMAINS`)**:
    - Subdomain kritis seperti `cdn` (khusus Cloudflare R2), `admin`, `api`, `auth`, `static`, `assets`, `media`, `storage`, `r2`, dan `s3` dikunci terpusat di `lib/domainUtils.ts`.
    - Menolak secara mutlak upaya klien mengklaim atau menimpa subdomain CDN R2, serta menjamin `middleware.ts` tidak pernah me-rewrite request aset CDN ke rute undangan klien (`/s/[subdomain]`).
+7. **Manajemen Dinamis Paket & Subjudul Harga (`pricing_subtitle`, `features_tier1..3`)**:
+   - Pengaturan daftar fitur paket per baris di setiap tier (`features_tier1`, `features_tier2`, `features_tier3`) serta kalimat pengantar section harga pada beranda (`pricing_subtitle`) 100% dinamis dan tersimpan di database `admin_settings`.
+   - Parser backend menghormati teks editan admin tanpa menimpa format custom dengan regex statis, memungkinkan kebebasan kustomisasi narasi paket langsung dari panel admin.
 
 ---
 

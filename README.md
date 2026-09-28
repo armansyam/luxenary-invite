@@ -191,7 +191,7 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 | **Symphony** *(TIER_2)* | Hingga 1.000 Tamu, Seluruh Fitur Serenade + **Sistem Resepsionis QR Check-In & PIN Staf Panitia**, Retensi 1 Bulan (30 Hari) | Total Kuota: **250 Foto Acara** *(Pengantin bebas atur roll per tamu)* | **Bebas Semua Tema** *(Minimalist, Modern, Traditional)* |
 | **Eternity** *(TIER_3)* | **Tamu Tanpa Batas (Unlimited)**, Seluruh Fitur Symphony + **Hak Integrasi Custom Domain**, Dashboard Monitoring Momen Tamu, Retensi 1 Bulan (30 Hari) | Total Kuota: **1.000 Foto Acara** *(Pengantin bebas atur roll per tamu)* | **Bebas Semua Tema** *(Minimalist, Modern, Traditional)* |
 
-> Harga dan kuota plafon kamera per paket serta add-on top-up foto (+100 Foto - Rp35.000) dan perpanjangan (+30 Hari - Rp50.000) dapat diatur mandiri oleh Administrator di Admin Portal → tab Paket & Harga tanpa perlu deploy ulang.
+> Seluruh nama tier, harga, subjudul pengantar paket di homepage (`pricing_subtitle`), butir-butir fitur (`features_tier1`, `features_tier2`, `features_tier3`), serta add-on top-up foto (+100 Foto - Rp35.000) dan perpanjangan (+30 Hari - Rp50.000) dapat diatur mandiri oleh Administrator di Admin Portal → tab Paket & Harga secara dinamis tanpa perlu deploy ulang.
 
 ### Standar Arsitektur Template Undangan
 - **Cover Gate & Smart Mobile Fullscreen:** Tombol buka undangan (`data-lux-field="customLabels.openBtn"`) wajib memiliki teks fisik default `"Buka Undangan"` dan didukung fallback engine agar tidak pernah kosong/transparan. Saat tombol diklik, sistem mengeksekusi `requestSmartFullscreen()` di seluruh 19 tema master dan `starter-blueprint.html` untuk memicu Fullscreen API atau auto-hide address bar mobile via `window.scrollTo(0, 1)`.
