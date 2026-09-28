@@ -7422,7 +7422,7 @@ export default function AdminPage() {
                               label: "Thumbnail Mobile (HP)", 
                               file: "thumbnail_mobile.webp", 
                               allowVideo: false, 
-                              desc: "Ukuran pas: 390 × 780 px (Rasio 1:2)" 
+                              desc: "Ukuran pas: 400 × 800 px (Rasio 1:2 — Retina: 800 × 1600 px)" 
                             },
                             { 
                               slot: "thumbnail_desktop", 

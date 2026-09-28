@@ -839,7 +839,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Seluruh aset visual beresolusi tinggi dioptimasi ke format WebP dengan batas dimensi Retina 2048px dan unsharp mask sharpening (`sharp.sharpen()`) untuk menjaga kejernihan mikro-kontras foto mempelai dan ornamen tema.
    - Bobot gambar ditekan 100% di bawah 200 KB guna menjamin Largest Contentful Paint (LCP) Google Core Web Vitals < 2.5 detik pada jaringan seluler 4G/5G serta mencegah crash memori pada browser iOS Safari.
 3. **Rasio Presisi Showcase & Penyelarasan Demo Studio:**
-   - **Mockup Showcase Mobile (HP):** Standar rasio **1 : 2** (ukuran pas: **390 × 780 px** / **800 × 1600 px**).
+   - **Mockup Showcase Mobile (HP):** Standar rasio **1 : 2** (ukuran pas: **400 × 800 px** / **800 × 1600 px**).
    - **Mockup Showcase Desktop (Laptop):** Standar rasio **16 : 10** (ukuran pas: **1280 × 800 px** / **2560 × 1600 px**).
    - Seluruh teks panduan formulir Demo Studio disederhanakan secara to-the-point tanpa referensi rancu ke iPad Mini, langsung menyajikan ukuran pas dan rasio yang dibutuhkan administrator.
 4. **Device Pair Mockup Showcase & Resolusi Ganda Thumbnail (Mobile & Desktop):**
@@ -1296,7 +1296,7 @@ API `/api/admin/overview` diperluas dengan 10 stats field baru (in-memory filter
 6. **Universal Section Engine & CDP Thumbnail Suite (v6.3.2):**
    - Registry Showroom (`lib/demoRegistry.ts`) dan Komposer Klien (`lib/themeEngine.ts`) kini 100% sinkron dan lengkap dengan generator seksi interaktif (`countdownHtml`, `eventSectionHtml`, `gallerySectionHtml`, `giftSectionHtml`, `rsvpSectionHtml`, dan `wishesSectionHtml`) untuk seluruh 6 perayaan non-wedding.
    - Kepatuhan total Zero-Hardcode Policy dengan CSS tokens (`var(--primary)`, `var(--card-bg)`, `var(--text-main)`, dll).
-   - Thumbnail engine mandiri via Chrome DevTools Protocol (`scripts/generate-all-thumbnails.ts`) menghasilkan pratinjau autentik (Desktop 1280×800 16:10, Mobile 390×780 1:2) berstandar Lanczos3 + WebP Q92 tanpa artefak banding.
+   - Thumbnail engine mandiri via Chrome DevTools Protocol (`scripts/generate-all-thumbnails.ts`) menghasilkan pratinjau autentik (Desktop 1280×800 16:10, Mobile 400×800 1:2) berstandar Lanczos3 + WebP Q92 tanpa artefak banding.
 
 ---
 

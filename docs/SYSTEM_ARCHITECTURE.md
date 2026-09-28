@@ -2324,7 +2324,7 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
    - Penamaan aset gambar hero mockup didekopel menjadi netral dan mandiri: `hero_mockup_1.webp` (Ponsel Kiri), `hero_mockup_2.webp` (Ponsel Tengah), dan `hero_mockup_3.webp` (Ponsel Kanan).
    - Tetap mempertahankan arsitektur frame iPhone 16 Pro CSS: bodi Titanium, Dynamic Island (`z-index: 8`), dan lapisan kilau kaca Specular Glare (`z-index: 3`).
 2. **Standarisasi Bobot Aset Visual WebP (< 200 KB) & Rasio Presisi Showcase:**
-   - **Mockup Showcase Mobile (HP):** Standar rasio **1 : 2** (ukuran pas: **390 × 780 px** / **800 × 1600 px**).
+   - **Mockup Showcase Mobile (HP):** Standar rasio **1 : 2** (ukuran pas: **400 × 800 px** / **800 × 1600 px**).
    - **Mockup Showcase Desktop (Laptop):** Standar rasio **16 : 10** (ukuran pas: **1280 × 800 px** / **2560 × 1600 px**).
    - Seluruh aset dikompresi dengan WebP effort 6 serta unsharp mask filter (`sharp.sharpen({ sigma: 1.0, m1: 0.75, m2: 2.0 })`) dengan bobot 100% di bawah 200 KB untuk menjamin metrik LCP < 2.5s.
 3. **Penyelarasan Teks Panduan Demo Studio:**
