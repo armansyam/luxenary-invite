@@ -628,7 +628,7 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
     - **Makassar Maros (`themes/traditional/maros.html`)**: Pesona Butta Salewangang & bukit karst Rammang-Rammang berbalut Royal Navy & Gold.
     - **Makassar Takalar (`themes/traditional/takalar.html`)**: Kemegahan Butta Panrannuangku & Sanrobone berbalut Royal Navy & Gold.
     - **Makassar Bulukumba (`themes/traditional/bulukumba.html`)**: Keperkasaan Butta Panrita Lopi & Bahtera Phinisi Tanah Beru berbalut Royal Navy & Gold.
-  * **Standarisasi Invarian 9 Slot Media & Aset Terisolasi**: Seluruh 7 tema baru dilengkapi 9 slot media lengkap, folder demo mandiri (`public/demo/{daerah}/`), folder ornamen terdedikasi (`public/assets/ornaments/{daerah}/`), dan kepatuhan penuh split desktop 460px.
+  * **Standarisasi Invarian 9 Slot Media & Aset Terisolasi**: Seluruh 7 tema baru dilengkapi 9 slot media lengkap, folder demo mandiri (`public/demo/{daerah}/`), pustaka ornamen adat bersama (`public/assets/ornaments/bugis/`), dan kepatuhan penuh split desktop 460px.
 - **Penyempurnaan Standar Global Closing Section, Kontras Timeline, & Ornamen Etnik Autentik (v5.9.5)**:
   * **Standarisasi Global Closing Section (`themes/BLUEPRINT_GUIDE.md` & Seluruh Tema Tradisional)**: Standarisasi penataan footer dinamis: saat media slot `CLOSING_COVER` di-upload (`.has-closing-photo`), layout bertransformasi ke `justify-content: space-between;` dengan ornamen kultural statis di atas (`.closing-top-ornament`) dan teks doa/mempelai (`.closing-content`) merapat elegan ke bawah; saat tidak ada foto (`.no-closing-photo`), seluruh elemen terpusat (`justify-content: center;`).
   * **Penyempurnaan Ornamen Bugis**: Mengganti ikon `rumah-adat-bugis.webp` dan artificial neon glow dengan ornamen etnik fotorealistik `pavillion-bamboo.webp` berbayang hitam tipis natural (`drop-shadow(0 4px 12px rgba(0, 0, 0, 0.45))`).
@@ -667,5 +667,10 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
   * **Hukum Zero-Copy (Anti-Copy Invariant)**: Dilarang keras menyalin berkas fisik ornamen ke folder demo (`public/demo/...`) atau folder unggahan klien (`public/uploads/...`). Template tema master memanggil langsung path URL publik absolut (`/assets/ornaments/background/<nama-file>`).
   * **Fleksibilitas Desain & Ornamen Berlapis**: Setiap tema master memiliki kebebasan desain mandiri; tema bebas memadukan slot media unggahan (`landingCoverUrl`, `sidebarPhotoUrl`) dengan aset ornamen/motif latar sistem (seperti perpaduan layer di tema Makassar) untuk mempertahankan identitas estetik dan ciri khas budaya tema masing-masing.
   * **Matriks 39 Tema Terverifikasi**: Seluruh 39 tema master terdokumentasi dan terpetakan rapi ke aset fallback masing-masing di `docs/SYSTEM_ARCHITECTURE.md` dan `docs/S-Invitation.md`.
+- **Konsolidasi Pustaka Ornamen Terpusat & Eliminasi Duplikat (~5,4 MB)**:
+  * **Penyatuan Pustaka Rumpun Sulawesi Selatan (`public/assets/ornaments/bugis/`)**: Mengintegrasikan seluruh lambang kultural Bugis & Makassar (Walasuji, Kapal Phinisi, Frame Makassar, Rumah Adat Saoraja/Balla Lompoa, Kain Tenun Sabbe, Sulapa Eppa, Balo Tettong, Cobo Rebung, Bingkai 3D) ke dalam satu pustaka bersama yang diakses bersama oleh seluruh 11 tema daerah Sulsel (`bugis`, `makassar`, `bone`, `soppeng`, `wajo`, `gowa`, `maros`, `takalar`, `bulukumba`, `lagaligo`, `dillalucky`).
+  * **Eliminasi 20 Grup Kloning Duplikat Mati**: Menghapus seluruh folder duplikat kloningan per-daerah (`bone/`, `soppeng/`, `wajo/`, `bulukumba/`, `gowa/`, `maros/`, `takalar/`, `makale/`, `rantepao/`) serta mengeliminasi folder kosong `minimalist-elegant/` & `minimalist-elegant-04/`, menghemat ruang disk ~5,4 MB.
+  * **Sinkronisasi Katalog Interaktif (`public/assets/ornaments/preview.html`)**: Memperbarui katalog preview resmi menjadi 134 aset aktif fisik 100% presisi tanpa berkas yatim.
+
 
 

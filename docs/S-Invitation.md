@@ -1179,7 +1179,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - **Ornamen Budaya Otentik Toraja Rantepao:**
      * *Ukiran Passura' Toraja:* Ornamen ragam hias khas Toraja (*Pa'barre Allo, Pa'kadang Pao, Pa'tedong*).
      * *Siluet Arsitektur Tongkonan:* Rumah adat Tongkonan dengan atap perahu melengkung yang megah.
-     * *Folder Aset Terdedikasi:* Disiapkan direktori `public/assets/ornaments/rantepao/` untuk ornamen kustom khas daerah Rantepao.
+     * *Pustaka Ornamen Bersama:* Mengakses pustaka terpusat `public/assets/ornaments/toraja/`.
    - **Tipografi Luhur & Narasi Adat:**
      * Kombinasi font sakral `Cinzel`, `Great Vibes`, `Cormorant Garamond`, dan `Plus Jakarta Sans`.
      * Petuah leluhur *"Misa' kada dipotuo, pantan kada dipomate"* (Bersatu kita teguh, bercerai kita runtuh) dan ucapan syukur *"Kurresumanga'"*.
@@ -1204,7 +1204,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - **Ornamen Budaya Otentik Tana Toraja Makale:**
      * *Ukiran Passura' Toraja:* Ragam hias ukiran kayu khas Toraja (*Pa'barre Allo, Pa'tedong, Pa'manuk Londong*).
      * *Siluet Arsitektur Buntu Burake & Tongkonan:* Megahnya siluet bukit kars Buntu Burake dan rumah adat Tongkonan.
-     * *Folder Aset Terdedikasi:* Disiapkan direktori `public/assets/ornaments/makale/` untuk ornamen kustom khas daerah Makale.
+     * *Pustaka Ornamen Bersama:* Mengakses pustaka terpusat `public/assets/ornaments/toraja/`.
    - **Tipografi Luhur & Narasi Adat:**
      * Kombinasi font sakral `Cinzel`, `Great Vibes`, `Cormorant Garamond`, dan `Plus Jakarta Sans`.
      * Petuah leluhur *"Misa' kada dipotuo, pantan kada dipomate"* dan ucapan syukur *"Kurresumanga'"*.
@@ -1221,16 +1221,16 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Mengeliminasi `lux-at-home-zone` agar docking navigasi tetap terlihat stabil saat scroll ke atas dan hanya auto-hide saat mencapai seksi outro terbawah.
 
 2. **Koleksi 7 Master Tema Fisik Daerah Sulawesi Selatan:**
-   - **Bugis Bone (`themes/wedding/traditional/bone.html`):** Mengangkat kemegahan bangsawan Kerajaan Bone, Saoraja Lamurukung, dan filosofi Songkok To Bone. Folder ornamen: `public/assets/ornaments/bone/`.
-   - **Bugis Wajo (`themes/wedding/traditional/wajo.html`):** Mengangkat keindahan tenun sutera Sengkang, Danau Tempe, dan Saoraja Ranreng Bettempola. Folder ornamen: `public/assets/ornaments/wajo/`.
-   - **Bugis Soppeng (`themes/wedding/traditional/soppeng.html`):** Mengangkat keanggunan Bumi Latemmamala dan Villa Yuliana. Folder ornamen: `public/assets/ornaments/soppeng/`.
-   - **Makassar Gowa (`themes/wedding/traditional/gowa.html`):** Mengangkat keagungan Kesultanan Gowa, Istana Balla Lompoa Sungguminasa, dan Benteng Somba Opu. Folder ornamen: `public/assets/ornaments/gowa/`.
-   - **Makassar Maros (`themes/wedding/traditional/maros.html`):** Mengangkat kearifan Butta Salewangang, karst Rammang-Rammang, dan Marusu'. Folder ornamen: `public/assets/ornaments/maros/`.
-   - **Makassar Takalar (`themes/wedding/traditional/takalar.html`):** Mengangkat semangat Butta Panrannuangku dan Balla Lompoa Sanrobone. Folder ornamen: `public/assets/ornaments/takalar/`.
-   - **Makassar Bulukumba (`themes/wedding/traditional/bulukumba.html`):** Mengangkat kemegahan bahtera Phinisi Tanah Beru, filosofi Butta Panrita Lopi, dan tradisi Ammatoa. Folder ornamen: `public/assets/ornaments/bulukumba/`.
+   - **Bugis Bone (`themes/wedding/traditional/bone.html`):** Mengangkat kemegahan bangsawan Kerajaan Bone, Saoraja Lamurukung, dan filosofi Songkok To Bone. Pustaka ornamen bersama: `public/assets/ornaments/bugis/`.
+   - **Bugis Wajo (`themes/wedding/traditional/wajo.html`):** Mengangkat keindahan tenun sutera Sengkang, Danau Tempe, dan Saoraja Ranreng Bettempola. Pustaka ornamen bersama: `public/assets/ornaments/bugis/`.
+   - **Bugis Soppeng (`themes/wedding/traditional/soppeng.html`):** Mengangkat keanggunan Bumi Latemmamala dan Villa Yuliana. Pustaka ornamen bersama: `public/assets/ornaments/bugis/`.
+   - **Makassar Gowa (`themes/wedding/traditional/gowa.html`):** Mengangkat keagungan Kesultanan Gowa, Istana Balla Lompoa Sungguminasa, dan Benteng Somba Opu. Pustaka ornamen bersama: `public/assets/ornaments/bugis/`.
+   - **Makassar Maros (`themes/wedding/traditional/maros.html`):** Mengangkat kearifan Butta Salewangang, karst Rammang-Rammang, dan Marusu'. Pustaka ornamen bersama: `public/assets/ornaments/bugis/`.
+   - **Makassar Takalar (`themes/wedding/traditional/takalar.html`):** Mengangkat semangat Butta Panrannuangku dan Balla Lompoa Sanrobone. Pustaka ornamen bersama: `public/assets/ornaments/bugis/`.
+   - **Makassar Bulukumba (`themes/wedding/traditional/bulukumba.html`):** Mengangkat kemegahan bahtera Phinisi Tanah Beru, filosofi Butta Panrita Lopi, dan tradisi Ammatoa. Pustaka ornamen bersama: `public/assets/ornaments/bugis/`.
 
 3. **Invarian 9 Slot Media & Aset Terisolasi:**
-   - Setiap tema memiliki direktori demo terisolasi (`public/demo/{daerah}/`) dan folder ornamen mandiri (`public/assets/ornaments/{daerah}/`).
+   - Setiap tema memiliki direktori demo terisolasi (`public/demo/{daerah}/`) dan memanfaatkan pustaka ornamen adat bersama (`public/assets/ornaments/bugis/`).
    - Mendukung penuh seluruh 9 slot media (`LANDING_COVER`, `LANDING_COVER_DESKTOP`, `HOME_PHOTO`, `DESKTOP_SIDEBAR`, `GLOBAL_FIXED_BG`, `GROOM_PHOTO`, `BRIDE_PHOTO`, `GALLERY`, `CLOSING_COVER`).
 
 ## 28. Spesifikasi Pengujian Kesiapan Industri (v5.9.7)
