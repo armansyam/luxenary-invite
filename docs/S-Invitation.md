@@ -1321,4 +1321,22 @@ Untuk menjamin keandalan sistem jangka panjang pada beban puncak produksi (*high
 5. **Cloudflare Cache Key Normalization Blueprint:**
    - Panduan konfigurasi Cloudflare Cache Rules pada reverse proxy publik: mengabaikan parameter query personalisasi tamu (`to` dan `v`) dari cache key untuk rute undangan publik `/*`, menjamin 100% Edge CDN Cache HIT (<20ms) bagi ribuan tamu WhatsApp sekaligus melindungi server aplikasi dari kehabisan koneksi basis data.
 
+---
+
+## 32. Arsitektur SEO, Dynamic XML Sitemap & Search Console Indexing (v6.3.4)
+
+Untuk menjamin visibilitas organik dan pengindeksan optimal oleh Googlebot:
+1. **Dynamic XML Sitemap (`app/sitemap.ts`):**
+   - Berjalan pada mode `force-dynamic` dengan header revalidasi berkala.
+   - Menggabungkan seluruh rute publik statis utama (`/`, `/demo`, `/packages`, `/how-it-works`, `/demo/memories`, `/demo/receptionist`, `/demo/sharemoment`, `/portfolio`, `/contact`, `/terms`, `/privacy`, `/refund`).
+   - Secara dinamis mengagregasi 100% tema fisik aktif dari basis data (`/demo/${theme.id}`) dengan prioritas 0.8.
+   - Secara dinamis mengagregasi seluruh portofolio publik terbitan (`/portfolio/${slug}`) via `listPortfolioSlugs()`.
+2. **Robots Crawling Policy (`app/robots.ts`):**
+   - Mengizinkan perayapan Googlebot ke seluruh showroom publik, panduan interaktif `/how-it-works`, galeri portofolio, dan aset statis.
+   - Mengisolasi dan memblokir perayapan (*disallow*) pada area privat/otentikasi: `/admin/*`, `/dashboard/*`, `/api/*`, `/login`, `/checkout/*`, `/onboarding`, dan `/setup`.
+3. **Dynamic Verification & Metadata (`app/layout.tsx`):**
+   - Mendukung integrasi token verifikasi Google Search Console otomatis via variabel lingkungan `GOOGLE_SITE_VERIFICATION` atau `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`.
+   - Menghasilkan JSON-LD `WebSite` Schema.org dengan aksi pencarian terintegrasi dan canonical URL dinamis per domain.
+
+
 

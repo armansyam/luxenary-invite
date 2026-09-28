@@ -45,6 +45,7 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
      - `/privacy` (Kebijakan Privasi Data)
      - `/refund` (Kebijakan Pengembalian Dana)
      - `/contact` (Pusat Bantuan & Kontak WhatsApp/Email Resmi)
+     - `/sitemap.xml` & `/robots.txt` (Dynamic SEO XML Sitemap agregasi statis, showroom tema, dan portofolio)
    *(Seluruh informasi nama platform, kontak, meta title & tab browser terhubung dinamis ke DB Admin Settings)*
      │
      ▼

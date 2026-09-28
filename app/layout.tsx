@@ -73,6 +73,9 @@ export async function generateMetadata(): Promise<Metadata> {
     alternates: {
       canonical: siteUrl,
     },
+    verification: {
+      google: process.env.GOOGLE_SITE_VERIFICATION || process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+    },
     icons: {
       icon: [
         { url: "/favicon.ico", sizes: "48x48", type: "image/x-icon" },

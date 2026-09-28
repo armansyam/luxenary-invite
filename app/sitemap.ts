@@ -1,6 +1,7 @@
 import { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 import { getDynamicServerAppUrl } from "@/lib/serverDomainUtils";
+import { listPortfolioSlugs } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 3600;
@@ -28,6 +29,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: "weekly",
       priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/how-it-works`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
     },
     {
       url: `${baseUrl}/demo/memories`,
@@ -97,5 +104,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("[sitemap] Failed to fetch dynamic themes", e);
   }
 
-  return [...staticRoutes, ...dynamicThemeRoutes];
+  // Dynamic Portfolio Routes
+  let dynamicPortfolioRoutes: MetadataRoute.Sitemap = [];
+  try {
+    const portfolioSlugs = await listPortfolioSlugs();
+    dynamicPortfolioRoutes = portfolioSlugs.map((slug) => ({
+      url: `${baseUrl}/portfolio/${slug}`,
+      lastModified: now,
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    }));
+  } catch (e) {
+    console.error("[sitemap] Failed to fetch portfolio slugs", e);
+  }
+
+  return [...staticRoutes, ...dynamicThemeRoutes, ...dynamicPortfolioRoutes];
 }

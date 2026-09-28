@@ -13,6 +13,7 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
           "/demo",
           "/demo/*",
           "/packages",
+          "/how-it-works",
           "/terms",
           "/privacy",
           "/refund",

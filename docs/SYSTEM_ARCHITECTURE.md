@@ -125,7 +125,7 @@
 │   ├── 403/                  # Halaman forbidden
 │   ├── privacy/terms/refund/contact/ # Legal & public support pages
 │   ├── robots.ts             # SEO Googlebot crawler guidelines
-│   ├── sitemap.ts            # Dynamic XML Sitemap generator (static & themes)
+│   ├── sitemap.ts            # Dynamic XML Sitemap generator (static, themes & portfolio)
 │   ├── layout.tsx            # Root layout (JSON-LD WebSite schema & dynamic metadata)
 │   ├── page.tsx              # Landing page utama
 │   └── globals.css           # Global CSS
