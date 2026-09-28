@@ -1,0 +1,191 @@
+[
+  {
+    "file": "01_kain-merah-atas-kiri.png",
+    "source_component": 1,
+    "size_px": [
+      514,
+      475
+    ],
+    "area_px": 131724
+  },
+  {
+    "file": "02_banner-gantung.png",
+    "source_component": 2,
+    "size_px": [
+      53,
+      320
+    ],
+    "area_px": 14460
+  },
+  {
+    "file": "03_tali-banner-kiri.png",
+    "source_component": 3,
+    "size_px": [
+      30,
+      474
+    ],
+    "area_px": 2661
+  },
+  {
+    "file": "04_tali-banner-kanan.png",
+    "source_component": 4,
+    "size_px": [
+      28,
+      308
+    ],
+    "area_px": 1738
+  },
+  {
+    "file": "05_kain-merah-atas-kanan.png",
+    "source_component": 5,
+    "size_px": [
+      268,
+      336
+    ],
+    "area_px": 31212
+  },
+  {
+    "file": "06_ornamen-diamond-atas.png",
+    "source_component": 6,
+    "size_px": [
+      70,
+      75
+    ],
+    "area_px": 1761
+  },
+  {
+    "file": "07_tali-ornamen-tengah.png",
+    "source_component": 7,
+    "size_px": [
+      31,
+      350
+    ],
+    "area_px": 2063
+  },
+  {
+    "file": "08_divider-gold-kiri.png",
+    "source_component": 8,
+    "size_px": [
+      176,
+      11
+    ],
+    "area_px": 946
+  },
+  {
+    "file": "09_divider-gold-kanan.png",
+    "source_component": 9,
+    "size_px": [
+      183,
+      10
+    ],
+    "area_px": 936
+  },
+  {
+    "file": "23_ornamen-diamond-tengah.png",
+    "source_component": 23,
+    "size_px": [
+      151,
+      63
+    ],
+    "area_px": 1560
+  },
+  {
+    "file": "24_awan-pegunungan.png",
+    "source_component": 24,
+    "size_px": [
+      629,
+      219
+    ],
+    "area_px": 69337
+  },
+  {
+    "file": "32_detail-kecil-kapal.png",
+    "source_component": 32,
+    "size_px": [
+      9,
+      133
+    ],
+    "area_px": 664
+  },
+  {
+    "file": "33_rumah-tradisional.png",
+    "source_component": 33,
+    "size_px": [
+      613,
+      450
+    ],
+    "area_px": 125883
+  },
+  {
+    "file": "34_kapal-phinisi.png",
+    "source_component": 34,
+    "size_px": [
+      349,
+      416
+    ],
+    "area_px": 66902
+  },
+  {
+    "file": "36_burung-1.png",
+    "source_component": 36,
+    "size_px": [
+      80,
+      42
+    ],
+    "area_px": 843
+  },
+  {
+    "file": "43_burung-2.png",
+    "source_component": 43,
+    "size_px": [
+      96,
+      39
+    ],
+    "area_px": 930
+  },
+  {
+    "file": "44_pulau-dan-air.png",
+    "source_component": 44,
+    "size_px": [
+      514,
+      236
+    ],
+    "area_px": 60538
+  },
+  {
+    "file": "47_burung-3.png",
+    "source_component": 47,
+    "size_px": [
+      79,
+      27
+    ],
+    "area_px": 577
+  },
+  {
+    "file": "58_daun-merah-kiri-bawah.png",
+    "source_component": 58,
+    "size_px": [
+      386,
+      275
+    ],
+    "area_px": 37866
+  },
+  {
+    "file": "59_daun-keris-kanan-bawah.png",
+    "source_component": 59,
+    "size_px": [
+      291,
+      273
+    ],
+    "area_px": 43896
+  },
+  {
+    "file": "65_kain-merah-bawah-tengah.png",
+    "source_component": 65,
+    "size_px": [
+      803,
+      160
+    ],
+    "area_px": 53909
+  }
+]
