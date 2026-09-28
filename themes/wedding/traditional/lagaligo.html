@@ -325,6 +325,27 @@
       background-size: cover;
       background-repeat: no-repeat;
       pointer-events: none;
+      filter: grayscale(100%);
+      background-image: 
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--bg-dark, #021712) 75%, transparent) 0%,
+          color-mix(in srgb, var(--bg-dark, #021712) 52%, transparent) 45%,
+          var(--bg-dark, #021712) 100%
+        ),
+        url('/assets/ornaments/bugis/bg-maroon.webp');
+    }
+
+    .fixed-bg-layer.has-custom-bg {
+      filter: none;
+      background-image: 
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--bg-dark, #021712) 75%, transparent) 0%,
+          color-mix(in srgb, var(--bg-dark, #021712) 52%, transparent) 45%,
+          var(--bg-dark, #021712) 100%
+        ),
+        var(--custom-bg);
     }
 
     /* DESKTOP SPLIT RULES (>= 900px) */
@@ -1561,7 +1582,7 @@
   <!-- =================================================================== -->
   <div class="layout-wrapper">
 
-    <div class="fixed-bg-layer" style="background-image: linear-gradient(180deg, color-mix(in srgb, var(--bg-dark, #021712) 75%, transparent) 0%, color-mix(in srgb, var(--bg-dark, #021712) 52%, transparent) 45%, var(--bg-dark, #021712) 100%), url('{{globalBgUrl}}');"></div>
+    <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
 
     <!-- DESKTOP FIXED SIDEBAR (Hanya tampil di layar desktop >= 900px) -->
     <aside class="sidebar-desktop">

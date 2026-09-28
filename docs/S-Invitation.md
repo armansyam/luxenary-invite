@@ -343,6 +343,9 @@ Sistem Studio Editor Klien (`/dashboard/invitation/[id]`) menyediakan kendali kr
    - **Mobile (< 900px):** Selalu menggunakan `LANDING_COVER` (rasio portrait 9:16) sebagai pop-up sampul pembuka layar HP.
    - **Desktop (≥ 900px):** Menggunakan `LANDING_COVER_DESKTOP` (rasio landscape 16:9). Jika slot desktop tidak diunggah, sistem otomatis beralih (*graceful fallback*) ke `LANDING_COVER` bawaan.
    - **Universal Fullscreen Override:** Pada tema dengan layout panel-terbatas (seperti Badrika, Candani, Mayang, Solaria, Lumina, Chronicle) yang secara bawaan membatasi cover pada kartu fixed 460px, saat `LANDING_COVER_DESKTOP` aktif, sistem otomatis menyuntikkan CSS override `@media (min-width: 900px)` yang memposisikan cover menjadi fullscreen fixed 100vw/100vh di seluruh monitor tanpa mengubah kartu undangan di dalamnya.
+5. **Universal Fallback Ornamen Latar (`GLOBAL_FIXED_BG`):**
+   - Jika slot latar belakang tidak diunggah atau dihapus, template master otomatis menampilkan gambar ornamen fallback dari pustaka bersama (`/assets/ornaments/background/` atau `/assets/ornaments/bugis/`).
+   - Begitu klien mengunggah foto/video kustom, selector `.has-custom-bg` aktif menggantikan fallback secara total dengan `filter: none` (warna murni).
 5. **Cloudflare Edge Caching & Wildcard Subdomain:**
    - Subdomain otomatis `*.luxenary.id` (contoh: `dimas-clarissa.luxenary.id`).
    - Cache statis dengan `Cache-Control: public, max-age=31536000, immutable`.

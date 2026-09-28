@@ -2,7 +2,7 @@
 
 > **Platform Undangan Digital Multi-Event B2C Self-Service (Wedding, Birthday, Khitan, Aqiqah, Wisuda, Gathering)**  
 > Next.js 16.3.2 · Prisma 7.9 (PostgreSQL) · NextAuth v5 · Multi-Gateway (5 Gateway) · Nodemailer SMTP · Cloudflare R2  
-> **Versi Dokumen: 6.3.4 | Diperbarui: 28 September 2026**
+> **Versi Dokumen: 6.3.5 | Diperbarui: 28 September 2026**
 
 > [!IMPORTANT]
 > **PROTOKOL SINKRONISASI DOKUMENTASI OTOMATIS (MANDATORY POST-EDIT & PRE-PUSH PROTOCOL):**  

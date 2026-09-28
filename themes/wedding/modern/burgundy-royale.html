@@ -244,7 +244,7 @@
       right: 0;
       width: 100%;
       height: 100vh;
-      background-image: url("{{globalBgUrl}}");
+      background-image: url('/assets/ornaments/background/background-red.png');
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -252,6 +252,11 @@
       z-index: 1;
       opacity: 0.18;
       filter: sepia(0.2) saturate(1.2);
+    }
+    .fixed-bg-layer.has-custom-bg {
+      background-image: var(--custom-bg);
+      opacity: 0.22;
+      filter: none;
     }
 
     @media (min-width: 900px) {
@@ -1491,7 +1496,7 @@
   <!-- =================================================================== -->
   <!-- 3-LAYER BACKGROUND STACK                                            -->
   <!-- =================================================================== -->
-  <div class="fixed-bg-layer"></div>
+  <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
   <div class="scrim-canvas"></div>
 
   <!-- =================================================================== -->

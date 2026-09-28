@@ -242,7 +242,7 @@
       right: 0;
       width: 100%;
       height: 100vh;
-      background-image: url("{{globalBgUrl}}");
+      background-image: url('/assets/ornaments/background/background-cream.png');
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -250,6 +250,11 @@
       z-index: 1;
       opacity: 0.16;
       filter: saturate(1.1) brightness(0.95);
+    }
+    .fixed-bg-layer.has-custom-bg {
+      background-image: var(--custom-bg);
+      opacity: 0.20;
+      filter: none;
     }
 
     @media (min-width: 900px) {
@@ -1815,7 +1820,7 @@
     <!-- MAIN SCROLLABLE APP CONTAINER -->
     <main class="app-container main-scroll-panel" id="mainAppContainer">
       <!-- TIGA LAPISAN KANVAS LATAR -->
-      <div class="fixed-bg-layer" aria-hidden="true"></div>
+      <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
       <div class="scrim-canvas" aria-hidden="true"></div>
 
       <!-- =============================================================== -->

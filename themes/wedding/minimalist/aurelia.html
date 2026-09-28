@@ -309,6 +309,29 @@
       background-size: cover;
       background-repeat: no-repeat;
       pointer-events: none;
+      filter: grayscale(100%);
+      background-image: 
+        linear-gradient(
+          to bottom,
+          color-mix(in srgb, var(--bg-dark, #070709) 55%, transparent) 0%,
+          color-mix(in srgb, var(--bg-dark, #070709) 40%, transparent) 35%,
+          color-mix(in srgb, var(--bg-dark, #070709) 82%, transparent) 70%,
+          color-mix(in srgb, var(--bg-dark, #070709) 94%, transparent) 100%
+        ),
+        url('/assets/ornaments/background/background-flower.png');
+    }
+
+    .fixed-bg-layer.has-custom-bg {
+      filter: none;
+      background-image: 
+        linear-gradient(
+          to bottom,
+          color-mix(in srgb, var(--bg-dark, #070709) 55%, transparent) 0%,
+          color-mix(in srgb, var(--bg-dark, #070709) 40%, transparent) 35%,
+          color-mix(in srgb, var(--bg-dark, #070709) 82%, transparent) 70%,
+          color-mix(in srgb, var(--bg-dark, #070709) 94%, transparent) 100%
+        ),
+        var(--custom-bg);
     }
 
     /* RIGHT SCROLLABLE PANEL */
@@ -1637,7 +1660,7 @@
   </div>
 
   <!-- FIXED PARALLAX BACKGROUND LAYER (GLOBAL BG) -->
-  <div class="fixed-bg-layer" style="background-image: linear-gradient(to bottom, rgba(7,7,9,0.55) 0%, rgba(7,7,9,0.40) 35%, rgba(7,7,9,0.82) 70%, rgba(7,7,9,0.94) 100%), url('{{globalBgUrl}}');"></div>
+  <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
 
   <!-- RIGHT SCROLLABLE PANEL -->
   <div class="right-panel" id="rightPanel">
