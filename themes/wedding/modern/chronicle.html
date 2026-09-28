@@ -132,7 +132,8 @@
       transition: opacity 0.7s cubic-bezier(0.65, 0, 0.35, 1), visibility 0.7s;
     }
 
-    .cover-overlay.opened {
+    .cover-overlay.opened,
+    .cover-screen.opened {
       opacity: 0;
       visibility: hidden;
       pointer-events: none;
@@ -1217,7 +1218,7 @@
 <body>
 
   <!-- 1. DREAMBOLLEN COVER OVERLAY -->
-  <div id="coverOverlay" class="cover-overlay">
+  <div id="coverScreen" class="cover-screen cover-overlay">
     <div class="cover-center">
       <p class="cover-tagline">THE WEDDING &bull; SPECIAL EDITION</p>
       <h1 class="cover-names">{{firstName}} <em>&amp;</em> {{secondName}}</h1>
@@ -1227,7 +1228,7 @@
         <h3 id="coverGuestName" class="cover-guest-val">Tamu Undangan</h3>
       </div>
 
-      <button class="btn-open-issue" onclick="openInvitation()" data-lux-field="customLabels.openBtn">
+      <button class="btn-open-issue btn-buka" onclick="openInvitation()" data-lux-field="customLabels.openBtn">
         <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
           <path
             d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
@@ -1510,7 +1511,7 @@
 
     function openInvitation() {
       requestSmartFullscreen();
-      const cover = document.getElementById('coverOverlay');
+      const cover = document.getElementById('coverScreen') || document.getElementById('coverOverlay') || document.querySelector('.cover-screen') || document.querySelector('.cover-overlay');
       if (cover) cover.classList.add('opened');
       const dock = document.querySelector('.bottom-dock');
       if (dock) dock.classList.remove('dock-hidden');

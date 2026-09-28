@@ -310,10 +310,12 @@
       }
     }
 
-    .cover-screen.unlocked {
+    .cover-screen.unlocked,
+    .cover-screen.opened {
       transform: translateY(-100%);
       opacity: 0;
       pointer-events: none;
+      visibility: hidden;
     }
 
     .cover-backdrop-img {
@@ -327,7 +329,7 @@
       transition: transform 8s ease-out;
     }
 
-    .cover-screen:not(.unlocked) .cover-backdrop-img {
+    .cover-screen:not(.unlocked):not(.opened) .cover-backdrop-img {
       transform: scale(1);
     }
 
@@ -345,7 +347,7 @@
     /* Floating Botanical Leaf Ornaments on Cover */
     .cover-botanical-corner {
       position: absolute;
-      width: 85px;
+      width: clamp(65px, 18vw, 85px);
       max-width: 25vw;
       height: auto;
       pointer-events: none;
@@ -357,13 +359,13 @@
     }
 
     .cover-botanical-top-left {
-      top: -15px;
-      left: -15px;
+      top: 10px;
+      left: 10px;
     }
 
     .cover-botanical-top-right {
-      top: -15px;
-      right: -15px;
+      top: 10px;
+      right: 10px;
       transform: scaleX(-1);
     }
 
@@ -1787,7 +1789,7 @@
         <p class="cover-guest-name" id="coverGuestName">Tamu Undangan</p>
       </div>
 
-      <button class="btn-open-envelope" onclick="luxOpenInvitation()" aria-label="Buka Undangan">
+      <button class="btn-open-envelope btn-buka" onclick="luxOpenInvitation()" aria-label="Buka Undangan">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
           <polyline points="22,6 12,13 2,6" />
@@ -2145,24 +2147,20 @@
     let isInvitationOpen = false;
     function luxOpenInvitation() {
       requestSmartFullscreen();
-      const cover = document.getElementById("coverScreen");
-      if (cover) cover.classList.add("unlocked");
+      const cover = document.getElementById("coverScreen") || document.getElementById("coverOverlay");
+      if (cover) cover.classList.add("unlocked", "opened");
 
       isInvitationOpen = true;
 
-      const audio = document.getElementById("luxAudio");
-      const fab = document.getElementById("musicToggle");
+      const audio = document.getElementById("luxAudioPlayer") || document.getElementById("luxAudio") || document.querySelector("audio");
+      const fab = document.getElementById("musicToggle") || document.getElementById("dockAudioBtn");
       if (audio) {
         audio.play().then(() => {
           if (fab) fab.classList.add("playing");
         }).catch(() => {});
       }
-
-      // Smooth scroll to top of content
-      setTimeout(() => {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }, 300);
     }
+    window.openInvitation = luxOpenInvitation;
 
     /* 3. Audio Toggle */
     function luxToggleAudio() {

@@ -713,10 +713,10 @@ Sistem menerapkan prinsip *Tiered Storage* untuk memisahkan beban operasional li
 **Files:** `lib/themeEngine.ts` (~124KB), `lib/renderTemplate.ts`, `lib/participantUtils.ts`, `lib/invitationUtils.ts`, `themes/`
 
 ```
-Katalog Tema Aktual: 36 Tema Fisik (34 Wedding + 2 Birthday):
-  Wedding (34 Tema):
+Katalog Tema Aktual: 35 Tema Fisik (33 Wedding + 2 Birthday):
+  Wedding (33 Tema):
     Minimalist (6) : kalandra.html, valente.html, aurelia.html, artisan.html, minimalist-elegant.html, minimalist-elegant-04.html
-    Modern (13)    : wave.html, papercut.html, ameera.html, chronicle.html, lumina.html, solaria.html, badrika.html, candani.html, mayang.html, pink-castle.html, starlit-dreams.html, burgundy-royale.html, vintage-forest.html
+    Modern (12)    : wave.html, papercut.html, ameera.html, chronicle.html, lumina.html, solaria.html, badrika.html, candani.html, mayang.html, starlit-dreams.html, burgundy-royale.html, vintage-forest.html
     Traditional (15): prameswari.html, dillalucky.html, lagaligo.html, toraja.html, rantepao.html, makale.html, bugis.html, bone.html, wajo.html, soppeng.html, makassar.html, gowa.html, maros.html, takalar.html, bulukumba.html
   Birthday (2 Tema):
     Minimalist (1) : kalandra-birthday.html (child theme dari kalandra)
@@ -822,7 +822,104 @@ HTML standalone lengkap (self-contained, inline CSS/JS)
       - Menghilangkan redundansi jarak kosong bawah di halaman RSVP (`pb-20` dihapus, mengandalkan proteksi padding dock terpusat `pb-28` di layout).
       - Tombol salin link tamu pada buku tamu (`guests/page.tsx`) ditingkatkan ke ukuran ergonomis minimum 36px (`touch-manipulation`), dan tabel pratinjau CSV dibungkus kontainer `overflow-x-auto min-w-[340px]`.
   - **Arsitektur Lapisan Zero-Fake Fallback & Infinite Seamless Flow:**
-    - **Prinsip Zero-Fake Fallback & Ornamen Bersama:** Jika klien tidak mengunggah foto background global (`GLOBAL_FIXED_BG`), engine `lib/themeEngine.ts` meneruskan string kosong (`""`) alih-alih memaksa aset demo (`/demo/...`). Template tema master secara idempoten menampilkan ornamen fallback estetis dari pustaka bersama (`/assets/ornaments/background/` dan `/assets/ornaments/bugis/`) di bawah lapisan gradasi pelindung tema (`.fixed-bg-layer`). Begitu klien mengunggah foto kustom, class `.has-custom-bg` aktif menimpa layer secara total (`var(--custom-bg)`) dengan `filter: none` (warna asli murni).
+    - **Standarisasi Universal Fallback Background Tema Master (`/assets/ornaments/background/`):**
+      - **Penetapan Pustaka Terpusat (Canonical Directory):** Seluruh tema master sistem Luxenary-Invite menggunakan pustaka ornamen latar terpusat yang berlokasi di `public/assets/ornaments/background/` (dapat diakses oleh browser melalui path URL publik `/assets/ornaments/background/<nama-file>`) dan pustaka adat di `/assets/ornaments/bugis/`.
+      - **Hukum Arsitektur Anti-Copy (Zero-Copy Invariant):**
+        - DILARANG KERAS menyalin (*copy*) atau menduplikasi berkas fisik ornamen latar ke folder demo (`public/demo/<tema>/`) maupun folder unggahan klien (`public/uploads/...`).
+        - Berkas demo (`/public/demo/...`) adalah aset konten mandiri untuk keperluan showcase studio, sedangkan `/public/uploads/...` adalah data privat klien. Menimpa atau menyalin aset ornamen sistem ke dalam folder demo/klien adalah pelanggaran fatal pemisahan domain aset (*separation of concerns*).
+        - Seluruh template tema master WAJIB memanggil langsung berkas melalui **path URL publik absolut** (`/assets/ornaments/background/<nama-file>`) di dalam stylesheet internalnya.
+      - **Katalog 6 Aset Ornamen Fallback Kanonikal:**
+        1. `/assets/ornaments/background/background-cream.png`: Tekstur lembut palet krem hangat (standar tema modern minimalis).
+        2. `/assets/ornaments/background/background-cream1.png`: Serat kertas mewah bertekstur (*warm textured paper*) untuk tema kontemporer & editorial.
+        3. `/assets/ornaments/background/background-flower.png`: Ilustrasi botani klasik (*vintage floral lace*) untuk tema floral & botanical luxury.
+        4. `/assets/ornaments/background/background-monocrhome.png`: Gradasi obsidian monokrom bersih (*clean dark monochrome*) untuk tema modern arsitektural.
+        5. `/assets/ornaments/background/background-monocrhome1.png`: Tekstur monokrom artistik (*monochrome architectural weave*) untuk tema seni kontemporer & wisuda.
+        6. `/assets/ornaments/background/background-red.png`: Beludru marun mendalam & emas adat (*royal red velvet & gold*) untuk tema adat Toraja, Makale, dan Rantepao.
+        7. `/assets/ornaments/background/bg-maroon.webp`: Beludru marun sakral Bugis (*Bugis royal velvet*) untuk tema rumpun Bugis (`bugis`, `bone`, `soppeng`, `wajo`, `lagaligo`, `dillalucky`).
+        8. `/assets/ornaments/background/bg-makassar.webp`: Tekstur kain pelaminan aksara Lontara kuno & motif emas adat Makassar (*Makassar royal gold lontara*) untuk tema rumpun Makassar (`makassar`, `gowa`, `maros`, `takalar`, `bulukumba`).
+      - **Kontrak Teknis CSS & Template Rendering:**
+        - Latar belakang fallback dideklarasikan pada selector `.fixed-bg-layer` sebagai jaring pengaman terbawah di bawah lapisan scrim/gradasi pelindung:
+          ```css
+          .fixed-bg-layer {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100vh;
+            background-image: linear-gradient(
+              180deg,
+              color-mix(in srgb, var(--bg-dark) 20%, transparent) 0%,
+              color-mix(in srgb, var(--primary) 22%, transparent) 35%,
+              color-mix(in srgb, var(--bg-dark) 42%, transparent) 75%,
+              color-mix(in srgb, var(--bg-dark) 62%, transparent) 100%
+            ), url('/assets/ornaments/background/<nama-file>.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            z-index: 1;
+            pointer-events: none;
+          }
+          .fixed-bg-layer.has-custom-bg {
+            background-image: linear-gradient(
+              180deg,
+              color-mix(in srgb, var(--bg-dark) 20%, transparent) 0%,
+              color-mix(in srgb, var(--primary) 22%, transparent) 35%,
+              color-mix(in srgb, var(--bg-dark) 42%, transparent) 75%,
+              color-mix(in srgb, var(--bg-dark) 62%, transparent) 100%
+            ), var(--custom-bg);
+          }
+          ```
+        - Struktur HTML elemen kanvas:
+          ```html
+          <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
+          ```
+        - **Logika Eksekusi Hulu-ke-Hilir:**
+          - Saat klien/admin **tidak mengunggah media latar** (`globalBgUrl` kosong/null), engine `lib/themeEngine.ts` meneruskan string kosong (`""`), class `.has-custom-bg` tidak dicetak, dan browser otomatis menampilkan gambar ornamen fallback bawaan sistem di balik gradasi warna palet aktif. Tidak ada gambar rusak (*broken image 404*) atau layar hitam polos.
+      - **Fleksibilitas Desain Slot Media & Layering Ornamen Khas Tema:**
+        - `GLOBAL_FIXED_BG`: Kanvas latar belakang seluruh undangan pada `.fixed-bg-layer` dengan fallback ornamen bawaan sistem saat slot tidak diisi.
+        - `LANDING_COVER` / `LANDING_COVER_DESKTOP`: Slot media unggahan untuk layar pembuka / cover gateway (`.cover-screen`). Setiap tema memiliki kebebasan desain tersendiri; tema bebas memadukan slot `landingCoverUrl` dengan aset ornamen/motif latar sistem (seperti perpaduan layer di tema Makassar) untuk mempertahankan identitas estetik dan ciri khas budaya tema tersebut.
+        - `DESKTOP_SIDEBAR` / `HOME_PHOTO`: Slot media hero dan sidebar layar lebar yang dapat berdiri sendiri atau berpadu dengan tekstur ornamen tema sesuai karakter visual tema masing-masing.
+      - **Matriks Pemetaan Fallback Background 39 Tema Master:**
+        | No | Tema | Kategori | File Fallback Background Bawaan |
+        | :--- | :--- | :--- | :--- |
+        | 1 | `al-khalid` | Aqiqah / Minimalist | `/assets/ornaments/background/background-cream.png` |
+        | 2 | `kalandra-birthday` | Birthday / Minimalist | `/assets/ornaments/background/background-monocrhome.png` |
+        | 3 | `festivo` | Birthday / Modern | `/assets/ornaments/background/background-monocrhome1.png` |
+        | 4 | `sinergi` | General / Modern | `/assets/ornaments/background/background-monocrhome1.png` |
+        | 5 | `al-fariz` | Khitan / Traditional | `/assets/ornaments/background/background-cream1.png` |
+        | 6 | `artisan` | Wedding / Minimalist | `/assets/ornaments/background/background-monocrhome1.png` |
+        | 7 | `aurelia` | Wedding / Minimalist | `/assets/ornaments/background/background-flower.png` |
+        | 8 | `kalandra` | Wedding / Minimalist | `/assets/ornaments/background/background-monocrhome.png` |
+        | 9 | `minimalist-elegant` | Wedding / Minimalist | `/assets/ornaments/background/background-cream.png` |
+        | 10 | `minimalist-elegant-04` | Wedding / Minimalist | `/assets/ornaments/background/background-cream1.png` |
+        | 11 | `valente` | Wedding / Minimalist | `/assets/ornaments/background/background-flower.png` |
+        | 12 | `ameera` | Wedding / Modern | `/assets/ornaments/background/background-flower.png` |
+        | 13 | `badrika` | Wedding / Modern | `/assets/ornaments/background/background-monocrhome.png` |
+        | 14 | `burgundy-royale` | Wedding / Modern | `/assets/ornaments/background/background-red.png` |
+        | 15 | `candani` | Wedding / Modern | `/assets/ornaments/background/background-cream.png` |
+        | 16 | `chronicle` | Wedding / Modern | `/assets/ornaments/background/background-cream1.png` |
+        | 17 | `lumina` | Wedding / Modern | `/assets/ornaments/background/background-flower.png` |
+        | 18 | `mayang` | Wedding / Modern | `/assets/ornaments/background/background-flower.png` |
+        | 19 | `papercut` | Wedding / Modern | `/assets/ornaments/background/background-cream.png` |
+        | 20 | `solaria` | Wedding / Modern | `/assets/ornaments/background/background-cream.png` |
+        | 21 | `starlit-dreams` | Wedding / Modern | `/assets/ornaments/background/background-monocrhome.png` |
+        | 22 | `vintage-forest` | Wedding / Modern | `/assets/ornaments/background/background-cream.png` |
+        | 23 | `wave` | Wedding / Modern | `/assets/ornaments/background/background-monocrhome1.png` |
+        | 24 | `bone` | Wedding / Traditional | `/assets/ornaments/background/bg-maroon.webp` |
+        | 25 | `bugis` | Wedding / Traditional | `/assets/ornaments/background/bg-maroon.webp` |
+        | 26 | `bulukumba` | Wedding / Traditional | `/assets/ornaments/background/bg-makassar.webp` |
+        | 27 | `dillalucky` | Wedding / Traditional | `/assets/ornaments/background/bg-maroon.webp` |
+        | 28 | `gowa` | Wedding / Traditional | `/assets/ornaments/background/bg-makassar.webp` |
+        | 29 | `lagaligo` | Wedding / Traditional | `/assets/ornaments/background/bg-maroon.webp` |
+        | 30 | `makale` | Wedding / Traditional | `/assets/ornaments/background/background-red.png` |
+        | 31 | `makassar` | Wedding / Traditional | `/assets/ornaments/background/bg-makassar.webp` |
+        | 32 | `maros` | Wedding / Traditional | `/assets/ornaments/background/bg-makassar.webp` |
+        | 33 | `prameswari` | Wedding / Traditional | `/assets/ornaments/background/background-flower.png` |
+        | 34 | `rantepao` | Wedding / Traditional | `/assets/ornaments/background/background-red.png` |
+        | 35 | `soppeng` | Wedding / Traditional | `/assets/ornaments/background/bg-maroon.webp` |
+        | 36 | `takalar` | Wedding / Traditional | `/assets/ornaments/background/bg-makassar.webp` |
+        | 37 | `toraja` | Wedding / Traditional | `/assets/ornaments/background/background-red.png` |
+        | 38 | `wajo` | Wedding / Traditional | `/assets/ornaments/background/bg-maroon.webp` |
+        | 39 | `cendekia` | Wisuda / Modern | `/assets/ornaments/background/background-monocrhome1.png` |
     - **Pencegahan Duplikasi Foto ke Seksi Home:** Jika klien tidak mengunggah foto khusus `HOME_PHOTO`, seksi `#home` berstatus transparan (`background: transparent;`) tanpa memaksa duplikasi dari foto latar, menjaga tampilan bersih dengan tipografi, kaligrafi, dan monogram artistik.
     - **Infinite Seamless Flow (Anti-Garis Potongan Seksi):** Seluruh seksi aliran konten (`.slide-opening`, `.sec-flow`) dilarang memiliki `border-bottom` pemotong layar. Panel scroll (`.main-scroll-panel`) berlatar transparan penuh (`background: transparent;`) di mobile maupun desktop, menjamin seluruh pergantian seksi mengalir mulus sebagai satu kanvas utuh yang elegan.
   - **Standarisasi Smart Auto-Hide Navigasi Dock & Kontrol Audio Mengambang:**
@@ -1997,9 +2094,9 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
 
 ### 17.9 — Arsitektur Theme-Specific Blueprint, Theme-Locked Standalone Palette & Dynamic Custom Labels
 1. **Registri Kamus Budaya & Narasi Bawaan (`lib/themeDefaults.ts`):**
-   - Mendefinisikan cetak biru teks narasi spesifik untuk seluruh 40 tema fisik master lintas 6 jenis acara resmi (`EventType`):
+   - Mendefinisikan cetak biru teks narasi spesifik untuk seluruh 39 tema fisik master lintas 6 jenis acara resmi (`EventType`):
      - **Wedding — Tradisional (15 Tema):** Sentuhan bahasa adat & doa kedaerahan (Jawa Keraton Dillalucky, Keraton Prameswari, La Galigo, Toraja, Rantepao, Makale, Bugis, Makassar, Bone, Wajo, Soppeng, Gowa, Maros, Takalar, Bulukumba).
-     - **Wedding — Modern Editorial & Floral (13 Tema):** Narasi puitis editorial majalah & estetika modern floral kontemporer (Ameera, Chronicle, Lumina, Papercut, Solaria, Wave, Badrika, Candani, Mayang, Pink Castle, Starlit Dreams, Burgundy Royale, Vintage Forest).
+     - **Wedding — Modern Editorial & Floral (12 Tema):** Narasi puitis editorial majalah & estetika modern floral kontemporer (Ameera, Chronicle, Lumina, Papercut, Solaria, Wave, Badrika, Candani, Mayang, Starlit Dreams, Burgundy Royale, Vintage Forest).
      - **Wedding — Minimalist Series (6 Tema):** Diksi elegan monokrom dan formal terhormat (Artisan, Aurelia, Kalandra, Valente, Minimalist Elegant, Minimalist Elegant 04).
      - **Birthday Celebration (2 Tema):** Narasi pesta ulang tahun modern dan perayaan ceria (Festivo, Kalandra Birthday).
      - **Walimatul Khitan (1 Tema):** Narasi doa keberkahan syukuran khitanan putra (Al-Fariz Khitan).

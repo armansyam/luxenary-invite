@@ -125,12 +125,19 @@
         180deg,
         color-mix(in srgb, var(--bg-dark, #1a0404) 70%, transparent) 0%,
         color-mix(in srgb, var(--bg-dark, #1a0404) 70%, transparent) 100%
-      ), url('{{globalBgUrl}}'), url('/assets/ornaments/background/background-red.png');
+      ), url('/assets/ornaments/background/background-red.png');
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
       z-index: 1;
       pointer-events: none;
+    }
+    .fixed-bg-layer.has-custom-bg {
+      background-image: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--bg-dark, #1a0404) 70%, transparent) 0%,
+        color-mix(in srgb, var(--bg-dark, #1a0404) 70%, transparent) 100%
+      ), var(--custom-bg);
     }
 
     /* 2. ARSITEKTUR DESKTOP SPLIT & EMULASI MOBILE (GOLDEN RATIO) */
@@ -302,8 +309,9 @@
       ), url('{{landingCoverUrl}}') center/cover no-repeat;
       transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s ease;
     }
-    .cover-overlay.opened {
-      transform: translateY(-100%); pointer-events: none; opacity: 0;
+    .cover-overlay.opened,
+    .cover-screen.opened {
+      transform: translateY(-100%); pointer-events: none; opacity: 0; visibility: hidden;
     }
 
     .cover-top {
@@ -1158,7 +1166,7 @@
 
 <body>
   <!-- FIXED BACKGROUND LAYER -->
-  <div class="fixed-bg-layer"></div>
+  <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
 
   <!-- FLOATING AUDIO CONTROL -->
   <button id="musicToggle" class="music-fab" aria-label="Toggle Musik" onclick="luxToggleAudio()">
@@ -1171,7 +1179,7 @@
   <audio id="bgAudio" src="{{audioUrl}}" loop preload="none"></audio>
 
   <!-- 1. COVER OVERLAY (PINTU GERBANG PEMBUKA) -->
-  <div id="coverOverlay" class="cover-overlay">
+  <div id="coverScreen" class="cover-screen cover-overlay">
     <!-- Watermark Tongkonan 3D (Sudut Bawah Kiri, Tengah Tampak Depan, Kanan Mirror) -->
     <img src="/assets/ornaments/toraja/tongkonan-perspektif-3d.webp" alt="" class="cover-watermark-left" aria-hidden="true">
     <img src="/assets/ornaments/toraja/tongkonan-depan-3d.webp" alt="" class="cover-watermark-center" aria-hidden="true">
@@ -1190,7 +1198,7 @@
         <div class="cover-guest-val" id="coverGuestName">Tamu Undangan</div>
       </div>
 
-      <button type="button" class="btn-buka-undangan" onclick="openInvitation()" data-lux-field="customLabels.openBtn">
+      <button type="button" class="btn-buka-undangan btn-buka" onclick="openInvitation()" data-lux-field="customLabels.openBtn">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
         <span>{{openBtnText}}</span>
       </button>
@@ -1619,16 +1627,18 @@
     // Buka Undangan
     function openInvitation() {
       requestSmartFullscreen();
-      const cover = document.getElementById('coverOverlay');
+      const cover = document.getElementById('coverScreen') || document.getElementById('coverOverlay') || document.querySelector('.cover-screen') || document.querySelector('.cover-overlay');
       if (cover) cover.classList.add('opened');
-      const dock = document.getElementById('bottomDock');
+      const dock = document.getElementById('bottomDock') || document.querySelector('.bottom-dock');
       if (dock) dock.classList.remove('dock-hidden');
-      const audio = document.getElementById('bgAudio');
+      const audio = document.getElementById('bgAudio') || document.getElementById('luxAudioPlayer') || document.querySelector('audio');
       if (audio && !window.__DISABLE_AUDIO__ && new URLSearchParams(window.location.search).get("autoplay") !== "1" && window === window.top) {
         audio.play().then(function () {
           const btn = document.getElementById('musicToggle');
           if (btn) btn.classList.add('playing');
-        }).catch(function () {});
+        }).catch(function (err) {
+          console.warn('Autoplay ditahan oleh kebijakan peramban:', err);
+        });
       }
       startCountdown();
       initScrollAnimations();

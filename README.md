@@ -662,5 +662,10 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
     - **Anti-Banding & Kualitas Visual**: Lanczos3 kernel resampling + WebP Q90 + smartSubsample di Sharp.
     - **Keamanan & Kompatibilitas**: Multi-platform Chrome binary auto-resolver (macOS, Ubuntu/Debian Linux, Windows) serta proteksi *Pre-Flight Server Healthcheck* otomatis guna mencegah kerusakan aset thumbnail saat server Next.js tidak aktif.
     - **Konsolidasi Skrip**: Skrip usang (`generate-missing-desktop-thumbnails.ts` dan `generate-thumbnails.ts`) dihapus total; seluruh alur generasi disatukan dalam satu perintah standar `npm run generate:thumbnails`.
-  * **Audit Kepatuhan Ganda**: `npm run audit:integrity` LOLOS (40/40 tema fisik PASS, 40/40 hash unik tanpa duplikat kloning), `npm run test:hygiene` LOLOS (0 pelanggaran hex/token), dan `npx tsc --noEmit` Exit Code 0.
+  * **Audit Kepatuhan Ganda**: `npm run audit:integrity` LOLOS (39/39 tema fisik PASS, hash unik tanpa duplikat kloning), `npm run test:hygiene` LOLOS (0 pelanggaran hex/token), dan `npx tsc --noEmit` Exit Code 0.
+- **Standarisasi Universal Fallback Background & Invarian Zero-Copy (`/assets/ornaments/background/`)**:
+  * **Hukum Zero-Copy (Anti-Copy Invariant)**: Dilarang keras menyalin berkas fisik ornamen ke folder demo (`public/demo/...`) atau folder unggahan klien (`public/uploads/...`). Template tema master memanggil langsung path URL publik absolut (`/assets/ornaments/background/<nama-file>`).
+  * **Fleksibilitas Desain & Ornamen Berlapis**: Setiap tema master memiliki kebebasan desain mandiri; tema bebas memadukan slot media unggahan (`landingCoverUrl`, `sidebarPhotoUrl`) dengan aset ornamen/motif latar sistem (seperti perpaduan layer di tema Makassar) untuk mempertahankan identitas estetik dan ciri khas budaya tema masing-masing.
+  * **Matriks 39 Tema Terverifikasi**: Seluruh 39 tema master terdokumentasi dan terpetakan rapi ke aset fallback masing-masing di `docs/SYSTEM_ARCHITECTURE.md` dan `docs/S-Invitation.md`.
+
 

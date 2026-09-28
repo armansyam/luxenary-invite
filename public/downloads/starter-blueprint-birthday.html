@@ -75,9 +75,43 @@
       max-width: 480px;
       margin: 0 auto;
       min-height: 100vh;
-      background: var(--bg-dark);
+      background: color-mix(in srgb, var(--bg-dark) 92%, transparent);
       position: relative;
       box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+      z-index: 1;
+    }
+
+    /* FIXED BACKGROUND LAYER */
+    .fixed-bg-layer {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100vh;
+      background-image: 
+        linear-gradient(
+          to bottom,
+          color-mix(in srgb, var(--bg-dark, #0f172a) 75%, transparent) 0%,
+          color-mix(in srgb, var(--primary, #38bdf8) 35%, transparent) 40%,
+          color-mix(in srgb, var(--bg-dark, #0f172a) 85%, transparent) 75%,
+          color-mix(in srgb, var(--bg-dark, #0f172a) 95%, transparent) 100%
+        ),
+        url('/assets/ornaments/background/background-monocrhome.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .fixed-bg-layer.has-custom-bg {
+      background-image: 
+        linear-gradient(
+          to bottom,
+          color-mix(in srgb, var(--bg-dark, #0f172a) 75%, transparent) 0%,
+          color-mix(in srgb, var(--primary, #38bdf8) 35%, transparent) 40%,
+          color-mix(in srgb, var(--bg-dark, #0f172a) 85%, transparent) 75%,
+          color-mix(in srgb, var(--bg-dark, #0f172a) 95%, transparent) 100%
+        ),
+        var(--custom-bg);
     }
 
     /* Cover Fullscreen */
@@ -101,6 +135,7 @@
       transform: translateY(-100%);
       opacity: 0;
       pointer-events: none;
+      visibility: hidden;
     }
 
     .cover-overlay {
@@ -321,6 +356,8 @@
 </head>
 
 <body>
+  <!-- FIXED BACKGROUND LAYER -->
+  <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
   <!-- COVER SCREEN -->
   <div id="coverScreen" class="cover-screen" style="background-image: url('{{personPhotoUrl}}');">
     <div class="cover-overlay"></div>
@@ -336,7 +373,7 @@
         <div class="guest-name">{{guestName}}</div>
       </div>
 
-      <button id="btnOpenInvitation" class="btn-open" onclick="openInvitation()">
+      <button id="btnOpenInvitation" class="btn-open btn-buka" onclick="openInvitation()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
           <polyline points="22,6 12,13 2,6"></polyline>

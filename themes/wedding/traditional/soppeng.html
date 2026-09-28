@@ -67,12 +67,21 @@
         color-mix(in srgb, var(--primary, #5a0b10) 60%, transparent) 35%,
         color-mix(in srgb, var(--bg-dark, #140204) 86%, transparent) 75%,
         color-mix(in srgb, var(--bg-dark, #140204) 96%, transparent) 100%
-      ), url('{{globalBgUrl}}'), url('/assets/ornaments/bugis/bg-maroon.webp');
+      ), url('/assets/ornaments/background/bg-maroon.webp');
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
       z-index: 1;
       pointer-events: none;
+    }
+    .fixed-bg-layer.has-custom-bg {
+      background-image: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--bg-dark, #140204) 84%, transparent) 0%,
+        color-mix(in srgb, var(--primary, #5a0b10) 60%, transparent) 35%,
+        color-mix(in srgb, var(--bg-dark, #140204) 86%, transparent) 75%,
+        color-mix(in srgb, var(--bg-dark, #140204) 96%, transparent) 100%
+      ), var(--custom-bg);
     }
 
     /* TYPOGRAPHY CLASSES */
@@ -116,28 +125,39 @@
     .corner-bl { bottom: 0; left: 0; }
     .corner-br { bottom: 0; right: 0; }
 
-    /* BORDER FRAMES */
+    /* BORDER FRAMES (SEAMLESS REPEAT-X ARCHITECTURE) */
     .bugis-frame-top {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
-      height: 38px;
-      object-fit: fill;
+      height: clamp(54px, 8vw, 75px);
+      background-image: url('/assets/ornaments/soppeng/frame-top.webp'), url('/assets/ornaments/bugis/frame-top.webp');
+      background-repeat: repeat-x;
+      background-position: top center;
+      background-size: auto 100%;
       pointer-events: none;
       z-index: 14;
-      opacity: 0.9;
+      opacity: 0.98;
+      filter: drop-shadow(0 4px 16px rgba(0,0,0,0.6));
+    }
+    .cover-screen .bugis-frame-top {
+      height: clamp(80px, 14vw, 115px);
     }
     .bugis-frame-bottom {
       position: absolute;
       bottom: 0;
       left: 0;
       width: 100%;
-      height: 48px;
-      object-fit: fill;
+      height: clamp(58px, 9vw, 88px);
+      background-image: url('/assets/ornaments/soppeng/frame-bottom.webp'), url('/assets/ornaments/bugis/frame-bottom.webp');
+      background-repeat: repeat-x;
+      background-position: bottom center;
+      background-size: auto 100%;
       pointer-events: none;
       z-index: 14;
-      opacity: 0.9;
+      opacity: 0.98;
+      filter: drop-shadow(0 -4px 18px rgba(0,0,0,0.65));
     }
 
     /* COVER SCREEN (POP-UP GATEWAY) */
@@ -151,7 +171,7 @@
         color-mix(in srgb, var(--bg-dark, #140204) 75%, transparent) 0%,
         color-mix(in srgb, var(--primary, #5a0b10) 50%, transparent) 40%,
         color-mix(in srgb, var(--bg-dark, #140204) 90%, transparent) 100%
-      ), url('/assets/ornaments/bugis/bg-maroon.webp'), url('{{landingCoverUrl}}');
+      ), url('/assets/ornaments/background/bg-maroon.webp'), url('{{landingCoverUrl}}');
       background-size: cover;
       background-position: center;
       display: flex;
@@ -166,6 +186,7 @@
       transform: translateY(-100%);
       opacity: 0;
       pointer-events: none;
+      visibility: hidden;
     }
 
     .cover-emblem-wrap {
@@ -271,7 +292,7 @@
           to right,
           color-mix(in srgb, var(--bg-dark, #140204) 40%, transparent) 0%,
           color-mix(in srgb, var(--bg-dark, #140204) 95%, transparent) 100%
-        ), url('{{sidebarPhotoUrl}}'), url('/assets/ornaments/bugis/bg-maroon.webp');
+        ), url('{{sidebarPhotoUrl}}'), url('/assets/ornaments/background/bg-maroon.webp');
         background-size: cover;
         background-position: center;
       }
@@ -996,7 +1017,7 @@
 <body>
 
   <!-- FIXED BACKGROUND LAYER -->
-  <div class="fixed-bg-layer"></div>
+  <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
 
   <!-- FLOATING AUDIO CONTROL -->
   <button id="musicToggle" class="music-fab" aria-label="Toggle Musik" onclick="toggleAudio()">
@@ -1017,8 +1038,8 @@
     <img src="/assets/ornaments/flowers/flower-br.webp" alt="Ornament" class="corner-floral corner-br">
     
     <!-- Top & Bottom Gold Borders -->
-    <img src="/assets/ornaments/bugis/frame-top.webp" alt="Border" class="bugis-frame-top">
-    <img src="/assets/ornaments/bugis/frame-bottom.webp" alt="Border" class="bugis-frame-bottom">
+    <div class="bugis-frame-top" role="presentation"></div>
+    <div class="bugis-frame-bottom" role="presentation"></div>
 
     <div class="cover-emblem-wrap">
       <img src="/assets/ornaments/bugis/rumah-adat-bugis.webp" alt="Rumah Adat Bugis" class="cover-emblem-img">
@@ -1037,7 +1058,7 @@
       <div class="cover-guest-val" id="guestNameSlot">{{guestName}}</div>
     </div>
 
-    <button type="button" class="btn-buka-undangan" onclick="openInvitation()" data-lux-field="customLabels.openBtn">
+    <button type="button" class="btn-buka-undangan btn-buka" onclick="openInvitation()" data-lux-field="customLabels.openBtn">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
         <polyline points="7 10 12 15 17 10"></polyline>
@@ -1059,8 +1080,8 @@
       <!-- SECTION 1: HOME / OPENING HERO -->
       <section id="home" class="sec-home">
         <!-- Top & Bottom Gold Borders -->
-        <img src="/assets/ornaments/bugis/frame-top.webp" alt="Border" class="bugis-frame-top">
-        <img src="/assets/ornaments/bugis/frame-bottom.webp" alt="Border" class="bugis-frame-bottom">
+        <div class="bugis-frame-top" role="presentation"></div>
+        <div class="bugis-frame-bottom" role="presentation"></div>
 
         <div class="home-emblem-wrap reveal-on-scroll">
           <img src="/assets/ornaments/bugis/rumah-adat-bugis.webp" alt="Rumah Adat Bugis">
@@ -1261,8 +1282,8 @@
         <img src="/assets/ornaments/flowers/flower-br.webp" alt="Ornament" class="corner-floral corner-br">
         
         <!-- Top & Bottom Gold Borders -->
-        <img src="/assets/ornaments/bugis/frame-top.webp" alt="Border" class="bugis-frame-top">
-        <img src="/assets/ornaments/bugis/frame-bottom.webp" alt="Border" class="bugis-frame-bottom">
+        <div class="bugis-frame-top" role="presentation"></div>
+        <div class="bugis-frame-bottom" role="presentation"></div>
 
         <!-- Top Cultural Ornament (Statis di Atas) -->
         <div class="closing-top-ornament reveal-on-scroll">

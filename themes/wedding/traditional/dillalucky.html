@@ -93,7 +93,8 @@
       transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.85s;
     }
 
-    .cover-screen.hidden {
+    .cover-screen.hidden,
+    .cover-screen.opened {
       opacity: 0;
       visibility: hidden;
       pointer-events: none;
@@ -304,7 +305,7 @@
           color-mix(in srgb, var(--bg-dark, #070709) 82%, transparent) 70%,
           color-mix(in srgb, var(--bg-dark, #070709) 94%, transparent) 100%
         ),
-        url('/assets/ornaments/bugis/bg-maroon.webp');
+        url('/assets/ornaments/background/bg-maroon.webp');
     }
 
     .fixed-bg-layer.has-custom-bg {
@@ -1724,7 +1725,7 @@
     function openInvitation() {
       requestSmartFullscreen();
       const cover = document.getElementById('coverScreen');
-      if (cover) cover.classList.add('hidden');
+      if (cover) cover.classList.add('hidden', 'opened');
       playAudio();
       const dock = document.querySelector('.bottom-dock');
       if (dock) dock.classList.remove('dock-hidden');

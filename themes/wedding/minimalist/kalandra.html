@@ -105,7 +105,8 @@
       box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95);
       will-change: transform, opacity;
     }
-    .cover-screen.slide-up-hidden {
+    .cover-screen.slide-up-hidden,
+    .cover-screen.opened {
       transform: translate3d(0, -100%, 0);
       opacity: 0;
       visibility: hidden;
@@ -1131,7 +1132,7 @@
       requestSmartFullscreen();
       formatHeroInitials();
       const cover = document.getElementById('coverScreen');
-      if (cover) cover.classList.add('slide-up-hidden');
+      if (cover) cover.classList.add('slide-up-hidden', 'opened');
       playAudio();
       const dock = document.querySelector('.bottom-dock');
       if (dock) dock.classList.remove('dock-hidden');

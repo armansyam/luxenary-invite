@@ -298,10 +298,21 @@
       overflow: hidden;
     }
 
-    .cover-overlay.opened {
+    @media (min-width: 900px) {
+      .cover-overlay,
+      .cover-screen {
+        width: 460px;
+        left: calc(100% - 460px);
+        right: 0;
+      }
+    }
+
+    .cover-overlay.opened,
+    .cover-screen.opened {
       transform: translateY(-100%);
       opacity: 0;
       pointer-events: none;
+      visibility: hidden;
     }
 
     .cover-scrim {
@@ -339,11 +350,12 @@
 
     /* Baroque Mirror Mini Frame on Cover */
     .cover-mirror-badge {
-      width: 110px;
-      height: 110px;
-      margin: -25px auto 10px;
-      filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.2));
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 12px;
+      filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.25));
       animation: gentleFloat 6s ease-in-out infinite;
+      display: block;
     }
 
     @keyframes gentleFloat {
@@ -354,7 +366,7 @@
     /* Mint Ribbon Floral Accents */
     .card-floral-starlit {
       position: absolute;
-      width: 100px;
+      width: clamp(65px, 18vw, 85px);
       height: auto;
       pointer-events: none;
       z-index: 10;
@@ -363,18 +375,31 @@
     }
 
     .card-floral-left {
-      top: -30px;
-      left: -30px;
+      top: -16px;
+      left: -14px;
       animation: floralSwayL 7s ease-in-out infinite;
       transform-origin: bottom right;
     }
 
     .card-floral-right {
-      top: -30px;
-      right: -30px;
+      top: -16px;
+      right: -14px;
       transform: scaleX(-1);
       animation: floralSwayR 7.5s ease-in-out infinite;
       transform-origin: bottom left;
+    }
+
+    @media (max-width: 400px) {
+      .card-floral-starlit {
+        width: 56px;
+        top: -10px;
+      }
+      .card-floral-left {
+        left: -8px;
+      }
+      .card-floral-right {
+        right: -8px;
+      }
     }
 
     @keyframes floralSwayL {
@@ -1456,7 +1481,7 @@
   <!-- =================================================================== -->
   <!-- SAMPUL UNDANGAN ELEGAN (COVER OVERLAY)                              -->
   <!-- =================================================================== -->
-  <div id="coverOverlay" class="cover-overlay">
+  <div id="coverScreen" class="cover-screen cover-overlay">
     <div class="cover-scrim"></div>
     <div id="birdsLottieCover" class="starlit-birds-layer"></div>
     <div class="stars-sparkle-container" id="starsCover"></div>
@@ -1479,7 +1504,7 @@
         <div id="coverGuestName" class="cover-guest-name">Nama Tamu</div>
       </div>
 
-      <button id="openInvitationBtn" class="btn-open-starlit" onclick="openInvitation()">
+      <button id="openInvitationBtn" class="btn-open-starlit btn-buka" onclick="openInvitation()">
         <span data-lux-field="customLabels.openBtn">{{openBtn}}</span>
         <svg viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
       </button>
@@ -1562,7 +1587,7 @@
 
         <!-- 3. COUPLE SECTION -->
         <section class="sec-flow" id="couple">
-          <img src="/assets/ornaments/starlit-dreams/icon-wedding-couple.svg" alt="Couple Icon" style="width: 44px; height: 44px; margin: 0 auto 0.6rem; opacity: 0.85;" class="reveal" />
+          <img src="/assets/ornaments/starlit-dreams/midnight-icon.webp" alt="Baroque Emblem" style="width: 46px; height: 46px; margin: 0 auto 0.6rem; opacity: 0.9; filter: drop-shadow(0 4px 12px color-mix(in srgb, var(--accent) 30%, transparent));" class="reveal" />
           <span class="sec-eyebrow reveal" data-lux-field="customLabels.coupleEyebrow">{{coupleSectionEyebrow}}</span>
           <h2 class="sec-main-title serif reveal delay-1" data-lux-field="customLabels.coupleTitle">{{coupleSectionTitle}}</h2>
           <p class="sec-sub reveal delay-2">{{coupleSectionSub}}</p>
@@ -1606,7 +1631,7 @@
 
         <!-- 4. EVENTS & AGENDA (UNIVERSAL TOKEN: {{eventDataHtml}}) -->
         <section class="sec-flow" id="events">
-          <img src="/assets/ornaments/starlit-dreams/icon-wedding-arch.svg" alt="Wedding Arch" style="width: 44px; height: 44px; margin: 0 auto 0.6rem; opacity: 0.85;" class="reveal" />
+          <img src="/assets/ornaments/starlit-dreams/midnight-icon.webp" alt="Events Emblem" style="width: 46px; height: 46px; margin: 0 auto 0.6rem; opacity: 0.9; filter: drop-shadow(0 4px 12px color-mix(in srgb, var(--accent) 30%, transparent));" class="reveal" />
           <span class="sec-eyebrow reveal" data-lux-field="customLabels.eventsEyebrow">{{eventsSectionEyebrow}}</span>
           <h2 class="sec-main-title serif reveal delay-1" data-lux-field="customLabels.eventsTitle">{{eventsSectionTitle}}</h2>
           <p class="sec-sub reveal delay-2">Dengan memohon ridho dan rahmat-Nya, rangkaian acara akan diselenggarakan pada:</p>
@@ -1633,7 +1658,7 @@
 
         <!-- 10. WISHES & RSVP SECTION -->
         <section class="sec-flow" id="rsvp">
-          <img src="/assets/ornaments/starlit-dreams/congratulations.svg" alt="Wishes Icon" style="width: 42px; height: 42px; margin: 0 auto 0.6rem; opacity: 0.85;" class="reveal" />
+          <img src="/assets/ornaments/starlit-dreams/midnight-icon.webp" alt="Wishes Emblem" style="width: 46px; height: 46px; margin: 0 auto 0.6rem; opacity: 0.9; filter: drop-shadow(0 4px 12px color-mix(in srgb, var(--accent) 30%, transparent));" class="reveal" />
           <span class="sec-eyebrow reveal" data-lux-field="customLabels.wishesEyebrow">{{wishesSectionEyebrow}}</span>
           <h2 class="sec-main-title serif reveal delay-1" data-lux-field="customLabels.wishesTitle">{{wishesSectionTitle}}</h2>
           <p class="sec-sub reveal delay-2">{{wishesSectionSub}}</p>
@@ -1675,7 +1700,11 @@
           <p class="closing-quote reveal delay-1" data-lux-field="customLabels.closingQuote">{{closingQuote}}</p>
           <p class="closing-sub reveal delay-2" data-lux-field="customLabels.closingSub">{{closingSub}}</p>
           <h3 class="closing-sign serif reveal delay-3">{{firstName}} &amp; {{secondName}}</h3>
-          <img src="/assets/ornaments/starlit-dreams/sticker-love-never-fails.svg" alt="Love Never Fails" style="width: 80px; height: 80px; margin: 1.2rem auto 0; display: block;" class="reveal delay-3" />
+          <div class="closing-emblem-wrap reveal delay-3" style="margin-top: 1.2rem; display: flex; justify-content: center; align-items: center; gap: 0.8rem;">
+            <div style="height: 1px; width: 48px; background: color-mix(in srgb, var(--accent) 40%, transparent);"></div>
+            <img src="/assets/ornaments/starlit-dreams/midnight-icon.webp" alt="Baroque Accent" style="width: 38px; height: 38px; opacity: 0.85;" />
+            <div style="height: 1px; width: 48px; background: color-mix(in srgb, var(--accent) 40%, transparent);"></div>
+          </div>
         </section>
 
       </div><!-- end main-content -->
@@ -1756,7 +1785,7 @@
     // B. Buka Undangan
     function openInvitation() {
       requestSmartFullscreen();
-      const cover = document.getElementById("coverOverlay");
+      const cover = document.getElementById("coverScreen") || document.getElementById("coverOverlay");
       if (cover) {
         cover.classList.add("opened");
         cover.style.pointerEvents = "none";
@@ -1769,7 +1798,7 @@
       const dock = document.querySelector(".bottom-dock");
       if (dock) dock.classList.remove("dock-hidden");
 
-      const audio = document.getElementById("luxAudioPlayer");
+      const audio = document.getElementById("luxAudioPlayer") || document.getElementById("luxAudio") || document.querySelector("audio");
       if (audio) {
         audio.play().then(function () {
           if (fab) fab.classList.add("playing");

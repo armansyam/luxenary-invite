@@ -317,6 +317,7 @@
       transform: translateY(-100%);
       opacity: 0;
       pointer-events: none;
+      visibility: hidden;
     }
 
     .cover-overlay {
@@ -334,9 +335,9 @@
     /* Signature Floral Corner */
     .cover-floral-ornament {
       position: absolute;
-      top: -15px;
-      right: -15px;
-      width: 110px;
+      top: 14px;
+      right: 14px;
+      width: clamp(75px, 20vw, 100px);
       max-width: 28vw;
       pointer-events: none;
       z-index: 2;
@@ -1520,7 +1521,7 @@
         <h2 class="cover-guest-name" id="guestName">Tamu Undangan</h2>
       </div>
 
-      <button type="button" class="btn-open-royale" id="openBtn" onclick="openInvitation()">
+      <button type="button" class="btn-open-royale btn-buka" id="openBtn" onclick="openInvitation()">
         <span data-lux-field="customLabels.openBtn">{{openBtn}}</span>
         <svg viewBox="0 0 24 24">
           <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
@@ -1944,12 +1945,12 @@
 
     // 2. Open Invitation Action
     function openInvitation() {
-      const cover = document.getElementById("coverScreen");
+      const cover = document.getElementById("coverScreen") || document.getElementById("coverOverlay");
       if (cover) cover.classList.add("opened");
 
       // Auto play audio
-      const audio = document.getElementById("luxAudio");
-      const btn = document.getElementById("dockAudioBtn");
+      const audio = document.getElementById("luxAudioPlayer") || document.getElementById("luxAudio") || document.querySelector("audio");
+      const btn = document.getElementById("dockAudioBtn") || document.getElementById("musicToggle");
       if (audio) {
         audio.play().then(() => {
           if (btn) btn.classList.add("playing");
@@ -1957,9 +1958,6 @@
           console.log("Audio autoplay prevented by browser policy.");
         });
       }
-
-      // Smooth scroll to top of content
-      window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     // 3. Audio Toggle Controller

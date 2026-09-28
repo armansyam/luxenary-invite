@@ -2071,6 +2071,7 @@ export async function composeBirthdayData(inv: any) {
   const customCover = mediaMap.get("LANDING_COVER");
   const customCoverDesktop = mediaMap.get("LANDING_COVER_DESKTOP");
   const customHome = mediaMap.get("HOME_PHOTO");
+  const customFixedBg = mediaMap.get("GLOBAL_FIXED_BG");
   const customPersonPhoto = mediaMap.get("GROOM_PHOTO") || mediaMap.get("HERO_PHOTO") || customCover;
 
   const defaultHeroFallback = `/demo/${themeFolder}/hero.webp`;
@@ -2083,7 +2084,7 @@ export async function composeBirthdayData(inv: any) {
   const homePhotoUrl = customHome || defaultHeroFallback;
   const personPhotoUrl = customPersonPhoto || defaultHeroFallback;
   const sidebarPhotoUrl = personPhotoUrl;
-  const globalBgUrl = defaultBgFallback;
+  const globalBgUrl = customFixedBg || "";
   const footerPhotoUrl = mediaMap.get("CLOSING_PHOTO") || "";
 
   // Date & Countdown
@@ -2668,6 +2669,7 @@ export async function composeKhitanData(inv: any) {
     eventDateFormatted,
     guestName,
     audioUrl: finalAudioUrl,
+    globalBgUrl: mediaMap.get("GLOBAL_FIXED_BG") || "",
     eventSectionHtml,
     gallerySectionHtml,
     giftSectionHtml,
@@ -2783,6 +2785,7 @@ export async function composeAqiqahData(inv: any) {
     eventDateFormatted,
     guestName,
     audioUrl: finalAudioUrl,
+    globalBgUrl: mediaMap.get("GLOBAL_FIXED_BG") || "",
     eventSectionHtml,
     gallerySectionHtml,
     giftSectionHtml,
@@ -2903,6 +2906,7 @@ export async function composeWisudaData(inv: any) {
     eventDateFormatted,
     guestName,
     audioUrl: finalAudioUrl,
+    globalBgUrl: mediaMap.get("GLOBAL_FIXED_BG") || "",
     eventSectionHtml,
     gallerySectionHtml,
     giftSectionHtml,
@@ -3011,6 +3015,7 @@ export async function composeGatheringData(inv: any) {
     eventDateFormatted,
     guestName,
     audioUrl: finalAudioUrl,
+    globalBgUrl: mediaMap.get("GLOBAL_FIXED_BG") || "",
     eventSectionHtml,
     gallerySectionHtml,
     giftSectionHtml,

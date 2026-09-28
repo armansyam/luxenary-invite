@@ -80,12 +80,19 @@
         circle at 50% 25%,
         color-mix(in srgb, var(--primary, #cfa859) 30%, var(--bg-dark, #120c06) 82%) 0%,
         color-mix(in srgb, var(--bg-dark, #120c06) 96%, transparent) 88%
-      ), url('{{globalBgUrl}}'), url('/assets/ornaments/background/background-flower.png');
+      ), url('/assets/ornaments/background/background-flower.png');
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
       z-index: 1;
       pointer-events: none;
+    }
+    .fixed-bg-layer.has-custom-bg {
+      background-image: radial-gradient(
+        circle at 50% 25%,
+        color-mix(in srgb, var(--primary, #cfa859) 30%, var(--bg-dark, #120c06) 82%) 0%,
+        color-mix(in srgb, var(--bg-dark, #120c06) 96%, transparent) 88%
+      ), var(--custom-bg);
     }
 
     /* TYPOGRAPHY CLASSES */
@@ -131,7 +138,7 @@
     }
     .cover-screen::-webkit-scrollbar, .cover-overlay::-webkit-scrollbar { display: none; }
     .cover-screen.opened, .cover-screen.slide-up-hidden, .cover-overlay.opened {
-      transform: translateY(-100%); pointer-events: none; opacity: 0;
+      transform: translateY(-100%); pointer-events: none; opacity: 0; visibility: hidden;
     }
 
     .cover-monogram-circle {
@@ -668,7 +675,7 @@
 <body>
 
   <!-- 1. COVER SCREEN -->
-  <div id="coverOverlay" class="cover-screen cover-overlay">
+  <div id="coverScreen" class="cover-screen cover-overlay">
     <div class="cover-monogram-circle">{{monogramInitial}}</div>
 
     <p class="cover-badge" data-lux-field="customLabels.coverBadge">{{coverBadge}}</p>
@@ -679,7 +686,7 @@
       <h3 class="cover-guest-val" id="coverGuestName">Tamu Undangan</h3>
     </div>
 
-    <button class="btn-buka-undangan" onclick="openInvitation()" data-lux-field="customLabels.openBtn">
+    <button class="btn-buka-undangan btn-buka" onclick="openInvitation()" data-lux-field="customLabels.openBtn">
       <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
       Buka Undangan
     </button>
@@ -688,7 +695,7 @@
   <div class="layout-wrapper">
     
     <!-- FIXED BACKGROUND CANVAS (Fokus di Panel Undangan) -->
-    <div class="fixed-bg-layer"></div>
+    <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
 
     <!-- DESKTOP SIDEBAR HERO -->
     <div class="sidebar-desktop">
@@ -983,7 +990,7 @@
 
     function openInvitation() {
       requestSmartFullscreen();
-      const cover = document.getElementById('coverOverlay');
+      const cover = document.getElementById('coverScreen') || document.getElementById('coverOverlay') || document.querySelector('.cover-screen') || document.querySelector('.cover-overlay');
       if (cover) cover.classList.add('opened', 'slide-up-hidden');
       const dock = document.querySelector('.bottom-dock');
       if (dock) dock.classList.remove('dock-hidden');

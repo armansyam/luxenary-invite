@@ -303,10 +303,12 @@
       box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
     }
 
-    .cover-overlay.opened {
+    .cover-overlay.opened,
+    .cover-screen.opened {
       transform: translateY(-100%);
       opacity: 0;
       pointer-events: none;
+      visibility: hidden;
     }
 
     /* =================================================================== */
@@ -333,7 +335,7 @@
           color-mix(in srgb, var(--bg-dark, #021712) 52%, transparent) 45%,
           var(--bg-dark, #021712) 100%
         ),
-        url('/assets/ornaments/bugis/bg-maroon.webp');
+        url('/assets/ornaments/background/bg-maroon.webp');
     }
 
     .fixed-bg-layer.has-custom-bg {
@@ -1533,7 +1535,7 @@
   <!-- =================================================================== -->
   <!-- 1. COVER PEMBUKA (PINTU GERBANG UTAMA)                              -->
   <!-- =================================================================== -->
-  <div id="coverOverlay" class="cover-overlay">
+  <div id="coverScreen" class="cover-screen cover-overlay">
     <!-- WATERMARK INISIAL LONTARA RAKSASA (SILUET TENGAH COVER) -->
     <div class="cover-watermark font-lontara" aria-hidden="true">{{firstInitial}}{{secondInitial}}</div>
 
@@ -1570,7 +1572,7 @@
         <div class="envelope-pocket"></div>
 
         <!-- Teks Murni 'BUKA UNDANGAN' di Permukaan Kantung Depan Amplop (Tanpa Border / Background / SVG) -->
-        <button type="button" class="envelope-text-btn" id="coverOpenBtn" data-lux-field="customLabels.openBtn" onclick="event.stopPropagation(); openInvitation();">
+        <button type="button" class="envelope-text-btn btn-buka" id="coverOpenBtn" data-lux-field="customLabels.openBtn" onclick="event.stopPropagation(); openInvitation();">
           {{openBtn}}
         </button>
       </div>
@@ -1937,17 +1939,17 @@
     // A. Buka Undangan & Autoplay Audio
     function openInvitation() {
       requestSmartFullscreen();
-      const cover = document.getElementById('coverOverlay');
+      const cover = document.getElementById('coverScreen') || document.getElementById('coverOverlay') || document.querySelector('.cover-screen') || document.querySelector('.cover-overlay');
       if (cover) cover.classList.add('opened');
       const dock = document.querySelector('.bottom-dock');
       if (dock) dock.classList.remove('dock-hidden');
       const fab = document.getElementById('musicToggle');
-      const audio = document.getElementById('luxAudioPlayer');
-      if (audio) {
+      const audio = document.getElementById('luxAudioPlayer') || document.querySelector('audio');
+      if (audio && typeof audio.play === 'function') {
         audio.play().then(function () {
           if (fab) fab.classList.add('playing');
-        }).catch(function () {
-          console.log('Autoplay ditahan oleh peramban');
+        }).catch(function (err) {
+          console.warn('Autoplay ditahan oleh peramban:', err);
         });
       }
       setTimeout(function () {

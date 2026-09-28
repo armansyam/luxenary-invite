@@ -22,17 +22,17 @@ Sistem undangan platform **Luxenary Invite** menggunakan arsitektur **100% Nativ
 
 ## 1.1. Inventaris Faktual 40 Tema Platform (Multi-Event)
 
-Saat ini platform memiliki **40 tema fisik mandiri** yang terdaftar di database dan disk, mencakup 6 jenis acara:
+Saat ini platform memiliki **39 tema fisik mandiri** yang terdaftar di database dan disk, mencakup 6 jenis acara:
 
 | Jenis Acara (`eventType`) | Total Tema | Daftar Tema Aktif di Disk & Database |
 |:---|:---:|:---|
-| **WEDDING** | **34 Tema** | • **Minimalist (5):** `artisan`, `aurelia`, `kalandra`, `minimalist-elegant`, `minimalist-elegant-04`, `valente`<br>• **Modern (14):** `ameera`, `badrika`, `burgundy-royale`, `candani`, `chronicle`, `lumina`, `mayang`, `papercut`, `pink-castle`, `solaria`, `starlit-dreams`, `vintage-forest`, `wave`<br>• **Traditional (15):** `bone`, `bugis`, `bulukumba`, `dillalucky`, `gowa`, `lagaligo`, `makale`, `makassar`, `maros`, `prameswari`, `rantepao`, `soppeng`, `takalar`, `toraja`, `wajo` |
+| **WEDDING** | **33 Tema** | • **Minimalist (6):** `artisan`, `aurelia`, `kalandra`, `minimalist-elegant`, `minimalist-elegant-04`, `valente`<br>• **Modern (12):** `ameera`, `badrika`, `burgundy-royale`, `candani`, `chronicle`, `lumina`, `mayang`, `papercut`, `solaria`, `starlit-dreams`, `vintage-forest`, `wave`<br>• **Traditional (15):** `bone`, `bugis`, `bulukumba`, `dillalucky`, `gowa`, `lagaligo`, `makale`, `makassar`, `maros`, `prameswari`, `rantepao`, `soppeng`, `takalar`, `toraja`, `wajo` |
 | **BIRTHDAY** | **2 Tema** | • `kalandra-birthday` (Minimalist)<br>• `festivo` (Modern) |
 | **KHITAN** | **1 Tema** | • `al-fariz` (Traditional) |
 | **AQIQAH** | **1 Tema** | • `al-khalid` (Minimalist) |
 | **WISUDA** | **1 Tema** | • `cendekia` (Modern) |
 | **GATHERING** | **1 Tema** | • `sinergi` (Modern) |
-| **TOTAL** | **40 Tema** | **Tersinkronisasi 100% via `npm run themes:sync`** |
+| **TOTAL** | **39 Tema** | **Tersinkronisasi 100% via `npm run themes:sync`** |
 
 ### Sistem Thumbnail Ganda Beresolusi Tinggi (Retina DevTools)
 Setiap tema di direktori `public/demo/{themeId}/` wajib dilengkapi oleh dua berkas thumbnail WebP kompresi tajam:

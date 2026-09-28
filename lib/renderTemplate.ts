@@ -89,7 +89,6 @@ export const THEME_MAP: Record<string, ThemeEntry> = {
   "lumina": { file: "lumina.html", eventType: "wedding", style: "modern" },
   "solaria": { file: "solaria.html", eventType: "wedding", style: "modern" },
   "burgundy-royale": { file: "burgundy-royale.html", eventType: "wedding", style: "modern" },
-  "pink-castle": { file: "pink-castle.html", eventType: "wedding", style: "modern" },
   "starlit-dreams": { file: "starlit-dreams.html", eventType: "wedding", style: "modern" },
   "vintage-forest": { file: "vintage-forest.html", eventType: "wedding", style: "modern" },
 
@@ -2052,50 +2051,55 @@ export async function renderTemplateFile(
     }
   );
 
-  // Conditional Template Blocks: {{#if condition}} ... {{/if}} and {{#unless condition}} ... {{/unless}}
-  tpl = tpl.replace(
-    /\{[\s\n]*\{[\s\n]*#if\s+([\w.]+)[\s\n]*\}[\s\n]*\}([\s\S]*?)\{[\s\n]*\{[\s\n]*\/if[\s\n]*\}[\s\n]*\}/gi,
-    (_, key: string, innerContent: string) => {
-      let val = data[key];
-      if (val === undefined && key.includes(".")) {
-        const parts = key.split(".");
-        let curr: any = data;
-        for (const p of parts) {
-          if (curr && typeof curr === "object") {
-            curr = curr[p];
-          } else {
-            curr = undefined;
-            break;
-          }
+  // Conditional Template Blocks: recursively process innermost {{#if ...}} ... {{/if}} first
+  const ifRegex = /\{[\s\n]*\{[\s\n]*#if\s+([\w.]+)[\s\n]*\}[\s\n]*\}((?:(?!\{[\s\n]*\{[\s\n]*#if\b)[\s\S])*?)\{[\s\n]*\{[\s\n]*\/if[\s\n]*\}[\s\n]*\}/i;
+  let ifMatch;
+  let maxIfDepth = 25;
+  while ((ifMatch = ifRegex.exec(tpl)) !== null && maxIfDepth-- > 0) {
+    const key = ifMatch[1];
+    const innerContent = ifMatch[2];
+    let val = data[key];
+    if (val === undefined && key.includes(".")) {
+      const parts = key.split(".");
+      let curr: any = data;
+      for (const p of parts) {
+        if (curr && typeof curr === "object") {
+          curr = curr[p];
+        } else {
+          curr = undefined;
+          break;
         }
-        val = curr;
       }
-      const isTruthy = Boolean(val && val !== "false" && val !== "0" && val !== 0);
-      return isTruthy ? innerContent : "";
+      val = curr;
     }
-  );
+    const isTruthy = Boolean(val && val !== "false" && val !== "0" && val !== 0);
+    tpl = tpl.replace(ifMatch[0], isTruthy ? innerContent : "");
+  }
 
-  tpl = tpl.replace(
-    /\{[\s\n]*\{[\s\n]*#unless\s+([\w.]+)[\s\n]*\}[\s\n]*\}([\s\S]*?)\{[\s\n]*\{[\s\n]*\/unless[\s\n]*\}[\s\n]*\}/gi,
-    (_, key: string, innerContent: string) => {
-      let val = data[key];
-      if (val === undefined && key.includes(".")) {
-        const parts = key.split(".");
-        let curr: any = data;
-        for (const p of parts) {
-          if (curr && typeof curr === "object") {
-            curr = curr[p];
-          } else {
-            curr = undefined;
-            break;
-          }
+  // Conditional Template Blocks: recursively process innermost {{#unless ...}} ... {{/unless}} first
+  const unlessRegex = /\{[\s\n]*\{[\s\n]*#unless\s+([\w.]+)[\s\n]*\}[\s\n]*\}((?:(?!\{[\s\n]*\{[\s\n]*#unless\b)[\s\S])*?)\{[\s\n]*\{[\s\n]*\/unless[\s\n]*\}[\s\n]*\}/i;
+  let unlessMatch;
+  let maxUnlessDepth = 25;
+  while ((unlessMatch = unlessRegex.exec(tpl)) !== null && maxUnlessDepth-- > 0) {
+    const key = unlessMatch[1];
+    const innerContent = unlessMatch[2];
+    let val = data[key];
+    if (val === undefined && key.includes(".")) {
+      const parts = key.split(".");
+      let curr: any = data;
+      for (const p of parts) {
+        if (curr && typeof curr === "object") {
+          curr = curr[p];
+        } else {
+          curr = undefined;
+          break;
         }
-        val = curr;
       }
-      const isTruthy = Boolean(val && val !== "false" && val !== "0" && val !== 0);
-      return !isTruthy ? innerContent : "";
+      val = curr;
     }
-  );
+    const isTruthy = Boolean(val && val !== "false" && val !== "0" && val !== 0);
+    tpl = tpl.replace(unlessMatch[0], !isTruthy ? innerContent : "");
+  }
 
   const RAW_HTML_KEY_REGEX = /(Html|html|Svg|svg|Style|Styles|Css|css|Script|Scripts)$/;
   const URL_KEY_REGEX = /(Url|url|Src|src|Link|link)$/;

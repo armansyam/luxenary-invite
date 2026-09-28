@@ -212,11 +212,14 @@
       height: 100vh;
       height: 100dvh;
       z-index: 0;
-      background-image: url('{{globalBgUrl}}');
+      background-image: url('/assets/ornaments/background/background-monocrhome1.png');
       background-position: center;
       background-size: cover;
       background-repeat: no-repeat;
       pointer-events: none;
+    }
+    .fixed-bg-layer.has-custom-bg {
+      background-image: var(--custom-bg);
     }
 
     /* ==========================================================================
@@ -530,9 +533,12 @@
     }
     .cover-overlay::-webkit-scrollbar { display: none; }
 
-    .cover-overlay.opened {
+    .cover-overlay.opened,
+    .cover-screen.opened {
       transform: translateY(-100%);
+      opacity: 0;
       pointer-events: none;
+      visibility: hidden;
     }
 
     .cover-monogram {
@@ -1069,7 +1075,7 @@
   <!-- =================================================================== -->
   <!-- 1. COVER PEMBUKA (PINTU GERBANG UTAMA)                              -->
   <!-- =================================================================== -->
-  <div id="coverOverlay" class="cover-overlay">
+  <div id="coverScreen" class="cover-screen cover-overlay">
     <div class="cover-top">
       <div class="cover-monogram serif">{{coupleMonogram}}</div>
       <p class="cover-tagline" data-lux-field="customLabels.coverBadge">{{coverBadge}}</p>
@@ -1087,7 +1093,7 @@
         <p class="cover-guest-val" id="coverGuestName" data-lux-field="guestName" style="font-size:16px; font-weight:700;">Tamu Undangan</p>
       </div>
 
-      <button type="button" class="cover-btn-open" data-lux-field="customLabels.openBtn" onclick="openInvitation()">
+      <button type="button" class="cover-btn-open btn-buka" data-lux-field="customLabels.openBtn" onclick="openInvitation()">
         <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path
             d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -1106,7 +1112,7 @@
   <div class="layout-wrapper">
 
     <!-- LAPISAN 2: MEDIA SLOT BACKGROUND (MURNI GAMBAR) -->
-    <div class="fixed-bg-layer" aria-hidden="true"></div>
+    <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
 
     <!-- LAPISAN 3: KANVAS SCRIM OVERLAY (MANDIRI) -->
     <div class="scrim-canvas" aria-hidden="true"></div>
@@ -1424,18 +1430,18 @@
     // A. Buka Undangan & Autoplay Audio
     function openInvitation() {
       requestSmartFullscreen();
-      const cover = document.getElementById('coverOverlay');
+      const cover = document.getElementById('coverScreen') || document.getElementById('coverOverlay') || document.querySelector('.cover-screen') || document.querySelector('.cover-overlay');
       if (cover) cover.classList.add('opened');
       const fab = document.getElementById('musicToggle');
-      if (fab) fab.classList.add('fab-hidden');
+      if (fab) fab.classList.remove('fab-hidden');
       const dock = document.querySelector('.bottom-dock');
       if (dock) dock.classList.remove('dock-hidden');
-      const audio = document.getElementById('luxAudioPlayer');
-      if (audio) {
+      const audio = document.getElementById('luxAudioPlayer') || document.querySelector('audio');
+      if (audio && typeof audio.play === 'function') {
         audio.play().then(function () {
           if (fab) fab.classList.add('playing');
-        }).catch(function () {
-          console.log('Autoplay ditahan oleh kebijakan peramban');
+        }).catch(function (err) {
+          console.warn('Autoplay ditahan oleh kebijakan peramban:', err);
         });
       }
     }

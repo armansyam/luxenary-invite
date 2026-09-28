@@ -86,13 +86,16 @@
       width: 100%;
       height: 100vh;
       background-image: radial-gradient(circle at 50% 10%, color-mix(in srgb, var(--primary, #c46849) 35%, #190e0a) 0%, rgba(25, 14, 10, 0.95) 85%),
-        url('{{globalBgUrl}}'),
         url('/assets/ornaments/background/background-cream.png');
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
       z-index: 5;
       pointer-events: none;
+    }
+    .fixed-bg-layer.has-custom-bg {
+      background-image: radial-gradient(circle at 50% 10%, color-mix(in srgb, var(--primary, #c46849) 35%, #190e0a) 0%, rgba(25, 14, 10, 0.95) 85%),
+        var(--custom-bg);
     }
 
     /* TYPOGRAPHY CLASSES */
@@ -150,10 +153,12 @@
       transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s ease;
     }
 
-    .cover-overlay.opened {
+    .cover-overlay.opened,
+    .cover-screen.opened {
       transform: translateY(-100%);
       pointer-events: none;
       opacity: 0;
+      visibility: hidden;
     }
 
     .sunset-arch-icon {
@@ -1060,7 +1065,7 @@
 <body>
 
   <!-- 1. COVER OVERLAY -->
-  <div id="coverOverlay" class="cover-overlay">
+  <div id="coverScreen" class="cover-screen cover-overlay">
     <!-- SUNSET ARCH VECTOR -->
     <svg class="sunset-arch-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M12 56V28C12 16.9543 20.9543 8 32 8C43.0457 8 52 16.9543 52 28V56" stroke="#e59866" stroke-width="2.5"
@@ -1078,7 +1083,7 @@
       <h3 class="cover-guest-val">Tamu Undangan</h3>
     </div>
 
-    <button class="btn-buka-undangan" onclick="openInvitation()">
+    <button class="btn-buka-undangan btn-buka" onclick="openInvitation()">
       <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
         <path
           d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
@@ -1088,7 +1093,7 @@
   </div>
 
   <!-- FIXED BACKGROUND LAYER (FOKUS DI PANEL UNDANGAN) -->
-  <div class="fixed-bg-layer"></div>
+  <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
 
   <div class="layout-wrapper">
 
@@ -1332,7 +1337,7 @@
 
     function openInvitation() {
       requestSmartFullscreen();
-      const cover = document.getElementById('coverOverlay');
+      const cover = document.getElementById('coverScreen') || document.getElementById('coverOverlay') || document.querySelector('.cover-screen') || document.querySelector('.cover-overlay');
       if (cover) cover.classList.add('opened');
       const dock = document.querySelector('.bottom-dock');
       if (dock) dock.classList.remove('dock-hidden');

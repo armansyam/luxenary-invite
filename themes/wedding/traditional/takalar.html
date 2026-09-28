@@ -75,12 +75,21 @@
         color-mix(in srgb, var(--primary, #0a192f) 65%, transparent) 35%,
         color-mix(in srgb, var(--bg-dark, #030914) 88%, transparent) 75%,
         color-mix(in srgb, var(--bg-dark, #030914) 96%, transparent) 100%
-      ), url('{{globalBgUrl}}'), url('/assets/ornaments/bugis/bg-makassar.webp');
+      ), url('/assets/ornaments/background/bg-makassar.webp');
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
       z-index: 1;
       pointer-events: none;
+    }
+    .fixed-bg-layer.has-custom-bg {
+      background-image: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--bg-dark, #030914) 82%, transparent) 0%,
+        color-mix(in srgb, var(--primary, #0a192f) 65%, transparent) 35%,
+        color-mix(in srgb, var(--bg-dark, #030914) 88%, transparent) 75%,
+        color-mix(in srgb, var(--bg-dark, #030914) 96%, transparent) 100%
+      ), var(--custom-bg);
     }
 
     /* TYPOGRAPHY CLASSES */
@@ -159,7 +168,7 @@
         color-mix(in srgb, var(--bg-dark, #030914) 75%, transparent) 0%,
         color-mix(in srgb, var(--primary, #0a192f) 55%, transparent) 40%,
         color-mix(in srgb, var(--bg-dark, #030914) 92%, transparent) 100%
-      ), url('/assets/ornaments/bugis/bg-makassar.webp'), url('{{landingCoverUrl}}');
+      ), url('/assets/ornaments/background/bg-makassar.webp'), url('{{landingCoverUrl}}');
       background-size: cover;
       background-position: center;
       display: flex;
@@ -174,6 +183,7 @@
       transform: translateY(-100%);
       opacity: 0;
       pointer-events: none;
+      visibility: hidden;
     }
 
     .cover-emblem-wrap {
@@ -279,7 +289,7 @@
           to right,
           color-mix(in srgb, var(--bg-dark, #030914) 40%, transparent) 0%,
           color-mix(in srgb, var(--bg-dark, #030914) 95%, transparent) 100%
-        ), url('{{sidebarPhotoUrl}}'), url('/assets/ornaments/bugis/bg-makassar.webp');
+        ), url('{{sidebarPhotoUrl}}'), url('/assets/ornaments/background/bg-makassar.webp');
         background-size: cover;
         background-position: center;
       }
@@ -1010,7 +1020,7 @@
 <body>
 
   <!-- FIXED BACKGROUND LAYER -->
-  <div class="fixed-bg-layer"></div>
+  <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
 
   <!-- FLOATING AUDIO CONTROL -->
   <button id="musicToggle" class="music-fab" aria-label="Toggle Musik" onclick="toggleAudio()">
@@ -1051,7 +1061,7 @@
       <div class="cover-guest-val" id="guestNameSlot">{{guestName}}</div>
     </div>
 
-    <button type="button" class="btn-buka-undangan" onclick="openInvitation()" data-lux-field="customLabels.openBtn">
+    <button type="button" class="btn-buka-undangan btn-buka" onclick="openInvitation()" data-lux-field="customLabels.openBtn">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
         <polyline points="7 10 12 15 17 10"></polyline>

@@ -302,6 +302,7 @@
       transform: translateY(-100%);
       opacity: 0;
       pointer-events: none;
+      visibility: hidden;
     }
 
     .cover-overlay {
@@ -1434,7 +1435,7 @@
         <h2 class="cover-guest-name" id="guestName">Tamu Undangan</h2>
       </div>
 
-      <button type="button" class="btn-open-monochrome" id="openBtn" onclick="openInvitation()">
+      <button type="button" class="btn-open-monochrome btn-buka" id="openBtn" onclick="openInvitation()">
         <span data-lux-field="customLabels.openBtn">{{openBtn}}</span>
         <svg viewBox="0 0 24 24">
           <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
@@ -1833,22 +1834,19 @@
 
     // 2. Open Invitation Action
     function openInvitation() {
-      const cover = document.getElementById("coverScreen");
+      const cover = document.getElementById("coverScreen") || document.getElementById("coverOverlay") || document.querySelector(".cover-screen") || document.querySelector(".cover-overlay");
       if (cover) cover.classList.add("opened");
 
       // Auto play audio
-      const audio = document.getElementById("luxAudio");
+      const audio = document.getElementById("luxAudio") || document.getElementById("luxAudioPlayer") || document.querySelector("audio");
       const btn = document.getElementById("dockAudioBtn");
-      if (audio) {
+      if (audio && typeof audio.play === "function") {
         audio.play().then(() => {
           if (btn) btn.classList.add("playing");
-        }).catch(() => {
-          console.log("Audio autoplay prevented by browser policy.");
+        }).catch((err) => {
+          console.warn("Audio autoplay prevented by browser policy:", err);
         });
       }
-
-      // Smooth scroll to top of content
-      window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     // 3. Audio Toggle Controller

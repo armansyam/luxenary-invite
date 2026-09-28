@@ -94,7 +94,8 @@
     }
     .cover-screen::-webkit-scrollbar { display: none; }
 
-    .cover-screen.hidden {
+    .cover-screen.hidden,
+    .cover-screen.opened {
       opacity: 0;
       visibility: hidden;
       pointer-events: none;
@@ -1730,7 +1731,7 @@
     function openInvitation() {
       requestSmartFullscreen();
       const cover = document.getElementById('coverScreen');
-      if (cover) cover.classList.add('hidden');
+      if (cover) cover.classList.add('hidden', 'opened');
       playAudio();
       const dock = document.querySelector('.bottom-dock');
       if (dock) dock.classList.remove('dock-hidden');

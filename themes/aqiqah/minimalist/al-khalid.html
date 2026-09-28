@@ -45,9 +45,43 @@
       max-width: 480px;
       margin: 0 auto;
       min-height: 100vh;
-      background: var(--bg-dark);
+      background: color-mix(in srgb, var(--bg-dark) 92%, transparent);
       position: relative;
       box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+      z-index: 1;
+    }
+
+    /* FIXED BACKGROUND LAYER */
+    .fixed-bg-layer {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100vh;
+      background-image: 
+        linear-gradient(
+          to bottom,
+          color-mix(in srgb, var(--bg-dark, #082f49) 75%, transparent) 0%,
+          color-mix(in srgb, var(--primary, #0284c7) 40%, transparent) 40%,
+          color-mix(in srgb, var(--bg-dark, #082f49) 85%, transparent) 75%,
+          color-mix(in srgb, var(--bg-dark, #082f49) 95%, transparent) 100%
+        ),
+        url('/assets/ornaments/background/background-cream.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .fixed-bg-layer.has-custom-bg {
+      background-image: 
+        linear-gradient(
+          to bottom,
+          color-mix(in srgb, var(--bg-dark, #082f49) 75%, transparent) 0%,
+          color-mix(in srgb, var(--primary, #0284c7) 40%, transparent) 40%,
+          color-mix(in srgb, var(--bg-dark, #082f49) 85%, transparent) 75%,
+          color-mix(in srgb, var(--bg-dark, #082f49) 95%, transparent) 100%
+        ),
+        var(--custom-bg);
     }
 
     /* Cover */
@@ -66,7 +100,7 @@
       background-size: cover;
       background-position: center;
     }
-    .cover-screen.opened { transform: translateY(-100%); opacity: 0; pointer-events: none; }
+    .cover-screen.opened { transform: translateY(-100%); opacity: 0; pointer-events: none; visibility: hidden; }
     .cover-overlay {
       position: absolute;
       inset: 0;
@@ -176,6 +210,9 @@
 </head>
 
 <body>
+  <!-- FIXED BACKGROUND LAYER -->
+  <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
+
   <div class="lux-wrapper">
     <!-- Cover -->
     <div class="cover-screen" id="coverScreen" style="background-image: url('{{landingCoverUrl}}');">
@@ -188,7 +225,7 @@
           <p class="guest-lbl">Kepada Yth. Bapak/Ibu/Saudara/i</p>
           <h3 class="guest-name">{{guestName}}</h3>
         </div>
-        <button class="btn-open" onclick="openInvitation()">Buka Undangan</button>
+        <button class="btn-open btn-buka" onclick="openInvitation()">Buka Undangan</button>
       </div>
     </div>
 

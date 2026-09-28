@@ -81,21 +81,17 @@ Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan 
    - Identifikasi seksi pembuka menggunakan ID `#home` yang kompatibel penuh dengan injeksi template engine (`homePhotoCssUrl` untuk kanvas bersih tanpa fallback tekstur jika kosong).
    - Integrasi seksi kisah `#story` (`{{storyItemsHtml}}`), monogram pembatas modern SVG murni tanpa emoji OS, Smart Bottom Dock dengan audio toggle terintegrasi (`luxToggleAudio()`), serta modal voucher souvenir QR (`#modalBg`).
    - Terpasang atribut `data-lux-field` lengkap untuk mendukung pengalaman Live Visual Studio Click-to-Edit.
-10. **Pink Castle (`themes/wedding/modern/pink-castle.html`)**
-    - Fairy tale castle aesthetic berpadu palet pastel romantic (`rose`, `blush`, `gold`).
-    - Fitur visual khas: gerbang kastil vintage (*castle gate arch*), floating fairy sparkle animation, dan ribbon floral accents.
-    - Kepatuhan penuh Standar Emas Blueprint: desktop split 460px, 3-layer background stack, discrete parents architecture, universal audio & RSVP handling, dan dynamic CSS tokens tanpa hex mati.
-11. **Starlit Dreams (`themes/wedding/modern/starlit-dreams.html`)**
+10. **Starlit Dreams (`themes/wedding/modern/starlit-dreams.html`)**
     - Celestial Midnight Elegance berpadu palet emerald mendalam (`#1b4332`, `#2d6a4f`, `#d7bb83`) dan aksen bintang bersinar (*starlit sparkle*).
     - Tipografi mewah dual font lokal: *Geraldo Island* (display serif berkelas untuk nama mempelai) & *Romland* (signature accent script untuk sub-judul & floating monogram).
     - Ornamen visual khas: *Midnight Baroque Mirror Oval Frame* (`midnight-icon.webp`) sebagai wadah lencana cover & hero photo, serta aksen *Watercolor Yellow Florals with Mint Ribbon Bow* (`couple-frame-1.webp` & `couple-frame-2.webp`).
     - Kepatuhan penuh Standar Emas Blueprint: desktop split 460px, 3-layer background stack, discrete parents architecture, universal audio & RSVP handling, countdown timer hari H, dan dynamic CSS tokens tanpa hex mati.
-12. **Burgundy Royale (`themes/wedding/modern/burgundy-royale.html`)**
+11. **Burgundy Royale (`themes/wedding/modern/burgundy-royale.html`)**
     - Opulent Vintage Burgundy Royale berpadu tipografi prestisius *Iskry Regular* (`public/fonts/burgundy-royale/Iskry-Regular.woff2`), *Vidaloka* (Bodoni serif), *Cinzel* (Roman capitals), dan *Imperial Script*.
     - Nuansa warna burgundy merah tua anggur mewah (`--primary`), rose wine (`--secondary`), dan sampanye antik hangat (`--accent`).
     - Ornamen visual khas: lukisan cat minyak mawar burgundy mewah (`bunga-burgundy-royale.png`) di sudut-sudut kartu, ornamen pemisah simetris vintage, dan bingkai kubah katedral romanesque (*Cathedral Romanesque Arch Framing* `border-radius: 500px 500px 0 0`).
     - Kepatuhan penuh Standar Emas Blueprint: desktop split 460px, 3-layer background stack, discrete parents architecture, universal countdown timer hari H, interactive inline RSVP & ucapan live feed, dan dynamic CSS tokens 100% bebas hardcode.
-13. **Vintage Forest (`themes/wedding/modern/vintage-forest.html`)**
+12. **Vintage Forest (`themes/wedding/modern/vintage-forest.html`)**
     - Botanical Vintage Elegance berpadu tipografi khas *Mea Culpa* (kaligrafi skrip romantis), *Caudex* (serif klasik), *Cinzel* (kapital megah), dan *Aboreto* (huruf ukir geometris).
     - Nuansa warna hijau botani mendalam (`--primary`), sage olive green (`--secondary`), dan aksen emas antik / pasir hangat (`--accent`).
     - Ornamen visual khas: dedaunan eukaliptus botani rimbun (`bunga-botani2.png`) yang mengambang anggun di sudut kartu cover, hero arch, dan footer penutup, dipadukan bingkai kubah arsitektural (*Romanesque Arch Framing* `border-radius: 350px 350px 0 0`).
@@ -343,14 +339,29 @@ Sistem Studio Editor Klien (`/dashboard/invitation/[id]`) menyediakan kendali kr
    - **Mobile (< 900px):** Selalu menggunakan `LANDING_COVER` (rasio portrait 9:16) sebagai pop-up sampul pembuka layar HP.
    - **Desktop (≥ 900px):** Menggunakan `LANDING_COVER_DESKTOP` (rasio landscape 16:9). Jika slot desktop tidak diunggah, sistem otomatis beralih (*graceful fallback*) ke `LANDING_COVER` bawaan.
    - **Universal Fullscreen Override:** Pada tema dengan layout panel-terbatas (seperti Badrika, Candani, Mayang, Solaria, Lumina, Chronicle) yang secara bawaan membatasi cover pada kartu fixed 460px, saat `LANDING_COVER_DESKTOP` aktif, sistem otomatis menyuntikkan CSS override `@media (min-width: 900px)` yang memposisikan cover menjadi fullscreen fixed 100vw/100vh di seluruh monitor tanpa mengubah kartu undangan di dalamnya.
-5. **Universal Fallback Ornamen Latar (`GLOBAL_FIXED_BG`):**
-   - Jika slot latar belakang tidak diunggah atau dihapus, template master otomatis menampilkan gambar ornamen fallback dari pustaka bersama (`/assets/ornaments/background/` atau `/assets/ornaments/bugis/`).
-   - Begitu klien mengunggah foto/video kustom, selector `.has-custom-bg` aktif menggantikan fallback secara total dengan `filter: none` (warna murni).
-5. **Cloudflare Edge Caching & Wildcard Subdomain:**
+5. **Universal Fallback Ornamen Latar (`GLOBAL_FIXED_BG`) & Zero-Copy Architecture:**
+   - **Pustaka Terpusat:** Latar cadangan tema master tersimpan terpusat di `public/assets/ornaments/background/` (dan `/public/assets/ornaments/bugis/` untuk adat Sulsel).
+   - **Hukum Anti-Copy (Zero-Copy Policy):** Berkas ornamen sistem **TIDAK BOLEH** disalin (*copy*) ke direktori demo (`public/demo/...`) ataupun direktori unggahan klien (`public/uploads/...`). Berkas dipanggil langsung secara transparan melalui **path URL publik** (`/assets/ornaments/background/<nama-file>`) di dalam template master HTML.
+   - **Perilaku di Studio Klien & Showroom Demo:**
+     - Jika pengguna/admin mengosongkan media background (`globalBgUrl` = null/kosong), kanvas undangan tidak akan menampilkan layar hitam mati atau gambar pecah, melainkan otomatis mengekspos ornamen fallback bawaan tema di bawah lapisan gradasi pelindung kontras.
+     - Begitu pengguna mengunggah foto/video kustom, selector `.has-custom-bg` dan CSS variable `--custom-bg: url('...')` aktif menggantikan fallback secara total dengan warna asli murni (`filter: none`).
+   - **Fleksibilitas Desain & Ornamen Berlapis Tiap Tema:**
+     - Setiap tema master memiliki kebebasan dan identitas desain mandiri.
+     - Slot media upload (`LANDING_COVER`, `LANDING_COVER_DESKTOP`, `DESKTOP_SIDEBAR`) dapat dipadukan secara estetik dengan ornamen/motif latar sistem (seperti perpaduan layer di tema Makassar) untuk mempertahankan ciri khas visual tema tersebut.
+   - **Matriks Fallback Ornamen 39 Tema Master:**
+     - *Krem Lembut (`background-cream.png`)*: `al-khalid` (Aqiqah), `minimalist-elegant`, `candani`, `papercut`, `solaria`, `vintage-forest`.
+     - *Kertas Bertekstur (`background-cream1.png`)*: `al-fariz` (Khitan), `minimalist-elegant-04`, `chronicle`.
+     - *Floral Vintage (`background-flower.png`)*: `aurelia`, `valente`, `ameera`, `lumina`, `mayang`, `prameswari`.
+     - *Obsidian Monokrom (`background-monocrhome.png`)*: `kalandra-birthday`, `kalandra`, `badrika`, `starlit-dreams`.
+     - *Monokrom Geometris (`background-monocrhome1.png`)*: `sinergi` (General), `cendekia` (Wisuda), `festivo` (Birthday), `artisan`, `wave`.
+     - *Red & Gold Velvet (`background-red.png`)*: `makale`, `rantepao`, `toraja`, `burgundy-royale`.
+     - *Sulsel Bugis Maroon (`/assets/ornaments/background/bg-maroon.webp`)*: `bone`, `bugis`, `dillalucky`, `lagaligo`, `soppeng`, `wajo`.
+     - *Sulsel Makassar Gold Lontara (`/assets/ornaments/background/bg-makassar.webp`)*: `makassar`, `bulukumba`, `gowa`, `maros`, `takalar`.
+6. **Cloudflare Edge Caching & Wildcard Subdomain:**
    - Subdomain otomatis `*.luxenary.id` (contoh: `dimas-clarissa.luxenary.id`).
    - Cache statis dengan `Cache-Control: public, max-age=31536000, immutable`.
    - Beban server 0% dan loading instan di HP tamu.
-6. **Isolasi Seksi Home (`HOME_PHOTO`) & Container Flush Alignment:**
+7. **Isolasi Seksi Home (`HOME_PHOTO`) & Container Flush Alignment:**
    - Slot `HOME_PHOTO` ("Latar Belakang Home (Opsional)") terinjeksi mandiri pada Seksi 1 (`.slide-opening#home`) dengan gradient overlay pelindung teks judul dan kutipan.
    - Jika slot kosong, seksi Home tetap transparan memperlihatkan latar belakang fixed global (video loop atau foto kanvas).
    - Eliminasi total celah bawah (*gap*) 90px/110px di bawah footer `.site-footer` melalui `public/css/modules.css` dan `renderTemplate.ts`, serta pendaftaran `footer, .site-footer, .closing-sec` ke CSS Scroll Snap (`scroll-snap-align: start; scroll-snap-stop: always;`) di `fonts.css` & `modules.css` sehingga footer 100vh menutup rapat ke dasar layar (*flush to bottom*) dan mengunci (*snap*) presisi tanpa memantul balik ke atas.

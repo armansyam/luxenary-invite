@@ -3162,95 +3162,6 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     turutMengundang: ["Keluarga Besar Gunawan Sanjaya", "Keluarga Besar Hendra Pramudita"],
     defaultPalette: "sand-stone",
   },
-  "pink-castle": {
-    themeId: "pink-castle",
-    themeName: "Pink Castle",
-    series: "Modern",
-    category: "modern",
-    tagline: "OUR ONCE UPON A TIME IS NOW",
-    groomName: "Julian",
-    brideName: "Aurelie",
-    groomDisplayName: "Julian Pratama, S.E.",
-    brideDisplayName: "Aurelie Valencia, B.Com.",
-    groomRole: "Mempelai Pria",
-    brideRole: "Mempelai Wanita",
-    groomParents: "Putra dari Bpk. Ir. Pratama Wijaya & Ibu Christine Tan",
-    groomFather: "Ir. Pratama Wijaya",
-    groomMother: "Christine Tan",
-    brideParents: "Putri dari Bpk. Hartono Valencia & Ibu Jessica Anggraini",
-    brideFather: "Hartono Valencia",
-    brideMother: "Jessica Anggraini",
-    groomInstagram: "julianpratama",
-    brideInstagram: "aurelielvalencia",
-    monogramInitial: "J & A",
-    targetDate: "2026-12-19T10:00:00",
-    weddingDateFormatted: "Sabtu, 19 Desember 2026",
-    weddingDateDay: "19",
-    weddingDateMonth: "12",
-    weddingDateYear: "2026",
-    openingQuote: "Cinta sejati bukanlah tentang dongeng, melainkan tentang dua hati yang memilih saling mencintai setiap hari.",
-    openingQuoteRef: "ROMANTIC ROYAL CHRONICLE",
-    city: "Surabaya",
-    globalBgUrl: "/demo/pink-castle/background.webp",
-    groomPhotoUrl: "/demo/pink-castle/groom.webp",
-    bridePhotoUrl: "/demo/pink-castle/bride.webp",
-    sidebarPhotoUrl: "/demo/pink-castle/hero.webp",
-    homePhotoUrl: "/demo/pink-castle/home.webp",
-    landingCoverUrl: "/demo/pink-castle/cover.webp",
-    landingCoverDesktopUrl: "/demo/pink-castle/cover_desktop.webp",
-    thumbnailDesktopUrl: "/demo/pink-castle/thumbnail_desktop.webp",
-    thumbnailMobileUrl: "/demo/pink-castle/thumbnail_mobile.webp",
-    footerPhotoUrl: "/demo/pink-castle/footer.webp",
-    closingCoverUrl: "/demo/pink-castle/footer.webp",
-    galleryPhotos: [
-      "/demo/pink-castle/gallery_01.webp",
-      "/demo/pink-castle/gallery_02.webp",
-      "/demo/pink-castle/gallery_03.webp",
-      "/demo/pink-castle/gallery_04.webp",
-      "/demo/pink-castle/gallery_05.webp",
-      "/demo/pink-castle/gallery_06.webp",
-      "/demo/pink-castle/gallery_07.webp",
-      "/demo/pink-castle/gallery_08.webp",
-    ],
-    events: [
-      {
-        badge: "MATRIMONY",
-        title: "The Royal Matrimony",
-        time: "10.00 – 12.00 WIB",
-        location: "The Grand Chapel Pakuwon",
-        address: "Pakuwon Golf & Family Club, Surabaya Barat",
-        mapsUrl: "https://maps.google.com",
-      },
-      {
-        badge: "RECEPTION",
-        title: "Grand Fairy Reception",
-        time: "18.30 – 21.30 WIB",
-        location: "Ballroom Pakuwon Imperial",
-        address: "Pakuwon Golf & Family Club, Surabaya Barat",
-        mapsUrl: "https://maps.google.com",
-      },
-    ],
-    stories: [
-      {
-        chapter: "A Gentle Beginning",
-        title: "Sebuah Awal yang Hangat",
-        content: "Pertemuan tak sengaja di kampus yang berlanjut menjadi jalinan kasih penuh pengertian dan kelembutan.",
-      },
-      {
-        chapter: "Under The Castle Lights",
-        title: "Momen Lamaran Indah",
-        content: "Di bawah kilau cahaya dan doa keluarga tercinta, cincin disematkan sebagai ikrar cinta abadi.",
-      },
-    ],
-    banks: [
-      { bank: "BCA", number: "0189283741", name: "Julian Pratama" },
-      { bank: "Bank Mandiri", number: "1420098765412", name: "Aurelie Valencia" },
-    ],
-    dressCodeColors: "#e89fb2, #f5d6dc, #ffffff",
-    dressCodeNote: "Pastel Blush, Rose Gold & Soft Champagne",
-    turutMengundang: ["Keluarga Besar Pratama Wijaya", "Keluarga Besar Hartono Valencia"],
-    defaultPalette: "blush-rose",
-  },
   "starlit-dreams": {
     themeId: "starlit-dreams",
     themeName: "Starlit Dreams",
@@ -4572,7 +4483,9 @@ export function composeDemoTemplateData(
   const effectiveLandingCover = withV((customData as any)?.landingCoverUrl !== undefined ? (customData as any)?.landingCoverUrl : demo.landingCoverUrl);
   const effectiveLandingCoverDesktop = withV((customData as any)?.landingCoverDesktopUrl !== undefined ? (customData as any)?.landingCoverDesktopUrl : (demo.landingCoverDesktopUrl || ""));
   const effectiveSidebarPhoto = withV((customData as any)?.sidebarPhotoUrl !== undefined ? (customData as any)?.sidebarPhotoUrl : demo.sidebarPhotoUrl);
-  const effectiveGlobalBg = withV((customData as any)?.globalBgUrl !== undefined ? (customData as any)?.globalBgUrl : demo.globalBgUrl);
+  const rawGlobalBg = (customData as any)?.globalBgUrl !== undefined ? (customData as any)?.globalBgUrl : demo.globalBgUrl;
+  const localBgExists = rawGlobalBg ? (rawGlobalBg.startsWith("http") || fs.existsSync(path.join(process.cwd(), "public", rawGlobalBg.replace(/^\//, "").split("?")[0]))) : false;
+  const effectiveGlobalBg = localBgExists ? withV(rawGlobalBg) : "";
   const effectiveHome = withV(effectiveHomePhoto);
   const effectiveFooter = rawClosing ? withV(rawClosing) : "";
   const effectiveGroom = withV((customData as any)?.groomPhotoUrl !== undefined ? (customData as any)?.groomPhotoUrl : demo.groomPhotoUrl);

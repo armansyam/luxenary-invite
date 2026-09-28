@@ -3,60 +3,163 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Katalog Ornamen Minimalis Bugis - Luxenary</title>
+  <title>Katalog &amp; Panduan Path Ornamen Tema — Luxenary</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-dark: #021712;
-      --card-bg: rgba(255, 255, 255, 0.04);
-      --border: rgba(245, 242, 235, 0.15);
-      --accent: #f5f2eb;
-      --text-muted: #a3a099;
+      --bg-dark: #070d0b;
+      --card-bg: rgba(255, 255, 255, 0.035);
+      --card-hover: rgba(255, 255, 255, 0.065);
+      --border: rgba(245, 242, 235, 0.12);
+      --border-hover: rgba(229, 195, 120, 0.4);
+      --accent: #e5c378;
+      --accent-muted: color-mix(in srgb, #e5c378 15%, transparent);
+      --text-main: #f5f2eb;
+      --text-muted: #9c9a92;
+      --font-sans: "Plus Jakarta Sans", sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+      --font-serif: "Cinzel", Georgia, serif;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       background-color: var(--bg-dark);
-      color: #f5f2eb;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      padding: 40px 20px 80px;
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      padding: 40px 24px 100px;
       min-height: 100vh;
+      line-height: 1.5;
     }
     .container {
-      max-width: 1100px;
+      max-width: 1320px;
       margin: 0 auto;
     }
     header {
       text-align: center;
-      margin-bottom: 48px;
+      margin-bottom: 36px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
     }
     .eyebrow {
       font-size: 11px;
-      letter-spacing: 0.28em;
+      letter-spacing: 0.32em;
       text-transform: uppercase;
-      color: var(--text-muted);
-      margin-bottom: 8px;
-      display: block;
+      color: var(--accent);
+      margin-bottom: 10px;
+      display: inline-block;
+      font-weight: 600;
     }
     h1 {
-      font-size: clamp(24px, 4vw, 36px);
+      font-family: var(--font-serif);
+      font-size: clamp(26px, 4vw, 40px);
       font-weight: 700;
-      letter-spacing: -0.02em;
+      letter-spacing: 0.04em;
       color: #ffffff;
       margin-bottom: 12px;
     }
     p.desc {
       font-size: 14px;
       color: var(--text-muted);
-      max-width: 600px;
-      margin: 0 auto;
-      line-height: 1.6;
+      max-width: 740px;
+      margin: 0 auto 20px;
+      line-height: 1.65;
     }
+    .stats-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 9999px;
+      padding: 8px 22px;
+      font-size: 12.5px;
+      color: var(--text-muted);
+    }
+    .stats-bar strong {
+      color: var(--accent);
+    }
+
+    /* CONTROLS: SEARCH & TABS */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 32px;
+      position: sticky;
+      top: 16px;
+      z-index: 100;
+      background: rgba(7, 13, 11, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 16px 20px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+    }
+    .search-wrap {
+      position: relative;
+      width: 100%;
+    }
+    .search-wrap input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 18px 12px 42px;
+      color: #fff;
+      font-size: 14px;
+      font-family: var(--font-sans);
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .search-wrap input:focus {
+      border-color: var(--accent);
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+    .tabs-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .tab-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 7px 15px;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: var(--font-sans);
+    }
+    .tab-btn:hover {
+      background: rgba(255, 255, 255, 0.09);
+      color: #fff;
+    }
+    .tab-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #070d0b;
+      font-weight: 600;
+    }
+
+    /* GRID & CARDS */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 24px;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 22px;
     }
     .card {
       background: var(--card-bg);
@@ -65,199 +168,3657 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      transition: transform 0.2s, border-color 0.2s;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      position: relative;
     }
     .card:hover {
       transform: translateY(-4px);
-      border-color: rgba(245, 242, 235, 0.4);
+      border-color: var(--border-hover);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
     }
     .preview-box {
-      background: radial-gradient(circle at center, rgba(4, 90, 68, 0.25) 0%, rgba(2, 23, 18, 0.8) 70%);
-      height: 240px;
+      height: 220px;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 24px;
+      padding: 20px;
       border-bottom: 1px solid var(--border);
       position: relative;
+      background: radial-gradient(circle at center, rgba(229, 195, 120, 0.08) 0%, rgba(7, 13, 11, 0.95) 75%);
+      overflow: hidden;
     }
     .preview-box img {
       max-width: 100%;
       max-height: 100%;
       object-fit: contain;
-      filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.5));
+      filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.6));
+      transition: transform 0.3s ease;
     }
-    .badge {
+    .card:hover .preview-box img {
+      transform: scale(1.05);
+    }
+    .ext-badge {
       position: absolute;
-      top: 12px;
-      right: 12px;
+      top: 10px;
+      right: 10px;
       font-size: 10px;
-      letter-spacing: 0.12em;
+      font-weight: 600;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      padding: 4px 10px;
-      background: rgba(245, 242, 235, 0.1);
-      border-radius: 999px;
-      border: 1px solid rgba(245, 242, 235, 0.2);
+      padding: 3px 8px;
+      background: rgba(7, 13, 11, 0.75);
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      color: var(--accent);
+      backdrop-filter: blur(8px);
+    }
+    .size-badge {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      font-size: 10px;
+      font-family: var(--font-mono);
+      padding: 2px 7px;
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 4px;
+      color: var(--text-muted);
     }
     .info {
-      padding: 20px;
+      padding: 16px 18px;
       display: flex;
       flex-direction: column;
       flex-grow: 1;
-    }
-    .title {
-      font-size: 17px;
-      font-weight: 700;
-      color: #ffffff;
-      margin-bottom: 4px;
-    }
-    .subtitle {
-      font-size: 11px;
-      color: var(--text-muted);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-bottom: 10px;
-    }
-    .meaning {
-      font-size: 12.5px;
-      color: rgba(245, 242, 235, 0.8);
-      line-height: 1.6;
-      margin-bottom: 16px;
-      flex-grow: 1;
-    }
-    .links {
-      display: flex;
       gap: 10px;
     }
-    .btn-link {
-      font-size: 11px;
+    .title-row {
+      display: flex;
+      flex-direction: column;
+    }
+    .file-name {
+      font-size: 13.5px;
       font-weight: 600;
       color: #ffffff;
-      text-decoration: none;
-      padding: 8px 14px;
-      background: rgba(245, 242, 235, 0.08);
-      border: 1px solid rgba(245, 242, 235, 0.2);
-      border-radius: 8px;
-      transition: background 0.2s;
+      word-break: break-all;
     }
-    .btn-link:hover {
-      background: rgba(245, 242, 235, 0.2);
+    .category-tag {
+      font-size: 10.5px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .path-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 6px 10px;
+      margin-top: auto;
+    }
+    .path-text {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #f5f2eb;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      direction: rtl;
+      text-align: left;
+    }
+    .btn-copy {
+      background: var(--accent-muted);
+      border: 1px solid rgba(229, 195, 120, 0.3);
+      color: var(--accent);
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      font-family: var(--font-sans);
+    }
+    .btn-copy:hover {
+      background: var(--accent);
+      color: #070d0b;
+    }
+    .actions-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .btn-action {
+      flex: 1;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: 6px 10px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+    .btn-action:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    /* TOAST NOTIFICATION */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #e5c378;
+      color: #070d0b;
+      padding: 10px 20px;
+      border-radius: 9999px;
+      font-size: 12.5px;
+      font-weight: 600;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 9999;
+    }
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <span class="eyebrow">Ragam Hias Kultural Bugis-Makassar</span>
-      <h1>Koleksi Ornamen Minimalis (Bone-White)</h1>
-      <p class="desc">Didesain dengan garis presisi minimalis monokrom tanpa warna emas pekat. Tersedia dalam format SVG vektor murni dan PNG transparan resolusi tinggi (800x800).</p>
+      <span class="eyebrow">Direktori Resmi Asset Tema</span>
+      <h1>Katalog &amp; Panduan Path Ornamen</h1>
+      <p class="desc">
+        Katalog asset ornamen tema Luxenary-Invite untuk tema tradisional (Bugis, Makassar, Toraja), celestial (Starlit Dreams), botanical floral, dan tekstur background kanvas.
+      </p>
+      <div class="stats-bar">
+        <span>Total Asset: <strong id="totalCount">161</strong></span>
+        <span>•</span>
+        <span>Path Prefix: <code>/assets/ornaments/</code></span>
+      </div>
     </header>
 
-    <div class="grid">
-      <!-- 1. Sulapa Eppa -->
-      <div class="card">
-        <div class="preview-box">
-          <span class="badge">SVG &amp; PNG</span>
-          <img src="sulapa-eppa.svg" alt="Sulapa Eppa" />
-        </div>
-        <div class="info">
-          <h3 class="title">Sulapa Eppa</h3>
-          <span class="subtitle">Belah Ketupat Kosmik Bugis</span>
-          <p class="meaning">Simbol 4 elemen semesta (api, air, angin, tanah) dan 4 karakter ideal ksatria Bugis: Macca (cerdas), Malempu (jujur), Warani (berani), dan Getteng (teguh).</p>
-          <div class="links">
-            <a href="sulapa-eppa.svg" target="_blank" class="btn-link">Buka SVG</a>
-            <a href="sulapa-eppa.png" target="_blank" class="btn-link">Buka PNG</a>
-          </div>
-        </div>
+    <div class="controls">
+      <div class="search-wrap">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" id="searchInput" placeholder="Cari nama file, folder, atau path ornamen (contoh: cover-frame, toraja, bugis)..." />
       </div>
-
-      <!-- 2. Cobo Rebung -->
-      <div class="card">
-        <div class="preview-box">
-          <span class="badge">SVG &amp; PNG</span>
-          <img src="cobo-rebung.svg" alt="Cobo Rebung" />
-        </div>
-        <div class="info">
-          <h3 class="title">Cobo'-Cobo'</h3>
-          <span class="subtitle">Pucuk Rebung / Chevron Bugis</span>
-          <p class="meaning">Simbol tunas bambu muda yang meruncing menembus tanah. Melambangkan pertumbuhan tanpa batas, keteguhan hati, dan doa masa depan yang terus menanjak.</p>
-          <div class="links">
-            <a href="cobo-rebung.svg" target="_blank" class="btn-link">Buka SVG</a>
-            <a href="cobo-rebung.png" target="_blank" class="btn-link">Buka PNG</a>
-          </div>
-        </div>
-      </div>
-
-      <!-- 3. Walasoji Lattice -->
-      <div class="card">
-        <div class="preview-box">
-          <span class="badge">SVG &amp; PNG</span>
-          <img src="walasoji-lattice.svg" alt="Anyaman Walasoji" />
-        </div>
-        <div class="info">
-          <h3 class="title">Anyaman Walasoji</h3>
-          <span class="subtitle">Kisi Pagar Kehormatan Adat</span>
-          <p class="meaning">Anyaman bambu berongga belah ketupat yang biasa dipasang pada gerbang penyambutan tamu bangsawan (*saoraja*), simbol perlindungan dan kehormatan rumah tangga.</p>
-          <div class="links">
-            <a href="walasoji-lattice.svg" target="_blank" class="btn-link">Buka SVG</a>
-            <a href="walasoji-lattice.png" target="_blank" class="btn-link">Buka PNG</a>
-          </div>
-        </div>
-      </div>
-
-      <!-- 4. Balo Tettong -->
-      <div class="card">
-        <div class="preview-box">
-          <span class="badge">SVG &amp; PNG</span>
-          <img src="balo-tettong.svg" alt="Balo Tettong" />
-        </div>
-        <div class="info">
-          <h3 class="title">Balo Tettong &amp; Renni</h3>
-          <span class="subtitle">Pinstripe Tenun Sutera Sengkang</span>
-          <p class="meaning">Motif garis vertikal presisi sarung tenun sutera Wajo-Sengkang (*Lipa' Sabbe*). Melambangkan keteguhan prinsip lurus dan keharmonisan keluarga.</p>
-          <div class="links">
-            <a href="balo-tettong.svg" target="_blank" class="btn-link">Buka SVG</a>
-            <a href="balo-tettong.png" target="_blank" class="btn-link">Buka PNG</a>
-          </div>
-        </div>
-      </div>
-
-      <!-- 5. Parenreng Sulur -->
-      <div class="card">
-        <div class="preview-box">
-          <span class="badge">SVG &amp; PNG</span>
-          <img src="parenreng-sulur.svg" alt="Sulur Parenreng" />
-        </div>
-        <div class="info">
-          <h3 class="title">Sulur Parenreng</h3>
-          <span class="subtitle">Botanical Line Art Daun Menjalar</span>
-          <p class="meaning">Ukiran sulur daun flora Bugis yang meliuk anggun (*taro ada taro gau*), melambangkan rezeki dan berkah cinta kasih yang tidak pernah terputus.</p>
-          <div class="links">
-            <a href="parenreng-sulur.svg" target="_blank" class="btn-link">Buka SVG</a>
-            <a href="parenreng-sulur.png" target="_blank" class="btn-link">Buka PNG</a>
-          </div>
-        </div>
-      </div>
-
-      <!-- 6. Rumah Bugis (Existing Asset) -->
-      <div class="card">
-        <div class="preview-box">
-          <span class="badge">Existing PNG</span>
-          <img src="rumah-bugis.png" alt="Rumah Adat Bugis" />
-        </div>
-        <div class="info">
-          <h3 class="title">Bola / Saoraja Bugis</h3>
-          <span class="subtitle">Rumah Panggung Tradisional</span>
-          <p class="meaning">Arsitektur rumah panggung Bugis dengan atap bersusun timpa laja dan tangga depan penyambut tamu.</p>
-          <div class="links">
-            <a href="rumah-bugis.png" target="_blank" class="btn-link">Buka PNG</a>
-            <a href="rumah-bugis.webp" target="_blank" class="btn-link">Buka WEBP</a>
-          </div>
-        </div>
+      <div class="tabs-row">
+        <button class="tab-btn active" data-cat="all">Semua Asset (161)</button>
+        <button class="tab-btn" data-cat="bugis">Bugis Tradisional</button>
+        <button class="tab-btn" data-cat="makassar">Makassar &amp; Phinisi</button>
+        <button class="tab-btn" data-cat="toraja">Toraja Passura</button>
+        <button class="tab-btn" data-cat="starlit-dreams">Starlit Dreams</button>
+        <button class="tab-btn" data-cat="vintage-forest">Vintage &amp; Flora</button>
+        <button class="tab-btn" data-cat="background">Background Kanvas</button>
       </div>
     </div>
+
+    <div class="grid" id="assetGrid">
+      
+      <div class="card" data-cat="background" data-search="background/background-cream.png background-cream.png">
+        <div class="preview-box">
+          <span class="ext-badge">PNG</span>
+          <img src="background/background-cream.png" alt="background-cream.png" loading="lazy" />
+          <span class="size-badge">1913 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">background-cream.png</span>
+            <span class="category-tag">BACKGROUND</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/background/background-cream.png">/assets/ornaments/background/background-cream.png</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/background/background-cream.png', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="background/background-cream.png" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="background" data-search="background/background-cream1.png background-cream1.png">
+        <div class="preview-box">
+          <span class="ext-badge">PNG</span>
+          <img src="background/background-cream1.png" alt="background-cream1.png" loading="lazy" />
+          <span class="size-badge">2138 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">background-cream1.png</span>
+            <span class="category-tag">BACKGROUND</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/background/background-cream1.png">/assets/ornaments/background/background-cream1.png</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/background/background-cream1.png', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="background/background-cream1.png" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="background" data-search="background/background-flower.png background-flower.png">
+        <div class="preview-box">
+          <span class="ext-badge">PNG</span>
+          <img src="background/background-flower.png" alt="background-flower.png" loading="lazy" />
+          <span class="size-badge">2049 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">background-flower.png</span>
+            <span class="category-tag">BACKGROUND</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/background/background-flower.png">/assets/ornaments/background/background-flower.png</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/background/background-flower.png', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="background/background-flower.png" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="background" data-search="background/background-monocrhome.png background-monocrhome.png">
+        <div class="preview-box">
+          <span class="ext-badge">PNG</span>
+          <img src="background/background-monocrhome.png" alt="background-monocrhome.png" loading="lazy" />
+          <span class="size-badge">2216 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">background-monocrhome.png</span>
+            <span class="category-tag">BACKGROUND</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/background/background-monocrhome.png">/assets/ornaments/background/background-monocrhome.png</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/background/background-monocrhome.png', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="background/background-monocrhome.png" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="background" data-search="background/background-monocrhome1.png background-monocrhome1.png">
+        <div class="preview-box">
+          <span class="ext-badge">PNG</span>
+          <img src="background/background-monocrhome1.png" alt="background-monocrhome1.png" loading="lazy" />
+          <span class="size-badge">2072 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">background-monocrhome1.png</span>
+            <span class="category-tag">BACKGROUND</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/background/background-monocrhome1.png">/assets/ornaments/background/background-monocrhome1.png</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/background/background-monocrhome1.png', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="background/background-monocrhome1.png" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="background" data-search="background/background-red.png background-red.png">
+        <div class="preview-box">
+          <span class="ext-badge">PNG</span>
+          <img src="background/background-red.png" alt="background-red.png" loading="lazy" />
+          <span class="size-badge">1998 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">background-red.png</span>
+            <span class="category-tag">BACKGROUND</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/background/background-red.png">/assets/ornaments/background/background-red.png</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/background/background-red.png', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="background/background-red.png" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="balo-tettong.png balo-tettong.png">
+        <div class="preview-box">
+          <span class="ext-badge">PNG</span>
+          <img src="balo-tettong.png" alt="balo-tettong.png" loading="lazy" />
+          <span class="size-badge">22 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">balo-tettong.png</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/balo-tettong.png">/assets/ornaments/balo-tettong.png</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/balo-tettong.png', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="balo-tettong.png" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="balo-tettong.svg balo-tettong.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="balo-tettong.svg" alt="balo-tettong.svg" loading="lazy" />
+          <span class="size-badge">3 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">balo-tettong.svg</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/balo-tettong.svg">/assets/ornaments/balo-tettong.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/balo-tettong.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="balo-tettong.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bingkai-adat-bugis-3d.png bingkai-adat-bugis-3d.png">
+        <div class="preview-box">
+          <span class="ext-badge">PNG</span>
+          <img src="bingkai-adat-bugis-3d.png" alt="bingkai-adat-bugis-3d.png" loading="lazy" />
+          <span class="size-badge">1538 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">bingkai-adat-bugis-3d.png</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bingkai-adat-bugis-3d.png">/assets/ornaments/bingkai-adat-bugis-3d.png</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bingkai-adat-bugis-3d.png', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bingkai-adat-bugis-3d.png" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bingkai-adat-bugis-minimal.png bingkai-adat-bugis-minimal.png">
+        <div class="preview-box">
+          <span class="ext-badge">PNG</span>
+          <img src="bingkai-adat-bugis-minimal.png" alt="bingkai-adat-bugis-minimal.png" loading="lazy" />
+          <span class="size-badge">45 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">bingkai-adat-bugis-minimal.png</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bingkai-adat-bugis-minimal.png">/assets/ornaments/bingkai-adat-bugis-minimal.png</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bingkai-adat-bugis-minimal.png', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bingkai-adat-bugis-minimal.png" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bingkai-adat-bugis-minimal.svg bingkai-adat-bugis-minimal.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="bingkai-adat-bugis-minimal.svg" alt="bingkai-adat-bugis-minimal.svg" loading="lazy" />
+          <span class="size-badge">6 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">bingkai-adat-bugis-minimal.svg</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bingkai-adat-bugis-minimal.svg">/assets/ornaments/bingkai-adat-bugis-minimal.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bingkai-adat-bugis-minimal.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bingkai-adat-bugis-minimal.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bingkai-adat-bugis.png bingkai-adat-bugis.png">
+        <div class="preview-box">
+          <span class="ext-badge">PNG</span>
+          <img src="bingkai-adat-bugis.png" alt="bingkai-adat-bugis.png" loading="lazy" />
+          <span class="size-badge">114 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">bingkai-adat-bugis.png</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bingkai-adat-bugis.png">/assets/ornaments/bingkai-adat-bugis.png</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bingkai-adat-bugis.png', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bingkai-adat-bugis.png" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bingkai-adat-bugis.svg bingkai-adat-bugis.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="bingkai-adat-bugis.svg" alt="bingkai-adat-bugis.svg" loading="lazy" />
+          <span class="size-badge">12 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">bingkai-adat-bugis.svg</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bingkai-adat-bugis.svg">/assets/ornaments/bingkai-adat-bugis.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bingkai-adat-bugis.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bingkai-adat-bugis.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bone/bg-maroon.webp bg-maroon.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bone/bg-maroon.webp" alt="bg-maroon.webp" loading="lazy" />
+          <span class="size-badge">238 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">bg-maroon.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bone/bg-maroon.webp">/assets/ornaments/bone/bg-maroon.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bone/bg-maroon.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bone/bg-maroon.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bone/frame-bottom.webp frame-bottom.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bone/frame-bottom.webp" alt="frame-bottom.webp" loading="lazy" />
+          <span class="size-badge">87 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">frame-bottom.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bone/frame-bottom.webp">/assets/ornaments/bone/frame-bottom.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bone/frame-bottom.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bone/frame-bottom.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bone/frame-top.webp frame-top.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bone/frame-top.webp" alt="frame-top.webp" loading="lazy" />
+          <span class="size-badge">10 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">frame-top.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bone/frame-top.webp">/assets/ornaments/bone/frame-top.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bone/frame-top.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bone/frame-top.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bone/pavillion-bamboo.webp pavillion-bamboo.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bone/pavillion-bamboo.webp" alt="pavillion-bamboo.webp" loading="lazy" />
+          <span class="size-badge">325 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">pavillion-bamboo.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bone/pavillion-bamboo.webp">/assets/ornaments/bone/pavillion-bamboo.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bone/pavillion-bamboo.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bone/pavillion-bamboo.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bone/rumah-adat-bugis.webp rumah-adat-bugis.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bone/rumah-adat-bugis.webp" alt="rumah-adat-bugis.webp" loading="lazy" />
+          <span class="size-badge">49 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">rumah-adat-bugis.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bone/rumah-adat-bugis.webp">/assets/ornaments/bone/rumah-adat-bugis.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bone/rumah-adat-bugis.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bone/rumah-adat-bugis.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bugis/bg-makassar.webp bg-makassar.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bugis/bg-makassar.webp" alt="bg-makassar.webp" loading="lazy" />
+          <span class="size-badge">814 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">bg-makassar.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bugis/bg-makassar.webp">/assets/ornaments/bugis/bg-makassar.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bugis/bg-makassar.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bugis/bg-makassar.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bugis/bg-maroon.webp bg-maroon.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bugis/bg-maroon.webp" alt="bg-maroon.webp" loading="lazy" />
+          <span class="size-badge">238 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">bg-maroon.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bugis/bg-maroon.webp">/assets/ornaments/bugis/bg-maroon.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bugis/bg-maroon.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bugis/bg-maroon.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bugis/bugis-atas.webp bugis-atas.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bugis/bugis-atas.webp" alt="bugis-atas.webp" loading="lazy" />
+          <span class="size-badge">657 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">bugis-atas.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bugis/bugis-atas.webp">/assets/ornaments/bugis/bugis-atas.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bugis/bugis-atas.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bugis/bugis-atas.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bugis/frame-bottom.webp frame-bottom.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bugis/frame-bottom.webp" alt="frame-bottom.webp" loading="lazy" />
+          <span class="size-badge">87 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">frame-bottom.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bugis/frame-bottom.webp">/assets/ornaments/bugis/frame-bottom.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bugis/frame-bottom.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bugis/frame-bottom.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bugis/frame-left.webp frame-left.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bugis/frame-left.webp" alt="frame-left.webp" loading="lazy" />
+          <span class="size-badge">5 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">frame-left.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bugis/frame-left.webp">/assets/ornaments/bugis/frame-left.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bugis/frame-left.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bugis/frame-left.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bugis/frame-makassar-bottom.webp frame-makassar-bottom.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bugis/frame-makassar-bottom.webp" alt="frame-makassar-bottom.webp" loading="lazy" />
+          <span class="size-badge">11 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">frame-makassar-bottom.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bugis/frame-makassar-bottom.webp">/assets/ornaments/bugis/frame-makassar-bottom.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bugis/frame-makassar-bottom.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bugis/frame-makassar-bottom.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bugis/frame-makassar-top.webp frame-makassar-top.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bugis/frame-makassar-top.webp" alt="frame-makassar-top.webp" loading="lazy" />
+          <span class="size-badge">10 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">frame-makassar-top.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bugis/frame-makassar-top.webp">/assets/ornaments/bugis/frame-makassar-top.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bugis/frame-makassar-top.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bugis/frame-makassar-top.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bugis/frame-profil.webp frame-profil.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bugis/frame-profil.webp" alt="frame-profil.webp" loading="lazy" />
+          <span class="size-badge">316 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">frame-profil.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bugis/frame-profil.webp">/assets/ornaments/bugis/frame-profil.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bugis/frame-profil.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bugis/frame-profil.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bugis/frame-right.webp frame-right.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bugis/frame-right.webp" alt="frame-right.webp" loading="lazy" />
+          <span class="size-badge">5 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">frame-right.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bugis/frame-right.webp">/assets/ornaments/bugis/frame-right.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bugis/frame-right.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bugis/frame-right.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bugis/frame-top.webp frame-top.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bugis/frame-top.webp" alt="frame-top.webp" loading="lazy" />
+          <span class="size-badge">10 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">frame-top.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bugis/frame-top.webp">/assets/ornaments/bugis/frame-top.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bugis/frame-top.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bugis/frame-top.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bugis/kapal-phinisi.webp kapal-phinisi.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bugis/kapal-phinisi.webp" alt="kapal-phinisi.webp" loading="lazy" />
+          <span class="size-badge">39 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">kapal-phinisi.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bugis/kapal-phinisi.webp">/assets/ornaments/bugis/kapal-phinisi.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bugis/kapal-phinisi.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bugis/kapal-phinisi.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bugis/pavillion-bamboo.webp pavillion-bamboo.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bugis/pavillion-bamboo.webp" alt="pavillion-bamboo.webp" loading="lazy" />
+          <span class="size-badge">325 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">pavillion-bamboo.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bugis/pavillion-bamboo.webp">/assets/ornaments/bugis/pavillion-bamboo.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bugis/pavillion-bamboo.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bugis/pavillion-bamboo.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bugis/rumah-adat-bugis.webp rumah-adat-bugis.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bugis/rumah-adat-bugis.webp" alt="rumah-adat-bugis.webp" loading="lazy" />
+          <span class="size-badge">49 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">rumah-adat-bugis.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bugis/rumah-adat-bugis.webp">/assets/ornaments/bugis/rumah-adat-bugis.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bugis/rumah-adat-bugis.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bugis/rumah-adat-bugis.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bugis/sabbe.webp sabbe.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bugis/sabbe.webp" alt="sabbe.webp" loading="lazy" />
+          <span class="size-badge">291 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">sabbe.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bugis/sabbe.webp">/assets/ornaments/bugis/sabbe.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bugis/sabbe.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bugis/sabbe.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bugis/top-walasuji.webp top-walasuji.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bugis/top-walasuji.webp" alt="top-walasuji.webp" loading="lazy" />
+          <span class="size-badge">233 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">top-walasuji.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bugis/top-walasuji.webp">/assets/ornaments/bugis/top-walasuji.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bugis/top-walasuji.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bugis/top-walasuji.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bugis/vapillion-bamboo2.webp vapillion-bamboo2.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bugis/vapillion-bamboo2.webp" alt="vapillion-bamboo2.webp" loading="lazy" />
+          <span class="size-badge">256 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">vapillion-bamboo2.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bugis/vapillion-bamboo2.webp">/assets/ornaments/bugis/vapillion-bamboo2.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bugis/vapillion-bamboo2.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bugis/vapillion-bamboo2.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bugis/walasuji-full.webp walasuji-full.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bugis/walasuji-full.webp" alt="walasuji-full.webp" loading="lazy" />
+          <span class="size-badge">325 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">walasuji-full.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bugis/walasuji-full.webp">/assets/ornaments/bugis/walasuji-full.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bugis/walasuji-full.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bugis/walasuji-full.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="bugis/woven-bamboo.webp woven-bamboo.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bugis/woven-bamboo.webp" alt="woven-bamboo.webp" loading="lazy" />
+          <span class="size-badge">140 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">woven-bamboo.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bugis/woven-bamboo.webp">/assets/ornaments/bugis/woven-bamboo.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bugis/woven-bamboo.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bugis/woven-bamboo.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="makassar" data-search="bulukumba/bg-makassar.webp bg-makassar.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bulukumba/bg-makassar.webp" alt="bg-makassar.webp" loading="lazy" />
+          <span class="size-badge">814 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">bg-makassar.webp</span>
+            <span class="category-tag">MAKASSAR</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bulukumba/bg-makassar.webp">/assets/ornaments/bulukumba/bg-makassar.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bulukumba/bg-makassar.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bulukumba/bg-makassar.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="makassar" data-search="bulukumba/frame-makassar-bottom.webp frame-makassar-bottom.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bulukumba/frame-makassar-bottom.webp" alt="frame-makassar-bottom.webp" loading="lazy" />
+          <span class="size-badge">11 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">frame-makassar-bottom.webp</span>
+            <span class="category-tag">MAKASSAR</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bulukumba/frame-makassar-bottom.webp">/assets/ornaments/bulukumba/frame-makassar-bottom.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bulukumba/frame-makassar-bottom.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bulukumba/frame-makassar-bottom.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="makassar" data-search="bulukumba/frame-makassar-top.webp frame-makassar-top.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bulukumba/frame-makassar-top.webp" alt="frame-makassar-top.webp" loading="lazy" />
+          <span class="size-badge">10 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">frame-makassar-top.webp</span>
+            <span class="category-tag">MAKASSAR</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bulukumba/frame-makassar-top.webp">/assets/ornaments/bulukumba/frame-makassar-top.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bulukumba/frame-makassar-top.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bulukumba/frame-makassar-top.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="makassar" data-search="bulukumba/kapal-phinisi.webp kapal-phinisi.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="bulukumba/kapal-phinisi.webp" alt="kapal-phinisi.webp" loading="lazy" />
+          <span class="size-badge">39 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">kapal-phinisi.webp</span>
+            <span class="category-tag">MAKASSAR</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/bulukumba/kapal-phinisi.webp">/assets/ornaments/bulukumba/kapal-phinisi.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/bulukumba/kapal-phinisi.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="bulukumba/kapal-phinisi.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="vintage-forest" data-search="burgundy-royale/bunga-burgundy-royale.png bunga-burgundy-royale.png">
+        <div class="preview-box">
+          <span class="ext-badge">PNG</span>
+          <img src="burgundy-royale/bunga-burgundy-royale.png" alt="bunga-burgundy-royale.png" loading="lazy" />
+          <span class="size-badge">107 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">bunga-burgundy-royale.png</span>
+            <span class="category-tag">VINTAGE FOREST</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/burgundy-royale/bunga-burgundy-royale.png">/assets/ornaments/burgundy-royale/bunga-burgundy-royale.png</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/burgundy-royale/bunga-burgundy-royale.png', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="burgundy-royale/bunga-burgundy-royale.png" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="cobo-rebung.png cobo-rebung.png">
+        <div class="preview-box">
+          <span class="ext-badge">PNG</span>
+          <img src="cobo-rebung.png" alt="cobo-rebung.png" loading="lazy" />
+          <span class="size-badge">25 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">cobo-rebung.png</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/cobo-rebung.png">/assets/ornaments/cobo-rebung.png</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/cobo-rebung.png', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="cobo-rebung.png" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="cobo-rebung.svg cobo-rebung.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="cobo-rebung.svg" alt="cobo-rebung.svg" loading="lazy" />
+          <span class="size-badge">2 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">cobo-rebung.svg</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/cobo-rebung.svg">/assets/ornaments/cobo-rebung.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/cobo-rebung.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="cobo-rebung.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="other" data-search="couple-frame-preview.png couple-frame-preview.png">
+        <div class="preview-box">
+          <span class="ext-badge">PNG</span>
+          <img src="couple-frame-preview.png" alt="couple-frame-preview.png" loading="lazy" />
+          <span class="size-badge">464 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">couple-frame-preview.png</span>
+            <span class="category-tag">OTHER</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/couple-frame-preview.png">/assets/ornaments/couple-frame-preview.png</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/couple-frame-preview.png', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="couple-frame-preview.png" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="other" data-search="couple-frame-preview.svg couple-frame-preview.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="couple-frame-preview.svg" alt="couple-frame-preview.svg" loading="lazy" />
+          <span class="size-badge">11 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">couple-frame-preview.svg</span>
+            <span class="category-tag">OTHER</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/couple-frame-preview.svg">/assets/ornaments/couple-frame-preview.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/couple-frame-preview.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="couple-frame-preview.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="other" data-search="envelope-card-preview.png envelope-card-preview.png">
+        <div class="preview-box">
+          <span class="ext-badge">PNG</span>
+          <img src="envelope-card-preview.png" alt="envelope-card-preview.png" loading="lazy" />
+          <span class="size-badge">101 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">envelope-card-preview.png</span>
+            <span class="category-tag">OTHER</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/envelope-card-preview.png">/assets/ornaments/envelope-card-preview.png</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/envelope-card-preview.png', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="envelope-card-preview.png" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="other" data-search="envelope-card-preview.svg envelope-card-preview.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="envelope-card-preview.svg" alt="envelope-card-preview.svg" loading="lazy" />
+          <span class="size-badge">8 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">envelope-card-preview.svg</span>
+            <span class="category-tag">OTHER</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/envelope-card-preview.svg">/assets/ornaments/envelope-card-preview.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/envelope-card-preview.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="envelope-card-preview.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="vintage-forest" data-search="flowers/flower-bl.webp flower-bl.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="flowers/flower-bl.webp" alt="flower-bl.webp" loading="lazy" />
+          <span class="size-badge">70 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">flower-bl.webp</span>
+            <span class="category-tag">VINTAGE FOREST</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/flowers/flower-bl.webp">/assets/ornaments/flowers/flower-bl.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/flowers/flower-bl.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="flowers/flower-bl.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="vintage-forest" data-search="flowers/flower-br.webp flower-br.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="flowers/flower-br.webp" alt="flower-br.webp" loading="lazy" />
+          <span class="size-badge">80 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">flower-br.webp</span>
+            <span class="category-tag">VINTAGE FOREST</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/flowers/flower-br.webp">/assets/ornaments/flowers/flower-br.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/flowers/flower-br.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="flowers/flower-br.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="vintage-forest" data-search="flowers/flower-tl.webp flower-tl.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="flowers/flower-tl.webp" alt="flower-tl.webp" loading="lazy" />
+          <span class="size-badge">68 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">flower-tl.webp</span>
+            <span class="category-tag">VINTAGE FOREST</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/flowers/flower-tl.webp">/assets/ornaments/flowers/flower-tl.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/flowers/flower-tl.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="flowers/flower-tl.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="vintage-forest" data-search="flowers/flower-tr.webp flower-tr.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="flowers/flower-tr.webp" alt="flower-tr.webp" loading="lazy" />
+          <span class="size-badge">68 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">flower-tr.webp</span>
+            <span class="category-tag">VINTAGE FOREST</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/flowers/flower-tr.webp">/assets/ornaments/flowers/flower-tr.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/flowers/flower-tr.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="flowers/flower-tr.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="makassar" data-search="gowa/bg-makassar.webp bg-makassar.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="gowa/bg-makassar.webp" alt="bg-makassar.webp" loading="lazy" />
+          <span class="size-badge">814 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">bg-makassar.webp</span>
+            <span class="category-tag">MAKASSAR</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/gowa/bg-makassar.webp">/assets/ornaments/gowa/bg-makassar.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/gowa/bg-makassar.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="gowa/bg-makassar.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="makassar" data-search="gowa/frame-makassar-bottom.webp frame-makassar-bottom.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="gowa/frame-makassar-bottom.webp" alt="frame-makassar-bottom.webp" loading="lazy" />
+          <span class="size-badge">11 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">frame-makassar-bottom.webp</span>
+            <span class="category-tag">MAKASSAR</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/gowa/frame-makassar-bottom.webp">/assets/ornaments/gowa/frame-makassar-bottom.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/gowa/frame-makassar-bottom.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="gowa/frame-makassar-bottom.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="makassar" data-search="gowa/frame-makassar-top.webp frame-makassar-top.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="gowa/frame-makassar-top.webp" alt="frame-makassar-top.webp" loading="lazy" />
+          <span class="size-badge">10 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">frame-makassar-top.webp</span>
+            <span class="category-tag">MAKASSAR</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/gowa/frame-makassar-top.webp">/assets/ornaments/gowa/frame-makassar-top.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/gowa/frame-makassar-top.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="gowa/frame-makassar-top.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="makassar" data-search="gowa/kapal-phinisi.webp kapal-phinisi.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="gowa/kapal-phinisi.webp" alt="kapal-phinisi.webp" loading="lazy" />
+          <span class="size-badge">39 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">kapal-phinisi.webp</span>
+            <span class="category-tag">MAKASSAR</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/gowa/kapal-phinisi.webp">/assets/ornaments/gowa/kapal-phinisi.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/gowa/kapal-phinisi.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="gowa/kapal-phinisi.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="makale/atap-tongkonan-depan.webp atap-tongkonan-depan.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="makale/atap-tongkonan-depan.webp" alt="atap-tongkonan-depan.webp" loading="lazy" />
+          <span class="size-badge">97 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">atap-tongkonan-depan.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/makale/atap-tongkonan-depan.webp">/assets/ornaments/makale/atap-tongkonan-depan.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/makale/atap-tongkonan-depan.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="makale/atap-tongkonan-depan.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="makale/atap-tongkonan-perspektif.webp atap-tongkonan-perspektif.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="makale/atap-tongkonan-perspektif.webp" alt="atap-tongkonan-perspektif.webp" loading="lazy" />
+          <span class="size-badge">173 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">atap-tongkonan-perspektif.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/makale/atap-tongkonan-perspektif.webp">/assets/ornaments/makale/atap-tongkonan-perspektif.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/makale/atap-tongkonan-perspektif.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="makale/atap-tongkonan-perspektif.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="makale/border-pa-kadang-pao-seamless.webp border-pa-kadang-pao-seamless.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="makale/border-pa-kadang-pao-seamless.webp" alt="border-pa-kadang-pao-seamless.webp" loading="lazy" />
+          <span class="size-badge">18 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">border-pa-kadang-pao-seamless.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/makale/border-pa-kadang-pao-seamless.webp">/assets/ornaments/makale/border-pa-kadang-pao-seamless.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/makale/border-pa-kadang-pao-seamless.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="makale/border-pa-kadang-pao-seamless.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="makale/divider-spiral-tedong-toraja.webp divider-spiral-tedong-toraja.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="makale/divider-spiral-tedong-toraja.webp" alt="divider-spiral-tedong-toraja.webp" loading="lazy" />
+          <span class="size-badge">89 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">divider-spiral-tedong-toraja.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/makale/divider-spiral-tedong-toraja.webp">/assets/ornaments/makale/divider-spiral-tedong-toraja.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/makale/divider-spiral-tedong-toraja.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="makale/divider-spiral-tedong-toraja.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="makale/sudut-flourish-acanthus-toraja.webp sudut-flourish-acanthus-toraja.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="makale/sudut-flourish-acanthus-toraja.webp" alt="sudut-flourish-acanthus-toraja.webp" loading="lazy" />
+          <span class="size-badge">242 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">sudut-flourish-acanthus-toraja.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/makale/sudut-flourish-acanthus-toraja.webp">/assets/ornaments/makale/sudut-flourish-acanthus-toraja.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/makale/sudut-flourish-acanthus-toraja.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="makale/sudut-flourish-acanthus-toraja.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="makale/sudut-siku-passura-toraja.webp sudut-siku-passura-toraja.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="makale/sudut-siku-passura-toraja.webp" alt="sudut-siku-passura-toraja.webp" loading="lazy" />
+          <span class="size-badge">258 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">sudut-siku-passura-toraja.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/makale/sudut-siku-passura-toraja.webp">/assets/ornaments/makale/sudut-siku-passura-toraja.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/makale/sudut-siku-passura-toraja.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="makale/sudut-siku-passura-toraja.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="makale/tongkonan-depan-3d.webp tongkonan-depan-3d.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="makale/tongkonan-depan-3d.webp" alt="tongkonan-depan-3d.webp" loading="lazy" />
+          <span class="size-badge">173 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">tongkonan-depan-3d.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/makale/tongkonan-depan-3d.webp">/assets/ornaments/makale/tongkonan-depan-3d.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/makale/tongkonan-depan-3d.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="makale/tongkonan-depan-3d.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="makale/tongkonan-perspektif-3d.webp tongkonan-perspektif-3d.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="makale/tongkonan-perspektif-3d.webp" alt="tongkonan-perspektif-3d.webp" loading="lazy" />
+          <span class="size-badge">316 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">tongkonan-perspektif-3d.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/makale/tongkonan-perspektif-3d.webp">/assets/ornaments/makale/tongkonan-perspektif-3d.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/makale/tongkonan-perspektif-3d.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="makale/tongkonan-perspektif-3d.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="makassar" data-search="maros/bg-makassar.webp bg-makassar.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="maros/bg-makassar.webp" alt="bg-makassar.webp" loading="lazy" />
+          <span class="size-badge">814 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">bg-makassar.webp</span>
+            <span class="category-tag">MAKASSAR</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/maros/bg-makassar.webp">/assets/ornaments/maros/bg-makassar.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/maros/bg-makassar.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="maros/bg-makassar.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="makassar" data-search="maros/frame-makassar-bottom.webp frame-makassar-bottom.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="maros/frame-makassar-bottom.webp" alt="frame-makassar-bottom.webp" loading="lazy" />
+          <span class="size-badge">11 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">frame-makassar-bottom.webp</span>
+            <span class="category-tag">MAKASSAR</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/maros/frame-makassar-bottom.webp">/assets/ornaments/maros/frame-makassar-bottom.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/maros/frame-makassar-bottom.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="maros/frame-makassar-bottom.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="makassar" data-search="maros/frame-makassar-top.webp frame-makassar-top.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="maros/frame-makassar-top.webp" alt="frame-makassar-top.webp" loading="lazy" />
+          <span class="size-badge">10 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">frame-makassar-top.webp</span>
+            <span class="category-tag">MAKASSAR</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/maros/frame-makassar-top.webp">/assets/ornaments/maros/frame-makassar-top.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/maros/frame-makassar-top.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="maros/frame-makassar-top.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="makassar" data-search="maros/kapal-phinisi.webp kapal-phinisi.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="maros/kapal-phinisi.webp" alt="kapal-phinisi.webp" loading="lazy" />
+          <span class="size-badge">39 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">kapal-phinisi.webp</span>
+            <span class="category-tag">MAKASSAR</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/maros/kapal-phinisi.webp">/assets/ornaments/maros/kapal-phinisi.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/maros/kapal-phinisi.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="maros/kapal-phinisi.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="parenreng-sulur.png parenreng-sulur.png">
+        <div class="preview-box">
+          <span class="ext-badge">PNG</span>
+          <img src="parenreng-sulur.png" alt="parenreng-sulur.png" loading="lazy" />
+          <span class="size-badge">41 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">parenreng-sulur.png</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/parenreng-sulur.png">/assets/ornaments/parenreng-sulur.png</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/parenreng-sulur.png', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="parenreng-sulur.png" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="parenreng-sulur.svg parenreng-sulur.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="parenreng-sulur.svg" alt="parenreng-sulur.svg" loading="lazy" />
+          <span class="size-badge">3 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">parenreng-sulur.svg</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/parenreng-sulur.svg">/assets/ornaments/parenreng-sulur.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/parenreng-sulur.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="parenreng-sulur.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="rantepao/atap-tongkonan-depan.webp atap-tongkonan-depan.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="rantepao/atap-tongkonan-depan.webp" alt="atap-tongkonan-depan.webp" loading="lazy" />
+          <span class="size-badge">97 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">atap-tongkonan-depan.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/rantepao/atap-tongkonan-depan.webp">/assets/ornaments/rantepao/atap-tongkonan-depan.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/rantepao/atap-tongkonan-depan.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="rantepao/atap-tongkonan-depan.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="rantepao/atap-tongkonan-perspektif.webp atap-tongkonan-perspektif.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="rantepao/atap-tongkonan-perspektif.webp" alt="atap-tongkonan-perspektif.webp" loading="lazy" />
+          <span class="size-badge">173 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">atap-tongkonan-perspektif.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/rantepao/atap-tongkonan-perspektif.webp">/assets/ornaments/rantepao/atap-tongkonan-perspektif.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/rantepao/atap-tongkonan-perspektif.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="rantepao/atap-tongkonan-perspektif.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="rantepao/border-pa-kadang-pao-seamless.webp border-pa-kadang-pao-seamless.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="rantepao/border-pa-kadang-pao-seamless.webp" alt="border-pa-kadang-pao-seamless.webp" loading="lazy" />
+          <span class="size-badge">18 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">border-pa-kadang-pao-seamless.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/rantepao/border-pa-kadang-pao-seamless.webp">/assets/ornaments/rantepao/border-pa-kadang-pao-seamless.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/rantepao/border-pa-kadang-pao-seamless.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="rantepao/border-pa-kadang-pao-seamless.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="rantepao/divider-spiral-tedong-toraja.webp divider-spiral-tedong-toraja.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="rantepao/divider-spiral-tedong-toraja.webp" alt="divider-spiral-tedong-toraja.webp" loading="lazy" />
+          <span class="size-badge">89 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">divider-spiral-tedong-toraja.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/rantepao/divider-spiral-tedong-toraja.webp">/assets/ornaments/rantepao/divider-spiral-tedong-toraja.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/rantepao/divider-spiral-tedong-toraja.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="rantepao/divider-spiral-tedong-toraja.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="rantepao/sudut-flourish-acanthus-toraja.webp sudut-flourish-acanthus-toraja.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="rantepao/sudut-flourish-acanthus-toraja.webp" alt="sudut-flourish-acanthus-toraja.webp" loading="lazy" />
+          <span class="size-badge">242 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">sudut-flourish-acanthus-toraja.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/rantepao/sudut-flourish-acanthus-toraja.webp">/assets/ornaments/rantepao/sudut-flourish-acanthus-toraja.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/rantepao/sudut-flourish-acanthus-toraja.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="rantepao/sudut-flourish-acanthus-toraja.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="rantepao/sudut-siku-passura-toraja.webp sudut-siku-passura-toraja.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="rantepao/sudut-siku-passura-toraja.webp" alt="sudut-siku-passura-toraja.webp" loading="lazy" />
+          <span class="size-badge">258 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">sudut-siku-passura-toraja.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/rantepao/sudut-siku-passura-toraja.webp">/assets/ornaments/rantepao/sudut-siku-passura-toraja.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/rantepao/sudut-siku-passura-toraja.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="rantepao/sudut-siku-passura-toraja.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="rantepao/tongkonan-depan-3d.webp tongkonan-depan-3d.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="rantepao/tongkonan-depan-3d.webp" alt="tongkonan-depan-3d.webp" loading="lazy" />
+          <span class="size-badge">173 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">tongkonan-depan-3d.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/rantepao/tongkonan-depan-3d.webp">/assets/ornaments/rantepao/tongkonan-depan-3d.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/rantepao/tongkonan-depan-3d.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="rantepao/tongkonan-depan-3d.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="rantepao/tongkonan-perspektif-3d.webp tongkonan-perspektif-3d.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="rantepao/tongkonan-perspektif-3d.webp" alt="tongkonan-perspektif-3d.webp" loading="lazy" />
+          <span class="size-badge">316 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">tongkonan-perspektif-3d.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/rantepao/tongkonan-perspektif-3d.webp">/assets/ornaments/rantepao/tongkonan-perspektif-3d.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/rantepao/tongkonan-perspektif-3d.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="rantepao/tongkonan-perspektif-3d.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="rumah-bugis.png rumah-bugis.png">
+        <div class="preview-box">
+          <span class="ext-badge">PNG</span>
+          <img src="rumah-bugis.png" alt="rumah-bugis.png" loading="lazy" />
+          <span class="size-badge">55 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">rumah-bugis.png</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/rumah-bugis.png">/assets/ornaments/rumah-bugis.png</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/rumah-bugis.png', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="rumah-bugis.png" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="rumah-bugis.webp rumah-bugis.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="rumah-bugis.webp" alt="rumah-bugis.webp" loading="lazy" />
+          <span class="size-badge">49 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">rumah-bugis.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/rumah-bugis.webp">/assets/ornaments/rumah-bugis.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/rumah-bugis.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="rumah-bugis.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="soppeng/bg-maroon.webp bg-maroon.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="soppeng/bg-maroon.webp" alt="bg-maroon.webp" loading="lazy" />
+          <span class="size-badge">238 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">bg-maroon.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/soppeng/bg-maroon.webp">/assets/ornaments/soppeng/bg-maroon.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/soppeng/bg-maroon.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="soppeng/bg-maroon.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="soppeng/frame-bottom.webp frame-bottom.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="soppeng/frame-bottom.webp" alt="frame-bottom.webp" loading="lazy" />
+          <span class="size-badge">87 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">frame-bottom.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/soppeng/frame-bottom.webp">/assets/ornaments/soppeng/frame-bottom.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/soppeng/frame-bottom.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="soppeng/frame-bottom.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="soppeng/frame-top.webp frame-top.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="soppeng/frame-top.webp" alt="frame-top.webp" loading="lazy" />
+          <span class="size-badge">10 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">frame-top.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/soppeng/frame-top.webp">/assets/ornaments/soppeng/frame-top.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/soppeng/frame-top.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="soppeng/frame-top.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="soppeng/pavillion-bamboo.webp pavillion-bamboo.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="soppeng/pavillion-bamboo.webp" alt="pavillion-bamboo.webp" loading="lazy" />
+          <span class="size-badge">325 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">pavillion-bamboo.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/soppeng/pavillion-bamboo.webp">/assets/ornaments/soppeng/pavillion-bamboo.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/soppeng/pavillion-bamboo.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="soppeng/pavillion-bamboo.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="soppeng/rumah-adat-bugis.webp rumah-adat-bugis.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="soppeng/rumah-adat-bugis.webp" alt="rumah-adat-bugis.webp" loading="lazy" />
+          <span class="size-badge">49 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">rumah-adat-bugis.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/soppeng/rumah-adat-bugis.webp">/assets/ornaments/soppeng/rumah-adat-bugis.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/soppeng/rumah-adat-bugis.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="soppeng/rumah-adat-bugis.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="starlit-dreams" data-search="starlit-dreams/arch-bg.webp arch-bg.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="starlit-dreams/arch-bg.webp" alt="arch-bg.webp" loading="lazy" />
+          <span class="size-badge">131 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">arch-bg.webp</span>
+            <span class="category-tag">STARLIT DREAMS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/starlit-dreams/arch-bg.webp">/assets/ornaments/starlit-dreams/arch-bg.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/starlit-dreams/arch-bg.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="starlit-dreams/arch-bg.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="starlit-dreams" data-search="starlit-dreams/couple-frame-1.webp couple-frame-1.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="starlit-dreams/couple-frame-1.webp" alt="couple-frame-1.webp" loading="lazy" />
+          <span class="size-badge">85 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">couple-frame-1.webp</span>
+            <span class="category-tag">STARLIT DREAMS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/starlit-dreams/couple-frame-1.webp">/assets/ornaments/starlit-dreams/couple-frame-1.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/starlit-dreams/couple-frame-1.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="starlit-dreams/couple-frame-1.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="starlit-dreams" data-search="starlit-dreams/couple-frame-2.webp couple-frame-2.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="starlit-dreams/couple-frame-2.webp" alt="couple-frame-2.webp" loading="lazy" />
+          <span class="size-badge">83 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">couple-frame-2.webp</span>
+            <span class="category-tag">STARLIT DREAMS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/starlit-dreams/couple-frame-2.webp">/assets/ornaments/starlit-dreams/couple-frame-2.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/starlit-dreams/couple-frame-2.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="starlit-dreams/couple-frame-2.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="starlit-dreams" data-search="starlit-dreams/midnight-icon.webp midnight-icon.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="starlit-dreams/midnight-icon.webp" alt="midnight-icon.webp" loading="lazy" />
+          <span class="size-badge">125 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">midnight-icon.webp</span>
+            <span class="category-tag">STARLIT DREAMS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/starlit-dreams/midnight-icon.webp">/assets/ornaments/starlit-dreams/midnight-icon.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/starlit-dreams/midnight-icon.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="starlit-dreams/midnight-icon.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="starlit-dreams" data-search="starlit-dreams/starlit-cover.webp starlit-cover.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="starlit-dreams/starlit-cover.webp" alt="starlit-cover.webp" loading="lazy" />
+          <span class="size-badge">49 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">starlit-cover.webp</span>
+            <span class="category-tag">STARLIT DREAMS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/starlit-dreams/starlit-cover.webp">/assets/ornaments/starlit-dreams/starlit-cover.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/starlit-dreams/starlit-cover.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="starlit-dreams/starlit-cover.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="sulapa-eppa.png sulapa-eppa.png">
+        <div class="preview-box">
+          <span class="ext-badge">PNG</span>
+          <img src="sulapa-eppa.png" alt="sulapa-eppa.png" loading="lazy" />
+          <span class="size-badge">17 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">sulapa-eppa.png</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/sulapa-eppa.png">/assets/ornaments/sulapa-eppa.png</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/sulapa-eppa.png', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="sulapa-eppa.png" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="sulapa-eppa.svg sulapa-eppa.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="sulapa-eppa.svg" alt="sulapa-eppa.svg" loading="lazy" />
+          <span class="size-badge">2 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">sulapa-eppa.svg</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/sulapa-eppa.svg">/assets/ornaments/sulapa-eppa.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/sulapa-eppa.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="sulapa-eppa.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="makassar" data-search="takalar/bg-makassar.webp bg-makassar.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="takalar/bg-makassar.webp" alt="bg-makassar.webp" loading="lazy" />
+          <span class="size-badge">814 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">bg-makassar.webp</span>
+            <span class="category-tag">MAKASSAR</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/takalar/bg-makassar.webp">/assets/ornaments/takalar/bg-makassar.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/takalar/bg-makassar.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="takalar/bg-makassar.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="makassar" data-search="takalar/frame-makassar-bottom.webp frame-makassar-bottom.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="takalar/frame-makassar-bottom.webp" alt="frame-makassar-bottom.webp" loading="lazy" />
+          <span class="size-badge">11 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">frame-makassar-bottom.webp</span>
+            <span class="category-tag">MAKASSAR</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/takalar/frame-makassar-bottom.webp">/assets/ornaments/takalar/frame-makassar-bottom.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/takalar/frame-makassar-bottom.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="takalar/frame-makassar-bottom.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="makassar" data-search="takalar/frame-makassar-top.webp frame-makassar-top.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="takalar/frame-makassar-top.webp" alt="frame-makassar-top.webp" loading="lazy" />
+          <span class="size-badge">10 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">frame-makassar-top.webp</span>
+            <span class="category-tag">MAKASSAR</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/takalar/frame-makassar-top.webp">/assets/ornaments/takalar/frame-makassar-top.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/takalar/frame-makassar-top.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="takalar/frame-makassar-top.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="makassar" data-search="takalar/kapal-phinisi.webp kapal-phinisi.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="takalar/kapal-phinisi.webp" alt="kapal-phinisi.webp" loading="lazy" />
+          <span class="size-badge">39 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">kapal-phinisi.webp</span>
+            <span class="category-tag">MAKASSAR</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/takalar/kapal-phinisi.webp">/assets/ornaments/takalar/kapal-phinisi.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/takalar/kapal-phinisi.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="takalar/kapal-phinisi.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/atap-tongkonan-depan.webp atap-tongkonan-depan.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/atap-tongkonan-depan.webp" alt="atap-tongkonan-depan.webp" loading="lazy" />
+          <span class="size-badge">97 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">atap-tongkonan-depan.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/atap-tongkonan-depan.webp">/assets/ornaments/toraja/atap-tongkonan-depan.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/atap-tongkonan-depan.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/atap-tongkonan-depan.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/atap-tongkonan-perspektif.webp atap-tongkonan-perspektif.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/atap-tongkonan-perspektif.webp" alt="atap-tongkonan-perspektif.webp" loading="lazy" />
+          <span class="size-badge">173 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">atap-tongkonan-perspektif.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/atap-tongkonan-perspektif.webp">/assets/ornaments/toraja/atap-tongkonan-perspektif.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/atap-tongkonan-perspektif.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/atap-tongkonan-perspektif.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/border-lisplang-rumbai-toraja.webp border-lisplang-rumbai-toraja.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/border-lisplang-rumbai-toraja.webp" alt="border-lisplang-rumbai-toraja.webp" loading="lazy" />
+          <span class="size-badge">269 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">border-lisplang-rumbai-toraja.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/border-lisplang-rumbai-toraja.webp">/assets/ornaments/toraja/border-lisplang-rumbai-toraja.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/border-lisplang-rumbai-toraja.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/border-lisplang-rumbai-toraja.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/border-pa-kadang-pao-h.svg border-pa-kadang-pao-h.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="toraja/border-pa-kadang-pao-h.svg" alt="border-pa-kadang-pao-h.svg" loading="lazy" />
+          <span class="size-badge">206 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">border-pa-kadang-pao-h.svg</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/border-pa-kadang-pao-h.svg">/assets/ornaments/toraja/border-pa-kadang-pao-h.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/border-pa-kadang-pao-h.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/border-pa-kadang-pao-h.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/border-pa-kadang-pao-h.webp border-pa-kadang-pao-h.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/border-pa-kadang-pao-h.webp" alt="border-pa-kadang-pao-h.webp" loading="lazy" />
+          <span class="size-badge">38 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">border-pa-kadang-pao-h.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/border-pa-kadang-pao-h.webp">/assets/ornaments/toraja/border-pa-kadang-pao-h.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/border-pa-kadang-pao-h.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/border-pa-kadang-pao-h.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/border-pa-kadang-pao-seamless.webp border-pa-kadang-pao-seamless.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/border-pa-kadang-pao-seamless.webp" alt="border-pa-kadang-pao-seamless.webp" loading="lazy" />
+          <span class="size-badge">18 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">border-pa-kadang-pao-seamless.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/border-pa-kadang-pao-seamless.webp">/assets/ornaments/toraja/border-pa-kadang-pao-seamless.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/border-pa-kadang-pao-seamless.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/border-pa-kadang-pao-seamless.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/border-pa-kadang-pao-v.svg border-pa-kadang-pao-v.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="toraja/border-pa-kadang-pao-v.svg" alt="border-pa-kadang-pao-v.svg" loading="lazy" />
+          <span class="size-badge">212 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">border-pa-kadang-pao-v.svg</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/border-pa-kadang-pao-v.svg">/assets/ornaments/toraja/border-pa-kadang-pao-v.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/border-pa-kadang-pao-v.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/border-pa-kadang-pao-v.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/border-pa-kadang-pao-v.webp border-pa-kadang-pao-v.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/border-pa-kadang-pao-v.webp" alt="border-pa-kadang-pao-v.webp" loading="lazy" />
+          <span class="size-badge">38 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">border-pa-kadang-pao-v.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/border-pa-kadang-pao-v.webp">/assets/ornaments/toraja/border-pa-kadang-pao-v.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/border-pa-kadang-pao-v.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/border-pa-kadang-pao-v.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/border-toraja.svg border-toraja.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="toraja/border-toraja.svg" alt="border-toraja.svg" loading="lazy" />
+          <span class="size-badge">206 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">border-toraja.svg</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/border-toraja.svg">/assets/ornaments/toraja/border-toraja.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/border-toraja.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/border-toraja.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/border-toraja.webp border-toraja.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/border-toraja.webp" alt="border-toraja.webp" loading="lazy" />
+          <span class="size-badge">38 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">border-toraja.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/border-toraja.webp">/assets/ornaments/toraja/border-toraja.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/border-toraja.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/border-toraja.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/crest-mahkota-toraja.webp crest-mahkota-toraja.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/crest-mahkota-toraja.webp" alt="crest-mahkota-toraja.webp" loading="lazy" />
+          <span class="size-badge">181 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">crest-mahkota-toraja.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/crest-mahkota-toraja.webp">/assets/ornaments/toraja/crest-mahkota-toraja.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/crest-mahkota-toraja.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/crest-mahkota-toraja.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/divider-jarum-toraja.webp divider-jarum-toraja.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/divider-jarum-toraja.webp" alt="divider-jarum-toraja.webp" loading="lazy" />
+          <span class="size-badge">96 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">divider-jarum-toraja.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/divider-jarum-toraja.webp">/assets/ornaments/toraja/divider-jarum-toraja.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/divider-jarum-toraja.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/divider-jarum-toraja.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/divider-spiral-tedong-toraja.webp divider-spiral-tedong-toraja.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/divider-spiral-tedong-toraja.webp" alt="divider-spiral-tedong-toraja.webp" loading="lazy" />
+          <span class="size-badge">89 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">divider-spiral-tedong-toraja.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/divider-spiral-tedong-toraja.webp">/assets/ornaments/toraja/divider-spiral-tedong-toraja.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/divider-spiral-tedong-toraja.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/divider-spiral-tedong-toraja.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/motif-toraja-mandala.svg motif-toraja-mandala.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="toraja/motif-toraja-mandala.svg" alt="motif-toraja-mandala.svg" loading="lazy" />
+          <span class="size-badge">910 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">motif-toraja-mandala.svg</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/motif-toraja-mandala.svg">/assets/ornaments/toraja/motif-toraja-mandala.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/motif-toraja-mandala.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/motif-toraja-mandala.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/motif-toraja-mandala.webp motif-toraja-mandala.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/motif-toraja-mandala.webp" alt="motif-toraja-mandala.webp" loading="lazy" />
+          <span class="size-badge">121 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">motif-toraja-mandala.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/motif-toraja-mandala.webp">/assets/ornaments/toraja/motif-toraja-mandala.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/motif-toraja-mandala.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/motif-toraja-mandala.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/pa-barre-allo.svg pa-barre-allo.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="toraja/pa-barre-allo.svg" alt="pa-barre-allo.svg" loading="lazy" />
+          <span class="size-badge">519 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">pa-barre-allo.svg</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/pa-barre-allo.svg">/assets/ornaments/toraja/pa-barre-allo.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/pa-barre-allo.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/pa-barre-allo.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/pa-barre-allo.webp pa-barre-allo.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/pa-barre-allo.webp" alt="pa-barre-allo.webp" loading="lazy" />
+          <span class="size-badge">169 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">pa-barre-allo.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/pa-barre-allo.webp">/assets/ornaments/toraja/pa-barre-allo.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/pa-barre-allo.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/pa-barre-allo.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/pa-tedong.svg pa-tedong.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="toraja/pa-tedong.svg" alt="pa-tedong.svg" loading="lazy" />
+          <span class="size-badge">63 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">pa-tedong.svg</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/pa-tedong.svg">/assets/ornaments/toraja/pa-tedong.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/pa-tedong.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/pa-tedong.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/pa-tedong.webp pa-tedong.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/pa-tedong.webp" alt="pa-tedong.webp" loading="lazy" />
+          <span class="size-badge">13 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">pa-tedong.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/pa-tedong.webp">/assets/ornaments/toraja/pa-tedong.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/pa-tedong.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/pa-tedong.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/passura-grid.svg passura-grid.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="toraja/passura-grid.svg" alt="passura-grid.svg" loading="lazy" />
+          <span class="size-badge">941 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">passura-grid.svg</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/passura-grid.svg">/assets/ornaments/toraja/passura-grid.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/passura-grid.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/passura-grid.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/passura-grid.webp passura-grid.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/passura-grid.webp" alt="passura-grid.webp" loading="lazy" />
+          <span class="size-badge">186 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">passura-grid.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/passura-grid.webp">/assets/ornaments/toraja/passura-grid.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/passura-grid.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/passura-grid.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/passura-pa-barre-allo.svg passura-pa-barre-allo.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="toraja/passura-pa-barre-allo.svg" alt="passura-pa-barre-allo.svg" loading="lazy" />
+          <span class="size-badge">80 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">passura-pa-barre-allo.svg</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/passura-pa-barre-allo.svg">/assets/ornaments/toraja/passura-pa-barre-allo.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/passura-pa-barre-allo.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/passura-pa-barre-allo.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/passura-pa-barre-allo.webp passura-pa-barre-allo.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/passura-pa-barre-allo.webp" alt="passura-pa-barre-allo.webp" loading="lazy" />
+          <span class="size-badge">17 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">passura-pa-barre-allo.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/passura-pa-barre-allo.webp">/assets/ornaments/toraja/passura-pa-barre-allo.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/passura-pa-barre-allo.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/passura-pa-barre-allo.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/passura-pa-buntun.svg passura-pa-buntun.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="toraja/passura-pa-buntun.svg" alt="passura-pa-buntun.svg" loading="lazy" />
+          <span class="size-badge">87 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">passura-pa-buntun.svg</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/passura-pa-buntun.svg">/assets/ornaments/toraja/passura-pa-buntun.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/passura-pa-buntun.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/passura-pa-buntun.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/passura-pa-buntun.webp passura-pa-buntun.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/passura-pa-buntun.webp" alt="passura-pa-buntun.webp" loading="lazy" />
+          <span class="size-badge">20 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">passura-pa-buntun.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/passura-pa-buntun.webp">/assets/ornaments/toraja/passura-pa-buntun.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/passura-pa-buntun.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/passura-pa-buntun.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/passura-pa-daun-bolu.svg passura-pa-daun-bolu.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="toraja/passura-pa-daun-bolu.svg" alt="passura-pa-daun-bolu.svg" loading="lazy" />
+          <span class="size-badge">83 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">passura-pa-daun-bolu.svg</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/passura-pa-daun-bolu.svg">/assets/ornaments/toraja/passura-pa-daun-bolu.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/passura-pa-daun-bolu.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/passura-pa-daun-bolu.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/passura-pa-daun-bolu.webp passura-pa-daun-bolu.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/passura-pa-daun-bolu.webp" alt="passura-pa-daun-bolu.webp" loading="lazy" />
+          <span class="size-badge">16 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">passura-pa-daun-bolu.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/passura-pa-daun-bolu.webp">/assets/ornaments/toraja/passura-pa-daun-bolu.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/passura-pa-daun-bolu.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/passura-pa-daun-bolu.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/passura-pa-doti-siluang.svg passura-pa-doti-siluang.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="toraja/passura-pa-doti-siluang.svg" alt="passura-pa-doti-siluang.svg" loading="lazy" />
+          <span class="size-badge">84 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">passura-pa-doti-siluang.svg</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/passura-pa-doti-siluang.svg">/assets/ornaments/toraja/passura-pa-doti-siluang.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/passura-pa-doti-siluang.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/passura-pa-doti-siluang.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/passura-pa-doti-siluang.webp passura-pa-doti-siluang.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/passura-pa-doti-siluang.webp" alt="passura-pa-doti-siluang.webp" loading="lazy" />
+          <span class="size-badge">17 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">passura-pa-doti-siluang.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/passura-pa-doti-siluang.webp">/assets/ornaments/toraja/passura-pa-doti-siluang.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/passura-pa-doti-siluang.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/passura-pa-doti-siluang.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/passura-pa-kandaure.svg passura-pa-kandaure.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="toraja/passura-pa-kandaure.svg" alt="passura-pa-kandaure.svg" loading="lazy" />
+          <span class="size-badge">78 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">passura-pa-kandaure.svg</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/passura-pa-kandaure.svg">/assets/ornaments/toraja/passura-pa-kandaure.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/passura-pa-kandaure.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/passura-pa-kandaure.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/passura-pa-kandaure.webp passura-pa-kandaure.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/passura-pa-kandaure.webp" alt="passura-pa-kandaure.webp" loading="lazy" />
+          <span class="size-badge">16 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">passura-pa-kandaure.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/passura-pa-kandaure.webp">/assets/ornaments/toraja/passura-pa-kandaure.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/passura-pa-kandaure.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/passura-pa-kandaure.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/passura-pa-kapu-baka.svg passura-pa-kapu-baka.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="toraja/passura-pa-kapu-baka.svg" alt="passura-pa-kapu-baka.svg" loading="lazy" />
+          <span class="size-badge">71 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">passura-pa-kapu-baka.svg</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/passura-pa-kapu-baka.svg">/assets/ornaments/toraja/passura-pa-kapu-baka.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/passura-pa-kapu-baka.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/passura-pa-kapu-baka.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/passura-pa-kapu-baka.webp passura-pa-kapu-baka.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/passura-pa-kapu-baka.webp" alt="passura-pa-kapu-baka.webp" loading="lazy" />
+          <span class="size-badge">16 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">passura-pa-kapu-baka.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/passura-pa-kapu-baka.webp">/assets/ornaments/toraja/passura-pa-kapu-baka.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/passura-pa-kapu-baka.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/passura-pa-kapu-baka.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/passura-pa-repo-sangbua.svg passura-pa-repo-sangbua.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="toraja/passura-pa-repo-sangbua.svg" alt="passura-pa-repo-sangbua.svg" loading="lazy" />
+          <span class="size-badge">86 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">passura-pa-repo-sangbua.svg</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/passura-pa-repo-sangbua.svg">/assets/ornaments/toraja/passura-pa-repo-sangbua.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/passura-pa-repo-sangbua.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/passura-pa-repo-sangbua.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/passura-pa-repo-sangbua.webp passura-pa-repo-sangbua.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/passura-pa-repo-sangbua.webp" alt="passura-pa-repo-sangbua.webp" loading="lazy" />
+          <span class="size-badge">18 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">passura-pa-repo-sangbua.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/passura-pa-repo-sangbua.webp">/assets/ornaments/toraja/passura-pa-repo-sangbua.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/passura-pa-repo-sangbua.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/passura-pa-repo-sangbua.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/passura-pa-sekong-kandaure.svg passura-pa-sekong-kandaure.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="toraja/passura-pa-sekong-kandaure.svg" alt="passura-pa-sekong-kandaure.svg" loading="lazy" />
+          <span class="size-badge">73 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">passura-pa-sekong-kandaure.svg</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/passura-pa-sekong-kandaure.svg">/assets/ornaments/toraja/passura-pa-sekong-kandaure.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/passura-pa-sekong-kandaure.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/passura-pa-sekong-kandaure.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/passura-pa-sekong-kandaure.webp passura-pa-sekong-kandaure.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/passura-pa-sekong-kandaure.webp" alt="passura-pa-sekong-kandaure.webp" loading="lazy" />
+          <span class="size-badge">13 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">passura-pa-sekong-kandaure.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/passura-pa-sekong-kandaure.webp">/assets/ornaments/toraja/passura-pa-sekong-kandaure.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/passura-pa-sekong-kandaure.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/passura-pa-sekong-kandaure.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/passura-pa-sulan-sangbua.svg passura-pa-sulan-sangbua.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="toraja/passura-pa-sulan-sangbua.svg" alt="passura-pa-sulan-sangbua.svg" loading="lazy" />
+          <span class="size-badge">68 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">passura-pa-sulan-sangbua.svg</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/passura-pa-sulan-sangbua.svg">/assets/ornaments/toraja/passura-pa-sulan-sangbua.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/passura-pa-sulan-sangbua.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/passura-pa-sulan-sangbua.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/passura-pa-sulan-sangbua.webp passura-pa-sulan-sangbua.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/passura-pa-sulan-sangbua.webp" alt="passura-pa-sulan-sangbua.webp" loading="lazy" />
+          <span class="size-badge">15 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">passura-pa-sulan-sangbua.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/passura-pa-sulan-sangbua.webp">/assets/ornaments/toraja/passura-pa-sulan-sangbua.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/passura-pa-sulan-sangbua.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/passura-pa-sulan-sangbua.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/passura-pa-tangke-lumu.svg passura-pa-tangke-lumu.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="toraja/passura-pa-tangke-lumu.svg" alt="passura-pa-tangke-lumu.svg" loading="lazy" />
+          <span class="size-badge">65 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">passura-pa-tangke-lumu.svg</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/passura-pa-tangke-lumu.svg">/assets/ornaments/toraja/passura-pa-tangke-lumu.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/passura-pa-tangke-lumu.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/passura-pa-tangke-lumu.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/passura-pa-tangke-lumu.webp passura-pa-tangke-lumu.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/passura-pa-tangke-lumu.webp" alt="passura-pa-tangke-lumu.webp" loading="lazy" />
+          <span class="size-badge">13 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">passura-pa-tangke-lumu.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/passura-pa-tangke-lumu.webp">/assets/ornaments/toraja/passura-pa-tangke-lumu.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/passura-pa-tangke-lumu.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/passura-pa-tangke-lumu.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/passura-pa-tangke-spiral.svg passura-pa-tangke-spiral.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="toraja/passura-pa-tangke-spiral.svg" alt="passura-pa-tangke-spiral.svg" loading="lazy" />
+          <span class="size-badge">71 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">passura-pa-tangke-spiral.svg</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/passura-pa-tangke-spiral.svg">/assets/ornaments/toraja/passura-pa-tangke-spiral.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/passura-pa-tangke-spiral.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/passura-pa-tangke-spiral.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/passura-pa-tangke-spiral.webp passura-pa-tangke-spiral.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/passura-pa-tangke-spiral.webp" alt="passura-pa-tangke-spiral.webp" loading="lazy" />
+          <span class="size-badge">16 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">passura-pa-tangke-spiral.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/passura-pa-tangke-spiral.webp">/assets/ornaments/toraja/passura-pa-tangke-spiral.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/passura-pa-tangke-spiral.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/passura-pa-tangke-spiral.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/passura-pa-tedong.svg passura-pa-tedong.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="toraja/passura-pa-tedong.svg" alt="passura-pa-tedong.svg" loading="lazy" />
+          <span class="size-badge">63 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">passura-pa-tedong.svg</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/passura-pa-tedong.svg">/assets/ornaments/toraja/passura-pa-tedong.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/passura-pa-tedong.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/passura-pa-tedong.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/passura-pa-tedong.webp passura-pa-tedong.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/passura-pa-tedong.webp" alt="passura-pa-tedong.webp" loading="lazy" />
+          <span class="size-badge">13 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">passura-pa-tedong.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/passura-pa-tedong.webp">/assets/ornaments/toraja/passura-pa-tedong.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/passura-pa-tedong.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/passura-pa-tedong.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/rumah-tongkonan-perspektif.svg rumah-tongkonan-perspektif.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="toraja/rumah-tongkonan-perspektif.svg" alt="rumah-tongkonan-perspektif.svg" loading="lazy" />
+          <span class="size-badge">35 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">rumah-tongkonan-perspektif.svg</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/rumah-tongkonan-perspektif.svg">/assets/ornaments/toraja/rumah-tongkonan-perspektif.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/rumah-tongkonan-perspektif.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/rumah-tongkonan-perspektif.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/rumah-tongkonan-perspektif.webp rumah-tongkonan-perspektif.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/rumah-tongkonan-perspektif.webp" alt="rumah-tongkonan-perspektif.webp" loading="lazy" />
+          <span class="size-badge">16 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">rumah-tongkonan-perspektif.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/rumah-tongkonan-perspektif.webp">/assets/ornaments/toraja/rumah-tongkonan-perspektif.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/rumah-tongkonan-perspektif.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/rumah-tongkonan-perspektif.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/rumah-tongkonan.svg rumah-tongkonan.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="toraja/rumah-tongkonan.svg" alt="rumah-tongkonan.svg" loading="lazy" />
+          <span class="size-badge">598 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">rumah-tongkonan.svg</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/rumah-tongkonan.svg">/assets/ornaments/toraja/rumah-tongkonan.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/rumah-tongkonan.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/rumah-tongkonan.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/rumah-tongkonan.webp rumah-tongkonan.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/rumah-tongkonan.webp" alt="rumah-tongkonan.webp" loading="lazy" />
+          <span class="size-badge">61 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">rumah-tongkonan.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/rumah-tongkonan.webp">/assets/ornaments/toraja/rumah-tongkonan.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/rumah-tongkonan.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/rumah-tongkonan.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/sudut-flourish-acanthus-toraja.webp sudut-flourish-acanthus-toraja.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/sudut-flourish-acanthus-toraja.webp" alt="sudut-flourish-acanthus-toraja.webp" loading="lazy" />
+          <span class="size-badge">242 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">sudut-flourish-acanthus-toraja.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/sudut-flourish-acanthus-toraja.webp">/assets/ornaments/toraja/sudut-flourish-acanthus-toraja.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/sudut-flourish-acanthus-toraja.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/sudut-flourish-acanthus-toraja.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/sudut-siku-passura-toraja.webp sudut-siku-passura-toraja.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/sudut-siku-passura-toraja.webp" alt="sudut-siku-passura-toraja.webp" loading="lazy" />
+          <span class="size-badge">258 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">sudut-siku-passura-toraja.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/sudut-siku-passura-toraja.webp">/assets/ornaments/toraja/sudut-siku-passura-toraja.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/sudut-siku-passura-toraja.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/sudut-siku-passura-toraja.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/tongkonan-depan-3d.webp tongkonan-depan-3d.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/tongkonan-depan-3d.webp" alt="tongkonan-depan-3d.webp" loading="lazy" />
+          <span class="size-badge">173 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">tongkonan-depan-3d.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/tongkonan-depan-3d.webp">/assets/ornaments/toraja/tongkonan-depan-3d.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/tongkonan-depan-3d.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/tongkonan-depan-3d.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/tongkonan-lineart-vector.svg tongkonan-lineart-vector.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="toraja/tongkonan-lineart-vector.svg" alt="tongkonan-lineart-vector.svg" loading="lazy" />
+          <span class="size-badge">304 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">tongkonan-lineart-vector.svg</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/tongkonan-lineart-vector.svg">/assets/ornaments/toraja/tongkonan-lineart-vector.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/tongkonan-lineart-vector.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/tongkonan-lineart-vector.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/tongkonan-perspektif-3d.webp tongkonan-perspektif-3d.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/tongkonan-perspektif-3d.webp" alt="tongkonan-perspektif-3d.webp" loading="lazy" />
+          <span class="size-badge">316 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">tongkonan-perspektif-3d.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/tongkonan-perspektif-3d.webp">/assets/ornaments/toraja/tongkonan-perspektif-3d.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/tongkonan-perspektif-3d.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/tongkonan-perspektif-3d.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="toraja" data-search="toraja/tongkonan-twin.webp tongkonan-twin.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="toraja/tongkonan-twin.webp" alt="tongkonan-twin.webp" loading="lazy" />
+          <span class="size-badge">188 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">tongkonan-twin.webp</span>
+            <span class="category-tag">TORAJA</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/toraja/tongkonan-twin.webp">/assets/ornaments/toraja/tongkonan-twin.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/toraja/tongkonan-twin.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="toraja/tongkonan-twin.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="vintage-forest" data-search="vintage-forest/bunga-botani2.png bunga-botani2.png">
+        <div class="preview-box">
+          <span class="ext-badge">PNG</span>
+          <img src="vintage-forest/bunga-botani2.png" alt="bunga-botani2.png" loading="lazy" />
+          <span class="size-badge">543 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">bunga-botani2.png</span>
+            <span class="category-tag">VINTAGE FOREST</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/vintage-forest/bunga-botani2.png">/assets/ornaments/vintage-forest/bunga-botani2.png</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/vintage-forest/bunga-botani2.png', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="vintage-forest/bunga-botani2.png" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="vintage-forest" data-search="vintage-forest/forest-bg-utama.jpg forest-bg-utama.jpg">
+        <div class="preview-box">
+          <span class="ext-badge">JPG</span>
+          <img src="vintage-forest/forest-bg-utama.jpg" alt="forest-bg-utama.jpg" loading="lazy" />
+          <span class="size-badge">524 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">forest-bg-utama.jpg</span>
+            <span class="category-tag">VINTAGE FOREST</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/vintage-forest/forest-bg-utama.jpg">/assets/ornaments/vintage-forest/forest-bg-utama.jpg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/vintage-forest/forest-bg-utama.jpg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="vintage-forest/forest-bg-utama.jpg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="vintage-forest" data-search="vintage-forest/paper-bg-rissa.jpg paper-bg-rissa.jpg">
+        <div class="preview-box">
+          <span class="ext-badge">JPG</span>
+          <img src="vintage-forest/paper-bg-rissa.jpg" alt="paper-bg-rissa.jpg" loading="lazy" />
+          <span class="size-badge">687 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">paper-bg-rissa.jpg</span>
+            <span class="category-tag">VINTAGE FOREST</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/vintage-forest/paper-bg-rissa.jpg">/assets/ornaments/vintage-forest/paper-bg-rissa.jpg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/vintage-forest/paper-bg-rissa.jpg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="vintage-forest/paper-bg-rissa.jpg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="wajo/bg-maroon.webp bg-maroon.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="wajo/bg-maroon.webp" alt="bg-maroon.webp" loading="lazy" />
+          <span class="size-badge">238 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">bg-maroon.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/wajo/bg-maroon.webp">/assets/ornaments/wajo/bg-maroon.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/wajo/bg-maroon.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="wajo/bg-maroon.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="wajo/frame-bottom.webp frame-bottom.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="wajo/frame-bottom.webp" alt="frame-bottom.webp" loading="lazy" />
+          <span class="size-badge">87 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">frame-bottom.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/wajo/frame-bottom.webp">/assets/ornaments/wajo/frame-bottom.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/wajo/frame-bottom.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="wajo/frame-bottom.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="wajo/frame-top.webp frame-top.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="wajo/frame-top.webp" alt="frame-top.webp" loading="lazy" />
+          <span class="size-badge">10 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">frame-top.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/wajo/frame-top.webp">/assets/ornaments/wajo/frame-top.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/wajo/frame-top.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="wajo/frame-top.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="wajo/pavillion-bamboo.webp pavillion-bamboo.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="wajo/pavillion-bamboo.webp" alt="pavillion-bamboo.webp" loading="lazy" />
+          <span class="size-badge">325 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">pavillion-bamboo.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/wajo/pavillion-bamboo.webp">/assets/ornaments/wajo/pavillion-bamboo.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/wajo/pavillion-bamboo.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="wajo/pavillion-bamboo.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="wajo/rumah-adat-bugis.webp rumah-adat-bugis.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="wajo/rumah-adat-bugis.webp" alt="rumah-adat-bugis.webp" loading="lazy" />
+          <span class="size-badge">49 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">rumah-adat-bugis.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/wajo/rumah-adat-bugis.webp">/assets/ornaments/wajo/rumah-adat-bugis.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/wajo/rumah-adat-bugis.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="wajo/rumah-adat-bugis.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="wajo/sabbe.webp sabbe.webp">
+        <div class="preview-box">
+          <span class="ext-badge">WEBP</span>
+          <img src="wajo/sabbe.webp" alt="sabbe.webp" loading="lazy" />
+          <span class="size-badge">291 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">sabbe.webp</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/wajo/sabbe.webp">/assets/ornaments/wajo/sabbe.webp</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/wajo/sabbe.webp', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="wajo/sabbe.webp" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="walasoji-lattice.png walasoji-lattice.png">
+        <div class="preview-box">
+          <span class="ext-badge">PNG</span>
+          <img src="walasoji-lattice.png" alt="walasoji-lattice.png" loading="lazy" />
+          <span class="size-badge">27 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">walasoji-lattice.png</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/walasoji-lattice.png">/assets/ornaments/walasoji-lattice.png</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/walasoji-lattice.png', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="walasoji-lattice.png" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card" data-cat="bugis" data-search="walasoji-lattice.svg walasoji-lattice.svg">
+        <div class="preview-box">
+          <span class="ext-badge">SVG</span>
+          <img src="walasoji-lattice.svg" alt="walasoji-lattice.svg" loading="lazy" />
+          <span class="size-badge">3 KB</span>
+        </div>
+        <div class="info">
+          <div class="title-row">
+            <span class="file-name">walasoji-lattice.svg</span>
+            <span class="category-tag">BUGIS</span>
+          </div>
+          <div class="path-box">
+            <span class="path-text" title="/assets/ornaments/walasoji-lattice.svg">/assets/ornaments/walasoji-lattice.svg</span>
+            <button class="btn-copy" onclick="copyPath('/assets/ornaments/walasoji-lattice.svg', this)">Salin Path</button>
+          </div>
+          <div class="actions-row">
+            <a href="walasoji-lattice.svg" target="_blank" class="btn-action">Buka Asset</a>
+          </div>
+        </div>
+      </div>
+      
+    </div>
   </div>
+
+  <div id="toast" class="toast">Path berhasil disalin ke clipboard!</div>
+
+  <script>
+    const searchInput = document.getElementById("searchInput");
+    const tabBtns = document.querySelectorAll(".tab-btn");
+    const cards = document.querySelectorAll(".card");
+    const totalCountEl = document.getElementById("totalCount");
+    const toast = document.getElementById("toast");
+
+    let currentCategory = "all";
+    let searchQuery = "";
+
+    function filterGrid() {
+      let visible = 0;
+      cards.forEach(card => {
+        const cat = card.getAttribute("data-cat");
+        const search = card.getAttribute("data-search");
+
+        const matchesCat = (currentCategory === "all" || cat === currentCategory);
+        const matchesSearch = !searchQuery || search.includes(searchQuery);
+
+        if (matchesCat && matchesSearch) {
+          card.style.display = "flex";
+          visible++;
+        } else {
+          card.style.display = "none";
+        }
+      });
+      totalCountEl.textContent = visible;
+    }
+
+    searchInput.addEventListener("input", e => {
+      searchQuery = e.target.value.toLowerCase().trim();
+      filterGrid();
+    });
+
+    tabBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        tabBtns.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentCategory = btn.getAttribute("data-cat");
+        filterGrid();
+      });
+    });
+
+    function copyPath(path, btn) {
+      navigator.clipboard.writeText(path).then(() => {
+        const oldText = btn.textContent;
+        btn.textContent = "Disalin!";
+        btn.style.background = "#e5c378";
+        btn.style.color = "#070d0b";
+        showToast("Path disalin: " + path);
+        setTimeout(() => {
+          btn.textContent = oldText;
+          btn.style.background = "";
+          btn.style.color = "";
+        }, 1500);
+      }).catch(err => {
+        showToast("Gagal menyalin path");
+      });
+    }
+
+    let toastTimer;
+    function showToast(msg) {
+      clearTimeout(toastTimer);
+      toast.textContent = msg;
+      toast.classList.add("show");
+      toastTimer = setTimeout(() => {
+        toast.classList.remove("show");
+      }, 2500);
+    }
+  </script>
 </body>
 </html>

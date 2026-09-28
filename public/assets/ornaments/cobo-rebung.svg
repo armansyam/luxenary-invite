@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <!-- Cobo'-Cobo' / Pucuk Rebung Bugis-Makassar - Minimalist Architectural Chevron -->
+  <g fill="none" stroke="#f5f2eb" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Outer Main Triangular Spear / Bamboo Shoot -->
+    <path d="M 250 40 L 410 440 L 90 440 Z" stroke-width="2.2" opacity="0.9" />
+
+    <!-- Stepped Apex Accent (Timpa Laja Motif) -->
+    <line x1="210" y1="140" x2="290" y2="140" stroke-width="1.5" opacity="0.6" />
+    <line x1="180" y1="210" x2="320" y2="210" stroke-width="1.5" opacity="0.6" />
+    <line x1="150" y1="280" x2="350" y2="280" stroke-width="1.5" opacity="0.6" />
+    <line x1="120" y1="350" x2="380" y2="350" stroke-width="1.5" opacity="0.6" />
+
+    <!-- Inner Nested Chevrons (Ascending Growth) -->
+    <path d="M 250 90 L 370 410 L 130 410 Z" stroke-width="1.4" opacity="0.7" />
+    <path d="M 250 150 L 330 380 L 170 380 Z" stroke-width="1.2" opacity="0.5" stroke-dasharray="6,4" />
+
+    <!-- Center Vertical Spine (Prinsip Keteguhan) -->
+    <line x1="250" y1="50" x2="250" y2="440" stroke-width="1.6" opacity="0.8" />
+
+    <!-- Chevron Ribs (Garis Tulang Rebung) -->
+    <path d="M 250 110 L 290 170" stroke-width="1.2" opacity="0.6" />
+    <path d="M 250 110 L 210 170" stroke-width="1.2" opacity="0.6" />
+
+    <path d="M 250 180 L 310 250" stroke-width="1.2" opacity="0.6" />
+    <path d="M 250 180 L 190 250" stroke-width="1.2" opacity="0.6" />
+
+    <path d="M 250 250 L 330 330" stroke-width="1.2" opacity="0.6" />
+    <path d="M 250 250 L 170 330" stroke-width="1.2" opacity="0.6" />
+
+    <path d="M 250 320 L 350 410" stroke-width="1.2" opacity="0.6" />
+    <path d="M 250 320 L 150 410" stroke-width="1.2" opacity="0.6" />
+
+    <!-- Base Horizon & Dots -->
+    <circle cx="250" cy="55" r="3.5" fill="#f5f2eb" opacity="0.9" />
+    <circle cx="250" cy="425" r="4" fill="#f5f2eb" opacity="0.8" />
+    <circle cx="115" cy="425" r="3" fill="#f5f2eb" opacity="0.5" />
+    <circle cx="385" cy="425" r="3" fill="#f5f2eb" opacity="0.5" />
+  </g>
+</svg>
