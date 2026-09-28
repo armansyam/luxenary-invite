@@ -580,6 +580,7 @@ Sistem pengiriman email otomatis menggunakan **Nodemailer** yang membaca kredens
      - Pengiriman sampel nyata (*Live Test Send*) ke inbox email administrator via `POST /api/admin/emails/preview-send`.
      - Penampil kode HTML mentah dengan tombol salin.
    - **Otomatisasi Cron Cleanup (`app/api/cron/cleanup/route.ts`)**: Peringatan retensi dikirimkan secara otomatis pada jadwal cron harian bagi undangan pasca-acara yang mendekati tenggat (H-3) dengan tracking idempoten via `featureSettings.retentionWarningSentAt`.
+   - **Standar RFC 2046 `multipart/alternative` & Anti-Spam Deliverability**: Seluruh builder email menyertakan versi HTML mewah dan versi teks polos (`text`), dikirimkan bersamaan via `transporter.sendMail()`. Subjek email menggunakan format editorial resmi tanpa kata kunci pemicu filter spam seperti kurung siku kapital (`[TAGIHAN]`, `[LUNAS]`, `[PENTING]`, `[LIVE TEST]`), memaksimalkan deliverability langsung ke kotak masuk utama (Inbox).
 3. **Sinkronisasi Tab Browser & Identitas Visual Real-Time**:
    - Dynamic metadata SSR (`force-dynamic` dan `revalidate = 0`) pada root layout (`app/layout.tsx`) dan admin layout (`app/(admin)/layout.tsx`) menjamin judul tab browser selalu membaca nama platform teranyar dari database `admin_settings`.
    - Reaktivitas hook `useEffect` pada antarmuka admin (`/admin`), login admin (`/admin/login`), dasbor klien (`/dashboard`), dan login klien (`/login`) memperbarui `document.title` seketika saat pengaturan platform disimpan tanpa perlu me-reload halaman.

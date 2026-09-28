@@ -63,7 +63,7 @@ export interface EmailTemplateMeta {
   triggerEvent: string;
   recipientTarget: string;
   samplePayload: any;
-  render: (customPayload?: any, settings?: any) => { subject: string; html: string };
+  render: (customPayload?: any, settings?: any) => { subject: string; html: string; text: string };
 }
 
 /**
@@ -77,7 +77,7 @@ export function buildInvoiceEmailHtml(
     paymentGatewayFeePayer?: string;
     appUrl?: string;
   }
-): { subject: string; html: string } {
+): { subject: string; html: string; text: string } {
   const platformName = settings?.platformName || "LUXVITE";
   const feePercent = settings?.paymentGatewayFeePercent ?? 0.7;
   const feePayer = settings?.paymentGatewayFeePayer || "BUYER";
@@ -112,8 +112,8 @@ export function buildInvoiceEmailHtml(
     : "Akses tema lengkap, fitur RSVP, check-in QR tamu, dan buku tamu digital.";
 
   const subject = isPaid
-    ? `[LUNAS] Kuitansi Pembayaran: ${categoryTitle} — #${invoiceNo}`
-    : `[TAGIHAN] Menunggu Pembayaran: ${categoryTitle} — #${invoiceNo}`;
+    ? `Kuitansi Pembayaran: ${categoryTitle} — No. ${invoiceNo}`
+    : `Faktur Tagihan: ${categoryTitle} — No. ${invoiceNo}`;
 
   const ctaUrl = isPaid
     ? `${baseUrl}/dashboard`
@@ -127,6 +127,21 @@ export function buildInvoiceEmailHtml(
   const badgeText = isPaid ? "LUNAS / PAID" : "MENUNGGU PEMBAYARAN";
   const badgeBorder = isPaid ? "#C8E6C9" : "#FFE082";
   const badgeColor = isPaid ? "#1B5E20" : "#92400E";
+
+  const invoiceTitleText = isPaid ? "KUITANSI PEMBAYARAN" : "FAKTUR TAGIHAN";
+
+  const text = `${platformName} - ${invoiceTitleText}\n` +
+    `Status: ${isPaid ? "Lunas / Paid" : "Menunggu Pembayaran"}\n\n` +
+    `No. Faktur: #${invoiceNo}\n` +
+    `Tanggal: ${dateFormatted}\n` +
+    `Ditujukan Kepada: ${opts.recipientName || opts.recipientEmail}\n` +
+    `Metode Pembayaran: ${opts.paymentMethod || "QRIS / Payment Gateway"}\n\n` +
+    `Rincian Layanan: ${itemTitle}\n` +
+    `Subtotal: Rp ${subtotal.toLocaleString("id-ID")}\n` +
+    `Biaya Layanan: Rp ${feeAmount.toLocaleString("id-ID")}\n` +
+    `Total: Rp ${totalAmount.toLocaleString("id-ID")}\n\n` +
+    `Tautan Transaksi: ${ctaUrl}\n\n` +
+    `Email ini dikirimkan secara otomatis sebagai bukti transaksi yang sah pada sistem ${platformName}.`;
 
   const html = `<!DOCTYPE html>
 <html lang="id">
@@ -162,7 +177,7 @@ export function buildInvoiceEmailHtml(
     <div class="card">
       <div class="header">
         <div class="brand">${platformName}</div>
-        <h1 class="invoice-title">FAKTUR PEMBAYARAN</h1>
+        <h1 class="invoice-title">${invoiceTitleText}</h1>
         <span class="status-badge">${badgeText}</span>
       </div>
 
@@ -234,7 +249,7 @@ export function buildInvoiceEmailHtml(
 </body>
 </html>`;
 
-  return { subject, html };
+  return { subject, html, text };
 }
 
 /**
@@ -246,14 +261,14 @@ export function buildMemoriesQuotaHtml(
     platformName?: string;
     appUrl?: string;
   }
-): { subject: string; html: string } {
+): { subject: string; html: string; text: string } {
   const platformName = settings?.platformName || "LUXVITE";
   const percentUsed = opts.milestonePercent ?? Math.round((opts.usedPhotos / opts.totalQuota) * 100);
   const isFull = percentUsed >= 100;
 
   const subject = isFull
-    ? `[Penuh] Kuota Roll Kamera Tamu Telah Habis — ${opts.coupleNames}`
-    : `[Perhatian] Penggunaan Roll Kamera Tamu Telah Mencapai ${percentUsed}% — ${opts.coupleNames}`;
+    ? `Pemberitahuan: Kuota Roll Kamera Tamu ${opts.coupleNames} Telah Penuh (100%)`
+    : `Pemberitahuan: Kuota Roll Kamera Tamu ${opts.coupleNames} Terisi ${percentUsed}%`;
 
   const titleText = isFull ? "ROLL KAMERA TAMU TELAH PENUH" : `PROGRESS ROLL KAMERA TAMU (${percentUsed}%)`;
   const badgeText = isFull ? "ROLL 100% PENUH" : (percentUsed >= 80 ? `ANTUSIASME TINGGI (${percentUsed}%)` : `SEPARUH ROLL (${percentUsed}%)`);
@@ -269,6 +284,14 @@ export function buildMemoriesQuotaHtml(
        <p style="margin: 0; color: #44403C; line-height: 1.6;">Seluruh kapasitas roll kamera kenangan untuk pernikahan Anda saat ini telah terisi penuh sebanyak <strong>${opts.usedPhotos} dari ${opts.totalQuota} foto</strong> (tersisa <strong>0 foto</strong>). Tamu baru saat ini tidak dapat mengunggah foto lagi kecuali kuota roll diperluas.</p>`
     : `<p style="margin: 0 0 8px 0; color: #1C1917;">Halo <strong>${opts.recipientName || opts.coupleNames}</strong>,</p>
        <p style="margin: 0; color: #44403C; line-height: 1.6;">Tamu undangan pernikahan Anda sangat antusias! Saat ini roll kamera kenangan telah terisi sebanyak <strong>${opts.usedPhotos} dari ${opts.totalQuota} foto</strong> (tersisa <strong>${opts.remainingPhotos} foto</strong>).</p>`;
+
+  const text = `${platformName} - PROGRES ROLL KAMERA TAMU\n` +
+    `Status: ${isFull ? "Roll 100% Penuh" : `${percentUsed}% Terisi`}\n\n` +
+    `Halo ${opts.recipientName || opts.coupleNames},\n\n` +
+    `${isFull ? `Seluruh kapasitas roll kamera kenangan untuk pernikahan Anda saat ini telah terisi penuh sebanyak ${opts.usedPhotos} dari ${opts.totalQuota} foto (tersisa 0 foto). Tamu baru saat ini tidak dapat mengunggah foto lagi kecuali kuota roll diperluas.` : `Tamu undangan pernikahan Anda sangat antusias! Saat ini roll kamera kenangan telah terisi sebanyak ${opts.usedPhotos} dari ${opts.totalQuota} foto (tersisa ${opts.remainingPhotos} foto).`}\n\n` +
+    `Kapasitas Terpakai: ${opts.usedPhotos} / ${opts.totalQuota} Foto (${percentUsed}%)\n\n` +
+    `Buka Dasbor Momen Tamu: ${topupUrl}\n\n` +
+    `Pemberitahuan otomatis ini dikirimkan khusus untuk menjaga kelancaran dokumentasi pernikahan Anda di ${platformName}.`;
 
   const html = `<!DOCTYPE html>
 <html lang="id">
@@ -336,14 +359,24 @@ export function buildMemoriesQuotaHtml(
 </body>
 </html>`;
 
-  return { subject, html };
+  return { subject, html, text };
 }
 
 /**
  * 3. Template Diagnostik Uji Coba Server SMTP
  */
-export function buildTestSmtpHtml(opts: TestSmtpOptions): { subject: string; html: string } {
-  const subject = `[Uji Coba SMTP] Koneksi Email Berhasil — ${opts.fromName}`;
+export function buildTestSmtpHtml(opts: TestSmtpOptions): { subject: string; html: string; text: string } {
+  const subject = `Verifikasi Koneksi Server Email (SMTP) — ${opts.fromName}`;
+
+  const text = `${opts.fromName} - DIAGNOSTIK SISTEM\n` +
+    `Koneksi SMTP Berhasil Diverifikasi\n\n` +
+    `Pesan ini dikirim secara langsung dari Dashboard Admin untuk menguji keabsahan konfigurasi server pengiriman email (SMTP).\n\n` +
+    `SMTP Host: ${opts.smtpHost}\n` +
+    `SMTP Port: ${opts.port} (${opts.isSecure ? "SSL/TLS" : "STARTTLS"})\n` +
+    `Akun Pengirim: ${opts.smtpUser}\n` +
+    `Waktu Pengujian: ${opts.timestamp}\n\n` +
+    `Email transaksi otomatis kini siap digunakan dengan normal.`;
+
   const html = `<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -384,7 +417,7 @@ export function buildTestSmtpHtml(opts: TestSmtpOptions): { subject: string; htm
 </body>
 </html>`;
 
-  return { subject, html };
+  return { subject, html, text };
 }
 
 /**
@@ -396,14 +429,24 @@ export function buildRetentionExpiryHtml(
     platformName?: string;
     appUrl?: string;
   }
-): { subject: string; html: string } {
+): { subject: string; html: string; text: string } {
   const platformName = settings?.platformName || "LUXVITE";
   const baseUrl = opts.appUrl || (typeof window !== "undefined" ? window.location.origin : process.env.NEXTAUTH_URL) || "https://luxvite.id";
 
   const extendUrl = `${baseUrl}/dashboard/moments`;
   const downloadUrl = `${baseUrl}/dashboard/moments`;
 
-  const subject = `[PENTING] Masa Simpan Galeri Foto Tamu Berakhir dalam ${opts.daysRemaining} Hari — ${opts.coupleNames}`;
+  const subject = `Pemberitahuan: Masa Simpan Galeri Foto Tamu ${opts.coupleNames} Berakhir dalam ${opts.daysRemaining} Hari`;
+
+  const text = `${platformName} - PEMBERITAHUAN MASA SIMPAN FOTO TAMU\n` +
+    `Status: Terakhir ${opts.daysRemaining} Hari Lagi\n\n` +
+    `Halo ${opts.recipientName || opts.coupleNames},\n\n` +
+    `Masa aktif penyimpanan foto kenangan momen pernikahan Anda di cloud storage akan berakhir pada ${opts.expiryDateFormatted} (tersisa ${opts.daysRemaining} hari lagi). Sesuai kebijakan retensi sistem, seluruh foto candid yang diunggah para tamu akan diarsipkan dan dibersihkan dari server demi menjaga privasi dan efisiensi penyimpanan data.\n\n` +
+    `Total Foto Kenangan Tamu: ${opts.totalPhotos} Foto\n` +
+    `Batas Waktu Pengunduhan / Perpanjangan: ${opts.expiryDateFormatted}\n\n` +
+    `Perpanjang Masa Simpan (+30 Hari): ${extendUrl}\n` +
+    `Unduh Semua Foto Kenangan (ZIP): ${downloadUrl}\n\n` +
+    `Pemberitahuan resmi ini dikirimkan otomatis oleh sistem ${platformName} untuk menjaga keamanan dokumentasi berharga pernikahan Anda.`;
 
   const html = `<!DOCTYPE html>
 <html lang="id">
@@ -480,7 +523,7 @@ export function buildRetentionExpiryHtml(
 </body>
 </html>`;
 
-  return { subject, html };
+  return { subject, html, text };
 }
 
 /**

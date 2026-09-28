@@ -1836,6 +1836,7 @@ Sistem membaca konfigurasi server email secara real-time:
   - Pengujian live (*Live Test Send*) ke email administrator via endpoint `POST /api/admin/emails/preview-send`.
   - Penampil kode sumber HTML mentah dan tombol salin clipboard.
 - **Otomatisasi Cron Cleanup (`app/api/cron/cleanup/route.ts`):** Peringatan retensi dikirimkan secara otomatis pada jadwal cron harian bagi undangan pasca-acara yang mendekati tenggat (H-3) dengan tracking idempoten via `featureSettings.retentionWarningSentAt`.
+- **Standar RFC 2046 `multipart/alternative` & Anti-Spam Deliverability:** Seluruh builder email menyertakan versi HTML mewah dan versi teks polos (`text`), dikirimkan bersamaan via `transporter.sendMail()`. Subjek email menggunakan format editorial resmi tanpa kata kunci pemicu filter spam seperti kurung siku kapital (`[TAGIHAN]`, `[LUNAS]`, `[PENTING]`, `[LIVE TEST]`), memaksimalkan deliverability langsung ke kotak masuk utama (Inbox).
 - Bebas dari emoji default OS untuk menjaga citra SaaS profesional.
 - Pengiriman email invoice dijalankan secara asynchronous non-blocking di dalam `applyUpgradePlan` setelah status order berubah menjadi `PAID`.
 

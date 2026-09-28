@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     const fromName = settings.smtpFromName || settings.platformName || "Platform Undangan";
     const timestamp = new Date().toLocaleString("id-ID", { dateStyle: "full", timeStyle: "medium" });
 
-    const { subject, html } = buildTestSmtpHtml({
+    const { subject, html, text } = buildTestSmtpHtml({
       fromName,
       smtpHost: settings.smtpHost,
       port,
@@ -71,6 +71,7 @@ export async function POST(req: NextRequest) {
       from: `"${fromName}" <${fromAddress}>`,
       to: recipientEmail,
       subject,
+      text,
       html,
     });
 

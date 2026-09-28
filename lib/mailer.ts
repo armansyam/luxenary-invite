@@ -39,7 +39,7 @@ export async function sendInvoiceEmail(opts: InvoiceEmailOptions): Promise<{ suc
       },
     });
 
-    const { subject, html: htmlContent } = buildInvoiceEmailHtml(opts, {
+    const { subject, html: htmlContent, text: textContent } = buildInvoiceEmailHtml(opts, {
       platformName: settings.platformName,
       paymentGatewayFeePercent: settings.paymentGatewayFeePercent,
       paymentGatewayFeePayer: settings.paymentGatewayFeePayer,
@@ -53,6 +53,7 @@ export async function sendInvoiceEmail(opts: InvoiceEmailOptions): Promise<{ suc
       from: `"${fromName}" <${fromAddress}>`,
       to: opts.recipientEmail,
       subject,
+      text: textContent,
       html: htmlContent,
     });
 
@@ -87,7 +88,7 @@ export async function sendMemoriesQuotaAlertEmail(opts: MemoriesQuotaAlertOption
       },
     });
 
-    const { subject, html: htmlContent } = buildMemoriesQuotaHtml(opts, {
+    const { subject, html: htmlContent, text: textContent } = buildMemoriesQuotaHtml(opts, {
       platformName: settings.platformName,
       appUrl: opts.appUrl,
     });
@@ -99,6 +100,7 @@ export async function sendMemoriesQuotaAlertEmail(opts: MemoriesQuotaAlertOption
       from: `"${fromName}" <${fromAddress}>`,
       to: opts.recipientEmail,
       subject,
+      text: textContent,
       html: htmlContent,
     });
 
@@ -133,7 +135,7 @@ export async function sendRetentionExpiryAlertEmail(opts: RetentionExpiryAlertOp
       },
     });
 
-    const { subject, html: htmlContent } = buildRetentionExpiryHtml(opts, {
+    const { subject, html: htmlContent, text: textContent } = buildRetentionExpiryHtml(opts, {
       platformName: settings.platformName,
       appUrl: opts.appUrl,
     });
@@ -145,6 +147,7 @@ export async function sendRetentionExpiryAlertEmail(opts: RetentionExpiryAlertOp
       from: `"${fromName}" <${fromAddress}>`,
       to: opts.recipientEmail,
       subject,
+      text: textContent,
       html: htmlContent,
     });
 

@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
       ...(customOverrides || {}),
     };
 
-    const { subject, html } = template.render(overrides, {
+    const { subject, html, text } = template.render(overrides, {
       platformName: settings.platformName || "LUXVITE",
       paymentGatewayFeePercent: settings.paymentGatewayFeePercent,
       paymentGatewayFeePayer: settings.paymentGatewayFeePayer,
@@ -76,7 +76,8 @@ export async function POST(req: NextRequest) {
     await transporter.sendMail({
       from: `"${fromName}" <${fromAddress}>`,
       to: recipientEmail,
-      subject: `[LIVE TEST] ${subject}`,
+      subject: `Pratinjau: ${subject}`,
+      text,
       html,
     });
 

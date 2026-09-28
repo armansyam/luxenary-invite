@@ -251,7 +251,7 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 | **Image Processing** | `sharp` — WebP, resize, compress |
 | **Video Processing** | `FFmpeg` — H.264, auto-trim 20s, no audio loop, 30fps cap, +faststart streaming |
 | **Payment** | Gateway 2-Arah (Midtrans Core API QRIS & Xendit Invoice) + Transfer Bank Manual dengan transmisi profil pembeli lengkap (Nama, Email, WhatsApp/HP, Alamat, Item Branding, & Metadata) |
-| **Mailer & Email Engine** | Nodemailer dengan kredensial SMTP dinamis via `admin_settings`, template HTML editorial Warm White Cream & Royal Amber Gold, peringatan retensi H-3 otomatis via cron, serta Galeri Pratinjau 7 Varian di `/admin/emails` |
+| **Mailer & Email Engine** | Nodemailer dengan kredensial SMTP dinamis via `admin_settings`, template HTML editorial Warm White Cream & Royal Amber Gold dengan RFC 2046 `multipart/alternative` teks polos (anti-spam deliverability), subjek editorial resmi tanpa kurung siku, peringatan retensi H-3 otomatis via cron, serta Galeri Pratinjau 7 Varian di `/admin/emails` |
 | **Cron** | `POST /api/cron/cleanup` — retensi & cleanup otomatis |
 | **Manajemen Proses** | PM2 (VPS) |
 
