@@ -1310,6 +1310,47 @@
       box-shadow: var(--gold-glow);
     }
 
+    .gift-tabs {
+      display: flex;
+      max-width: 320px;
+      margin: 0 auto 1.8rem;
+      border: 1px solid var(--bugis-border);
+      border-radius: 9999px;
+      overflow: hidden;
+      background: color-mix(in srgb, var(--bugis-card-bg, #140204) 80%, transparent);
+      backdrop-filter: blur(10px);
+      padding: 3px;
+      gap: 4px;
+    }
+
+    .gift-tab-btn {
+      flex: 1;
+      padding: 0.65rem 1rem;
+      background: transparent;
+      border: none;
+      border-radius: 9999px;
+      color: var(--bugis-gold, #dfb76c);
+      opacity: 0.65;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      transition: all 0.3s ease;
+    }
+
+    .gift-tab-btn:hover {
+      opacity: 0.9;
+    }
+
+    .gift-tab-btn.active {
+      background: var(--bugis-gold, #dfb76c);
+      color: var(--bugis-dark, #140204);
+      opacity: 1;
+      font-weight: 700;
+      box-shadow: var(--gold-glow);
+    }
+
     .story-chapter-block {
       background: var(--bugis-card-bg);
       border: 1px solid var(--bugis-border);

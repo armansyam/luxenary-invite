@@ -86,7 +86,7 @@
       width: 100%;
       height: 100vh;
       background-image: radial-gradient(circle at 50% 10%, color-mix(in srgb, var(--primary, #c46849) 35%, #190e0a) 0%, rgba(25, 14, 10, 0.95) 85%),
-        url('/assets/ornaments/background/background-cream.png');
+        url('/assets/ornaments/background/background-cream.webp');
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -328,6 +328,7 @@
        FULL VIEWPORT ISOLATED SLIDES (100VH SETIAP SEKSI)
        ========================================================================== */
     .slide-section,
+    #home,
     #section-quote,
     #section-couple,
     #section-events,
@@ -1113,7 +1114,19 @@
     <!-- MAIN SCROLLABLE PANEL -->
     <main class="main-scroll-panel">
 
-      <!-- SEKSI 1: KUTIPAN & COUNTDOWN (100VH STANDALONE) -->
+      <!-- SEKSI 1: HERO PEMBUKA (#home) -->
+      <section id="home" class="slide-section sec-home">
+        <div class="sec-content-box reveal-on-scroll">
+          <span class="sec-eyebrow" data-lux-field="customLabels.weddingTagline">{{weddingTagline}}</span>
+          <div class="home-hero-arch" style="width: 210px; aspect-ratio: 3/4; border-radius: 500px 500px 0 0; overflow: hidden; border: 2px solid var(--sunset-amber); box-shadow: var(--sunset-glow); margin: 0.8rem auto 1.2rem; position: relative;">
+            <img src="{{homePhotoUrl}}" alt="{{firstName}} &amp; {{secondName}}" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
+          </div>
+          <h2 class="sec-heading" style="font-size: clamp(2.6rem, 9vw, 3.6rem); margin-bottom: 0.2rem;">{{firstName}} &amp; {{secondName}}</h2>
+          <p style="font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: 0.2em; font-size: 0.82rem; text-transform: uppercase; color: var(--sunset-sand); font-weight: 500;">{{weddingDate}}</p>
+        </div>
+      </section>
+
+      <!-- SEKSI 2: KUTIPAN & COUNTDOWN (100VH STANDALONE) -->
       <section id="section-quote" class="slide-section">
         <div class="sec-content-box reveal-on-scroll">
           <span class="opening-greeting" data-lux-field="customLabels.openingGreeting" style="font-size: 2rem; color: var(--sunset-amber); display: block; margin-bottom: 0.4rem;">{{openingGreeting}}</span>
@@ -1156,30 +1169,42 @@
         </div>
       </section>
 
-      <!-- SEKSI 2: MEMPELAI (100VH STANDALONE) -->
+      <!-- SEKSI 3: MEMPELAI (100VH STANDALONE) -->
       <section id="section-couple" class="slide-section">
         <div class="sec-content-box reveal-on-scroll">
           <h2 class="sec-heading" data-lux-field="customLabels.coupleTitle">{{coupleSectionTitle}}</h2>
           <p class="sec-subheading" data-lux-field="customLabels.coupleSub">{{coupleSectionSub}}</p>
 
-          <!-- GROOM -->
+          <!-- THE FIRST MEMBER -->
           <div class="couple-card">
             <div class="couple-photo-wrap">
-              <img src="{{groomPhotoUrl}}" alt="{{groomDisplayName}}">
+              <img src="{{firstPhotoUrl}}" alt="{{firstDisplayName}}">
             </div>
-            <h3 class="couple-name">{{groomDisplayName}}</h3>
-            <p class="couple-parents">{{groomParents}}</p>
-            <a href="https://instagram.com/{{groomInstagram}}" target="_blank" class="couple-ig">@{{groomInstagram}}</a>
+            <h3 class="couple-name">{{firstDisplayName}}</h3>
+            {{#if firstRoleLabel}}<p class="couple-role" style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--sunset-amber); margin: 0.1rem 0 0.3rem; font-weight: 600;">{{firstRoleLabel}}</p>{{/if}}
+            <p class="couple-parents">
+              {{firstParentPrefix}}<br />
+              <strong>{{firstFather}} &amp; {{firstMother}}</strong>
+            </p>
+            {{#if firstInstagram}}
+            <a href="https://instagram.com/{{firstInstagram}}" target="_blank" class="couple-ig">@{{firstInstagram}}</a>
+            {{/if}}
           </div>
 
-          <!-- BRIDE -->
+          <!-- THE SECOND MEMBER -->
           <div class="couple-card">
             <div class="couple-photo-wrap">
-              <img src="{{bridePhotoUrl}}" alt="{{brideDisplayName}}">
+              <img src="{{secondPhotoUrl}}" alt="{{secondDisplayName}}">
             </div>
-            <h3 class="couple-name">{{brideDisplayName}}</h3>
-            <p class="couple-parents">{{brideParents}}</p>
-            <a href="https://instagram.com/{{brideInstagram}}" target="_blank" class="couple-ig">@{{brideInstagram}}</a>
+            <h3 class="couple-name">{{secondDisplayName}}</h3>
+            {{#if secondRoleLabel}}<p class="couple-role" style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--sunset-amber); margin: 0.1rem 0 0.3rem; font-weight: 600;">{{secondRoleLabel}}</p>{{/if}}
+            <p class="couple-parents">
+              {{secondParentPrefix}}<br />
+              <strong>{{secondFather}} &amp; {{secondMother}}</strong>
+            </p>
+            {{#if secondInstagram}}
+            <a href="https://instagram.com/{{secondInstagram}}" target="_blank" class="couple-ig">@{{secondInstagram}}</a>
+            {{/if}}
           </div>
         </div>
       </section>
@@ -1271,11 +1296,11 @@
 
   <!-- FLOATING NAVIGATION DOCK -->
   <nav class="bottom-dock">
-    <a href="#section-quote" class="dock-btn">
+    <a href="#home" class="dock-btn">
       <svg viewBox="0 0 24 24">
         <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
       </svg>
-      <span>Cover</span>
+      <span>Home</span>
     </a>
     <a href="#section-couple" class="dock-btn">
       <svg viewBox="0 0 24 24">

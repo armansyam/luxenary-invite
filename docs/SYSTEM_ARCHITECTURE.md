@@ -1,5 +1,5 @@
 # PLATFORM UNDANGAN (WHITE-LABEL) — DOKUMENTASI ARSITEKTUR SISTEM
-## Versi: 6.3.4 | Diperbarui: 28 September 2026
+## Versi: 6.3.6 | Diperbarui: 29 September 2026
 
 > **SUMBER KEBENARAN TUNGGAL** untuk semua developer dan AI Agent yang bekerja di repositori ini.  
 > Dokumen ini WAJIB dibaca sebelum melakukan perubahan apapun pada kode.  
@@ -715,7 +715,7 @@ Sistem menerapkan prinsip *Tiered Storage* untuk memisahkan beban operasional li
 ```
 Katalog Tema Aktual: 35 Tema Fisik (33 Wedding + 2 Birthday):
   Wedding (33 Tema):
-    Minimalist (6) : kalandra.html, valente.html, aurelia.html, artisan.html, minimalist-elegant.html, minimalist-elegant-04.html
+    Minimalist (6) : kalandra.html, valente.html, aurelia.html, artisan.html, verona.html, aeterna.html
     Modern (12)    : wave.html, papercut.html, ameera.html, chronicle.html, lumina.html, solaria.html, badrika.html, candani.html, mayang.html, starlit-dreams.html, burgundy-royale.html, vintage-forest.html
     Traditional (15): prameswari.html, dillalucky.html, lagaligo.html, toraja.html, rantepao.html, makale.html, bugis.html, bone.html, wajo.html, soppeng.html, makassar.html, gowa.html, maros.html, takalar.html, bulukumba.html
   Birthday (2 Tema):
@@ -799,7 +799,7 @@ HTML standalone lengkap (self-contained, inline CSS/JS)
     - **Prioritas Acara Utama pada Tautan Kalender (`googleCalendarUrl`):**
       - Tautan Google Calendar secara konsisten membaca tanggal dan lokasi dari sesi yang ditandai sebagai **Acara Utama (`isPrimary: true`)** (`primaryEvent?.location || primaryEvent?.address`), menjamin agenda kalender tamu sinkron 1:1 dengan acara puncak pernikahan.
     - **Sinkronisasi Hitung Mundur (*Countdown Timer*) ke Sesi Acara Utama (`targetDate`):**
-      - Seluruh 28 tema master (`aurelia`, `artisan`, `kalandra`, `valente`, `wave`, `papercut`, `ameera`, `chronicle`, `lumina`, `solaria`, `prameswari`, `dillalucky`, `badrika`, `mayang`, `candani`, `lagaligo`, `toraja`, `rantepao`, `makale`, `bugis`, `bone`, `wajo`, `soppeng`, `makassar`, `gowa`, `maros`, `takalar`, `bulukumba`) kini mengonsumsi `targetDate` yang ditambatkan secara presisi ke `primaryEventDate` dan jam mulai acara utama, menjamin angka hitung mundur hari H selalu aktif dan seragam.
+      - Seluruh 39 tema master (`aurelia`, `artisan`, `kalandra`, `valente`, `wave`, `papercut`, `ameera`, `chronicle`, `lumina`, `solaria`, `prameswari`, `dillalucky`, `badrika`, `mayang`, `candani`, `lagaligo`, `toraja`, `rantepao`, `makale`, `bugis`, `bone`, `wajo`, `soppeng`, `makassar`, `gowa`, `maros`, `takalar`, `bulukumba`, `verona`, `aeterna`, `burgundy-royale`, `vintage-forest`, `starlit-dreams`, serta varian multi-event) kini mengonsumsi `targetDate` yang ditambatkan secara presisi ke `primaryEventDate` dan jam mulai acara utama, menjamin angka hitung mundur hari H selalu aktif dan seragam.
   - **Standarisasi Tipografi Anti-Overflow Split Desktop (Mobile-Emulation Scale):**
     - **Akar Masalah Tipografi `vw`:** Unit CSS `vw` mengevaluasi lebar seluruh layar peramban (1440px - 1920px), bukan lebar kontainer 460px. Hal ini membuat judul besar berhuruf kapital (misal "LIVE STREAMING") atau font kaligrafi (seperti *Parisienne* / *Cinzel*) membengkak hingga >54px dan meluap keluar dari panel split kanan.
     - **Pemberian Cap Maksimal:** Pada media query `@media (min-width: 900px)`, seluruh judul seksi `.sec-main-title, .sec-heading` dikunci maksimal pada `font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important;` dengan proteksi `overflow-wrap: break-word !important; word-break: break-word !important;`.
@@ -829,12 +829,12 @@ HTML standalone lengkap (self-contained, inline CSS/JS)
         - Berkas demo (`/public/demo/...`) adalah aset konten mandiri untuk keperluan showcase studio, sedangkan `/public/uploads/...` adalah data privat klien. Menimpa atau menyalin aset ornamen sistem ke dalam folder demo/klien adalah pelanggaran fatal pemisahan domain aset (*separation of concerns*).
         - Seluruh template tema master WAJIB memanggil langsung berkas melalui **path URL publik absolut** (`/assets/ornaments/background/<nama-file>`) di dalam stylesheet internalnya.
       - **Katalog 6 Aset Ornamen Fallback Kanonikal:**
-        1. `/assets/ornaments/background/background-cream.png`: Tekstur lembut palet krem hangat (standar tema modern minimalis).
-        2. `/assets/ornaments/background/background-cream1.png`: Serat kertas mewah bertekstur (*warm textured paper*) untuk tema kontemporer & editorial.
-        3. `/assets/ornaments/background/background-flower.png`: Ilustrasi botani klasik (*vintage floral lace*) untuk tema floral & botanical luxury.
-        4. `/assets/ornaments/background/background-monocrhome.png`: Gradasi obsidian monokrom bersih (*clean dark monochrome*) untuk tema modern arsitektural.
-        5. `/assets/ornaments/background/background-monocrhome1.png`: Tekstur monokrom artistik (*monochrome architectural weave*) untuk tema seni kontemporer & wisuda.
-        6. `/assets/ornaments/background/background-red.png`: Beludru marun mendalam & emas adat (*royal red velvet & gold*) untuk tema adat Toraja, Makale, dan Rantepao.
+        1. `/assets/ornaments/background/background-cream.webp`: Tekstur lembut palet krem hangat (standar tema modern minimalis).
+        2. `/assets/ornaments/background/background-cream1.webp`: Serat kertas mewah bertekstur (*warm textured paper*) untuk tema kontemporer & editorial.
+        3. `/assets/ornaments/background/background-flower.webp`: Ilustrasi botani klasik (*vintage floral lace*) untuk tema floral & botanical luxury.
+        4. `/assets/ornaments/background/background-monocrhome.webp`: Gradasi obsidian monokrom bersih (*clean dark monochrome*) untuk tema modern arsitektural.
+        5. `/assets/ornaments/background/background-monocrhome1.webp`: Tekstur monokrom artistik (*monochrome architectural weave*) untuk tema seni kontemporer & wisuda.
+        6. `/assets/ornaments/background/background-red.webp`: Beludru marun mendalam & emas adat (*royal red velvet & gold*) untuk tema adat Toraja, Makale, dan Rantepao.
         7. `/assets/ornaments/background/bg-maroon.webp`: Beludru marun sakral Bugis (*Bugis royal velvet*) untuk tema rumpun Bugis (`bugis`, `bone`, `soppeng`, `wajo`, `lagaligo`, `dillalucky`).
         8. `/assets/ornaments/background/bg-makassar.webp`: Tekstur kain pelaminan aksara Lontara kuno & motif emas adat Makassar (*Makassar royal gold lontara*) untuk tema rumpun Makassar (`makassar`, `gowa`, `maros`, `takalar`, `bulukumba`).
       - **Kontrak Teknis CSS & Template Rendering:**
@@ -881,45 +881,45 @@ HTML standalone lengkap (self-contained, inline CSS/JS)
       - **Matriks Pemetaan Fallback Background 39 Tema Master:**
         | No | Tema | Kategori | File Fallback Background Bawaan |
         | :--- | :--- | :--- | :--- |
-        | 1 | `al-khalid` | Aqiqah / Minimalist | `/assets/ornaments/background/background-cream.png` |
-        | 2 | `kalandra-birthday` | Birthday / Minimalist | `/assets/ornaments/background/background-monocrhome.png` |
-        | 3 | `festivo` | Birthday / Modern | `/assets/ornaments/background/background-monocrhome1.png` |
-        | 4 | `sinergi` | General / Modern | `/assets/ornaments/background/background-monocrhome1.png` |
-        | 5 | `al-fariz` | Khitan / Traditional | `/assets/ornaments/background/background-cream1.png` |
-        | 6 | `artisan` | Wedding / Minimalist | `/assets/ornaments/background/background-monocrhome1.png` |
-        | 7 | `aurelia` | Wedding / Minimalist | `/assets/ornaments/background/background-flower.png` |
-        | 8 | `kalandra` | Wedding / Minimalist | `/assets/ornaments/background/background-monocrhome.png` |
-        | 9 | `minimalist-elegant` | Wedding / Minimalist | `/assets/ornaments/background/background-cream.png` |
-        | 10 | `minimalist-elegant-04` | Wedding / Minimalist | `/assets/ornaments/background/background-cream1.png` |
-        | 11 | `valente` | Wedding / Minimalist | `/assets/ornaments/background/background-flower.png` |
-        | 12 | `ameera` | Wedding / Modern | `/assets/ornaments/background/background-flower.png` |
-        | 13 | `badrika` | Wedding / Modern | `/assets/ornaments/background/background-monocrhome.png` |
-        | 14 | `burgundy-royale` | Wedding / Modern | `/assets/ornaments/background/background-red.png` |
-        | 15 | `candani` | Wedding / Modern | `/assets/ornaments/background/background-cream.png` |
-        | 16 | `chronicle` | Wedding / Modern | `/assets/ornaments/background/background-cream1.png` |
-        | 17 | `lumina` | Wedding / Modern | `/assets/ornaments/background/background-flower.png` |
-        | 18 | `mayang` | Wedding / Modern | `/assets/ornaments/background/background-flower.png` |
-        | 19 | `papercut` | Wedding / Modern | `/assets/ornaments/background/background-cream.png` |
-        | 20 | `solaria` | Wedding / Modern | `/assets/ornaments/background/background-cream.png` |
-        | 21 | `starlit-dreams` | Wedding / Modern | `/assets/ornaments/background/background-monocrhome.png` |
-        | 22 | `vintage-forest` | Wedding / Modern | `/assets/ornaments/background/background-cream.png` |
-        | 23 | `wave` | Wedding / Modern | `/assets/ornaments/background/background-monocrhome1.png` |
+        | 1 | `al-khalid` | Aqiqah / Minimalist | `/assets/ornaments/background/background-cream.webp` |
+        | 2 | `kalandra-birthday` | Birthday / Minimalist | `/assets/ornaments/background/background-monocrhome.webp` |
+        | 3 | `festivo` | Birthday / Modern | `/assets/ornaments/background/background-monocrhome1.webp` |
+        | 4 | `sinergi` | General / Modern | `/assets/ornaments/background/background-monocrhome1.webp` |
+        | 5 | `al-fariz` | Khitan / Traditional | `/assets/ornaments/background/background-cream1.webp` |
+        | 6 | `artisan` | Wedding / Minimalist | `/assets/ornaments/background/background-monocrhome1.webp` |
+        | 7 | `aurelia` | Wedding / Minimalist | `/assets/ornaments/background/background-flower.webp` |
+        | 8 | `kalandra` | Wedding / Minimalist | `/assets/ornaments/background/background-monocrhome.webp` |
+        | 9 | `verona` | Wedding / Minimalist | `/assets/ornaments/background/background-cream.webp` |
+        | 10 | `aeterna` | Wedding / Minimalist | `/assets/ornaments/background/background-cream1.webp` |
+        | 11 | `valente` | Wedding / Minimalist | `/assets/ornaments/background/background-flower.webp` |
+        | 12 | `ameera` | Wedding / Modern | `/assets/ornaments/background/background-flower.webp` |
+        | 13 | `badrika` | Wedding / Modern | `/assets/ornaments/background/background-monocrhome.webp` |
+        | 14 | `burgundy-royale` | Wedding / Modern | `/assets/ornaments/background/background-red.webp` |
+        | 15 | `candani` | Wedding / Modern | `/assets/ornaments/background/background-cream.webp` |
+        | 16 | `chronicle` | Wedding / Modern | `/assets/ornaments/background/background-cream1.webp` |
+        | 17 | `lumina` | Wedding / Modern | `/assets/ornaments/background/background-flower.webp` |
+        | 18 | `mayang` | Wedding / Modern | `/assets/ornaments/background/background-flower.webp` |
+        | 19 | `papercut` | Wedding / Modern | `/assets/ornaments/background/background-cream.webp` |
+        | 20 | `solaria` | Wedding / Modern | `/assets/ornaments/background/background-cream.webp` |
+        | 21 | `starlit-dreams` | Wedding / Modern | `/assets/ornaments/background/background-monocrhome.webp` |
+        | 22 | `vintage-forest` | Wedding / Modern | `/assets/ornaments/background/background-cream.webp` |
+        | 23 | `wave` | Wedding / Modern | `/assets/ornaments/background/background-monocrhome1.webp` |
         | 24 | `bone` | Wedding / Traditional | `/assets/ornaments/background/bg-maroon.webp` |
         | 25 | `bugis` | Wedding / Traditional | `/assets/ornaments/background/bg-maroon.webp` |
         | 26 | `bulukumba` | Wedding / Traditional | `/assets/ornaments/background/bg-makassar.webp` |
         | 27 | `dillalucky` | Wedding / Traditional | `/assets/ornaments/background/bg-maroon.webp` |
         | 28 | `gowa` | Wedding / Traditional | `/assets/ornaments/background/bg-makassar.webp` |
         | 29 | `lagaligo` | Wedding / Traditional | `/assets/ornaments/background/bg-maroon.webp` |
-        | 30 | `makale` | Wedding / Traditional | `/assets/ornaments/background/background-red.png` |
-        | 31 | `makassar` | Wedding / Traditional | `/assets/ornaments/background/bg-makassar.webp` |
+        | 30 | `makale` | Wedding / Traditional | `/assets/ornaments/background/background-red.webp` |
+        | 31 | `makassar` | Wedding / Traditional | `/assets/ornaments/background/background-cream.webp` |
         | 32 | `maros` | Wedding / Traditional | `/assets/ornaments/background/bg-makassar.webp` |
-        | 33 | `prameswari` | Wedding / Traditional | `/assets/ornaments/background/background-flower.png` |
-        | 34 | `rantepao` | Wedding / Traditional | `/assets/ornaments/background/background-red.png` |
+        | 33 | `prameswari` | Wedding / Traditional | `/assets/ornaments/background/background-flower.webp` |
+        | 34 | `rantepao` | Wedding / Traditional | `/assets/ornaments/background/background-red.webp` |
         | 35 | `soppeng` | Wedding / Traditional | `/assets/ornaments/background/bg-maroon.webp` |
         | 36 | `takalar` | Wedding / Traditional | `/assets/ornaments/background/bg-makassar.webp` |
-        | 37 | `toraja` | Wedding / Traditional | `/assets/ornaments/background/background-red.png` |
+        | 37 | `toraja` | Wedding / Traditional | `/assets/ornaments/background/background-red.webp` |
         | 38 | `wajo` | Wedding / Traditional | `/assets/ornaments/background/bg-maroon.webp` |
-        | 39 | `cendekia` | Wisuda / Modern | `/assets/ornaments/background/background-monocrhome1.png` |
+        | 39 | `cendekia` | Wisuda / Modern | `/assets/ornaments/background/background-monocrhome1.webp` |
     - **Pencegahan Duplikasi Foto ke Seksi Home:** Jika klien tidak mengunggah foto khusus `HOME_PHOTO`, seksi `#home` berstatus transparan (`background: transparent;`) tanpa memaksa duplikasi dari foto latar, menjaga tampilan bersih dengan tipografi, kaligrafi, dan monogram artistik.
     - **Infinite Seamless Flow (Anti-Garis Potongan Seksi):** Seluruh seksi aliran konten (`.slide-opening`, `.sec-flow`) dilarang memiliki `border-bottom` pemotong layar. Panel scroll (`.main-scroll-panel`) berlatar transparan penuh (`background: transparent;`) di mobile maupun desktop, menjamin seluruh pergantian seksi mengalir mulus sebagai satu kanvas utuh yang elegan.
   - **Standarisasi Smart Auto-Hide Navigasi Dock & Kontrol Audio Mengambang:**
@@ -987,11 +987,11 @@ HTML standalone lengkap (self-contained, inline CSS/JS)
       - **Zero-Unsplash & Kepatuhan Blueprint 460px:** 100% menggunakan foto lokal dummy, layout split desktop 460px, Smart Mobile Fullscreen, dan Smart Auto-Hide dock navigasi.
   - **Arsitektur Tema Tradisional Makassar (`themes/traditional/makassar.html`):**
     - Tema `makassar.html` merupakan tema tradisional ke-9 (tema master ke-19) yang mengangkat filosofi kehormatan dan kemaritiman agung suku Makassar:
-      - **Ornamen Budaya Otentik Makassar:** Mengintegrasikan lambang Kapal Phinisi (`/assets/ornaments/bugis/kapal-phinisi.webp`), bingkai border Makassar (`frame-makassar-top.webp`, `frame-makassar-bottom.webp`), 4 sudut bunga emas, dan latar belakang tekstur navy agung (`bg-makassar.webp`).
+      - **Ornamen Budaya Otentik Makassar:** Mengintegrasikan lambang Kapal Phinisi (`/assets/ornaments/bugis/kapal-phinisi.webp`), bingkai border Makassar (`frame-makassar-top.webp`, `frame-makassar-bottom.webp`), 4 sudut bunga emas, ornamen profil mempelai (badik pusaka `badik-merah-sudut.webp` pada kartu pria, dedaunan emas `daun-merah-sudut.webp` pada kartu wanita), divider selendang songket emas (`selendang-merah-divider.webp`), dan latar belakang tekstur navy agung (`bg-makassar.webp`).
       - **Tipografi Luhur:** Kombinasi `Cinzel`, `Great Vibes`, `Cormorant Garamond`, dan `Plus Jakarta Sans`.
       - **Narasi Adat Puitis (Makassar Wedding Lore):** Filosofi kehormatan *"Siri' na Pacce"* dan *"Bajiki passiriki, sombere' na malabbiri"* (Menjaga martabat dengan budi pekerti yang ramah dan mulia), serta ucapan *"Tarima kasi' lompo"*.
       - **Palet Warna Makassar Phinisi Navy & Gold:** Terkunci mandiri pada `:root` CSS tema (`primary: #0a192f`, `accent: #dfb76c`, `bgDark: #030914`).
-      - **Zero-Unsplash & Kepatuhan Blueprint 460px:** 100% menggunakan foto lokal dummy, layout split desktop 460px, Smart Mobile Fullscreen, dan Smart Auto-Hide dock navigasi.
+      - **Zero-Unsplash, Fluid Responsive & Kepatuhan Blueprint 460px:** 100% menggunakan foto lokal dummy, layout split desktop 460px, Smart Mobile Fullscreen, dan Smart Auto-Hide dock navigasi. Seksi hero `#home` dioptimasi 100vh murni tanpa sesak, modul hitung mundur (*countdown timer*) diposisikan kontekstual pada seksi acara `#events`, serta jarak antar seksi petuah adat (`.sec-quote`) dan profil mempelai (`.sec-couple`) dirapatkan proporsional dengan tipografi dinamis `clamp()` anti-awkward text wrap.
   - **Arsitektur Tema Tradisional Toraja Rantepao (`themes/traditional/rantepao.html`):**
     - Tema `rantepao.html` merupakan tema tradisional ke-10 (tema master ke-20) yang mengangkat kemegahan adat Toraja Rantepao berbalut Crimson Marun & Kilau Emas Bambu:
       - **Integrasi 9 Slot Media Lengkap:** Mendukung secara penuh `LANDING_COVER` (mobile 9:16), `LANDING_COVER_DESKTOP` (desktop 16:9 fullscreen override), `HOME_PHOTO` (hero pembuka), `DESKTOP_SIDEBAR` (hero panel kiri desktop), `GLOBAL_FIXED_BG` (kanvas latar tetap), `GROOM_PHOTO` & `BRIDE_PHOTO` (avatar foto mempelai), `GALLERY` (8 grid foto & lightbox), dan `CLOSING_COVER` (seksi outro 100vh adaptif `.site-footer.has-closing-photo`).
@@ -1018,6 +1018,41 @@ HTML standalone lengkap (self-contained, inline CSS/JS)
         * **Takalar (`takalar.html`):** Mengangkat semangat Butta Panrannuangku dan kawasan adat Balla Lompoa Sanrobone berbalut Royal Navy & Gold (`#0a192f` / `#dfb76c`). Pustaka ornamen: `public/assets/ornaments/bugis/`.
         * **Bulukumba (`bulukumba.html`):** Mengangkat keperkasaan bahtera Phinisi Tanah Beru, filosofi Butta Panrita Lopi, dan tradisi luhur Ammatoa berbalut Royal Navy & Gold (`#0a192f` / `#dfb76c`). Pustaka ornamen: `public/assets/ornaments/bugis/`.
       - **Integrasi 9 Slot Media & Standarisasi Emas:** Ketujuh tema secara penuh mengintegrasikan 9 slot media (`LANDING_COVER`, `LANDING_COVER_DESKTOP`, `HOME_PHOTO`, `DESKTOP_SIDEBAR`, `GLOBAL_FIXED_BG`, `GROOM_PHOTO`, `BRIDE_PHOTO`, `GALLERY`, `CLOSING_COVER`), Home Arch Photo Frame mempelai, folder demo terisolasi (`public/demo/{daerah}/`), pustaka ornamen adat bersama (`public/assets/ornaments/bugis/`), serta Smart Outro Auto-Hide pada floating dock.
+  - **Arsitektur & Standardisasi 6 Tema Modern & Minimalis Baru (v6.3.6):**
+    - Menggenapkan total katalog platform menjadi **39 tema master** aktif (33 Wedding, 2 Birthday, 1 Khitan, 1 Aqiqah, 1 Wisuda, 1 Gathering):
+      1. **Verona (`verona.html`):**
+         * Arsitektur Editorial Minimalis Modern dengan tipografi *Playfair Display*, *Cormorant Garamond*, dan skrip kaligrafi romantis *The Nautigal*.
+         * Fallback background kanonikal `/assets/ornaments/background/background-cream.webp` dengan visibilitas 100% (`opacity: 1; filter: none;`) dan scrim transparan murni (`background: transparent;`).
+         * Kelengkapan alur tata letak sekuensial penuh: `#home`, `#couple` (peran dinamis `firstRoleLabel`/`secondRoleLabel`), `#events`, `#gallery`, `#story`, `#gift`, `#rsvp`/`#wishes` (`#wishesFeed`), dan penutup 100vh.
+      2. **Aeterna (`aeterna.html`):**
+         * Varian Minimalist Noir Kontemporer bertekstur kertas halus dengan tipografi *Cormorant Garamond* & *Yaqoote Script*, serta fallback kanonikal `/assets/ornaments/background/background-cream1.webp` (`opacity: 1; filter: none;`).
+         * Tata letak lengkap dengan kartu mempelai adaptif peran dan discrete parents architecture.
+      3. **Burgundy Royale (`burgundy-royale.html`):**
+         * Opulent Vintage Burgundy Royale berpadu ornamen lukisan mawar cat minyak (`bunga-burgundy-royale.webp`) dan kubah katedral romanesque.
+         * Fallback background kanonikal `/assets/ornaments/background/background-red.webp` (`opacity: 1; filter: none;`) dan scrim transparan murni (`background: transparent;`).
+         * Peran mempelai dinamis (`firstRoleLabel`/`secondRoleLabel`), feed ucapan live terpadu (`id="wishesList"`), dan eliminasi ketergantungan background webp duplikat di demo.
+      4. **Vintage Forest (`vintage-forest.html`):**
+         * Botanical Vintage Elegance berbalut hijau hutan, ornamen dedaunan eukaliptus rimbun (`bunga-botani2.webp`), dan lengkungan kubah arsitektural.
+         * Fallback background kanonikal `/assets/ornaments/background/background-cream.webp` (`opacity: 1; filter: none;`) dan scrim transparan murni.
+         * Dynamic role badge pills pada kartu profil mempelai dan feed ucapan real-time (`data-feed-id="wishesFeed"`).
+      5. **Starlit Dreams (`starlit-dreams.html`):**
+         * Celestial Midnight Elegance berbalut palet emerald gelap (`#1b4332`, `#2d6a4f`) dan aksen bintang bersinar.
+         * Fallback background kanonikal `/assets/ornaments/background/background-monocrhome.webp` (`opacity: 1; filter: none;`) dan scrim transparan murni.
+         * Koreksi posisi kartu profil mempelai: Kartu 1 terikat ke persona pertama (`firstPhotoUrl`, `firstDisplayName`, `firstRoleLabel`, `firstParents`) dan Kartu 2 ke persona kedua (`secondPhotoUrl`, `secondDisplayName`, `secondRoleLabel`, `secondParents`). Feed container universal `id="wishesList"`.
+      6. **Solaria (`solaria.html`):**
+         * Warm Modern Terracotta & Sunset Elegance.
+         * Penanaman seksi pembuka Opening Hero 100vh `#home` yang sebelumnya terlewat (dilengkapi Sunset Arch Photo Frame `{{homePhotoUrl}}`, judul, pasangan, dan tanggal), dock navigasi terhubung ke `#home`, dan pendaftaran ID `#home` ke selektor viewport slide CSS.
+    - **Invarian Zero-Copy & Pembersihan Redundansi Aset:**
+      * DILARANG KERAS menyalin atau menduplikasi file fallback background ke `public/demo/` atau `public/uploads/`.
+      * Seluruh duplikasi file `background.webp` di `public/demo/{burgundy-royale, vintage-forest, starlit-dreams}/` telah dihapus permanen.
+      * `globalBgUrl` di `lib/demoRegistry.ts` dinormalisasi menjadi string kosong `""` agar tema demo menampilkan keindahan ornamen fallback kanonikal tanpa memicu override `--custom-bg`.
+    - **Gender-Adaptive Couple Framework & Anti-Desynchronization Architecture (`#couple`):**
+      * Engine ([lib/themeEngine.ts](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/lib/themeEngine.ts) & [lib/demoRegistry.ts](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/lib/demoRegistry.ts)) memancarkan token `firstGender` (`"groom"` / `"bride"`), `secondGender` (`"bride"` / `"groom"`), `firstPhotoUrl`, `secondPhotoUrl`, `firstGenderLabel`, `secondGenderLabel`, dan boolean `isGroomFirst`/`isBrideFirst`.
+      * Master template ([themes/wedding/traditional/makassar.html](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/themes/wedding/traditional/makassar.html) & starter blueprint) mengikat kartu profil ke class `.couple-{{firstGender}}` dan `.couple-{{secondGender}}`. Ornamen khas adat (seperti Badik Pria vs Dedaunan Wanita) diikat ke class CSS `.couple-groom` dan `.couple-bride`, sehingga berpindah posisi otomatis mengikuti orangnya tanpa risiko tertukar saat opsi `BRIDE_FIRST` diaktifkan.
+    - **Resolusi Miss-Colour Tombol Maps & Glassmorphism Depth Consistency:**
+      * Menghapus circular dependency `background: currentColor; color: var(--bg-dark);` pada [public/css/modules.css](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/public/css/modules.css) baris 351 yang menyebabkan teks tombol peta hilang saat hover (black-on-black).
+      * Menyelaraskan seluruh kartu seksi acara (`.event-card`), amplop digital (`.gift-card`), reservasi (`.rsvp-form-box`), dan ucapan (`.wish-item`) ke formula glassmorphism seragam (`color-mix(in srgb, var(--theme-card) 65%, transparent); backdrop-filter: blur(14px)`).
+      * Menyelaraskan ID countdown timer `id="cdMinutes"` & `id="cdSeconds"` dengan fallback dual-query di runtime JS.
 
 
 

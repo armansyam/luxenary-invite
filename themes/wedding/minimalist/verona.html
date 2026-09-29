@@ -6,8 +6,8 @@
 |_____| \___/  /_/\_\ |_____| |_| \_| /_/   \_\|_| \_\   |_|  
 
   ==============================================================
-  THEME BUILDER WORKSPACE: MINIMALIST ELEGANT 04
-  Contemporary Monochrome Editorial with Yaqoote Script & Cormorant Garamond
+  THEME BUILDER WORKSPACE: VERONA
+  Contemporary Editorial Theme with Playfair Display & Asymmetric Arches
   Hak Cipta (c) Luxenary. Dilindungi undang-undang.
   ==============================================================
 -->
@@ -17,20 +17,33 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>The Wedding of {{firstName}} &amp; {{secondName}} — Minimalist Elegant 04</title>
+  <title>The Wedding of {{firstName}} &amp; {{secondName}} — Verona</title>
 
   <!-- =================================================================== -->
   <!-- 1. TYPOGRAPHY & SELF-HOSTED FONTS                                   -->
   <!-- =================================================================== -->
   <link rel="stylesheet" href="/fonts/fonts.css" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
   <style>
     @font-face {
-      font-family: "Yaqoote Script";
-      src: url("/fonts/minimalist-elegant-04/YaqooteScript.woff2") format("woff2");
+      font-family: "The Nautigal";
+      src: url("/fonts/verona/TheNautigal.woff2") format("woff2");
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "Editor Light";
+      src: url("/fonts/verona/Editor-Light.woff2") format("woff2");
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "Gloriousity Two";
+      src: url("/fonts/verona/Gloriousity-Two.woff2") format("woff2");
       font-weight: normal;
       font-style: normal;
       font-display: swap;
@@ -40,21 +53,21 @@
     /* 2. DESIGN SYSTEM & DYNAMIC PALETTE (GOLDEN STANDARD)                */
     /* =================================================================== */
     :root {
-      --primary: #18181b;
-      --secondary: #3f3f46;
-      --accent: #a1a1aa;
-      --bg-light: #fafafa;
-      --bg-dark: #121212;
-      --text-main: #18181b;
-      --text-muted: color-mix(in srgb, #18181b 70%, transparent);
+      --primary: #4a3728;
+      --secondary: #6b5241;
+      --accent: #b8956a;
+      --bg-light: #faf8f5;
+      --bg-dark: #1a1816;
+      --text-main: #1f1d1a;
+      --text-muted: color-mix(in srgb, #1f1d1a 70%, transparent);
       --radius-sm: 6px;
-      --radius-md: 12px;
-      --radius-lg: 22px;
+      --radius-md: 14px;
+      --radius-lg: 24px;
       --radius-full: 9999px;
-      --shadow-soft: 0 6px 24px color-mix(in srgb, var(--primary) 8%, transparent);
-      --shadow-elevated: 0 14px 36px color-mix(in srgb, var(--primary) 16%, transparent);
-      --glass-bg: color-mix(in srgb, var(--bg-light) 92%, transparent);
-      --glass-border: color-mix(in srgb, var(--accent) 35%, transparent);
+      --shadow-soft: 0 8px 30px color-mix(in srgb, var(--primary) 10%, transparent);
+      --shadow-elevated: 0 16px 40px color-mix(in srgb, var(--primary) 18%, transparent);
+      --glass-bg: color-mix(in srgb, var(--bg-light) 90%, transparent);
+      --glass-border: color-mix(in srgb, var(--accent) 30%, transparent);
     }
 
     * {
@@ -65,7 +78,7 @@
     }
 
     ::selection {
-      background: color-mix(in srgb, var(--primary) 40%, transparent);
+      background: color-mix(in srgb, var(--primary) 35%, transparent);
       color: #ffffff;
     }
 
@@ -76,7 +89,7 @@
     }
 
     body {
-      font-family: "Plus Jakarta Sans", -apple-system, sans-serif;
+      font-family: "Plus Jakarta Sans", "Open Sans", -apple-system, sans-serif;
       background-color: var(--bg-dark);
       color: var(--text-main);
       overflow-x: hidden;
@@ -86,7 +99,7 @@
 
     /* Scrollbar */
     ::-webkit-scrollbar {
-      width: 4px;
+      width: 5px;
     }
     ::-webkit-scrollbar-track {
       background: transparent;
@@ -106,14 +119,19 @@
     }
 
     /* Headings & Scripts */
+    .playfair,
     h1, h2, h3, h4,
     .sec-main-title {
+      font-family: "Playfair Display", "Cormorant Garamond", Georgia, serif;
+      letter-spacing: 0.02em;
+    }
+
+    .font-cormorant {
       font-family: "Cormorant Garamond", Georgia, serif;
-      letter-spacing: 0.05em;
     }
 
     .script-accent {
-      font-family: "Yaqoote Script", cursive;
+      font-family: "The Nautigal", "Gloriousity Two", cursive;
       font-weight: 400;
     }
 
@@ -144,9 +162,9 @@
       inset: 0;
       background: linear-gradient(
         to top,
-        color-mix(in srgb, var(--bg-dark) 95%, transparent) 0%,
+        color-mix(in srgb, var(--bg-dark) 94%, transparent) 0%,
         color-mix(in srgb, var(--bg-dark) 50%, transparent) 50%,
-        rgba(0, 0, 0, 0.4) 100%
+        rgba(0, 0, 0, 0.35) 100%
       );
     }
 
@@ -169,23 +187,23 @@
     }
 
     .sidebar-desktop-names {
-      font-size: clamp(3rem, 4.2vw, 4.8rem);
+      font-size: clamp(2.8rem, 4vw, 4.6rem);
       line-height: 1.1;
       color: #ffffff;
       margin-bottom: 1rem;
-      font-family: "Yaqoote Script", cursive;
-      text-shadow: 0 4px 24px rgba(0, 0, 0, 0.7);
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+      font-family: "Playfair Display", Georgia, serif;
     }
 
     .sidebar-desktop-names span {
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: "The Nautigal", cursive;
       color: var(--accent);
-      font-size: 0.8em;
-      margin: 0 0.4rem;
+      font-size: 1.2em;
+      margin: 0 0.35rem;
     }
 
     .sidebar-desktop-date {
-      font-size: 0.92rem;
+      font-size: 0.95rem;
       letter-spacing: 0.25em;
       color: var(--accent);
       text-transform: uppercase;
@@ -217,13 +235,13 @@
       .main-scroll-panel {
         width: 460px;
         margin-left: auto;
-        box-shadow: -10px 0 35px rgba(0, 0, 0, 0.45);
+        box-shadow: -10px 0 35px rgba(0, 0, 0, 0.4);
         border-left: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
       }
     }
 
     /* =================================================================== */
-    /* 4. TIGA LAPISAN KANVAS LATAR                                        */
+    /* 4. TIGA LAPISAN KANVAS LATAR (ANTI-TABRAKAN)                        */
     /* =================================================================== */
     .fixed-bg-layer {
       position: fixed;
@@ -231,18 +249,17 @@
       right: 0;
       width: 100%;
       height: 100vh;
-      background-image: url('/assets/ornaments/background/background-cream1.png');
+      background-image: url('/assets/ornaments/background/background-cream.webp');
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
       pointer-events: none;
       z-index: 1;
-      opacity: 0.12;
-      filter: grayscale(1);
+      opacity: 1;
     }
     .fixed-bg-layer.has-custom-bg {
       background-image: var(--custom-bg);
-      opacity: 0.15;
+      opacity: 1;
     }
 
     @media (min-width: 900px) {
@@ -257,11 +274,7 @@
       right: 0;
       width: 100%;
       height: 100vh;
-      background: linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--bg-light) 96%, transparent) 0%,
-        color-mix(in srgb, var(--bg-light) 98%, transparent) 100%
-      );
+      background: transparent;
       pointer-events: none;
       z-index: 2;
     }
@@ -312,7 +325,7 @@
         to top,
         color-mix(in srgb, var(--bg-dark) 96%, transparent) 0%,
         color-mix(in srgb, var(--bg-dark) 65%, transparent) 50%,
-        rgba(0, 0, 0, 0.3) 100%
+        rgba(0, 0, 0, 0.25) 100%
       );
       z-index: 1;
     }
@@ -327,51 +340,50 @@
       margin-bottom: 1.5rem;
     }
 
-    .cover-badge-box {
+    .cover-arch-badge {
       display: inline-block;
-      padding: 5px 16px;
+      padding: 6px 18px;
       border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
       border-radius: var(--radius-full);
-      font-size: 0.7rem;
-      letter-spacing: 0.3em;
+      font-size: 0.72rem;
+      letter-spacing: 0.28em;
       text-transform: uppercase;
       color: var(--accent);
       font-weight: 600;
       margin-bottom: 1rem;
-      background: rgba(0, 0, 0, 0.3);
+      background: rgba(0, 0, 0, 0.25);
       backdrop-filter: blur(4px);
     }
 
     .cover-tagline {
-      font-size: 0.74rem;
-      letter-spacing: 0.32em;
+      font-size: 0.75rem;
+      letter-spacing: 0.3em;
       text-transform: uppercase;
       color: rgba(255, 255, 255, 0.8);
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.6rem;
       font-weight: 500;
     }
 
     .cover-names {
-      font-size: clamp(3rem, 9.5vw, 4.2rem);
+      font-size: clamp(2.4rem, 8vw, 3.2rem);
       line-height: 1.15;
-      font-family: "Yaqoote Script", cursive;
+      font-family: "Playfair Display", Georgia, serif;
       color: #ffffff;
-      margin: 0.2rem 0 0.8rem;
-      font-weight: 400;
-      text-shadow: 0 4px 24px rgba(0, 0, 0, 0.7);
+      margin: 0.2rem 0 0.6rem;
+      font-weight: 500;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
     }
 
     .cover-names span {
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: "The Nautigal", cursive;
       color: var(--accent);
-      font-size: 0.65em;
-      margin: 0 0.4rem;
-      vertical-align: middle;
+      font-size: 1.25em;
+      margin: 0 0.3rem;
     }
 
     .cover-date-row {
-      font-size: 0.82rem;
-      letter-spacing: 0.22em;
+      font-size: 0.85rem;
+      letter-spacing: 0.2em;
       text-transform: uppercase;
       color: var(--accent);
       font-weight: 500;
@@ -381,14 +393,14 @@
     .cover-guest-box {
       margin: 0.8rem 0 1.4rem;
       padding: 1rem 1.2rem;
-      background: rgba(255, 255, 255, 0.07);
-      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
       border-radius: var(--radius-md);
       backdrop-filter: blur(8px);
     }
 
     .cover-guest-lbl {
-      font-size: 0.66rem;
+      font-size: 0.68rem;
       letter-spacing: 0.2em;
       text-transform: uppercase;
       color: rgba(255, 255, 255, 0.7);
@@ -401,10 +413,10 @@
       font-weight: 600;
       color: #ffffff;
       letter-spacing: 0.04em;
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: "Playfair Display", Georgia, serif;
     }
 
-    .btn-open-monochrome {
+    .btn-open-minimal {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -413,31 +425,31 @@
       padding: 13px 26px;
       border-radius: var(--radius-full);
       background: var(--bg-light);
-      color: #121212;
+      color: #1a1816;
       border: 1px solid var(--glass-border);
       font-size: 0.82rem;
       font-weight: 600;
       letter-spacing: 0.16em;
       text-transform: uppercase;
       cursor: pointer;
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
       transition: all 0.3s ease;
     }
 
-    .btn-open-monochrome:hover {
+    .btn-open-minimal:hover {
       transform: translateY(-2px);
       background: var(--bg-light);
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
     }
 
-    .btn-open-monochrome svg {
+    .btn-open-minimal svg {
       width: 16px;
       height: 16px;
       fill: currentColor;
       transition: transform 0.3s ease;
     }
 
-    .btn-open-monochrome:hover svg {
+    .btn-open-minimal:hover svg {
       transform: translateX(4px);
     }
 
@@ -451,7 +463,7 @@
     }
 
     .sec-flow {
-      padding: 4.2rem 1.8rem;
+      padding: 4rem 1.8rem;
       position: relative;
       text-align: center;
     }
@@ -459,7 +471,7 @@
     .sec-eyebrow {
       display: block;
       font-size: 0.72rem;
-      letter-spacing: 0.3em;
+      letter-spacing: 0.28em;
       text-transform: uppercase;
       color: var(--secondary);
       margin-bottom: 0.6rem;
@@ -467,8 +479,8 @@
     }
 
     .sec-main-title {
-      font-size: clamp(2rem, 6vw, 2.5rem);
-      line-height: 1.2;
+      font-size: clamp(1.8rem, 5.5vw, 2.3rem);
+      line-height: 1.25;
       color: var(--text-main);
       margin-bottom: 0.8rem;
       font-weight: 500;
@@ -481,6 +493,22 @@
       max-width: 360px;
       margin: 0 auto 2.2rem;
       line-height: 1.6;
+    }
+
+    /* Asymmetric Arch Containers */
+    .arch-frame-left {
+      border-radius: 100px 0 0 0;
+      overflow: hidden;
+    }
+
+    .arch-frame-right {
+      border-radius: 0 100px 0 0;
+      overflow: hidden;
+    }
+
+    .arch-frame-diagonal {
+      border-radius: 100px 0 100px 0;
+      overflow: hidden;
     }
 
     /* Opening Hero Section (#home) */
@@ -501,7 +529,7 @@
       aspect-ratio: 4/5;
       margin: 0 auto 1.8rem;
       position: relative;
-      border-radius: 100px 0 0 0;
+      border-radius: 120px 0 0 0;
       overflow: hidden;
       box-shadow: var(--shadow-elevated);
       border: 1px solid var(--glass-border);
@@ -529,25 +557,24 @@
     }
 
     .home-names {
-      font-size: clamp(2.8rem, 8vw, 3.8rem);
+      font-size: clamp(2.3rem, 7vw, 3rem);
       line-height: 1.15;
       color: var(--text-main);
-      font-family: "Yaqoote Script", cursive;
-      margin-bottom: 0.5rem;
-      font-weight: 400;
+      font-family: "Playfair Display", Georgia, serif;
+      margin-bottom: 0.6rem;
+      font-weight: 500;
     }
 
     .home-names span {
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: "The Nautigal", cursive;
       color: var(--secondary);
-      font-size: 0.7em;
-      margin: 0 0.3rem;
-      vertical-align: middle;
+      font-size: 1.2em;
+      margin: 0 0.25rem;
     }
 
     .home-date-box {
-      font-size: 0.82rem;
-      letter-spacing: 0.22em;
+      font-size: 0.84rem;
+      letter-spacing: 0.2em;
       text-transform: uppercase;
       color: var(--secondary);
       font-weight: 500;
@@ -574,17 +601,17 @@
     }
 
     .countdown-num {
-      font-size: 1.6rem;
-      font-weight: 500;
+      font-size: 1.5rem;
+      font-weight: 600;
       color: var(--text-main);
       line-height: 1;
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: "Playfair Display", Georgia, serif;
       margin-bottom: 4px;
     }
 
     .countdown-lbl {
-      font-size: 0.64rem;
-      letter-spacing: 0.16em;
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
       text-transform: uppercase;
       color: var(--text-muted);
       font-weight: 500;
@@ -592,13 +619,13 @@
 
     /* Section Quote / Sacred Union */
     .sec-quote {
-      background: color-mix(in srgb, var(--primary) 3%, transparent);
+      background: color-mix(in srgb, var(--primary) 4%, transparent);
       border-top: 1px solid var(--glass-border);
       border-bottom: 1px solid var(--glass-border);
     }
 
     .greeting-text {
-      font-family: "Traditional Arabic", "Amiri", "Cormorant Garamond", serif;
+      font-family: "Traditional Arabic", "Amiri", "Playfair Display", serif;
       font-size: 1.45rem;
       color: var(--secondary);
       margin-bottom: 1.2rem;
@@ -607,12 +634,12 @@
 
     .quote-content {
       font-family: "Cormorant Garamond", Georgia, serif;
-      font-size: 1.15rem;
+      font-size: 1.12rem;
       font-style: italic;
-      line-height: 1.8;
+      line-height: 1.75;
       color: var(--text-main);
       max-width: 380px;
-      margin: 0 auto 1.2rem;
+      margin: 0 auto 1rem;
       position: relative;
     }
 
@@ -644,7 +671,6 @@
       position: relative;
       box-shadow: var(--shadow-elevated);
       border: 1px solid var(--glass-border);
-      overflow: hidden;
     }
 
     .couple-photo-wrap img {
@@ -654,25 +680,17 @@
       display: block;
     }
 
-    .arch-groom {
-      border-radius: 100px 0 0 0;
-    }
-
-    .arch-bride {
-      border-radius: 0 100px 0 0;
-    }
-
     .couple-name {
-      font-size: 1.8rem;
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: 1.6rem;
+      font-family: "Playfair Display", Georgia, serif;
       color: var(--text-main);
-      margin-bottom: 0.3rem;
+      margin-bottom: 0.4rem;
       font-weight: 600;
     }
 
     .couple-role {
       font-size: 0.72rem;
-      letter-spacing: 0.22em;
+      letter-spacing: 0.2em;
       text-transform: uppercase;
       color: var(--secondary);
       font-weight: 600;
@@ -713,14 +731,13 @@
     }
 
     .couple-divider-amp {
-      font-family: "Yaqoote Script", cursive;
-      font-size: 3.8rem;
+      font-family: "The Nautigal", cursive;
+      font-size: 3.5rem;
       color: var(--secondary);
       line-height: 1;
       margin: -1rem 0;
     }
 
-    /* Section Events (#events) */
     /* Section Events (#events) */
     .events-unified-container {
       display: flex;
@@ -754,20 +771,20 @@
       border: 1px solid var(--glass-border);
       border-radius: var(--radius-full);
       font-size: 0.68rem;
-      letter-spacing: 0.22em;
+      letter-spacing: 0.2em;
       text-transform: uppercase;
       color: var(--secondary);
       font-weight: 600;
       margin-bottom: 0.8rem;
-      background: color-mix(in srgb, var(--primary) 5%, transparent);
+      background: color-mix(in srgb, var(--primary) 6%, transparent);
     }
 
     .ev-name {
-      font-size: 1.5rem;
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: 1.4rem;
+      font-family: "Playfair Display", Georgia, serif;
       color: var(--text-main);
       margin-bottom: 0.4rem;
-      font-weight: 600;
+      font-weight: 500;
     }
 
     .ev-time {
@@ -806,7 +823,7 @@
 
     .ev-venue {
       font-size: 1.05rem;
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: "Playfair Display", Georgia, serif;
       color: var(--text-main);
       margin-bottom: 0.3rem;
       font-weight: 600;
@@ -832,7 +849,7 @@
       color: #ffffff;
       text-decoration: none;
       font-size: 0.74rem;
-      letter-spacing: 0.16em;
+      letter-spacing: 0.15em;
       text-transform: uppercase;
       font-weight: 600;
       transition: all 0.3s ease;
@@ -847,8 +864,7 @@
       transform: translateY(-2px);
     }
 
-    .btn-maps svg,
-    .btn-map-outline svg {
+    .btn-maps svg {
       width: 14px;
       height: 14px;
       fill: currentColor;
@@ -904,11 +920,11 @@
     }
 
     .story-title {
-      font-size: 1.35rem;
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: 1.25rem;
+      font-family: "Playfair Display", Georgia, serif;
       color: var(--text-main);
       margin-bottom: 0.4rem;
-      font-weight: 600;
+      font-weight: 500;
     }
 
     .story-content {
@@ -939,11 +955,11 @@
     .gallery-item:first-child {
       grid-column: span 2;
       aspect-ratio: 16/10;
-      border-radius: 100px 0 0 0;
+      border-radius: 90px 0 0 0;
     }
 
     .gallery-item:last-child {
-      border-radius: 0 0 100px 0;
+      border-radius: 0 0 90px 0;
     }
 
     .gallery-item img {
@@ -977,8 +993,8 @@
     }
 
     .gift-bank-name {
-      font-size: 1.25rem;
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: 1.15rem;
+      font-family: "Playfair Display", Georgia, serif;
       letter-spacing: 0.1em;
       color: var(--secondary);
       font-weight: 600;
@@ -1012,7 +1028,7 @@
       border: 1px solid var(--glass-border);
       color: var(--text-main);
       font-size: 0.72rem;
-      letter-spacing: 0.14em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
       font-weight: 600;
       cursor: pointer;
@@ -1124,7 +1140,7 @@
       border-color: var(--secondary);
     }
 
-    /* Wishes Feed */
+    /* Wishes Feed List */
     .wishes-feed-box {
       max-width: 380px;
       margin: 0 auto;
@@ -1153,10 +1169,10 @@
     }
 
     .wish-sender-name {
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       font-weight: 600;
       color: var(--text-main);
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: "Playfair Display", Georgia, serif;
     }
 
     .wish-status-badge {
@@ -1178,7 +1194,7 @@
 
     .wish-timestamp {
       font-size: 0.68rem;
-      color: #a1a1aa;
+      color: #9c948b;
       margin-top: 6px;
       display: block;
     }
@@ -1186,7 +1202,7 @@
     /* Section Closing */
     .sec-closing {
       padding: 5rem 1.8rem 4rem;
-      background: color-mix(in srgb, var(--primary) 5%, transparent);
+      background: color-mix(in srgb, var(--primary) 6%, transparent);
       border-top: 1px solid var(--glass-border);
     }
 
@@ -1219,19 +1235,11 @@
     }
 
     .closing-names {
-      font-size: 2.8rem;
-      font-family: "Yaqoote Script", cursive;
+      font-size: 2.2rem;
+      font-family: "Playfair Display", Georgia, serif;
       color: var(--text-main);
       margin-bottom: 0.4rem;
-      font-weight: 400;
-    }
-
-    .closing-names span {
-      font-family: "Cormorant Garamond", Georgia, serif;
-      font-size: 0.7em;
-      margin: 0 0.3rem;
-      vertical-align: middle;
-      color: var(--secondary);
+      font-weight: 500;
     }
 
     .closing-sub-note {
@@ -1288,7 +1296,7 @@
     .dock-link:hover,
     .dock-link.active {
       color: var(--text-main);
-      background: color-mix(in srgb, var(--primary) 10%, transparent);
+      background: color-mix(in srgb, var(--primary) 12%, transparent);
     }
 
     .dock-link svg {
@@ -1423,7 +1431,7 @@
   <div class="cover-screen" id="coverScreen">
     <div class="cover-overlay"></div>
     <div class="cover-content">
-      <span class="cover-badge-box" data-lux-field="customLabels.coverBadge">{{coverBadge}}</span>
+      <span class="cover-arch-badge" data-lux-field="customLabels.coverBadge">{{coverBadge}}</span>
       <p class="cover-tagline" data-lux-field="customLabels.weddingTagline">{{weddingTagline}}</p>
       <h1 class="cover-names">
         {{firstName}} <span>&amp;</span> {{secondName}}
@@ -1435,7 +1443,7 @@
         <h2 class="cover-guest-name" id="guestName">Tamu Undangan</h2>
       </div>
 
-      <button type="button" class="btn-open-monochrome btn-buka" id="openBtn" onclick="openInvitation()">
+      <button type="button" class="btn-open-minimal btn-buka" id="openBtn" onclick="openInvitation()">
         <span data-lux-field="customLabels.openBtn">{{openBtn}}</span>
         <svg viewBox="0 0 24 24">
           <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
@@ -1523,16 +1531,16 @@
           <p class="sec-sub" data-lux-field="customLabels.coupleSectionSub">{{coupleSectionSub}}</p>
 
           <div class="couple-container">
-            <!-- The Bride (First) -->
+            <!-- First Partner -->
             <div class="couple-card">
-              <div class="couple-photo-wrap arch-bride">
+              <div class="couple-photo-wrap arch-frame-right">
                 <img src="{{firstPhotoUrl}}" alt="{{firstDisplayName}}" />
               </div>
-              <h3 class="couple-name" data-lux-field="bride.displayName">{{firstDisplayName}}</h3>
-              <p class="couple-role" data-lux-field="bride.role">{{brideRole}}</p>
+              <h3 class="couple-name" data-lux-field="firstDisplayName">{{firstDisplayName}}</h3>
+              <p class="couple-role" data-lux-field="firstRoleLabel">{{firstRoleLabel}}</p>
               <div class="couple-parents">
                 <span data-lux-field="firstParentPrefix">{{firstParentPrefix}}</span><br />
-                <strong data-lux-field="bride.father">{{firstFather}}</strong> &amp; <strong data-lux-field="bride.mother">{{firstMother}}</strong>
+                <strong data-lux-field="firstFather">{{firstFather}}</strong> &amp; <strong data-lux-field="firstMother">{{firstMother}}</strong>
               </div>
               {{#if firstInstagram}}
               <a href="https://instagram.com/{{firstInstagram}}" target="_blank" rel="noopener noreferrer" class="couple-ig">
@@ -1546,16 +1554,16 @@
 
             <div class="couple-divider-amp">&amp;</div>
 
-            <!-- The Groom (Second) -->
+            <!-- Second Partner -->
             <div class="couple-card">
-              <div class="couple-photo-wrap arch-groom">
+              <div class="couple-photo-wrap arch-frame-left">
                 <img src="{{secondPhotoUrl}}" alt="{{secondDisplayName}}" />
               </div>
-              <h3 class="couple-name" data-lux-field="groom.displayName">{{secondDisplayName}}</h3>
-              <p class="couple-role" data-lux-field="groom.role">{{groomRole}}</p>
+              <h3 class="couple-name" data-lux-field="secondDisplayName">{{secondDisplayName}}</h3>
+              <p class="couple-role" data-lux-field="secondRoleLabel">{{secondRoleLabel}}</p>
               <div class="couple-parents">
                 <span data-lux-field="secondParentPrefix">{{secondParentPrefix}}</span><br />
-                <strong data-lux-field="groom.father">{{secondFather}}</strong> &amp; <strong data-lux-field="groom.mother">{{secondMother}}</strong>
+                <strong data-lux-field="secondFather">{{secondFather}}</strong> &amp; <strong data-lux-field="secondMother">{{secondMother}}</strong>
               </div>
               {{#if secondInstagram}}
               <a href="https://instagram.com/{{secondInstagram}}" target="_blank" rel="noopener noreferrer" class="couple-ig">
@@ -1690,20 +1698,20 @@
           <div class="wishes-feed-box" id="wishesFeed">
             <div class="wish-item-card">
               <div class="wish-sender-row">
-                <span class="wish-sender-name">Keluarga Bpk. Handoko</span>
+                <span class="wish-sender-name">Keluarga Bpk. Hartono</span>
                 <span class="wish-status-badge">HADIR</span>
               </div>
-              <p class="wish-text-body">Selamat menempuh hidup baru Tiara dan Jati. Semoga cinta kalian senantiasa abadi dan diberkahi Allah SWT sepanjang masa.</p>
-              <span class="wish-timestamp">Hari ini, 10:20</span>
+              <p class="wish-text-body">Selamat menempuh hidup baru untuk Tiara dan Jati. Semoga menjadi keluarga sakinah mawaddah warahmah, dilimpahkan keberkahan dan kebahagiaan abadi.</p>
+              <span class="wish-timestamp">Hari ini, 09:15</span>
             </div>
 
             <div class="wish-item-card">
               <div class="wish-sender-row">
-                <span class="wish-sender-name">Alumni FEB UGM</span>
+                <span class="wish-sender-name">Sahabat Kampus Jogja</span>
                 <span class="wish-status-badge">HADIR</span>
               </div>
-              <p class="wish-text-body">Happy wedding Tiara &amp; Jati! Turut berbahagia dan mendoakan yang terbaik untuk perjalanan baru kalian berdua.</p>
-              <span class="wish-timestamp">Kemarin, 19:45</span>
+              <p class="wish-text-body">Masya Allah lancar sampai hari H ya teman-teman seperjuangan. Ikut bahagia melihat perjalanan kalian berdua sampai ke pelaminan!</p>
+              <span class="wish-timestamp">Kemarin, 20:30</span>
             </div>
           </div>
         </section>
@@ -1795,15 +1803,15 @@
       </button>
 
       <span class="sec-eyebrow" style="margin-top:0.5rem;">TIKET KEHADIRAN</span>
-      <h3 style="font-family:'Cormorant Garamond',serif; font-size:1.5rem; margin-bottom:0.4rem;">QR Check-in Tamu</h3>
+      <h3 style="font-family:'Playfair Display',serif; font-size:1.4rem; margin-bottom:0.4rem;">QR Check-in Tamu</h3>
       <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:1.2rem;">Tunjukkan kode QR ini kepada resepsionis di lokasi acara.</p>
 
       <div style="background:var(--bg-light); border-radius:12px; padding:1.2rem; display:inline-block; border:1px solid var(--glass-border); margin-bottom:1rem;">
-        <svg width="140" height="140" viewBox="0 0 100 100" fill="none" stroke="#18181b" stroke-width="3">
+        <svg width="140" height="140" viewBox="0 0 100 100" fill="none" stroke="#1f1d1a" stroke-width="3">
           <rect x="10" y="10" width="80" height="80" stroke-width="3" />
-          <rect x="22" y="22" width="22" height="22" fill="#18181b" />
-          <rect x="56" y="22" width="22" height="22" fill="#18181b" />
-          <rect x="22" y="56" width="22" height="22" fill="#18181b" />
+          <rect x="22" y="22" width="22" height="22" fill="#1f1d1a" />
+          <rect x="56" y="22" width="22" height="22" fill="#1f1d1a" />
+          <rect x="22" y="56" width="22" height="22" fill="#1f1d1a" />
           <circle cx="67" cy="67" r="7" fill="var(--secondary)" />
         </svg>
       </div>

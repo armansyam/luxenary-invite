@@ -948,6 +948,47 @@
       background: var(--bugis-gold) !important;
       color: var(--bg-dark, #140204) !important;
     }
+
+    .gift-tabs {
+      display: flex;
+      max-width: 320px;
+      margin: 0 auto 1.8rem;
+      border: 1px solid var(--border-gold);
+      border-radius: 9999px;
+      overflow: hidden;
+      background: color-mix(in srgb, var(--bg-dark, #140204) 75%, transparent);
+      backdrop-filter: blur(10px);
+      padding: 3px;
+      gap: 4px;
+    }
+
+    .gift-tab-btn {
+      flex: 1;
+      padding: 0.65rem 1rem;
+      background: transparent;
+      border: none;
+      border-radius: 9999px;
+      color: var(--bugis-gold, #dfb76c);
+      opacity: 0.65;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      transition: all 0.3s ease;
+    }
+
+    .gift-tab-btn:hover {
+      opacity: 0.9;
+    }
+
+    .gift-tab-btn.active {
+      background: var(--bugis-gold, #dfb76c);
+      color: var(--bg-dark, #140204);
+      opacity: 1;
+      font-weight: 700;
+      box-shadow: 0 0 14px var(--gold-glow, rgba(223, 183, 108, 0.35));
+    }
     .btn-map-outline {
       display: inline-flex !important;
       align-items: center !important;

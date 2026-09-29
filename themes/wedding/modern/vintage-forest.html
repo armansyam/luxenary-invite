@@ -242,18 +242,18 @@
       right: 0;
       width: 100%;
       height: 100vh;
-      background-image: url('/assets/ornaments/background/background-cream.png');
+      background-image: url('/assets/ornaments/background/background-cream.webp');
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
       pointer-events: none;
       z-index: 1;
-      opacity: 0.16;
-      filter: saturate(1.1) brightness(0.95);
+      opacity: 1;
+      filter: none;
     }
     .fixed-bg-layer.has-custom-bg {
       background-image: var(--custom-bg);
-      opacity: 0.20;
+      opacity: 1;
       filter: none;
     }
 
@@ -269,11 +269,7 @@
       right: 0;
       width: 100%;
       height: 100vh;
-      background: linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--bg-light) 94%, transparent) 0%,
-        color-mix(in srgb, var(--bg-light) 97%, transparent) 100%
-      );
+      background: transparent;
       pointer-events: none;
       z-index: 2;
     }
@@ -1773,8 +1769,8 @@
     <div class="cover-overlay-gradient"></div>
 
     <!-- Ornamen Daun Botani di Sudut Cover -->
-    <img src="/assets/ornaments/vintage-forest/bunga-botani2.png" alt="Botanical Leaf" class="cover-botanical-corner cover-botanical-top-left" />
-    <img src="/assets/ornaments/vintage-forest/bunga-botani2.png" alt="Botanical Leaf" class="cover-botanical-corner cover-botanical-top-right" />
+    <img src="/assets/ornaments/vintage-forest/bunga-botani2.webp" alt="Botanical Leaf" class="cover-botanical-corner cover-botanical-top-left" />
+    <img src="/assets/ornaments/vintage-forest/bunga-botani2.webp" alt="Botanical Leaf" class="cover-botanical-corner cover-botanical-top-right" />
 
     <div class="cover-content-card">
       <span class="cover-badge-pill" data-lux-field="customLabels.coverBadge">{{coverBadge}}</span>
@@ -1831,7 +1827,7 @@
       <section class="sec-flow sec-flow-hero" id="home">
         <div class="hero-card-arch">
           <!-- Ornamen Daun Botani di Sudut Hero -->
-          <img src="/assets/ornaments/vintage-forest/bunga-botani2.png" alt="Botanical Leaf" class="ornament-botanical-corner ob-top-right" />
+          <img src="/assets/ornaments/vintage-forest/bunga-botani2.webp" alt="Botanical Leaf" class="ornament-botanical-corner ob-top-right" />
 
           <div class="hero-arch-photo-container">
             <img src="{{homePhotoUrl}}" alt="The Couple" class="hero-arch-photo" />
@@ -1883,12 +1879,13 @@
         <div class="couple-stack">
           <!-- MEMPELAI WANITA (BRIDE) -->
           <div class="person-card">
-            <img src="/assets/ornaments/vintage-forest/bunga-botani2.png" alt="Botanical Leaf" class="ornament-botanical-corner ob-top-right" />
+            <img src="/assets/ornaments/vintage-forest/bunga-botani2.webp" alt="Botanical Leaf" class="ornament-botanical-corner ob-top-right" />
             <div class="person-photo-arch">
               <img src="{{firstPhotoUrl}}" alt="{{firstDisplayName}}" />
             </div>
             <h3 class="person-nickname">{{firstName}}</h3>
             <p class="person-fullname">{{firstDisplayName}}</p>
+            {{#if firstRoleLabel}}<p class="person-role-label" style="font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); margin: 0.2rem 0; font-weight: 600;">{{firstRoleLabel}}</p>{{/if}}
             <p class="person-parents">
               {{firstParentPrefix}}<br />
               <strong>{{firstFather}} &amp; {{firstMother}}</strong>
@@ -1907,12 +1904,13 @@
 
           <!-- MEMPELAI PRIA (GROOM) -->
           <div class="person-card">
-            <img src="/assets/ornaments/vintage-forest/bunga-botani2.png" alt="Botanical Leaf" class="ornament-botanical-corner ob-top-right" />
+            <img src="/assets/ornaments/vintage-forest/bunga-botani2.webp" alt="Botanical Leaf" class="ornament-botanical-corner ob-top-right" />
             <div class="person-photo-arch">
               <img src="{{secondPhotoUrl}}" alt="{{secondDisplayName}}" />
             </div>
             <h3 class="person-nickname">{{secondName}}</h3>
             <p class="person-fullname">{{secondDisplayName}}</p>
+            {{#if secondRoleLabel}}<p class="person-role-label" style="font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); margin: 0.2rem 0; font-weight: 600;">{{secondRoleLabel}}</p>{{/if}}
             <p class="person-parents">
               {{secondParentPrefix}}<br />
               <strong>{{secondFather}} &amp; {{secondMother}}</strong>
@@ -2053,7 +2051,7 @@
           </form>
 
           <!-- LIVE WISHES FEED -->
-          <div class="wishes-stream-box" id="wishesStream">
+          <div class="wishes-stream-box" id="wishesStream" data-feed-id="wishesFeed">
             <div class="wish-item-card">
               <div class="wi-header">
                 <span class="wi-author">Sarah &amp; Dimas</span>
@@ -2077,7 +2075,7 @@
       <!-- =============================================================== -->
       <footer class="site-footer {{closingPhotoClass}}" style="{{closingBgStyle}}">
         <!-- Ornamen Daun Botani di Bagian Atas Outro -->
-        <img src="/assets/ornaments/vintage-forest/bunga-botani2.png" alt="Botanical Leaf" class="closing-top-ornament" />
+        <img src="/assets/ornaments/vintage-forest/bunga-botani2.webp" alt="Botanical Leaf" class="closing-top-ornament" />
 
         <div class="closing-content-box">
           <p class="closing-quote-text" data-lux-field="narrative.closingQuote">"{{closingQuote}}"</p>

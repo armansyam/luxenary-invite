@@ -405,20 +405,27 @@ export default function AdminPage() {
   };
 
   const rawRole = (session?.user as any)?.originalRole || (session?.user as any)?.role;
-  const userRole = rawRole === "CLIENT" && (session?.user as any)?.isAdmin ? "ADMIN" : (rawRole || "CLIENT");
-  const userPermissions = (session?.user as any)?.permissions || [];
+  const isUserAdmin = Boolean((session?.user as any)?.isAdmin);
+  const userRole = rawRole === "CLIENT" && isUserAdmin ? "ADMIN" : (rawRole || "CLIENT");
+  const userPermissionsKey = Array.isArray((session?.user as any)?.permissions)
+    ? (session?.user as any).permissions.join(",")
+    : "";
+  const userPermissions = useMemo(() => {
+    return userPermissionsKey ? userPermissionsKey.split(",") : [];
+  }, [userPermissionsKey]);
+
   const filteredTabs = useMemo(() => {
     return tabs.filter(tab => {
       return hasAdminPermission(
         {
           role: userRole,
-          isAdmin: (session?.user as any)?.isAdmin,
+          isAdmin: isUserAdmin,
           permissions: userPermissions,
         },
         tab.id
       );
     });
-  }, [userRole, userPermissions, (session?.user as any)?.isAdmin]);
+  }, [userRole, userPermissions, isUserAdmin]);
 
   // Otomatis arahkan ke tab pertama yang sah jika tab aktif saat ini di luar izin role
   useEffect(() => {

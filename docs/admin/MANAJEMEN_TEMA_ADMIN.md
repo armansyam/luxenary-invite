@@ -26,7 +26,7 @@ Saat ini platform memiliki **39 tema fisik mandiri** yang terdaftar di database 
 
 | Jenis Acara (`eventType`) | Total Tema | Daftar Tema Aktif di Disk & Database |
 |:---|:---:|:---|
-| **WEDDING** | **33 Tema** | • **Minimalist (6):** `artisan`, `aurelia`, `kalandra`, `minimalist-elegant`, `minimalist-elegant-04`, `valente`<br>• **Modern (12):** `ameera`, `badrika`, `burgundy-royale`, `candani`, `chronicle`, `lumina`, `mayang`, `papercut`, `solaria`, `starlit-dreams`, `vintage-forest`, `wave`<br>• **Traditional (15):** `bone`, `bugis`, `bulukumba`, `dillalucky`, `gowa`, `lagaligo`, `makale`, `makassar`, `maros`, `prameswari`, `rantepao`, `soppeng`, `takalar`, `toraja`, `wajo` |
+| **WEDDING** | **33 Tema** | • **Minimalist (6):** `aeterna`, `artisan`, `aurelia`, `kalandra`, `valente`, `verona`<br>• **Modern (12):** `ameera`, `badrika`, `burgundy-royale`, `candani`, `chronicle`, `lumina`, `mayang`, `papercut`, `solaria`, `starlit-dreams`, `vintage-forest`, `wave`<br>• **Traditional (15):** `bone`, `bugis`, `bulukumba`, `dillalucky`, `gowa`, `lagaligo`, `makale`, `makassar`, `maros`, `prameswari`, `rantepao`, `soppeng`, `takalar`, `toraja`, `wajo` |
 | **BIRTHDAY** | **2 Tema** | • `kalandra-birthday` (Minimalist)<br>• `festivo` (Modern) |
 | **KHITAN** | **1 Tema** | • `al-fariz` (Traditional) |
 | **AQIQAH** | **1 Tema** | • `al-khalid` (Minimalist) |

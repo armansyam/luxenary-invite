@@ -212,7 +212,7 @@
       height: 100vh;
       height: 100dvh;
       z-index: 0;
-      background-image: url('/assets/ornaments/background/background-monocrhome1.png');
+      background-image: url('/assets/ornaments/background/background-monocrhome1.webp');
       background-position: center;
       background-size: cover;
       background-repeat: no-repeat;
@@ -1170,8 +1170,8 @@
         <p class="sec-sub" data-lux-field="customLabels.coupleSub">{{coupleSectionSub}}</p>
 
         <div class="couple-grid">
-          <!-- Mempelai Pria -->
-          <div class="couple-card">
+          <!-- Persona Pertama (Gender Adaptif) -->
+          <div class="couple-card couple-{{firstGender}}">
             <div class="couple-photo-wrap">
               <img src="{{firstPhotoUrl}}" alt="{{firstFullName}}" loading="lazy" />
             </div>
@@ -1192,8 +1192,8 @@
 
           <div style="font-size:28px; color:var(--primary); font-family:serif;">&amp;</div>
 
-          <!-- Mempelai Wanita -->
-          <div class="couple-card">
+          <!-- Persona Kedua (Gender Adaptif) -->
+          <div class="couple-card couple-{{secondGender}}">
             <div class="couple-photo-wrap">
               <img src="{{secondPhotoUrl}}" alt="{{secondFullName}}" loading="lazy" />
             </div>
@@ -1720,9 +1720,9 @@
         const isNearBottom = (currentScrollY + windowHeight) >= (docHeight - 70);
         const isAtHome = currentScrollY <= getHomeThreshold();
 
-        // Jika berada di seksi #home: dock tampil, audio fab disembunyikan agar estetika pembuka bersih
+        // 1. Home-Safe Auto-Hide: Sembunyikan dock dan tombol musik di seksi #home
         if (isAtHome) {
-          setControls(true, false);
+          setControls(false, false);
           lastScrollY = currentScrollY;
           ticking = false;
           return;
@@ -1769,7 +1769,7 @@
           link.addEventListener('click', () => {
             const href = link.getAttribute('href');
             if (href === '#home') {
-              setControls(true, false);
+              setControls(false, false);
             } else {
               setControls(true, true);
             }

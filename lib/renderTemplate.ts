@@ -58,8 +58,8 @@ export const THEME_MAP: Record<string, ThemeEntry> = {
   "valente": { file: "valente.html", eventType: "wedding", style: "minimalist" },
   "aurelia": { file: "aurelia.html", eventType: "wedding", style: "minimalist" },
   "artisan": { file: "artisan.html", eventType: "wedding", style: "minimalist" },
-  "minimalist-elegant": { file: "minimalist-elegant.html", eventType: "wedding", style: "minimalist" },
-  "minimalist-elegant-04": { file: "minimalist-elegant-04.html", eventType: "wedding", style: "minimalist" },
+  "verona": { file: "verona.html", eventType: "wedding", style: "minimalist" },
+  "aeterna": { file: "aeterna.html", eventType: "wedding", style: "minimalist" },
 
   // Traditional Series (15)
   "prameswari": { file: "prameswari.html", eventType: "wedding", style: "traditional" },

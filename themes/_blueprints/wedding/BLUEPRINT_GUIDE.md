@@ -110,16 +110,18 @@ Semua token diapit kurung kurawal ganda `{{...}}`. Saat dirender oleh engine, to
 | `{{coupleSectionEyebrow}}` | Eyebrow profil (cth: *THE BRIDE & GROOM*) | `data-lux-field="customLabels.coupleEyebrow"` |
 | `{{coupleSectionTitle}}` | Judul seksi mempelai (cth: *Mempelai Bahagia*) | `data-lux-field="customLabels.coupleTitle"` |
 | `{{coupleSectionSub}}` | Pengantar profil mempelai | `data-lux-field="customLabels.coupleSub"` |
-| `{{firstPhotoUrl}}` | Foto mempelai pria | — |
-| `{{firstDisplayName}}` | Nama lengkap mempelai pria | `data-lux-field="groomName"` |
-| `{{firstRoleLabel}}` | Peran mempelai pria (cth: *Mempelai Pria*) | `data-lux-field="customLabels.groomRole"` |
-| `{{firstParents}}` | Keterangan putra dari bapak & ibu | `data-lux-field="groomParents"` |
-| `{{firstInstagram}}` | Username Instagram pria (tanpa tanda @) | — |
-| `{{secondPhotoUrl}}` | Foto mempelai wanita | — |
-| `{{secondDisplayName}}`| Nama lengkap mempelai wanita | `data-lux-field="brideName"` |
-| `{{secondRoleLabel}}` | Peran mempelai wanita (cth: *Mempelai Wanita*) | `data-lux-field="customLabels.brideRole"` |
-| `{{secondParents}}` | Keterangan putri dari bapak & ibu | `data-lux-field="brideParents"` |
-| `{{secondInstagram}}` | Username Instagram wanita (tanpa tanda @) | — |
+| `{{firstPhotoUrl}}` | Foto mempelai pertama (gender adaptif) | — |
+| `{{firstDisplayName}}` | Nama lengkap mempelai pertama | `data-lux-field="firstDisplayName"` |
+| `{{firstRoleLabel}}` | Peran mempelai pertama (cth: *Mempelai Pria* / *Mempelai Wanita*) | `data-lux-field="customLabels.firstRoleLabel"` |
+| `{{firstGender}}` | Identitas gender persona pertama (`groom` atau `bride`) untuk styling kartu & bingkai adaptif | — |
+| `{{firstParents}}` | Keterangan orang tua mempelai pertama | `data-lux-field="firstParents"` |
+| `{{firstInstagram}}` | Username Instagram persona pertama (tanpa tanda @) | — |
+| `{{secondPhotoUrl}}` | Foto mempelai kedua (gender adaptif) | — |
+| `{{secondDisplayName}}`| Nama lengkap mempelai kedua | `data-lux-field="secondDisplayName"` |
+| `{{secondRoleLabel}}` | Peran mempelai kedua (cth: *Mempelai Wanita* / *Mempelai Pria*) | `data-lux-field="customLabels.secondRoleLabel"` |
+| `{{secondGender}}` | Identitas gender persona kedua (`bride` atau `groom`) untuk styling kartu & bingkai adaptif | — |
+| `{{secondParents}}` | Keterangan orang tua mempelai kedua | `data-lux-field="secondParents"` |
+| `{{secondInstagram}}` | Username Instagram persona kedua (tanpa tanda @) | — |
 
 ### D. Seksi 3: Rangkaian Acara (Schedule & Venue)
 
@@ -420,17 +422,17 @@ Untuk menjamin seluruh label navigasi dock dapat diterjemahkan atau dikustomisas
 
 ### K. Standar Floating Audio FAB & Visibilitas Dock (Home-Safe Audio & Outro Autohide)
 
-Tombol audio mengambang (`#musicToggle` / `.audio-fab`) dan dock navigasi bawah (`.bottom-dock`) wajib mengimplementasikan sinkronisasi visibilitas terpadu:
-1. **Tersembunyi di Seksi Pembuka `#home` (`fab-hidden`):**
-   - Saat sampul dibuka (`openInvitation()`), audio mulai diputar di latar, namun tombol fisik FAB **wajib tetap tersembunyi** (`fab.classList.add('fab-hidden')`) agar tidak merusak keanggunan visual Opening Hero 100vh.
-2. **Mengikuti Dock saat Scroll:**
-   - Begitu tamu scroll melewati seksi `#home` (`currentScrollY > homeThreshold`), tombol audio muncul bersama dock navigasi.
-   - Saat scroll ke bawah cepat (*scroll down*), kedua kontrol bersembunyi bersamaan.
-   - Saat scroll ke atas (*scroll up*), kedua kontrol muncul kembali bersamaan.
+Tombol audio mengambang (`#musicToggle` / `.audio-fab`) dan dock navigasi bawah (`.bottom-dock`) wajib mengimplementasikan sinkronisasi visibilitas terpadu (Home-Safe Auto-Hide):
+1. **Tersembunyi Murni di Seksi Pembuka `#home` (`dock-hidden` & `fab-hidden`):**
+   - Saat sampul dibuka (`openInvitation()`), audio mulai diputar di latar, namun bilah navigasi dock (`.bottom-dock`) dan tombol fisik FAB (`#musicToggle`) **wajib tetap tersembunyi** (`setControls(false, false)`) agar estetika Opening Hero 100vh bersih tanpa gangguan elemen mengambang.
+2. **Dinamika Kontrol saat Scroll (Di Luar Seksi `#home`):**
+   - Begitu tamu scroll melewati seksi `#home` (`currentScrollY > homeThreshold`), kontrol mengikuti dinamika baca:
+     - **Scroll ke bawah (`delta > 12px`):** Kontrol disembunyikan agar tamu fokus membaca konten.
+     - **Scroll ke atas (`delta < -12px`):** Bilah dock dan tombol audio dimunculkan bersamaan (`setControls(true, true)`).
 3. **Ultra-Clean Outro (Ujung Bawah Halaman):**
-   - Di ujung bawah halaman (seksi penutup/outro), dock dan audio FAB otomatis bersembunyi untuk memberikan tampilan akhir yang bersih dan elegan.
+   - Di seksi penutup paling bawah (`isNearBottom`), dock dan audio FAB otomatis bersembunyi untuk estetika visual kartu penutup, dan segera muncul kembali jika tamu melakukan *scroll-up*.
 4. **Navigasi Balik ke `#home`:**
-   - Jika tamu men-scroll kembali ke `#home` atau mengklik tab `#home` di dock navigasi, audio FAB kembali tersembunyi secara otomatis (`setControls(true, false)`).
+   - Jika tamu men-scroll kembali ke `#home` atau mengklik tab `#home` di dock navigasi, dock dan audio FAB kembali tersembunyi secara otomatis (`setControls(false, false)`).
 
 ---
 

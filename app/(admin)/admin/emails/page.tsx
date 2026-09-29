@@ -29,8 +29,8 @@ export default function AdminEmailPreviewPage() {
     fetch("/api/client/user/profile")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.user?.email && !recipientEmail) {
-          setRecipientEmail(data.user.email);
+        if (data?.user?.email) {
+          setRecipientEmail((prev) => prev || data.user.email);
         }
       })
       .catch(() => {});

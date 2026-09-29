@@ -535,10 +535,10 @@ export const THEME_BLUEPRINTS: Record<string, ThemeBlueprint> = {
     coverSubtitle: "Tabe' kipammopporang. Tanpa mengurangi rasa hormat, kami mengundang Bapak/Ibu/Saudara/i untuk menghadiri hari bahagia kami.",
     openBtn: "Buka Undangan",
     quoteSectionTitle: "Petuah & Doa Restu",
-    quoteSectionEyebrow: "PASANG RI BURA'NE",
+    quoteSectionEyebrow: "PETUAH LELUHUR",
     openingGreeting: "Tabe' Kipammopporang",
     coverBadge: "THE WEDDING OF • ADAT MAKASSAR",
-    coupleSectionEyebrow: "DUA INSAN",
+    coupleSectionEyebrow: "PROFIL MEMPELAI",
     coupleSectionTitle: "Dua Insan",
     coupleSectionSub: "Dua Jiwa Berlayar Bersama Mengarungi Bahtera Kehidupan",
     eventsSectionTitle: "Rangkaian Acara",
@@ -1646,9 +1646,9 @@ export const THEME_BLUEPRINTS: Record<string, ThemeBlueprint> = {
     rsvpTitle: "Konfirmasi Kehadiran",
     rsvpBtnText: "Konfirmasi Kehadiran",
   },
-  "minimalist-elegant": {
-    themeId: "minimalist-elegant",
-    themeName: "Minimalist Elegant",
+  "verona": {
+    themeId: "verona",
+    themeName: "Verona",
     series: "minimalist",
     defaultPalette: "gold",
     defaultMusicUrl: "/music/canon-in-d.ogg",
@@ -1691,9 +1691,9 @@ export const THEME_BLUEPRINTS: Record<string, ThemeBlueprint> = {
     rsvpTitle: "Konfirmasi Kehadiran & Doa",
     rsvpBtnText: "Kirim Konfirmasi & Doa",
   },
-  "minimalist-elegant-04": {
-    themeId: "minimalist-elegant-04",
-    themeName: "Minimalist Elegant 04",
+  "aeterna": {
+    themeId: "aeterna",
+    themeName: "Aeterna",
     series: "minimalist",
     defaultPalette: "gold",
     defaultMusicUrl: "/music/canon-in-d.ogg",

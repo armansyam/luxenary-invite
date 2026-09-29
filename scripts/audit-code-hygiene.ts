@@ -200,7 +200,9 @@ export class CodeHygieneAuditor {
       "gallery-masonry-item", "gift-card", "bank-card", "bank-label", "bank-owner",
       "bank-row", "bank-number", "gift-tabs", "gift-tab-btn", "btn-copy", "btn-map-outline",
       "no-closing-photo", "has-closing-photo", "qr-btn", "dock-btn", "nav-item", "opened",
-      "fade-in", "zoom-in", "rotate-disc", "revealed"
+      "fade-in", "zoom-in", "rotate-disc", "revealed",
+      "event-unified-venue-card", "event-block-item", "events-unified-container", "events-sessions-stack",
+      "ev-venue-unified", "ev-addr-unified", "venue-card-lbl", "couple-groom", "couple-bride", "couple-gender-ornament"
     ]);
 
     for (const file of themeFiles) {

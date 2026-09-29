@@ -2984,9 +2984,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     turutMengundang: ["Dewan Komisaris & Direksi", "Seluruh Karyawan PT Sinergi Prima"],
     defaultPalette: "corporate-teal",
   },
-  "minimalist-elegant": {
-    themeId: "minimalist-elegant",
-    themeName: "Minimalist Elegant",
+  "verona": {
+    themeId: "verona",
+    themeName: "Verona",
     series: "Minimalist",
     category: "minimalist",
     tagline: "A MINIMALIST CELEBRATION OF TIMELESS DEVOTION",
@@ -3013,26 +3013,26 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     openingQuote: "Dalam kesederhanaan, kami menemukan ketulusan cinta yang abadi.",
     openingQuoteRef: "THE ART OF SIMPLICITY",
     city: "Jakarta",
-    globalBgUrl: "/demo/minimalist-elegant/background.webp",
-    groomPhotoUrl: "/demo/minimalist-elegant/groom.webp",
-    bridePhotoUrl: "/demo/minimalist-elegant/bride.webp",
-    sidebarPhotoUrl: "/demo/minimalist-elegant/hero.webp",
-    homePhotoUrl: "/demo/minimalist-elegant/home.webp",
-    landingCoverUrl: "/demo/minimalist-elegant/cover.webp",
-    landingCoverDesktopUrl: "/demo/minimalist-elegant/cover_desktop.webp",
-    thumbnailDesktopUrl: "/demo/minimalist-elegant/thumbnail_desktop.webp",
-    thumbnailMobileUrl: "/demo/minimalist-elegant/thumbnail_mobile.webp",
-    footerPhotoUrl: "/demo/minimalist-elegant/footer.webp",
-    closingCoverUrl: "/demo/minimalist-elegant/footer.webp",
+    globalBgUrl: "",
+    groomPhotoUrl: "/demo/verona/groom.webp",
+    bridePhotoUrl: "/demo/verona/bride.webp",
+    sidebarPhotoUrl: "/demo/verona/hero.webp",
+    homePhotoUrl: "/demo/verona/home.webp",
+    landingCoverUrl: "/demo/verona/cover.webp",
+    landingCoverDesktopUrl: "/demo/verona/cover_desktop.webp",
+    thumbnailDesktopUrl: "/demo/verona/thumbnail_desktop.webp",
+    thumbnailMobileUrl: "/demo/verona/thumbnail_mobile.webp",
+    footerPhotoUrl: "/demo/verona/footer.webp",
+    closingCoverUrl: "/demo/verona/footer.webp",
     galleryPhotos: [
-      "/demo/minimalist-elegant/gallery_01.webp",
-      "/demo/minimalist-elegant/gallery_02.webp",
-      "/demo/minimalist-elegant/gallery_03.webp",
-      "/demo/minimalist-elegant/gallery_04.webp",
-      "/demo/minimalist-elegant/gallery_05.webp",
-      "/demo/minimalist-elegant/gallery_06.webp",
-      "/demo/minimalist-elegant/gallery_07.webp",
-      "/demo/minimalist-elegant/gallery_08.webp",
+      "/demo/verona/gallery_01.webp",
+      "/demo/verona/gallery_02.webp",
+      "/demo/verona/gallery_03.webp",
+      "/demo/verona/gallery_04.webp",
+      "/demo/verona/gallery_05.webp",
+      "/demo/verona/gallery_06.webp",
+      "/demo/verona/gallery_07.webp",
+      "/demo/verona/gallery_08.webp",
     ],
     events: [
       {
@@ -3073,9 +3073,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     turutMengundang: ["Keluarga Besar Prasetya Hadi", "Keluarga Besar Danang Danastri"],
     defaultPalette: "minimalist-sand",
   },
-  "minimalist-elegant-04": {
-    themeId: "minimalist-elegant-04",
-    themeName: "Minimalist Elegant 04",
+  "aeterna": {
+    themeId: "aeterna",
+    themeName: "Aeterna",
     series: "Minimalist",
     category: "minimalist",
     tagline: "ELEGANCE IN PURITY AND PURPOSE",
@@ -3102,26 +3102,26 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     openingQuote: "Dua jiwa yang bersatu, mengukir keindahan dalam setiap hening dan kata.",
     openingQuoteRef: "MINIMALIST ESSENCE",
     city: "Bandung",
-    globalBgUrl: "/demo/minimalist-elegant-04/background.webp",
-    groomPhotoUrl: "/demo/minimalist-elegant-04/groom.webp",
-    bridePhotoUrl: "/demo/minimalist-elegant-04/bride.webp",
-    sidebarPhotoUrl: "/demo/minimalist-elegant-04/hero.webp",
-    homePhotoUrl: "/demo/minimalist-elegant-04/home.webp",
-    landingCoverUrl: "/demo/minimalist-elegant-04/cover.webp",
-    landingCoverDesktopUrl: "/demo/minimalist-elegant-04/cover_desktop.webp",
-    thumbnailDesktopUrl: "/demo/minimalist-elegant-04/thumbnail_desktop.webp",
-    thumbnailMobileUrl: "/demo/minimalist-elegant-04/thumbnail_mobile.webp",
-    footerPhotoUrl: "/demo/minimalist-elegant-04/footer.webp",
-    closingCoverUrl: "/demo/minimalist-elegant-04/footer.webp",
+    globalBgUrl: "",
+    groomPhotoUrl: "/demo/aeterna/groom.webp",
+    bridePhotoUrl: "/demo/aeterna/bride.webp",
+    sidebarPhotoUrl: "/demo/aeterna/hero.webp",
+    homePhotoUrl: "/demo/aeterna/home.webp",
+    landingCoverUrl: "/demo/aeterna/cover.webp",
+    landingCoverDesktopUrl: "/demo/aeterna/cover_desktop.webp",
+    thumbnailDesktopUrl: "/demo/aeterna/thumbnail_desktop.webp",
+    thumbnailMobileUrl: "/demo/aeterna/thumbnail_mobile.webp",
+    footerPhotoUrl: "/demo/aeterna/footer.webp",
+    closingCoverUrl: "/demo/aeterna/footer.webp",
     galleryPhotos: [
-      "/demo/minimalist-elegant-04/gallery_01.webp",
-      "/demo/minimalist-elegant-04/gallery_02.webp",
-      "/demo/minimalist-elegant-04/gallery_03.webp",
-      "/demo/minimalist-elegant-04/gallery_04.webp",
-      "/demo/minimalist-elegant-04/gallery_05.webp",
-      "/demo/minimalist-elegant-04/gallery_06.webp",
-      "/demo/minimalist-elegant-04/gallery_07.webp",
-      "/demo/minimalist-elegant-04/gallery_08.webp",
+      "/demo/aeterna/gallery_01.webp",
+      "/demo/aeterna/gallery_02.webp",
+      "/demo/aeterna/gallery_03.webp",
+      "/demo/aeterna/gallery_04.webp",
+      "/demo/aeterna/gallery_05.webp",
+      "/demo/aeterna/gallery_06.webp",
+      "/demo/aeterna/gallery_07.webp",
+      "/demo/aeterna/gallery_08.webp",
     ],
     events: [
       {
@@ -3191,7 +3191,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     openingQuote: "Di antara miliaran bintang di angkasa, hatiku menemukan tempat berpulang yang abadi padamu.",
     openingQuoteRef: "CELESTIAL SERENADE",
     city: "Bali",
-    globalBgUrl: "/demo/starlit-dreams/background.webp",
+    globalBgUrl: "",
     groomPhotoUrl: "/demo/starlit-dreams/groom.webp",
     bridePhotoUrl: "/demo/starlit-dreams/bride.webp",
     sidebarPhotoUrl: "/demo/starlit-dreams/hero.webp",
@@ -3280,7 +3280,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     openingQuote: "Cinta yang mulia adalah perpaduan rasa hormat, kesetiaan, dan gairah yang tak lekang oleh waktu.",
     openingQuoteRef: "THE ROYAL CHRONICLE",
     city: "Jakarta",
-    globalBgUrl: "/demo/burgundy-royale/background.webp",
+    globalBgUrl: "",
     groomPhotoUrl: "/demo/burgundy-royale/groom.webp",
     bridePhotoUrl: "/demo/burgundy-royale/bride.webp",
     sidebarPhotoUrl: "/demo/burgundy-royale/hero.webp",
@@ -3369,7 +3369,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     openingQuote: "Seperti akar pohon yang saling menguatkan di dalam bumi, cinta kita bertumbuh kukuh menghadapi badai.",
     openingQuoteRef: "WOODLAND DEVOTION",
     city: "Malang",
-    globalBgUrl: "/demo/vintage-forest/background.webp",
+    globalBgUrl: "",
     groomPhotoUrl: "/demo/vintage-forest/groom.webp",
     bridePhotoUrl: "/demo/vintage-forest/bride.webp",
     sidebarPhotoUrl: "/demo/vintage-forest/hero.webp",
@@ -3856,6 +3856,34 @@ export function composeDemoTemplateData(
     </div>
   `).join("");
 
+  const demoShippingAddress = (() => {
+    if (demo.eventType === "BIRTHDAY") return `Kediaman ${(demo as any).personName || "Tuan Rumah"}, ${demo.city}, Indonesia`;
+    if (demo.eventType === "KHITAN") return `Kediaman ${(demo as any).childName || "Ananda"}, ${demo.city}, Indonesia`;
+    if (demo.eventType === "AQIQAH") return `Kediaman Orang Tua ${(demo as any).babyName || "Buah Hati"}, ${demo.city}, Indonesia`;
+    if (demo.eventType === "WISUDA") return `Kediaman ${(demo as any).graduateName || "Wisudawan"}, ${demo.city}, Indonesia`;
+    if (demo.eventType === "GATHERING") return `Kantor / Lokasi ${(demo as any).eventTitle || "Penyelenggara"}, ${demo.city}, Indonesia`;
+    return `Kediaman Mempelai, ${demo.city}, Indonesia`;
+  })();
+
+  const giftCardsHtml = `
+    <div class="gift-tabs">
+      <button class="gift-tab-btn active" onclick="switchGiftTab('amplop', this)">Transfer Bank / QRIS</button>
+      <button class="gift-tab-btn" onclick="switchGiftTab('kado', this)">Kirim Kado</button>
+    </div>
+
+    <div id="giftTabAmplop">
+      ${bankCardsHtml}
+    </div>
+
+    <div id="giftTabKado" style="display:none;" class="bank-card">
+      <span class="bank-label">Alamat Pengiriman Kado</span>
+      <p style="font-size:0.8rem; color:rgba(255,255,255,0.7); line-height:1.5; margin:0.4rem 0 0.8rem;">
+        ${demoShippingAddress}
+      </p>
+      <button class="btn-copy" onclick="copyText('${demoShippingAddress}')">Salin Alamat</button>
+    </div>
+  `;
+
   const giftSectionHtml = `
     <section class="sec-flow" id="gift">
       <span class="sec-eyebrow" data-lux-field="customLabels.giftEyebrow">${blueprint.giftSectionEyebrow || "WEDDING GIFT"}</span>
@@ -3864,36 +3892,7 @@ export function composeDemoTemplateData(
         ${blueprint.giftSectionDesc || "Doa restu Anda merupakan karunia yang sangat berarti bagi kami. Bagi Anda yang ingin memberikan tanda kasih:"}
       </p>
 
-      <div class="gift-tabs">
-        <button class="gift-tab-btn active" onclick="switchGiftTab('amplop', this)">Transfer Bank / QRIS</button>
-        <button class="gift-tab-btn" onclick="switchGiftTab('kado', this)">Kirim Kado</button>
-      </div>
-
-      <div id="giftTabAmplop">
-        ${bankCardsHtml}
-      </div>
-
-      <div id="giftTabKado" style="display:none;" class="bank-card">
-        <span class="bank-label">Alamat Pengiriman Kado</span>
-        <p style="font-size:0.8rem; color:rgba(255,255,255,0.7); line-height:1.5; margin:0.4rem 0 0.8rem;">
-          ${(() => {
-            if (demo.eventType === "BIRTHDAY") return `Kediaman ${(demo as any).personName || "Tuan Rumah"}, ${demo.city}, Indonesia`;
-            if (demo.eventType === "KHITAN") return `Kediaman ${(demo as any).childName || "Ananda"}, ${demo.city}, Indonesia`;
-            if (demo.eventType === "AQIQAH") return `Kediaman Orang Tua ${(demo as any).babyName || "Buah Hati"}, ${demo.city}, Indonesia`;
-            if (demo.eventType === "WISUDA") return `Kediaman ${(demo as any).graduateName || "Wisudawan"}, ${demo.city}, Indonesia`;
-            if (demo.eventType === "GATHERING") return `Kantor / Lokasi ${(demo as any).eventTitle || "Penyelenggara"}, ${demo.city}, Indonesia`;
-            return `Kediaman Mempelai, ${demo.city}, Indonesia`;
-          })()}
-        </p>
-        <button class="btn-copy" onclick="copyText('${(() => {
-          if (demo.eventType === "BIRTHDAY") return `Kediaman ${(demo as any).personName || "Tuan Rumah"}, ${demo.city}, Indonesia`;
-          if (demo.eventType === "KHITAN") return `Kediaman ${(demo as any).childName || "Ananda"}, ${demo.city}, Indonesia`;
-          if (demo.eventType === "AQIQAH") return `Kediaman Orang Tua ${(demo as any).babyName || "Buah Hati"}, ${demo.city}, Indonesia`;
-          if (demo.eventType === "WISUDA") return `Kediaman ${(demo as any).graduateName || "Wisudawan"}, ${demo.city}, Indonesia`;
-          if (demo.eventType === "GATHERING") return `Kantor / Lokasi ${(demo as any).eventTitle || "Penyelenggara"}, ${demo.city}, Indonesia`;
-          return `Kediaman Mempelai, ${demo.city}, Indonesia`;
-        })()}')">Salin Alamat</button>
-      </div>
+      ${giftCardsHtml}
     </section>
   `;
 
@@ -4591,6 +4590,9 @@ export function composeDemoTemplateData(
     secondDisplayName: demo.brideDisplayName || "",
     groomDisplayName: (demo as any).personName || demo.groomDisplayName || "",
     brideDisplayName: demo.brideDisplayName || "",
+    groomFullName: (demo as any).personName || demo.groomDisplayName || "",
+    brideFullName: demo.brideDisplayName || "",
+    primaryEventDate: demo.weddingDateFormatted,
     
     // Multi-event Persona Variables
     eventType: demo.eventType || "WEDDING",
@@ -4644,6 +4646,12 @@ export function composeDemoTemplateData(
     secondRole: demo.brideRole,
     firstRoleLabel: demo.groomRole,
     secondRoleLabel: demo.brideRole,
+    firstGender: "groom",
+    secondGender: "bride",
+    firstGenderLabel: demo.groomRole || "Mempelai Pria",
+    secondGenderLabel: demo.brideRole || "Mempelai Wanita",
+    isGroomFirst: true,
+    isBrideFirst: false,
     firstParentLabel: "Putra Dari",
     secondParentLabel: "Putri Dari",
     firstParentPrefix: "Putra dari",
@@ -4746,6 +4754,8 @@ export function composeDemoTemplateData(
     showTurutMengundang: true,
     gallerySectionHtml,
     giftSectionHtml,
+    giftCardsHtml,
+    giftAddress: demoShippingAddress,
     qrAccessSectionHtml,
     qrAccessCardHtml,
     dressCodeHtml,

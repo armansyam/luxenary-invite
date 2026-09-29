@@ -279,6 +279,10 @@ export async function composeWeddingData(inv: any) {
   const secondInstagram = isGroomFirst ? brideInstagram : groomInstagram;
   const firstPhotoUrl = isGroomFirst ? groomPhoto : bridePhoto;
   const secondPhotoUrl = isGroomFirst ? bridePhoto : groomPhoto;
+  const firstGender = isGroomFirst ? "groom" : "bride";
+  const secondGender = isGroomFirst ? "bride" : "groom";
+  const firstGenderLabel = isGroomFirst ? "Mempelai Pria" : "Mempelai Wanita";
+  const secondGenderLabel = isGroomFirst ? "Mempelai Wanita" : "Mempelai Pria";
 
   // Date Resolution: Prioritaskan Sesi Acara Utama (isPrimary: true) sebagai patokan tunggal
   const rawEventsList = Array.isArray(events) ? events : [];
@@ -1201,6 +1205,7 @@ export async function composeWeddingData(inv: any) {
 
   // 11. Section: Bank Accounts & Gift Section
   let giftSectionHtml = "";
+  let giftCardsHtml = "";
   const qrisImageUrl = featureSettings.qrisImageUrl || "";
   if (showGift) {
     const hasExplicitBanks = Array.isArray(bankAccounts) && bankAccounts.length > 0;
@@ -1255,6 +1260,12 @@ export async function composeWeddingData(inv: any) {
         <button class="btn-copy" onclick="copyText('${escapeHtml(String(inv.shippingAddress).trim())}')">Salin Alamat</button>
       </div>
     ` : "";
+
+    giftCardsHtml = `
+      ${tabsHtml}
+      ${amplopHtml}
+      ${kadoHtml}
+    `;
 
     giftSectionHtml = `
       <section class="sec-flow" id="gift">
@@ -1844,6 +1855,12 @@ export async function composeWeddingData(inv: any) {
     secondInstagram,
     firstPhotoUrl,
     secondPhotoUrl,
+    firstGender,
+    secondGender,
+    firstGenderLabel,
+    secondGenderLabel,
+    isGroomFirst: Boolean(isGroomFirst),
+    isBrideFirst: !isGroomFirst,
 
     // Specific Groom & Bride
     groomName,
@@ -1852,6 +1869,8 @@ export async function composeWeddingData(inv: any) {
     brideNickname,
     groomDisplayName,
     brideDisplayName,
+    groomFullName: groomDisplayName,
+    brideFullName: brideDisplayName,
     groomParents,
     brideParents,
     groomFather,
@@ -1889,6 +1908,7 @@ export async function composeWeddingData(inv: any) {
     closingSub: (inv as any).closingSub || blueprint.closingSub,
     targetDate,
     weddingDate,
+    primaryEventDate: weddingDate,
     weddingDateDay,
     weddingDateMonth,
     weddingDateYear,
@@ -1905,6 +1925,8 @@ export async function composeWeddingData(inv: any) {
     turutMengundangHtml,
     gallerySectionHtml,
     giftSectionHtml,
+    giftCardsHtml,
+    giftAddress: inv.shippingAddress ? String(inv.shippingAddress).trim() : "",
     wishesHtml,
     memoriesSectionHtml,
     vendorsSectionHtml,
