@@ -91,6 +91,7 @@ npx prisma migrate deploy || npx prisma db push
 # 5a. Seed database (upsert-safe: aman dijalankan berulang — themes, settings, music presets)
 echo "🌱 Menyinkronisasi data master (Themes, Admin Settings, Music Presets)..."
 npx prisma db seed || echo "⚠️ Seed gagal atau sudah ada — lanjut deployment."
+npm run themes:sync || echo "⚠️ Themes sync gagal — lanjut deployment."
 
 # 5b. Kompilasi Cache Demo Tema Statis
 echo "🎨 Memastikan cache demo tema statis terkompilasi segar..."
@@ -115,8 +116,8 @@ if command -v pm2 &> /dev/null; then
   pm2 set pm2-logrotate:retain 7 > /dev/null 2>&1 || true
   pm2 set pm2-logrotate:compress true > /dev/null 2>&1 || true
 
-  echo "✅ PM2 terdeteksi. Merestart aplikasi via ecosystem..."
-  pm2 reload ecosystem.config.js --update-env || pm2 start ecosystem.config.js
+  echo "✅ PM2 terdeteksi. Merestart aplikasi luxenary-invite..."
+  pm2 reload luxenary-invite --update-env || pm2 restart luxenary-invite || pm2 start ecosystem.config.js
   pm2 save
   
   # Verifikasi port lokal 3001
