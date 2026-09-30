@@ -1,4 +1,4 @@
-import { prisma } from "../lib/prisma";
+import { prisma, pool } from "../lib/prisma";
 
 /**
  * Global setup: dijalankan SEKALI sebelum seluruh test suite oleh Vitest.
@@ -35,6 +35,7 @@ export async function setup() {
 export async function teardown() {
   try {
     await prisma.$disconnect();
+    await pool.end();
   } catch {}
   console.log("\n[TEST TEARDOWN] Prisma disconnected.");
 }

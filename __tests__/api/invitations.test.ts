@@ -39,7 +39,6 @@ vi.mock("@/lib/pinEncryption", () => ({
 vi.mock("@/lib/domainUtils", () => ({
   isReservedSubdomain: vi.fn().mockReturnValue(false),
   isSubdomainExpired: vi.fn().mockReturnValue(false),
-  getLatestEventDate: vi.fn().mockReturnValue(null),
 }));
 
 vi.mock("@/lib/mediaSlots", () => ({
