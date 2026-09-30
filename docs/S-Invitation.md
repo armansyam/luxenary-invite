@@ -160,7 +160,7 @@ Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan 
    - `{{coupleSectionSub}}` (pengantar pernikahan universal non-sektarian).
 
 ### F. Standar Proporsi Desktop Split 460px (Golden Ratio Architecture)
-Seluruh 19 tema fisik master dan starter blueprint mengimplementasikan standarisasi tata letak split layar desktop (breakpoint `≥ 900px` atau `≥ 1024px`):
+33 dari 39 tema fisik (semua tema wedding) dan starter blueprint mengimplementasikan standarisasi tata letak split layar desktop (breakpoint `≥ 900px` atau `≥ 1024px`):
 1. **Sidebar Hero Kiri Dinamis (`width: calc(100% - 460px)`):** Membentang mengisi seluruh sisa ruang layar lebar/widescreen secara responsif.
 2. **Panel Undangan Kanan Terkunci 460px (`width: 460px; margin-left: calc(100% - 460px)`):** Menjaga rasio emas visual smartphone flagship tanpa distorsi tombol melebar atau tipografi renggang di monitor besar.
 3. **Fokus Latar Belakang & Video (`.fixed-bg-layer` & `.lux-fixed-bg-video`):**
@@ -178,7 +178,7 @@ Seluruh 19 tema fisik master dan starter blueprint mengimplementasikan standaris
    - Saat tamu menggulir ke bawah cepat untuk membaca konten atau tiba di outro penutup, dock dan tombol musik mengambang meluncur keluar layar secara serentak demi menghadirkan viewport yang 100% bersih dan imersif.
    - Saat tamu menggulir ke atas (delta $\ge$ 12px), mencapai footer, atau menekan menu navigasi, seluruh kontrol mengambang otomatis meluncur masuk kembali dengan transisi lembut (`cubic-bezier(0.16, 1, 0.3, 1)`). Jika tamu kembali ke `#home`, audio FAB otomatis tersembunyi kembali.
 8. **Smart Mobile Fullscreen (`requestSmartFullscreen()`):**
-   - Seluruh 19 tema fisik master dan `starter-blueprint.html` mengeksekusi `requestSmartFullscreen()` saat tombol *"Buka Undangan"* diklik.
+   - 30 dari 39 tema fisik (pengecualian: `docs/SYSTEM_ARCHITECTURE.md` bagian 26) dan `starter-blueprint.html` mengeksekusi `requestSmartFullscreen()` saat tombol *"Buka Undangan"* diklik.
    - Memicu Fullscreen API native (`requestFullscreen`, `webkitRequestFullscreen`, `mozRequestFullScreen`, `msRequestFullscreen`) dengan penanganan fallback `window.scrollTo(0, 1)` untuk menyembunyikan address bar browser smartphone (Safari iOS / Chrome Android) demi menghadirkan viewport imersif bebas gangguan navigasi browser.
 
 ### G. Standar Global Seksi Penutup / Outro 100vh (`.site-footer`)
@@ -982,7 +982,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Sesi tambahan yang memiliki tanggal lebih awal (misal H-1) secara otomatis naik ke posisi nomor 1 di atas acara utama tanpa merusak penanda sesi utama.
 
 5. **Penegasan Kebijakan All-Access Themes & Feature-Gating:**
-   - Koleksi seluruh 19 tema desain terbuka 100% untuk semua paket (`TIER_1`, `TIER_2`, `TIER_3`).
+   - Koleksi seluruh 39 tema desain terbuka 100% untuk semua paket (`TIER_1`, `TIER_2`, `TIER_3`).
    - Diferensiasi antar paket murni bertumpu pada **Feature Gating**:
      * TIER_1 (Serenade): Undangan Intim, Musik Autoplay, Galeri Prewedding, RSVP Online, Generator WhatsApp Personal.
      * TIER_2 (Symphony): Fitur Tier 1 + Scanner Resepsionis QR Check-In (`qr_checkin`) + Kamera Momen Tamu / Guest Memories Vault (`guest_memories`).
@@ -1017,7 +1017,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 5. **Purifikasi Skema Murni & Master Seed Terpadu (`prisma/seed.ts`):**
    - Menghapus model mati `Wish` dan tabel `wishes` dari skema.
    - Menstandarkan tabel `guests` ke kolom `phone` murni dan enum `WaStatus` (`PENDING`, `SENT`).
-   - Menanamkan seluruh 84 parameter platform (nama paket dinamis `Serenade`, `Symphony`, `Eternity`), 19 tema master, 2 preset musik, dan akun admin default ke dalam seed otomatis terpadu dengan proteksi non-destruktif (klausul `update` pada `AdminSetting` hanya memperbarui label metadata dan tidak pernah menimpa nilai `value` produksi).
+   - Menanamkan seluruh 126 parameter platform (nama paket dinamis `Serenade`, `Symphony`, `Eternity`) dan 1 preset musik bawaan ke dalam seed otomatis terpadu; akun Super Admin dibuat dari `SEED_ADMIN_EMAIL`, dan tema dikelola `npm run themes:sync` (seed tidak menyentuh tabel `themes`) dengan proteksi non-destruktif (klausul `update` pada `AdminSetting` hanya memperbarui label metadata dan tidak pernah menimpa nilai `value` produksi).
 6. **Resolusi Domain Kanonikal Subdomain & Slug (`app/(public)/s/` & `[slug]`):**
    - Menjamin bahwa seluruh pengalihan internal untuk subdomain yang belum terisi (`subdomain-available`), kedaluwarsa (`subdomain-expired`), maupun undangan berstatus `ARCHIVED` diarahkan ke URL kanonikal resmi (`NEXT_PUBLIC_APP_URL` / `https://luxvite.id`) tanpa membocorkan binding reverse proxy internal (`localhost:3001`).
 7. **Isolasi Subdomain Total (Strict Subdomain Isolation Guard di `middleware.ts`):**
@@ -1136,7 +1136,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
       * 100% menggunakan foto lokal terstandarisasi (`public/demo/toraja/`: `cover.webp`, `cover_desktop.webp` landscape panorama 16:9, `home.webp`, `hero.webp`, `background.webp`, `groom.webp`, `bride.webp`, `footer.webp`, dan `gallery_01.webp` s/d `08`) untuk showroom demo tanpa dependensi Unsplash.
 
 2. **Standarisasi Smart Mobile Fullscreen (`requestSmartFullscreen()`):**
-   - Diintegrasikan ke seluruh 19 tema master (`themes/**/*.html`) dan `starter-blueprint.html`.
+   - Terpasang di 30 dari 39 tema (`themes/**/*.html`) dan `starter-blueprint.html`; pengecualian ada di `docs/SYSTEM_ARCHITECTURE.md` bagian 26.
    - Dipicu otomatis saat tamu mengklik tombol *"Buka Undangan"*.
    - Menerapkan Fullscreen API native dengan fallback `window.scrollTo(0, 1)` untuk menyembunyikan address bar peramban smartphone (Safari iOS & Chrome Mobile) secara elegan tanpa merusak layout.
 
