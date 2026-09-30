@@ -1,12 +1,13 @@
 import "dotenv/config";
 import { prisma, pool } from "../lib/prisma";
 import { rateLimitDb } from "../lib/rateLimit";
-import { generateReceptionistToken, verifyReceptionistToken } from "../lib/receptionistAuth";
+import { generateReceptionistToken, verifyReceptionistToken, RECEPTIONIST_TOKEN_TTL_MS } from "../lib/receptionistAuth";
 import { encryptPin, verifyPin, decryptPin } from "../lib/pinEncryption";
 import { buildAndSavePublishedHtml, deletePublishedHtml } from "../lib/staticPublisher";
 import { isNasArchiveEnabled, syncInvitationToNasArchive, readNasArchiveHtml, verifyNasArchiveStatus, purgeNasArchive, getNasArchivePath } from "../lib/nasArchive";
 import { hasPlanCapability, invalidateSettingsCache } from "../lib/settings";
 import { applyUpgradePlan } from "../lib/upgradeHelper";
+import { settleOrderAsPaid } from "../lib/paymentSettlement";
 import { renderTemplateFile } from "../lib/renderTemplate";
 import fs from "fs";
 import path from "path";
@@ -260,14 +261,21 @@ export class IndustrialQASuite {
 
       try {
         const dummyInvId = `inv_test_${this.runId}`;
-        const validToken = generateReceptionistToken(dummyInvId);
-        const isLegitValid = verifyReceptionistToken(validToken, dummyInvId);
-        const isForgedRejected = !verifyReceptionistToken("rcpt_forged_payload_1234567890abcdef", dummyInvId);
-        const isCrossInvRejected = !verifyReceptionistToken(validToken, "other_invitation_999");
+        const dummyPin = `enc:pin_${this.runId}`;
+        const validToken = generateReceptionistToken(dummyInvId, dummyPin);
+        const isLegitValid = verifyReceptionistToken(validToken, dummyInvId, dummyPin);
+        const isForgedRejected = !verifyReceptionistToken("rcpt_forged_payload_1234567890abcdef", dummyInvId, dummyPin);
+        const isCrossInvRejected = !verifyReceptionistToken(validToken, "other_invitation_999", dummyPin);
+        const isExpiredRejected = !verifyReceptionistToken(
+          generateReceptionistToken(dummyInvId, dummyPin, Date.now() - RECEPTIONIST_TOKEN_TTL_MS - 1000),
+          dummyInvId,
+          dummyPin
+        );
+        const isPinChangeRejected = !verifyReceptionistToken(validToken, dummyInvId, `${dummyPin}_baru`);
 
-        passed = isLegitValid && isForgedRejected && isCrossInvRejected;
+        passed = isLegitValid && isForgedRejected && isCrossInvRejected && isExpiredRejected && isPinChangeRejected;
         detail = passed
-          ? "Token HMAC terverifikasi kokoh: token valid lolos, pemalsuan & token silang-undangan 100% ditolak."
+          ? "Token HMAC terverifikasi kokoh: token valid lolos; pemalsuan, token silang-undangan, token kedaluwarsa, dan token pasca-ganti-PIN 100% ditolak."
           : "Verifikasi HMAC membocorkan akses sesi resepsionis!";
       } catch (err: any) {
         detail = `Exception: ${err?.message}`;
@@ -314,18 +322,17 @@ export class IndustrialQASuite {
         });
         this.trackedOrderIds.push(order.id);
 
-        // Simulasi 8 request webhook paralel secara serentak (network glitch / double hits)
+        // 8 pelunasan paralel lewat settleOrderAsPaid — inti transisi PENDING -> PAID yang dipakai
+        // webhook Midtrans, webhook Xendit, approve admin, dan rekonsiliasi status klien.
         const webhookHits = Array.from({ length: 8 }, () =>
-          prisma.order.updateMany({
-            where: { id: order.id, status: "PENDING" },
-            data: { status: "PAID", paidAt: new Date() },
-          })
+          settleOrderAsPaid(order.id, { paymentMethod: "GATEWAY" })
         );
 
         const results = await Promise.all(webhookHits);
-        const successfulTransitions = results.reduce((acc, curr) => acc + curr.count, 0);
+        const successfulTransitions = results.filter(Boolean).length;
+        const finalOrder = await prisma.order.findUniqueOrThrow({ where: { id: order.id } });
 
-        passed = successfulTransitions === 1;
+        passed = successfulTransitions === 1 && finalOrder.status === "PAID" && finalOrder.paidAt !== null;
         detail = passed
           ? `Idempotensi Webhook Sempurna: Tepat 1 dari 8 callback dieksekusi, 7 lainnya diabaikan secara aman.`
           : `Gagal Idempotensi: Terjadi ${successfulTransitions} mutasi status!`;
@@ -1156,7 +1163,7 @@ export class IndustrialQASuite {
       const corruptDecryption = decryptPin("invalid_ciphertext_not_hex");
 
       // 3. Uji token resepsionis kosong atau invalid prefix
-      const corruptTokenValid = verifyReceptionistToken("not_a_rcpt_token", "inv_id");
+      const corruptTokenValid = verifyReceptionistToken("not_a_rcpt_token", "inv_id", "enc:pin");
 
       passed = nonExistentInv === null && corruptDecryption === "invalid_ciphertext_not_hex" && !corruptTokenValid;
       detail = passed
@@ -1307,7 +1314,7 @@ export class IndustrialQASuite {
         passedCount,
         totalTests,
         passPercentage: Math.round((passedCount / Math.max(1, totalTests)) * 100),
-        status: allPassed ? "PRODUCTION_CERTIFIED" : "FAILED",
+        status: allPassed ? "ALL_PASSED" : "FAILED",
         results: this.results,
         benchmarks: this.benchmarks,
       };
@@ -1320,7 +1327,7 @@ export class IndustrialQASuite {
       md += `- **Waktu Uji**: \`${jsonReport.timestamp}\`\n`;
       md += `- **Total Durasi**: \`${totalDurationSec} detik\`\n`;
       md += `- **Skor Audit**: \`${passedCount}/${totalTests} Kasus Lolos (${jsonReport.passPercentage}%)\`\n`;
-      md += `- **Status Akhir**: **${allPassed ? "🏆 PRODUCTION CERTIFIED (100% PASS)" : "⚠️ FAILED"}**\n\n`;
+      md += `- **Status Akhir**: **${allPassed ? "ALL PASSED (regresi in-process; bukan sertifikasi produksi)" : "FAILED"}**\n\n`;
 
       md += `## Ringkasan Kasus Pengujian\n\n`;
       md += `| Status | Kode | Domain | Nama Kasus | Durasi | Detail |\n`;
@@ -1378,7 +1385,7 @@ export class IndustrialQASuite {
     console.log(`Skor Audit     : ${passedCount}/${totalTests} Kasus Lolos (${Math.round((passedCount / Math.max(1, totalTests)) * 100)}%)`);
 
     if (allPassed) {
-      console.log("🏆 STATUS: 100% LOLOS AUDIT KESIAPAN INDUSTRI (PRODUCTION CERTIFIED) 🏆");
+      console.log("STATUS: seluruh kasus regresi in-process lolos (bukan pengganti uji HTTP, browser, dan beban).");
     } else {
       console.log("⚠️ STATUS: DITEMUKAN KEGAGALAN DALAM PENGUJIAN KESIAPAN INDUSTRI! ⚠️");
     }

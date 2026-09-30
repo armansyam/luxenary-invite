@@ -8,9 +8,8 @@ echo "🚀 Memulai proses deployment otomatis..."
 
 # 1. Tarik pembaruan terbaru dari repository
 echo "📦 Menarik pembaruan terbaru dari Git (origin main)..."
-# Buang perubahan minor otomatis pada package-lock.json akibat beda arsitektur OS agar tidak memblokir git pull
-git checkout -- package-lock.json 2>/dev/null || true
-if ! git pull origin main; then
+PREVIOUS_COMMIT=$(git rev-parse HEAD)
+if ! git pull --ff-only origin main; then
   echo "❌ Error: Gagal menarik perubahan terbaru dari Git origin main! Deployment dihentikan untuk mencegah corrupt build."
   exit 1
 fi
@@ -79,33 +78,62 @@ if [ -z "$PIN_KEY" ] || [ "$PIN_KEY" == '""' ]; then
   fi
 fi
 
-# 4. Install Dependencies
-echo "📦 Menginstal dependensi (npm install)..."
-npm install --prefer-offline || npm install
-
-# 5. Database Setup
-echo "🗄️ Sinkronisasi skema database (Prisma)..."
-npx prisma generate
-npx prisma migrate deploy || npx prisma db push
-
-# 5a. Seed database (upsert-safe: aman dijalankan berulang — themes, settings, music presets)
-echo "🌱 Menyinkronisasi data master (Themes, Admin Settings, Music Presets)..."
-npx prisma db seed || echo "⚠️ Seed gagal atau sudah ada — lanjut deployment."
-npm run themes:sync || echo "⚠️ Themes sync gagal — lanjut deployment."
-
-# 5b. Kompilasi Cache Demo Tema Statis
-echo "🎨 Memastikan cache demo tema statis terkompilasi segar..."
-npx -y tsx -r dotenv/config -e "import('./lib/demoPublisher.ts').then(m => (m.compileAllStaticDemos || m.default.compileAllStaticDemos)()).then(n => console.log('✅ ' + n + ' demo tema berhasil dikompilasi.')).catch(e => console.warn('⚠️ Gagal pra-kompilasi demo (akan dikompilasi on-demand saat diakses):', e.message));" || true
-
-# 6. Build Aplikasi Next.js
-echo "🏗️ Membangun (Build) aplikasi Next.js... (Ini mungkin memakan waktu)"
-NODE_OPTIONS="--max-old-space-size=1536" npm run build
-if [ $? -ne 0 ]; then
-  echo "❌ Build Next.js gagal! PM2 tidak akan di-restart untuk menghindari down-time."
+# 4. Install Dependencies (persis sesuai package-lock.json)
+echo "📦 Menginstal dependensi (npm ci)..."
+if ! npm ci; then
+  echo "❌ npm ci gagal! Deployment dihentikan sebelum menyentuh database."
   exit 1
 fi
 
-# 7. Restart Server & Persist PM2
+# 5. Prisma Client & Build — dijalankan SEBELUM database disentuh.
+# Bila build gagal, skema database tetap utuh dan PM2 tetap menjalankan rilis lama.
+echo "🏗️ Membangun (Build) aplikasi Next.js... (Ini mungkin memakan waktu)"
+if ! npx prisma generate; then
+  echo "❌ prisma generate gagal! Deployment dihentikan sebelum menyentuh database."
+  exit 1
+fi
+if ! NODE_OPTIONS="--max-old-space-size=1536" npm run build; then
+  echo "❌ Build Next.js gagal! Database tidak disentuh dan PM2 tidak di-restart."
+  exit 1
+fi
+
+# 6. Backup database pra-migrasi (format custom pg_dump; pulihkan dengan pg_restore)
+DB_URL=$(grep -E "^DATABASE_URL=" .env | cut -d '=' -f2- | tr -d '"' | tr -d "'")
+# Kredensial diteruskan lewat PGHOST/PGUSER/PGPASSWORD/PGDATABASE (bukan URL): password di .env dapat memuat '@'
+# yang tidak di-encode sehingga parser URL libpq salah membaca host, dan URL tidak boleh tampil di daftar proses atau log.
+if ! eval "$(DB_URL="$DB_URL" node scripts/pg-env.cjs)"; then
+  echo "❌ DATABASE_URL di .env tidak dapat dibaca. Deployment dihentikan sebelum migrasi."
+  exit 1
+fi
+PRE_BACKUP="data/backups/pre-deploy_$(date +%Y-%m-%d_%H%M%S).dump"
+mkdir -p data/backups
+echo "💾 Membuat backup database pra-migrasi: $PRE_BACKUP"
+if ! pg_dump -Fc -f "$PRE_BACKUP"; then
+  echo "❌ Backup pra-migrasi gagal! Migrasi dibatalkan agar tidak ada perubahan skema tanpa titik pemulihan."
+  exit 1
+fi
+
+# 7. Migrasi database. Kegagalan menghentikan deploy; tidak ada fallback ke 'prisma db push'
+# karena db push melewati riwayat migrasi dan dapat membuat skema menyimpang.
+echo "🗄️ Menerapkan migrasi database (Prisma)..."
+if ! npx prisma migrate deploy; then
+  echo "❌ Migrasi database gagal! PM2 tidak di-restart (rilis lama tetap berjalan)."
+  echo "   Titik pemulihan : $PRE_BACKUP"
+  echo "   Pulihkan DB     : eval \"\$(DB_URL=<DATABASE_URL dari .env> node scripts/pg-env.cjs)\" && pg_restore --clean --if-exists --no-owner -d \"\$PGDATABASE\" $PRE_BACKUP"
+  echo "   Kode sebelumnya : git switch --detach $PREVIOUS_COMMIT"
+  exit 1
+fi
+
+# 7a. Data master (idempoten: seed tidak menghapus atau menimpa data yang dikelola admin)
+echo "🌱 Menyinkronisasi data master (Admin Settings, Music Presets, Themes)..."
+npx prisma db seed || echo "⚠️ Seed gagal — lanjut deployment."
+npm run themes:sync || echo "⚠️ Themes sync gagal — lanjut deployment."
+
+# 7b. Kompilasi Cache Demo Tema Statis
+echo "🎨 Memastikan cache demo tema statis terkompilasi segar..."
+npx -y tsx -r dotenv/config -e "import('./lib/demoPublisher.ts').then(m => (m.compileAllStaticDemos || m.default.compileAllStaticDemos)()).then(n => console.log('✅ ' + n + ' demo tema berhasil dikompilasi.')).catch(e => console.warn('⚠️ Gagal pra-kompilasi demo (akan dikompilasi on-demand saat diakses):', e.message));" || true
+
+# 8. Restart Server & Persist PM2
 echo "🔄 Merestart aplikasi..."
 if command -v pm2 &> /dev/null; then
   echo "🪵 Memastikan rotasi log PM2 (anti-disk leak) aktif..."
@@ -122,17 +150,27 @@ if command -v pm2 &> /dev/null; then
   
   # Verifikasi port lokal 3001
   echo "🩺 Melakukan health-check aplikasi lokal (port 3001)..."
-  sleep 3
-  if curl -s -f http://localhost:3001/api/public/themes > /dev/null 2>&1; then
-    echo "✅ Health check berhasil! Aplikasi merespons HTTP 200 di port 3001."
-  else
-    echo "⚠️ Peringatan: Health check lokal belum merespons instan. Cek logs dengan 'pm2 logs luxenary-invite'."
+  HEALTH_OK=0
+  for attempt in 1 2 3 4 5 6 7 8 9 10; do
+    if curl -s -f http://localhost:3001/api/health > /dev/null 2>&1; then
+      HEALTH_OK=1
+      break
+    fi
+    sleep 3
+  done
+  if [ "$HEALTH_OK" -ne 1 ]; then
+    echo "❌ Health check gagal setelah 30 detik. Deployment DITANDAI GAGAL."
+    pm2 logs luxenary-invite --lines 40 --nostream || true
+    echo "   Kode sebelumnya : git switch --detach $PREVIOUS_COMMIT && npm ci && npm run build && pm2 reload luxenary-invite"
+    echo "   Database        : pulihkan dari $PRE_BACKUP bila migrasi rilis ini tidak kompatibel dengan kode lama."
+    exit 1
   fi
+  echo "✅ Health check berhasil! Aplikasi merespons HTTP 200 di port 3001."
 else
   echo "⚠️ PM2 tidak terdeteksi di sistem ini. Silakan jalankan manual via 'npm run start'."
 fi
 
-# 8. Sinkronisasi Crontab Pemeliharaan OS Linux Otomatis
+# 9. Sinkronisasi Crontab Pemeliharaan OS Linux Otomatis
 if command -v crontab &> /dev/null; then
   echo "⏰ Memverifikasi dan menyinkronkan jadwal pemeliharaan OS (crontab)..."
   ACTUAL_CRON_SECRET=$(grep -E "^CRON_SECRET=" .env | cut -d '=' -f2 | tr -d '"' | tr -d "'")
@@ -140,8 +178,13 @@ if command -v crontab &> /dev/null; then
     CURRENT_CRON=$(crontab -l 2>/dev/null || true)
     FILTERED_CRON=$(echo "$CURRENT_CRON" | grep -v "api/cron/cleanup" | grep -v "api/cron/backup" || true)
     
-    CLEANUP_LINE="0 2 * * * curl -s -X POST -H \"Authorization: Bearer $ACTUAL_CRON_SECRET\" http://localhost:3001/api/cron/cleanup > /dev/null 2>&1"
-    BACKUP_LINE="0 3 * * * curl -s -X POST -H \"Authorization: Bearer $ACTUAL_CRON_SECRET\" http://localhost:3001/api/cron/backup > /dev/null 2>&1"
+    # Secret disimpan di berkas ber-izin 600 dan dibaca curl lewat -H @berkas, agar tidak tampil di 'crontab -l' maupun daftar proses.
+    CRON_AUTH_FILE="$(pwd)/data/.cron-auth"
+    (umask 077 && printf 'Authorization: Bearer %s\n' "$ACTUAL_CRON_SECRET" > "$CRON_AUTH_FILE")
+    chmod 600 "$CRON_AUTH_FILE"
+
+    CLEANUP_LINE="0 2 * * * curl -s -X POST -H @$CRON_AUTH_FILE http://localhost:3001/api/cron/cleanup > /dev/null 2>&1"
+    BACKUP_LINE="0 3 * * * curl -s -X POST -H @$CRON_AUTH_FILE http://localhost:3001/api/cron/backup > /dev/null 2>&1"
     
     NEW_CRON=$(printf "%s\n%s\n%s\n" "$FILTERED_CRON" "$CLEANUP_LINE" "$BACKUP_LINE" | sed '/^[[:space:]]*$/d')
     echo "$NEW_CRON" | crontab - 2>/dev/null || true

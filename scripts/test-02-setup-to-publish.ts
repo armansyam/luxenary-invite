@@ -61,9 +61,7 @@ async function runTest02() {
         loveStory: dummyLoveStory,
         staffPin: encryptedPin,
         status: "PUBLISHED",
-        publishedAt: new Date(),
-        // Setup expires at (Contoh: 1 tahun sejak publish)
-        expiresAt: new Date(Date.now() + 86400000 * 365)
+        publishedAt: new Date()
       }
     });
 

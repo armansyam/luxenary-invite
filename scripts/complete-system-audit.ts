@@ -225,7 +225,7 @@ async function runCompleteSystemAudit() {
     });
     testGuestId = guest.id;
 
-    const waText = `Halo Bpk. Bambang Pamungkas, Anda diundang: https://${testSubdomain}.luxvite.id?to=${encodeURIComponent(guest.name)}`;
+    const waText = `Halo Bpk. Bambang Pamungkas, Anda diundang: http://${testSubdomain}.localhost:3000/?to=${encodeURIComponent(guest.name)}`;
     const isCase6Passed = Boolean(guest.id) && waText.includes("Bambang") && guest.guestQuota === 2;
 
     results.push({
@@ -305,9 +305,10 @@ async function runCompleteSystemAudit() {
     const isCorrectPinValid = verifyPin("123456", testInvitation.staffPin || "");
 
     // 2. Token sesi resepsionis HMAC
-    const rcptToken = generateReceptionistToken(testInvitationId);
-    const isRcptTokenValid = verifyReceptionistToken(rcptToken, testInvitationId);
-    const isForgedTokenValid = verifyReceptionistToken("rcpt_hacked_token_123", testInvitationId);
+    const storedStaffPin = testInvitation.staffPin || "";
+    const rcptToken = generateReceptionistToken(testInvitationId, storedStaffPin);
+    const isRcptTokenValid = verifyReceptionistToken(rcptToken, testInvitationId, storedStaffPin);
+    const isForgedTokenValid = verifyReceptionistToken("rcpt_hacked_token_123", testInvitationId, storedStaffPin);
 
     // 3. Scan pertama: Tamu Check-In Berhasil
     const scan1 = await prisma.guest.update({
@@ -349,7 +350,7 @@ async function runCompleteSystemAudit() {
         invitationId: testInvitationId,
         senderName: "Bpk. Bambang Pamungkas",
         senderEmail: "bambang@example.com",
-        mediaUrl: "https://r2.luxvite.id/memories/bambang_sample.webp",
+        mediaUrl: "/memories/bambang_sample.webp",
         mediaType: "PHOTO",
         message: "Selamat!",
       },

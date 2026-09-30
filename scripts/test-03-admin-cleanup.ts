@@ -23,15 +23,10 @@ async function runTest03() {
 
     console.log(`✅ Ditemukan undangan PUBLISHED (ID: ${invitation.id})`);
 
-    // 2. Simulasi Waktu Berjalan (Time Travel): Buat undangan expired
-    const pastDate = new Date(Date.now() - 86400000 * 30); // 30 hari yang lalu
-    
+    // 2. Simulasi undangan yang sudah masuk masa arsip
     await prisma.invitation.update({
       where: { id: invitation.id },
-      data: {
-        expiresAt: pastDate,
-        status: "ARCHIVED"
-      }
+      data: { status: "ARCHIVED" }
     });
     console.log(`⏱️  Simulasi waktu: Undangan berhasil diubah statusnya menjadi ARCHIVED (Expired).`);
 

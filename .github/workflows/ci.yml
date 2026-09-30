@@ -48,6 +48,9 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
+      - name: Dependency Audit (production, critical gate)
+        run: npm audit --omit=dev --audit-level=critical
+
       - name: TypeScript Gate (tsc --noEmit)
         run: npx tsc --noEmit
 
@@ -57,8 +60,20 @@ jobs:
       - name: Prisma Migrate (Test DB)
         run: npx prisma migrate deploy
 
-      - name: Unit & Integration Tests (Vitest)
-        run: npm run test:unit
+      - name: Seed Master Data and Sync Themes (Test DB)
+        run: |
+          npx prisma db seed
+          npm run themes:sync
+
+      - name: Production Build (next build)
+        run: npx next build
+
+      - name: Unit & Integration Tests with Coverage (Vitest)
+        run: npx vitest run --coverage --reporter=default --reporter=json --outputFile.json=vitest-report.json
+
+      - name: Fail on Skipped Tests
+        run: |
+          node -e "const r=require('./vitest-report.json'); if (r.numPendingTests > 0) { console.error(r.numPendingTests + ' tes di-skip. Semua tes harus berjalan di CI.'); process.exit(1); } console.log('Tes di-skip: 0');"
 
       - name: Upload Coverage Report
         uses: actions/upload-artifact@v4

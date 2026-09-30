@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { prisma, pool } from '../lib/prisma';
+import { settleOrderAsPaid } from '../lib/paymentSettlement';
 
 async function runTest01() {
   console.log("🚀 [TEST-01] Memulai simulasi: Registrasi -> Klien Aktif...");
@@ -35,21 +36,21 @@ async function runTest01() {
     await prisma.order.update({
       where: { id: order.id },
       data: {
-        proofImageUrl: "https://example.com/dummy-proof.jpg",
+        proofImageUrl: "/uploads/dummy-proof.jpg",
         proofUploadedAt: new Date()
       }
     });
     console.log(`✅ Klien mengunggah bukti transfer manual.`);
 
-    // 4. Simulasi Admin verifikasi Order (Approve)
-    const paidOrder = await prisma.order.update({
-      where: { id: order.id },
-      data: {
-        status: "PAID",
-        paidAt: new Date(),
-        paymentGatewayRef: "MANUAL_ADMIN_APPROVAL"
-      }
-    });
+    // 4. Admin verifikasi Order (Approve) — lewat settleOrderAsPaid, inti transisi yang dipakai rute approve admin
+    const settled = await settleOrderAsPaid(order.id, { paymentGatewayRef: "MANUAL_ADMIN_APPROVAL" });
+    if (!settled) {
+      throw new Error("settleOrderAsPaid mengembalikan false: order bukan PENDING");
+    }
+    const paidOrder = await prisma.order.findUniqueOrThrow({ where: { id: order.id } });
+    if (paidOrder.status !== "PAID" || !paidOrder.paidAt) {
+      throw new Error(`Order tidak berstatus PAID setelah approve (status=${paidOrder.status})`);
+    }
     console.log(`✅ Admin menyetujui order. Status berubah menjadi PAID.`);
 
     // 5. Buat entitas Invitation berdasarkan order yang sudah PAID (menggunakan tema aktif candani)
