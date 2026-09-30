@@ -39,7 +39,7 @@
 
 | Komponen | Detail |
 |---|---|
-| **Framework** | Next.js 16.3.2 (App Router, TypeScript strict) |
+| **Framework** | Next.js 16.3.7 (App Router, TypeScript strict) |
 | **Runtime** | Node.js di VPS (bukan Vercel/Edge Function) |
 | **Database** | PostgreSQL via Prisma ORM + `@prisma/adapter-pg` |
 | **ORM** | Prisma v7.9.1 (Konfigurasi URL via `prisma.config.ts`, bukan schema) |
@@ -3007,8 +3007,8 @@ Luxenary-Invite dielevasi dari sistem undangan pernikahan murni menjadi platform
 1. **L1 RAM Cache (`publishedHtmlCache` di `lib/cache.ts`):**
    - Menghasilkan respon HTML undangan terbit dalam waktu < 0.05ms tanpa menyiksa database atau I/O disk saat lonjakan ribuan tamu undangan membuka tautan secara bersamaan.
    - Invalidation otomatis terjadi saat klien menekan tombol *Simpan Perubahan* atau *Publikasi*.
-2. **Rate Limiting 3-Tier (`lib/rateLimiter.ts`):**
-   - Membatasi serangan brute-force dan spam pada endpoint publik (RSVP, upload kenangan, scanner check-in) menggunakan token bucket algoritma sliding-window.
+2. **Rate Limiting Multi-Driver (`lib/rateLimit.ts`):**
+   - Membatasi brute-force dan spam pada login credentials, RSVP, upload, dan endpoint receptionist dengan counter jendela tetap (*fixed window*). `rateLimitDb` memakai cascade Redis REST (Upstash, bila dikonfigurasi), lalu PostgreSQL UPSERT atomik (`rate_limit_counters`), lalu memori sebagai fallback terakhir. Kunci dibentuk dari IP klien tepercaya (bagian 25.1).
 
 ### 24.4 Infrastruktur VPS Produksi (`amsdev@103.150.92.238`)
 1. **Domain:** `https://luxvite.id` via Reverse Proxy Caddy On-Demand TLS + Cloudflare DNS/Proxy.
@@ -3059,9 +3059,16 @@ Snapshot baru berformat custom `pg_dump -F c` dan berekstensi `.dump` (pulihkan 
 | `lib/safeCss.ts` | `safeCssColor`: hanya hex, rgb()/hsl() numerik, dan nama warna |
 | `lib/safeJson.ts` | `jsonForInlineScript`: JSON aman ditanam di `<script>` (meloloskan `<`, `>`, `&`, U+2028/2029) |
 | `lib/paymentSettlement.ts` | `isGatewayAmountValid` (nominal gateway harus sama dengan `chargedAmount`; order lama tanpa kolom itu boleh `>= amount`) dan `settleOrderAsPaid` (PENDING→PAID beserta efek marketing dalam satu transaksi) |
-| `lib/lifecycleCleanup.ts`, `lifecycleDates.ts`, `lifecycleSettings.ts` | Pembersihan siklus hidup, perhitungan masa aktif dari acara utama, dan pengaturan retensi |
+| `lib/lifecycleCleanup.ts`, `lifecycleDates.ts`, `lifecycleSettings.ts` | `lifecycleCleanup`: pembersihan siklus hidup (arsip, draf yatim, order lama); `lifecycleDates`: perhitungan masa aktif dari acara utama beserta parsing dan nilai bawaan pengaturan; `lifecycleSettings`: membaca pengaturan siklus hidup dari AdminSetting (server saja) |
 
 Migrasi: `20260930045346_add_order_charged_amount` (kolom `orders.chargedAmount`) dan `20260930120000_lifecycle_cleanup` (hapus kolom `invitations.expiresAt`, bersihkan kunci pengaturan usang, ubah bawaan retensi custom domain menjadi 365 hari).
+
+### 25.10 Paritas Runtime, Reproduksibilitas, dan Status Migrasi Produksi
+1. **Runtime produksi:** VPS memakai Node 20.20 dan npm 10.8; pengembangan memakai Node 24 dan npm 11. CI (`.github/workflows/ci.yml`) kini diuji pada matriks Node 20 dan 24 dan menjalankan rantai skrip alur E2E. `package.json` mendeklarasikan `engines.node >= 20.9.0`.
+2. **`overrides`:** `next-auth@5.0.0-beta.32` memiliki `peerOptional nodemailer "^7.0.7 || ^8.0.5"`. Proyek memakai nodemailer 10, yang ditolak `npm ci` di npm 10 (ERESOLVE) tetapi lolos di npm 11. `overrides.next-auth.nodemailer = "$nodemailer"` menyamakannya (provider Email NextAuth tidak dipakai).
+3. **`tsx` terkunci:** `tsx` (4.23.15) kini devDependency. Sebelumnya `prisma db seed`, `themes:sync`, skrip uji, `deploy.sh`, dan CI memakainya lewat `npx tsx` yang mengunduh dari jaringan tanpa versi terkunci.
+4. **Dependabot:** pembaruan npm mingguan (versi mayor Next/Prisma ditinjau manual) dan GitHub Actions bulanan.
+5. **Status migrasi produksi:** migrasi `20260925000000_baseline_clean` sempat tercatat gagal di database produksi (kode 42710) karena skema sebelumnya dibuat lewat `db push`. Skema produksi hanya berbeda dari `schema.prisma` pada dua pernyataan (migrasi `add_order_charged_amount` dan `lifecycle_cleanup`). Penyelesaian: `prisma migrate resolve --applied` untuk `baseline_clean`, `add_event_type`, `add_admin_permissions`, lalu `prisma migrate deploy`. Latihan pada replika skema produksi menghasilkan "Database schema is up to date" dan diff ke `schema.prisma` kosong.
 
 
 

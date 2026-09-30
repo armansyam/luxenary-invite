@@ -482,8 +482,9 @@ NEXT_PUBLIC_ROOT_DOMAIN="localhost:3000"
 
 ### 3. Setup Database
 ```bash
-# Untuk Development Lokal
-npx prisma db push
+# Untuk Development Lokal (pakai migrate deploy, sama seperti produksi; `db push` melewati riwayat migrasi dan
+# membuat tabel _prisma_migrations tidak sinkron dengan skema, itulah yang membuat `migrate deploy` produksi sempat macet)
+npx prisma migrate deploy
 npx prisma db seed
 
 # Untuk Deployment Produksi (VPS) — Baseline init terverifikasi
@@ -539,7 +540,7 @@ Untuk deployment kluster 2+ server VPS di balik Load Balancer (Cloudflare / Cadd
 | `npx tsc --noEmit`, `npm run lint`, `npm run test:hygiene` | Tipe, lint, kontrak kebersihan kode | Tidak ada |
 | `npm run test:unit` | Vitest: unit dan API dengan Prisma di-mock | Tidak ada |
 | `npx vitest run __tests__/integration` | Alur pembayaran nyata, isolasi antar user, XSS render, sintaks JavaScript inline seluruh tema, seed tidak menimpa suntingan admin, limiter tahan pemalsuan header IP, health, JSON rusak, backup `.dump`, terhadap PostgreSQL | `DATABASE_URL` menunjuk ke `luxenary_test` yang sudah di-seed (`prisma db seed` dan `themes:sync`) dan `STORAGE_PROVIDER=local`; tanpa itu suite di-skip otomatis. File tes berjalan berurutan (`fileParallelism: false`) karena berbagi DB dan `data/drafts` |
-| `npx vitest run --coverage` | Semua tes di atas dengan ambang cakupan (lantai: lines 21, functions 43, branches 49). CI menjalankan perintah ini, `next build`, `npm audit --omit=dev --audit-level=critical`, dan menggagalkan build bila ada tes yang di-skip | Sama seperti baris di atas |
+| `npx vitest run --coverage` | Semua tes di atas dengan ambang cakupan (lantai: lines 21, functions 43, branches 49). CI menjalankan perintah ini pada **Node 20 dan Node 24** (produksi VPS memakai Node 20 + npm 10; beda runtime/npm pernah menyembunyikan konflik peer dependency yang hanya gagal di npm 10), bersama `next build`, `npm audit --omit=dev --audit-level=critical`, rantai skrip alur E2E (`complete-system-audit`, `end-to-end-stress-audit`, `master-e2e-stress-test`, `test-security-penetration`, `test-theme-matrix`), dan menggagalkan build bila ada tes yang di-skip. Dependabot (`.github/dependabot.yml`) mengajukan pembaruan dependensi mingguan | Sama seperti baris di atas |
 | `npm run test:all`, `test:audit`, `test:stress`, `test:security`, `test:themes`, `test:nas`, `npx tsx scripts/test-0{1,2,3}-*.ts` | Skrip di `scripts/` (lihat [scripts/README.md](scripts/README.md)); menguji fungsi `lib/` dan constraint DB, bukan rute HTTP | Database uji berisi seed dan tema |
 
 Menyiapkan database uji terpisah (jangan memakai database kerja):
