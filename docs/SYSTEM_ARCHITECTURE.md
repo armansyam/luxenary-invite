@@ -3093,6 +3093,8 @@ Angka berikut diukur dengan merender seluruh 39 tema lewat `renderTemplateFile` 
 | Gaya `::selection` kustom | 12 / 39 | 27 tema memakai seleksi bawaan peramban |
 | `text-wrap: balance`/`pretty` | 1 / 39 | 38 tema |
 
+Status RSVP yang dikirim tema berbeda-beda (15 tema `hadir`/`tidak`; 17 tema `HADIR`/`TIDAK_HADIR`, 14 di antaranya juga `RAGU`). `lib/rsvpStatus.ts` menormalkannya ke `hadir`/`tidak`/`ragu` saat `POST /api/public/rsvp` (nilai lain: HTTP 400; nama maksimal 100 dan pesan maksimal 1000 karakter), dan dipakai juga oleh statistik dan filter dasbor klien.
+
 Tanggal acara untuk kalender dan hitung mundur diambil dari Sesi Acara Utama (`isPrimary: true`, jatuh ke sesi pertama bila tidak ada), di `lib/themeEngine.ts`. Skrip pengukurnya tidak disimpan di repo; `scripts/test-theme-matrix.ts` dan `scripts/audit-theme-integrity.ts` tetap menjadi uji rutin (render tanpa error, tanpa XSS, aset ada), bukan uji cakupan fitur.
 
 

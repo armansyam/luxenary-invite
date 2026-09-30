@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { normalizeRsvpStatus } from "@/lib/rsvpStatus";
 
 export const dynamic = "force-dynamic";
 
@@ -57,9 +58,9 @@ export async function GET(req: NextRequest) {
 
     const stats = {
       totalResponses: rsvps.length,
-      attending: rsvps.filter((r) => r.status.toLowerCase() === "hadir").reduce((sum, r) => sum + (r.guestCount || 1), 0),
-      declined: rsvps.filter((r) => r.status.toLowerCase() === "tidak").length,
-      uncertain: rsvps.filter((r) => r.status.toLowerCase() === "ragu").length,
+      attending: rsvps.filter((r) => normalizeRsvpStatus(r.status) === "hadir").reduce((sum, r) => sum + (r.guestCount || 1), 0),
+      declined: rsvps.filter((r) => normalizeRsvpStatus(r.status) === "tidak").length,
+      uncertain: rsvps.filter((r) => normalizeRsvpStatus(r.status) === "ragu").length,
       totalWishes: rsvps.filter((r) => r.message && r.message.trim().length > 0).length,
     };
 

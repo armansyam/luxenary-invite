@@ -42,9 +42,10 @@ flowchart TD
 Formulir dirancang sederhana dan cepat diisi dari smartphone:
 - **Nama Tamu:** Otomatis terisi jika tamu membuka undangan melalui link personalisasi WhatsApp (`?to=Nama+Tamu`).
 - **Pilihan Status Kehadiran:** Nilai yang dikirim form bergantung pada tema (diukur dari 39 berkas tema): 15 tema mengirim `hadir` / `tidak`; 17 tema mengirim `HADIR` / `TIDAK_HADIR` (14 di antaranya juga `RAGU`); sisanya (enam tema non-wedding dan `vintage-forest`) memakai markup tanpa `<option value>` status yang terukur.
-  - Server hanya membedakan "hadir" (tanpa peka huruf besar); hanya status ini yang menyimpan jumlah pax.
-  - Status lain, termasuk `RAGU` dan `TIDAK_HADIR`, tersimpan apa adanya dengan pax 0 dan tampil sebagai "Berhalangan" di feed ucapan. Server tidak memvalidasi nilai status terhadap daftar tertentu.
-  - **Ketidaksesuaian yang diketahui di dasbor klien:** statistik dan filter (`app/api/client/rsvps/route.ts`, `app/(client)/dashboard/rsvp/page.tsx`) membandingkan `hadir`, `tidak`, dan `ragu` tanpa peka huruf besar. `TIDAK_HADIR` tidak sama dengan `tidak`, sehingga RSVP "tidak hadir" dari tema yang mengirim `TIDAK_HADIR` tidak ikut hitungan "Tidak Hadir" dan tidak muncul di filternya (dibuktikan dengan mengevaluasi logika rute pada status sampel; belum diuji lewat sesi klien nyata). `HADIR` dan `RAGU` terhitung benar.
+  - Server menormalkan semua ragam itu ke tiga nilai kanonik lewat `lib/rsvpStatus.ts`: `hadir`, `tidak` (dari `tidak`, `TIDAK_HADIR`, `tidak hadir`), dan `ragu` (dari `ragu`, `RAGU`, `ragu-ragu`). Nilai yang tersimpan di database selalu salah satu dari tiga itu.
+  - Nilai di luar daftar (mis. `APA-SAJA`) dijawab HTTP 400 dan tidak tersimpan (diuji lewat HTTP).
+  - Hanya `hadir` yang menyimpan jumlah pax; `tidak` dan `ragu` tersimpan dengan pax 0, dan feed ucapan menampilkan keduanya sebagai "Berhalangan".
+  - Statistik, filter, dan lencana di dasbor klien (`app/api/client/rsvps/route.ts`, `app/(client)/dashboard/rsvp/page.tsx`) memakai helper yang sama, sehingga baris lama yang masih bernilai `TIDAK_HADIR` tetap terhitung sebagai "Tidak Hadir".
 - **Jumlah Pax (Orang):** Tamu terdaftar (nama cocok dengan buku tamu, tanpa peka huruf besar) dibatasi `guestQuota` yang diatur pengantin; tamu umum yang membuka tautan langsung dibatasi 2 orang. Angka yang lebih besar dipotong tanpa pesan error (diuji: kuota 4, permintaan 9, tersimpan 4).
 - **Kirim Ulang:** Nama yang sama (tanpa peka huruf besar) memperbarui baris RSVP yang sudah ada, bukan membuat baris baru (diuji: id baris sama).
 - **Kolom Doa & Ucapan:** Kotak teks untuk menyampaikan harapan tulus kepada kedua mempelai.
@@ -61,7 +62,7 @@ Untuk melindungi platform dari serangan bot dan spamming komentar:
 2. **Tidak ada honeypot maupun CAPTCHA.** Perlindungan spam hanya rate limit di atas; tidak ada field tersembunyi di rute server maupun di tema.
 3. **Penanganan XSS:**
    Nama dan pesan disimpan apa adanya. Feed ucapan untuk tamu lain di-escape (`&`, `<`, `>`) saat dirender oleh skrip yang disuntikkan mesin tema, sehingga payload `<script>` atau `<img onerror>` tampil sebagai teks (diuji dengan payload nyata). Sembilan dari 39 tema menampilkan ucapan yang baru saja dikirim pengirimnya lewat `innerHTML` tanpa escape; dampaknya terbatas pada browser pengirim sendiri (self-XSS), bukan tamu lain.
-4. **Tidak ada batas panjang input.** Nama, pesan, dan status tidak dibatasi panjangnya di server (diuji: pesan 60 KB diterima, disimpan, dan dikembalikan utuh oleh feed). Batas 10 per menit per IP dan 50 baris per pembacaan feed adalah satu-satunya pembatas.
+4. **Batas panjang dan tipe input.** `invitationId`, `guestName`, dan `message` harus berupa teks; nama maksimal 100 karakter dan pesan maksimal 1000 karakter (panjang tepat di batas diterima). Pelanggaran dijawab HTTP 400 dan tidak tersimpan (diuji lewat HTTP: nama 101 karakter dan pesan 60 KB ditolak). Feed ucapan mengembalikan paling banyak 50 baris per pembacaan.
 
 ---
 

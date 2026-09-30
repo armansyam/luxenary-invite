@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { rateLimitDb, getClientIp } from "@/lib/rateLimit";
+import { normalizeRsvpStatus, RSVP_NAME_MAX, RSVP_MESSAGE_MAX } from "@/lib/rsvpStatus";
 
 export async function GET(req: NextRequest) {
   try {
@@ -103,6 +104,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (typeof invitationId !== "string" || typeof guestName !== "string" || (message != null && typeof message !== "string")) {
+      return NextResponse.json({ error: "invitationId, guestName, dan message harus berupa teks" }, { status: 400 });
+    }
+    const normalizedStatus = normalizeRsvpStatus(status);
+    if (!normalizedStatus) {
+      return NextResponse.json({ error: "status harus hadir, tidak, atau ragu" }, { status: 400 });
+    }
+    if (guestName.trim().length > RSVP_NAME_MAX) {
+      return NextResponse.json({ error: `Nama maksimal ${RSVP_NAME_MAX} karakter` }, { status: 400 });
+    }
+    if (message && message.length > RSVP_MESSAGE_MAX) {
+      return NextResponse.json({ error: `Pesan maksimal ${RSVP_MESSAGE_MAX} karakter` }, { status: 400 });
+    }
+
     // Batas per undangan (tidak bergantung pada IP): tetap menahan banjir RSVP palsu bila IP klien tidak dapat dipercaya
     if (typeof invitationId === "string" && !(await rateLimitDb(`rsvp_post:inv:${invitationId}`, 200, 60000))) {
       return NextResponse.json({ error: "Terlalu banyak pengiriman RSVP untuk undangan ini. Silakan coba lagi sebentar." }, { status: 429 });
@@ -117,7 +132,7 @@ export async function POST(req: NextRequest) {
         rsvp: {
           id: `demo-rsvp-${Date.now()}`,
           guestName,
-          status,
+          status: normalizedStatus,
           guestCount: Number(guestCount) || 1,
           message: message || "",
           respondedAt: new Date().toISOString(),
@@ -160,7 +175,7 @@ export async function POST(req: NextRequest) {
         // - Tamu umum (URL langsung): maksimal 2 orang sesuai kebijakan platform
         const maxAllowedPax = matchingGuest && matchingGuest.guestQuota > 0 ? matchingGuest.guestQuota : 2;
         const requestedPax = Math.max(1, parseInt(String(guestCount), 10) || 1);
-        const isAttending = String(status).toLowerCase() === "hadir";
+        const isAttending = normalizedStatus === "hadir";
         const finalGuestCount = isAttending ? Math.min(requestedPax, maxAllowedPax) : 0;
 
         // 3. Cari entri RSVP eksisting untuk mencegah duplikasi (idempotent)
@@ -172,7 +187,7 @@ export async function POST(req: NextRequest) {
           return await tx.rsvp.update({
             where: { id: existingRsvp.id },
             data: {
-              status,
+              status: normalizedStatus,
               guestCount: finalGuestCount,
               message: message || null,
               respondedAt: new Date(),
@@ -185,7 +200,7 @@ export async function POST(req: NextRequest) {
             invitationId,
             guestId: matchingGuest ? matchingGuest.id : null,
             guestName: cleanGuestName,
-            status,
+            status: normalizedStatus,
             guestCount: finalGuestCount,
             message: message || null,
           },

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
+import { normalizeRsvpStatus } from "@/lib/rsvpStatus";
 
 export default function RsvpPage() {
   const [loading, setLoading] = useState(true);
@@ -65,7 +66,7 @@ export default function RsvpPage() {
   }, []);
 
   const filteredRsvps = rsvps.filter((r) => {
-    const matchesFilter = filterStatus === "all" || (r.status || "").toLowerCase() === filterStatus.toLowerCase();
+    const matchesFilter = filterStatus === "all" || normalizeRsvpStatus(r.status) === filterStatus;
     const matchesSearch =
       !search ||
       (r.guestName && r.guestName.toLowerCase().includes(search.toLowerCase())) ||
@@ -277,8 +278,8 @@ export default function RsvpPage() {
       ) : (
         <div className="bg-white rounded-2xl sm:rounded-3xl border border-stone-200 shadow-xs overflow-hidden divide-y divide-stone-100">
           {filteredRsvps.map((rsvp) => {
-            const isHadir = (rsvp.status || "").toLowerCase() === "hadir";
-            const isTidak = (rsvp.status || "").toLowerCase() === "tidak";
+            const isHadir = normalizeRsvpStatus(rsvp.status) === "hadir";
+            const isTidak = normalizeRsvpStatus(rsvp.status) === "tidak";
 
             return (
               <div

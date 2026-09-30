@@ -1394,6 +1394,7 @@ Ringkasan fungsional perubahan 1 Oktober 2026 (rincian teknis: `docs/SYSTEM_ARCH
 6. **Health check:** publik hanya status; detail untuk pemegang `CRON_SECRET`. Header `Content-Security-Policy-Report-Only` aktif dengan penerima laporan `POST /api/security/csp-report`.
 7. **Backup:** snapshot baru berekstensi `.dump` (format custom `pg_dump`; pulihkan dengan `pg_restore`). Kegagalan unggah off-site dicatat sebagai error dan dilaporkan di respons cron.
 8. **Modul yang kini tercatat:** `lib/adminAuth.ts` (guard per modul admin), `lib/receptionistGuard.ts` (verifikasi token resepsionis terhadap PIN saat ini), `lib/safeUrl.ts` (normalisasi URL aman), `lib/safeCss.ts` (warna aman), `lib/paymentSettlement.ts` (validasi nominal gateway dan transisi PAID atomik), migrasi `add_order_charged_amount` (kolom `orders.chargedAmount`).
+9. **Validasi RSVP publik:** `lib/rsvpStatus.ts` memetakan ragam status tema (`hadir`/`tidak`, `HADIR`/`RAGU`/`TIDAK_HADIR`) ke `hadir`/`tidak`/`ragu`; `POST /api/public/rsvp` menolak status lain, tipe data salah, nama di atas 100 karakter, dan pesan di atas 1000 karakter dengan HTTP 400. Statistik dasbor klien memakai helper yang sama sehingga RSVP `TIDAK_HADIR` terhitung sebagai "Tidak Hadir".
 
 
 
