@@ -3018,6 +3018,7 @@ Luxenary-Invite dielevasi dari sistem undangan pernikahan murni menjadi platform
    - 02:00 WIB: Pembersihan file draf dan data sementara (`/api/cron/cleanup`).
    - 03:00 WIB: Pencadangan otomatis database PostgreSQL (`/api/cron/backup`).
 5. **Pemanggilan cron:** `deploy.sh` menulis `Authorization: Bearer <CRON_SECRET>` ke `data/.cron-auth` (izin 600) dan crontab memakai `curl -H @data/.cron-auth`, sehingga secret tidak tampil di `crontab -l` maupun daftar proses.
+6. **Pemulihan otomatis proses yang macet:** crontab juga menjalankan `scripts/health-watch.sh` tiap menit. Skrip memanggil `http://localhost:3001/api/health` (timeout 10 detik) dan menjalankan `pm2 restart luxenary-invite` hanya bila tidak ada respons HTTP sama sekali (kode 000) 3 kali berturut-turut, maksimal satu restart per 15 menit. Respons HTTP apa pun, mis. 503 saat database bermasalah, tidak memicu restart. Jejak di `logs/health-watch.log`, status di `data/.health-watch-fails` dan `data/.health-watch-restart`. Skrip tidak mengirim notifikasi; peringatan ke pemilik memerlukan pemantau luar (mis. UptimeRobot terhadap `https://<domain>/api/health`).
 
 ---
 

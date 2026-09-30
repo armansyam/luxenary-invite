@@ -208,7 +208,7 @@ if command -v crontab &> /dev/null; then
   ACTUAL_CRON_SECRET=$(grep -E "^CRON_SECRET=" .env | cut -d '=' -f2 | tr -d '"' | tr -d "'")
   if [ -n "$ACTUAL_CRON_SECRET" ] && [ "$ACTUAL_CRON_SECRET" != '""' ]; then
     CURRENT_CRON=$(crontab -l 2>/dev/null || true)
-    FILTERED_CRON=$(echo "$CURRENT_CRON" | grep -v "api/cron/cleanup" | grep -v "api/cron/backup" || true)
+    FILTERED_CRON=$(echo "$CURRENT_CRON" | grep -v "api/cron/cleanup" | grep -v "api/cron/backup" | grep -v "scripts/health-watch.sh" || true)
     
     # Secret disimpan di berkas ber-izin 600 dan dibaca curl lewat -H @berkas, agar tidak tampil di 'crontab -l' maupun daftar proses.
     CRON_AUTH_FILE="$(pwd)/data/.cron-auth"
@@ -218,9 +218,11 @@ if command -v crontab &> /dev/null; then
     CLEANUP_LINE="0 2 * * * curl -s -X POST -H @$CRON_AUTH_FILE http://localhost:3001/api/cron/cleanup > /dev/null 2>&1"
     BACKUP_LINE="0 3 * * * curl -s -X POST -H @$CRON_AUTH_FILE http://localhost:3001/api/cron/backup > /dev/null 2>&1"
     
-    NEW_CRON=$(printf "%s\n%s\n%s\n" "$FILTERED_CRON" "$CLEANUP_LINE" "$BACKUP_LINE" | sed '/^[[:space:]]*$/d')
+    WATCH_LINE="* * * * * PATH=/usr/local/bin:/usr/bin:/bin bash $(pwd)/scripts/health-watch.sh"
+
+    NEW_CRON=$(printf "%s\n%s\n%s\n%s\n" "$FILTERED_CRON" "$CLEANUP_LINE" "$BACKUP_LINE" "$WATCH_LINE" | sed '/^[[:space:]]*$/d')
     echo "$NEW_CRON" | crontab - 2>/dev/null || true
-    echo "✅ Crontab OS disinkronkan: Cleanup (02:00) & Backup (03:00) dengan token aktif."
+    echo "✅ Crontab OS disinkronkan: Cleanup (02:00), Backup (03:00), dan pemantau health (tiap menit) dengan token aktif."
   else
     echo "⚠️ CRON_SECRET tidak ditemukan di .env — sinkronisasi crontab dilewati."
   fi

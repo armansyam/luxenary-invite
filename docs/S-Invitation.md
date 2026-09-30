@@ -1078,7 +1078,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 
 4. **Otomatisasi Pendaftaran Crontab OS & Rotasi Log PM2 (`deploy.sh`):**
    - Menanamkan instalasi dan konfigurasi otomatis `pm2-logrotate` (maksimal 10MB x 7 rotasi terkompresi).
-   - Menanamkan pendaftaran otomatis jadwal pemeliharaan `/api/cron/cleanup` (02:00) dan `/api/cron/backup` (03:00) ke dalam crontab Linux host saat deployment, menghilangkan kebutuhan intervensi manual oleh engineer IT.
+   - Menanamkan pendaftaran otomatis jadwal pemeliharaan `/api/cron/cleanup` (02:00) dan `/api/cron/backup` (03:00) ke dalam crontab Linux host saat deployment, menghilangkan kebutuhan intervensi manual oleh engineer IT. Crontab yang sama menjalankan `scripts/health-watch.sh` tiap menit untuk memulihkan proses aplikasi yang macet (tidak ada respons `/api/health` 3 kali berturut-turut) lewat `pm2 restart luxenary-invite`.
 
 ---
 

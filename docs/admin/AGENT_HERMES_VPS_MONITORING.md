@@ -179,7 +179,10 @@ Sistem memiliki jadwal otomatis yang tersinkronisasi di crontab Linux:
 ```
 0 2 * * * -> /api/cron/cleanup (Pembersihan draf usang & daur ulang subdomain)
 0 3 * * * -> /api/cron/backup  (Pencadangan snapshot PostgreSQL)
+* * * * * -> scripts/health-watch.sh (restart luxenary-invite bila /api/health tidak merespons 3 menit berturut-turut; jejak di logs/health-watch.log)
 ```
+
+Baris `logs/health-watch.log` yang berisi "pm2 restart luxenary-invite" berarti aplikasi sempat macet dan dipulihkan otomatis; laporkan sebagai insiden meski layanan sudah pulih.
 
 Hermes wajib memverifikasi hasil eksekusinya setiap pagi:
 
