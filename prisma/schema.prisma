@@ -76,6 +76,7 @@ model Order {
   promoCodeApplied    String?
   discountAmount      Decimal?             @db.Decimal(12, 2)
   promoCouponId       String?
+  chargedAmount       Decimal?             @db.Decimal(12, 2)
   createdAt           DateTime             @default(now())
   gatewayId           String?
   gatewayTxId         String?
@@ -108,7 +109,6 @@ model Invitation {
   brideSlug            String
   status               InvitationStatus  @default(DRAFT)
   publishedAt          DateTime?
-  expiresAt            DateTime?
   eventData            String?
   loveStory            String?
   bankAccounts         String?

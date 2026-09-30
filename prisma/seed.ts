@@ -1,7 +1,8 @@
-import { PrismaClient, Prisma } from '@prisma/client'
+import { PrismaClient } from '@prisma/client'
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import path from "path";
 import * as dotenv from "dotenv";
 import { defaultAdminSettings, defaultMusicPresets } from "./defaultSettings";
@@ -13,348 +14,9 @@ const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
-const themes: Prisma.ThemeCreateInput[] = [
-  // Minimalist Series (4)
-  {
-    id: 'kalandra',
-    name: 'Kalandra',
-    category: 'minimalist',
-    series: 'Minimalist',
-    description: 'THE WEDDING OF — Modern, Elegan & Minimalis Editorial',
-    previewUrl: '/demo/kalandra',
-    isPremium: true,
-    isActive: true,
-    sortOrder: 1,
-  },
-  {
-    id: 'valente',
-    name: 'Valente',
-    category: 'minimalist',
-    series: 'Minimalist',
-    description: 'A CELEBRATION OF LOVE — Elegan, Mewah & Berkelas',
-    previewUrl: '/demo/valente',
-    isPremium: true,
-    isActive: true,
-    sortOrder: 2,
-  },
-  {
-    id: 'aurelia',
-    name: 'Aurelia',
-    category: 'minimalist',
-    series: 'Minimalist',
-    description: 'ROYAL LUXURY CELEBRATION — Sentuhan Emas & Kemegahan Kerajaan',
-    previewUrl: '/demo/aurelia',
-    isPremium: true,
-    isActive: true,
-    sortOrder: 3,
-  },
-  {
-    id: 'artisan',
-    name: 'Artisan',
-    category: 'minimalist',
-    series: 'Minimalist',
-    description: 'HANDCRAFTED IN LOVE — Sentuhan Artistik & Tipografi Organik',
-    previewUrl: '/demo/artisan',
-    isPremium: true,
-    isActive: true,
-    sortOrder: 4,
-  },
-  // Modern Series (6)
-  {
-    id: 'ameera',
-    name: 'Ameera',
-    category: 'modern',
-    series: 'Modern',
-    description: 'CONTEMPORARY HERITAGE — Perpaduan Estetika Timur & Modern',
-    previewUrl: '/demo/ameera',
-    isPremium: false,
-    isActive: true,
-    sortOrder: 5,
-  },
-  {
-    id: 'chronicle',
-    name: 'Chronicle',
-    category: 'modern',
-    series: 'Modern',
-    description: 'HIGH-FASHION VOGUE EDITORIAL — Estetika Majalah Mode Kontemporer',
-    previewUrl: '/demo/chronicle',
-    isPremium: false,
-    isActive: true,
-    sortOrder: 6,
-  },
-  {
-    id: 'lumina',
-    name: 'Lumina',
-    category: 'modern',
-    series: 'Modern',
-    description: 'MINIMALIST GLASS & CINEMA — Sinematik Bersih dengan Efek Glassmorphism',
-    previewUrl: '/demo/lumina',
-    isPremium: false,
-    isActive: true,
-    sortOrder: 7,
-  },
-  {
-    id: 'papercut',
-    name: 'Papercut',
-    category: 'modern',
-    series: 'Modern',
-    description: 'TEXTURED CRAFT & MINIMALIST — Keanggunan Tekstur Kertas Alami',
-    previewUrl: '/demo/papercut',
-    isPremium: false,
-    isActive: true,
-    sortOrder: 8,
-  },
-  {
-    id: 'solaria',
-    name: 'Solaria',
-    category: 'modern',
-    series: 'Modern',
-    description: 'WARM SUNSET BOTANICAL — Kehangatan Golden Hour & Botani Segar',
-    previewUrl: '/demo/solaria',
-    isPremium: false,
-    isActive: true,
-    sortOrder: 9,
-  },
-  {
-    id: 'wave',
-    name: 'Wave',
-    category: 'modern',
-    series: 'Modern',
-    description: 'DYNAMIC FLUID OCEAN — Aliran Gelombang Modern Dinamis & Segar',
-    previewUrl: '/demo/wave',
-    isPremium: false,
-    isActive: true,
-    sortOrder: 10,
-  },
-  {
-    id: 'badrika',
-    name: 'Badrika',
-    category: 'modern',
-    series: 'Modern',
-    description: 'ARCHITECTURAL EDITORIAL — Garis Lengkung Mewah & Tipografi Kontemporer',
-    previewUrl: '/demo/badrika',
-    isPremium: false,
-    isActive: true,
-    sortOrder: 11,
-  },
-  {
-    id: 'candani',
-    name: 'Candani',
-    category: 'modern',
-    series: 'Modern',
-    description: 'BOTANICAL WARMTH — Kehangatan Nuansa Alam & Tipografi Modern Bersih',
-    previewUrl: '/demo/candani',
-    isPremium: false,
-    isActive: true,
-    sortOrder: 12,
-  },
-  {
-    id: 'mayang',
-    name: 'Mayang',
-    category: 'modern',
-    series: 'Modern',
-    description: 'CONTEMPORARY GOLDEN CHIC — Kilau Emas Minimalis & Elegan',
-    previewUrl: '/demo/mayang',
-    isPremium: false,
-    isActive: true,
-    sortOrder: 13,
-  },
-  // Traditional Series
-  {
-    id: 'dillalucky',
-    name: 'Dilla Lucky',
-    category: 'traditional',
-    series: 'Traditional',
-    description: 'Kehangatan Adat Melayu & Padang Modern',
-    previewUrl: '/demo/dillalucky',
-    isPremium: false,
-    isActive: true,
-    sortOrder: 14,
-  },
-  {
-    id: 'prameswari',
-    name: 'Prameswari',
-    category: 'traditional',
-    series: 'Traditional',
-    description: 'Royal Heritage Tradisional Agung Nan Sarat Makna',
-    previewUrl: '/demo/prameswari',
-    isPremium: false,
-    isActive: true,
-    sortOrder: 15,
-  },
-  {
-    id: 'lagaligo',
-    name: 'La Galigo',
-    category: 'traditional',
-    series: 'Traditional',
-    description: 'Kemegahan Adat Bugis-Makassar Berbalut Hijau Zamrud & Kilau Benang Emas',
-    previewUrl: '/demo/lagaligo',
-    isPremium: false,
-    isActive: true,
-    sortOrder: 16,
-  },
-  {
-    id: 'toraja',
-    name: 'Toraja',
-    category: 'traditional',
-    series: 'Traditional',
-    description: 'Kemegahan Adat Toraja Rampuan Lolo Berbalut Crimson Marun & Kilau Emas Tongkonan',
-    previewUrl: '/demo/toraja',
-    isPremium: false,
-    isActive: true,
-    sortOrder: 17,
-  },
-  {
-    id: 'bugis',
-    name: 'Bugis',
-    category: 'traditional',
-    series: 'Traditional',
-    description: 'Kemegahan Adat Bugis Berbalut Royal Maroon & Kilau Emas Tenun Saoraja',
-    previewUrl: '/demo/bugis',
-    isPremium: false,
-    isActive: true,
-    sortOrder: 18,
-  },
-  {
-    id: 'makassar',
-    name: 'Makassar',
-    category: 'traditional',
-    series: 'Traditional',
-    description: 'Kemegahan Adat Makassar Siri\' na Pacce Berbalut Royal Navy & Emas Kehormatan Phinisi',
-    previewUrl: '/demo/makassar',
-    isPremium: false,
-    isActive: true,
-    sortOrder: 19,
-  },
-  {
-    id: 'rantepao',
-    name: 'Rantepao',
-    category: 'traditional',
-    series: 'Traditional',
-    description: 'Kemegahan Adat Toraja Rantepao Berbalut Crimson Marun & Kilau Emas Bambu',
-    previewUrl: '/demo/rantepao',
-    isPremium: false,
-    isActive: true,
-    sortOrder: 20,
-  },
-  {
-    id: 'makale',
-    name: 'Makale',
-    category: 'traditional',
-    series: 'Traditional',
-    description: 'Kemegahan Adat Tana Toraja Makale Berbalut Royal Earth Crimson & Kilau Emas Tongkonan',
-    previewUrl: '/demo/makale',
-    isPremium: false,
-    isActive: true,
-    sortOrder: 21,
-  },
-  {
-    id: 'bone',
-    name: 'Bone',
-    category: 'traditional',
-    series: 'Traditional',
-    description: 'Kemegahan Adat Bangsawan Bugis Bone Berbalut Maroon & Emas Saoraja Lamurukung',
-    previewUrl: '/demo/bone',
-    isPremium: false,
-    isActive: true,
-    sortOrder: 22,
-  },
-  {
-    id: 'wajo',
-    name: 'Wajo',
-    category: 'traditional',
-    series: 'Traditional',
-    description: 'Keindahan Adat Bugis Wajo Berbalut Sutera Sengkang & Emas Saoraja Bettempola',
-    previewUrl: '/demo/wajo',
-    isPremium: false,
-    isActive: true,
-    sortOrder: 23,
-  },
-  {
-    id: 'soppeng',
-    name: 'Soppeng',
-    category: 'traditional',
-    series: 'Traditional',
-    description: 'Keanggunan Adat Bugis Soppeng Bumi Latemmamala Berbalut Maroon & Emas Royal Villa Yuliana',
-    previewUrl: '/demo/soppeng',
-    isPremium: false,
-    isActive: true,
-    sortOrder: 24,
-  },
-  {
-    id: 'gowa',
-    name: 'Gowa',
-    category: 'traditional',
-    series: 'Traditional',
-    description: 'Keagungan Adat Kesultanan Gowa Berbalut Royal Navy & Emas Istana Balla Lompoa',
-    previewUrl: '/demo/gowa',
-    isPremium: false,
-    isActive: true,
-    sortOrder: 25,
-  },
-  {
-    id: 'maros',
-    name: 'Maros',
-    category: 'traditional',
-    series: 'Traditional',
-    description: 'Pesona Adat Makassar Maros Butta Salewangang Berbalut Royal Navy & Emas Karst Rammang-Rammang',
-    previewUrl: '/demo/maros',
-    isPremium: false,
-    isActive: true,
-    sortOrder: 26,
-  },
-  {
-    id: 'takalar',
-    name: 'Takalar',
-    category: 'traditional',
-    series: 'Traditional',
-    description: 'Kemegahan Adat Makassar Takalar Bumi Panrannuangku Berbalut Royal Navy & Emas Sanrobone',
-    previewUrl: '/demo/takalar',
-    isPremium: false,
-    isActive: true,
-    sortOrder: 27,
-  },
-  {
-    id: 'bulukumba',
-    name: 'Bulukumba',
-    category: 'traditional',
-    series: 'Traditional',
-    description: 'Keperkasaan Adat Makassar Bulukumba Bumi Panrita Lopi Berbalut Royal Navy & Emas Bahtera Phinisi',
-    previewUrl: '/demo/bulukumba',
-    isPremium: false,
-    isActive: true,
-    sortOrder: 28,
-  },
-]
-
-
 async function main() {
-  // Purge any obsolete themes not in the official 15 standalone list
-  const validIds = themes.map((t) => t.id);
-  await prisma.theme.deleteMany({
-    where: {
-      id: { notIn: validIds },
-    },
-  });
-
-  // Create default themes (upsert to handle re-runs)
-  for (const theme of themes) {
-    await prisma.theme.upsert({
-      where: { id: theme.id },
-      create: theme,
-      update: {
-        name: theme.name,
-        category: theme.category,
-        series: theme.series,
-        description: theme.description,
-        previewUrl: theme.previewUrl,
-        isPremium: theme.isPremium,
-        isActive: theme.isActive,
-        sortOrder: theme.sortOrder,
-      },
-    })
-  }
-  console.log(`✅ Themes seeded: ${themes.length} themes.`);
+  // Tema dikelola oleh scripts/sync-themes.ts (npm run themes:sync), yang memindai berkas tema
+  // dan mempertahankan isPremium/isActive yang diubah admin. Seed sengaja tidak menyentuh tabel themes.
 
   // Seed default admin settings (84 items)
   for (const s of defaultAdminSettings) {
@@ -388,50 +50,49 @@ async function main() {
         isActive: m.isActive,
         sortOrder: m.sortOrder,
       },
-      update: {
-        title: m.title,
-        composer: m.composer,
-        genre: m.genre,
-        durationSec: m.durationSec,
-        isActive: m.isActive,
-        sortOrder: m.sortOrder,
-      },
+      // Preset yang sudah ada dibiarkan apa adanya: admin dapat mengubah judul, status aktif, dan urutan lewat panel.
+      update: {},
     });
   }
   console.log(`✅ Music presets seeded: ${defaultMusicPresets.length} presets.`);
 
-  // Seed Admins (Super Admin & Admin)
-  const defaultPasswordHash = await bcrypt.hash('admin123', 10);
-  const defaultAdmins = [
-    {
-      username: 'admin',
-      email: 'admin@luxenary.com',
-      name: 'Super Admin',
-      role: 'SUPER_ADMIN' as const,
-    },
-    {
-      username: 'zulham',
-      email: 'zulhamikor@gmail.com',
-      name: 'Admin Zulham',
-      role: 'ADMIN' as const,
-    },
-  ];
-
-  for (const adm of defaultAdmins) {
-    const existing = await prisma.admin.findUnique({ where: { email: adm.email } });
-    if (!existing) {
+  // Seed Super Admin awal. Identitas dan password berasal dari environment; tidak ada kredensial bawaan.
+  const seedAdminEmail = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
+  if (!seedAdminEmail) {
+    console.warn('⚠️  SEED_ADMIN_EMAIL tidak diset: akun Super Admin tidak dibuat. Set SEED_ADMIN_EMAIL (dan opsional SEED_ADMIN_PASSWORD) lalu jalankan ulang seed.');
+  } else {
+    const existingAdmin = await prisma.admin.findUnique({ where: { email: seedAdminEmail } });
+    if (!existingAdmin) {
+      const providedPassword = process.env.SEED_ADMIN_PASSWORD?.trim();
+      if (providedPassword !== undefined && providedPassword.length > 0 && providedPassword.length < 12) {
+        throw new Error('SEED_ADMIN_PASSWORD minimal 12 karakter.');
+      }
+      const initialPassword = providedPassword || crypto.randomBytes(15).toString('base64url');
       await prisma.admin.create({
         data: {
-          username: adm.username,
-          email: adm.email,
-          name: adm.name,
-          role: adm.role,
-          passwordHash: defaultPasswordHash,
+          username: process.env.SEED_ADMIN_USERNAME?.trim() || 'superadmin',
+          email: seedAdminEmail,
+          name: process.env.SEED_ADMIN_NAME?.trim() || 'Super Admin',
+          role: 'SUPER_ADMIN',
+          passwordHash: await bcrypt.hash(initialPassword, 12),
         },
       });
+      console.log(`✅ Super Admin dibuat: ${seedAdminEmail}`);
+      if (!providedPassword) {
+        console.log(`🔐 Password awal (hanya ditampilkan sekali, simpan sekarang): ${initialPassword}`);
+      }
+    } else {
+      console.log(`✅ Super Admin sudah ada: ${seedAdminEmail}`);
     }
   }
-  console.log(`✅ Admins verified & seeded: ${defaultAdmins.length} admins.`);
+
+  // Peringatan keras jika masih ada akun admin yang memakai password bawaan lama.
+  const allAdmins = await prisma.admin.findMany({ select: { email: true, passwordHash: true } });
+  for (const adm of allAdmins) {
+    if (adm.passwordHash && await bcrypt.compare('admin123', adm.passwordHash)) {
+      console.error(`🚨 AKUN ADMIN MEMAKAI PASSWORD BAWAAN LAMA: ${adm.email} — segera ganti password di Portal Admin.`);
+    }
+  }
 
   console.log('✨ Master database seed executed successfully!')
 }
