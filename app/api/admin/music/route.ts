@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireAdminModule } from "@/lib/adminAuth";
 import { prisma } from "@/lib/prisma";
 import fs from "fs";
 import path from "path";
@@ -10,12 +10,8 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const session = await auth();
-    const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
-
-    if (!session?.user || !isAdmin) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("themes");
+    if (!guard.ok) return guard.response;
 
     // Auto-sync file fisik audio dari folder public/music/ jika belum terdaftar di database
     await syncPhysicalMusicPresets();
@@ -36,12 +32,8 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
-
-    if (!session?.user || !isAdmin) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("themes");
+    if (!guard.ok) return guard.response;
 
     const formData = await req.formData();
     const file = formData.get("file") as File | null;

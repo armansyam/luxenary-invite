@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { paymentEmitter } from "@/lib/paymentEvents";
+import { logger } from "@/lib/logger";
 import { deleteFile } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
@@ -70,7 +71,9 @@ export async function POST(
           },
         });
       }
-    } catch {}
+    } catch (auditErr) {
+      logger.error("AdminRejectOrder", "Gagal mencatat AdminAuditLog penolakan order", auditErr, { orderId });
+    }
 
     // Push notifikasi real-time ke browser klien via SSE
     // Klien menerima event REJECTED secara instan — tidak perlu polling

@@ -2,7 +2,9 @@ import { XenditGateway } from "@/lib/gateways/xendit";
 import { prisma } from "@/lib/prisma";
 import { applyUpgradePlan } from "@/lib/upgradeHelper";
 import { paymentEmitter } from "@/lib/paymentEvents";
-import { processOrderPaidMarketing, releaseOrderPromoHold } from "@/lib/marketing";
+import { releaseOrderPromoHold } from "@/lib/marketing";
+import { isGatewayAmountValid, settleOrderAsPaid } from "@/lib/paymentSettlement";
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
@@ -21,19 +23,22 @@ import { NextRequest, NextResponse } from "next/server";
 async function getXenditWebhookTokens(): Promise<string[]> {
   const tokens: string[] = [];
   if (process.env.XENDIT_WEBHOOK_TOKEN) tokens.push(process.env.XENDIT_WEBHOOK_TOKEN);
-  try {
-    const setting = await prisma.adminSetting.findUnique({
-      where: { key: "xendit_webhook_token" },
-    });
-    if (setting?.value) tokens.push(setting.value);
-  } catch {}
+  const setting = await prisma.adminSetting.findUnique({
+    where: { key: "xendit_webhook_token" },
+  });
+  if (setting?.value) tokens.push(setting.value);
   return Array.from(new Set(tokens.filter((t) => t && !t.includes("your_"))));
 }
 
 export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
-    const body = JSON.parse(rawBody);
+    let body: any;
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
 
     // orderId adalah external_id yang kita kirim saat membuat invoice
     const orderId = body.external_id;
@@ -86,7 +91,9 @@ export async function POST(req: NextRequest) {
         },
       });
       webhookLogId = log.id;
-    } catch {}
+    } catch (err) {
+      logger.error("XenditWebhook", "Gagal merekam webhookLog ke database", err, { orderId });
+    }
 
     const isPaid = xenditStatus === "PAID" || xenditStatus === "SETTLED";
     const isExpired = xenditStatus === "EXPIRED";
@@ -108,32 +115,49 @@ export async function POST(req: NextRequest) {
     }
 
     if (isPaid) {
-      // Idempotency Guard: updateMany dengan filter status=PENDING — atomic check-and-set
-      // Mencegah double-processing jika Xendit kirim webhook duplikat bersamaan
-      const updated = await prisma.order.updateMany({
-        where: { id: orderId, status: "PENDING" },
-        data: {
-          status: "PAID",
-          paymentMethod: "GATEWAY",
-          paymentGatewayRef: body.id || null,
-          paidAt: new Date(),
-        },
+      // Nominal yang dibayar harus sama dengan nominal yang ditagihkan saat init gateway
+      const orderForAmount = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: { amount: true, chargedAmount: true },
       });
-
-      // Jika count=0, order sudah di-update sebelumnya — return idempotent
-      if (updated.count === 0) {
-        return NextResponse.json({ status: "ok", note: "already_processed" });
+      if (!orderForAmount) {
+        return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      }
+      const paidAmount = Number(body.paid_amount ?? body.amount);
+      if (!isGatewayAmountValid(orderForAmount, paidAmount)) {
+        logger.error("XenditWebhook", `Nominal tidak cocok, order ${orderId} tidak dilunasi.`, undefined, {
+          orderId,
+          paidAmount,
+          chargedAmount: orderForAmount.chargedAmount?.toString() ?? null,
+          amount: orderForAmount.amount.toString(),
+        });
+        if (webhookLogId) {
+          await prisma.webhookLog.update({
+            where: { id: webhookLogId },
+            data: { status: "amount_mismatch", processedAt: new Date() },
+          });
+        }
+        return NextResponse.json({ status: "ignored", reason: "amount_mismatch" }, { status: 200 });
       }
 
-      // Konsumsi PromoHold dan catat komisi mitra jika ada
-      await processOrderPaidMarketing(orderId);
+      // Transisi PENDING -> PAID + marketing dalam satu transaksi (atomic check-and-set,
+      // aman terhadap webhook duplikat bersamaan)
+      const settled = await settleOrderAsPaid(orderId, {
+        paymentMethod: "GATEWAY",
+        paymentGatewayRef: body.id || null,
+      });
+
+      // Order sudah diproses sebelumnya — return idempotent
+      if (!settled) {
+        return NextResponse.json({ status: "ok", note: "already_processed" });
+      }
 
       // Update webhook log
       if (webhookLogId) {
         await prisma.webhookLog.update({
           where: { id: webhookLogId },
           data: { status: "processed", processedAt: new Date() },
-        }).catch(() => {});
+        }).catch((err) => logger.warn("XenditWebhook", "Gagal memperbarui status webhookLog", { orderId, error: String(err) }));
       }
 
       // Ambil planType untuk SSE emit

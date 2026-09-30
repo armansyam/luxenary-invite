@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { isAdminSession, requireAnyAdmin } from "@/lib/adminAuth";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
@@ -11,12 +12,7 @@ import { prisma } from "@/lib/prisma";
 export async function GET() {
   const session = await auth();
 
-  const isAdmin =
-    (session?.user as any)?.isAdmin === true ||
-    (session?.user as any)?.role === "ADMIN" ||
-    (session?.user as any)?.role === "SUPER_ADMIN";
-
-  if (!session?.user || !isAdmin) {
+  if (!session?.user || !isAdminSession(session)) {
     return NextResponse.json({ isRemote: false });
   }
 
@@ -45,15 +41,8 @@ export async function GET() {
  * Menghapus cookie remote → Admin kembali ke mode normal.
  */
 export async function DELETE() {
-  const session = await auth();
-  const isAdmin =
-    (session?.user as any)?.isAdmin === true ||
-    (session?.user as any)?.role === "ADMIN" ||
-    (session?.user as any)?.role === "SUPER_ADMIN";
-
-  if (!session?.user || !isAdmin) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const guard = await requireAnyAdmin();
+  if (!guard.ok) return guard.response;
 
   const cookieStore = await cookies();
   cookieStore.delete("lux_remote_client_id");

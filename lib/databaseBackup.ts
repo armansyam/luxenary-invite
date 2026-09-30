@@ -5,6 +5,7 @@ import { exec, execFile } from "child_process";
 import { promisify } from "util";
 import { STORAGE_PROVIDER, s3Client } from "@/lib/storage";
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { logger } from "@/lib/logger";
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
@@ -193,6 +194,10 @@ export function getLibpqDbUrl(rawUrl: string): string {
 }
 
 // Buat snapshot database instan
+// Snapshot baru berformat custom pg_dump (-F c) dan diberi ekstensi .dump; pulihkan dengan pg_restore, bukan psql.
+// .sql dan .backup tetap dikenali karena snapshot lama memakai ekstensi tersebut.
+export const isSnapshotFile = (name: string) => [".dump", ".sql", ".backup"].some((ext) => name.endsWith(ext));
+
 export async function createDatabaseSnapshot(customLabel?: string): Promise<{ filename: string; sizeBytes: number; sizeFormatted: string; path: string; offsiteSynced?: boolean }> {
   let backupPathSetting: string | undefined;
   try {
@@ -204,12 +209,12 @@ export async function createDatabaseSnapshot(customLabel?: string): Promise<{ fi
   const rawDbUrl = await getActiveDbUrl();
   const libpqDbUrl = getLibpqDbUrl(rawDbUrl);
 
-  // Format penamaan: snapshot_{YYYY-MM-DD_HH-mm-ss}_{label}.sql
+  // Format penamaan: snapshot_{YYYY-MM-DD_HH-mm-ss}_{label}.dump
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
   const timestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
   const labelSuffix = customLabel ? `_${customLabel.replace(/[^a-zA-Z0-9_-]/g, "")}` : "";
-  const filename = `snapshot_${timestamp}${labelSuffix}.sql`;
+  const filename = `snapshot_${timestamp}${labelSuffix}.dump`;
   const targetPath = path.join(backupDir, filename);
 
   // Jalankan pg_dump untuk membackup database
@@ -247,7 +252,7 @@ export async function createDatabaseSnapshot(customLabel?: string): Promise<{ fi
       offsiteSynced = true;
       console.log(`[Backup Engine] Off-site snapshot berhasil diunggah ke R2: backups/database/${filename}`);
     } catch (r2Err: any) {
-      console.warn(`[Backup Engine] Gagal mengunggah snapshot ke R2 (Off-site backup skipped):`, r2Err.message);
+      logger.error("BackupEngine", `Unggah off-site ke R2 gagal; ${filename} hanya tersimpan di disk lokal`, r2Err);
     }
   }
 
@@ -280,7 +285,7 @@ export async function listDatabaseSnapshots(): Promise<SnapshotItem[]> {
   const snapshots: SnapshotItem[] = [];
 
   for (const f of files) {
-    if (!f.endsWith(".sql") && !f.endsWith(".backup")) continue;
+    if (!isSnapshotFile(f)) continue;
     const fullPath = path.join(backupDir, f);
     try {
       const stat = await fs.promises.stat(fullPath);
@@ -384,7 +389,7 @@ export async function pruneOldSnapshots(keepCount: number, backupDir: string) {
   const snapshots: Array<{ name: string; time: number; path: string }> = [];
 
   for (const f of files) {
-    if (!f.endsWith(".sql") && !f.endsWith(".backup")) continue;
+    if (!isSnapshotFile(f)) continue;
     const p = path.join(backupDir, f);
     try {
       const stat = await fs.promises.stat(p);

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { paymentEmitter } from "@/lib/paymentEvents";
 import { applyUpgradePlan } from "@/lib/upgradeHelper";
-import { processOrderPaidMarketing } from "@/lib/marketing";
+import { settleOrderAsPaid } from "@/lib/paymentSettlement";
 
 export const dynamic = "force-dynamic";
 
@@ -46,18 +46,15 @@ export async function POST(
       }, { status: 400 });
     }
 
-    // Update order status ke PAID
-    await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        status: "PAID",
-        paidAt: new Date(),
-        paymentGatewayRef: "MANUAL_ADMIN_APPROVAL",
-      },
+    // Transisi PENDING -> PAID + konsumsi PromoHold + komisi mitra dalam satu transaksi
+    const settled = await settleOrderAsPaid(orderId, {
+      paymentGatewayRef: "MANUAL_ADMIN_APPROVAL",
     });
-
-    // Konsumsi PromoHold dan catat komisi mitra jika ada
-    await processOrderPaidMarketing(orderId);
+    if (!settled) {
+      return NextResponse.json({
+        error: "Order sudah diproses oleh proses lain. Muat ulang daftar order.",
+      }, { status: 409 });
+    }
 
     // Log audit internal staf & webhook
     try {

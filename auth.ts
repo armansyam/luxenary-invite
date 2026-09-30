@@ -9,7 +9,9 @@ import dns from "node:dns";
 // Ensure IPv4 first to prevent IPv6 route-to-host timeouts (EHOSTUNREACH) on outbound OAuth discovery
 try {
   dns.setDefaultResultOrder("ipv4first");
-} catch {}
+} catch {
+  // Runtime tanpa dukungan setDefaultResultOrder: urutan DNS bawaan dipakai; hanya optimasi, bukan syarat fungsi.
+}
 
 // Google OAuth credentials dibaca dari .env (bukan dari database)
 // Untuk mengubah credentials, update .env dan restart server.
@@ -143,15 +145,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         (token as any).permissions = (user as any).permissions || [];
       }
       if (account?.provider === "google" && profile?.sub) {
-        try {
-          const { prisma } = await import("@/lib/prisma");
-          const dbUser = await prisma.user.findUnique({ where: { googleId: profile.sub } });
-          if (dbUser) {
-            token.id = dbUser.id;
-            (token as any).role = dbUser.role;
-            (token as any).isAdmin = false;
-          }
-        } catch {}
+        // Kegagalan DB di sini sengaja tidak ditelan: token dengan id/role bawaan Google akan tidak cocok dengan data pengguna.
+        const { prisma } = await import("@/lib/prisma");
+        const dbUser = await prisma.user.findUnique({ where: { googleId: profile.sub } });
+        if (dbUser) {
+          token.id = dbUser.id;
+          (token as any).role = dbUser.role;
+          (token as any).isAdmin = false;
+        }
       }
       return token;
     },

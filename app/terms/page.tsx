@@ -3,6 +3,7 @@ import Link from "next/link";
 import { BrandLogo } from "@/components/BrandLogo";
 import { getPublicPlatformSettings } from "@/lib/settings";
 import { getDynamicServerRootDomain } from "@/lib/serverDomainUtils";
+import { formatRetentionLabel } from "@/lib/lifecycleDates";
 import { getPlanDisplayName } from "@/lib/planUtils";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -18,8 +19,9 @@ export default async function TermsPage() {
   const platformName = settings.platformName || "Platform Undangan";
   const supportEmail = settings.supportEmail || "";
   const supportWhatsapp = settings.supportWhatsapp || "";
-  const graceDays = settings.retentionInvitationGraceDays || 7;
-  const galleryDays = settings.retentionGalleryDefaultDays || 30;
+  const graceDays = settings.subdomainGraceDays;
+  const galleryDays = settings.galleryRetentionDays;
+  const customDomainLabel = formatRetentionLabel(settings.customDomainRetentionDays);
   const rootDomain = await getDynamicServerRootDomain();
   const tier3Name = getPlanDisplayName("TIER_3", settings.packages);
 
@@ -100,7 +102,7 @@ export default async function TermsPage() {
                   5. Layanan Custom Domain Pribadi
                 </h3>
                 <p className="text-xs text-stone-600 leading-relaxed">
-                  Bagi klien yang memilih layanan integrasi Custom Domain pribadi (seperti <em>namakamu.com</em>), domain Anda terhubung langsung ke website undangan dan galeri foto selama masa aktif acara ({galleryDays} hari pasca acara), dan selanjutnya tetap terhubung ke arsip mandiri undangan pernikahan Anda selama masa sewa domain aktif.
+                  Bagi klien yang memilih layanan integrasi Custom Domain pribadi (seperti <em>namakamu.com</em>), domain Anda terhubung langsung ke website undangan dan tetap terhubung ke undangan Anda (termasuk arsip mandiri setelah acara) selama {customDomainLabel} sejak tanggal acara utama.
                 </p>
               </div>
             </div>

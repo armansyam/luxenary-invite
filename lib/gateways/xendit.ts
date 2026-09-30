@@ -9,6 +9,7 @@
 import crypto from "crypto";
 import { PaymentGateway } from "@/lib/gateways/types";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 export class XenditGateway implements PaymentGateway {
   private async getConfig() {
@@ -24,7 +25,9 @@ export class XenditGateway implements PaymentGateway {
 
       if (map["xendit_api_key"]) apiKey = map["xendit_api_key"];
       if (map["xendit_webhook_token"]) webhookToken = map["xendit_webhook_token"];
-    } catch {}
+    } catch (err) {
+      logger.error("XenditGateway", "Gagal memuat kredensial dari AdminSetting, memakai nilai environment", err);
+    }
 
     const baseUrl = "https://api.xendit.co";
     return { apiKey, webhookToken, baseUrl };
@@ -117,7 +120,9 @@ export class XenditGateway implements PaymentGateway {
         const bName = invitation.brideNickname || invitation.brideName || "";
         if (gName || bName) coupleName = `${gName} & ${bName}`.trim();
       }
-    } catch {}
+    } catch (err) {
+      logger.warn("XenditGateway", "Gagal memuat data undangan untuk invoice", { orderId, error: String(err) });
+    }
 
     const { apiKey, baseUrl } = await this.getConfig();
 
@@ -129,8 +134,6 @@ export class XenditGateway implements PaymentGateway {
     let expiryMinutes = 60;
     let invoicePrefix = "Tagihan Pembayaran";
     let platformName = "Sistem Undangan";
-    let supportEmail = "support@domain.com";
-    let supportPhone = "";
 
     try {
       const settings = await prisma.adminSetting.findMany({
@@ -140,8 +143,6 @@ export class XenditGateway implements PaymentGateway {
               "payment_expiry_minutes",
               "payment_invoice_prefix",
               "platform_name",
-              "support_email",
-              "support_whatsapp",
               "company_name",
             ],
           },
@@ -153,10 +154,10 @@ export class XenditGateway implements PaymentGateway {
         }
         if (s.key === "payment_invoice_prefix" && s.value) invoicePrefix = s.value;
         if (s.key === "platform_name" && s.value) platformName = s.value;
-        if (s.key === "support_email" && s.value) supportEmail = s.value;
-        if (s.key === "support_whatsapp" && s.value) supportPhone = s.value;
       });
-    } catch {}
+    } catch (err) {
+      logger.warn("XenditGateway", "Gagal memuat setting invoice, memakai nilai bawaan", { orderId, error: String(err) });
+    }
 
     // Rincian item berdasarkan 3 kondisi pembayaran
     let itemName = `Paket Undangan Digital - ${packageType}`;

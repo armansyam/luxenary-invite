@@ -497,7 +497,7 @@ export default function AdminDatabaseTab(props: Props) {
         </select>
       </FieldRow>
 
-      <FieldRow label="Masa Tayang Arsip (Hari)" description="Durasi penyimpanan arsip setelah status beralih ke ARCHIVED">
+      <FieldRow label="Masa Simpan Arsip Undangan (Hari)" description="Hari sejak tanggal acara utama undangan diamankan di arsip; setelah lewat, arsip dibersihkan (Default: 365 hari).">
         <input
           type="number"
           min="30"

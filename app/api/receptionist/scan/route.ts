@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { sseEmitter } from "@/lib/sseEmitter";
 import { verifyPin } from "@/lib/pinEncryption";
 import { rateLimitDb, getClientIp } from "@/lib/rateLimit";
-import { verifyReceptionistToken } from "@/lib/receptionistAuth";
+import { isReceptionistAuthorized } from "@/lib/receptionistGuard";
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,7 +19,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Server-side authorization check using session token
-    if (!verifyReceptionistToken(token, invitationId)) {
+    if (!(await isReceptionistAuthorized(invitationId, token))) {
       return NextResponse.json({ error: "Akses Ditolak. Sesi tidak valid." }, { status: 401 });
     }
 
@@ -112,17 +111,6 @@ export async function POST(req: NextRequest) {
       });
 
       const isFirstCheckIn = updateResult.count === 1;
-
-      if (isFirstCheckIn) {
-        // Emit Server-Sent Event for real-time dashboard updates HANYA pada scanner pertama yang memenangkan mutasi atomik
-        sseEmitter.emit("new_guest_checkin", {
-          invitationId: guest.invitationId,
-          guestId: guest.id,
-          guestName: guest.name,
-          timestamp: new Date().toISOString(),
-        });
-      }
-
       const wasAlreadyRedeemed = !isFirstCheckIn;
 
       return NextResponse.json({

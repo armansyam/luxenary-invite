@@ -112,7 +112,11 @@ export async function GET(
       req.signal.addEventListener("abort", () => {
         clearInterval(heartbeat);
         paymentEmitter.off(orderId, onPaymentUpdate);
-        try { controller.close(); } catch {}
+        try {
+          controller.close();
+        } catch {
+          // Stream sudah tertutup oleh klien; tidak ada yang perlu dibersihkan lagi.
+        }
       });
     },
   });

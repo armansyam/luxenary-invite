@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireAdminModule } from "@/lib/adminAuth";
 import { revalidatePath } from "next/cache";
 import { purgeCloudflareCache } from "@/lib/cloudflare";
 
@@ -7,11 +7,8 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   // Guard: hanya SUPER_ADMIN / ADMIN
-  const session = await auth();
-  const role = (session?.user as any)?.role;
-  if (!session || !["ADMIN", "SUPER_ADMIN"].includes(role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const guard = await requireAdminModule("settings");
+  if (!guard.ok) return guard.response;
 
   const results: Record<string, any> = {};
 

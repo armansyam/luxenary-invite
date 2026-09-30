@@ -6,7 +6,7 @@ import { uploadFile } from "@/lib/storage";
 import { optimizeWebVideo, optimizeWebAudio } from "@/lib/videoOptimizer";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { rateLimit } from "@/lib/rateLimit";
+import { getClientIp, rateLimitDb } from "@/lib/rateLimit";
 import { MEDIA_SLOT_FILE_NAMES } from "@/lib/mediaSlots";
 
 // SLOT_FILE_NAMES = 9 slot resmi DB (dari lib/mediaSlots.ts) + slot upload tambahan non-DB
@@ -26,9 +26,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Rate limit: maks 10 upload/menit per IP — mencegah bandwidth & disk exhaustion
-    // Prioritaskan cf-connecting-ip (Cloudflare) yang tidak bisa dipalsukan
-    const ip = req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip") || req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
-    if (!rateLimit(`upload:${ip}`, 10, 60_000)) {
+    const ip = getClientIp(req);
+    if (!(await rateLimitDb(`upload:${ip}`, 10, 60_000))) {
       return NextResponse.json(
         { error: "Terlalu banyak upload. Silakan tunggu beberapa saat sebelum mencoba lagi." },
         { status: 429 }

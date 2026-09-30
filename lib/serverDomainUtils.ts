@@ -3,11 +3,10 @@ import { headers } from "next/headers";
 /**
  * Mendeteksi URL origin aplikasi secara dinamis dari incoming request headers.
  * Bekerja di Server Components, Server Actions, dan Route Handlers.
- * Menghasilkan:
- * - http://localhost:3000 (di local dev)
- * - https://luxvite.id (di production VPS)
- * - https://namaklien.com (di custom domain)
- * Tanpa hardcode URL sama sekali.
+ * Menghasilkan origin host yang sedang diakses (mis. http://localhost:3000, https://domain-platform.com,
+ * atau https://domain-klien.com bila diakses lewat custom domain). Tanpa hardcode URL.
+ * Jangan dipakai untuk konten yang dipersist atau dikirim ke pihak lain (HTML statis terbit, link email):
+ * header Host dapat dipalsukan sehingga jalur itu wajib memakai NEXT_PUBLIC_APP_URL.
  */
 export async function getDynamicServerAppUrl(defaultFallback = "http://localhost:3000"): Promise<string> {
   try {
@@ -23,6 +22,20 @@ export async function getDynamicServerAppUrl(defaultFallback = "http://localhost
 
   const envUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "");
   return (envUrl || defaultFallback).replace(/\/$/, "");
+}
+
+/**
+ * Origin apex platform untuk request yang masuk lewat subdomain klien
+ * (`budi-sari.domain-platform.com` -> `https://domain-platform.com`): label subdomain klien dibuang dari host.
+ * Host tanpa label tersebut (mis. akses via IP) dikembalikan apa adanya.
+ */
+export async function getDynamicServerApexUrl(clientSubdomain: string): Promise<string> {
+  const origin = new URL(await getDynamicServerAppUrl());
+  const label = `${clientSubdomain.toLowerCase().trim()}.`;
+  if (origin.hostname.startsWith(label)) {
+    origin.hostname = origin.hostname.slice(label.length);
+  }
+  return origin.origin;
 }
 
 /**

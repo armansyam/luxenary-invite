@@ -1,20 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import fs from "fs";
-import path from "path";
 import crypto from "crypto";
-import { buildAndSavePublishedHtml, deletePublishedHtml } from "@/lib/staticPublisher";
-import { getLatestEventDate } from "@/lib/domainUtils";
-
-async function fileExists(filePath: string): Promise<boolean> {
-  try {
-    await fs.promises.access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
-}
+import { runLifecycleCleanup, runStaleDataCleanup } from "@/lib/lifecycleCleanup";
 
 export const dynamic = "force-dynamic";
 
@@ -50,251 +37,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized: Invalid or missing CRON_SECRET / Admin session" }, { status: 401 });
     }
 
-    const retentionCleanupSetting = await prisma.adminSetting.findUnique({ where: { key: "retention_cleanup_days" } });
-    const retentionOrderSetting = await prisma.adminSetting.findUnique({ where: { key: "retention_order_days" } });
-    const subdomainAutoRecycleSetting = await prisma.adminSetting.findUnique({ where: { key: "subdomain_auto_recycle" } });
-
-    // 1 Jadwal Tunggal Retensi Pasca-Acara (Default: 14 hari)
-    const cleanupDays = Number(retentionCleanupSetting?.value) || 14;
-    const retentionOrderDays = Number(retentionOrderSetting?.value) || 90;
-    const isAutoRecycleSubdomain = (subdomainAutoRecycleSetting?.value || "true") === "true";
-
-    const now = new Date();
-    const thresholdOrderDate = new Date(now.getTime() - (retentionOrderDays * 24 * 60 * 60 * 1000));
-
-    // ── 1. TRANSISI STATUS PASCA-ACARA (PUBLISHED -> EVENT_FINISHED) ──
-    // Undangan yang tanggal resepsinya sudah terlewati ditandai EVENT_FINISHED
-    const activeInvs = await prisma.invitation.findMany({
-      where: { status: "PUBLISHED" },
-      select: {
-        id: true,
-        eventData: true,
-        subdomain: true,
-        customDomain: true,
-        invitationSlug: true,
-      }
-    });
-
-    let transitionCount = 0;
-    for (const inv of activeInvs) {
-      const latestDate = getLatestEventDate(inv.eventData);
-      if (latestDate && now > latestDate) {
-        // Pastikan canonical published HTML tersimpan
-        await buildAndSavePublishedHtml(inv.id);
-
-        await prisma.invitation.update({
-          where: { id: inv.id },
-          data: { status: "EVENT_FINISHED" }
-        });
-        transitionCount++;
-      }
-    }
-
-    // ── 2. RETENSI TERPADU SEKALI JALAN (SINGLE UNIFIED CLEANUP: H + cleanupDays ATAU galleryExpiresAt) ──
-    // Berjalan serentak dalam satu jadwal terpadu (default H+14 atau batas perpanjangan galeri):
-    // 1. Bersihkan foto candid tamu di R2 & local
-    // 2. Daur ulang subdomain ke pool (subdomain: null) jika auto-recycle aktif
-    // 3. Bersihkan data RSVP yang kedaluwarsa demi privasi
-    // 4. Daur ulang subdomain ke pool dan tandai ARCHIVED
-    const finishedInvs = await prisma.invitation.findMany({
-      where: { status: { in: ["EVENT_FINISHED", "TAKEN_DOWN"] } },
-      select: {
-        id: true,
-        eventData: true,
-        featureSettings: true,
-        galleryExpiresAt: true,
-        invitationSlug: true,
-        customDomain: true,
-        subdomain: true,
-        groomName: true,
-        brideName: true,
-        user: {
-          select: {
-            email: true,
-            name: true,
-          },
-        },
-      }
-    });
-
-    let cleanedCount = 0;
-    let recycledSubdomainCount = 0;
-    let retentionWarningsSentCount = 0;
-
-    for (const inv of finishedInvs) {
-      const latestDate = getLatestEventDate(inv.eventData);
-      const effectiveExpiry = inv.galleryExpiresAt || (latestDate ? new Date(latestDate.getTime() + (cleanupDays * 24 * 60 * 60 * 1000)) : null);
-
-      // ── 2A. PERINGATAN RETENSI (H-3 Hari Sebelum Cleanup) ──
-      if (effectiveExpiry && effectiveExpiry > now) {
-        const diffMs = effectiveExpiry.getTime() - now.getTime();
-        const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
-
-        if (diffMs <= threeDaysMs && inv.user?.email) {
-          let featObj: Record<string, any> = {};
-          try {
-            featObj = typeof inv.featureSettings === "string" ? JSON.parse(inv.featureSettings) : (inv.featureSettings || {});
-          } catch {}
-
-          if (!featObj.retentionWarningSentAt) {
-            const daysRemaining = Math.max(1, Math.ceil(diffMs / (24 * 60 * 60 * 1000)));
-            const expiryDateFormatted = effectiveExpiry.toLocaleDateString("id-ID", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            });
-            const totalPhotos = await prisma.guestMemory.count({ where: { invitationId: inv.id } });
-            const coupleNames = (inv.groomName && inv.brideName) ? `${inv.groomName} & ${inv.brideName}` : (inv.user.name || "Mempelai");
-
-            try {
-              const { sendRetentionExpiryAlertEmail } = await import("@/lib/mailer");
-              const mailRes = await sendRetentionExpiryAlertEmail({
-                invitationId: inv.id,
-                invitationSlug: inv.invitationSlug,
-                coupleNames,
-                daysRemaining,
-                expiryDateFormatted,
-                totalPhotos,
-                recipientEmail: inv.user.email,
-                recipientName: inv.user.name || coupleNames,
-              });
-
-              if (mailRes.success) {
-                featObj.retentionWarningSentAt = now.toISOString();
-                await prisma.invitation.update({
-                  where: { id: inv.id },
-                  data: { featureSettings: JSON.stringify(featObj) },
-                });
-                retentionWarningsSentCount++;
-                console.log(`[Cron Cleanup] Peringatan retensi (H-${daysRemaining}) terkirim ke ${inv.user.email} (inv: ${inv.id})`);
-              }
-            } catch (err: any) {
-              console.warn(`[Cron Cleanup] Gagal mengirim email peringatan retensi (inv: ${inv.id}):`, err.message);
-            }
-          }
-        }
-      }
-
-      // ── 2B. EKSEKUSI PEMBERSIHAN RETENSI (Saat Expired) ──
-      if (effectiveExpiry && now > effectiveExpiry) {
-        // 1. Hapus published HTML & draft lokal agar tidak ada disk leak di VPS
-        await deletePublishedHtml(inv.id);
-        const draftPath = path.join(process.cwd(), "data", "drafts", `${inv.id}.html`);
-        try {
-          if (await fileExists(draftPath)) {
-            await fs.promises.unlink(draftPath);
-          }
-        } catch {}
-
-        // 2. Hapus foto candid tamu dari R2 & local
-        const memories = await prisma.guestMemory.findMany({ where: { invitationId: inv.id } });
-        if (memories.length > 0) {
-          const { deleteFile } = await import("@/lib/storage");
-          await Promise.all(memories.map(mem => mem.mediaUrl ? deleteFile(mem.mediaUrl) : Promise.resolve()))
-            .catch((e) => console.warn(`[Cron Cleanup] Partial guestMemory file delete failed (inv: ${inv.id}):`, e.message));
-        }
-        await prisma.guestMemory.deleteMany({ where: { invitationId: inv.id } });
-
-        const memoriesDir = path.join(process.cwd(), "public", "uploads", "guest-memories", inv.id);
-        const legacyMemoriesDir = path.join(process.cwd(), "public", "uploads", "invitations", inv.id, "memories");
-        try {
-          if (await fileExists(memoriesDir)) await fs.promises.rm(memoriesDir, { recursive: true, force: true });
-          if (await fileExists(legacyMemoriesDir)) await fs.promises.rm(legacyMemoriesDir, { recursive: true, force: true });
-        } catch {}
-
-        // 2.5 Sinkronisasi arsip NAS & bersihkan media inti di R2 jika Cold Storage aktif
-        try {
-          const { isNasArchiveEnabled, syncInvitationToNasArchive } = await import("@/lib/nasArchive");
-          const nasEnabled = await isNasArchiveEnabled();
-          if (nasEnabled) {
-            await syncInvitationToNasArchive(inv.id);
-            const invMedia = await prisma.invitationMedia.findMany({ where: { invitationId: inv.id } });
-            if (invMedia.length > 0) {
-              const { deleteFile } = await import("@/lib/storage");
-              await Promise.all(invMedia.map(m => m.localPath ? deleteFile(m.localPath) : Promise.resolve()))
-                .catch((e) => console.warn(`[Cron Cleanup] Partial invMedia file delete failed:`, e.message));
-            }
-          }
-        } catch (e: any) {
-          console.warn(`[Cron Cleanup] Gagal sinkron/bersihkan media arsip NAS (inv: ${inv.id}):`, e.message);
-        }
-
-        // 3. Bersihkan formulir RSVP kedaluwarsa demi privasi
-        await prisma.rsvp.deleteMany({ where: { invitationId: inv.id } });
-
-        // 4. Daur ulang subdomain ke pool dan tandai ARCHIVED
-        const shouldReleaseSubdomain = isAutoRecycleSubdomain && Boolean(inv.subdomain);
-        await prisma.invitation.update({
-          where: { id: inv.id },
-          data: {
-            memoriesUploadLocked: true,
-            status: "ARCHIVED",
-            subdomain: shouldReleaseSubdomain ? null : inv.subdomain,
-          }
-        });
-
-        if (shouldReleaseSubdomain) recycledSubdomainCount++;
-        cleanedCount++;
-      }
-    }
-
-    // ── 3. HOUSEKEEPING INTERNAL: PEMBERSIHAN DRAFT YATIM & ORDER LAMA ──
-    const draftsDir = path.join(process.cwd(), "data", "drafts");
-    let cleanedOrphanedDraftsCount = 0;
-    if (await fileExists(draftsDir)) {
-      try {
-        const draftFiles = await fs.promises.readdir(draftsDir);
-        for (const file of draftFiles) {
-          if (!file.endsWith(".html")) continue;
-          const invId = file.replace(".html", "");
-          const invExists = await prisma.invitation.findUnique({
-            where: { id: invId },
-            select: { id: true },
-          });
-          if (!invExists) {
-            await fs.promises.unlink(path.join(draftsDir, file)).catch((e: any) => console.warn(`[Cron Cleanup] Gagal hapus orphaned draft ${file}:`, e.message));
-            cleanedOrphanedDraftsCount++;
-          }
-        }
-      } catch (err) {
-        console.error("Gagal membersihkan orphaned drafts:", err);
-      }
-    }
-
-    // Bersihkan data order kedaluwarsa lama (PENDING / EXPIRED / FAILED > retentionOrderDays)
-    const staleOrders = await prisma.order.findMany({
-      where: {
-        status: { in: ["EXPIRED", "FAILED", "PENDING"] },
-        createdAt: { lt: thresholdOrderDate }, // Gunakan retensi order terpisah
-      },
-    });
-
-    for (const ord of staleOrders) {
-      if (ord.proofImageUrl) {
-        try {
-          const { deleteFile } = await import("@/lib/storage");
-          await deleteFile(ord.proofImageUrl);
-        } catch (e) {
-          console.error("Gagal menghapus file proof lama dari cron:", e);
-        }
-      }
-    }
-
-    const deletedOrdersCount = await prisma.order.deleteMany({
-      where: {
-        status: { in: ["EXPIRED", "FAILED", "PENDING"] },
-        createdAt: { lt: thresholdOrderDate },
-      },
-    });
+    const dryRun = req.nextUrl.searchParams.get("dryRun") === "true";
+    const lifecycle = await runLifecycleCleanup({ dryRun });
+    const stale = await runStaleDataCleanup({ dryRun });
+    const failedCount = lifecycle.archiveFailures.length;
 
     return NextResponse.json({
-      success: true,
-      transitionedInvitations: transitionCount,
-      recycledSubdomains: recycledSubdomainCount,
-      cleanedInvitations: cleanedCount,
-      retentionWarningsSent: retentionWarningsSentCount,
-      deletedOrders: deletedOrdersCount.count,
-      message: `Pembersihan selesai: ${transitionCount} undangan ditransisikan ke selesai, ${retentionWarningsSentCount} peringatan retensi terkirim, ${recycledSubdomainCount} subdomain didaur ulang, ${cleanedCount} berkas foto/media kedaluwarsa dibersihkan.`,
+      success: failedCount === 0,
+      dryRun,
+      transitionedInvitations: lifecycle.transitionedInvitations,
+      recycledSubdomains: lifecycle.recycledSubdomains,
+      cleanedInvitations: lifecycle.archivedInvitations,
+      archiveFailures: lifecycle.archiveFailures,
+      purgedArchives: lifecycle.purgedArchives,
+      retentionWarningsSent: lifecycle.retentionWarningsSent,
+      deletedOrders: stale.deletedOrders,
+      message:
+        `${dryRun ? "Simulasi pembersihan" : "Pembersihan selesai"}: ${lifecycle.transitionedInvitations} undangan ditransisikan ke selesai, ` +
+        `${lifecycle.retentionWarningsSent} peringatan retensi terkirim, ${lifecycle.recycledSubdomains} subdomain dikembalikan ke pool, ` +
+        `${lifecycle.archivedInvitations} undangan diarsipkan, ${lifecycle.purgedArchives} arsip kedaluwarsa dibersihkan` +
+        (failedCount > 0 ? `, ${failedCount} undangan gagal diarsipkan dan akan dicoba lagi.` : "."),
     });
   } catch (error: any) {
     console.error("[Cleanup Cron Error]", error);

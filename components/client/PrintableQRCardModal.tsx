@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import QRCode from "react-qr-code";
+import { useFeedback } from "@/components/ui/Feedback";
 
 export interface PrintableQRCardModalProps {
   isOpen: boolean;
@@ -97,6 +98,7 @@ export default function PrintableQRCardModal({
   shareMomentUrl,
   onInvitationUpdated,
 }: PrintableQRCardModalProps) {
+  const feedback = useFeedback();
   const cardRef = useRef<HTMLDivElement>(null);
 
   // Parse Feature Settings
@@ -180,7 +182,7 @@ export default function PrintableQRCardModal({
         setTimeout(() => setStatusNotice(null), 3000);
       }
     } catch {
-      alert("Gagal menyimpan pengaturan kartu.");
+      feedback.notify("Gagal menyimpan pengaturan kartu.", "error");
     } finally {
       setIsSavingSettings(false);
     }
@@ -313,7 +315,7 @@ export default function PrintableQRCardModal({
       a.href = dataUrl;
       a.click();
     } catch (err: any) {
-      alert("Gagal mengunduh kartu cetak: " + err.message);
+      feedback.notify("Gagal mengunduh kartu cetak: " + err.message, "error");
     } finally {
       setIsGeneratingPng(false);
     }

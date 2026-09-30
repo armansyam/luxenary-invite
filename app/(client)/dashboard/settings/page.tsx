@@ -4,10 +4,20 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getInvitationPublicUrl, getApexRootDomain, resolveEffectiveInvitationUrl } from "@/lib/domainUtils";
+import {
+  computeLifecycleDates,
+  formatDateInEventTimezone,
+  formatPrimaryEventDate,
+  getPrimaryEventTimezone,
+  lifecycleSettingsFromPublic,
+  type LifecycleDaySettings,
+} from "@/lib/lifecycleDates";
 import { getPlanDisplayName } from "@/lib/planUtils";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
+import { useFeedback } from "@/components/ui/Feedback";
 
 export default function SettingsPage() {
+  const feedback = useFeedback();
   const router = useRouter();
   const [invitation, setInvitation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -58,8 +68,7 @@ export default function SettingsPage() {
   const [showBuyModal, setShowBuyModal] = useState(false);
   const [isDomainOwned, setIsDomainOwned] = useState(false);
   const [isCustomDomainEnabled, setIsCustomDomainEnabled] = useState(true);
-  const [retentionGraceDays, setRetentionGraceDays] = useState(14);
-  const [retentionGalleryDays, setRetentionGalleryDays] = useState(14);
+  const [lifecycleSettings, setLifecycleSettings] = useState<LifecycleDaySettings>(lifecycleSettingsFromPublic(null));
   const [platformPackages, setPlatformPackages] = useState<any[]>([]);
 
   const handleCopyDns = async (val: string, key: string) => {
@@ -415,9 +424,7 @@ export default function SettingsPage() {
         if (d?.custom_domain_enabled !== undefined) {
           setIsCustomDomainEnabled(d.custom_domain_enabled !== false);
         }
-        const cleanupDays = Number(d?.retentionCleanupDays ?? d?.retention_cleanup_days ?? d?.retentionInvitationGraceDays ?? 14);
-        setRetentionGraceDays(cleanupDays);
-        setRetentionGalleryDays(cleanupDays);
+        setLifecycleSettings(lifecycleSettingsFromPublic(d));
         if (Array.isArray(d?.packages)) {
           setPlatformPackages(d.packages);
         }
@@ -713,50 +720,13 @@ export default function SettingsPage() {
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, "_blank");
   };
 
-  const getEventDateFormatted = () => {
-    try {
-      const ev = typeof invitation?.eventData === "string" ? JSON.parse(invitation.eventData) : invitation?.eventData;
-      if (Array.isArray(ev) && ev[0]?.date) {
-        const evDate = new Date(ev[0].date);
-        if (!isNaN(evDate.getTime())) {
-          return evDate.toLocaleDateString("id-ID", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          });
-        }
-      }
-    } catch {}
-    return null;
-  };
+  const getEventDateFormatted = () => formatPrimaryEventDate(invitation?.eventData);
 
-  const getValidityDate = () => {
-    try {
-      if (invitation?.galleryExpiresAt) {
-        const exp = new Date(invitation.galleryExpiresAt);
-        if (!isNaN(exp.getTime())) {
-          return exp.toLocaleDateString("id-ID", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          });
-        }
-      }
-      const ev = typeof invitation?.eventData === "string" ? JSON.parse(invitation.eventData) : invitation?.eventData;
-      if (Array.isArray(ev) && ev[0]?.date) {
-        const evDate = new Date(ev[0].date);
-        if (!isNaN(evDate.getTime())) {
-          const expiry = new Date(evDate.getTime() + retentionGraceDays * 24 * 60 * 60 * 1000);
-          return expiry.toLocaleDateString("id-ID", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          });
-        }
-      }
-    } catch {}
-    return `${retentionGraceDays} Hari Pasca Hari H`;
-  };
+  const lifecycleDates = computeLifecycleDates(
+    { eventData: invitation?.eventData, galleryExpiresAt: invitation?.galleryExpiresAt },
+    lifecycleSettings
+  );
+  const formatLifecycleDate = (date: Date) => formatDateInEventTimezone(date, getPrimaryEventTimezone(invitation?.eventData));
 
   if (loading) {
     return (
@@ -880,14 +850,26 @@ export default function SettingsPage() {
             {/* Informasi Detail Masa Aktif & Tanggal Acara */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <div className="p-3.5 rounded-xl bg-stone-800/50 border border-stone-800 text-xs space-y-1">
-                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">Masa Berlaku Sistem Terpadu:</span>
-                <p className="text-stone-200 font-medium">
-                  Aktif hingga <strong className="text-amber-300">{getValidityDate()}</strong>
-                </p>
+                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">Masa Berlaku:</span>
+                {lifecycleDates ? (
+                  <ul className="text-stone-200 font-medium space-y-1">
+                    <li>
+                      Subdomain hingga <strong className="text-amber-300">{formatLifecycleDate(lifecycleDates.subdomainReleaseAt)}</strong>
+                    </li>
+                    <li>
+                      Galeri foto tamu hingga <strong className="text-amber-300">{formatLifecycleDate(lifecycleDates.galleryExpiresAt)}</strong>
+                    </li>
+                    <li>
+                      Undangan tersimpan hingga <strong className="text-amber-300">{formatLifecycleDate(lifecycleDates.archiveExpiresAt)}</strong>
+                    </li>
+                  </ul>
+                ) : (
+                  <p className="text-stone-200 font-medium">Tanggal acara utama belum diatur.</p>
+                )}
                 <p className="text-[10px] text-stone-400 leading-normal">
                   {invitation?.galleryExpiresAt
-                    ? "Masa simpan telah diperpanjang melalui paket add-on."
-                    : `Dihitung otomatis ${retentionGraceDays} hari pasca tanggal acara pernikahan Anda (Subdomain, Custom Domain, & Galeri Momen).`}
+                    ? "Masa simpan galeri telah diperpanjang melalui paket add-on."
+                    : "Dihitung otomatis dari tanggal acara utama sesuai zona waktu acara. Alamat slug tetap menjadi tautan utama setelah subdomain berakhir."}
                 </p>
               </div>
 
@@ -2020,7 +2002,13 @@ export default function SettingsPage() {
                       type="button"
                       disabled={savingCustomDomain}
                       onClick={async () => {
-                        if (!confirm("Apakah Anda yakin ingin melepaskan domain kustom dari undangan ini?")) return;
+                        const confirmed = await feedback.confirm({
+                          title: "Lepaskan domain kustom",
+                          message: "Apakah Anda yakin ingin melepaskan domain kustom dari undangan ini?",
+                          confirmLabel: "Lepaskan",
+                          danger: true,
+                        });
+                        if (!confirmed) return;
                         setSavingCustomDomain(true);
                         setCustomDomainError(null);
                         try {

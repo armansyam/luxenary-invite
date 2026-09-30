@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { extendGalleryExpiry } from "@/lib/lifecycleDates";
+import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 
 export const dynamic = "force-dynamic";
 
@@ -56,11 +58,12 @@ export async function POST(
     }
 
     if (action === "EXTEND_GALLERY") {
-      const baseDate = invitation.galleryExpiresAt && invitation.galleryExpiresAt > now
-        ? new Date(invitation.galleryExpiresAt)
-        : now;
+      const extraDays = Number(days);
+      if (!Number.isFinite(extraDays) || extraDays < 1) {
+        return NextResponse.json({ error: "Jumlah hari perpanjangan harus berupa angka minimal 1." }, { status: 400 });
+      }
 
-      const newExpiry = new Date(baseDate.getTime() + (Number(days) * 24 * 60 * 60 * 1000));
+      const newExpiry = extendGalleryExpiry(invitation, extraDays, await getLifecycleSettings(), now);
 
       const updated = await prisma.invitation.update({
         where: { id },

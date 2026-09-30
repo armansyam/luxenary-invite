@@ -1,32 +1,25 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
-import { isSubdomainExpired, getLatestEventDate } from "@/lib/domainUtils";
+import { requireAdminModule } from "@/lib/adminAuth";
+import { invalidateInvitationLookup } from "@/lib/cache";
+import { DAY_MS, computeLifecycleDates, getPrimaryEventDateString } from "@/lib/lifecycleDates";
+import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { buildCanonicalPath, resolveInvitationDisplayName } from "@/lib/invitationUtils";
 
 export const dynamic = "force-dynamic";
 
-async function verifyAdminSession() {
-  const session = await auth();
-  const isAdmin =
-    (session?.user as any)?.isAdmin === true ||
-    (session?.user as any)?.role === "SUPER_ADMIN" ||
-    (session?.user as any)?.role === "ADMIN";
-  return session?.user && isAdmin;
+async function denyUnlessAdmin() {
+  const guard = await requireAdminModule("invitations");
+  return guard.ok ? null : guard.response;
 }
 
 export async function GET() {
   try {
-    const isAuthorized = await verifyAdminSession();
-    if (!isAuthorized) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const denied = await denyUnlessAdmin();
+    if (denied) return denied;
 
-    // Get grace days setting
-    const graceSetting = await prisma.adminSetting.findUnique({
-      where: { key: "subdomain_grace_days" },
-    });
-    const graceDays = graceSetting ? parseInt(graceSetting.value, 10) || 7 : 7;
+    const settings = await getLifecycleSettings();
+    const graceDays = settings.subdomainGraceDays;
 
     const invitations = await prisma.invitation.findMany({
       select: {
@@ -50,17 +43,12 @@ export async function GET() {
     });
 
     const items = invitations.map((inv) => {
-      const latestDate = getLatestEventDate(inv.eventData);
-      const eventDate = latestDate ? latestDate.toISOString().split("T")[0] : null;
+      const dates = computeLifecycleDates({ eventData: inv.eventData }, settings);
+      const eventDate = getPrimaryEventDateString(inv.eventData);
 
       const hasSubdomain = Boolean(inv.subdomain);
-      const isExpired = latestDate ? isSubdomainExpired(latestDate, graceDays) : false;
-
-      let remainingDays: number | null = null;
-      if (latestDate) {
-        const expiryTime = latestDate.getTime() + graceDays * 24 * 60 * 60 * 1000;
-        remainingDays = Math.ceil((expiryTime - Date.now()) / (1000 * 60 * 60 * 24));
-      }
+      const isExpired = dates ? Date.now() > dates.subdomainReleaseAt.getTime() : false;
+      const remainingDays = dates ? Math.ceil((dates.subdomainReleaseAt.getTime() - Date.now()) / DAY_MS) : null;
 
       return {
         id: inv.id,
@@ -89,15 +77,11 @@ export async function GET() {
 
 export async function POST() {
   try {
-    const isAuthorized = await verifyAdminSession();
-    if (!isAuthorized) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const denied = await denyUnlessAdmin();
+    if (denied) return denied;
 
-    const graceSetting = await prisma.adminSetting.findUnique({
-      where: { key: "subdomain_grace_days" },
-    });
-    const graceDays = graceSetting ? parseInt(graceSetting.value, 10) || 7 : 7;
+    const settings = await getLifecycleSettings();
+    const graceDays = settings.subdomainGraceDays;
 
     const invitations = await prisma.invitation.findMany({
       where: { subdomain: { not: null } },
@@ -117,13 +101,14 @@ export async function POST() {
     for (const inv of invitations) {
       if (!inv.subdomain) continue;
 
-      const latestDate = getLatestEventDate(inv.eventData);
+      const dates = computeLifecycleDates({ eventData: inv.eventData }, settings);
 
-      if (latestDate && isSubdomainExpired(latestDate, graceDays)) {
+      if (dates && Date.now() > dates.subdomainReleaseAt.getTime()) {
         await prisma.invitation.update({
           where: { id: inv.id },
           data: { subdomain: null },
         });
+        invalidateInvitationLookup(inv.invitationSlug, inv.subdomain);
 
         releasedCount++;
         releasedList.push(inv.subdomain);

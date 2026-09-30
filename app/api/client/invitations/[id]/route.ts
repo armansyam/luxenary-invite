@@ -1,11 +1,16 @@
 import { prisma } from "@/lib/prisma";
+import { InvitationStatus } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { encryptPin, decryptPin, isPinEncrypted } from "@/lib/pinEncryption";
-import { isReservedSubdomain, isSubdomainExpired, getLatestEventDate } from "@/lib/domainUtils";
+import { isReservedSubdomain, isSubdomainExpired } from "@/lib/domainUtils";
+import { DAY_MS, getPrimaryEventDate } from "@/lib/lifecycleDates";
+import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { getPlanMemoriesQuota } from "@/lib/settings";
 import { VALID_MEDIA_SLOTS } from "@/lib/mediaSlots";
 import { invalidateInvitationLookup } from "@/lib/cache";
+import { safeExternalUrl, normalizeFeatureUrls } from "@/lib/safeUrl";
+import { getDynamicServerRootDomain } from "@/lib/serverDomainUtils";
 
 
 export function getInvitationLockStatus(inv: any) {
@@ -31,31 +36,9 @@ export function getInvitationLockStatus(inv: any) {
     };
   }
 
-  // 3. Check if wedding event date has passed (Hari H Sesi Utama + 1 day grace period)
-  let hasPassed = false;
-  if (inv.eventData) {
-    try {
-      const parsed = typeof inv.eventData === "string" ? JSON.parse(inv.eventData) : inv.eventData;
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        // Patokan kedaluwarsa utama adalah Sesi Acara Utama (isPrimary); fallback ke tanggal paling akhir
-        const primaryEvent = parsed.find((e: any) => e.isPrimary);
-        const refDateStr = primaryEvent?.date;
-        if (refDateStr) {
-          const refDate = new Date(refDateStr).getTime();
-          if (!isNaN(refDate) && Date.now() > refDate + 24 * 3600 * 1000) {
-            hasPassed = true;
-          }
-        } else {
-          const latest = getLatestEventDate(parsed);
-          if (latest && Date.now() > latest.getTime() + 24 * 3600 * 1000) {
-            hasPassed = true;
-          }
-        }
-      }
-    } catch (e) {
-      console.error("[getInvitationLockStatus] Error parsing eventData:", e);
-    }
-  }
+  // 3. Hari acara utama (pada zona waktu acara) telah berlalu: terkunci permanen mulai awal hari berikutnya
+  const eventDay = getPrimaryEventDate(inv.eventData);
+  const hasPassed = eventDay !== null && Date.now() >= eventDay.getTime() + DAY_MS;
 
   if (hasPassed) {
     return {
@@ -219,12 +202,12 @@ export async function PUT(
 
         // Otomatis bersihkan (purge) edge cache Cloudflare untuk URL spesifik undangan ini (Anti-Stale Cache)
         try {
-          const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || "luxvite.id").split(":")[0].toLowerCase();
+          const rootDomain = (await getDynamicServerRootDomain("")).split(":")[0].toLowerCase();
           const urlsToPurge: string[] = [];
-          if (currentInv.subdomain) {
+          if (rootDomain && currentInv.subdomain) {
             urlsToPurge.push(`https://${currentInv.subdomain}.${rootDomain}/`);
           }
-          if (currentInv.invitationSlug) {
+          if (rootDomain && currentInv.invitationSlug) {
             urlsToPurge.push(`https://${rootDomain}/${currentInv.invitationSlug}`);
           }
           if (currentInv.customDomain) {
@@ -314,17 +297,8 @@ export async function PUT(
       }
       const existingSub = await prisma.invitation.findUnique({ where: { subdomain: newSubdomain } });
       if (existingSub && existingSub.id !== id) {
-        let eventDateToTest: string | null = null;
-        try {
-          if (existingSub.eventData) {
-            const parsed = JSON.parse(existingSub.eventData);
-            if (Array.isArray(parsed) && parsed[0]?.date) {
-              eventDateToTest = parsed[0].date;
-            }
-          }
-        } catch {}
-
-        if (isSubdomainExpired(eventDateToTest, 7)) {
+        const { subdomainGraceDays } = await getLifecycleSettings();
+        if (isSubdomainExpired(existingSub.eventData, subdomainGraceDays)) {
           await prisma.invitation.update({
             where: { id: existingSub.id },
             data: { subdomain: null },
@@ -351,7 +325,7 @@ export async function PUT(
             ? body.featureSettings
             : JSON.parse(body.featureSettings || "{}");
           
-          let parsedFeatures = { ...existingObj, ...incomingObj };
+          let parsedFeatures = normalizeFeatureUrls({ ...existingObj, ...incomingObj });
 
           // --- SERVER-SIDE FEATURE GATING ---
           // Prevent API Bypass for tiered features based on planType
@@ -417,6 +391,26 @@ export async function PUT(
     }
     // --- END THEME VALIDATION ---
 
+    // --- STATUS VALIDATION: nilai harus enum yang sah; klien hanya boleh DRAFT/PUBLISHED dan tidak dapat
+    // mengubah status yang dikunci sistem/admin (TAKEN_DOWN, ARCHIVED, EVENT_FINISHED) ---
+    if (body.status !== undefined) {
+      const CLIENT_SETTABLE_STATUSES = ["DRAFT", "PUBLISHED"];
+      if (!Object.values(InvitationStatus).includes(body.status)) {
+        return NextResponse.json({ error: "Status undangan tidak valid." }, { status: 400 });
+      }
+      if (!isAdmin && body.status !== currentInv.status) {
+        if (!CLIENT_SETTABLE_STATUSES.includes(body.status)) {
+          return NextResponse.json({ error: "Status ini tidak dapat diatur oleh pemilik undangan." }, { status: 403 });
+        }
+        if (!CLIENT_SETTABLE_STATUSES.includes(currentInv.status)) {
+          return NextResponse.json(
+            { error: "Status undangan dikunci oleh sistem. Hubungi Administrator untuk membukanya." },
+            { status: 403 }
+          );
+        }
+      }
+    }
+
     const newStatus = body.status !== undefined ? body.status : currentInv.status;
     const isStatusChangedToUnpublished = currentInv.status === "PUBLISHED" && newStatus !== "PUBLISHED";
     const isSubdomainChanged = newSubdomain !== undefined && newSubdomain !== currentInv.subdomain && currentInv.status === "PUBLISHED";
@@ -445,7 +439,7 @@ export async function PUT(
           timezone: typeof ev.timezone === "string" ? ev.timezone.trim() : (ev.timezone || "WIB"),
           location: typeof ev.location === "string" ? ev.location.trim() : (ev.location || ""),
           address: typeof ev.address === "string" ? ev.address.trim() : (ev.address || ""),
-          mapsUrl: typeof ev.mapsUrl === "string" ? ev.mapsUrl.trim() : (ev.mapsUrl || ""),
+          mapsUrl: safeExternalUrl(ev.mapsUrl),
           badge: typeof ev.badge === "string" ? ev.badge.trim() : (ev.badge || ""),
           notes: typeof ev.notes === "string" ? ev.notes.trim() : (ev.notes || ""),
           isUntilDone: Boolean(ev.isUntilDone),
@@ -531,13 +525,13 @@ export async function PUT(
         openingQuoteRef: body.openingQuoteRef !== undefined ? body.openingQuoteRef : undefined,
         themeId: body.themeId !== undefined ? body.themeId : undefined,
         subdomain: newSubdomain,
-        musicUrl: body.musicUrl !== undefined ? String(body.musicUrl || "") : undefined,
+        musicUrl: body.musicUrl !== undefined ? safeExternalUrl(body.musicUrl) : undefined,
         status: body.status !== undefined ? body.status : undefined,
         loveStory: body.loveStory !== undefined ? toStr(body.loveStory) : undefined,
         dresscode: body.dresscode !== undefined ? body.dresscode : undefined,
         bankAccounts: body.bankAccounts !== undefined ? toStr(body.bankAccounts) : undefined,
         shippingAddress: body.shippingAddress !== undefined ? body.shippingAddress : undefined,
-        liveStreamUrl: body.liveStreamUrl !== undefined ? body.liveStreamUrl : undefined,
+        liveStreamUrl: body.liveStreamUrl !== undefined ? safeExternalUrl(body.liveStreamUrl) : undefined,
         eventData: eventDataToSave,
         featureSettings: mergedFeatureSettings,
         participantsJson: body.participantsJson !== undefined
@@ -620,10 +614,10 @@ export async function PUT(
           }
 
           // Bersihkan cache jika subdomain sebelumnya sempat diakses sebelum rilis
-          const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || "luxvite.id").split(":")[0].toLowerCase();
+          const rootDomain = (await getDynamicServerRootDomain("")).split(":")[0].toLowerCase();
           const urlsToPurge: string[] = [];
-          if (updated.subdomain) urlsToPurge.push(`https://${updated.subdomain}.${rootDomain}/`);
-          if (updated.invitationSlug) urlsToPurge.push(`https://${rootDomain}/${updated.invitationSlug}`);
+          if (rootDomain && updated.subdomain) urlsToPurge.push(`https://${updated.subdomain}.${rootDomain}/`);
+          if (rootDomain && updated.invitationSlug) urlsToPurge.push(`https://${rootDomain}/${updated.invitationSlug}`);
           if (urlsToPurge.length > 0) {
             const { purgeCloudflareCache } = await import("@/lib/cloudflare");
             await purgeCloudflareCache({ files: urlsToPurge });
@@ -687,7 +681,7 @@ export async function PATCH(
         ? body.featureSettings
         : JSON.parse(body.featureSettings || "{}");
 
-      let parsedFeatures = { ...existingObj, ...incomingObj };
+      let parsedFeatures = normalizeFeatureUrls({ ...existingObj, ...incomingObj });
 
       if (parsedFeatures.memoriesShotsQuota !== undefined) {
         const sq = Number(parsedFeatures.memoriesShotsQuota);

@@ -1,25 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createDatabaseSnapshot, listDatabaseSnapshots, deleteDatabaseSnapshot, inspectBackupPath } from "@/lib/databaseBackup";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requireAdminModule } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
-async function verifyAdminSession() {
-  const session = await auth();
-  const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
-  if (!session?.user || !isAdmin) {
-    return false;
-  }
-  return true;
+async function denyUnlessDatabaseAdmin() {
+  const guard = await requireAdminModule("database");
+  return guard.ok ? null : guard.response;
 }
 
 export async function GET() {
   try {
-    const isAuthorized = await verifyAdminSession();
-    if (!isAuthorized) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const denied = await denyUnlessDatabaseAdmin();
+    if (denied) return denied;
 
     let backupPathSetting = "./data/backups";
     try {
@@ -40,10 +34,8 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const isAuthorized = await verifyAdminSession();
-    if (!isAuthorized) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const denied = await denyUnlessDatabaseAdmin();
+    if (denied) return denied;
 
     const body = await req.json().catch(() => ({}));
 
@@ -68,10 +60,8 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const isAuthorized = await verifyAdminSession();
-    if (!isAuthorized) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const denied = await denyUnlessDatabaseAdmin();
+    if (denied) return denied;
 
     const { searchParams } = new URL(req.url);
     const filename = searchParams.get("filename");

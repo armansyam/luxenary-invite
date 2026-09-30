@@ -1977,28 +1977,36 @@ export default function AdminSettingsTab(props: Props) {
   {/* Subdomain Lifecycle & Archiving Settings */}
   <SettingsCard
     title="Siklus Hidup &amp; Retensi Sistem"
-    description="Atur masa simpan terpadu website (subdomain &amp; custom domain), foto candid tamu di cloud, dan otomatisasi pelepasan subdomain ke pool pasca acara."
+    description="Atur jam retensi yang terpisah, seluruhnya dihitung dari tanggal acara utama sesuai zona waktu acara: pelepasan subdomain, pembersihan galeri foto tamu, dan masa custom domain. Masa simpan arsip undangan diatur di tab Database."
     isEditing={Boolean(editSection["subdomain"])}
     onEdit={() => toggleEditSection("subdomain")}
-    onCancel={() => cancelEdit("subdomain", ["retention_cleanup_days", "subdomain_auto_recycle"])}
-    onSave={() => saveSettings(["retention_cleanup_days", "subdomain_auto_recycle"], setSavingSubdomainSettings, "subdomain")}
+    onCancel={() => cancelEdit("subdomain", ["subdomain_grace_days", "retention_cleanup_days", "retention_custom_domain_days", "subdomain_auto_recycle"])}
+    onSave={() => saveSettings(["subdomain_grace_days", "retention_cleanup_days", "retention_custom_domain_days", "subdomain_auto_recycle"], setSavingSubdomainSettings, "subdomain")}
     saving={savingSubdomainSettings}
-    isDirty={isSectionDirty(["retention_cleanup_days", "subdomain_auto_recycle"])}
+    isDirty={isSectionDirty(["subdomain_grace_days", "retention_cleanup_days", "retention_custom_domain_days", "subdomain_auto_recycle"])}
     saveSuccess={settingsSaved["subdomain"]}
     saveSuccessMessage="Pengaturan siklus hidup &amp; retensi berhasil disimpan"
     viewContent={
       <div className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-          <div className="p-4 bg-amber-50/50 rounded-xl border border-amber-200">
-            <span className="text-xs text-amber-950 font-bold block mb-1">Masa Aktif &amp; Retensi Pasca-Acara</span>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-mono font-bold text-amber-900">
-                {settingsMap["retention_cleanup_days"] || "14"}
-              </span>
-              <span className="text-xs text-amber-800 font-medium">Hari pasca acara</span>
-            </div>
-            <p className="text-[11px] text-stone-500 mt-2">
-              Subdomain platform, custom domain, dan galeri foto candid tamu aktif bersamaan selama {settingsMap["retention_cleanup_days"] || "14"} hari pasca-acara sebelum dibersihkan dan dilepas serentak.
+          <div className="p-4 bg-amber-50/50 rounded-xl border border-amber-200 space-y-2.5">
+            <span className="text-xs text-amber-950 font-bold block">Jam Retensi Pasca-Acara</span>
+            <dl className="space-y-1.5 text-[11px] text-stone-600">
+              <div className="flex items-baseline justify-between gap-3">
+                <dt>Subdomain kembali ke pool</dt>
+                <dd className="font-mono font-bold text-amber-900">{settingsMap["subdomain_grace_days"] || "7"} hari</dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-3">
+                <dt>Galeri foto tamu dibersihkan</dt>
+                <dd className="font-mono font-bold text-amber-900">{settingsMap["retention_cleanup_days"] || "30"} hari</dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-3">
+                <dt>Custom domain aktif (mengikuti slug)</dt>
+                <dd className="font-mono font-bold text-amber-900">{settingsMap["retention_custom_domain_days"] || "365"} hari</dd>
+              </div>
+            </dl>
+            <p className="text-[11px] text-stone-500">
+              Setelah subdomain kembali ke pool, alamat slug menjadi tautan utama. Perpanjangan galeri berbayar menggantikan jam galeri per undangan.
             </p>
           </div>
 
@@ -2031,7 +2039,7 @@ export default function AdminSettingsTab(props: Props) {
               <span>Pembersihan Subdomain Kedaluwarsa</span>
             </h4>
             <p className="text-[11px] text-stone-300 mt-0.5">
-              Eksekusi manual untuk melepaskan semua subdomain yang telah lewat masa simpan (&gt; {settingsMap["retention_cleanup_days"] || "14"} hari).
+              Eksekusi manual untuk melepaskan semua subdomain yang telah lewat masa tenggang (&gt; {settingsMap["subdomain_grace_days"] || "7"} hari pasca acara).
             </p>
           </div>
           <button
@@ -2070,17 +2078,35 @@ export default function AdminSettingsTab(props: Props) {
     }
   >
     <div className="space-y-4">
-      <FieldRow label="Masa Aktif &amp; Retensi Pasca-Acara (Hari)" description="Jumlah hari website (subdomain &amp; custom domain), formulir RSVP, dan foto candid tamu di cloud tetap aktif bersama sebelum dibersihkan dan dilepas serentak (Default: 14 hari pasca-acara).">
+      <FieldRow label="Masa Tenggang Subdomain (Hari)" description="Hari sejak tanggal acara utama hingga subdomain dikembalikan ke pool. Sesudahnya undangan tetap dapat dibuka lewat alamat slug (Default: 7 hari).">
         <input
           type="number"
           min="1"
-          max="90"
-          value={settingsMap["retention_cleanup_days"] || "14"}
-          onChange={(e) => {
-            setSetting("retention_cleanup_days", e.target.value);
-            setSetting("subdomain_grace_days", e.target.value);
-            setSetting("retention_gallery_default_days", e.target.value);
-          }}
+          max="365"
+          value={settingsMap["subdomain_grace_days"] || "7"}
+          onChange={(e) => setSetting("subdomain_grace_days", e.target.value)}
+          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
+        />
+      </FieldRow>
+
+      <FieldRow label="Retensi Galeri Foto Tamu (Hari)" description="Hari sejak tanggal acara utama hingga foto candid tamu dibersihkan dari R2 agar penyimpanan tetap lega. Klien dapat memperpanjang lewat add-on galeri (Default: 30 hari).">
+        <input
+          type="number"
+          min="1"
+          max="365"
+          value={settingsMap["retention_cleanup_days"] || "30"}
+          onChange={(e) => setSetting("retention_cleanup_days", e.target.value)}
+          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
+        />
+      </FieldRow>
+
+      <FieldRow label="Masa Aktif Custom Domain (Hari)" description="Hari sejak tanggal acara utama custom domain klien tetap melayani undangan, mengikuti gerbang slug (Default: 365 hari).">
+        <input
+          type="number"
+          min="1"
+          max="3650"
+          value={settingsMap["retention_custom_domain_days"] || "365"}
+          onChange={(e) => setSetting("retention_custom_domain_days", e.target.value)}
           className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
         />
       </FieldRow>

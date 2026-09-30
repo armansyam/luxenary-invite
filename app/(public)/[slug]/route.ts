@@ -8,6 +8,8 @@ import { STORAGE_PROVIDER, s3Client } from "@/lib/storage";
 import { HeadObjectCommand } from "@aws-sdk/client-s3";
 import { invitationLookupCache } from "@/lib/cache";
 import { hasPlanCapability } from "@/lib/settings";
+import { computeLifecycleDates } from "@/lib/lifecycleDates";
+import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import fs from "fs";
 import path from "path";
 
@@ -150,30 +152,34 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
 
   // Jika undangan sudah berstatus ARCHIVED (masa galeri telah berakhir)
   if (invitation.status === "ARCHIVED") {
-    // 1. Prioritaskan penyajian arsip mandiri dari Cold Storage NAS jika tersedia
-    try {
-      const { readNasArchiveHtml } = await import("@/lib/nasArchive");
-      const nasHtml = await readNasArchiveHtml(slug);
-      if (nasHtml) {
-        return new NextResponse(nasHtml, {
-          status: 200,
-          headers: {
-            "Content-Type": "text/html; charset=utf-8",
-            "Cache-Control": "public, max-age=3600, s-maxage=86400",
-          },
-        });
-      }
-    } catch (nasErr) {
-      console.warn(`[Public Slug Route] Gagal membaca arsip NAS (${slug}):`, nasErr);
-    }
+    const rootUrl = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
 
-    const rootUrl = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "https://luxvite.id")).replace(/\/$/, "");
-    const portfolioExists = await hasPortfolio(slug);
-    if (portfolioExists) {
+    // 1. Portofolio pilihan admin (bila ada) menjadi tujuan utama
+    if (await hasPortfolio(slug)) {
       return NextResponse.redirect(`${rootUrl}/portfolio/${slug}`, 307);
     }
 
-    // Jika tidak ada portofolio dan arsip NAS belum siap, alihkan ke halaman utama
+    // 2. Arsip mandiri (NAS) hanya disajikan selama masa arsip (nas_archive_retention_days sejak acara utama)
+    const archiveDates = computeLifecycleDates({ eventData: invitation.eventData }, await getLifecycleSettings());
+    if (archiveDates && Date.now() <= archiveDates.archiveExpiresAt.getTime()) {
+      try {
+        const { readNasArchiveHtml } = await import("@/lib/nasArchive");
+        const nasHtml = await readNasArchiveHtml(slug);
+        if (nasHtml) {
+          return new NextResponse(nasHtml, {
+            status: 200,
+            headers: {
+              "Content-Type": "text/html; charset=utf-8",
+              "Cache-Control": "public, max-age=3600, s-maxage=86400",
+            },
+          });
+        }
+      } catch (nasErr) {
+        console.warn(`[Public Slug Route] Gagal membaca arsip NAS (${slug}):`, nasErr);
+      }
+    }
+
+    // 3. Tanpa portofolio dan arsip (belum ada, NAS nonaktif, atau masa arsip habis): beranda
     return NextResponse.redirect(`${rootUrl}/`, 307);
   }
 

@@ -6,6 +6,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getPlanDisplayName } from "@/lib/planUtils";
+import { DEFAULT_LIFECYCLE_SETTINGS, formatRetentionLabel } from "@/lib/lifecycleDates";
 
 function formatWhatsAppNumber(val: string): string {
   const digits = val.replace(/\D/g, "").slice(0, 15);
@@ -83,7 +84,7 @@ function CheckoutContent() {
   // Waktu offset untuk sinkronisasi timer klien dan server
   const [serverTimeOffset, setServerTimeOffset] = useState<number>(0);
   const [reloadKey, setReloadKey] = useState<number>(0);
-  const [retentionDays, setRetentionDays] = useState<number>(30);
+  const [retentionDays, setRetentionDays] = useState<number>(DEFAULT_LIFECYCLE_SETTINGS.archiveRetentionDays);
   const [cancellingOrder, setCancellingOrder] = useState(false);
   const [requestedDomain, setRequestedDomain] = useState<string | null>(null);
 
@@ -209,8 +210,8 @@ function CheckoutContent() {
       if (settings.paymentGatewayFeePayer) {
         setFeePayer(settings.paymentGatewayFeePayer);
       }
-      if (settings.retentionInvitationDays) {
-        setRetentionDays(settings.retentionInvitationDays);
+      if (settings.archiveRetentionDays) {
+        setRetentionDays(settings.archiveRetentionDays);
       }
 
       // 2. If orderId is provided, fetch existing order status directly
@@ -765,7 +766,7 @@ function CheckoutContent() {
                 ) : (
                   <div className="flex justify-between items-center">
                     <span className="text-stone-400">Masa Aktif Undangan</span>
-                    <span className="text-emerald-400 font-semibold">Aktif hingga {retentionDays} Hari Setelah Acara</span>
+                    <span className="text-emerald-400 font-semibold">Tersimpan {formatRetentionLabel(retentionDays)} Setelah Acara</span>
                   </div>
                 )}
               </div>

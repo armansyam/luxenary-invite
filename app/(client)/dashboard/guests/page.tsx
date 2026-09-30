@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { getInvitationPublicUrl, resolveEffectiveInvitationUrl } from "@/lib/domainUtils";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
+import { useFeedback } from "@/components/ui/Feedback";
 
 interface Guest {
   id: string;
@@ -68,6 +69,7 @@ const WA_PRESETS = [
 ];
 
 export default function GuestsPage() {
+  const feedback = useFeedback();
   const [invitationId, setInvitationId] = useState<string>("");
   const [invitationData, setInvitationData] = useState<any>(null);
   const [platformPackages, setPlatformPackages] = useState<any[]>([]);
@@ -777,7 +779,7 @@ export default function GuestsPage() {
                     onClick={() => {
                       const url = `${window.location.origin}/s/${invitationData.subdomain}/receptionist`;
                       navigator.clipboard.writeText(`Tautan Portal Resepsionis: ${url}\nPIN Akses: ${invitationData?.staffPin || ""}`);
-                      alert("Tautan Scanner & PIN berhasil disalin untuk Panitia / WO.");
+                      feedback.notify("Tautan Scanner & PIN berhasil disalin untuk Panitia / WO.", "success");
                     }}
                     className="px-3 py-1.5 bg-white hover:bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
                   >

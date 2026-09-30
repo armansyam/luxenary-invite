@@ -4,8 +4,10 @@ import { isSubdomainExpired } from "@/lib/domainUtils";
 import { getPublishedHtml, buildAndSavePublishedHtml } from "@/lib/staticPublisher";
 import { composeTemplateData } from "@/lib/themeEngine";
 import { renderTemplateFile } from "@/lib/renderTemplate";
-import { invitationLookupCache } from "@/lib/cache";
+import { invitationLookupCache, invalidateInvitationLookup } from "@/lib/cache";
 import { hasPlanCapability } from "@/lib/settings";
+import { getLifecycleSettings } from "@/lib/lifecycleSettings";
+import { getDynamicServerApexUrl } from "@/lib/serverDomainUtils";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ subdomain: string }> }) {
   const { subdomain } = await params;
@@ -36,7 +38,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
 
   if (!invitation) {
     // If subdomain is vacant / released, redirect to homepage with info
-    const rootUrl = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "https://luxvite.id")).replace(/\/$/, "");
+    const rootUrl = await getDynamicServerApexUrl(subdomain);
     return NextResponse.redirect(`${rootUrl}/?notice=subdomain-available`, 307);
   }
 
@@ -119,27 +121,21 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
     }
   }
 
-  // Evaluasi masa aktif subdomain sesuai adminSetting dan tanggal acara mutakhir (multi-sesi)
-  try {
-    const [retentionCleanupSetting, autoRecycleSetting] = await Promise.all([
-      prisma.adminSetting.findUnique({ where: { key: "retention_cleanup_days" } }),
-      prisma.adminSetting.findUnique({ where: { key: "subdomain_auto_recycle" } }),
-    ]);
+  // Setelah masa tenggang subdomain (subdomain_grace_days dari acara utama) atau saat ARCHIVED, subdomain
+  // tidak lagi melayani; slug menjadi gerbang utama (portofolio/arsip/beranda diputuskan oleh rute slug).
+  const lifecycleSettings = await getLifecycleSettings();
+  const isPastGrace = isSubdomainExpired(invitation.eventData, lifecycleSettings.subdomainGraceDays);
 
-    const cleanupDays = Number(retentionCleanupSetting?.value) || 14;
-    const isAutoRecycle = (autoRecycleSetting?.value || "true") === "true";
-
-    if (isAutoRecycle && isSubdomainExpired(invitation.eventData, cleanupDays)) {
-      // Auto-release subdomain kembali ke pool jika masa retensi terlewati
+  if (!isPreview && (invitation.status === "ARCHIVED" || (lifecycleSettings.autoRecycleSubdomain && isPastGrace))) {
+    if (lifecycleSettings.autoRecycleSubdomain && isPastGrace) {
       await prisma.invitation.update({
         where: { id: invitation.id },
         data: { subdomain: null },
       });
-      const rootUrl = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "https://luxvite.id")).replace(/\/$/, "");
-      return NextResponse.redirect(`${rootUrl}/?notice=subdomain-expired`, 307);
+      invalidateInvitationLookup(invitation.invitationSlug, invitation.subdomain);
     }
-  } catch (err) {
-    console.warn("[Subdomain Route] Gagal memvalidasi setting retensi:", err);
+    const rootUrl = await getDynamicServerApexUrl(subdomain);
+    return NextResponse.redirect(`${rootUrl}/${invitation.invitationSlug}`, 307);
   }
 
   let html: string | null = null;

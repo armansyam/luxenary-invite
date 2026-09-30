@@ -4,7 +4,8 @@ import { getPublicPlatformSettings, hasPlanCapability, getPlanMemoriesQuota } fr
 import crypto from "crypto";
 import { uploadFile, deleteFile } from "@/lib/storage";
 import { rateLimitDb, getClientIp } from "@/lib/rateLimit";
-import { sseEmitter } from "@/lib/sseEmitter";
+import { parseFeatureSettings } from "@/lib/featureSettings";
+import { publishNewMemory } from "@/lib/sseEmitter";
 import { getMemoriesActiveSchedule, calculateSessionCumulativeQuota } from "@/lib/domainUtils";
 
 export const dynamic = "force-dynamic";
@@ -121,15 +122,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ── VALIDASI KONFIGURASI DINAMIS (featureSettings) ──
-    const fs = (() => {
-      try {
-        return typeof invitation.featureSettings === "object"
-          ? invitation.featureSettings
-          : JSON.parse(invitation.featureSettings || "{}");
-      } catch {
-        return {};
-      }
-    })();
+    const fs = parseFeatureSettings(invitation.featureSettings);
 
     // Cek apakah fitur memori tamu dinonaktifkan di level undangan
     if (fs.showGuestMemories === false) {
@@ -374,7 +367,7 @@ export async function POST(req: NextRequest) {
 
     // Pancarkan event real-time ke SSE stream galeri tamu
     try {
-      sseEmitter.emit("new_memory", memory);
+      await publishNewMemory({ id: memory.id, invitationId: memory.invitationId });
     } catch (sseErr) {
       console.error("[SSE Emitter Error]", sseErr);
     }

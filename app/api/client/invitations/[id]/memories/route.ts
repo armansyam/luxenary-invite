@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import fs from "fs";
 import path from "path";
 import { buildAndSavePublishedHtml } from "@/lib/staticPublisher";
+import { parseFeatureSettings } from "@/lib/featureSettings";
 
 export const dynamic = "force-dynamic";
 
@@ -98,15 +99,7 @@ export async function GET(
     const { getPlanMemoriesQuota } = await import("@/lib/settings");
     const planQuota = await getPlanMemoriesQuota(invitation.order?.planType);
 
-    const fs = (() => {
-      try {
-        return typeof invitation.featureSettings === "object"
-          ? invitation.featureSettings
-          : JSON.parse((invitation.featureSettings as string) || "{}");
-      } catch {
-        return {};
-      }
-    })();
+    const fs = parseFeatureSettings(invitation.featureSettings);
 
     const maxContributors = typeof fs.memoriesMaxContributors === "number" ? fs.memoriesMaxContributors : planQuota.maxContributors;
     const shotsQuota = typeof fs.memoriesShotsQuota === "number" ? fs.memoriesShotsQuota : planQuota.shotsQuota;
@@ -242,15 +235,7 @@ export async function PATCH(
       }
     }
 
-    const currentFs = (() => {
-      try {
-        return typeof invitation.featureSettings === "object"
-          ? (invitation.featureSettings || {})
-          : JSON.parse((invitation.featureSettings as string) || "{}");
-      } catch {
-        return {};
-      }
-    })();
+    const currentFs = parseFeatureSettings(invitation.featureSettings);
 
     // Ambil semua field konfigurasi moments yang diizinkan
     const incomingSettings = body.settings && typeof body.settings === "object" ? body.settings : body;

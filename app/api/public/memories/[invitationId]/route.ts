@@ -24,7 +24,6 @@ export async function GET(
         mediaType: true,
         mediaUrl: true,
         thumbnailUrl: true,
-        senderEmail: true,
       },
     });
 

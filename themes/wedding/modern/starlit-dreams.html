@@ -1914,7 +1914,7 @@
     async function luxSubmitRsvp(e) {
       e.preventDefault();
       const form = e.target;
-      const btn = form.querySelector("button[type="submit"]");
+      const btn = form.querySelector('button[type="submit"]');
       const oldBtnText = btn ? btn.textContent : "";
       if (btn) {
         btn.disabled = true;
@@ -1932,7 +1932,19 @@
           const item = document.createElement("div");
           item.className = "wish-item-card";
           item.style.cssText = "background: rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; padding: 1rem 1.2rem; margin-bottom: 0.75rem; text-align: left; animation: fadeIn 0.5s ease;";
-          item.innerHTML = "<div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.35rem;"><strong style="color: var(--primary); font-size: 0.92rem;">" + (name || "Tamu") + "</strong><span style="font-size: 0.72rem; color: var(--text-muted);">Baru saja (" + status + ")</span></div><p style="margin: 0; font-size: 0.85rem; line-height: 1.5; color: var(--text-main);">" + (message || "Selamat berbahagia!") + "</p>";
+          const wishHead = document.createElement("div");
+          wishHead.style.cssText = "display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.35rem;";
+          const wishName = document.createElement("strong");
+          wishName.style.cssText = "color: var(--primary); font-size: 0.92rem;";
+          wishName.textContent = name || "Tamu";
+          const wishMeta = document.createElement("span");
+          wishMeta.style.cssText = "font-size: 0.72rem; color: var(--text-muted);";
+          wishMeta.textContent = "Baru saja (" + status + ")";
+          wishHead.append(wishName, wishMeta);
+          const wishBody = document.createElement("p");
+          wishBody.style.cssText = "margin: 0; font-size: 0.85rem; line-height: 1.5; color: var(--text-main);";
+          wishBody.textContent = message || "Selamat berbahagia!";
+          item.append(wishHead, wishBody);
           container.prepend(item);
         }
 

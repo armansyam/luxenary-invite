@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 interface RateLimitRecord {
   count: number;
   resetTime: number;
@@ -161,25 +163,36 @@ export async function rateLimitDb(key: string, limit: number, windowMs: number):
 }
 
 /**
- * Ekstraksi IP Klien yang Aman dari Reverse Proxy (Cloudflare / Caddy / Nginx)
- * Memprioritaskan header terpercaya dari cloud provider sebelum fallback ke header x-forwarded-for.
+ * IP klien dari header proxy yang DIPERCAYA, dipilih lewat env TRUSTED_PROXY:
+ *  - "cloudflare" (default): hanya cf-connecting-ip.
+ *  - "nginx": hanya x-real-ip (nginx wajib menimpanya: proxy_set_header X-Real-IP $remote_addr).
+ *  - "none": tidak ada header yang dipercaya.
+ * Header lain diabaikan karena klien dapat memalsukannya bila origin dijangkau langsung. Tanpa header
+ * tepercaya, semua permintaan berbagi satu kunci, sehingga memutar header tidak membuat kunci limiter baru.
+ * Hanya NODE_ENV=development yang menerima header apa adanya, agar uji lokal tanpa proxy tetap nyaman.
  */
 export function getClientIp(req: Request | { headers: Headers }): string {
   const headers = req.headers;
-  // 1. Cloudflare True Client IP
-  const cfIp = headers.get("cf-connecting-ip");
-  if (cfIp && cfIp.trim()) return cfIp.trim();
+  const configured = (process.env.TRUSTED_PROXY || "cloudflare").toLowerCase();
+  const mode = configured === "nginx" || configured === "none" ? configured : "cloudflare";
 
-  // 2. Nginx / Caddy X-Real-IP
-  const realIp = headers.get("x-real-ip");
-  if (realIp && realIp.trim()) return realIp.trim();
+  const cfIp = headers.get("cf-connecting-ip")?.trim();
+  const realIp = headers.get("x-real-ip")?.trim();
 
-  // 3. X-Forwarded-For: Ambil IP paling kiri yang valid (origin IP)
-  const forwarded = headers.get("x-forwarded-for");
-  if (forwarded && forwarded.trim()) {
-    const ips = forwarded.split(",").map((s) => s.trim());
-    if (ips.length > 0 && ips[0]) return ips[0];
+  if (mode === "cloudflare" && cfIp) return cfIp;
+  if (mode === "nginx" && realIp) return realIp;
+
+  if (process.env.NODE_ENV === "development") {
+    return cfIp || realIp || headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "dev-local";
   }
-
-  return "unknown-ip";
+  if (process.env.NODE_ENV === "production" && !warnedUntrustedOrigin) {
+    warnedUntrustedOrigin = true;
+    logger.warn(
+      "RateLimit",
+      `Permintaan tanpa header IP dari proxy tepercaya (TRUSTED_PROXY=${mode}); seluruh permintaan semacam itu berbagi satu kunci limiter. Bila ini lalu lintas pengunjung sungguhan, periksa TRUSTED_PROXY dan konfigurasi proxy.`
+    );
+  }
+  return "untrusted-origin";
 }
+
+let warnedUntrustedOrigin = false;

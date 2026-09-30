@@ -24,6 +24,14 @@ import { compressImageToWebP } from "@/lib/clientImageCompressor";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { resolveInvitationDisplayName, buildCanonicalPath } from "@/lib/invitationUtils";
 import { hasAdminPermission } from "@/lib/adminPermissions";
+import {
+  computeLifecycleDates,
+  formatDateInEventTimezone,
+  formatPrimaryEventDate,
+  getPrimaryEventTimezone,
+  parseLifecycleSettings,
+} from "@/lib/lifecycleDates";
+import { useFeedback } from "@/components/ui/Feedback";
 
 const tabs = [
   {
@@ -217,6 +225,7 @@ const VALID_SETTINGS_SUBS = [
 ];
 
 export default function AdminPage() {
+  const feedback = useFeedback();
   const { data: session, status } = useSession();
   const router = useRouter();
 
@@ -3628,8 +3637,14 @@ export default function AdminPage() {
                 {editingTheme ? (
                   <button
                     type="button"
-                    onClick={() => {
-                      if (window.confirm(`Hapus tema "${editingTheme.name}" secara permanen? Tindakan ini tidak dapat dibatalkan.`)) {
+                    onClick={async () => {
+                      const confirmed = await feedback.confirm({
+                        title: "Hapus tema",
+                        message: `Hapus tema "${editingTheme.name}" secara permanen? Tindakan ini tidak dapat dibatalkan.`,
+                        confirmLabel: "Hapus",
+                        danger: true,
+                      });
+                      if (confirmed) {
                         setShowThemeModal(false);
                         handleDeleteTheme(editingTheme.id, editingTheme.name);
                       }
@@ -5818,10 +5833,10 @@ export default function AdminPage() {
                                               const updated = curVendors.map((v: any, i: number) => i === vIdx ? { ...v, logoUrl: json.rawUrl } : v);
                                               setDemoStudioData({ ...demoStudioData, vendors: updated });
                                             } else {
-                                              alert(json.error || "Gagal mengunggah logo vendor");
+                                              feedback.notify(json.error || "Gagal mengunggah logo vendor", "error");
                                             }
                                           } catch (err: any) {
-                                            alert(err.message || "Error mengunggah logo");
+                                            feedback.notify(err.message || "Error mengunggah logo", "error");
                                           } finally {
                                             setUploadingSlot(null);
                                           }
@@ -5846,9 +5861,14 @@ export default function AdminPage() {
                                     {/* Tombol Input URL Manual */}
                                     <button
                                       type="button"
-                                      onClick={() => {
+                                      onClick={async () => {
                                         const currentUrl = vendor.logoUrl || "";
-                                        const inputUrl = window.prompt("Masukkan URL Logo Vendor (misal: /uploads/logo_dummy/logo_1.png atau URL eksternal):", currentUrl);
+                                        const inputUrl = await feedback.prompt({
+                                          title: "URL logo vendor",
+                                          message: "Path lokal (misal /uploads/logo_dummy/logo_1.png) atau URL eksternal.",
+                                          initialValue: currentUrl,
+                                          placeholder: "/uploads/... atau https://...",
+                                        });
                                         if (inputUrl !== null) {
                                           const updated = curVendors.map((v: any, i: number) => i === vIdx ? { ...v, logoUrl: inputUrl.trim() } : v);
                                           setDemoStudioData({ ...demoStudioData, vendors: updated });
@@ -6168,28 +6188,16 @@ export default function AdminPage() {
               
               {(() => {
                 const activeInv = manageClient.invitations?.[0];
-                let eventDateStr = "-";
-                let eventDate = null;
-                
-                if (activeInv?.eventData) {
-                  try {
-                    const parsed = JSON.parse(activeInv.eventData);
-                    if (parsed[0]?.date) {
-                      eventDate = new Date(parsed[0].date);
-                      eventDateStr = eventDate.toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' });
-                    }
-                  } catch(e) {}
-                }
-                
-                let expiredStr = "-";
-                if (activeInv?.expiresAt) {
-                  expiredStr = new Date(activeInv.expiresAt).toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' });
-                } else if (eventDate) {
-                  const retentionDays = parseInt(settingsMap["retention_cleanup_days"] || "14", 10);
-                  const calculatedExpiry = new Date(eventDate.getTime() + (retentionDays * 24 * 60 * 60 * 1000));
-                  expiredStr = calculatedExpiry.toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' });
-                }
-                
+                const eventDateStr = formatPrimaryEventDate(activeInv?.eventData) ?? "-";
+                const lifecycleDates = activeInv
+                  ? computeLifecycleDates(
+                      { eventData: activeInv.eventData, galleryExpiresAt: activeInv.galleryExpiresAt },
+                      parseLifecycleSettings(settingsMap)
+                    )
+                  : null;
+                const eventTimezone = getPrimaryEventTimezone(activeInv?.eventData);
+                const lifecycleDateStr = (date?: Date) => (date ? formatDateInEventTimezone(date, eventTimezone) : "-");
+
                 return (
                   <div className="space-y-4">
                     <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
@@ -6213,8 +6221,16 @@ export default function AdminPage() {
                           <div className="text-sm font-bold text-indigo-700">{eventDateStr}</div>
                         </div>
                         <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                          <div className="text-xs text-gray-400 font-medium mb-1">Masa Aktif Berakhir</div>
-                          <div className="text-sm font-bold text-rose-600">{expiredStr}</div>
+                          <div className="text-xs text-gray-400 font-medium mb-1">Subdomain Dilepas</div>
+                          <div className="text-sm font-bold text-rose-600">{lifecycleDateStr(lifecycleDates?.subdomainReleaseAt)}</div>
+                        </div>
+                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                          <div className="text-xs text-gray-400 font-medium mb-1">Galeri Foto Berakhir</div>
+                          <div className="text-sm font-bold text-rose-600">{lifecycleDateStr(lifecycleDates?.galleryExpiresAt)}</div>
+                        </div>
+                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                          <div className="text-xs text-gray-400 font-medium mb-1">Undangan Tersimpan Hingga</div>
+                          <div className="text-sm font-bold text-rose-600">{lifecycleDateStr(lifecycleDates?.archiveExpiresAt)}</div>
                         </div>
                       </div>
                     )}

@@ -1,23 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requireAdminModule } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
-    const role = (session?.user as any)?.role;
-    const isAdmin =
-      (session?.user as any)?.isAdmin === true ||
-      role === "SUPER_ADMIN" ||
-      role === "ADMIN" ||
-      role === "SUPPORT" ||
-      role === "FINANCE";
-
-    if (!session?.user || !isAdmin) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("finance");
+    if (!guard.ok) return guard.response;
 
     const { searchParams } = new URL(req.url);
     const now = new Date();
@@ -131,17 +121,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    const role = (session?.user as any)?.role;
-    const isAdmin =
-      (session?.user as any)?.isAdmin === true ||
-      role === "SUPER_ADMIN" ||
-      role === "ADMIN" ||
-      role === "FINANCE";
-
-    if (!session?.user || !isAdmin) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator Finance." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("finance");
+    if (!guard.ok) return guard.response;
+    const session = guard.session;
 
     const body = await req.json();
     const { month, year, taxPaid, ntpn, taxPaidAt } = body;

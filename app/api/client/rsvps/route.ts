@@ -2,32 +2,55 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   try {
     const session = await auth();
-    if (!session?.user?.email) {
+    const userId = session?.user?.id;
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(req.url);
-    const invitationId = searchParams.get("invitationId");
+    const isAdmin =
+      (session.user as any).isAdmin === true ||
+      (session.user as any).role === "SUPER_ADMIN" ||
+      (session.user as any).role === "ADMIN";
 
-    let whereClause: any = {};
-    if (invitationId) {
-      whereClause.invitationId = invitationId;
-    } else {
-      // Find user's invitation
-      const user = await prisma.user.findUnique({
-        where: { email: session.user.email },
-        include: { invitations: { select: { id: true } } },
+    const requestedInvitationId = new URL(req.url).searchParams.get("invitationId");
+
+    let invitationId: string;
+    if (requestedInvitationId) {
+      const invitation = await prisma.invitation.findUnique({
+        where: { id: requestedInvitationId },
+        select: { userId: true },
       });
-      if (user?.invitations?.[0]) {
-        whereClause.invitationId = user.invitations[0].id;
+      if (!invitation) {
+        return NextResponse.json({ error: "Undangan tidak ditemukan" }, { status: 404 });
       }
+      if (invitation.userId !== userId && !isAdmin) {
+        return NextResponse.json({ error: "Forbidden: bukan pemilik undangan ini" }, { status: 403 });
+      }
+      invitationId = requestedInvitationId;
+    } else {
+      const ownInvitation = await prisma.invitation.findFirst({
+        where: { userId },
+        orderBy: { createdAt: "asc" },
+        select: { id: true },
+      });
+      if (!ownInvitation) {
+        return NextResponse.json({
+          success: true,
+          stats: { totalResponses: 0, attending: 0, declined: 0, uncertain: 0, totalWishes: 0 },
+          rsvps: [],
+          wishes: [],
+        });
+      }
+      invitationId = ownInvitation.id;
     }
 
     const rsvps = await prisma.rsvp.findMany({
-      where: whereClause,
+      where: { invitationId },
       orderBy: { respondedAt: "desc" },
       include: { guest: { select: { name: true, category: true, phone: true } } },
     });

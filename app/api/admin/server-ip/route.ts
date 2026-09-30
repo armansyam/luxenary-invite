@@ -1,23 +1,17 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireAdminModule } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
-async function verifyAdminSession() {
-  const session = await auth();
-  const isAdmin =
-    (session?.user as any)?.isAdmin === true ||
-    (session?.user as any)?.role === "SUPER_ADMIN" ||
-    (session?.user as any)?.role === "ADMIN";
-  return Boolean(session?.user && isAdmin);
+async function denyUnlessAdmin() {
+  const guard = await requireAdminModule("custom_domains");
+  return guard.ok ? null : guard.response;
 }
 
 export async function GET() {
   try {
-    const isAuthorized = await verifyAdminSession();
-    if (!isAuthorized) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const denied = await denyUnlessAdmin();
+    if (denied) return denied;
 
     let detectedIp = "";
 

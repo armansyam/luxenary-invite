@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
+import { requireAdminModule } from "@/lib/adminAuth";
 import fs from "fs";
 import path from "path";
 
@@ -11,11 +11,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
-    if (!session || !isAdmin) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const guard = await requireAdminModule("themes");
+    if (!guard.ok) return guard.response;
 
     const { id } = await params;
     const themeId = id.toLowerCase().trim();
@@ -186,14 +183,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    const isAdmin =
-      (session?.user as any)?.isAdmin === true ||
-      (session?.user as any)?.role === "SUPER_ADMIN" ||
-      (session?.user as any)?.role === "ADMIN";
-    if (!session || !isAdmin) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const guard = await requireAdminModule("themes");
+    if (!guard.ok) return guard.response;
 
     const { id } = await params;
     const themeId = id.toLowerCase().trim();

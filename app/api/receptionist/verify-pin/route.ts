@@ -1,21 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyPin } from "@/lib/pinEncryption";
-import { rateLimit } from "@/lib/rateLimit";
+import { getClientIp, rateLimitDb } from "@/lib/rateLimit";
 import { generateReceptionistToken } from "@/lib/receptionistAuth";
+
+const PIN_WINDOW_MS = 15 * 60 * 1000;
 
 export async function POST(req: NextRequest) {
   try {
-    const ip = req.headers.get("x-forwarded-for") || "unknown-ip";
+    const ip = getClientIp(req);
     const { invitationId, pin } = await req.json();
 
-    if (!invitationId || !pin) {
+    if (typeof invitationId !== "string" || typeof pin !== "string" || !invitationId || !pin) {
       return NextResponse.json({ error: "Data tidak lengkap" }, { status: 400 });
     }
 
-    // Rate limit: max 5 percobaan per invitationId per 15 menit (anti brute-force PIN 4-digit)
-    const rateLimitKey = `verify-pin:${ip}:${invitationId}`;
-    if (!rateLimit(rateLimitKey, 5, 15 * 60 * 1000)) {
+    // Dua lapis anti brute-force yang bersifat lintas-proses (PostgreSQL): per IP+undangan dan
+    // batas total per undangan yang tidak bergantung pada IP (header IP dapat dipalsukan).
+    const withinIpLimit = await rateLimitDb(`verify-pin:ip:${ip}:${invitationId}`, 5, PIN_WINDOW_MS);
+    const withinInvitationLimit = await rateLimitDb(`verify-pin:inv:${invitationId}`, 30, PIN_WINDOW_MS);
+    if (!withinIpLimit || !withinInvitationLimit) {
       return NextResponse.json(
         { error: "Terlalu banyak percobaan PIN. Silakan tunggu 15 menit sebelum mencoba kembali." },
         { status: 429 }
@@ -45,7 +49,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "PIN tidak valid" }, { status: 401 });
     }
 
-    const sessionToken = generateReceptionistToken(invitationId);
+    const sessionToken = generateReceptionistToken(invitationId, invitation.staffPin);
 
     return NextResponse.json({
       success: true,

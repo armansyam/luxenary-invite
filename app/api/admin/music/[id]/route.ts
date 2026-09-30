@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireAdminModule } from "@/lib/adminAuth";
 import { prisma } from "@/lib/prisma";
 import fs from "fs";
 import path from "path";
@@ -11,12 +11,8 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
-
-    if (!session?.user || !isAdmin) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("themes");
+    if (!guard.ok) return guard.response;
 
     const { id } = await params;
     const body = await req.json();
@@ -55,12 +51,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
-
-    if (!session?.user || !isAdmin) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("themes");
+    if (!guard.ok) return guard.response;
 
     const { id } = await params;
 

@@ -2,7 +2,8 @@ import { MidtransGateway } from "@/lib/gateways/midtrans";
 import { prisma } from "@/lib/prisma";
 import { applyUpgradePlan } from "@/lib/upgradeHelper";
 import { paymentEmitter } from "@/lib/paymentEvents";
-import { processOrderPaidMarketing, releaseOrderPromoHold } from "@/lib/marketing";
+import { releaseOrderPromoHold } from "@/lib/marketing";
+import { isGatewayAmountValid, settleOrderAsPaid } from "@/lib/paymentSettlement";
 import { logger } from "@/lib/logger";
 import { captureException } from "@/lib/errorTracker";
 import { NextRequest, NextResponse } from "next/server";
@@ -10,7 +11,12 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
-    const body = JSON.parse(rawBody);
+    let body: any;
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
 
     const orderId = body.order_id;
     const statusCode = body.status_code;
@@ -151,32 +157,41 @@ export async function POST(req: NextRequest) {
       (trxStatus === "capture" && fraudStatus === "accept");
 
     if (isPaid) {
-      // Idempotency Guard: gunakan updateMany dengan filter status=PENDING untuk atomic check-and-set
-      // Mencegah double-processing jika Midtrans kirim webhook duplikat bersamaan
-      const updated = await prisma.order.updateMany({
-        where: { id: orderId, status: "PENDING" },
-        data: {
-          status: "PAID",
-          paymentMethod: "GATEWAY",
-          paymentGatewayRef: body.transaction_id || null,
-          paidAt: new Date(),
-        },
-      });
-
-      // Jika count=0, order sudah di-update oleh webhook sebelumnya — return idempotent
-      if (updated.count === 0) {
-        return NextResponse.json({ status: "ok", note: "already_processed" });
+      // Nominal yang dibayar harus sama dengan nominal yang ditagihkan saat init gateway
+      if (!isGatewayAmountValid(order, Number(grossAmount))) {
+        logger.error("MidtransWebhook", `Nominal tidak cocok, order ${orderId} tidak dilunasi.`, undefined, {
+          orderId,
+          grossAmount,
+          chargedAmount: order.chargedAmount?.toString() ?? null,
+          amount: order.amount.toString(),
+        });
+        if (webhookLogId) {
+          await prisma.webhookLog.update({
+            where: { id: webhookLogId },
+            data: { status: "amount_mismatch", processedAt: new Date() },
+          });
+        }
+        return NextResponse.json({ status: "ignored", reason: "amount_mismatch" }, { status: 200 });
       }
 
-      // Konsumsi PromoHold dan catat komisi mitra jika ada
-      await processOrderPaidMarketing(orderId);
+      // Transisi PENDING -> PAID + marketing dalam satu transaksi (atomic check-and-set,
+      // aman terhadap webhook duplikat bersamaan)
+      const settled = await settleOrderAsPaid(orderId, {
+        paymentMethod: "GATEWAY",
+        paymentGatewayRef: body.transaction_id || null,
+      });
+
+      // Order sudah diproses webhook sebelumnya — return idempotent
+      if (!settled) {
+        return NextResponse.json({ status: "ok", note: "already_processed" });
+      }
 
       // Update webhook log
       if (webhookLogId) {
         await prisma.webhookLog.update({
           where: { id: webhookLogId },
           data: { status: "processed", processedAt: new Date() },
-        }).catch(() => {});
+        }).catch((err) => logger.warn("MidtransWebhook", "Gagal memperbarui status webhookLog", { orderId, error: String(err) }));
       }
 
       // If this is an UPGRADE order, update planType on the linked original order

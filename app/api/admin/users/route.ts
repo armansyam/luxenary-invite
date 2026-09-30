@@ -80,6 +80,7 @@ export async function GET(req: NextRequest) {
               status: true,
               themeId: true,
               eventData: true,
+              galleryExpiresAt: true,
               groomName: true,
               brideName: true,
             },

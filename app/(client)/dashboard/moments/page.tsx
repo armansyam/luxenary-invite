@@ -6,11 +6,13 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import QRCode from "react-qr-code";
 
-import { resolveEffectiveInvitationUrl, getLatestEventDate, getMemoriesActiveSchedule } from "@/lib/domainUtils";
+import { resolveEffectiveInvitationUrl, getMemoriesActiveSchedule } from "@/lib/domainUtils";
+import { computeLifecycleDates, getPrimaryEventDateString, lifecycleSettingsFromPublic } from "@/lib/lifecycleDates";
 import UnifiedAddonModal from "@/components/client/UnifiedAddonModal";
 import PrintableQRCardModal from "@/components/client/PrintableQRCardModal";
 import GuestOpeningSetupModal from "@/components/client/GuestOpeningSetupModal";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
+import { useFeedback } from "@/components/ui/Feedback";
 
 const FILTER_PRESETS_LIST = [
   {
@@ -82,6 +84,7 @@ const OPENING_LAYOUTS = [
 ];
 
 export default function MomentsSetupPage() {
+  const feedback = useFeedback();
   const { data: session } = useSession();
   const router = useRouter();
 
@@ -293,7 +296,14 @@ export default function MomentsSetupPage() {
   };
 
   const handleDeletePhoto = async (memoryId: string) => {
-    if (!confirm("Hapus foto candid ini dari galeri kenangan?") || !invitation?.id) return;
+    if (!invitation?.id) return;
+    const confirmed = await feedback.confirm({
+      title: "Hapus foto",
+      message: "Hapus foto candid ini dari galeri kenangan?",
+      confirmLabel: "Hapus",
+      danger: true,
+    });
+    if (!confirmed) return;
     try {
       const res = await fetch(`/api/client/invitations/${invitation.id}/memories`, {
         method: "DELETE",
@@ -369,16 +379,14 @@ export default function MomentsSetupPage() {
   const activeFilterId = getFeatureSetting("memoriesFilter", "aura_90s");
   const activePreset = FILTER_PRESETS_LIST.find((f) => f.id === activeFilterId) || FILTER_PRESETS_LIST[0];
   const isEnabled = getFeatureSetting("showGuestMemories", true);
-  const baseRetentionDays = planType === "TIER_3" ? 90 : (planType === "TIER_2" ? 30 : 7);
+  const lifecycleSettings = lifecycleSettingsFromPublic(platformSettings);
+  const baseRetentionDays = lifecycleSettings.galleryRetentionDays;
   const extraGalleryDays = Number(getFeatureSetting("extraGalleryDays", 0)) || 0;
-  const totalRetentionDays = baseRetentionDays + extraGalleryDays;
 
-  const latestEventDate = getLatestEventDate(invitation?.eventData);
-  const effectiveExpiry = invitation?.galleryExpiresAt
-    ? new Date(invitation.galleryExpiresAt)
-    : latestEventDate
-    ? new Date(latestEventDate.getTime() + totalRetentionDays * 24 * 60 * 60 * 1000)
-    : null;
+  const eventDayString = getPrimaryEventDateString(invitation?.eventData);
+  const effectiveExpiry =
+    computeLifecycleDates({ eventData: invitation?.eventData, galleryExpiresAt: invitation?.galleryExpiresAt }, lifecycleSettings)
+      ?.galleryExpiresAt ?? null;
 
   const daysRemaining = effectiveExpiry
     ? Math.max(0, Math.ceil((effectiveExpiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
@@ -397,11 +405,9 @@ export default function MomentsSetupPage() {
   const instructionText = getFeatureSetting("memoriesCardInstruction", "Pindai kode QR untuk mengabadikan momen istimewa dari sudut pandang Anda.");
 
   const getRetroDateStamp = () => {
-    if (latestEventDate) {
-      const day = String(latestEventDate.getDate()).padStart(2, "0");
-      const month = String(latestEventDate.getMonth() + 1).padStart(2, "0");
-      const yearShort = String(latestEventDate.getFullYear()).slice(-2);
-      return `${day}  ${month}  '${yearShort}`;
+    if (eventDayString) {
+      const [year, month, day] = eventDayString.split("-");
+      return `${day}  ${month}  '${year.slice(-2)}`;
     }
     const now = new Date();
     return `${String(now.getDate()).padStart(2, "0")}  ${String(now.getMonth() + 1).padStart(2, "0")}  '${String(now.getFullYear()).slice(-2)}`;

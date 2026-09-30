@@ -1,5 +1,6 @@
 import { getActiveGateway, getActiveGatewayId, getGatewayById } from "@/lib/gatewayRegistry";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -110,7 +111,9 @@ export async function POST(req: NextRequest) {
       if (expirySetting && !isNaN(Number(expirySetting.value))) {
         expiryMinutes = Math.max(5, Math.min(1440, Number(expirySetting.value)));
       }
-    } catch {}
+    } catch (err) {
+      logger.warn("QrisRegenerate", "Gagal memuat payment_expiry_minutes, memakai default 60 menit", { error: String(err) });
+    }
 
     const finalAmount = Number(order.amount);
     const { checkoutUrl, qrString, sessionId, expiryTimestamp, gatewayTxId } = await gw.init(orderId, finalAmount, appUrl);
@@ -127,6 +130,7 @@ export async function POST(req: NextRequest) {
         paymentGatewayRef: activeGatewayId,
         gatewayId: activeGatewayId,
         gatewayTxId: gatewayTxId || orderId,
+        chargedAmount: finalAmount,
         snapToken: qrString ? JSON.stringify({ qrString, sessionId, expiry: expiryMs }) : checkoutUrl,
         expiredAt: new Date(expiryMs),
       },

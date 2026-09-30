@@ -49,10 +49,14 @@ async function handleBackupRequest(req: NextRequest) {
     // 2. Buat snapshot terjadwal
     const result = await createDatabaseSnapshot("auto_daily");
 
+    const offsiteConfigured = process.env.STORAGE_PROVIDER === "r2" || process.env.STORAGE_PROVIDER === "s3";
     return NextResponse.json({
       success: true,
       message: "Auto-backup berhasil dijalankan.",
       snapshot: result,
+      ...(offsiteConfigured && result.offsiteSynced === false && {
+        warning: "Snapshot tersimpan lokal tetapi unggahan off-site ke R2/S3 gagal. Periksa log server.",
+      }),
     });
   } catch (error: any) {
     return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal menjalankan auto-backup" : (error.message || "Gagal menjalankan auto-backup") }, { status: 500 });

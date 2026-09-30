@@ -5,6 +5,8 @@
  * - Production: https://[subdomain].[root_domain]
  */
 
+import { DAY_MS, getEventTimezoneOffset, getPrimaryEventDate, resolveEventTimezone } from "./lifecycleDates";
+
 /**
  * Subdomain cadangan sistem yang dilindungi dan dilarang digunakan oleh klien.
  * Termasuk cdn (Cloudflare R2), admin, api, auth, media, cname, dll.
@@ -133,8 +135,8 @@ export interface ResolvedInvitationUrl {
 
 /**
  * Resolves the primary public URL for an invitation with strict precedence:
- * 1. Active Custom Domain (e.g., https://yoga-nisa.com/?to=Budi)
- * 2. Active Subdomain (e.g., https://yoga-nisa.luxenary.id/?to=Budi atau http://yoga-nisa.localhost:3000/?to=Budi)
+ * 1. Active Custom Domain (e.g., https://domain-klien.com/?to=Budi)
+ * 2. Active Subdomain (e.g., https://nama-klien.domain-platform.com/?to=Budi atau http://nama-klien.localhost:3000/?to=Budi)
  * 3. Unconfigured / Empty state (No fake simulation fallbacks)
  */
 export function resolveEffectiveInvitationUrl(options: ResolveInvitationUrlOptions): ResolvedInvitationUrl {
@@ -218,54 +220,13 @@ export function getMonthYearSlug(dateInput?: string | Date | null): string {
 }
 
 /**
- * Resolves the latest/most recent wedding event date from an eventData JSON array or string.
- * Ensures multi-session weddings (e.g. Akad on Day 1, Reception on Day 3) use the final event date.
+ * Apakah masa tenggang subdomain (`subdomain_grace_days`) sudah lewat, dihitung dari awal hari acara utama
+ * pada zona waktu acara. Menerima eventData (JSON string atau array). Tanpa tanggal valid: false.
  */
-export function getLatestEventDate(eventData: any): Date | null {
-  try {
-    const events = typeof eventData === "string" ? JSON.parse(eventData) : eventData || [];
-    const list = Array.isArray(events) ? events : events?.events;
-    if (!Array.isArray(list)) return null;
-    let latest: Date | null = null;
-    for (const ev of list) {
-      if (ev?.date) {
-        const d = new Date(ev.date);
-        if (!isNaN(d.getTime())) {
-          if (!latest || d > latest) latest = d;
-        }
-      }
-    }
-    return latest;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Checks if a wedding event date has exceeded the grace period (default: 7 days).
- * Accepts Date object, ISO date string, or raw eventData JSON string.
- */
-export function isSubdomainExpired(eventDateInput?: string | Date | null, gracePeriodDays: number = 7): boolean {
-  if (!eventDateInput) return false;
-  try {
-    let eventDate: Date | null = null;
-    if (eventDateInput instanceof Date) {
-      eventDate = eventDateInput;
-    } else if (typeof eventDateInput === "string") {
-      const trimmed = eventDateInput.trim();
-      if (trimmed.startsWith("[") || trimmed.startsWith("{")) {
-        eventDate = getLatestEventDate(trimmed);
-      } else {
-        eventDate = new Date(trimmed);
-      }
-    }
-    if (!eventDate || isNaN(eventDate.getTime())) return false;
-
-    const expiryTime = eventDate.getTime() + gracePeriodDays * 24 * 60 * 60 * 1000;
-    return Date.now() > expiryTime;
-  } catch {
-    return false;
-  }
+export function isSubdomainExpired(eventData: unknown, graceDays: number, now: Date = new Date()): boolean {
+  const eventDay = getPrimaryEventDate(eventData);
+  if (!eventDay) return false;
+  return now.getTime() > eventDay.getTime() + graceDays * DAY_MS;
 }
 
 
@@ -348,12 +309,7 @@ export function getMemoriesActiveSchedule(featureSettingsInput: any, eventDataIn
           if (ev?.date) {
             let sTime = ev.startTime;
             let eTime = ev.endTime;
-            let tz = ev.timezone;
-            if (!tz && ev.time) {
-              if (/WITA/i.test(ev.time)) tz = "WITA";
-              else if (/WIT/i.test(ev.time)) tz = "WIT";
-              else if (/WIB/i.test(ev.time)) tz = "WIB";
-            }
+            const tz = resolveEventTimezone(ev);
             if ((!sTime || !eTime) && ev.time) {
               const match = String(ev.time).match(/(\d{1,2}[:.]\d{2})\s*[-–—]\s*(\d{1,2}[:.]\d{2}|selesai)/i);
               if (match) {
@@ -369,7 +325,7 @@ export function getMemoriesActiveSchedule(featureSettingsInput: any, eventDataIn
               date: ev.date,
               startTime: sTime || "08:00",
               endTime: eTime || "22:00",
-              timezone: tz || "WIB",
+              timezone: tz,
               allocatedQuota: 0,
             });
           }
@@ -383,8 +339,7 @@ export function getMemoriesActiveSchedule(featureSettingsInput: any, eventDataIn
   const now = new Date();
   const parsed = rawSessions.map((s, index) => {
     const cleanDate = s.date.includes("T") ? s.date.split("T")[0] : s.date;
-    const tz = (s as any).timezone || "WIB";
-    const offset = tz === "WITA" ? "+08:00" : tz === "WIT" ? "+09:00" : "+07:00";
+    const offset = getEventTimezoneOffset(resolveEventTimezone(s));
     const sTime = (s.startTime || "00:00").slice(0, 5);
     const eTime = (s.endTime || "23:59").slice(0, 5);
     const startDate = new Date(`${cleanDate}T${sTime}:00${offset}`);

@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { EventType } from "@prisma/client";
 
 import { getMonthYearSlug, isSubdomainExpired, isReservedSubdomain } from "@/lib/domainUtils";
+import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { safeParseParticipants } from "@/lib/participantUtils";
 
@@ -230,17 +231,8 @@ export async function POST(req: Request) {
     });
 
     if (existingSubdomain) {
-      let eventDateToTest: string | null = null;
-      try {
-        if (existingSubdomain.eventData) {
-          const parsed = JSON.parse(existingSubdomain.eventData);
-          if (Array.isArray(parsed) && parsed[0]?.date) {
-            eventDateToTest = parsed[0].date;
-          }
-        }
-      } catch {}
-
-      if (isSubdomainExpired(eventDateToTest, 7)) {
+      const { subdomainGraceDays } = await getLifecycleSettings();
+      if (isSubdomainExpired(existingSubdomain.eventData, subdomainGraceDays)) {
         await prisma.invitation.update({
           where: { id: existingSubdomain.id },
           data: { subdomain: null },

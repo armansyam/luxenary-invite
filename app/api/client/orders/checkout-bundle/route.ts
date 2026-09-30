@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { randomUUID } from "crypto";
 import { hasPlanCapability } from "@/lib/settings";
-import { getLatestEventDate } from "@/lib/domainUtils";
+import { computeLifecycleDates } from "@/lib/lifecycleDates";
+import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { normalizePlanType } from "@/lib/planUtils";
 
 export const dynamic = "force-dynamic";
@@ -200,14 +201,10 @@ export async function POST(req: NextRequest) {
         }
 
         // Cek apakah masih > 7 hari
-        const cleanupSetting = settings.find(s => s.key === "retention_cleanup_days");
-        const retentionDays = Number(cleanupSetting?.value) || 30;
-        const latestEventDate = getLatestEventDate(invitation.eventData);
-        const effectiveExpiry = invitation.galleryExpiresAt
-          ? new Date(invitation.galleryExpiresAt)
-          : latestEventDate
-          ? new Date(latestEventDate.getTime() + retentionDays * 24 * 60 * 60 * 1000)
-          : null;
+        const effectiveExpiry = computeLifecycleDates(
+          { eventData: invitation.eventData, galleryExpiresAt: invitation.galleryExpiresAt },
+          await getLifecycleSettings()
+        )?.galleryExpiresAt ?? null;
 
         if (effectiveExpiry) {
           const daysRemaining = Math.ceil((effectiveExpiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24));

@@ -7,7 +7,33 @@ const s3CustomDomain = (process.env.S3_CUSTOM_DOMAIN || process.env.R2_PUBLIC_UR
   .replace(/\/$/, "")
   .trim();
 
+// Kebijakan CSP dipasang sebagai Report-Only: pelanggaran hanya dilaporkan ke /api/security/csp-report.
+// 'unsafe-inline' tetap dibutuhkan karena tema undangan memuat skrip dan gaya inline; setelah laporan bersih,
+// naikkan ke Content-Security-Policy penuh (idealnya dengan nonce).
+const cspReportOnly = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' https://app.midtrans.com https://app.sandbox.midtrans.com",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "media-src 'self' blob: https:",
+  "font-src 'self' data:",
+  "connect-src 'self' https:",
+  "frame-src https://app.midtrans.com https://app.sandbox.midtrans.com https://www.youtube.com https://player.vimeo.com https://www.google.com",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'self'",
+  "report-uri /api/security/csp-report",
+].join("; ");
+
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
+  // Rute membaca data runtime lewat process.cwd() (data/, public/) sehingga file tracing menelusuri ±325 MB per rute
+  // dan build melambat seiring bertambahnya draft dan demo. Produksi memakai `next start` dari direktori proyek
+  // (bukan output standalone), jadi berkas-berkas ini tidak perlu ikut dijejak.
+  outputFileTracingExcludes: {
+    "/*": ["./data/**/*", "./public/**/*", "./coverage/**/*", "./reports/**/*", "./scratch/**/*", "./.vscode_history_backup/**/*"],
+  },
   images: {
     remotePatterns: [
       // Cloudflare R2 / S3-compatible storage (custom domain dari env)
@@ -47,6 +73,7 @@ const nextConfig: NextConfig = {
           //   2. /receptionist (ReceptionistScannerClient — QR code check-in via getUserMedia)
           // microphone & geolocation tidak digunakan — diblokir untuk keamanan.
           { key: "Permissions-Policy", value: "microphone=(), geolocation=(), payment=()" },
+          { key: "Content-Security-Policy-Report-Only", value: cspReportOnly },
           // Paksa HTTPS untuk browser yang sudah pernah mengunjungi (HSTS — aktif hanya jika production)
           ...(process.env.NODE_ENV === "production"
             ? [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" }]

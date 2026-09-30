@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireAdminModule } from "@/lib/adminAuth";
 import nodemailer from "nodemailer";
 import { getPublicPlatformSettings } from "@/lib/settings";
 import { buildTestSmtpHtml } from "@/lib/email-templates";
@@ -8,18 +8,11 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    const isAdmin =
-      (session?.user as any)?.isAdmin === true ||
-      (session?.user as any)?.role === "SUPER_ADMIN" ||
-      (session?.user as any)?.role === "ADMIN";
-
-    if (!session?.user || !isAdmin) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("settings");
+    if (!guard.ok) return guard.response;
 
     const body = await req.json().catch(() => ({}));
-    const recipientEmail = (body.recipientEmail || session.user.email || "").trim();
+    const recipientEmail = (body.recipientEmail || guard.session.user.email || "").trim();
 
     if (!recipientEmail || !recipientEmail.includes("@")) {
       return NextResponse.json({ error: "Alamat email penerima tidak valid." }, { status: 400 });

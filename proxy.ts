@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import NextAuth from "next-auth";
 import { authConfig } from "@/auth.config";
 import { isReservedSubdomain } from "@/lib/domainUtils";
-import { rateLimit } from "@/lib/rateLimit";
+import { getClientIp, rateLimitDb } from "@/lib/rateLimit";
 
 const { auth } = NextAuth(authConfig);
 
@@ -65,12 +65,9 @@ export const proxy = auth(async (req) => {
   // ── Guard Brute-Force Login: 5 percobaan per IP per 15 menit ──
   // Hanya berlaku untuk endpoint autentikasi credentials (login admin/client)
   if (pathname === "/api/auth/callback/credentials" && req.method === "POST") {
-    const ip = req.headers.get("cf-connecting-ip")
-      || req.headers.get("x-real-ip")
-      || req.headers.get("x-forwarded-for")?.split(",")[0].trim()
-      || "unknown";
-    // 5 percobaan dalam window 15 menit (900.000ms)
-    if (!rateLimit(`auth_login:${ip}`, 5, 15 * 60 * 1000)) {
+    const ip = getClientIp(req);
+    // 5 percobaan dalam window 15 menit (900.000ms); hitungan di PostgreSQL agar berlaku lintas worker PM2 dan reload
+    if (!(await rateLimitDb(`auth_login:${ip}`, 5, 15 * 60 * 1000))) {
       return new Response(
         JSON.stringify({ error: "Terlalu banyak percobaan login. Silakan tunggu 15 menit." }),
         { status: 429, headers: { "Content-Type": "application/json" } }

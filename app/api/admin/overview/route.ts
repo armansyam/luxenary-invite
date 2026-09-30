@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireAdminModule } from "@/lib/adminAuth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -11,12 +11,8 @@ const EXPIRE_SWEEP_INTERVAL_MS = 5 * 60 * 1000; // 5 menit
 
 export async function GET() {
   try {
-    const session = await auth();
-    const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
-    
-    if (!session?.user || !isAdmin) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("overview");
+    if (!guard.ok) return guard.response;
 
     // --- AUTO EXPIRE SWEEP (ADMIN SIDE) — Throttle 5 menit ---
     // Sweep hanya dijalankan jika sudah > 5 menit dari sweep terakhir
@@ -203,7 +199,7 @@ export async function GET() {
             take: 1,
           },
           invitations: {
-            select: { id: true, subdomain: true, status: true, expiresAt: true, eventData: true },
+            select: { id: true, subdomain: true, status: true, eventData: true },
             take: 1,
           },
         },

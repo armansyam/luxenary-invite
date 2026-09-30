@@ -16,11 +16,11 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function ContactPage() {
   const settings = await getPublicPlatformSettings();
   const platformName = settings.platformName || "Platform Undangan";
-  const supportEmail = settings.supportEmail || "support@example.com";
+  const supportEmail = settings.supportEmail || "";
   const supportWhatsapp = settings.supportWhatsapp || "";
   const cleanWaNumber = supportWhatsapp.replace(/\D/g, "").replace(/^0/, "62");
-  const graceDays = settings.retentionInvitationGraceDays || 7;
-  const galleryDays = settings.retentionGalleryDefaultDays || 30;
+  const graceDays = settings.subdomainGraceDays;
+  const galleryDays = settings.galleryRetentionDays;
   const galleryDurationLabel = galleryDays >= 30 && galleryDays % 30 === 0
     ? `${galleryDays / 30} bulan (${galleryDays} hari)`
     : `${galleryDays} hari`;
@@ -102,19 +102,23 @@ export default async function ContactPage() {
                 Untuk pertanyaan formal, kendala verifikasi pembayaran, kerjasama vendor, atau pengajuan komplain akun.
               </p>
               <div className="p-3 bg-stone-50 rounded-lg border border-stone-100 text-xs font-mono text-stone-700 mb-6">
-                {supportEmail}
+                {supportEmail || "Email belum dikonfigurasi"}
               </div>
             </div>
 
-            <a
-              href={`mailto:${supportEmail}?subject=${encodeURIComponent(`Pertanyaan Layanan - ${platformName}`)}`}
-              className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-amber-800 text-white text-xs font-semibold hover:bg-amber-900 transition shadow-sm"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-              Kirim Email
-            </a>
+            {supportEmail ? (
+              <a
+                href={`mailto:${supportEmail}?subject=${encodeURIComponent(`Pertanyaan Layanan - ${platformName}`)}`}
+                className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-amber-800 text-white text-xs font-semibold hover:bg-amber-900 transition shadow-sm"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Kirim Email
+              </a>
+            ) : (
+              <div className="text-xs text-stone-400 italic">Email dukungan dapat diatur melalui dashboard admin.</div>
+            )}
           </div>
         </div>
 

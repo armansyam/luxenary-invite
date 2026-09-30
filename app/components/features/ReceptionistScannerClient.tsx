@@ -71,6 +71,11 @@ export default function ReceptionistScannerClient({
   const guestsRef = useRef(guests);
   const scanResultRef = useRef(scanResult);
   const isScreensaverActiveRef = useRef(isScreensaverActive);
+  const onLockRef = useRef(onLock);
+
+  useEffect(() => {
+    onLockRef.current = onLock;
+  }, [onLock]);
 
   useEffect(() => {
     guestsRef.current = guests;
@@ -276,7 +281,15 @@ export default function ReceptionistScannerClient({
       if (cachedQueue) setOfflineQueue(JSON.parse(cachedQueue));
 
       try {
-        const res = await fetch(`/api/receptionist/guests?invitationId=${invitationId}`);
+        const res = await fetch(`/api/receptionist/guests?invitationId=${invitationId}`, {
+          headers: { "x-receptionist-token": localStorage.getItem(`staff_auth_token_${invitationId}`) || "" },
+        });
+        if (res.status === 401) {
+          // Sesi kedaluwarsa atau PIN sudah diganti: kembali ke layar PIN
+          localStorage.removeItem(`guests_${invitationId}`);
+          onLockRef.current?.();
+          return;
+        }
         const data = await res.json();
         if (data.success) {
           setGuests(data.guests);
@@ -330,7 +343,9 @@ export default function ReceptionistScannerClient({
     const fetchLatestGuests = async () => {
       if (!navigator.onLine) return;
       try {
-        const res = await fetch(`/api/receptionist/guests?invitationId=${invitationId}`);
+        const res = await fetch(`/api/receptionist/guests?invitationId=${invitationId}`, {
+          headers: { "x-receptionist-token": localStorage.getItem(`staff_auth_token_${invitationId}`) || "" },
+        });
         const data = await res.json();
         if (data.success && data.guests) {
           // Hanya update jika ada penambahan tamu atau perubahan signifikan,

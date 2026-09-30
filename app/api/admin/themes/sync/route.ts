@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import fs from "fs";
 import path from "path";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requireAdminModule } from "@/lib/adminAuth";
 import { purgeCloudflareCache } from "@/lib/cloudflare";
 
 export const dynamic = "force-dynamic";
@@ -24,15 +24,8 @@ interface DiscoveredTheme {
 
 export async function POST() {
   try {
-    const session = await auth();
-    const isAdmin =
-      (session?.user as { isAdmin?: boolean; role?: string })?.isAdmin === true ||
-      (session?.user as { isAdmin?: boolean; role?: string })?.role === "SUPER_ADMIN" ||
-      (session?.user as { isAdmin?: boolean; role?: string })?.role === "ADMIN";
-
-    if (!session?.user || !isAdmin) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("themes");
+    if (!guard.ok) return guard.response;
 
     const themesDir = path.join(process.cwd(), "themes");
     const discovered: DiscoveredTheme[] = [];

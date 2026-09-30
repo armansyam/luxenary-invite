@@ -4,6 +4,9 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getAdminSetting, hasPlanCapability } from "@/lib/settings";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
+import { jsonForInlineScript } from "@/lib/safeJson";
+import { parseFeatureSettings } from "@/lib/featureSettings";
+import { createHash } from "crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -59,15 +62,7 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
   const shareMomentUrl = `/${slug}/sharemoment`;
 
   // ── 1. PARSE FEATURE SETTINGS & DELAYED REVEAL STATUS ──
-  const fs = (() => {
-    try {
-      return typeof invitation.featureSettings === "object"
-        ? invitation.featureSettings
-        : JSON.parse(invitation.featureSettings || "{}");
-    } catch {
-      return {};
-    }
-  })();
+  const fs = parseFeatureSettings(invitation.featureSettings);
 
   const isDelayedReveal = Boolean(fs.memoriesDelayedReveal);
   const isCustomSchedule = Boolean(fs.memoriesCustomSchedule);
@@ -103,7 +98,6 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
   interface GuestRollStack {
     key: string;
     senderName: string;
-    senderEmail: string;
     message: string;
     photos: StackPhoto[];
     coverPhoto: string;
@@ -114,15 +108,16 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
   const rollStacksMap = new Map<string, GuestRollStack>();
 
   for (const m of memories) {
-    const rawKey = (m.senderEmail && m.senderEmail !== "guest@system" && m.senderEmail !== "guest@moment.com")
+    // Kunci grup memakai hash: alamat email tamu tidak boleh muncul di HTML publik.
+    const identity = (m.senderEmail && m.senderEmail !== "guest@system" && m.senderEmail !== "guest@moment.com")
       ? m.senderEmail
       : m.senderName.trim().toLowerCase();
+    const rawKey = createHash("sha256").update(identity).digest("hex").slice(0, 16);
 
     if (!rollStacksMap.has(rawKey)) {
       rollStacksMap.set(rawKey, {
         key: rawKey,
         senderName: m.senderName || "Tamu Undangan",
-        senderEmail: m.senderEmail || "",
         message: m.message || "",
         photos: [],
         coverPhoto: m.mediaUrl,
@@ -148,7 +143,7 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
   const rollStacks = Array.from(rollStacksMap.values());
   const shuffledStoryStacks = [...rollStacks].sort(() => 0.5 - Math.random()).slice(0, 10);
 
-  const rollStacksJson = JSON.stringify(rollStacks);
+  const rollStacksJson = jsonForInlineScript(rollStacks);
 
   // ── JIKA KAMAR GELAP DIGITAL MASIH AKTIF (DELAYED REVEAL) ──
   if (isDarkroomActive) {
@@ -473,6 +468,11 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
           const toast = document.getElementById('liveToastIndicator');
           const toastCount = document.getElementById('liveToastCount');
           const allStacks = ${rollStacksJson};
+          const escapeHtml = function(value) {
+            return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch) {
+              return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+            });
+          };
           let activeStack = null;
           let activePhotoIndex = 0;
 
@@ -509,7 +509,7 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
 
             if (content) {
               let html = '<div class="relative select-none pointer-events-none flex items-center justify-center max-h-[65vh] w-full" style="-webkit-touch-callout:none;">';
-              html += '<img src="' + photo.mediaUrl + '" alt="' + (activeStack.senderName || '') + '" class="max-h-[65vh] w-auto object-contain transition-all duration-300 pointer-events-none select-none" draggable="false" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" />';
+              html += '<img src="' + escapeHtml(photo.mediaUrl) + '" alt="' + escapeHtml(activeStack.senderName || '') + '" class="max-h-[65vh] w-auto object-contain transition-all duration-300 pointer-events-none select-none" draggable="false" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" />';
               
               // Tombol Panah Navigasi Kiri & Kanan jika foto dalam roll > 1
               if (activeStack.photos.length > 1) {
@@ -539,7 +539,7 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
             if (caption) {
               let capHtml = '<div class="flex items-center justify-between mb-2">';
               capHtml += '<div class="flex items-center gap-2">';
-              capHtml += '<h3 class="text-base font-bold text-white select-none">' + activeStack.senderName + '</h3>';
+              capHtml += '<h3 class="text-base font-bold text-white select-none">' + escapeHtml(activeStack.senderName) + '</h3>';
               capHtml += '<span class="text-[10px] font-mono text-amber-400 bg-stone-900 border border-stone-800 px-2.5 py-0.5 rounded-full font-bold">' + (photoIdx + 1) + ' / ' + activeStack.photos.length + ' Roll</span>';
               capHtml += '</div>';
               capHtml += '<span class="text-xs text-stone-500 font-mono">' + new Date(photo.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) + '</span>';
@@ -547,7 +547,7 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
 
               // Pesan doa
               if (activeStack.message) {
-                capHtml += '<p class="text-sm text-stone-300 leading-relaxed font-serif italic text-left select-none">"' + activeStack.message + '"</p>';
+                capHtml += '<p class="text-sm text-stone-300 leading-relaxed font-serif italic text-left select-none">"' + escapeHtml(activeStack.message) + '"</p>';
               }
 
               // Deretan Thumbnail Roll jika foto > 1
@@ -556,7 +556,7 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
                 activeStack.photos.forEach(function(p, pIdx) {
                   const isActive = pIdx === photoIdx;
                   capHtml += '<button type="button" data-photo-idx="' + pIdx + '" class="roll-thumb-btn w-11 h-11 rounded-lg overflow-hidden shrink-0 border-2 transition ' + (isActive ? 'border-amber-400 scale-105 shadow-md shadow-amber-500/20' : 'border-white/10 opacity-50 hover:opacity-100') + '">';
-                  capHtml += '<img src="' + (p.thumbnailUrl || p.mediaUrl) + '" class="w-full h-full object-cover pointer-events-none" />';
+                  capHtml += '<img src="' + escapeHtml(p.thumbnailUrl || p.mediaUrl) + '" class="w-full h-full object-cover pointer-events-none" />';
                   capHtml += '</button>';
                 });
                 capHtml += '</div>';

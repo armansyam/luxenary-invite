@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BrandLogo } from "@/components/BrandLogo";
 import { getPublicPlatformSettings } from "@/lib/settings";
 import { getDynamicServerRootDomain } from "@/lib/serverDomainUtils";
+import { formatRetentionLabel } from "@/lib/lifecycleDates";
 import { LandingInteractive } from "@/components/landing/LandingInteractive";
 import "./landing.css";
 
@@ -14,19 +15,15 @@ export default async function Home() {
     heroSubtitle,
     pricingSubtitle,
     packages: pricingPackages,
-    retentionInvitationGraceDays,
-    retentionGalleryDefaultDays,
+    subdomainGraceDays,
+    galleryRetentionDays,
     serviceStatus,
   } = await getPublicPlatformSettings();
 
   const activeDomain = await getDynamicServerRootDomain();
   const brand = platformName || "Platform Undangan";
-  const graceDays = retentionInvitationGraceDays || 7;
-  const galleryRetention = retentionGalleryDefaultDays
-    ? retentionGalleryDefaultDays >= 30 && retentionGalleryDefaultDays % 30 === 0
-      ? `${retentionGalleryDefaultDays / 30} bulan`
-      : `${retentionGalleryDefaultDays} hari`
-    : "1 bulan";
+  const graceDays = subdomainGraceDays;
+  const galleryRetention = formatRetentionLabel(galleryRetentionDays);
 
   return (
     <div className="lux-landing-root min-h-screen selection:bg-[#C9A227]/30 selection:text-[#FBF8F2]">

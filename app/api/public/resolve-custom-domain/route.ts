@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { computeLifecycleDates } from "@/lib/lifecycleDates";
+import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 
 export const dynamic = "force-dynamic";
 
@@ -37,11 +39,18 @@ export async function GET(req: NextRequest) {
       subdomain: true,
       status: true,
       invitationSlug: true,
+      eventData: true,
     },
   });
 
   if (!invitation || !invitation.invitationSlug) {
     return NextResponse.json({ error: "Domain tidak terdaftar atau undangan belum aktif." }, { status: 404 });
+  }
+
+  // Custom domain mengikuti gerbang slug selama retention_custom_domain_days sejak acara utama
+  const lifecycle = computeLifecycleDates({ eventData: invitation.eventData }, await getLifecycleSettings());
+  if (lifecycle && Date.now() > lifecycle.customDomainExpiresAt.getTime()) {
+    return NextResponse.json({ error: "Masa aktif custom domain telah berakhir." }, { status: 404 });
   }
 
   return NextResponse.json(

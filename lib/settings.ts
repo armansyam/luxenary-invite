@@ -1,6 +1,8 @@
 import { prisma } from "./prisma";
+import { logger } from "./logger";
 import { getDynamicServerRootDomain } from "./serverDomainUtils";
 import { normalizePlanType } from "./planUtils";
+import { formatRetentionLabel, parseLifecycleSettings } from "./lifecycleDates";
 
 export interface PricingPackageItem {
   id: "TIER_1" | "TIER_2" | "TIER_3";
@@ -40,11 +42,10 @@ export interface PublicPlatformSettings {
   bankAccountNumber: string;
   bankAccountHolder: string;
   bankInstructions: string;
-  retentionInvitationDays: number;
-  retentionInvitationGraceDays: number;
-  retentionGalleryDefaultDays: number;
-  retentionCleanupDays: number;
-  retentionCustomDomainDays: number;
+  subdomainGraceDays: number;
+  galleryRetentionDays: number;
+  archiveRetentionDays: number;
+  customDomainRetentionDays: number;
   galleryExtensionPricePerMonth: number;
   customDomainEnabled: boolean;
   addonMemoriesTopupEnabled: boolean;
@@ -171,10 +172,11 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
 
 
 
-  const galleryRetentionDays = Number(map["retention_gallery_default_days"] || 30);
-  const galleryDurationLabel = galleryRetentionDays >= 30 && galleryRetentionDays % 30 === 0
-    ? `${galleryRetentionDays / 30} bulan`
-    : `${galleryRetentionDays} hari`;
+  const lifecycle = parseLifecycleSettings(map);
+  const galleryLabel = formatRetentionLabel(lifecycle.galleryRetentionDays);
+  const archiveLabel = formatRetentionLabel(lifecycle.archiveRetentionDays);
+  const resolveRetentionTokens = (text: string) =>
+    text.replace(/\{\{archiveRetention\}\}/g, archiveLabel).replace(/\{\{galleryRetention\}\}/g, galleryLabel);
 
   const activeDomain = await getDynamicServerRootDomain();
 
@@ -209,16 +211,16 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
       const totalQ = Number(map[`memories_total_quota_${planId}`]);
       const defaultTotal = planId === "TIER_3" ? 1000 : (planId === "TIER_2" ? 250 : 100);
       const totalPhotos = !isNaN(totalQ) && totalQ > 0 ? totalQ : defaultTotal;
-      rawList.push(`Guest Camera — Kamera Saku Tamu (Kapasitas Total ${totalPhotos} Foto — Aktif 1 bulan setelah acara)`);
+      rawList.push(`Guest Camera — Kamera Saku Tamu (Kapasitas Total ${totalPhotos} Foto — Aktif ${galleryLabel} setelah acara)`);
     }
 
     // Hanya tangani string lama yang masih menggabungkan 1 baris (legacy combined) jika ada
     const separatedList: string[] = [];
     for (const item of rawList) {
       if (/masa\s*aktif\s*undangan.*galeri.*(cold\s*storage|nas)/i.test(item)) {
-        separatedList.push("Masa aktif undangan 1 tahun (archive)");
+        separatedList.push(`Masa aktif undangan ${archiveLabel} (archive)`);
         if (caps.includes("guest_memories")) {
-          separatedList.push("Penyimpanan galeri foto tamu 30 hari (unduh ZIP)");
+          separatedList.push(`Penyimpanan galeri foto tamu ${galleryLabel} (unduh ZIP)`);
         }
       } else {
         separatedList.push(item);
@@ -231,7 +233,7 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     const nameTier2 = map["name_tier2"] || "Symphony";
 
     return separatedList.map(item => {
-      let resolvedItem = item;
+      let resolvedItem = resolveRetentionTokens(item);
       if (resolvedItem.includes(".luxvite.id")) {
         resolvedItem = resolvedItem.replace(/\.luxvite\.id/g, `.${targetDomain}`);
       }
@@ -261,9 +263,10 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     heroSubtitle:
       map["hero_subtitle"] ||
       "Didesain khusus dengan sentuhan estetika mewah dan eksklusif. Hadirkan pengalaman berkesan dengan layout split desktop, custom subdomain, buku tamu real-time, dan video booth ucapan.",
-    pricingSubtitle:
+    pricingSubtitle: resolveRetentionTokens(
       map["pricing_subtitle"] ||
-      "Biaya satu kali bayar dengan masa aktif undangan 1 tahun (archive), penyimpanan galeri foto tamu 30 hari, dan portofolio resmi permanen.",
+        `Biaya satu kali bayar dengan masa aktif undangan ${archiveLabel} (archive), penyimpanan galeri foto tamu ${galleryLabel}, dan portofolio resmi permanen.`
+    ),
     supportEmail: map["support_email"] || "",
     supportWhatsapp: map["support_whatsapp"] || "",
     paymentMode: ((map["payment_mode"] === "MANUAL" ? "MANUAL" : "GATEWAY") as "GATEWAY" | "MANUAL"),
@@ -275,11 +278,10 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     bankInstructions:
       map["bank_instructions"] ||
       "Silakan transfer tepat sesuai total tagihan invoice. Setelah transfer, unggah foto bukti transfer di bawah ini untuk diverifikasi admin.",
-    retentionInvitationDays: Number(map["retention_cleanup_days"] || 14),
-    retentionInvitationGraceDays: Number(map["retention_invitation_grace_days"] || 7),
-    retentionGalleryDefaultDays: Number(map["retention_cleanup_days"] || galleryRetentionDays || 14),
-    retentionCleanupDays: Number(map["retention_cleanup_days"] || 14),
-    retentionCustomDomainDays: Number(map["retention_custom_domain_days"] || 30),
+    subdomainGraceDays: lifecycle.subdomainGraceDays,
+    galleryRetentionDays: lifecycle.galleryRetentionDays,
+    archiveRetentionDays: lifecycle.archiveRetentionDays,
+    customDomainRetentionDays: lifecycle.customDomainRetentionDays,
     galleryExtensionPricePerMonth: Number(map["gallery_extension_price_per_month"] || 50000),
     customDomainEnabled: map["custom_domain_enabled"] !== "false",
     addonMemoriesTopupEnabled: map["addon_memories_topup_enabled"] !== "false",
@@ -392,7 +394,9 @@ export async function hasPlanCapability(planType: string | null | undefined, cap
         return caps.includes(capability);
       }
     }
-  } catch {}
+  } catch (err) {
+    logger.warn("Settings", `Gagal membaca kapabilitas ${capability} dari AdminSetting, memakai default`, { error: String(err) });
+  }
 
   // Default fallback if not set in DB
   const defaultCaps: Record<string, string[]> = {

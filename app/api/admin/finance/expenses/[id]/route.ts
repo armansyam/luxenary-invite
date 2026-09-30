@@ -1,22 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requireAdminModule } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
 export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const session = await auth();
-    const role = (session?.user as any)?.role;
-    const isAdmin =
-      (session?.user as any)?.isAdmin === true ||
-      role === "SUPER_ADMIN" ||
-      role === "ADMIN" ||
-      role === "FINANCE";
-
-    if (!session?.user || !isAdmin) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator Finance." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("finance");
+    if (!guard.ok) return guard.response;
 
     const { id } = await context.params;
     const existing = await prisma.expense.findUnique({ where: { id } });
@@ -74,17 +65,8 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
 
 export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const session = await auth();
-    const role = (session?.user as any)?.role;
-    const isAdmin =
-      (session?.user as any)?.isAdmin === true ||
-      role === "SUPER_ADMIN" ||
-      role === "ADMIN" ||
-      role === "FINANCE";
-
-    if (!session?.user || !isAdmin) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator Finance." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("finance");
+    if (!guard.ok) return guard.response;
 
     const { id } = await context.params;
     const existing = await prisma.expense.findUnique({ where: { id } });

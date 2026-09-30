@@ -5,12 +5,15 @@ import Link from "next/link";
 import { useState, useEffect, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { getInvitationPublicUrl, resolveEffectiveInvitationUrl, getLatestEventDate } from "@/lib/domainUtils";
+import { getInvitationPublicUrl, resolveEffectiveInvitationUrl } from "@/lib/domainUtils";
+import { computeLifecycleDates, formatPrimaryEventDate, lifecycleSettingsFromPublic } from "@/lib/lifecycleDates";
 import UnifiedAddonModal from "@/components/client/UnifiedAddonModal";
 import { getPlanDisplayName, getPlanDisplayDescription, normalizePlanType } from "@/lib/planUtils";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
+import { useFeedback } from "@/components/ui/Feedback";
 
 function DashboardHomeContent() {
+  const feedback = useFeedback();
   const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -178,15 +181,14 @@ function DashboardHomeContent() {
     );
   }
 
-  const retentionDays = Number(platformSettings?.retentionCleanupDays) || 30;
-  const baseRetentionDays = retentionDays;
+  const lifecycleSettings = lifecycleSettingsFromPublic(platformSettings);
+  const baseRetentionDays = lifecycleSettings.galleryRetentionDays;
 
   // === 1-PAGE EVENT CLOSING STATEMENT & FINAL SUMMARY (ARCHIVED STATUS) ===
   if (invitation?.status === "ARCHIVED") {
-    const latestDate = getLatestEventDate(invitation.eventData);
-    const formattedEventDate = latestDate
-      ? latestDate.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
-      : new Date(invitation.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+    const formattedEventDate =
+      formatPrimaryEventDate(invitation.eventData) ??
+      new Date(invitation.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
 
     return (
       <div className="max-w-4xl mx-auto space-y-6 font-sans animate-in fade-in duration-300 pb-12">
@@ -402,7 +404,7 @@ function DashboardHomeContent() {
             onClick={() => {
               if (typeof window !== "undefined") {
                 navigator.clipboard.writeText(window.location.origin);
-                alert("Tautan website disalin! Terima kasih telah merekomendasikan layanan kami kepada teman dan keluarga.");
+                feedback.notify("Tautan website disalin. Terima kasih telah merekomendasikan layanan kami.", "success");
               }
             }}
             className="w-full sm:w-auto px-4 py-2.5 bg-stone-100 hover:bg-stone-200/80 text-stone-700 font-semibold rounded-xl text-xs transition border border-stone-200 flex items-center justify-center gap-1.5 cursor-pointer"
@@ -430,12 +432,9 @@ function DashboardHomeContent() {
 
   const editorUrl = invitation ? `/dashboard/invitation/${invitation.id}` : "/dashboard/invitation";
 
-  const latestEventDate = getLatestEventDate(invitation?.eventData);
-  const effectiveExpiry = invitation?.galleryExpiresAt
-    ? new Date(invitation.galleryExpiresAt)
-    : latestEventDate
-    ? new Date(latestEventDate.getTime() + retentionDays * 24 * 60 * 60 * 1000)
-    : null;
+  const effectiveExpiry =
+    computeLifecycleDates({ eventData: invitation?.eventData, galleryExpiresAt: invitation?.galleryExpiresAt }, lifecycleSettings)
+      ?.galleryExpiresAt ?? null;
 
   const daysRemaining = effectiveExpiry
     ? Math.ceil((effectiveExpiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24))

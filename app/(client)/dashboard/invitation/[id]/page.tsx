@@ -8,6 +8,7 @@ import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { getPlanDisplayName } from "@/lib/planUtils";
 import { safeParseParticipants } from "@/lib/participantUtils";
 import { resolveInvitationDisplayName, getMediaSlotLabel } from "@/lib/invitationUtils";
+import { useFeedback } from "@/components/ui/Feedback";
 
 // Pilihan tema dimuat secara dinamis dari API /api/public/themes untuk menjamin sinkronisasi status aktif
 
@@ -145,6 +146,7 @@ function formatIndonesianDatePreview(dateStr?: string): string {
 }
 
 export default function EditInvitation() {
+  const feedback = useFeedback();
   const params = useParams();
   const router = useRouter();
   const invitationId = params.id as string;
@@ -5412,10 +5414,10 @@ export default function EditInvitation() {
                                           const updated = list.map((v: any, i: number) => i === idx ? { ...v, logoUrl: data.url } : v);
                                           updateFeatureSetting("vendors", updated);
                                         } else {
-                                          alert(data.error || "Gagal mengunggah logo");
+                                          feedback.notify(data.error || "Gagal mengunggah logo", "error");
                                         }
                                       } catch (err: any) {
-                                        alert(err?.message || "Gagal mengunggah logo");
+                                        feedback.notify(err?.message || "Gagal mengunggah logo", "error");
                                       }
                                     }}
                                   />

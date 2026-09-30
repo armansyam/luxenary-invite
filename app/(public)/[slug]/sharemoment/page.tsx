@@ -5,6 +5,7 @@ import GuestMomentClient from "@/app/components/features/GuestMomentClient";
 import { getAdminSetting, hasPlanCapability, getPlanMemoriesQuota } from "@/lib/settings";
 import { getMemoriesActiveSchedule } from "@/lib/domainUtils";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
+import { parseFeatureSettings } from "@/lib/featureSettings";
 
 export const dynamic = "force-dynamic";
 
@@ -65,15 +66,7 @@ export default async function FreeGuestMemoriesStandalonePage({ params, searchPa
   const coupleName = resolveInvitationDisplayName(invitation);
 
   // Parse featureSettings terlebih dahulu untuk membaca custom memoriesCoverPhoto
-  const fs = (() => {
-    try {
-      return typeof invitation.featureSettings === "object"
-        ? invitation.featureSettings
-        : JSON.parse(invitation.featureSettings || "{}");
-    } catch {
-      return {};
-    }
-  })();
+  const fs = parseFeatureSettings(invitation.featureSettings);
 
   const coverMedia = invitation.media && invitation.media.length > 0 ? invitation.media[0] : null;
   const coverUrl = fs.memoriesCoverPhoto || coverMedia?.localPath || undefined;

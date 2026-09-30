@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import QRCode from "react-qr-code";
+import { useFeedback } from "@/components/ui/Feedback";
 
 export interface GuestOpeningSetupModalProps {
   isOpen: boolean;
@@ -41,6 +42,7 @@ export default function GuestOpeningSetupModal({
   shareMomentUrl,
   onInvitationUpdated,
 }: GuestOpeningSetupModalProps) {
+  const feedback = useFeedback();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Parse Feature Settings
@@ -185,7 +187,7 @@ export default function GuestOpeningSetupModal({
       await persistFeatureSettings({ memoriesCoverPhoto: newPhotoUrl });
       setStatusNotice("Foto pembuka berhasil diperbarui!");
     } catch (err: any) {
-      alert(err.message || "Gagal mengunggah foto.");
+      feedback.notify(err.message || "Gagal mengunggah foto.", "error");
     } finally {
       setIsUploadingPhoto(false);
     }

@@ -1,23 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requireAdminModule, requireSuperAdmin } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
-    const role = (session?.user as any)?.role;
-    const isAdmin =
-      (session?.user as any)?.isAdmin === true ||
-      role === "SUPER_ADMIN" ||
-      role === "ADMIN" ||
-      role === "SUPPORT" ||
-      role === "FINANCE";
-
-    if (!session?.user || !isAdmin) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("finance");
+    if (!guard.ok) return guard.response;
 
     const closings = await prisma.financialClosing.findMany({
       orderBy: [{ periodYear: "desc" }, { periodMonth: "desc" }],
@@ -50,16 +40,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    const role = (session?.user as any)?.role;
-    const isAuthorized =
-      (session?.user as any)?.isAdmin === true ||
-      role === "SUPER_ADMIN" ||
-      role === "ADMIN";
-
-    if (!session?.user || !isAuthorized) {
-      return NextResponse.json({ error: "Unauthorized. Hanya Admin Utama yang dapat mengeksekusi Tutup Buku." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("finance");
+    if (!guard.ok) return guard.response;
+    const session = guard.session;
 
     const body = await req.json();
     const { month, year, notes } = body;
@@ -165,17 +148,9 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await auth();
-    const role = (session?.user as any)?.role;
     // Pembukaan kembali tutup buku hanya diizinkan untuk SUPER_ADMIN
-    const isSuperAdmin = (session?.user as any)?.isAdmin === true || role === "SUPER_ADMIN";
-
-    if (!session?.user || !isSuperAdmin) {
-      return NextResponse.json(
-        { error: "Akses ditolak. Pembukaan kembali periode tutup buku hanya diizinkan untuk Super Administrator." },
-        { status: 403 }
-      );
-    }
+    const guard = await requireSuperAdmin();
+    if (!guard.ok) return guard.response;
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");

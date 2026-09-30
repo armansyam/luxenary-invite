@@ -3,17 +3,14 @@ import path from "path";
 import fs from "fs";
 import { getBackupDirectory } from "@/lib/databaseBackup";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requireAdminModule } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
-    const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
-    if (!session?.user || !isAdmin) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("database");
+    if (!guard.ok) return guard.response;
 
     const { searchParams } = new URL(req.url);
     const filename = searchParams.get("filename");

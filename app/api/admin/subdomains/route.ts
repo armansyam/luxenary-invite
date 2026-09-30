@@ -1,39 +1,28 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
-import { isSubdomainExpired, getLatestEventDate, isReservedSubdomain } from "@/lib/domainUtils";
+import { requireAdminModule } from "@/lib/adminAuth";
+import { isReservedSubdomain } from "@/lib/domainUtils";
+import { DAY_MS, computeLifecycleDates, getPrimaryEventDateString } from "@/lib/lifecycleDates";
+import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 
 export const dynamic = "force-dynamic";
 
-async function verifyAdminSession() {
-  try {
-    const session = await auth();
-    const isAdmin =
-      (session?.user as any)?.isAdmin === true ||
-      (session?.user as any)?.role === "SUPER_ADMIN" ||
-      (session?.user as any)?.role === "ADMIN";
-    return session?.user && isAdmin;
-  } catch {
-    return false;
-  }
+async function denyUnlessAdmin() {
+  const guard = await requireAdminModule("invitations");
+  return guard.ok ? null : guard.response;
 }
 
 export async function GET(req: Request) {
   try {
-    const isAuthorized = await verifyAdminSession();
-    if (!isAuthorized) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const denied = await denyUnlessAdmin();
+    if (denied) return denied;
 
     const { searchParams } = new URL(req.url);
     const searchQuery = searchParams.get("search")?.trim().toLowerCase() || "";
     const filterStatus = searchParams.get("status")?.trim().toUpperCase() || "";
 
-    // 1. Dapatkan grace days dari Admin Setting
-    const graceSetting = await prisma.adminSetting.findUnique({
-      where: { key: "subdomain_grace_days" },
-    });
-    const graceDays = graceSetting ? parseInt(graceSetting.value, 10) || 7 : 7;
+    // 1. Masa tenggang subdomain dari Admin Setting (subdomain_grace_days)
+    const lifecycleSettings = await getLifecycleSettings();
 
     // 2. Ambil seluruh undangan yang memiliki subdomain
     const allActiveInvitations = await prisma.invitation.findMany({
@@ -80,15 +69,10 @@ export async function GET(req: Request) {
     let totalExpired = 0;
 
     const mappedItems = allActiveInvitations.map((inv) => {
-      const latestDate = getLatestEventDate(inv.eventData);
-      const eventDate = latestDate ? latestDate.toISOString().split("T")[0] : null;
-      const isExpired = latestDate ? isSubdomainExpired(latestDate, graceDays) : false;
-
-      let remainingDays: number | null = null;
-      if (latestDate) {
-        const expiryTime = latestDate.getTime() + graceDays * 24 * 60 * 60 * 1000;
-        remainingDays = Math.ceil((expiryTime - Date.now()) / (1000 * 60 * 60 * 24));
-      }
+      const dates = computeLifecycleDates({ eventData: inv.eventData }, lifecycleSettings);
+      const eventDate = getPrimaryEventDateString(inv.eventData);
+      const isExpired = dates ? Date.now() > dates.subdomainReleaseAt.getTime() : false;
+      const remainingDays = dates ? Math.ceil((dates.subdomainReleaseAt.getTime() - Date.now()) / DAY_MS) : null;
 
       if (inv.status === "PUBLISHED") totalPublished++;
       if (inv.status === "DRAFT") totalDraft++;
@@ -167,7 +151,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       success: true,
-      graceDays,
+      graceDays: lifecycleSettings.subdomainGraceDays,
       kpis: {
         totalActive,
         totalPublished,

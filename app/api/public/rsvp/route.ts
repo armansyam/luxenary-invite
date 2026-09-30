@@ -88,7 +88,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Terlalu banyak pengiriman RSVP. Silakan coba lagi sebentar." }, { status: 429 });
     }
 
-    const body = await req.json();
+    let body: any;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
     const { invitationId, guestName, status, guestCount, message, phone } = body;
 
     if (!invitationId || !guestName || !status) {
@@ -96,6 +101,11 @@ export async function POST(req: NextRequest) {
         { error: "invitationId, guestName, and status (hadir/tidak) are required" },
         { status: 400 }
       );
+    }
+
+    // Batas per undangan (tidak bergantung pada IP): tetap menahan banjir RSVP palsu bila IP klien tidak dapat dipercaya
+    if (typeof invitationId === "string" && !(await rateLimitDb(`rsvp_post:inv:${invitationId}`, 200, 60000))) {
+      return NextResponse.json({ error: "Terlalu banyak pengiriman RSVP untuk undangan ini. Silakan coba lagi sebentar." }, { status: 429 });
     }
 
     // Demo mode: Return instant simulated success for showroom/sandbox invitations without DB entry

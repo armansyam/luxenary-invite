@@ -84,6 +84,7 @@ export async function processOrderPaidMarketing(
     }
   } catch (error) {
     console.error(`[Marketing] Gagal memproses paid marketing untuk order ${orderId}:`, error);
+    throw error;
   }
 }
 

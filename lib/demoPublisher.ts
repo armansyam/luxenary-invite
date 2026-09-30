@@ -5,6 +5,7 @@ import { composeDemoTemplateData } from "./demoRegistry";
 import { prisma } from "./prisma";
 import { getAdminSetting } from "./settings";
 import { masterTemplateCache } from "./cache";
+import { escapeHtml } from "./escapeHtml";
 
 /**
  * Compiles a single theme demo into a standalone static HTML file in public/demo/[themeId]/index.html
@@ -63,23 +64,27 @@ export async function compileAndSaveStaticDemo(
   }
   const platformName = await getAdminSetting("platform_name", "Platform Undangan");
 
+  const safeDemoTitle = escapeHtml(demoTitle);
+  const safeDemoDesc = escapeHtml(demoDesc);
+  const safeCover = escapeHtml(absoluteCover);
+
   (data as any).metaTagsHtml = `
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>${demoTitle}</title>
-    <meta name="description" content="${demoDesc}">
-    <meta property="og:site_name" content="${platformName}">
-    <meta property="og:title" content="${demoTitle}">
-    <meta property="og:description" content="${demoDesc}">
-    <meta property="og:image" content="${absoluteCover}">
-    <meta property="og:image:secure_url" content="${absoluteCover}">
+    <title>${safeDemoTitle}</title>
+    <meta name="description" content="${safeDemoDesc}">
+    <meta property="og:site_name" content="${escapeHtml(platformName)}">
+    <meta property="og:title" content="${safeDemoTitle}">
+    <meta property="og:description" content="${safeDemoDesc}">
+    <meta property="og:image" content="${safeCover}">
+    <meta property="og:image:secure_url" content="${safeCover}">
     <meta property="og:image:type" content="image/webp">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="${demoTitle}">
-    <meta name="twitter:description" content="${demoDesc}">
-    <meta name="twitter:image" content="${absoluteCover}">
+    <meta name="twitter:title" content="${safeDemoTitle}">
+    <meta name="twitter:description" content="${safeDemoDesc}">
+    <meta name="twitter:image" content="${safeCover}">
   `;
 
   let html = await renderTemplateFile(cleanId, data);

@@ -1,28 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import fs from "fs";
-import { getBackupDirectory, restoreDatabaseSnapshot, createDatabaseSnapshot } from "@/lib/databaseBackup";
+import { getBackupDirectory, restoreDatabaseSnapshot, createDatabaseSnapshot, isSnapshotFile } from "@/lib/databaseBackup";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requireAdminModule } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
-async function verifyAdminSession() {
-  const session = await auth();
-  const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
-  if (!session?.user || !isAdmin) {
-    return false;
-  }
-  return true;
+async function denyUnlessDatabaseAdmin() {
+  const guard = await requireAdminModule("database");
+  return guard.ok ? null : guard.response;
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const isAuthorized = await verifyAdminSession();
-    if (!isAuthorized) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const denied = await denyUnlessDatabaseAdmin();
+    if (denied) return denied;
 
     const contentType = req.headers.get("content-type") || "";
 
@@ -32,11 +26,11 @@ export async function POST(req: NextRequest) {
       const file = formData.get("file") as File | null;
 
       if (!file) {
-        return NextResponse.json({ error: "File backup PostgreSQL (.sql atau .backup) wajib diunggah" }, { status: 400 });
+        return NextResponse.json({ error: "File backup PostgreSQL (.dump, .sql, atau .backup) wajib diunggah" }, { status: 400 });
       }
 
-      if (!file.name.endsWith(".sql") && !file.name.endsWith(".backup")) {
-        return NextResponse.json({ error: "Format file harus .sql atau .backup" }, { status: 400 });
+      if (!isSnapshotFile(file.name)) {
+        return NextResponse.json({ error: "Format file harus .dump, .sql, atau .backup" }, { status: 400 });
       }
 
       let backupPathSetting: string | undefined;

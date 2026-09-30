@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireAdminModule } from "@/lib/adminAuth";
 import { STORAGE_PROVIDER, s3Client } from "@/lib/storage";
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs";
@@ -9,15 +9,8 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    const isAdmin =
-      (session?.user as any)?.isAdmin === true ||
-      (session?.user as any)?.role === "SUPER_ADMIN" ||
-      (session?.user as any)?.role === "ADMIN";
-
-    if (!session?.user || !isAdmin) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("settings");
+    if (!guard.ok) return guard.response;
 
     const startTime = Date.now();
 

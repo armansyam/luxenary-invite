@@ -55,6 +55,7 @@ export async function syncInvitationToNasArchive(invitationId: string): Promise<
   skipped?: boolean;
   slug?: string;
   error?: string;
+  failedAssets?: string[];
 }> {
   const isEnabled = await isNasArchiveEnabled();
   if (!isEnabled) {
@@ -96,10 +97,20 @@ export async function syncInvitationToNasArchive(invitationId: string): Promise<
       ...inv.media.map((m) => m.localPath),
     ].filter(Boolean) as string[];
 
-    // 3. Salin berkas media ke NAS dan ubah URL pada HTML
+    // 3. Salin aset milik platform (unggahan lokal dan R2) ke NAS lalu ubah URL pada HTML.
+    // Aset sistem (mis. /music/...) dan tautan eksternal tetap dirujuk apa adanya.
+    const ownedRemotePrefixes = [process.env.S3_CUSTOM_DOMAIN, process.env.S3_PUBLIC_URL]
+      .filter((prefix): prefix is string => Boolean(prefix))
+      .map((prefix) => prefix.replace(/\/$/, ""));
+    const failedAssets: string[] = [];
+
     for (const rawUrl of mediaUrlsToProcess) {
       try {
         const cleanUrl = rawUrl.split("?")[0];
+        const isOwnedAsset =
+          cleanUrl.startsWith("/uploads/") || ownedRemotePrefixes.some((prefix) => cleanUrl.startsWith(`${prefix}/`));
+        if (!isOwnedAsset) continue;
+
         let fileName = "";
 
         if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://")) {
@@ -132,10 +143,11 @@ export async function syncInvitationToNasArchive(invitationId: string): Promise<
           }
         }
 
-        // Tulis berkas fisik ke folder NAS jika buffer tersedia
-        if (buffer) {
-          await fs.promises.writeFile(targetAssetPath, buffer);
+        if (!buffer) {
+          failedAssets.push(rawUrl);
+          continue;
         }
+        await fs.promises.writeFile(targetAssetPath, buffer);
 
         // Ganti referensi URL lama di HTML menjadi URL stream arsip lokal
         const newAssetUrl = `/archives/${slug}/assets/${fileName}`;
@@ -145,7 +157,18 @@ export async function syncInvitationToNasArchive(invitationId: string): Promise<
         }
       } catch (mediaErr) {
         console.warn(`[NAS Archive] Gagal menyalin media (${rawUrl}):`, mediaErr);
+        failedAssets.push(rawUrl);
       }
+    }
+
+    // Arsip tidak lengkap tidak boleh menggantikan arsip sebelumnya dan tidak boleh dianggap aman
+    if (failedAssets.length > 0) {
+      return {
+        success: false,
+        slug,
+        error: `Gagal menyalin ${failedAssets.length} aset undangan ke arsip.`,
+        failedAssets,
+      };
     }
 
     // 4. Simpan index.html mandiri di folder NAS

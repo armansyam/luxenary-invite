@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { deleteFile } from "@/lib/storage";
 import { sendInvoiceEmail } from "@/lib/mailer";
 import { hasPlanCapability } from "./settings";
-import { getLatestEventDate } from "@/lib/domainUtils";
+import { extendGalleryExpiry } from "@/lib/lifecycleDates";
+import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 
 /**
  * applyBundleFulfillment
@@ -111,24 +112,7 @@ export async function applyBundleFulfillment(paidOrderId: string): Promise<boole
       const extraDays = Number(extItem.days) || (Number(extItem.months) ? Number(extItem.months) * 30 : 30);
       curFs.extraGalleryDays = (curFs.extraGalleryDays || 0) + extraDays;
 
-      const now = new Date();
-      if (invitation.galleryExpiresAt && invitation.galleryExpiresAt > now) {
-        // Jika sudah ada batas masa aktif berjalan di masa depan, tambahkan dari sana
-        newExpiry = new Date(invitation.galleryExpiresAt.getTime() + extraDays * 24 * 60 * 60 * 1000);
-      } else {
-        // Cek tanggal acara resepsi
-        const latestEventDate = getLatestEventDate(invitation.eventData);
-        if (latestEventDate) {
-          const cleanupSetting = await tx.adminSetting.findUnique({
-            where: { key: "retention_cleanup_days" },
-          });
-          const baseRetentionDays = Number(cleanupSetting?.value) || 30;
-          newExpiry = new Date(latestEventDate.getTime() + (baseRetentionDays + curFs.extraGalleryDays) * 24 * 60 * 60 * 1000);
-        } else {
-          // Jika draft belum ada tanggal acara, set sementara dari now
-          newExpiry = new Date(now.getTime() + extraDays * 24 * 60 * 60 * 1000);
-        }
-      }
+      newExpiry = extendGalleryExpiry(invitation, extraDays, await getLifecycleSettings());
     }
 
     // 5. Simpan seluruh pembaruan ke invitation
@@ -163,17 +147,12 @@ export async function applyGalleryExtension(extensionOrderId: string): Promise<v
 
   const invitation = await prisma.invitation.findUnique({
     where: { id: order.linkedOrderId },
-    select: { id: true, galleryExpiresAt: true },
+    select: { id: true, eventData: true, galleryExpiresAt: true },
   });
 
   if (!invitation) return;
 
-  const now = new Date();
-  const baseDate = invitation.galleryExpiresAt && invitation.galleryExpiresAt > now
-    ? new Date(invitation.galleryExpiresAt)
-    : now;
-
-  const newExpiry = new Date(baseDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const newExpiry = extendGalleryExpiry(invitation, 30, await getLifecycleSettings());
 
   await prisma.invitation.update({
     where: { id: invitation.id },
@@ -382,22 +361,13 @@ export async function applyUpgradePlan(paidOrderId: string): Promise<void> {
           { id: order.linkedOrderId },
         ],
       },
-      select: { id: true, galleryExpiresAt: true },
+      select: { id: true },
     });
 
     if (invitation) {
-      const now = new Date();
-      const baseDate = invitation.galleryExpiresAt && invitation.galleryExpiresAt > now
-        ? new Date(invitation.galleryExpiresAt)
-        : now;
-      const newExpiry = new Date(baseDate.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 tahun
-
       await prisma.invitation.update({
         where: { id: invitation.id },
-        data: {
-          customDomain: order.requestedDomain,
-          galleryExpiresAt: newExpiry,
-        },
+        data: { customDomain: order.requestedDomain },
       });
     }
   }

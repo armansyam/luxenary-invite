@@ -96,7 +96,7 @@ export function buildInvoiceEmailHtml(
   });
 
   const isPaid = opts.type === "PAID";
-  const baseUrl = opts.appUrl || (typeof window !== "undefined" ? window.location.origin : process.env.NEXTAUTH_URL) || "https://luxvite.id";
+  const baseUrl = opts.appUrl || (typeof window !== "undefined" ? window.location.origin : process.env.NEXTAUTH_URL) || "http://localhost:3000";
 
   const isGallery = opts.orderType === "GALLERY_EXTENSION";
   const categoryTitle = isGallery
@@ -276,7 +276,7 @@ export function buildMemoriesQuotaHtml(
   const badgeColor = isFull ? "#991B1B" : "#92400E";
   const badgeBorder = isFull ? "#FECACA" : "#FDE68A";
 
-  const baseUrl = opts.appUrl || (typeof window !== "undefined" ? window.location.origin : process.env.NEXTAUTH_URL) || "https://luxvite.id";
+  const baseUrl = opts.appUrl || (typeof window !== "undefined" ? window.location.origin : process.env.NEXTAUTH_URL) || "http://localhost:3000";
   const topupUrl = `${baseUrl}/dashboard/moments`;
 
   const greetingHtml = isFull
@@ -431,7 +431,7 @@ export function buildRetentionExpiryHtml(
   }
 ): { subject: string; html: string; text: string } {
   const platformName = settings?.platformName || "LUXVITE";
-  const baseUrl = opts.appUrl || (typeof window !== "undefined" ? window.location.origin : process.env.NEXTAUTH_URL) || "https://luxvite.id";
+  const baseUrl = opts.appUrl || (typeof window !== "undefined" ? window.location.origin : process.env.NEXTAUTH_URL) || "http://localhost:3000";
 
   const extendUrl = `${baseUrl}/dashboard/moments`;
   const downloadUrl = `${baseUrl}/dashboard/moments`;
@@ -711,7 +711,7 @@ export const EMAIL_TEMPLATE_CATALOG: EmailTemplateMeta[] = [
       smtpHost: "smtp.gmail.com",
       port: 587,
       isSecure: false,
-      smtpUser: "luxenary.id@gmail.com",
+      smtpUser: "akun-smtp@example.com",
       timestamp: "Senin, 28 September 2026 pukul 15.30 WIB",
     },
     render: (overrides = {}) => {
@@ -720,7 +720,7 @@ export const EMAIL_TEMPLATE_CATALOG: EmailTemplateMeta[] = [
         smtpHost: "smtp.gmail.com",
         port: 587,
         isSecure: false,
-        smtpUser: "luxenary.id@gmail.com",
+        smtpUser: "akun-smtp@example.com",
         timestamp: new Date().toLocaleString("id-ID", { dateStyle: "full", timeStyle: "medium" }),
         ...overrides,
       };

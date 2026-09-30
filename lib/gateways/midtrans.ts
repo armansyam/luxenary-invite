@@ -9,6 +9,7 @@
 import crypto from "crypto";
 import { PaymentGateway } from "@/lib/gateways/types";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 export class MidtransGateway implements PaymentGateway {
   private async getConfig() {
@@ -172,7 +173,9 @@ export class MidtransGateway implements PaymentGateway {
       if (invitation?.shippingAddress) {
         shippingAddress = invitation.shippingAddress.trim();
       }
-    } catch {}
+    } catch (err) {
+      logger.warn("MidtransGateway", "Gagal memuat data undangan untuk transaksi", { orderId, error: String(err) });
+    }
 
     const { serverKey, snapUrl, apiUrl } = await this.getConfig();
 
@@ -183,12 +186,11 @@ export class MidtransGateway implements PaymentGateway {
     // Baca konfigurasi platform & masa kedaluwarsa QRIS dari admin setting
     let expiryMinutes = 60;
     let platformName = "Sistem Undangan";
-    let supportEmail = "support@domain.com";
     let supportPhone = "";
     try {
       const settings = await prisma.adminSetting.findMany({
         where: {
-          key: { in: ["payment_expiry_minutes", "platform_name", "support_email", "support_whatsapp", "company_name"] },
+          key: { in: ["payment_expiry_minutes", "platform_name", "support_whatsapp", "company_name"] },
         },
       });
       settings.forEach((s) => {
@@ -196,10 +198,11 @@ export class MidtransGateway implements PaymentGateway {
           expiryMinutes = Math.max(5, Math.min(1440, Number(s.value)));
         }
         if (s.key === "platform_name" && s.value) platformName = s.value;
-        if (s.key === "support_email" && s.value) supportEmail = s.value;
         if (s.key === "support_whatsapp" && s.value) supportPhone = s.value;
       });
-    } catch {}
+    } catch (err) {
+      logger.warn("MidtransGateway", "Gagal memuat setting transaksi, memakai nilai bawaan", { orderId, error: String(err) });
+    }
 
     // Rincian item berdasarkan 3 kondisi pembayaran
     let itemId = "INV-ITEM";
@@ -259,13 +262,15 @@ export class MidtransGateway implements PaymentGateway {
     }
 
     // Nomor telepon yang bersih (hanya angka dan simbol +)
-    const cleanPhone = (customerPhone || supportPhone || "081200000000").replace(/[^\d+]/g, "").slice(0, 19);
+    const cleanPhone = (customerPhone || supportPhone).replace(/[^\d+]/g, "").slice(0, 19);
 
     const customerDetails: Record<string, any> = {
       first_name: customerFirstName.slice(0, 50),
       email: customerEmail.slice(0, 45),
-      phone: cleanPhone,
     };
+    if (cleanPhone) {
+      customerDetails.phone = cleanPhone;
+    }
     if (customerLastName) {
       customerDetails.last_name = customerLastName.slice(0, 50);
     }
@@ -275,7 +280,7 @@ export class MidtransGateway implements PaymentGateway {
       first_name: customerFirstName.slice(0, 50),
       last_name: (customerLastName || customerFirstName).slice(0, 50),
       email: customerEmail.slice(0, 45),
-      phone: cleanPhone,
+      ...(cleanPhone ? { phone: cleanPhone } : {}),
       address: shippingAddress ? shippingAddress.slice(0, 100) : "Layanan Undangan Digital",
       city: "Indonesia",
       postal_code: "10110",
@@ -489,7 +494,7 @@ export class MidtransGateway implements PaymentGateway {
     for (const amt of amountCandidates) {
       const raw = `${order_id}${status_code}${amt}${cleanServerKey}`;
       const expected = crypto.createHash("sha512").update(raw).digest("hex").toLowerCase();
-      if (expected === cleanSignatureKey) return true;
+      if (expected.length === cleanSignatureKey.length && crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(cleanSignatureKey))) return true;
     }
     return false;
   }

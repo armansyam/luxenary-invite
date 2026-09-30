@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { buildAndSavePublishedHtml } from "@/lib/staticPublisher";
 import { purgeCloudflareCache } from "@/lib/cloudflare";
+import { getDynamicServerRootDomain } from "@/lib/serverDomainUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -60,13 +61,13 @@ export async function POST(
     }
 
     // 2. Kumpulkan URL spesifik undangan ini
-    const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || "luxvite.id").split(":")[0].toLowerCase();
+    const rootDomain = (await getDynamicServerRootDomain("")).split(":")[0].toLowerCase();
     const urlsToPurge: string[] = [];
 
-    if (invitation.subdomain) {
+    if (rootDomain && invitation.subdomain) {
       urlsToPurge.push(`https://${invitation.subdomain}.${rootDomain}/`);
     }
-    if (invitation.invitationSlug) {
+    if (rootDomain && invitation.invitationSlug) {
       urlsToPurge.push(`https://${rootDomain}/${invitation.invitationSlug}`);
     }
     if (invitation.customDomain) {

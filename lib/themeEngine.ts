@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { getGoogleDriveFolderPhotos } from "@/lib/driveHelper";
 import { escapeHtml } from "@/lib/escapeHtml";
+import { safeHref, safeExternalUrl } from "@/lib/safeUrl";
+import { safeCssColor } from "@/lib/safeCss";
+import { jsonForInlineScript } from "@/lib/safeJson";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { getAdminSetting } from "@/lib/settings";
 import { safeParseParticipants } from "@/lib/participantUtils";
@@ -38,7 +41,7 @@ function parseVideoEmbed(url: string): string | null {
     return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
   }
 
-  return trimmed;
+  return safeExternalUrl(trimmed) || null;
 }
 
 /**
@@ -332,16 +335,16 @@ export async function composeWeddingData(inv: any) {
       // Skenario 1: Lokasi & Maps Sama (Satu Tempat, Beda Jam) -> Tampilkan 1 Blok Maps Bersama di Bawah
       const sessionsListHtml = rawEventsList.map((ev: any, idx: number) => `
         <div class="event-block-item unified-session">
-          <span class="ev-cat">${(ev.badge || (idx === 0 ? "SAKRAMEN / AKAD" : "RESEPSI")).toUpperCase()}</span>
-          <h3 class="ev-name serif" data-lux-field="events.${idx}.title">${(ev.title || (idx === 0 ? "Akad Nikah" : "Resepsi Pernikahan")).toUpperCase()}</h3>
-          ${ev.time ? `<p class="ev-time" data-lux-field="events.${idx}.time">${ev.time}</p>` : ""}
+          <span class="ev-cat">${escapeHtml((ev.badge || (idx === 0 ? "SAKRAMEN / AKAD" : "RESEPSI")).toUpperCase())}</span>
+          <h3 class="ev-name serif" data-lux-field="events.${idx}.title">${escapeHtml((ev.title || (idx === 0 ? "Akad Nikah" : "Resepsi Pernikahan")).toUpperCase())}</h3>
+          ${ev.time ? `<p class="ev-time" data-lux-field="events.${idx}.time">${escapeHtml(ev.time)}</p>` : ""}
           ${ev.notes ? `<p class="ev-notes" style="font-size:0.75rem; font-style:italic; margin-top:0.3rem; color:rgba(255,255,255,0.7);">${nl2br(ev.notes)}</p>` : ""}
         </div>
       `).join("");
 
-      const unifiedVenue = rawEventsList[0]?.location || "";
-      const unifiedAddress = rawEventsList[0]?.address || "";
-      const unifiedMapUrl = rawEventsList[0]?.mapsUrl || "";
+      const unifiedVenue = escapeHtml(rawEventsList[0]?.location || "");
+      const unifiedAddress = escapeHtml(rawEventsList[0]?.address || "");
+      const unifiedMapUrl = safeHref(rawEventsList[0]?.mapsUrl);
 
       eventsHtml = `
         <div class="events-unified-container">
@@ -354,7 +357,7 @@ export async function composeWeddingData(inv: any) {
             ${unifiedVenue ? `<h4 class="ev-venue-unified serif" data-lux-field="events.0.location">${unifiedVenue}</h4>` : ""}
             ${unifiedAddress ? `<p class="ev-addr-unified" data-lux-field="events.0.address">${unifiedAddress}</p>` : ""}
             ${unifiedMapUrl ? `
-              <a href="${unifiedMapUrl}" target="_blank" rel="noreferrer" class="btn-map-outline">
+              <a href="${unifiedMapUrl}" target="_blank" rel="noopener noreferrer" class="btn-map-outline">
                 BUKA PETUNJUK ARAH (MAPS)
               </a>
             ` : ""}
@@ -378,15 +381,15 @@ export async function composeWeddingData(inv: any) {
 
         return `
         <div class="event-block-item">
-          <span class="ev-cat">${(ev.badge || (idx === 0 ? "SAKRAMEN / AKAD" : "RESEPSI")).toUpperCase()}</span>
-          <h3 class="ev-name serif" data-lux-field="events.${idx}.title">${(ev.title || (idx === 0 ? "Akad Nikah" : "Resepsi Pernikahan")).toUpperCase()}</h3>
+          <span class="ev-cat">${escapeHtml((ev.badge || (idx === 0 ? "SAKRAMEN / AKAD" : "RESEPSI")).toUpperCase())}</span>
+          <h3 class="ev-name serif" data-lux-field="events.${idx}.title">${escapeHtml((ev.title || (idx === 0 ? "Akad Nikah" : "Resepsi Pernikahan")).toUpperCase())}</h3>
           ${showSessionDate ? `<p class="ev-session-date" style="font-size:0.85rem; letter-spacing:0.04em; color:rgba(255,255,255,0.92); font-weight:500; margin-bottom:0.25rem;">${sessionDateFormatted}</p>` : ""}
-          ${ev.time ? `<p class="ev-time" data-lux-field="events.${idx}.time">${ev.time}</p>` : ""}
-          ${ev.location ? `<h4 class="ev-venue" data-lux-field="events.${idx}.location">${ev.location}</h4>` : ""}
-          ${ev.address ? `<p class="ev-addr" data-lux-field="events.${idx}.address">${ev.address}</p>` : ""}
+          ${ev.time ? `<p class="ev-time" data-lux-field="events.${idx}.time">${escapeHtml(ev.time)}</p>` : ""}
+          ${ev.location ? `<h4 class="ev-venue" data-lux-field="events.${idx}.location">${escapeHtml(ev.location)}</h4>` : ""}
+          ${ev.address ? `<p class="ev-addr" data-lux-field="events.${idx}.address">${escapeHtml(ev.address)}</p>` : ""}
           ${ev.notes ? `<p class="ev-notes" style="font-size:0.75rem; font-style:italic; margin-top:0.3rem; color:rgba(255,255,255,0.7);">${nl2br(ev.notes)}</p>` : ""}
-          ${ev.mapsUrl ? `
-            <a href="${ev.mapsUrl}" target="_blank" rel="noreferrer" class="btn-map-outline">
+          ${safeHref(ev.mapsUrl) ? `
+            <a href="${safeHref(ev.mapsUrl)}" target="_blank" rel="noopener noreferrer" class="btn-map-outline">
               BUKA MAPS
             </a>
           ` : ""}
@@ -489,7 +492,7 @@ export async function composeWeddingData(inv: any) {
       return `
         <div class="story-chapter-block journey-chapter-item">
           <span class="sc-label chapter-eyebrow">CHAPTER ${numWord}</span>
-          <h4 class="sc-title chapter-heading serif" data-lux-field="stories.${idx}.title">${st.title || heading}</h4>
+          <h4 class="sc-title chapter-heading serif" data-lux-field="stories.${idx}.title">${escapeHtml(st.title || heading)}</h4>
           <p class="sc-desc chapter-desc" data-lux-field="stories.${idx}.content">${nl2br(st.content || st.description || "")}</p>
         </div>
       `;
@@ -504,7 +507,7 @@ export async function composeWeddingData(inv: any) {
         </div>
         <div class="journey-footer reveal-fade delay-3">
           <div class="jf-line"></div>
-          <span class="jf-signature serif">${firstName} <em>&amp;</em> ${secondName}</span>
+          <span class="jf-signature serif">${escapeHtml(firstName)} <em>&amp;</em> ${escapeHtml(secondName)}</span>
         </div>
       </section>
     `;
@@ -523,7 +526,10 @@ export async function composeWeddingData(inv: any) {
   }
 
   if (customPhotosList && customPhotosList.trim() !== "") {
-    const manualUrls = customPhotosList.split("\n").map((s: string) => s.trim()).filter((s: string) => s.length > 5);
+    const manualUrls = String(customPhotosList)
+      .split("\n")
+      .map((s: string) => safeExternalUrl(s))
+      .filter((s: string) => s.length > 5);
     manualUrls.forEach((u: string) => {
       if (!allPhotos.includes(u)) allPhotos.push(u);
     });
@@ -549,7 +555,7 @@ export async function composeWeddingData(inv: any) {
   }
 
   // 4. Video Player HTML
-  const videoGalleryRawUrl = featureSettings.videoGalleryUrl || "";
+  const videoGalleryRawUrl = safeExternalUrl(featureSettings.videoGalleryUrl);
   const embedVideoUrl = parseVideoEmbed(videoGalleryRawUrl);
   let videoPlayerHtml = "";
   if (embedVideoUrl) {
@@ -558,7 +564,7 @@ export async function composeWeddingData(inv: any) {
         <div class="video-teaser-box" style="margin: 1.5rem auto 2rem; max-width: 480px; width: 100%; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15);">
           <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
             <iframe 
-              src="${embedVideoUrl}" 
+              src="${escapeHtml(embedVideoUrl)}"
               title="Pre-Wedding Teaser"
               style="position: absolute; top:0; left:0; width:100%; height:100%; border:0;" 
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
@@ -571,7 +577,7 @@ export async function composeWeddingData(inv: any) {
       videoPlayerHtml = `
         <div class="video-teaser-box" style="margin: 1.5rem auto 2rem; max-width: 480px; width: 100%; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15);">
           <video controls playsinline style="width:100%; display:block;">
-            <source src="${videoGalleryRawUrl}" type="video/mp4">
+            <source src="${escapeHtml(videoGalleryRawUrl)}" type="video/mp4">
           </video>
         </div>
       `;
@@ -583,13 +589,13 @@ export async function composeWeddingData(inv: any) {
   if (showGallery) {
     const photosFeedHtml = allPhotos.map((imgUrl, i) => `
       <div class="moment-photo-item" data-idx="${i}" onclick="luxOpenZoom(${i})">
-        <img src="${imgUrl}" alt="Our Moment ${i + 1}" loading="lazy" decoding="async" referrerpolicy="no-referrer">
+        <img src="${escapeHtml(imgUrl)}" alt="Our Moment ${i + 1}" loading="lazy" decoding="async" referrerpolicy="no-referrer">
       </div>
     `).join("");
 
     const allPhotosGridHtml = allPhotos.map((imgUrl, i) => `
       <div class="full-gallery-item" onclick="luxOpenZoom(${i})">
-        <img src="${imgUrl}" alt="Photo ${i + 1}" loading="lazy" decoding="async" referrerpolicy="no-referrer">
+        <img src="${escapeHtml(imgUrl)}" alt="Photo ${i + 1}" loading="lazy" decoding="async" referrerpolicy="no-referrer">
       </div>
     `).join("");
 
@@ -709,7 +715,7 @@ export async function composeWeddingData(inv: any) {
         <button class="lux-zoom-close" onclick="luxCloseZoom()">✕</button>
         <button class="lux-zoom-nav prev" onclick="luxPrevZoom(event)">‹</button>
         <div class="lux-zoom-img-box" onclick="event.stopPropagation()">
-          <img id="luxZoomActiveImg" src="${allPhotos[0] || ''}" alt="Zoom View" referrerpolicy="no-referrer">
+          <img id="luxZoomActiveImg" src="${escapeHtml(allPhotos[0] || '')}" alt="Zoom View" referrerpolicy="no-referrer">
           <div class="lux-zoom-counter" id="luxZoomCounter">1 / ${allPhotos.length}</div>
         </div>
         <button class="lux-zoom-nav next" onclick="luxNextZoom(event)">›</button>
@@ -903,8 +909,8 @@ export async function composeWeddingData(inv: any) {
       <p class="sec-sub">Silakan tunjukkan QR Code ini kepada penerima tamu undangan di lokasi acara.</p>
       
       <div class="access-pass-card">
-        <span class="pass-tagline">${featureSettings.weddingTagline || "THE WEDDING OF"}</span>
-        <h3 class="pass-names serif">${firstName} <em>&amp;</em> ${secondName}</h3>
+        <span class="pass-tagline">${escapeHtml(featureSettings.weddingTagline || "THE WEDDING OF")}</span>
+        <h3 class="pass-names serif">${escapeHtml(firstName)} <em>&amp;</em> ${escapeHtml(secondName)}</h3>
         <p class="pass-date">${weddingDate}</p>
         
         <div class="pass-qr-wrapper">
@@ -946,13 +952,15 @@ export async function composeWeddingData(inv: any) {
     }
   }
 
-  const finalAudioUrl = featureSettings.showMusic !== false ? (inv.musicUrl || featureSettings.musicUrl || fallbackMusicUrl) : "";
+  const finalAudioUrl = featureSettings.showMusic !== false
+    ? (safeExternalUrl(inv.musicUrl || featureSettings.musicUrl) || fallbackMusicUrl)
+    : "";
   const isOgg = finalAudioUrl.toLowerCase().endsWith(".ogg");
   const musicPlayerHtml = `
     ${finalAudioUrl ? `
     <!-- UNIVERSAL MUSIC PLAYER INJECTED BY THEME ENGINE -->
     <audio id="luxAudioPlayer" loop preload="none">
-      <source src="${finalAudioUrl}" type="${isOgg ? "audio/ogg" : "audio/mpeg"}" />
+      <source src="${escapeHtml(finalAudioUrl)}" type="${isOgg ? "audio/ogg" : "audio/mpeg"}" />
     </audio>
     ` : ""}
     <script>
@@ -1136,7 +1144,7 @@ export async function composeWeddingData(inv: any) {
   let dressCodeHtml = "";
   if (showDresscode && (dressCodeColors || dressCodeNote)) {
     const colorBadges = dressCodeColors
-      ? dressCodeColors.split(",").map((c: string) => `<span style="width:28px; height:28px; border-radius:50%; background:${c.trim()}; display:inline-block; border:2px solid rgba(255,255,255,0.7); box-shadow:0 4px 10px rgba(0,0,0,0.35);"></span>`).join("")
+      ? String(dressCodeColors).split(",").map((c: string) => `<span style="width:28px; height:28px; border-radius:50%; background:${escapeHtml(safeCssColor(c))}; display:inline-block; border:2px solid rgba(255,255,255,0.7); box-shadow:0 4px 10px rgba(0,0,0,0.35);"></span>`).join("")
       : `<span style="width:28px; height:28px; border-radius:50%; background:#a67c52; display:inline-block; border:2px solid rgba(255,255,255,0.7);"></span><span style="width:28px; height:28px; border-radius:50%; background:#2b2725; display:inline-block; border:2px solid rgba(255,255,255,0.7);"></span><span style="width:28px; height:28px; border-radius:50%; background:#faf7f2; display:inline-block; border:2px solid rgba(255,255,255,0.7);"></span>`;
 
     dressCodeHtml = `
@@ -1151,12 +1159,12 @@ export async function composeWeddingData(inv: any) {
   }
 
   // 8. Section: Live Streaming (Live Wedding)
-  const liveStreamYoutubeUrl = featureSettings.liveStreamYoutubeUrl || inv.liveStreamUrl || "";
-  const liveStreamInstagramUrl = featureSettings.liveStreamInstagramUrl || "";
-  const liveStreamZoomUrl = featureSettings.liveStreamZoomUrl || "";
+  const liveStreamYoutubeUrl = safeHref(featureSettings.liveStreamYoutubeUrl || inv.liveStreamUrl);
+  const liveStreamInstagramUrl = safeHref(featureSettings.liveStreamInstagramUrl);
+  const liveStreamZoomUrl = safeHref(featureSettings.liveStreamZoomUrl);
   let liveStreamingHtml = "";
   if (showLiveStream && (liveStreamYoutubeUrl || liveStreamInstagramUrl || liveStreamZoomUrl)) {
-    const liveTimeStr = rawEventsList[0]?.time ? ` • ${rawEventsList[0].time}` : "";
+    const liveTimeStr = rawEventsList[0]?.time ? ` • ${escapeHtml(rawEventsList[0].time)}` : "";
     liveStreamingHtml = `
       <section class="sec-flow" id="live">
         <span class="sec-eyebrow" data-lux-field="customLabels.streamingEyebrow">${streamingEyebrow}</span>
@@ -1164,16 +1172,16 @@ export async function composeWeddingData(inv: any) {
         <p class="sec-sub">${weddingDate}${liveTimeStr}</p>
         <p class="sec-sub" style="margin-top:0.4rem;" data-lux-field="customLabels.streamingSubtitle">${streamingSubtitle}</p>
         <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:0.8rem; margin-top:1.5rem;">
-          ${liveStreamYoutubeUrl ? `<a href="${liveStreamYoutubeUrl}" target="_blank" class="btn-map-outline">YOUTUBE LIVE</a>` : ""}
-          ${liveStreamInstagramUrl ? `<a href="${liveStreamInstagramUrl}" target="_blank" class="btn-map-outline">INSTAGRAM LIVE</a>` : ""}
-          ${liveStreamZoomUrl ? `<a href="${liveStreamZoomUrl}" target="_blank" class="btn-map-outline">ZOOM MEETING</a>` : ""}
+          ${liveStreamYoutubeUrl ? `<a href="${liveStreamYoutubeUrl}" target="_blank" rel="noopener noreferrer" class="btn-map-outline">YOUTUBE LIVE</a>` : ""}
+          ${liveStreamInstagramUrl ? `<a href="${liveStreamInstagramUrl}" target="_blank" rel="noopener noreferrer" class="btn-map-outline">INSTAGRAM LIVE</a>` : ""}
+          ${liveStreamZoomUrl ? `<a href="${liveStreamZoomUrl}" target="_blank" rel="noopener noreferrer" class="btn-map-outline">ZOOM MEETING</a>` : ""}
         </div>
       </section>
     `;
   }
 
   // 9. Section: Wedding Frame / Instagram Filter
-  const instagramFilterUrl = featureSettings.instagramFilterUrl || "";
+  const instagramFilterUrl = safeHref(featureSettings.instagramFilterUrl);
   let weddingFilterHtml = "";
   if (showFilter && instagramFilterUrl) {
     weddingFilterHtml = `
@@ -1181,7 +1189,7 @@ export async function composeWeddingData(inv: any) {
         <span class="sec-eyebrow">CAPTURE YOUR MOMENT</span>
         <h2 class="sec-main-title serif">WEDDING FRAME</h2>
         <p class="sec-sub">Unggah dan abadikan momen Anda saat menghadiri pernikahan kami menggunakan Wedding Frame resmi kami di Instagram.</p>
-        <a href="${instagramFilterUrl}" target="_blank" class="btn-outline-box" style="margin-top:1.8rem;">BUKA FILTER INSTAGRAM</a>
+        <a href="${instagramFilterUrl}" target="_blank" rel="noopener noreferrer" class="btn-outline-box" style="margin-top:1.8rem;">BUKA FILTER INSTAGRAM</a>
       </section>
     `;
   }
@@ -1206,7 +1214,7 @@ export async function composeWeddingData(inv: any) {
   // 11. Section: Bank Accounts & Gift Section
   let giftSectionHtml = "";
   let giftCardsHtml = "";
-  const qrisImageUrl = featureSettings.qrisImageUrl || "";
+  const qrisImageUrl = safeHref(featureSettings.qrisImageUrl);
   if (showGift) {
     const hasExplicitBanks = Array.isArray(bankAccounts) && bankAccounts.length > 0;
     const hasQris = Boolean(qrisImageUrl);
@@ -1219,11 +1227,11 @@ export async function composeWeddingData(inv: any) {
 
     const bankCardsHtml = rawBanks.map((b: any, idx: number) => `
       <div class="bank-card">
-        <span class="bank-label" data-lux-field="bankAccounts.${idx}.bank">${b.bank || "BCA"}</span>
-        <span class="bank-owner" data-lux-field="bankAccounts.${idx}.name">a.n ${b.name || (isGroomFirst ? groomName : brideName)}</span>
+        <span class="bank-label" data-lux-field="bankAccounts.${idx}.bank">${escapeHtml(b.bank || "BCA")}</span>
+        <span class="bank-owner" data-lux-field="bankAccounts.${idx}.name">a.n ${escapeHtml(b.name || (isGroomFirst ? groomName : brideName))}</span>
         <div class="bank-row">
-          <span class="bank-number" data-lux-field="bankAccounts.${idx}.number">${b.number}</span>
-          <button class="btn-copy" onclick="copyText('${b.number}')">Salin</button>
+          <span class="bank-number" data-lux-field="bankAccounts.${idx}.number">${escapeHtml(b.number)}</span>
+          <button class="btn-copy" data-copy="${escapeHtml(b.number)}" onclick="copyText(this.dataset.copy)">Salin</button>
         </div>
       </div>
     `).join("");
@@ -1257,7 +1265,7 @@ export async function composeWeddingData(inv: any) {
         <p style="font-size:0.8rem; color:rgba(255,255,255,0.7); line-height:1.5; margin:0.4rem 0 0.8rem;">
           ${nl2br(String(inv.shippingAddress).trim())}
         </p>
-        <button class="btn-copy" onclick="copyText('${escapeHtml(String(inv.shippingAddress).trim())}')">Salin Alamat</button>
+        <button class="btn-copy" data-copy="${escapeHtml(String(inv.shippingAddress).trim())}" onclick="copyText(this.dataset.copy)">Salin Alamat</button>
       </div>
     ` : "";
 
@@ -1333,14 +1341,14 @@ export async function composeWeddingData(inv: any) {
     const isMarquee = totalMemCount > 5;
 
     const storyAvatarsHtml = shuffledMemories.map((sm: any) => `
-      <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; width: 68px; cursor: pointer;" onclick="luxOpenMemoryPreview('${sm.mediaUrl}', '${sm.senderName}', '${(sm.message || "").replace(/'/g, "\\'")}', '${sm.mediaType}')">
+      <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; width: 68px; cursor: pointer;" data-url="${safeHref(sm.mediaUrl)}" data-name="${escapeHtml(sm.senderName)}" data-msg="${escapeHtml(sm.message || "")}" data-type="${escapeHtml(sm.mediaType)}" onclick="luxOpenMemoryPreview(this.dataset.url, this.dataset.name, this.dataset.msg, this.dataset.type)">
         <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
           <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-            <img src="${sm.thumbnailUrl || sm.mediaUrl}" alt="${sm.senderName}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;" />
+            <img src="${safeHref(sm.thumbnailUrl || sm.mediaUrl)}" alt="${escapeHtml(sm.senderName)}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;" />
           </div>
         </div>
         <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; color: inherit; text-align: center;">
-          ${(sm.senderName || "Tamu").split(" ")[0]}
+          ${escapeHtml((sm.senderName || "Tamu").split(" ")[0])}
         </span>
       </div>
     `).join("");
@@ -1690,7 +1698,7 @@ export async function composeWeddingData(inv: any) {
             } else {
               throw new Error(data.error || 'Gagal mengunggah foto.');
             }
-          } catch (err: any) {
+          } catch (err) {
             if (errorBox) {
               errorBox.textContent = err.message || 'Terjadi kesalahan saat mengunggah foto ke server.';
               errorBox.style.display = 'block';
@@ -1706,8 +1714,11 @@ export async function composeWeddingData(inv: any) {
           const caption = document.getElementById('luxMemoryPreviewCaption');
           if (!modal || !content) return;
 
-          const safeUrl = url.replace(/"/g, '&quot;');
-          content.innerHTML = '<img src="' + safeUrl + '" style="max-height: 75vh; max-width: 100%; border-radius: 16px; object-fit: contain; box-shadow: 0 20px 50px rgba(0,0,0,0.8);" />';
+          content.textContent = '';
+          const previewImg = document.createElement('img');
+          previewImg.src = url;
+          previewImg.style.cssText = 'max-height: 75vh; max-width: 100%; border-radius: 16px; object-fit: contain; box-shadow: 0 20px 50px rgba(0,0,0,0.8);';
+          content.appendChild(previewImg);
 
           if (caption) {
             caption.textContent = '';
@@ -1758,17 +1769,13 @@ export async function composeWeddingData(inv: any) {
   if (showVendors && validVendors.length > 0) {
     const vendorItemsHtml = validVendors.map((v: any) => {
       const name = (v.name || "").trim();
-      const logo = (v.logoUrl || "").trim();
-      let rawUrl = (v.url || "").trim();
+      const logo = safeExternalUrl(v.logoUrl);
+      const rawUrl = String(v.url || "").trim();
       let finalUrl = "";
       if (rawUrl) {
-        if (rawUrl.startsWith("@")) {
-          finalUrl = `https://instagram.com/${rawUrl.slice(1).trim()}`;
-        } else if (rawUrl.startsWith("http://") || rawUrl.startsWith("https://") || rawUrl.startsWith("//")) {
-          finalUrl = rawUrl;
-        } else {
-          finalUrl = `https://${rawUrl}`;
-        }
+        finalUrl = rawUrl.startsWith("@")
+          ? safeHref(`https://instagram.com/${encodeURIComponent(rawUrl.slice(1).trim())}`)
+          : safeHref(rawUrl);
       }
 
       // Clean borderless floating presentation directly on canvas background (NO CARD WRAP)
@@ -1997,21 +2004,21 @@ export async function composeWeddingData(inv: any) {
     // Dynamic OpenGraph & Meta Tags Default
     metaTagsHtml: `
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <title>${firstNickname} &amp; ${secondNickname} — Undangan Pernikahan</title>
-    <meta name="description" content="Undangan pernikahan ${firstFullName} &amp; ${secondFullName}. Simak informasi rangkaian acara, lokasi, dan konfirmasi kehadiran.">
+    <title>${escapeHtml(firstNickname)} &amp; ${escapeHtml(secondNickname)} — Undangan Pernikahan</title>
+    <meta name="description" content="Undangan pernikahan ${escapeHtml(firstFullName)} &amp; ${escapeHtml(secondFullName)}. Simak informasi rangkaian acara, lokasi, dan konfirmasi kehadiran.">
     <meta property="og:site_name" content="${escapeHtml(platformName)}">
-    <meta property="og:title" content="${firstNickname} &amp; ${secondNickname} — Undangan Pernikahan">
-    <meta property="og:description" content="Undangan pernikahan ${firstFullName} &amp; ${secondFullName}. Simak informasi rangkaian acara, lokasi, dan konfirmasi kehadiran.">
-    <meta property="og:image" content="${absoluteCover}">
-    <meta property="og:image:secure_url" content="${absoluteCover}">
+    <meta property="og:title" content="${escapeHtml(firstNickname)} &amp; ${escapeHtml(secondNickname)} — Undangan Pernikahan">
+    <meta property="og:description" content="Undangan pernikahan ${escapeHtml(firstFullName)} &amp; ${escapeHtml(secondFullName)}. Simak informasi rangkaian acara, lokasi, dan konfirmasi kehadiran.">
+    <meta property="og:image" content="${escapeHtml(absoluteCover)}">
+    <meta property="og:image:secure_url" content="${escapeHtml(absoluteCover)}">
     <meta property="og:image:type" content="image/jpeg">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="${firstNickname} &amp; ${secondNickname} — Undangan Pernikahan">
-    <meta name="twitter:description" content="Undangan pernikahan ${firstFullName} &amp; ${secondFullName}.">
-    <meta name="twitter:image" content="${absoluteCover}">
+    <meta name="twitter:title" content="${escapeHtml(firstNickname)} &amp; ${escapeHtml(secondNickname)} — Undangan Pernikahan">
+    <meta name="twitter:description" content="Undangan pernikahan ${escapeHtml(firstFullName)} &amp; ${escapeHtml(secondFullName)}.">
+    <meta name="twitter:image" content="${escapeHtml(absoluteCover)}">
     `,
     
     featureSettings,
@@ -2162,8 +2169,8 @@ export async function composeBirthdayData(inv: any) {
   ];
 
   const galleryItemsHtml = galleryPhotos.map((src, idx) => `
-    <div class="gallery-cell" onclick="openPhotoModal('${src}')">
-      <img src="${src}" alt="Momen ${idx + 1}" loading="lazy" />
+    <div class="gallery-cell" data-src="${safeHref(src)}" onclick="openPhotoModal(this.dataset.src)">
+      <img src="${safeHref(src)}" alt="Momen ${idx + 1}" loading="lazy" />
     </div>
   `).join("");
 
@@ -2226,7 +2233,7 @@ export async function composeBirthdayData(inv: any) {
       <span class="bank-name">${escapeHtml(b.bank || "Bank")}</span>
       <span class="bank-number">${escapeHtml(b.number || b.accountNumber || "")}</span>
       <span class="bank-owner">a.n ${escapeHtml(b.name || b.accountName || personName)}</span>
-      <button class="btn-copy" onclick="copyText('${escapeHtml(b.number || b.accountNumber || "")}')">Salin Rekening</button>
+      <button class="btn-copy" data-copy="${escapeHtml(b.number || b.accountNumber || "")}" onclick="copyText(this.dataset.copy)">Salin Rekening</button>
     </div>
   `).join("");
 
@@ -2261,13 +2268,13 @@ export async function composeBirthdayData(inv: any) {
   ` : "";
 
   // Music Player
-  const clientUploadedSong = mediaMap.get("AUDIO_TRACK") || inv.musicUrl;
+  const clientUploadedSong = safeExternalUrl(mediaMap.get("AUDIO_TRACK") || inv.musicUrl);
   const finalAudioUrl = clientUploadedSong || dbThemeDefaultMusic || blueprint.defaultMusicUrl || "/music/canon-in-d.ogg";
 
   const musicPlayerHtml = `
     <audio id="luxAudioPlayer" loop preload="none">
-      <source src="${finalAudioUrl}" type="audio/ogg" />
-      <source src="${finalAudioUrl}" type="audio/mpeg" />
+      <source src="${escapeHtml(finalAudioUrl)}" type="audio/ogg" />
+      <source src="${escapeHtml(finalAudioUrl)}" type="audio/mpeg" />
     </audio>
   `;
 
@@ -2416,13 +2423,13 @@ export async function composeBirthdayData(inv: any) {
     // Meta Tags
     metaTagsHtml: `
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <title>Ulang Tahun ${personNickname} — Undangan Digital</title>
-    <meta name="description" content="Perayaan ulang tahun ${personName}. Simak informasi rangkaian acara, lokasi, dan konfirmasi kehadiran.">
+    <title>Ulang Tahun ${escapeHtml(personNickname)} — Undangan Digital</title>
+    <meta name="description" content="Perayaan ulang tahun ${escapeHtml(personName)}. Simak informasi rangkaian acara, lokasi, dan konfirmasi kehadiran.">
     <meta property="og:site_name" content="${escapeHtml(platformName)}">
-    <meta property="og:title" content="Ulang Tahun ${personNickname} — Undangan Digital">
-    <meta property="og:description" content="Perayaan ulang tahun ${personName}.">
-    <meta property="og:image" content="${absoluteCover}">
-    <meta property="og:image:secure_url" content="${absoluteCover}">
+    <meta property="og:title" content="Ulang Tahun ${escapeHtml(personNickname)} — Undangan Digital">
+    <meta property="og:description" content="Perayaan ulang tahun ${escapeHtml(personName)}.">
+    <meta property="og:image" content="${escapeHtml(absoluteCover)}">
+    <meta property="og:image:secure_url" content="${escapeHtml(absoluteCover)}">
     <meta property="og:type" content="website">
     `,
 
@@ -2483,7 +2490,7 @@ function buildUniversalGiftSection(
       <span style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--primary); letter-spacing: 1px;">${escapeHtml(b.bank || "Bank")}</span>
       <div style="font-family: monospace; font-size: 18px; font-weight: 700; color: var(--text-main); margin: 8px 0; letter-spacing: 1px;">${escapeHtml(b.number || b.accountNumber || "")}</div>
       <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">a.n ${escapeHtml(b.name || b.accountName || fallbackOwnerName)}</p>
-      <button type="button" onclick="navigator.clipboard.writeText('${escapeHtml(b.number || b.accountNumber || "")}').then(function(){alert('Nomor rekening berhasil disalin!');})" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 20px; border-radius: var(--radius-full, 9999px); background: color-mix(in srgb, var(--primary) 15%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent); color: var(--primary); font-size: 12px; font-weight: 700; cursor: pointer;">Salin No. Rekening</button>
+      <button type="button" data-copy="${escapeHtml(b.number || b.accountNumber || "")}" onclick="navigator.clipboard.writeText(this.dataset.copy).then(function(){alert('Nomor rekening berhasil disalin!');})" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 20px; border-radius: var(--radius-full, 9999px); background: color-mix(in srgb, var(--primary) 15%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent); color: var(--primary); font-size: 12px; font-weight: 700; cursor: pointer;">Salin No. Rekening</button>
     </div>
   `).join("");
 
@@ -2700,10 +2707,10 @@ export async function composeKhitanData(inv: any) {
     brandWatermarkHtml: `<span style="font-size: 10px; color: var(--primary);">Powered by ${escapeHtml(platformName)}</span>`,
     metaTagsHtml: `
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <title>Walimatul Khitan ${childName} — Undangan Digital</title>
-    <meta name="description" content="Tasyakuran Walimatul Khitan ${childName}.">
-    <meta property="og:title" content="Walimatul Khitan ${childName} — Undangan Digital">
-    <meta property="og:image" content="${absoluteCover}">
+    <title>Walimatul Khitan ${escapeHtml(childName)} — Undangan Digital</title>
+    <meta name="description" content="Tasyakuran Walimatul Khitan ${escapeHtml(childName)}.">
+    <meta property="og:title" content="Walimatul Khitan ${escapeHtml(childName)} — Undangan Digital">
+    <meta property="og:image" content="${escapeHtml(absoluteCover)}">
     `,
     featureSettings,
     customLabels,
@@ -2816,10 +2823,10 @@ export async function composeAqiqahData(inv: any) {
     brandWatermarkHtml: `<span style="font-size: 10px; color: var(--primary);">Powered by ${escapeHtml(platformName)}</span>`,
     metaTagsHtml: `
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <title>Tasyakuran Aqiqah ${babyName} — Undangan Digital</title>
-    <meta name="description" content="Tasyakuran Aqiqah ${babyName}.">
-    <meta property="og:title" content="Tasyakuran Aqiqah ${babyName} — Undangan Digital">
-    <meta property="og:image" content="${absoluteCover}">
+    <title>Tasyakuran Aqiqah ${escapeHtml(babyName)} — Undangan Digital</title>
+    <meta name="description" content="Tasyakuran Aqiqah ${escapeHtml(babyName)}.">
+    <meta property="og:title" content="Tasyakuran Aqiqah ${escapeHtml(babyName)} — Undangan Digital">
+    <meta property="og:image" content="${escapeHtml(absoluteCover)}">
     `,
     featureSettings,
     customLabels,
@@ -2937,10 +2944,10 @@ export async function composeWisudaData(inv: any) {
     brandWatermarkHtml: `<span style="font-size: 10px; color: var(--primary);">Powered by ${escapeHtml(platformName)}</span>`,
     metaTagsHtml: `
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <title>Wisuda ${graduateName} — Undangan Digital</title>
-    <meta name="description" content="Syukuran kelulusan ${graduateName}.">
-    <meta property="og:title" content="Wisuda ${graduateName} — Undangan Digital">
-    <meta property="og:image" content="${absoluteCover}">
+    <title>Wisuda ${escapeHtml(graduateName)} — Undangan Digital</title>
+    <meta name="description" content="Syukuran kelulusan ${escapeHtml(graduateName)}.">
+    <meta property="og:title" content="Wisuda ${escapeHtml(graduateName)} — Undangan Digital">
+    <meta property="og:image" content="${escapeHtml(absoluteCover)}">
     `,
     featureSettings,
     customLabels,
@@ -3046,10 +3053,10 @@ export async function composeGatheringData(inv: any) {
     brandWatermarkHtml: `<span style="font-size: 10px; color: var(--primary);">Powered by ${escapeHtml(platformName)}</span>`,
     metaTagsHtml: `
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <title>${eventTitle} — Undangan Resmi</title>
-    <meta name="description" content="${eventSubtitle}">
-    <meta property="og:title" content="${eventTitle} — Undangan Resmi">
-    <meta property="og:image" content="${absoluteCover}">
+    <title>${escapeHtml(eventTitle)} — Undangan Resmi</title>
+    <meta name="description" content="${escapeHtml(eventSubtitle)}">
+    <meta property="og:title" content="${escapeHtml(eventTitle)} — Undangan Resmi">
+    <meta property="og:image" content="${escapeHtml(absoluteCover)}">
     `,
     featureSettings,
     customLabels,

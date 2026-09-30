@@ -14,7 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function RefundPage() {
   const settings = await getPublicPlatformSettings();
   const platformName = settings.platformName || "Platform Undangan";
-  const supportEmail = settings.supportEmail || "support@example.com";
+  const supportEmail = settings.supportEmail || "";
   const supportWhatsapp = settings.supportWhatsapp || "";
 
   return (

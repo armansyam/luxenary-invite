@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requireAdminModule } from "@/lib/adminAuth";
 import { invalidateSettingsCache } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
-async function verifyAdminSession() {
-  const session = await auth();
-  const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
-  if (!session?.user || !isAdmin) {
-    return false;
-  }
-  return true;
+async function denyUnlessSettingsAdmin() {
+  const guard = await requireAdminModule("settings");
+  return guard.ok ? null : guard.response;
 }
 
 // Default seeds for AdminSetting
@@ -71,7 +67,9 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group
   { key: "backup_retention_count", value: "10", label: "Batas Jumlah Snapshot Disimpan", group: "backup" },
   { key: "nas_archive_enabled", value: "false", label: "Aktifkan Cold Storage Arsip NAS", group: "backup" },
   { key: "nas_archive_path", value: "./data/archives", label: "Path Direktori Arsip NAS", group: "backup" },
-  { key: "nas_archive_retention_days", value: "365", label: "Masa Retensi Arsip NAS (Hari)", group: "backup" },
+  { key: "nas_archive_retention_days", value: "365", label: "Masa Simpan Arsip Undangan (Hari Pasca Acara)", group: "backup" },
+  { key: "retention_cleanup_days", value: "30", label: "Retensi Galeri Foto Tamu (Hari Pasca Acara)", group: "setup" },
+  { key: "retention_custom_domain_days", value: "365", label: "Masa Aktif Custom Domain (Hari Pasca Acara)", group: "setup" },
   { key: "subdomain_grace_days", value: "7", label: "Masa Tenggang Subdomain (Hari Pasca Acara)", group: "subdomain" },
   { key: "subdomain_auto_recycle", value: "true", label: "Otomatis Lepas Subdomain ke Pool", group: "subdomain" },
   // Retensi order — terpisah dari retensi undangan
@@ -95,10 +93,8 @@ async function seedDefaultSettings() {
 
 export async function GET() {
   try {
-    const isAuthorized = await verifyAdminSession();
-    if (!isAuthorized) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const denied = await denyUnlessSettingsAdmin();
+    if (denied) return denied;
 
     const settingCount = await prisma.adminSetting.count();
     if (settingCount === 0) {
@@ -129,10 +125,8 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const isAuthorized = await verifyAdminSession();
-    if (!isAuthorized) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const denied = await denyUnlessSettingsAdmin();
+    if (denied) return denied;
 
     const body = await req.json();
     const updates = Array.isArray(body) ? body : [body];

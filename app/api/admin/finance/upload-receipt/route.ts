@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import fs from "fs";
-import { auth } from "@/auth";
+import { requireAdminModule } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -17,17 +17,8 @@ async function ensureReceiptsDir() {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    const role = (session?.user as any)?.role;
-    const isAdmin =
-      (session?.user as any)?.isAdmin === true ||
-      role === "SUPER_ADMIN" ||
-      role === "ADMIN" ||
-      role === "FINANCE";
-
-    if (!session?.user || !isAdmin) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator Finance." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("finance");
+    if (!guard.ok) return guard.response;
 
     await ensureReceiptsDir();
 

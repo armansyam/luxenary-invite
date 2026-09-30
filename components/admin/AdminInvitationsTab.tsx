@@ -3,7 +3,15 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { startRemoteSession } from "@/app/(admin)/admin/actions/remote";
 
-import { getLatestEventDate } from "@/lib/domainUtils";
+import {
+  computeLifecycleDates,
+  formatDateInEventTimezone,
+  formatPrimaryEventDate,
+  formatRetentionLabel,
+  getPrimaryEventTimezone,
+  lifecycleSettingsFromPublic,
+  type LifecycleDaySettings,
+} from "@/lib/lifecycleDates";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 
 interface InvitationItem {
@@ -55,6 +63,14 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
   const [actionLoading, setActionLoading] = useState(false);
   const [actionMsg, setActionMsg] = useState<{ ok: boolean; msg: string } | null>(null);
   const [confirmCloseToGallery, setConfirmCloseToGallery] = useState<InvitationItem | null>(null);
+  const [lifecycleSettings, setLifecycleSettings] = useState<LifecycleDaySettings>(lifecycleSettingsFromPublic(null));
+
+  useEffect(() => {
+    fetch("/api/public/settings")
+      .then((res) => res.json())
+      .then((data) => setLifecycleSettings(lifecycleSettingsFromPublic(data)))
+      .catch((err) => console.error("Gagal memuat pengaturan retensi:", err));
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -207,11 +223,6 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
     } finally {
       setActionLoading(false);
     }
-  };
-
-  // Parse tanggal acara dari eventData JSON (mengambil tanggal sesi acara terakhir)
-  const getEventDate = (eventDataRaw?: string | null) => {
-    return getLatestEventDate(eventDataRaw);
   };
 
   return (
@@ -384,8 +395,8 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
                 invitations.map((inv) => {
                   const coupleName = resolveInvitationDisplayName(inv);
                   const isEmergencyUnlocked = inv.adminUnlockedUntil && new Date(inv.adminUnlockedUntil) > new Date();
-                  const eventDate = getEventDate(inv.eventData);
-                  const defaultGalleryExpiry = eventDate ? new Date(eventDate.getTime() + 30 * 24 * 60 * 60 * 1000) : null;
+                  const eventDateLabel = formatPrimaryEventDate(inv.eventData);
+                  const defaultGalleryExpiry = computeLifecycleDates({ eventData: inv.eventData }, lifecycleSettings)?.galleryExpiresAt ?? null;
 
                   return (
                     <tr key={inv.id} className="hover:bg-gray-50/80 transition">
@@ -480,8 +491,8 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
                         {inv.status === "PUBLISHED" && (
                           <div>
                             <div className="text-stone-700 font-medium">
-                              {eventDate ? (
-                                <span>Acara: <strong>{eventDate.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</strong></span>
+                              {eventDateLabel ? (
+                                <span>Acara: <strong>{eventDateLabel}</strong></span>
                               ) : (
                                 <span className="text-stone-400 italic">Tanggal acara belum diset</span>
                               )}
@@ -497,10 +508,10 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
                               </div>
                             ) : defaultGalleryExpiry ? (
                               <div className="text-stone-700">
-                                s.d. {defaultGalleryExpiry.toLocaleDateString("id-ID")}
+                                s.d. {formatDateInEventTimezone(defaultGalleryExpiry, getPrimaryEventTimezone(inv.eventData))}
                               </div>
                             ) : (
-                              <span className="text-stone-500">Standar 30 Hari</span>
+                              <span className="text-stone-500">Standar {formatRetentionLabel(lifecycleSettings.galleryRetentionDays)}</span>
                             )}
                             <div className="text-[10px] text-stone-400 mt-0.5">Retensi foto tamu</div>
                           </div>

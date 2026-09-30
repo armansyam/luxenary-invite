@@ -1,18 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requireAnyAdmin } from "@/lib/adminAuth";
 import bcrypt from "bcryptjs";
 
 export async function PUT(req: Request) {
   try {
-    const session = await auth();
-    
     // Setiap admin yang login boleh mengubah profil mereka sendiri
-    if (!session?.user || !(session.user as any).isAdmin) {
-      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-    }
+    const guard = await requireAnyAdmin();
+    if (!guard.ok) return guard.response;
 
-    const adminId = (session.user as any).id as string;
+    const adminId = guard.session.user.id;
     const { name, email, username, currentPassword, newPassword } = await req.json();
 
     const admin = await prisma.admin.findUnique({ where: { id: adminId } });

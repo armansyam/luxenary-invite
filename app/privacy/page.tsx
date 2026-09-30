@@ -16,8 +16,8 @@ export default async function PrivacyPage() {
   const platformName = settings.platformName || "Platform Undangan";
   const supportEmail = settings.supportEmail || "";
   const supportWhatsapp = settings.supportWhatsapp || "";
-  const graceDays = settings.retentionInvitationGraceDays || 7;
-  const galleryDays = settings.retentionGalleryDefaultDays || 30;
+  const graceDays = settings.subdomainGraceDays;
+  const galleryDays = settings.galleryRetentionDays;
 
   return (
     <div className="min-h-screen bg-[#faf8f5] font-sans flex flex-col text-stone-800" style={{ colorScheme: "only light", backgroundColor: "#faf8f5", color: "#292524" }}>

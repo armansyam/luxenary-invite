@@ -208,6 +208,8 @@ export async function POST(req: Request) {
         // Rekam gateway yang menangani order ini + ID transaksi di sisi gateway
         gatewayId: activeGatewayId,
         gatewayTxId: gatewayTxId || orderId, // Fallback ke orderId jika gateway tidak mengembalikan txId spesifik
+        // Nominal yang benar-benar ditagihkan ke gateway (termasuk biaya layanan mode BUYER) — dipakai webhook untuk validasi
+        chargedAmount: finalAmount,
         snapToken: qrString ? JSON.stringify({ qrString, sessionId, expiry: expiryMs }) : checkoutUrl,
         expiredAt: new Date(expiryMs),
       },

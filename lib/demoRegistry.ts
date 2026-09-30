@@ -4784,14 +4784,6 @@ export function composeDemoTemplateData(
     vendorSubtitle,
     
     googleCalendarUrl,
-    waLink: (() => {
-      if (demo.eventType === "BIRTHDAY") return `https://wa.me/6281234567890?text=Halo%20${encodeURIComponent((demo as any).personName || "Sahabat")}`;
-      if (demo.eventType === "KHITAN") return `https://wa.me/6281234567890?text=Halo%20${encodeURIComponent((demo as any).childName || "Ananda")}`;
-      if (demo.eventType === "AQIQAH") return `https://wa.me/6281234567890?text=Halo%20${encodeURIComponent((demo as any).babyName || "Buah Hati")}`;
-      if (demo.eventType === "WISUDA") return `https://wa.me/6281234567890?text=Halo%20${encodeURIComponent((demo as any).graduateName || "Wisudawan")}`;
-      if (demo.eventType === "GATHERING") return `https://wa.me/6281234567890?text=Halo%20${encodeURIComponent((demo as any).eventTitle || "Penyelenggara")}`;
-      return `https://wa.me/6281234567890?text=Halo%20${encodeURIComponent(demo.groomName || "")}%20dan%20${encodeURIComponent(demo.brideName || "")}`;
-    })(),
     audioUrl: effectiveAudioUrl,
     musicPlayerHtml: `
     ${effectiveAudioUrl ? `

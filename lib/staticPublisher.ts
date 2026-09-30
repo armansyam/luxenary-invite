@@ -6,6 +6,7 @@ import { renderTemplateFile } from "@/lib/renderTemplate";
 import { getAdminSetting } from "@/lib/settings";
 import { resolveInvitationDisplayName, buildCalendarTitle } from "@/lib/invitationUtils";
 import { publishedHtmlCache } from "@/lib/cache";
+import { escapeHtml } from "@/lib/escapeHtml";
 
 const PUBLISHED_DIR = path.join(process.cwd(), "public", "published");
 
@@ -97,23 +98,28 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
   const rawImage = coverMedia?.localPath || (data as any).landingCoverUrl || (data as any).sidebarPhotoUrl || (data as any).heroPhotoUrl || "/assets/brand/og-banner.png";
   const absoluteImageUrl = rawImage.startsWith("http") ? rawImage : `${siteOrigin}${rawImage.startsWith("/") ? "" : "/"}${rawImage}`;
 
+  const safeTitle = escapeHtml(title);
+  const safeDescription = escapeHtml(description);
+  const safePlatformName = escapeHtml(platformName);
+  const safeImageUrl = escapeHtml(absoluteImageUrl);
+
   const metaTagsHtml = `
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>${title}</title>
-    <meta name="description" content="${description}">
-    <meta property="og:site_name" content="${platformName}">
-    <meta property="og:title" content="${title}">
-    <meta property="og:description" content="${description}">
-    <meta property="og:image" content="${absoluteImageUrl}">
-    <meta property="og:image:secure_url" content="${absoluteImageUrl}">
+    <title>${safeTitle}</title>
+    <meta name="description" content="${safeDescription}">
+    <meta property="og:site_name" content="${safePlatformName}">
+    <meta property="og:title" content="${safeTitle}">
+    <meta property="og:description" content="${safeDescription}">
+    <meta property="og:image" content="${safeImageUrl}">
+    <meta property="og:image:secure_url" content="${safeImageUrl}">
     <meta property="og:image:type" content="image/jpeg">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="${title}">
-    <meta name="twitter:description" content="${description}">
-    <meta name="twitter:image" content="${absoluteImageUrl}">
+    <meta name="twitter:title" content="${safeTitle}">
+    <meta name="twitter:description" content="${safeDescription}">
+    <meta name="twitter:image" content="${safeImageUrl}">
   `;
   
   (data as any).metaTagsHtml = metaTagsHtml;

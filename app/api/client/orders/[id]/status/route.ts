@@ -112,26 +112,23 @@ export async function GET(
           if (gw && typeof gw.verify === "function") {
             const checkRes = await gw.verify(order.id);
             if (checkRes.status === "PAID") {
-              await prisma.order.update({
-                where: { id: order.id },
-                data: {
-                  status: "PAID",
-                  paidAt: new Date(),
-                },
-              });
+              // Transisi atomik PENDING -> PAID + marketing; false jika webhook sudah lebih dulu memprosesnya
+              const { settleOrderAsPaid } = await import("@/lib/paymentSettlement");
+              const settled = await settleOrderAsPaid(order.id);
 
-              const { applyUpgradePlan } = await import("@/lib/upgradeHelper");
-              await applyUpgradePlan(order.id);
+              if (settled) {
+                const { applyUpgradePlan } = await import("@/lib/upgradeHelper");
+                await applyUpgradePlan(order.id);
 
-              const { processOrderPaidMarketing } = await import("@/lib/marketing");
-              await processOrderPaidMarketing(order.id);
-
-              const { paymentEmitter } = await import("@/lib/paymentEvents");
-              paymentEmitter.emit(order.id, { status: "PAID", planType: order.planType });
+                const { paymentEmitter } = await import("@/lib/paymentEvents");
+                paymentEmitter.emit(order.id, { status: "PAID", planType: order.planType });
+              }
               finalStatus = "PAID";
             }
           }
-        } catch {}
+        } catch (reconcileErr) {
+          console.error(`[Order Status] Rekonsiliasi gateway gagal untuk order ${order.id}:`, reconcileErr);
+        }
       }
     }
 
