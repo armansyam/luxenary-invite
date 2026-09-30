@@ -57,7 +57,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/supertest": "^7.2.1",
-    "@vitest/coverage-v8": "^3.2.7",
+    "@vitest/coverage-v8": "^5.0.2",
     "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.3.7",
