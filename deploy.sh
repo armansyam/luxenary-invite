@@ -78,6 +78,19 @@ if [ -z "$PIN_KEY" ] || [ "$PIN_KEY" == '""' ]; then
   fi
 fi
 
+# 3a. Runtime Node khusus aplikasi (opsional): NODE_BIN_DIR di .env, mis. /home/amsdev/node22/bin.
+# Dipakai untuk npm ci, build, seed, dan sebagai interpreter PM2, agar sama persis dengan runtime produksi
+# tanpa mengubah Node sistem yang dipakai aplikasi lain di server ini.
+NODE_BIN_DIR=$(grep -E "^NODE_BIN_DIR=" .env | cut -d '=' -f2- | tr -d '"' | tr -d "'")
+if [ -n "$NODE_BIN_DIR" ]; then
+  if [ ! -x "$NODE_BIN_DIR/node" ]; then
+    echo "❌ NODE_BIN_DIR ($NODE_BIN_DIR) tidak berisi node yang dapat dijalankan. Deployment dihentikan."
+    exit 1
+  fi
+  export PATH="$NODE_BIN_DIR:$PATH"
+fi
+echo "🟢 Runtime Node untuk deploy: $(node -v) | npm $(npm -v) | $(command -v node)"
+
 # 4. Install Dependencies (persis sesuai package-lock.json)
 echo "📦 Menginstal dependensi (npm ci)..."
 if ! npm ci; then
@@ -145,7 +158,16 @@ if command -v pm2 &> /dev/null; then
   pm2 set pm2-logrotate:compress true > /dev/null 2>&1 || true
 
   echo "✅ PM2 terdeteksi. Merestart aplikasi luxenary-invite..."
-  pm2 reload luxenary-invite --update-env || pm2 restart luxenary-invite || pm2 start ecosystem.config.js
+  # 'pm2 reload' memakai ulang konfigurasi tersimpan dan TIDAK mengganti interpreter. Bila NODE_BIN_DIR diset dan
+  # interpreter yang berjalan berbeda, hanya aplikasi ini (luxenary-invite) dihapus dan dijalankan ulang dari
+  # ecosystem.config.js (jeda beberapa detik); aplikasi lain di PM2 tidak disentuh.
+  CURRENT_INTERPRETER=$(pm2 jlist 2>/dev/null | node -e 'try{const j=JSON.parse(require("fs").readFileSync(0));const p=j.find(x=>x.name==="luxenary-invite");process.stdout.write(p?String(p.pm2_env.exec_interpreter||""):"-")}catch{process.stdout.write("?")}')
+  if [ -n "$NODE_BIN_DIR" ] && [ "$CURRENT_INTERPRETER" != "?" ] && [ "$CURRENT_INTERPRETER" != "-" ] && [ "$CURRENT_INTERPRETER" != "$NODE_BIN_DIR/node" ]; then
+    echo "↻ Interpreter PM2 berubah ($CURRENT_INTERPRETER -> $NODE_BIN_DIR/node): menjalankan ulang luxenary-invite dari ecosystem.config.js"
+    pm2 delete luxenary-invite && pm2 start ecosystem.config.js
+  else
+    pm2 reload luxenary-invite --update-env || pm2 restart luxenary-invite || pm2 start ecosystem.config.js
+  fi
   pm2 save
   
   # Verifikasi port lokal 3001
