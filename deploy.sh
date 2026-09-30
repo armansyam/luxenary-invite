@@ -8,10 +8,17 @@ echo "🚀 Memulai proses deployment otomatis..."
 
 # 1. Tarik pembaruan terbaru dari repository
 echo "📦 Menarik pembaruan terbaru dari Git (origin main)..."
-PREVIOUS_COMMIT=$(git rev-parse HEAD)
+export PREVIOUS_COMMIT=${PREVIOUS_COMMIT:-$(git rev-parse HEAD)}
 if ! git pull --ff-only origin main; then
   echo "❌ Error: Gagal menarik perubahan terbaru dari Git origin main! Deployment dihentikan untuk mencegah corrupt build."
   exit 1
+fi
+
+# Bash membaca skrip secara bertahap; bila git pull mengganti deploy.sh ini, sisa eksekusi memakai versi lama.
+# Jalankan ulang skrip hasil pull sekali (DEPLOY_REEXEC mencegah pengulangan).
+if [ -z "$DEPLOY_REEXEC" ] && [ "$(git rev-parse HEAD)" != "$PREVIOUS_COMMIT" ]; then
+  export DEPLOY_REEXEC=1
+  exec bash "$0" "$@"
 fi
 
 # 2. Setup Direktori Runtime
@@ -161,7 +168,7 @@ if command -v pm2 &> /dev/null; then
   # 'pm2 reload' memakai ulang konfigurasi tersimpan dan TIDAK mengganti interpreter. Bila NODE_BIN_DIR diset dan
   # interpreter yang berjalan berbeda, hanya aplikasi ini (luxenary-invite) dihapus dan dijalankan ulang dari
   # ecosystem.config.js (jeda beberapa detik); aplikasi lain di PM2 tidak disentuh.
-  CURRENT_INTERPRETER=$(pm2 jlist 2>/dev/null | node -e 'try{const j=JSON.parse(require("fs").readFileSync(0));const p=j.find(x=>x.name==="luxenary-invite");process.stdout.write(p?String(p.pm2_env.exec_interpreter||""):"-")}catch{process.stdout.write("?")}')
+  CURRENT_INTERPRETER=$(pm2 jlist 2>/dev/null | node -e 'try{const s=require("fs").readFileSync(0,"utf8");const j=JSON.parse(s.slice(s.indexOf("[")));const p=j.find(x=>x.name==="luxenary-invite");process.stdout.write(p?String(p.pm2_env.exec_interpreter||""):"-")}catch{process.stdout.write("?")}')
   if [ -n "$NODE_BIN_DIR" ] && [ "$CURRENT_INTERPRETER" != "?" ] && [ "$CURRENT_INTERPRETER" != "-" ] && [ "$CURRENT_INTERPRETER" != "$NODE_BIN_DIR/node" ]; then
     echo "↻ Interpreter PM2 berubah ($CURRENT_INTERPRETER -> $NODE_BIN_DIR/node): menjalankan ulang luxenary-invite dari ecosystem.config.js"
     pm2 delete luxenary-invite && pm2 start ecosystem.config.js
