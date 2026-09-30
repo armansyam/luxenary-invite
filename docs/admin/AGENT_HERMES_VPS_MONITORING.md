@@ -12,7 +12,7 @@ Dokumen ini memuat mandat, cakupan pengawasan, ambang batas peringatan (*alert t
 | **Identitas Agen** | **Agent Hermes** (Autonomous Sentinel & Reliability Watchdog) |
 | **Server Target** | VPS Ubuntu Linux `103.150.92.238` (User: `amsdev`) |
 | **Domain Produksi** | `https://luxvite.id` |
-| **Aplikasi Inti** | `luxenary-invite` (Next.js 16.3.2 Turbopack, PM2 Cluster Port 3001) |
+| **Aplikasi Inti** | `luxenary-invite` (Next.js 16.3.7 Turbopack, PM2 Cluster Port 3001) |
 | **Database** | PostgreSQL 16 (`luxenary_db` di `localhost:5432`) |
 | **Web Server / Ingress** | Caddy v2 (On-Demand TLS, Reverse Proxy) di belakang Cloudflare |
 | **Layanan Berdampingan**| `pick-your-photo`, `wisuda-api`, `wisuda-cron`, `pm2-logrotate` |

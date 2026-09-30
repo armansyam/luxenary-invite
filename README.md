@@ -1,7 +1,7 @@
 # Luxenary Invite — S-Invite Platform
 
 > **Platform Undangan Digital Multi-Event B2C Self-Service (Wedding, Birthday, Khitan, Aqiqah, Wisuda, Gathering)**  
-> Next.js 16.3.2 · Prisma 7.9 (PostgreSQL) · NextAuth v5 · Gateway 2-Arah (Midtrans & Xendit) · Nodemailer SMTP · Cloudflare R2  
+> Next.js 16.3.7 · Prisma 7.9/7.10 (PostgreSQL) · NextAuth v5 · Gateway 2-Arah (Midtrans & Xendit) · Nodemailer SMTP · Cloudflare R2  
 > **Versi Dokumen: 6.3.6 | Diperbarui: 29 September 2026**
 
 > [!IMPORTANT]
@@ -246,10 +246,10 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 
 | Komponen | Teknologi |
 |:--|:--|
-| **Framework** | Next.js 16.3.2 (App Router) |
+| **Framework** | Next.js 16.3.7 (App Router) |
 | **Bahasa** | TypeScript 5 |
 | **Styling** | Tailwind CSS v4 + Vanilla CSS |
-| **Database** | PostgreSQL via Prisma 7.9.1 (`pg`) |
+| **Database** | PostgreSQL via Prisma (`@prisma/client` 7.9.1, CLI `prisma` 7.10.0) dan `pg` |
 | **Auth** | NextAuth.js v5 — Google OAuth + Credential Admin |
 | **Media Storage** | Cloudflare R2 (prod) + Local disk VPS (draft/dev) via `lib/storage.ts` (penamaan slot deterministik & clean overwrite) |
 | **Image Processing** | `sharp` — WebP, resize, compress |
