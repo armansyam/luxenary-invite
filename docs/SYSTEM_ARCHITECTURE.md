@@ -1998,7 +1998,7 @@ Sistem Luxenary Invite dirancang sebagai aplikasi *self-hosted* yang berjalan pa
 
 ### 17.1 — PM2 Daemon & Deployment Engine
 - **Skrip Deployment Otomatis:** `deploy.sh` menangani pembersihan drift `package-lock.json` lintas arsitektur, pembaruan repositori git (`origin main`) dengan abort protection, penyiapan direktori runtime (`logs`, `public/uploads`, `data/drafts`), inisialisasi kunci rahasia (*secret generator*), sinkronisasi Prisma, *build* Next.js (dengan alokasi 2GB RAM), proses *restart* peladen PM2 zero-downtime, persistensi konfigurasi `pm2 save`, serta health-check verifikasi port 3001.
-- **Manajemen Proses:** Node.js (Next.js) dijalankan menggunakan PM2 di belakang layar pada port internal (`localhost:3001` dengan mode `cluster` multi-core).
+- **Manajemen Proses:** Node.js (Next.js) dijalankan menggunakan PM2 di belakang layar pada port internal (`localhost:3001`). Tanpa `NODE_BIN_DIR` di `.env` memakai mode `cluster` multi-core di Node sistem; dengan `NODE_BIN_DIR` (produksi saat ini) memakai mode `fork` 1 instance di Node khusus aplikasi, karena PM2 cluster mengabaikan `interpreter` (worker di-fork dari daemon PM2 dan memakai Node milik daemon).
 
 ### 17.2 — Caddy Server & Otomatisasi SSL SaaS (On-Demand TLS)
 Untuk menangani arsitektur Multi-Tenant Custom Domain, sistem NGINX tradisional digantikan secara total oleh **Caddy Server**.
@@ -3064,7 +3064,7 @@ Snapshot baru berformat custom `pg_dump -F c` dan berekstensi `.dump` (pulihkan 
 Migrasi: `20260930045346_add_order_charged_amount` (kolom `orders.chargedAmount`) dan `20260930120000_lifecycle_cleanup` (hapus kolom `invitations.expiresAt`, bersihkan kunci pengaturan usang, ubah bawaan retensi custom domain menjadi 365 hari).
 
 ### 25.10 Paritas Runtime, Reproduksibilitas, dan Status Migrasi Produksi
-1. **Runtime produksi:** VPS memakai Node 20.20 dan npm 10.8; pengembangan memakai Node 24 dan npm 11. CI (`.github/workflows/ci.yml`) kini diuji pada matriks Node 20 dan 24 dan menjalankan rantai skrip alur E2E. `package.json` mendeklarasikan `engines.node >= 20.9.0`.
+1. **Runtime produksi:** aplikasi berjalan di Node 22.23 dan npm 10.9 (`/home/amsdev/node22`, dipilih lewat `NODE_BIN_DIR` di `.env`); Node sistem VPS tetap 20.20 karena Wisuda dan pick-your-photo memakai `better-sqlite3` yang dikompilasi untuk Node 20 (NODE_MODULE_VERSION 115) dan gagal dimuat di Node 22. Pengembangan memakai Node 24 dan npm 11. CI (`.github/workflows/ci.yml`) diuji pada matriks Node 22 dan 24 dan menjalankan rantai skrip alur E2E. `package.json` mendeklarasikan `engines.node >= 22.0.0`. `deploy.sh` memakai `NODE_BIN_DIR` untuk `npm ci`, build, dan seed, menjalankan ulang dirinya sekali bila `git pull` mengganti `deploy.sh`, dan mengembalikan `PATH` ke Node sistem sebelum perintah PM2 supaya modul `pm2-logrotate` milik daemon bersama tidak ikut pindah Node.
 2. **`overrides`:** `next-auth@5.0.0-beta.32` memiliki `peerOptional nodemailer "^7.0.7 || ^8.0.5"`. Proyek memakai nodemailer 10, yang ditolak `npm ci` di npm 10 (ERESOLVE) tetapi lolos di npm 11. `overrides.next-auth.nodemailer = "$nodemailer"` menyamakannya (provider Email NextAuth tidak dipakai).
 3. **`tsx` terkunci:** `tsx` (4.23.15) kini devDependency. Sebelumnya `prisma db seed`, `themes:sync`, skrip uji, `deploy.sh`, dan CI memakainya lewat `npx tsx` yang mengunduh dari jaringan tanpa versi terkunci.
 4. **Dependabot:** pembaruan npm mingguan (versi mayor Next/Prisma ditinjau manual) dan GitHub Actions bulanan.

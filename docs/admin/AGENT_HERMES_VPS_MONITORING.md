@@ -67,7 +67,7 @@ Hermes wajib memantau kestabilan runtime Next.js pada port lokal 3001:
      ```
    - **Kondisi Normal:**
      - `status` bernilai `"online"`.
-     - Jumlah instance aktif minimal 2 (cluster mode).
+     - Jumlah instance aktif sesuai konfigurasi: 1 (fork mode) bila `NODE_BIN_DIR` diisi di `.env` (produksi saat ini), atau 2 (cluster mode) di Node sistem.
      - Memori per instance di bawah $450\text{ MB}$.
    - **Kondisi Bahaya (Trigger Critical Alert):**
      - Status salah satu atau kedua instance bernilai `"errored"`, `"stopped"`, atau `"launching"`.

@@ -11,7 +11,7 @@ Dokumen ini adalah buku panduan operasional (*runbook*) langkah demi langkah unt
 ## DAFTAR TAHAPAN DEPLOYMENT
 
 1. [Tahap 1: Setup Awal VPS & Swap Memori](#tahap-1-setup-awal-vps--swap-memori)
-2. [Tahap 2: Instalasi Node.js 20 LTS, PM2 & PostgreSQL](#tahap-2-instalasi-nodejs-20-lts-pm2--postgresql)
+2. [Tahap 2: Instalasi Node.js 22 LTS, PM2 & PostgreSQL](#tahap-2-instalasi-nodejs-22-lts-pm2--postgresql)
 3. [Tahap 3: Konfigurasi DNS & SSL Cloudflare (Tameng Luar)](#tahap-3-konfigurasi-dns--ssl-cloudflare-tameng-luar)
 4. [Tahap 4: Setup Caddy Web Server (Reverse Proxy & Auto SSL)](#tahap-4-setup-caddy-web-server-reverse-proxy--auto-ssl)
 5. [Tahap 5: Pemasangan Kode Program & Environment (.env)](#tahap-5-pemasangan-kode-program--environment-env)
@@ -53,15 +53,17 @@ echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 
 ---
 
-## Tahap 2: Instalasi Node.js 20 LTS, PM2 & PostgreSQL
+## Tahap 2: Instalasi Node.js 22 LTS, PM2 & PostgreSQL
 
-### 2.1 Install Node.js v20 LTS
+### 2.1 Install Node.js v22 LTS
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt install -y nodejs
-node -v # Pastikan v20.x.x
+node -v # Pastikan v22.x.x
 npm -v
 ```
+
+Bila server yang sama menjalankan aplikasi lain yang bergantung pada Node lama (mis. addon native seperti `better-sqlite3` yang dikompilasi untuk Node 20), jangan ubah Node sistem. Pasang Node 22 dari tarball resmi nodejs.org (verifikasi checksum `SHASUMS256.txt`) ke folder terpisah, mis. `/home/amsdev/node22`, lalu isi `NODE_BIN_DIR=/home/amsdev/node22/bin` di `.env`. `deploy.sh` dan `ecosystem.config.js` akan memakainya untuk aplikasi ini saja (PM2 fork mode 1 instance).
 
 ### 2.2 Install PM2 Global
 ```bash
