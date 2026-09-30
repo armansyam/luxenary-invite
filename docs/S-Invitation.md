@@ -171,7 +171,7 @@ Seluruh 19 tema fisik master dan starter blueprint mengimplementasikan standaris
    - Karena perhitungan unit `vw` mengevaluasi layar monitor penuh (1440–1920px), seluruh judul seksi `.sec-main-title, .sec-heading` dikunci maksimal pada `font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important;` dengan aturan protektif `overflow-wrap: break-word !important; word-break: break-word !important;`.
    - Padding seksi desktop dinormalisasi menjadi `1.8rem` (~57px), menjamin ruang konten efektif sebesar ~404px yang identik dengan layar mobile sesungguhnya.
 6. **Integrasi Starter Blueprint Synchronization:**
-   - Arsitektur Golden Standard split 460px, seksi pembuka 100vh `#home`, dan aturan tipografi anti-overflow dibundel secara identik 1:1 di kedua berkas cetak biru: [`themes/starter-blueprint.html`](themes/starter-blueprint.html) dan [`public/downloads/starter-blueprint.html`](public/downloads/starter-blueprint.html). Dilengkapi kustomisasi seleksi kursor `::selection` berbasis token palet aktif.
+   - Arsitektur Golden Standard split 460px, seksi pembuka 100vh `#home`, dan aturan tipografi anti-overflow dibundel secara identik 1:1 di kedua berkas cetak biru: [`themes/_blueprints/wedding/starter-blueprint.html`](themes/_blueprints/wedding/starter-blueprint.html) dan [`public/downloads/starter-blueprint.html`](public/downloads/starter-blueprint.html). Dilengkapi kustomisasi seleksi kursor `::selection` berbasis token palet aktif.
 7. **Smart Auto-Hide Navigasi Dock & Home-Safe Floating Audio (`initSmartDock` / `initSmartControls`):**
    - Seluruh tema mengadopsi mekanisme auto-hide pintar hardware-accelerated (`translate3d` & `opacity`).
    - **Home-Safe Audio FAB:** Saat tamu berada di seksi pembuka `#home`, tombol audio FAB mengambang (`#musicToggle` / `.audio-fab`) disembunyikan secara mutlak (`fab-hidden`) agar keindahan panggung pembuka 100vh bebas polusi visual. Begitu tamu scroll melintasi batas seksi pembuka, tombol audio otomatis muncul dan menyelaraskan visibilitasnya dengan `.bottom-dock`.
@@ -812,7 +812,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 10. **Theme Freedom Architecture & Conditional Blocks (`{{#if}}`):**
    - **Independensi Markup:** Tema master tidak lagi dipaksa menggunakan template seksi seragam yang dicetak mati oleh Engine. Tema dapat merancang sendiri layout HTML-nya di dalam file template master (`themes/**/*.html`).
    - **Blok Kondisional:** Didukung blok `{{#if <fitur>}} ... {{/if}}` di `lib/renderTemplate.ts`. Jika klien mematikan seksi di dashboard, seluruh tag HTML seksi lenyap bersih dari halaman (*zero ghost elements*).
-   - **Pilot Candani & Starter Blueprint:** Diterapkan langsung pada seksi Kisah Cinta (*Love Story*) Candani dengan estetika floral terakota anggun (`.candani-story-flow`), dan didokumentasikan di `themes/starter-blueprint.html` serta `public/downloads/starter-blueprint.html` sebagai standar emas pembuatan tema master baru.
+   - **Pilot Candani & Starter Blueprint:** Diterapkan langsung pada seksi Kisah Cinta (*Love Story*) Candani dengan estetika floral terakota anggun (`.candani-story-flow`), dan didokumentasikan di `themes/_blueprints/wedding/starter-blueprint.html` serta `public/downloads/starter-blueprint.html` sebagai standar emas pembuatan tema master baru.
 11. **Ekosistem Demo Publik Mandiri Fitur Hari-H (Day-of-Event Tech Demo):**
    - **Dual-Tab Hub di `/demo`:** Navigasi tab utama *"Koleksi Desain Tema"* (15 tema fisik) dan *"Sistem & Fitur Acara"* (3 modul teknologi operasional Hari-H).
    - **Demo Sistem Resepsionis & QR Scanner (`/demo/receptionist`):** Arsitektur *zero-database in-memory client demo*. Dilengkapi generator tiket QR kustom (Nama, Kategori VIP/Keluarga/Reguler, Pax, Nomor Meja), unduh QR PNG, modal preview layar HP untuk scan kamera, live camera scanner via `html5-qrcode`, audio beep chime, proteksi anti-double scan, daftar kehadiran tamu real-time, dan simulasi kunci layar PIN panitia (`1234`).
@@ -1318,7 +1318,7 @@ API `/api/admin/overview` diperluas dengan 10 stats field baru (in-memory filter
    - 34 tema pernikahan direstrukturisasi ke `themes/wedding/{minimalist,modern,traditional}/`.
    - 2 tema ulang tahun aktif: `themes/birthday/modern/festivo.html` dan `themes/birthday/minimalist/kalandra-birthday.html`.
    - 1 tema khitanan aktif: `themes/khitan/traditional/al-fariz.html`.
-   - 1 tema aqiqah aktif: `themes/aqiqah/traditional/al-khalid.html`.
+   - 1 tema aqiqah aktif: `themes/aqiqah/minimalist/al-khalid.html`.
    - 1 tema wisuda aktif: `themes/wisuda/modern/cendekia.html`.
    - 1 tema gathering aktif: `themes/general/modern/sinergi.html`.
    - Blueprint modular per kategori: `themes/_blueprints/` (`wedding/`, `birthday/`, `khitan/`, `aqiqah/`, `wisuda/`, `general/`).

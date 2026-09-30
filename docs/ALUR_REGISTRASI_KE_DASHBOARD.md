@@ -213,11 +213,11 @@ flowchart TD
     2. Jika checkout dikonfirmasi $\rightarrow$ status `checkoutConfirmedAt` dicatat, dan klien diarahkan ke halaman pembayaran aktif: `/payment?order=${order.id}`.
 
 ### 2. Penanganan Pembayaran Real-Time
-*   **File Stream SSE:** [`app/api/payments/status-stream/[id]/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/payments/status-stream/%5Bid%5D/route.ts)
+*   **File Stream SSE:** [`app/api/payments/status-stream/[orderId]/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/payments/status-stream/%5BorderId%5D/route.ts)
 *   **Alur:**
     1. Klien membuka koneksi Server-Sent Events (SSE) saat kode QRIS ditampilkan di layar.
     2. Saat pembeli memindai QRIS dan membayar via m-Banking/e-Wallet, gateway mengirim Webhook HTTP POST ke:
-       `app/api/payments/webhook/[provider]/route.ts`.
+       `app/api/webhook/midtrans/route.ts` atau `app/api/webhook/xendit/route.ts`, sesuai gateway yang dipakai order.
     3. Handler webhook memvalidasi checksum/signature, lalu mengupdate database:
        ```typescript
        await prisma.order.update({
@@ -310,8 +310,8 @@ Klien kini memiliki akses ke 4 modul utama:
 | **Katalog** | UI | `app/packages/page.tsx` | Grid pemilihan paket (Serenade, Symphony, Eternity) |
 | **Checkout** | UI | `app/checkout/page.tsx` | Kasir pembayaran, countdown QRIS, & upload bukti transfer |
 | **Order** | API | `app/api/orders/create/route.ts` | Penerbitan nomor invoice unik transaksi |
-| **Payment** | API SSE | `app/api/payments/status-stream/[id]/route.ts` | Realtime listener status pembayaran lunas |
-| **Webhook** | API | `app/api/payments/webhook/[provider]/route.ts` | Penerima notifikasi pembayaran dari payment gateway |
+| **Payment** | API SSE | `app/api/payments/status-stream/[orderId]/route.ts` | Realtime listener status pembayaran lunas |
+| **Webhook** | API | `app/api/webhook/midtrans/route.ts`, `app/api/webhook/xendit/route.ts` | Penerima notifikasi pembayaran dari payment gateway |
 | **Setup** | UI | `app/(client)/dashboard/setup/page.tsx` | Wizard 3 langkah profil pasangan & pilihan tema |
 | **Setup** | API | `app/api/client/invitations/create/route.ts` | Inisialisasi record invitation, slug, dan default events |
 | **Dashboard** | UI | `app/(client)/dashboard/page.tsx` | Dashboard utama ringkasan performa undangan |
@@ -472,10 +472,10 @@ Master file HTML fisik yang menjadi basis kompilasi undangan tersimpan secara mo
 | `valente` | Valente | Wedding | Minimalist | `themes/wedding/minimalist/valente.html` | High-Fashion, Editorial & Mewah |
 | `aurelia` | Aurelia | Wedding | Minimalist | `themes/wedding/minimalist/aurelia.html` | Romantis, Sinematik & Anggun |
 | `artisan` | Artisan | Wedding | Minimalist | `themes/wedding/minimalist/artisan.html` | Artistik, Hangat & Vintage |
-| `badrika` | Badrika | Wedding | Traditional | `themes/wedding/traditional/badrika.html` | Walimatul 'Urs & Saoraja Royal |
-| `candani` | Candani | Wedding | Traditional | `themes/wedding/traditional/candani.html` | Pesona Nusantara Floral |
+| `badrika` | Badrika | Wedding | Modern | `themes/wedding/modern/badrika.html` | Walimatul 'Urs & Saoraja Royal |
+| `candani` | Candani | Wedding | Modern | `themes/wedding/modern/candani.html` | Pesona Nusantara Floral |
 | `dillalucky` | Dilla Lucky | Wedding | Traditional | `themes/wedding/traditional/dillalucky.html` | Islami Sakral — Batik Ornament |
-| `mayang` | Mayang | Wedding | Traditional | `themes/wedding/traditional/mayang.html` | Nuansa Adat Bugis/Makassar Anggun |
+| `mayang` | Mayang | Wedding | Modern | `themes/wedding/modern/mayang.html` | Nuansa Adat Bugis/Makassar Anggun |
 | `prameswari` | Prameswari | Wedding | Traditional | `themes/wedding/traditional/prameswari.html` | Sakral, Megah & Royal Keraton Jawa |
 | `ameera` | Ameera | Wedding | Modern | `themes/wedding/modern/ameera.html` | Heritage Modern — Elegan Dark |
 | `chronicle` | Chronicle | Wedding | Modern | `themes/wedding/modern/chronicle.html` | High-Fashion Vogue Editorial |

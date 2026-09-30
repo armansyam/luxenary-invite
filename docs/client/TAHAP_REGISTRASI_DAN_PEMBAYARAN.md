@@ -159,9 +159,9 @@ flowchart TD
   5. Pengguna membuka aplikasi m-Banking (BCA Mobile, Livin Mandiri, BRImo, BNI) atau e-Wallet (GoPay, OVO, Dana, ShopeePay) di HP mereka, lalu memindai kode QRIS tersebut.
   6. **Deteksi Realtime Tanpa Reload (Server-Sent Events):**
      - Browser klien mendengarkan streaming event dari:  
-       [`app/api/payments/status-stream/[id]/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/payments/status-stream/%5Bid%5D/route.ts).
+       [`app/api/payments/status-stream/[orderId]/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/payments/status-stream/%5BorderId%5D/route.ts).
   7. **Konfirmasi Masuk (Webhook Gateway):**
-     - Server gateway mengirim sinyal Webhook ke endpoint sistem (`/api/webhook/[provider]`).
+     - Server gateway mengirim sinyal Webhook ke endpoint sistem (`/api/webhook/midtrans` atau `/api/webhook/xendit`).
      - Sistem memvalidasi signature hash resmi dari gateway.
      - Status transaksi di database diubah menjadi **`status: "PAID"`, `paidAt: new Date()`**.
   8. **Otomatis Masuk ke Setup Wizard:**
@@ -266,8 +266,8 @@ Setiap kali transaksi disetujui lunas (baik otomatis via Webhook QRIS maupun man
 | **3. Pilih Paket** | `app/packages/page.tsx` | `GET /api/public/settings` | `admin_settings` |
 | **4. Buat / Reuse Order** | `app/checkout/page.tsx` | `POST /api/orders/create` | `Order` (`status: PENDING` / Single Order Reuse) |
 | **5. Bayar QRIS** | `app/checkout/page.tsx` | `POST /api/payments/checkout` | `Order` (`gatewayId`, `snapToken`) |
-| **6. Listener Realtime** | Browser Client | `GET /api/payments/status-stream/[id]` | SSE Stream |
-| **7. Webhook Lunas** | Payment Gateway Server | `POST /api/webhook/[provider]` | `Order` (`status: PAID`) |
+| **6. Listener Realtime** | Browser Client | `GET /api/payments/status-stream/[orderId]` | SSE Stream |
+| **7. Webhook Lunas** | Payment Gateway Server | `POST /api/webhook/midtrans` atau `/api/webhook/xendit` | `Order` (`status: PAID`) |
 | **8. Upload Bukti Transfer** | `app/checkout/page.tsx` | `POST /api/client/orders/[id]/upload-proof` | `Order` (`proofImageUrl`, `status: PENDING`) |
 | **9. Cek Status & Superseded** | `app/checkout/page.tsx` | `GET /api/client/orders/[id]/status` | `Order` (`status`, `isSuperseded`, `rejectReason`) |
 | **10. Admin Tolak Bukti** | `app/(admin)/admin/page.tsx` | `POST /api/admin/orders/[orderId]/reject` | `Order` (`status: FAILED`, `rejectReason`) |

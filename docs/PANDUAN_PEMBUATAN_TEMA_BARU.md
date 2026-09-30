@@ -9,12 +9,12 @@ Dokumen ini adalah panduan teknis bagi perancang tema (*Theme Designer / Develop
 
 Platform Luxenary Invite menggunakan arsitektur **Tema Fisik Mandiri Berjenjang (Two-Tier Event Hierarchy)**:
 - Setiap tema disimpan dalam 1 file `.html` utuh di direktori `themes/{eventType}/{style}/{nama-tema}.html`.
-  * Contoh Wedding: `themes/wedding/minimalist/kalandra.html`, `themes/wedding/traditional/bugis.html`, `themes/wedding/modern/monochrome.html`
-  * Contoh Birthday: `themes/birthday/modern/aurora-birthday.html`, `themes/birthday/minimalist/sweet-sixteen.html`
-  * Contoh Khitan: `themes/khitan/traditional/al-fatih-khitan.html`
-  * Contoh Aqiqah: `themes/aqiqah/minimalist/barakah-aqiqah.html`
-  * Contoh Wisuda: `themes/wisuda/modern/adarma-wisuda.html`
-  * Contoh Gathering: `themes/general/modern/harmony-gathering.html`
+  * Contoh Wedding: `themes/wedding/minimalist/kalandra.html`, `themes/wedding/traditional/bugis.html`, `themes/wedding/modern/lumina.html`
+  * Contoh Birthday: `themes/birthday/modern/festivo.html`, `themes/birthday/minimalist/kalandra-birthday.html`
+  * Contoh Khitan: `themes/khitan/traditional/al-fariz.html`
+  * Contoh Aqiqah: `themes/aqiqah/minimalist/al-khalid.html`
+  * Contoh Wisuda: `themes/wisuda/modern/cendekia.html`
+  * Contoh Gathering: `themes/general/modern/sinergi.html`
 - Tidak memerlukan kompilasi JavaScript rumit di browser tamu; tema disajikan secara instan dengan performa *Core Web Vitals* maksimal.
 - Seluruh aset font menggunakan font lokal mandiri (`/fonts/fonts.css`) berlatensi 0 ms.
 - **Starter Blueprints Resmi:** Pengembang tema baru disarankan mengkloning kerangka resmi dari direktori `themes/_blueprints/{eventType}/` yang telah memiliki sanitasi XSS, responsive split-screen, dan audio handler standar.
