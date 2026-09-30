@@ -1,0 +1,26 @@
+# Pembaruan dependensi berkala agar kerentanan (mis. advisori Next.js, sharp) tidak menumpuk.
+# Setiap PR melewati CI (audit, tsc, build, tes, E2E alur) pada Node 20 dan 24 sebelum dapat digabung.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      patch-and-minor:
+        update-types: [minor, patch]
+    # Versi mayor Next, Prisma, dan next-auth (beta) mengubah perilaku inti; ditinjau manual.
+    ignore:
+      - dependency-name: next
+        update-types: [version-update:semver-major]
+      - dependency-name: prisma
+        update-types: [version-update:semver-major]
+      - dependency-name: "@prisma/client"
+        update-types: [version-update:semver-major]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
