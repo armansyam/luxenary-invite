@@ -88,6 +88,7 @@ fi
 # 3a. Runtime Node khusus aplikasi (opsional): NODE_BIN_DIR di .env, mis. /home/amsdev/node22/bin.
 # Dipakai untuk npm ci, build, seed, dan sebagai interpreter PM2, agar sama persis dengan runtime produksi
 # tanpa mengubah Node sistem yang dipakai aplikasi lain di server ini.
+SYSTEM_PATH="$PATH"
 NODE_BIN_DIR=$(grep -E "^NODE_BIN_DIR=" .env | cut -d '=' -f2- | tr -d '"' | tr -d "'")
 if [ -n "$NODE_BIN_DIR" ]; then
   if [ ! -x "$NODE_BIN_DIR/node" ]; then
@@ -156,6 +157,8 @@ npx -y tsx -r dotenv/config -e "import('./lib/demoPublisher.ts').then(m => (m.co
 # 8. Restart Server & Persist PM2
 echo "🔄 Merestart aplikasi..."
 if command -v pm2 &> /dev/null; then
+  # Daemon PM2 dipakai bersama aplikasi lain dan modul pm2-logrotate mewarisi PATH perintah ini; kembalikan ke Node sistem.
+  export PATH="$SYSTEM_PATH"
   echo "🪵 Memastikan rotasi log PM2 (anti-disk leak) aktif..."
   if ! pm2 list | grep -q "pm2-logrotate"; then
     pm2 install pm2-logrotate --silent || true
