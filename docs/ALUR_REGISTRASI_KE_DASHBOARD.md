@@ -190,7 +190,7 @@ flowchart TD
 
 ### 1. Tampilan Katalog
 *   **File:** [`app/packages/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/packages/page.tsx)
-*   **Logika Dinamis:** Paket tidak di-hardcode. Halaman melakukan fetch ke `GET /api/public/settings` untuk mengambil konfigurasi paket dari database (`AdminSetting: platform_packages`).
+*   **Logika Dinamis:** Paket tidak di-hardcode. Halaman melakukan fetch ke `GET /api/public/settings` untuk mengambil konfigurasi paket dari database (kunci `AdminSetting` per tier, mis. `desc_tier1`, `features_tier1`, `capabilities_tier1`, `memories_shots_quota_tier1`; tidak ada kunci tunggal `platform_packages`).
 *   **Tingkatan Tier Paket:**
     *   **TIER_1 (Serenade):** Paket esensial intim, undangan online berkelas, pemutar musik, galeri foto, RSVP & seluruh tema terbuka.
     *   **TIER_2 (Symphony):** Seluruh fitur Tier 1 + Resepsionis QR Check-In Scanner + Kamera Momen Tamu.

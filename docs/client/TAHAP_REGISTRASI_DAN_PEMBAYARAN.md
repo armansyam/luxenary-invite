@@ -105,7 +105,7 @@ flowchart TD
 
 ### TAHAP 3: Pemilihan Paket Undangan
 * **Halaman UI:** [`app/packages/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/packages/page.tsx)
-* **Data Dinamis:** Diambil dari endpoint `GET /api/public/settings` (konfigurasi `platform_packages` di `admin_settings`).
+* **Data Dinamis:** Diambil dari endpoint `GET /api/public/settings` (kunci per tier di `admin_settings`, mis. `desc_tier1`, `features_tier1`, `capabilities_tier1`).
 * **Pilihan Paket:**
   - **Traditional:** Koleksi tema adat nusantara.
   - **Modern:** Tema editorial modern sinematik.

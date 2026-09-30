@@ -36,18 +36,18 @@ Setiap tamu yang tersimpan di dalam basis data memiliki atribut lengkap:
 
 | Kolom Database | Tipe Data | Keterangan |
 |---|---|---|
-| `id` | `String (cuid)` | Primary key unik tamu |
+| `id` | `String (uuid)` | Primary key unik tamu |
 | `invitationId` | `String` | Relasi ke model `Invitation` |
 | `name` | `String` | Nama lengkap tamu (ditampilkan pada sampul: *"Kepada Yth. Bapak/Ibu..."*) |
 | `phone` | `String?` | Nomor WhatsApp tamu (format standar Indonesia: `08...` atau `628...`) |
 | `category` | `String?` | Kategori tamu (`VIP`, `KELUARGA`, `TEMAN_KANTOR`, `TEMAN_SEKOLAH`, `UMUM`) |
-| `qrToken` | `String (unique)` | Token acak unik terenkripsi untuk validasi check-in meja resepsionis |
+| `qrToken` | `String? (unique)` | Token acak: UUID untuk tamu yang ditambah satu per satu, 16 karakter heksadesimal untuk impor massal. Dipakai sebagai kunci pencarian saat check-in disinkronkan ke server (lihat bagian 5) |
 | `waStatus` | `String` | Status pengiriman pesan (`PENDING`, `SENT`) |
 | `sessionInfo` | `String?` | Penanda sesi kehadiran tamu (misal: "Sesi 1: 10.00 - 12.00" atau "Akad & Resepsi") |
 | `guestQuota` | `Int` (bawaan `1`) | Kuota maksimal jumlah orang / pax yang boleh dibawa oleh tamu ini |
 | `tableNumber` | `String?` | Nomor atau nama meja yang dialokasikan untuk tamu di venue resepsi |
-| `isCheckedIn` | `Boolean` | Penanda apakah tamu sudah hadir dan memindai QR di resepsionis |
-| `checkedInAt` | `DateTime?` | Timestamp waktu pemindaian QR saat kedatangan tamu |
+| `isTokenRedeemed` | `Boolean` (bawaan `false`) | Penanda satu arah bahwa tamu sudah check-in di resepsionis. Tidak ada kolom waktu check-in |
+| `waSentAt` | `DateTime?` | Waktu pengiriman pesan WhatsApp (bersama `waStatus`) |
 
 ---
 
@@ -104,7 +104,11 @@ Setelah diklik, status tamu di tabel otomatis berubah menjadi `SENT` untuk memud
 ## 5. Generator Tiket QR Code & Validasi Resepsionis
 
 1. **Keunikan Token QR (`qrToken`):**
-   Setiap tamu memiliki token unik 12-karakter acak (*nano id/uuid*) yang tidak dapat ditebak.
+   Setiap tamu menyimpan `qrToken` acak (UUID, atau 16 heksadesimal pada impor massal). Namun QR yang tampil di halaman undangan (dibuat lewat layanan pihak ketiga `api.qrserver.com`, sehingga nama tamu dikirim ke layanan itu) hanya berisi **nama tamu** dari parameter `?to=`, bukan `qrToken`. Pemindai resepsionis mencocokkan nama itu dengan daftar tamu di perangkatnya, lalu menyinkronkan check-in ke server dengan `qrToken` tamu tersebut.
+   - `POST /api/receptionist/scan` menerima dua bentuk: `qrToken` biasa (pencarian unik, dibatasi pada undangan yang sama) dan `LUX|<invitationId>|<nama>|<kategori>` (pencarian berdasarkan nama; nama yang belum terdaftar otomatis dibuat sebagai tamu langsung di tempat dengan token `OTS-<invitationId>-<waktu>`). Di repositori ini tidak ada kode yang membuat QR berbentuk `LUX|`; hanya pemindai dan rute scan yang membacanya.
+   - Hanya perangkat dengan sesi resepsionis yang valid (lolos PIN) yang dapat memanggil rute ini; tanpanya HTTP 401.
+   - Karena QR di undangan hanya berisi nama, QR itu bukan rahasia yang tidak dapat ditebak; siapa pun yang tahu nama tamu dapat membuatnya.
+   - Check-in bersifat atomik dan idempoten (`isTokenRedeemed` diubah dengan `updateMany` bersyarat; pemindaian ulang dijawab "sudah pernah check-in").
 2. **Download Tiket Individual:**
    Klien dapat mengunduh file gambar QR Code individual tamu untuk dicetak pada kartu fisik atau dikirimkan sebagai lampiran gambar.
 3. **Penyematan di Undangan Web:**

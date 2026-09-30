@@ -51,8 +51,8 @@ Seluruh media berat (foto prewedding, video teaser, berkas audio MP3, struk tran
 
 ### Batas Upload Media & Web Optimization Dinamis:
 Administrator dapat mengatur ambang batas ukuran berkas media secara langsung tanpa menyentuh kode:
-- **Batas Unggah Video (`video_upload_max_mb`):** Batas kapasitas video prewedding (default: `50` MB). Disertai optimasi kompresi otomatis FFmpeg (kodek H.264 & audio AAC) untuk kelancaran streaming di jaringan seluler tamu.
-- **Batas Unggah Foto (`photo_upload_max_mb`):** Batas kapasitas berkas foto (default: `10` MB). Dikonversi dan dikompresi otomatis ke format WebP via Sharp Engine.
+- **Batas Unggah Video (`max_video_upload_mb`):** Batas kapasitas video prewedding (bawaan kode `50` MB, plafon 100 MB; tidak ada di seed). Disertai optimasi kompresi otomatis FFmpeg (kodek H.264 & audio AAC) untuk kelancaran streaming di jaringan seluler tamu.
+- **Batas Unggah Foto (`max_photo_upload_mb`, cadangan `max_upload_mb`):** Batas kapasitas berkas foto (bawaan kode `15` MB, plafon 50 MB; tidak ada di seed). Audio musik dibatasi tetap 20 MB di server. Dikonversi dan dikompresi otomatis ke format WebP via Sharp Engine.
 
 ### Mekanisme Sinkronisasi CORS Otomatis (`/api/admin/r2-cors`):
 Browser memblokir upload langsung (*direct client-to-storage upload*) jika header CORS bucket belum diizinkan. Administrator cukup menekan tombol **"Sinkronisasi CORS R2"**:
@@ -78,7 +78,7 @@ Mengatur akses keamanan internal pengelola sistem:
 
 Menyediakan antarmuka Disaster Recovery mandiri untuk database PostgreSQL:
 - **Arsitektur Koneksi & Sizing Connection Pool:**
-  - Konfigurasi Prisma PostgreSQL memanfaatkan parameter URL `connection_limit=15&pool_timeout=20` untuk menjamin stabilitas query konkurensi tinggi dan mencegah kehabisan slot koneksi database (*pool exhaustion*).
+  - Prisma 7 berjalan lewat adapter `pg` dengan `Pool` di `lib/prisma.ts`: ukuran pool dari env `DB_POOL_MAX` (bawaan 10 per proses), `idleTimeoutMillis` 30 detik, `connectionTimeoutMillis` 5 detik. Parameter URL `connection_limit` dan `pool_timeout` tidak dipakai. Dengan PM2 cluster, total koneksi = `DB_POOL_MAX` dikali jumlah instance.
   - **Non-Destructive Database Seeder:** Seeder `prisma/seed.ts` menerapkan logika non-destruktif (`upsert` tanpa menimpa nilai `value` eksisting), menjamin kredensial produksi dan kunci payment gateway di database tidak akan pernah tereset menjadi nilai dummy saat proses build/deploy.
 - **Kartu Status Mesin Database:**
   - Menampilkan mesin aktif: `PostgreSQL (pg_dump)` dengan indikator status koneksi (*Connected & Running*).
@@ -128,7 +128,7 @@ Sistem mengadopsi arsitektur hierarki URL yang bersih dan hemat sumber daya name
    - Undangan utama ditutup, dan pengunjung langsung disuguhi dokumentasi momen candid para tamu.
 
 4. **Pembersihan Terpadu & Dasbor Memorial 1 Halaman (`ARCHIVED`):**
-   - Subdomain, custom domain, foto kenangan tamu di R2/lokal, dan RSVP dibersihkan secara bersamaan dalam 1 jadwal retensi terpadu (H+14 pasca acara `retention_cleanup_days` atau sesuai perpanjangan `galleryExpiresAt`).
+   - Subdomain, custom domain, foto kenangan tamu di R2/lokal, dan RSVP dibersihkan secara bersamaan dalam 1 jadwal retensi terpadu (bawaan 30 hari pasca acara lewat `retention_cleanup_days`, atau sesuai perpanjangan `galleryExpiresAt`).
    - Ketika berstatus `ARCHIVED`, dasbor klien bertransformasi menjadi 1 halaman memorial eksklusif berisi surat apresiasi, ringkasan 4 metrik acara, serta Pusat Unduhan Arsip Digital (.CSV Doa Restu & .CSV Tamu/Kehadiran).
    - Akun klien (`User`) di PostgreSQL tidak pernah dihapus (Zero Account Deletion) agar klien dapat login kembali sewaktu-waktu.
 

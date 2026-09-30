@@ -39,11 +39,11 @@ Admin memiliki kendali penuh untuk membuat dan memonitor kupon promosi:
 | **Paket Target** | Multi-Pilihan | Membatasi kupon hanya berlaku untuk paket tertentu (`TIER_1`, `TIER_2`, `TIER_3`). |
 | **Masa Berlaku** | Tanggal | Tanggal awal dan akhir berlakunya kupon diskon. |
 
-### Mekanisme Proteksi Kasir 15 Menit (`PromoHold`):
+### Mekanisme Proteksi Kasir (`PromoHold`):
 Untuk mencegah klaim ganda (*double-claim*) atau *race condition* saat banyak pembeli checkout bersamaan:
-- Saat pembeli mengklik *"Konfirmasi Pesanan"* di kasir, sistem membuat reservasi `PromoHold` selama **15 menit**.
+- Saat kode promo divalidasi di kasir (`POST /api/public/promo/validate`), sistem membuat reservasi `PromoHold` dalam satu transaksi. Masa berlakunya mengikuti batas waktu order (`order.expiredAt`, bawaan 24 jam sejak order dibuat), bukan 15 menit.
 - Kuota kupon dipotong sementara selama masa reservasi ini.
-- Jika pesanan dibayar dalam 15 menit $\rightarrow$ status hold menjadi `CONSUMED` dan pemakaian kupon tercatat sah.
+- Jika pesanan dibayar sebelum hold kedaluwarsa $\rightarrow$ status hold menjadi `CONSUMED` dan pemakaian kupon tercatat sah.
 - Jika pesanan batal atau kedaluwarsa $\rightarrow$ status hold menjadi `RELEASED` dan kuota kupon dikembalikan otomatis ke platform.
 
 ---

@@ -62,7 +62,7 @@ Endpoint ini bertugas menjaga performa database dan kapasitas storage agar tetap
 2. **Kebijakan Nol Penghapusan Akun Klien (Zero Account Deletion):**
    - Akun pengguna (`User`) di basis data disimpan abadi (<1 KB) agar klien dapat login kembali untuk melihat dasbor memorial dan mengunduh rekapan doa (.CSV).
 3. **Pembersihan Invoice Kedaluwarsa:**
-   - Pesanan berstatus `PENDING` yang berusia lebih dari `retention_order_days` (default: 30 hari) otomatis diubah menjadi `CANCELLED`.
+   - Pesanan berstatus `EXPIRED`, `FAILED`, atau `PENDING` yang berusia lebih dari `retention_order_days` (bawaan 90 hari) dihapus permanen beserta foto bukti transfernya (`lib/lifecycleCleanup.ts`). Enum `OrderStatus` hanya berisi `PENDING`, `PAID`, `EXPIRED`, `FAILED`; tidak ada status `CANCELLED`.
 
 ---
 
@@ -80,10 +80,10 @@ Endpoint ini menjamin keselamatan data pengguna (*Disaster Recovery*) dengan mem
 2. **Pembuatan Snapshot:**
    - Memanggil utilitas bawaan PostgreSQL `pg_dump` dengan koneksi langsung ke `DATABASE_URL`.
    - Format penamaan file: `backup_auto_daily_YYYY-MM-DD_HH-mm-ss.sql` (atau `.backup`).
-   - Berkas disimpan di direktori aman yang ditentukan oleh setting `backup_storage_path` (default: folder server internal).
+   - Berkas disimpan di direktori aman yang ditentukan oleh setting `backup_path` (bawaan: `data/backups` di folder proyek).
 3. **Pembersihan Snapshot Lama (Rotasi Otomatis):**
    - Sistem membaca tanggal pembuatan berkas snapshot.
-   - File backup otomatis yang berusia lebih dari masa retensi (default: 7 hari) akan dihapus secara otomatis demi mencegah kepenuhan ruang disk VPS.
+   - Retensi dihitung per jumlah berkas, bukan umur: snapshot terlama dihapus bila jumlahnya melebihi `backup_retention_count` (bawaan 10), demi mencegah kepenuhan ruang disk VPS. Dump baru berekstensi `.dump` (format custom); `.sql` lama tetap dikenali.
 
 ---
 

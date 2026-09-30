@@ -393,7 +393,7 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
 1. **Dual-Mode Route Switcher (Peralihan ke Galeri Momen `/memories`)**:
    - Sistem secara cerdas mengalihkan URL publik (baik subdomain maupun custom domain) ke `/memories` berdasarkan dua mode:
      - **Mode AUTO (Default):** Otomatis beralih ke galeri momen pada awal hari setelah tanggal **acara utama** (`isPrimary`), pada zona waktu acara (WIB/WITA/WIT) via `lib/lifecycleDates.ts`.
-     - **Mode MANUAL:** Klien dapat menyalakan atau mematikan peralihan rute seketika melalui tombol toggle di Studio Editor Seksi 14 (`memoriesForceGallery`).
+     - **Mode MANUAL:** Klien dapat beralih seketika antara `PUBLISHED` dan `EVENT_FINISHED` dari dasbor Momen (`POST /api/client/invitations/[id]/gallery-mode`, parameter `targetMode`). Undangan berstatus `DRAFT` ditolak (HTTP 400), dan beralih ke galeri menuntut hak akses `guest_memories` pada paket (HTTP 403 bila tidak ada).
 2. **Empat Jam Retensi Terpisah** (seluruhnya dari awal hari acara utama pada zona waktu acara; bawaan kode/seed, nilai aktif dari Admin Setting):
    - **Subdomain** (`subdomain_grace_days`, 7): subdomain dikembalikan ke pool agar dapat dipakai pasangan lain; sesudahnya URL yang dipakai adalah slug.
    - **Galeri foto tamu** (`retention_cleanup_days`, 30; atau `galleryExpiresAt` hasil add-on): foto candid dibersihkan dari R2/lokal agar R2 lega.

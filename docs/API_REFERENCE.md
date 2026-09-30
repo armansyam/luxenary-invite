@@ -71,7 +71,7 @@ Memerlukan sesi aktif klien (`role: CLIENT` atau Admin Remote Session):
 |---|:---:|---|---|
 | **Onboarding** | `GET` | `/api/client/onboarding-state` | Decision tree penentu navigasi klien pasca-login (ke `/dashboard`, `/setup`, `/checkout`, atau `/packages`). |
 | **Undangan** | `GET` | `/api/client/invitations` | Mengambil seluruh undangan milik user aktif. |
-| | `POST` | `/api/client/invitations/create` | Membuat draf undangan baru setelah aktivasi invoice. Mendukung parameter `eventType` (`WEDDING`, `BIRTHDAY`, `KHITAN`, `AQIQAH`, `WISUDA`, `GATHERING`), `themeId`, `title`, `slug`, `participantsJson`, `eventDetailsJson`. Memvalidasi kecocokan `theme.eventType` dengan fallback otomatis ke `DEFAULT_THEME_BY_EVENT`. |
+| | `POST` | `/api/client/invitations/create` | Membuat draf undangan baru setelah aktivasi invoice. Mendukung parameter `eventType` (`WEDDING`, `BIRTHDAY`, `KHITAN`, `AQIQAH`, `WISUDA`, `GATHERING`), `themeId`, `participantsJson`, `invitationName`, `groomName`/`brideName`/`groomNickname`/`brideNickname`, dan `eventTime`; judul dan slug diturunkan dari data peserta, bukan dikirim sebagai parameter terpisah. Memvalidasi kecocokan `theme.eventType` dengan fallback otomatis ke `DEFAULT_THEME_BY_EVENT`. |
 | | `GET` | `/api/client/invitations/{id}` | Mengambil detail konfigurasi lengkap satu undangan beserta relasi media, audio, dan event. |
 | | `PUT` | `/api/client/invitations/{id}` | Memperbarui konten 16 seksi formulir Studio Editor secara menyeluruh. |
 | | `PATCH` | `/api/client/invitations/{id}` | Memperbarui atribut parsial undangan, termasuk perubahan `themeId` dengan pengawalan ketat *cross-event guard* (`theme.eventType === invitation.eventType`). |

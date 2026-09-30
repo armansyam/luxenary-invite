@@ -187,8 +187,11 @@ Di samping fitur Remote, Admin Control Panel mengelola siklus hidup akun klien d
 |---|---|
 | `DRAFT` | Undangan baru dibuat atau belum dipublikasikan. Hanya dapat dilihat oleh pemilik di dasbor atau Admin. Belum dapat diakses publik. |
 | `PUBLISHED` | Undangan telah aktif dan dapat diakses tamu via subdomain (`namapasangan.luxvite.id`) atau custom domain. |
-| `EXPIRED` | Masa aktif retensi undangan telah habis (`Tanggal Acara + retention_invitation_days`). Subdomain dapat didaur ulang. |
-| `CLOSED_TO_GALLERY` | Undangan ditutup dan dikonversi menjadi galeri kenangan tamu mandiri (`/memories`). Tampilan resepsi dinonaktifkan. |
+| `EVENT_FINISHED` | Hari acara utama (zona waktu acara) sudah lewat. Dipindahkan otomatis oleh cron dari `PUBLISHED`, atau seketika oleh admin lewat aksi `CLOSE_TO_GALLERY`. RSVP ditutup (HTTP 410). Subdomain didaur ulang setelah masa tenggang `subdomain_grace_days` (bawaan 7 hari). |
+| `ARCHIVED` | Hasil cron setelah masa retensi galeri (bawaan 30 hari). Foto kenangan tamu, HTML terbit, draf, dan baris RSVP dihapus, unggahan kenangan dikunci. Bila arsip NAS aktif, undangan disinkronkan dan diverifikasi ke arsip lebih dulu (gagal: tidak ada yang dihapus dan dicoba lagi), lalu media lokalnya dihapus; tanpa NAS langkah arsip itu dilewati. Arsip NAS dibersihkan setelah `nas_archive_retention_days` (bawaan 365 hari). |
+| `TAKEN_DOWN` | Status cadangan: dibaca oleh filter admin, cron, RSVP, dan unggah kenangan, tetapi tidak ada kode yang mengisinya saat ini. |
+
+Enum `InvitationStatus` hanya berisi `DRAFT`, `PUBLISHED`, `TAKEN_DOWN`, `ARCHIVED`, `EVENT_FINISHED`. Pemilik undangan hanya bisa menetapkan `DRAFT` dan `PUBLISHED` sendiri. Nilai di luar enum dijawab HTTP 400; menetapkan `ARCHIVED`, `TAKEN_DOWN`, atau `EVENT_FINISHED`, dan mem-publish ulang undangan `TAKEN_DOWN`, dijawab HTTP 403 (diuji di `__tests__/integration/securityContract.test.ts`).
 
 ### B. Fitur Kunci Darurat (Emergency Unlock)
 * **Aturan Kunci D-Day:** Saat hari H pernikahan tiba (`today >= eventDate`), daftar tamu otomatis terkunci di sisi klien untuk mencegah penambahan data ganda di luar pantauan panitia resepsionis.

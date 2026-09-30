@@ -2636,7 +2636,7 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
 
 3. **Sesi Acara Utama (Single Primary Event Anchor) sebagai Patokan Mutlak Masa Berlaku:**
    - Klien menandai tepat 1 sesi acara sebagai **Sesi Acara Utama** (`isPrimary: true`, misal: Akad Nikah atau Resepsi Utama) yang menjadi jangkar tunggal (*single source of truth*) untuk:
-     a. **Masa Aktif Undangan (`expiresAt`):** Tanggal Sesi Utama + `retention_invitation_days` (default 30 hari).
+     a. **Masa Aktif Undangan (`expiresAt`):** (riwayat) kolom `expiresAt` dan kunci `retention_invitation_days` sudah dihapus (migrasi `lifecycle_cleanup`); model retensi saat ini memakai `subdomain_grace_days`, `retention_cleanup_days`, `nas_archive_retention_days`, dan `retention_custom_domain_days`.
      b. **Batas Masa Simpan Galeri Tamu (`galleryExpiresAt`):** Tanggal Sesi Utama + `retention_cleanup_days` (default 14 hari) + `extraGalleryDays`.
      c. **Countdown Timer (`targetDate`):** Engine tema (`lib/themeEngine.ts`) memprioritaskan Sesi Acara Utama (`isPrimary: true`) untuk jam dan tanggal hitung mundur di cover undangan live.
      d. **Header Tanggal Tema (`weddingDate`):** Ditampilkan dari Sesi Acara Utama, bukan sesi pengajian yang di indeks 0.
@@ -2793,7 +2793,7 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
    - Tautan CTA di dalam email mengarahkan pengantin langsung menuju Dasbor Momen Tamu privat (`/dashboard/moments`) untuk menjaga keamanan sesi autentikasi dan mencegah kebocoran link pembayaran publik.
 
 3. **Mekanisme Re-Arming Milestone Pasca Top-Up Kuota (`lib/upgradeHelper.ts`):**
-   - Saat pengantin melakukan pembelian top-up roll foto (`applyPaidUpgrades` atau `applyMemoriesTopup`), saldo kuota bertambah sehingga persentase pemakaian roll menurun.
+   - Saat pengantin melakukan pembelian top-up roll foto (`applyBundleFulfillment` atau `applyMemoriesTopup` di `lib/upgradeHelper.ts`), saldo kuota bertambah sehingga persentase pemakaian roll menurun.
    - Sistem secara otomatis me-rearm milestone yang berada di atas persentase pemakaian baru (`curFs.memoriesNotifiedMilestones = curFs.memoriesNotifiedMilestones.filter(m => m <= newUsagePercent)`).
    - Menjamin pengantin akan tetap mendapatkan notifikasi peringatan kembali saat kuota yang baru diperluas mendekati batas di masa mendatang.
 
@@ -2813,7 +2813,7 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
 1. **Anti-Double Check-In Atomic Conditional Update (`app/api/receptionist/scan/route.ts`):**
    - Menggantikan pola *read-then-write* non-atomik dengan *Atomic Compare-and-Swap (CAS)*:
      `prisma.guest.updateMany({ where: { id: guest.id, isTokenRedeemed: false }, data: { isTokenRedeemed: true } })`.
-   - Event Server-Sent Events (`new_guest_checkin`) dan penyerahan souvenir fisik hanya dieksekusi jika `updateResult.count === 1`.
+   - Hanya pemanggil yang memenangkan `updateMany` (`updateResult.count === 1`) yang dianggap check-in pertama; pemanggil lain dijawab `alreadyRedeemed`. Event SSE `new_guest_checkin` dan pencatatan souvenir tidak ada di kode saat ini.
    - Menutup celah konkurensi saat dua perangkat tablet resepsionis memindai QR code tamu yang sama pada milidetik yang identik.
 
 2. **Pencegahan Duplikasi RSVP Lintas Cluster PM2 (`app/api/public/rsvp/route.ts`):**

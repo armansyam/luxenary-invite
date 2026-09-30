@@ -218,7 +218,9 @@ NEXT_PUBLIC_ROOT_DOMAIN="domainanda.id"
 NEXTAUTH_URL="https://domainanda.id"
 
 # Database PostgreSQL (Gunakan password yang dibuat di Tahap 2.3)
-DATABASE_URL="postgresql://lux_user:PasswordKuat123!@localhost:5432/luxenary_db?schema=public&connection_limit=15&pool_timeout=20"
+DATABASE_URL="postgresql://lux_user:PasswordKuat123!@localhost:5432/luxenary_db?schema=public"
+# Ukuran pool koneksi (bawaan 10 per proses) diatur lewat DB_POOL_MAX; parameter URL connection_limit/pool_timeout tidak dipakai Prisma 7 + adapter pg.
+# Hindari karakter @ dan # mentah di password (gunakan password acak heksadesimal).
 
 # Kunci Enkripsi (Otomatis dibuat jika dibiarkan kosong, atau buat manual via openssl rand -base64 32)
 AUTH_SECRET=""

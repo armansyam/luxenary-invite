@@ -80,9 +80,8 @@ erDiagram
         string name
         string slug
         string qrToken UK
-        boolean isAttending
-        boolean isCheckedIn
-        int paxActual
+        boolean isTokenRedeemed
+        int guestQuota
     }
 
     Rsvp {
@@ -254,13 +253,14 @@ Master katalog tema fisik resmi di sistem (39 tema terdaftar):
 Buku tamu undangan klien:
 - `name` (String): Nama tamu undangan (contoh: "Bapak H. Syamsuddin & Keluarga").
 - `slug` (String): Slug nama untuk parameter `?to=...`.
-- `phoneNumber` (String, Nullable): Nomor kontak WhatsApp tamu untuk broadcast undangan.
+- `category` (String, Nullable): Kategori tamu (mis. VIP, Keluarga).
+- `phone` (String, Nullable): Nomor kontak WhatsApp tamu untuk broadcast undangan.
+- `waStatus` (enum `WaStatus`, bawaan `PENDING`) dan `waSentAt` (DateTime, Nullable): Status dan waktu pengiriman pesan WhatsApp.
+- `sessionInfo` (String, Nullable): Penanda sesi kehadiran tamu.
 - `tableNumber` (String, Nullable): Alokasi nomor / nama meja VIP tamu di venue.
-- `qrToken` (String, Unique): Token acak terenkripsi untuk verifikasi check-in QR di resepsionis.
-- `paxAllocated` (Int): Kuota porsi katering yang dialokasikan.
-- `isCheckedIn` (Boolean): Status kehadiran fisik di venue.
-- `checkInTime` (DateTime, Nullable): Waktu pemindaian barcode check-in.
-- `souvenirTaken` (Boolean): Pencatatan pengambilan souvenir fisik di meja penerima tamu.
+- `qrToken` (String, Nullable, Unique): Token acak (UUID untuk tamu tunggal, 16 heksadesimal untuk impor massal, `OTS-<invitationId>-<waktu>` untuk tamu langsung di tempat) yang dipakai saat sinkronisasi check-in.
+- `guestQuota` (Int, bawaan 1): Jumlah orang maksimal yang boleh dibawa tamu; juga menjadi batas pax pada RSVP.
+- `isTokenRedeemed` (Boolean, bawaan false): Penanda satu arah bahwa tamu sudah check-in di venue. Tidak ada kolom waktu check-in, penanda `isCheckedIn`, alokasi katering, maupun pencatatan souvenir di skema.
 
 #### 2. Tabel `rsvps`
 Konfirmasi kehadiran tamu:
@@ -270,11 +270,11 @@ Konfirmasi kehadiran tamu:
 #### 3. Tabel `guest_memories`
 Album foto momen candid yang diunggah oleh tamu di hari pernikahan:
 - `senderName` (String): Nama tamu pengunggah.
-- `senderPhone` (String, Nullable): Nomor telepon tamu pengunggah.
-- `mediaType` (String): Nilai tetap `PHOTO` / `IMAGE`.
-- `mediaUrl` (String): Tautan file foto terkompresi di Cloudflare R2.
+- `senderEmail` (String): Email tamu pengunggah (wajib).
+- `mediaType` (String, bawaan `PHOTO`): Jenis media.
+- `mediaUrl` (String): Tautan file foto terkompresi di penyimpanan aktif (Cloudflare R2 atau lokal).
+- `thumbnailUrl` (String, Nullable): Tautan gambar mini.
 - `message` (String, Nullable): Caption ucapan momen.
-- `story` (String, Nullable): Cerita atau ucapan doa panjang dari tamu.
 
 ---
 
