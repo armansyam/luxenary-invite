@@ -10,14 +10,16 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # Strict Agent Execution Protocol (Claude Code Standard)
 
+**Pemetaan tool:** baca file = `Read`, cari simbol/string = `Grep`, cari file = `Glob`, edit bedah = `Edit`, file baru = `Write`, perintah terminal = `Bash`. Aturan di bawah memakai nama tool Claude Code ini.
+
 ## 1. Zero-Assertion & Anti-Fake Success Policy
 - **NO Hallucinated Success:** NEVER declare an issue fixed, working, or solved without providing concrete, empirical proof from actual tool execution logs (terminal exit code, typecheck output, or API response).
 - **Surface Errors Honestly:** If an error occurs, NEVER hide it or pretend it succeeded. Always display the exact error log and traceback so the root cause can be accurately resolved.
 - **NO Tone Smoothing / Sycophancy:** Do not use empty pleasantries ("Everything is working perfectly now!"). Summarize with cold, verifiable facts: modified files/lines, verification command run, and actual stdout/stderr.
 
 ## 2. Deterministic Tool Contracts & Anti-Symptom Patching
-- **NO Blind Edits:** ALWAYS inspect the target file and surrounding context (`view_file` or `grep_search`) before making any edits. Never guess variable names, props, or imports.
-- **Surgical Edits Only:** ONLY edit the specific lines/functions causing the issue (`replace_file_content`). NEVER overwrite entire files (`write_to_file`) unless creating an entirely new file.
+- **NO Blind Edits:** ALWAYS inspect the target file and surrounding context (`Read` or `Grep`) before making any edits. Never guess variable names, props, or imports.
+- **Surgical Edits Only:** ONLY edit the specific lines/functions causing the issue (`Edit`). NEVER overwrite entire files (`Write`) unless creating an entirely new file.
 - **NO Workarounds / NO Dummy Fallbacks:**
   - NEVER swallow errors with empty `try-catch` blocks.
   - NEVER return fake `success: true` or mock objects when a database query or API call fails.
@@ -57,23 +59,23 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   - Dilarang mengambil jalan pintas (*skipping*): wajib audit lintas file hulu-ke-hilir (UI -> Route -> Schema -> Database).
   - Dilarang membela kode mati (*defending dead code*): jangan pernah mengarang cerita fiksi untuk membenarkan kode/komentar janggal. Lacak riwayat Git (`git log -S`) dan basmi sampah tersebut.
   - Dilarang meninggalkan komentar zombi (*zombie comments*): hapus seluruh baris komentar usang bersamaan dengan kode yang dibuang.
-  - **Dilarang keras membersihkan kode berbasis string pencarian massal (Blind String-Match Destruction):** String search (`grep_search`) HANYA alat pemetaan investigasi, BUKAN alat eksekusi penghapusan. Dilarang menghapus massal hanya karena string cocok, karena rentan menghancurkan simbol/variabel lain yang memiliki kemiripan nama atau prefix sama. Setiap baris wajib diinspeksi manual (`view_file`) dan diedit secara bedah presisi (`replace_file_content`).
+  - **Dilarang keras membersihkan kode berbasis string pencarian massal (Blind String-Match Destruction):** String search (`Grep`) HANYA alat pemetaan investigasi, BUKAN alat eksekusi penghapusan. Dilarang menghapus massal hanya karena string cocok, karena rentan menghancurkan simbol/variabel lain yang memiliki kemiripan nama atau prefix sama. Setiap baris wajib diinspeksi manual (`Read`) dan diedit secara bedah presisi (`Edit`).
 - **Rantai Wajib 5 Langkah Audit:**
-  1. Pelacakan simbol total (`grep_search` lintas repositori).
-  2. Inspeksi baris nyata (`view_file`).
-  3. Eksekusi bedah bersih + hapus komentar usang (`replace_file_content`).
+  1. Pelacakan simbol total (`Grep` lintas repositori).
+  2. Inspeksi baris nyata (`Read`).
+  3. Eksekusi bedah bersih + hapus komentar usang (`Edit`).
   4. Sinkronisasi 4 layer arsitektur (Database riil, Prisma Seeder, Backend API, Frontend UI).
-  5. Gerbang bukti empiris (Output `grep_search` 0 match, output `psql` bersih, output `tsc --noEmit` Exit 0).
+  5. Gerbang bukti empiris (Output `Grep` 0 match, output `psql` bersih, output `tsc --noEmit` Exit 0).
 
 ## 7. LARANGAN PENGGUNAAN BROWSER TOOLS UNTUK KONFIRMASI (CODE-FIRST VERIFICATION ONLY)
 - **DILARANG MENGGUNAKAN BROWSER TOOLS / SUBAGENT UNTUK KONFIRMASI RUTIN:**
-  - Menjalankan browser subagent, merekam video WebP, atau mengambil screenshot browser untuk sekadar "konfirmasi" memakan waktu sangat lama (2-5 menit), berbobot berat, rentan timeout, dan membuang-buang waktu kerja pengguna.
+  - Menjalankan tool browser (`mcp__Claude_Browser__*`, `mcp__claude-in-chrome__*`) atau subagent `Agent`, merekam video WebP, atau mengambil screenshot browser untuk sekadar "konfirmasi" memakan waktu sangat lama (2-5 menit), berbobot berat, rentan timeout, dan membuang-buang waktu kerja pengguna.
   - Pengecekan visual browser BUKAN alat verifikasi integritas kode dan tidak boleh dipakai untuk pembuktian rutin.
 - **WAJIB CODE-FIRST & TERMINAL-FIRST VERIFICATION (FAKTUAL, AMAN & CEPAT):**
-  - Seluruh verifikasi fungsional dan integritas sistem WAJIB diperiksa langsung melalui kode sumber (`view_file`, `grep_search`), eksekusi skrip runtime/unit test (`npx tsx`, `curl`, API handler tests), inspeksi data database langsung (`psql`), dan typecheck statis (`npx tsc --noEmit`).
+  - Seluruh verifikasi fungsional dan integritas sistem WAJIB diperiksa langsung melalui kode sumber (`Read`, `Grep`), eksekusi skrip runtime/unit test (`npx tsx`, `curl`, API handler tests), inspeksi data database langsung (`psql`), dan typecheck statis (`npx tsc --noEmit`).
   - Cara ini 10x lebih cepat, 100% deterministik, tidak membuang waktu, dan langsung menyasar akar logika kode secara faktual.
 - **HANYA BISA DIAKTIFKAN ATAS PERMINTAAN EKSPLISIT PENGGUNA:**
-  - Browser subagent HANYA BOLEH dipanggil apabila pengguna secara eksplisit dan tertulis memberikan perintah: *"buka browser"*, *"uji di browser"*, atau *"rekam layar browser"*. Tanpa instruksi eksplisit tersebut, browser tool TERLARANG digunakan.
+  - Tool browser HANYA BOLEH dipanggil apabila pengguna secara eksplisit dan tertulis memberikan perintah: *"buka browser"*, *"uji di browser"*, atau *"rekam layar browser"*. Tanpa instruksi eksplisit tersebut, browser tool TERLARANG digunakan.
 
 # 🎯 Expert Critic & Anti-Yes-Man Protocol (Kritikus Ahli Objektif & Ilmiah)
 - **Bertindak sebagai Kritikus Ahli yang Objektif dan Jujur:**
@@ -98,8 +100,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 # 🔒 PROTOKOL GEMBOK EKSEKUSI & AUDIT KEPATUHAN MUTLAK (ZERO TOLERANCE)
 
 ## 1. Gembok Eksekusi Dua Fase (Discussion Mode vs Execution Mode)
-- **STATUS DEFAULT = READ-ONLY (TERKUNCI):** Tool pengubah file (`replace_file_content`, `multi_replace_file_content`, `write_to_file`) **BERSTATUS TERKUNCI SECARA MUTLAK**.
-- **DILARANG KERAS MENGUBAH KODE SAAT DISKUSI:** Ketika pengguna sedang bertanya (*"kenapa..."*, *"apakah..."*, *"bagaimana..."*), memberi masukan, atau mengkritik desain, Agent HANYA BERHAK membaca file (`view_file`, `grep_search`) dan menjawab di teks.
+- **STATUS DEFAULT = READ-ONLY (TERKUNCI):** Tool pengubah file (`Edit`, `Write`, `NotebookEdit`) dan perintah `Bash` yang menulis ke disk **BERSTATUS TERKUNCI SECARA MUTLAK**.
+- **DILARANG KERAS MENGUBAH KODE SAAT DISKUSI:** Ketika pengguna sedang bertanya (*"kenapa..."*, *"apakah..."*, *"bagaimana..."*), memberi masukan, atau mengkritik desain, Agent HANYA BERHAK membaca file (`Read`, `Grep`, `Glob`) dan menjawab di teks.
 - **HANYA BISA DIBUKA DENGAN IZIN EKSPLISIT:** Tool edit HANYA BOLEH dipanggil jika pengguna secara tegas memberikan instruksi persetujuan eksekusi: *"eksekusi"*, *"terapkan"*, atau *"jalankan"* setelah proposal baris kode disajikan secara transparan.
 
 ## 2. Larangan Mutlak Nilai Hardcode (Zero Hardcode Policy)
@@ -126,7 +128,8 @@ Setiap kali Agent memberikan jawaban teknis yang berpotensi memodifikasi kode, A
   2. `README.md` (panduan alur, katalog tema, deployment, environment)
   3. `docs/S-Invitation.md` (spesifikasi fungsional modul, tema fisik, dan gateway)
 - **DILARANG PUSH JIKA DOCS BELUM TERBARU:** Push ke git remote hanya boleh dilakukan setelah ketiga dokumen diverifikasi sinkron dengan kode faktual terbaru dan `npx tsc --noEmit` menghasilkan Exit Code 0.
-# 🚨 STRICT ANTI-DESTRUCTION PROTOCOL (KHUSUS GEMINI / ALL AI AGENTS) 🚨
+# 🚨 STRICT ANTI-DESTRUCTION PROTOCOL (SEMUA AI AGENT) 🚨
+
 Aturan ini **HARGA MATI** dan tidak boleh dilanggar dalam kondisi apapun untuk mencegah hilangnya pekerjaan lokal user (Uncommitted Work) dan kerusakan massal:
 
 ## 1. DILARANG KERAS MENGGUNAKAN `git checkout` ATAU `git restore`
@@ -137,7 +140,7 @@ Aturan ini **HARGA MATI** dan tidak boleh dilanggar dalam kondisi apapun untuk m
 ## 2. DILARANG KERAS MENGGUNAKAN `sed` ATAU GLOBAL MASS REPLACE
 - **JANGAN PERNAH** menggunakan terminal command seperti `sed` atau utilitas regex massal lainnya untuk mengubah isi file codebase.
 - Command ini sering kali terlalu serakah (*greedy*) dan akan menghancurkan data/kode di baris lain yang tidak bersalah.
-- Gunakan hanya *AST tools* atau fungsi *surgical replace_file_content* (penggantian per baris spesifik).
+- Gunakan hanya tool `Edit` (penggantian per baris spesifik) atau AST tools.
 
 ## 3. ASUMSI UNCOMMITTED WORK
 - Selalu asumsikan bahwa codebase lokal user saat ini memiliki modifikasi kritis yang belum tersimpan di Git.
@@ -148,5 +151,5 @@ Aturan ini diatur secara mendalam dalam `.agents/rules/anti-ai-slop.md` dan waji
 1. **Zero Code Slop:** Dilarang narasi komentar remeh (obvious comments), dilarang wrapper spekulatif/over-engineering, dilarang fallback palsu penutup bug, dilarang komentar zombi/TODO mati.
 2. **Zero UI/UX Slop:** Dilarang gradien ungu klise AI, dilarang copy filler generic ("unlock your potential"), dilarang perusakan CSS cascade/token dinamis, dilarang OS emojis di antarmuka profesional.
 3. **Zero Chat Slop:** Dilarang basa-basi/sycophancy, dilarang apology loops berlebihan, dilarang klaim sukses tanpa bukti log terminal riil.
-4. **Zero Execution Slop:** Wajib surgical edits (`replace_file_content`), dilarang full-file overwrite (`write_to_file`) pada berkas eksisting, dan dilarang scope creep.
+4. **Zero Execution Slop:** Wajib surgical edits (`Edit`), dilarang full-file overwrite (`Write`) pada berkas eksisting, dan dilarang scope creep.
 

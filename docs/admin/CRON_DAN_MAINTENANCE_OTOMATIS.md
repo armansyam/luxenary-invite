@@ -52,7 +52,7 @@ Endpoint ini bertugas menjaga performa database dan kapasitas storage agar tetap
 
 ### B. Tahapan Pembersihan yang Dilakukan:
 1. **Pembersihan Siklus Hidup Terpadu (Single Unified Lifecycle Cleanup):**
-   - Mencari undangan yang telah melewati masa simpan pasca acara berdasarkan `retention_cleanup_days` (default 14 hari) atau `galleryExpiresAt` (jika diperpanjang via add-on).
+   - Mencari undangan yang telah melewati masa simpan pasca acara berdasarkan empat jam retensi terpisah dari acara utama pada zona waktu acara (`subdomain_grace_days`, `retention_cleanup_days` atau `galleryExpiresAt`, `nas_archive_retention_days`; custom domain ditegakkan resolver). Rute dan `npm run cron:cleanup` memanggil `lib/lifecycleCleanup.ts` yang sama; hasil `archiveFailures` berisi undangan yang gagal diarsipkan dan akan dicoba lagi.
    - Menghapus seluruh foto kenangan tamu (`GuestMemory`) dari database dan Cloudflare R2 / penyimpanan lokal.
    - Mengunci izin upload foto tamu (`memoriesUploadLocked = true`).
    - Melepaskan subdomain kembali ke pool namespace (`subdomain = null`) jika fitur auto-recycle aktif.

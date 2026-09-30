@@ -1,5 +1,5 @@
 # PLATFORM UNDANGAN (WHITE-LABEL) — DOKUMENTASI ARSITEKTUR SISTEM
-## Versi: 6.3.6 | Diperbarui: 29 September 2026
+## Versi: 6.3.7 | Diperbarui: 1 Oktober 2026
 
 > **SUMBER KEBENARAN TUNGGAL** untuk semua developer dan AI Agent yang bekerja di repositori ini.  
 > Dokumen ini WAJIB dibaca sebelum melakukan perubahan apapun pada kode.  
@@ -92,7 +92,7 @@
 │   │   ├── payments/         # checkout, status-stream
 │   │   ├── orders/           # create invoice
 │   │   ├── webhook/          # midtrans, xendit (gateway 2-arah)
-│   │   ├── cron/             # cleanup (retensi otomatis H+7 & H+30)
+│   │   ├── cron/             # cleanup (memanggil lib/lifecycleCleanup.ts; jam retensi dari Admin Setting)
 │   │   └── sse/              # Server-Sent Events (memories real-time)
 │   │
 │   ├── components/           # React components reusable
@@ -165,7 +165,7 @@
 │
 ├── prisma.config.ts           # Konfigurasi Prisma 7 DB URL
 │
-├── themes/                   # Template HTML tema undangan (40 Tema Fisik Lintas 6 Kategori Acara)
+├── themes/                   # Template HTML tema undangan (39 Tema Fisik Lintas 6 Kategori Acara)
 │   ├── _blueprints/          # Master Blueprints per EventType
 │   │   ├── wedding/          # starter-blueprint.html
 │   │   ├── birthday/         # starter-blueprint-birthday.html
@@ -423,35 +423,43 @@ Fungsi utama di lib/storage.ts:
                                  ├── Tamu & Klien unduh koleksi foto via JSZip (aman dari beban VPS)
                                  └── Opsi perpanjangan masa simpan (+30 Hari / +1 Tahun via Add-on QRIS)
                                  │
-                                 ▼ (Masa simpan berakhir / H + retention_cleanup_days [14 Hari] atau galleryExpiresAt)
+                                 ▼ (acara utama + retention_cleanup_days [bawaan 30 hari] atau galleryExpiresAt)
                             [ARCHIVED]
-                                 ├── Pembersihan Terpadu Sekali Jalan (Single Unified Cleanup):
-                                 │   ├── Foto momen tamu di R2 & lokal dihapus permanen
-                                 │   ├── Subdomain dilepaskan kembali ke pool (subdomain = null)
-                                 │   ├── Custom domain dinonaktifkan / dilepaskan
-                                 │   └── Record RSVP kedaluwarsa dibersihkan demi privasi
+                                 ├── Foto momen tamu di R2 & lokal dihapus; RSVP dibersihkan demi privasi
+                                 ├── Arsip mandiri diverifikasi dulu (bila NAS aktif), baru HTML published & media inti dihapus
                                  ├── Zero Account Deletion: Akun klien (User) tetap tersimpan abadi (<1 KB)
                                  ├── No Portfolio Deletion: Portofolio admin tidak pernah disentuh
                                  └── Dasbor Klien beralih ke 1 Halaman Rangkuman & Arsip Digital (Closing Memorial)
 ```
+
+Empat jam retensi **terpisah**, seluruhnya dihitung dari **awal hari acara utama** (`isPrimary`; bila tidak ada, acara pertama bertanggal) pada **zona waktu acara** (WIB +07:00, WITA +08:00, WIT +09:00) oleh `lib/lifecycleDates.ts`:
+
+| Jam | Setting admin (bawaan) | Efek |
+|---|---|---|
+| EVENT_FINISHED | tetap H+1 | `PUBLISHED` menjadi `EVENT_FINISHED` pada awal hari berikutnya menurut zona acara |
+| Subdomain | `subdomain_grace_days` (7) | Subdomain kembali ke pool; sesudahnya URL yang dipakai adalah slug. Rute `/s/` mengalihkan ke slug |
+| Galeri | `retention_cleanup_days` (30) atau `galleryExpiresAt` (add-on perpanjangan) | Foto tamu dibersihkan agar R2 lega, undangan menjadi `ARCHIVED` |
+| Arsip | `nas_archive_retention_days` (365) | Arsip mandiri undangan dibersihkan setelah masa ini |
+| Custom domain | `retention_custom_domain_days` (365) | Resolver custom domain berhenti melayani; mengikuti gerbang slug |
+
+Nilai bawaan di atas adalah bawaan kode/seed; nilai aktif selalu dari Admin Setting. Seluruh perhitungan tanggal memakai satu modul (`lib/lifecycleDates.ts`), sehingga tidak ada lagi patokan "acara terakhir", `parsed[0]`, atau UTC tengah malam.
 
 ### 6.1 — Status Undangan (Enum `InvitationStatus` di DB)
 - `DRAFT` — Masih dalam pengaturan, URL publik belum aktif, download ZIP dinonaktifkan.
 - `PUBLISHED` — URL publik aktif, file HTML statis telah di-bake ke disk (`/published/`). Tamu dapat mengirim foto momen dan RSVP.
 - `EVENT_FINISHED` — Acara utama selesai; URL publik otomatis menyajikan **Galeri Kenangan Tamu (`/memories`)** (baik lewat mode AUTO H+1 pasca-acara maupun toggle MANUAL dari Studio Seksi 14).
 - `TAKEN_DOWN` — Dinonaktifkan sementara oleh Admin atau Klien.
-- `ARCHIVED` — Diarsipkan setelah masa retensi terpadu (14 hari pasca acara) berakhir. Foto dihapus dari cloud storage R2, subdomain dilepas ke pool umum, dan dasbor klien bertransformasi menjadi 1 Halaman Penutup & Pusat Unduhan Rekapitulasi (.CSV).
+- `ARCHIVED` — Diarsipkan setelah jam galeri (`retention_cleanup_days` pasca acara utama atau `galleryExpiresAt`) berakhir. Foto dihapus dari cloud storage R2, subdomain dilepas ke pool umum, dan dasbor klien bertransformasi menjadi 1 Halaman Penutup & Pusat Unduhan Rekapitulasi (.CSV).
 
-### 6.2 — Fase Pembersihan Terpadu Cron Cleanup (`POST /api/cron/cleanup`)
-Cron job dilindungi oleh header `Authorization: Bearer <CRON_SECRET>` atau sesi Admin:
-1. **Satu Jadwal Retensi Terpadu (Single Unified 14-Day Timeline):**
-   - Menggunakan parameter tunggal `retention_cleanup_days` (default 14 hari pasca acara paling akhir `getLatestEventDate`).
-   - Seluruh komponen (Subdomain, Custom Domain, Foto Tamu R2/Lokal, dan RSVP) memiliki masa hidup yang sama dan dibersihkan bersamaan dalam 1 fase eksekusi saat `now > effectiveExpiry`.
-   - Menghapus seluruh foto kenangan tamu dari Cloudflare R2 (`deleteFile`) dan disk lokal.
-   - Menghapus file HTML publikasi canonical (`deletePublishedHtml`) dan draft lokal (`data/drafts/{id}.html`) untuk mencegah akumulasi file usang di disk VPS.
-   - Mengunci izin upload foto (`memoriesUploadLocked = true`).
-   - Mengubah status undangan menjadi `ARCHIVED`.
-   - Melepaskan subdomain kembali ke pool (`subdomain = null`).
+### 6.2 — Cron Cleanup (`POST /api/cron/cleanup`, `npm run cron:cleanup`)
+Cron job dilindungi oleh header `Authorization: Bearer <CRON_SECRET>` atau sesi Admin. Rute dan skrip memanggil **satu implementasi** yang sama, `runLifecycleCleanup` di `lib/lifecycleCleanup.ts` (opsi `dryRun`: `?dryRun=true` atau `--dry-run`). Tanpa `CRON_SECRET`, request tanpa sesi admin ditolak 401; crontab yang gagal terotorisasi tidak akan berjalan, jadi periksa keluarannya:
+1. **Empat jam terpisah (lihat tabel di bagian 6):**
+   - `PUBLISHED` menjadi `EVENT_FINISHED` pada awal hari setelah acara utama (zona waktu acara).
+   - Subdomain dikembalikan ke pool pada acara utama + `subdomain_grace_days` (bila `subdomain_auto_recycle` aktif); status apa pun `EVENT_FINISHED`/`ARCHIVED`/`TAKEN_DOWN`.
+   - Pada acara utama + `retention_cleanup_days` (atau `galleryExpiresAt`): foto tamu R2/lokal dihapus; bila NAS aktif arsip mandiri disinkronkan dan **diverifikasi**; hanya jika berhasil HTML published, draft lokal, media inti R2, dan RSVP dihapus, `memoriesUploadLocked = true`, status menjadi `ARCHIVED`. Bila arsip gagal, tidak ada yang dihapus dan undangan dicoba lagi pada eksekusi berikutnya (tercatat di `archiveFailures`).
+   - Pada acara utama + `nas_archive_retention_days`: folder arsip dibersihkan.
+   - Custom domain tidak diproses cron: `GET /api/public/resolve-custom-domain` berhenti melayani setelah acara utama + `retention_custom_domain_days`.
+   - Peringatan email retensi H-3 dikirim sekali sebelum jam galeri berakhir; tanggalnya diformat pada zona waktu acara.
 2. **Kebijakan Nol Penghapusan Akun (Zero Account Deletion Policy):**
    - Akun klien (`User`) di database PostgreSQL berukuran sangat kecil (<1 KB) dan **TIDAK PERNAH DIHAPUS**.
    - Klien tetap dapat login kapan saja ke dasbor untuk melihat rangkuman acara dan mengunduh rekapan doa restu.
@@ -505,33 +513,33 @@ Ketika undangan telah berstatus `ARCHIVED`, dasbor klien secara otomatis beralih
 - **Tanpa Tombol Menyesatkan:** Tidak ada tombol "Buat Undangan Baru" dan tidak ada tombol "Reaktivasi" (karena foto galeri tamu sudah dibersihkan permanen dari server).
 
 ### 6.5 — Layanan Tambahan (Add-Ons) & Perpanjangan Masa Aktif
-1. **Perpanjangan Masa Simpan Bulanan (+30 Hari) (`orderType: GALLERY_EXTENSION`):**
-   - Memperpanjang masa simpan subdomain, custom domain, dan foto momen tamu selama +30 hari via QRIS (Rp50.000).
-2. **Perpanjangan Masa Simpan Tahunan (+1 Tahun) (`orderType: GALLERY_EXTENSION`):**
-   - Memperpanjang masa simpan selama +365 hari via QRIS (Rp150.000).
-3. **Custom Domain Pribadi:**
-   - Merupakan fitur gratis dan opsional yang sudah termasuk dalam Paket Premium (bukan add-on berbayar terpisah).
+1. **Perpanjangan Galeri (+30 Hari) (`orderType: GALLERY_EXTENSION`):**
+   - Menambah 30 hari di atas jam galeri yang berlaku (`extendGalleryExpiry` di `lib/lifecycleDates.ts`, satu-satunya rumus untuk add-on klien, upgrade, dan aksi admin) via QRIS (harga `gallery_extension_price_per_month`). Hanya jam galeri yang berubah; jam subdomain, arsip, dan custom domain tidak ikut berubah.
+   - Aturan checkout (`checkout-bundle`): hanya pada H-7 sebelum jam galeri berakhir dan maksimal 1 kali per undangan. Varian "+1 Tahun" yang ada di dokumen lama tidak diimplementasikan di kode.
+2. **Custom Domain Pribadi:**
+   - Fitur gratis dan opsional pada paket dengan kapabilitas `custom_domain`. Masa aktifnya `retention_custom_domain_days` sejak acara utama, mengikuti gerbang slug (tidak terkait perpanjangan galeri).
 
 ### 6.5 — Smart Fallback Lifecycle Routing (`app/(public)/[slug]/route.ts`)
 1. **Fase Acara Selesai (`EVENT_FINISHED` / H+7 Pasca-Acara):**
    - **Paket dengan kapabilitas `guest_memories`:** Pengunjung yang mengakses `/[slug]` otomatis dialihkan ke Galeri Kenangan Tamu (`/[slug]/memories`).
    - **Paket tanpa `guest_memories`:** Pengunjung disajikan layar penutup resmi yang anggun (*Graceful Event Closed Page*) bertema dark luxury yang berisi ucapan terima kasih tulus dari kedua mempelai, tanpa diarahkan ke galeri kosong.
-2. **Fase Arsip Total (`ARCHIVED` / Masa Galeri Selesai / 1 Tahun Abadi):**
-   - **Prioritas 1 (Cold Storage NAS / Luxenary Vault):** Sistem memeriksa keberadaan arsip mandiri di direktori NAS melalui `readNasArchiveHtml(slug)` ([lib/nasArchive.ts](./lib/nasArchive.ts)). Jika aktif dan berkas tersedia, sistem menyajikan berkas HTML statis mandiri langsung dengan status HTTP 200 dan aset media di-stream dari `/archives/[slug]/assets/[file]`. Undangan tetap hidup dan utuh selama 1 tahun (365 hari) tanpa memakan kuota cloud storage R2.
-   - **Prioritas 2 (Portofolio Admin):** Jika arsip NAS tidak aktif atau tidak ditemukan, sistem memeriksa apakah undangan dijadikan portofolio melalui `hasPortfolio(slug)` dan mengalihkan (*HTTP 307*) ke `/portfolio/[slug]`.
-   - **Prioritas 3 (Fallback Beranda):** Jika tidak ada portofolio dan tidak ada arsip NAS, pengunjung dialihkan (*HTTP 307*) ke Halaman Utama (`/`) secara aman.
+2. **Fase Arsip (`ARCHIVED`)**, urutan keputusan admin:
+   - **Prioritas 1 (Portofolio Admin):** bila undangan dijadikan portofolio (`hasPortfolio(slug)`), pengunjung dialihkan (*HTTP 307*) ke `/portfolio/[slug]`.
+   - **Prioritas 2 (Cold Storage NAS / Luxenary Vault):** bila NAS aktif, berkas arsip ada, dan masih dalam `nas_archive_retention_days` sejak acara utama, HTML mandiri disajikan langsung (HTTP 200) dan aset di-stream dari `/archives/[slug]/assets/[file]` ([lib/nasArchive.ts](./lib/nasArchive.ts)).
+   - **Prioritas 3 (Fallback Beranda):** tanpa portofolio dan tanpa arsip yang berlaku (NAS nonaktif, belum ada, atau masa arsip habis), pengunjung dialihkan (*HTTP 307*) ke `/`.
+   - Slug adalah gerbang tetap. Custom domain di-rewrite proxy ke slug. Subdomain (`/s/[subdomain]`) yang berstatus `ARCHIVED` atau melewati `subdomain_grace_days` dialihkan ke slug, dan subdomain dikembalikan ke pool.
 
 ### 6.6 — Arsitektur Penyimpanan Bertingkat: Hot Storage (Cloudflare R2) & Cold Storage (NAS Archive Vault)
 Sistem menerapkan prinsip *Tiered Storage* untuk memisahkan beban operasional live dan retensi jangka panjang:
 1. **Tier Panas / Hot Storage (Cloudflare R2):**
-   - Aktif selama H-30 persiapan hingga H+14/30 pasca acara (`DRAFT`, `PUBLISHED`, `EVENT_FINISHED`).
+   - Aktif selama persiapan hingga jam galeri berakhir (`retention_cleanup_days` pasca acara utama atau `galleryExpiresAt`) untuk `DRAFT`, `PUBLISHED`, `EVENT_FINISHED`.
    - Menyajikan berkas media dengan latensi milidetik melalui Cloudflare Global CDN Edge.
    - Menampung ratusan foto candid tamu (*Guest Memories / Virtual Disposable Camera*).
 2. **Tier Dingin / Cold Storage (NAS Lokal Standby / Luxenary Vault):**
    - Modul: `lib/nasArchive.ts` dan route stream `app/archives/[slug]/assets/[...file]/route.ts`.
    - Menggunakan konfigurasi dinamis `nas_archive_enabled`, `nas_archive_path`, dan `nas_archive_retention_days`.
    - Bekerja secara *Plug-and-Play (Dormant Ready)*: default `false` atau path lokal `./data/archives`.
-   - Saat status berubah ke `ARCHIVED`: seluruh foto di Cloudflare R2 dibersihkan total (kuota R2 kembali 0 KB), sedangkan berkas mandiri HTML dan aset inti undangan disajikan langsung dari harddisk NAS lokal.
+   - Saat status berubah ke `ARCHIVED`: foto tamu dibersihkan, dan bila NAS aktif media inti R2 dihapus **hanya setelah** `syncInvitationToNasArchive` sukses menyalin seluruh aset milik platform (aset sistem seperti `/music/...` dan tautan eksternal tidak disalin dan tetap dirujuk apa adanya). Arsip yang tidak lengkap tidak pernah menggantikan arsip sebelumnya. NAS boleh dinonaktifkan; urutan fallback ARCHIVED lihat 6.5.
 
 ### 6.5.1 — Manajemen Projek Undangan di Admin Dashboard (`app/(admin)/admin/page.tsx`)
 1. **Nama Tab & Elevasi Konseptual:** Tab navigasi diubah dari sekadar "Undangan" menjadi **"Projek Undangan" (Invitation Projects)** untuk mencerminkan satu siklus hidup utuh (persiapan, tayang, pasca-acara, hingga pengarsipan).
@@ -1908,7 +1916,8 @@ Setiap inisialisasi tagihan ke payment gateway (Midtrans & Xendit) mengirimkan i
 
 ### 15.12 — Clean SaaS UI Standard & Eliminasi Total Dialog Native Browser (Zero window.alert / window.confirm)
 - **Zero Native Browser Dialogs & In-Button Micro Feedback:**
-  - Seluruh pemanggilan `window.alert()` dan `window.confirm()` telah dieliminasi 100% dari seluruh codebase (Portal Admin, Dasbor Klien, Scanner Resepsionis, dan Tema Publik).
+  - Seluruh pemanggilan `window.alert()`, `window.confirm()`, dan `window.prompt()` telah dieliminasi 100% dari `app/` dan `components/` (diverifikasi grep: 0 sisa; sebelumnya masih 13 titik di admin, dashboard, guests, moments, settings, editor undangan, `GuestOpeningSetupModal`, dan `PrintableQRCardModal`).
+  - **Komponen bersama `components/ui/Feedback.tsx`:** `FeedbackProvider` dipasang sekali di `lib/session.tsx` (di dalam layout root) dan diakses lewat hook `useFeedback()` yang menyediakan `notify(pesan, "success" | "error" | "info")` (toast, otomatis hilang 3,8 detik), `confirm({ title, message, confirmLabel, danger })` yang mengembalikan `Promise<boolean>`, dan `prompt({ title, initialValue, placeholder })` yang mengembalikan `Promise<string | null>`. Dialog memakai `role="alertdialog"`, menutup dengan Esc atau klik latar, mengembalikan fokus ke elemen sebelumnya, dan memakai z-index `100`. Hook di luar provider melempar error.
   - Digantikan dengan komponen dialog konfirmasi kustom modern berlatar belakang gelap transparan (*backdrop blur*), kartu bersudut membulat (*rounded-2xl*), ikon vektor SVG minimalis tanpa emoji OS kaku, serta feedback interaktif saat memproses.
   - **Prinsip Feedback Mandiri di Tombol (In-Button Feedback):** Aksi yang bersifat konfirmasi lokal atau salin tautan (misal "Salin Link", "Samakan Tema", simpan seksi) mempertahankan umpan balik langsung di dalam tombol itu sendiri (seperti label sementara *"✓ Tersalin!"*, *"✓ Tersimpan"*, atau indikator visual tersinkronisasi) tanpa memunculkan toast melayang yang berlebihan.
   - **Minimalist Floating Toast:** Floating toast (`fixed bottom-6 right-6 z-[80]`) dirancang ringkas (dot indicator 2px, backdrop-blur, tanpa dekorasi berlebihan) dan hanya dipicu untuk notifikasi sistem penting, error server/koneksi, atau konfirmasi tingkat halaman dengan timer auto-dismiss 4 detik.
@@ -2154,7 +2163,7 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
      - `DEFAULT_MINIMALIST_BLUEPRINT`: Diksi luxury monokrom, Sacred Vows, The Solemnity, The Tapestry, Curated Frames, Wedding Registry, Expressions of Grace.
    - Nama tema diturunkan otomatis dari database (`theme.name`) atau kapitalisasi `themeId`. Saat Admin membuka Demo Studio pertama kali (`GET /api/admin/themes/[id]/demo-data`), seluruh formulir 4 Tab sudah 100% terisi data awal yang rapi tanpa ada input kosong.
 5. **Garansi Kompatibilitas Mundur 100% (Zero-Breaking Policy):**
-   - Seluruh 40 tema master tetap berfungsi normal tanpa regresi karena Engine tetap mengekspor fallback token lama (`storySectionHtml`, dll.).
+   - Seluruh 39 tema master tetap berfungsi normal tanpa regresi karena Engine tetap mengekspor fallback token lama (`storySectionHtml`, dll.).
 6. **Standarisasi Warna Tema Mandiri (Theme-Locked Standalone Palette):**
    - **Warna Terkunci di Master File:** Warna tema (`:root { --primary, --secondary, --accent, --bg-light, --bg-dark }`) dikunci secara permanen di berkas master HTML/CSS masing-masing tema (`themes/**/*.html`).
    - **Penghapusan Palet Dinamis:** Fitur 18 pemilih palet warna dinamis telah dieliminasi total dari Studio Admin dan Dasbor Klien demi menjaga konsistensi kontras tipografi dan orisinalitas desain visual masing-masing tema.
@@ -2550,7 +2559,9 @@ Sistem pemasaran terpusat yang dirancang untuk mengelola kupon diskon publik, ko
      - Manual Transfer Mode: Menampilkan data rekening bank resmi dan form upload bukti transfer WebP. Jika admin menolak bukti transfer, status order tetap `PENDING` sehingga pembeli dapat mengunggah ulang bukti baru tanpa kehilangan kupon promonya.
 
 3. **Orkestrasi Pembayaran & Webhook Idempoten (`lib/marketing.ts`):**
-   - `processOrderPaidMarketing(orderId)`: Dipanggil saat pembayaran terkonfirmasi (Midtrans webhook `settlement`, Xendit webhook `PAID`, atau Admin manual approve).
+   - `settleOrderAsPaid(orderId, data)` (`lib/paymentSettlement.ts`): satu-satunya pintu transisi `PENDING` -> `PAID`, dipakai webhook Midtrans, webhook Xendit, approve manual admin, dan rekonsiliasi status klien (`/api/client/orders/[id]/status`). Menjalankan `updateMany where status=PENDING` dan `processOrderPaidMarketing(orderId, tx)` dalam **satu transaksi Prisma**: jika marketing gagal, seluruh transisi dibatalkan (order tetap `PENDING`, webhook membalas 500 sehingga gateway mengirim ulang). Mengembalikan `false` jika order sudah diproses proses lain.
+   - `isGatewayAmountValid(order, paidAmount)` (`lib/paymentSettlement.ts`): validasi nominal webhook. Jika `Order.chargedAmount` terisi (nominal yang dikirim ke gateway saat `init`, termasuk biaya layanan mode `BUYER`), nominal wajib sama persis; order lama tanpa `chargedAmount` hanya boleh dibayar >= `amount`. Nominal tidak cocok: order tidak dilunasi, `WebhookLog.status = amount_mismatch`, respons 200 (`ignored`). `chargedAmount` diisi di `/api/payments/checkout` dan `/api/payments/qris/regenerate`.
+   - `processOrderPaidMarketing(orderId, client)`: Dipanggil dari dalam `settleOrderAsPaid` (Midtrans webhook `settlement`, Xendit webhook `PAID`, atau Admin manual approve). Error tidak lagi ditelan: dilempar ulang agar transaksi pemanggil dibatalkan.
      - Mengubah status `PromoHold` menjadi `CONSUMED`.
      - Menginkremen `PromoCoupon.usageCount` sebesar +1.
      - Jika kupon terikat ke Mitra Afiliasi aktif, menghitung komisi, membuat record `AffiliateCommission` status `PENDING`, dan menambah `PartnerAffiliate.pendingBalance`.
@@ -2817,8 +2828,8 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
    - Jika kuota terdeteksi penuh saat concurrent uploads, berkas fisik yang sempat terunggah ke Cloudflare R2 otomatis dibersihkan (`deleteFile`) untuk mencegah *storage leak*.
 
 4. **Ekstraksi IP Aman dari Reverse Proxy (`lib/rateLimit.ts`):**
-   - Menambahkan helper `getClientIp()` yang memprioritaskan header terpercaya dari cloud provider (`cf-connecting-ip`, `x-real-ip`, lalu IP paling kiri pada `x-forwarded-for`).
-   - Mencegah penyerang mem-bypass rate limiter dengan memalsukan header `X-Forwarded-For`.
+   - Helper `getClientIp()` hanya mempercayai header dari proxy yang dipilih lewat `TRUSTED_PROXY` (`cloudflare` = `cf-connecting-ip`, `nginx` = `x-real-ip`, `none` = tidak ada). `x-forwarded-for` tidak dipercaya di luar `NODE_ENV=development`; rincian di bagian 25.1.
+   - Versi awal helper ini mengambil IP paling kiri `x-forwarded-for` sehingga limiter masih dapat dilewati dengan memutar header; hal itu terbukti pada audit 30 September 2026 dan sudah ditutup.
 
 ---
 
@@ -2833,7 +2844,7 @@ Untuk menjamin kesiapan industri (*enterprise-grade / production-ready*), sistem
    - Verifikasi tanda tangan HMAC-SHA256 pada token sesi resepsionis untuk mencegah pemalsuan dan penyusupan lintas undangan.
 
 2. **Domain 2 — Transaksi Finansial, Billing & Kupon Promo:**
-   - Idempotensi webhook pembayaran (Midtrans/Xendit): simulasi 8 callback paralel hanya mengeksekusi tepat 1 transisi status `PENDING` -> `PAID`.
+   - Idempotensi pelunasan (Midtrans/Xendit/approve admin): 8 panggilan paralel `settleOrderAsPaid` hanya mengeksekusi tepat 1 transisi status `PENDING` -> `PAID`.
    - Concurrency race condition pada kupon terbatas (`quotaLimit = 1`): diuji menggunakan row-level lock `SELECT ... FOR UPDATE` dalam transaksi Prisma, memastikan tepat 1 user menang dan klaim berlebih ditolak secara atomik.
    - Proteksi anti-downgrade paket (Tier 3 terkunci dari penurunan sepihak ke Tier 1).
 
@@ -2967,7 +2978,7 @@ Luxenary-Invite dielevasi dari sistem undangan pernikahan murni menjadi platform
      - **Anti-Banding Filter**: Lanczos3 resampling kernel + Sharp WebP Q90 dengan `smartSubsample: true` dan `effort: 4`.
    - **Isolasi Target Bersih**: Setiap tema diproses dalam tab target terisolasi (`Target.createTarget` -> render -> capture -> `Target.closeTarget`), menjamin zero-leak memori dan eksekusi bebas macet.
 3. **Pintu Gerbang Kepatuhan Terpadu:**
-   - `npm run audit:integrity`: Memverifikasi 100% dari 40 tema di disk memiliki file `thumbnail_desktop.webp` dan `thumbnail_mobile.webp`, merespons HTTP 200, bebas duplikasi hash, dan bersih dari kebocoran teks pernikahan.
+   - `npm run audit:integrity`: Memverifikasi 100% dari 39 tema di disk memiliki file `thumbnail_desktop.webp` dan `thumbnail_mobile.webp`, merespons HTTP 200, bebas duplikasi hash, dan bersih dari kebocoran teks pernikahan.
    - `npm run test:hygiene`: Menguji ketiadaan kode hex mati (Zero-Hardcode Policy) pada tema dan komponen dinamis.
 
 ---
@@ -3006,6 +3017,51 @@ Luxenary-Invite dielevasi dari sistem undangan pernikahan murni menjadi platform
 4. **Maintenance Automation (OS Crontab Linux):**
    - 02:00 WIB: Pembersihan file draf dan data sementara (`/api/cron/cleanup`).
    - 03:00 WIB: Pencadangan otomatis database PostgreSQL (`/api/cron/backup`).
+5. **Pemanggilan cron:** `deploy.sh` menulis `Authorization: Bearer <CRON_SECRET>` ke `data/.cron-auth` (izin 600) dan crontab memakai `curl -H @data/.cron-auth`, sehingga secret tidak tampil di `crontab -l` maupun daftar proses.
+
+---
+
+## 25. Hardening Produksi & Modul Keamanan (v6.3.7, 1 Oktober 2026)
+
+### 25.1 IP Klien Tepercaya & Rate Limiter (`lib/rateLimit.ts`)
+1. `getClientIp(req)` hanya membaca header dari proxy yang dipilih env `TRUSTED_PROXY`: `cloudflare` (default) memakai `cf-connecting-ip`; `nginx` memakai `x-real-ip` (nginx wajib menimpanya dengan `$remote_addr`); `none` tidak mempercayai header apa pun. `x-forwarded-for` tidak pernah dipercaya kecuali `NODE_ENV=development`.
+2. Tanpa header tepercaya, semua permintaan berbagi satu kunci (`untrusted-origin`), sehingga memutar header tidak menghasilkan kunci limiter baru. Origin sebaiknya juga dikunci di firewall ke IP proxy.
+3. Login (`proxy.ts`, 5 percobaan per 15 menit) dan upload klien (`app/api/client/upload/route.ts`) memakai `rateLimitDb` (PostgreSQL atomik, lintas worker PM2 dan reload). `rateLimit()` in-memory hanya tersisa sebagai fallback di dalam `rateLimitDb`.
+4. RSVP publik (`app/api/public/rsvp/route.ts`) memiliki dua batas: per IP (10/menit) dan per undangan (`rsvp_post:inv:<id>`, 200/menit) yang tidak bergantung pada IP.
+
+### 25.2 Pipeline Deploy (`deploy.sh`)
+`git pull --ff-only` → `npm ci` → `prisma generate` + `next build` → backup `pg_dump -Fc` ke `data/backups/pre-deploy_<waktu>.dump` (kredensial diteruskan lewat `PGHOST/PGUSER/PGPASSWORD/PGDATABASE` yang dihasilkan `scripts/pg-env.cjs`; parser itu membelah `DATABASE_URL` pada `@` terakhir sehingga password mentah berisi `@`, `#`, atau `/` tetap terbaca, dan password tidak tampil di daftar proses maupun log deploy) → `prisma migrate deploy` (tanpa fallback `db push`) → `prisma db seed` + `themes:sync` + kompilasi demo statis → `pm2 reload` → health check `/api/health` (10 percobaan, 30 detik). Kegagalan build, backup, atau migrasi menghentikan deploy sebelum PM2 di-reload; health check gagal menandai deploy gagal (exit 1) dan mencetak perintah rollback kode serta lokasi backup pra-migrasi.
+
+### 25.3 Seed vs Sinkronisasi Tema
+`prisma/seed.ts` tidak lagi menyentuh tabel `themes` (sebelumnya `deleteMany` pada tema di luar daftar 28 dan menimpa `name`/`isPremium`/`isActive`/`sortOrder`), dan tidak menimpa preset musik yang sudah ada (`update: {}`); nilai `AdminSetting` sejak awal tidak ditimpa. Satu-satunya sumber tema adalah `scripts/sync-themes.ts` (`npm run themes:sync`), yang menjaga `isPremium`/`isActive` bila tema sudah ada.
+
+### 25.4 Header Keamanan
+`next.config.ts`: `poweredByHeader: false`; `Content-Security-Policy-Report-Only` (default-src `'self'`, script/style `'unsafe-inline'` karena tema memuat skrip dan gaya inline, `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`, `frame-ancestors 'self'`, `report-uri /api/security/csp-report`). `POST /api/security/csp-report` (`app/api/security/csp-report/route.ts`) hanya mencatat log, dibatasi 8 KB dan 30 laporan/menit/IP. Setelah laporan bersih, naikkan ke `Content-Security-Policy`.
+
+### 25.5 Health Check
+`GET /api/health`: publik hanya `{status, timestamp}` (200 atau 503 tanpa pesan error). Dengan `Authorization: Bearer $CRON_SECRET` (dibandingkan `timingSafeEqual`) ditambah `environment`, `uptimeSeconds`, `database.latencyMs`, `memory`, `cacheStats`, `services`. Agen pemantau VPS wajib mengirim header itu.
+
+### 25.6 `featureSettings` NULL (`lib/featureSettings.ts`)
+`parseFeatureSettings(raw)` selalu mengembalikan objek (menolak `null`, array, JSON korup dengan log peringatan). Dipakai oleh halaman `/[slug]/memories`, `/[slug]/sharemoment`, `/s/[subdomain]/sharemoment`, `POST /api/public/memories/upload`, dan `/api/client/invitations/[id]/memories`. Pola lama `typeof x === "object" ? x : JSON.parse(x)` mengembalikan `null` untuk NULL dan membuat `fs.showGuestMemories` melempar TypeError (HTTP 500).
+
+### 25.7 Skrip Klien pada HTML Tema
+Semua `<script>` inline hasil render harus valid JavaScript. Perbaikan: `catch (err: any)` (sintaks TypeScript) di `lib/themeEngine.ts` dan kutip ganda bersarang di `themes/wedding/modern/starlit-dreams.html` (`luxSubmitRsvp`, kini menyusun ucapan dengan `textContent`, bukan `innerHTML`). Penjaga regresi: `__tests__/integration/inlineScriptSyntax.test.ts` mem-parse seluruh skrip inline untuk 39 tema (terbit, pratinjau, demo).
+
+### 25.8 Backup
+Snapshot baru berformat custom `pg_dump -F c` dan berekstensi `.dump` (pulihkan dengan `pg_restore`); `.sql`/`.backup` lama tetap dikenali lewat `isSnapshotFile`. Kegagalan unggah off-site R2 dicatat `logger.error`, dan `POST /api/cron/backup` menambahkan `warning` pada respons.
+
+### 25.9 Modul Baru yang Sebelumnya Tidak Terdokumentasi
+| Modul | Fungsi |
+|---|---|
+| `lib/adminAuth.ts` | Guard server-side per modul admin: `requireAdminModule(id)`, `requireSuperAdmin()`, `requireAnyAdmin()`; 401 bila bukan admin, 403 bila peran tidak mencakup modul. Modul `settings`, `database`, `team` hanya SUPER_ADMIN |
+| `lib/receptionistGuard.ts` | Membaca token sesi resepsionis (`x-receptionist-token` atau Bearer) dan memverifikasinya terhadap PIN undangan saat ini |
+| `lib/safeUrl.ts` | `safeExternalUrl`, `normalizeFeatureUrls`, `safeHref`: hanya http/https atau path lokal; skema `javascript:`/`data:` dan `//host` ditolak |
+| `lib/safeCss.ts` | `safeCssColor`: hanya hex, rgb()/hsl() numerik, dan nama warna |
+| `lib/safeJson.ts` | `jsonForInlineScript`: JSON aman ditanam di `<script>` (meloloskan `<`, `>`, `&`, U+2028/2029) |
+| `lib/paymentSettlement.ts` | `isGatewayAmountValid` (nominal gateway harus sama dengan `chargedAmount`; order lama tanpa kolom itu boleh `>= amount`) dan `settleOrderAsPaid` (PENDING→PAID beserta efek marketing dalam satu transaksi) |
+| `lib/lifecycleCleanup.ts`, `lifecycleDates.ts`, `lifecycleSettings.ts` | Pembersihan siklus hidup, perhitungan masa aktif dari acara utama, dan pengaturan retensi |
+
+Migrasi: `20260930045346_add_order_charged_amount` (kolom `orders.chargedAmount`) dan `20260930120000_lifecycle_cleanup` (hapus kolom `invitations.expiresAt`, bersihkan kunci pengaturan usang, ubah bawaan retensi custom domain menjadi 365 hari).
 
 
 

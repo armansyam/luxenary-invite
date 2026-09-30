@@ -96,7 +96,8 @@ Database adalah jantung operasional undangan, transaksi, dan RSVP:
 2. **Latensi Kueri & Antrean Koneksi:**
    - **Perintah Audit (Metrik Terintegrasi):**
      ```bash
-     curl -s http://localhost:3001/api/health | jq '.database'
+     # Detail (database, memori) hanya untuk pemegang CRON_SECRET; tanpa header, respons publik hanya {status, timestamp}.
+     curl -s -H "Authorization: Bearer $CRON_SECRET" http://localhost:3001/api/health | jq '.database'
      ```
    - **Kondisi Normal:**
      - `"status": "connected"`
@@ -207,7 +208,7 @@ echo "=== [1/5] PM2 APP STATUS ==="
 pm2 jlist | jq -r '.[] | select(.name=="luxenary-invite") | "Instance: \(.pm2_env.pm_id) | Status: \(.pm2_env.status) | Restarts: \(.pm2_env.restart_time) | Mem: \((.monit.memory / 1048576) | round)MB"'
 
 echo -e "\n=== [2/5] INTERNAL HEALTH CHECK ==="
-curl -s http://localhost:3001/api/health | jq '{status, uptimeSeconds, database, memory: .memory.heapUsedMb}'
+curl -s -H "Authorization: Bearer $CRON_SECRET" http://localhost:3001/api/health | jq '{status, uptimeSeconds, database, memory: .memory.heapUsedMb}'
 
 echo -e "\n=== [3/5] HARDWARE UTILIZATION ==="
 echo "Disk Usage: $(df -h / | awk 'NR==2 {print $5}')"
@@ -283,7 +284,7 @@ Pemicu: Laporan rutin status operasional 24 jam terakhir.
 • Storage     : Disk terpakai {X}% | RAM terpakai {Y}%
 • Backup Harian: SUKSES (Ukuran: {Z} MB di /backups)
 • Cleanup Draf: SUKSES (Draf kedaluwarsa dibersihkan)
-• Katalog Tema: 40 Tema Aktif Terdaftar
+• Katalog Tema: 39 Tema Aktif Terdaftar
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Semua sistem beroperasi normal dan siap melayani klien.
 ```

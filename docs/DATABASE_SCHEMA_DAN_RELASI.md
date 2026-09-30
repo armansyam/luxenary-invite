@@ -21,7 +21,6 @@ erDiagram
     Invitation ||--o{ Guest : "contains"
     Invitation ||--o{ InvitationMedia : "has_media"
     Invitation ||--o{ Rsvp : "receives"
-    Invitation ||--o{ Wish : "receives"
     Invitation ||--o{ GuestMemory : "collects"
     Guest ||--o| Rsvp : "submits"
     Admin ||--o{ AdminAuditLog : "logs"
@@ -45,6 +44,7 @@ erDiagram
         string paymentMethod
         string promoCodeApplied
         decimal discountAmount
+        decimal chargedAmount
         string promoCouponId FK
         datetime paidAt
     }
@@ -90,12 +90,6 @@ erDiagram
         string name
         string status
         int guestCount
-        string message
-    }
-
-    Wish {
-        string id PK
-        string senderName
         string message
     }
 
@@ -174,15 +168,16 @@ Menyimpan lembar penagihan dan riwayat transaksi:
 - `proofImageUrl` (String, Nullable): URL slip transfer jika menggunakan transfer manual.
 - `promoCodeApplied` (String, Nullable): Kode kupon diskon yang diaplikasikan saat checkout.
 - `discountAmount` (Decimal, Nullable): Nominal potongan harga dari kupon promo.
+- `chargedAmount` (Decimal 12,2, Nullable): Nominal yang benar-benar dikirim ke gateway saat `init` (termasuk biaya layanan mode `BUYER`). Diisi oleh `/api/payments/checkout` dan `/api/payments/qris/regenerate`; dipakai webhook untuk memvalidasi nominal yang dibayar.
 - `promoCouponId` (UUID, Foreign Key, Nullable): Referensi ke kupon yang digunakan.
 - `checkoutConfirmedAt` (DateTime, Nullable): Waktu penguncian pesanan dan reservasi diskon promo hold.
 
 #### 2. Tabel `webhook_logs`
 Menyimpan riwayat callback / IPN dari payment gateway untuk idempotency dan debugging:
-- `source` (String): Nama provider (`duitku`, `midtrans`, `ipaymu`, `tripay`, `xendit`).
+- `source` (String): Nama provider (`midtrans` atau `xendit`).
 - `event` (String): Tipe event (contoh: `payment.success`).
 - `payload` (JSON): Payload biner lengkap dari gateway.
-- `status` (String): `received` atau `processed`.
+- `status` (String): `received`, `processed`, atau `amount_mismatch` (nominal webhook tidak cocok dengan `Order.chargedAmount`, order tidak dilunasi).
 
 ---
 
@@ -233,7 +228,7 @@ Menyimpan daftar aset visual mempelai:
 - `localPath` (String): URL file di Cloudflare R2 CDN atau path storage lokal.
 
 #### 3. Tabel `themes` (Model `Theme`)
-Master katalog tema fisik resmi di sistem (40 tema terdaftar):
+Master katalog tema fisik resmi di sistem (39 tema terdaftar):
 - `id` (String, Primary Key): Identifier unik tema (contoh: `kalandra`, `artisan`, `festivo`).
 - `name` (String): Nama komersial tema.
 - `eventType` (Enum `EventType`): Afiliasi tipe acara (`WEDDING`, `BIRTHDAY`, `KHITAN`, `AQIQAH`, `WISUDA`, `GATHERING`).
@@ -253,7 +248,7 @@ Master katalog tema fisik resmi di sistem (40 tema terdaftar):
 
 ---
 
-### D. Entitas Tamu, Interaksi & Galeri (`guests`, `rsvps`, `wishes`, `guest_memories`)
+### D. Entitas Tamu, Interaksi & Galeri (`guests`, `rsvps`, `guest_memories`)
 
 #### 1. Tabel `guests`
 Buku tamu undangan klien:
@@ -272,10 +267,7 @@ Konfirmasi kehadiran tamu:
 - `status` (String): Konfirmasi hadir (`HADIR`, `TIDAK_HADIR`, `RAGU`).
 - `guestCount` (Int): Jumlah orang yang akan hadir.
 
-#### 3. Tabel `wishes`
-Buku tamu doa dan ucapan selamat dari tamu undangan.
-
-#### 4. Tabel `guest_memories`
+#### 3. Tabel `guest_memories`
 Album foto momen candid yang diunggah oleh tamu di hari pernikahan:
 - `senderName` (String): Nama tamu pengunggah.
 - `senderPhone` (String, Nullable): Nomor telepon tamu pengunggah.
@@ -336,24 +328,62 @@ Mekanisme penguncian kupon 15 menit (*Anti-Race Condition & Anti-Double Claim*):
 #### 1. Tabel `expenses`
 Buku kas pengeluaran operasional (*OPEX*) dan pencairan komisi mitra:
 - `title` (String): Judul pengeluaran.
-- `category` (Enum `ExpenseCategory`): `SERVER`, `MARKETING`, `SALARY`, `LEGAL`, `OFFICE`, `MISC`.
-- `amount` (Decimal): Nominal uang keluar.
+- `category` (Enum `ExpenseCategory`): `INFRASTRUCTURE`, `UTILITIES`, `MARKETING`, `SOFTWARE_LICENSES`, `OPERATIONAL`, `OTHER` (default `OTHER`).
+- `amount` (Decimal 12,2): Nominal uang keluar.
 - `expenseDate` (DateTime): Tanggal realisasi pembayaran.
+- `paymentSource` (String, Nullable): Sumber dana (default `TRANSFER_BANK`).
+- `referenceNumber` (String, Nullable): Nomor referensi transaksi.
 - `receiptUrl` (String, Nullable): URL bukti bayar / struk transfer di R2.
+- `notes` (String, Nullable): Catatan tambahan.
+- `createdById` (String, Nullable): ID admin pencatat.
+- `isLocked` (Boolean): `true` jika periode sudah ditutup buku dan pengeluaran tidak boleh diubah.
 
 #### 2. Tabel `recurring_expenses`
 Jadwal tagihan rutin berkala (sewa server VPS, domain, lisensi software):
-- `billingCycle` (Enum `BillingCycle`): `MONTHLY` atau `YEARLY`.
-- `dueDate` (Int): Tanggal jatuh tempo kalender.
+- `name` (String): Nama tagihan.
+- `category` (Enum `ExpenseCategory`): Kategori beban (default `UTILITIES`).
+- `estimatedAmount` (Decimal 12,2): Estimasi nominal per bulan.
+- `dueDayOfMonth` (Int): Tanggal jatuh tempo setiap bulan.
+- `vendorName` (String, Nullable): Nama vendor penagih.
+- `paymentSource` (String, Nullable): Sumber dana (default `TRANSFER_BANK`).
+- `isActive` (Boolean): Status tagihan aktif.
 
 #### 3. Tabel `financial_closings`
-Laporan audit tutup buku keuangan bulanan yang terkunci (*immutable snapshot*):
-- `period` (String, Unique): Periode format `YYYY-MM`.
-- `grossRevenue` (Decimal): Total pendapatan kotor lunas.
-- `totalExpenses` (Decimal): Total beban operasional.
-- `netProfit` (Decimal): Laba bersih operasional.
-- `taxAmount` (Decimal): Kewajiban PPh Final UMKM 0,5% (PP 55/2022).
-- `closedAt` (DateTime): Waktu penguncian pembukuan oleh Administrator.
+Laporan audit tutup buku keuangan bulanan yang terkunci:
+- `periodMonth` + `periodYear` (Int, Unique bersama): Periode tutup buku.
+- `grossRevenue` (Decimal 12,2): Total pendapatan kotor lunas.
+- `totalExpenses` (Decimal 12,2): Total beban operasional.
+- `netProfit` (Decimal 12,2): Laba bersih operasional.
+- `taxAmount` (Decimal 12,2): Kewajiban pajak hasil kalkulasi.
+- `taxPaid` (Boolean) dan `taxPaidAt` (DateTime, Nullable): Status dan waktu pelunasan pajak.
+- `closedById` (String): ID admin yang menutup buku.
+- `closedAt` (DateTime): Waktu penguncian pembukuan.
+- `notes` (String, Nullable): Catatan penutupan.
+
+---
+
+### G. Entitas Konfigurasi & Infrastruktur (`admin_settings`, `music_presets`, `rate_limit_counters`)
+
+#### 1. Tabel `admin_settings`
+Penyimpanan pasangan kunci-nilai untuk seluruh konfigurasi dinamis dari Admin Portal (brand, kontak, kredensial gateway, SMTP, tarif, gateway aktif `active_payment_gateway`, dan `theme_demo_*`):
+- `key` (String, Unique): Kunci pengaturan.
+- `value` (String): Nilai pengaturan.
+- `label` (String, Nullable): Label tampilan di Admin Portal.
+- `group` (String): Kelompok pengaturan (default `general`).
+- `updatedAt` (DateTime): Waktu perubahan terakhir.
+
+#### 2. Tabel `music_presets`
+Pustaka musik latar bawaan yang dipilih klien pada studio:
+- `title` (String), `composer` (String, Nullable), `genre` (String, Nullable): Metadata lagu.
+- `url` (String, Unique): URL berkas audio.
+- `durationSec` (Int, Nullable): Durasi dalam detik.
+- `isActive` (Boolean) dan `sortOrder` (Int): Status tampil dan urutan.
+
+#### 3. Tabel `rate_limit_counters`
+Penghitung pembatasan laju permintaan Tier 2 (PostgreSQL atomic UPSERT) ketika Redis Upstash tidak dikonfigurasi:
+- `key` (String, Primary Key): Kunci pembatasan yang dibentuk oleh pemanggil `rateLimitDb` (`lib/rateLimit.ts`).
+- `count` (Int): Jumlah permintaan pada jendela aktif.
+- `expiresAt` (DateTime): Waktu jendela berakhir, terindeks untuk pembersihan.
 
 ---
 

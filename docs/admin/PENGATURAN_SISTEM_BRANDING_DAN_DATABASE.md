@@ -42,11 +42,12 @@ Platform dirancang modular sehingga dapat di-rebrand secara instan tanpa perlu m
 Seluruh media berat (foto prewedding, video teaser, berkas audio MP3, struk transfer, avatar) dialihkan ke **Cloudflare R2 Object Storage** yang kompatibel dengan protokol AWS S3:
 
 ### Kredensial R2 yang Dikonfigurasi:
-- `R2_ACCOUNT_ID` — ID akun Cloudflare pemilik bucket.
-- `R2_ACCESS_KEY_ID` — Kunci akses S3 API R2.
-- `R2_SECRET_ACCESS_KEY` — Kunci rahasia S3 API R2.
-- `R2_BUCKET_NAME` — Nama bucket penyimpanan (contoh: `luxvite-media`).
-- `R2_PUBLIC_URL` — Domain publik atau Cloudflare Custom Domain untuk akses cepat CDN (contoh: `https://pub-r2.luxvite.id`).
+- `S3_ENDPOINT` — Endpoint S3 API R2 (`https://<account-id>.r2.cloudflarestorage.com`).
+- `S3_ACCESS_KEY` — Kunci akses S3 API R2.
+- `S3_SECRET_KEY` — Kunci rahasia S3 API R2.
+- `S3_BUCKET_NAME` — Nama bucket penyimpanan (contoh: `luxvite-media`).
+- `S3_PUBLIC_URL` — URL publik bucket (`r2.dev`) untuk akses CDN.
+- `S3_CUSTOM_DOMAIN` — Cloudflare Custom Domain untuk akses cepat CDN (contoh: `cdn.luxvite.id`).
 
 ### Batas Upload Media & Web Optimization Dinamis:
 Administrator dapat mengatur ambang batas ukuran berkas media secara langsung tanpa menyentuh kode:

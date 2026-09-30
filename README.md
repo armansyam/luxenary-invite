@@ -1,7 +1,7 @@
 # Luxenary Invite — S-Invite Platform
 
 > **Platform Undangan Digital Multi-Event B2C Self-Service (Wedding, Birthday, Khitan, Aqiqah, Wisuda, Gathering)**  
-> Next.js 16.3.2 · Prisma 7.9 (PostgreSQL) · NextAuth v5 · Multi-Gateway (5 Gateway) · Nodemailer SMTP · Cloudflare R2  
+> Next.js 16.3.2 · Prisma 7.9 (PostgreSQL) · NextAuth v5 · Gateway 2-Arah (Midtrans & Xendit) · Nodemailer SMTP · Cloudflare R2  
 > **Versi Dokumen: 6.3.6 | Diperbarui: 29 September 2026**
 
 > [!IMPORTANT]
@@ -117,9 +117,9 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
    - Monitoring & moderasi kiriman foto tamu di Pusat Komando Moments (`/dashboard/moments`) & dasbor utama dengan grid navigasi cepat 3-kolom bersih (Studio Editor, Buku Tamu, RSVP) tanpa kartu duplikat.
    - Custom Domain Pribadi: Tersedia gratis dan opsional khusus Paket Premium (diatur langsung lewat Dasbor Pengaturan Klien tanpa biaya tambahan).
    - Arsitektur URL Bersih & Pengalihan Mode Pasca-Acara: Halaman web undangan (`/[slug]` atau `/s/[subdomain]`) dan Custom Domain mendukung pengalihan mode otomatis pasca-acara (`EVENT_FINISHED`) ke Galeri Kenangan Tamu (`/memories`) serta kontrol manual fleksibel via tombol switch di Dasbor Klien (`/dashboard` & `/dashboard/moments`), dengan dukungan parameter `?view=invitation` bagi tamu yang ingin melihat kembali web undangan asli.
-   - Siklus Hidup Terpadu (H+14 Pasca-Acara): Subdomain, custom domain, foto candid tamu R2/lokal, dan RSVP dibersihkan secara bersamaan dalam 1 fase cron cleanup tunggal.
+   - Siklus Hidup dengan 4 jam retensi terpisah (dari awal hari acara utama pada zona waktu acara; nilai dari Admin Setting): subdomain kembali ke pool (`subdomain_grace_days`, 7), foto candid tamu dibersihkan agar R2 lega (`retention_cleanup_days`, 30, dapat diperpanjang), arsip undangan (`nas_archive_retention_days`, 365), dan custom domain mengikuti slug (`retention_custom_domain_days`, 365). Cron (`lib/lifecycleCleanup.ts`) hanya menghapus setelah arsip terverifikasi.
    - Dasbor Memorial 1 Halaman & Vault Undangan Abadi (Saat ARCHIVED): Klien disajikan surat apresiasi penutup, kartu Luxenary Vault Undangan Kenangan (membuka kembali undangan digital yang tersimpan mandiri di Cold Storage NAS), 4 metrik ringkasan eksekutif, dan Pusat Unduhan Arsip Digital (.CSV Doa Restu & .CSV Kehadiran Tamu). Akun klien disimpan abadi tanpa penghapusan.
-   - Arsitektur Penyimpanan Bertingkat (Tiered Storage): Hot Storage Cloudflare R2 untuk event aktif (H-30 s/d H+14), dan Cold Storage NAS Standby (Luxenary Vault) untuk arsip mandiri 1 tahun pasca retensi galeri tamu berakhir. Dilengkapi sistem Plug-and-Play dormant-ready di `.env` (`NAS_ARCHIVE_ENABLED=false`).
+   - Arsitektur Penyimpanan Bertingkat (Tiered Storage): Hot Storage Cloudflare R2 untuk event aktif (hingga jam galeri berakhir), dan Cold Storage NAS Standby (Luxenary Vault) untuk arsip mandiri 1 tahun pasca retensi galeri tamu berakhir. Dilengkapi sistem Plug-and-Play dormant-ready di `.env` (`NAS_ARCHIVE_ENABLED=false`).
    - Layanan Perpanjangan Masa Simpan: Add-on perpanjangan masa aktif sebelum kedaluwarsa (+30 Hari Rp50.000 / +1 Tahun Rp150.000 via QRIS).
    - Subdomain otomatis didaur ulang ke pool namespace pasca `subdomain_grace_days` jika `subdomain_auto_recycle = "true"`, sementara URL Asli (`/[slug]`) tetap aktif sebagai arsip kenangan abadi.
    - Download koleksi foto ZIP (Client-side JSZip dengan proteksi status DRAFT & peringatan unduh dini) + Perpanjang Masa Aktif URL Asli / Galeri (+30 Hari via QRIS)
@@ -135,7 +135,7 @@ ADMIN PORTAL (/admin)
    - Tema & Musik (Themes & Music): Manajemen katalog tema dengan showcase visual interaktif Device Pair Mockup (Tablet 16:10 + Ponsel 1:2 bersanding dengan resolusi aset thumbnailDesktop & thumbnailMobile otomatis), Demo Studio (kustomisasi 6 seksi narasi & label tema, dynamic timeline acara, dynamic bab cerita, dynamic rekening bank, harmonisasi casing font skrip vs uppercase, dan pewarisan otomatis ke undangan klien), serta Pustaka Musik Sistem dinamis (auto-sync file fisik audio di disk `public/music/` ke database, tambah audio dengan auto-kompresi FFmpeg MP3 128kbps, preview, edit, dan toggle aktif/nonaktif untuk klien)
    - Portofolio (Portfolio): Kurasi & kloning undangan pilihan → /portfolio
    - Pengaturan (Settings): 
-     - **Tab Setup & Integrasi:** Konfigurasi DNS & IP Server (auto-detect IP publik VPS, CNAME target dinamis), SMTP Email Server, Batas Upload Media & Galeri (Video Studio hingga 100 MB, Foto Studio, dan Foto Galeri Tamu Memories), dan Siklus Hidup & Retensi Sistem (parameter tunggal 14 hari pasca acara).
+     - **Tab Setup & Integrasi:** Konfigurasi DNS & IP Server (auto-detect IP publik VPS, CNAME target dinamis), SMTP Email Server, Batas Upload Media & Galeri (Video Studio hingga 100 MB, Foto Studio, dan Foto Galeri Tamu Memories), dan Siklus Hidup & Retensi Sistem (empat jam terpisah: subdomain, galeri foto tamu, custom domain; masa arsip di tab Database).
      - **Tab Platform:** Branding & Identitas Platform, CS Support, Hero Tagline, Fitur Landing Page, Template WhatsApp.
      - **Tab Paket & Harga:** Konfigurasi harga paket undangan (TIER_1 Serenade, TIER_2 Symphony, TIER_3 Eternity) serta Layanan Tambahan (Add-Ons) resmi: Perpanjang Masa Aktif Bulanan (30 Hari - Rp50.000) dan Tahunan (1 Tahun - Rp150.000). Fitur custom domain sudah melekat gratis dan opsional pada Paket TIER_3 Eternity.
      - **Tab Gateway QRIS:** Pusat kontrol global dan sub-tabs terisolasi per vendor gateway 2-arah (Midtrans dan Xendit) dengan kredensial terpadu dan resolusi endpoint otomatis.
@@ -187,9 +187,9 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 
 | Paket | Kapasitas & Fitur Utama | Plafon Kamera Disposable (Admin Setting) | Pilihan Tema |
 |:--|:--|:--|:--|
-| **Serenade** *(TIER_1)* | Hingga 300 Tamu, Subdomain Platform, RSVP & Ucapan Realtime, Musik Latar Bebas, Retensi 1 Bulan (30 Hari) | Kamera Tamu: **Nonaktif** *(Dapat diaktifkan via Admin)* | **Bebas Semua Tema** *(Minimalist, Modern, Traditional)* |
-| **Symphony** *(TIER_2)* | Hingga 1.000 Tamu, Seluruh Fitur Serenade + **Sistem Resepsionis QR Check-In & PIN Staf Panitia**, Retensi 1 Bulan (30 Hari) | Total Kuota: **250 Foto Acara** *(Pengantin bebas atur roll per tamu)* | **Bebas Semua Tema** *(Minimalist, Modern, Traditional)* |
-| **Eternity** *(TIER_3)* | **Tamu Tanpa Batas (Unlimited)**, Seluruh Fitur Symphony + **Hak Integrasi Custom Domain**, Dashboard Monitoring Momen Tamu, Retensi 1 Bulan (30 Hari) | Total Kuota: **1.000 Foto Acara** *(Pengantin bebas atur roll per tamu)* | **Bebas Semua Tema** *(Minimalist, Modern, Traditional)* |
+| **Serenade** *(TIER_1)* | Hingga 300 Tamu, Subdomain Platform, RSVP & Ucapan Realtime, Musik Latar Bebas, Retensi galeri sesuai Admin Setting (bawaan 30 hari) | Kamera Tamu: **Nonaktif** *(Dapat diaktifkan via Admin)* | **Bebas Semua Tema** *(Minimalist, Modern, Traditional)* |
+| **Symphony** *(TIER_2)* | Hingga 1.000 Tamu, Seluruh Fitur Serenade + **Sistem Resepsionis QR Check-In & PIN Staf Panitia**, Retensi galeri sesuai Admin Setting (bawaan 30 hari) | Total Kuota: **250 Foto Acara** *(Pengantin bebas atur roll per tamu)* | **Bebas Semua Tema** *(Minimalist, Modern, Traditional)* |
+| **Eternity** *(TIER_3)* | **Tamu Tanpa Batas (Unlimited)**, Seluruh Fitur Symphony + **Hak Integrasi Custom Domain**, Dashboard Monitoring Momen Tamu, Retensi galeri sesuai Admin Setting (bawaan 30 hari) | Total Kuota: **1.000 Foto Acara** *(Pengantin bebas atur roll per tamu)* | **Bebas Semua Tema** *(Minimalist, Modern, Traditional)* |
 
 > Seluruh nama tier, harga, subjudul pengantar paket di homepage (`pricing_subtitle`), butir-butir fitur (`features_tier1`, `features_tier2`, `features_tier3`), serta add-on top-up foto (+100 Foto - Rp35.000) dan perpanjangan (+30 Hari - Rp50.000) dapat diatur mandiri oleh Administrator di Admin Portal → tab Paket & Harga secara dinamis tanpa perlu deploy ulang.
 
@@ -319,7 +319,7 @@ Luxenary-Invite/
 │   │   ├── payments/          # checkout, status-stream
 │   │   ├── orders/            # create invoice
 │   │   ├── webhook/           # midtrans, xendit (gateway 2-arah)
-│   │   ├── cron/              # cleanup (retensi otomatis H+7 & H+30)
+│   │   ├── cron/              # cleanup (memanggil lib/lifecycleCleanup.ts; jam retensi dari Admin Setting)
 │   │   └── sse/               # Server-Sent Events (memories real-time)
 │   ├── checkout/              # Flow pembayaran (multi-gateway 2-arah + manual transfer)
 │   ├── demo/                  # Preview tema publik
@@ -440,6 +440,7 @@ npm install
 DATABASE_URL="postgresql://luxenary_user:password_rahasia@localhost:5432/luxenary?schema=public"
 
 # NextAuth v5
+# Wajib. Tanpa AUTH_SECRET (atau NEXTAUTH_SECRET sebagai alternatif) token resepsionis melempar error; tidak ada secret cadangan.
 AUTH_SECRET="min-32-chars-random"
 NEXTAUTH_URL="http://localhost:3000"
 
@@ -452,11 +453,12 @@ GOOGLE_API_KEY="..."
 
 # Media Storage Provider ("local" | "r2" | "s3")
 STORAGE_PROVIDER="local"
-R2_ACCOUNT_ID="..."
-R2_ACCESS_KEY_ID="..."
-R2_SECRET_ACCESS_KEY="..."
-R2_BUCKET_NAME="..."
-R2_PUBLIC_URL="https://..."
+S3_ENDPOINT="https://<account-id>.r2.cloudflarestorage.com"
+S3_BUCKET_NAME="..."
+S3_ACCESS_KEY="..."
+S3_SECRET_KEY="..."
+S3_PUBLIC_URL="https://..."
+S3_CUSTOM_DOMAIN="cdn.domainanda.com"
 
 # Keamanan Cron Cleanup
 CRON_SECRET="your-secure-cron-token-here"
@@ -464,6 +466,11 @@ CRON_SECRET="your-secure-cron-token-here"
 # Cloudflare Cache Purge (Opsional - untuk 1-klik purge edge cache via Admin)
 CF_ZONE_ID="..."
 CF_API_TOKEN="..."
+
+# Proxy tepercaya untuk IP klien (rate limiter): cloudflare (default) | nginx | none
+# cloudflare = hanya cf-connecting-ip; nginx = hanya x-real-ip (nginx wajib menimpanya); none = tidak ada header dipercaya.
+# Header lain diabaikan agar klien tidak bisa memalsukan IP. Kunci origin agar hanya menerima IP proxy tersebut.
+TRUSTED_PROXY="cloudflare"
 
 # App URL
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
@@ -481,7 +488,8 @@ npx prisma db seed
 
 # Untuk Deployment Produksi (VPS) — Baseline init terverifikasi
 npx prisma migrate deploy
-npx prisma db seed
+npx prisma db seed        # pengaturan admin dan preset musik; tidak menyentuh tabel themes
+npm run themes:sync       # satu-satunya sumber tema (memindai berkas tema, menjaga isPremium/isActive suntingan admin)
 ```
 
 ### 4. Jalankan Dev Server
@@ -501,6 +509,11 @@ Admin Portal → Tab Tema → Klik "Sinkronisasi Tema & Cache"
 
 ```bash
 # Opsi 1: Deployment Otomatis Lengkap (Direkomendasikan di VPS)
+# Urutan: git pull --ff-only -> npm ci -> prisma generate + next build -> backup pg_dump pra-migrasi
+#         (kredensial via PG* dari scripts/pg-env.cjs, aman untuk password berisi @ atau #)
+#         -> prisma migrate deploy (tanpa fallback db push) -> seed + themes:sync -> pm2 reload -> health check.
+# Build, backup, atau migrasi yang gagal menghentikan deploy sebelum PM2 di-reload; health check yang gagal
+# menandai deploy gagal (exit 1) dan mencetak perintah rollback beserta lokasi backup pra-migrasi.
 chmod +x deploy.sh
 ./deploy.sh
 
@@ -519,6 +532,27 @@ Untuk deployment kluster 2+ server VPS di balik Load Balancer (Cloudflare / Cadd
 
 ---
 
+## Pengujian
+
+| Perintah | Cakupan | Prasyarat |
+|---|---|---|
+| `npx tsc --noEmit`, `npm run lint`, `npm run test:hygiene` | Tipe, lint, kontrak kebersihan kode | Tidak ada |
+| `npm run test:unit` | Vitest: unit dan API dengan Prisma di-mock | Tidak ada |
+| `npx vitest run __tests__/integration` | Alur pembayaran nyata, isolasi antar user, XSS render, sintaks JavaScript inline seluruh tema, seed tidak menimpa suntingan admin, limiter tahan pemalsuan header IP, health, JSON rusak, backup `.dump`, terhadap PostgreSQL | `DATABASE_URL` menunjuk ke `luxenary_test` yang sudah di-seed (`prisma db seed` dan `themes:sync`) dan `STORAGE_PROVIDER=local`; tanpa itu suite di-skip otomatis. File tes berjalan berurutan (`fileParallelism: false`) karena berbagi DB dan `data/drafts` |
+| `npx vitest run --coverage` | Semua tes di atas dengan ambang cakupan (lantai: lines 21, functions 43, branches 49). CI menjalankan perintah ini, `next build`, `npm audit --omit=dev --audit-level=critical`, dan menggagalkan build bila ada tes yang di-skip | Sama seperti baris di atas |
+| `npm run test:all`, `test:audit`, `test:stress`, `test:security`, `test:themes`, `test:nas`, `npx tsx scripts/test-0{1,2,3}-*.ts` | Skrip di `scripts/` (lihat [scripts/README.md](scripts/README.md)); menguji fungsi `lib/` dan constraint DB, bukan rute HTTP | Database uji berisi seed dan tema |
+
+Menyiapkan database uji terpisah (jangan memakai database kerja):
+
+```bash
+createdb luxenary_test
+export DATABASE_URL="postgresql://USER:PASS@localhost:5432/luxenary_test?schema=public"
+npx prisma migrate deploy && npx prisma db seed && npm run themes:sync
+npx vitest run
+```
+
+---
+
 ## Keamanan
 
 - **Webhook Payment 2-Arah (Midtrans & Xendit)**: Diverifikasi signature SHA512 (Midtrans) & x-callback-token timing-safe (Xendit) dengan garansi pembatalan instan untuk mencegah ghost payment
@@ -526,7 +560,11 @@ Untuk deployment kluster 2+ server VPS di balik Load Balancer (Cloudflare / Cadd
 - **Routing Loop Protection**: Middleware mengisolasi seluruh rute statis sistem (`PLATFORM_EXCLUSIONS` seperti `/contact`, `/privacy`, `/terms`, `/refund`, dll.) dari Flat Slug interceptor untuk mencegah *infinite rewrite loop*.
 - **Reserved Subdomains Protection**: Subdomain `cdn` (Cloudflare R2), `admin`, `api`, `auth`, `static`, `assets`, dll. diproteksi terpusat via `lib/domainUtils.ts` dan dilarang diklaim oleh klien baik saat pemeriksaan ketersediaan maupun saat pembuatan/pembaruan undangan.
 - **Upload**: Validasi kepemilikan via `userId` session
-- **RSVP/Memories**: Rate-limited untuk cegah spam
+- **RSVP/Memories**: Rate-limited untuk cegah spam. RSVP publik juga dibatasi per undangan (200/menit) selain per IP.
+- **Rate Limiter & IP Klien Tepercaya**: Login (`proxy.ts`), upload, RSVP, dan receptionist memakai `rateLimitDb` (PostgreSQL atomik, berlaku lintas worker PM2 dan reload). `getClientIp` hanya mempercayai header dari proxy yang dipilih lewat `TRUSTED_PROXY` (`cloudflare` default, `nginx`, `none`); `X-Forwarded-For` dan header lain diabaikan, sehingga memutar header tidak menghasilkan kunci limiter baru.
+- **Content-Security-Policy (Report-Only)**: `next.config.ts` mengirim `Content-Security-Policy-Report-Only`; pelanggaran diterima `POST /api/security/csp-report` (dibatasi ukuran 8 KB dan laju) dan hanya dicatat di log. `X-Powered-By` dimatikan. Tahap berikutnya: naikkan ke `Content-Security-Policy` penuh setelah laporan bersih.
+- **Health Check Minimal Publik**: `GET /api/health` publik hanya mengembalikan `status` dan `timestamp`; detail (lingkungan, memori, cache, latensi DB) hanya untuk pemegang `CRON_SECRET` lewat `Authorization: Bearer`.
+- **Parsing Aman**: Body JSON rusak pada RSVP dan webhook Midtrans/Xendit dijawab 400; `featureSettings` NULL diproses lewat `lib/featureSettings.ts` (`parseFeatureSettings`) sehingga tidak lagi membuat halaman momen tamu dan unggahan tamu 500.
 - **Service Availability (Tutup Order / Maintenance / Coming Soon)**: Kontrol ketersediaan sistem terpusat dari Admin Portal (Tab Platform & Tampilan). Mendukung 4 status (`OPEN`, `CLOSED_ORDER`, `MAINTENANCE`, `COMING_SOON`) dengan notifikasi dinamis di Landing Page, Login, Paket, dan Checkout. Registrasi akun baru diblokir di NextAuth `signIn` callback dan endpoint `/api/orders/create` (HTTP 403), sementara klien lama yang telah terdaftar tetap bebas login & mengelola undangannya. Tamu undangan publik (`/[slug]`), RSVP, dan resepsionis 100% tetap aktif tanpa gangguan.
 - **Receptionist**: Scanner QR dilindungi PIN panitia (AES-256-GCM), token sesi HMAC di localStorage, header profesional dengan BrandLogo dan judul terpusat, aksi navbar minimalis icon-only dengan indikator hijau online, arsitektur *Single-Screen Zero-Scroll Kiosk* (`h-screen overflow-hidden`) bebas scroll vertikal di seluruh jenis monitor/tablet, kolom kiri-kanan simetris dinamis (`h-full min-h-0`), tombol manual *"Kembali ke Siaga Scan"*, tombol Standby Screensaver di navbar, *Ambient Standby Screensaver* otomatis saat idle (Watermark inisial monogram mempelai di live dan Watermark BrandLogo platform di demo) dengan mode *True Standby* (hardware kamera mati total demi hemat daya, anti-overheating, dan perlindungan privasi; langsung aktif kembali saat layar disentuh atau barcode ditembak), auto-dismiss kartu check-in 15 detik, jeda kamera otomatis saat notifikasi aktif (anti-loop scan), judul pemindai "SCAN" & "KAMERA LIVE", daftar tamu ringkas tanpa badge count, mode Layar Penuh (Fullscreen Kiosk), isolasi warna tema (anti distorsi Dark/Light OS), serta dukungan kamera multi-device (Laptop webcam & Tablet dual-camera) dengan audio beep dan visual laser.
 - **Portfolio**: Hanya SUPER_ADMIN yang bisa kloning undangan
@@ -557,7 +595,7 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
 
 ### Aturan Baku Dokumentasi:
 1. **Dilarang keras push tanpa menyelaraskan docs:** Jika ada penambahan endpoint, migrasi kolom database, gateway baru, atau perubahan alur UI, ketiga file dokumen (`README.md`, `docs/SYSTEM_ARCHITECTURE.md`, `docs/S-Invitation.md`) wajib langsung disinkronkan di commit yang sama.
-2. **Katalog Tema Fisik:** Pastikan jumlah tema fisik yang aktif di database dan template selalu sinkron (40 tema fisik aktif: 34 Wedding, 2 Birthday, 1 Khitan, 1 Aqiqah, 1 Wisuda, 1 Gathering).
+2. **Katalog Tema Fisik:** Pastikan jumlah tema fisik yang aktif di database dan template selalu sinkron (39 tema fisik aktif: 33 Wedding, 2 Birthday, 1 Khitan, 1 Aqiqah, 1 Wisuda, 1 Gathering).
 3. **No Phantom Docs:** Dokumentasi harus mencantumkan path dan nama variabel lingkungan aktual (misal format AWS SDK `S3_*` untuk R2, bukan format lama).
 4. **Standar Kontrak Placeholder Nama Mempelai:** Cover buka undangan, hero title, sidebar desktop, dan closing footer **MUTLAK** menggunakan Nama Panggilan (`{{firstName}} & {{secondName}}`). Nama lengkap beserta gelar (`{{firstDisplayName}} & {{secondDisplayName}}`) hanya digunakan pada Seksi Profil Pasangan (*The Couple*).
 5. **Standar Navigasi Imersif (Smart Auto-Hide):** Seluruh tema fisik master dan starter blueprint menerapkan interaksi smart auto-hide untuk dock navigasi dan floating audio player saat pengguna menggulir ke bawah, dan otomatis kembali meluncur masuk saat menggulir ke atas atau mencapai footer.
@@ -589,7 +627,7 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
   * **Structured NDJSON Logger (`lib/logger.ts`)**: Standardisasi log satu baris JSON untuk lingkungan produksi, memuat ISO timestamp, log level, module context, pesan, serta data kontekstual (siap untuk PM2, Vector, Loki, Datadog, CloudWatch).
   * **Centralized Error Tracker (`lib/errorTracker.ts`)**: Penangkapan exception terpusat dengan masking data sensitif (PII, sandi, PIN, server key) dan pengiriman non-blocking ke Sentry jika `SENTRY_DSN` aktif.
   * **Multi-Driver Distributed Rate Limiting (`lib/rateLimit.ts`)**: Arsitektur cascade 3-tingkat (Tier 1: Redis REST via Upstash tanpa dependensi tambahan; Tier 2: PostgreSQL Atomic UPSERT; Tier 3: In-Memory Bounded Map fallback).
-- **Enterprise Health Check Endpoint (`GET /api/health`)**: Pemantauan status sistem otomatis bagi Caddy reverse proxy, Kubernetes liveness probes, dan UptimeRobot (database ping latency `SELECT 1`, pemakaian memori RSS/heap, cache stats, status driver rate limiter, dan uptime).
+- **Enterprise Health Check Endpoint (`GET /api/health`)**: Pemantauan status sistem otomatis bagi Caddy reverse proxy, Kubernetes liveness probes, dan UptimeRobot (publik: `status` dan `timestamp`; dengan `Authorization: Bearer $CRON_SECRET`: database ping latency `SELECT 1`, pemakaian memori RSS/heap, cache stats, status driver rate limiter, dan uptime).
 - **Optimasi Cloudflare Cache Rules**: Panduan konfigurasi Cloudflare Cache Rule (strip query parameters `to` dan `v` dari cache key) menjamin 100% Edge CDN HIT saat link undangan disebar serentak ke ribuan tamu di WhatsApp.
 
 ### Kebijakan Akses Tema & Sesi Acara Utama (Update September 2026)
@@ -604,7 +642,7 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
   * **Purifikasi Skema & Master Seed Mandiri (Non-Destructive Invariant)**: Menghapus model mati `Wish`, menormalisasi enum & kolom sisa ke 0-drift, membukukan seluruh 84 parameter platform ke dalam `prisma/seed.ts`, serta mengunci operasi `upsert` pada `AdminSetting` agar hanya memperbarui label metadata dan tidak pernah menimpa nilai (`value`) produksi yang sudah diatur admin.
 - **Penguatan Stabilitas DevOps & Server Infrastructure (v5.8.0)**:
   * **PostgreSQL Pool Boundaries (`lib/prisma.ts`)**: Konfigurasi batas koneksi pool eksplisit (`max: 10`, `idleTimeoutMillis: 30000`) mencegah kehabisan koneksi pada PM2 Cluster mode.
-  * **Off-Site Disaster Recovery ke Cloudflare R2 (`lib/databaseBackup.ts`)**: Replikasi otomatis snapshot `.sql` terkompresi ke R2 bucket setiap kali backup dijalankan.
+  * **Off-Site Disaster Recovery ke Cloudflare R2 (`lib/databaseBackup.ts`)**: Replikasi otomatis snapshot `.dump` (format custom `pg_dump -F c`, pulihkan dengan `pg_restore`, bukan `psql`) ke R2 bucket setiap kali backup dijalankan. Snapshot lama `.sql`/`.backup` tetap dikenali. Kegagalan unggah off-site dicatat sebagai error dan cron backup mengembalikan field `warning`.
   * **Sinkronisasi Otomatis Crontab Linux & Logrotate (`deploy.sh`)**: Setup otomatis `pm2-logrotate` (maks 10MB x 7 rotasi) dan pendaftaran crontab pemeliharaan dengan `CRON_SECRET` aktif.
   * **Koreksi Retensi & Pengalihan Subdomain Kanonikal (`app/(public)/s/[subdomain]/route.ts` & `[slug]`):** Evaluasi tanggal acara multi-sesi terpadu via `getLatestEventDate`, sinkronisasi retensi admin, dan pengalihan kanonikal absolut ke `NEXT_PUBLIC_APP_URL` (`https://luxvite.id`) untuk mencegah kebocoran port lokal internal reverse proxy (`localhost:3001`).
 - **Sinkronisasi Kalender & Hitung Mundur Sesi Acara Utama (v5.8.5)**:
@@ -653,10 +691,10 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
   * **Domain QA LIFE-04 — Cold Storage NAS Archive Vault:** Suite `industrial-qa-suite.ts` diperluas dengan domain pengujian LIFE-04 yang memverifikasi siklus lengkap tiered storage: dual-bake HTML mandiri, rewriting URL aset, verifikasi status arsip, dan purge 100% bersih tanpa kebocoran disk.
   * **Standarisasi Pool Termination Seluruh Script QA:** Seluruh script pengujian distandardisasi dengan `$disconnect()` eksplisit di blok `finally` untuk mencegah proses menggantung pasca eksekusi.
 - **Standarisasi Kontrak Fisik Thumbnail Ganda & Automated Integrity Gate (v6.3.1)**:
-  * **Standarisasi Aset Fisik 100% (40/40 Tema):** Seluruh 40 tema di database memiliki aset fisik `thumbnail_desktop.webp` dan `thumbnail_mobile.webp` di disk. Eliminasi total seluruh manipulasi fallback `onError` di `app/demo/page.tsx`, `app/(admin)/admin/page.tsx`, dan dasbor klien.
+  * **Standarisasi Aset Fisik 100% (39/39 Tema):** Seluruh 39 tema di database memiliki aset fisik `thumbnail_desktop.webp` dan `thumbnail_mobile.webp` di disk. Eliminasi total seluruh manipulasi fallback `onError` di `app/demo/page.tsx`, `app/(admin)/admin/page.tsx`, dan dasbor klien.
   * **Pemisahan Tegas `cover_desktop` vs `thumbnail_desktop`:** Slot `LANDING_COVER_DESKTOP` (`cover_desktop.webp`) dikhususkan untuk layar pembuka undangan fisik PC/Laptop pada tema adat tertentu, bukan untuk mockup kartu katalog showroom.
   * **Universal Preloader Multi-Event:** Injeksi preloader di `lib/renderTemplate.ts` otomatis menyesuaikan teks badge dengan `eventType` (`BIRTHDAY CELEBRATION`, `WALIMATUL KHITAN`, `SYUKURAN AQIQAH`, `GRADUATION CELEBRATION`, `EXCLUSIVE INVITATION`, `THE WEDDING INVITATION`) serta menampilkan monogram tunggal untuk perayaan perseorangan (tanpa monogram palsu "& I").
-  * **Pintu Pengaman Otomatis (`npm run audit:integrity`):** Script `scripts/audit-theme-integrity.ts` menguji ketersediaan fisik aset 40 tema di disk, status HTTP 200 API publik, dan ketiadaan kebocoran teks pernikahan pada tema non-wedding dengan toleransi kegagalan nol (*Zero-Cheating Policy*).
+  * **Pintu Pengaman Otomatis (`npm run audit:integrity`):** Script `scripts/audit-theme-integrity.ts` menguji ketersediaan fisik aset 39 tema di disk, status HTTP 200 API publik, dan ketiadaan kebocoran teks pernikahan pada tema non-wedding dengan toleransi kegagalan nol (*Zero-Cheating Policy*).
 - **Penyempurnaan Seksi Non-Wedding Hulu-ke-Hilir & CDP High-Fidelity Thumbnails (v6.3.2)**:
   * **Penyempurnaan Registry Showroom (`lib/demoRegistry.ts`)**: Pengisian data lengkap untuk seluruh seksi non-wedding (`countdownHtml`, `eventSectionHtml`, `gallerySectionHtml`, `giftSectionHtml`, `rsvpSectionHtml`, dan `wishesSectionHtml`) pada tema ulang tahun (`festivo`, `kalandra-birthday`), khitan (`al-fariz`), aqiqah (`al-khalid`), wisuda (`cendekia`), dan gathering (`sinergi`).
   * **Universal Section Engine di Klien (`lib/themeEngine.ts`)**: Implementasi `buildUniversalGallerySection`, `buildUniversalGiftSection`, `buildUniversalRsvpSection`, dan `buildUniversalWishesSection` pada fungsi komposer klien (`composeKhitanData`, `composeAqiqahData`, `composeWisudaData`, `composeGatheringData`) dengan ketaatan 100% pada variabel CSS dinamis (`var(--primary)`, `var(--card-bg)`, `var(--text-main)`, dll) dan bebas hardcoded hex.

@@ -25,8 +25,8 @@ Sebelum membaca dokumen spesifik per modul, seluruh pihak WAJIB memahami 5 pilar
    - Enum `EventType` di PostgreSQL: `WEDDING`, `BIRTHDAY`, `KHITAN`, `AQIQAH`, `WISUDA`, `GATHERING`.
    - Data persona non-wedding disimpan terstruktur di kolom `participantsJson` pada tabel `Invitation`.
    - Setup Wizard 4 Langkah & Studio Editor beradaptasi otomatis sesuai jenis acara. Fitur pernikahan (Seksi 7: Kisah Cinta) otomatis disembunyikan untuk non-wedding.
-4. **Isolasi Tema Ketat (Total 40 Tema di DB & Disk):**
-   - Distribusi tema faktual: 34 Wedding, 2 Birthday, 1 Khitan, 1 Aqiqah, 1 Wisuda, 1 Gathering.
+4. **Isolasi Tema Ketat (Total 39 Tema di DB & Disk):**
+   - Distribusi tema faktual: 33 Wedding, 2 Birthday, 1 Khitan, 1 Aqiqah, 1 Wisuda, 1 Gathering.
    - Klien hanya diizinkan memilih tema yang cocok dengan `eventType` acaranya. Backend menolak submit jika jenis tema tidak cocok.
    - Pilihan tema dikunci permanen pasca publikasi (`status: PUBLISHED`).
 5. **Infrastruktur Produksi VPS & Gembok Layanan:**
@@ -55,7 +55,7 @@ Dokumentasi ini membedah seluruh tahapan siklus hidup klien mulai dari registras
 
 ## 2. Dokumentasi Sisi Administrator (`docs/admin/`)
 
-Dokumentasi ini mencakup seluruh instrumen pengelolaan bisnis, keuangan, 40 tema, kontrol akses pengguna, dan infrastruktur server VPS.
+Dokumentasi ini mencakup seluruh instrumen pengelolaan bisnis, keuangan, 39 tema, kontrol akses pengguna, dan infrastruktur server VPS.
 
 | Modul | Dokumen Spesifikasi | Ruang Lingkup & Deskripsi |
 |:---:|---|---|
@@ -63,7 +63,7 @@ Dokumentasi ini mencakup seluruh instrumen pengelolaan bisnis, keuangan, 40 tema
 | **02** | [REMOTE_DAN_MANAJEMEN_KLIEN.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/REMOTE_DAN_MANAJEMEN_KLIEN.md) | **Remote Session & Klien**: Arsitektur *Cookie-Based Workspace Override*, Server Action impersonasi klien tanpa password, banner peringatan merah, dan manajemen siklus hidup akun. |
 | **03** | [MANAJEMEN_UNDANGAN_DAN_DOMAIN.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/MANAJEMEN_UNDANGAN_DAN_DOMAIN.md) | **Undangan & Custom Domain**: Monitoring seluruh proyek undangan dengan 5 filter status, kontrol masa aktif galeri, kunci darurat 24 jam, dan integrasi Caddy On-Demand TLS. |
 | **04** | [MANAJEMEN_TRANSAKSI_DAN_GATEWAY.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/MANAJEMEN_TRANSAKSI_DAN_GATEWAY.md) | **Invoice & Payment Mode**: Pengaturan terpusat `payment_mode` (`GATEWAY` vs `MANUAL`), tata kelola penagihan pesanan (PENDING, PAID, FAILED), modal inspeksi struk manual, dan konfigurasi gateway aktif (Midtrans & Xendit). |
-| **05** | [MANAJEMEN_TEMA_ADMIN.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/MANAJEMEN_TEMA_ADMIN.md) | **40 Tema Fisik & Sinkronisasi**: Arsitektur *Single Source of Truth* tema HTML fisik (34 Wedding + 6 Non-Wedding), skrip `npm run themes:sync`, auto-compile demo `/public/demo/`, dan thumbnail ganda Mobile (400×800) & Desktop (1280×800). |
+| **05** | [MANAJEMEN_TEMA_ADMIN.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/MANAJEMEN_TEMA_ADMIN.md) | **39 Tema Fisik & Sinkronisasi**: Arsitektur *Single Source of Truth* tema HTML fisik (33 Wedding + 6 Non-Wedding), skrip `npm run themes:sync`, auto-compile demo `/public/demo/`, dan thumbnail ganda Mobile (400×800) & Desktop (1280×800). |
 | **06** | [PENGATURAN_SISTEM_BRANDING_DAN_DATABASE.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/PENGATURAN_SISTEM_BRANDING_DAN_DATABASE.md) | **Branding, R2 & Database**: Kustomisasi identitas platform, switch `serviceStatus` (Coming Soon / Open), sinkronisasi CORS Cloudflare R2 otomatis, batas upload media dinamis, dan connection pooling PostgreSQL. |
 | **07** | [CRON_DAN_MAINTENANCE_OTOMATIS.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/CRON_DAN_MAINTENANCE_OTOMATIS.md) | **Tugas Terjadwal & Snapshot**: Siklus pembersihan harian `/api/cron/cleanup`, daur ulang subdomain, retensi foto tamu, dan auto-backup database `/api/cron/backup`. |
 | **08** | [DEPLOYMENT_VPS_CADDY.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/DEPLOYMENT_VPS_CADDY.md) | **Infrastruktur Produksi**: Panduan komprehensif setup VPS Ubuntu dari nol, Swap 2 GB, Node.js 20, PostgreSQL, Caddy auto-SSL, PM2 cluster, dan skalabilitas multi-server shared storage NFS. |

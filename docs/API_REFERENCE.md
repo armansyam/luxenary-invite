@@ -45,7 +45,8 @@ Endpoint berikut dapat diakses oleh publik (tamu undangan, browser pengunjung, d
 | `GET` | `/api/public/memories/{invitationId}` | Mengambil feed foto kenangan tamu untuk galeri publik. |
 | `GET` | `/api/sse/memories` | *Server-Sent Events* stream untuk notifikasi real-time momen baru di galeri kenangan tamu. |
 | `GET` | `/api/public/version` | Mengambil versi sistem rilis aktif platform. |
-| `GET` | `/api/health` | Enterprise health check endpoint untuk Caddy, Kubernetes, dan Uptime probes (status DB, memori, cache). |
+| `GET` | `/api/health` | Health check untuk Caddy, Kubernetes, dan Uptime probes. Publik: `{status, timestamp}` (200/503). Dengan `Authorization: Bearer $CRON_SECRET`: ditambah status DB, latensi, memori, cache, dan lingkungan. |
+| `POST` | `/api/security/csp-report` | Penerima laporan `Content-Security-Policy-Report-Only` (maks 8 KB, 30/menit/IP); 204 bila valid, 400 JSON rusak, 413 terlalu besar. |
 | `POST` | `/api/public/promo/validate` | Validasi kode promo secara real-time di kasir, pengecekan kuota, masa berlaku, dan kalkulasi diskon. |
 
 ---
@@ -108,9 +109,6 @@ Memerlukan sesi aktif klien (`role: CLIENT` atau Admin Remote Session):
 | `POST` | `/api/payments/upgrade` | Menghitung selisih harga dan membuat invoice kenaikan paket langganan. |
 | `GET` | `/api/payments/status-stream/{orderId}` | Long-polling / SSE stream status lunas invoice di kasir ditenagai PostgreSQL LISTEN/NOTIFY. |
 | `POST` | `/api/webhook/midtrans` | Webhook HTTP callback notifikasi pembayaran resmi Midtrans. |
-| `POST` | `/api/webhook/duitku` | Webhook callback IPN resmi Duitku. |
-| `POST` | `/api/webhook/ipaymu` | Webhook callback IPN resmi iPaymu. |
-| `POST` | `/api/webhook/tripay` | Webhook callback IPN resmi TriPay. |
 | `POST` | `/api/webhook/xendit` | Webhook callback IPN resmi Xendit. |
 
 ---
@@ -163,7 +161,7 @@ Memerlukan autentikasi admin (`role: ADMIN` atau `SUPER_ADMIN`):
 | | `GET` | `/api/admin/webhooks` | Melihat log incoming webhook transaksi dari gateway pembayaran. |
 | **Cache** | `POST` | `/api/admin/cache/purge` | Membersihkan server cache Next.js ISR dan edge CDN Cloudflare secara serentak. |
 | **Database** | `POST` | `/api/admin/database/backup` | Memicu pembuatan snapshot basis data manual. |
-| | `GET` | `/api/admin/database/download` | Mengunduh file `.sql` snapshot database ke komputer lokal. |
+| | `GET` | `/api/admin/database/download` | Mengunduh file snapshot database (`.dump`, format custom `pg_dump`; snapshot lama `.sql`/`.backup`) ke komputer lokal. Pulihkan dengan `pg_restore`. |
 | | `POST` | `/api/admin/database/restore` | Mengembalikan (*restore*) database dari berkas snapshot. |
 | **Storage** | `POST` | `/api/admin/r2-cors` | Menerapkan konfigurasi CORS JSON otomatis ke bucket Cloudflare R2. |
 | **Settings** | `GET` / `PUT` | `/api/admin/settings` | Membaca dan memperbarui pengaturan konfigurasi platform (paket, gateway, limits). |

@@ -1,5 +1,5 @@
 # S-Invitation: Luxenary Invite System Architecture & Master Specification
-> **Versi: 6.3.6 | Diperbarui: 29 September 2026**
+> **Versi: 6.3.7 | Diperbarui: 1 Oktober 2026**
 
 ## 1. Executive Summary & Core Philosophy
 **Luxenary Invite** adalah platform ekosistem undangan digital modern multi-event berbasis Next.js 16 (App Router + Turbopack) yang menghadirkan pengalaman visual mewah (*haute couture*), kecepatan muat instan (<0.8 detik), self-service dashboard mandiri bagi klien, dan integrasi cloud edge caching untuk aneka ragam perayaan: Wedding, Birthday, Khitan, Aqiqah, Wisuda, dan Gathering.
@@ -392,33 +392,35 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
 
 1. **Dual-Mode Route Switcher (Peralihan ke Galeri Momen `/memories`)**:
    - Sistem secara cerdas mengalihkan URL publik (baik subdomain maupun custom domain) ke `/memories` berdasarkan dua mode:
-     - **Mode AUTO (Default):** Otomatis beralih ke galeri momen pada H+1 pasca tanggal acara pernikahan paling akhir (`getLatestEventDate(eventData)`).
+     - **Mode AUTO (Default):** Otomatis beralih ke galeri momen pada awal hari setelah tanggal **acara utama** (`isPrimary`), pada zona waktu acara (WIB/WITA/WIT) via `lib/lifecycleDates.ts`.
      - **Mode MANUAL:** Klien dapat menyalakan atau mematikan peralihan rute seketika melalui tombol toggle di Studio Editor Seksi 14 (`memoriesForceGallery`).
-2. **Satu Jadwal Retensi Terpadu (Single Unified 14-Day Post-Event Lifecycle)**:
-   - Seluruh komponen (Subdomain platform, Custom domain, Foto momen tamu di R2/lokal, dan RSVP) memiliki masa aktif yang sama dan dihitung dari tanggal acara paling akhir + `retention_cleanup_days` (default 14 hari).
+2. **Empat Jam Retensi Terpisah** (seluruhnya dari awal hari acara utama pada zona waktu acara; bawaan kode/seed, nilai aktif dari Admin Setting):
+   - **Subdomain** (`subdomain_grace_days`, 7): subdomain dikembalikan ke pool agar dapat dipakai pasangan lain; sesudahnya URL yang dipakai adalah slug.
+   - **Galeri foto tamu** (`retention_cleanup_days`, 30; atau `galleryExpiresAt` hasil add-on): foto candid dibersihkan dari R2/lokal agar R2 lega.
+   - **Arsip undangan** (`nas_archive_retention_days`, 365): undangan diamankan di arsip mandiri lalu dibersihkan setelah masa ini.
+   - **Custom domain** (`retention_custom_domain_days`, 365): domain klien tetap melayani mengikuti gerbang slug.
    - Tamu dan pengantin dapat mengunduh seluruh koleksi foto kenangan dalam format ZIP via JSZip client-side tanpa membebani bandwidth VPS.
-   - Klien dapat memperpanjang masa simpan sebelum kedaluwarsa melalui Add-on QRIS: **+30 Hari (Rp50.000)** atau **+1 Tahun (Rp150.000)**.
-3. **Pembersihan Terpadu Sekali Jalan (Single Unified Cleanup Phase saat `now > effectiveExpiry`)**:
-   - Seluruh foto kenangan tamu (`GuestMemory`) di Cloudflare R2 (`deleteFile`) dan direktori lokal `public/uploads/guest-memories/{id}/` dihapus permanen.
-   - Jika Cold Storage NAS aktif (`lib/nasArchive.ts`), berkas media di Cloudflare R2 (`invitations/{id}/`) dibersihkan total sehingga storage R2 kembali 0 KB, setelah dipastikan salinan mandiri telah aman tersimpan di NAS.
-   - Subdomain dilepaskan kembali ke pool umum (`subdomain = null`) agar dapat digunakan kembali oleh pasangan lain.
-   - Custom domain dinonaktifkan/dilepas.
-   - Data formulir RSVP dibersihkan demi privasi tamu.
-   - Status undangan diperbarui menjadi `ARCHIVED`.
+   - Klien dapat memperpanjang **jam galeri** (+30 hari via QRIS, H-7 sebelum berakhir, maksimal 1 kali); rumus tunggalnya `extendGalleryExpiry`. Varian "+1 Tahun" pada dokumen lama tidak ada di kode.
+3. **Pembersihan Cron (`runLifecycleCleanup`, `lib/lifecycleCleanup.ts`; dipakai rute dan `npm run cron:cleanup`)**:
+   - Saat jam galeri berakhir: foto kenangan tamu (`GuestMemory`) dihapus dari R2 dan `public/uploads/guest-memories/{id}/`.
+   - Jika Cold Storage NAS aktif, arsip mandiri disinkronkan dan **diverifikasi**; hanya bila sukses, HTML published, draft, media inti R2, dan RSVP dihapus lalu status menjadi `ARCHIVED`. Bila gagal, tidak ada yang dihapus dan undangan dicoba lagi berikutnya (`archiveFailures`). Aset sistem (`/music/...`) dan tautan eksternal tidak disalin.
+   - Subdomain dan custom domain mengikuti jam masing-masing (bukan jam galeri); custom domain ditegakkan resolver `resolve-custom-domain`.
+   - Saat masa arsip habis, folder arsip dibersihkan.
 4. **Kebijakan Nol Penghapusan Akun & Portofolio Abadi**:
    - **Zero Account Deletion:** Akun klien (`User`) di PostgreSQL tidak pernah dihapus (<1 KB). Klien dapat login kapan saja ke dasbor.
    - **Zero Portfolio Deletion:** Portofolio admin (`public/portfolio/`) adalah aset abadi yang tidak tersentuh oleh siklus retensi klien.
 5. **Dasbor Klien 1 Halaman Rangkuman & Vault Undangan Abadi (`/dashboard` saat `ARCHIVED`)**:
    - Ketika undangan telah berstatus `ARCHIVED`, tampilan dasbor klien otomatis beralih menjadi 1 halaman memorial eksklusif:
      - Surat Penutup Hangat dan apresiasi kepada kedua mempelai.
-     - **Kartu Vault Undangan Kenangan (Cold Vault Archive):** Tautan kanonikal abadi `luxvite.id/[invitationSlug]` yang menyajikan undangan dari Cold Storage NAS selama 1 tahun, lengkap dengan tombol *Buka Undangan* dan *Salin Tautan*.
+     - **Kartu Vault Undangan Kenangan (Cold Vault Archive):** Tautan kanonikal `[domain-platform]/[invitationSlug]` yang menyajikan undangan dari Cold Storage NAS selama `nas_archive_retention_days` sejak acara utama, lengkap dengan tombol *Buka Undangan* dan *Salin Tautan*.
      - 4 Kartu Metrik Ringkasan Eksekutif: Doa Restu Masuk, Tamu Hadir (Pax), Total Buku Tamu, dan Tanggal Acara.
      - Pusat Unduhan Arsip Digital: Unduh Rekapan Doa (.CSV) dan Unduh Rekapitulasi Kehadiran & RSVP (.CSV).
      - Bersih tanpa tombol "Buat Undangan Baru" dan tanpa tombol "Reaktivasi".
 6. **Smart Fallback & Penyajian Arsip Mandiri NAS (`app/(public)/[slug]/route.ts`)**:
-   - **Prioritas 1 (Cold Storage NAS Vault):** Jika slug diakses saat undangan berstatus `ARCHIVED` dan fitur NAS aktif, sistem langsung menyajikan file HTML mandiri dari NAS (`readNasArchiveHtml`) dengan status HTTP 200 dan streaming aset dari `/archives/[slug]/assets/[file]`. Undangan tetap hidup dan utuh selama 1 tahun.
-   - **Prioritas 2 (Portofolio):** Jika arsip NAS tidak aktif/tidak ada, sistem memeriksa apakah salinan portofolio ada di `/portfolio/[slug]` dan mengalihkan (*HTTP 307*) ke halaman portofolio.
-   - **Prioritas 3 (Fallback Beranda):** Jika tidak ada portofolio dan tidak ada arsip NAS, sistem langsung mengalihkan (*HTTP 307*) pengunjung kembali ke Halaman Utama (`/`) secara elegan tanpa error 404.
+   - **Prioritas 1 (Portofolio):** Jika salinan portofolio pilihan admin ada di `/portfolio/[slug]`, pengunjung dialihkan (*HTTP 307*) ke sana.
+   - **Prioritas 2 (Cold Storage NAS Vault):** Jika NAS aktif, berkas arsip ada, dan masih dalam `nas_archive_retention_days` sejak acara utama, HTML mandiri disajikan (HTTP 200) dengan streaming aset dari `/archives/[slug]/assets/[file]`.
+   - **Prioritas 3 (Fallback Beranda):** Tanpa portofolio dan tanpa arsip yang berlaku, pengunjung dialihkan (*HTTP 307*) ke Halaman Utama (`/`) tanpa error 404. NAS boleh nonaktif.
+   - Subdomain yang `ARCHIVED` atau melewati masa tenggangnya dialihkan ke slug oleh `/s/[subdomain]`.
 4. **Pemisahan Desain & Operasional Galeri Kenangan Tamu**:
    - **Formulir Studio Editor (`/dashboard/invitation/[id]` Seksi 14):** Styling & konfigurasi seksi: Toggle aktif (`showGuestMemories`), Judul Seksi, Eyebrow, Deskripsi, Mode Pengambilan (Disposable Camera vs Standard Form), Pilihan 5 Filter Analog (`aura_90s`, `heritage_romance`, `botanical_mist`, `cinema_noir`, `pure_daylight`), Toggle & Format LED Date Stamp (`#e8875a`), Kuota Dinamis Tamu Pengunggah (`memoriesMaxContributors`), Jatah Roll per Tamu bebas hingga 30 foto (`memoriesShotsQuota`), Jadwal Kamera Aktif Mandiri, dan Toggle Kamar Gelap Digital (*Delayed Reveal*).
    - **Dashboard Klien (`/dashboard` Seksi 5 & Card 4):** Pusat operasional & monitoring momen tamu: tautan album kenangan, widget unduh arsip ZIP client-side, status kuota real-time, rincian masa simpan transparan (*Masa Aktif: Base Days (Default) + Perpanjangan (XH) : Tanggal Mulai s.d. Tanggal Expired*), tombol & modal *Atur Jatah Roll Tamu* dengan estimasi kapasitas dinamis `~Floor(Sisa_Pool / Jatah_Roll) Tamu`, dan *Unified Addon Modal* bertema Warm Editorial Ivory & Royal Amber Gold untuk top-up kuota foto (+100, +250, +500), perpanjangan masa galeri (+30 hari via QRIS), dan upgrade tier paket.
@@ -506,7 +508,7 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
 12. **Standar Antarmuka Bersih SaaS & Zero Native Dialogs:**
     - Seluruh dialog konfirmasi penghapusan (Klien, Undangan, Portofolio, Domain Kustom, Tamu, RSVP) dan notifikasi status menggunakan dialog modal kustom berlatar *backdrop blur*, kartu bersudut lengkung *rounded-2xl*, tombol aksi berdiferensiasi tegas (batal vs konfirmasi), dan status aksi dinamis.
     - **In-Button Feedback Principle:** Aksi yang bersifat konfirmasi lokal atau salin tautan (seperti tombol Salin Link, Samakan Tema, simpan seksi) mempertahankan respons visual langsung di tombolnya sendiri tanpa memunculkan toast berlebihan. Toast melayang (`fixed bottom-6 right-6 z-[80]`) dirancang ringkas dan minimalis khusus untuk pesan sistem penting dan kendala server/koneksi dengan auto-dismiss 4 detik.
-    - Zero `window.alert()` dan zero `window.confirm()` di seluruh modul operasional maupun publik.
+    - Zero `window.alert()`, `window.confirm()`, dan `window.prompt()` di seluruh modul operasional maupun publik. Konfirmasi hapus, notifikasi status, dan isian URL memakai komponen bersama `useFeedback()` (`components/ui/Feedback.tsx`).
 
 ---
 
@@ -519,6 +521,7 @@ Platform mendukung arsitektur payment gateway 2-arah (*two-way handshake*) terin
    - **Xendit** (Invoice QRIS, VA Multi-Bank, E-Wallet, pembatalan instan via `/v2/invoices/{invoiceId}/expire`)
    - **Transfer Bank Manual** (Verifikasi struk transfer manual oleh Admin)
    - *Penghapusan Gateway 1-Arah:* Seluruh gateway 1-arah (iPaymu, Duitku, Tripay) telah dieliminasi dari arsitektur sistem karena ketiadaan API pembatalan publik. Ketiadaan fungsi pembatalan 2-arah memicu celah fatal *ghost payment* di mana QRIS/VA tetap aktif di bank setelah order dibatalkan di aplikasi.
+   - *Validasi Nominal & Pelunasan Atomik:* Webhook hanya melunasi order jika nominal yang dibayar sama dengan `Order.chargedAmount` (nominal yang dikirim ke gateway, termasuk biaya layanan mode `BUYER`); nominal tidak cocok dicatat sebagai `WebhookLog.status = amount_mismatch` dan order tetap `PENDING`. Transisi `PENDING` -> `PAID` beserta konsumsi hold promo dan komisi mitra berjalan dalam satu transaksi (`settleOrderAsPaid`): kegagalan di tengah jalan membatalkan seluruh perubahan dan gateway mengirim ulang webhook.
 2. **Two-Way Cancellation Handshake**:
    - Order melacak `gatewayId` dan `gatewayTxId`.
    - Saat klien membatalkan tagihan, mengubah paket sebelum bayar, atau waktu kedaluwarsa habis, sistem secara proaktif memanggil API pembatalan resmi ke gateway aktif (Midtrans `/v2/cancel` atau Xendit `/v2/invoices/.../expire`) agar QRIS di jaringan perbankan (ASPI / BI) langsung hangus seketika.
@@ -670,7 +673,7 @@ Dalam pengelolaan Klien dan Undangan di Dashboard Admin (`app/(admin)/admin/page
 2. **Kunci Hak Desain Klien:** Dropdown "Ganti Tema" tidak tersedia bagi Admin. Pilihan tema adalah hak absolut klien selama status belum dipublish, mencegah Admin merusak layout secara tidak sengaja.
 3. **Pemberantasan Tombol *Backdoor* Gratisan:** Seluruh perpanjangan (*Gallery Extension*) wajib melalui jalur *Payment Gateway* yang sah. Tombol `+30H Galeri` ditiadakan dari UI Admin untuk melindungi integritas laporan keuangan (*Revenue Report*).
 4. **Logika Fitur Kunci Darurat:** Opsi `Buka Kunci Darurat` hanya muncul jika sistem secara objektif mendeteksi undangan telah terkunci permanen. Jika status masih `DRAFT` atau "Bisa Diedit", tombol tersebut secara otomatis disembunyikan.
-5. **Kalkulasi Kedaluwarsa Dinamis (On-The-Fly):** Nilai `expiresAt` akan tetap `null` di database sampai benar-benar di-hardcode. Untuk tampilan UI Admin, masa aktif dihitung dinamis menggunakan rumus `Tanggal Acara Utama + retention_cleanup_days`.
+5. **Kalkulasi Kedaluwarsa Dinamis (On-The-Fly):** Kolom `Invitation.expiresAt` telah dihapus (migrasi `20260930120000_lifecycle_cleanup`); seluruh tenggat dihitung `computeLifecycleDates` dari `Tanggal Acara Utama` + jam retensi masing-masing (subdomain, galeri, arsip, custom domain).
 6. **Mekanisme Remote Klien & Segmentasi Leads (Restore 1-Klik) (`docs/admin/REMOTE_DAN_MANAJEMEN_KLIEN.md`):** Admin dapat meremote Dasbor Klien secara utuh tanpa meminta password melalui arsitektur *httpOnly Cookie Session Override (`lux_remote_client_id`)*. Tombol Remote hanya aktif untuk klien yang memiliki ruang kerja aktif (undangan/pesanan lunas). Calon klien (leads) yang belum checkout disegmentasikan secara terpisah dengan opsi follow-up WhatsApp dan tombol remote dinonaktifkan. Server Action `startRemoteSession(clientId)` menetapkan cookie dan mengarahkan ke `/dashboard`. Callback `session` di `auth.ts` secara dinamis memetakan workspace ke profil klien target (`id`, `name`, `email`, `role`) sembari mempertahankan penanda hak akses Admin (`originalRole`). Di halaman `/admin`, proteksi *Immunity Guard* mencegah sidebar admin hilang saat cookie remote aktif, dan dilengkapi banner sticky amber dengan tombol 1-klik hentikan remote. Saat Admin logout dari dashboard admin, cookie remote otomatis dibersihkan secara tuntas.
 7. **Realtime SSE Checkout & Dark Luxury Transition Modal (PostgreSQL LISTEN/NOTIFY Multi-Process Bridge):** Pintu masuk ruang kerja undangan `/dashboard/setup` terlindungi secara absolut (Zero Visual Leak) hanya jika order berstatus `PAID`. Halaman checkout menggunakan Server-Sent Events (SSE) murni (`/api/payments/status-stream/[orderId]`) yang didukung jembatan event cross-process PostgreSQL `LISTEN/NOTIFY` (`lib/paymentEvents.ts`). Baik pembayaran otomatis QRIS maupun verifikasi manual transfer memicu `NOTIFY payment_events` yang tersiar seketika (<5ms) ke seluruh instance PM2 cluster, menghilangkan polling browser dan beban loop database sepenuhnya. Instance yang memegang SSE klien langsung mendorong event `PAID` atau `REJECTED` (lengkap dengan `rejectReason`). Jika `PAID`, modal transisi sukses bertema Dark Luxury muncul dengan animasi checkmark dan rincian invoice, lalu mengalihkan pengguna ke dasbor setelah jeda 1.8 detik. Heartbeat pasif 15 detik menjamin stabilitas proxy Caddy dan fail-safe reconnect.
 8. **Resolusi Dinamis Mode Pembayaran Add-on Dasbor Klien:** Seluruh modul add-on klien (perpanjangan galeri kenangan, domain kustom, upgrade paket) membaca konfigurasi `payment_mode` dari `AdminSetting` secara dinamis tanpa hardcoding.
@@ -956,8 +959,8 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Setiap undangan memiliki tepat 1 sesi acara yang ditetapkan sebagai **Sesi Acara Utama** (misalnya: Akad Nikah atau Resepsi Utama).
    - Ditandai dengan badge khusus `★ Sesi Acara Utama (Patokan Masa Aktif)` pada Seksi 5 Studio Editor.
    - Sesi utama ini menjadi jangkar tunggal (*single source of truth*) kalkulasi:
-     * Masa aktif undangan (`expiresAt = mainDate + 30 hari`).
-     * Batas kedaluwarsa galeri foto kenangan tamu (`galleryExpiresAt = mainDate + 14 hari + extraGalleryDays`).
+     * Masa subdomain (`mainDate + subdomain_grace_days`) dan masa arsip undangan (`mainDate + nas_archive_retention_days`).
+     * Batas kedaluwarsa galeri foto kenangan tamu (`mainDate + retention_cleanup_days`, atau `galleryExpiresAt` bila diperpanjang).
      * Countdown Timer di cover HTML live (`targetDate = mainDate + startTime`).
      * Header tanggal pernikahan di tema (`weddingDate`).
      * Jadwal Google Calendar pengingat tamu.
@@ -1311,7 +1314,7 @@ API `/api/admin/overview` diperluas dengan 10 stats field baru (in-memory filter
 1. **Dukungan 6 Persona Acara Terpadu:**
    - Platform kini mendukung 6 jenis acara: `WEDDING`, `BIRTHDAY`, `KHITAN`, `AQIQAH`, `WISUDA`, dan `GATHERING`.
    - Database dilengkapi enum `EventType`, kolom `eventType` pada tabel `Theme` dan `Invitation`, serta kolom JSONB `participantsJson`.
-2. **Koleksi Tema & Blueprint Multi-Event (40/40 Tema Fisik):**
+2. **Koleksi Tema & Blueprint Multi-Event (39/39 Tema Fisik):**
    - 34 tema pernikahan direstrukturisasi ke `themes/wedding/{minimalist,modern,traditional}/`.
    - 2 tema ulang tahun aktif: `themes/birthday/modern/festivo.html` dan `themes/birthday/minimalist/kalandra-birthday.html`.
    - 1 tema khitanan aktif: `themes/khitan/traditional/al-fariz.html`.
@@ -1319,7 +1322,7 @@ API `/api/admin/overview` diperluas dengan 10 stats field baru (in-memory filter
    - 1 tema wisuda aktif: `themes/wisuda/modern/cendekia.html`.
    - 1 tema gathering aktif: `themes/general/modern/sinergi.html`.
    - Blueprint modular per kategori: `themes/_blueprints/` (`wedding/`, `birthday/`, `khitan/`, `aqiqah/`, `wisuda/`, `general/`).
-   - Seluruh 40 tema memiliki cetak biru mandiri (`THEME_BLUEPRINTS` di `lib/themeDefaults.ts`) dan terdaftar di `AdminSetting` (`theme_demo_*`) serta seeder Prisma (`prisma/defaultSettings.ts`).
+   - Seluruh 39 tema memiliki cetak biru mandiri (`THEME_BLUEPRINTS` di `lib/themeDefaults.ts`) dan terdaftar di `AdminSetting` (`theme_demo_*`) serta seeder Prisma (`prisma/defaultSettings.ts`).
 3. **Zero-Leak Data Composition & Multi-Event Defaults:**
    - Seluruh handler komposer data (`composeBirthdayData`, `composeKhitanData`, `composeAqiqahData`, `composeWisudaData`, `composeGatheringData`) menjamin variabel khusus pengantin dikosongkan secara total untuk acara non-wedding.
    - Pustaka wishes/ucapan tamu demo (`wishesSample`), modal unggah memori di halaman publik, filter Instagram, alamat tanda kasih fisik, serta label seksi profil beradaptasi dinamis tanpa kebocoran istilah pernikahan ("Mempelai", "Kediaman Mempelai", "The Wedding Of", dll.).
@@ -1331,7 +1334,7 @@ API `/api/admin/overview` diperluas dengan 10 stats field baru (in-memory filter
 5. **Admin Panel Multi-Event:**
    - Tab Projek Undangan dilengkapi filter tabs (`Semua`, `Wedding`, `Birthday`, `Khitan`, `Aqiqah`, `Wisuda`, `Gathering`).
    - Manajemen tema mendukung upload, edit, dan preview tema dengan seleksi `eventType`.
-   - Gerbang Integritas Tema (`scripts/audit-theme-integrity.ts`) memvalidasi 100% kelengkapan 40 tema fisik, integritas rute publik, dan validasi aset tanpa bypass.
+   - Gerbang Integritas Tema (`scripts/audit-theme-integrity.ts`) memvalidasi 100% kelengkapan 39 tema fisik, integritas rute publik, dan validasi aset tanpa bypass.
 6. **Universal Section Engine & CDP Thumbnail Suite (v6.3.2):**
    - Registry Showroom (`lib/demoRegistry.ts`) dan Komposer Klien (`lib/themeEngine.ts`) kini 100% sinkron dan lengkap dengan generator seksi interaktif (`countdownHtml`, `eventSectionHtml`, `gallerySectionHtml`, `giftSectionHtml`, `rsvpSectionHtml`, dan `wishesSectionHtml`) untuk seluruh 6 perayaan non-wedding.
    - Kepatuhan total Zero-Hardcode Policy dengan CSS tokens (`var(--primary)`, `var(--card-bg)`, `var(--text-main)`, dll).
@@ -1376,6 +1379,21 @@ Untuk menjamin visibilitas organik dan pengindeksan optimal oleh Googlebot:
 3. **Dynamic Verification & Metadata (`app/layout.tsx`):**
    - Mendukung integrasi token verifikasi Google Search Console otomatis via variabel lingkungan `GOOGLE_SITE_VERIFICATION` atau `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`.
    - Menghasilkan JSON-LD `WebSite` Schema.org dengan aksi pencarian terintegrasi dan canonical URL dinamis per domain.
+
+---
+
+## 33. Hardening Produksi, Keandalan Deploy & Modul Keamanan (v6.3.7)
+
+Ringkasan fungsional perubahan 1 Oktober 2026 (rincian teknis: `docs/SYSTEM_ARCHITECTURE.md` bagian 25):
+
+1. **Interaksi tamu pada undangan terbit:** seluruh skrip inline tema kini valid. Sebelumnya 36 dari 39 tema memuat sintaks TypeScript (`catch (err: any)`) di JavaScript klien sehingga pratinjau momen tamu (klik lingkaran story) dan modul unggah momen tidak berfungsi, dan tema `starlit-dreams` memiliki kutip bersarang yang mematikan form RSVP. Ucapan RSVP yang tampil seketika di `starlit-dreams` dirender sebagai teks (bukan HTML).
+2. **Momen tamu pada undangan tanpa `featureSettings`:** halaman `/memories`, `/sharemoment`, dan `POST /api/public/memories/upload` memakai `parseFeatureSettings`, sehingga nilai NULL diperlakukan sebagai pengaturan bawaan, bukan galat 500.
+3. **Pembatasan laju:** login admin/klien, upload, RSVP, dan receptionist dibatasi di PostgreSQL per IP klien tepercaya (`TRUSTED_PROXY`). RSVP juga dibatasi per undangan (200/menit). Header `X-Forwarded-For` tidak dipercaya.
+4. **Deploy:** build dijalankan sebelum database disentuh; backup `pg_dump -Fc` pra-migrasi wajib berhasil; migrasi yang gagal menghentikan deploy (tanpa `db push`); health check yang gagal menandai deploy gagal.
+5. **Tema:** seed tidak lagi menghapus atau menimpa tema dan preset musik yang disunting admin; tema disinkronkan hanya oleh `npm run themes:sync`.
+6. **Health check:** publik hanya status; detail untuk pemegang `CRON_SECRET`. Header `Content-Security-Policy-Report-Only` aktif dengan penerima laporan `POST /api/security/csp-report`.
+7. **Backup:** snapshot baru berekstensi `.dump` (format custom `pg_dump`; pulihkan dengan `pg_restore`). Kegagalan unggah off-site dicatat sebagai error dan dilaporkan di respons cron.
+8. **Modul yang kini tercatat:** `lib/adminAuth.ts` (guard per modul admin), `lib/receptionistGuard.ts` (verifikasi token resepsionis terhadap PIN saat ini), `lib/safeUrl.ts` (normalisasi URL aman), `lib/safeCss.ts` (warna aman), `lib/paymentSettlement.ts` (validasi nominal gateway dan transisi PAID atomik), migrasi `add_order_charged_amount` (kolom `orders.chargedAmount`).
 
 
 

@@ -263,10 +263,11 @@ npx prisma migrate deploy
 # 3. Jalankan seed awal (Membuat akun Super Admin & 15 Katalog Tema Resmi)
 npx prisma db seed
 ```
-> **Catatan Akun Default Hasil Seed:**  
+> **Akun Super Admin Awal (tanpa kredensial bawaan):**  
+> Seed hanya membuat akun jika `SEED_ADMIN_EMAIL` diset di `.env` (opsional: `SEED_ADMIN_PASSWORD` minimal 12 karakter, `SEED_ADMIN_USERNAME`, `SEED_ADMIN_NAME`).  
+> Jika `SEED_ADMIN_PASSWORD` kosong, seed membuat password acak dan **menampilkannya sekali** di output terminal; simpan segera.  
 > - **URL Admin:** `https://domainanda.id/admin/login`  
-> - **Email:** `admin@luxenary.com`  
-> - **Password:** `admin123` *(Harap segera ganti password di dashboard admin).*
+> Setiap kali seed berjalan, akun admin yang masih memakai password lama `admin123` diberi peringatan `🚨` di output; ganti passwordnya di Portal Admin.
 
 ---
 
@@ -316,9 +317,7 @@ Tambahkan baris berikut di bagian paling bawah *(ganti `CRON_SECRET_ANDA` sesuai
 
 Buka peramban (browser) Anda dan uji beberapa hal berikut:
 1. **Akses Web Utama:** Buka `https://domainanda.id` (Pastikan berlogo gembok HTTPS aman).
-2. **Login Portal Admin:** Buka `https://domainanda.id/admin/login` dengan akun default:
-   - Email: `admin@luxenary.com`
-   - Password: `admin123`
+2. **Login Portal Admin:** Buka `https://domainanda.id/admin/login` dengan akun Super Admin dari langkah seed (email = `SEED_ADMIN_EMAIL`, password = `SEED_ADMIN_PASSWORD` atau password acak yang tercetak saat seed).
 3. **Pengaturan Identitas Platform:** Di dasbor Admin > Tab **Platform**, ubah nama platform, kontak WhatsApp, dan email dukungan resmi Anda.
 4. **Uji Demo Tema:** Buka `https://domainanda.id/demo` dan buka salah satu tema (misal `kalandra`).
 5. **Uji Subdomain:** Buat 1 pesanan undangan uji coba dan terbitkan ke subdomain (misal `tes-link.domainanda.id`). Pastikan link terbuka tanpa kendala SSL.

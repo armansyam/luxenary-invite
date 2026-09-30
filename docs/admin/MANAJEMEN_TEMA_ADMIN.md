@@ -20,7 +20,7 @@ Sistem undangan platform **Luxenary Invite** menggunakan arsitektur **100% Nativ
 
 ---
 
-## 1.1. Inventaris Faktual 40 Tema Platform (Multi-Event)
+## 1.1. Inventaris Faktual 39 Tema Platform (Multi-Event)
 
 Saat ini platform memiliki **39 tema fisik mandiri** yang terdaftar di database dan disk, mencakup 6 jenis acara:
 

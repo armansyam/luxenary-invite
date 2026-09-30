@@ -149,7 +149,7 @@ flowchart TD
 * **API Checkout:** `POST /api/payments/checkout` ([`app/api/payments/checkout/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/payments/checkout/route.ts))
 * **Alur Eksekusi:**
   1. Klien menekan tombol *"Bayar via QRIS"*.
-  2. Server memanggil driver gateway aktif (`midtrans`, `ipaymu`, `xendit`, `tripay`, atau `duitku`).
+  2. Server memanggil driver gateway aktif (`midtrans` atau `xendit`).
   3. Gateway menghasilkan **String Data QRIS Dinamis**.
   4. Layar kasir langsung menampilkan **Output Kotak QRIS**:
      - Gambar QR Code (300x300 px).
@@ -185,7 +185,7 @@ flowchart TD
   - Kasir memunculkan pesan peringatan: *"QRIS sebelumnya sudah kedaluwarsa. Silakan bayar tagihan baru."*
   - Tombol bayar kembali aktif untuk meminta kode QRIS baru yang segar.
 * **Jika Pengguna Membayar QRIS Expired di HP:**
-  - Gateway (Midtrans/iPaymu) menolak transaksi di aplikasi m-Banking (*"Kode QRIS tidak berlaku"*). Saldo pengguna tidak akan terpotong.
+  - Gateway (Midtrans/Xendit) menolak transaksi di aplikasi m-Banking (*"Kode QRIS tidak berlaku"*). Saldo pengguna tidak akan terpotong.
 * **Pencegahan Data Sampah di Database:**
   - Sistem **tidak membuat invoice baru** saat user mencoba bayar ulang paket yang sama.
   - Sistem mendaur ulang (*re-use*) record order yang expired tersebut dan mereset statusnya kembali ke `PENDING`.
