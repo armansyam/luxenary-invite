@@ -2,8 +2,11 @@
 // (mis. /home/amsdev/node22/bin), sehingga aplikasi lain di server yang sama tetap memakai Node sistem.
 // PM2 mode cluster mengabaikan `interpreter` (worker di-fork dari daemon PM2 dan memakai Node milik daemon),
 // jadi dengan NODE_BIN_DIR aplikasi berjalan fork mode 1 instance; tanpa NODE_BIN_DIR tetap cluster di Node sistem.
-require('dotenv').config({ path: `${__dirname}/.env`, quiet: true });
-const nodeBinDir = process.env.NODE_BIN_DIR;
+// Hanya NODE_BIN_DIR yang dibaca; .env tidak dimuat ke process.env karena PM2 menyimpan env pemanggil dan nilainya
+// akan mengalahkan .env milik Next (rahasia tertulis di dump.pm2, rotasi kredensial tidak berlaku setelah restart).
+const fs = require('fs');
+const envPath = `${__dirname}/.env`;
+const nodeBinDir = fs.existsSync(envPath) ? require('dotenv').parse(fs.readFileSync(envPath)).NODE_BIN_DIR : undefined;
 
 module.exports = {
   apps: [
