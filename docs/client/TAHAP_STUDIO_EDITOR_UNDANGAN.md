@@ -184,7 +184,7 @@ Studio Editor membagi form input menjadi 16 seksi terorganisir untuk kenyamanan 
 
 1. **Pustaka Musik Sistem & Custom Upload:**
    - Klien dapat memilih lagu instrumen romantis berlisensi dari katalog sistem.
-   - Opsi upload file MP3 sendiri ke Cloudflare R2 dengan batas ukuran aman (maks 10MB).
+   - Opsi upload file MP3 sendiri ke Cloudflare R2 dengan batas ukuran aman (maks 20 MB, dicek server di `app/api/client/upload/route.ts`).
 2. **Web Audio API Policy Enforcement:**
    - Browser modern memblokir audio autoplay sebelum ada interaksi pengguna (*user gesture*).
    - Audio diinisialisasi dalam keadaan `muted/paused` dan baru dipicu saat tamu menekan tombol **"Buka Undangan"** pada sampul pembuka.

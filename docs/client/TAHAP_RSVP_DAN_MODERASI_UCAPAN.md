@@ -58,7 +58,7 @@ Salah satu tantangan terbesar pernikahan adalah pemborosan atau kekurangan makan
   Sistem menjumlahkan kolom `guestCount` dari seluruh tamu berstatus `ATTENDING`.
   $$\text{Total Pax Estimasi} = \sum (\text{guestCount}_{\text{attending}})$$
 - **Penyesuaian Buffer Tamu Ragu-Ragu:**
-  Pengantin dapat melihat potensi tambahan pax dari tamu berstatus `UNCERTAIN` untuk memesan kapasitas porsi cadangan (buffer 10–20%).
+  Pengantin dapat melihat potensi tambahan pax dari tamu berstatus `ragu` (tema mengirim `RAGU`; dibandingkan tanpa peka huruf besar) untuk memesan kapasitas porsi cadangan (buffer 10–20%).
 
 ---
 

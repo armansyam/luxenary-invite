@@ -19,9 +19,9 @@ flowchart TD
     
     subgraph GatewayOtomatis [Payment Gateway Server]
         C --> E[Klien Menyelesaikan Pembayaran QRIS / VA]
-        E --> F[Webhook Callback: POST /api/payments/webhook/:provider]
+        E --> F[Webhook Callback: POST /api/webhook/midtrans atau /api/webhook/xendit]
         F --> G[Verifikasi Signature Kriptografi]
-        G -->|Signature Valid & Status Settlement| H[Auto Update Order: PAID & Terbitkan Undangan]
+        G -->|Signature Valid & Status Settlement| H[Auto Update Order: PAID, undangan tetap DRAFT sampai klien merilis]
     end
     
     subgraph AdminConsole [Admin Panel: /admin Tab Orders]
@@ -65,7 +65,8 @@ Menampilkan catatan seluruh lembar penagihan (*invoice*) yang tercipta di sistem
 1. **Persetujuan (Approve):**
    - Admin menekan tombol *"Konfirmasi Lunas"* di modal struk.
    - Status order berubah menjadi `PAID`, timestamp `paidAt` tercatat.
-   - Hak akses paket aktif seketika dan proyek undangan langsung dipublikasikan (`PUBLISHED`).
+   - Hak akses paket aktif seketika. Persetujuan hanya menandai order `PAID` (beserta konsumsi kode promo dan komisi mitra dalam satu transaksi); undangan tidak dipublikasikan otomatis. Status `PUBLISHED` hanya diberikan saat klien menekan "Rilis Undangan Resmi" di halaman pengaturan dasbornya.
+   - Persetujuan hanya berlaku untuk order `PENDING` yang sudah memiliki bukti transfer; order lain dijawab HTTP 400, dan persetujuan ganda bersamaan dijawab HTTP 409 (satu pemenang).
 2. **Penolakan (Reject):**
    - Admin menekan tombol *"Tolak"* dan memasukkan alasan penolakan secara spesifik (misal: *Nominal tidak sesuai* atau *Mutasi belum masuk*).
    - Status invoice berubah menjadi `FAILED`, alasan penolakan tersimpan di kolom `rejectReason`.
@@ -88,9 +89,10 @@ Sistem mengadopsi pergantian gateway instan 1-klik (*Hot-Switching*) langsung da
    - Pengaturan rekening penerima: Nama Bank, Nomor Rekening, Nama Pemilik Rekening, dan Catatan Instruksi Pembayaran.
 
 ### Pengaturan Mode Pembayaran Global (`payment_mode`):
-- `both`: Mengaktifkan pembayaran QRIS otomatis dan transfer bank manual secara bersamaan.
+- `BOTH` (nilai bawaan seed): Mengaktifkan pembayaran QRIS otomatis dan transfer bank manual secara bersamaan; kasir klien membuka jalur gateway lebih dulu.
 - `GATEWAY`: Hanya mengizinkan pembayaran otomatis via gateway (Midtrans / Xendit).
 - `MANUAL`: Hanya mengizinkan pembayaran transfer bank manual ke rekening admin.
+- Nilai ditulis huruf besar. Pengaturan `payment_gateway_mode` ikut ditanam oleh seed tetapi tidak dibaca kode mana pun; yang berlaku adalah `payment_mode` dan `active_payment_gateway`.
 - **Status Gateway Dinamis:** Indikator status gateway pada dashboard dan kartu pengaturan bersifat 100% dinamis mengikuti nilai `payment_mode` dan kredensial aktif dari basis data, tanpa hardcode statis label status.
 
 ### Gateway Aktif (`active_payment_gateway`):
@@ -101,10 +103,10 @@ Sistem mengadopsi pergantian gateway instan 1-klik (*Hot-Switching*) langsung da
 
 ## 4. Batasan Teknis Faktual & Roadmap Pengembangan
 
-1. **Volume Data Terbatas (`take: 50`):**
-   - Daftar pesanan saat ini dimuat dari query agregasi overview dengan batasan 50 transaksi mutakhir.
-   - *Roadmap*: Pembuatan endpoint terpisah `GET /api/admin/orders` dengan pagination server-side, search berdasarkan nomor invoice/nama klien, dan filter rentang tanggal.
+1. **Daftar Pesanan (sudah berpaginasi):**
+   - Tab Orders memakai `GET /api/admin/orders` dengan parameter `page`, `limit` (bawaan 20, maksimum 100), `search` (nomor invoice, nama, email, telepon), `status`, `startDate`/`endDate`, dan `export=csv`. Semua menuntut sesi admin (tanpa sesi: HTTP 401, diuji).
+   - Query agregasi overview (`GET /api/admin/overview`) masih memakai `take: 50` untuk ringkasan dasbor.
 2. **Ekspor Laporan Finansial:**
-   - *Roadmap*: Penambahan tombol *"Ekspor CSV/Excel"* untuk mempermudah audit akuntansi dan rekonsiliasi kas admin.
+   - Ekspor CSV sudah tersedia (tombol "Ekspor CSV" di tab Orders, `export=csv`). Ekspor Excel belum ada.
 3. **Cetak Invoice PDF:**
    - *Roadmap*: Pembuatan template cetak invoice resmi berformat PDF.

@@ -68,7 +68,8 @@ Platform menggunakan server web **Caddy** dengan fitur *On-Demand TLS*. Begitu k
 
 ## 4. PIN Keamanan Meja Resepsionis (Staff PIN)
 
-- Klien mengatur 4 digit angka rahasia (*Staff PIN*) pada kartu pengaturan.
+- Klien mengatur PIN rahasia (*Staff PIN*) pada kartu pengaturan. Syaratnya minimal 4 karakter dan hanya dicek di antarmuka (checklist rilis); server tidak memvalidasi panjang maupun isi PIN, dan tidak harus angka. PIN disimpan terenkripsi (AES) dan dapat ditampilkan ke pemilik undangan.
+- Percobaan PIN dibatasi di server: 5 percobaan per IP per undangan dan 30 percobaan per undangan dalam 15 menit; kelebihannya dijawab HTTP 429 (diuji: percobaan ke-6 dari IP yang sama).
 - PIN ini berfungsi sebagai autentikasi bagi petugas penerima tamu di pintu venue acara untuk masuk ke portal pemindaian tiket QR (`/s/[subdomain]/receptionist`).
 - Hal ini mencegah tamu undangan umum atau pihak luar menyalahgunakan portal resepsionis tanpa izin pengantin.
 
@@ -91,7 +92,7 @@ Untuk memberikan kepastian kepada pengantin tanpa ada data bolong (*Zero-Hole Po
      3. Simulasi Tautan Tamu: `https://{subdomain}.luxvite.id/?to=Nama+Tamu`
      4. Portal Resepsionis & QR: `https://{subdomain}.luxvite.id/receptionist` (PIN Panitia)
      5. Portal Live Momen: `https://{subdomain}.luxvite.id/sharemoment`
-   - Tombol **"Rilis Undangan Resmi"** berstatus terkunci (*disabled*) hingga ke-5 instrumen URL terkonfirmasi 100% oleh klien.
+   - Tombol **"Rilis Undangan Resmi"** berstatus terkunci (*disabled*) hingga ke-5 instrumen URL terkonfirmasi oleh klien (`allUrlsReviewed` di `app/(client)/dashboard/settings/page.tsx`). Kunci ini berlaku di antarmuka; ini satu-satunya tempat yang mengubah status undangan menjadi `PUBLISHED`.
 3. **Baking Pipeline (Kompilasi & Pre-render):**
    - Saat tombol *"Rilis Undangan Resmi"* ditekan, antarmuka memproses pemanggangan file mandiri dan sinkronisasi CDN global.
    - Server memperbarui status `status = 'PUBLISHED'`, mengunci subdomain serta tema, dan menampilkan Hero Box Tautan Resmi.

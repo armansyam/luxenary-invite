@@ -44,7 +44,7 @@ Setiap tamu yang tersimpan di dalam basis data memiliki atribut lengkap:
 | `qrToken` | `String (unique)` | Token acak unik terenkripsi untuk validasi check-in meja resepsionis |
 | `waStatus` | `String` | Status pengiriman pesan (`PENDING`, `SENT`) |
 | `sessionInfo` | `String?` | Penanda sesi kehadiran tamu (misal: "Sesi 1: 10.00 - 12.00" atau "Akad & Resepsi") |
-| `guestLimit` | `Int` | Kuota maksimal jumlah orang / pax yang boleh dibawa oleh tamu ini |
+| `guestQuota` | `Int` (bawaan `1`) | Kuota maksimal jumlah orang / pax yang boleh dibawa oleh tamu ini |
 | `tableNumber` | `String?` | Nomor atau nama meja yang dialokasikan untuk tamu di venue resepsi |
 | `isCheckedIn` | `Boolean` | Penanda apakah tamu sudah hadir dan memindai QR di resepsionis |
 | `checkedInAt` | `DateTime?` | Timestamp waktu pemindaian QR saat kedatangan tamu |

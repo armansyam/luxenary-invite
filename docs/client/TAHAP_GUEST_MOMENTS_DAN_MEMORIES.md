@@ -126,6 +126,6 @@ Komponen `PrintableQRCardModal.tsx` menyediakan generator materi fisik cetak sia
 ## 8. Unified Add-on Modal (Top-Up Kuota & Perpanjangan Galeri)
 
 Pengantin dapat memperluas kapabilitas kamera virtual melalui modal terpadu:
-1. **Top-Up Kuota Foto Acara:** Tambahan kuota foto (+200, +500 foto) yang langsung aktif dan dapat dialokasikan ke jadwal sesi.
+1. **Top-Up Kuota Foto Acara:** Tambahan kuota foto (satu paket top-up: `addon_memories_topup_photos`, bawaan seed 100 foto seharga `addon_memories_topup_price` 35.000; klien dapat membeli beberapa paket sekaligus lewat `topupBatches`) yang langsung aktif dan dapat dialokasikan ke jadwal sesi.
 2. **Perpanjangan Masa Simpan Galeri (+30 Hari):** Memperpanjang masa tayang album kenangan digital sebelum pengarsipan permanen.
 3. **Pembayaran Instan via QRIS Dinamis:** Transaksi diproses melalui kasir pembayaran terpadu 1-Invoice dengan verifikasi otomatis instan.
