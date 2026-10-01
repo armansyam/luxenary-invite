@@ -198,6 +198,10 @@ if command -v pm2 &> /dev/null; then
     exit 1
   fi
   echo "✅ Health check berhasil! Aplikasi merespons HTTP 200 di port 3001."
+  # Smoke test tidak membatalkan deploy (aplikasi sudah berjalan); kegagalannya wajib diperiksa pemilik.
+  if ! bash scripts/smoke-test.sh http://localhost:3001; then
+    echo "⚠️ Smoke test GAGAL: periksa pemeriksaan bertanda GAGAL di atas sebelum menganggap rilis ini sehat."
+  fi
 else
   echo "⚠️ PM2 tidak terdeteksi di sistem ini. Silakan jalankan manual via 'npm run start'."
 fi

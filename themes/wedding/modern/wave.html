@@ -1839,7 +1839,8 @@
             if (wishesList) {
               const newWishItem = document.createElement('div');
               newWishItem.className = 'wish-item';
-              newWishItem.innerHTML = '<div class="wish-name">' + name + ' <span style="font-size:0.68rem;opacity:0.7;font-weight:normal;">• ' + (status === 'hadir' ? 'Hadir (' + count + ' tamu)' : 'Berhalangan') + '</span></div><div class="wish-msg">' + message + '</div>';
+              const escWish = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+              newWishItem.innerHTML = '<div class="wish-name">' + escWish(name) + ' <span style="font-size:0.68rem;opacity:0.7;font-weight:normal;">• ' + (status === 'hadir' ? 'Hadir (' + escWish(count) + ' tamu)' : 'Berhalangan') + '</span></div><div class="wish-msg">' + escWish(message) + '</div>';
               wishesList.insertBefore(newWishItem, wishesList.firstChild);
             }
           }

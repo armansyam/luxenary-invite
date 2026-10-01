@@ -26,6 +26,7 @@ function DashboardHomeContent() {
     guestCount: 0,
     waSentCount: 0,
     attendingCount: 0,
+    checkedInCount: 0,
     wishesCount: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -85,6 +86,7 @@ function DashboardHomeContent() {
 
             const guestCount = Array.isArray(guestData) ? guestData.length : 0;
             const waSent = Array.isArray(guestData) ? guestData.filter((g) => g.waStatus === "SENT").length : 0;
+            const checkedIn = Array.isArray(guestData) ? guestData.filter((g) => g.isTokenRedeemed).length : 0;
             const attending = rsvpData?.stats?.attending || 0;
             const wishes = rsvpData?.stats?.totalWishes || 0;
 
@@ -92,6 +94,7 @@ function DashboardHomeContent() {
               guestCount,
               waSentCount: waSent,
               attendingCount: attending,
+              checkedInCount: checkedIn,
               wishesCount: wishes,
             });
           } catch (e) {
@@ -298,7 +301,8 @@ function DashboardHomeContent() {
                 </svg>
               </div>
               <p className="text-2xl sm:text-3xl font-bold text-emerald-700">{stats.attendingCount}</p>
-              <span className="text-[10px] text-stone-400 block">Pax tamu hadir</span>
+              <span className="text-[10px] text-stone-400 block">Pax rencana hadir</span>
+              <span className="text-[10px] text-stone-500 block">{stats.checkedInCount} tamu sudah check-in</span>
             </div>
 
             {/* Total Guests */}
@@ -783,6 +787,7 @@ function DashboardHomeContent() {
           </div>
           <p className="text-xl sm:text-2xl font-bold text-amber-800">{stats.attendingCount}</p>
           <span className="text-[10px] text-stone-400 block">Pax terkonfirmasi</span>
+          <span className="text-[10px] text-stone-500 block">{stats.checkedInCount} tamu sudah check-in</span>
         </div>
 
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/80 shadow-xs space-y-1">

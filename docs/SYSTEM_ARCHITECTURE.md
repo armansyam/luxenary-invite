@@ -584,7 +584,7 @@ Sistem menerapkan prinsip *Tiered Storage* untuk memisahkan beban operasional li
    - Endpoint `GET /api/client/invitations` menyertakan header `Cache-Control: no-store, no-cache, must-revalidate` serta pemanggilan `fetch` di `/dashboard/guests` dan `/dashboard` menyematkan `{ cache: "no-store" }` agar tautan personal tamu aktif seketika saat tab berpindah tanpa *caching lag*.
 6. **Streamlined Compact Dashboard Layout & Floating Glass Dock Hierarchy:**
    - Navigasi utama klien menggunakan Apple-Style Floating Liquid Glass Dock yang diurutkan secara hierarki prioritas:
-     `[ Beranda (/dashboard) ]` | `[ Studio Editor (/dashboard/invitation) ]` | `[ Moments (/dashboard/moments) ]` | `[ Buku Tamu (/dashboard/guests) ]` | `[ RSVP & Doa (/dashboard/rsvp) ]` | `[ Pengaturan (/dashboard/settings) ]`.
+     `[ Beranda (/dashboard) ]` | `[ Studio Editor (/dashboard/invitation) ]` | `[ Moments (/dashboard/moments) ]` | `[ Buku Tamu (/dashboard/guests) ]` | `[ Konfirmasi & Doa (/dashboard/rsvp) ]` | `[ Pengaturan (/dashboard/settings) ]`.
    - Top header action card di seluruh modul dasbor klien dirapatkan presisi ke navbar (`pt-2 sm:pt-2.5`, padding internal `px-4 py-3 sm:px-6 sm:py-3.5`, serta spasi antar kartu `space-y-2.5 sm:space-y-3`) guna mengeliminasi whitespace berlebih dan menjaga estetika antarmuka yang padat, rapi, dan modern.
 
 ### 6.7 — Pemisahan UX Galeri Kenangan Tamu, Pusat Setup Moments & Standarisasi Musik Latar
@@ -2613,7 +2613,7 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
      - Tab 0 (Live Canvas): Mode click-to-edit nama mempelai langsung di viewport mobile.
      - Tab 1 (Tema & Nuansa): Pemilihan seri tema Nusantara (Dillalucky, Candani, Badrika) dan palet warna Royal Gold/Emerald Green.
      - Tab 2 (Buku Tamu VIP): Manajemen kuota tamu dan tautan WhatsApp personal.
-     - Tab 3 (RSVP & Doa): Statistik konfirmasi kehadiran real-time dan aliran ucapan selamat.
+     - Tab 3 (Konfirmasi & Doa): Statistik konfirmasi kehadiran real-time dan aliran ucapan selamat.
      - Tab 4 (Audit & Publikasi): Simulasi faktual **Hero Launchpad & Jendela Sliding Ticker 3 Baris** (sinkron 1:1 dengan `app/(client)/dashboard/settings/page.tsx`) yang memverifikasi 10 komponen kesiapan data secara sekuensial sebelum status publikasi resmi mengudara (`PUBLISHED`).
    - **Rute Panduan Berdedikasi (`/how-it-works`):** Menyajikan edukasi mandiri dengan bahasa santun & intuitif, anti-jargon, bebas perbandingan vendor konvensional, serta dilengkapi FAQ praktis dan navigasi bersih ke `/demo`. Rute didaftarkan di `PLATFORM_EXCLUSIONS` pada `middleware.ts`.
 
@@ -3070,6 +3070,14 @@ Migrasi: `20260930045346_add_order_charged_amount` (kolom `orders.chargedAmount`
 3. **`tsx` terkunci:** `tsx` (4.23.15) kini devDependency. Sebelumnya `prisma db seed`, `themes:sync`, skrip uji, `deploy.sh`, dan CI memakainya lewat `npx tsx` yang mengunduh dari jaringan tanpa versi terkunci.
 4. **Dependabot:** pembaruan npm mingguan (versi mayor Next/Prisma ditinjau manual) dan GitHub Actions bulanan.
 5. **Status migrasi produksi:** migrasi `20260925000000_baseline_clean` sempat tercatat gagal di database produksi (kode 42710) karena skema sebelumnya dibuat lewat `db push`. Skema produksi hanya berbeda dari `schema.prisma` pada dua pernyataan (migrasi `add_order_charged_amount` dan `lifecycle_cleanup`). Penyelesaian: `prisma migrate resolve --applied` untuk `baseline_clean`, `add_event_type`, `add_admin_permissions`, lalu `prisma migrate deploy`. Latihan pada replika skema produksi menghasilkan "Database schema is up to date" dan diff ke `schema.prisma` kosong.
+
+### 25.11 IP klien di produksi, smoke test pasca-deploy, QR lokal, dan tampilan kehadiran
+
+1. **IP klien (F-30, selesai):** Caddy (`/etc/caddy/Caddyfile`) menimpa `X-Real-IP` di dua blok milik aplikasi ini: blok `luxvite.id, *.luxvite.id` memakai `{http.request.header.CF-Connecting-IP}`, dan blok penangkap domain kustom memakai `{remote_host}` serta membuang `CF-Connecting-IP` kiriman klien. `.env` produksi memakai `TRUSTED_PROXY="nginx"`. Terbukti: 12 POST `/api/public/rsvp` dengan `X-Real-IP` palsu berbeda-beda lewat jalur publik menghasilkan 10 kali 200 lalu 429; direktif blok domain kustom diuji pada instance Caddy sementara dengan backend pantul header (belum ada domain kustom di produksi).
+2. **Smoke test:** `scripts/smoke-test.sh` (dipanggil `deploy.sh` setelah health check, tidak membatalkan deploy bila gagal) memeriksa health, beranda, login, demo, 404, QR, validasi RSVP demo, tidak ada `X-Powered-By`, dan admin tanpa sesi 401. Hanya memakai undangan demo.
+3. **QR lokal:** `GET /api/public/qr?data=...&size=...` membuat QR SVG di server (`qrcode-generator`, UTF-8, data maksimal 600 karakter, ukuran 80-400, 120 per menit per IP) menggantikan `api.qrserver.com` di mesin tema, demo, dan halaman pembayaran. Next.js melarang `react-dom/server` di `app/`, sehingga SVG disusun langsung dari matriks modul. Terbukti terbaca: 5 dari 5 payload (termasuk nama beraksen dan 300 karakter) didekode ulang dengan jsQR dari hasil render. HTML undangan yang sudah terbit sebelum perubahan ini baru memakai QR lokal setelah dibangun ulang.
+4. **Tampilan kehadiran:** tab Tamu menampilkan per tamu status konfirmasi (hadir, tidak, ragu, belum menjawab) dan status check-in; beranda dasbor menampilkan "tamu sudah check-in" berdampingan dengan pax rencana hadir; tab RSVP berlabel "Konfirmasi & Doa".
+5. **Pembangunan di folder terpisah (F-31) belum diterapkan:** pendekatannya (`distDir` lain lalu memindahkan hasilnya ke `.next`) belum dicoba di repositori ini. Risiko yang dipertimbangkan, belum diuji: Next.js dapat menyesuaikan `tsconfig.json` (berkas terlacak) untuk `distDir` kustom sehingga `git pull --ff-only` berikutnya di server terganggu, dan manifest hasil build yang dipindahkan perlu dibuktikan tetap valid. Jendela error saat deploy tetap sebesar durasi build (sekitar 6 menit di VPS).
 
 ## 26. Matriks Fitur Tema (hasil render mesin nyata, 1 Oktober 2026)
 

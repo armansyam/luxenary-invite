@@ -104,7 +104,7 @@ Setelah diklik, status tamu di tabel otomatis berubah menjadi `SENT` untuk memud
 ## 5. Generator Tiket QR Code & Validasi Resepsionis
 
 1. **Keunikan Token QR (`qrToken`):**
-   Setiap tamu menyimpan `qrToken` acak (UUID, atau 16 heksadesimal pada impor massal). Namun QR yang tampil di halaman undangan (dibuat lewat layanan pihak ketiga `api.qrserver.com`, sehingga nama tamu dikirim ke layanan itu) hanya berisi **nama tamu** dari parameter `?to=`, bukan `qrToken`. Pemindai resepsionis mencocokkan nama itu dengan daftar tamu di perangkatnya, lalu menyinkronkan check-in ke server dengan `qrToken` tamu tersebut.
+   Setiap tamu menyimpan `qrToken` acak (UUID, atau 16 heksadesimal pada impor massal). Namun QR yang tampil di halaman undangan (dibuat di server sendiri lewat `GET /api/public/qr`, bukan layanan pihak ketiga, sehingga nama tamu tidak keluar dari server) hanya berisi **nama tamu** dari parameter `?to=`, bukan `qrToken`. Pemindai resepsionis mencocokkan nama itu dengan daftar tamu di perangkatnya, lalu menyinkronkan check-in ke server dengan `qrToken` tamu tersebut.
    - `POST /api/receptionist/scan` menerima dua bentuk: `qrToken` biasa (pencarian unik, dibatasi pada undangan yang sama) dan `LUX|<invitationId>|<nama>|<kategori>` (pencarian berdasarkan nama; nama yang belum terdaftar otomatis dibuat sebagai tamu langsung di tempat dengan token `OTS-<invitationId>-<waktu>`). Di repositori ini tidak ada kode yang membuat QR berbentuk `LUX|`; hanya pemindai dan rute scan yang membacanya.
    - Hanya perangkat dengan sesi resepsionis yang valid (lolos PIN) yang dapat memanggil rute ini; tanpanya HTTP 401.
    - Karena QR di undangan hanya berisi nama, QR itu bukan rahasia yang tidak dapat ditebak; siapa pun yang tahu nama tamu dapat membuatnya.

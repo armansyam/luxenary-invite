@@ -115,6 +115,7 @@ describe("pemindai statis — rute tidak boleh terlupa guard", () => {
       "public/memories/upload",
       "public/music",
       "public/promo/validate",
+      "public/qr",
       "public/resolve-custom-domain",
       "public/rsvp",
       "public/settings",

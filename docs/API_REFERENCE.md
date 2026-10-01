@@ -39,6 +39,7 @@ Endpoint berikut dapat diakses oleh publik (tamu undangan, browser pengunjung, d
 | `GET` | `/api/public/settings` | Mengambil data pengaturan publik platform (nama platform, logo, WhatsApp CS, limit upload). |
 | `GET` | `/api/public/themes` | Mengambil katalog tema aktif untuk galeri landing page & `/demo`. Mendukung query parameter `?eventType=WEDDING\|BIRTHDAY\|KHITAN\|AQIQAH\|WISUDA\|GATHERING` (cached via Cloudflare `s-maxage=86400`, `max-age=60`). |
 | `GET` | `/api/public/music` | Mengambil daftar pustaka musik latar (*audio presets*) resmi. |
+| `GET` | `/api/public/qr` | Membuat QR SVG di server sendiri. Parameter `data` (wajib, maksimal 600 karakter, UTF-8) dan `size` (80-400, bawaan 160). Rate limit 120 per menit per IP (HTTP 429). Respons di-cache 1 hari. |
 | `POST` | `/api/public/rsvp` | Mengirim konfirmasi kehadiran tamu. Rate limit 10 per menit per IP dan 200 per menit per undangan (HTTP 429). `status` dinormalkan ke `hadir`/`tidak`/`ragu` (nilai lain: 400); `guestName` maksimal 100 dan `message` maksimal 1000 karakter (lebih: 400). |
 | `GET` | `/api/public/resolve-custom-domain` | Verifikasi kepemilikan domain untuk Caddy On-Demand TLS & Next.js middleware rewrite. |
 | `POST` | `/api/public/memories/upload` | Mengunggah foto kenangan candid dari tamu hari-H (murni foto: JPEG/PNG/WebP/GIF). |

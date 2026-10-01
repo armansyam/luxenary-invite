@@ -243,7 +243,7 @@ Enum `InvitationStatus` hanya berisi `DRAFT`, `PUBLISHED`, `TAKEN_DOWN`, `ARCHIV
 4. **Periksa Indikator:**
    - Pastikan banner merah bertuliskan *"MODE REMOTE AKTIF"* muncul di bagian atas halaman dengan nama pengantin yang sesuai.
 5. **Lakukan Pendampingan / Perbaikan:**
-   - Anda kini dapat membuka menu *Edit Undangan*, *Buku Tamu*, *RSVP & Doa*, atau *Pengaturan* persis seperti yang dilihat oleh klien.
+   - Anda kini dapat membuka menu *Edit Undangan*, *Buku Tamu*, *Konfirmasi & Doa*, atau *Pengaturan* persis seperti yang dilihat oleh klien.
    - Seluruh perubahan yang Anda simpan akan langsung tersinkronkan ke akun klien.
 6. **Selesai & Kembali ke Admin:**
    - Klik tombol putih *"Kembali ke Admin"* pada banner merah di bagian atas.

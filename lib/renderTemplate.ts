@@ -864,7 +864,7 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
 
       // Update QR Code image to guest name
       document.querySelectorAll('#passQrImg, #modalQrImg, .pass-qr-img').forEach(function(img) {
-        img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(gn);
+        img.src = '/api/public/qr?size=160&data=' + encodeURIComponent(gn);
       });
     } catch(e){}
   }

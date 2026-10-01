@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { getInvitationPublicUrl, resolveEffectiveInvitationUrl } from "@/lib/domainUtils";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 import { useFeedback } from "@/components/ui/Feedback";
+import { normalizeRsvpStatus, type RsvpStatus } from "@/lib/rsvpStatus";
 
 interface Guest {
   id: string;
@@ -16,11 +17,28 @@ interface Guest {
   guestQuota?: number;
   guestLimit?: number | null;
   tableNumber?: string | null;
+  isTokenRedeemed?: boolean;
   rsvps?: {
     status: string | null;
     guestCount: number;
     message: string | null;
   }[];
+}
+
+const RSVP_DOT: Record<string, string> = {
+  hadir: "bg-emerald-600",
+  tidak: "bg-rose-500",
+  ragu: "bg-amber-500",
+  none: "bg-stone-300",
+};
+
+function rsvpOf(guest: Guest): { state: RsvpStatus; label: string } | null {
+  const latest = guest.rsvps?.[0];
+  const state = normalizeRsvpStatus(latest?.status);
+  if (!latest || !state) return null;
+  const label =
+    state === "hadir" ? `Konfirmasi hadir (${latest.guestCount || 1} pax)` : state === "tidak" ? "Konfirmasi tidak hadir" : "Konfirmasi ragu";
+  return { state, label };
 }
 
 const DEFAULT_WA_TEMPLATE = `Kepada Yth.
@@ -1049,6 +1067,16 @@ export default function GuestsPage() {
                         {guest.category || "UMUM"}
                       </span>
                       <span className="md:hidden text-[10px] text-stone-400 font-mono">#{idx + 1}</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-[10px] text-stone-500">
+                      <span className="inline-flex items-center gap-1">
+                        <span className={`w-1.5 h-1.5 rounded-full ${RSVP_DOT[rsvpOf(guest)?.state ?? "none"]}`} />
+                        {rsvpOf(guest)?.label ?? "Belum menjawab"}
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <span className={`w-1.5 h-1.5 rounded-full ${guest.isTokenRedeemed ? "bg-emerald-600" : "bg-stone-300"}`} />
+                        {guest.isTokenRedeemed ? "Sudah check-in" : "Belum check-in"}
+                      </span>
                     </div>
                   </div>
 

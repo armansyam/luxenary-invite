@@ -61,7 +61,7 @@ Untuk melindungi platform dari serangan bot dan spamming komentar:
    - Kelebihan batas dijawab HTTP 429 (diuji: permintaan ke-11 dan ke-31 dari IP yang sama).
 2. **Tidak ada honeypot maupun CAPTCHA.** Perlindungan spam hanya rate limit di atas; tidak ada field tersembunyi di rute server maupun di tema.
 3. **Penanganan XSS:**
-   Nama dan pesan disimpan apa adanya. Feed ucapan untuk tamu lain di-escape (`&`, `<`, `>`) saat dirender oleh skrip yang disuntikkan mesin tema, sehingga payload `<script>` atau `<img onerror>` tampil sebagai teks (diuji dengan payload nyata). Sembilan dari 39 tema menampilkan ucapan yang baru saja dikirim pengirimnya lewat `innerHTML` tanpa escape; dampaknya terbatas pada browser pengirim sendiri (self-XSS), bukan tamu lain.
+   Nama dan pesan disimpan apa adanya. Feed ucapan untuk tamu lain di-escape (`&`, `<`, `>`) saat dirender oleh skrip yang disuntikkan mesin tema, sehingga payload `<script>` atau `<img onerror>` tampil sebagai teks (diuji dengan payload nyata). Delapan tema (artisan, aurelia, kalandra, ameera, papercut, wave, dillalucky, prameswari) dulu menampilkan ucapan yang baru saja dikirim pengirimnya lewat `innerHTML` tanpa escape (self-XSS, terbatas pada browser pengirim); kini nama, jumlah, dan pesan di-escape dan `__tests__/unit/themeWishEscape.test.ts` menjaga agar pola itu tidak kembali di tema mana pun.
 4. **Batas panjang dan tipe input.** `invitationId`, `guestName`, dan `message` harus berupa teks; nama maksimal 100 karakter dan pesan maksimal 1000 karakter (panjang tepat di batas diterima). Pelanggaran dijawab HTTP 400 dan tidak tersimpan (diuji lewat HTTP: nama 101 karakter dan pesan 60 KB ditolak). Feed ucapan mengembalikan paling banyak 50 baris per pembacaan.
 
 ---

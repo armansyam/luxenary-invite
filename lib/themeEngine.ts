@@ -914,7 +914,7 @@ export async function composeWeddingData(inv: any) {
         <p class="pass-date">${weddingDate}</p>
         
         <div class="pass-qr-wrapper">
-          <img class="pass-qr-img" id="passQrImg" src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=Tamu%20Undangan" alt="QR Check-In" style="width:160px; height:160px; display:block; margin:0 auto;">
+          <img class="pass-qr-img" id="passQrImg" src="/api/public/qr?size=160&data=Tamu%20Undangan" alt="QR Check-In" style="width:160px; height:160px; display:block; margin:0 auto;">
         </div>
 
         <div class="pass-guest-box">
@@ -1311,7 +1311,7 @@ export async function composeWeddingData(inv: any) {
       <h3 style="font-size:1.4rem; color:#fff; font-family:'Cormorant Garamond',serif; margin-bottom:0.2rem;" id="modalGuestName">Tamu Undangan</h3>
       <p style="font-size:0.75rem; color:rgba(255,255,255,0.65); margin-bottom:1.2rem;">Tunjukkan kode QR ini kepada penerima tamu di lokasi acara.</p>
       <div style="background:#ffffff; padding:14px; display:inline-block; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
-        <img class="pass-qr-img" id="modalQrImg" src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=Tamu%20Undangan" alt="QR Check-In" style="width:160px; height:160px; display:block; margin:0 auto;">
+        <img class="pass-qr-img" id="modalQrImg" src="/api/public/qr?size=160&data=Tamu%20Undangan" alt="QR Check-In" style="width:160px; height:160px; display:block; margin:0 auto;">
       </div>
     </div>
   `;

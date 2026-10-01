@@ -1395,6 +1395,7 @@ Ringkasan fungsional perubahan 1 Oktober 2026 (rincian teknis: `docs/SYSTEM_ARCH
 7. **Backup:** snapshot baru berekstensi `.dump` (format custom `pg_dump`; pulihkan dengan `pg_restore`). Kegagalan unggah off-site dicatat sebagai error dan dilaporkan di respons cron.
 8. **Modul yang kini tercatat:** `lib/adminAuth.ts` (guard per modul admin), `lib/receptionistGuard.ts` (verifikasi token resepsionis terhadap PIN saat ini), `lib/safeUrl.ts` (normalisasi URL aman), `lib/safeCss.ts` (warna aman), `lib/paymentSettlement.ts` (validasi nominal gateway dan transisi PAID atomik), migrasi `add_order_charged_amount` (kolom `orders.chargedAmount`).
 9. **Validasi RSVP publik:** `lib/rsvpStatus.ts` memetakan ragam status tema (`hadir`/`tidak`, `HADIR`/`RAGU`/`TIDAK_HADIR`) ke `hadir`/`tidak`/`ragu`; `POST /api/public/rsvp` menolak status lain, tipe data salah, nama di atas 100 karakter, dan pesan di atas 1000 karakter dengan HTTP 400. Statistik dasbor klien memakai helper yang sama sehingga RSVP `TIDAK_HADIR` terhitung sebagai "Tidak Hadir".
+10. **Keamanan tampilan, QR lokal, dan verifikasi pasca-deploy:** delapan tema meng-escape ucapan yang baru dikirim (dijaga `themeWishEscape.test.ts`); QR dibuat di server sendiri lewat `GET /api/public/qr` (tanpa `api.qrserver.com`); `scripts/smoke-test.sh` dipanggil `deploy.sh`; `TRUSTED_PROXY="nginx"` dengan Caddy menimpa `X-Real-IP` (bagian 25.11 `docs/SYSTEM_ARCHITECTURE.md`); tab Tamu menampilkan status konfirmasi dan check-in per tamu, dan beranda menampilkan jumlah tamu yang sudah check-in.
 
 
 

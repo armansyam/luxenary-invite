@@ -171,7 +171,10 @@ Hapus seluruh isi default, lalu isi dengan konfigurasi berikut *(ganti `domainan
 # ------------------------------------------------------------------------------
 domainanda.id, *.domainanda.id {
     encode zstd gzip
-    reverse_proxy localhost:3001
+    reverse_proxy localhost:3001 {
+        # Domain utama di belakang Cloudflare: IP klien dari header Cloudflare, menimpa X-Real-IP kiriman klien.
+        header_up X-Real-IP {http.request.header.CF-Connecting-IP}
+    }
 }
 
 # ------------------------------------------------------------------------------
@@ -182,9 +185,15 @@ https:// {
         on_demand
     }
     encode zstd gzip
-    reverse_proxy localhost:3001
+    reverse_proxy localhost:3001 {
+        # Domain kustom klien tidak lewat Cloudflare kita: IP klien adalah alamat koneksi, header Cloudflare palsu dibuang.
+        header_up X-Real-IP {remote_host}
+        header_up -CF-Connecting-IP
+    }
 }
 ```
+
+Dengan dua blok di atas, setel `TRUSTED_PROXY="nginx"` di `.env` aplikasi (aplikasi hanya mempercayai `X-Real-IP`, yang selalu ditimpa Caddy). Urutan yang aman: ubah Caddy lebih dulu (`caddy validate`, lalu `systemctl reload caddy`), baru ubah `.env` dan restart aplikasi. Uji dengan 12 POST ke `/api/public/rsvp` memakai `X-Real-IP` palsu yang berbeda-beda: permintaan ke-11 harus 429 (header palsu diabaikan). Bila `TRUSTED_PROXY=nginx` dipasang tanpa blok Caddy di atas, semua permintaan berbagi satu kunci pembatas laju.
 
 Simpan file (`CTRL + O`, lalu `Enter`, lalu `CTRL + X`), kemudian jalankan ulang Caddy:
 ```bash

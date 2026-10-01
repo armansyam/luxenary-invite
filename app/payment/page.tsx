@@ -649,7 +649,7 @@ function PaymentContent() {
 
                 <div className="p-2.5 sm:p-3 bg-white inline-block rounded-2xl mx-auto shadow-xl border-4 border-amber-500/20">
                   <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}`}
+                    src={`/api/public/qr?size=300&data=${encodeURIComponent(qrData)}`}
                     alt="Kode QRIS"
                     className="w-44 h-44 sm:w-56 sm:h-56 object-contain"
                   />
