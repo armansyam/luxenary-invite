@@ -9,6 +9,8 @@ import { paymentEmitter } from "@/lib/paymentEvents";
 
 export const dynamic = "force-dynamic";
 
+const MAX_PROOF_BYTES = 10 * 1024 * 1024;
+
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -48,6 +50,14 @@ export async function POST(
 
     if (order.status === "PAID") {
       return NextResponse.json({ error: "Pesanan ini sudah dibayar dan aktif." }, { status: 400 });
+    }
+
+    const platformMode = (await prisma.adminSetting.findUnique({ where: { key: "payment_mode" } }))?.value;
+    if (platformMode !== "MANUAL" && order.paymentMethod !== "MANUAL_TRANSFER" && !order.proofImageUrl) {
+      return NextResponse.json(
+        { error: "Transfer manual tidak aktif. Selesaikan pembayaran lewat payment gateway." },
+        { status: 409 }
+      );
     }
 
     // Tolak jika order ini sudah digantikan oleh invoice baru yang aktif (superseded)
@@ -92,111 +102,107 @@ export async function POST(
     const buffer = Buffer.from(await file.arrayBuffer());
     const mime = file.type.toLowerCase();
 
-    // 1. Hapus file bukti lama pada order aktif ini (jika ada) sebelum mengunggah yang baru
-    if (order.proofImageUrl) {
-      try {
-        await deleteFile(order.proofImageUrl);
-      } catch (err) {
-        console.error("Gagal menghapus bukti pembayaran lama:", err);
-      }
+    if (buffer.length === 0 || buffer.length > MAX_PROOF_BYTES) {
+      return NextResponse.json({ error: "Ukuran file bukti transfer harus antara 1 byte dan 10 MB." }, { status: 400 });
     }
 
-    // 2. Bersihkan order usang lainnya milik user ini (status PENDING / FAILED non-PAID) beserta file struknya di storage
-    try {
-      const obsoleteOrders = await prisma.order.findMany({
-        where: {
-          userId: order.userId,
-          id: { not: order.id },
-          status: { in: ["PENDING", "FAILED"] },
-          orderType: "NEW",
-        },
-        select: { id: true, proofImageUrl: true },
-      });
-
-      for (const obs of obsoleteOrders) {
-        if (obs.proofImageUrl) {
-          try {
-            await deleteFile(obs.proofImageUrl);
-          } catch (e) {
-            console.error("Gagal menghapus file bukti order usang:", e);
-          }
+    // Pembersihan hanya dijalankan setelah bukti baru tersimpan, agar kegagalan unggah tidak menghilangkan bukti lama.
+    const cleanupSuperseded = async (newProofUrl: string) => {
+      if (order.proofImageUrl && order.proofImageUrl !== newProofUrl) {
+        try {
+          await deleteFile(order.proofImageUrl);
+        } catch (err) {
+          console.error("Gagal menghapus bukti pembayaran lama:", err);
         }
       }
 
-      if (obsoleteOrders.length > 0) {
-        await prisma.order.deleteMany({
+      // Bersihkan order usang lainnya milik user ini (status PENDING / FAILED non-PAID) beserta file struknya di storage
+      try {
+        const obsoleteOrders = await prisma.order.findMany({
           where: {
-            id: { in: obsoleteOrders.map((o) => o.id) },
+            userId: order.userId,
+            id: { not: order.id },
+            status: { in: ["PENDING", "FAILED"] },
+            orderType: "NEW",
           },
+          select: { id: true, proofImageUrl: true },
         });
+
+        for (const obs of obsoleteOrders) {
+          if (obs.proofImageUrl) {
+            try {
+              await deleteFile(obs.proofImageUrl);
+            } catch (e) {
+              console.error("Gagal menghapus file bukti order usang:", e);
+            }
+          }
+        }
+
+        if (obsoleteOrders.length > 0) {
+          await prisma.order.deleteMany({
+            where: {
+              id: { in: obsoleteOrders.map((o) => o.id) },
+            },
+          });
+        }
+      } catch (cleanupErr) {
+        console.error("Gagal membersihkan order usang user:", cleanupErr);
       }
-    } catch (cleanupErr) {
-      console.error("Gagal membersihkan order usang user:", cleanupErr);
-    }
+    };
 
+    let publicUrl: string;
     if (mime.includes("pdf")) {
-      // PDF saved directly
-      const pdfFileName = `${datePrefix}-${cleanEmailUser}.pdf`;
-      const relativePath = `proofs/${pdfFileName}`;
-      const publicUrl = await uploadFile(buffer, relativePath, mime);
-
-      const updatedOrder = await prisma.order.update({
-        where: { id: order.id },
-        data: {
-          paymentMethod: "MANUAL_TRANSFER",
-          proofImageUrl: publicUrl,
-          proofUploadedAt: new Date(),
-          status: "PENDING",
-          paidAt: null,
-          rejectReason: null,
-        },
-      });
-
-      return NextResponse.json({
-        success: true,
-        message: "Bukti transfer berhasil dikirim. Tim admin akan segera memverifikasi pembayaran Anda.",
-        proofImageUrl: publicUrl,
-        order: {
-          id: updatedOrder.id,
-          status: updatedOrder.status,
-          paymentMethod: updatedOrder.paymentMethod,
-          proofImageUrl: updatedOrder.proofImageUrl,
-          proofUploadedAt: updatedOrder.proofUploadedAt,
-        },
-      });
+      if (buffer.subarray(0, 4).toString("latin1") !== "%PDF") {
+        return NextResponse.json({ error: "File PDF tidak valid." }, { status: 400 });
+      }
+      publicUrl = await uploadFile(buffer, `proofs/${datePrefix}-${cleanEmailUser}.pdf`, mime);
+    } else {
+      // High-Resolution Sharp Compression for Images:
+      // Max width 1400px (crystal sharp text legibility for receipts, file size ~100KB-200KB)
+      let compressedWebp: Buffer;
+      try {
+        compressedWebp = await sharp(buffer)
+          .rotate() // Auto-orient based on EXIF
+          .resize({
+            width: 1400,
+            height: 2000,
+            fit: "inside",
+            withoutEnlargement: true,
+          })
+          .webp({
+            quality: 82, // Optimal balance: razor-sharp text & lightweight file size
+            effort: 4,
+          })
+          .toBuffer();
+      } catch {
+        return NextResponse.json(
+          { error: "File bukan gambar atau PDF yang valid. Unggah foto bukti transfer (JPG, PNG, WebP) atau PDF." },
+          { status: 400 }
+        );
+      }
+      publicUrl = await uploadFile(compressedWebp, `proofs/${fileName}`, "image/webp");
     }
 
-    // High-Resolution Sharp Compression for Images:
-    // Max width 1400px (crystal sharp text legibility for receipts, file size ~100KB-200KB)
-    const compressedWebp = await sharp(buffer)
-      .rotate() // Auto-orient based on EXIF
-      .resize({
-        width: 1400,
-        height: 2000,
-        fit: "inside",
-        withoutEnlargement: true,
-      })
-      .webp({
-        quality: 82, // Optimal balance: razor-sharp text & lightweight file size
-        effort: 4,
-      })
-      .toBuffer();
-
-    const relativePath = `proofs/${fileName}`;
-    const publicUrl = await uploadFile(compressedWebp, relativePath, "image/webp");
-
-    // Update order with proof data
-    const updatedOrder = await prisma.order.update({
-      where: { id: order.id },
+    // Update bersyarat: order yang baru saja lunas (webhook / persetujuan admin) tidak boleh dikembalikan ke PENDING
+    const saved = await prisma.order.updateMany({
+      where: { id: order.id, status: { in: ["PENDING", "FAILED"] } },
       data: {
         paymentMethod: "MANUAL_TRANSFER",
         proofImageUrl: publicUrl,
         proofUploadedAt: new Date(),
         status: "PENDING",
         paidAt: null,
-        rejectReason: null, // Clear any previous rejection
+        rejectReason: null,
       },
     });
+    if (saved.count === 0) {
+      await deleteFile(publicUrl);
+      return NextResponse.json({ error: "Pesanan sudah diproses dan tidak dapat menerima bukti baru. Muat ulang halaman." }, { status: 409 });
+    }
+
+    await cleanupSuperseded(publicUrl);
+
+    const updatedOrder = await prisma.order.findUniqueOrThrow({ where: { id: order.id } });
 
     return NextResponse.json({
       success: true,

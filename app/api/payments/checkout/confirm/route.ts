@@ -141,8 +141,8 @@ export async function POST(req: NextRequest) {
     const resolvedMethodOnConfirm = paymentModeSettingConfirm?.value === "MANUAL" ? "MANUAL_TRANSFER" : "GATEWAY";
 
     // 4. Update Order: finalisasi amount, paymentMethod, set checkoutConfirmedAt
-    const updatedOrder = await prisma.order.update({
-      where: { id: order.id },
+    const confirmed = await prisma.order.updateMany({
+      where: { id: order.id, status: "PENDING" },
       data: {
         amount: finalBaseAmount,
         discountAmount: appliedDiscount > 0 ? appliedDiscount : null,
@@ -152,17 +152,20 @@ export async function POST(req: NextRequest) {
         checkoutConfirmedAt: now,
       },
     });
+    if (confirmed.count === 0) {
+      return NextResponse.json({ error: "Pesanan sudah diproses oleh proses lain. Muat ulang halaman." }, { status: 409 });
+    }
 
     return NextResponse.json({
       success: true,
-      orderId: updatedOrder.id,
+      orderId: order.id,
       amount: finalBaseAmount,
       discountAmount: appliedDiscount,
       promoCode: appliedPromoCode,
-      redirectUrl: `/payment?order=${updatedOrder.id}`,
+      redirectUrl: `/payment?order=${order.id}`,
     });
   } catch (error: any) {
     console.error("[Checkout Confirm Error]", error);
-    return NextResponse.json({ error: error.message || "Gagal mengonfirmasi pesanan" }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal mengonfirmasi pesanan" : error.message }, { status: 500 });
   }
 }

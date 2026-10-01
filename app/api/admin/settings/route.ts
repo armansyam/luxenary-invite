@@ -46,7 +46,7 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group
   { key: "payment_gateway_fee_percent", value: "0.7", label: "Tarif Fee Gateway (%)", group: "payment" },
   { key: "payment_fee_rate", value: "0.007", label: "Tarif Fee Gateway (desimal, contoh: 0.007 = 0.7%)", group: "payment" },
   { key: "payment_expiry_minutes", value: "60", label: "Masa Berlaku Tagihan (menit)", group: "payment" },
-  { key: "payment_mode", value: "BOTH", label: "Mode Pembayaran (BOTH/GATEWAY/MANUAL)", group: "payment" },
+  { key: "payment_mode", value: "GATEWAY", label: "Mode Pembayaran (GATEWAY/MANUAL)", group: "payment" },
   { key: "payment_invoice_prefix", value: "Tagihan Pembayaran", label: "Prefix Invoice Gateway", group: "payment" },
   // Server email SMTP
   { key: "smtp_host", value: "", label: "Host SMTP", group: "platform" },

@@ -218,7 +218,7 @@ export default function AdminSettingsTab(props: Props) {
           <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
             <span className="text-xs text-gray-500 block font-medium">Mode Pembayaran Aktif</span>
             <div className="mt-1">
-              {(settingsMap["payment_mode"] || "GATEWAY") === "GATEWAY" || settingsMap["payment_mode"] === "BOTH" ? (
+              {(settingsMap["payment_mode"] || "GATEWAY") === "GATEWAY" ? (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200">
                   <span className="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
                   Hanya QRIS / Otomatis
@@ -273,7 +273,7 @@ export default function AdminSettingsTab(props: Props) {
               type="button"
               onClick={() => setSetting("payment_mode", opt.id)}
               className={`p-3 rounded-xl border text-left transition cursor-pointer ${
-                ((settingsMap["payment_mode"] || "GATEWAY") === opt.id || (settingsMap["payment_mode"] === "BOTH" && opt.id === "GATEWAY"))
+                (settingsMap["payment_mode"] || "GATEWAY") === opt.id
                   ? "border-amber-600 bg-amber-50 text-amber-950 ring-1 ring-amber-500"
                   : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
               }`}

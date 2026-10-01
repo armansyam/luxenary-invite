@@ -148,6 +148,7 @@ describe("POST /api/public/promo/validate", () => {
       id: ORDER_ID,
       userId: USER_ID,
       status: "PENDING",
+      orderType: "NEW",
       planType: "TIER_2",
       user: { email: "user@test.com", phoneNumber: "08123456789" },
     });

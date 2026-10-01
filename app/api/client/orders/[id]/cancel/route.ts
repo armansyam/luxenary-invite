@@ -66,13 +66,16 @@ export async function POST(
     }
 
     // 3. Soft Cancel: Ubah status menjadi EXPIRED agar sinkron dengan webhook Midtrans & alur checkout
-    await prisma.order.update({
-      where: { id: orderId },
+    const cancelled = await prisma.order.updateMany({
+      where: { id: orderId, status: "PENDING" },
       data: {
         status: "EXPIRED",
         rejectReason: "Dibatalkan secara mandiri oleh Klien",
       },
     });
+    if (cancelled.count === 0) {
+      return NextResponse.json({ error: "Pesanan sudah diproses (misalnya baru saja terbayar) dan tidak dapat dibatalkan." }, { status: 409 });
+    }
 
     // 4. Lepaskan PromoHold agar kupon promo kembali tersedia (RELEASED) jika order menggunakan kupon
     try {
@@ -92,7 +95,7 @@ export async function POST(
   } catch (error: any) {
     console.error("Cancel Order Error:", error);
     return NextResponse.json(
-      { error: "Terjadi kesalahan sistem saat membatalkan pesanan" },
+      { error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan sistem saat membatalkan pesanan" : error.message },
       { status: 500 }
     );
   }

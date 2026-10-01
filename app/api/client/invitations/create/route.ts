@@ -109,6 +109,8 @@ export async function POST(req: Request) {
     where: {
       userId: userId,
       status: "PAID",
+      // Hanya order paket dasar: order upgrade/add-on tidak punya undangan sendiri dan tidak boleh membuka hak undangan baru
+      orderType: "NEW",
       // No invitation linked yet — or linked invitation still DRAFT
       OR: [
         { invitation: null },
@@ -453,7 +455,7 @@ export async function POST(req: Request) {
             brideSlug: brideSlug || existingDraft.brideSlug,
             invitationSlug: invitationSlug || existingDraft.invitationSlug,
             subdomain: finalSubdomain !== null ? finalSubdomain : existingDraft.subdomain,
-            themeId: themeId?.trim() ? themeId.trim() : (existingDraft.themeId || ""),
+            themeId: themeId?.trim() ? chosenTheme.toLowerCase() : (existingDraft.themeId || chosenTheme.toLowerCase()),
             musicUrl: effectiveMusicUrl,
             openingQuote: blueprint.openingQuote || existingDraft.openingQuote,
             openingQuoteRef: blueprint.openingQuoteRef || existingDraft.openingQuoteRef,
@@ -481,7 +483,7 @@ export async function POST(req: Request) {
             brideSlug,
             invitationSlug,
             subdomain: finalSubdomain,
-            themeId: themeId?.trim() || "",
+            themeId: chosenTheme.toLowerCase(),
             openingQuote: blueprint.openingQuote,
             openingQuoteRef: blueprint.openingQuoteRef,
             eventData: JSON.stringify(initialEvents),
@@ -550,7 +552,13 @@ export async function POST(req: Request) {
         { status: 409 }
       );
     }
+    if (error.code === "P2003") {
+      return NextResponse.json({ error: "Tema yang dipilih tidak tersedia di katalog." }, { status: 400 });
+    }
     console.error("Failed to create/update invitation:", error);
-    return NextResponse.json({ error: "Gagal membuat undangan. Terjadi kesalahan server." }, { status: 500 });
+    return NextResponse.json(
+      { error: process.env.NODE_ENV === "production" ? "Gagal membuat undangan. Terjadi kesalahan server." : error.message },
+      { status: 500 }
+    );
   }
 }

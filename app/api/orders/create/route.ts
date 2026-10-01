@@ -174,8 +174,8 @@ export async function POST(req: NextRequest) {
       // Jika regenerate diminta, atau tagihan sudah expired, atau paket diubah padahal sudah pernah diproses gateway:
       // Wajib matikan order lama (Soft Cancel ke EXPIRED) dan JANGAN PERNAH me-reuse ID lama (Midtrans melarang reuse order_id).
       if (regenerate || isExpired || (isPlanChanged && hadGatewaySession)) {
-        await prisma.order.update({
-          where: { id: existingPending.id },
+        const softCancelled = await prisma.order.updateMany({
+          where: { id: existingPending.id, status: { in: ["PENDING", "FAILED"] } },
           data: {
             status: "EXPIRED",
             rejectReason: regenerate
@@ -185,6 +185,12 @@ export async function POST(req: NextRequest) {
               : "Paket diubah oleh klien",
           },
         });
+        if (softCancelled.count === 0) {
+          return NextResponse.json(
+            { error: "Pesanan Anda baru saja diproses. Muat ulang halaman untuk melihat status terbarunya." },
+            { status: 409 }
+          );
+        }
 
         // Hubungi gateway cancel jika ada transaksi gateway aktif
         if (hadGatewaySession && existingPending.gatewayId) {
@@ -269,31 +275,42 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Pastikan tidak ada order draf PENDING/FAILED lama yang tertinggal
-    await prisma.order.deleteMany({
-      where: {
-        userId: validUserId,
-        status: { in: ["PENDING", "FAILED"] },
-        orderType: "NEW",
-      },
-    });
-
     const invoiceNumber = `INV-LUX-${Date.now()}-${randomUUID().slice(0, 6).toUpperCase()}`;
 
     // Resolusi paymentMethod dari AdminSetting — platform setting wins, bukan schema default
     const paymentModeSetting = await prisma.adminSetting.findUnique({ where: { key: "payment_mode" } });
     const resolvedPaymentMethod = paymentModeSetting?.value === "MANUAL" ? "MANUAL_TRANSFER" : "GATEWAY";
 
-    const order = await prisma.order.create({
-      data: {
-        userId: validUserId,
-        invoiceNumber,
-        planType: planType as "TIER_1" | "TIER_2" | "TIER_3",
-        amount,
-        status: "PENDING",
-        paymentMethod: resolvedPaymentMethod,
-        expiredAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      },
+    // Satu order draf per pengguna: permintaan bersamaan diserialkan per pengguna. Yang tiba belakangan memakai ulang
+    // order pemenang, bukan menghapusnya lalu membuat yang baru (sebelumnya klien bisa memegang ID order yang sudah terhapus).
+    const { order, reused } = await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`order_create:${validUserId}`}))`;
+
+      const draft = await tx.order.findFirst({
+        where: { userId: validUserId, status: { in: ["PENDING", "FAILED"] }, orderType: "NEW" },
+        orderBy: { createdAt: "desc" },
+      });
+      if (draft) {
+        if (draft.planType === planType) return { order: draft, reused: true };
+        const retargeted = await tx.order.update({
+          where: { id: draft.id },
+          data: { planType: planType as "TIER_1" | "TIER_2" | "TIER_3", amount },
+        });
+        return { order: retargeted, reused: true };
+      }
+
+      const created = await tx.order.create({
+        data: {
+          userId: validUserId,
+          invoiceNumber,
+          planType: planType as "TIER_1" | "TIER_2" | "TIER_3",
+          amount,
+          status: "PENDING",
+          paymentMethod: resolvedPaymentMethod,
+          expiredAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        },
+      });
+      return { order: created, reused: false };
     });
 
     return NextResponse.json({
@@ -301,7 +318,7 @@ export async function POST(req: NextRequest) {
       invoiceNumber: order.invoiceNumber,
       amount,
       planType,
-      existing: false,
+      existing: reused,
       serverTime: Date.now(),
     });
   } catch (error: any) {

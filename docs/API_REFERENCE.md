@@ -48,7 +48,7 @@ Endpoint berikut dapat diakses oleh publik (tamu undangan, browser pengunjung, d
 | `GET` | `/api/public/version` | Mengambil versi sistem rilis aktif platform. |
 | `GET` | `/api/health` | Health check untuk Caddy, Kubernetes, dan Uptime probes. Publik: `{status, timestamp}` (200/503). Dengan `Authorization: Bearer $CRON_SECRET`: ditambah status DB, latensi, memori, cache, dan lingkungan. |
 | `POST` | `/api/security/csp-report` | Penerima laporan `Content-Security-Policy-Report-Only` (maks 8 KB, 30/menit/IP); 204 bila valid, 400 JSON rusak, 413 terlalu besar. |
-| `POST` | `/api/public/promo/validate` | Validasi kode promo secara real-time di kasir, pengecekan kuota, masa berlaku, dan kalkulasi diskon. |
+| `POST` | `/api/public/promo/validate` | Validasi kode promo secara real-time di kasir, pengecekan kuota, masa berlaku, dan kalkulasi diskon. Hanya untuk order pendaftaran paket baru (`orderType = NEW`); order upgrade dan add-on ditolak 400. `DELETE ?orderId=` hanya untuk pemilik order atau admin (403 selain itu). |
 
 ---
 
@@ -95,7 +95,7 @@ Memerlukan sesi aktif klien (`role: CLIENT` atau Admin Remote Session):
 | **Pesanan** | `GET` | `/api/client/orders` | Mengambil riwayat transaksi pesanan paket atau add-on. |
 | | `GET` | `/api/client/orders/{id}/status` | Mengecek status pelunasan transaksi pesanan secara spesifik. |
 | | `POST` | `/api/client/orders/{id}/cancel` | Membatalkan tagihan pesanan berstatus pending. |
-| | `POST` | `/api/client/orders/{id}/upload-proof` | Klien mengunggah gambar slip bukti transfer bank manual. |
+| | `POST` | `/api/client/orders/{id}/upload-proof` | Klien mengunggah slip bukti transfer manual (gambar atau PDF, maksimal 10 MB). File tidak valid dijawab 400 tanpa menghapus bukti lama; hanya order `PENDING`/`FAILED` yang menerima bukti (409 selain itu); ditolak 409 bila mode pembayaran `GATEWAY`. |
 | | `POST` | `/api/client/orders/checkout-bundle` | Penerbitan tagihan terpadu 1-Invoice multi-layanan (Upgrade Paket, Perpanjangan Galeri, dan Top-Up Kuota Foto Acara). |
 
 ---

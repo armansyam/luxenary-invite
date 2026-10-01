@@ -87,6 +87,14 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
+    const platformMode = (await prisma.adminSetting.findUnique({ where: { key: "payment_mode" } }))?.value;
+    if (platformMode === "MANUAL" || order.paymentMethod === "MANUAL_TRANSFER" || order.proofImageUrl) {
+      return NextResponse.json(
+        { error: "Order ini memakai transfer manual. Unggah bukti transfer, bukan pembayaran gateway." },
+        { status: 409 }
+      );
+    }
+
     // Auto-detect appUrl dari request headers
     const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
     const proto = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");

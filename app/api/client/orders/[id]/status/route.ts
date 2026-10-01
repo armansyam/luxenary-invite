@@ -93,16 +93,18 @@ export async function GET(
 
       // 2. Cek batas hidup keseluruhan order (24 jam)
       if (order.expiredAt && nowMs > order.expiredAt.getTime()) {
-        await prisma.order.update({
-          where: { id: order.id },
+        const expired = await prisma.order.updateMany({
+          where: { id: order.id, status: "PENDING" },
           data: { status: "EXPIRED" },
         });
 
-        // Release promo hold jika ada
-        const { releaseOrderPromoHold } = await import("@/lib/marketing");
-        await releaseOrderPromoHold(order.id);
-
-        finalStatus = "EXPIRED";
+        if (expired.count > 0) {
+          const { releaseOrderPromoHold } = await import("@/lib/marketing");
+          await releaseOrderPromoHold(order.id);
+          finalStatus = "EXPIRED";
+        } else {
+          finalStatus = (await prisma.order.findUniqueOrThrow({ where: { id: order.id }, select: { status: true } })).status;
+        }
       } else if (order.paymentMethod === "GATEWAY" && !isQrisSessionExpired) {
         // Realtime Reconciliation via Gateway (Midtrans / Xendit)
         try {

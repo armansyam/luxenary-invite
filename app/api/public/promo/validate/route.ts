@@ -66,20 +66,28 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (order.orderType !== "NEW") {
+      return NextResponse.json(
+        { error: "Kode promo hanya berlaku untuk pendaftaran paket baru, bukan untuk upgrade atau add-on." },
+        { status: 400 }
+      );
+    }
+
     const now = new Date();
 
     // 3. Eksekusi Validasi & Locking Kuota via DB Transaction (Atomic)
     const result = await prisma.$transaction(async (tx) => {
       // 3.1 Lock baris kupon via SELECT ... FOR UPDATE untuk cegah race condition
-      const coupons = await tx.$queryRaw<any[]>`
-        SELECT * FROM promo_coupons WHERE UPPER(code) = ${cleanCode} LIMIT 1 FOR UPDATE
+      const locked = await tx.$queryRaw<{ id: string }[]>`
+        SELECT id FROM promo_coupons WHERE UPPER(code) = ${cleanCode} LIMIT 1 FOR UPDATE
       `;
 
-      if (!coupons || coupons.length === 0) {
+      if (!locked || locked.length === 0) {
         throw new Error("Kode promo tidak ditemukan.");
       }
 
-      const coupon = coupons[0];
+      // Data diambil lewat Prisma bertipe: query mentah mengembalikan kolom enum[] (applicablePlans) sebagai teks "{...}".
+      const coupon = await tx.promoCoupon.findUniqueOrThrow({ where: { id: locked[0].id } });
 
       // 3.2 Cek status aktif
       if (!coupon.isActive) {
@@ -241,6 +249,15 @@ export async function DELETE(req: NextRequest) {
 
     if (!orderId) {
       return NextResponse.json({ error: "orderId wajib diisi" }, { status: 400 });
+    }
+
+    const order = await prisma.order.findUnique({ where: { id: orderId }, select: { userId: true } });
+    if (!order) {
+      return NextResponse.json({ error: "Order tidak ditemukan." }, { status: 404 });
+    }
+    const role = (session.user as any)?.role;
+    if (order.userId !== session.user.id && role !== "ADMIN" && role !== "SUPER_ADMIN") {
+      return NextResponse.json({ error: "Akses ditolak. Bukan order Anda." }, { status: 403 });
     }
 
     const { releaseOrderPromoHold } = await import("@/lib/marketing");

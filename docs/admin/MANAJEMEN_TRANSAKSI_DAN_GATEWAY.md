@@ -89,9 +89,9 @@ Sistem mengadopsi pergantian gateway instan 1-klik (*Hot-Switching*) langsung da
    - Pengaturan rekening penerima: Nama Bank, Nomor Rekening, Nama Pemilik Rekening, dan Catatan Instruksi Pembayaran.
 
 ### Pengaturan Mode Pembayaran Global (`payment_mode`):
-- `BOTH` (nilai bawaan seed): Mengaktifkan pembayaran QRIS otomatis dan transfer bank manual secara bersamaan; kasir klien membuka jalur gateway lebih dulu.
-- `GATEWAY`: Hanya mengizinkan pembayaran otomatis via gateway (Midtrans / Xendit).
-- `MANUAL`: Hanya mengizinkan pembayaran transfer bank manual ke rekening admin.
+- `GATEWAY` (nilai bawaan seed): Pembayaran otomatis via gateway (Midtrans / Xendit). Konfirmasi lunas masuk lewat webhook dua arah, dan route status order juga merekonsiliasi lewat `verify` gateway.
+- `MANUAL`: Pembayaran transfer bank manual ke rekening admin. Klien mengunggah bukti, lalu admin menyetujui atau menolak lewat `/api/admin/orders/{orderId}/approve` atau `reject`; tidak ada konfirmasi otomatis.
+- Hanya dua mode ini yang berlaku (nilai lama `BOTH` sudah dihapus; kode selalu memperlakukannya sebagai `GATEWAY`). Penegakan di server: `POST /api/payments/checkout` menolak (409) bila mode `MANUAL` atau order sudah memakai transfer manual, dan `POST /api/client/orders/{id}/upload-proof` menolak (409) bila mode `GATEWAY` dan order bukan transfer manual.
 - Nilai ditulis huruf besar. Pengaturan `payment_gateway_mode` ikut ditanam oleh seed tetapi tidak dibaca kode mana pun; yang berlaku adalah `payment_mode` dan `active_payment_gateway`.
 - **Status Gateway Dinamis:** Indikator status gateway pada dashboard dan kartu pengaturan bersifat 100% dinamis mengikuti nilai `payment_mode` dan kredensial aktif dari basis data, tanpa hardcode statis label status.
 

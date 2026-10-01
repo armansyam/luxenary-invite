@@ -200,8 +200,7 @@ function CheckoutContent() {
       }
 
       if (settings.paymentMode) {
-        const mode = (settings.paymentMode === "BOTH" ? "GATEWAY" : settings.paymentMode) as "GATEWAY" | "MANUAL";
-        setPaymentMode(mode);
+        setPaymentMode(settings.paymentMode as "GATEWAY" | "MANUAL");
       }
 
       if (typeof settings.paymentGatewayFeePercent === "number") {
@@ -616,6 +615,8 @@ function CheckoutContent() {
     );
   }
 
+  // Kode promo hanya berlaku untuk pendaftaran paket baru (ditegakkan juga di /api/public/promo/validate)
+  const isAddonOrUpgradeOrder = ["GALLERY_EXTENSION", "MEMORIES_TOPUP", "UPGRADE"].includes(currentOrderType);
   const subtotal = planData?.price || 0;
   const discountAmount = appliedPromo?.discountAmount || 0;
   const netSubtotal = Math.max(0, subtotal - discountAmount);
@@ -685,6 +686,23 @@ function CheckoutContent() {
           {error && (
             <div className="p-4 bg-rose-900/40 border border-rose-500/40 rounded-2xl text-rose-300 text-xs font-medium">
               {error}
+              {!planData && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setReloadKey((key) => key + 1)}
+                    className="px-3 py-1.5 rounded-lg border border-rose-400/40 text-rose-200 hover:bg-rose-500/10 transition cursor-pointer"
+                  >
+                    Muat ulang
+                  </button>
+                  <a
+                    href="/packages"
+                    className="px-3 py-1.5 rounded-lg border border-white/15 text-stone-300 hover:bg-white/5 transition"
+                  >
+                    Kembali ke pilihan paket
+                  </a>
+                </div>
+              )}
             </div>
           )}
 
@@ -772,7 +790,7 @@ function CheckoutContent() {
               </div>
 
               {/* Promo Code Collapsible (Hanya jika Master Switch ON) */}
-              {promoEnabled && (
+              {promoEnabled && !isAddonOrUpgradeOrder && (
                 <div className="pt-3 border-t border-white/10 space-y-2.5">
                   {!appliedPromo ? (
                     <div>
@@ -912,6 +930,7 @@ function CheckoutContent() {
 
           {/* Action: Konfirmasi & Lanjut Pembayaran */}
           <div className="space-y-3 pt-2">
+            {planData && (
             <button
               id="btn-confirm-checkout"
               type="button"
@@ -933,6 +952,7 @@ function CheckoutContent() {
                 </>
               )}
             </button>
+            )}
 
             {/* Tombol Batalkan Tagihan Ini */}
             <div className="text-center pt-1">
