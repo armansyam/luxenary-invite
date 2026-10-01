@@ -22,6 +22,8 @@ erDiagram
     Invitation ||--o{ InvitationMedia : "has_media"
     Invitation ||--o{ Rsvp : "receives"
     Invitation ||--o{ GuestMemory : "collects"
+    Theme ||--o{ Invitation : "dipakai (RESTRICT)"
+    Expense ||--o{ AffiliateCommission : "payout (SET NULL)"
     Guest ||--o| Rsvp : "submits"
     Admin ||--o{ AdminAuditLog : "logs"
 
@@ -150,7 +152,7 @@ Mencatat seluruh aksi operasional administrator untuk kepatuhan audit keamanan (
 Menyimpan lembar penagihan dan riwayat transaksi:
 - `invoiceNumber` (String, Unique): Nomor tagihan format `INV-YYYYMMDD-XXXX`.
 - `planType` (Enum `PlanType`): Paket langganan (`TIER_1`, `TIER_2`, `TIER_3`).
-- `amount` (Decimal): Total nominal yang harus dibayar.
+- `amount` (Decimal 12,2): Total nominal yang harus dibayar (sebelumnya `numeric(65,30)`, disamakan dengan kolom uang lain lewat migrasi `20261001150000`).
 - `status` (Enum `OrderStatus`):
   - `PENDING`: Menunggu pembayaran.
   - `PAID`: Lunas, fitur otomatis aktif seketika.
@@ -193,7 +195,7 @@ Entitas pusat platform yang menyimpan konfigurasi undangan:
   - `AQIQAH`: Syukuran aqiqah buah hati.
   - `WISUDA`: Perayaan kelulusan sarjana & wisudawan.
   - `GATHERING`: Acara komunitas, reuni, & family gathering.
-- `themeId` (String): ID template tema (contoh: `kalandra`, `bugis`, `festivo`, `al-fariz`).
+- `themeId` (String, FK `themes.id`, `ON DELETE RESTRICT`): ID template tema (contoh: `kalandra`, `bugis`, `festivo`, `al-fariz`). Tema yang dipakai undangan tidak dapat dihapus.
 - `participantsJson` (JSON String, Nullable): Data spesifik celebrant/partisipan (nama anak/bayi/wisudawan, usia, universitas, orang tua).
 - `subdomain` (String, Unique, Nullable): Subdomain unik platform (contoh: `yoga-nisa`).
 - `customDomain` (String, Unique, Nullable): Domain pribadi klien (contoh: `yoganisa.com`).
@@ -236,7 +238,7 @@ Master katalog tema fisik resmi di sistem (39 tema terdaftar):
 - `sortOrder` (Int): Urutan penampilan di galeri.
 - `defaultMusicUrl` (String, Nullable): Lagu latar bawaan tema.
 
-Tema tidak memiliki harga atau label premium: kolom `isPremium` dan `price` dihapus (migrasi `20261001120000_drop_theme_price_and_premium`) karena paket dibedakan oleh kapabilitas fitur, bukan oleh tema, dan semua tema terbuka untuk semua paket.
+Tema tidak memiliki harga atau label premium: kolom `isPremium` dan `price` dihapus (migrasi `20261001120000_drop_theme_price_and_premium`) karena paket dibedakan oleh kapabilitas fitur, bukan oleh tema, dan semua tema terbuka untuk semua paket. Kolom `isFeatured` juga dihapus (migrasi `20261001150000_db_integrity_theme_fk_amount_precision`) karena tidak dibaca dan tidak ditulis kode mana pun; `isFeatured` yang dipakai halaman harga adalah properti paket di `admin_settings`, bukan tema.
 
 > **Media Khusus Non-Enum (`app/api/client/upload/route.ts`):**
 > Media berikut dikelola secara langsung melalui penamaan file deterministik:
@@ -311,6 +313,7 @@ Catatan komisi per transaksi pesanan klien:
 - `commissionAmount` (Decimal): Nominal hak bagi hasil mitra.
 - `status` (Enum `CommissionStatus`): `PENDING` atau `PAID`.
 - `paidAt` (DateTime, Nullable): Tanggal pencairan dana.
+- `payoutExpenseId` (UUID, Nullable, Foreign Key `expenses.id`, `ON DELETE SET NULL`, terindeks): Pengeluaran kas yang dibuat saat pencairan.
 
 #### 4. Tabel `promo_holds`
 Mekanisme penguncian kupon 15 menit (*Anti-Race Condition & Anti-Double Claim*):

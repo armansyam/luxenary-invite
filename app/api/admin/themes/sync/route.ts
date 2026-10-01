@@ -193,11 +193,16 @@ export async function POST() {
       }, { status: 400 });
     }
 
-    await prisma.theme.deleteMany({
+    const { count: purgedCount } = await prisma.theme.deleteMany({
       where: {
         id: { notIn: discoveredIds },
+        invitations: { none: {} },
       },
     });
+    const retainedIds = (await prisma.theme.findMany({
+      where: { id: { notIn: discoveredIds } },
+      select: { id: true },
+    })).map((t) => t.id);
 
     // Invalidate in-memory template cache so fresh disk content is always read
     const { masterTemplateCache } = await import("@/lib/cache");
@@ -222,6 +227,8 @@ export async function POST() {
       message: `Sinkronisasi tema berhasil! ${syncedCount} tema tersinkron dan ${precompiledCount} file HTML demo statis telah diperbarui.`,
       syncedCount,
       precompiledCount,
+      purgedCount,
+      retainedWithoutFile: retainedIds,
       discoveredThemes: discovered,
       timestamp: new Date().toISOString(),
     });

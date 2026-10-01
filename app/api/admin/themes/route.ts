@@ -316,9 +316,14 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Tema tidak ditemukan" }, { status: 404 });
     }
 
-    // HARD DELETE: Karena sistem sudah menggunakan Arsitektur Piring (Draft mandiri),
-    // kita bisa menghapus tema ini secara permanen dari database.
-    await prisma.theme.delete({ 
+    const usedBy = await prisma.invitation.count({ where: { themeId: id } });
+    if (usedBy > 0) {
+      return NextResponse.json({
+        error: `Tema masih dipakai ${usedBy} undangan dan tidak bisa dihapus. Nonaktifkan tema agar tidak muncul di katalog.`,
+      }, { status: 409 });
+    }
+
+    await prisma.theme.delete({
       where: { id }
     });
 

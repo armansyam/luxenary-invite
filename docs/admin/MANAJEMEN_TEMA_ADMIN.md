@@ -98,6 +98,8 @@ Admin dapat mengubah metadata maupun memperbarui kode HTML master kapan saja:
 
 Ketika Admin menekan tombol Hapus (ikon tempat sampah) pada kartu tema di panel Admin:
 
+**Penjagaan keterpakaian:** `invitations.themeId` memiliki foreign key ke `themes.id` dengan `ON DELETE RESTRICT` (migrasi `20261001150000_db_integrity_theme_fk_amount_precision`). `DELETE /api/admin/themes` menghitung undangan yang memakai tema lebih dulu; bila ada, API membalas HTTP 409 (`Tema masih dipakai N undangan...`) dan tidak ada yang dihapus, termasuk berkas master di disk. Tema yang tidak dipakai dihapus dengan empat lapisan di bawah. Untuk menyembunyikan tema yang masih dipakai dari katalog, nonaktifkan tema (`isActive = false`).
+
 ### 4.1. Tahapan Pembersihan 4 Lapisan (*Full Sterilization*)
 1. **Pembersihan Database:** Baris record tema dihapus secara permanen dari tabel PostgreSQL `themes` (`await prisma.theme.delete`).
 2. **Pembersihan Master Fisik:** File template master `.html` di `themes/{kategori}/{id}.html` dihapus secara fisik dari disk (`await fs.unlink`).
@@ -108,7 +110,7 @@ Ketika Admin menekan tombol Hapus (ikon tempat sampah) pada kartu tema di panel 
 
 ### 4.2. Mekanisme Perlindungan Undangan Klien (*Arsitektur Piring Mandiri*)
 
-Bagaimana jika tema dihapus saat ada klien yang sedang dalam tahap penyusunan draft atau sudah memilih tema tersebut? Sistem menerapkan **Arsitektur Piring Mandiri (*Standalone Draft Plate Architecture*)**:
+Tema yang dipakai undangan tidak dapat dihapus lewat panel (lihat penjagaan di atas). Perlindungan ini tetap berlaku untuk kasus berkas master hilang dari disk (misalnya terhapus lewat Git atau filesystem) sementara baris tema dan undangan klien masih ada. Sistem menerapkan **Arsitektur Piring Mandiri (*Standalone Draft Plate Architecture*)**:
 
 ```
                               [ Penghapusan Tema oleh Admin ]
@@ -163,7 +165,7 @@ Tombol hijau **"Sinkronisasi Tema & Cache"** di bagian atas tab Manajemen Tema b
 
 1. **Auto-Discovery Multi-Event:** Memindai seluruh folder acara dan gayanya (`themes/wedding/`, `themes/birthday/`, `themes/khitan/`, `themes/aqiqah/`, `themes/wisuda/`, `themes/general/`). Setiap file `.html` baru yang diletakkan langsung via Git/filesystem akan otomatis didaftarkan ke tabel `themes` dengan `eventType` dan `style` yang tepat.
 2. **Safety Guard Anti-Wipeout:** Memastikan jika 0 file terdeteksi di disk (misal saat proses deploy belum selesai), operasi langsung dibatalkan secara aman tanpa merusak database.
-3. **Auto-Purge Tema Zombie:** Memeriksa seluruh baris tema di tabel database. Jika ada record di database yang file fisiknya **tidak ditemukan** di disk, record tersebut otomatis dihapus dari database demi menjaga integritas data.
+3. **Auto-Purge Tema Zombie:** Memeriksa seluruh baris tema di tabel database. Jika ada record di database yang file fisiknya **tidak ditemukan** di disk, record tersebut otomatis dihapus dari database demi menjaga integritas data. Record yang masih dipakai undangan tidak dihapus: tetap tersimpan dan namanya dikembalikan di `retainedWithoutFile` pada respons sync, sedangkan jumlah yang terhapus ada di `purgedCount`.
 4. **Preservasi Pengaturan Kustom:** Mempertahankan kustomisasi admin (`sortOrder`, thumbnail kustom, deskripsi, dan status aktif/nonaktif tema yang pernah diatur di dashboard).
 5. **Mass Re-Compile:** Mengompilasi ulang seluruh file HTML demo statis di `public/demo/` untuk semua tema aktif.
 6. **Multi-Layer Cache Invalidation:** Me-revalidate seluruh halaman Next.js (`/demo`, `/demo/[theme]`, `/demo/preview`, `/api/public/themes`, dan `/`), serta secara otomatis mengeksekusi purge cache ke **Cloudflare Edge CDN** (jika `CF_ZONE_ID` dan `CF_API_TOKEN` terkonfigurasi di `.env`).

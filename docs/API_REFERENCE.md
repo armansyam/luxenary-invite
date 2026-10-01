@@ -149,7 +149,8 @@ Memerlukan autentikasi admin (`role: ADMIN` atau `SUPER_ADMIN`):
 | | `POST` | `/api/admin/finance/upload-receipt` | Mengunggah bukti kuitansi fisik pengeluaran operasional. |
 | **Tema** | `GET` | `/api/admin/themes` | Daftar seluruh master tema di sistem lintas jenis acara (*Wedding, Birthday, Khitan, Aqiqah, Wisuda, Gathering*). |
 | | `POST` | `/api/admin/themes` | Unggah tema fisik mandiri baru (`themes/{eventType}/{style}/{id}.html`). |
-| | `POST` | `/api/admin/themes/sync` | Sinkronisasi master tema fisik di disk ke database, auto-compile static demo, dan auto-purge Cloudflare edge cache. |
+| | `DELETE` | `/api/admin/themes?id={id}` | Menghapus tema beserta berkas master dan demo-nya. Membalas HTTP 409 bila tema masih dipakai undangan (FK `ON DELETE RESTRICT`); nonaktifkan tema sebagai gantinya. |
+| | `POST` | `/api/admin/themes/sync` | Sinkronisasi master tema fisik di disk ke database, auto-compile static demo, dan auto-purge Cloudflare edge cache. Tema tanpa berkas yang masih dipakai undangan dipertahankan (`retainedWithoutFile`); sisanya dihapus (`purgedCount`). |
 | | `POST` | `/api/admin/themes/{id}/demo-asset` | Mengunggah thumbnail cover atau video demo tema resmi. |
 | | `POST` | `/api/admin/themes/{id}/demo-data` | Menyimpan custom mock dataset untuk rendering preview demo statis tema tertentu. |
 | **Pustaka Musik**| `GET` / `POST` | `/api/admin/music` | Mengambil katalog musik latar dan mengunggah berkas audio MP3/OGG resmi. |

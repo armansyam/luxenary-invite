@@ -1201,7 +1201,8 @@ ADMIN (auth required, role=ADMIN/SUPER_ADMIN):
   DELETE /api/admin/users             → Hapus permanen klien, relasi DB (undangan, transaksi) & pembersihan fisik file (published HTML, draft HTML, folder uploads rekursif)
   GET  /api/admin/invitations         → List projek undangan terpaginasi server-side dengan filter status & pencarian multi-field
   GET/POST/PUT/DELETE /api/admin/themes → Manajemen tema (Upload master .html, update metadata, auto-compile demo, hard-delete steril)
-  POST /api/admin/themes/sync         → Sinkronisasi tema disk-to-DB, auto-discovery, auto-compile static demo, revalidate cache & Cloudflare edge purge
+  POST /api/admin/themes/sync         → Sinkronisasi tema disk-to-DB, auto-discovery, auto-compile static demo, revalidate cache & Cloudflare edge purge; tema tanpa berkas yang masih dipakai undangan dipertahankan
+  (DELETE /api/admin/themes menolak tema yang dipakai undangan dengan HTTP 409)
   POST /api/admin/cache/purge         → Purge Next.js ISR & Cloudflare Edge CDN Cache (homepage, sitemap, packages, demo, public themes)
   POST /api/admin/settings            → Update platform settings
   POST /api/admin/test-smtp           → Uji coba handshake live email SMTP & pengiriman pesan diagnostik
@@ -1298,6 +1299,7 @@ Model Utama:
 Indeks Produksi & Hardening (Migration: 20260922010000_production_db_hardening):
   - invitations: themeId, galleryExpiresAt (partial), expiresAt, status+galleryExpiresAt (composite cron), createdAt DESC, eventType
   - themes: eventType, category, isActive, sortOrder
+  - rsvps: guestId (migrasi 20261001150000); affiliate_commissions: payoutExpenseId (FK ke expenses, SET NULL)
   - orders: createdAt DESC, paidAt, status+createdAt (composite cron), planType
   - rsvps: guestId, status, invitationId+guestId (composite)
   - guests: invitationId+isTokenRedeemed (partial WHERE isTokenRedeemed=false), waStatus, invitationId+category
@@ -3080,6 +3082,7 @@ Migrasi: `20260930045346_add_order_charged_amount` (kolom `orders.chargedAmount`
 5. **Pembangunan di folder terpisah (F-31) belum diterapkan:** pendekatannya (`distDir` lain lalu memindahkan hasilnya ke `.next`) belum dicoba di repositori ini. Risiko yang dipertimbangkan, belum diuji: Next.js dapat menyesuaikan `tsconfig.json` (berkas terlacak) untuk `distDir` kustom sehingga `git pull --ff-only` berikutnya di server terganggu, dan manifest hasil build yang dipindahkan perlu dibuktikan tetap valid. Jendela error saat deploy tetap sebesar durasi build (sekitar 6 menit di VPS).
 
 6. **Pembersihan logika tema berbayar:** kolom `themes.isPremium` dan `themes.price` dihapus (migrasi `20261001120000_drop_theme_price_and_premium`; `price` tidak dibaca kode mana pun, `isPremium` hanya menampilkan lencana "Premium" di pemilih tema klien untuk 8 tema bergaya minimalist). Dihapus juga: toggle dan penulisannya di API admin tema, sinkronisasi tema, API publik tema, dan seluruh dokumen yang menyebut paket sebagai Traditional/Modern/Premium (nama paket yang berlaku: Serenade, Symphony, Eternity; `minimalist`/`modern`/`traditional` hanya kategori gaya). Daftar tema bawaan `DEFAULT_THEMES` beserta seed otomatis saat tabel kosong di `GET /api/admin/themes` ikut dihapus karena menggandakan `npm run themes:sync` dan berisi 16 tema usang; tsc tidak menangkap kolom yang dihapus di objek yang di-spread ke Prisma, sehingga pemeriksaan runtime tetap wajib setiap kali kolom dihapus.
+7. **Integritas skema (migrasi `20261001150000_db_integrity_theme_fk_amount_precision`):** `orders.amount` dari `numeric(65,30)` menjadi `numeric(12,2)` (semua kolom uang lain sudah `numeric(12,2)`); `themes.isFeatured` dihapus (tidak dibaca/ditulis kode mana pun); FK `invitations.themeId → themes.id` `ON DELETE RESTRICT` sehingga tema yang dipakai undangan tidak bisa terhapus (`DELETE /api/admin/themes` membalas 409, sync mempertahankannya); FK `affiliate_commissions.payoutExpenseId → expenses.id` `ON DELETE SET NULL`; indeks FK `rsvps.guestId` dan `affiliate_commissions.payoutExpenseId`. Migrasi menolkan `payoutExpenseId` yatim dan sengaja gagal dengan pesan yang menyebut ID tema bila ada `themeId` yatim; keduanya dibuktikan pada DB sementara dengan data yatim. Perilaku sebelumnya (hapus tema yang dipakai, mengandalkan piring draf `data/drafts/` atau layar "Tema Tidak Tersedia") berubah menjadi penolakan. `invitations.linkedOrderId`/`orders.linkedOrderId` tidak diberi FK karena berisi ID Order atau ID Invitation (`lib/upgradeHelper.ts`).
 
 ## 26. Matriks Fitur Tema (hasil render mesin nyata, 1 Oktober 2026)
 

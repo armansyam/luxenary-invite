@@ -58,7 +58,7 @@ model Order {
   userId              String
   invoiceNumber       String               @unique
   planType            PlanType
-  amount              Decimal
+  amount              Decimal              @db.Decimal(12, 2)
   status              OrderStatus          @default(PENDING)
   orderType           OrderType            @default(NEW)
   upgradedFromPlan    PlanType?
@@ -142,6 +142,7 @@ model Invitation {
   guests               Guest[]
   order                Order?            @relation(fields: [orderId], references: [id])
   user                 User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme                Theme             @relation(fields: [themeId], references: [id], onDelete: Restrict)
   media                InvitationMedia[]
   rsvps                Rsvp[]
 
@@ -201,6 +202,7 @@ model Rsvp {
   invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 
   @@index([invitationId])
+  @@index([guestId])
   @@map("rsvps")
 }
 
@@ -246,20 +248,20 @@ model AdminSetting {
 }
 
 model Theme {
-  id               String   @id
-  name             String
-  description      String?
-  thumbnail        String?
-  category         String    @default("minimalist")
-  eventType        EventType @default(WEDDING)
-  parentTheme      String?
-  series           String?
-  previewUrl       String?
-  isActive         Boolean  @default(true)
-  isFeatured       Boolean  @default(false)
-  sortOrder        Int      @default(0)
-  defaultMusicUrl  String?  @map("default_music_url")
-  createdAt        DateTime @default(now())
+  id              String       @id
+  name            String
+  description     String?
+  thumbnail       String?
+  category        String       @default("minimalist")
+  eventType       EventType    @default(WEDDING)
+  parentTheme     String?
+  series          String?
+  previewUrl      String?
+  isActive        Boolean      @default(true)
+  sortOrder       Int          @default(0)
+  defaultMusicUrl String?      @map("default_music_url")
+  createdAt       DateTime     @default(now())
+  invitations     Invitation[]
 
   @@map("themes")
 }
@@ -368,6 +370,7 @@ model Expense {
   isLocked        Boolean         @default(false)
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
+  commissions     AffiliateCommission[]
 
   @@index([category])
   @@index([expenseDate])
@@ -508,8 +511,10 @@ model AffiliateCommission {
   createdAt        DateTime         @default(now())
   partner          PartnerAffiliate @relation(fields: [partnerId], references: [id], onDelete: Restrict)
   order            Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  payoutExpense    Expense?         @relation(fields: [payoutExpenseId], references: [id], onDelete: SetNull)
 
   @@index([partnerId, status])
+  @@index([payoutExpenseId])
   @@map("affiliate_commissions")
 }
 
