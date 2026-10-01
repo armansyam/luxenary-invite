@@ -164,7 +164,7 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     
     themes = await prisma.theme.findMany({
       where: { isActive: true },
-      select: { name: true, isPremium: true, series: true }
+      select: { name: true, series: true }
     });
   } catch (e) {
     console.warn("[getPublicPlatformSettings error]", e);

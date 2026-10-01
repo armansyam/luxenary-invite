@@ -30,7 +30,6 @@ export async function GET(req: Request) {
         eventType: (demo as any).eventType || "WEDDING",
         description: demo.tagline || `${demo.themeName} Series`,
         previewUrl: `/demo/${demo.themeId.toLowerCase()}`,
-        isPremium: demo.category.toLowerCase() === "minimalist" || demo.category.toLowerCase() === "premium",
         isActive: true,
         sortOrder: idx + 1,
       }));

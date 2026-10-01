@@ -577,7 +577,7 @@ export const EMAIL_TEMPLATE_CATALOG: EmailTemplateMeta[] = [
     samplePayload: {
       orderId: "ord_lux_73910248",
       orderType: "PACKAGE_ACTIVATION",
-      plan: "Emerald Sapphire Premium",
+      plan: "Symphony",
       amount: 149000,
       paymentMethod: "QRIS / Transfer Bank",
       recipientEmail: "dimas.setiawan@gmail.com",
@@ -588,7 +588,7 @@ export const EMAIL_TEMPLATE_CATALOG: EmailTemplateMeta[] = [
       const merged = {
         orderId: "ord_lux_73910248",
         orderType: "PACKAGE_ACTIVATION",
-        plan: "Emerald Sapphire Premium",
+        plan: "Symphony",
         amount: 149000,
         paymentMethod: "QRIS / Transfer Bank",
         recipientEmail: "dimas.setiawan@gmail.com",

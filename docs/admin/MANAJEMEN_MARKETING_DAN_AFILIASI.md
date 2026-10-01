@@ -23,7 +23,7 @@ Admin memiliki kendali penuh untuk membuat dan memonitor kupon promosi:
           ├─ Kode Kupon (e.g. 'WOPROMO50')
           ├─ Tipe Diskon: PERSENTASE (%) vs NOMINAL (Rp)
           ├─ Batasan: Min. Pembelian, Maks. Potongan, Batas Kuota & Limit/User
-          ├─ Target Paket: Traditional / Modern / Premium
+          ├─ Target Paket: Serenade / Symphony / Eternity
           └─ Tautkan ke Mitra Afiliasi (Opsional)
 ```
 
@@ -55,7 +55,7 @@ Admin dapat mendaftarkan mitra bisnis dan menetapkan hak bagi hasil secara adil:
 1. **Pendaftaran Mitra:**
    - Menyimpan nama agensi/mitra, nomor WhatsApp/telepon, email resmi, dan informasi rekening bank pencairan komisi.
 2. **Skema Perhitungan Komisi:**
-   - **Persentase (`PERCENT`):** Mendapatkan persentase tertentu dari nominal pesanan bersih klien (contoh: 15% dari transaksi paket Premium).
+   - **Persentase (`PERCENT`):** Mendapatkan persentase tertentu dari nominal pesanan bersih klien (contoh: 15% dari transaksi paket Eternity).
    - **Nominal Tetap (`FLAT`):** Mendapatkan nominal komisi flat per transaksi (contoh: Rp 50.000 per pesanan lunas).
 3. **Pencatatan Komisi Otomatis (`AffiliateCommission`):**
    - Setiap kali invoice pesanan klien berubah status menjadi `PAID` (baik via Webhook Midtrans/Xendit maupun approval manual Admin), sistem otomatis menghitung komisi mitra.

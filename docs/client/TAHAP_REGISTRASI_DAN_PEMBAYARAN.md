@@ -33,7 +33,7 @@ flowchart TD
     G -->|Sudah Punya Undangan| H[Langsung Masuk Dashboard: /dashboard]
     G -->|Belum Aktif / Belum Ada Order| I[Langsung Pilih Paket: /packages]
     
-    I --> J[Klien Klik: Pilih Paket Traditional / Modern / Premium]
+    I --> J[Klien Klik: Pilih Paket Serenade / Symphony / Eternity]
     J --> K[Masuk Kasir: /checkout?plan=ID]
     
     K --> L[API: POST /api/orders/create ➔ Terbit Invoice PENDING]
@@ -107,9 +107,10 @@ flowchart TD
 * **Halaman UI:** [`app/packages/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/packages/page.tsx)
 * **Data Dinamis:** Diambil dari endpoint `GET /api/public/settings` (kunci per tier di `admin_settings`, mis. `desc_tier1`, `features_tier1`, `capabilities_tier1`).
 * **Pilihan Paket:**
-  - **Traditional:** Koleksi tema adat nusantara.
-  - **Modern:** Tema editorial modern sinematik.
-  - **Premium:** Akses 15 tema lengkap.
+  - **Serenade (`TIER_1`):** paket dasar, tanpa kapabilitas tambahan pada bawaan seed.
+  - **Symphony (`TIER_2`):** menambah kapabilitas `guest_memories` (kuota roll kamera 5 foto per tamu pada bawaan) dan `qr_checkin`.
+  - **Eternity (`TIER_3`):** menambah `custom_domain` dan kuota roll kamera 15 foto per tamu.
+  - Semua paket membuka seluruh 39 tema; paket dibedakan oleh kapabilitas fitur (`capabilities_tier1..3` di `admin_settings`, dapat diubah admin), bukan oleh tema.
 * **Fitur & Kapabilitas Paket:**
   - Hanya membatasi resource server yang nyata:
     1. `Galeri Kenangan Tamu (Live Photo Drop)` (Storage Cloudflare R2).
@@ -125,7 +126,7 @@ flowchart TD
   - Halaman kasir memanggil `POST /api/orders/create` ([`app/api/orders/create/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/orders/create/route.ts)).
   - Membuat transaksi baru di tabel `Order` dengan `status: "PENDING"`.
 * **Proteksi Siklus Transaksi Pending (Single Active Order per User):**
-  - Klien yang bolak-balik antara `/packages` dan `/checkout` untuk mengubah paket (misal dari Traditional ke Premium) **TIDAK AKAN** melipatgandakan invoice di database.
+  - Klien yang bolak-balik antara `/packages` dan `/checkout` untuk mengubah paket (misal dari Serenade ke Eternity) **TIDAK AKAN** melipatgandakan invoice di database.
   - Server menggunakan pola *Single Active Pending Order*: mengecek order `PENDING` atau `FAILED` (yang ditolak) yang sudah ada, lalu melakukan **`UPDATE` / Reuse** pada kolom `planType` dan `amount` pada invoice yang sama (`INV-...`), mereset status kembali ke `PENDING`, dan membersihkan penolakan lama.
   - Mencegah timbulan invoice sampah (*zero orphaned invoices*), menjaga database tetap bersih dan terstruktur.
   - **Penguncian Pengubahan Paket:**

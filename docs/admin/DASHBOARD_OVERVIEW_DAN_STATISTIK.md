@@ -61,9 +61,7 @@ Tab Overview menyajikan 2 modul analitik bisnis:
 
 1. **Distribusi Penjualan per Kategori Paket:**
    - Memetakan perolehan omset dan volume pesanan lunas ke dalam 3 tier paket:
-     - `Traditional` (Tema Standar / Adat)
-     - `Modern` (Tema Kontemporer / Editorial)
-     - `Premium` (Tema Haute Couture / Split Desktop)
+     - Tier 1 (bawaan: `Serenade`), Tier 2 (bawaan: `Symphony`), Tier 3 (bawaan: `Eternity`); namanya dibaca dari `name_tier1..3` di pengaturan admin.
    - Disajikan dengan bilah persentase proporsi (*progress bar*) dinamis berdasarkan kontribusi terhadap total volume penjualan lunas.
 2. **Popularitas Tema Pilihan Mempelai:**
    - Menghitung frekuensi tema yang dipilih oleh seluruh pasangan pengantin di sistem.

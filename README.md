@@ -111,11 +111,11 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
      │
      ▼
 7. HARI H & PASCA ACARA (DASHBOARD OPERASIONAL BERDASARKAN TIER)
-   - Tamu scan QR → Receptionist check-in (PIN-protected, khusus Modern & Premium)
+   - Tamu scan QR → Receptionist check-in (dilindungi PIN; kapabilitas `qr_checkin`, pada bawaan seed ada di paket Symphony dan Eternity)
    - Virtual Disposable Camera Retro (/sharemoment) → Didahului **Layar Pembuka Ramah Tamu (Guest Moment Opening Screen)** dengan 3 pilihan model layout (`POLAROID_MINIMAL`, `VINTAGE_FILM`, `MODERN_ELEGANT`), kustomisasi teks instruksi kartu (`memoriesCardInstruction`), cap tanggal analog, live countdown jadwal pra-acara, dan tombol pembuka sensor kamera non-agresif (*"Buka Kamera"*). Dilengkapi **Strobe Pulse Flash Hardware Burst** (lampu kilat aktif sesaat saat rana ditekan tanpa senter konstan di preview dan pemadaman mutlak di blok `finally`), **Film Winding Cooldown (1.5 detik)** untuk mencegah *burst race condition* dan memberikan feel analog realistis, 5 filter film analog branded (Aura '90s, Heritage Romance, Botanical Mist, Cinema Noir, Pure Daylight), stempel tanggal oranye retro LED (#e8875a), jadwal multi-sesi dengan **Smart Quota Boundary Guard** (`Math.min` real-time clamping, tombol bagi rata kuota, dan validasi sisi server), antrean offline, **notifikasi otomatis multi-milestone (50%, 80%, 100%) terkonfigurasi dinamis di Admin Settings via email terarah ke Dasbor privat**, banner peringatan amber & rose di Dasbor Pengantin, re-arming milestone otomatis pasca top-up kuota, serta **wording analog sopan** (*"Roll kamera kenangan telah terisi penuh dengan cinta..."*) saat kuota habis demi menjaga martabat pengantin di depan tamu.
    - **Studio Desain Kartu Cetak QR & Standing Banner (A3, A4, A5, 4R):** Generator kartu cetak interaktif siap pakai di Dasbor Klien dengan 4 model format standar percetakan, kustomisasi judul dan petunjuk tamu mandiri, serta ekspor resolusi tinggi 300 DPI (PNG) siap cetak.
    - Monitoring & moderasi kiriman foto tamu di Pusat Komando Moments (`/dashboard/moments`) & dasbor utama dengan grid navigasi cepat 3-kolom bersih (Studio Editor, Buku Tamu, RSVP) tanpa kartu duplikat.
-   - Custom Domain Pribadi: Tersedia gratis dan opsional khusus Paket Premium (diatur langsung lewat Dasbor Pengaturan Klien tanpa biaya tambahan).
+   - Custom Domain Pribadi: Kapabilitas `custom_domain`, pada bawaan seed ada di paket Eternity tanpa biaya tambahan (diatur langsung lewat Dasbor Pengaturan Klien tanpa biaya tambahan).
    - Arsitektur URL Bersih & Pengalihan Mode Pasca-Acara: Halaman web undangan (`/[slug]` atau `/s/[subdomain]`) dan Custom Domain mendukung pengalihan mode otomatis pasca-acara (`EVENT_FINISHED`) ke Galeri Kenangan Tamu (`/memories`) serta kontrol manual fleksibel via tombol switch di Dasbor Klien (`/dashboard` & `/dashboard/moments`), dengan dukungan parameter `?view=invitation` bagi tamu yang ingin melihat kembali web undangan asli.
    - Siklus Hidup dengan 4 jam retensi terpisah (dari awal hari acara utama pada zona waktu acara; nilai dari Admin Setting): subdomain kembali ke pool (`subdomain_grace_days`, 7), foto candid tamu dibersihkan agar R2 lega (`retention_cleanup_days`, 30, dapat diperpanjang), arsip undangan (`nas_archive_retention_days`, 365), dan custom domain mengikuti slug (`retention_custom_domain_days`, 365). Cron (`lib/lifecycleCleanup.ts`) hanya menghapus setelah arsip terverifikasi.
    - Dasbor Memorial 1 Halaman & Vault Undangan Abadi (Saat ARCHIVED): Klien disajikan surat apresiasi penutup, kartu Luxenary Vault Undangan Kenangan (membuka kembali undangan digital yang tersimpan mandiri di Cold Storage NAS), 4 metrik ringkasan eksekutif, dan Pusat Unduhan Arsip Digital (.CSV Doa Restu & .CSV Kehadiran Tamu). Akun klien disimpan abadi tanpa penghapusan.
@@ -490,7 +490,7 @@ npx prisma db seed
 # Untuk Deployment Produksi (VPS) — Baseline init terverifikasi
 npx prisma migrate deploy
 npx prisma db seed        # pengaturan admin dan preset musik; tidak menyentuh tabel themes
-npm run themes:sync       # satu-satunya sumber tema (memindai berkas tema, menjaga isPremium/isActive suntingan admin)
+npm run themes:sync       # satu-satunya sumber tema (memindai berkas tema, menjaga isActive suntingan admin)
 ```
 
 ### 4. Jalankan Dev Server

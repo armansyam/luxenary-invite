@@ -22,7 +22,7 @@ function runSeed() {
 }
 
 describe.skipIf(!IS_TEST_DB)("Seed tidak menimpa atau menghapus data yang dikelola admin", () => {
-  let original: { name: string; isActive: boolean; isPremium: boolean } | null = null;
+  let original: { name: string; isActive: boolean } | null = null;
   let themeCount = 0;
   let music: { id: string; title: string; isActive: boolean; sortOrder: number } | null = null;
   let settingKey = "";
@@ -30,10 +30,10 @@ describe.skipIf(!IS_TEST_DB)("Seed tidak menimpa atau menghapus data yang dikelo
 
   beforeAll(async () => {
     const base = await prisma.theme.findUniqueOrThrow({ where: { id: "kalandra" } });
-    original = { name: base.name, isActive: base.isActive, isPremium: base.isPremium };
-    await prisma.theme.update({ where: { id: "kalandra" }, data: { name: EDITED_NAME, isActive: false, isPremium: !base.isPremium } });
+    original = { name: base.name, isActive: base.isActive };
+    await prisma.theme.update({ where: { id: "kalandra" }, data: { name: EDITED_NAME, isActive: false } });
     await prisma.theme.create({
-      data: { id: CUSTOM_THEME_ID, name: "Tema Kustom Admin", category: base.category, series: base.series, eventType: base.eventType, description: "dibuat admin", isPremium: false, isActive: true, sortOrder: 999 },
+      data: { id: CUSTOM_THEME_ID, name: "Tema Kustom Admin", category: base.category, series: base.series, eventType: base.eventType, description: "dibuat admin", isActive: true, sortOrder: 999 },
     });
     themeCount = await prisma.theme.count();
 
@@ -63,11 +63,10 @@ describe.skipIf(!IS_TEST_DB)("Seed tidak menimpa atau menghapus data yang dikelo
     expect(await prisma.theme.count()).toBe(themeCount);
   });
 
-  it("nama, isActive, dan isPremium tema yang disunting admin tidak dikembalikan", async () => {
+  it("nama dan isActive tema yang disunting admin tidak dikembalikan", async () => {
     const t = await prisma.theme.findUniqueOrThrow({ where: { id: "kalandra" } });
     expect(t.name).toBe(EDITED_NAME);
     expect(t.isActive).toBe(false);
-    expect(t.isPremium).toBe(!original!.isPremium);
   });
 
   it("preset musik yang disunting admin tidak ditimpa", async () => {

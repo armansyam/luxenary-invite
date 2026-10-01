@@ -255,11 +255,9 @@ model Theme {
   parentTheme      String?
   series           String?
   previewUrl       String?
-  isPremium        Boolean  @default(false)
   isActive         Boolean  @default(true)
   isFeatured       Boolean  @default(false)
   sortOrder        Int      @default(0)
-  price            Decimal  @default(0)
   defaultMusicUrl  String?  @map("default_music_url")
   createdAt        DateTime @default(now())
 

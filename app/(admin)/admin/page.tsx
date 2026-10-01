@@ -608,7 +608,6 @@ export default function AdminPage() {
     description: "",
     sortOrder: 1,
     isActive: true,
-    isPremium: true,
     defaultMusicUrl: "",
   });
   const [themeSaving, setThemeSaving] = useState(false);
@@ -1227,7 +1226,6 @@ export default function AdminPage() {
       description: "",
       sortOrder: (themes.length + 1),
       isActive: true,
-      isPremium: true,
       defaultMusicUrl: "",
     });
     setThemeError(null);
@@ -1249,7 +1247,6 @@ export default function AdminPage() {
       description: th.description || "",
       sortOrder: th.sortOrder || 1,
       isActive: th.isActive !== false,
-      isPremium: Boolean(th.isPremium),
       defaultMusicUrl: th.defaultMusicUrl || "",
     });
     setThemeError(null);
@@ -1285,7 +1282,6 @@ export default function AdminPage() {
       formData.append("description", themeForm.description);
       formData.append("sortOrder", String(themeForm.sortOrder));
       formData.append("isActive", String(themeForm.isActive));
-      formData.append("isPremium", String(themeForm.isPremium));
       formData.append("defaultMusicUrl", themeForm.defaultMusicUrl || "");
       if (themeFile) {
         formData.append("file", themeFile);
@@ -2627,7 +2623,7 @@ export default function AdminPage() {
                         </span>
                       </div>
                       <p className="text-xs text-gray-500">
-                        Katalog tema Traditional, Modern, dan Premium siap pakai.
+                        Katalog tema Traditional, Modern, dan Minimalist siap pakai.
                       </p>
                       <button
                         type="button"

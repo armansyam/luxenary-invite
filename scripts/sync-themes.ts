@@ -62,7 +62,6 @@ async function main() {
         series: d.series,
         eventType: d.eventType,
         sortOrder: i + 1,
-        isPremium: existing ? existing.isPremium : d.category === "minimalist",
         ...(existing ? {} : { isActive: true }),
       },
       create: {
@@ -71,7 +70,6 @@ async function main() {
         category: d.category,
         series: d.series,
         eventType: d.eventType,
-        isPremium: d.category === "minimalist",
         sortOrder: i + 1,
         isActive: true,
       },

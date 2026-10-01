@@ -71,8 +71,6 @@ erDiagram
         string category
         string series
         boolean isActive
-        boolean isPremium
-        decimal price
     }
 
     Guest {
@@ -234,10 +232,11 @@ Master katalog tema fisik resmi di sistem (39 tema terdaftar):
 - `category` (String): Kategori gaya desain (`minimalist`, `modern`, `traditional`).
 - `series` (String, Nullable): Lini koleksi tema.
 - `previewUrl` (String, Nullable): Rute demo publik (contoh: `/demo/kalandra`).
-- `isPremium` (Boolean): Flag status premium tema.
 - `isActive` (Boolean): Flag status aktif di katalog showroom & kasir.
 - `sortOrder` (Int): Urutan penampilan di galeri.
 - `defaultMusicUrl` (String, Nullable): Lagu latar bawaan tema.
+
+Tema tidak memiliki harga atau label premium: kolom `isPremium` dan `price` dihapus (migrasi `20261001120000_drop_theme_price_and_premium`) karena paket dibedakan oleh kapabilitas fitur, bukan oleh tema, dan semua tema terbuka untuk semua paket.
 
 > **Media Khusus Non-Enum (`app/api/client/upload/route.ts`):**
 > Media berikut dikelola secara langsung melalui penamaan file deterministik:

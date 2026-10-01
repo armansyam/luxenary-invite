@@ -1467,13 +1467,6 @@ function SetupWizardContent() {
                             ✓
                           </span>
                         )}
-
-                        {/* Premium badge */}
-                        {theme.isPremium && (
-                          <span className="absolute top-2 left-2 z-20 px-1.5 py-0.5 bg-amber-800 text-white text-[9px] font-bold rounded-full uppercase tracking-wide">
-                            Premium
-                          </span>
-                        )}
                       </div>
 
                       {/* Info + Preview link */}

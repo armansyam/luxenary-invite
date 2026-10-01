@@ -16,7 +16,7 @@ const prisma = new PrismaClient({ adapter });
 
 async function main() {
   // Tema dikelola oleh scripts/sync-themes.ts (npm run themes:sync), yang memindai berkas tema
-  // dan mempertahankan isPremium/isActive yang diubah admin. Seed sengaja tidak menyentuh tabel themes.
+  // dan mempertahankan isActive yang diubah admin. Seed sengaja tidak menyentuh tabel themes.
 
   // Seed default admin settings (84 items)
   for (const s of defaultAdminSettings) {

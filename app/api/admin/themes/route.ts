@@ -15,28 +15,6 @@ async function verifyAdminSession() {
   return true;
 }
 
-export const DEFAULT_THEMES = [
-  // Minimalist Series (4)
-  { id: "kalandra", name: "Kalandra", category: "minimalist", eventType: "WEDDING" as const, series: "Minimalist", description: "THE WEDDING OF — Modern, Elegan & Minimalis Editorial", isPremium: true, sortOrder: 1, isActive: true },
-  { id: "valente", name: "Valente", category: "minimalist", eventType: "WEDDING" as const, series: "Minimalist", description: "A CELEBRATION OF LOVE — Elegan, Mewah & Berkelas", isPremium: true, sortOrder: 2, isActive: true },
-  { id: "aurelia", name: "Aurelia", category: "minimalist", eventType: "WEDDING" as const, series: "Minimalist", description: "ROYAL LUXURY CELEBRATION — Sentuhan Emas & Kemegahan Kerajaan", isPremium: true, sortOrder: 3, isActive: true },
-  { id: "artisan", name: "Artisan", category: "minimalist", eventType: "WEDDING" as const, series: "Minimalist", description: "HANDCRAFTED IN LOVE — Sentuhan Artistik & Tipografi Organik", isPremium: true, sortOrder: 4, isActive: true },
-  // Modern Series (6)
-  { id: "ameera", name: "Ameera", category: "modern", eventType: "WEDDING" as const, series: "Modern", description: "CONTEMPORARY HERITAGE — Perpaduan Estetika Timur & Modern", isPremium: false, sortOrder: 5, isActive: true },
-  { id: "chronicle", name: "Chronicle", category: "modern", eventType: "WEDDING" as const, series: "Modern", description: "HIGH-FASHION VOGUE EDITORIAL — Estetika Majalah Mode Kontemporer", isPremium: false, sortOrder: 6, isActive: true },
-  { id: "lumina", name: "Lumina", category: "modern", eventType: "WEDDING" as const, series: "Modern", description: "MINIMALIST GLASS & CINEMA — Sinematik Bersih dengan Efek Glassmorphism", isPremium: false, sortOrder: 7, isActive: true },
-  { id: "papercut", name: "Papercut", category: "modern", eventType: "WEDDING" as const, series: "Modern", description: "TEXTURED CRAFT & MINIMALIST — Keanggunan Tekstur Kertas Alami", isPremium: false, sortOrder: 8, isActive: true },
-  { id: "solaria", name: "Solaria", category: "modern", eventType: "WEDDING" as const, series: "Modern", description: "WARM SUNSET BOTANICAL — Kehangatan Golden Hour & Botani Segar", isPremium: false, sortOrder: 9, isActive: true },
-  { id: "wave", name: "Wave", category: "modern", eventType: "WEDDING" as const, series: "Modern", description: "DYNAMIC FLUID OCEAN — Aliran Gelombang Modern Dinamis & Segar", isPremium: false, sortOrder: 10, isActive: true },
-  { id: "badrika", name: "Badrika", category: "modern", eventType: "WEDDING" as const, series: "Modern", description: "ARCHITECTURAL EDITORIAL — Garis Lengkung Mewah & Tipografi Kontemporer", isPremium: false, sortOrder: 11, isActive: true },
-  { id: "candani", name: "Candani", category: "modern", eventType: "WEDDING" as const, series: "Modern", description: "BOTANICAL WARMTH — Kehangatan Nuansa Alam & Tipografi Modern Bersih", isPremium: false, sortOrder: 12, isActive: true },
-  { id: "mayang", name: "Mayang", category: "modern", eventType: "WEDDING" as const, series: "Modern", description: "CONTEMPORARY GOLDEN CHIC — Kilau Emas Minimalis & Elegan", isPremium: false, sortOrder: 13, isActive: true },
-  // Traditional Series
-  { id: "dillalucky", name: "Dilla Lucky", category: "traditional", eventType: "WEDDING" as const, series: "Traditional", description: "Kehangatan Adat Melayu & Padang Modern", isPremium: false, sortOrder: 14, isActive: true },
-  { id: "prameswari", name: "Prameswari", category: "traditional", eventType: "WEDDING" as const, series: "Traditional", description: "Royal Heritage Tradisional Agung Nan Sarat Makna", isPremium: false, sortOrder: 15, isActive: true },
-  { id: "lagaligo", name: "La Galigo", category: "traditional", eventType: "WEDDING" as const, series: "Traditional", description: "Kemegahan Adat Bugis-Makassar Berbalut Hijau Zamrud & Kilau Benang Emas", isPremium: false, sortOrder: 16, isActive: true },
-];
-
 export async function GET() {
   try {
     const isAuthorized = await verifyAdminSession();
@@ -44,17 +22,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
     }
 
-    let dbThemes = await prisma.theme.findMany({ orderBy: { sortOrder: "asc" } });
-    if (dbThemes.length === 0) {
-      for (const t of DEFAULT_THEMES) {
-        await prisma.theme.upsert({
-          where: { id: t.id },
-          create: t,
-          update: t,
-        });
-      }
-      dbThemes = await prisma.theme.findMany({ orderBy: { sortOrder: "asc" } });
-    }
+    const dbThemes = await prisma.theme.findMany({ orderBy: { sortOrder: "asc" } });
 
     const themeSettingKeys = dbThemes.map((t) => `theme_demo_${t.id.toLowerCase()}`);
     const themeSettings = await prisma.adminSetting.findMany({
@@ -107,7 +75,6 @@ export async function POST(req: NextRequest) {
     let category = "modern";
     let description = "";
     let series = "";
-    let isPremium = false;
     let isActive = true;
     let sortOrder = 99;
     let defaultMusicUrl = "";
@@ -123,7 +90,6 @@ export async function POST(req: NextRequest) {
       description = (formData.get("description") as string) || "";
       series = (formData.get("series") as string) || "";
       if (formData.has("eventType")) eventType = (formData.get("eventType") as string) || "WEDDING";
-      isPremium = formData.get("isPremium") === "true";
       isActive = formData.get("isActive") === null ? true : formData.get("isActive") === "true";
       sortOrder = Number(formData.get("sortOrder") || 99);
       if (formData.has("defaultMusicUrl")) defaultMusicUrl = (formData.get("defaultMusicUrl") as string) || "";
@@ -139,7 +105,6 @@ export async function POST(req: NextRequest) {
       description = body.description || "";
       series = body.series || "";
       if (body.eventType) eventType = body.eventType || "WEDDING";
-      isPremium = Boolean(body.isPremium);
       isActive = body.isActive !== false;
       sortOrder = Number(body.sortOrder || 99);
       if (body.defaultMusicUrl !== undefined) defaultMusicUrl = body.defaultMusicUrl || "";
@@ -192,7 +157,6 @@ export async function POST(req: NextRequest) {
         eventType: (eventType as any) || "WEDDING",
         description: description || "",
         series: series || (cat === "traditional" ? "Traditional" : cat === "minimalist" ? "Minimalist" : "Modern"),
-        isPremium: Boolean(isPremium || cat === "minimalist"),
         isActive: isActive !== false,
         sortOrder: Number(sortOrder || 99),
         defaultMusicUrl: defaultMusicUrl || null,
@@ -236,7 +200,6 @@ export async function PUT(req: NextRequest) {
     let category: string | undefined;
     let description: string | undefined;
     let series: string | undefined;
-    let isPremium: boolean | undefined;
     let isActive: boolean | undefined;
     let sortOrder: number | undefined;
     let defaultMusicUrl: string | undefined;
@@ -250,7 +213,6 @@ export async function PUT(req: NextRequest) {
       if (formData.has("category")) category = (formData.get("category") as string) || "";
       if (formData.has("description")) description = (formData.get("description") as string) || "";
       if (formData.has("series")) series = (formData.get("series") as string) || "";
-      if (formData.has("isPremium")) isPremium = formData.get("isPremium") === "true";
       if (formData.has("isActive")) isActive = formData.get("isActive") === "true";
       if (formData.has("sortOrder")) sortOrder = Number(formData.get("sortOrder"));
       if (formData.has("defaultMusicUrl")) defaultMusicUrl = (formData.get("defaultMusicUrl") as string) || "";
@@ -265,7 +227,6 @@ export async function PUT(req: NextRequest) {
       category = body.category;
       description = body.description;
       series = body.series;
-      if (body.isPremium !== undefined) isPremium = Boolean(body.isPremium);
       if (body.isActive !== undefined) isActive = Boolean(body.isActive);
       if (body.sortOrder !== undefined) sortOrder = Number(body.sortOrder);
       if (body.defaultMusicUrl !== undefined) defaultMusicUrl = body.defaultMusicUrl || "";
@@ -317,7 +278,6 @@ export async function PUT(req: NextRequest) {
         ...(category !== undefined && { category: targetCat }),
         ...(description !== undefined && { description }),
         ...(series !== undefined && { series }),
-        ...(isPremium !== undefined && { isPremium: Boolean(isPremium) }),
         ...(isActive !== undefined && { isActive: Boolean(isActive) }),
         ...(sortOrder !== undefined && { sortOrder: Number(sortOrder) }),
         ...(defaultMusicUrl !== undefined && { defaultMusicUrl: defaultMusicUrl || null }),
