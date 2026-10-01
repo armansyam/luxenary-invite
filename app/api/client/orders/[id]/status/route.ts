@@ -44,7 +44,7 @@ export async function GET(
         orderType: true,
         requestedDomain: true,
         itemsJson: true,
-        linkedOrderId: true,
+        linkedInvitationId: true,
         user: {
           select: {
             name: true,
@@ -168,7 +168,7 @@ export async function GET(
           userId: order.userId,
           id: { not: order.id },
           orderType: order.orderType,
-          linkedOrderId: order.linkedOrderId || null,
+          linkedInvitationId: order.linkedInvitationId,
           createdAt: { gt: order.createdAt },
           status: { in: ["PENDING", "PAID"] },
         },
@@ -197,7 +197,7 @@ export async function GET(
       orderType: order.orderType,
       paymentMethod: order.paymentMethod,
       requestedDomain: order.requestedDomain,
-      linkedOrderId: order.linkedOrderId,
+      linkedInvitationId: order.linkedInvitationId,
       buyerName: order.user?.name || null,
       buyerEmail: order.user?.email || null,
       buyerPhone: order.user?.phoneNumber || null,

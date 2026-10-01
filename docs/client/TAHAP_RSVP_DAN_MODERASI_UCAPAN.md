@@ -55,8 +55,8 @@ Dashboard RSVP menyajikan 5 kartu ringkasan analitik utama di baris teratas:
 
 Salah satu tantangan terbesar pernikahan adalah pemborosan atau kekurangan makanan. Modul RSVP Luxenary Invite menyelesaikan masalah ini dengan:
 - **Kalkulasi Akumulasi Pax:**
-  Sistem menjumlahkan kolom `guestCount` dari seluruh tamu berstatus `ATTENDING`.
-  $$\text{Total Pax Estimasi} = \sum (\text{guestCount}_{\text{attending}})$$
+  Sistem menjumlahkan kolom `guestCount` dari seluruh RSVP berstatus `hadir`.
+  $$\text{Total Pax Estimasi} = \sum (\text{guestCount}_{\text{hadir}})$$
 - **Penyesuaian Buffer Tamu Ragu-Ragu:**
   Pengantin dapat melihat potensi tambahan pax dari tamu berstatus `ragu` (tema mengirim `RAGU`; dibandingkan tanpa peka huruf besar) untuk memesan kapasitas porsi cadangan (buffer 10–20%).
 

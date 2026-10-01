@@ -20,7 +20,7 @@ export async function applyBundleFulfillment(paidOrderId: string): Promise<boole
     select: {
       id: true,
       userId: true,
-      linkedOrderId: true,
+      linkedInvitationId: true,
       targetPlanType: true,
       requestedDomain: true,
       itemsJson: true,
@@ -39,13 +39,7 @@ export async function applyBundleFulfillment(paidOrderId: string): Promise<boole
 
   // Cari undangan terkait
   const invitation = await prisma.invitation.findFirst({
-    where: {
-      OR: [
-        { id: order.linkedOrderId || undefined },
-        { orderId: order.linkedOrderId || undefined },
-        { userId: order.userId },
-      ],
-    },
+    where: order.linkedInvitationId ? { id: order.linkedInvitationId } : { userId: order.userId },
     include: {
       order: { select: { id: true, planType: true } },
     },
@@ -138,15 +132,15 @@ export async function applyGalleryExtension(extensionOrderId: string): Promise<v
     where: { id: extensionOrderId },
     select: {
       orderType: true,
-      linkedOrderId: true,
+      linkedInvitationId: true,
       userId: true,
     },
   });
 
-  if (!order || order.orderType !== "GALLERY_EXTENSION" || !order.linkedOrderId) return;
+  if (!order || order.orderType !== "GALLERY_EXTENSION" || !order.linkedInvitationId) return;
 
   const invitation = await prisma.invitation.findUnique({
-    where: { id: order.linkedOrderId },
+    where: { id: order.linkedInvitationId },
     select: { id: true, eventData: true, galleryExpiresAt: true },
   });
 
@@ -173,20 +167,15 @@ export async function applyMemoriesTopup(topupOrderId: string): Promise<void> {
     where: { id: topupOrderId },
     select: {
       orderType: true,
-      linkedOrderId: true,
+      linkedInvitationId: true,
       userId: true,
     },
   });
 
-  if (!order || order.orderType !== "MEMORIES_TOPUP" || !order.linkedOrderId) return;
+  if (!order || order.orderType !== "MEMORIES_TOPUP" || !order.linkedInvitationId) return;
 
-  const invitation = await prisma.invitation.findFirst({
-    where: {
-      OR: [
-        { id: order.linkedOrderId },
-        { orderId: order.linkedOrderId },
-      ],
-    },
+  const invitation = await prisma.invitation.findUnique({
+    where: { id: order.linkedInvitationId },
     select: { id: true, featureSettings: true, order: { select: { planType: true } } },
   });
 
@@ -247,7 +236,7 @@ export async function purgeObsoleteUserOrders(userId: string, currentOrderId: st
         userId,
         id: { not: currentOrderId },
         status: { in: ["PENDING", "FAILED", "EXPIRED"] },
-        linkedOrderId: null,
+        orderType: "NEW",
       },
       select: { id: true, proofImageUrl: true },
     });
@@ -333,42 +322,26 @@ export async function applyUpgradePlan(paidOrderId: string): Promise<void> {
 
 
   if (order.orderType !== "UPGRADE") return;
-  if (!order.linkedOrderId || !order.targetPlanType) return;
+  if (!order.linkedInvitationId || !order.targetPlanType) return;
 
-  // Resolusi ID order lama: linkedOrderId bisa berupa ID Order atau ID Invitation
-  let targetOrderIdToUpdate = order.linkedOrderId;
-  const possibleInv = await prisma.invitation.findUnique({
-    where: { id: order.linkedOrderId },
-    select: { orderId: true },
+  const invitation = await prisma.invitation.findUnique({
+    where: { id: order.linkedInvitationId },
+    select: { id: true, orderId: true },
   });
-  if (possibleInv?.orderId) {
-    targetOrderIdToUpdate = possibleInv.orderId;
-  }
+  if (!invitation?.orderId) return;
 
   // Update planType di order LAMA → tier baru aktif
   await prisma.order.update({
-    where: { id: targetOrderIdToUpdate },
+    where: { id: invitation.orderId },
     data: { planType: order.targetPlanType },
   });
 
   // Jika paket upgrade menyertakan custom domain dan target tier memiliki kapabilitas custom_domain
   const canHaveCustomDomain = await hasPlanCapability(order.targetPlanType, "custom_domain");
   if (canHaveCustomDomain && order.requestedDomain) {
-    const invitation = await prisma.invitation.findFirst({
-      where: {
-        OR: [
-          { orderId: order.linkedOrderId },
-          { id: order.linkedOrderId },
-        ],
-      },
-      select: { id: true },
+    await prisma.invitation.update({
+      where: { id: invitation.id },
+      data: { customDomain: order.requestedDomain },
     });
-
-    if (invitation) {
-      await prisma.invitation.update({
-        where: { id: invitation.id },
-        data: { customDomain: order.requestedDomain },
-      });
-    }
   }
 }

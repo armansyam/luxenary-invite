@@ -252,7 +252,7 @@ Setiap kali transaksi disetujui lunas (baik otomatis via Webhook QRIS maupun man
    - Otomatis mencari dan memusnahkan sisa draft/order usang non-PAID milik klien beserta seluruh file struknya di Cloudflare R2.
 3. **Pencabangan Tipe Order (`orderType`):**
    - **`NEW`:** Transaksi paket pertama ➔ Mengarahkan klien masuk ke Formulir Setup Undangan ([`app/(client)/dashboard/setup/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/(client)/dashboard/setup/page.tsx)).
-   - **`UPGRADE` (`applyUpgradePlan`):** Memperbarui `planType` pada order awal (`linkedOrderId`) ke tier yang lebih tinggi (misal: Modern ➔ Premium).
+   - **`UPGRADE` (`applyUpgradePlan`):** Memperbarui `planType` pada order awal milik undangan sasaran (`linkedInvitationId` ➔ `invitation.orderId`) ke tier yang lebih tinggi (misal: Serenade ➔ Symphony).
     - **`GALLERY_EXTENSION` (`applyGalleryExtension`):** Menambahkan masa simpan foto kenangan tamu ke `galleryExpiresAt` pada undangan klien dan membuka kembali kunci unggah foto kenangan tamu (`memoriesUploadLocked: false`).
     - **`MEMORIES_TOPUP` (`applyMemoriesTopup`):** Menambahkan kuota foto kenangan tamu (`extraMemoriesQuota`) pada undangan klien.
 

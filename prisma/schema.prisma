@@ -63,9 +63,8 @@ model Order {
   orderType           OrderType            @default(NEW)
   upgradedFromPlan    PlanType?
   targetPlanType      PlanType?
-  linkedOrderId       String?
-  paymentMethod       String?              @default("GATEWAY")
-  paymentGatewayRef   String?
+  linkedInvitationId  String?
+  paymentMethod       PaymentMethod?       @default(GATEWAY)
   snapToken           String?
   proofImageUrl       String?
   proofUploadedAt     DateTime?
@@ -82,7 +81,8 @@ model Order {
   gatewayTxId         String?
   requestedDomain     String?
   itemsJson           String?
-  invitation          Invitation?
+  invitation          Invitation?          @relation("InvitationOrder")
+  linkedInvitation    Invitation?          @relation("OrderLinkedInvitation", fields: [linkedInvitationId], references: [id], onDelete: SetNull)
   user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   promoCoupon         PromoCoupon?         @relation(fields: [promoCouponId], references: [id], onDelete: SetNull)
   promoHold           PromoHold?
@@ -92,6 +92,7 @@ model Order {
   @@index([status])
   @@index([gatewayId])
   @@index([promoCouponId])
+  @@index([linkedInvitationId])
   @@map("orders")
 }
 
@@ -140,9 +141,10 @@ model Invitation {
   galleryExpiresAt     DateTime?
   guestMemories        GuestMemory[]
   guests               Guest[]
-  order                Order?            @relation(fields: [orderId], references: [id])
+  order                Order?            @relation("InvitationOrder", fields: [orderId], references: [id])
+  linkedOrders         Order[]           @relation("OrderLinkedInvitation")
   user                 User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  theme                Theme             @relation(fields: [themeId], references: [id], onDelete: Restrict)
+  theme               Theme             @relation(fields: [themeId], references: [id], onDelete: Restrict)
   media                InvitationMedia[]
   rsvps                Rsvp[]
 
@@ -194,7 +196,7 @@ model Rsvp {
   invitationId String
   guestId      String?
   guestName    String
-  status       String
+  status       RsvpStatus
   guestCount   Int        @default(1)
   message      String?
   respondedAt  DateTime   @default(now())
@@ -304,6 +306,17 @@ enum OrderStatus {
   PAID
   EXPIRED
   FAILED
+}
+
+enum PaymentMethod {
+  GATEWAY
+  MANUAL_TRANSFER
+}
+
+enum RsvpStatus {
+  hadir
+  tidak
+  ragu
 }
 
 enum OrderType {

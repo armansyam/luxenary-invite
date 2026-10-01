@@ -149,12 +149,7 @@ export class MidtransGateway implements PaymentGateway {
       let invitation = order?.invitation;
       if (!invitation && order?.userId) {
         invitation = await prisma.invitation.findFirst({
-          where: {
-            OR: [
-              ...(order.linkedOrderId ? [{ orderId: order.linkedOrderId }] : []),
-              { userId: order.userId },
-            ],
-          },
+          where: order.linkedInvitationId ? { id: order.linkedInvitationId } : { userId: order.userId },
           select: {
             id: true,
             themeId: true,

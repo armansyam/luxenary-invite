@@ -297,7 +297,7 @@ describe.skipIf(!IS_TEST_DB)("Integrasi pembayaran & pemenuhan (DB luxenary_test
 
   // ── A: isolasi antar-tenant pada pemenuhan bundle ──────────────────────────
   describe("A. applyBundleFulfillment — isolasi antar user", () => {
-    it("order bundle tanpa linkedOrderId dari user TANPA undangan -> undangan user lain tidak boleh berubah", async () => {
+    it("order bundle tanpa linkedInvitationId dari user TANPA undangan -> undangan user lain tidak boleh berubah", async () => {
       const victim = await makeUser("a-victim");
       const victimOrder = await makeOrder(victim.id, { status: "PAID" });
       const victimInv = await makeInvitation(victim.id, victimOrder.id, "a-victim");
@@ -306,7 +306,7 @@ describe.skipIf(!IS_TEST_DB)("Integrasi pembayaran & pemenuhan (DB luxenary_test
       const bundle = await makeOrder(buyer.id, {
         status: "PAID",
         orderType: "MEMORIES_TOPUP",
-        linkedOrderId: null,
+        linkedInvitationId: null,
         itemsJson: JSON.stringify([{ type: "MEMORIES_TOPUP", photos: 100 }]),
       });
 
@@ -317,7 +317,7 @@ describe.skipIf(!IS_TEST_DB)("Integrasi pembayaran & pemenuhan (DB luxenary_test
       expect(fs.extraMemoriesQuota ?? 0).toBe(0);
     });
 
-    it("order bundle dengan linkedOrderId valid -> hanya undangan miliknya yang berubah", async () => {
+    it("order bundle dengan linkedInvitationId valid -> hanya undangan miliknya yang berubah", async () => {
       const owner = await makeUser("a-owner");
       const ownerOrder = await makeOrder(owner.id, { status: "PAID" });
       const ownerInv = await makeInvitation(owner.id, ownerOrder.id, "a-owner");
@@ -329,7 +329,7 @@ describe.skipIf(!IS_TEST_DB)("Integrasi pembayaran & pemenuhan (DB luxenary_test
       const bundle = await makeOrder(owner.id, {
         status: "PAID",
         orderType: "MEMORIES_TOPUP",
-        linkedOrderId: ownerOrder.id,
+        linkedInvitationId: ownerInv.id,
         itemsJson: JSON.stringify([{ type: "MEMORIES_TOPUP", photos: 50 }]),
       });
 

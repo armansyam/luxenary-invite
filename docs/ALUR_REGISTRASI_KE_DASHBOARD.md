@@ -347,7 +347,7 @@ model Order {
   planType      PlanType     // TIER_1 | TIER_2 | TIER_3
   amount        Int
   status        OrderStatus  @default(PENDING) // PENDING | PAID | FAILED | EXPIRED
-  paymentMethod String?      // QRIS | MANUAL_TRANSFER
+  paymentMethod PaymentMethod? // GATEWAY | MANUAL_TRANSFER
   proofImage    String?      // Untuk transfer manual
   paidAt        DateTime?
   user          User         @relation(fields: [userId], references: [id])

@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
     const existingPendingWithProof = await prisma.order.findFirst({
       where: {
         userId,
-        linkedOrderId: invitation.id,
+        linkedInvitationId: invitation.id,
         status: "PENDING",
         proofImageUrl: { not: null },
       },
@@ -258,7 +258,7 @@ export async function POST(req: NextRequest) {
     await prisma.order.updateMany({
       where: {
         userId,
-        linkedOrderId: invitation.id,
+        linkedInvitationId: invitation.id,
         status: "PENDING",
         proofImageUrl: null,
       },
@@ -297,7 +297,7 @@ export async function POST(req: NextRequest) {
         orderType: primaryOrderType as any,
         upgradedFromPlan: effectiveTargetPlan ? (currentPlan as any) : null,
         targetPlanType: effectiveTargetPlan ? (effectiveTargetPlan as any) : null,
-        linkedOrderId: invitation.id,
+        linkedInvitationId: invitation.id,
         amount: totalAmount,
         status: "PENDING",
         paymentMethod: resolvedPaymentMethod,

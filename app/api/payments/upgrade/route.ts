@@ -108,7 +108,7 @@ export async function POST(req: Request) {
       where: {
         userId,
         orderType: "UPGRADE",
-        linkedOrderId: currentOrder.id,
+        linkedInvitationId: invitation.id,
         status: "PENDING",
         proofImageUrl: { not: null },
       },
@@ -127,7 +127,7 @@ export async function POST(req: Request) {
       where: {
         userId,
         orderType: "UPGRADE",
-        linkedOrderId: currentOrder.id,
+        linkedInvitationId: invitation.id,
         status: "PENDING",
         proofImageUrl: null,
       },
@@ -148,7 +148,7 @@ export async function POST(req: Request) {
         orderType: "UPGRADE",
         upgradedFromPlan: currentPlan as any,
         targetPlanType: targetPlanUpper as any,
-        linkedOrderId: currentOrder.id,
+        linkedInvitationId: invitation.id,
         amount: upgradeAmount,
         status: "PENDING",
         paymentMethod: resolvedPaymentMethod, // Dinamis dari AdminSetting payment_mode

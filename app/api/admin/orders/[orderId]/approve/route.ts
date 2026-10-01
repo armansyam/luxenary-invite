@@ -47,9 +47,7 @@ export async function POST(
     }
 
     // Transisi PENDING -> PAID + konsumsi PromoHold + komisi mitra dalam satu transaksi
-    const settled = await settleOrderAsPaid(orderId, {
-      paymentGatewayRef: "MANUAL_ADMIN_APPROVAL",
-    });
+    const settled = await settleOrderAsPaid(orderId);
     if (!settled) {
       return NextResponse.json({
         error: "Order sudah diproses oleh proses lain. Muat ulang daftar order.",

@@ -92,6 +92,66 @@ describe.skipIf(!IS_TEST_DB)("integritas skema database", () => {
     expect(commission.payoutExpenseId).toBeNull();
   });
 
+  it("linkedInvitationId menolak ID yang tidak ada, dan menghapus undangan hanya melepas tautan order (order tetap ada)", async () => {
+    await expect(
+      prisma.order.create({
+        data: { userId, invoiceNumber: `${TAG}-BAD`, planType: "TIER_1", orderType: "MEMORIES_TOPUP", amount: 1000, linkedInvitationId: `${TAG}-tidak-ada` },
+      })
+    ).rejects.toMatchObject({ code: "P2003" });
+
+    const inv = await prisma.invitation.create({
+      data: { userId, themeId: THEME_ID, invitationSlug: `${TAG}-l`, groomSlug: `${TAG}-lg`, brideSlug: `${TAG}-lb` },
+    });
+    const addOn = await prisma.order.create({
+      data: { userId, invoiceNumber: `${TAG}-ADDON`, planType: "TIER_1", orderType: "MEMORIES_TOPUP", amount: 35000, status: "PAID", linkedInvitationId: inv.id },
+    });
+    await prisma.invitation.delete({ where: { id: inv.id } });
+    const after = await prisma.order.findUniqueOrThrow({ where: { id: addOn.id } });
+    expect(after.linkedInvitationId).toBeNull();
+    expect(after.status).toBe("PAID");
+    await prisma.order.delete({ where: { id: addOn.id } });
+  });
+
+  it("order UPGRADE yang tertaut ke undangan menaikkan planType order dasar milik undangan itu", async () => {
+    const { applyUpgradePlan } = await import("@/lib/upgradeHelper");
+    const base = await prisma.order.create({
+      data: { userId, invoiceNumber: `${TAG}-BASE`, planType: "TIER_1", amount: 99000, status: "PAID" },
+    });
+    const inv = await prisma.invitation.create({
+      data: { userId, orderId: base.id, themeId: THEME_ID, invitationSlug: `${TAG}-u`, groomSlug: `${TAG}-ug`, brideSlug: `${TAG}-ub` },
+    });
+    const upgrade = await prisma.order.create({
+      data: {
+        userId, invoiceNumber: `${TAG}-UPG`, planType: "TIER_2", orderType: "UPGRADE", targetPlanType: "TIER_2",
+        amount: 50000, status: "PAID", linkedInvitationId: inv.id,
+      },
+    });
+    try {
+      await applyUpgradePlan(upgrade.id);
+      expect((await prisma.order.findUniqueOrThrow({ where: { id: base.id } })).planType).toBe("TIER_2");
+    } finally {
+      await prisma.order.deleteMany({ where: { id: upgrade.id } });
+      await prisma.invitation.deleteMany({ where: { id: inv.id } });
+      await prisma.order.deleteMany({ where: { id: base.id } });
+    }
+  });
+
+  it("enum menolak nilai di luar daftar: Rsvp.status dan Order.paymentMethod", async () => {
+    await expect(
+      prisma.rsvp.create({ data: { invitationId, guestName: "X", status: "ATTENDING" as never } })
+    ).rejects.toThrow();
+    await expect(
+      prisma.order.create({ data: { userId, invoiceNumber: `${TAG}-PM`, planType: "TIER_1", amount: 1, paymentMethod: "QRIS" as never } })
+    ).rejects.toThrow();
+  });
+
+  it("kolom paymentGatewayRef dan linkedOrderId sudah tidak ada di orders", async () => {
+    const { rows } = await pool.query(
+      `SELECT column_name FROM information_schema.columns WHERE table_name='orders' AND column_name IN ('paymentGatewayRef','linkedOrderId')`
+    );
+    expect(rows).toEqual([]);
+  });
+
   it("indeks FK rsvps.guestId ada dan kolom mati themes.isFeatured sudah tidak ada", async () => {
     const idx = await pool.query(`SELECT 1 FROM pg_indexes WHERE tablename='rsvps' AND indexname='rsvps_guestId_idx'`);
     expect(idx.rowCount).toBe(1);

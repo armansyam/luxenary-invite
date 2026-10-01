@@ -125,7 +125,7 @@ async function runComprehensiveAudit() {
           planType: "TIER_2",
           amount: 299000,
           status: "PENDING",
-          paymentMethod: "QRIS",
+          paymentMethod: "GATEWAY",
         },
       });
       cleanupOrderIds.push(testOrder1.id);
@@ -560,7 +560,6 @@ async function runComprehensiveAudit() {
         data: {
           status: "PAID",
           paidAt: new Date(),
-          paymentGatewayRef: "MANUAL_ADMIN_APPROVAL",
         },
       });
 

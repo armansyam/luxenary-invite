@@ -246,13 +246,13 @@ async function runCompleteSystemAudit() {
         invitationId: testInvitationId,
         guestId: testGuestId,
         guestName: "Bpk. Bambang Pamungkas",
-        status: "ATTENDING",
+        status: "hadir",
         guestCount: Math.min(2, guest.guestQuota),
         message: "Selamat menempuh hidup baru!",
       },
     });
 
-    const isCase7Passed = rsvpSubmission.status === "ATTENDING" && rsvpSubmission.guestCount === 2;
+    const isCase7Passed = rsvpSubmission.status === "hadir" && rsvpSubmission.guestCount === 2;
     results.push({
       step: 7,
       name: "RSVP_DAN_PAX_ENFORCEMENT",

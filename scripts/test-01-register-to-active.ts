@@ -43,7 +43,7 @@ async function runTest01() {
     console.log(`✅ Klien mengunggah bukti transfer manual.`);
 
     // 4. Admin verifikasi Order (Approve) — lewat settleOrderAsPaid, inti transisi yang dipakai rute approve admin
-    const settled = await settleOrderAsPaid(order.id, { paymentGatewayRef: "MANUAL_ADMIN_APPROVAL" });
+    const settled = await settleOrderAsPaid(order.id);
     if (!settled) {
       throw new Error("settleOrderAsPaid mengembalikan false: order bukan PENDING");
     }

@@ -499,7 +499,7 @@ export class IndustrialQASuite {
             planType: "TIER_3",
             targetPlanType: "TIER_3",
             orderType: "UPGRADE",
-            linkedOrderId: inv.id,
+            linkedInvitationId: inv.id,
             status: "PAID",
             paidAt: new Date(),
           },
@@ -657,7 +657,7 @@ export class IndustrialQASuite {
               invitationId: inv.id,
               guestId: guest.id,
               guestName: guest.name,
-              status: "ATTENDING",
+              status: "hadir",
               guestCount: lockedPax,
             },
           });
@@ -1118,7 +1118,7 @@ export class IndustrialQASuite {
             invitationId: inv.id,
             guestId: guest.id,
             guestName: guest.name,
-            status: "ATTENDING",
+            status: "hadir",
           },
         });
 

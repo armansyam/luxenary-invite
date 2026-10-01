@@ -127,7 +127,6 @@ export async function POST(req: NextRequest) {
         paymentMethod: "GATEWAY",
         status: "PENDING",
         rejectReason: null,
-        paymentGatewayRef: activeGatewayId,
         gatewayId: activeGatewayId,
         gatewayTxId: gatewayTxId || orderId,
         chargedAmount: finalAmount,

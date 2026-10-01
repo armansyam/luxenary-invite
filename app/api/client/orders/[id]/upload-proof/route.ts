@@ -108,7 +108,7 @@ export async function POST(
           userId: order.userId,
           id: { not: order.id },
           status: { in: ["PENDING", "FAILED"] },
-          linkedOrderId: null,
+          orderType: "NEW",
         },
         select: { id: true, proofImageUrl: true },
       });
@@ -147,7 +147,6 @@ export async function POST(
           proofImageUrl: publicUrl,
           proofUploadedAt: new Date(),
           status: "PENDING",
-          paymentGatewayRef: null,
           paidAt: null,
           rejectReason: null,
         },
@@ -194,7 +193,6 @@ export async function POST(
         proofImageUrl: publicUrl,
         proofUploadedAt: new Date(),
         status: "PENDING",
-        paymentGatewayRef: null,
         paidAt: null,
         rejectReason: null, // Clear any previous rejection
       },

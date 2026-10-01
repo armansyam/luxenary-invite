@@ -59,7 +59,7 @@ export async function GET(
     const pendingOrder = await prisma.order.findFirst({
       where: {
         userId,
-        linkedOrderId: id,
+        linkedInvitationId: id,
         orderType: { in: ["GALLERY_EXTENSION", "UPGRADE", "MEMORIES_TOPUP"] },
         status: "PENDING",
       },

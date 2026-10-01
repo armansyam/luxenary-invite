@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
     }
 
     const existingPaid = await prisma.order.findFirst({
-      where: { userId: validUserId, status: "PAID", linkedOrderId: null },
+      where: { userId: validUserId, status: "PAID", orderType: "NEW" },
     });
 
     if (existingPaid) {
@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
       where: {
         userId: validUserId,
         status: { in: ["PENDING", "FAILED"] },
-        linkedOrderId: null,
+        orderType: "NEW",
       },
       orderBy: { createdAt: "desc" },
     });
@@ -207,7 +207,7 @@ export async function POST(req: NextRequest) {
               userId: validUserId,
               status: { in: ["PENDING", "FAILED"] },
               id: { not: existingPending.id },
-              linkedOrderId: null,
+              orderType: "NEW",
             },
             select: { id: true, proofImageUrl: true },
           });
@@ -274,7 +274,7 @@ export async function POST(req: NextRequest) {
       where: {
         userId: validUserId,
         status: { in: ["PENDING", "FAILED"] },
-        linkedOrderId: null,
+        orderType: "NEW",
       },
     });
 

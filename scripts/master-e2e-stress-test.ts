@@ -216,7 +216,7 @@ async function main() {
         amount: 35000,
         status: "PENDING",
         orderType: "MEMORIES_TOPUP",
-        linkedOrderId: testInvitation.id,
+        linkedInvitationId: testInvitation.id,
         itemsJson: JSON.stringify([
           { type: "MEMORIES_TOPUP", label: "Top-Up Kuota Foto (+100 Foto)", price: 35000, photos: 100 },
         ]),

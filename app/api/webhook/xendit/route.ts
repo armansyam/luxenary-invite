@@ -142,10 +142,7 @@ export async function POST(req: NextRequest) {
 
       // Transisi PENDING -> PAID + marketing dalam satu transaksi (atomic check-and-set,
       // aman terhadap webhook duplikat bersamaan)
-      const settled = await settleOrderAsPaid(orderId, {
-        paymentMethod: "GATEWAY",
-        paymentGatewayRef: body.id || null,
-      });
+      const settled = await settleOrderAsPaid(orderId, { paymentMethod: "GATEWAY" });
 
       // Order sudah diproses sebelumnya — return idempotent
       if (!settled) {

@@ -43,7 +43,8 @@ erDiagram
         decimal amount
         enum status
         enum orderType
-        string paymentMethod
+        enum paymentMethod
+        string linkedInvitationId FK
         string promoCodeApplied
         decimal discountAmount
         decimal chargedAmount
@@ -163,7 +164,8 @@ Menyimpan lembar penagihan dan riwayat transaksi:
   - `UPGRADE`: Upgrade ke paket lebih tinggi.
   - `GALLERY_EXTENSION`: Add-on perpanjangan masa aktif galeri foto tamu.
   - `MEMORIES_TOPUP`: Add-on kuota tambahan foto kenangan tamu.
-- `paymentMethod` (String): Kanal pembayaran (`GATEWAY` atau `MANUAL_TRANSFER`).
+- `paymentMethod` (Enum `PaymentMethod`, Nullable, bawaan `GATEWAY`): Kanal pembayaran (`GATEWAY` atau `MANUAL_TRANSFER`).
+- `linkedInvitationId` (UUID, Nullable, FK `invitations.id`, `ON DELETE SET NULL`, terindeks): Undangan yang menjadi sasaran order `UPGRADE`, `GALLERY_EXTENSION`, atau `MEMORIES_TOPUP`. Menggantikan `linkedOrderId` yang berisi ID Order atau ID Invitation. Order dasar (`orderType = NEW`) dikenali lewat `orderType`, bukan lewat tautan kosong.
 - `proofImageUrl` (String, Nullable): URL slip transfer jika menggunakan transfer manual.
 - `promoCodeApplied` (String, Nullable): Kode kupon diskon yang diaplikasikan saat checkout.
 - `discountAmount` (Decimal, Nullable): Nominal potongan harga dari kupon promo.
@@ -265,14 +267,14 @@ Buku tamu undangan klien:
 
 #### 2. Tabel `rsvps`
 Konfirmasi kehadiran tamu:
-- `status` (String): Konfirmasi hadir (`HADIR`, `TIDAK_HADIR`, `RAGU`).
+- `status` (Enum `RsvpStatus`): Konfirmasi kehadiran `hadir`, `tidak`, atau `ragu`. Ragam kiriman tema (`HADIR`, `TIDAK_HADIR`, `RAGU`) dinormalkan oleh `lib/rsvpStatus.ts` sebelum disimpan; migrasi `20261001160000` menormalkan baris lama dan menolak nilai tak dikenal.
 - `guestCount` (Int): Jumlah orang yang akan hadir.
 
 #### 3. Tabel `guest_memories`
 Album foto momen candid yang diunggah oleh tamu di hari pernikahan:
 - `senderName` (String): Nama tamu pengunggah.
 - `senderEmail` (String): Email tamu pengunggah (wajib).
-- `mediaType` (String, bawaan `PHOTO`): Jenis media.
+- `mediaType` (String, bawaan `PHOTO`): Jenis media. Belum enum karena nilainya tidak konsisten: jalur unggah publik menulis `IMAGE`, sedangkan bawaan dan form menulis `PHOTO`, dan tidak ada kode yang membacanya dengan pembanding.
 - `mediaUrl` (String): Tautan file foto terkompresi di penyimpanan aktif (Cloudflare R2 atau lokal).
 - `thumbnailUrl` (String, Nullable): Tautan gambar mini.
 - `message` (String, Nullable): Caption ucapan momen.

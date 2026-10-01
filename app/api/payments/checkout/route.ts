@@ -204,7 +204,6 @@ export async function POST(req: Request) {
         paymentMethod: "GATEWAY",
         status: "PENDING",
         rejectReason: null,
-        paymentGatewayRef: activeGatewayId,
         // Rekam gateway yang menangani order ini + ID transaksi di sisi gateway
         gatewayId: activeGatewayId,
         gatewayTxId: gatewayTxId || orderId, // Fallback ke orderId jika gateway tidak mengembalikan txId spesifik
