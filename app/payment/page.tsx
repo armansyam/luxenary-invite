@@ -218,6 +218,7 @@ function PaymentContent() {
         clearInterval(interval);
         setCountdownStr("00:00");
         setIsGatewayExpired(true);
+        loadOrder();
       } else {
         const m = Math.floor(diff / 60000);
         const s = Math.floor((diff % 60000) / 1000);
@@ -226,7 +227,7 @@ function PaymentContent() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [qrisExpiry, serverTimeOffset]);
+  }, [qrisExpiry, serverTimeOffset, loadOrder]);
 
   // Real-time SSE Listener untuk deteksi status PAID instan
   useEffect(() => {
@@ -278,6 +279,10 @@ function PaymentContent() {
         body: JSON.stringify({ orderId }),
       });
       const data = await res.json();
+      if (data.isOrderExpired) {
+        await loadOrder();
+        return;
+      }
       if (!res.ok) throw new Error(data.error || "Gagal memperbarui sesi QRIS");
 
       if (data.qrString) {
@@ -599,7 +604,7 @@ function PaymentContent() {
                 <div className="space-y-1">
                   <h3 className="text-white font-bold text-base">Sesi QRIS Telah Berakhir</h3>
                   <p className="text-xs text-stone-400 max-w-sm mx-auto leading-relaxed">
-                    Batas waktu pembayaran untuk kode QR sebelumnya telah habis. Klik tombol di bawah untuk membuat kode QR baru. Diskon Anda tetap terjaga.
+                    Batas waktu pembayaran untuk kode QR sebelumnya telah habis. Klik tombol di bawah untuk membuat kode QR baru.
                   </p>
                 </div>
                 <button

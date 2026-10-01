@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { applyUpgradePlan } from "@/lib/upgradeHelper";
 import { paymentEmitter } from "@/lib/paymentEvents";
 import { releaseOrderPromoHold } from "@/lib/marketing";
-import { isGatewayAmountValid, settleOrderAsPaid } from "@/lib/paymentSettlement";
+import { isGatewayAmountValid, isStaleGatewaySession, settleOrderAsPaid } from "@/lib/paymentSettlement";
 import { logger } from "@/lib/logger";
 import { captureException } from "@/lib/errorTracker";
 import { NextRequest, NextResponse } from "next/server";
@@ -204,6 +204,16 @@ export async function POST(req: NextRequest) {
       });
 
     } else if (trxStatus === "expire" || trxStatus === "cancel" || trxStatus === "deny") {
+      if (isStaleGatewaySession(order, body.transaction_id)) {
+        if (webhookLogId) {
+          await prisma.webhookLog.update({
+            where: { id: webhookLogId },
+            data: { status: "stale_session", processedAt: new Date() },
+          });
+        }
+        return NextResponse.json({ status: "ignored", reason: "stale_session" }, { status: 200 });
+      }
+
       await prisma.order.updateMany({
         where: { id: orderId, status: "PENDING" },
         data: { status: "EXPIRED" },

@@ -21,6 +21,18 @@ export function isGatewayAmountValid(
 }
 
 /**
+ * Webhook kedaluwarsa/batal dari transaksi gateway lama (sesi QR yang sudah diganti, atau yang dibatalkan aplikasi
+ * sendiri saat rincian berubah) tidak boleh mematikan order yang sudah punya sesi baru.
+ * `gatewayTxId === order.id` menandakan alur redirect yang tidak menyimpan ID transaksi gateway, sehingga tidak bisa
+ * dibandingkan dan dianggap sesi aktif.
+ */
+export function isStaleGatewaySession(order: { id: string; gatewayTxId: string | null }, eventTxId: unknown): boolean {
+  if (typeof eventTxId !== "string" || eventTxId === "") return false;
+  if (order.gatewayTxId === order.id) return false;
+  return order.gatewayTxId !== eventTxId;
+}
+
+/**
  * Transisi PENDING -> PAID beserta efek samping marketing (hold promo, kupon, komisi mitra)
  * dalam SATU transaksi. Jika marketing gagal, seluruh transisi dibatalkan: order tetap PENDING
  * sehingga gateway mengirim ulang webhook dan tidak ada data setengah jadi.

@@ -12,6 +12,13 @@ import { prisma, pool } from "@/lib/prisma";
 const session = vi.hoisted(() => ({ user: null as null | Record<string, unknown> }));
 vi.mock("@/auth", () => ({ auth: vi.fn(async () => (session.user ? { user: session.user } : null)) }));
 
+const gw = vi.hoisted(() => ({ cancel: vi.fn(async (_txId: string): Promise<{ success: boolean; error?: string }> => ({ success: true })) }));
+vi.mock("@/lib/gatewayRegistry", () => ({
+  getGatewayById: vi.fn(async () => ({ cancel: gw.cancel })),
+  getActiveGateway: vi.fn(async () => ({ cancel: gw.cancel })),
+  getActiveGatewayId: vi.fn(async () => "midtrans"),
+}));
+
 import { POST as createOrder } from "@/app/api/orders/create/route";
 import { POST as confirmOrder } from "@/app/api/payments/checkout/confirm/route";
 import { POST as validatePromo, DELETE as releasePromo } from "@/app/api/public/promo/validate/route";
@@ -271,6 +278,90 @@ describe.skipIf(!IS_TEST_DB)("alur registrasi", () => {
       const res = await createInvitation(json("/api/client/invitations/create", "POST", { groomName: "Budi", brideName: "Ani" }));
       expect(res.status).toBe(403);
       expect(await prisma.invitation.count({ where: { userId: u.id } })).toBe(1);
+    });
+  });
+
+  describe("perubahan rincian saat sesi gateway sudah terbit", () => {
+    const setMode = (value: string) =>
+      prisma.adminSetting.upsert({ where: { key: "payment_mode" }, create: { key: "payment_mode", value }, update: { value } });
+    const SESSION = JSON.stringify({ qrString: "qr", sessionId: "tx-lama", expiry: Date.now() + 600000 });
+    const withSession = (userId: string) =>
+      makeOrder(userId, {
+        paymentMethod: "GATEWAY", gatewayId: "midtrans", gatewayTxId: "tx-lama", snapToken: SESSION,
+        chargedAmount: 99000, checkoutConfirmedAt: new Date(),
+      });
+    const confirm = (orderId: string) => confirmOrder(json("/api/payments/checkout/confirm", "POST", { orderId }));
+    const read = (id: string) => prisma.order.findUniqueOrThrow({ where: { id } });
+    let originalMode = "GATEWAY";
+
+    beforeAll(async () => {
+      originalMode = (await prisma.adminSetting.findUnique({ where: { key: "payment_mode" } }))?.value ?? "GATEWAY";
+      await setMode("GATEWAY");
+    });
+    afterAll(async () => {
+      await setMode(originalMode);
+    });
+
+    it("promo diterapkan setelah QR terbit: transaksi lama dibatalkan dan sesi dikosongkan agar QR baru bernominal benar terbit", async () => {
+      gw.cancel.mockClear();
+      const u = await makeUser("regate");
+      as(u);
+      const order = await withSession(u.id);
+      await validatePromo(json("/api/public/promo/validate", "POST", { code: COUPON, orderId: order.id }));
+
+      expect((await confirm(order.id)).status).toBe(200);
+      expect(gw.cancel).toHaveBeenCalledWith("tx-lama");
+      const after = await read(order.id);
+      expect(Number(after.amount)).toBe(79200);
+      expect(after.snapToken).toBeNull();
+      expect(after.gatewayTxId).toBeNull();
+      expect(after.chargedAmount).toBeNull();
+    });
+
+    it("konfirmasi ulang tanpa perubahan nominal mempertahankan QR yang sama", async () => {
+      gw.cancel.mockClear();
+      const u = await makeUser("rekeep");
+      as(u);
+      const order = await withSession(u.id);
+
+      expect((await confirm(order.id)).status).toBe(200);
+      expect(gw.cancel).not.toHaveBeenCalled();
+      const after = await read(order.id);
+      expect(after.gatewayTxId).toBe("tx-lama");
+      expect(after.snapToken).toBe(SESSION);
+      expect(Number(after.chargedAmount)).toBe(99000);
+    });
+
+    it("transaksi lama ternyata sudah terbayar: rincian tidak diubah dan dijawab 409", async () => {
+      gw.cancel.mockClear();
+      gw.cancel.mockResolvedValueOnce({ success: false, error: "Transaksi sudah terbayar" });
+      const u = await makeUser("repaid");
+      as(u);
+      const order = await withSession(u.id);
+      await validatePromo(json("/api/public/promo/validate", "POST", { code: COUPON, orderId: order.id }));
+
+      const res = await confirm(order.id);
+      expect(res.status).toBe(409);
+      const after = await read(order.id);
+      expect(Number(after.amount)).toBe(99000);
+      expect(after.gatewayTxId).toBe("tx-lama");
+    });
+
+    it("mode platform berpindah ke MANUAL: QR gateway lama dibatalkan agar tidak bisa dibayar ganda", async () => {
+      gw.cancel.mockClear();
+      const u = await makeUser("remanual");
+      as(u);
+      const order = await withSession(u.id);
+      await setMode("MANUAL");
+      try {
+        expect((await confirm(order.id)).status).toBe(200);
+      } finally {
+        await setMode("GATEWAY");
+      }
+      expect(gw.cancel).toHaveBeenCalledWith("tx-lama");
+      const after = await read(order.id);
+      expect(after.paymentMethod).toBe("MANUAL_TRANSFER");
+      expect(after.snapToken).toBeNull();
     });
   });
 });

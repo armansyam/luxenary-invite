@@ -80,7 +80,7 @@ async function makeInvitation(userId: string, orderId: string | null, tag: strin
 
 function signedWebhook(
   orderId: string,
-  opts: { status?: string; amount?: string; signature?: string | null } = {}
+  opts: { status?: string; amount?: string; signature?: string | null; transactionId?: string } = {}
 ) {
   const statusCode = "200";
   const amount = opts.amount ?? "500000.00";
@@ -96,7 +96,7 @@ function signedWebhook(
     status_code: statusCode,
     gross_amount: amount,
     transaction_status: opts.status ?? "settlement",
-    transaction_id: crypto.randomUUID(),
+    transaction_id: opts.transactionId ?? crypto.randomUUID(),
   };
   if (signature !== null) body.signature_key = signature;
   return new NextRequest("http://localhost:3000/api/webhook/midtrans", {
@@ -339,6 +339,52 @@ describe.skipIf(!IS_TEST_DB)("Integrasi pembayaran & pemenuhan (DB luxenary_test
       const otherAfter = await prisma.invitation.findUniqueOrThrow({ where: { id: otherInv.id } });
       expect(JSON.parse(ownerAfter.featureSettings || "{}").extraMemoriesQuota).toBe(50);
       expect(JSON.parse(otherAfter.featureSettings || "{}").extraMemoriesQuota ?? 0).toBe(0);
+    });
+  });
+
+  // ── E: webhook batal/kedaluwarsa dari sesi gateway yang sudah diganti ──────
+  describe("E. webhook cancel/expire dari sesi lama", () => {
+    const statusOf = async (id: string) => (await prisma.order.findUniqueOrThrow({ where: { id } })).status;
+
+    it("cancel dari transaksi lama (bukan sesi aktif) diabaikan, order tetap PENDING", async () => {
+      const u = await makeUser("e-stale");
+      const o = await makeOrder(u.id, { gatewayId: "midtrans", gatewayTxId: "tx-aktif" });
+      const res = await midtransWebhook(signedWebhook(o.id, { status: "cancel", transactionId: "tx-lama" }));
+      expect((await res.json()).reason).toBe("stale_session");
+      expect(await statusOf(o.id)).toBe("PENDING");
+      const log = await prisma.webhookLog.findFirst({
+        where: { source: "midtrans", status: "stale_session", payload: { path: ["order_id"], equals: o.id } },
+      });
+      expect(log).not.toBeNull();
+    });
+
+    it("expire dari sesi aktif menjadikan order EXPIRED", async () => {
+      const u = await makeUser("e-current");
+      const o = await makeOrder(u.id, { gatewayId: "midtrans", gatewayTxId: "tx-aktif" });
+      await midtransWebhook(signedWebhook(o.id, { status: "expire", transactionId: "tx-aktif" }));
+      expect(await statusOf(o.id)).toBe("EXPIRED");
+    });
+
+    it("cancel ketika sesi sudah dikosongkan (rincian berubah) diabaikan", async () => {
+      const u = await makeUser("e-cleared");
+      const o = await makeOrder(u.id, { gatewayId: "midtrans", gatewayTxId: null });
+      await midtransWebhook(signedWebhook(o.id, { status: "cancel", transactionId: "tx-lama" }));
+      expect(await statusOf(o.id)).toBe("PENDING");
+    });
+
+    it("alur redirect (gatewayTxId = ID order) tidak bisa dibandingkan sehingga tetap diproses", async () => {
+      const u = await makeUser("e-redirect");
+      const o = await makeOrder(u.id, { gatewayId: "midtrans" });
+      await prisma.order.update({ where: { id: o.id }, data: { gatewayTxId: o.id } });
+      await midtransWebhook(signedWebhook(o.id, { status: "expire", transactionId: "apa-saja" }));
+      expect(await statusOf(o.id)).toBe("EXPIRED");
+    });
+
+    it("pelunasan dari sesi lama tetap diterima bila nominalnya cukup (uang sudah masuk)", async () => {
+      const u = await makeUser("e-paid-old");
+      const o = await makeOrder(u.id, { gatewayId: "midtrans", gatewayTxId: "tx-aktif" });
+      await midtransWebhook(signedWebhook(o.id, { status: "settlement", transactionId: "tx-lama" }));
+      expect(await statusOf(o.id)).toBe("PAID");
     });
   });
 });
