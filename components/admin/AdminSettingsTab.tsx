@@ -177,7 +177,7 @@ export default function AdminSettingsTab(props: Props) {
   {/* Mode Pembayaran & Rekening Bank Manual */}
   <SettingsCard
     title="Mode Pembayaran"
-    description="Pilih metode pembayaran yang diizinkan untuk klien: QRIS Otomatis, Transfer Bank Manual, atau keduanya."
+    description="Pilih satu metode pembayaran untuk klien: QRIS Otomatis (payment gateway) atau Transfer Bank Manual."
     isEditing={Boolean(editSection["payment_mode"])}
     onEdit={() => toggleEditSection("payment_mode")}
     onCancel={() =>
