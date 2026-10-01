@@ -7,6 +7,8 @@ ALTER TABLE "orders" ALTER COLUMN "amount" SET DATA TYPE DECIMAL(12,2);
 ALTER TABLE "themes" DROP COLUMN "isFeatured";
 
 CREATE INDEX "affiliate_commissions_payoutExpenseId_idx" ON "affiliate_commissions"("payoutExpenseId");
+-- Produksi memiliki versi parsial (WHERE "guestId" IS NOT NULL) dari migrasi hardening lama yang sudah dipadatkan ke baseline; ganti dengan indeks penuh sesuai skema.
+DROP INDEX IF EXISTS "rsvps_guestId_idx";
 CREATE INDEX "rsvps_guestId_idx" ON "rsvps"("guestId");
 
 -- Referensi payout yatim dinolkan agar sesuai semantik ON DELETE SET NULL.
