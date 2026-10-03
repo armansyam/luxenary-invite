@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { isReservedSubdomain } from "@/lib/domainUtils";
+import { isReservedSubdomain, isSubdomainExpired } from "@/lib/domainUtils";
+import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 
 export async function GET(req: Request) {
   try {
@@ -51,22 +52,10 @@ export async function GET(req: Request) {
     });
 
     if (existing) {
-      let eventDateToTest: string | null = null;
-      try {
-        if (existing.eventData) {
-          const parsed = JSON.parse(existing.eventData);
-          if (Array.isArray(parsed) && parsed[0]?.date) {
-            eventDateToTest = parsed[0].date;
-          }
-        }
-      } catch (err) {
-        console.warn(`[SubdomainCheck] Failed to parse eventData for invitation ${existing.id}:`, err);
-      }
+      // Aturan yang sama dengan pembuatan dan pengeditan undangan: masa tenggang dari pengaturan, acara utama sebagai patokan.
+      const { subdomainGraceDays } = await getLifecycleSettings();
 
-      // If holding invitation has expired (> 7 days post event), it can be recycled!
-      const isExpired = eventDateToTest ? (new Date(eventDateToTest).getTime() + 7 * 24 * 60 * 60 * 1000 < Date.now()) : false;
-
-      if (!isExpired) {
+      if (!isSubdomainExpired(existing.eventData, subdomainGraceDays)) {
         return NextResponse.json({
           available: false,
           message: "Subdomain sedang aktif digunakan oleh pasangan lain. Silakan gunakan kombinasi lain.",

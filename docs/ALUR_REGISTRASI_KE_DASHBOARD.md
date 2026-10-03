@@ -238,26 +238,27 @@ flowchart TD
 *   **Fitur Keamanan Draft Lokal:**
     Menggunakan `localStorage ("luxenary_setup_draft")`. Jika koneksi terputus atau halaman ter-refresh di tengah jalan, seluruh data input pulih otomatis.
 *   **Tahapan Form Wizard:**
-    1. **Langkah 0: Pilihan Jenis Acara (`eventType`):**
-       - Pilihan: `WEDDING`, `BIRTHDAY`, `KHITAN`, `AQIQAH`, `WISUDA`, `GATHERING`.
-       - Menentukan skema formulir langkah berikutnya serta memfilter katalog tema secara eksklusif.
-    2. **Langkah 1: Profil Penyelenggara / Persona (Adaptif):**
+    *Wizard hanya memudahkan pengisian data awal: hanya Langkah 0 yang wajib, Langkah 1 sampai 3 boleh dikosongkan dan dilengkapi di Studio Editor.*
+    1. **Langkah 0: Pilihan Jenis Acara (`eventType`) — wajib:**
+       - Pilihan: `WEDDING`, `BIRTHDAY`, `KHITAN`, `AQIQAH`, `WISUDA`, `GATHERING`. Tidak ada kartu terpilih di awal; tombol lanjut nonaktif sampai satu dipilih.
+       - Menentukan skema formulir langkah berikutnya serta memfilter katalog tema secara eksklusif. Tidak dapat diubah setelah undangan dibuat.
+    2. **Langkah 1: Profil Penyelenggara / Persona (Adaptif, boleh kosong):**
        - **Wedding:** Nama lengkap & panggilan kedua mempelai (Pria & Wanita).
        - **Birthday:** Nama lengkap, nama panggilan, dan usia/milad persona utama.
        - **Khitan & Aqiqah:** Nama anak/bayi dan nama kedua orang tua (Ayah & Ibu).
        - **Wisuda:** Nama wisudawan, gelar akademik, program studi, dan institusi.
        - **Gathering:** Nama acara utama, sub-tema, dan organisasi penyelenggara.
-    3. **Langkah 2: Hari Bahagia, Wilayah & Waktu Sesi Terstruktur:**
+    3. **Langkah 2: Hari Bahagia, Wilayah & Waktu Sesi Terstruktur (boleh kosong):**
        - Tanggal acara utama dan wilayah/kota dengan pendeteksian zona waktu otomatis (`WIB`, `WITA`, `WIT`).
        - Penentuan waktu sesi terstruktur (Akad/Sesi 1 dan Resepsi/Sesi 2).
-    4. **Langkah 3: Pemilihan Desain Tema (Terisolasi per Jenis Acara):**
+    4. **Langkah 3: Pemilihan Desain Tema (Terisolasi per Jenis Acara, boleh dilewati; tanpa pilihan, server memakai tema bawaan jenis acara):**
        - Menampilkan tema yang **hanya relevan** dengan `eventType` yang dipilih.
        - Navigasi tab kategori gaya dinamis (`all`, `minimalist`, `modern`, `traditional`) menyesuaikan tema yang tersedia pada jenis acara tersebut.
 
 ### 2. Backend Pembuat Undangan
 *   **File:** [`app/api/client/invitations/create/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/invitations/create/route.ts)
 *   **Operasi Kritis yang Dilakukan:**
-    1. **Guard Validasi Order & Event Type:** Memverifikasi bahwa order ID benar-benar berstatus `PAID`, milik user yang bersangkutan, dan jika `themeId` diisi, temanya wajib memiliki `eventType` yang sesuai (jika tidak cocok, sistem fallback aman ke `DEFAULT_THEME_BY_EVENT`).
+    1. **Guard Validasi Order & Event Type:** Menolak (HTTP 400, "Jenis acara wajib dipilih.") bila `eventType` kosong atau tidak sah; tidak ada lagi bawaan diam-diam ke `WEDDING`. Memverifikasi bahwa order ID benar-benar berstatus `PAID`, milik user yang bersangkutan, dan jika `themeId` diisi, temanya wajib memiliki `eventType` yang sesuai (jika tidak cocok, sistem fallback aman ke `DEFAULT_THEME_BY_EVENT`).
     2. **Pembuatan Canonical Flat Slug Permanen:**
        - **Wedding:** `{groomSlug}-{brideSlug}-{DDMMYY}` (Contoh: `dimas-clarissa-121226`).
        - **Non-Wedding:** `{personaSlug}-{DDMMYY}` (Contoh: `kenzo-150826`).

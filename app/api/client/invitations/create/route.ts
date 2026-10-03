@@ -138,9 +138,7 @@ export async function POST(req: Request) {
     brideName,
     groomNickname,
     brideNickname,
-    invitationName,
     themeId,
-    planType,
     weddingDate,
     eventDate,
     city,
@@ -153,8 +151,11 @@ export async function POST(req: Request) {
   } = body;
 
   const validEventTypes: EventType[] = ["WEDDING", "BIRTHDAY", "KHITAN", "AQIQAH", "WISUDA", "GATHERING"];
-  const cleanType = typeof rawEventType === "string" ? rawEventType.trim().toUpperCase() : "WEDDING";
-  const eventType: EventType = (validEventTypes.includes(cleanType as EventType) ? cleanType : "WEDDING") as EventType;
+  const cleanType = typeof rawEventType === "string" ? rawEventType.trim().toUpperCase() : "";
+  if (!validEventTypes.includes(cleanType as EventType)) {
+    return NextResponse.json({ error: "Jenis acara wajib dipilih." }, { status: 400 });
+  }
+  const eventType = cleanType as EventType;
 
   if (themeId && typeof themeId === "string" && themeId.trim()) {
     const cleanThemeId = themeId.trim().toLowerCase();
@@ -206,7 +207,8 @@ export async function POST(req: Request) {
 
   let invitationSlug = baseSlug;
   const existingBase = await prisma.invitation.findUnique({ where: { invitationSlug: baseSlug } });
-  if (existingBase) {
+  // Draf milik pengguna sendiri bukan bentrok: submit ulang wizard tidak boleh mengganti slug permanennya.
+  if (existingBase && existingBase.id !== existingDraft?.id) {
     const citySlug = city ? slugify(city) : "";
     const withCity = citySlug ? `${baseSlug}-${citySlug}` : baseSlug;
     const existingWithCity = await prisma.invitation.findUnique({ where: { invitationSlug: withCity } });
@@ -232,7 +234,7 @@ export async function POST(req: Request) {
       where: { subdomain: desiredSubdomain },
     });
 
-    if (existingSubdomain) {
+    if (existingSubdomain && existingSubdomain.id !== existingDraft?.id) {
       const { subdomainGraceDays } = await getLifecycleSettings();
       if (isSubdomainExpired(existingSubdomain.eventData, subdomainGraceDays)) {
         await prisma.invitation.update({
@@ -308,7 +310,6 @@ export async function POST(req: Request) {
   }
 
   const invitationStatus = "DRAFT";
-  const publishedAt = paidOrder ? new Date() : undefined;
 
   const DEFAULT_THEME_BY_EVENT: Record<EventType, string> = {
     WEDDING: "kalandra",
@@ -462,7 +463,6 @@ export async function POST(req: Request) {
             eventData: initialEvents.length > 0 ? JSON.stringify(initialEvents) : existingDraft.eventData,
             featureSettings: JSON.stringify(mergedFs),
             status: "DRAFT",
-            publishedAt: publishedAt || existingDraft.publishedAt,
           },
         });
       } else {
@@ -498,7 +498,6 @@ export async function POST(req: Request) {
               customLabels: defaultCustomLabels,
             }),
             status: invitationStatus,
-            publishedAt: publishedAt,
           },
         });
       }

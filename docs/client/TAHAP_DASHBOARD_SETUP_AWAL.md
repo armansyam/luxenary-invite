@@ -11,27 +11,14 @@ Dokumen ini memuat spesifikasi teknis dan alur faktual sistem pada tahap **Dashb
    ```
    /dashboard/setup?order={orderId}&plan={planType}
    ```
-2. **Setup Bertahap 4 Langkah Adaptif Multi-Event (Zero Friction):** Calon pengantin atau penyelenggara tidak langsung dibebani ratusan kolom formulir rumit. Penyiapan awal dibagi menjadi 4 langkah terarah:
-   - **Langkah 0:** Pemilihan Jenis Acara (`eventType`: Wedding, Birthday, Khitan, Aqiqah, Wisuda, Gathering).
-   - **Langkah 1:** Identitas Penyelenggara / Pasangan (Formulir adaptif sesuai jenis acara yang dipilih).
-   - **Langkah 2:** Hari Bahagia & Wilayah Utama (Tanggal Acara, Kota dengan zona waktu otomatis WIB/WITA/WIT, dan waktu sesi terstruktur).
-   - **Langkah 3:** Pemilihan Desain Tema Perdana (Difilter ketat hanya menampilkan tema untuk jenis acara terpilih).
-3. **Prinsip Anti-Hardcode & Zero Fake Data (Clean State):**
-   - **Tidak Ada Tema Default:** State awal tema bernilai kosong murni (`themeId = ""`). Tidak ada auto-select ke tema tertentu. Klien bebas menentukan tema pilihannya sendiri.
-   - **Validasi Submit:** Jika klien menyelesaikan setup form 4 langkah, sistem mewajibkan pemilihan salah satu tema sebelum formulir dapat dikirimkan ke server.
-4. **Fleksibilitas Penuh (Opsi Lewati Setup Murni Kosong):**
-   - Klien memiliki opsi *"Lewati Setup (Atur Nanti)"*.
-   - Jika dilewati, backend menyimpan record dengan data murni kosong (`themeId: ""`, `eventData: []`, `loveStory: []`, `bankAccounts: []`).
-   - Tidak ada data fiktif / dummy yang disuntikkan secara paksa.
-5. **Penanganan Status "Belum Memilih Tema" Pasca Skip:**
-   - **Di Dashboard Utama (`/dashboard`):** Menampilkan badge status merah/rose *"Belum Memilih Tema"* pada label tema dan banner perhatian teratas *"Anda belum memilih desain tema undangan"* dengan tombol *"Pilih Tema Sekarang"*.
-   - **Di Studio Editor (`/dashboard/invitation/[id]`):**
-     - Header editor menampilkan badge *"Belum Memilih Tema"*.
-     - Banner tahap wajib pertama muncul di atas canvas editor.
-     - Seksi 1 (Tema Desain & Palet Warna) otomatis dibuka (*auto-expanded*) saat editor pertama kali dimuat jika tema belum ditentukan, dan daftar tema di Seksi 1 difilter ketat sesuai `invitation.eventType`.
-     - Jika Seksi 1 diminimalkan, kartu menampilkan alert ramah *"Belum Memilih Tema Undangan"* dengan tombol akses cepat *"Pilih Tema Sekarang"*.
-   - **Di Route Pratinjau (`/api/client/invitations/[id]/preview`):** Menampilkan halaman peringatan elegan *"Tema Belum Dipilih"* tanpa memaksakan fallback tema apapun.
-   - **Di Syarat Publikasi (`/dashboard/settings` & `lib/staticPublisher.ts`):** Publikasi undangan diblokir (`isPublishable = false`) dan compiler statis menolak proses rendering hingga tema resmi telah dipilih oleh klien.
+2. **Setup Bertahap 4 Langkah Adaptif Multi-Event:** Wizard hanya memudahkan pengisian data awal. Satu-satunya isian yang wajib adalah jenis acara; seluruh isian lain boleh dikosongkan dan dilengkapi di Studio Editor. Syarat kelengkapan untuk rilis ada di akhir alur, pada audit pra-rilis di tab Pengaturan (`/dashboard/settings`).
+   - **Langkah 0 (wajib):** Pemilihan Jenis Acara (`eventType`: Wedding, Birthday, Khitan, Aqiqah, Wisuda, Gathering). Tidak ada kartu yang terpilih di awal dan tombol lanjut nonaktif sampai klien memilih satu. Jenis acara tidak dapat diubah setelah undangan dibuat (rute `PUT /api/client/invitations/{id}` tidak menerima `eventType`, dan tema dikunci per jenis acara).
+   - **Langkah 1 (boleh kosong):** Identitas Penyelenggara / Pasangan (formulir adaptif sesuai jenis acara).
+   - **Langkah 2 (boleh kosong):** Hari Bahagia & Wilayah Utama (tanggal, kota, zona waktu otomatis WIB/WITA/WIT, dan waktu sesi terstruktur).
+   - **Langkah 3 (boleh kosong):** Pemilihan Desain Tema Perdana, difilter sesuai jenis acara terpilih.
+3. **Tema Bawaan per Jenis Acara:** `themes` adalah FK wajib pada `invitations.themeId`, sehingga nilai kosong tidak dapat disimpan. Bila klien tidak memilih tema, `POST /api/client/invitations/create` memakai tema bawaan jenis acara (`kalandra`, `kalandra-birthday`, `al-fariz`, `al-khalid`, `cendekia`, `sinergi`). Tema dapat diganti di Studio Editor selama undangan masih `DRAFT`.
+4. **Penegakan di Server:** `POST /api/client/invitations/create` menjawab HTTP 400 ("Jenis acara wajib dipilih.") bila `eventType` kosong atau tidak sah; tidak ada lagi bawaan diam-diam ke `WEDDING`. Tombol "Lewati Setup" sudah dihapus karena membuat undangan dari nol tanpa membawa jenis acara yang dipilih.
+5. **Isian Kosong Tidak Menyuntikkan Data Palsu:** Nama kosong menghasilkan `groomName`/`brideName` kosong dan slug kanonikal `undangan-{randomId}`; tanggal kosong berarti kartu acara awal (Akad/Resepsi) tidak dibuat; `eventData` tetap kosong. Kelengkapan ditegakkan oleh audit pra-rilis di `/dashboard/settings` (antara lain subdomain, tema, empat visual sampul, profil utama, foto profil, tanggal acara, lokasi, PIN petugas bila paket mendukung, dan galeri bila aktif; daftar lengkapnya adalah `AUDIT_RULES` di `app/(client)/dashboard/settings/page.tsx`). Slug kanonikal tidak ikut berubah saat nama diisi kemudian, sehingga klien yang mengosongkan nama tetap memiliki jalur kanonikal acak. Untuk pernikahan, subdomain turunan nama (`{pria}-{wanita}`) terisi otomatis saat kedua nama dilengkapi dan subdomain belum diatur.
 6. **Anti Kehilangan Data (Local Storage Persistence):** Form otomatis menyimpan draft input setiap kali ada ketikan ke `localStorage` (`luxenary_setup_draft`). Jika browser tertutup, baterai habis, atau halaman ter-refresh, seluruh ketikan klien langsung pulih seketika. Draft dibersihkan saat submit selesai.
 
 ---
@@ -45,47 +32,42 @@ flowchart TD
     
     C --> D[Cek Draft Tersimpan di localStorage: luxenary_setup_draft]
     D -->|Ada Draft Lama| E[Auto-Restore State Input & Step]
-    D -->|Tidak Ada Draft| F[Inisialisasi State Kosong: themeId = kosong, eventType = WEDDING]
+    D -->|Tidak Ada Draft| F[Inisialisasi State Kosong: eventType = kosong, themeId = kosong]
     
     E & F --> G[Fetch Hak Akses Paket: Onboarding-State / Query Param]
     G --> H[Identifikasi Tier Paket Klien: TIER_1 / TIER_2 / TIER_3]
     
-    H --> I0[LANGKAH 0: Pilihan Jenis Acara]
+    H --> I0[LANGKAH 0: Pilihan Jenis Acara - Wajib]
+    I0 -->|Belum memilih| I0X[Tombol Lanjut Nonaktif]
     I0 -->|Pilih Acara| I0A[Wedding / Birthday / Khitan / Aqiqah / Wisuda / Gathering]
     
-    I0A --> I[LANGKAH 1: Profil Penyelenggara / Persona Adaptif]
+    I0A --> I[LANGKAH 1: Profil Penyelenggara / Persona Adaptif - Boleh Kosong]
     I -->|Wedding| I1[Nama Panggilan & Lengkap Pria & Wanita]
     I -->|Non-Wedding| I2[Nama Utama, Usia/Gelar, Nama Orang Tua / Organisasi]
-    I --> J{Pilihan Aksi Klien}
+    I --> L[LANGKAH 2: Tanggal, Lokasi & Waktu Acara - Boleh Kosong]
     
-    J -->|Klik: Lewati Setup| K[handleSkipSetup: themeId = kosong, eventData = kosong]
-    J -->|Klik: Lanjut ke Tanggal Acara| L[LANGKAH 2: Tanggal, Lokasi & Waktu Acara]
-    
-    L -->|Wajib| L1[Tanggal Acara: YYYY-MM-DD]
-    L -->|Wajib| L2[Kota / Wilayah Utama Acara]
+    L --> L1[Tanggal Acara: YYYY-MM-DD]
+    L --> L2[Kota / Wilayah Utama Acara]
     L -->|Otomatis| L3[Deteksi Zona Waktu Browser: WIB / WITA / WIT]
-    L -->|Opsional| L4[Waktu Sesi Akad / Resepsi Terstruktur]
-    L --> M[Klik: Pilih Desain Tema]
+    L --> L4[Waktu Sesi Akad / Resepsi Terstruktur]
+    L --> N[LANGKAH 3: Pemilihan Desain Tema - Boleh Kosong]
     
-    M --> N[LANGKAH 3: Pemilihan Desain Tema Terisolasi]
-    N --> O[Filter Tema Eksklusif sesuai eventType - Tanpa Auto-Select]
-    O --> P{Apakah Klien Sudah Memilih Tema?}
-    P -->|Belum Memilih| P1[Tombol Submit Dinonaktifkan / Peringatan Muncul]
-    P -->|Sudah Memilih 1 Tema| Q[Klik: Selesai & Masuk ke Studio Undangan]
+    N --> O[Filter Tema sesuai eventType]
+    O --> Q[Klik: Selesai & Masuk ke Studio Undangan]
     
-    Q --> R[API Backend: POST /api/client/invitations/create dengan eventType & themeId Terpilih]
-    K --> R2[API Backend: POST /api/client/invitations/create dengan themeId KOSONG]
-    
-    R & R2 --> S[Verifikasi Keamanan: User Memiliki Order PAID]
+    Q --> R[API Backend: POST /api/client/invitations/create dengan eventType wajib]
+    R --> RX{eventType Sah?}
+    RX -->|Tidak| RY[HTTP 400: Jenis acara wajib dipilih]
+    RX -->|Ya| S[Verifikasi Keamanan: User Memiliki Order PAID]
     S --> T[Rakit Slug Kanonikal Multi-Event & Validasi Guard Tema]
-    T --> U[Simpan Record Baru di Database PostgreSQL via Prisma]
+    T --> TT{Tema Dipilih?}
+    TT -->|Tidak| TD[Pakai Tema Bawaan Jenis Acara]
+    TT -->|Ya| U[Simpan Record Baru di Database PostgreSQL via Prisma]
+    TD --> U
     U --> V[Hapus Draft localStorage: luxenary_setup_draft]
     
     V --> W[Auto-Redirect ke Studio Editor: /dashboard/invitation/ID]
-    
-    W --> X{Apakah themeId Kosong?}
-    X -->|Ya: Kasus Skip Setup| Y[Buka Seksi 1 Otomatis + Tampilkan Banner Wajib Pilih Tema + Blokir Publish]
-    X -->|Tidak: Tema Sudah Ada| Z[Tampilkan Editor Normal Siap Disesuaikan]
+    W --> Z[Klien melengkapi data di editor; kelengkapan diperiksa audit pra-rilis di /dashboard/settings]
 ```
 
 ---
@@ -101,7 +83,8 @@ flowchart TD
   - `AQIQAH` (Aqiqah / Tasyakuran Kelahiran)
   - `WISUDA` (Wisuda / Graduation / Yudisium)
   - `GATHERING` (Reuni / Halal Bihalal / Corporate Gathering)
-* **Dampak Sistem:** Mengubah skema input pada Langkah 1, format slug kanonikal, serta memfilter tema di Langkah 3.
+* **Wajib dipilih:** `eventType` kosong sejak awal; tombol lanjut nonaktif sampai satu kartu diklik. Server menolak pembuatan undangan tanpa `eventType` sah (HTTP 400).
+* **Dampak Sistem:** Mengubah skema input pada Langkah 1, format slug kanonikal, serta memfilter tema di Langkah 3. Tidak dapat diubah setelah undangan dibuat.
 
 ---
 
@@ -110,10 +93,10 @@ flowchart TD
 * **Tujuan:** Menangkap profil utama penyelenggara/tokoh sesuai jenis acara.
 * **Elemen Formulir:**
   1. **Wedding:**
-     - `groomNickname` & `brideNickname` (*Wajib*): Nama panggilan mempelai.
-     - `groomName` & `brideName` (*Opsional*): Nama lengkap & gelar kedua mempelai.
+     - `groomNickname` & `brideNickname` (*Boleh kosong*): Nama panggilan mempelai.
+     - `groomName` & `brideName` (*Boleh kosong*): Nama lengkap & gelar kedua mempelai.
   2. **Non-Wedding (Birthday, Khitan, Aqiqah, Wisuda, Gathering):**
-     - `personName` / `eventTitle` (*Wajib*): Nama tokoh utama atau nama agenda acara.
+     - `personName` / `eventTitle` (*Boleh kosong*): Nama tokoh utama atau nama agenda acara.
      - `personNickname` / `eventSubtitle` (*Opsional*): Panggilan atau tema pendukung.
      - `fatherName` & `motherName` (*Opsional*): Nama orang tua (khusus Khitan & Aqiqah).
      - `degree`, `major`, `institution` (*Opsional*): Gelar dan almamater (khusus Wisuda).
@@ -125,8 +108,8 @@ flowchart TD
 * **Komponen:** [`app/(client)/dashboard/setup/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/(client)/dashboard/setup/page.tsx) (`step === 2`)
 * **Tujuan:** Menentukan patokan tanggal, kota lokasi sentral, zona waktu resmi, serta waktu sesi terstruktur.
 * **Elemen Formulir:**
-  1. **Tanggal Acara Utama (`weddingDate`) — *Wajib*:** Format `YYYY-MM-DD`.
-  2. **Kota / Wilayah Utama Acara (`city`) — *Wajib*:** Autocomplete daftar kota/kabupaten se-Indonesia dengan saran cepat.
+  1. **Tanggal Acara Utama (`weddingDate`) — *Boleh kosong*:** Format `YYYY-MM-DD`. Bila terisi, server membuat kartu acara awal (Akad dan Resepsi untuk pernikahan, satu acara utama untuk jenis lain); bila kosong, `eventData` tetap kosong dan tanggal diisi di Studio Editor.
+  2. **Kota / Wilayah Utama Acara (`city`) — *Boleh kosong*:** Hanya dipakai sebagai teks lokasi awal pada kartu acara. Autocomplete daftar kota/kabupaten se-Indonesia dengan saran cepat.
   3. **Zona Waktu Acara (`timeZone`) — *Pilihan Interaktif*:** Opsi chip: `WIB`, `WITA`, `WIT`. Otomatis terdeteksi dari zona waktu browser klien.
   4. **Waktu Sesi Terstruktur (Akad & Resepsi) — *Opsional*:** Input jam mulai dan jam selesai terpisah (`akadStart`, `akadEnd`, `resepsiStart`, `resepsiEnd`) untuk menjamin validitas format tanpa free-text rentan error.
 
@@ -136,74 +119,59 @@ flowchart TD
 * **Komponen:** [`app/(client)/dashboard/setup/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/(client)/dashboard/setup/page.tsx) (`step === 3`)
 * **Tujuan:** Memilih tema perdana yang difilter secara ketat sesuai `eventType` yang dipilih di Langkah 0.
 * **Navigasi Kategori Dinamis:** Tab filter kategori gaya (`all`, `minimalist`, `modern`, `traditional`) secara cerdas hanya menampilkan tab kategori yang memang memiliki tema pada jenis acara tersebut.
-* **Clean State Tanpa Default Tema:** Variabel `themeId` diinisialisasi sebagai string kosong `""`. Tidak ada auto-select sembarangan.
-* **Validasi Sebelum Finalisasi:** Klien wajib memilih satu tema sebelum menekan tombol submit (kecuali jika memilih alur lewati setup).
+* **Tanpa Auto-Select di Wizard:** Variabel `themeId` diinisialisasi sebagai string kosong `""`; wizard tidak memilihkan tema.
+* **Boleh Dilewati:** Klien dapat menyelesaikan wizard tanpa memilih tema. Label pada ringkasan menampilkan "Tema bawaan jenis acara", dan server memakai tema bawaan jenis acara tersebut (lihat bagian 1 poin 3). Tema dapat diganti di Studio Editor selama undangan masih `DRAFT`.
 
 
 ---
 
-## 4. Mekanisme "Lewati Setup" & Penanganan Undangan Tanpa Tema
+## 4. Pembuatan Undangan dengan Isian Minimal & Penanganan Tema
 
-### A. Alur "Lewati Setup" (Clean Null State)
-Saat tombol *"Lewati Setup (Atur Nanti)"* diklik:
-1. Fungsi `handleSkipSetup()` mengirim payload ke `POST /api/client/invitations/create`:
-   ```typescript
-   {
-     groomNickname: "Mempelai Pria",
-     brideNickname: "Mempelai Wanita",
-     weddingDate: "",
-     city: "",
-     themeId: "" // Murni kosong tanpa pemaksaan tema default
-   }
-   ```
-2. Backend tidak menyuntikkan data fiktif apapun. Array `eventData`, `loveStory`, dan `bankAccounts` diinisialisasi sebagai array kosong `[]`.
-3. Slug kanonikal dibuat aman dengan format `undangan-{randomId}`.
-4. Draft lokal dibersihkan dan klien langsung dialihkan ke Studio Editor `/dashboard/invitation/{id}`.
+### A. Payload Minimum
+Satu-satunya isian yang wajib adalah `eventType`. Payload berikut diterima `POST /api/client/invitations/create` dan menghasilkan undangan `DRAFT` (diuji untuk keenam jenis acara di `__tests__/integration/registrationFlow.test.ts`):
+```typescript
+{
+  eventType: "WEDDING",
+  groomNickname: "", brideNickname: "", groomName: "", brideName: "",
+  weddingDate: "", city: "", themeId: "", planType: "TIER_1"
+}
+```
+1. Backend tidak menyuntikkan data fiktif. `eventData` kosong bila tanggal kosong.
+2. Slug kanonikal berformat `undangan-{randomId}` bila nama kosong.
+3. Tema memakai tema bawaan jenis acara.
+4. Draft lokal dibersihkan dan klien dialihkan ke Studio Editor `/dashboard/invitation/{id}`.
 
-### B. Indikator Status di Dashboard Utama (`/dashboard`)
-1. **Badge Tema di Kartu Status:**
-   - Jika `invitation.themeId` ada: Menampilkan nama tema terpilih (misal: *Kalandra*).
-   - Jika `invitation.themeId` kosong: Menampilkan badge merah/rose bold `Belum Memilih Tema`.
-2. **Banner Edukasi Atas:**
-   - Menampilkan alert kuning/amber: *"Anda belum memilih desain tema undangan. Silakan tentukan tema desain pilihan Anda di Studio Editor agar undangan dapat diselesaikan."*.
-   - Terdapat tombol call-to-action *"Pilih Tema Sekarang"* yang langsung membawa klien ke Seksi 1 Studio Editor.
+### B. Cabang "Tema Kosong" yang Masih Ada di Kode
+`invitations.themeId` adalah FK wajib ke `themes`, sehingga undangan baru tidak pernah bertema kosong. Cabang berikut tetap ada sebagai pengaman dan tidak tercapai pada data yang dibuat lewat jalur sekarang:
+- `/dashboard`: badge *"Belum Memilih Tema"* dan banner *"Pilih Tema Sekarang"* (`!invitation?.themeId`).
+- Studio Editor: auto-expand Seksi 1 dan banner tema bila `!inv.themeId`.
+- `/api/client/invitations/[id]/preview`: halaman *"Tema Belum Dipilih"*.
+- `lib/staticPublisher.ts`: melempar *"Gagal mempublikasikan undangan: Desain tema belum dipilih."* bila `themeId` kosong.
 
-### C. Alur Studio Editor (`/dashboard/invitation/[id]`)
-1. **Auto-Expand Seksi 1:** Jika `!inv.themeId`, sistem otomatis membuka kartu Seksi 1 (`collapsed.sec1 = false`) agar pandangan klien langsung tertuju pada pemilihan tema.
-2. **Banner Tahap Pertama:** Banner peringatan menonjol di atas tab navigasi menginstruksikan bahwa memilih tema adalah langkah nomor satu sebelum kustomisasi lainnya.
-3. **Pratinjau Seksi 1 saat Tertutup:** Jika kartu seksi 1 ditutup dalam kondisi belum ada tema, kartu tidak merusak tampilan (no null pointer exception), melainkan menampilkan kotak peringatan *"Belum Memilih Tema Undangan"* disertai tombol aksi cepat *"Pilih Tema Sekarang"*.
-4. **Bebas Seleksi Dinamis:** Checkmark "Terpilih" hanya aktif jika `Boolean(invitation.themeId) && invitation.themeId === th.id`.
+### C. Syarat Rilis
+Kelengkapan data diperiksa saat klien merilis, bukan di wizard: audit pra-rilis `AUDIT_RULES` di `app/(client)/dashboard/settings/page.tsx` menghentikan rilis dan menunjuk bagian yang kurang. Pemeriksaan ini berjalan di klien; rute `PUT /api/client/invitations/{id}` sendiri tidak mengulang syarat kelengkapan.
 
-### D. Keamanan Publikasi & Live Preview
-1. **Preview Route (`/api/client/invitations/[id]/preview`):**
-   - Jika `themeId` kosong, preview tidak menampilkan tema `kalandra` secara paksa, melainkan menampilkan halaman panduan informatif *"Tema Belum Dipilih"*.
-2. **Syarat Publikasi (`/dashboard/settings`):**
-   - Aturan `isPublishable` kini mencakup `isThemeValid = !!invitation?.themeId`.
-   - Tombol Publikasikan dinonaktifkan (*disabled*) dan daftar syarat menampilkan poin: *"Tema Undangan belum dipilih (silakan pilih desain tema di Studio Editor)."*.
-3. **Kompilasi Statis (`lib/staticPublisher.ts`):**
-   - Fungsi `publishInvitationToStatic()` memverifikasi keberadaan `themeId`. Jika kosong, proses melempar exception: *"Gagal mempublikasikan undangan: Desain tema belum dipilih."*.
-4. **Penanganan Tema Dihapus oleh Admin:**
-   - Berkat **Arsitektur Piring Mandiri**, jika klien sudah memiliki piring draft di `data/drafts/{id}.html`, undangan klien tetap aman 100%.
-   - Jika piring belum terbentuk saat tema dihapus Admin, preview menampilkan layar informatif *"Tema Tidak Tersedia"* yang memandu klien untuk memilih tema aktif lain di Dashboard tanpa fallback siluman.
+### D. Penanganan Tema Dihapus oleh Admin
+Tema yang dipakai undangan tidak dapat dihapus (`DELETE /api/admin/themes` menjawab 409 dan FK `RESTRICT`). Bila file tema hilang di disk saat sinkronisasi, tema yang masih dipakai dipertahankan.
 
 ---
 
 ## 5. Matriks Parameter State & Database
 
-| Komponen Input | Kolom Tabel `Invitation` | Tipe Data | Perilaku Saat Setup Lengkap | Perilaku Saat Lewati Setup |
+| Komponen Input | Kolom Tabel `Invitation` | Tipe Data | Perilaku Saat Diisi Lengkap | Perilaku Saat Dikosongkan |
 | :--- | :--- | :--- | :--- | :--- |
-| **Jenis Acara** | `eventType` | `EventType` (Enum) | `WEDDING`, `BIRTHDAY`, `KHITAN`, `AQIQAH`, `WISUDA`, `GATHERING` | Sesuai pilihan step 0 (default: `WEDDING`) |
-| **Nama Panggilan Pria / Tokoh** | `groomNickname` | `String?` | Input klien (contoh: `Arman`) | `"Mempelai Pria"` / Nama Persona |
-| **Nama Panggilan Wanita** | `brideNickname` | `String?` | Input klien (contoh: `Siti`) | `"Mempelai Wanita"` |
-| **Data Persona Non-Wedding** | `participantsJson` | `String? (JSON)` | Disimpan JSON persona (usia, ortu, gelar, dll) | `null` |
-| **Tanggal Acara** | `eventData` | `String (JSON)` | Disimpan dalam susunan acara | `[]` (Array Kosong) |
-| **Kota Utama** | `eventData` | `String (JSON)` | Disimpan dalam lokasi acara | `[]` (Array Kosong) |
-| **Tema Pilihan** | `themeId` | `String` | ID tema terpilih (contoh: `kalandra`) | `""` (String Kosong) |
-| **Kanonikal Slug** | `invitationSlug` | `String (Unique)` | `{pria}-{wanita}-{DDMMYY}` atau `{tokoh}-{DDMMYY}` | `undangan-{randomId}` |
+| **Jenis Acara** | `eventType` | `EventType` (Enum) | `WEDDING`, `BIRTHDAY`, `KHITAN`, `AQIQAH`, `WISUDA`, `GATHERING` | Tidak boleh kosong: HTTP 400 |
+| **Nama Panggilan Pria / Tokoh** | `groomNickname` | `String?` | Input klien (contoh: `Arman`) | `""` |
+| **Nama Panggilan Wanita** | `brideNickname` | `String?` | Input klien (contoh: `Siti`) | `""` |
+| **Data Persona Non-Wedding** | `participantsJson` | `String? (JSON)` | Disimpan JSON persona (usia, ortu, gelar, dll) | JSON dengan nama kosong (acara non-pernikahan) |
+| **Tanggal Acara** | `eventData` | `String (JSON)` | Disimpan dalam susunan acara | Tanpa kartu acara awal |
+| **Kota Utama** | `eventData` | `String (JSON)` | Teks lokasi awal pada kartu acara | Lokasi kosong |
+| **Tema Pilihan** | `themeId` | `String` (FK ke `themes`) | ID tema terpilih (contoh: `kalandra`) | Tema bawaan jenis acara |
+| **Kanonikal Slug** | `invitationSlug` | `String (Unique)` | `{pria}-{wanita}-{DDMMYY}` atau `{tokoh}-{DDMMYY}` | `undangan-{randomId}` untuk pernikahan; non-pernikahan memakai kata bawaan jenis acara |
 | **Status Publikasi** | `status` | `InvitationStatus` | `DRAFT` | `DRAFT` |
-| **Syarat Publish** | `isPublishable` | `Boolean` | `false` (Menunggu biodata & PIN) | `false` (Wajib pilih tema + isi data) |
+| **Syarat Rilis** | audit pra-rilis | klien (`AUDIT_RULES`) | Lolos bila seluruh syarat terpenuhi | Rilis dihentikan dan bagian yang kurang ditunjuk |
 
 ---
 
 ## 6. Kesimpulan
-Dengan arsitektur ini, sistem Luxenary Invite telah sepenuhnya bebas dari nilai bawaan yang memaksakan kehendak (*zero hardcoded defaults*). Setiap data awal yang tercipta benar-benar merefleksikan pilihan nyata calon pengantin atau berstatus bersih tanpa data palsu, dengan jaminan panduan antarmuka yang ramah dan konsisten di seluruh dashboard, editor, serta gerbang publikasi.
+Wizard hanya mempercepat pengisian data awal. Jenis acara adalah satu-satunya keputusan yang wajib dan permanen; nama, tanggal, kota, dan tema dapat dikosongkan dan dilengkapi di Studio Editor. Tidak ada data fiktif yang disuntikkan, dan kelengkapan baru ditegakkan pada audit pra-rilis di tab Pengaturan.

@@ -251,17 +251,45 @@ describe.skipIf(!IS_TEST_DB)("alur registrasi", () => {
       const u = await makeUser("notheme");
       as(u);
       await makeOrder(u.id, { status: "PAID", paidAt: new Date() });
-      const res = await createInvitation(json("/api/client/invitations/create", "POST", { groomName: "Adi", brideName: "Sari" }));
+      const res = await createInvitation(json("/api/client/invitations/create", "POST", { eventType: "WEDDING", groomName: "Adi", brideName: "Sari" }));
       expect(res.status).toBe(200);
       const inv = await prisma.invitation.findFirstOrThrow({ where: { userId: u.id } });
       expect(inv.themeId).toBe("kalandra");
+    });
+
+    it("tanpa eventType ditolak 400 dan tidak membuat undangan", async () => {
+      const u = await makeUser("noevent");
+      as(u);
+      await makeOrder(u.id, { status: "PAID", paidAt: new Date() });
+      for (const body of [{ groomName: "Adi", brideName: "Sari" }, { eventType: "" }, { eventType: "PESTA" }, { eventType: 7 }]) {
+        const res = await createInvitation(json("/api/client/invitations/create", "POST", body));
+        expect(res.status).toBe(400);
+      }
+      expect(await prisma.invitation.count({ where: { userId: u.id } })).toBe(0);
+    });
+
+    it("wizard hanya memilih jenis acara: semua isian lain boleh kosong dan dilengkapi di editor", async () => {
+      for (const eventType of ["WEDDING", "BIRTHDAY", "KHITAN", "AQIQAH", "WISUDA", "GATHERING"]) {
+        const u = await makeUser(`min-${eventType.toLowerCase()}`);
+        as(u);
+        await makeOrder(u.id, { status: "PAID", paidAt: new Date() });
+        const res = await createInvitation(json("/api/client/invitations/create", "POST", {
+          eventType, groomNickname: "", brideNickname: "", groomName: "", brideName: "", weddingDate: "", city: "", themeId: "", planType: "TIER_1",
+        }));
+        expect(res.status, eventType).toBe(200);
+        const inv = await prisma.invitation.findFirstOrThrow({ where: { userId: u.id } });
+        expect(inv.eventType).toBe(eventType);
+        expect(inv.status).toBe("DRAFT");
+        expect(inv.themeId).not.toBe("");
+        expect(inv.eventData === null || JSON.parse(inv.eventData).length === 0).toBe(true);
+      }
     });
 
     it("themeId dengan huruf besar disimpan dalam bentuk kanonik", async () => {
       const u = await makeUser("casetheme");
       as(u);
       await makeOrder(u.id, { status: "PAID", paidAt: new Date() });
-      const res = await createInvitation(json("/api/client/invitations/create", "POST", { groomName: "Adi", brideName: "Sari", themeId: "Kalandra" }));
+      const res = await createInvitation(json("/api/client/invitations/create", "POST", { eventType: "WEDDING", groomName: "Adi", brideName: "Sari", themeId: "Kalandra" }));
       expect(res.status).toBe(200);
       expect((await prisma.invitation.findFirstOrThrow({ where: { userId: u.id } })).themeId).toBe("kalandra");
     });
@@ -275,7 +303,7 @@ describe.skipIf(!IS_TEST_DB)("alur registrasi", () => {
       });
       await makeOrder(u.id, { status: "PAID", paidAt: new Date(), orderType: "UPGRADE", planType: "TIER_2", amount: 50000 });
 
-      const res = await createInvitation(json("/api/client/invitations/create", "POST", { groomName: "Budi", brideName: "Ani" }));
+      const res = await createInvitation(json("/api/client/invitations/create", "POST", { eventType: "WEDDING", groomName: "Budi", brideName: "Ani" }));
       expect(res.status).toBe(403);
       expect(await prisma.invitation.count({ where: { userId: u.id } })).toBe(1);
     });

@@ -73,7 +73,7 @@ function SetupWizardContent() {
   const [platformName, setPlatformName] = useState("");
   const [themesList, setThemesList] = useState<any[]>([]);
 
-  const [eventType, setEventType] = useState<string>("WEDDING");
+  const [eventType, setEventType] = useState<string>("");
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -154,7 +154,7 @@ function SetupWizardContent() {
         if (draft.resepsiStart) setResepsiStart(draft.resepsiStart);
         if (draft.resepsiEnd) setResepsiEnd(draft.resepsiEnd);
         if (draft.themeId) setThemeId(draft.themeId);
-        if (typeof draft.step === "number" && draft.step >= 0 && draft.step <= 3) setStep(draft.step);
+        if (draft.eventType && typeof draft.step === "number" && draft.step >= 0 && draft.step <= 3) setStep(draft.step);
       }
     } catch {}
     setIsDraftLoaded(true);
@@ -248,29 +248,9 @@ function SetupWizardContent() {
 
 
   const handleCompleteSetup = async () => {
-    if (eventType === "WEDDING") {
-      if (!groomNickname.trim() || !brideNickname.trim()) {
-        setError("Nama panggilan kedua mempelai wajib diisi.");
-        setStep(1);
-        return;
-      }
-    } else if (eventType === "BIRTHDAY" || eventType === "KHITAN" || eventType === "AQIQAH" || eventType === "WISUDA") {
-      if (!personNickname.trim() && !personName.trim()) {
-        setError("Nama / nama panggilan wajib diisi.");
-        setStep(1);
-        return;
-      }
-    } else if (eventType === "GATHERING") {
-      if (!eventTitle.trim()) {
-        setError("Judul / nama acara wajib diisi.");
-        setStep(1);
-        return;
-      }
-    }
-
-    if (!themeId) {
-      setError("Silakan pilih salah satu desain tema terlebih dahulu.");
-      setStep(3);
+    if (!eventType) {
+      setError("Pilih jenis momen terlebih dahulu.");
+      setStep(0);
       return;
     }
 
@@ -362,40 +342,6 @@ function SetupWizardContent() {
       }
 
       // Success Redirect directly to the invitation editor
-      localStorage.removeItem("app_setup_draft");
-      localStorage.removeItem("luxenary_setup_draft");
-      router.push(`/dashboard/invitation/${data.invitationId}`);
-    } catch (err: any) {
-      setError(err.message || "Terjadi kesalahan. Silakan coba lagi.");
-      setLoading(false);
-    }
-  };
-
-  const handleSkipSetup = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/client/invitations/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          groomNickname: "",
-          brideNickname: "",
-          groomName: "",
-          brideName: "",
-          subdomain: "",
-          weddingDate: "",
-          city: "",
-          themeId: "", // Murni kosong tanpa tema default
-          planType: currentPlan,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Gagal melewati penyiapan.");
-      }
-
       localStorage.removeItem("app_setup_draft");
       localStorage.removeItem("luxenary_setup_draft");
       router.push(`/dashboard/invitation/${data.invitationId}`);
@@ -584,19 +530,10 @@ function SetupWizardContent() {
               })}
             </div>
 
-            <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center justify-end pt-2">
               <button
                 type="button"
-                onClick={handleSkipSetup}
-                disabled={loading}
-                className="text-xs font-bold text-stone-500 hover:text-stone-900 transition cursor-pointer disabled:opacity-50"
-              >
-                {loading ? "Memproses..." : "Lewati Setup (Atur Nanti)"}
-              </button>
-
-              <button
-                type="button"
-                disabled={loading}
+                disabled={loading || !eventType}
                 onClick={() => {
                   setError(null);
                   setStep(1);
@@ -1064,6 +1001,10 @@ function SetupWizardContent() {
               </>
             )}
 
+            <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 text-xs text-stone-600 leading-relaxed">
+              Langkah ini hanya mengisi data awal. Nama dapat dikosongkan dan dilengkapi kapan saja di Studio Editor.
+            </div>
+
             <div className="flex items-center justify-between pt-2">
               <button
                 type="button"
@@ -1077,23 +1018,6 @@ function SetupWizardContent() {
                 type="button"
                 disabled={loading}
                 onClick={() => {
-                  if (eventType === "WEDDING") {
-                    if (!groomNickname.trim() || !brideNickname.trim()) {
-                      setError("Harap isi nama panggilan kedua mempelai.");
-                      return;
-                    }
-                  } else if (eventType === "GATHERING") {
-                    if (!eventTitle.trim()) {
-                      setError("Harap isi nama atau judul acara.");
-                      return;
-                    }
-                  } else {
-                    if (!personNickname.trim() && !personName.trim()) {
-                      setError("Harap isi nama panggilan atau nama lengkap.");
-                      return;
-                    }
-                  }
-
                   setError(null);
                   setStep(2);
                 }}
@@ -1301,7 +1225,7 @@ function SetupWizardContent() {
                 </div>
 
                 <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 text-xs text-stone-600 leading-relaxed">
-                  Detail lengkap seperti nama gedung, alamat lengkap, peta lokasi, dan multi-sesi acara dapat Anda lengkapi dengan leluasa di Studio Editor.
+                  Tanggal dan kota boleh dikosongkan. Detail lengkap seperti nama gedung, alamat lengkap, peta lokasi, dan multi-sesi acara dapat Anda lengkapi dengan leluasa di Studio Editor.
                 </div>
               </div>
 
@@ -1317,14 +1241,6 @@ function SetupWizardContent() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (!weddingDate) {
-                      setError("Harap tentukan tanggal pelaksanaan acara.");
-                      return;
-                    }
-                    if (!city.trim()) {
-                      setError("Harap isi kota atau wilayah pelaksanaan acara.");
-                      return;
-                    }
                     setError(null);
                     setStep(3);
                   }}
@@ -1499,7 +1415,7 @@ function SetupWizardContent() {
                     </h4>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-mono ${themeId ? "bg-white/10 text-stone-300" : "bg-amber-500/20 text-amber-300 border border-amber-500/30"}`}>
-                    Tema: {themesList.find((t: any) => t.id === themeId)?.name || (themeId ? themeId : "Belum Memilih Tema")}
+                    Tema: {themesList.find((t: any) => t.id === themeId)?.name || (themeId ? themeId : "Tema bawaan jenis acara")}
                   </span>
                 </div>
                 <p className="text-xs text-stone-400">
