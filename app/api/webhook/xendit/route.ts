@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { applyUpgradePlan } from "@/lib/upgradeHelper";
 import { paymentEmitter } from "@/lib/paymentEvents";
 import { releaseOrderPromoHold } from "@/lib/marketing";
-import { isGatewayAmountValid, isStaleGatewaySession, settleOrderAsPaid } from "@/lib/paymentSettlement";
+import { isGatewayAmountValid, isStaleGatewaySession, settleOrderAsPaid, settlementSourceStatuses } from "@/lib/paymentSettlement";
 import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -118,10 +118,15 @@ export async function POST(req: NextRequest) {
       // Nominal yang dibayar harus sama dengan nominal yang ditagihkan saat init gateway
       const orderForAmount = await prisma.order.findUnique({
         where: { id: orderId },
-        select: { amount: true, chargedAmount: true },
+        select: { id: true, userId: true, orderType: true, status: true, fulfilledAt: true, amount: true, chargedAmount: true },
       });
       if (!orderForAmount) {
         return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      }
+      if (orderForAmount.status === "PAID") {
+        // Pemenuhan layanan yang gagal pada pengiriman sebelumnya dicoba lagi di sini (idempoten lewat fulfilledAt).
+        if (!orderForAmount.fulfilledAt) await applyUpgradePlan(orderId);
+        return NextResponse.json({ status: "ok", note: "already_paid" });
       }
       const paidAmount = Number(body.paid_amount ?? body.amount);
       if (!isGatewayAmountValid(orderForAmount, paidAmount)) {
@@ -140,9 +145,28 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ status: "ignored", reason: "amount_mismatch" }, { status: 200 });
       }
 
-      // Transisi PENDING -> PAID + marketing dalam satu transaksi (atomic check-and-set,
+      const sources = await settlementSourceStatuses(orderForAmount);
+      if (!sources) {
+        logger.error("XenditWebhook", `Pembayaran diterima untuk order ${orderId} berstatus ${orderForAmount.status}; perlu rekonsiliasi manual.`, undefined, {
+          orderId,
+          status: orderForAmount.status,
+          paidAmount,
+        });
+        if (webhookLogId) {
+          await prisma.webhookLog.update({
+            where: { id: webhookLogId },
+            data: { status: "paid_on_closed_order", processedAt: new Date() },
+          });
+        }
+        return NextResponse.json({ status: "ignored", reason: "order_closed" }, { status: 200 });
+      }
+      if (orderForAmount.status !== "PENDING") {
+        logger.warn("XenditWebhook", `Order ${orderId} berstatus ${orderForAmount.status} dilunasi karena pembayaran gateway valid diterima.`, { orderId });
+      }
+
+      // Transisi ke PAID + marketing dalam satu transaksi (atomic check-and-set,
       // aman terhadap webhook duplikat bersamaan)
-      const settled = await settleOrderAsPaid(orderId, { paymentMethod: "GATEWAY" });
+      const settled = await settleOrderAsPaid(orderId, { paymentMethod: "GATEWAY" }, { from: sources });
 
       // Order sudah diproses sebelumnya — return idempotent
       if (!settled) {

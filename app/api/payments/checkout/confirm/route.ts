@@ -107,9 +107,10 @@ export async function POST(req: NextRequest) {
           where: { code: order.promoHold.promoCode },
         });
 
-        if (coupon && coupon.isActive && (!coupon.validUntil || coupon.validUntil > now)) {
-          // Kunci diskon dari discountAmount yang tersimpan di hold (Celah 2: tidak recalculate)
-          appliedDiscount = Number(order.promoHold.discountAmount);
+        const planAllowed = !coupon || coupon.applicablePlans.length === 0 || coupon.applicablePlans.includes(order.planType);
+        if (coupon && coupon.isActive && planAllowed && (!coupon.validUntil || coupon.validUntil > now)) {
+          // Kunci diskon dari discountAmount yang tersimpan di hold (Celah 2: tidak recalculate), tidak melebihi harga paket
+          appliedDiscount = Math.min(Number(order.promoHold.discountAmount), basePrice);
           appliedPromoCode = coupon.code;
           promoCouponId = coupon.id;
         } else {
@@ -120,7 +121,7 @@ export async function POST(req: NextRequest) {
           });
 
           return NextResponse.json({
-            error: "Kode promo yang digunakan telah dinonaktifkan. Rincian harga telah dikembalikan normal.",
+            error: "Kode promo tidak lagi berlaku untuk pesanan ini (dinonaktifkan atau tidak sesuai paket). Rincian harga telah dikembalikan normal.",
             promoRevoked: true,
           }, { status: 400 });
         }

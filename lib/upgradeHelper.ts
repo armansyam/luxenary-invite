@@ -269,11 +269,30 @@ export async function purgeObsoleteUserOrders(userId: string, currentOrderId: st
 
 /**
  * applyUpgradePlan
- * Dipanggil setelah order UPGRADE atau GALLERY_EXTENSION berhasil PAID.
+ * Dipanggil setelah order berhasil PAID (upgrade, perpanjangan galeri, top-up kuota, bundle, email lunas).
  *
- * @param paidOrderId - ID order yang baru saja PAID
+ * Idempoten: pemenuhan diklaim lewat `fulfilledAt` sehingga pemanggilan ganda (webhook ulang, polling, cron)
+ * tidak melipatgandakan kuota atau hari galeri. Bila pemenuhan gagal, klaim dilepas dan error dilempar ulang
+ * agar webhook dicoba lagi gateway dan sapuan cron dapat mengulanginya.
+ *
+ * @param paidOrderId - ID order yang sudah PAID
  */
 export async function applyUpgradePlan(paidOrderId: string): Promise<void> {
+  const claimed = await prisma.order.updateMany({
+    where: { id: paidOrderId, status: "PAID", fulfilledAt: null },
+    data: { fulfilledAt: new Date() },
+  });
+  if (claimed.count === 0) return;
+
+  try {
+    await runPaidOrderFulfillment(paidOrderId);
+  } catch (err) {
+    await prisma.order.updateMany({ where: { id: paidOrderId }, data: { fulfilledAt: null } });
+    throw err;
+  }
+}
+
+async function runPaidOrderFulfillment(paidOrderId: string): Promise<void> {
   const order = await prisma.order.findUnique({
     where: { id: paidOrderId },
     include: {

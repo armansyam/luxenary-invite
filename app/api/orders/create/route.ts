@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { deleteFile } from "@/lib/storage";
 import { normalizePlanType } from "@/lib/planUtils";
+import { releaseOrderPromoHold } from "@/lib/marketing";
 
 export const dynamic = "force-dynamic";
 
@@ -191,6 +192,7 @@ export async function POST(req: NextRequest) {
             { status: 409 }
           );
         }
+        await releaseOrderPromoHold(existingPending.id);
 
         // Hubungi gateway cancel jika ada transaksi gateway aktif
         if (hadGatewaySession && existingPending.gatewayId) {
@@ -239,6 +241,9 @@ export async function POST(req: NextRequest) {
 
         const isResetProof = isPlanChanged || existingPending.status === "FAILED";
 
+        // Diskon dihitung terhadap paket sebelumnya (applicablePlans, minimum belanja, nominal): tidak boleh terbawa ke paket baru.
+        if (isPlanChanged) await releaseOrderPromoHold(existingPending.id);
+
         if (isResetProof && existingPending.proofImageUrl) {
           try {
             await deleteFile(existingPending.proofImageUrl);
@@ -257,6 +262,9 @@ export async function POST(req: NextRequest) {
             proofUploadedAt: isResetProof ? null : existingPending.proofUploadedAt,
             rejectReason: isResetProof ? null : existingPending.rejectReason,
             snapToken: isPlanChanged ? null : existingPending.snapToken,
+            ...(isPlanChanged
+              ? { discountAmount: null, promoCodeApplied: null, promoCouponId: null, checkoutConfirmedAt: null, chargedAmount: null }
+              : {}),
             expiredAt: isPlanChanged ? new Date(Date.now() + 24 * 60 * 60 * 1000) : (existingPending.expiredAt || new Date(Date.now() + 24 * 60 * 60 * 1000)),
           },
         });
@@ -292,9 +300,20 @@ export async function POST(req: NextRequest) {
       });
       if (draft) {
         if (draft.planType === planType) return { order: draft, reused: true };
+        await tx.promoHold.updateMany({ where: { orderId: draft.id, status: "HELD" }, data: { status: "RELEASED" } });
         const retargeted = await tx.order.update({
           where: { id: draft.id },
-          data: { planType: planType as "TIER_1" | "TIER_2" | "TIER_3", amount },
+          data: {
+            planType: planType as "TIER_1" | "TIER_2" | "TIER_3",
+            amount,
+            discountAmount: null,
+            promoCodeApplied: null,
+            promoCouponId: null,
+            checkoutConfirmedAt: null,
+            chargedAmount: null,
+            snapToken: null,
+            gatewayTxId: null,
+          },
         });
         return { order: retargeted, reused: true };
       }

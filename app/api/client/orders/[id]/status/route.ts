@@ -35,6 +35,9 @@ export async function GET(
         proofUploadedAt: true,
         rejectReason: true,
         paidAt: true,
+        fulfilledAt: true,
+        gatewayId: true,
+        gatewayTxId: true,
         expiredAt: true,
         checkoutConfirmedAt: true,
         promoCodeApplied: true,
@@ -80,6 +83,16 @@ export async function GET(
     let isQrisSessionExpired = false;
     const nowMs = Date.now();
 
+    // Order sudah PAID tetapi pemenuhan layanan belum selesai (mis. gagal setelah webhook): ulangi, idempoten.
+    if (order.status === "PAID" && !order.fulfilledAt) {
+      try {
+        const { applyUpgradePlan } = await import("@/lib/upgradeHelper");
+        await applyUpgradePlan(order.id);
+      } catch (fulfillErr) {
+        console.error(`[Order Status] Pemenuhan ulang order ${order.id} gagal:`, fulfillErr);
+      }
+    }
+
     if (order.status === "PENDING") {
       // 1. Cek sesi QRIS
       if (order.snapToken) {
@@ -109,10 +122,11 @@ export async function GET(
         // Realtime Reconciliation via Gateway (Midtrans / Xendit)
         try {
           const { getActiveGatewayId, getGatewayById } = await import("@/lib/gatewayRegistry");
-          const activeGwId = (order as any).gatewayId || (await getActiveGatewayId());
+          const activeGwId = order.gatewayId || (await getActiveGatewayId());
           const gw = await getGatewayById(activeGwId);
           if (gw && typeof gw.verify === "function") {
-            const checkRes = await gw.verify(order.id);
+            // Referensi sisi gateway (ID invoice Xendit / transaction_id Midtrans), bukan ID order kita.
+            const checkRes = await gw.verify(order.gatewayTxId || order.id);
             if (checkRes.status === "PAID") {
               // Transisi atomik PENDING -> PAID + marketing; false jika webhook sudah lebih dulu memprosesnya
               const { settleOrderAsPaid } = await import("@/lib/paymentSettlement");

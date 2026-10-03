@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { prisma } from "./prisma";
+import { prisma, pool } from "./prisma";
 import { logger } from "./logger";
 import { getAdminSetting } from "./settings";
 import { buildAndSavePublishedHtml, deletePublishedHtml } from "./staticPublisher";
@@ -9,6 +9,7 @@ import { invalidateInvitationLookup } from "./cache";
 import { isNasArchiveEnabled, purgeNasArchive, syncInvitationToNasArchive } from "./nasArchive";
 import { DAY_MS, computeLifecycleDates, formatDateInEventTimezone, getPrimaryEventTimezone, type LifecycleSettings } from "./lifecycleDates";
 import { getLifecycleSettings } from "./lifecycleSettings";
+import { applyUpgradePlan } from "./upgradeHelper";
 
 const CONTEXT = "LifecycleCleanup";
 const RETENTION_WARNING_LEAD_MS = 3 * DAY_MS;
@@ -275,6 +276,45 @@ export async function runLifecycleCleanup(options: LifecycleCleanupOptions = {})
 export interface StaleDataCleanupResult {
   orphanedDrafts: number;
   deletedOrders: number;
+  refulfilledOrders: number;
+  purgedRateLimitRows: number;
+}
+
+const FULFILLMENT_GRACE_MS = 5 * 60 * 1000;
+
+/** Order PAID yang pemenuhan layanannya tidak pernah selesai (kegagalan setelah webhook) dijalankan ulang. */
+async function refulfillStuckOrders(now: Date, dryRun: boolean): Promise<number> {
+  const stuck = await prisma.order.findMany({
+    where: { status: "PAID", fulfilledAt: null, paidAt: { lt: new Date(now.getTime() - FULFILLMENT_GRACE_MS) } },
+    select: { id: true },
+    take: 50,
+  });
+  if (dryRun) return stuck.length;
+
+  let done = 0;
+  for (const order of stuck) {
+    try {
+      await applyUpgradePlan(order.id);
+      done++;
+    } catch (err) {
+      logger.error("LifecycleCleanup", `Pemenuhan ulang order ${order.id} gagal`, err);
+    }
+  }
+  return done;
+}
+
+/**
+ * Baris limiter yang sudah kedaluwarsa tidak pernah dipakai ulang bila kuncinya (mis. IP) tidak muncul lagi.
+ * SQL mentah, bukan filter DateTime Prisma: kolom `expires_at` bertipe timestamptz dan adapter pg mengirim parameter
+ * tanpa zona, sehingga perbandingan bergeser sebesar selisih zona waktu sesi (sama seperti rateLimitDb di lib/rateLimit.ts).
+ */
+async function purgeExpiredRateLimitRows(dryRun: boolean): Promise<number> {
+  if (dryRun) {
+    const counted = await pool.query("SELECT count(*)::int AS n FROM rate_limit_counters WHERE expires_at < now()");
+    return counted.rows[0].n;
+  }
+  const deleted = await pool.query("DELETE FROM rate_limit_counters WHERE expires_at < now()");
+  return deleted.rowCount ?? 0;
 }
 
 /** Draft HTML tanpa undangan dan order EXPIRED/FAILED/PENDING yang melewati `retention_order_days`. */
@@ -301,10 +341,13 @@ export async function runStaleDataCleanup(options: LifecycleCleanupOptions = {})
     createdAt: { lt: new Date(now.getTime() - retentionOrderDays * DAY_MS) },
   };
 
+  const refulfilledOrders = await refulfillStuckOrders(now, dryRun);
+  const purgedRateLimitRows = await purgeExpiredRateLimitRows(dryRun);
+
   const staleOrders = await prisma.order.findMany({ where: staleWhere, select: { proofImageUrl: true } });
-  if (dryRun) return { orphanedDrafts, deletedOrders: staleOrders.length };
+  if (dryRun) return { orphanedDrafts, deletedOrders: staleOrders.length, refulfilledOrders, purgedRateLimitRows };
 
   await Promise.all(staleOrders.map((order) => deleteFile(order.proofImageUrl)));
   const deleted = await prisma.order.deleteMany({ where: staleWhere });
-  return { orphanedDrafts, deletedOrders: deleted.count };
+  return { orphanedDrafts, deletedOrders: deleted.count, refulfilledOrders, purgedRateLimitRows };
 }

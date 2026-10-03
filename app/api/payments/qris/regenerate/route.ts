@@ -1,6 +1,6 @@
 import { getActiveGateway, getActiveGatewayId, getGatewayById } from "@/lib/gatewayRegistry";
 import { prisma } from "@/lib/prisma";
-import { logger } from "@/lib/logger";
+import { computeGatewayCharge } from "@/lib/paymentFees";
 import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -104,19 +104,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Hitung waktu kedaluwarsa sesi QRIS baru
-    let expiryMinutes = 60;
-    try {
-      const expirySetting = await prisma.adminSetting.findUnique({ where: { key: "payment_expiry_minutes" } });
-      if (expirySetting && !isNaN(Number(expirySetting.value))) {
-        expiryMinutes = Math.max(5, Math.min(1440, Number(expirySetting.value)));
-      }
-    } catch (err) {
-      logger.warn("QrisRegenerate", "Gagal memuat payment_expiry_minutes, memakai default 60 menit", { error: String(err) });
-    }
+    // Nominal (termasuk biaya layanan BUYER) dan masa berlaku sama persis dengan checkout awal
+    const { finalAmount, expiryMinutes } = await computeGatewayCharge(Number(order.amount));
 
-    const finalAmount = Number(order.amount);
-    const { checkoutUrl, qrString, sessionId, expiryTimestamp, gatewayTxId } = await gw.init(orderId, finalAmount, appUrl);
+    // Order ini sudah pernah punya sesi gateway, jadi ID sisi gateway harus baru
+    const sessionSuffix = prevGatewayTxId ? Date.now().toString(36) : undefined;
+    const { checkoutUrl, qrString, sessionId, expiryTimestamp, gatewayTxId } = await gw.init(orderId, finalAmount, appUrl, sessionSuffix);
 
     const expiryMs = expiryTimestamp ?? (serverNow + expiryMinutes * 60 * 1000);
 

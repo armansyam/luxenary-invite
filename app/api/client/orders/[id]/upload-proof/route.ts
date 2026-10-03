@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import path from "path";
+import { randomBytes } from "crypto";
 import sharp from "sharp";
 import { uploadFile, deleteFile } from "@/lib/storage";
-import { applyUpgradePlan } from "@/lib/upgradeHelper";
-import { paymentEmitter } from "@/lib/paymentEvents";
 
 export const dynamic = "force-dynamic";
 
@@ -97,7 +95,9 @@ export async function POST(
     const ss = String(now.getSeconds()).padStart(2, "0");
     const datePrefix = `${yyyy}-${mm}-${dd}-${hh}${min}${ss}`;
 
-    const fileName = `${datePrefix}-${cleanEmailUser}.webp`;
+    // Komponen acak membuat URL tidak dapat ditebak dari tanggal dan nama pengguna: bukti transfer memuat rekening dan nominal.
+    const proofBaseName = `${datePrefix}-${cleanEmailUser}-${randomBytes(12).toString("hex")}`;
+    const fileName = `${proofBaseName}.webp`;
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const mime = file.type.toLowerCase();
@@ -155,7 +155,7 @@ export async function POST(
       if (buffer.subarray(0, 4).toString("latin1") !== "%PDF") {
         return NextResponse.json({ error: "File PDF tidak valid." }, { status: 400 });
       }
-      publicUrl = await uploadFile(buffer, `proofs/${datePrefix}-${cleanEmailUser}.pdf`, mime);
+      publicUrl = await uploadFile(buffer, `proofs/${proofBaseName}.pdf`, mime);
     } else {
       // High-Resolution Sharp Compression for Images:
       // Max width 1400px (crystal sharp text legibility for receipts, file size ~100KB-200KB)

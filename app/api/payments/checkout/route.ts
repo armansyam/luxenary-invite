@@ -1,4 +1,5 @@
 import { getActiveGateway, getActiveGatewayId, getGatewayById } from "@/lib/gatewayRegistry";
+import { computeGatewayCharge } from "@/lib/paymentFees";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
       (session.user as any).role === "ADMIN" ||
       (session.user as any).isAdmin === true;
 
-    const { orderId, gateway: requestedGateway, customerName, customerPhone } = await req.json();
+    const { orderId, customerName, customerPhone } = await req.json();
     if (!orderId) {
       return NextResponse.json({ error: "orderId wajib diisi" }, { status: 400 });
     }
@@ -100,12 +101,9 @@ export async function POST(req: Request) {
     const proto = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
     const appUrl = `${proto}://${host}`;
 
-    // Gunakan gateway yang diminta klien, atau fallback ke gateway aktif dari AdminSetting
-    const gw = requestedGateway
-      ? await getGatewayById(requestedGateway)
-      : await getActiveGateway();
-
-    const activeGatewayId = requestedGateway || (await getActiveGatewayId());
+    // Gateway ditentukan admin lewat pengaturan, bukan oleh klien: parameter `gateway` dari klien diabaikan.
+    const gw = await getActiveGateway();
+    const activeGatewayId = await getActiveGatewayId();
 
     // ──────────────────────────────────────────────────────────────────────
     // IDEMPOTENCY / SESI QRIS AKTIF:
@@ -166,36 +164,12 @@ export async function POST(req: Request) {
       }
     }
 
-    // Baca konfigurasi pembayaran dari AdminSetting — satu sumber kebenaran
-    let finalAmount = Number(order.amount);
-    let expiryMinutes = 60;
-    try {
-      const [feePayerSetting1, feePayerSetting2, feePercentSetting, feeRateSetting, expirySetting] = await Promise.all([
-        prisma.adminSetting.findUnique({ where: { key: "payment_fee_payer" } }),
-        prisma.adminSetting.findUnique({ where: { key: "payment_gateway_fee_payer" } }),
-        prisma.adminSetting.findUnique({ where: { key: "payment_gateway_fee_percent" } }),
-        prisma.adminSetting.findUnique({ where: { key: "payment_fee_rate" } }),
-        prisma.adminSetting.findUnique({ where: { key: "payment_expiry_minutes" } }),
-      ]);
+    // Nominal tagihan dan masa berlaku dari AdminSetting — satu sumber kebenaran, dibagi dengan penerbitan ulang QRIS
+    const { finalAmount, expiryMinutes } = await computeGatewayCharge(Number(order.amount));
 
-      const feePayer = (feePayerSetting1?.value || feePayerSetting2?.value || "MERCHANT") === "BUYER" ? "BUYER" : "MERCHANT";
-      const feePercent = feePercentSetting && !isNaN(Number(feePercentSetting.value))
-        ? Number(feePercentSetting.value)
-        : (feeRateSetting && !isNaN(Number(feeRateSetting.value)) ? Number(feeRateSetting.value) * 100 : 0.7);
-
-      if (feePayer === "BUYER") {
-        const adminFee = Math.round(finalAmount * (feePercent / 100));
-        finalAmount += adminFee;
-      }
-
-      if (expirySetting && !isNaN(Number(expirySetting.value))) {
-        expiryMinutes = Math.max(5, Math.min(1440, Number(expirySetting.value)));
-      }
-    } catch (err) {
-      console.warn("[Payments Checkout] Gagal memuat setting biaya admin / expiry:", err);
-    }
-
-    const { checkoutUrl, qrString, sessionId, expiryTimestamp, gatewayTxId } = await gw.init(orderId, finalAmount, appUrl);
+    // Penerbitan ulang untuk order yang sudah pernah punya sesi memakai ID sisi gateway yang baru
+    const sessionSuffix = prevGatewayTxId ? Date.now().toString(36) : undefined;
+    const { checkoutUrl, qrString, sessionId, expiryTimestamp, gatewayTxId } = await gw.init(orderId, finalAmount, appUrl, sessionSuffix);
 
     /**
      * Tentukan waktu kedaluwarsa yang valid:

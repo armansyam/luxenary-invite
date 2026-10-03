@@ -87,13 +87,16 @@ export class MidtransGateway implements PaymentGateway {
     return { serverKey, clientKey, snapUrl, apiUrl };
   }
 
-  async init(orderId: string, amount: number, appUrl?: string): Promise<{
+  async init(orderId: string, amount: number, appUrl?: string, sessionSuffix?: string): Promise<{
     checkoutUrl?: string;
     qrString?: string;
     sessionId?: string;
     expiryTimestamp?: number;
     gatewayTxId?: string;
   }> {
+    // Midtrans tidak mengizinkan order_id dipakai ulang, bahkan setelah transaksi lama dibatalkan atau kedaluwarsa.
+    // Penerbitan ulang memakai sufiks unik; webhook mengurai prefiks UUID kembali menjadi ID order kita.
+    const gatewayOrderId = sessionSuffix ? `${orderId}~${sessionSuffix}` : orderId;
     let customerFirstName = "Klien";
     let customerLastName = "";
     let customerFullName = "Klien";
@@ -103,7 +106,6 @@ export class MidtransGateway implements PaymentGateway {
     let baseAmount = amount;
     let orderType = "NEW";
     let invoiceNumber = orderId;
-    let requestedDomain = "";
     let upgradedFromPlan = "";
     let targetPlanType = "";
     let shippingAddress = "";
@@ -142,7 +144,6 @@ export class MidtransGateway implements PaymentGateway {
       if (order?.amount) baseAmount = Number(order.amount);
       if (order?.orderType) orderType = order.orderType;
       if (order?.invoiceNumber) invoiceNumber = order.invoiceNumber;
-      if (order?.requestedDomain) requestedDomain = order.requestedDomain;
       if (order?.upgradedFromPlan) upgradedFromPlan = order.upgradedFromPlan;
       if (order?.targetPlanType) targetPlanType = order.targetPlanType;
 
@@ -313,7 +314,7 @@ export class MidtransGateway implements PaymentGateway {
         body: JSON.stringify({
           payment_type: "qris",
           transaction_details: {
-            order_id: orderId,
+            order_id: gatewayOrderId,
             gross_amount: amount,
           },
           item_details: itemDetails,
@@ -344,7 +345,7 @@ export class MidtransGateway implements PaymentGateway {
           qrString: chargeData.qr_string,
           sessionId: chargeData.transaction_id,
           expiryTimestamp,
-          gatewayTxId: chargeData.transaction_id || orderId,
+          gatewayTxId: chargeData.transaction_id || gatewayOrderId,
         };
       }
 
@@ -372,7 +373,7 @@ export class MidtransGateway implements PaymentGateway {
       },
       body: JSON.stringify({
         transaction_details: {
-          order_id: orderId,
+          order_id: gatewayOrderId,
           gross_amount: amount,
         },
         item_details: itemDetails,
@@ -398,7 +399,7 @@ export class MidtransGateway implements PaymentGateway {
       throw new Error(`Midtrans: ${data?.error_messages?.join(", ") || JSON.stringify(data)}`);
     }
 
-    return { checkoutUrl: data.redirect_url, gatewayTxId: orderId };
+    return { checkoutUrl: data.redirect_url, gatewayTxId: gatewayOrderId };
   }
 
   /**

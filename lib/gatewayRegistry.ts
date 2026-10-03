@@ -28,14 +28,6 @@ async function loadGateway(gatewayId: string): Promise<PaymentGateway> {
       const { XenditGateway } = await import("@/lib/gateways/xendit");
       return new XenditGateway();
     }
-    // Fallback otomatis jika setting DB masih menyimpan vendor legacy 1-arah
-    case "ipaymu":
-    case "duitku":
-    case "tripay": {
-      console.warn(`[Gateway Registry] Vendor "${normalized}" (1-arah) telah dihentikan. Dialihkan ke Midtrans (2-arah).`);
-      const { MidtransGateway } = await import("@/lib/gateways/midtrans");
-      return new MidtransGateway();
-    }
     default:
       throw new Error(
         `Gateway "${gatewayId}" tidak dikenali. Sistem hanya mendukung gateway 2-arah: midtrans, xendit`

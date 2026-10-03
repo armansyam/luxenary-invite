@@ -52,6 +52,8 @@ export async function POST(req: NextRequest) {
       purgedArchives: lifecycle.purgedArchives,
       retentionWarningsSent: lifecycle.retentionWarningsSent,
       deletedOrders: stale.deletedOrders,
+      refulfilledOrders: stale.refulfilledOrders,
+      purgedRateLimitRows: stale.purgedRateLimitRows,
       message:
         `${dryRun ? "Simulasi pembersihan" : "Pembersihan selesai"}: ${lifecycle.transitionedInvitations} undangan ditransisikan ke selesai, ` +
         `${lifecycle.retentionWarningsSent} peringatan retensi terkirim, ${lifecycle.recycledSubdomains} subdomain dikembalikan ke pool, ` +

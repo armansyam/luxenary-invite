@@ -251,13 +251,58 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "orderId wajib diisi" }, { status: 400 });
     }
 
-    const order = await prisma.order.findUnique({ where: { id: orderId }, select: { userId: true } });
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: {
+        userId: true,
+        status: true,
+        planType: true,
+        amount: true,
+        discountAmount: true,
+        promoCodeApplied: true,
+        snapToken: true,
+        gatewayId: true,
+        gatewayTxId: true,
+      },
+    });
     if (!order) {
       return NextResponse.json({ error: "Order tidak ditemukan." }, { status: 404 });
     }
     const role = (session.user as any)?.role;
     if (order.userId !== session.user.id && role !== "ADMIN" && role !== "SUPER_ADMIN") {
       return NextResponse.json({ error: "Akses ditolak. Bukan order Anda." }, { status: 403 });
+    }
+
+    // Diskon yang sudah dikunci saat konfirmasi sudah tertanam di nominal order dan sesi gateway. Melepas hold saja
+    // akan membebaskan kuota kupon sementara order tetap berdiskon, jadi order dikembalikan ke harga normal.
+    if (order.status === "PENDING" && order.promoCodeApplied) {
+      const hasGatewaySession = Boolean(order.snapToken || order.gatewayTxId);
+      if (hasGatewaySession) {
+        const { getGatewayById, getActiveGateway } = await import("@/lib/gatewayRegistry");
+        const gateway = order.gatewayId ? await getGatewayById(order.gatewayId) : await getActiveGateway();
+        const cancelRes = await gateway.cancel(order.gatewayTxId || orderId);
+        if (!cancelRes.success && cancelRes.error?.includes("terbayar")) {
+          return NextResponse.json({ error: "Pesanan ini sudah terbayar di payment gateway dan promo tidak dapat dilepas." }, { status: 409 });
+        }
+      }
+
+      const priceKey = { TIER_1: "price_tier1", TIER_2: "price_tier2", TIER_3: "price_tier3" }[normalizePlanType(order.planType) as "TIER_1" | "TIER_2" | "TIER_3"];
+      const priceSetting = await prisma.adminSetting.findUnique({ where: { key: priceKey } });
+      const listPrice = priceSetting && Number(priceSetting.value) > 0
+        ? Number(priceSetting.value)
+        : Number(order.amount) + Number(order.discountAmount ?? 0);
+
+      await prisma.order.updateMany({
+        where: { id: orderId, status: "PENDING" },
+        data: {
+          amount: listPrice,
+          discountAmount: null,
+          promoCodeApplied: null,
+          promoCouponId: null,
+          checkoutConfirmedAt: null,
+          ...(hasGatewaySession ? { snapToken: null, gatewayTxId: null, chargedAmount: null } : {}),
+        },
+      });
     }
 
     const { releaseOrderPromoHold } = await import("@/lib/marketing");

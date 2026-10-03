@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { applyUpgradePlan } from "@/lib/upgradeHelper";
 import { paymentEmitter } from "@/lib/paymentEvents";
 import { releaseOrderPromoHold } from "@/lib/marketing";
-import { isGatewayAmountValid, isStaleGatewaySession, settleOrderAsPaid } from "@/lib/paymentSettlement";
+import { isGatewayAmountValid, isStaleGatewaySession, settleOrderAsPaid, settlementSourceStatuses } from "@/lib/paymentSettlement";
 import { logger } from "@/lib/logger";
 import { captureException } from "@/lib/errorTracker";
 import { NextRequest, NextResponse } from "next/server";
@@ -18,7 +18,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    const orderId = body.order_id;
+    // order_id di sisi Midtrans = UUID order, atau `<UUID>~<sufiks>` untuk sesi yang diterbitkan ulang (lihat MidtransGateway.init).
+    const gatewayOrderId = body.order_id;
+    const [orderId, sessionSuffix] = typeof gatewayOrderId === "string" ? gatewayOrderId.split("~") : [gatewayOrderId, undefined];
     const statusCode = body.status_code;
     const grossAmount = body.gross_amount;
     const signatureKey = body.signature_key;
@@ -31,7 +33,7 @@ export async function POST(req: NextRequest) {
 
     // Validasi format orderId (harus UUID v4 — mencegah query DB sia-sia dari input sembarang)
     const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!UUID_REGEX.test(orderId)) {
+    if (!UUID_REGEX.test(orderId) || (sessionSuffix !== undefined && !/^[A-Za-z0-9._-]{1,13}$/.test(sessionSuffix))) {
       return NextResponse.json({ status: "ignored", reason: "invalid_order_id_format" }, { status: 200 });
     }
 
@@ -102,7 +104,7 @@ export async function POST(req: NextRequest) {
 
       const isValid = validServerKeys.some((serverKey) =>
         MidtransGateway.verifyWebhookSignature({
-          order_id: orderId,
+          order_id: gatewayOrderId,
           status_code: statusCode,
           gross_amount: grossAmount,
           signature_key: signatureKey,
@@ -148,6 +150,8 @@ export async function POST(req: NextRequest) {
 
     // Cek Idempotency: Jika sudah PAID, return ok
     if (order.status === "PAID") {
+      // Pemenuhan layanan yang gagal pada pengiriman sebelumnya dicoba lagi di sini (idempoten lewat fulfilledAt).
+      if (!order.fulfilledAt) await applyUpgradePlan(orderId);
       return NextResponse.json({ status: "ok", note: "already_paid" });
     }
 
@@ -174,9 +178,28 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ status: "ignored", reason: "amount_mismatch" }, { status: 200 });
       }
 
-      // Transisi PENDING -> PAID + marketing dalam satu transaksi (atomic check-and-set,
+      const sources = await settlementSourceStatuses(order);
+      if (!sources) {
+        logger.error("MidtransWebhook", `Pembayaran diterima untuk order ${orderId} berstatus ${order.status}; perlu rekonsiliasi manual.`, undefined, {
+          orderId,
+          status: order.status,
+          grossAmount,
+        });
+        if (webhookLogId) {
+          await prisma.webhookLog.update({
+            where: { id: webhookLogId },
+            data: { status: "paid_on_closed_order", processedAt: new Date() },
+          });
+        }
+        return NextResponse.json({ status: "ignored", reason: "order_closed" }, { status: 200 });
+      }
+      if (order.status !== "PENDING") {
+        logger.warn("MidtransWebhook", `Order ${orderId} berstatus ${order.status} dilunasi karena pembayaran gateway valid diterima.`, { orderId });
+      }
+
+      // Transisi ke PAID + marketing dalam satu transaksi (atomic check-and-set,
       // aman terhadap webhook duplikat bersamaan)
-      const settled = await settleOrderAsPaid(orderId, { paymentMethod: "GATEWAY" });
+      const settled = await settleOrderAsPaid(orderId, { paymentMethod: "GATEWAY" }, { from: sources });
 
       // Order sudah diproses webhook sebelumnya — return idempotent
       if (!settled) {
