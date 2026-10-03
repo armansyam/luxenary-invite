@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
-import { CommissionType, DiscountType, PlanType } from "@prisma/client";
+import { CommissionType, DiscountType } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -119,11 +119,8 @@ export async function POST(req: NextRequest) {
         description,
         discountType,
         discountValue,
-        minOrderAmount,
         maxDiscountAmount,
         quotaLimit,
-        isSingleUse,
-        perUserLimit,
         applicablePlans,
         validFrom,
         validUntil,
@@ -158,7 +155,6 @@ export async function POST(req: NextRequest) {
           minOrderAmount: 0, // Tidak diekspos di form — selalu 0 (filter paket via applicablePlans)
           maxDiscountAmount: maxDiscountAmount ? Number(maxDiscountAmount) : null,
           quotaLimit: quotaLimit !== null && quotaLimit !== undefined && quotaLimit !== "" ? Number(quotaLimit) : null,
-          isSingleUse: false,
           perUserLimit: 1, // Hardcode: 1 akun = 1 kali pakai, tidak bisa diubah dari form
           applicablePlans: Array.isArray(applicablePlans) ? applicablePlans : [],
           validFrom: validFrom ? new Date(validFrom) : null,
@@ -177,11 +173,8 @@ export async function POST(req: NextRequest) {
         description,
         discountType,
         discountValue,
-        minOrderAmount,
         maxDiscountAmount,
         quotaLimit,
-        isSingleUse,
-        perUserLimit,
         applicablePlans,
         validFrom,
         validUntil,
@@ -202,7 +195,6 @@ export async function POST(req: NextRequest) {
           minOrderAmount: 0, // Tidak diekspos di form — selalu 0
           maxDiscountAmount: maxDiscountAmount ? Number(maxDiscountAmount) : null,
           quotaLimit: quotaLimit !== null && quotaLimit !== undefined && quotaLimit !== "" ? Number(quotaLimit) : null,
-          isSingleUse: false,
           perUserLimit: 1, // Hardcode: 1 akun = 1 kali pakai
           applicablePlans: Array.isArray(applicablePlans) ? applicablePlans : [],
           validFrom: validFrom ? new Date(validFrom) : null,

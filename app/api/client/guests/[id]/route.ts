@@ -88,7 +88,6 @@ export async function PUT(
     if (body.tableNumber !== undefined) allowedData.tableNumber = body.tableNumber || null;
     if (body.guestQuota !== undefined) allowedData.guestQuota = Number(body.guestQuota) || 1;
     if (body.waStatus !== undefined) allowedData.waStatus = body.waStatus;
-    if (body.waSentAt !== undefined) allowedData.waSentAt = body.waSentAt ? new Date(body.waSentAt) : null;
 
     const guest = await prisma.guest.update({
       where: { id },

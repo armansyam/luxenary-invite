@@ -33,7 +33,6 @@ interface PromoCoupon {
   maxDiscountAmount: number | null;
   quotaLimit: number | null;
   usageCount: number;
-  isSingleUse: boolean;
   perUserLimit: number | null;
   applicablePlans: string[];
   validFrom: string | null;
