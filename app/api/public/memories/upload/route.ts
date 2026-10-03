@@ -4,6 +4,7 @@ import { getPublicPlatformSettings, hasPlanCapability, getPlanMemoriesQuota } fr
 import crypto from "crypto";
 import { uploadFile, deleteFile } from "@/lib/storage";
 import { rateLimitDb, getClientIp } from "@/lib/rateLimit";
+import { exceedsDeclaredBodySize } from "@/lib/requestLimits";
 import { parseFeatureSettings } from "@/lib/featureSettings";
 import { publishNewMemory } from "@/lib/sseEmitter";
 import { getMemoriesActiveSchedule, calculateSessionCumulativeQuota } from "@/lib/domainUtils";
@@ -44,6 +45,11 @@ export async function POST(req: NextRequest) {
     // Limit: 15 request per menit (60000ms) untuk mengakomodasi jaringan WiFi yang sama (cross-process PM2 safe)
     if (!(await rateLimitDb(`memories_upload:${ip}`, 15, 60000))) {
       return NextResponse.json({ error: "Terlalu banyak permintaan unggahan. Silakan coba lagi sebentar." }, { status: 429 });
+    }
+
+    // Foto dibatasi 5 MB; ruang tambahan untuk overhead multipart/base64 sebelum body dibaca ke memori.
+    if (exceedsDeclaredBodySize(req, 8 * 1024 * 1024)) {
+      return NextResponse.json({ error: "Ukuran unggahan terlalu besar." }, { status: 413 });
     }
 
     let invitationId = "";

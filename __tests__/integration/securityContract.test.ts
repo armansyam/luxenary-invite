@@ -122,14 +122,30 @@ describe.skipIf(!IS_TEST_DB)("Kontrak keamanan (DB luxenary_test)", () => {
   });
 
   describe("H3 — /api/public/memories/[invitationId]", () => {
-    it("tidak membocorkan email pengirim", async () => {
-      const res = await memoriesGet(new NextRequest(`http://localhost/api/public/memories/${invA}`), {
-        params: { invitationId: invA },
-      });
-      const text = await res.text();
-      expect(res.status).toBe(200);
-      expect(text).toContain("Budi");
-      expect(text).not.toContain(GUEST_EMAIL);
+    const fetchMemories = () =>
+      memoriesGet(new NextRequest(`http://localhost/api/public/memories/${invA}`), { params: { invitationId: invA } });
+
+    it("tidak membocorkan email pengirim pada undangan yang terbit", async () => {
+      await prisma.invitation.update({ where: { id: invA }, data: { status: "PUBLISHED" } });
+      try {
+        const res = await fetchMemories();
+        const text = await res.text();
+        expect(res.status).toBe(200);
+        expect(text).toContain("Budi");
+        expect(text).not.toContain(GUEST_EMAIL);
+      } finally {
+        await prisma.invitation.update({ where: { id: invA }, data: { status: "DRAFT" } });
+      }
+    });
+
+    it("undangan DRAFT dan TAKEN_DOWN tidak menyajikan galeri (404)", async () => {
+      expect((await fetchMemories()).status).toBe(404);
+      await prisma.invitation.update({ where: { id: invA }, data: { status: "TAKEN_DOWN" } });
+      try {
+        expect((await fetchMemories()).status).toBe(404);
+      } finally {
+        await prisma.invitation.update({ where: { id: invA }, data: { status: "DRAFT" } });
+      }
     });
   });
 

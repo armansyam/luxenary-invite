@@ -1,12 +1,5 @@
 import type { NextConfig } from "next";
 
-// Ambil custom domain R2/S3 dari env untuk whitelist Image Optimizer
-// Format: https://cdn.example.com → hostname: cdn.example.com
-const s3CustomDomain = (process.env.S3_CUSTOM_DOMAIN || process.env.R2_PUBLIC_URL || "")
-  .replace(/^https?:\/\//, "")
-  .replace(/\/$/, "")
-  .trim();
-
 // Kebijakan CSP dipasang sebagai Report-Only: pelanggaran hanya dilaporkan ke /api/security/csp-report.
 // 'unsafe-inline' tetap dibutuhkan karena tema undangan memuat skrip dan gaya inline; setelah laporan bersih,
 // naikkan ke Content-Security-Policy penuh (idealnya dengan nonce).
@@ -34,23 +27,8 @@ const nextConfig: NextConfig = {
   outputFileTracingExcludes: {
     "/*": ["./data/**/*", "./public/**/*", "./coverage/**/*", "./reports/**/*", "./scratch/**/*", "./.vscode_history_backup/**/*"],
   },
-  images: {
-    remotePatterns: [
-      // Cloudflare R2 / S3-compatible storage (custom domain dari env)
-      ...(s3CustomDomain ? [{ protocol: "https" as const, hostname: s3CustomDomain }] : []),
-      // Cloudflare R2 default dev subdomain (sebelum custom domain aktif)
-      { protocol: "https" as const, hostname: "*.r2.cloudflarestorage.com" },
-      // Google OAuth user avatar (foto profil Google login klien)
-      { protocol: "https" as const, hostname: "lh3.googleusercontent.com" },
-      { protocol: "https" as const, hostname: "lh4.googleusercontent.com" },
-      { protocol: "https" as const, hostname: "lh5.googleusercontent.com" },
-      { protocol: "https" as const, hostname: "lh6.googleusercontent.com" },
-      // AWS S3 jika digunakan sebagai fallback storage
-      { protocol: "https" as const, hostname: "*.amazonaws.com" },
-      // Lokal development (localhost)
-      { protocol: "http" as const, hostname: "localhost" },
-    ],
-  },
+  // Tidak ada komponen next/image di aplikasi ini. Tanpa remotePatterns, /_next/image menolak URL eksternal sehingga
+  // server tidak dapat dipakai sebagai proksi gambar atau untuk menjangkau layanan internal (localhost).
   experimental: {
     proxyClientMaxBodySize: "100mb",
   },

@@ -17,6 +17,9 @@ export default defineConfig({
     // Global APIs: describe, it, expect, beforeAll, afterAll — tanpa import di setiap file
     globals: true,
 
+    // next-auth mengimpor "next/server" tanpa ekstensi; harus diproses Vite agar tes sesi JWT nyata dapat berjalan.
+    server: { deps: { inline: ["next-auth"] } },
+
     // Setup file: dijalankan sekali sebelum seluruh test suite
     globalSetup: "./__tests__/setup.ts",
 

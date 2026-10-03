@@ -8,6 +8,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextResponse } from "next/server";
 
+// GET menerbitkan token pratinjau yang ditandatangani dengan AUTH_SECRET.
+vi.hoisted(() => {
+  process.env.AUTH_SECRET ||= "vitest-invitations-secret";
+});
+
 // ── Mock dependencies sebelum import handler ──────────────────────────────
 vi.mock("@/auth", () => ({
   auth: vi.fn(),

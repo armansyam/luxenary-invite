@@ -27,6 +27,8 @@ declare module "next-auth" {
       isAdmin: boolean;
       role: AppRole;
       originalRole?: AppRole;
+      originalAdminId?: string;
+      isRemote?: boolean;
       permissions?: string[];
       phoneNumber?: string | null;
     };

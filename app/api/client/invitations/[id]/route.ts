@@ -11,6 +11,8 @@ import { VALID_MEDIA_SLOTS } from "@/lib/mediaSlots";
 import { invalidateInvitationLookup } from "@/lib/cache";
 import { safeExternalUrl, normalizeFeatureUrls } from "@/lib/safeUrl";
 import { getDynamicServerRootDomain } from "@/lib/serverDomainUtils";
+import { createPreviewToken } from "@/lib/previewAccess";
+import { parseFeatureSettings, mergeClientFeatureSettings, gateFeaturesByPlan, SERVER_MANAGED_FEATURE_KEYS } from "@/lib/featureSettings";
 
 
 export function getInvitationLockStatus(inv: any) {
@@ -129,6 +131,7 @@ export async function GET(
     return NextResponse.json({
       ...invitation,
       staffPin: displayPin, // Tampilkan PIN plain-text (sudah di-decrypt) ke owner yang login
+      previewToken: createPreviewToken(invitation.id),
       mediaMap,
       ...lockStatus,
       planMemoriesQuota: await getPlanMemoriesQuota(invitation.order?.planType),
@@ -281,7 +284,7 @@ export async function PUT(
           : null)
       : undefined;
 
-    if (newSubdomain === undefined && (!currentInv?.subdomain || currentInv.subdomain === "mempelai-pria-wanita")) {
+    if (newSubdomain === undefined && !currentInv.subdomain) {
       if (newGroomSlug && newBrideSlug) {
         newSubdomain = `${newGroomSlug}-${newBrideSlug}`;
       }
@@ -312,47 +315,36 @@ export async function PUT(
       }
     }
 
-    let mergedFeatureSettings = undefined;
+    let mergedFeatureSettings: string | null | undefined = undefined;
     if (body.featureSettings !== undefined) {
+      const existingObj = parseFeatureSettings(currentInv.featureSettings);
       if (body.featureSettings === null) {
-        mergedFeatureSettings = null;
+        // Menghapus seluruh featureSettings juga menghapus add-on berbayar yang tersimpan di dalamnya.
+        mergedFeatureSettings = isAdmin
+          ? null
+          : JSON.stringify(Object.fromEntries(SERVER_MANAGED_FEATURE_KEYS.filter((k) => k in existingObj).map((k) => [k, existingObj[k]])));
       } else {
+        let incomingObj: Record<string, any>;
         try {
-          const existingObj = currentInv?.featureSettings
-            ? (typeof currentInv.featureSettings === "object" ? currentInv.featureSettings : JSON.parse(currentInv.featureSettings || "{}"))
-            : {};
-          const incomingObj = typeof body.featureSettings === "object"
-            ? body.featureSettings
-            : JSON.parse(body.featureSettings || "{}");
-          
-          let parsedFeatures = normalizeFeatureUrls({ ...existingObj, ...incomingObj });
-
-          // --- SERVER-SIDE FEATURE GATING ---
-          // Prevent API Bypass for tiered features based on planType
-          if (!isAdmin) {
-            const { getPublicPlatformSettings } = await import("@/lib/settings");
-            const platformSettings = await getPublicPlatformSettings();
-            
-            // Get PlanType from order
-            let planType = "TIER_1";
-            if (currentInv.orderId) {
-              const order = await prisma.order.findUnique({ where: { id: currentInv.orderId }, select: { planType: true } });
-              if (order) planType = order.planType;
-            }
-
-            const packageConfig = platformSettings.packages?.find(p => p.id === planType);
-            const allowedCaps = packageConfig?.capabilities || (planType === "TIER_3" ? ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"] : planType === "TIER_2" ? ["music", "gallery", "qr_checkin"] : ["music", "gallery"]);
-            const hasCap = (cap: string) => allowedCaps.includes(cap);
-
-            // Force override if they try to enable features they don't have
-            if (parsedFeatures.showQrCheckin && !hasCap("qr_checkin")) parsedFeatures.showQrCheckin = false;
-            if (parsedFeatures.showGuestMemories && !hasCap("guest_memories")) parsedFeatures.showGuestMemories = false;
-          }
-
-          mergedFeatureSettings = JSON.stringify(parsedFeatures);
+          incomingObj = typeof body.featureSettings === "object" ? body.featureSettings : JSON.parse(body.featureSettings || "{}");
         } catch {
-          mergedFeatureSettings = toStr(body.featureSettings);
+          return NextResponse.json({ error: "featureSettings bukan JSON yang valid." }, { status: 400 });
         }
+        if (!incomingObj || typeof incomingObj !== "object" || Array.isArray(incomingObj)) {
+          return NextResponse.json({ error: "featureSettings harus berupa objek." }, { status: 400 });
+        }
+
+        let parsedFeatures = normalizeFeatureUrls(mergeClientFeatureSettings(existingObj, incomingObj, isAdmin));
+
+        // Gating fitur per paket di sisi server: mencegah pembukaan fitur berbayar lewat API langsung.
+        if (!isAdmin) {
+          const order = currentInv.orderId
+            ? await prisma.order.findUnique({ where: { id: currentInv.orderId }, select: { planType: true } })
+            : null;
+          parsedFeatures = await gateFeaturesByPlan(parsedFeatures, order?.planType);
+        }
+
+        mergedFeatureSettings = JSON.stringify(parsedFeatures);
       }
     }
 
@@ -500,7 +492,8 @@ export async function PUT(
 
         eventDataToSave = JSON.stringify(validatedEvents);
       } catch {
-        eventDataToSave = toStr(body.eventData);
+        // Data acara yang tidak dapat divalidasi tidak boleh disimpan mentah: kunci tanggal sesi utama dan sanitasi URL ada di blok ini.
+        return NextResponse.json({ error: "Format eventData tidak valid." }, { status: 400 });
       }
     }
 
@@ -527,6 +520,7 @@ export async function PUT(
         subdomain: newSubdomain,
         musicUrl: body.musicUrl !== undefined ? safeExternalUrl(body.musicUrl) : undefined,
         status: body.status !== undefined ? body.status : undefined,
+        ...(body.status === "PUBLISHED" && currentInv.status !== "PUBLISHED" ? { publishedAt: new Date() } : {}),
         loveStory: body.loveStory !== undefined ? toStr(body.loveStory) : undefined,
         dresscode: body.dresscode !== undefined ? body.dresscode : undefined,
         bankAccounts: body.bankAccounts !== undefined ? toStr(body.bankAccounts) : undefined,
@@ -638,7 +632,7 @@ export async function PUT(
     });
   } catch (err: any) {
     console.error("Error updating invitation:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal memperbarui undangan." : err.message }, { status: 500 });
   }
 }
 
@@ -674,14 +668,25 @@ export async function PATCH(
     let updateData: any = {};
 
     if (body.featureSettings !== undefined) {
-      const existingObj = currentInv?.featureSettings
-        ? (typeof currentInv.featureSettings === "object" ? currentInv.featureSettings : JSON.parse(currentInv.featureSettings || "{}"))
-        : {};
-      const incomingObj = typeof body.featureSettings === "object"
-        ? body.featureSettings
-        : JSON.parse(body.featureSettings || "{}");
+      const existingObj = parseFeatureSettings(currentInv.featureSettings);
+      let incomingObj: Record<string, any>;
+      try {
+        incomingObj = typeof body.featureSettings === "object" ? body.featureSettings : JSON.parse(body.featureSettings || "{}");
+      } catch {
+        return NextResponse.json({ error: "featureSettings bukan JSON yang valid." }, { status: 400 });
+      }
+      if (!incomingObj || typeof incomingObj !== "object" || Array.isArray(incomingObj)) {
+        return NextResponse.json({ error: "featureSettings harus berupa objek." }, { status: 400 });
+      }
 
-      let parsedFeatures = normalizeFeatureUrls({ ...existingObj, ...incomingObj });
+      let parsedFeatures = normalizeFeatureUrls(mergeClientFeatureSettings(existingObj, incomingObj, isAdmin));
+
+      if (!isAdmin) {
+        const order = currentInv.orderId
+          ? await prisma.order.findUnique({ where: { id: currentInv.orderId }, select: { planType: true } })
+          : null;
+        parsedFeatures = await gateFeaturesByPlan(parsedFeatures, order?.planType);
+      }
 
       if (parsedFeatures.memoriesShotsQuota !== undefined) {
         const sq = Number(parsedFeatures.memoriesShotsQuota);
@@ -694,6 +699,11 @@ export async function PATCH(
     }
 
     if (body.participantsJson !== undefined) {
+      // Nama peserta acara adalah data inti yang dikunci setelah publikasi, sama seperti groomName/brideName pada PUT.
+      const lock = getInvitationLockStatus(currentInv);
+      if (!isAdmin && lock.isCoreLocked && !lock.isEmergencyUnlocked) {
+        return NextResponse.json({ error: "Data peserta acara terkunci. Hubungi Administrator untuk membuka kunci darurat." }, { status: 403 });
+      }
       updateData.participantsJson = typeof body.participantsJson === "string"
         ? body.participantsJson
         : JSON.stringify(body.participantsJson);
@@ -719,7 +729,7 @@ export async function PATCH(
     });
   } catch (err: any) {
     console.error("Error patching invitation:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal memperbarui pengaturan undangan." : err.message }, { status: 500 });
   }
 }
 

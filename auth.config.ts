@@ -6,44 +6,9 @@ export const authConfig = {
   pages: {
     signIn: "/login",
   },
+  // Perlindungan rute (admin, dashboard klien) ada di proxy.ts. Callback `authorized` tidak dipasang di sini karena
+  // proxy memakai handler kustom, dan Auth.js mengabaikan hasil boolean `authorized` bila handler kustom ada.
   callbacks: {
-    authorized({ auth, request }) {
-      const { nextUrl } = request;
-      const isLoggedIn = !!auth?.user;
-      const isAdmin = (auth?.user as any)?.isAdmin === true || (auth?.user as any)?.role === "ADMIN" || (auth?.user as any)?.role === "SUPER_ADMIN";
-      const pathname = nextUrl.pathname;
-
-      // Allow public access to login pages
-      if (pathname === "/admin/login" || pathname === "/login") {
-        return true;
-      }
-
-      // Admin portal protection — HANYA role Admin / Super Admin
-      if (pathname.startsWith("/admin")) {
-        if (!isLoggedIn || !isAdmin) {
-          return false;
-        }
-        return true;
-      }
-
-      // Client dashboard protection — HANYA role Client murni (Admin DILARANG masuk)
-      // PENGECUALIAN: Admin yang sedang memegang cookie remote diizinkan
-      if (pathname.startsWith("/dashboard")) {
-        if (isAdmin) {
-          // Cek apakah ada cookie remote yang valid
-          const remoteClientId = request.cookies.get("lux_remote_client_id")?.value;
-          if (remoteClientId) return true;
-          return false;
-        }
-        const isClient = isLoggedIn && !isAdmin && (auth?.user as any)?.role === "CLIENT";
-        if (!isClient) {
-          return false;
-        }
-        return true;
-      }
-
-      return true;
-    },
     jwt({ token, user }) {
       if (user) {
         token.id = user.id;

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { rateLimitDb, getClientIp } from "@/lib/rateLimit";
 import { normalizeRsvpStatus, RSVP_NAME_MAX, RSVP_MESSAGE_MAX } from "@/lib/rsvpStatus";
+import { exceedsDeclaredBodySize } from "@/lib/requestLimits";
 
 export async function GET(req: NextRequest) {
   try {
@@ -89,13 +90,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Terlalu banyak pengiriman RSVP. Silakan coba lagi sebentar." }, { status: 429 });
     }
 
+    if (exceedsDeclaredBodySize(req, 64 * 1024)) {
+      return NextResponse.json({ error: "Ukuran permintaan terlalu besar." }, { status: 413 });
+    }
+
     let body: any;
     try {
       body = await req.json();
     } catch {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
-    const { invitationId, guestName, status, guestCount, message, phone } = body;
+    const { invitationId, guestName, status, guestCount, message } = body;
 
     if (!invitationId || !guestName || !status) {
       return NextResponse.json(

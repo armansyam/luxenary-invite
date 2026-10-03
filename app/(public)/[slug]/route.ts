@@ -10,6 +10,7 @@ import { invitationLookupCache } from "@/lib/cache";
 import { hasPlanCapability } from "@/lib/settings";
 import { computeLifecycleDates } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
+import { canPreviewInvitation } from "@/lib/previewAccess";
 import fs from "fs";
 import path from "path";
 
@@ -36,11 +37,11 @@ async function hasPortfolio(slug: string): Promise<boolean> {
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const isPreview = req.nextUrl.searchParams.get("preview") === "true";
+  const previewParam = req.nextUrl.searchParams.get("preview");
 
   // L1 Memory Cache: Hilangkan query basis data redundant saat lonjakan ribuan tamu
   const cacheKey = `slug:${slug}`;
-  let invitation = !isPreview ? invitationLookupCache.get(cacheKey) : null;
+  let invitation = !previewParam ? invitationLookupCache.get(cacheKey) : null;
 
   if (!invitation) {
     invitation = await prisma.invitation.findUnique({
@@ -50,7 +51,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
       },
     });
 
-    if (invitation && !isPreview && (invitation.status === "PUBLISHED" || invitation.status === "EVENT_FINISHED")) {
+    if (invitation && !previewParam && (invitation.status === "PUBLISHED" || invitation.status === "EVENT_FINISHED")) {
       invitationLookupCache.set(cacheKey, invitation, 60_000);
     }
   }
@@ -59,6 +60,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
     return new NextResponse("Not Found", { status: 404 });
   }
 
+  const isPreview = await canPreviewInvitation(invitation, previewParam);
+
+  if (invitation.status === "TAKEN_DOWN" && !isPreview) {
+    return new NextResponse("Undangan ini telah diturunkan.", { status: 410 });
+  }
 
 
   // Jika undangan masih berstatus DRAFT (belum dipublikasikan)

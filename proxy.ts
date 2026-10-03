@@ -17,7 +17,12 @@ interface CustomDomainResolution {
 const customDomainCache = new Map<string, CustomDomainResolution>();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 menit
 
-async function resolveCustomDomain(host: string, baseUrl: string): Promise<CustomDomainResolution | null> {
+// Resolusi selalu ke proses ini sendiri. Basis URL dari header Host akan membuat server melakukan fetch ke host
+// pilihan penyerang (SSRF) bila origin dijangkau langsung.
+const INTERNAL_BASE_URL = `http://127.0.0.1:${process.env.PORT || "3000"}`;
+const CACHE_MAX_ENTRIES = 2000;
+
+async function resolveCustomDomain(host: string): Promise<CustomDomainResolution | null> {
   const now = Date.now();
 
   // Cek cache terlebih dahulu
@@ -26,16 +31,21 @@ async function resolveCustomDomain(host: string, baseUrl: string): Promise<Custo
     return cached;
   }
 
-  // Cleanup cache yang expired (lazy cleanup)
+  // Cleanup cache yang expired (lazy cleanup), lalu batasi ukuran: Host acak tidak boleh menumbuhkan memori tanpa batas
   if (customDomainCache.size > 500) {
     for (const [key, val] of customDomainCache.entries()) {
       if (val.expiry <= now) customDomainCache.delete(key);
     }
   }
+  while (customDomainCache.size >= CACHE_MAX_ENTRIES) {
+    const oldest = customDomainCache.keys().next().value;
+    if (oldest === undefined) break;
+    customDomainCache.delete(oldest);
+  }
 
   // Fetch ke API internal
   try {
-    const resolveUrl = new URL(`/api/public/resolve-custom-domain?host=${encodeURIComponent(host)}`, baseUrl);
+    const resolveUrl = new URL(`/api/public/resolve-custom-domain?host=${encodeURIComponent(host)}`, INTERNAL_BASE_URL);
     const resolveRes = await fetch(resolveUrl.toString());
     if (resolveRes.ok) {
       const data = await resolveRes.json();
@@ -229,7 +239,7 @@ export const proxy = auth(async (req) => {
   // Gunakan cache in-memory (TTL 5 menit) untuk menghindari amplifikasi self-fetch
   if (isCustomDomain && !pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/static")) {
     try {
-      const resolution = await resolveCustomDomain(cleanHost, req.url);
+      const resolution = await resolveCustomDomain(cleanHost);
       const slug = resolution?.slug;
 
       if (slug) {

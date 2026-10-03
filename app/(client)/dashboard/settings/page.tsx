@@ -606,6 +606,7 @@ export default function SettingsPage() {
   const currentSlug = invitation?.invitationSlug || "";
   const hasCustomDomain = Boolean(invitation?.customDomain);
   const normalizedStatus = (formData.status || invitation?.status || "DRAFT").toUpperCase();
+  const previewQuery = `preview=${invitation?.previewToken || "true"}`;
 
   const canonicalUrl = getCanonicalUrl(currentSlug);
   const subdomainUrl = getInvitationPublicUrl(currentSub);
@@ -819,7 +820,7 @@ export default function SettingsPage() {
                   <a
                     href={
                       normalizedStatus === "DRAFT"
-                        ? (officialUrl.includes("?") ? `${officialUrl}&preview=true` : `${officialUrl}?preview=true`)
+                        ? (officialUrl.includes("?") ? `${officialUrl}&${previewQuery}` : `${officialUrl}?${previewQuery}`)
                         : officialUrl
                     }
                     target="_blank"
@@ -1374,7 +1375,7 @@ export default function SettingsPage() {
                               <a
                                 href={
                                   normalizedStatus === "DRAFT" && (item.id === "canonical" || item.id === "subdomain" || item.id === "guest")
-                                    ? (item.url.includes("?") ? `${item.url}&preview=true` : `${item.url}?preview=true`)
+                                    ? (item.url.includes("?") ? `${item.url}&${previewQuery}` : `${item.url}?${previewQuery}`)
                                     : item.url
                                 }
                                 target="_blank"

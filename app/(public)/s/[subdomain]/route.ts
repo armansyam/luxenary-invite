@@ -8,6 +8,7 @@ import { invitationLookupCache, invalidateInvitationLookup } from "@/lib/cache";
 import { hasPlanCapability } from "@/lib/settings";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { getDynamicServerApexUrl } from "@/lib/serverDomainUtils";
+import { canPreviewInvitation } from "@/lib/previewAccess";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ subdomain: string }> }) {
   const { subdomain } = await params;
@@ -16,11 +17,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
     return new NextResponse("Not Found", { status: 404 });
   }
 
-  const isPreview = req.nextUrl.searchParams.get("preview") === "true";
+  const previewParam = req.nextUrl.searchParams.get("preview");
 
   // L1 Memory Cache: Hilangkan query basis data redundant pada routing subdomain
   const cacheKey = `subdomain:${subdomain}`;
-  let invitation = !isPreview ? invitationLookupCache.get(cacheKey) : null;
+  let invitation = !previewParam ? invitationLookupCache.get(cacheKey) : null;
 
   if (!invitation) {
     // Strict lookup by active unique subdomain
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
       },
     });
 
-    if (invitation && !isPreview && (invitation.status === "PUBLISHED" || invitation.status === "EVENT_FINISHED")) {
+    if (invitation && !previewParam && (invitation.status === "PUBLISHED" || invitation.status === "EVENT_FINISHED")) {
       invitationLookupCache.set(cacheKey, invitation, 60_000);
     }
   }
@@ -42,6 +43,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
     return NextResponse.redirect(`${rootUrl}/?notice=subdomain-available`, 307);
   }
 
+  const isPreview = await canPreviewInvitation(invitation, previewParam);
+
+  if (invitation.status === "TAKEN_DOWN" && !isPreview) {
+    return new NextResponse("Undangan ini telah diturunkan.", { status: 410 });
+  }
 
 
   // Jika undangan masih berstatus DRAFT (belum dipublikasikan)

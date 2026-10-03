@@ -15,6 +15,12 @@ export async function GET(
       return NextResponse.json({ error: "Missing invitationId" }, { status: 400 });
     }
 
+    // Galeri hanya untuk undangan yang sudah terbit: draf dan undangan yang diturunkan tidak boleh membocorkan fotonya.
+    const invitation = await prisma.invitation.findUnique({ where: { id: invitationId }, select: { status: true } });
+    if (!invitation || invitation.status === "DRAFT" || invitation.status === "TAKEN_DOWN") {
+      return NextResponse.json({ error: "Not Found" }, { status: 404 });
+    }
+
     const memories = await prisma.guestMemory.findMany({
       where: { invitationId },
       orderBy: { createdAt: "desc" },

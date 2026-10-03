@@ -4,20 +4,20 @@ import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { hasAdminPermission } from "@/lib/adminPermissions";
 
 /**
  * Memulai sesi Remote: Admin memasang "kacamata" Klien.
  * Berjalan murni di server → cookie ditulis sebelum redirect → middleware pasti membacanya.
  */
 export async function startRemoteSession(clientId: string) {
+  // Server action dapat dipanggil langsung tanpa melewati UI, jadi izin modul diperiksa di sini.
+  // Titik masuk impersonasi ada di tab Klien (users) dan tab Projek Undangan (invitations).
   const session = await auth();
-  const isAdmin =
-    (session?.user as any)?.isAdmin === true ||
-    (session?.user as any)?.role === "ADMIN" ||
-    (session?.user as any)?.role === "SUPER_ADMIN";
-
-  if (!session?.user || !isAdmin) {
-    throw new Error("Unauthorized: Hanya Admin yang bisa memulai sesi remote.");
+  const permitted =
+    session?.user && (hasAdminPermission(session.user, "users") || hasAdminPermission(session.user, "invitations"));
+  if (!session?.user || !permitted) {
+    throw new Error("Unauthorized: Akun Anda tidak berhak memulai sesi remote.");
   }
 
   // Verifikasi klien benar-benar ada di database
@@ -26,6 +26,15 @@ export async function startRemoteSession(clientId: string) {
     select: { id: true, name: true, email: true },
   });
   if (!clientUser) throw new Error("Klien tidak ditemukan di database.");
+
+  // Selama sesi remote, session.user.id adalah ID klien; pelaku sebenarnya ada di originalAdminId.
+  await prisma.adminAuditLog.create({
+    data: {
+      adminId: session.user.originalAdminId ?? session.user.id,
+      action: "REMOTE_SESSION_START",
+      details: `Masuk ke dasbor klien ${clientUser.email} (${clientUser.id})`,
+    },
+  });
 
   const cookieStore = await cookies();
   cookieStore.set("lux_remote_client_id", clientId, {

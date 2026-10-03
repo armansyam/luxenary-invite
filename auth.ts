@@ -138,6 +138,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return true;
     },
     async jwt({ token, user, account, profile }) {
+      // Akun admin yang sudah dihapus: mengembalikan null mengakhiri sesi. Tanpa ini JWT lama (default 30 hari)
+      // tetap membawa isAdmin dan role dari saat login.
+      if (!user && (token as any).isAdmin && token.id) {
+        const admin = await prisma.admin.findUnique({ where: { id: token.id as string }, select: { id: true } });
+        if (!admin) return null;
+      }
       if (user) {
         token.id = user.id;
         (token as any).role = (user as any).role || "CLIENT";
