@@ -289,6 +289,9 @@ npx prisma db seed
 > [!IMPORTANT]
 > **Aplikasi hanya boleh dijangkau lewat Caddy.** `ecosystem.config.js` menjalankan `next start --hostname 127.0.0.1`, sehingga port 3001 hanya mendengarkan di loopback. Tanpa itu Next mendengarkan di semua antarmuka dan siapa pun dapat memanggil `http://IP_VPS:3001` langsung, melewati Caddy dan Cloudflare serta memalsukan `X-Real-IP` untuk melewati pembatas laju. `deploy.sh` membuat ulang proses PM2 bila `ss -ltn` masih menunjukkan port 3001 terbuka ke jaringan. Periksa setelah deploy dari mesin lain: `curl -m 5 http://IP_VPS:3001/api/health` harus gagal, sedangkan `https://DOMAIN/api/health` harus 200. Sebagai lapisan kedua, blokir 3001 di firewall (mis. `ufw deny 3001/tcp`) dan hanya buka 22, 80, 443; itu keputusan operator server, bukan bagian `deploy.sh`.
 
+> [!NOTE]
+> **Rotasi password database (`scripts/rotate-db-password.sh`).** Password user PostgreSQL harus sama di dua tempat: PostgreSQL dan `DATABASE_URL` di `.env`. Skrip ini mengganti keduanya sekaligus, membuat backup `pg_dump` lebih dulu, menguji login, restart, kesehatan aplikasi, dan backup lewat aplikasi, lalu **memulihkan password dan `.env` lama secara otomatis** bila ada langkah yang gagal. Password baru (32 heksadesimal) dibuat di server dan tidak pernah dicetak. Jalankan dari Mac di folder proyek: pemeriksaan saja `ssh -i KUNCI.pem USER@HOST 'DRY_RUN=1 bash -s' < scripts/rotate-db-password.sh`, ganti sungguhan `ssh -i KUNCI.pem USER@HOST 'CONFIRM=ya bash -s' < scripts/rotate-db-password.sh`. Tanpa salah satu variabel itu skrip menolak berjalan. Diuji pada klaster PostgreSQL sementara dengan autentikasi `scram-sha-256` (27 pemeriksaan: sukses, gagal setelah password diganti, password `.env` salah, aplikasi tidak sehat sebelum rotasi, dan rotasi berturut-turut).
+
 Jalankan skrip deploy yang telah dioptimasi untuk server 2GB:
 ```bash
 chmod +x deploy.sh
