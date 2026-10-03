@@ -17,6 +17,11 @@ const eslintConfig = defineConfig([
       "react-hooks/purity": "off",
     },
   },
+  // Konfigurasi PM2 adalah CommonJS yang dimuat oleh PM2, bukan modul ES.
+  {
+    files: ["ecosystem.config.js"],
+    rules: { "@typescript-eslint/no-require-imports": "off" },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

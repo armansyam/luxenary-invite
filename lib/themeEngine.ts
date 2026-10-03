@@ -3,7 +3,6 @@ import { getGoogleDriveFolderPhotos } from "@/lib/driveHelper";
 import { escapeHtml } from "@/lib/escapeHtml";
 import { safeHref, safeExternalUrl } from "@/lib/safeUrl";
 import { safeCssColor } from "@/lib/safeCss";
-import { jsonForInlineScript } from "@/lib/safeJson";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { getAdminSetting } from "@/lib/settings";
 import { safeParseParticipants } from "@/lib/participantUtils";
@@ -2028,7 +2027,6 @@ export async function composeWeddingData(inv: any) {
 
 export async function composeBirthdayData(inv: any) {
   const p = safeParseParticipants(inv.participantsJson);
-  const invitationId = inv.id;
 
   const mediaMap = new Map<string, string>();
   for (const m of inv.media || []) {
@@ -2105,7 +2103,6 @@ export async function composeBirthdayData(inv: any) {
 
   const defaultHeroFallback = `/demo/${themeFolder}/hero.webp`;
   const defaultCoverFallback = `/demo/${themeFolder}/cover.webp`;
-  const defaultBgFallback = `/demo/${themeFolder}/background.webp`;
 
   const coverHeroUrl = customCover || defaultCoverFallback;
   const landingCoverUrl = coverHeroUrl;

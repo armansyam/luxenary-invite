@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { composeTemplateData } from "@/lib/themeEngine";
 import { renderTemplateFile } from "@/lib/renderTemplate";
 import { getAdminSetting } from "@/lib/settings";
-import { resolveInvitationDisplayName, buildCalendarTitle } from "@/lib/invitationUtils";
+import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 import { publishedHtmlCache } from "@/lib/cache";
 import { escapeHtml } from "@/lib/escapeHtml";
 

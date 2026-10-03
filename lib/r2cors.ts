@@ -28,7 +28,6 @@ export async function applyR2CorsPolicy(): Promise<{ success: boolean; origins: 
 
   // 1. APP_URL utama (mis. https://example.com atau http://localhost:3000)
   if (appUrl) {
-    const origin = appUrl.replace(/\/$/, "").replace(/\/.*$/, ""); // strip path
     // Ambil hanya scheme + host
     try {
       const parsed = new URL(appUrl);

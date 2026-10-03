@@ -145,7 +145,7 @@ export async function getServiceAvailability(): Promise<ServiceStatusSettings> {
 
 /**
  * Single Source of Truth for Platform & Pricing Settings
- * Directly queried from SQLite admin_settings table.
+ * Dibaca langsung dari tabel admin_settings (PostgreSQL).
  */
 export async function getPublicPlatformSettings(): Promise<PublicPlatformSettings> {
   const now = Date.now();

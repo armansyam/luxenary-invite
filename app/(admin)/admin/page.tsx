@@ -1,13 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { getApexRootDomain, getInvitationPublicUrl } from "@/lib/domainUtils";
+import { getInvitationPublicUrl } from "@/lib/domainUtils";
 import { BrandLogo } from "@/components/BrandLogo";
 
-import { AdminProfileSettings } from "@/components/admin/AdminProfileSettings";
 import { AdminTeamManagement } from "@/components/admin/AdminTeamManagement";
 import { AdminCashflowTab as AdminFinanceTab } from "@/components/admin/AdminCashflowTab";
 import { AdminMarketingTab } from "@/components/admin/AdminMarketingTab";
@@ -174,27 +172,6 @@ const Badge = ({ status }: { status: string }) => {
   );
 };
 
-function getInvitationEventDate(eventData: any): Date | null {
-  try {
-    const events = typeof eventData === "string" ? JSON.parse(eventData) : eventData || [];
-    if (!Array.isArray(events)) return null;
-    let latest: Date | null = null;
-    for (const ev of events) {
-      if (ev?.date) {
-        const d = new Date(ev.date);
-        if (!isNaN(d.getTime())) {
-          if (!latest || d > latest) latest = d;
-        }
-      }
-    }
-    return latest;
-  } catch {
-    return null;
-  }
-}
-
-
-
 const VALID_ADMIN_TABS = [
   "overview",
   "orders",
@@ -333,21 +310,6 @@ export default function AdminPage() {
   const [allOrders, setAllOrders] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [invitations, setInvitations] = useState<any[]>([]);
-  const [invitationFilter, setInvitationFilter] = useState<"ALL" | "DRAFT" | "PUBLISHED" | "EVENT_FINISHED" | "ARCHIVED">("ALL");
-
-  const draftInvitationCount = useMemo(() => invitations.filter((i) => i.status === "DRAFT").length, [invitations]);
-  const publishedInvitationCount = useMemo(() => invitations.filter((i) => i.status === "PUBLISHED").length, [invitations]);
-  const eventFinishedInvitationCount = useMemo(() => invitations.filter((i) => i.status === "EVENT_FINISHED").length, [invitations]);
-  const archivedInvitationCount = useMemo(() => invitations.filter((i) => i.status === "ARCHIVED" || i.status === "TAKEN_DOWN").length, [invitations]);
-
-  const filteredInvitations = useMemo(() => {
-    if (invitationFilter === "ALL") return invitations;
-    if (invitationFilter === "DRAFT") return invitations.filter((i) => i.status === "DRAFT");
-    if (invitationFilter === "PUBLISHED") return invitations.filter((i) => i.status === "PUBLISHED");
-    if (invitationFilter === "EVENT_FINISHED") return invitations.filter((i) => i.status === "EVENT_FINISHED");
-    if (invitationFilter === "ARCHIVED") return invitations.filter((i) => i.status === "ARCHIVED" || i.status === "TAKEN_DOWN");
-    return invitations;
-  }, [invitations, invitationFilter]);
   const [themes, setThemes] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
   const [customDomainOrders, setCustomDomainOrders] = useState<any[]>([]);
@@ -1662,80 +1624,6 @@ export default function AdminPage() {
     setLocalPreviews({});
   };
 
-
-  const handleToggleEmergencyUnlock = async (inv: any) => {
-    try {
-      const res = await fetch(`/api/admin/invitations/${inv.id}/unlock`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          durationHours: 24,
-          lockImmediately: inv.adminUnlockedUntil && new Date(inv.adminUnlockedUntil) > new Date(),
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        showAdminToast(data.message, true);
-        loadOverviewData();
-      } else {
-        showAdminToast(data.error || "Gagal mengubah status kunci", false);
-      }
-    } catch (e: any) {
-      showAdminToast("Error: " + e.message, false);
-    }
-  };
-
-  const handleCloseToGallery = async (inv: any) => {
-    try {
-      const res = await fetch(`/api/admin/invitations/${inv.id}/lifecycle`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "CLOSE_TO_GALLERY" }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        showAdminToast(data.message, true);
-        loadOverviewData();
-      } else {
-        showAdminToast(data.error || "Gagal menutup undangan", false);
-      }
-    } catch (e: any) {
-      showAdminToast("Error: " + e.message, false);
-    }
-  };
-
-  const handleExtendGallery = async (inv: any) => {
-    try {
-      const res = await fetch(`/api/admin/invitations/${inv.id}/lifecycle`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "EXTEND_GALLERY", days: 30 }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        showAdminToast(data.message, true);
-        loadOverviewData();
-      } else {
-        showAdminToast(data.error || "Gagal memperpanjang masa aktif", false);
-      }
-    } catch (e: any) {
-      showAdminToast("Error: " + e.message, false);
-    }
-  };
-
-  const handleSwitchTheme = async (invId: string, newTheme: string) => {
-    try {
-      const res = await fetch(`/api/client/invitations/${invId}`);
-      const invData = await res.json();
-      await fetch(`/api/client/invitations/${invId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...invData, themeId: newTheme }),
-      });
-      showAdminToast("Tema berhasil dialihkan", true);
-      loadOverviewData();
-    } catch (err: any) { showAdminToast("Gagal: " + err.message, false); }
-  };
 
   const handleApproveOrder = async (orderId: string) => {
     setProcessingOrderAction(true);

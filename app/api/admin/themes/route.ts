@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import fs from "fs";
-import path from "path";
 
 export const dynamic = "force-dynamic";
 
@@ -46,7 +44,6 @@ export async function GET() {
       const customEntry = themeCustomDataMap[themeKey];
       const customData = customEntry?.data;
 
-      const defaultCoverFallback = t.thumbnail || `/demo/${themeKey}/cover.webp`;
       const rawThumbMobile = customData?.thumbnailMobileUrl || `/demo/${themeKey}/thumbnail_mobile.webp`;
       const rawThumbDesktop = customData?.thumbnailDesktopUrl || `/demo/${themeKey}/thumbnail_desktop.webp`;
 

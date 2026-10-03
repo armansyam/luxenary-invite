@@ -1,13 +1,12 @@
 import path from "path";
 import fs from "fs";
 import { prisma } from "@/lib/prisma";
-import { exec, execFile } from "child_process";
+import { execFile } from "child_process";
 import { promisify } from "util";
 import { STORAGE_PROVIDER, s3Client } from "@/lib/storage";
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { logger } from "@/lib/logger";
 
-const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
 
 export interface SnapshotItem {

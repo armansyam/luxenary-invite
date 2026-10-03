@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { randomUUID } from "crypto";
-import { hasPlanCapability } from "@/lib/settings";
 import { computeLifecycleDates } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { normalizePlanType } from "@/lib/planUtils";
@@ -52,7 +51,6 @@ export async function POST(req: NextRequest) {
       targetPlan,
       extensionMonths = 0,
       topupBatches = 0,
-      customDomain = null,
     } = body;
 
     if (!invitationId) {
@@ -216,7 +214,6 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const days = 30;
       const extPrice = monthlyExtPrice;
 
       items.push({

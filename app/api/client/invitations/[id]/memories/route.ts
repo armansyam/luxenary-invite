@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import fs from "fs";
-import path from "path";
 import { buildAndSavePublishedHtml } from "@/lib/staticPublisher";
 import { parseFeatureSettings } from "@/lib/featureSettings";
 

@@ -73,7 +73,6 @@ export async function GET(req: Request) {
       // Priority: 1) Admin DB custom data, 2) DEMO_REGISTRY, 3) safe defaults
       const customEntry = customDataMap[themeKey];
       const customData = customEntry?.data;
-      const v = customEntry?.updatedAt || 1;
       const registryData = DEMO_REGISTRY[themeKey];
       const source = customData || registryData;
 

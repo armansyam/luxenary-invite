@@ -90,7 +90,6 @@ export async function GET() {
       const customEntry = themeCustomDataMap[themeKey];
       const customData = customEntry?.data;
 
-      const defaultCoverFallback = t.thumbnail || `/demo/${themeKey}/cover.webp`;
       const rawThumbMobile = customData?.thumbnailMobileUrl || `/demo/${themeKey}/thumbnail_mobile.webp`;
       const rawThumbDesktop = customData?.thumbnailDesktopUrl || `/demo/${themeKey}/thumbnail_desktop.webp`;
 

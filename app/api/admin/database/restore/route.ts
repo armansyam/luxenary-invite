@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import fs from "fs";
-import { getBackupDirectory, restoreDatabaseSnapshot, createDatabaseSnapshot, isSnapshotFile } from "@/lib/databaseBackup";
+import { getBackupDirectory, restoreDatabaseSnapshot, isSnapshotFile } from "@/lib/databaseBackup";
 
 import { prisma } from "@/lib/prisma";
 import { requireAdminModule } from "@/lib/adminAuth";
