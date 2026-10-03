@@ -11,6 +11,7 @@ import { hasPlanCapability } from "@/lib/settings";
 import { computeLifecycleDates } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { canPreviewInvitation } from "@/lib/previewAccess";
+import { isCustomDomainHost } from "@/lib/domainUtils";
 import fs from "fs";
 import path from "path";
 
@@ -160,8 +161,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
   if (invitation.status === "ARCHIVED") {
     const rootUrl = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
 
-    // 1. Portofolio pilihan admin (bila ada) menjadi tujuan utama
-    if (await hasPortfolio(slug)) {
+    // Pengunjung custom domain klien tetap berada di domainnya selama masa aktif custom domain: arsip disajikan
+    // langsung di sana, bukan dialihkan ke URL kanonik domain utama.
+    const viaCustomDomain = isCustomDomainHost(req.headers.get("host"), invitation.customDomain);
+
+    // 1. Portofolio pilihan admin (bila ada) menjadi tujuan utama untuk URL slug dan subdomain
+    if (!viaCustomDomain && (await hasPortfolio(slug))) {
       return NextResponse.redirect(`${rootUrl}/portfolio/${slug}`, 307);
     }
 
@@ -183,6 +188,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
       } catch (nasErr) {
         console.warn(`[Public Slug Route] Gagal membaca arsip NAS (${slug}):`, nasErr);
       }
+    }
+
+    // Custom domain tanpa salinan arsip yang dapat disajikan (NAS nonaktif atau masa arsip habis): perilaku lama,
+    // portofolio bila ada.
+    if (viaCustomDomain && (await hasPortfolio(slug))) {
+      return NextResponse.redirect(`${rootUrl}/portfolio/${slug}`, 307);
     }
 
     // 3. Tanpa portofolio dan arsip (belum ada, NAS nonaktif, atau masa arsip habis): beranda

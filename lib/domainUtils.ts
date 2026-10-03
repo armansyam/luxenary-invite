@@ -223,6 +223,17 @@ export function getMonthYearSlug(dateInput?: string | Date | null): string {
  * Apakah masa tenggang subdomain (`subdomain_grace_days`) sudah lewat, dihitung dari awal hari acara utama
  * pada zona waktu acara. Menerima eventData (JSON string atau array). Tanpa tanggal valid: false.
  */
+/**
+ * Apakah header Host sebuah permintaan adalah custom domain milik undangan ini (port dan awalan `www.` diabaikan).
+ * Dipakai rute slug untuk tahu bahwa pengunjung datang lewat custom domain klien dan tidak boleh dialihkan ke domain utama.
+ */
+export function isCustomDomainHost(hostHeader: string | null | undefined, customDomain: string | null | undefined): boolean {
+  if (!hostHeader || !customDomain) return false;
+  const normalize = (value: string) => value.trim().toLowerCase().split(":")[0].replace(/^www\./, "");
+  const host = normalize(hostHeader);
+  return host !== "" && host === normalize(customDomain);
+}
+
 export function isSubdomainExpired(eventData: unknown, graceDays: number, now: Date = new Date()): boolean {
   const eventDay = getPrimaryEventDate(eventData);
   if (!eventDay) return false;

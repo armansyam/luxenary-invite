@@ -398,7 +398,7 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
    - **Subdomain** (`subdomain_grace_days`, 7): subdomain dikembalikan ke pool agar dapat dipakai pasangan lain; sesudahnya URL yang dipakai adalah slug.
    - **Galeri foto tamu** (`retention_cleanup_days`, 30; atau `galleryExpiresAt` hasil add-on): foto candid dibersihkan dari R2/lokal agar R2 lega.
    - **Arsip undangan** (`nas_archive_retention_days`, 365): undangan diamankan di arsip mandiri lalu dibersihkan setelah masa ini.
-   - **Custom domain** (`retention_custom_domain_days`, 365): domain klien tetap melayani mengikuti gerbang slug.
+   - **Custom domain** (`retention_custom_domain_days`, 365): domain dibeli klien sendiri; platform hanya menyiapkan integrasi. Selama masa ini undangan yang sudah diarsipkan tetap tampil di domain klien (tanpa dialihkan ke URL kanonik) bila salinan arsip tersedia; tanpa salinan arsip, perilaku lama (portofolio atau beranda) berlaku.
    - Tamu dan pengantin dapat mengunduh seluruh koleksi foto kenangan dalam format ZIP via JSZip client-side tanpa membebani bandwidth VPS.
    - Klien dapat memperpanjang **jam galeri** (+30 hari via QRIS, H-7 sebelum berakhir, maksimal 1 kali); rumus tunggalnya `extendGalleryExpiry`. Varian "+1 Tahun" pada dokumen lama tidak ada di kode.
 3. **Pembersihan Cron (`runLifecycleCleanup`, `lib/lifecycleCleanup.ts`; dipakai rute dan `npm run cron:cleanup`)**:
