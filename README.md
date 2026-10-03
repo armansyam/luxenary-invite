@@ -76,12 +76,12 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
      │
      ▼
 4. ONBOARDING & SETUP IDEMPOTEN (/dashboard/setup)
-   - Step 0: Pemilih Jenis Acara (Wedding, Birthday, Khitan, Aqiqah, Wisuda, Gathering) dengan ikon SVG modern & bersih
-   - Step 1: Data Persona Adaptif (Pengantin untuk Wedding, Data Individu & Usia untuk Birthday, Anak & Ortu untuk Khitan/Aqiqah, Wisudawan & Kampus untuk Wisuda)
-   - Step 2: Tanggal & Lokasi Acara (label kontekstual)
-   - Step 3: Katalog Tema Terfilter sesuai jenis acara yang dipilih
+   - Step 0 (wajib): Pemilih Jenis Acara (Wedding, Birthday, Khitan, Aqiqah, Wisuda, Gathering) dengan ikon SVG modern & bersih. Tidak ada pilihan awal; lanjut hanya setelah satu kartu dipilih, dan jenis acara tidak bisa diubah setelah undangan dibuat (server menolak tanpa `eventType` sah, HTTP 400)
+   - Step 1 (boleh kosong): Data Persona Adaptif (Pengantin untuk Wedding, Data Individu & Usia untuk Birthday, Anak & Ortu untuk Khitan/Aqiqah, Wisudawan & Kampus untuk Wisuda)
+   - Step 2 (boleh kosong): Tanggal & Lokasi Acara (label kontekstual)
+   - Step 3 (boleh kosong): Katalog Tema Terfilter sesuai jenis acara yang dipilih; bila tidak dipilih, server memakai tema bawaan jenis acara
+   - Wizard hanya mempercepat data awal: semua isian selain jenis acara dilengkapi di Studio Editor, dan kelengkapan baru ditegakkan oleh audit pra-rilis di tab Pengaturan.
    - Idempotent Setup & Auto-Bypass: Jika klien sudah memiliki draft terdaftar, sistem langsung mengarahkan ke Studio Undangan tanpa form ganda atau error bentrokan orderId.
-   - Lewati Setup (Atur Nanti): Membuat draft netral seketika untuk langsung melompat ke Studio.
      │
      ▼
 5. STUDIO UNDANGAN (/dashboard/invitation/[id])
@@ -176,7 +176,7 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
   - Zero Data Bolong: Seksi bersakelar aktif wajib memiliki data lengkap; seksi yang dinonaktifkan berstatus "Nonaktif (Dilewati)" dan otomatis lolos.
   - Verifikasi Slot Upload: Menjamin tidak ada foto model atau latar demo bawaan tema yang tertinggal karena kelupaan unggah.
   - Runtime Auto-Pruning: Seksi yang dimatikan otomatis dihilangkan dari DOM dan navigasi dock bawah / tombol floating audio disembunyikan tanpa meninggalkan tombol statis kosong.
-  - Gatekeeper 6 URL: Tombol "Rilis Undangan Resmi" terkunci hingga ke-6 instrumen URL (Pintu Utama, Subdomain, Tamu, Resepsionis, Galeri Kenangan /memories, dan Form Kamera /sharemoment) terkonfirmasi dengan dukungan DRAFT preview (?preview=true).
+  - Gatekeeper 6 URL: Tombol "Rilis Undangan Resmi" terkunci hingga ke-6 instrumen URL (Pintu Utama, Subdomain, Tamu, Resepsionis, Galeri Kenangan /memories, dan Form Kamera /sharemoment) terkonfirmasi dengan dukungan DRAFT preview (`?preview=<token>`: token HMAC 6 jam yang diterbitkan untuk pemilik/admin, atau `?preview=true` dengan sesi pemilik/admin; tanpa itu draf tetap 403).
 ```
 
 ---
@@ -287,7 +287,7 @@ Sistem mendukung 4 kondisi transaksi dengan integrasi 2-arah eksklusif (Midtrans
 |:--|:--|
 | `User` | Akun klien (Google OAuth, role: CLIENT / ADMIN, nomor WhatsApp `phoneNumber`) |
 | `Admin` | Akun tim admin (SUPER_ADMIN, FINANCE, SUPPORT) |
-| `Order` | Invoice pembelian paket & add-on (`NEW`, `UPGRADE`, `GALLERY_EXTENSION`, `MEMORIES_TOPUP`) |
+| `Order` | Invoice pembelian paket & add-on (`NEW`, `UPGRADE`, `GALLERY_EXTENSION`, `MEMORIES_TOPUP`); `fulfilledAt` menandai pemenuhan layanan setelah `PAID` (idempoten, diulang webhook/polling/cron bila gagal) |
 | `Invitation` | Inti undangan (`DRAFT`, `PUBLISHED`, `EVENT_FINISHED`, `TAKEN_DOWN`, `ARCHIVED`) |
 | `InvitationMedia` | Media per slot (9 slot: LANDING_COVER, LANDING_COVER_DESKTOP, HOME_PHOTO, GROOM_PHOTO, dll) |
 | `Guest` | Daftar tamu + nomor kontak `phone` + QR token |
