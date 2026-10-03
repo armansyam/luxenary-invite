@@ -18,9 +18,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    // order_id di sisi Midtrans = UUID order, atau `<UUID>~<sufiks>` untuk sesi yang diterbitkan ulang (lihat MidtransGateway.init).
-    const gatewayOrderId = body.order_id;
-    const [orderId, sessionSuffix] = typeof gatewayOrderId === "string" ? gatewayOrderId.split("~") : [gatewayOrderId, undefined];
+    const orderId = body.order_id;
     const statusCode = body.status_code;
     const grossAmount = body.gross_amount;
     const signatureKey = body.signature_key;
@@ -33,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     // Validasi format orderId (harus UUID v4 — mencegah query DB sia-sia dari input sembarang)
     const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!UUID_REGEX.test(orderId) || (sessionSuffix !== undefined && !/^[A-Za-z0-9._-]{1,13}$/.test(sessionSuffix))) {
+    if (!UUID_REGEX.test(orderId)) {
       return NextResponse.json({ status: "ignored", reason: "invalid_order_id_format" }, { status: 200 });
     }
 
@@ -104,7 +102,7 @@ export async function POST(req: NextRequest) {
 
       const isValid = validServerKeys.some((serverKey) =>
         MidtransGateway.verifyWebhookSignature({
-          order_id: gatewayOrderId,
+          order_id: orderId,
           status_code: statusCode,
           gross_amount: grossAmount,
           signature_key: signatureKey,

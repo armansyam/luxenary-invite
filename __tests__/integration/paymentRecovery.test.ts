@@ -60,18 +60,14 @@ async function makeInvitation(userId: string, orderId: string | null, tag: strin
 const quotaOf = async (invitationId: string) =>
   JSON.parse((await prisma.invitation.findUniqueOrThrow({ where: { id: invitationId } })).featureSettings || "{}").extraMemoriesQuota ?? 0;
 
-function paidWebhook(orderId: string, amount = "100000.00", options: { gatewayOrderId?: string; signedOrderId?: string } = {}) {
+function paidWebhook(orderId: string, amount = "100000.00") {
   const statusCode = "200";
-  const gatewayOrderId = options.gatewayOrderId ?? orderId;
-  const signature = crypto
-    .createHash("sha512")
-    .update(`${options.signedOrderId ?? gatewayOrderId}${statusCode}${amount}${SERVER_KEY}`)
-    .digest("hex");
+  const signature = crypto.createHash("sha512").update(`${orderId}${statusCode}${amount}${SERVER_KEY}`).digest("hex");
   return new NextRequest("http://localhost:3000/api/webhook/midtrans", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      order_id: gatewayOrderId,
+      order_id: orderId,
       status_code: statusCode,
       gross_amount: amount,
       transaction_status: "settlement",
@@ -165,50 +161,6 @@ describe.skipIf(!IS_TEST_DB)("pemulihan pembayaran", () => {
     expect((await prisma.order.findUniqueOrThrow({ where: { id: stale.id } })).status).toBe("EXPIRED");
     const log = await prisma.webhookLog.findFirst({ where: { source: "midtrans", status: "paid_on_closed_order", createdAt: { gte: RUN_STARTED_AT } } });
     expect(log).not.toBeNull();
-  });
-
-  it("webhook dengan order_id sesi terbit ulang (<uuid>~sufiks) melunasi order, tanda tangan dihitung atas ID mentah", async () => {
-    const u = await makeUser("suffix");
-    const order = await makeOrder(u.id, { chargedAmount: 100000 });
-    const gatewayOrderId = `${order.id}~lx9k2a`;
-
-    const res = await midtransWebhook(paidWebhook(order.id, "100000.00", { gatewayOrderId }));
-    expect(res.status).toBe(200);
-    expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).status).toBe("PAID");
-  });
-
-  it("webhook bersufiks dengan tanda tangan atas UUID polos ditolak", async () => {
-    const u = await makeUser("suffixbad");
-    const order = await makeOrder(u.id, { chargedAmount: 100000 });
-
-    const res = await midtransWebhook(paidWebhook(order.id, "100000.00", { gatewayOrderId: `${order.id}~lx9k2a`, signedOrderId: order.id }));
-    expect((await res.json()).reason).toBe("invalid_signature");
-    expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).status).toBe("PENDING");
-  });
-
-  it("sufiks dengan karakter tidak sah ditolak sebelum menyentuh order", async () => {
-    const u = await makeUser("suffixchar");
-    const order = await makeOrder(u.id, { chargedAmount: 100000 });
-    const res = await midtransWebhook(paidWebhook(order.id, "100000.00", { gatewayOrderId: `${order.id}~a b/c` }));
-    expect((await res.json()).reason).toBe("invalid_order_id_format");
-  });
-
-  it("MidtransGateway.init mengirim order_id unik hanya pada penerbitan ulang", async () => {
-    const { MidtransGateway } = await import("@/lib/gateways/midtrans");
-    const u = await makeUser("init");
-    const order = await makeOrder(u.id);
-    const sent: string[] = [];
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (_url, init) => {
-      sent.push(JSON.parse(String((init as RequestInit).body)).transaction_details.order_id);
-      return new Response(JSON.stringify({ qr_string: "000201", transaction_id: crypto.randomUUID() }), { status: 200 });
-    });
-    try {
-      await new MidtransGateway().init(order.id, 100000);
-      await new MidtransGateway().init(order.id, 100000, undefined, "lx9k2a");
-    } finally {
-      fetchSpy.mockRestore();
-    }
-    expect(sent).toEqual([order.id, `${order.id}~lx9k2a`]);
   });
 
   it("sapuan cron memenuhi order PAID yang macet dan menghapus baris limiter kedaluwarsa", async () => {

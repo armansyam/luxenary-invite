@@ -107,9 +107,7 @@ export async function POST(req: NextRequest) {
     // Nominal (termasuk biaya layanan BUYER) dan masa berlaku sama persis dengan checkout awal
     const { finalAmount, expiryMinutes } = await computeGatewayCharge(Number(order.amount));
 
-    // Order ini sudah pernah punya sesi gateway, jadi ID sisi gateway harus baru
-    const sessionSuffix = prevGatewayTxId ? Date.now().toString(36) : undefined;
-    const { checkoutUrl, qrString, sessionId, expiryTimestamp, gatewayTxId } = await gw.init(orderId, finalAmount, appUrl, sessionSuffix);
+    const { checkoutUrl, qrString, sessionId, expiryTimestamp, gatewayTxId } = await gw.init(orderId, finalAmount, appUrl);
 
     const expiryMs = expiryTimestamp ?? (serverNow + expiryMinutes * 60 * 1000);
 

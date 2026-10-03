@@ -4,13 +4,8 @@
  */
 
 export interface PaymentGateway {
-  /**
-   * Inisialisasi transaksi, kembalikan URL redirect pembayaran atau string QRIS.
-   *
-   * @param sessionSuffix - diisi hanya saat menerbitkan ulang sesi untuk order yang sama. Gateway yang melarang
-   *   pemakaian ulang ID transaksi (Midtrans) memakainya agar ID di sisi gateway unik; gateway lain mengabaikannya.
-   */
-  init(orderId: string, amount: number, appUrl?: string, sessionSuffix?: string): Promise<{
+  /** Inisialisasi transaksi, kembalikan URL redirect pembayaran atau string QRIS */
+  init(orderId: string, amount: number, appUrl?: string): Promise<{
     checkoutUrl?: string;
     qrString?: string;
     sessionId?: string;

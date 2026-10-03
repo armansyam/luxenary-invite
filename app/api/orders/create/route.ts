@@ -173,7 +173,8 @@ export async function POST(req: NextRequest) {
       const hadGatewaySession = !!(existingPending.snapToken || existingPending.gatewayTxId);
 
       // Jika regenerate diminta, atau tagihan sudah expired, atau paket diubah padahal sudah pernah diproses gateway:
-      // Wajib matikan order lama (Soft Cancel ke EXPIRED) dan JANGAN PERNAH me-reuse ID lama (Midtrans melarang reuse order_id).
+      // Wajib matikan order lama (Soft Cancel ke EXPIRED) dan terbitkan order baru: Midtrans melarang order_id dipakai ulang
+      // selama transaksinya aktif atau sudah dibayar, jadi order lama harus dibatalkan lebih dulu.
       if (regenerate || isExpired || (isPlanChanged && hadGatewaySession)) {
         const softCancelled = await prisma.order.updateMany({
           where: { id: existingPending.id, status: { in: ["PENDING", "FAILED"] } },

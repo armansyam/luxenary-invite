@@ -167,9 +167,7 @@ export async function POST(req: Request) {
     // Nominal tagihan dan masa berlaku dari AdminSetting — satu sumber kebenaran, dibagi dengan penerbitan ulang QRIS
     const { finalAmount, expiryMinutes } = await computeGatewayCharge(Number(order.amount));
 
-    // Penerbitan ulang untuk order yang sudah pernah punya sesi memakai ID sisi gateway yang baru
-    const sessionSuffix = prevGatewayTxId ? Date.now().toString(36) : undefined;
-    const { checkoutUrl, qrString, sessionId, expiryTimestamp, gatewayTxId } = await gw.init(orderId, finalAmount, appUrl, sessionSuffix);
+    const { checkoutUrl, qrString, sessionId, expiryTimestamp, gatewayTxId } = await gw.init(orderId, finalAmount, appUrl);
 
     /**
      * Tentukan waktu kedaluwarsa yang valid:

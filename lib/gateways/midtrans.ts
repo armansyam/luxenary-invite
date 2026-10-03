@@ -87,16 +87,13 @@ export class MidtransGateway implements PaymentGateway {
     return { serverKey, clientKey, snapUrl, apiUrl };
   }
 
-  async init(orderId: string, amount: number, appUrl?: string, sessionSuffix?: string): Promise<{
+  async init(orderId: string, amount: number, appUrl?: string): Promise<{
     checkoutUrl?: string;
     qrString?: string;
     sessionId?: string;
     expiryTimestamp?: number;
     gatewayTxId?: string;
   }> {
-    // Midtrans tidak mengizinkan order_id dipakai ulang, bahkan setelah transaksi lama dibatalkan atau kedaluwarsa.
-    // Penerbitan ulang memakai sufiks unik; webhook mengurai prefiks UUID kembali menjadi ID order kita.
-    const gatewayOrderId = sessionSuffix ? `${orderId}~${sessionSuffix}` : orderId;
     let customerFirstName = "Klien";
     let customerLastName = "";
     let customerFullName = "Klien";
@@ -314,7 +311,7 @@ export class MidtransGateway implements PaymentGateway {
         body: JSON.stringify({
           payment_type: "qris",
           transaction_details: {
-            order_id: gatewayOrderId,
+            order_id: orderId,
             gross_amount: amount,
           },
           item_details: itemDetails,
@@ -345,7 +342,7 @@ export class MidtransGateway implements PaymentGateway {
           qrString: chargeData.qr_string,
           sessionId: chargeData.transaction_id,
           expiryTimestamp,
-          gatewayTxId: chargeData.transaction_id || gatewayOrderId,
+          gatewayTxId: chargeData.transaction_id || orderId,
         };
       }
 
@@ -373,7 +370,7 @@ export class MidtransGateway implements PaymentGateway {
       },
       body: JSON.stringify({
         transaction_details: {
-          order_id: gatewayOrderId,
+          order_id: orderId,
           gross_amount: amount,
         },
         item_details: itemDetails,
@@ -399,7 +396,7 @@ export class MidtransGateway implements PaymentGateway {
       throw new Error(`Midtrans: ${data?.error_messages?.join(", ") || JSON.stringify(data)}`);
     }
 
-    return { checkoutUrl: data.redirect_url, gatewayTxId: gatewayOrderId };
+    return { checkoutUrl: data.redirect_url, gatewayTxId: orderId };
   }
 
   /**
