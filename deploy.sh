@@ -172,8 +172,14 @@ if command -v pm2 &> /dev/null; then
   # interpreter yang berjalan berbeda, hanya aplikasi ini (luxenary-invite) dihapus dan dijalankan ulang dari
   # ecosystem.config.js (jeda beberapa detik); aplikasi lain di PM2 tidak disentuh.
   CURRENT_INTERPRETER=$(pm2 jlist 2>/dev/null | node -e 'try{const s=require("fs").readFileSync(0,"utf8");const j=JSON.parse(s.slice(s.indexOf("[")));const p=j.find(x=>x.name==="luxenary-invite");process.stdout.write(p?String(p.pm2_env.exec_interpreter||""):"-")}catch{process.stdout.write("?")}')
+  # 'pm2 reload' juga tidak membaca ulang argumen proses. Bila port aplikasi masih mendengarkan di semua antarmuka
+  # (bukan 127.0.0.1/::1), proses dibuat ulang dari ecosystem.config.js yang mengikatnya ke loopback.
+  EXPOSED_LISTENER=$(ss -ltn 2>/dev/null | awk '$4 ~ /(^|:|\])3001$/ && $4 !~ /^127\.0\.0\.1:/ && $4 !~ /^\[::1\]:/ {print $4}' | head -1)
   if [ -n "$NODE_BIN_DIR" ] && [ "$CURRENT_INTERPRETER" != "?" ] && [ "$CURRENT_INTERPRETER" != "-" ] && [ "$CURRENT_INTERPRETER" != "$NODE_BIN_DIR/node" ]; then
     echo "↻ Interpreter PM2 berubah ($CURRENT_INTERPRETER -> $NODE_BIN_DIR/node): menjalankan ulang luxenary-invite dari ecosystem.config.js"
+    pm2 delete luxenary-invite && pm2 start ecosystem.config.js
+  elif [ -n "$EXPOSED_LISTENER" ]; then
+    echo "↻ Port 3001 mendengarkan di $EXPOSED_LISTENER (terbuka ke jaringan): menjalankan ulang luxenary-invite agar terikat ke 127.0.0.1"
     pm2 delete luxenary-invite && pm2 start ecosystem.config.js
   else
     pm2 reload luxenary-invite --update-env || pm2 restart luxenary-invite || pm2 start ecosystem.config.js

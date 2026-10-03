@@ -286,6 +286,9 @@ npx prisma db seed
 
 ## Tahap 7: Eksekusi Deploy Otomatis (`./deploy.sh`)
 
+> [!IMPORTANT]
+> **Aplikasi hanya boleh dijangkau lewat Caddy.** `ecosystem.config.js` menjalankan `next start --hostname 127.0.0.1`, sehingga port 3001 hanya mendengarkan di loopback. Tanpa itu Next mendengarkan di semua antarmuka dan siapa pun dapat memanggil `http://IP_VPS:3001` langsung, melewati Caddy dan Cloudflare serta memalsukan `X-Real-IP` untuk melewati pembatas laju. `deploy.sh` membuat ulang proses PM2 bila `ss -ltn` masih menunjukkan port 3001 terbuka ke jaringan. Periksa setelah deploy dari mesin lain: `curl -m 5 http://IP_VPS:3001/api/health` harus gagal, sedangkan `https://DOMAIN/api/health` harus 200. Sebagai lapisan kedua, blokir 3001 di firewall (mis. `ufw deny 3001/tcp`) dan hanya buka 22, 80, 443; itu keputusan operator server, bukan bagian `deploy.sh`.
+
 Jalankan skrip deploy yang telah dioptimasi untuk server 2GB:
 ```bash
 chmod +x deploy.sh

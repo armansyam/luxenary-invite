@@ -13,7 +13,10 @@ module.exports = {
     {
       name: 'luxenary-invite',
       script: 'node_modules/next/dist/bin/next',
-      args: 'start',
+      // Hanya Caddy (localhost) yang boleh menjangkau aplikasi. Tanpa --hostname Next mendengarkan di semua antarmuka,
+      // sehingga port 3001 bisa dipanggil langsung dari internet dan header X-Real-IP (dipercaya TRUSTED_PROXY=nginx)
+      // dapat dipalsukan untuk melewati pembatas laju login dan RSVP.
+      args: 'start --hostname 127.0.0.1',
       ...(nodeBinDir
         ? { interpreter: `${nodeBinDir}/node`, instances: 1, exec_mode: 'fork' }
         : { instances: 'max', exec_mode: 'cluster' }),
