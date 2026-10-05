@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { hasAdminPermission } from "@/lib/adminPermissions";
 import { prisma } from "@/lib/prisma";
 import { randomBytes } from "crypto";
 import sharp from "sharp";
@@ -23,10 +24,7 @@ export async function POST(
     const sessionUserId = (session.user as any).id;
     const sessionEmail = session.user.email || "";
 
-    const isAdmin =
-      (session.user as any).role === "SUPER_ADMIN" ||
-      (session.user as any).role === "ADMIN" ||
-      (session.user as any).isAdmin === true;
+    const isAdmin = hasAdminPermission(session.user, "orders");
 
     const order = await prisma.order.findUnique({
       where: { id },

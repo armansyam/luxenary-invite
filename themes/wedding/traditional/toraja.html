@@ -52,6 +52,10 @@
       --shadow-elevated: 0 12px 36px rgba(0, 0, 0, 0.6);
     }
 
+    ::selection {
+      background: color-mix(in srgb, var(--accent) 40%, transparent);
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html {
       scroll-behavior: smooth;

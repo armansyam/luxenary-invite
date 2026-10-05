@@ -45,6 +45,10 @@
       --cinema-border-glow: 0 0 25px rgba(255, 255, 255, 0.12);
     }
 
+    ::selection {
+      background: color-mix(in srgb, var(--accent) 40%, transparent);
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html {
       scroll-behavior: smooth;

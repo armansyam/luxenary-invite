@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { hasPlanCapability } from "@/lib/settings";
+import { hasAdminPermission } from "@/lib/adminPermissions";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
     }
 
     const isOwner = invitation.userId === session.user.id;
-    const isAdmin = (session.user as any)?.isAdmin === true || (session.user as any)?.role === "SUPER_ADMIN" || (session.user as any)?.role === "ADMIN";
+    const isAdmin = hasAdminPermission(session.user, "custom_domains");
 
     if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: "Anda tidak memiliki akses ke undangan ini." }, { status: 403 });

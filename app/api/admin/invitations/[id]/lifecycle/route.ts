@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { extendGalleryExpiry } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
+import { invalidateInvitationLookup } from "@/lib/cache";
+import { purgeCloudflareCache } from "@/lib/cloudflare";
+import { getDynamicServerRootDomain } from "@/lib/serverDomainUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +15,8 @@ export const dynamic = "force-dynamic";
  * - CLOSE_TO_GALLERY: Menutup undangan seketika dan mengalihkan URL ke Galeri Momen
  * - EXTEND_GALLERY: Memperpanjang masa simpan galeri foto tamu (+30 hari)
  * - UPDATE_EVENT_DATE: Mengedit tanggal acara pernikahan secara darurat oleh Admin
+ * - TAKE_DOWN: Menurunkan undangan yang tayang karena pelanggaran (wajib beralasan, tercatat di audit log)
+ * - REOPEN: Membuka kembali undangan yang diturunkan (TAKEN_DOWN -> PUBLISHED)
  */
 export async function POST(
   req: NextRequest,
@@ -54,6 +59,55 @@ export async function POST(
         success: true,
         status: updated.status,
         message: "Undangan berhasil ditutup dan dialihkan ke Galeri Momen Acara.",
+      });
+    }
+
+    if (action === "TAKE_DOWN" || action === "REOPEN") {
+      const taking = action === "TAKE_DOWN";
+      const reason = typeof body.reason === "string" ? body.reason.trim() : "";
+
+      if (taking) {
+        if (!reason || reason.length > 500) {
+          return NextResponse.json({ error: "Alasan penurunan wajib diisi (maksimal 500 karakter)." }, { status: 400 });
+        }
+        if (invitation.status !== "PUBLISHED" && invitation.status !== "EVENT_FINISHED") {
+          return NextResponse.json({ error: "Hanya undangan yang sedang tayang yang dapat diturunkan." }, { status: 409 });
+        }
+      } else if (invitation.status !== "TAKEN_DOWN") {
+        return NextResponse.json({ error: "Hanya undangan yang sedang diturunkan yang dapat dibuka kembali." }, { status: 409 });
+      }
+
+      const targetStatus = taking ? "TAKEN_DOWN" : "PUBLISHED";
+      const label = invitation.invitationSlug || invitation.id;
+      // Selama sesi remote, session.user.id adalah ID klien; pelaku sebenarnya ada di originalAdminId.
+      const actorId = session.user.originalAdminId ?? session.user.id;
+
+      const [updated] = await prisma.$transaction([
+        prisma.invitation.update({ where: { id }, data: { status: targetStatus } }),
+        prisma.adminAuditLog.create({
+          data: {
+            adminId: actorId,
+            action: taking ? "TAKE_DOWN_INVITATION" : "REOPEN_INVITATION",
+            details: taking ? `Menurunkan undangan ${label}. Alasan: ${reason}` : `Membuka kembali undangan ${label}`,
+            ipAddress: req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || null,
+          },
+        }),
+      ]);
+
+      invalidateInvitationLookup(invitation.invitationSlug, invitation.subdomain);
+
+      const rootDomain = (await getDynamicServerRootDomain("")).split(":")[0].toLowerCase();
+      const urlsToPurge: string[] = [];
+      if (rootDomain && invitation.subdomain) urlsToPurge.push(`https://${invitation.subdomain}.${rootDomain}/`);
+      if (rootDomain && invitation.invitationSlug) urlsToPurge.push(`https://${rootDomain}/${invitation.invitationSlug}`);
+      if (invitation.customDomain) urlsToPurge.push(`https://${invitation.customDomain}/`);
+      const cloudflare = urlsToPurge.length > 0 ? await purgeCloudflareCache({ files: urlsToPurge }) : null;
+
+      return NextResponse.json({
+        success: true,
+        status: updated.status,
+        cloudflare,
+        message: taking ? "Undangan berhasil diturunkan." : "Undangan berhasil dibuka kembali.",
       });
     }
 

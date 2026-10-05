@@ -5,6 +5,7 @@ import { fileTypeFromBuffer } from "file-type";
 import { uploadFile } from "@/lib/storage";
 import { optimizeWebVideo, optimizeWebAudio } from "@/lib/videoOptimizer";
 import { auth } from "@/auth";
+import { hasAdminPermission } from "@/lib/adminPermissions";
 import { prisma } from "@/lib/prisma";
 import { getClientIp, rateLimitDb } from "@/lib/rateLimit";
 import { MEDIA_SLOT_FILE_NAMES } from "@/lib/mediaSlots";
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest) {
       if (inv) {
         invStatus = inv.status;
         const isOwner = inv.userId === session.user.id;
-        const isAdmin = (session.user as any).isAdmin === true || (session.user as any).role === "SUPER_ADMIN" || (session.user as any).role === "ADMIN";
+        const isAdmin = hasAdminPermission(session.user, "invitations");
         if (!isOwner && !isAdmin) {
           return NextResponse.json({ error: "Forbidden. Anda tidak memiliki akses ke undangan ini." }, { status: 403 });
         }

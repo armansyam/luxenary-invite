@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import crypto from "crypto";
 import { createDatabaseSnapshot } from "@/lib/databaseBackup";
+import { hasAdminPermission } from "@/lib/adminPermissions";
 
 export const dynamic = "force-dynamic";
 
@@ -20,8 +21,7 @@ async function isAuthorized(req: NextRequest): Promise<boolean> {
   }
   
   const session = await auth();
-  const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "ADMIN" || (session?.user as any)?.role === "SUPER_ADMIN";
-  return isAdmin;
+  return hasAdminPermission(session?.user, "database");
 }
 
 export async function GET(req: NextRequest) {

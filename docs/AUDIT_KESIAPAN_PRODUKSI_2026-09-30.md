@@ -447,6 +447,8 @@ Yang bertambah sejak 11.4: pemulihan otomatis proses macet (`scripts/health-watc
 
 Angka 82 adalah hasil penjumlahan tabel. Tiga penilaian (keamanan, operasi, integritas) masih estimasi karena belum terbukti oleh uji manusia dan alur nyata; batas realistis rubrik ini sekitar 90 sampai 92. Bug yang masih terbuka dari verifikasi dokumen: `innerHTML` tanpa escape di 9 tema, QR lewat `api.qrserver.com`, `::selection` kustom hanya di 12 dari 39 tema, `TAKEN_DOWN` tidak pernah diisi.
 
+**Koreksi 5 Okt 2026 (diperiksa terhadap kode):** daftar bug di atas sebagian sudah basi. QR lewat `api.qrserver.com` sudah tidak ada (dijaga `qrEndpoint.test.ts`). Dari tema yang menyisipkan ucapan ke `innerHTML`, hanya `vintage-forest` yang masih mentah (tesnya hanya memeriksa pola `newWishItem.innerHTML`, tema ini memakai `card.innerHTML` sehingga lolos); sudah diperbaiki bersama `::selection` di 27 tema yang tertinggal, penetap `TAKEN_DOWN` (aksi admin `TAKE_DOWN`/`REOPEN`), izin modul pada bypass admin di `/api/client/**`, dan kepemilikan RSVP. Rincian di bagian 25.11 butir 15 `docs/SYSTEM_ARCHITECTURE.md`. Skor di atas belum dihitung ulang.
+
 ## 7. Cara Mengulang Audit Ini
 
 ```bash

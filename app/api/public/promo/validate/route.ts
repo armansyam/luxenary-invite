@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { hasAdminPermission } from "@/lib/adminPermissions";
 import { NextRequest, NextResponse } from "next/server";
 import { PlanType } from "@prisma/client";
 import { normalizePlanType } from "@/lib/planUtils";
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Order tidak ditemukan." }, { status: 404 });
     }
 
-    if (order.userId !== userId && (session.user as any)?.role !== "ADMIN" && (session.user as any)?.role !== "SUPER_ADMIN") {
+    if (order.userId !== userId && !hasAdminPermission(session.user, "orders")) {
       return NextResponse.json({ error: "Akses ditolak. Bukan order Anda." }, { status: 403 });
     }
 
@@ -268,8 +269,7 @@ export async function DELETE(req: NextRequest) {
     if (!order) {
       return NextResponse.json({ error: "Order tidak ditemukan." }, { status: 404 });
     }
-    const role = (session.user as any)?.role;
-    if (order.userId !== session.user.id && role !== "ADMIN" && role !== "SUPER_ADMIN") {
+    if (order.userId !== session.user.id && !hasAdminPermission(session.user, "orders")) {
       return NextResponse.json({ error: "Akses ditolak. Bukan order Anda." }, { status: 403 });
     }
 

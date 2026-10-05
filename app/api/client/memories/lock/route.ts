@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { hasAdminPermission } from "@/lib/adminPermissions";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -33,9 +34,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Undangan tidak ditemukan" }, { status: 404 });
     }
 
-    const isAdmin = (session.user as any).isAdmin === true ||
-      (session.user as any).role === "ADMIN" ||
-      (session.user as any).role === "SUPER_ADMIN";
+    const isAdmin = hasAdminPermission(session.user, "invitations");
 
     if (!isAdmin && invitation.userId !== session.user.id) {
       return NextResponse.json({ error: "Forbidden: Bukan undangan Anda" }, { status: 403 });

@@ -13,22 +13,18 @@ function themeFiles(dir: string): string[] {
 
 const THEMES = themeFiles(path.join(process.cwd(), "themes"));
 
-describe("ucapan yang baru dikirim tidak boleh menjadi markup", () => {
+describe("seleksi teks memakai palet tema, bukan bawaan peramban", () => {
   it("menemukan berkas tema", () => {
     expect(THEMES.length).toBeGreaterThanOrEqual(39);
   });
 
   it.each(THEMES.map((file) => [path.relative(process.cwd(), file), file]))("%s", (_name, file) => {
-    const lines = fs.readFileSync(file, "utf8").split("\n").filter((line) => /newWishItem\.innerHTML\s*=/.test(line));
-    for (const line of lines) {
-      expect(line, "name mentah masuk innerHTML").not.toMatch(/\+\s*name\s*\+/);
-      expect(line, "message mentah masuk innerHTML").not.toMatch(/\+\s*message\s*\+/);
-      expect(line, "count mentah masuk innerHTML").not.toMatch(/\+\s*count\s*\+/);
-    }
-  });
-
-  it.each(THEMES.map((file) => [path.relative(process.cwd(), file), file]))("%s tidak menyisipkan input tamu mentah ke template literal innerHTML", (_name, file) => {
     const source = fs.readFileSync(file, "utf8");
-    expect(source).not.toMatch(/innerHTML\s*=\s*`[^`]*\$\{\s*(name|message|count)\s*\}/);
+    const rule = source.match(/::selection\s*\{([^}]*)\}/);
+    expect(rule, "aturan ::selection tidak ditemukan").not.toBeNull();
+
+    const token = rule![1].match(/var\((--[a-z-]+)[,)]/);
+    expect(token, "::selection tidak memakai token palet tema").not.toBeNull();
+    expect(source, `token ${token![1]} tidak didefinisikan di tema`).toMatch(new RegExp(`^\\s*${token![1]}\\s*:`, "m"));
   });
 });

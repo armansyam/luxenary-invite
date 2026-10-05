@@ -269,6 +269,7 @@ Buku tamu undangan klien:
 Konfirmasi kehadiran tamu:
 - `status` (Enum `RsvpStatus`): Konfirmasi kehadiran `hadir`, `tidak`, atau `ragu`. Ragam kiriman tema (`HADIR`, `TIDAK_HADIR`, `RAGU`) dinormalkan oleh `lib/rsvpStatus.ts` sebelum disimpan; migrasi `20261001160000` menormalkan baris lama dan menolak nilai tak dikenal.
 - `guestCount` (Int): Jumlah orang yang akan hadir.
+- `editTokenHash` (String, Nullable): Hash SHA-256 token acak yang dipegang peramban pengirim (cookie `httpOnly`); hanya pemegang token yang dapat memperbarui RSVP ini dari form publik. NULL pada baris sebelum migrasi `20261005100000_rsvp_edit_token`, yang karenanya tidak dapat diperbarui dari form publik.
 
 #### 3. Tabel `guest_memories`
 Album foto momen candid yang diunggah oleh tamu di hari pernikahan:

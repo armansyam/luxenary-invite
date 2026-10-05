@@ -63,6 +63,8 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
   const [actionLoading, setActionLoading] = useState(false);
   const [actionMsg, setActionMsg] = useState<{ ok: boolean; msg: string } | null>(null);
   const [confirmCloseToGallery, setConfirmCloseToGallery] = useState<InvitationItem | null>(null);
+  const [takeDownTarget, setTakeDownTarget] = useState<InvitationItem | null>(null);
+  const [takeDownReason, setTakeDownReason] = useState("");
   const [lifecycleSettings, setLifecycleSettings] = useState<LifecycleDaySettings>(lifecycleSettingsFromPublic(null));
 
   useEffect(() => {
@@ -172,6 +174,30 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
       }
     } catch (err: any) {
       setActionMsg({ ok: false, msg: err.message || "Gagal mengalihkan status" });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Handle Take Down / Reopen
+  const handleTakeDownOrReopen = async (inv: InvitationItem, action: "TAKE_DOWN" | "REOPEN", reason?: string) => {
+    try {
+      setActionLoading(true);
+      setActionMsg(null);
+      const res = await fetch(`/api/admin/invitations/${inv.id}/lifecycle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, reason }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || "Gagal mengubah status tayang undangan");
+      const cacheWarning = data.cloudflare && !data.cloudflare.success && !data.cloudflare.skipped
+        ? " Cache Cloudflare gagal dibersihkan; salinan lama dapat masih tampil sementara."
+        : "";
+      setActionMsg({ ok: true, msg: `${data.message}${cacheWarning}` });
+      fetchInvitations();
+    } catch (err: any) {
+      setActionMsg({ ok: false, msg: err.message || "Gagal mengubah status tayang undangan" });
     } finally {
       setActionLoading(false);
     }
@@ -585,6 +611,36 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
                             </button>
                           )}
 
+                          {/* Turunkan (PUBLISHED / EVENT_FINISHED) */}
+                          {(inv.status === "PUBLISHED" || inv.status === "EVENT_FINISHED") && (
+                            <button
+                              type="button"
+                              onClick={() => { setTakeDownReason(""); setTakeDownTarget(inv); }}
+                              disabled={actionLoading}
+                              className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-100 transition cursor-pointer"
+                              title="Turunkan undangan (pelanggaran konten)"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                              </svg>
+                            </button>
+                          )}
+
+                          {/* Buka kembali (TAKEN_DOWN) */}
+                          {inv.status === "TAKEN_DOWN" && (
+                            <button
+                              type="button"
+                              onClick={() => handleTakeDownOrReopen(inv, "REOPEN")}
+                              disabled={actionLoading}
+                              className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 border border-transparent hover:border-emerald-100 transition cursor-pointer"
+                              title="Buka kembali undangan"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                              </svg>
+                            </button>
+                          )}
+
                           {/* Toggle Buka Kunci Darurat */}
                           {(isEmergencyUnlocked || inv.isLockedPermanently || inv.status === "PUBLISHED" || inv.status === "EVENT_FINISHED") && (
                             <button
@@ -699,6 +755,49 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
                 className="flex-1 py-2.5 px-4 text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-xl transition cursor-pointer disabled:opacity-50"
               >
                 {actionLoading ? "Mengalihkan..." : "Ya, Alihkan ke Galeri"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Take Down Modal */}
+      {takeDownTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-stone-200 space-y-4">
+            <div className="text-center space-y-1.5">
+              <h3 className="text-sm font-bold text-stone-900">Turunkan Undangan?</h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                Undangan <strong className="font-semibold text-stone-900">{takeDownTarget.groomName} & {takeDownTarget.brideName}</strong> tidak lagi dapat dibuka publik (halaman menjawab 410) dan klien tidak dapat menayangkannya kembali sendiri. Aksi tercatat di audit log.
+              </p>
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="takeDownReason" className="text-[11px] font-semibold text-stone-700">Alasan penurunan</label>
+              <textarea
+                id="takeDownReason"
+                value={takeDownReason}
+                onChange={(e) => setTakeDownReason(e.target.value)}
+                maxLength={500}
+                rows={3}
+                className="w-full text-xs border border-stone-200 rounded-xl p-2.5 outline-none focus:border-rose-300 resize-none"
+              />
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setTakeDownTarget(null)}
+                disabled={actionLoading}
+                className="flex-1 py-2.5 px-4 text-xs font-semibold text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-xl transition cursor-pointer disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => { handleTakeDownOrReopen(takeDownTarget, "TAKE_DOWN", takeDownReason); setTakeDownTarget(null); }}
+                disabled={actionLoading || !takeDownReason.trim()}
+                className="flex-1 py-2.5 px-4 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition cursor-pointer disabled:opacity-50"
+              >
+                Ya, Turunkan
               </button>
             </div>
           </div>

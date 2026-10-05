@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { hasAdminPermission } from "@/lib/adminPermissions";
 import { randomUUID } from "crypto";
 import { computeLifecycleDates } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
@@ -72,7 +73,7 @@ export async function POST(req: NextRequest) {
     }
 
     const isOwner = invitation.userId === userId;
-    const isAdmin = (session.user as any)?.isAdmin === true || (session.user as any)?.role === "SUPER_ADMIN" || (session.user as any)?.role === "ADMIN";
+    const isAdmin = hasAdminPermission(session.user, "orders");
 
     if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: "Anda tidak memiliki akses ke undangan ini." }, { status: 403 });

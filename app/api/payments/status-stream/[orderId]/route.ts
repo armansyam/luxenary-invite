@@ -1,6 +1,7 @@
 import { paymentEmitter } from "@/lib/paymentEvents";
 import { NextRequest } from "next/server";
 import { auth } from "@/auth";
+import { hasAdminPermission } from "@/lib/adminPermissions";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -31,14 +32,9 @@ export async function GET(
     return new Response("Order not found", { status: 404 });
   }
 
-  const isAdmin =
-    (session.user as any)?.role === "SUPER_ADMIN" ||
-    (session.user as any)?.role === "ADMIN" ||
-    (session.user as any)?.role === "FINANCE" ||
-    (session.user as any)?.role === "SUPPORT";
   // Saat Admin sedang dalam sesi remote (isRemote=true), identitasnya sudah di-override ke CLIENT
-  // Gunakan originalRole untuk deteksi isAdmin yang sesungguhnya
-  const isRealAdmin = isAdmin && !(session.user as any)?.isRemote;
+  // sehingga hanya sesi admin asli yang dianggap admin di sini.
+  const isRealAdmin = hasAdminPermission(session.user, "orders") && !(session.user as any)?.isRemote;
   const isOwner =
     order.userId === (session.user as any)?.id ||
     (!!session?.user?.email && !!order.user?.email && order.user.email.toLowerCase() === session.user.email.toLowerCase());

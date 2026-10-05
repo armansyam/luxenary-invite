@@ -13,14 +13,20 @@ const TAG = `rsvpval${Date.now()}`;
 let invitationId = "";
 let ipSeq = 0;
 
-const post = (body: unknown) =>
+const post = (body: unknown, cookie?: string) =>
   rsvpPost(
     new NextRequest("http://localhost/api/public/rsvp", {
       method: "POST",
-      headers: { "content-type": "application/json", "cf-connecting-ip": `198.51.100.${(ipSeq++ % 200) + 20}` },
+      headers: {
+        "content-type": "application/json",
+        "cf-connecting-ip": `198.51.100.${(ipSeq++ % 200) + 20}`,
+        ...(cookie ? { cookie } : {}),
+      },
       body: JSON.stringify(body),
     })
   );
+
+const cookieFrom = (res: Response) => res.headers.getSetCookie()[0].split(";")[0];
 
 const storedStatuses = async () =>
   (await prisma.rsvp.findMany({ where: { invitationId }, orderBy: { respondedAt: "asc" } })).map((r) => [r.guestName, r.status, r.guestCount]);
@@ -96,11 +102,55 @@ describe.skipIf(!IS_TEST_DB)("validasi RSVP publik", () => {
     }
   });
 
-  it("kirim ulang dengan ragam status lain memperbarui baris yang sama", async () => {
+  it("kirim ulang dari peramban yang sama dengan ragam status lain memperbarui baris yang sama", async () => {
     const first = await post({ invitationId, guestName: "Tamu Ulang", status: "HADIR", guestCount: 2 });
-    const second = await post({ invitationId, guestName: "tamu ulang", status: "TIDAK_HADIR" });
+    const cookie = cookieFrom(first);
+    const second = await post({ invitationId, guestName: "tamu ulang", status: "TIDAK_HADIR" }, cookie);
+    expect(second.status).toBe(200);
     expect((await first.json()).rsvp.id).toBe((await second.json()).rsvp.id);
     const row = (await storedStatuses()).find(([n]) => String(n).toLowerCase() === "tamu ulang");
     expect(row).toEqual(["Tamu Ulang", "tidak", 0]);
+  });
+
+  describe("kepemilikan RSVP", () => {
+    it("nama sama dari perangkat lain ditolak 409 dan jawaban asli tidak berubah", async () => {
+      const original = await post({ invitationId, guestName: "Pemilik Asli", status: "hadir", guestCount: 2, message: "sampai jumpa" });
+      expect(original.status).toBe(200);
+
+      const attacker = await post({ invitationId, guestName: "pemilik asli", status: "tidak", message: "diganti penyusup" });
+      expect(attacker.status).toBe(409);
+
+      const row = await prisma.rsvp.findFirstOrThrow({ where: { invitationId, guestName: "Pemilik Asli" } });
+      expect([row.status, row.guestCount, row.message]).toEqual(["hadir", 2, "sampai jumpa"]);
+    });
+
+    it("cookie milik nama lain tidak memberi hak atas RSVP ini", async () => {
+      const victim = await post({ invitationId, guestName: "Korban Satu", status: "hadir" });
+      expect(victim.status).toBe(200);
+      const other = await post({ invitationId, guestName: "Pengirim Dua", status: "hadir" });
+      const attacker = await post({ invitationId, guestName: "Korban Satu", status: "tidak" }, cookieFrom(other));
+      expect(attacker.status).toBe(409);
+    });
+
+    it("satu perangkat dapat mengirim RSVP untuk beberapa nama berbeda", async () => {
+      const a = await post({ invitationId, guestName: "Anggota A", status: "hadir" });
+      const b = await post({ invitationId, guestName: "Anggota B", status: "hadir" }, cookieFrom(a));
+      expect(b.status).toBe(200);
+      expect(cookieFrom(a)).not.toBe(cookieFrom(b));
+    });
+
+    it("cookie bersifat httpOnly dan hash token tidak keluar di respons", async () => {
+      const res = await post({ invitationId, guestName: "Cek Cookie", status: "hadir" });
+      const setCookie = res.headers.getSetCookie()[0];
+      expect(setCookie).toMatch(/HttpOnly/i);
+      expect(setCookie).toMatch(/SameSite=lax/i);
+      expect(JSON.stringify(await res.json())).not.toContain("editTokenHash");
+    });
+
+    it("baris lama tanpa token tidak dapat diperbarui dari form publik", async () => {
+      await prisma.rsvp.create({ data: { invitationId, guestName: "Baris Lama", status: "hadir", guestCount: 1 } });
+      const res = await post({ invitationId, guestName: "Baris Lama", status: "tidak" });
+      expect(res.status).toBe(409);
+    });
   });
 });

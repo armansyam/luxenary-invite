@@ -2,6 +2,7 @@ import { getActiveGateway, getActiveGatewayId, getGatewayById } from "@/lib/gate
 import { prisma } from "@/lib/prisma";
 import { computeGatewayCharge } from "@/lib/paymentFees";
 import { auth } from "@/auth";
+import { hasAdminPermission } from "@/lib/adminPermissions";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -20,10 +21,7 @@ export async function POST(req: NextRequest) {
 
     const sessionUserId = (session.user as any).id;
     const sessionEmail = session.user.email;
-    const isAdmin =
-      (session.user as any).role === "SUPER_ADMIN" ||
-      (session.user as any).role === "ADMIN" ||
-      (session.user as any).isAdmin === true;
+    const isAdmin = hasAdminPermission(session.user, "orders");
 
     const body = await req.json().catch(() => ({}));
     const { orderId } = body;

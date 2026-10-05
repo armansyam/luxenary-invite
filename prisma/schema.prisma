@@ -200,6 +200,7 @@ model Rsvp {
   guestCount   Int        @default(1)
   message      String?
   respondedAt  DateTime   @default(now())
+  editTokenHash String?
   guest        Guest?     @relation(fields: [guestId], references: [id])
   invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 

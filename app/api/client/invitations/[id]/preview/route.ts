@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { hasAdminPermission } from "@/lib/adminPermissions";
 import { prisma } from "@/lib/prisma";
 import { composeTemplateData } from "@/lib/themeEngine";
 import { renderTemplateFile } from "@/lib/renderTemplate";
@@ -33,7 +34,7 @@ export async function GET(
     }
 
     const isOwner = invitation.userId === session.user.id;
-    const isAdmin = (session.user as any).isAdmin === true || (session.user as any).role === "SUPER_ADMIN" || (session.user as any).role === "ADMIN";
+    const isAdmin = hasAdminPermission(session.user, "invitations");
 
     if (!isOwner && !isAdmin) {
       return new NextResponse("Forbidden. Anda tidak memiliki akses ke preview ini.", { status: 403 });

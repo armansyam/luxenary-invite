@@ -45,6 +45,10 @@
       --text-muted: color-mix(in srgb, #ffffff 75%, transparent);
     }
 
+    ::selection {
+      background: color-mix(in srgb, var(--accent) 40%, transparent);
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html { scroll-behavior: smooth; }
     body {

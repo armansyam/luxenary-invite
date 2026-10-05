@@ -40,7 +40,7 @@ Endpoint berikut dapat diakses oleh publik (tamu undangan, browser pengunjung, d
 | `GET` | `/api/public/themes` | Mengambil katalog tema aktif untuk galeri landing page & `/demo`. Mendukung query parameter `?eventType=WEDDING\|BIRTHDAY\|KHITAN\|AQIQAH\|WISUDA\|GATHERING` (cached via Cloudflare `s-maxage=86400`, `max-age=60`). |
 | `GET` | `/api/public/music` | Mengambil daftar pustaka musik latar (*audio presets*) resmi. |
 | `GET` | `/api/public/qr` | Membuat QR SVG di server sendiri. Parameter `data` (wajib, maksimal 600 karakter, UTF-8) dan `size` (80-400, bawaan 160). Rate limit 120 per menit per IP (HTTP 429). Respons di-cache 1 hari. |
-| `POST` | `/api/public/rsvp` | Mengirim konfirmasi kehadiran tamu. Rate limit 10 per menit per IP dan 200 per menit per undangan (HTTP 429). `status` dinormalkan ke `hadir`/`tidak`/`ragu` (nilai lain: 400); `guestName` maksimal 100 dan `message` maksimal 1000 karakter (lebih: 400). |
+| `POST` | `/api/public/rsvp` | Mengirim konfirmasi kehadiran tamu. Rate limit 10 per menit per IP dan 200 per menit per undangan (HTTP 429). `status` dinormalkan ke `hadir`/`tidak`/`ragu` (nilai lain: 400); `guestName` maksimal 100 dan `message` maksimal 1000 karakter (lebih: 400). Respons pertama menetapkan cookie `lux_rsvp_*` (`httpOnly`); mengirim ulang dengan nama yang sama hanya memperbarui RSVP bila cookie itu ikut terkirim, selain itu 409. |
 | `GET` | `/api/public/resolve-custom-domain` | Verifikasi kepemilikan domain untuk Caddy On-Demand TLS & Next.js middleware rewrite. |
 | `POST` | `/api/public/memories/upload` | Mengunggah foto kenangan candid dari tamu hari-H (murni foto: JPEG/PNG/WebP/GIF). |
 | `GET` | `/api/public/memories/{invitationId}` | Mengambil feed foto kenangan tamu untuk galeri publik. |
@@ -127,7 +127,7 @@ Memerlukan autentikasi admin (`role: ADMIN` atau `SUPER_ADMIN`):
 | | `PUT` / `DELETE` | `/api/admin/admins/{id}` | Mengubah hak akses atau menonaktifkan akun admin. |
 | **Audit Logs** | `GET` | `/api/admin/audit-logs` | Mengambil log jejak audit aktivitas sensitif admin dan sistem. |
 | **Undangan** | `GET` | `/api/admin/invitations` | Mengambil katalog seluruh undangan digital platform. |
-| | `POST` | `/api/admin/invitations/{id}/lifecycle` | Mengubah status siklus hidup undangan (`DRAFT`, `PUBLISHED`, `ARCHIVED`, `EXPIRED`). |
+| | `POST` | `/api/admin/invitations/{id}/lifecycle` | Aksi siklus hidup undangan: `CLOSE_TO_GALLERY`, `EXTEND_GALLERY`, `UPDATE_EVENT_DATE`, `TAKE_DOWN` (wajib `reason`, hanya dari `PUBLISHED`/`EVENT_FINISHED`, 409 bila status tidak sesuai) dan `REOPEN` (hanya dari `TAKEN_DOWN`). Modul `invitations`. |
 | | `POST` | `/api/admin/invitations/{id}/unlock` | Membuka kunci edit undangan klien yang terkunci pasca-publikasi. |
 | | `DELETE` | `/api/admin/invitations/{id}/purge` | Pembersihan total permanen: baris DB + HTML statis + folder aset `public/uploads/invitations/{id}/`. |
 | **Subdomain** | `GET` | `/api/admin/subdomains` | Daftar seluruh subdomain aktif dan yang terdaftar. |

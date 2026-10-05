@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { hasAdminPermission } from "@/lib/adminPermissions";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Undangan tidak ditemukan" }, { status: 404 });
     }
 
-    const isAdmin = (session.user as any).role === "SUPER_ADMIN" || (session.user as any).isAdmin || (session.user as any).role === "ADMIN";
+    const isAdmin = hasAdminPermission(session.user, "invitations");
     if (invitation.userId !== session.user.id && !isAdmin) {
       return NextResponse.json({ error: "Forbidden. Anda bukan pemilik undangan ini." }, { status: 403 });
     }

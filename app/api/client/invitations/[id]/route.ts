@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { InvitationStatus } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { hasAdminPermission } from "@/lib/adminPermissions";
 import { encryptPin, decryptPin, isPinEncrypted } from "@/lib/pinEncryption";
 import { isReservedSubdomain, isSubdomainExpired } from "@/lib/domainUtils";
 import { DAY_MS, getPrimaryEventDate } from "@/lib/lifecycleDates";
@@ -106,7 +107,7 @@ export async function GET(
     }
 
     const isOwner = invitation.userId === session.user.id;
-    const isAdmin = (session.user as any).isAdmin === true || (session.user as any).role === "SUPER_ADMIN" || (session.user as any).role === "ADMIN";
+    const isAdmin = hasAdminPermission(session.user, "invitations");
 
     if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: "Forbidden. Anda tidak memiliki akses ke undangan ini." }, { status: 403 });
@@ -165,7 +166,7 @@ export async function PUT(
     }
 
     const isOwner = currentInv.userId === session.user.id;
-    const isAdmin = (session.user as any).isAdmin === true || (session.user as any).role === "SUPER_ADMIN" || (session.user as any).role === "ADMIN";
+    const isAdmin = hasAdminPermission(session.user, "invitations");
 
     if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: "Forbidden. Anda tidak memiliki hak mengedit undangan ini." }, { status: 403 });
@@ -659,7 +660,7 @@ export async function PATCH(
     }
 
     const isOwner = currentInv.userId === session.user.id;
-    const isAdmin = (session.user as any).isAdmin === true || (session.user as any).role === "SUPER_ADMIN" || (session.user as any).role === "ADMIN";
+    const isAdmin = hasAdminPermission(session.user, "invitations");
 
     if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: "Forbidden. Anda tidak memiliki hak mengedit undangan ini." }, { status: 403 });

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import crypto from "crypto";
 import { runLifecycleCleanup, runStaleDataCleanup } from "@/lib/lifecycleCleanup";
+import { hasAdminPermission } from "@/lib/adminPermissions";
 
 export const dynamic = "force-dynamic";
 
@@ -26,8 +27,7 @@ async function isAuthorized(req: NextRequest): Promise<boolean> {
 
   // Admin session fallback (hanya jika tidak ada CRON_SECRET atau request dari browser admin)
   const session = await auth();
-  const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "ADMIN" || (session?.user as any)?.role === "SUPER_ADMIN";
-  return isAdmin;
+  return hasAdminPermission(session?.user, "invitations");
 }
 
 

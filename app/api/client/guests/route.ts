@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { auth } from "@/auth";
+import { hasAdminPermission } from "@/lib/adminPermissions";
 
 export async function POST(req: Request) {
   try {
@@ -28,7 +29,7 @@ export async function POST(req: Request) {
 
     // 1. Verifikasi Kepemilikan & Hak Akses Terlebih Dahulu
     const isOwner = invitation.userId === session.user.id;
-    const isAdmin = (session.user as any).isAdmin === true || (session.user as any).role === "SUPER_ADMIN" || (session.user as any).role === "ADMIN";
+    const isAdmin = hasAdminPermission(session.user, "invitations");
 
     if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: "Forbidden. Anda tidak memiliki akses ke undangan ini." }, { status: 403 });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { hasAdminPermission } from "@/lib/adminPermissions";
 import { buildAndSavePublishedHtml } from "@/lib/staticPublisher";
 import { parseFeatureSettings } from "@/lib/featureSettings";
 
@@ -20,10 +21,7 @@ async function verifyClientAccess(invitationId: string) {
   if (!invitation) return null;
 
   const isOwner = invitation.userId === session.user.id;
-  const isAdmin =
-    (session.user as any)?.isAdmin === true ||
-    (session.user as any)?.role === "SUPER_ADMIN" ||
-    (session.user as any)?.role === "ADMIN";
+  const isAdmin = hasAdminPermission(session.user, "invitations");
 
   if (!isOwner && !isAdmin) return null;
 

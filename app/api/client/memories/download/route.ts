@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { hasAdminPermission } from "@/lib/adminPermissions";
 import { prisma } from "@/lib/prisma";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const archiver = require("archiver");
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest) {
     }
     
     // Only allow admin or the owner
-    const isAdmin = (session.user as any).isAdmin === true || (session.user as any).role === "ADMIN" || (session.user as any).role === "SUPER_ADMIN";
+    const isAdmin = hasAdminPermission(session.user, "invitations");
     if (!isAdmin && invitation.userId !== session.user.id) {
       return NextResponse.json({ error: "Forbidden: Not your invitation" }, { status: 403 });
     }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { hasAdminPermission } from "@/lib/adminPermissions";
 
 export const dynamic = "force-dynamic";
 
@@ -15,10 +16,7 @@ export async function GET(
     }
 
     const session = await auth();
-    const isAdmin =
-      (session?.user as any)?.isAdmin === true ||
-      (session?.user as any)?.role === "ADMIN" ||
-      (session?.user as any)?.role === "SUPER_ADMIN";
+    const isAdmin = hasAdminPermission(session?.user, "orders");
     const currentUserId = session?.user?.id;
 
     const order = await prisma.order.findUnique({

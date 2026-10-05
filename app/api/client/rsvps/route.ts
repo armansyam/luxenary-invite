@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { normalizeRsvpStatus } from "@/lib/rsvpStatus";
+import { hasAdminPermission } from "@/lib/adminPermissions";
 
 export const dynamic = "force-dynamic";
 
@@ -13,10 +14,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const isAdmin =
-      (session.user as any).isAdmin === true ||
-      (session.user as any).role === "SUPER_ADMIN" ||
-      (session.user as any).role === "ADMIN";
+    const isAdmin = hasAdminPermission(session.user, "invitations");
 
     const requestedInvitationId = new URL(req.url).searchParams.get("invitationId");
 

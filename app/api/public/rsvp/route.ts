@@ -3,6 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { rateLimitDb, getClientIp } from "@/lib/rateLimit";
 import { normalizeRsvpStatus, RSVP_NAME_MAX, RSVP_MESSAGE_MAX } from "@/lib/rsvpStatus";
 import { exceedsDeclaredBodySize } from "@/lib/requestLimits";
+import {
+  RSVP_COOKIE_MAX_AGE_SECONDS,
+  RSVP_COOKIE_PATH,
+  createRsvpEditToken,
+  rsvpCookieName,
+  rsvpEditTokenMatches,
+} from "@/lib/rsvpOwnership";
 
 export async function GET(req: NextRequest) {
   try {
@@ -160,9 +167,11 @@ export async function POST(req: NextRequest) {
 
     const cleanGuestName = String(guestName).trim();
     const lockKey = `${invitationId}:${cleanGuestName.toLowerCase()}`;
+    const cookieName = rsvpCookieName(invitationId, cleanGuestName);
+    const presentedToken = req.cookies.get(cookieName)?.value;
 
     // Atomic transaction dengan in-memory key lock dan PostgreSQL advisory lock untuk mencegah race condition double-submit (Cross-Process PM2 Cluster Safe)
-    const rsvp = await withRsvpLock(lockKey, async () => {
+    const result = await withRsvpLock(lockKey, async () => {
       return await prisma.$transaction(async (tx) => {
         // PostgreSQL Advisory Transaction Lock untuk serialisasi absolut lintas proses / cluster
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`;
@@ -188,8 +197,12 @@ export async function POST(req: NextRequest) {
           ? await tx.rsvp.findFirst({ where: { invitationId, guestId: matchingGuest.id } })
           : await tx.rsvp.findFirst({ where: { invitationId, guestName: { equals: cleanGuestName, mode: "insensitive" } } });
 
+        // Nama yang diketik tidak membuktikan identitas: hanya peramban yang membuat RSVP ini yang boleh memperbaruinya.
         if (existingRsvp) {
-          return await tx.rsvp.update({
+          if (!rsvpEditTokenMatches(presentedToken, existingRsvp.editTokenHash)) {
+            return { conflict: true as const };
+          }
+          const updated = await tx.rsvp.update({
             where: { id: existingRsvp.id },
             data: {
               status: normalizedStatus,
@@ -197,10 +210,13 @@ export async function POST(req: NextRequest) {
               message: message || null,
               respondedAt: new Date(),
             },
+            omit: { editTokenHash: true },
           });
+          return { conflict: false as const, rsvp: updated, token: presentedToken as string };
         }
 
-        return await tx.rsvp.create({
+        const { token, hash } = createRsvpEditToken();
+        const created = await tx.rsvp.create({
           data: {
             invitationId,
             guestId: matchingGuest ? matchingGuest.id : null,
@@ -208,16 +224,34 @@ export async function POST(req: NextRequest) {
             status: normalizedStatus,
             guestCount: finalGuestCount,
             message: message || null,
+            editTokenHash: hash,
           },
+          omit: { editTokenHash: true },
         });
+        return { conflict: false as const, rsvp: created, token };
       });
     });
 
-    return NextResponse.json({
+    if (result.conflict) {
+      return NextResponse.json(
+        { error: "Konfirmasi atas nama ini sudah tercatat dari perangkat lain. Hubungi pengantin bila perlu mengubahnya." },
+        { status: 409 }
+      );
+    }
+
+    const response = NextResponse.json({
       success: true,
       message: "RSVP berhasil dikirim. Terima kasih atas konfirmasinya!",
-      rsvp,
+      rsvp: result.rsvp,
     });
+    response.cookies.set(cookieName, result.token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: RSVP_COOKIE_PATH,
+      maxAge: RSVP_COOKIE_MAX_AGE_SECONDS,
+    });
+    return response;
   } catch (error: any) {
     return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal mengirim RSVP" : (error.message || "Gagal mengirim RSVP") }, { status: 500 });
   }

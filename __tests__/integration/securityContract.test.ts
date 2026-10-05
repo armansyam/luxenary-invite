@@ -188,6 +188,19 @@ describe.skipIf(!IS_TEST_DB)("Kontrak keamanan (DB luxenary_test)", () => {
       const res = await call(invA);
       expect(res.status).toBe(200);
     });
+
+    it("staf tanpa modul invitations (FINANCE) -> 403 tanpa data", async () => {
+      actAs(attacker, "FINANCE");
+      const res = await call(invA);
+      const text = await res.text();
+      expect(res.status).toBe(403);
+      expect(text).not.toContain(GUEST_PHONE);
+    });
+
+    it("staf dengan modul invitations (SUPPORT) -> 200", async () => {
+      actAs(attacker, "SUPPORT");
+      expect((await call(invA)).status).toBe(200);
+    });
   });
 
   describe("M6 — PUT /api/client/invitations/[id] validasi status", () => {
@@ -243,6 +256,13 @@ describe.skipIf(!IS_TEST_DB)("Kontrak keamanan (DB luxenary_test)", () => {
     it("pemilik lain -> 403 sebelum validasi status", async () => {
       actAs(attacker);
       const res = await put(invTakenDown, { status: "PUBLISHED" });
+      expect(res.status).toBe(403);
+      expect(await statusOf(invTakenDown)).toBe("TAKEN_DOWN");
+    });
+
+    it("staf tanpa modul invitations (FINANCE) tidak dapat mengubah undangan klien", async () => {
+      actAs(attacker, "FINANCE");
+      const res = await put(invTakenDown, { status: "DRAFT" });
       expect(res.status).toBe(403);
       expect(await statusOf(invTakenDown)).toBe("TAKEN_DOWN");
     });

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { hasAdminPermission } from "@/lib/adminPermissions";
 import { NextRequest, NextResponse } from "next/server";
 import { normalizePlanType } from "@/lib/planUtils";
 
@@ -37,9 +38,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Order tidak ditemukan" }, { status: 404 });
     }
 
-    const isAdmin =
-      (session.user as any)?.role === "ADMIN" ||
-      (session.user as any)?.role === "SUPER_ADMIN";
+    const isAdmin = hasAdminPermission(session.user, "orders");
 
     if (order.userId !== userId && !isAdmin) {
       return NextResponse.json({ error: "Akses ditolak. Bukan pesanan Anda." }, { status: 403 });

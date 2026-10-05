@@ -448,7 +448,7 @@ Nilai bawaan di atas adalah bawaan kode/seed; nilai aktif selalu dari Admin Sett
 - `DRAFT` — Masih dalam pengaturan, URL publik belum aktif, download ZIP dinonaktifkan.
 - `PUBLISHED` — URL publik aktif, file HTML statis telah di-bake ke disk (`/published/`). Tamu dapat mengirim foto momen dan RSVP.
 - `EVENT_FINISHED` — Acara utama selesai; URL publik otomatis menyajikan **Galeri Kenangan Tamu (`/memories`)** (baik lewat mode AUTO H+1 pasca-acara maupun toggle MANUAL dari Studio Seksi 14).
-- `TAKEN_DOWN` — Dinonaktifkan sementara oleh Admin atau Klien.
+- `TAKEN_DOWN` — Diturunkan oleh Admin karena pelanggaran (aksi `TAKE_DOWN` di tab Projek Undangan, wajib beralasan, tercatat di `admin_audit_logs`). Rute publik menjawab 410 dan klien tidak dapat menayangkannya kembali sendiri; Admin membukanya lewat `REOPEN` (kembali `PUBLISHED`).
 - `ARCHIVED` — Diarsipkan setelah jam galeri (`retention_cleanup_days` pasca acara utama atau `galleryExpiresAt`) berakhir. Foto dihapus dari cloud storage R2, subdomain dilepas ke pool umum, dan dasbor klien bertransformasi menjadi 1 Halaman Penutup & Pusat Unduhan Rekapitulasi (.CSV).
 
 ### 6.2 — Cron Cleanup (`POST /api/cron/cleanup`, `npm run cron:cleanup`)
@@ -1168,7 +1168,7 @@ Fitur *Remote* memungkinkan Admin untuk masuk ke dasbor Klien dan mengendalikann
 PUBLIC (tanpa auth):
   GET  /api/public/settings           → Platform settings global
   GET  /api/public/themes             → List tema aktif (cached via Cloudflare s-maxage=86400, max-age=60, auto-purged on admin sync)
-  POST /api/public/rsvp               → Submit RSVP tamu (in-memory key-lock withRsvpLock & atomic transaction prisma.$transaction, proteksi double-tap & kalkulasi pax katering cerdas)
+  POST /api/public/rsvp               → Submit RSVP tamu (in-memory key-lock withRsvpLock & atomic transaction prisma.$transaction, proteksi double-tap & kalkulasi pax katering cerdas; pembaruan RSVP yang sudah ada hanya dari peramban pembuatnya lewat cookie token `lux_rsvp_*`, selain itu HTTP 409)
   GET  /api/public/memories/{id}      → List foto momen
   POST /api/public/memories/upload    → Upload foto tamu (rate-limited, kalkulasi kuota total acara totalEventQuota + extraMemoriesQuota top-up & batas per-sesi)
   GET  /api/public/resolve-custom-domain → Resolve custom domain ke subdomain
@@ -1216,7 +1216,7 @@ ADMIN (auth required, role=ADMIN/SUPER_ADMIN):
   POST /api/admin/database/backup     → Backup database
   POST /api/admin/subdomains/recycle  → Daur ulang subdomain kedaluwarsa
   GET/POST/DELETE /api/admin/portfolio → Manajemen kloning portofolio statis mandiri
-  POST /api/admin/invitations/{id}/lifecycle → Kontrol siklus hidup (CLOSE_TO_GALLERY, EXTEND_GALLERY, UPDATE_EVENT_DATE, TOGGLE_EMERGENCY_UNLOCK)
+  POST /api/admin/invitations/{id}/lifecycle → Kontrol siklus hidup (CLOSE_TO_GALLERY, EXTEND_GALLERY, UPDATE_EVENT_DATE, TAKE_DOWN, REOPEN, TOGGLE_EMERGENCY_UNLOCK)
   GET/DELETE /api/admin/remote-session → Manajemen sesi Remote Klien (Baca status & hapus cookie remote)
   GET/POST /api/admin/music            → Pustaka musik sistem (List all & upload audio + kompresi FFmpeg 128kbps)
   PATCH/DELETE /api/admin/music/{id}   → Edit metadata/status & hapus lagu sistem
@@ -3103,6 +3103,12 @@ Migrasi: `20260930045346_add_order_charged_amount` (kolom `orders.chargedAmount`
 
 14. **Aplikasi hanya mendengarkan di loopback (3 Okt 2026):** pemeriksaan produksi menemukan `next start` mendengarkan di `*:3001` dan port itu terjangkau dari internet (respons aplikasi diterima dari jaringan lain), melewati Caddy dan Cloudflare. Karena `TRUSTED_PROXY=nginx` mempercayai `X-Real-IP` (diisi Caddy dari `CF-Connecting-IP` atau `remote_host`), jalur langsung memungkinkan pemalsuan header itu untuk melewati pembatas laju login dan RSVP. Perbaikan: `ecosystem.config.js` memakai `args: 'start --hostname 127.0.0.1'` dan `deploy.sh` membuat ulang proses PM2 bila `ss -ltn` menunjukkan 3001 mendengarkan di luar loopback (`pm2 reload` tidak membaca ulang argumen). Dibuktikan lokal: terikat `127.0.0.1`, 200 via `127.0.0.1` dan `localhost`, gagal via IP jaringan. Caddy (`localhost:3001`), `ask` TLS on-demand, health check, dan proxy custom domain (`127.0.0.1:$PORT`) tetap berfungsi. Port 5432 hanya loopback. Firewall tidak diubah oleh deploy; menutup 3001 di firewall adalah keputusan operator.
 
+15. **Izin modul pada akses admin ke data klien, kepemilikan RSVP, dan takedown (5 Okt 2026, dijaga `securityContract`, `rsvpValidation`, `invitationTakedown`, `themeWishEscape`, `themeSelectionStyle`):**
+    - **Izin modul:** sebelumnya `isAdmin === true` (atau role `ADMIN`/`SUPER_ADMIN`) meloloskan staf mana pun di `/api/client/**`, `/api/payments/**`, `promo/validate`, dan cron admin tanpa memeriksa modul. Sekarang setiap bypass admin memakai `hasAdminPermission(session.user, <modul>)`: `invitations` untuk undangan, tamu, RSVP, media, momen, dan upload; `orders` untuk pesanan, bukti transfer, checkout, dan stream status pembayaran; `custom_domains` untuk `/api/client/custom-domain`; `database` untuk `cron/backup`; `invitations` untuk `cron/cleanup`. Staf `FINANCE` tidak lagi dapat membaca atau mengubah undangan klien, dan staf `SUPPORT` tidak lagi dapat membuka transaksi. `orders/create` tidak diubah: di sana `isAdmin` memblokir admin membuat pesanan, bukan memberi akses.
+    - **Kepemilikan RSVP:** `POST /api/public/rsvp` tidak punya akun, jadi nama yang diketik tidak membuktikan pengirim. Saat RSVP dibuat, server menerbitkan token acak (cookie `httpOnly`, `SameSite=Lax`, path `/api/public/rsvp`, 1 tahun, satu cookie per undangan dan nama) dan menyimpan hash SHA-256-nya di `rsvps.editTokenHash` (migrasi `20261005100000_rsvp_edit_token`). Pembaruan RSVP dengan nama yang sama hanya diterima bila cookie cocok; pengirim lain mendapat HTTP 409 dan jawaban asli tidak berubah. Baris lama tanpa token tidak dapat diperbarui dari form publik. Batas yang diketahui: tanpa tautan personal per tamu, siapa pun yang mengirim nama itu lebih dulu memegang RSVP-nya; tamu yang berganti perangkat atau menghapus cookie perlu meminta pengantin.
+    - **Takedown:** `POST /api/admin/invitations/{id}/lifecycle` menerima `TAKE_DOWN` (hanya dari `PUBLISHED`/`EVENT_FINISHED`, `reason` wajib maksimal 500 karakter) dan `REOPEN` (hanya dari `TAKEN_DOWN`, kembali `PUBLISHED`), keduanya dalam satu transaksi dengan `admin_audit_logs`, membersihkan cache pencarian dan edge Cloudflare. Tombolnya ada di tab Projek Undangan. Pembaca `TAKEN_DOWN` (rute publik 410, RSVP/galeri ditutup, daftar admin) sudah ada sebelumnya; penetapnya baru ada sekarang.
+    - **Tema:** `vintage-forest` menyisipkan nama dan pesan tamu mentah ke `innerHTML`; kini memakai `textContent`. Delapan tema lain sudah meng-escape sebelumnya, dan `themeWishEscape.test.ts` sekarang juga menolak interpolasi `${name}`/`${message}`/`${count}` di template literal `innerHTML`. QR memang sudah dibuat di server sendiri (`api.qrserver.com` nol kemunculan, dijaga `qrEndpoint.test.ts`).
+
 ## 26. Matriks Fitur Tema (hasil render mesin nyata, 1 Oktober 2026)
 
 Katalog berisi **39 tema fisik** (33 Wedding: 12 modern, 6 minimalist, 15 traditional; 1 Birthday modern, 1 Birthday minimalist, 1 Khitan, 1 Aqiqah, 1 Wisuda, 1 General). Semuanya terbuka untuk semua paket (`TIER_1`, `TIER_2`, `TIER_3`); tema tidak punya harga maupun label premium (kolom `isPremium` dan `price` dihapus oleh migrasi `20261001120000_drop_theme_price_and_premium`, termasuk lencana "Premium" di pemilih tema klien). Paket (Serenade, Symphony, Eternity) dibedakan oleh kapabilitas fitur (`capabilities_tier1..3`, kuota roll kamera, retensi), bukan oleh tema; `minimalist`/`modern`/`traditional` adalah kategori gaya desain, bukan nama paket.
@@ -3122,7 +3128,7 @@ Angka berikut diukur dengan merender seluruh 39 tema lewat `renderTemplateFile` 
 | Salam Pembuka (`openingGreeting`) | 25 / 39 | al-khalid, kalandra-birthday, cendekia, festivo, sinergi, al-fariz, bone, bulukumba, gowa, makassar, maros, soppeng, takalar, wajo |
 | Tautan Google Calendar (`googleCalendarUrl`) | 21 / 39 | aeterna, verona, burgundy-royale, al-khalid, kalandra-birthday, festivo, sinergi, cendekia, al-fariz, bone, bugis, bulukumba, gowa, makassar, maros, soppeng, takalar, wajo |
 | `overflow-wrap: break-word` | 32 / 39 | al-khalid, kalandra-birthday, cendekia, festivo, sinergi, starlit-dreams, al-fariz |
-| Gaya `::selection` kustom | 12 / 39 | 27 tema memakai seleksi bawaan peramban |
+| Gaya `::selection` kustom | 39 / 39 | - (5 Okt 2026: 27 tema yang tertinggal memakai `color-mix` dari token `--accent` atau `--gold` milik tema; dijaga `themeSelectionStyle.test.ts`) |
 | `text-wrap: balance`/`pretty` | 1 / 39 | 38 tema |
 
 Status RSVP yang dikirim tema berbeda-beda (15 tema `hadir`/`tidak`; 17 tema `HADIR`/`TIDAK_HADIR`, 14 di antaranya juga `RAGU`). `lib/rsvpStatus.ts` menormalkannya ke `hadir`/`tidak`/`ragu` saat `POST /api/public/rsvp` (nilai lain: HTTP 400; nama maksimal 100 dan pesan maksimal 1000 karakter), dan dipakai juga oleh statistik dan filter dasbor klien.

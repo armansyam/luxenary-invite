@@ -2232,11 +2232,14 @@
       card.className = "wish-item-card";
       card.innerHTML = `
         <div class="wi-header">
-          <span class="wi-author">${name} (${count} Org)</span>
-          <span class="wi-status">${presence === "HADIR" ? "Hadir" : "Berhalangan"}</span>
+          <span class="wi-author"></span>
+          <span class="wi-status"></span>
         </div>
-        <p class="wi-message">${message || "Selamat berbahagia untuk kedua mempelai!"}</p>
+        <p class="wi-message"></p>
       `;
+      card.querySelector(".wi-author").textContent = `${name} (${count} Org)`;
+      card.querySelector(".wi-status").textContent = presence === "HADIR" ? "Hadir" : "Berhalangan";
+      card.querySelector(".wi-message").textContent = message || "Selamat berbahagia untuk kedua mempelai!";
 
       stream.prepend(card);
 
