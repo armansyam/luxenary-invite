@@ -153,13 +153,12 @@ export async function POST() {
       const existing = await prisma.theme.findUnique({ where: { id: d.id } });
       const demoData = (DEMO_REGISTRY as any)[d.id];
       const defaultDesc = demoData?.tagline || `${d.series} — ${d.name} Exclusive Design`;
-      const cat = d.category.toLowerCase();
 
       await prisma.theme.upsert({
         where: { id: d.id },
         update: {
           name: d.name,
-          category: cat,
+          category: d.category,
           eventType: (d.eventType as any) || "WEDDING",
           series: d.series,
           sortOrder: existing?.sortOrder ?? (i + 1),
@@ -170,7 +169,7 @@ export async function POST() {
         create: {
           id: d.id,
           name: d.name,
-          category: cat,
+          category: d.category,
           eventType: (d.eventType as any) || "WEDDING",
           series: d.series,
           description: defaultDesc,

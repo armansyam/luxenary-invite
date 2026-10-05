@@ -10,6 +10,36 @@ export const dynamic = "force-dynamic";
  * API Admin untuk Manajemen Pemasaran: Master Switch, Kupon Promo, Mitra Afiliasi, & Payout Komisi
  */
 
+// Aturan yang sama dijaga CHECK di database (migrasi 20261005120000); di sini input buruk dijawab 400, bukan 500.
+function couponInputError(input: {
+  discountType: unknown;
+  discountValue: unknown;
+  maxDiscountAmount: unknown;
+  quotaLimit: unknown;
+  validFrom: unknown;
+  validUntil: unknown;
+}): string | null {
+  const value = Number(input.discountValue);
+  if (!Number.isFinite(value) || value <= 0) return "Nilai diskon harus lebih besar dari 0";
+  if (input.discountType === "PERCENT" && value > 100) return "Diskon persen tidak boleh lebih dari 100";
+  if (input.maxDiscountAmount && !(Number(input.maxDiscountAmount) >= 0)) return "Batas diskon maksimal tidak valid";
+  const hasQuota = input.quotaLimit !== null && input.quotaLimit !== undefined && input.quotaLimit !== "";
+  if (hasQuota && !(Number.isInteger(Number(input.quotaLimit)) && Number(input.quotaLimit) >= 0)) {
+    return "Kuota harus bilangan bulat tidak negatif";
+  }
+  if (input.validFrom && input.validUntil && new Date(String(input.validUntil)) < new Date(String(input.validFrom))) {
+    return "Tanggal berakhir tidak boleh sebelum tanggal mulai";
+  }
+  return null;
+}
+
+function partnerCommissionError(commissionType: unknown, commissionValue: unknown): string | null {
+  const value = Number(commissionValue);
+  if (!Number.isFinite(value) || value < 0) return "Nilai komisi tidak valid";
+  if (commissionType !== "NOMINAL" && value > 100) return "Komisi persen tidak boleh lebih dari 100";
+  return null;
+}
+
 async function checkAdminAuth() {
   const session = await auth();
   const { hasAdminPermission } = await import("@/lib/adminPermissions");
@@ -137,8 +167,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Kode kupon harus berupa 3-20 karakter huruf, angka, atau tanda minus" }, { status: 400 });
       }
 
-      if (!discountValue || isNaN(Number(discountValue)) || Number(discountValue) <= 0) {
-        return NextResponse.json({ error: "Nilai diskon harus lebih besar dari 0" }, { status: 400 });
+      const couponError = couponInputError({ discountType, discountValue, maxDiscountAmount, quotaLimit, validFrom, validUntil });
+      if (couponError) {
+        return NextResponse.json({ error: couponError }, { status: 400 });
       }
 
       const existing = await prisma.promoCoupon.findUnique({ where: { code: cleanCode } });
@@ -184,6 +215,11 @@ export async function POST(req: NextRequest) {
 
       if (!id) {
         return NextResponse.json({ error: "ID kupon diperlukan" }, { status: 400 });
+      }
+
+      const couponError = couponInputError({ discountType, discountValue, maxDiscountAmount, quotaLimit, validFrom, validUntil });
+      if (couponError) {
+        return NextResponse.json({ error: couponError }, { status: 400 });
       }
 
       const updated = await prisma.promoCoupon.update({
@@ -235,8 +271,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Nama mitra wajib diisi" }, { status: 400 });
       }
 
-      if (!commissionValue || isNaN(Number(commissionValue)) || Number(commissionValue) < 0) {
-        return NextResponse.json({ error: "Nilai komisi tidak valid" }, { status: 400 });
+      const commissionError = commissionValue ? partnerCommissionError(commissionType, commissionValue) : "Nilai komisi tidak valid";
+      if (commissionError) {
+        return NextResponse.json({ error: commissionError }, { status: 400 });
       }
 
       const partner = await prisma.partnerAffiliate.create({
@@ -273,6 +310,11 @@ export async function POST(req: NextRequest) {
       } = body;
 
       if (!id) return NextResponse.json({ error: "ID mitra diperlukan" }, { status: 400 });
+
+      const commissionError = partnerCommissionError(commissionType, commissionValue);
+      if (commissionError) {
+        return NextResponse.json({ error: commissionError }, { status: 400 });
+      }
 
       const updated = await prisma.partnerAffiliate.update({
         where: { id },

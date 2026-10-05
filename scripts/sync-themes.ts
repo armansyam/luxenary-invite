@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { prisma, pool } from "../lib/prisma";
+import type { ThemeCategory } from "@prisma/client";
 import fs from "fs";
 import path from "path";
 
@@ -13,13 +14,13 @@ async function main() {
     { eventFolder: "wisuda",   eventType: "WISUDA" as const },
     { eventFolder: "general",  eventType: "GATHERING" as const },
   ];
-  const STYLE_FOLDERS = [
+  const STYLE_FOLDERS: Array<{ name: string; category: ThemeCategory; series: string }> = [
     { name: "minimalist", category: "minimalist", series: "Minimalist" },
     { name: "modern", category: "modern", series: "Modern" },
     { name: "traditional", category: "traditional", series: "Traditional" },
   ];
 
-  const discovered: Array<{ id: string; name: string; category: string; series: string; eventType: any }> = [];
+  const discovered: Array<{ id: string; name: string; category: ThemeCategory; series: string; eventType: any }> = [];
 
   for (const { eventFolder, eventType } of EVENT_FOLDERS) {
     for (const style of STYLE_FOLDERS) {

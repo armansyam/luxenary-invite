@@ -27,7 +27,6 @@ export async function GET(
       select: {
         id: true,
         senderName: true,
-        mediaType: true,
         mediaUrl: true,
         thumbnailUrl: true,
       },

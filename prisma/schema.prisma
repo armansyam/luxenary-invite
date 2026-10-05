@@ -64,7 +64,7 @@ model Order {
   upgradedFromPlan    PlanType?
   targetPlanType      PlanType?
   linkedInvitationId  String?
-  paymentMethod       PaymentMethod?       @default(GATEWAY)
+  paymentMethod       PaymentMethod        @default(GATEWAY)
   snapToken           String?
   proofImageUrl       String?
   proofUploadedAt     DateTime?
@@ -103,6 +103,8 @@ model Invitation {
   userId               String
   themeId              String            @default("kalandra")
   eventType            EventType         @default(WEDDING)
+  /// Kolom teks yang berisi JSON (participantsJson, eventData, loveStory, bankAccounts, featureSettings):
+  /// validitas JSON dijaga CHECK di database (migrasi 20261005120000), bukan tipe kolom.
   participantsJson     String?
   subdomain            String?           @unique
   customDomain         String?           @unique
@@ -145,7 +147,7 @@ model Invitation {
   order                Order?            @relation("InvitationOrder", fields: [orderId], references: [id])
   linkedOrders         Order[]           @relation("OrderLinkedInvitation")
   user                 User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  theme               Theme             @relation(fields: [themeId], references: [id], onDelete: Restrict)
+  theme                Theme             @relation(fields: [themeId], references: [id], onDelete: Restrict)
   media                InvitationMedia[]
   rsvps                Rsvp[]
 
@@ -169,22 +171,22 @@ model InvitationMedia {
 }
 
 model Guest {
-  id              String     @id @default(uuid())
+  id              String   @id @default(uuid())
   invitationId    String
   name            String
   slug            String
   category        String?
   phone           String?
-  guestQuota      Int        @default(1)
+  guestQuota      Int      @default(1)
   tableNumber     String?
-  waStatus        WaStatus   @default(PENDING)
-  qrToken        String?    @unique
-  isTokenRedeemed Boolean    @default(false)
+  waStatus        WaStatus @default(PENDING)
+  qrToken         String?  @unique
+  isTokenRedeemed Boolean  @default(false)
 
-  sessionInfo     String?
-  createdAt       DateTime   @default(now())
-  invitation      Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
-  rsvps           Rsvp[]
+  sessionInfo String?
+  createdAt   DateTime   @default(now())
+  invitation  Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  rsvps       Rsvp[]
 
   @@unique([invitationId, slug])
   @@index([invitationId])
@@ -192,17 +194,17 @@ model Guest {
 }
 
 model Rsvp {
-  id           String     @id @default(uuid())
-  invitationId String
-  guestId      String?
-  guestName    String
-  status       RsvpStatus
-  guestCount   Int        @default(1)
-  message      String?
-  respondedAt  DateTime   @default(now())
+  id            String     @id @default(uuid())
+  invitationId  String
+  guestId       String?
+  guestName     String
+  status        RsvpStatus
+  guestCount    Int        @default(1)
+  message       String?
+  respondedAt   DateTime   @default(now())
   editTokenHash String?
-  guest        Guest?     @relation(fields: [guestId], references: [id])
-  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  guest         Guest?     @relation(fields: [guestId], references: [id])
+  invitation    Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 
   @@index([invitationId])
   @@index([guestId])
@@ -215,7 +217,6 @@ model GuestMemory {
   senderName   String
   senderEmail  String
   message      String?
-  mediaType    String     @default("PHOTO")
   mediaUrl     String
   thumbnailUrl String?
   createdAt    DateTime   @default(now())
@@ -226,13 +227,13 @@ model GuestMemory {
 }
 
 model WebhookLog {
-  id          String    @id @default(uuid())
+  id          String           @id @default(uuid())
   source      String
   event       String
   payload     Json
-  status      String    @default("received")
+  status      WebhookLogStatus @default(received)
   processedAt DateTime?
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime         @default(now())
 
   @@index([source, createdAt])
   @@index([createdAt])
@@ -251,18 +252,18 @@ model AdminSetting {
 }
 
 model Theme {
-  id              String       @id
+  id              String        @id
   name            String
   description     String?
   thumbnail       String?
-  category        String       @default("minimalist")
-  eventType       EventType    @default(WEDDING)
+  category        ThemeCategory @default(minimalist)
+  eventType       EventType     @default(WEDDING)
   parentTheme     String?
   series          String?
-  isActive       Boolean      @default(true)
-  sortOrder       Int          @default(0)
-  defaultMusicUrl String?      @map("default_music_url")
-  createdAt       DateTime     @default(now())
+  isActive        Boolean       @default(true)
+  sortOrder       Int           @default(0)
+  defaultMusicUrl String?       @map("default_music_url")
+  createdAt       DateTime      @default(now())
   invitations     Invitation[]
 
   @@map("themes")
@@ -348,6 +349,20 @@ enum WaStatus {
   SENT
 }
 
+enum WebhookLogStatus {
+  received
+  processed
+  amount_mismatch
+  paid_on_closed_order
+  stale_session
+}
+
+enum ThemeCategory {
+  minimalist
+  modern
+  traditional
+}
+
 enum MediaSlot {
   LANDING_COVER
   LANDING_COVER_DESKTOP
@@ -370,19 +385,19 @@ enum ExpenseCategory {
 }
 
 model Expense {
-  id              String          @id @default(uuid())
+  id              String                @id @default(uuid())
   title           String
-  category        ExpenseCategory @default(OTHER)
-  amount          Decimal         @db.Decimal(12, 2)
-  expenseDate     DateTime        @default(now())
-  paymentSource   String?         @default("TRANSFER_BANK")
+  category        ExpenseCategory       @default(OTHER)
+  amount          Decimal               @db.Decimal(12, 2)
+  expenseDate     DateTime              @default(now())
+  paymentSource   String?               @default("TRANSFER_BANK")
   referenceNumber String?
   receiptUrl      String?
   notes           String?
   createdById     String?
-  isLocked        Boolean         @default(false)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  isLocked        Boolean               @default(false)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
   commissions     AffiliateCommission[]
 
   @@index([category])
@@ -475,7 +490,7 @@ model PromoCoupon {
   maxDiscountAmount Decimal?          @db.Decimal(12, 2)
   quotaLimit        Int?
   usageCount        Int               @default(0)
-  perUserLimit     Int?              @default(1)
+  perUserLimit      Int?              @default(1)
   applicablePlans   PlanType[]        @default([])
   validFrom         DateTime?
   validUntil        DateTime?
@@ -529,7 +544,6 @@ model AffiliateCommission {
   @@index([payoutExpenseId])
   @@map("affiliate_commissions")
 }
-
 
 /// Tabel rate limiting cross-process berbasis PostgreSQL.
 /// Digunakan oleh rateLimitDb() di lib/rateLimit.ts untuk endpoint publik sensitif

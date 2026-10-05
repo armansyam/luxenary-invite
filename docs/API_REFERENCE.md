@@ -160,7 +160,7 @@ Memerlukan autentikasi admin (`role: ADMIN` atau `SUPER_ADMIN`):
 | | `GET` | `/api/admin/server-ip` | Mendeteksi alamat IP publik server VPS untuk panduan DNS klien. |
 | | `POST` | `/api/admin/test-smtp` | Menguji pengiriman email transaksional via gateway SMTP. |
 | | `POST` | `/api/admin/test-storage` | Menguji kapabilitas read/write file ke Cloudflare R2 / local storage. |
-| | `GET` | `/api/admin/webhooks` | Melihat log incoming webhook transaksi dari gateway pembayaran. |
+| | `GET` | `/api/admin/webhooks` | Melihat log incoming webhook transaksi dari gateway pembayaran. Filter `status` harus salah satu `received`, `processed`, `amount_mismatch`, `paid_on_closed_order`, `stale_session`, atau `ALL` (lainnya: 400). |
 | **Cache** | `POST` | `/api/admin/cache/purge` | Membersihkan server cache Next.js ISR dan edge CDN Cloudflare secara serentak. |
 | **Database** | `POST` | `/api/admin/database/backup` | Memicu pembuatan snapshot basis data manual. |
 | | `GET` | `/api/admin/database/download` | Mengunduh file snapshot database (`.dump`, format custom `pg_dump`; snapshot lama `.sql`/`.backup`) ke komputer lokal. Pulihkan dengan `pg_restore`. |

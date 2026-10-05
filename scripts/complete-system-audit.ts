@@ -351,7 +351,6 @@ async function runCompleteSystemAudit() {
         senderName: "Bpk. Bambang Pamungkas",
         senderEmail: "bambang@example.com",
         mediaUrl: "/memories/bambang_sample.webp",
-        mediaType: "PHOTO",
         message: "Selamat!",
       },
     });

@@ -7,6 +7,7 @@ import { getMonthYearSlug, isSubdomainExpired, isReservedSubdomain } from "@/lib
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { safeParseParticipants } from "@/lib/participantUtils";
+import { normalizeJsonText } from "@/lib/jsonText";
 
 function slugify(text: string): string {
   return text
@@ -156,6 +157,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Jenis acara wajib dipilih." }, { status: 400 });
   }
   const eventType = cleanType as EventType;
+
+  const participants = normalizeJsonText(participantsJson);
+  if (!participants.ok) {
+    return NextResponse.json({ error: "participantsJson bukan JSON yang valid." }, { status: 400 });
+  }
 
   if (themeId && typeof themeId === "string" && themeId.trim()) {
     const cleanThemeId = themeId.trim().toLowerCase();
@@ -445,9 +451,7 @@ export async function POST(req: Request) {
           data: {
             orderId: paidOrder?.id ?? existingDraft.orderId ?? undefined,
             eventType: eventType || existingDraft.eventType,
-            participantsJson: participantsJson !== undefined
-              ? (typeof participantsJson === "string" ? participantsJson : JSON.stringify(participantsJson))
-              : existingDraft.participantsJson,
+            participantsJson: participantsJson !== undefined ? participants.value : existingDraft.participantsJson,
             groomName: groomName?.trim() || finalGroomNick || existingDraft.groomName || "",
             brideName: brideName?.trim() || finalBrideNick || existingDraft.brideName || "",
             groomNickname: finalGroomNick || existingDraft.groomNickname || "",
@@ -471,9 +475,7 @@ export async function POST(req: Request) {
             userId: userId,
             orderId: paidOrder?.id ?? undefined,
             eventType: eventType,
-            participantsJson: participantsJson
-              ? (typeof participantsJson === "string" ? participantsJson : JSON.stringify(participantsJson))
-              : null,
+            participantsJson: participants.value,
             musicUrl: initialMusicUrl || undefined,
             groomName: groomName?.trim() || finalGroomNick || "",
             brideName: brideName?.trim() || finalBrideNick || "",

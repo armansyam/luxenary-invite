@@ -3,6 +3,7 @@ import { InvitationStatus } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
+import { normalizeJsonText } from "@/lib/jsonText";
 import { encryptPin, decryptPin, isPinEncrypted } from "@/lib/pinEncryption";
 import { isReservedSubdomain, isSubdomainExpired } from "@/lib/domainUtils";
 import { DAY_MS, getPrimaryEventDate } from "@/lib/lifecycleDates";
@@ -498,6 +499,16 @@ export async function PUT(
       }
     }
 
+    const jsonTextFields: Partial<Record<"loveStory" | "bankAccounts" | "participantsJson", string | null>> = {};
+    for (const field of ["loveStory", "bankAccounts", "participantsJson"] as const) {
+      if (body[field] === undefined) continue;
+      const parsed = normalizeJsonText(body[field]);
+      if (!parsed.ok) {
+        return NextResponse.json({ error: `${field} bukan JSON yang valid.` }, { status: 400 });
+      }
+      jsonTextFields[field] = parsed.value;
+    }
+
     const updated = await prisma.invitation.update({
       where: { id },
       data: {
@@ -522,16 +533,14 @@ export async function PUT(
         musicUrl: body.musicUrl !== undefined ? safeExternalUrl(body.musicUrl) : undefined,
         status: body.status !== undefined ? body.status : undefined,
         ...(body.status === "PUBLISHED" && currentInv.status !== "PUBLISHED" ? { publishedAt: new Date() } : {}),
-        loveStory: body.loveStory !== undefined ? toStr(body.loveStory) : undefined,
+        loveStory: jsonTextFields.loveStory,
         dresscode: body.dresscode !== undefined ? body.dresscode : undefined,
-        bankAccounts: body.bankAccounts !== undefined ? toStr(body.bankAccounts) : undefined,
+        bankAccounts: jsonTextFields.bankAccounts,
         shippingAddress: body.shippingAddress !== undefined ? body.shippingAddress : undefined,
         liveStreamUrl: body.liveStreamUrl !== undefined ? safeExternalUrl(body.liveStreamUrl) : undefined,
         eventData: eventDataToSave,
         featureSettings: mergedFeatureSettings,
-        participantsJson: body.participantsJson !== undefined
-          ? (typeof body.participantsJson === "string" ? body.participantsJson : JSON.stringify(body.participantsJson))
-          : undefined,
+        participantsJson: jsonTextFields.participantsJson,
         // Enkripsi staffPin dengan AES-256 sebelum simpan ke database (cegah re-encrypt jika sudah terenkripsi)
         staffPin: body.staffPin !== undefined
           ? (body.staffPin
@@ -705,9 +714,11 @@ export async function PATCH(
       if (!isAdmin && lock.isCoreLocked && !lock.isEmergencyUnlocked) {
         return NextResponse.json({ error: "Data peserta acara terkunci. Hubungi Administrator untuk membuka kunci darurat." }, { status: 403 });
       }
-      updateData.participantsJson = typeof body.participantsJson === "string"
-        ? body.participantsJson
-        : JSON.stringify(body.participantsJson);
+      const participants = normalizeJsonText(body.participantsJson);
+      if (!participants.ok) {
+        return NextResponse.json({ error: "participantsJson bukan JSON yang valid." }, { status: 400 });
+      }
+      updateData.participantsJson = participants.value;
     }
 
     const updated = await prisma.invitation.update({

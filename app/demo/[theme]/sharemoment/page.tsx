@@ -58,28 +58,24 @@ export default async function DemoGuestMemoriesStandalonePage({ params }: PagePr
       id: "demo-1",
       senderName: "Budi Santoso",
       mediaUrl: getMediaUrl("01"),
-      mediaType: "PHOTO",
       message: `Selamat berbahagia untuk ${coupleName}! Sakinah mawaddah warahmah 🎉`,
     },
     {
       id: "demo-2",
       senderName: "Sahabat SMA (Dimas)",
       mediaUrl: getMediaUrl("02"),
-      mediaType: "PHOTO",
       message: "Happy wedding bro! Langgeng dan bahagia selalu sampai akhir hayat 🥂",
     },
     {
       id: "demo-3",
       senderName: "Rina & Teman Kuliah",
       mediaUrl: getMediaUrl("03"),
-      mediaType: "PHOTO",
       message: "Cantik dan gagah banget hari ini! Semoga selalu dalam lindungan-Nya ✨",
     },
     {
       id: "demo-4",
       senderName: "Keluarga Besar Tante Maya",
       mediaUrl: getMediaUrl("04"),
-      mediaType: "PHOTO",
       message: "Selamat menempuh hidup baru! Semoga rukun dan berkah pernikahannya.",
     },
   ];

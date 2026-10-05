@@ -15,14 +15,12 @@ export default function DemoShareMomentPage() {
       id: "demo-sample-1",
       senderName: "Budi Santoso & Keluarga",
       mediaUrl: "/demo/candani/gallery_01.webp",
-      mediaType: "PHOTO",
       message: "Selamat berbahagia untuk Raditya & Alana! Sakinah mawaddah warahmah selamanya 🎉",
     },
     {
       id: "demo-sample-2",
       senderName: "Sahabat SMA (Dimas & Tim)",
       mediaUrl: "/demo/kalandra/gallery_02.webp",
-      mediaType: "PHOTO",
       message: "Happy wedding brother! Akhirnya berlabuh di pelabuhan terakhir 🥂",
     },
   ];

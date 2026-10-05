@@ -71,7 +71,7 @@ erDiagram
         string id PK
         string name
         enum eventType
-        string category
+        enum category
         string series
         boolean isActive
     }
@@ -97,7 +97,6 @@ erDiagram
         string id PK
         string senderName
         string senderEmail
-        string mediaType
         string mediaUrl
         string message
     }
@@ -164,7 +163,7 @@ Menyimpan lembar penagihan dan riwayat transaksi:
   - `UPGRADE`: Upgrade ke paket lebih tinggi.
   - `GALLERY_EXTENSION`: Add-on perpanjangan masa aktif galeri foto tamu.
   - `MEMORIES_TOPUP`: Add-on kuota tambahan foto kenangan tamu.
-- `paymentMethod` (Enum `PaymentMethod`, Nullable, bawaan `GATEWAY`): Kanal pembayaran (`GATEWAY` atau `MANUAL_TRANSFER`).
+- `paymentMethod` (Enum `PaymentMethod`, wajib, bawaan `GATEWAY`): Kanal pembayaran (`GATEWAY` atau `MANUAL_TRANSFER`). Wajib sejak migrasi `20261005120000`; baris lama tanpa nilai diisi `MANUAL_TRANSFER` bila punya bukti transfer, selain itu `GATEWAY`.
 - `linkedInvitationId` (UUID, Nullable, FK `invitations.id`, `ON DELETE SET NULL`, terindeks): Undangan yang menjadi sasaran order `UPGRADE`, `GALLERY_EXTENSION`, atau `MEMORIES_TOPUP`. Menggantikan `linkedOrderId` yang berisi ID Order atau ID Invitation. Order dasar (`orderType = NEW`) dikenali lewat `orderType`, bukan lewat tautan kosong.
 - `proofImageUrl` (String, Nullable): URL slip transfer jika menggunakan transfer manual.
 - `promoCodeApplied` (String, Nullable): Kode kupon diskon yang diaplikasikan saat checkout.
@@ -178,7 +177,7 @@ Menyimpan riwayat callback / IPN dari payment gateway untuk idempotency dan debu
 - `source` (String): Nama provider (`midtrans` atau `xendit`).
 - `event` (String): Tipe event (contoh: `payment.success`).
 - `payload` (JSON): Payload biner lengkap dari gateway.
-- `status` (String): `received`, `processed`, atau `amount_mismatch` (nominal webhook tidak cocok dengan `Order.chargedAmount`, order tidak dilunasi).
+- `status` (Enum `WebhookLogStatus`, bawaan `received`): `received`, `processed`, `amount_mismatch` (nominal webhook tidak cocok dengan `Order.chargedAmount`, order tidak dilunasi), `paid_on_closed_order` (pembayaran valid untuk order yang sudah tertutup, butuh rekonsiliasi manual), atau `stale_session` (pembatalan dari sesi gateway lama diabaikan).
 
 ---
 
@@ -233,7 +232,7 @@ Master katalog tema fisik resmi di sistem (39 tema terdaftar):
 - `id` (String, Primary Key): Identifier unik tema (contoh: `kalandra`, `artisan`, `festivo`).
 - `name` (String): Nama komersial tema.
 - `eventType` (Enum `EventType`): Afiliasi tipe acara (`WEDDING`, `BIRTHDAY`, `KHITAN`, `AQIQAH`, `WISUDA`, `GATHERING`).
-- `category` (String): Kategori gaya desain (`minimalist`, `modern`, `traditional`).
+- `category` (Enum `ThemeCategory`, bawaan `minimalist`): Kategori gaya desain (`minimalist`, `modern`, `traditional`).
 - `series` (String, Nullable): Lini koleksi tema.
 - `previewUrl` (String, Nullable): Rute demo publik (contoh: `/demo/kalandra`).
 - `isActive` (Boolean): Flag status aktif di katalog showroom & kasir.
@@ -275,7 +274,6 @@ Konfirmasi kehadiran tamu:
 Album foto momen candid yang diunggah oleh tamu di hari pernikahan:
 - `senderName` (String): Nama tamu pengunggah.
 - `senderEmail` (String): Email tamu pengunggah (wajib).
-- `mediaType` (String, bawaan `PHOTO`): Jenis media. Belum enum karena nilainya tidak konsisten: jalur unggah publik menulis `IMAGE`, sedangkan bawaan dan form menulis `PHOTO`, dan tidak ada kode yang membacanya dengan pembanding.
 - `mediaUrl` (String): Tautan file foto terkompresi di penyimpanan aktif (Cloudflare R2 atau lokal).
 - `thumbnailUrl` (String, Nullable): Tautan gambar mini.
 - `message` (String, Nullable): Caption ucapan momen.

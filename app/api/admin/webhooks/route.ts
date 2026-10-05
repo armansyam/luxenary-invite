@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma, WebhookLogStatus } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +21,10 @@ export async function GET(req: NextRequest) {
       whereClause.source = source;
     }
     if (status && status !== "ALL") {
-      whereClause.status = status;
+      if (!(Object.values(WebhookLogStatus) as string[]).includes(status)) {
+        return NextResponse.json({ error: "Status webhook tidak dikenali." }, { status: 400 });
+      }
+      whereClause.status = status as WebhookLogStatus;
     }
 
     const [total, logs] = await Promise.all([

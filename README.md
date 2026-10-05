@@ -486,6 +486,8 @@ NEXT_PUBLIC_ROOT_DOMAIN="localhost:3000"
 # membuat tabel _prisma_migrations tidak sinkron dengan skema, itulah yang membuat `migrate deploy` produksi sempat macet)
 npx prisma migrate deploy
 npx prisma db seed
+# Skema dijaga database: status webhook dan kategori tema berupa enum, 23 CHECK (angka tidak negatif, persen paling besar 100,
+# bulan 1-12) dan 6 kolom teks-JSON menolak teks yang bukan JSON (migrasi 20261005120000). Database baru cukup `migrate deploy`.
 
 # Untuk Deployment Produksi (VPS) — Baseline init terverifikasi
 npx prisma migrate deploy

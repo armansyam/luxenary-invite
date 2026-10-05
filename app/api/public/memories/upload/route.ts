@@ -331,7 +331,6 @@ export async function POST(req: NextRequest) {
             senderName: senderName || "Guest",
             senderEmail: senderEmail || "guest@system",
             mediaUrl,
-            mediaType: "IMAGE", // Compressed JPEG from Canvas
             thumbnailUrl: mediaUrl,
             message: caption || "",
           },

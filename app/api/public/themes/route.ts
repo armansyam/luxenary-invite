@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { DEMO_REGISTRY } from "@/lib/demoRegistry";
+import type { ThemeCategory } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
@@ -25,11 +26,10 @@ export async function GET(req: Request) {
       const themesToInsert = Object.values(DEMO_REGISTRY).map((demo, idx) => ({
         id: demo.themeId.toLowerCase(),
         name: demo.themeName,
-        category: demo.category.toLowerCase(),
+        category: demo.category.toLowerCase() as ThemeCategory,
         series: demo.series,
         eventType: (demo as any).eventType || "WEDDING",
         description: demo.tagline || `${demo.themeName} Series`,
-        previewUrl: `/demo/${demo.themeId.toLowerCase()}`,
         isActive: true,
         sortOrder: idx + 1,
       }));

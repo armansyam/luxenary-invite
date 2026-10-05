@@ -1340,7 +1340,7 @@ export async function composeWeddingData(inv: any) {
     const isMarquee = totalMemCount > 5;
 
     const storyAvatarsHtml = shuffledMemories.map((sm: any) => `
-      <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; width: 68px; cursor: pointer;" data-url="${safeHref(sm.mediaUrl)}" data-name="${escapeHtml(sm.senderName)}" data-msg="${escapeHtml(sm.message || "")}" data-type="${escapeHtml(sm.mediaType)}" onclick="luxOpenMemoryPreview(this.dataset.url, this.dataset.name, this.dataset.msg, this.dataset.type)">
+      <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; width: 68px; cursor: pointer;" data-url="${safeHref(sm.mediaUrl)}" data-name="${escapeHtml(sm.senderName)}" data-msg="${escapeHtml(sm.message || "")}" onclick="luxOpenMemoryPreview(this.dataset.url, this.dataset.name, this.dataset.msg, this.dataset.type)">
         <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
           <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
             <img src="${safeHref(sm.thumbnailUrl || sm.mediaUrl)}" alt="${escapeHtml(sm.senderName)}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;" />
@@ -1670,7 +1670,6 @@ export async function composeWeddingData(inv: any) {
             const form = document.getElementById('luxMemoryForm');
             const fd = new FormData(form);
             fd.set('file', optimizedFile);
-            fd.set('mediaType', 'PHOTO');
 
             if (progressText) progressText.textContent = "Mengunggah ke album pengantin...";
             if (progressBar) progressBar.style.width = '85%';
