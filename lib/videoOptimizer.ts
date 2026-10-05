@@ -4,6 +4,7 @@ import path from "path";
 import os from "os";
 import { promisify } from "util";
 import { removeIfExists } from "@/lib/fsSafe";
+import { logger } from "@/lib/logger";
 
 const execFileAsync = promisify(execFile);
 
@@ -143,7 +144,7 @@ export async function optimizeWebVideo(inputBuffer: Buffer, baseName: string): P
 
     return inputBuffer;
   } catch (err) {
-    console.warn("FFmpeg optimization skipped or failed, using original video buffer:", err);
+    logger.warn("VideoOptimizer", "Optimasi FFmpeg gagal; video asli dipakai", { error: err instanceof Error ? err.message : String(err) });
     return inputBuffer;
   } finally {
     // Cleanup temporary scratch files
@@ -214,14 +215,14 @@ export async function optimizeWebAudio(inputBuffer: Buffer, baseName: string): P
       const compressedBuffer = await fs.promises.readFile(outputTempPath);
       const originalMB = (inputBuffer.length / 1024 / 1024).toFixed(1);
       const compressedMB = (compressedBuffer.length / 1024 / 1024).toFixed(1);
-      console.log(`[AudioOptimizer] ${baseName}: ${originalMB}MB → ${compressedMB}MB (MP3 96kbps)`);
+      logger.info("AudioOptimizer", "Audio dikompresi ke MP3 96kbps", { file: baseName, originalMB, compressedMB });
       return compressedBuffer;
     }
 
     // Fallback jika kedua encoder tidak tersedia
     return inputBuffer;
   } catch (err) {
-    console.warn("[AudioOptimizer] Compression skipped, using original audio:", err);
+    logger.warn("AudioOptimizer", "Kompresi audio gagal; audio asli dipakai", { error: err instanceof Error ? err.message : String(err) });
     return inputBuffer;
   } finally {
     await removeIfExists(inputTempPath);

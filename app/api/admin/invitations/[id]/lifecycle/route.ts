@@ -6,6 +6,7 @@ import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { invalidateInvitationLookup } from "@/lib/cache";
 import { purgeCloudflareCache } from "@/lib/cloudflare";
 import { getDynamicServerRootDomain } from "@/lib/serverDomainUtils";
+import { adminActorId } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,7 @@ export async function POST(
   try {
     const session = await auth();
     const { hasAdminPermission } = await import("@/lib/adminPermissions");
-    if (!session?.user || !hasAdminPermission(session.user as any, "invitations")) {
+    if (!session?.user || !hasAdminPermission(session.user, "invitations")) {
       return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
     }
 
@@ -79,8 +80,7 @@ export async function POST(
 
       const targetStatus = taking ? "TAKEN_DOWN" : "PUBLISHED";
       const label = invitation.invitationSlug || invitation.id;
-      // Selama sesi remote, session.user.id adalah ID klien; pelaku sebenarnya ada di originalAdminId.
-      const actorId = session.user.originalAdminId ?? session.user.id;
+      const actorId = adminActorId(session);
 
       const [updated] = await prisma.$transaction([
         prisma.invitation.update({ where: { id }, data: { status: targetStatus } }),

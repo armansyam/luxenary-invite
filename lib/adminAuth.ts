@@ -54,6 +54,15 @@ export async function requireAnyAdmin(): Promise<AdminGuard> {
   return { ok: true, session };
 }
 
+/**
+ * ID admin yang benar-benar bertindak, untuk catatan audit. Selama sesi remote `session.user.id` adalah ID klien yang
+ * sedang dibuka; pelaku sebenarnya ada di `originalAdminId`. Jangan mencari admin lewat email session: di sesi remote
+ * email itu milik klien.
+ */
+export function adminActorId(session: Session): string {
+  return session.user.originalAdminId ?? session.user.id;
+}
+
 export function isAdminSession(session: Session): boolean {
   const { isAdmin, role, originalRole } = session.user;
   const effective = originalRole || role;

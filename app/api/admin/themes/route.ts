@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 async function verifyAdminSession() {
   const session = await auth();
   const { hasAdminPermission } = await import("@/lib/adminPermissions");
-  if (!session?.user || !hasAdminPermission(session.user as any, "themes")) {
+  if (!session?.user || !hasAdminPermission(session.user, "themes")) {
     return false;
   }
   return true;

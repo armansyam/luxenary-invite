@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
     const session = await auth();
     const { hasAdminPermission } = await import("@/lib/adminPermissions");
 
-    if (!session?.user || !hasAdminPermission(session.user as any, "logs")) {
+    if (!session?.user || !hasAdminPermission(session.user, "logs")) {
       return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
     }
 

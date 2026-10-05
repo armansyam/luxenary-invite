@@ -14,6 +14,8 @@
  * - Menyediakan GOOGLE_API_KEY di environment variables
  */
 
+import { logger } from "./logger";
+
 interface CacheEntry {
   photos: string[];
   timestamp: number;
@@ -48,7 +50,7 @@ export async function getGoogleDriveFolderPhotos(folderUrlOrId: string): Promise
 
   const folderId = extractGoogleDriveFolderId(trimmed);
   if (!folderId) {
-    console.warn("[DriveHelper] Folder ID tidak dapat diekstrak dari:", trimmed);
+    logger.warn("DriveHelper", "Folder ID tidak dapat diekstrak", { input: trimmed });
     return [];
   }
 
@@ -60,7 +62,7 @@ export async function getGoogleDriveFolderPhotos(folderUrlOrId: string): Promise
   // Gunakan API Key dari env
   const apiKey = process.env.GOOGLE_API_KEY;
   if (!apiKey) {
-    console.warn("[DriveHelper] GOOGLE_API_KEY tidak dikonfigurasi. Fitur Drive dinonaktifkan.");
+    logger.warn("DriveHelper", "GOOGLE_API_KEY tidak dikonfigurasi; fitur Drive dinonaktifkan");
     return [];
   }
 
@@ -75,7 +77,7 @@ export async function getGoogleDriveFolderPhotos(folderUrlOrId: string): Promise
     });
 
     if (!response.ok) {
-      console.warn(`[DriveHelper] Gagal mengambil data via API (${response.status}). Pastikan folder public dan API Key valid.`);
+      logger.warn("DriveHelper", "Drive API menolak permintaan; pastikan folder publik dan API key valid", { folderId, status: response.status });
       return [];
     }
 
@@ -111,19 +113,19 @@ export async function getGoogleDriveFolderPhotos(folderUrlOrId: string): Promise
                 const subImgData = await subImgRes.json();
                 if (subImgData.files && subImgData.files.length > 0) {
                   files = subImgData.files;
-                  console.log(`[DriveHelper] Auto-detect: Berhasil mengambil ${files.length} foto dari subfolder '${targetFolder.name}'`);
+                  logger.info("DriveHelper", "Foto diambil dari subfolder", { folderId, subfolder: targetFolder.name, count: files.length });
                 }
               }
             }
           }
         }
       } catch (subErr) {
-        console.warn("[DriveHelper] Gagal menelusuri subfolder:", subErr);
+        logger.warn("DriveHelper", "Gagal menelusuri subfolder", { folderId, error: subErr instanceof Error ? subErr.message : String(subErr) });
       }
     }
 
     if (files.length === 0) {
-      console.warn("[DriveHelper] Tidak ada file gambar ditemukan di folder atau subfolder.");
+      logger.warn("DriveHelper", "Tidak ada gambar di folder atau subfolder", { folderId });
       return [];
     }
 
@@ -133,14 +135,14 @@ export async function getGoogleDriveFolderPhotos(folderUrlOrId: string): Promise
     );
 
     driveFolderCache.set(folderId, { photos: photoUrls, timestamp: Date.now() });
-    console.log(`[DriveHelper] ${photoUrls.length} foto ditemukan dari folder ${folderId} via API v3`);
+    logger.info("DriveHelper", "Foto ditemukan via Drive API v3", { folderId, count: photoUrls.length });
     
     return photoUrls;
   } catch (err: any) {
     if (err.name === "TimeoutError" || err.name === "AbortError") {
-      console.warn("[DriveHelper] Timeout saat mengakses Drive API.");
+      logger.warn("DriveHelper", "Timeout saat mengakses Drive API", { folderId });
     } else {
-      console.warn("[DriveHelper] Error:", err?.message || err);
+      logger.warn("DriveHelper", "Gagal mengambil foto Drive", { folderId, error: err?.message || String(err) });
     }
     return [];
   }

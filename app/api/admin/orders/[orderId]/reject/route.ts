@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { paymentEmitter } from "@/lib/paymentEvents";
 import { logger } from "@/lib/logger";
 import { deleteFile } from "@/lib/storage";
+import { adminActorId } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ export async function POST(
   try {
     const session = await auth();
     const { hasAdminPermission } = await import("@/lib/adminPermissions");
-    if (!session?.user || !hasAdminPermission(session.user as any, "orders")) {
+    if (!session?.user || !hasAdminPermission(session.user, "orders")) {
       return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
     }
 
@@ -43,39 +44,32 @@ export async function POST(
       try {
         await deleteFile(order.proofImageUrl);
       } catch (e) {
-        console.error("[Reject Order] Gagal menghapus file bukti lama:", e);
+        logger.error("AdminRejectOrder", "Gagal menghapus berkas bukti transfer lama", e, { orderId });
       }
     }
 
-    // Update order: status tetap PENDING agar order tidak mati, hapus proof agar user bisa upload ulang
-    await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        status: "PENDING",
-        proofImageUrl: null,
-        proofUploadedAt: null,
-        rejectReason: reason,
-      },
-    });
-
-    // Catat ke AdminAuditLog
-    try {
-      const adminRecord = await prisma.admin.findFirst({
-        where: { email: (session.user as any).email },
-      });
-      if (adminRecord) {
-        await prisma.adminAuditLog.create({
-          data: {
-            adminId: adminRecord.id,
-            action: "REJECT_MANUAL_ORDER",
-            details: `Menolak transaksi order ${order.invoiceNumber || orderId}. Alasan: ${reason}`,
-            ipAddress: req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "localhost",
-          },
-        });
-      }
-    } catch (auditErr) {
-      logger.error("AdminRejectOrder", "Gagal mencatat AdminAuditLog penolakan order", auditErr, { orderId });
-    }
+    // Update order: status tetap PENDING agar order tidak mati, hapus proof agar user bisa upload ulang.
+    // Perubahan dan catatan auditnya satu transaksi, atas nama admin yang bertindak (bukan email session, yang
+    // milik klien saat sesi remote).
+    await prisma.$transaction([
+      prisma.order.update({
+        where: { id: orderId },
+        data: {
+          status: "PENDING",
+          proofImageUrl: null,
+          proofUploadedAt: null,
+          rejectReason: reason,
+        },
+      }),
+      prisma.adminAuditLog.create({
+        data: {
+          adminId: adminActorId(session),
+          action: "REJECT_MANUAL_ORDER",
+          details: `Menolak transaksi order ${order.invoiceNumber || orderId}. Alasan: ${reason}`,
+          ipAddress: req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || null,
+        },
+      }),
+    ]);
 
     // Push notifikasi real-time ke browser klien via SSE
     // Klien menerima event REJECTED secara instan — tidak perlu polling
@@ -92,7 +86,7 @@ export async function POST(
       rejectReason: reason,
     });
   } catch (error: any) {
-    console.error("[Admin Reject Order Error]", error);
+    logger.error("AdminRejectOrder", "Penolakan order gagal", error);
     return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message }, { status: 500 });
   }
 }

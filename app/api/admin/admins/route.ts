@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import bcrypt from "bcryptjs";
+import { adminActorId } from "@/lib/adminAuth";
 
 export async function GET() {
   try {
@@ -9,7 +10,7 @@ export async function GET() {
     const { hasAdminPermission } = await import("@/lib/adminPermissions");
     
     // Hanya Super Admin yang boleh melihat daftar admin
-    if (!session?.user || !hasAdminPermission(session.user as any, "team")) {
+    if (!session?.user || !hasAdminPermission(session.user, "team")) {
       return NextResponse.json({ error: "Forbidden. Hanya Super Admin yang dapat mengakses data ini." }, { status: 403 });
     }
 
@@ -40,7 +41,7 @@ export async function POST(req: Request) {
     const { hasAdminPermission } = await import("@/lib/adminPermissions");
     
     // Hanya Super Admin yang boleh menambah admin baru
-    if (!session?.user || !hasAdminPermission(session.user as any, "team")) {
+    if (!session?.user || !hasAdminPermission(session.user, "team")) {
       return NextResponse.json({ error: "Forbidden. Hanya Super Admin yang dapat menambah admin baru." }, { status: 403 });
     }
 
@@ -68,34 +69,34 @@ export async function POST(req: Request) {
     const { resolveAdminPermissions } = await import("@/lib/adminPermissions");
     const effectivePermissions = newRole === "SUPER_ADMIN" ? [] : resolveAdminPermissions(newRole, permissions);
 
-    const newAdmin = await prisma.admin.create({
-      data: {
-        username,
-        email,
-        name,
-        role: newRole,
-        permissions: effectivePermissions,
-        passwordHash,
-      },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        name: true,
-        role: true,
-        permissions: true,
-        createdAt: true,
-      }
-    });
-
-    // Catat ke Audit Log
-    await prisma.adminAuditLog.create({
-      data: {
-        adminId: (session.user as any).id as string,
-        action: "CREATE_ADMIN",
-        details: `Created new admin: ${username} with role ${newRole}`,
-      }
-    });
+    const [newAdmin] = await prisma.$transaction([
+      prisma.admin.create({
+        data: {
+          username,
+          email,
+          name,
+          role: newRole,
+          permissions: effectivePermissions,
+          passwordHash,
+        },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          name: true,
+          role: true,
+          permissions: true,
+          createdAt: true,
+        }
+      }),
+      prisma.adminAuditLog.create({
+        data: {
+          adminId: adminActorId(session),
+          action: "CREATE_ADMIN",
+          details: `Created new admin: ${username} with role ${newRole}`,
+        }
+      }),
+    ]);
 
     return NextResponse.json({ success: true, admin: newAdmin });
   } catch (error: any) {

@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { getPublicPlatformSettings } from "./settings";
+import { logger } from "./logger";
 import {
   InvoiceEmailOptions,
   MemoriesQuotaAlertOptions,
@@ -20,7 +21,7 @@ export async function sendInvoiceEmail(opts: InvoiceEmailOptions): Promise<{ suc
 
     // Graceful check: Jika SMTP belum dikonfigurasi, skip dengan aman tanpa throw error
     if (!settings.smtpHost || !settings.smtpUser) {
-      console.log("[Mailer] SMTP belum dikonfigurasi di Admin Settings. Email dilewati.");
+      logger.warn("Mailer", "SMTP belum dikonfigurasi; email invoice dilewati", { type: opts.type });
       return { success: false, error: "SMTP_NOT_CONFIGURED" };
     }
 
@@ -57,10 +58,10 @@ export async function sendInvoiceEmail(opts: InvoiceEmailOptions): Promise<{ suc
       html: htmlContent,
     });
 
-    console.log(`[Mailer] Invoice email (${opts.type}) berhasil dikirim ke ${opts.recipientEmail}`);
+    logger.info("Mailer", "Email invoice terkirim", { type: opts.type, recipient: opts.recipientEmail });
     return { success: true };
   } catch (error: any) {
-    console.error("[Mailer] Gagal mengirim email invoice:", error);
+    logger.error("Mailer", "Gagal mengirim email invoice", error, { type: opts.type, recipient: opts.recipientEmail });
     return { success: false, error: error.message };
   }
 }
@@ -71,7 +72,7 @@ export async function sendMemoriesQuotaAlertEmail(opts: MemoriesQuotaAlertOption
 
     // Graceful check: Jika SMTP belum dikonfigurasi, skip dengan aman
     if (!settings.smtpHost || !settings.smtpUser) {
-      console.log("[Mailer] SMTP belum dikonfigurasi di Admin Settings. Email peringatan roll dilewati.");
+      logger.warn("Mailer", "SMTP belum dikonfigurasi; email peringatan kuota roll dilewati");
       return { success: false, error: "SMTP_NOT_CONFIGURED" };
     }
 
@@ -104,10 +105,10 @@ export async function sendMemoriesQuotaAlertEmail(opts: MemoriesQuotaAlertOption
       html: htmlContent,
     });
 
-    console.log(`[Mailer] Peringatan kuota roll berhasil dikirim ke ${opts.recipientEmail}`);
+    logger.info("Mailer", "Email peringatan kuota roll terkirim", { recipient: opts.recipientEmail });
     return { success: true };
   } catch (error: any) {
-    console.error("[Mailer] Gagal mengirim email peringatan kuota roll:", error);
+    logger.error("Mailer", "Gagal mengirim email peringatan kuota roll", error, { recipient: opts.recipientEmail });
     return { success: false, error: error.message };
   }
 }
@@ -118,7 +119,7 @@ export async function sendRetentionExpiryAlertEmail(opts: RetentionExpiryAlertOp
 
     // Graceful check: Jika SMTP belum dikonfigurasi, skip dengan aman
     if (!settings.smtpHost || !settings.smtpUser) {
-      console.log("[Mailer] SMTP belum dikonfigurasi di Admin Settings. Email peringatan retensi dilewati.");
+      logger.warn("Mailer", "SMTP belum dikonfigurasi; email peringatan retensi dilewati");
       return { success: false, error: "SMTP_NOT_CONFIGURED" };
     }
 
@@ -151,10 +152,10 @@ export async function sendRetentionExpiryAlertEmail(opts: RetentionExpiryAlertOp
       html: htmlContent,
     });
 
-    console.log(`[Mailer] Peringatan retensi berhasil dikirim ke ${opts.recipientEmail}`);
+    logger.info("Mailer", "Email peringatan retensi terkirim", { recipient: opts.recipientEmail });
     return { success: true };
   } catch (error: any) {
-    console.error("[Mailer] Gagal mengirim email peringatan retensi:", error);
+    logger.error("Mailer", "Gagal mengirim email peringatan retensi", error, { recipient: opts.recipientEmail });
     return { success: false, error: error.message };
   }
 }

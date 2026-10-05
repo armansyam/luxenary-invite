@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { hasAdminPermission } from "@/lib/adminPermissions";
+import { adminActorId } from "@/lib/adminAuth";
 
 /**
  * Memulai sesi Remote: Admin memasang "kacamata" Klien.
@@ -30,7 +31,7 @@ export async function startRemoteSession(clientId: string) {
   // Selama sesi remote, session.user.id adalah ID klien; pelaku sebenarnya ada di originalAdminId.
   await prisma.adminAuditLog.create({
     data: {
-      adminId: session.user.originalAdminId ?? session.user.id,
+      adminId: adminActorId(session),
       action: "REMOTE_SESSION_START",
       details: `Masuk ke dasbor klien ${clientUser.email} (${clientUser.id})`,
     },

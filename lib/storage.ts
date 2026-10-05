@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand, DeleteObjectCommand, PutBucketLifecycleConfigurationCommand } from "@aws-sdk/client-s3";
 import { prisma } from "./prisma";
+import { logger } from "./logger";
 
 // Determine Storage Provider
 export const STORAGE_PROVIDER = process.env.STORAGE_PROVIDER || "local";
@@ -110,7 +111,7 @@ export async function deleteFile(publicUrl: string | null): Promise<boolean> {
       }
     }
   } catch (error) {
-    console.error("[Storage Delete Error]:", error);
+    logger.error("Storage", "Gagal menghapus berkas", error, { publicUrl });
   }
   
   return false;
@@ -220,7 +221,7 @@ export async function syncDraftToR2(invitationId: string): Promise<void> {
     // Sinkronisasi ganda non-blocking ke NAS Cold Storage selagi berkas fisik masih ada di disk lokal VPS
     import("./nasArchive").then(({ syncInvitationToNasArchive }) => {
       syncInvitationToNasArchive(invitationId).catch((err) => {
-        console.warn("[syncDraftToR2] NAS archive sync failed:", err);
+        logger.warn("SyncDraftToR2", "Sinkronisasi arsip NAS gagal", { invitationId, error: err instanceof Error ? err.message : String(err) });
       });
     }).catch(() => {});
 
@@ -259,7 +260,7 @@ export async function syncDraftToR2(invitationId: string): Promise<void> {
         
         return `${customDomain}/${relativePath}`;
       } catch (err) {
-        console.error(`Failed to sync ${url} to R2:`, err);
+        logger.error("SyncDraftToR2", "Gagal mengunggah berkas ke R2; URL lokal dipertahankan", err, { url });
         return url;
       }
     };
@@ -296,11 +297,11 @@ export async function syncDraftToR2(invitationId: string): Promise<void> {
       const { buildAndSavePublishedHtml } = await import("./staticPublisher");
       await buildAndSavePublishedHtml(invitationId);
     } catch (publishErr) {
-      console.error("[syncDraftToR2] Failed to rebuild static HTML:", publishErr);
+      logger.error("SyncDraftToR2", "Gagal membangun ulang HTML statis setelah sinkronisasi R2", publishErr, { invitationId });
     }
 
   } catch (err) {
-    console.error("[syncDraftToR2 Error]", err);
+    logger.error("SyncDraftToR2", "Sinkronisasi draf ke R2 gagal", err, { invitationId });
   }
 }
 
@@ -332,10 +333,10 @@ export async function syncR2LifecycleRule(days: number): Promise<boolean> {
     });
 
     await s3Client.send(command);
-    console.log(`[R2 Sync] Lifecycle rule updated: Auto-delete after ${days} days.`);
+    logger.info("R2Lifecycle", "Aturan lifecycle R2 diperbarui", { days });
     return true;
   } catch (err) {
-    console.error("[R2 Sync Error] Failed to update lifecycle:", err);
+    logger.error("R2Lifecycle", "Gagal memperbarui aturan lifecycle R2", err, { days });
     return false;
   }
 }
@@ -419,7 +420,7 @@ export async function deletePortfolio(slug: string): Promise<void> {
         Bucket: bucketName,
         Key: `portfolio/${slug}.html`,
       }));
-    } catch (e) { console.error(e); }
+    } catch (e) { logger.error("DeletePortfolio", "Gagal menghapus HTML portofolio di R2", e, { slug }); }
 
     // Delete Assets
     try {
@@ -433,14 +434,14 @@ export async function deletePortfolio(slug: string): Promise<void> {
           }
         }
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { logger.error("DeletePortfolio", "Gagal menghapus aset portofolio di R2", e, { slug }); }
   } else {
     const htmlPath = path.join(process.cwd(), "public", "portfolio", `${slug}.html`);
     const assetDir = path.join(process.cwd(), "public", "portfolio", "assets", slug);
     try {
       if (fs.existsSync(htmlPath)) await fs.promises.unlink(htmlPath);
       if (fs.existsSync(assetDir)) await fs.promises.rm(assetDir, { recursive: true, force: true });
-    } catch (e) { console.error(e); }
+    } catch (e) { logger.error("DeletePortfolio", "Gagal menghapus portofolio lokal", e, { slug }); }
   }
 }
 

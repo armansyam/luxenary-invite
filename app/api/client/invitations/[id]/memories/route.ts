@@ -132,8 +132,9 @@ export async function GET(
         hasAccess: planQuota.hasAccess,
       },
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err?.message || "Internal Server Error" }, { status: 500 });
+  } catch (err) {
+    logger.error("ClientMemories", "Gagal memuat kenangan tamu", err);
+    return NextResponse.json({ error: "Gagal memuat kenangan tamu." }, { status: 500 });
   }
 }
 
@@ -195,8 +196,9 @@ export async function DELETE(
       success: true,
       message: "Foto/video kenangan berhasil dihapus.",
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err?.message || "Gagal menghapus memori." }, { status: 500 });
+  } catch (err) {
+    logger.error("ClientMemories", "Gagal menghapus kenangan tamu", err);
+    return NextResponse.json({ error: "Gagal menghapus memori." }, { status: 500 });
   }
 }
 
@@ -318,7 +320,8 @@ export async function PATCH(
       filterId: updatedFs.memoriesFilter,
       message: "Pengaturan kamera kenangan tamu berhasil diperbarui.",
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err?.message || "Gagal memperbarui pengaturan kenangan tamu." }, { status: 500 });
+  } catch (err) {
+    logger.error("ClientMemories", "Gagal memperbarui pengaturan kenangan tamu", err);
+    return NextResponse.json({ error: "Gagal memperbarui pengaturan kenangan tamu." }, { status: 500 });
   }
 }

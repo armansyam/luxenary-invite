@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     const session = await auth();
     const { hasAdminPermission } = await import("@/lib/adminPermissions");
 
-    if (!session?.user || !hasAdminPermission(session.user as any, "orders")) {
+    if (!session?.user || !hasAdminPermission(session.user, "orders")) {
       return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
     }
 
@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
           try {
             const bItems = JSON.parse(ord.itemsJson);
             if (Array.isArray(bItems) && bItems.length > 0) {
-              itemLabel = bItems.map((b: any) => b.label).join(" + ");
+              itemLabel = bItems.map((b: { label?: string }) => b.label).join(" + ");
             }
           } catch (err) {
             // itemsJson dijaga CHECK JSON di database, jadi ini seharusnya tidak terjadi; baris ekspor memakai nama paket.

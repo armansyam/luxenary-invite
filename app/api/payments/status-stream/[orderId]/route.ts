@@ -34,9 +34,9 @@ export async function GET(
 
   // Saat Admin sedang dalam sesi remote (isRemote=true), identitasnya sudah di-override ke CLIENT
   // sehingga hanya sesi admin asli yang dianggap admin di sini.
-  const isRealAdmin = hasAdminPermission(session.user, "orders") && !(session.user as any)?.isRemote;
+  const isRealAdmin = hasAdminPermission(session.user, "orders") && !session.user.isRemote;
   const isOwner =
-    order.userId === (session.user as any)?.id ||
+    order.userId === session.user.id ||
     (!!session?.user?.email && !!order.user?.email && order.user.email.toLowerCase() === session.user.email.toLowerCase());
 
   if (!isRealAdmin && !isOwner) {
@@ -46,8 +46,8 @@ export async function GET(
   // Jika sudah PAID/EXPIRED/FAILED (REJECTED) sebelum SSE terbuka, kirim langsung dan tutup koneksi
   if (order.status === "PAID" || order.status === "EXPIRED" || order.status === "FAILED") {
     const payload: Record<string, any> = { status: order.status, planType: order.planType };
-    if (order.status === "FAILED" && (order as any).rejectReason) {
-      payload.rejectReason = (order as any).rejectReason;
+    if (order.status === "FAILED" && order.rejectReason) {
+      payload.rejectReason = order.rejectReason;
       payload.status = "REJECTED"; // Normalisasi nama status ke REJECTED agar klien konsisten
     }
     const body = `retry: 0\ndata: ${JSON.stringify(payload)}\n\n`;

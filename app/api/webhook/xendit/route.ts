@@ -102,9 +102,9 @@ export async function POST(req: NextRequest) {
     try {
       const orderCheck = await prisma.order.findUnique({
         where: { id: orderId },
-        select: { gatewayId: true } as any,
+        select: { gatewayId: true },
       });
-      const gwId = (orderCheck as any)?.gatewayId as string | null;
+      const gwId = orderCheck?.gatewayId;
       if (gwId && gwId !== "xendit") {
         console.warn(`[Xendit Webhook] Order ${orderId} gatewayId=${gwId}, bukan xendit — diabaikan.`);
         return NextResponse.json({ status: "ignored", reason: "gateway_mismatch" }, { status: 200 });

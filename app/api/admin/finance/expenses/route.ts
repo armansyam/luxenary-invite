@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { Prisma } from "@prisma/client";
+import { adminActorId } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,7 @@ export async function GET(req: NextRequest) {
     const session = await auth();
     const { hasAdminPermission } = await import("@/lib/adminPermissions");
 
-    if (!session?.user || !hasAdminPermission(session.user as any, "finance")) {
+    if (!session?.user || !hasAdminPermission(session.user, "finance")) {
       return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
     }
 
@@ -116,7 +117,7 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     const { hasAdminPermission } = await import("@/lib/adminPermissions");
 
-    if (!session?.user || !hasAdminPermission(session.user as any, "finance")) {
+    if (!session?.user || !hasAdminPermission(session.user, "finance")) {
       return NextResponse.json({ error: "Unauthorized. Khusus Administrator Finance." }, { status: 401 });
     }
 
@@ -149,7 +150,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Pengeluaran dan catatan auditnya satu transaksi: tidak ada pengeluaran tanpa jejak, dan sebaliknya.
-    const actorId = session.user.originalAdminId ?? session.user.id;
+    const actorId = adminActorId(session);
     const [newExpense] = await prisma.$transaction([
       prisma.expense.create({
         data: {

@@ -4,6 +4,17 @@ import { sendInvoiceEmail } from "@/lib/mailer";
 import { hasPlanCapability } from "./settings";
 import { extendGalleryExpiry } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
+import type { PlanType } from "@prisma/client";
+import { logger } from "@/lib/logger";
+
+/** Bentuk butir `orders.itemsJson` yang ditulis checkout-bundle. */
+type BundleItem = {
+  type: string;
+  targetPlan?: PlanType;
+  photos?: number;
+  days?: number;
+  months?: number;
+};
 
 /**
  * applyBundleFulfillment
@@ -29,7 +40,7 @@ export async function applyBundleFulfillment(paidOrderId: string): Promise<boole
 
   if (!order || !order.itemsJson) return false;
 
-  let items: any[] = [];
+  let items: BundleItem[] = [];
   try {
     items = JSON.parse(order.itemsJson);
     if (!Array.isArray(items) || items.length === 0) return false;
@@ -94,7 +105,7 @@ export async function applyBundleFulfillment(paidOrderId: string): Promise<boole
         }
         curFs.memoriesNotified80 = newUsagePercent >= 80;
       } catch (rearmErr) {
-        console.warn("[applyBundleFulfillment] Gagal re-arm milestone notifikasi:", rearmErr);
+        logger.warn("BundleFulfillment", "Gagal mengatur ulang milestone notifikasi kuota", { invitationId: invitation.id, error: rearmErr instanceof Error ? rearmErr.message : String(rearmErr) });
       }
     }
 

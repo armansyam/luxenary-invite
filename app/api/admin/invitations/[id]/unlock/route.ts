@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { adminActorId } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,7 @@ export async function POST(
   try {
     const session = await auth();
     const { hasAdminPermission } = await import("@/lib/adminPermissions");
-    if (!session?.user || !hasAdminPermission(session.user as any, "invitations")) {
+    if (!session?.user || !hasAdminPermission(session.user, "invitations")) {
       return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
     }
 
@@ -30,8 +31,7 @@ export async function POST(
       return NextResponse.json({ error: "Undangan tidak ditemukan" }, { status: 404 });
     }
 
-    // Selama sesi remote, session.user.id adalah ID klien; pelaku sebenarnya ada di originalAdminId.
-    const actorId = session.user.originalAdminId ?? session.user.id;
+    const actorId = adminActorId(session);
 
     let updatedInvitation;
     if (lockImmediately) {

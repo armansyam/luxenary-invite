@@ -4,6 +4,8 @@ import { auth } from "@/auth";
 import { paymentEmitter } from "@/lib/paymentEvents";
 import { applyUpgradePlan } from "@/lib/upgradeHelper";
 import { settleOrderAsPaid } from "@/lib/paymentSettlement";
+import { adminActorId } from "@/lib/adminAuth";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +20,7 @@ export async function POST(
   try {
     const session = await auth();
     const { hasAdminPermission } = await import("@/lib/adminPermissions");
-    if (!session?.user || !hasAdminPermission(session.user as any, "orders")) {
+    if (!session?.user || !hasAdminPermission(session.user, "orders")) {
       return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
     }
 
@@ -54,37 +56,36 @@ export async function POST(
       }, { status: 409 });
     }
 
-    // Log audit internal staf & webhook
+    // Order sudah lunas dan tidak dapat dibatalkan; catatan audit dan webhook ditulis atomik, dan kegagalannya
+    // dicatat sebagai galat (pelunasan manual tanpa jejak harus terlihat), tetapi tidak membatalkan pelunasan.
+    const actorId = adminActorId(session);
     try {
-      const adminRecord = await prisma.admin.findFirst({
-        where: { email: (session.user as any).email },
-      });
-      if (adminRecord) {
-        await prisma.adminAuditLog.create({
+      await prisma.$transaction([
+        prisma.adminAuditLog.create({
           data: {
-            adminId: adminRecord.id,
+            adminId: actorId,
             action: "APPROVE_MANUAL_ORDER",
             details: `Menyetujui transaksi manual order ${order.invoiceNumber || orderId} sebesar Rp ${Number(order.amount).toLocaleString("id-ID")}`,
-            ipAddress: req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "localhost",
+            ipAddress: req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || null,
           },
-        });
-      }
-      await prisma.webhookLog.create({
-        data: {
-          source: "admin",
-          event: "MANUAL_ORDER_APPROVE",
-          payload: {
-            orderId,
-            approvedBy: (session.user as any).email,
-            approvedAt: new Date().toISOString(),
-            paymentMethod: order.paymentMethod,
+        }),
+        prisma.webhookLog.create({
+          data: {
+            source: "admin",
+            event: "MANUAL_ORDER_APPROVE",
+            payload: {
+              orderId,
+              approvedBy: actorId,
+              approvedAt: new Date().toISOString(),
+              paymentMethod: order.paymentMethod,
+            },
+            status: "processed",
+            processedAt: new Date(),
           },
-          status: "processed",
-          processedAt: new Date(),
-        },
-      });
+        }),
+      ]);
     } catch (logErr) {
-      console.warn("[Admin Approve Order Audit Log Error]", logErr);
+      logger.error("AdminApproveOrder", "Order dilunasi tetapi catatan audit gagal ditulis", logErr, { orderId, actorId });
     }
 
     // If this is an UPGRADE order, update planType on the linked original order
@@ -94,12 +95,12 @@ export async function POST(
     try {
       paymentEmitter.emit(orderId, { status: "PAID", planType: order.planType });
     } catch (emitErr) {
-      console.warn("[Admin Approve Order SSE Emit Error]", emitErr);
+      logger.warn("AdminApproveOrder", "Notifikasi SSE pelunasan gagal dikirim; klien akan melihatnya saat memuat ulang", { orderId, error: emitErr instanceof Error ? emitErr.message : String(emitErr) });
     }
 
     return NextResponse.json({ success: true, message: "Order berhasil dikonfirmasi lunas" });
   } catch (error: any) {
-    console.error("[Admin Approve Order Error]", error);
+    logger.error("AdminApproveOrder", "Konfirmasi order gagal", error);
     return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message }, { status: 500 });
   }
 }

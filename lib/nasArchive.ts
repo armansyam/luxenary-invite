@@ -180,7 +180,7 @@ export async function syncInvitationToNasArchive(invitationId: string): Promise<
     const targetHtmlPath = path.join(clientArchiveDir, "index.html");
     await fs.promises.writeFile(targetHtmlPath, standaloneHtml, "utf-8");
 
-    console.log(`[NAS Archive] Undangan [${slug}] berhasil diarsipkan di: ${clientArchiveDir}`);
+    logger.info("NasArchive", "Undangan diarsipkan", { slug, dir: clientArchiveDir });
     return { success: true, slug };
   } catch (err: any) {
     console.error("[NAS Archive Sync Error]", err);

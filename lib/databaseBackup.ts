@@ -255,7 +255,7 @@ export async function createDatabaseSnapshot(customLabel?: string): Promise<{ fi
         })
       );
       offsiteSynced = true;
-      console.log(`[Backup Engine] Off-site snapshot berhasil diunggah ke R2: backups/database/${filename}`);
+      logger.info("BackupEngine", "Snapshot off-site terunggah ke R2", { key: `backups/database/${filename}` });
     } catch (r2Err: any) {
       logger.error("BackupEngine", `Unggah off-site ke R2 gagal; ${filename} hanya tersimpan di disk lokal`, r2Err);
     }

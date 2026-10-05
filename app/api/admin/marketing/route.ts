@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { CommissionType, DiscountType } from "@prisma/client";
+import { adminActorId } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +44,7 @@ function partnerCommissionError(commissionType: unknown, commissionValue: unknow
 async function checkAdminAuth() {
   const session = await auth();
   const { hasAdminPermission } = await import("@/lib/adminPermissions");
-  if (!session?.user || !hasAdminPermission(session.user as any, "marketing")) {
+  if (!session?.user || !hasAdminPermission(session.user, "marketing")) {
     return null;
   }
   return session;
@@ -404,7 +405,7 @@ export async function POST(req: NextRequest) {
             paymentSource: paymentSource || "TRANSFER_BANK",
             referenceNumber: referenceNumber || null,
             notes: notes || `Transfer pencairan komisi mitra ke ${partner.bankName || "Bank"} ${partner.accountNumber || ""} a.n. ${partner.accountName || partner.name}`,
-            createdById: (session.user as any)?.id || null,
+            createdById: adminActorId(session),
           },
         });
 

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { computeGatewayCharge } from "@/lib/paymentFees";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized. Silakan login terlebih dahulu." }, { status: 401 });
     }
 
-    const sessionUserId = (session.user as any).id;
+    const sessionUserId = session.user.id;
     const sessionEmail = session.user.email;
     const isAdmin = hasAdminPermission(session.user, "orders");
 
@@ -133,8 +134,9 @@ export async function POST(req: NextRequest) {
       gateway: activeGatewayId,
       serverTime: serverNow,
     });
-  } catch (error: any) {
-    console.error("[QRIS Regenerate Error]", error);
-    return NextResponse.json({ error: error.message || "Gagal memperbarui sesi QRIS" }, { status: 500 });
+  } catch (error) {
+    logger.error("QrisRegenerate", "Gagal memperbarui sesi QRIS", error);
+    const detail = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal memperbarui sesi QRIS" : detail }, { status: 500 });
   }
 }

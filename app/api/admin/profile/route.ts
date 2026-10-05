@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAnyAdmin } from "@/lib/adminAuth";
+import { adminActorId, requireAnyAdmin } from "@/lib/adminAuth";
 import bcrypt from "bcryptjs";
 
 export async function PUT(req: Request) {
@@ -9,7 +9,7 @@ export async function PUT(req: Request) {
     const guard = await requireAnyAdmin();
     if (!guard.ok) return guard.response;
 
-    const adminId = guard.session.user.id;
+    const adminId = adminActorId(guard.session);
     const { name, email, username, currentPassword, newPassword } = await req.json();
 
     const admin = await prisma.admin.findUnique({ where: { id: adminId } });

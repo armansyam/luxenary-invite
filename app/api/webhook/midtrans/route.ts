@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
 
     // Validasi Gateway Ownership — tolak jika order sudah dipindah ke gateway lain
     // Contoh: admin switch dari Midtrans ke Xendit, lalu Midtrans kirim webhook telat
-    const orderGatewayId = (order as any).gatewayId as string | null;
+    const orderGatewayId = order.gatewayId;
     if (orderGatewayId && orderGatewayId !== "midtrans") {
       console.warn(`[Midtrans Webhook] Order ${orderId} gatewayId=${orderGatewayId}, bukan midtrans — diabaikan.`);
       return NextResponse.json({ status: "ignored", reason: "gateway_mismatch" }, { status: 200 });

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   _req: Request,
@@ -96,8 +97,9 @@ export async function PUT(
     });
 
     return NextResponse.json(guest);
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    logger.error("ClientGuest", "Gagal memperbarui tamu", err);
+    return NextResponse.json({ error: "Gagal memperbarui data tamu." }, { status: 500 });
   }
 }
 
@@ -133,7 +135,8 @@ export async function DELETE(
     await prisma.guest.delete({ where: { id } });
 
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    logger.error("ClientGuest", "Gagal menghapus tamu", err);
+    return NextResponse.json({ error: "Gagal menghapus tamu." }, { status: 500 });
   }
 }

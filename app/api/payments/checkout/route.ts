@@ -24,7 +24,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized. Silakan login terlebih dahulu." }, { status: 401 });
     }
 
-    const sessionUserId = (session.user as any).id;
+    const sessionUserId = session.user.id;
     const sessionEmail = session.user.email;
     const isAdmin = hasAdminPermission(session.user, "orders");
 
@@ -136,8 +136,8 @@ export async function POST(req: Request) {
     // Kenapa: Midtrans dan Xendit memerlukan pembatalan resmi via API agar status
     //         di jaringan perbankan (ASPI / BI) langsung hangus dan tidak terjadi pembayaran ganda.
     // ──────────────────────────────────────────────────────────────────────
-    const prevGatewayTxId = (order as any).gatewayTxId as string | null;
-    const prevGatewayId = (order as any).gatewayId as string | null;
+    const prevGatewayTxId = order.gatewayTxId;
+    const prevGatewayId = order.gatewayId;
 
     if (prevGatewayTxId && order.status === "PENDING") {
       // Ambil gateway yang sebelumnya menangani order ini
@@ -203,7 +203,7 @@ export async function POST(req: Request) {
           amount: Number(order.amount),
           paymentMethod: "QRIS / Payment Gateway",
           recipientEmail: order.user.email,
-          recipientName: (order.user as any)?.name || undefined,
+          recipientName: order.user.name || undefined,
           type: "UNPAID",
           appUrl,
         });

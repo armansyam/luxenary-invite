@@ -7,12 +7,12 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const session = await auth();
-    if (!session?.user || !(session.user as any).id) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const userEmail = session.user.email?.toLowerCase().trim();
-    const currentUserId = (session.user as any).id;
+    const currentUserId = session.user.id;
 
     // Resolve user dari database berdasarkan ID atau Email Google
     const dbUser = await prisma.user.findFirst({

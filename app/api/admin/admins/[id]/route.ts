@@ -2,15 +2,17 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import bcrypt from "bcryptjs";
+import { adminActorId } from "@/lib/adminAuth";
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> | { id: string } }) {
   try {
     const session = await auth();
     const { hasAdminPermission } = await import("@/lib/adminPermissions");
     
-    if (!session?.user || !hasAdminPermission(session.user as any, "team")) {
+    if (!session?.user || !hasAdminPermission(session.user, "team")) {
       return NextResponse.json({ error: "Forbidden." }, { status: 403 });
     }
+    const actorId = adminActorId(session);
 
     const resolvedParams = await Promise.resolve(params);
     const id = resolvedParams?.id;
@@ -24,7 +26,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
 
     // Cegah Super Admin men-downgrade akunnya sendiri agar tidak terkunci
-    if (existing.role === "SUPER_ADMIN" && newRole && newRole !== "SUPER_ADMIN" && existing.id === (session.user as any).id) {
+    if (existing.role === "SUPER_ADMIN" && newRole && newRole !== "SUPER_ADMIN" && existing.id === actorId) {
       return NextResponse.json({ error: "Anda tidak dapat menurunkan hak akses Super Admin pada akun Anda sendiri." }, { status: 400 });
     }
 
@@ -47,26 +49,27 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       updateData.passwordHash = await bcrypt.hash(password, 10);
     }
 
-    const updated = await prisma.admin.update({
-      where: { id },
-      data: updateData,
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        name: true,
-        role: true,
-        permissions: true,
-      }
-    });
-
-    await prisma.adminAuditLog.create({
-      data: {
-        adminId: (session.user as any).id as string,
-        action: "UPDATE_ADMIN",
-        details: `Updated admin ${updated.username}${password ? ' (with password reset)' : ''}`,
-      }
-    });
+    const [updated] = await prisma.$transaction([
+      prisma.admin.update({
+        where: { id },
+        data: updateData,
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          name: true,
+          role: true,
+          permissions: true,
+        }
+      }),
+      prisma.adminAuditLog.create({
+        data: {
+          adminId: actorId,
+          action: "UPDATE_ADMIN",
+          details: `Updated admin ${username || existing.username}${password ? ' (with password reset)' : ''}`,
+        }
+      }),
+    ]);
 
     return NextResponse.json({ success: true, admin: updated });
   } catch (error: any) {
@@ -80,16 +83,17 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     const session = await auth();
     const { hasAdminPermission } = await import("@/lib/adminPermissions");
     
-    if (!session?.user || !hasAdminPermission(session.user as any, "team")) {
+    if (!session?.user || !hasAdminPermission(session.user, "team")) {
       return NextResponse.json({ error: "Forbidden." }, { status: 403 });
     }
+    // Saat sesi remote `session.user.id` adalah ID klien, jadi perbandingan diri sendiri memakai pelaku asli.
+    const actorId = adminActorId(session);
 
     const resolvedParams = await Promise.resolve(params);
     const id = resolvedParams?.id;
     if (!id) return NextResponse.json({ error: "ID wajib disertakan." }, { status: 400 });
 
-    // Prevent deleting yourself
-    if (id === (session.user as any).id) {
+    if (id === actorId) {
       return NextResponse.json({ error: "Anda tidak dapat menghapus akun Anda sendiri." }, { status: 400 });
     }
 
@@ -98,15 +102,16 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
       return NextResponse.json({ error: "Admin tidak ditemukan." }, { status: 404 });
     }
 
-    await prisma.admin.delete({ where: { id } });
-
-    await prisma.adminAuditLog.create({
-      data: {
-        adminId: (session.user as any).id as string,
-        action: "DELETE_ADMIN",
-        details: `Deleted admin ${admin.username}`,
-      }
-    });
+    await prisma.$transaction([
+      prisma.admin.delete({ where: { id } }),
+      prisma.adminAuditLog.create({
+        data: {
+          adminId: actorId,
+          action: "DELETE_ADMIN",
+          details: `Deleted admin ${admin.username}`,
+        }
+      }),
+    ]);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

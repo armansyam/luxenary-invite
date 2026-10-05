@@ -19,7 +19,7 @@ export async function GET(
     const type = searchParams.get("type") || "wishes"; // "wishes" | "guests"
 
     // Verifikasi kepemilikan undangan
-    const currentUserId = (session.user as any).id;
+    const currentUserId = session.user.id;
     const currentUserEmail = session.user.email;
 
     const invitation = await prisma.invitation.findFirst({

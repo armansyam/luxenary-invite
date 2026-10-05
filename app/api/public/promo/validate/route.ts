@@ -4,6 +4,7 @@ import { hasAdminPermission } from "@/lib/adminPermissions";
 import { NextRequest, NextResponse } from "next/server";
 import { PlanType } from "@prisma/client";
 import { normalizePlanType } from "@/lib/planUtils";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -309,7 +310,8 @@ export async function DELETE(req: NextRequest) {
     await releaseOrderPromoHold(orderId);
 
     return NextResponse.json({ success: true, message: "Promo hold berhasil dilepaskan" });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Gagal melepaskan promo" }, { status: 500 });
+  } catch (err) {
+    logger.error("PromoRelease", "Gagal melepaskan promo hold", err);
+    return NextResponse.json({ error: "Gagal melepaskan promo" }, { status: 500 });
   }
 }

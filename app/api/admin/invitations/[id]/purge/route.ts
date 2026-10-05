@@ -15,7 +15,7 @@ export async function POST(
     const session = await auth();
     const { hasAdminPermission } = await import("@/lib/adminPermissions");
 
-    if (!session || !hasAdminPermission(session.user as any, "invitations")) {
+    if (!session || !hasAdminPermission(session.user, "invitations")) {
       return NextResponse.json({ error: "Unauthorized: Akses dibatasi hanya untuk Administrator." }, { status: 401 });
     }
 

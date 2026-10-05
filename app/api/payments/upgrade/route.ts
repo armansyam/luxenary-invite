@@ -25,7 +25,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized. Silakan login terlebih dahulu." }, { status: 401 });
     }
 
-    const userId = (session.user as any).id;
+    const userId = session.user.id;
     const { invitationId, targetPlan, requestedDomain } = await req.json();
 
     if (!invitationId || !targetPlan) {
@@ -144,10 +144,10 @@ export async function POST(req: Request) {
       data: {
         userId,
         invoiceNumber,
-        planType: targetPlanUpper as any,  // tier tujuan (untuk referensi)
+        planType: targetPlanUpper,  // tier tujuan (untuk referensi)
         orderType: "UPGRADE",
-        upgradedFromPlan: currentPlan as any,
-        targetPlanType: targetPlanUpper as any,
+        upgradedFromPlan: currentPlan,
+        targetPlanType: targetPlanUpper,
         linkedInvitationId: invitation.id,
         amount: upgradeAmount,
         status: "PENDING",

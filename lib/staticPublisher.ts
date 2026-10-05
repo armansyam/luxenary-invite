@@ -141,7 +141,7 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
   // Sinkronkan ke L1 Memory Cache secara instan
   publishedHtmlCache.set(invitation.id, standaloneHtml);
 
-  console.log(`[Static Publisher] HTML baked (Single Source of Truth): ${masterPath} | size=${(standaloneHtml.length / 1024).toFixed(1)}KB`);
+  logger.info("StaticPublisher", "HTML undangan dibangun", { path: masterPath, sizeKB: Number((standaloneHtml.length / 1024).toFixed(1)) });
 
   // Sinkronisasi non-blocking ke arsip NAS jika fitur diaktifkan
   import("./nasArchive").then(({ syncInvitationToNasArchive }) => {

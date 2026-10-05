@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { VALID_MEDIA_SLOTS } from "@/lib/mediaSlots";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   _req: Request,
@@ -111,7 +112,8 @@ export async function POST(
     }
 
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err) {
+    logger.error("ClientMedia", "Gagal menyimpan media undangan", err);
+    return NextResponse.json({ error: "Gagal menyimpan media." }, { status: 500 });
   }
 }

@@ -20,7 +20,7 @@ async function fileExists(filePath: string): Promise<boolean> {
 export async function GET(req: NextRequest) {
   try {
     const session = await auth();
-    if (!session || !hasAdminPermission(session.user as any, "portfolio")) {
+    if (!session || !hasAdminPermission(session.user, "portfolio")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
-    if (!session || !hasAdminPermission(session.user as any, "portfolio")) {
+    if (!session || !hasAdminPermission(session.user, "portfolio")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -245,7 +245,7 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const session = await auth();
-    if (!session || !hasAdminPermission(session.user as any, "portfolio")) {
+    if (!session || !hasAdminPermission(session.user, "portfolio")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

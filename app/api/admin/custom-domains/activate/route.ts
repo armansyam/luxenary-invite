@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { adminActorId } from "@/lib/adminAuth";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -9,11 +11,9 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     const { hasAdminPermission } = await import("@/lib/adminPermissions");
 
-    if (!session?.user || !hasAdminPermission(session.user as any, "custom_domains")) {
+    if (!session?.user || !hasAdminPermission(session.user, "custom_domains")) {
       return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
     }
-
-    const adminUser = session.user as any;
 
     const body = await req.json().catch(() => ({}));
     const { orderId } = body;
@@ -49,30 +49,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Tidak ditemukan proyek undangan yang terhubung dengan klien ini." }, { status: 404 });
     }
 
-    // Update custom domain pada undangan
-    await prisma.invitation.update({
-      where: { id: targetInvitation.id },
-      data: { customDomain: domain },
-    });
-
-    // Catat log audit staf
-    try {
-      const adminRecord = await prisma.admin.findFirst({
-        where: { email: adminUser.email },
-      });
-      if (adminRecord) {
-        await prisma.adminAuditLog.create({
-          data: {
-            adminId: adminRecord.id,
-            action: "ACTIVATE_CUSTOM_DOMAIN",
-            details: `Aktivasi domain ${domain} untuk undangan ${targetInvitation.invitationSlug || targetInvitation.id} (Order: ${order.invoiceNumber})`,
-            ipAddress: req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "localhost",
-          },
-        });
-      }
-    } catch (e) {
-      console.warn("Gagal menulis audit log activate domain:", e);
-    }
+    // Update custom domain pada undangan, satu transaksi dengan catatan auditnya.
+    await prisma.$transaction([
+      prisma.invitation.update({
+        where: { id: targetInvitation.id },
+        data: { customDomain: domain },
+      }),
+      prisma.adminAuditLog.create({
+        data: {
+          adminId: adminActorId(session),
+          action: "ACTIVATE_CUSTOM_DOMAIN",
+          details: `Aktivasi domain ${domain} untuk undangan ${targetInvitation.invitationSlug || targetInvitation.id} (Order: ${order.invoiceNumber})`,
+          ipAddress: req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || null,
+        },
+      }),
+    ]);
 
     return NextResponse.json({
       success: true,
@@ -80,7 +71,7 @@ export async function POST(req: NextRequest) {
       customDomain: domain,
     });
   } catch (error: any) {
-    console.error("POST /api/admin/custom-domains/activate error:", error);
+    logger.error("ActivateCustomDomain", "Aktivasi custom domain gagal", error);
     return NextResponse.json(
       { error: error.message || "Gagal mengaktifkan custom domain" },
       { status: 500 }

@@ -122,6 +122,7 @@ Memerlukan autentikasi admin (`role: ADMIN` atau `SUPER_ADMIN`):
 |---|:---:|---|---|
 | **Overview** | `GET` | `/api/admin/overview` | Statistik total klien, undangan aktif, GMV omset, dan grafik 30 hari. |
 | **Klien** | `GET` | `/api/admin/users` | Daftar seluruh akun pengguna terdaftar beserta filter status dan role. |
+| **Klien** | `DELETE` | `/api/admin/users?id=` | Hapus permanen klien beserta undangan dan medianya. Wajib modul `users`, ditolak (401) dari sesi remote; tercatat `DELETE_CLIENT` di log audit. |
 | | `POST` | `/api/admin/remote-session` | Membuka sesi kendali jarak jauh (*Remote Session*) ke dashboard klien. |
 | **Admin Team** | `GET` / `POST` | `/api/admin/admins` | Mengambil dan mendaftarkan akun administrator baru. |
 | | `PUT` / `DELETE` | `/api/admin/admins/{id}` | Mengubah hak akses atau menonaktifkan akun admin. |

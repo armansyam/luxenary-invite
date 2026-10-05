@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     const { hasAdminPermission } = await import("@/lib/adminPermissions");
 
-    if (!session?.user || !hasAdminPermission(session.user as any, "custom_domains")) {
+    if (!session?.user || !hasAdminPermission(session.user, "custom_domains")) {
       return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
     }
 

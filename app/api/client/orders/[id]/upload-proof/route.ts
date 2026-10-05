@@ -21,7 +21,7 @@ export async function POST(
     }
 
     const { id } = await params;
-    const sessionUserId = (session.user as any).id;
+    const sessionUserId = session.user.id;
     const sessionEmail = session.user.email || "";
 
     const isAdmin = hasAdminPermission(session.user, "orders");

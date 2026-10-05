@@ -3,16 +3,16 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { Prisma } from "@prisma/client";
 import { removeIfExists } from "@/lib/fsSafe";
+import { adminActorId } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
     const session = await auth();
-    const isRemote = (session?.user as any)?.isRemote === true;
     const { hasAdminPermission } = await import("@/lib/adminPermissions");
 
-    if (!session?.user || isRemote || !hasAdminPermission(session.user as any, "users")) {
+    if (!session?.user || session.user.isRemote === true || !hasAdminPermission(session.user, "users")) {
       return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
     }
 
@@ -149,12 +149,12 @@ export async function GET(req: NextRequest) {
 
 export async function DELETE(req: Request) {
   try {
+    // Penghapusan permanen: wajib izin modul "users" dan bukan dari sesi remote, sama dengan GET.
+    // `isAdmin` saja meloloskan staf SUPPORT/FINANCE yang tidak memegang modul klien.
     const session = await auth();
-    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const isAdmin = (session.user as any).isAdmin === true || (session.user as any).role === "SUPER_ADMIN" || (session.user as any).role === "ADMIN";
-    if (!isAdmin) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const { hasAdminPermission } = await import("@/lib/adminPermissions");
+    if (!session?.user || session.user.isRemote === true || !hasAdminPermission(session.user, "users")) {
+      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);
@@ -184,8 +184,21 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Tidak dapat menghapus akun Admin melalui endpoint klien." }, { status: 403 });
     }
 
+    // Baris DB dan catatan audit dihapus/ditulis lebih dulu dalam satu transaksi; berkas fisik baru dibersihkan
+    // setelahnya. Urutan sebaliknya bisa meninggalkan klien yang masih ada tanpa media bila penghapusan DB gagal.
+    await prisma.$transaction([
+      prisma.user.delete({ where: { id: userId } }),
+      prisma.adminAuditLog.create({
+        data: {
+          adminId: adminActorId(session),
+          action: "DELETE_CLIENT",
+          details: `Menghapus permanen klien ${targetUser.email || targetUser.id} beserta ${targetUser.invitations.length} undangan`,
+          ipAddress: req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || null,
+        },
+      }),
+    ]);
+
     if (targetUser.invitations && targetUser.invitations.length > 0) {
-      const fs = await import("fs");
       const path = await import("path");
       const { deletePublishedHtml } = await import("@/lib/staticPublisher");
       const { deleteFile } = await import("@/lib/storage");
@@ -216,8 +229,6 @@ export async function DELETE(req: Request) {
         await removeIfExists(guestMemoriesDir, { recursive: true });
       }
     }
-
-    await prisma.user.delete({ where: { id: userId } });
 
     return NextResponse.json({
       success: true,

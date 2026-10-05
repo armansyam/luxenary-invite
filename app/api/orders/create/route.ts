@@ -21,8 +21,8 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Proteksi Isolasi Admin — Akun Admin dilarang membuat pesanan klien
-    const userRole = (session.user as any)?.role;
-    const isAdmin = (session.user as any)?.isAdmin === true || userRole === "ADMIN" || userRole === "SUPER_ADMIN";
+    const userRole = session.user.role;
+    const isAdmin = session.user.isAdmin === true || userRole === "ADMIN" || userRole === "SUPER_ADMIN";
     if (isAdmin) {
       return NextResponse.json(
         { error: "Akun Administrator tidak dapat membuat pesanan paket klien." },
