@@ -5,6 +5,7 @@
 # Batas satu restart per 15 menit agar tidak berputar.
 
 cd "$(dirname "$0")/.." || exit 1
+. scripts/lib-heartbeat.sh
 URL="${HEALTH_URL:-http://localhost:3001/api/health}"
 FAILS_FILE="data/.health-watch-fails"
 RESTART_MARK="data/.health-watch-restart"
@@ -18,12 +19,14 @@ if [ "$code" = "200" ]; then
     echo "$(ts) pulih: HTTP 200 setelah $(cat "$FAILS_FILE") kegagalan berturut-turut" >> "$LOG"
   fi
   rm -f "$FAILS_FILE"
+  heartbeat HEALTHCHECK_PING_URL
   exit 0
 fi
 
 fails=$(( $(cat "$FAILS_FILE" 2>/dev/null || echo 0) + 1 ))
 echo "$fails" > "$FAILS_FILE"
 echo "$(ts) health HTTP $code (gagal berturut-turut: $fails)" >> "$LOG"
+heartbeat HEALTHCHECK_PING_URL /fail
 
 if [ "$code" = "000" ] && [ "$fails" -ge 3 ] && [ -z "$(find "$RESTART_MARK" -mmin -15 2>/dev/null)" ]; then
   touch "$RESTART_MARK"

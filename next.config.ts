@@ -6,10 +6,10 @@ import type { NextConfig } from "next";
 const cspReportOnly = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' https://app.midtrans.com https://app.sandbox.midtrans.com",
-  "style-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https:",
   "media-src 'self' blob: https:",
-  "font-src 'self' data:",
+  "font-src 'self' data: https://fonts.gstatic.com",
   "connect-src 'self' https:",
   "frame-src https://app.midtrans.com https://app.sandbox.midtrans.com https://www.youtube.com https://player.vimeo.com https://www.google.com",
   "object-src 'none'",
@@ -20,6 +20,9 @@ const cspReportOnly = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  // deploy.sh membangun ke direktori cadangan (.next-a atau .next-b) selagi aplikasi lama tetap melayani dari direktori
+  // aktifnya, lalu pindah saat restart. Tanpa ini build menimpa .next yang sedang dipakai dan permintaan gagal selama build.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   poweredByHeader: false,
   // Rute membaca data runtime lewat process.cwd() (data/, public/) sehingga file tracing menelusuri ±325 MB per rute
   // dan build melambat seiring bertambahnya draft dan demo. Produksi memakai `next start` dari direktori proyek

@@ -7,6 +7,9 @@
 const fs = require('fs');
 const envPath = `${__dirname}/.env`;
 const nodeBinDir = fs.existsSync(envPath) ? require('dotenv').parse(fs.readFileSync(envPath)).NODE_BIN_DIR : undefined;
+// Direktori build aktif (.next-a atau .next-b) ditulis deploy.sh setelah migrasi berhasil; tanpa berkas ini Next memakai .next.
+const distFile = `${__dirname}/data/.dist-dir`;
+const distDir = fs.existsSync(distFile) ? fs.readFileSync(distFile, 'utf8').trim() : '';
 
 module.exports = {
   apps: [
@@ -23,7 +26,8 @@ module.exports = {
       max_memory_restart: '450M',
       env: {
         NODE_ENV: 'production',
-        PORT: 3001
+        PORT: 3001,
+        ...(['.next-a', '.next-b'].includes(distDir) ? { NEXT_DIST_DIR: distDir } : {})
       },
       log_date_format: "YYYY-MM-DD HH:mm Z",
       error_file: "logs/error.log",

@@ -108,7 +108,15 @@ fi
 
 # 5. Prisma Client & Build — dijalankan SEBELUM database disentuh.
 # Bila build gagal, skema database tetap utuh dan PM2 tetap menjalankan rilis lama.
-echo "🏗️ Membangun (Build) aplikasi Next.js... (Ini mungkin memakan waktu)"
+# Build ke direktori cadangan (.next-a atau .next-b): aplikasi yang sedang berjalan tetap melayani dari direktori
+# aktifnya selama build, jadi tidak ada jendela error. Penanda data/.dist-dir baru ditulis setelah migrasi berhasil.
+mkdir -p data
+ACTIVE_DIST=$(cat data/.dist-dir 2>/dev/null || echo ".next")
+case "$ACTIVE_DIST" in .next|.next-a|.next-b) ;; *) ACTIVE_DIST=".next" ;; esac
+if [ "$ACTIVE_DIST" = ".next-a" ]; then NEW_DIST=".next-b"; else NEW_DIST=".next-a"; fi
+export NEXT_DIST_DIR="$NEW_DIST"
+rm -rf "$NEW_DIST"
+echo "🏗️ Membangun (Build) aplikasi Next.js ke $NEW_DIST... (aplikasi aktif tetap melayani dari $ACTIVE_DIST)"
 if ! npx prisma generate; then
   echo "❌ prisma generate gagal! Deployment dihentikan sebelum menyentuh database."
   exit 1
@@ -155,6 +163,9 @@ echo "🎨 Memastikan cache demo tema statis terkompilasi segar..."
 npx -y tsx -r dotenv/config -e "import('./lib/demoPublisher.ts').then(m => (m.compileAllStaticDemos || m.default.compileAllStaticDemos)()).then(n => console.log('✅ ' + n + ' demo tema berhasil dikompilasi.')).catch(e => console.warn('⚠️ Gagal pra-kompilasi demo (akan dikompilasi on-demand saat diakses):', e.message));" || true
 
 # 8. Restart Server & Persist PM2
+# Migrasi sudah berhasil: dari sini aplikasi dijalankan dari direktori build baru (dibaca ecosystem.config.js, dan
+# diteruskan ke 'pm2 reload --update-env' lewat NEXT_DIST_DIR yang sudah di-export).
+echo "$NEW_DIST" > data/.dist-dir
 echo "🔄 Merestart aplikasi..."
 if command -v pm2 &> /dev/null; then
   # Daemon PM2 dipakai bersama aplikasi lain dan modul pm2-logrotate mewarisi PATH perintah ini; kembalikan ke Node sistem.
@@ -199,11 +210,14 @@ if command -v pm2 &> /dev/null; then
   if [ "$HEALTH_OK" -ne 1 ]; then
     echo "❌ Health check gagal setelah 30 detik. Deployment DITANDAI GAGAL."
     pm2 logs luxenary-invite --lines 40 --nostream || true
+    echo "   Build sebelumnya (cepat, bila skema database masih cocok): echo $ACTIVE_DIST > data/.dist-dir && NEXT_DIST_DIR=$ACTIVE_DIST pm2 reload luxenary-invite --update-env"
     echo "   Kode sebelumnya : git switch --detach $PREVIOUS_COMMIT && npm ci && npm run build && pm2 reload luxenary-invite"
     echo "   Database        : pulihkan dari $PRE_BACKUP bila migrasi rilis ini tidak kompatibel dengan kode lama."
     exit 1
   fi
   echo "✅ Health check berhasil! Aplikasi merespons HTTP 200 di port 3001."
+  # Direktori build lama sebelum skema .next-a/.next-b tidak dipakai lagi; direktori aktif sebelumnya dibiarkan untuk rollback cepat.
+  if [ "$ACTIVE_DIST" = ".next" ]; then rm -rf .next; fi
   # Smoke test tidak membatalkan deploy (aplikasi sudah berjalan); kegagalannya wajib diperiksa pemilik.
   if ! bash scripts/smoke-test.sh http://localhost:3001; then
     echo "⚠️ Smoke test GAGAL: periksa pemeriksaan bertanda GAGAL di atas sebelum menganggap rilis ini sehat."
@@ -218,7 +232,7 @@ if command -v crontab &> /dev/null; then
   ACTUAL_CRON_SECRET=$(grep -E "^CRON_SECRET=" .env | cut -d '=' -f2 | tr -d '"' | tr -d "'")
   if [ -n "$ACTUAL_CRON_SECRET" ] && [ "$ACTUAL_CRON_SECRET" != '""' ]; then
     CURRENT_CRON=$(crontab -l 2>/dev/null || true)
-    FILTERED_CRON=$(echo "$CURRENT_CRON" | grep -v "api/cron/cleanup" | grep -v "api/cron/backup" | grep -v "scripts/health-watch.sh" || true)
+    FILTERED_CRON=$(echo "$CURRENT_CRON" | grep -v "api/cron/cleanup" | grep -v "api/cron/backup" | grep -v "scripts/cron-backup.sh" | grep -v "scripts/health-watch.sh" || true)
     
     # Secret disimpan di berkas ber-izin 600 dan dibaca curl lewat -H @berkas, agar tidak tampil di 'crontab -l' maupun daftar proses.
     CRON_AUTH_FILE="$(pwd)/data/.cron-auth"
@@ -226,7 +240,7 @@ if command -v crontab &> /dev/null; then
     chmod 600 "$CRON_AUTH_FILE"
 
     CLEANUP_LINE="0 2 * * * curl -s -X POST -H @$CRON_AUTH_FILE http://localhost:3001/api/cron/cleanup > /dev/null 2>&1"
-    BACKUP_LINE="0 3 * * * curl -s -X POST -H @$CRON_AUTH_FILE http://localhost:3001/api/cron/backup > /dev/null 2>&1"
+    BACKUP_LINE="0 3 * * * PATH=/usr/local/bin:/usr/bin:/bin bash $(pwd)/scripts/cron-backup.sh > /dev/null 2>&1"
     
     WATCH_LINE="* * * * * PATH=/usr/local/bin:/usr/bin:/bin bash $(pwd)/scripts/health-watch.sh"
 

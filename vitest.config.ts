@@ -5,7 +5,7 @@ export default defineConfig({
   test: {
     // Hanya jalankan file di __tests__/, bukan scripts/ yang dijalankan via npx tsx
     include: ["__tests__/**/*.test.ts"],
-    exclude: ["scripts/**", "node_modules/**", ".next/**"],
+    exclude: ["scripts/**", "node_modules/**", ".next/**", ".next-a/**", ".next-b/**"],
 
     // Node environment (bukan jsdom) — API route testing via direct handler calls
     environment: "node",
