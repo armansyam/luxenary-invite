@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -86,7 +87,10 @@ export async function GET(req: NextRequest) {
             if (Array.isArray(bItems) && bItems.length > 0) {
               itemLabel = bItems.map((b: any) => b.label).join(" + ");
             }
-          } catch {}
+          } catch (err) {
+            // itemsJson dijaga CHECK JSON di database, jadi ini seharusnya tidak terjadi; baris ekspor memakai nama paket.
+            logger.warn("AdminOrdersExport", "itemsJson order tidak terbaca; memakai nama paket", { orderId: ord.id, error: err instanceof Error ? err.message : String(err) });
+          }
         }
 
         const row = [

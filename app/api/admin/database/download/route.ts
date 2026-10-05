@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import fs from "fs";
-import { getBackupDirectory } from "@/lib/databaseBackup";
-import { prisma } from "@/lib/prisma";
+import { getBackupDirectory, readBackupPathSetting } from "@/lib/databaseBackup";
 import { requireAdminModule } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
@@ -21,13 +20,7 @@ export async function GET(req: NextRequest) {
 
     const safeFilename = path.basename(filename);
     
-    let backupPathSetting: string | undefined;
-    try {
-      const s = await prisma.adminSetting.findUnique({ where: { key: "backup_path" } });
-      if (s?.value) backupPathSetting = s.value;
-    } catch {}
-
-    const backupDir = await getBackupDirectory(backupPathSetting);
+    const backupDir = await getBackupDirectory(await readBackupPathSetting());
     const filePath = path.join(backupDir, safeFilename);
 
     // Path Traversal Protection: pastikan filePath berada di dalam backupDir

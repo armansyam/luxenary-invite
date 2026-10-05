@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
+import { logger } from "@/lib/logger";
 import { randomUUID } from "crypto";
 import { computeLifecycleDates } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
@@ -184,7 +185,10 @@ export async function POST(req: NextRequest) {
           curFs = typeof invitation.featureSettings === "object"
             ? (invitation.featureSettings || {})
             : JSON.parse((invitation.featureSettings as string) || "{}");
-        } catch {}
+        } catch (err) {
+          // featureSettings dijaga CHECK JSON di database, jadi ini seharusnya tidak terjadi; dihitung seolah belum ada perpanjangan.
+          logger.warn("CheckoutBundle", "featureSettings tidak terbaca saat memeriksa batas perpanjangan", { invitationId: invitation.id, error: err instanceof Error ? err.message : String(err) });
+        }
 
         const extraGalleryDays = Number(curFs.extraGalleryDays) || 0;
         if (extraGalleryDays >= 30) {

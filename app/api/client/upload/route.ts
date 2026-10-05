@@ -6,6 +6,8 @@ import { uploadFile } from "@/lib/storage";
 import { optimizeWebVideo, optimizeWebAudio } from "@/lib/videoOptimizer";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
+import { logger } from "@/lib/logger";
+import { removeIfExists } from "@/lib/fsSafe";
 import { prisma } from "@/lib/prisma";
 import { getClientIp, rateLimitDb } from "@/lib/rateLimit";
 import { MEDIA_SLOT_FILE_NAMES } from "@/lib/mediaSlots";
@@ -113,7 +115,9 @@ export async function POST(req: NextRequest) {
       else if (settingMap["max_upload_mb"]) maxImageMb = Math.min(Number(settingMap["max_upload_mb"]) || 15, 50);
 
       if (settingMap["max_video_upload_mb"]) maxVideoMb = Math.min(Number(settingMap["max_video_upload_mb"]) || 50, 100);
-    } catch {}
+    } catch (err) {
+      logger.warn("ClientUpload", "Gagal membaca batas ukuran unggah; memakai batas bawaan", { error: err instanceof Error ? err.message : String(err) });
+    }
 
     if (isVideo && file.size > maxVideoMb * 1024 * 1024) {
       return NextResponse.json(
@@ -201,17 +205,18 @@ export async function POST(req: NextRequest) {
       const uploadsDir = path.join(process.cwd(), "public", "uploads", "invitations", safeInvitationId);
       try {
         const fs = await import("fs");
-        const existingFiles = await fs.promises.readdir(uploadsDir);
+        const existingFiles = await fs.promises.readdir(uploadsDir).catch((err: NodeJS.ErrnoException) => {
+          if (err.code === "ENOENT") return [] as string[]; // folder belum ada pada unggahan pertama
+          throw err;
+        });
         for (const f of existingFiles) {
           const fileBase = path.parse(f).name;
           const isMatchingSlot = fileBase === baseSlug || (baseSlug === "wedding-song" && f.startsWith("wedding-song"));
-          if (isMatchingSlot && f !== finalFileName) {
-            try {
-              await fs.promises.unlink(path.join(uploadsDir, f));
-            } catch {}
-          }
+          if (isMatchingSlot && f !== finalFileName) await removeIfExists(path.join(uploadsDir, f));
         }
-      } catch {}
+      } catch (err) {
+        logger.warn("ClientUpload", "Pembersihan file lama untuk slot ini gagal", { uploadsDir, error: err instanceof Error ? err.message : String(err) });
+      }
     }
 
     const uploadedUrl = await uploadFile(finalBuffer, relativePath, contentType, forceLocal);

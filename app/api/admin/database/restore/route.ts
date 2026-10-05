@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import fs from "fs";
-import { getBackupDirectory, restoreDatabaseSnapshot, isSnapshotFile } from "@/lib/databaseBackup";
+import { getBackupDirectory, readBackupPathSetting, restoreDatabaseSnapshot, isSnapshotFile } from "@/lib/databaseBackup";
 
-import { prisma } from "@/lib/prisma";
 import { requireAdminModule } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
@@ -33,13 +32,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Format file harus .dump, .sql, atau .backup" }, { status: 400 });
       }
 
-      let backupPathSetting: string | undefined;
-      try {
-        const s = await prisma.adminSetting.findUnique({ where: { key: "backup_path" } });
-        if (s?.value) backupPathSetting = s.value;
-      } catch {}
-
-      const backupDir = await getBackupDirectory(backupPathSetting);
+      const backupDir = await getBackupDirectory(await readBackupPathSetting());
       const uploadedFilename = `uploaded_${Date.now()}_${path.basename(file.name)}`;
       const uploadedPath = path.join(backupDir, uploadedFilename);
 

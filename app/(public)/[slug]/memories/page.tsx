@@ -80,7 +80,9 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
         const parsed = new Date(`${receptionDate}T${receptionEndTime}:00`);
         if (!isNaN(parsed.getTime())) eventEndTime = parsed;
       }
-    } catch {}
+    } catch {
+      // eventData yang tidak terbaca berarti jam berakhir acara tidak diketahui; ruang gelap tidak diaktifkan.
+    }
   }
 
   const now = new Date();

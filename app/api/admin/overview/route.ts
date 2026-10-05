@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +38,9 @@ export async function GET() {
               if (tokenData && tokenData.expiry && now > tokenData.expiry + 120000) {
                 isExpired = true;
               }
-            } catch {}
+            } catch {
+              // snapToken yang diawali "{" tetapi bukan JSON valid tidak membawa waktu kedaluwarsa QR; yang berlaku expiredAt di bawah.
+            }
           }
 
           // 2. Cek expiry database (fallback: manual transfer ditinggalkan > batas waktu)
@@ -82,7 +85,9 @@ export async function GET() {
           data: JSON.parse(s.value),
           updatedAt: s.updatedAt ? new Date(s.updatedAt).getTime() : 1,
         };
-      } catch {}
+      } catch (err) {
+        logger.warn("AdminOverview", "Data demo kustom bukan JSON valid; tema memakai bawaan", { key: s.key, error: err instanceof Error ? err.message : String(err) });
+      }
     }
 
     const themes = dbThemes.map((t) => {

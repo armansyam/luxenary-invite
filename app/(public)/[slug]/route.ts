@@ -21,7 +21,9 @@ async function hasPortfolio(slug: string): Promise<boolean> {
   try {
     await fs.promises.access(localPortfolio);
     return true;
-  } catch {}
+  } catch {
+    // Tidak ada salinan lokal; lanjut memeriksa R2/S3.
+  }
 
   if ((STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3") && s3Client && process.env.S3_BUCKET_NAME) {
     try {
@@ -30,7 +32,9 @@ async function hasPortfolio(slug: string): Promise<boolean> {
         Key: `portfolio/${slug}.html`,
       }));
       return true;
-    } catch {}
+    } catch {
+      // HeadObject melempar bila objek tidak ada; portofolio dianggap tidak tersedia.
+    }
   }
 
   return false;

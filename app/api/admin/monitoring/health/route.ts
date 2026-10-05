@@ -22,7 +22,9 @@ function getDirectorySize(dirPath: string): number {
       } else if (entry.isFile()) {
         try {
           totalSize += fs.statSync(fullPath).size;
-        } catch {}
+        } catch {
+          // Berkas dapat dihapus di antara pembacaan folder dan stat; total ukuran hanya perkiraan untuk dasbor.
+        }
       }
     }
   } catch {

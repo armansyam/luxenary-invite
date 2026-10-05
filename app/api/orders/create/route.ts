@@ -153,7 +153,9 @@ export async function POST(req: NextRequest) {
           if (parsed?.expiry && nowMs > parsed.expiry) {
             isExpired = true;
           }
-        } catch {}
+        } catch {
+          // snapToken berisi URL checkout (bukan JSON sesi QR) pada sesi Snap; tidak ada waktu kedaluwarsa QR untuk diperiksa.
+        }
       }
 
       // FIX: Jangan izinkan ubah paket jika status masih PENDING dan sudah ada bukti transfer (menunggu verifikasi admin)

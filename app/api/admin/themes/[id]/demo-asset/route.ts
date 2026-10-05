@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { requireAdminModule } from "@/lib/adminAuth";
+import { logger } from "@/lib/logger";
+import { removeIfExists } from "@/lib/fsSafe";
 import fs from "fs";
 import path from "path";
 
@@ -50,19 +52,9 @@ export async function POST(
 
     // Clean up conflicting formats for this slot to avoid obsolete files
     if (isVideo) {
-      ["webp", "png", "jpg", "webm"].forEach((ext) => {
-        const conflictPath = path.join(targetDir, `${slot}.${ext}`);
-        if (fs.existsSync(conflictPath)) {
-          try { fs.unlinkSync(conflictPath); } catch {}
-        }
-      });
+      for (const ext of ["webp", "png", "jpg", "webm"]) await removeIfExists(path.join(targetDir, `${slot}.${ext}`));
     } else if (!isAudio) {
-      ["mp4", "webm"].forEach((ext) => {
-        const conflictPath = path.join(targetDir, `${slot}.${ext}`);
-        if (fs.existsSync(conflictPath)) {
-          try { fs.unlinkSync(conflictPath); } catch {}
-        }
-      });
+      for (const ext of ["mp4", "webm"]) await removeIfExists(path.join(targetDir, `${slot}.${ext}`));
     }
 
     let buffer: Buffer = Buffer.from(await file.arrayBuffer());
@@ -154,7 +146,9 @@ export async function POST(
         revalidatePath("/api/public/themes");
         const { purgeCloudflareCache } = await import("@/lib/cloudflare");
         await purgeCloudflareCache({ purgeEverything: true });
-      } catch {}
+      } catch (err) {
+        logger.warn("DemoAsset", "Revalidasi atau purge cache Cloudflare gagal setelah unggah aset", { themeId, error: err instanceof Error ? err.message : String(err) });
+      }
     } catch (publishErr) {
       console.error("[DemoAsset-Publish-Error]:", publishErr);
     }
@@ -200,14 +194,7 @@ export async function DELETE(
 
     // Delete any existing files for this slot regardless of extension
     const extensions = ["webp", "png", "jpg", "jpeg", "mp4", "webm", "mp3", "ogg"];
-    extensions.forEach((ext) => {
-      const targetFile = path.join(targetDir, `${slot}.${ext}`);
-      if (fs.existsSync(targetFile)) {
-        try {
-          fs.unlinkSync(targetFile);
-        } catch {}
-      }
-    });
+    for (const ext of extensions) await removeIfExists(path.join(targetDir, `${slot}.${ext}`));
 
     // Update database adminSetting theme_demo_${themeId}
     try {
@@ -278,7 +265,9 @@ export async function DELETE(
         revalidatePath("/api/public/themes");
         const { purgeCloudflareCache } = await import("@/lib/cloudflare");
         await purgeCloudflareCache({ purgeEverything: true });
-      } catch {}
+      } catch (err) {
+        logger.warn("DemoAsset", "Revalidasi atau purge cache Cloudflare gagal setelah hapus aset", { themeId, error: err instanceof Error ? err.message : String(err) });
+      }
     } catch (publishErr) {
       console.error("[DemoAsset-Delete-Publish-Error]:", publishErr);
     }

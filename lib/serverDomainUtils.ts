@@ -60,7 +60,9 @@ export async function getDynamicServerRootDomain(defaultFallback = "localhost:30
       }
       return host;
     }
-  } catch {}
+  } catch {
+    // Di luar konteks request (skrip latar atau build) headers() melempar; domain diambil dari lingkungan di bawah.
+  }
 
   const envRoot = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "";
   return envRoot.replace(/^https?:\/\//, "").replace(/\/$/, "") || defaultFallback;

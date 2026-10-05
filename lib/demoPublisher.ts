@@ -6,6 +6,7 @@ import { prisma } from "./prisma";
 import { getAdminSetting } from "./settings";
 import { masterTemplateCache } from "./cache";
 import { escapeHtml } from "./escapeHtml";
+import { logger } from "./logger";
 
 /**
  * Compiles a single theme demo into a standalone static HTML file in public/demo/[themeId]/index.html
@@ -33,7 +34,9 @@ export async function compileAndSaveStaticDemo(
         settingUpdatedAt = new Date(setting.updatedAt).getTime();
       }
     }
-  } catch {}
+  } catch (err) {
+    logger.warn("DemoPublisher", "Data demo kustom tidak terbaca; demo dikompilasi dengan bawaan tema", { theme: cleanId, error: err instanceof Error ? err.message : String(err) });
+  }
 
   const version = forcedVersion || settingUpdatedAt || Date.now();
   const data = composeDemoTemplateData(cleanId, resolvedData, version);
@@ -150,7 +153,9 @@ export async function compileAllStaticDemos(): Promise<number> {
       if (setting && setting.value) {
         customData = JSON.parse(setting.value);
       }
-    } catch {}
+    } catch (err) {
+      logger.warn("DemoPublisher", "Data demo kustom tidak terbaca; demo dikompilasi dengan bawaan tema", { theme: themeId, error: err instanceof Error ? err.message : String(err) });
+    }
 
     await compileAndSaveStaticDemo(themeId, customData);
     count++;

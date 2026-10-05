@@ -4,6 +4,7 @@ import { prisma } from "./prisma";
 import { getAdminSetting } from "./settings";
 import { composeTemplateData } from "./themeEngine";
 import { renderTemplateFile } from "./renderTemplate";
+import { logger } from "./logger";
 
 /**
  * Memeriksa apakah fitur Cold Storage NAS diaktifkan (via DB Admin Setting atau .env)
@@ -14,7 +15,9 @@ export async function isNasArchiveEnabled(): Promise<boolean> {
     if (setting) {
       return setting.toLowerCase() === "true";
     }
-  } catch {}
+  } catch (err) {
+    logger.warn("NasArchive", "Gagal membaca nas_archive_enabled; memakai NAS_ARCHIVE_ENABLED dari lingkungan", { error: err instanceof Error ? err.message : String(err) });
+  }
   return process.env.NAS_ARCHIVE_ENABLED === "true";
 }
 
@@ -25,7 +28,9 @@ export async function getNasArchivePath(): Promise<string> {
   let targetPath = "";
   try {
     targetPath = await getAdminSetting("nas_archive_path", "");
-  } catch {}
+  } catch (err) {
+    logger.warn("NasArchive", "Gagal membaca nas_archive_path; memakai NAS_ARCHIVE_PATH atau ./data/archives", { error: err instanceof Error ? err.message : String(err) });
+  }
 
   if (!targetPath) {
     targetPath = process.env.NAS_ARCHIVE_PATH || "./data/archives";
@@ -220,7 +225,9 @@ export async function getNasArchiveAssetPath(slug: string, fileName: string): Pr
     if (await fileExists(assetPath)) {
       return assetPath;
     }
-  } catch {}
+  } catch (err) {
+    logger.warn("NasArchive", "Aset arsip tidak dapat dicari", { slug, fileName, error: err instanceof Error ? err.message : String(err) });
+  }
   return null;
 }
 
@@ -257,7 +264,9 @@ export async function verifyNasArchiveStatus(slug: string): Promise<{
         try {
           const s = await fs.promises.stat(path.join(assetsDir, f));
           sizeBytes += s.size;
-        } catch {}
+        } catch (err) {
+          logger.warn("NasArchive", "Aset arsip tidak terbaca saat menghitung ukuran", { slug, file: f, error: err instanceof Error ? err.message : String(err) });
+        }
       }
     }
 

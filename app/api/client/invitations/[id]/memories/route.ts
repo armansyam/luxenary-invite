@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { buildAndSavePublishedHtml } from "@/lib/staticPublisher";
 import { parseFeatureSettings } from "@/lib/featureSettings";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -184,7 +185,10 @@ export async function DELETE(
     if (invitation.status === "PUBLISHED") {
       try {
         await buildAndSavePublishedHtml(invitation.id);
-      } catch {}
+      } catch (err) {
+        // Memori sudah terhapus; yang gagal hanya HTML terbit, yang akan terbit ulang saat undangan dibangun berikutnya.
+        logger.error("InvitationMemories", "Gagal membangun ulang HTML terbit setelah menghapus memori", err, { invitationId: invitation.id });
+      }
     }
 
     return NextResponse.json({

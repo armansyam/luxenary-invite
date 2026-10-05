@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { logger } from "@/lib/logger";
+import { removeIfExists } from "@/lib/fsSafe";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +38,9 @@ export async function GET() {
           data: JSON.parse(s.value),
           updatedAt: s.updatedAt ? new Date(s.updatedAt).getTime() : 1,
         };
-      } catch {}
+      } catch (err) {
+        logger.warn("AdminThemes", "Data demo kustom bukan JSON valid; tema memakai bawaan di daftar", { key: s.key, error: err instanceof Error ? err.message : String(err) });
+      }
     }
 
     const themes = dbThemes.map((t) => {
@@ -329,35 +333,22 @@ export async function DELETE(req: NextRequest) {
       where: { key: `theme_demo_${id.toLowerCase()}` },
     });
 
-    const { promises: fs } = await import("fs");
     const path = await import("path");
 
     // 3. Remove the master HTML file physically from the themes/ folder
-    try {
-      const categoryDir = existingTheme.category.toLowerCase();
-      const evType = (existingTheme.eventType || "WEDDING").toUpperCase();
-      const evFolder = evType === "GATHERING" ? "general" : evType.toLowerCase();
-      const possiblePaths = [
-        path.join(process.cwd(), "themes", evFolder, categoryDir, `${id.toLowerCase()}.html`),
-        path.join(process.cwd(), "themes", "wedding", categoryDir, `${id.toLowerCase()}.html`),
-        path.join(process.cwd(), "themes", categoryDir, `${id.toLowerCase()}.html`),
-      ];
-      for (const p of possiblePaths) {
-        try {
-          await fs.unlink(p);
-        } catch {}
-      }
-    } catch {
-      // Ignore if master file is already gone
-    }
+    const categoryDir = existingTheme.category.toLowerCase();
+    const evType = (existingTheme.eventType || "WEDDING").toUpperCase();
+    const evFolder = evType === "GATHERING" ? "general" : evType.toLowerCase();
+    // Lokasi master bergantung pada jenis acara dan riwayat folder tema, jadi ketiga kemungkinan dibersihkan.
+    const possiblePaths = [
+      path.join(process.cwd(), "themes", evFolder, categoryDir, `${id.toLowerCase()}.html`),
+      path.join(process.cwd(), "themes", "wedding", categoryDir, `${id.toLowerCase()}.html`),
+      path.join(process.cwd(), "themes", categoryDir, `${id.toLowerCase()}.html`),
+    ];
+    for (const p of possiblePaths) await removeIfExists(p);
 
     // 4. Also remove the compiled static demo directory so it no longer appears in catalog
-    try {
-      const demoDir = path.join(process.cwd(), "public", "demo", id.toLowerCase());
-      await fs.rm(demoDir, { recursive: true, force: true });
-    } catch {
-      // Non-fatal: demo dir may not exist yet
-    }
+    await removeIfExists(path.join(process.cwd(), "public", "demo", id.toLowerCase()), { recursive: true });
 
     const { revalidatePath } = await import("next/cache");
     revalidatePath("/demo");

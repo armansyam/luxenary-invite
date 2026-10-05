@@ -148,33 +148,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const newExpense = await prisma.expense.create({
-      data: {
-        title: title.trim(),
-        category: category || "OTHER",
-        amount: Number(amount),
-        expenseDate: dateVal,
-        paymentSource: paymentSource || "TRANSFER_BANK",
-        referenceNumber: referenceNumber?.trim() || null,
-        receiptUrl: receiptUrl || null,
-        notes: notes?.trim() || null,
-        createdById: session.user.id || (session.user as any).email || "admin",
-      },
-    });
-
-    // Catat ke audit log jika model AuditLog tersedia
-    try {
-      await (prisma as any).adminAuditLog?.create({
+    // Pengeluaran dan catatan auditnya satu transaksi: tidak ada pengeluaran tanpa jejak, dan sebaliknya.
+    const actorId = session.user.originalAdminId ?? session.user.id;
+    const [newExpense] = await prisma.$transaction([
+      prisma.expense.create({
         data: {
-          adminId: session.user.id || "admin",
+          title: title.trim(),
+          category: category || "OTHER",
+          amount: Number(amount),
+          expenseDate: dateVal,
+          paymentSource: paymentSource || "TRANSFER_BANK",
+          referenceNumber: referenceNumber?.trim() || null,
+          receiptUrl: receiptUrl || null,
+          notes: notes?.trim() || null,
+          createdById: actorId,
+        },
+      }),
+      prisma.adminAuditLog.create({
+        data: {
+          adminId: actorId,
           action: "CREATE_EXPENSE",
           details: `Menambahkan beban pengeluaran: ${title} sebesar Rp ${Number(amount).toLocaleString("id-ID")}`,
-          ipAddress: req.headers.get("x-forwarded-for") || "127.0.0.1",
+          ipAddress: req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || null,
         },
-      });
-    } catch {
-      // Ignore audit log error
-    }
+      }),
+    ]);
 
     return NextResponse.json({
       success: true,

@@ -59,10 +59,14 @@ export async function POST(req: NextRequest) {
     if (!domain.startsWith("www.")) {
       try {
         wwwDetectedA = await dns.promises.resolve4(`www.${domain}`);
-      } catch {}
+      } catch {
+        // Subdomain www bersifat opsional; tidak ada A record berarti belum dikonfigurasi, bukan galat.
+      }
       try {
         wwwDetectedCname = await dns.promises.resolveCname(`www.${domain}`);
-      } catch {}
+      } catch {
+        // Subdomain www bersifat opsional; tidak ada CNAME berarti belum dikonfigurasi, bukan galat.
+      }
     }
 
     const matchesA = expectedIp ? detectedA.includes(expectedIp) : false;

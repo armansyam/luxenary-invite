@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import { promisify } from "util";
+import { removeIfExists } from "@/lib/fsSafe";
 
 const execFileAsync = promisify(execFile);
 
@@ -146,10 +147,8 @@ export async function optimizeWebVideo(inputBuffer: Buffer, baseName: string): P
     return inputBuffer;
   } finally {
     // Cleanup temporary scratch files
-    try {
-      if (await fileExists(inputTempPath)) await fs.promises.unlink(inputTempPath);
-      if (await fileExists(outputTempPath)) await fs.promises.unlink(outputTempPath);
-    } catch {}
+    await removeIfExists(inputTempPath);
+    await removeIfExists(outputTempPath);
   }
 }
 
@@ -206,7 +205,9 @@ export async function optimizeWebAudio(inputBuffer: Buffer, baseName: string): P
         if (await fileExists(outputTempPath)) {
           compressionSuccess = true;
         }
-      } catch {}
+      } catch {
+        // Tanpa FFmpeg maupun LAME audio dipakai apa adanya (fallback di bawah).
+      }
     }
 
     if (compressionSuccess && (await fileExists(outputTempPath))) {
@@ -223,9 +224,7 @@ export async function optimizeWebAudio(inputBuffer: Buffer, baseName: string): P
     console.warn("[AudioOptimizer] Compression skipped, using original audio:", err);
     return inputBuffer;
   } finally {
-    try {
-      if (await fileExists(inputTempPath)) await fs.promises.unlink(inputTempPath);
-      if (await fileExists(outputTempPath)) await fs.promises.unlink(outputTempPath);
-    } catch {}
+    await removeIfExists(inputTempPath);
+    await removeIfExists(outputTempPath);
   }
 }

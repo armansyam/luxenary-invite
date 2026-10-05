@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { logger } from "@/lib/logger";
 
 export async function POST(
   req: Request,
@@ -89,7 +90,9 @@ export async function POST(
     try {
       const { paymentEmitter } = await import("@/lib/paymentEvents");
       paymentEmitter.emit(orderId, { status: "EXPIRED", planType: order.planType });
-    } catch {}
+    } catch (emitErr) {
+      logger.warn("ClientCancelOrder", "Notifikasi SSE pembatalan gagal dikirim; kasir akan menyegarkan sendiri", { orderId, error: emitErr instanceof Error ? emitErr.message : String(emitErr) });
+    }
 
     return NextResponse.json({ success: true, message: "Pesanan berhasil dibatalkan." });
   } catch (error: any) {

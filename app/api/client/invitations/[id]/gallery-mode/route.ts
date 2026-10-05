@@ -69,7 +69,9 @@ export async function POST(
     let body: any = {};
     try {
       body = await req.json();
-    } catch {}
+    } catch {
+      // Body opsional: tanpa body, mode berpindah (toggle) dari status sekarang.
+    }
 
     // Tentukan mode tujuan (toggle atau eksplisit)
     let nextStatus: "PUBLISHED" | "EVENT_FINISHED";

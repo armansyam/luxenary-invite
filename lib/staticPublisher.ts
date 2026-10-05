@@ -7,6 +7,7 @@ import { getAdminSetting } from "@/lib/settings";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 import { publishedHtmlCache } from "@/lib/cache";
 import { escapeHtml } from "@/lib/escapeHtml";
+import { logger } from "@/lib/logger";
 
 const PUBLISHED_DIR = path.join(process.cwd(), "public", "published");
 
@@ -164,11 +165,15 @@ export async function deletePublishedHtml(invitationId: string): Promise<boolean
   // Hapus file ID master (Single Source of Truth)
   const idPath = path.join(PUBLISHED_DIR, "ids", `${invitationId}.html`);
   try {
-    await fs.promises.access(idPath);
     await fs.promises.unlink(idPath);
     deleted = true;
-  } catch {}
-  
+  } catch (err) {
+    // Berkas yang memang belum pernah dibangun bukan masalah; galat lain (izin, I/O) dicatat.
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+      logger.warn("StaticPublisher", "Gagal menghapus HTML terbit", { invitationId, error: err instanceof Error ? err.message : String(err) });
+    }
+  }
+
   return deleted;
 }
 

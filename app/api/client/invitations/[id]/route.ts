@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { normalizeJsonText } from "@/lib/jsonText";
+import { logger } from "@/lib/logger";
 import { encryptPin, decryptPin, isPinEncrypted } from "@/lib/pinEncryption";
 import { isReservedSubdomain, isSubdomainExpired } from "@/lib/domainUtils";
 import { DAY_MS, getPrimaryEventDate } from "@/lib/lifecycleDates";
@@ -466,7 +467,10 @@ export async function PUT(
             savedEvents = typeof currentInv.eventData === "string"
               ? JSON.parse(currentInv.eventData || "[]")
               : (Array.isArray(currentInv.eventData) ? currentInv.eventData : []);
-          } catch {}
+          } catch (err) {
+            // eventData dijaga CHECK JSON di database, jadi ini seharusnya tidak terjadi; tanpa data tersimpan tidak ada tanggal yang dikunci.
+            logger.warn("InvitationUpdate", "eventData tersimpan tidak terbaca; kunci tanggal utama dilewati", { invitationId: id, error: err instanceof Error ? err.message : String(err) });
+          }
 
           const savedPrimary = savedEvents.find((e: any) => e.isPrimary) || savedEvents[0];
           const newPrimary = validatedEvents.find((e: any) => e.isPrimary);

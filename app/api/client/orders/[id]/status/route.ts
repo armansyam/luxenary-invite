@@ -99,7 +99,9 @@ export async function GET(
           if (tokenData && tokenData.expiry && nowMs > tokenData.expiry) {
             isQrisSessionExpired = true;
           }
-        } catch {}
+        } catch {
+          // snapToken berisi URL checkout (bukan JSON sesi QR) pada sesi Snap; tidak ada waktu kedaluwarsa QR untuk diperiksa.
+        }
       }
 
       // 2. Cek batas hidup keseluruhan order (24 jam)

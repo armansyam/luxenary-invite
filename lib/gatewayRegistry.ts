@@ -14,6 +14,7 @@
 
 import { PaymentGateway } from "@/lib/gateways/types";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 /** Lazy import masing-masing gateway untuk menghindari bundle bloat */
 async function loadGateway(gatewayId: string): Promise<PaymentGateway> {
@@ -50,7 +51,11 @@ export async function getActiveGatewayId(): Promise<string> {
       // Jika diset ke vendor legacy 1-arah, otomatis gunakan midtrans
       return "midtrans";
     }
-  } catch {}
+  } catch (err) {
+    // Pembayaran tetap berjalan lewat gateway bawaan, tetapi bila admin memilih Xendit, ini berarti pembayaran
+    // diarahkan ke gateway yang salah: wajib terlihat di log.
+    logger.error("GatewayRegistry", "Gagal membaca active_payment_gateway; memakai midtrans", err);
+  }
   return "midtrans"; // Default gateway 2-arah
 }
 

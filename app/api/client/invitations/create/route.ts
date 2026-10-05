@@ -8,6 +8,7 @@ import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { safeParseParticipants } from "@/lib/participantUtils";
 import { normalizeJsonText } from "@/lib/jsonText";
+import { logger } from "@/lib/logger";
 
 function slugify(text: string): string {
   return text
@@ -335,7 +336,9 @@ export async function POST(req: Request) {
     if (customSetting?.value) {
       customDemoData = JSON.parse(customSetting.value);
     }
-  } catch {}
+  } catch (err) {
+    logger.warn("InvitationCreate", "Data demo kustom tema tidak terbaca; undangan memakai bawaan tema", { theme: chosenTheme, error: err instanceof Error ? err.message : String(err) });
+  }
 
   let themeMeta: { name: string; category: string; series: string | null; defaultMusicUrl?: string | null } | null = null;
   try {
@@ -343,7 +346,9 @@ export async function POST(req: Request) {
       where: { id: chosenTheme.toLowerCase() },
       select: { name: true, category: true, series: true, defaultMusicUrl: true },
     });
-  } catch {}
+  } catch (err) {
+    logger.warn("InvitationCreate", "Metadata tema tidak terbaca; undangan memakai bawaan", { theme: chosenTheme, error: err instanceof Error ? err.message : String(err) });
+  }
 
   const blueprint = getThemeBlueprint(chosenTheme, {
     ...(customDemoData || {}),
@@ -424,7 +429,10 @@ export async function POST(req: Request) {
         if (existingDraft.featureSettings) {
           try {
             existingFs = typeof existingDraft.featureSettings === "string" ? JSON.parse(existingDraft.featureSettings) : existingDraft.featureSettings;
-          } catch {}
+          } catch (err) {
+            // Kolom featureSettings dijaga CHECK JSON di database, jadi ini seharusnya tidak terjadi; draf dimulai dari kosong.
+            logger.warn("InvitationCreate", "featureSettings draf tidak terbaca; dimulai dari kosong", { draftId: existingDraft.id, error: err instanceof Error ? err.message : String(err) });
+          }
         }
 
         const isThemeChanged = Boolean(themeId?.trim() && themeId.trim().toLowerCase() !== existingDraft.themeId?.toLowerCase());

@@ -30,29 +30,28 @@ export async function POST(
       return NextResponse.json({ error: "Undangan tidak ditemukan" }, { status: 404 });
     }
 
+    // Selama sesi remote, session.user.id adalah ID klien; pelaku sebenarnya ada di originalAdminId.
+    const actorId = session.user.originalAdminId ?? session.user.id;
+
     let updatedInvitation;
     if (lockImmediately) {
-      updatedInvitation = await prisma.invitation.update({
-        where: { id },
-        data: {
-          adminUnlockedUntil: null,
-          isLockedPermanently: true,
-        },
-      });
-
-      // Audit Log
-      try {
-        const admin = await prisma.admin.findFirst();
-        if (admin) {
-          await prisma.adminAuditLog.create({
-            data: {
-              adminId: admin.id,
-              action: "LOCK_INVITATION",
-              details: `Mengunci kembali undangan ID: ${id} (${invitation.groomName} & ${invitation.brideName})`,
-            },
-          });
-        }
-      } catch (e) {}
+      // Perubahan kunci dan catatan auditnya satu transaksi, atas nama admin yang benar-benar menekan tombol.
+      [updatedInvitation] = await prisma.$transaction([
+        prisma.invitation.update({
+          where: { id },
+          data: {
+            adminUnlockedUntil: null,
+            isLockedPermanently: true,
+          },
+        }),
+        prisma.adminAuditLog.create({
+          data: {
+            adminId: actorId,
+            action: "LOCK_INVITATION",
+            details: `Mengunci kembali undangan ID: ${id} (${invitation.groomName} & ${invitation.brideName})`,
+          },
+        }),
+      ]);
 
       return NextResponse.json({
         success: true,
@@ -63,27 +62,22 @@ export async function POST(
       });
     } else {
       const unlockExpiry = new Date(Date.now() + durationHours * 3600 * 1000);
-      updatedInvitation = await prisma.invitation.update({
-        where: { id },
-        data: {
-          adminUnlockedUntil: unlockExpiry,
-          isLockedPermanently: false,
-        },
-      });
-
-      // Audit Log
-      try {
-        const admin = await prisma.admin.findFirst();
-        if (admin) {
-          await prisma.adminAuditLog.create({
-            data: {
-              adminId: admin.id,
-              action: "UNLOCK_INVITATION",
-              details: `Membuka kunci darurat undangan ID: ${id} (${invitation.groomName} & ${invitation.brideName}) selama ${durationHours} jam hingga ${unlockExpiry.toISOString()}`,
-            },
-          });
-        }
-      } catch (e) {}
+      [updatedInvitation] = await prisma.$transaction([
+        prisma.invitation.update({
+          where: { id },
+          data: {
+            adminUnlockedUntil: unlockExpiry,
+            isLockedPermanently: false,
+          },
+        }),
+        prisma.adminAuditLog.create({
+          data: {
+            adminId: actorId,
+            action: "UNLOCK_INVITATION",
+            details: `Membuka kunci darurat undangan ID: ${id} (${invitation.groomName} & ${invitation.brideName}) selama ${durationHours} jam hingga ${unlockExpiry.toISOString()}`,
+          },
+        }),
+      ]);
 
       return NextResponse.json({
         success: true,

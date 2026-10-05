@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { DEMO_REGISTRY } from "@/lib/demoRegistry";
 import type { ThemeCategory } from "@prisma/client";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
@@ -64,7 +65,9 @@ export async function GET(req: Request) {
           data: JSON.parse(s.value),
           updatedAt: s.updatedAt ? new Date(s.updatedAt).getTime() : 1,
         };
-      } catch {}
+      } catch (err) {
+        logger.warn("PublicThemes", "Data demo kustom bukan JSON valid; tema memakai bawaan", { key: s.key, error: err instanceof Error ? err.message : String(err) });
+      }
     }
 
     const themes = dbThemes.map((t) => {

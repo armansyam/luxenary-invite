@@ -181,7 +181,9 @@ export async function streamMemoriesToZip(archive: any, invitationId: string): P
         await fs.promises.access(legacyDir);
         memoriesDir = legacyDir;
         dirExists = true;
-      } catch {}
+      } catch {
+        // Kedua folder tidak ada: undangan belum punya momen, ditangani sebagai EMPTY di bawah.
+      }
     }
 
     if (!dirExists) {

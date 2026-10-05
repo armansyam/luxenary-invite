@@ -4,6 +4,7 @@ import { requireAdminModule } from "@/lib/adminAuth";
 import { prisma } from "@/lib/prisma";
 import { DEMO_REGISTRY } from "@/lib/demoRegistry";
 import { purgeCloudflareCache } from "@/lib/cloudflare";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -41,7 +42,10 @@ export async function GET(
       try {
         resolvedData = JSON.parse(setting.value);
         isCustom = true;
-      } catch {}
+      } catch (err) {
+        // Data kustom yang rusak tidak menggagalkan halaman: admin melihat bawaan tema dan dapat menyimpan ulang.
+        logger.warn("ThemeDemoData", "Data demo kustom bukan JSON valid; memakai bawaan tema", { key: settingKey, error: err instanceof Error ? err.message : String(err) });
+      }
     }
 
     if (!resolvedData) {
@@ -151,7 +155,9 @@ export async function POST(
       revalidatePath(`/demo/${themeId}`);
       revalidatePath("/api/public/themes");
       await purgeCloudflareCache({ purgeEverything: true });
-    } catch {}
+    } catch (err) {
+      logger.warn("ThemeDemoData", "Revalidasi atau purge cache Cloudflare gagal setelah menyimpan data demo", { themeId, error: err instanceof Error ? err.message : String(err) });
+    }
 
     return NextResponse.json({
       success: true,

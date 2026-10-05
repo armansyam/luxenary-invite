@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { Prisma } from "@prisma/client";
+import { removeIfExists } from "@/lib/fsSafe";
 
 export const dynamic = "force-dynamic";
 
@@ -194,13 +195,7 @@ export async function DELETE(req: Request) {
         await deletePublishedHtml(inv.id);
 
         // 2. Hapus draft HTML (data/drafts/<id>.html) jika ada
-        const draftPath = path.join(process.cwd(), "data", "drafts", `${inv.id}.html`);
-        try {
-          await fs.promises.access(draftPath);
-          await fs.promises.unlink(draftPath);
-        } catch {
-          // file tidak ada — skip
-        }
+        await removeIfExists(path.join(process.cwd(), "data", "drafts", `${inv.id}.html`));
 
         // 3. Hapus file media & guest memories dari R2/Local
         if (inv.media && inv.media.length > 0) {
@@ -217,14 +212,8 @@ export async function DELETE(req: Request) {
         // sehingga menghapus uploads asli tidak merusak portfolio yang sudah dipublish.
         const uploadsDir = path.join(process.cwd(), "public", "uploads", "invitations", inv.id);
         const guestMemoriesDir = path.join(process.cwd(), "public", "uploads", "guest-memories", inv.id);
-        try {
-          await fs.promises.access(uploadsDir);
-          await fs.promises.rm(uploadsDir, { recursive: true, force: true });
-        } catch {}
-        try {
-          await fs.promises.access(guestMemoriesDir);
-          await fs.promises.rm(guestMemoriesDir, { recursive: true, force: true });
-        } catch {}
+        await removeIfExists(uploadsDir, { recursive: true });
+        await removeIfExists(guestMemoriesDir, { recursive: true });
       }
     }
 

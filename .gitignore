@@ -83,3 +83,6 @@ public/published/
 # portfolio HTML baked (full static clone klien)
 /public/portfolio/assets/
 public/portfolio/assets/
+
+# Keluaran skrip QA (ditimpa tiap dijalankan)
+/reports/

@@ -34,7 +34,9 @@ export async function POST(
       if (body.reason && body.reason.trim()) {
         reason = body.reason.trim();
       }
-    } catch {}
+    } catch {
+      // Body opsional: tanpa body JSON, alasan memakai nilai bawaan di atas.
+    }
 
     // Hapus file bukti transfer fisik lama yang ditolak
     if (order.proofImageUrl) {
@@ -79,7 +81,9 @@ export async function POST(
     // Klien menerima event REJECTED secara instan — tidak perlu polling
     try {
       paymentEmitter.emit(orderId, { status: "REJECTED", rejectReason: reason, planType: order.planType });
-    } catch {}
+    } catch (emitErr) {
+      logger.warn("AdminRejectOrder", "Notifikasi SSE penolakan gagal dikirim; klien akan melihatnya saat memuat ulang", { orderId, error: emitErr instanceof Error ? emitErr.message : String(emitErr) });
+    }
 
     return NextResponse.json({
       success: true,

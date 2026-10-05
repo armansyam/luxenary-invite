@@ -6,6 +6,7 @@ import { promisify } from "util";
 import { STORAGE_PROVIDER, s3Client } from "@/lib/storage";
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { logger } from "@/lib/logger";
+import { removeIfExists } from "@/lib/fsSafe";
 
 const execFileAsync = promisify(execFile);
 
@@ -35,7 +36,10 @@ export async function inspectBackupPath(configuredPath?: string): Promise<Backup
   const fallbackPath = path.resolve(process.cwd(), "data", "backups");
   try {
     await fs.promises.mkdir(fallbackPath, { recursive: true });
-  } catch {}
+  } catch (err) {
+    // Hasil inspeksi di bawah melaporkan bila direktori tidak dapat ditulis; di sini cukup dicatat penyebabnya.
+    logger.warn("BackupEngine", "Direktori backup bawaan tidak dapat dibuat", { path: fallbackPath, error: err instanceof Error ? err.message : String(err) });
+  }
 
   const rawPath = (configuredPath || "").trim();
   const effectiveConfigured = rawPath || "./data/backups";
@@ -63,11 +67,7 @@ export async function inspectBackupPath(configuredPath?: string): Promise<Backup
     isRelative = true;
   } else if (effectiveConfigured === "/data/backups") {
     // Penanganan backward compatibility untuk nilai default lama /data/backups
-    let hasRootData = false;
-    try {
-      hasRootData = fs.existsSync("/data/backups");
-    } catch {}
-    if (hasRootData) {
+    if (fs.existsSync("/data/backups")) {
       targetPath = "/data/backups";
       isRelative = false;
     } else {
@@ -197,14 +197,17 @@ export function getLibpqDbUrl(rawUrl: string): string {
 // .sql dan .backup tetap dikenali karena snapshot lama memakai ekstensi tersebut.
 export const isSnapshotFile = (name: string) => [".dump", ".sql", ".backup"].some((ext) => name.endsWith(ext));
 
-export async function createDatabaseSnapshot(customLabel?: string): Promise<{ filename: string; sizeBytes: number; sizeFormatted: string; path: string; offsiteSynced?: boolean }> {
-  let backupPathSetting: string | undefined;
-  try {
-    const s = await prisma.adminSetting.findUnique({ where: { key: "backup_path" } });
-    if (s?.value) backupPathSetting = s.value;
-  } catch {}
+/**
+ * Lokasi backup yang diatur admin (undefined bila belum diatur). Galat database dilempar: backup tidak boleh
+ * diam-diam pindah ke lokasi bawaan hanya karena pengaturannya gagal dibaca.
+ */
+export async function readBackupPathSetting(): Promise<string | undefined> {
+  const setting = await prisma.adminSetting.findUnique({ where: { key: "backup_path" } });
+  return setting?.value || undefined;
+}
 
-  const backupDir = await getBackupDirectory(backupPathSetting);
+export async function createDatabaseSnapshot(customLabel?: string): Promise<{ filename: string; sizeBytes: number; sizeFormatted: string; path: string; offsiteSynced?: boolean }> {
+  const backupDir = await getBackupDirectory(await readBackupPathSetting());
   const rawDbUrl = await getActiveDbUrl();
   const libpqDbUrl = getLibpqDbUrl(rawDbUrl);
 
@@ -233,7 +236,10 @@ export async function createDatabaseSnapshot(customLabel?: string): Promise<{ fi
     if (rSetting?.value) retentionLimit = parseInt(rSetting.value, 10) || 10;
 
     await pruneOldSnapshots(retentionLimit, backupDir);
-  } catch {}
+  } catch (err) {
+    // Retensi adalah pekerjaan sampingan: backup yang baru dibuat tidak boleh gagal karenanya.
+    logger.warn("BackupEngine", "Retensi snapshot gagal; snapshot lama tidak dihapus", { error: err instanceof Error ? err.message : String(err) });
+  }
 
   // Replikasi Off-Site ke Cloudflare R2 / S3 jika terkonfigurasi (Disaster Recovery)
   let offsiteSynced = false;
@@ -266,13 +272,7 @@ export async function createDatabaseSnapshot(customLabel?: string): Promise<{ fi
 
 // Ambil daftar seluruh file snapshot
 export async function listDatabaseSnapshots(): Promise<SnapshotItem[]> {
-  let backupPathSetting: string | undefined;
-  try {
-    const s = await prisma.adminSetting.findUnique({ where: { key: "backup_path" } });
-    if (s?.value) backupPathSetting = s.value;
-  } catch {}
-
-  const backupDir = await getBackupDirectory(backupPathSetting);
+  const backupDir = await getBackupDirectory(await readBackupPathSetting());
   try {
     await fs.promises.access(backupDir);
   } catch {
@@ -295,7 +295,10 @@ export async function listDatabaseSnapshots(): Promise<SnapshotItem[]> {
         createdAt: stat.mtime.toISOString(),
         isSafetyBackup: f.startsWith("safety_") || f.includes("pre_restore"),
       });
-    } catch {}
+    } catch (err) {
+      // Berkas dapat dihapus rotasi di antara readdir dan stat; yang tidak terbaca dilewati, bukan menggagalkan daftar.
+      logger.warn("BackupEngine", "Snapshot tidak terbaca, dilewati dari daftar", { file: f, error: err instanceof Error ? err.message : String(err) });
+    }
   }
 
   // Urutkan dari yang paling baru
@@ -307,13 +310,7 @@ export async function listDatabaseSnapshots(): Promise<SnapshotItem[]> {
 // Restore database dari snapshot
 export async function restoreDatabaseSnapshot(filename: string): Promise<{ success: boolean; safetySnapshot: string; restoredFrom: string }> {
   const safeName = path.basename(filename);
-  let backupPathSetting: string | undefined;
-  try {
-    const s = await prisma.adminSetting.findUnique({ where: { key: "backup_path" } });
-    if (s?.value) backupPathSetting = s.value;
-  } catch {}
-
-  const backupDir = await getBackupDirectory(backupPathSetting);
+  const backupDir = await getBackupDirectory(await readBackupPathSetting());
   const snapshotPath = path.join(backupDir, safeName);
 
   try {
@@ -347,19 +344,10 @@ export async function restoreDatabaseSnapshot(filename: string): Promise<{ succe
 export async function deleteDatabaseSnapshot(filename: string): Promise<{ success: boolean }> {
   // Cegah directory traversal
   const safeName = path.basename(filename);
-  let backupPathSetting: string | undefined;
-  try {
-    const s = await prisma.adminSetting.findUnique({ where: { key: "backup_path" } });
-    if (s?.value) backupPathSetting = s.value;
-  } catch {}
-
-  const backupDir = await getBackupDirectory(backupPathSetting);
+  const backupDir = await getBackupDirectory(await readBackupPathSetting());
   const targetPath = path.join(backupDir, safeName);
 
-  try {
-    await fs.promises.access(targetPath);
-    await fs.promises.unlink(targetPath);
-  } catch {}
+  await removeIfExists(targetPath);
 
   // Sinkronisasi hapus dari R2/S3 jika terkonfigurasi
   if ((STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3") && s3Client && process.env.S3_BUCKET_NAME) {
@@ -370,7 +358,9 @@ export async function deleteDatabaseSnapshot(filename: string): Promise<{ succes
           Key: `backups/database/${safeName}`,
         })
       );
-    } catch {}
+    } catch (err) {
+      logger.error("BackupEngine", `Salinan off-site ${safeName} gagal dihapus dari R2/S3 (salinan lokal sudah dihapus)`, err);
+    }
   }
 
   return { success: true };
@@ -393,7 +383,10 @@ export async function pruneOldSnapshots(keepCount: number, backupDir: string) {
     try {
       const stat = await fs.promises.stat(p);
       snapshots.push({ name: f, time: stat.mtime.getTime(), path: p });
-    } catch {}
+    } catch (err) {
+      // Berkas dapat hilang di antara readdir dan stat; yang tidak terbaca tidak ikut dihitung dalam rotasi.
+      logger.warn("BackupEngine", "Snapshot tidak terbaca saat rotasi, dilewati", { file: f, error: err instanceof Error ? err.message : String(err) });
+    }
   }
 
   snapshots.sort((a, b) => b.time - a.time);
@@ -401,18 +394,20 @@ export async function pruneOldSnapshots(keepCount: number, backupDir: string) {
   if (snapshots.length > keepCount) {
     const toDelete = snapshots.slice(keepCount);
     for (const item of toDelete) {
-      try {
-        await fs.promises.unlink(item.path);
-        // Hapus juga dari R2 jika ada
-        if ((STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3") && s3Client && process.env.S3_BUCKET_NAME) {
+      await removeIfExists(item.path);
+      // Hapus juga dari R2 jika ada; kegagalan dicatat karena salinan off-site yang tidak terhapus menumpuk tanpa batas.
+      if ((STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3") && s3Client && process.env.S3_BUCKET_NAME) {
+        try {
           await s3Client.send(
             new DeleteObjectCommand({
               Bucket: process.env.S3_BUCKET_NAME,
               Key: `backups/database/${item.name}`,
             })
-          ).catch(() => {});
+          );
+        } catch (err) {
+          logger.error("BackupEngine", `Rotasi: salinan off-site ${item.name} gagal dihapus dari R2/S3`, err);
         }
-      } catch {}
+      }
     }
   }
 }

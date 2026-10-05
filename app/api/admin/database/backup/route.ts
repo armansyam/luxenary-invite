@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createDatabaseSnapshot, listDatabaseSnapshots, deleteDatabaseSnapshot, inspectBackupPath } from "@/lib/databaseBackup";
+import { createDatabaseSnapshot, listDatabaseSnapshots, deleteDatabaseSnapshot, inspectBackupPath, readBackupPathSetting } from "@/lib/databaseBackup";
 import { prisma } from "@/lib/prisma";
 import { requireAdminModule } from "@/lib/adminAuth";
 
@@ -15,11 +15,7 @@ export async function GET() {
     const denied = await denyUnlessDatabaseAdmin();
     if (denied) return denied;
 
-    let backupPathSetting = "./data/backups";
-    try {
-      const s = await prisma.adminSetting.findUnique({ where: { key: "backup_path" } });
-      if (s?.value) backupPathSetting = s.value;
-    } catch {}
+    const backupPathSetting = (await readBackupPathSetting()) ?? "./data/backups";
 
     const [snapshots, pathInfo] = await Promise.all([
       listDatabaseSnapshots(),
