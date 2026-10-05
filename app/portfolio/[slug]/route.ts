@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { STORAGE_PROVIDER, s3Client } from "@/lib/storage";
+import { isSafePathSegment } from "@/lib/fsSafe";
+import { logger } from "@/lib/logger";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs";
 import path from "path";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  // Slug menjadi nama berkas di `public/portfolio/`; `..` atau `/` (dari %2F) akan membaca berkas di luar folder itu.
+  if (!isSafePathSegment(slug)) {
+    return new NextResponse("Portfolio Not Found", { status: 404 });
+  }
 
   if (STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3") {
     const bucketName = process.env.S3_BUCKET_NAME;
@@ -40,7 +46,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
       if (error.name === "NoSuchKey" || error.name === "NotFound") {
         return new NextResponse("Portfolio Not Found", { status: 404 });
       }
-      console.error("[Portfolio Route] Error fetching from R2:", error);
+      logger.error("PortfolioRoute", "Gagal mengambil portofolio dari R2", error, { slug });
       return new NextResponse("Internal Server Error", { status: 500 });
     }
   } 

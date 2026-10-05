@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
 import { paymentEmitter } from "@/lib/paymentEvents";
 import { applyUpgradePlan } from "@/lib/upgradeHelper";
 import { settleOrderAsPaid } from "@/lib/paymentSettlement";
-import { adminActorId } from "@/lib/adminAuth";
+import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -18,11 +18,9 @@ export async function POST(
   { params }: { params: Promise<{ orderId: string }> }
 ) {
   try {
-    const session = await auth();
-    const { hasAdminPermission } = await import("@/lib/adminPermissions");
-    if (!session?.user || !hasAdminPermission(session.user, "orders")) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("orders");
+    if (!guard.ok) return guard.response;
+    const { session } = guard;
 
     const { orderId } = await params;
     if (!orderId) {
@@ -99,8 +97,7 @@ export async function POST(
     }
 
     return NextResponse.json({ success: true, message: "Order berhasil dikonfirmasi lunas" });
-  } catch (error: any) {
-    logger.error("AdminApproveOrder", "Konfirmasi order gagal", error);
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message }, { status: 500 });
+  } catch (error) {
+    return routeError("AdminApproveOrder", error, "Konfirmasi order gagal");
   }
 }

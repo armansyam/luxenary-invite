@@ -161,7 +161,7 @@ export async function syncInvitationToNasArchive(invitationId: string): Promise<
           standaloneHtml = standaloneHtml.split(cleanUrl).join(newAssetUrl);
         }
       } catch (mediaErr) {
-        console.warn(`[NAS Archive] Gagal menyalin media (${rawUrl}):`, mediaErr);
+        logger.warn("NasArchive", "Media gagal disalin ke arsip", { slug, url: rawUrl, error: mediaErr instanceof Error ? mediaErr.message : String(mediaErr) });
         failedAssets.push(rawUrl);
       }
     }
@@ -183,7 +183,7 @@ export async function syncInvitationToNasArchive(invitationId: string): Promise<
     logger.info("NasArchive", "Undangan diarsipkan", { slug, dir: clientArchiveDir });
     return { success: true, slug };
   } catch (err: any) {
-    console.error("[NAS Archive Sync Error]", err);
+    logger.error("NasArchive", "Sinkronisasi arsip NAS gagal", err, { invitationId });
     return { success: false, error: err?.message || String(err) };
   }
 }
@@ -204,7 +204,7 @@ export async function readNasArchiveHtml(slug: string): Promise<string | null> {
       return await fs.promises.readFile(htmlPath, "utf-8");
     }
   } catch (err) {
-    console.warn(`[NAS Archive] Gagal membaca arsip HTML (${slug}):`, err);
+    logger.warn("NasArchive", "Arsip HTML gagal dibaca", { slug, error: err instanceof Error ? err.message : String(err) });
   }
   return null;
 }
@@ -302,7 +302,7 @@ export async function purgeNasArchive(slug: string): Promise<boolean> {
       return true;
     }
   } catch (err) {
-    console.error(`[NAS Archive] Gagal menghapus arsip (${slug}):`, err);
+    logger.error("NasArchive", "Arsip gagal dihapus", err, { slug });
   }
   return false;
 }

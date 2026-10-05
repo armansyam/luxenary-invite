@@ -4315,7 +4315,7 @@ export default function EditInvitation() {
                           type="text"
                           value={b.number || ""}
                           onChange={(e) => updateBankItem(idx, "number", e.target.value)}
-                          placeholder="7330497518"
+                          placeholder="Contoh: 1234567890"
                           className="w-full p-2 bg-white border border-stone-200 rounded-lg text-xs font-mono"
                         />
                       </div>

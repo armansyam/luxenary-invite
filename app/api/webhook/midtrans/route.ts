@@ -5,7 +5,7 @@ import { paymentEmitter } from "@/lib/paymentEvents";
 import { releaseOrderPromoHold } from "@/lib/marketing";
 import { isGatewayAmountValid, isStaleGatewaySession, settleOrderAsPaid, settlementSourceStatuses } from "@/lib/paymentSettlement";
 import { logger } from "@/lib/logger";
-import { captureException } from "@/lib/errorTracker";
+import { routeError } from "@/lib/routeError";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
         serverKeys.push(dbClientKey);
       }
     } catch (err) {
-      console.warn("[Midtrans Webhook] Gagal memuat server key dari AdminSettings DB:", err);
+      logger.error("MidtransWebhook", "Server key dari pengaturan admin gagal dibaca; hanya kunci env yang dipakai", err);
     }
 
     const validServerKeys = Array.from(new Set(serverKeys.filter((k) => k && !k.includes("your_"))));
@@ -86,17 +86,17 @@ export async function POST(req: NextRequest) {
     if (validServerKeys.length === 0) {
       const isLocalDev = process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_APP_ENV !== "staging";
       if (!isLocalDev) {
-        console.error("[Midtrans Webhook] KRITIS: MIDTRANS_SERVER_KEY tidak terkonfigurasi. Webhook ditolak.");
+        logger.error("MidtransWebhook", "Server key Midtrans tidak terkonfigurasi; webhook ditolak");
         return NextResponse.json({ error: "Gateway not configured" }, { status: 503 });
       }
-      console.warn("[Midtrans Webhook] ⚠️ Server key tidak terkonfigurasi — dev/sandbox bypass aktif (lokal only).");
+      logger.warn("MidtransWebhook", "Server key tidak terkonfigurasi; verifikasi signature dilewati (hanya pengembangan lokal)");
     }
 
     // Verifikasi Signature — WAJIB jika server key terkonfigurasi
     if (validServerKeys.length > 0) {
       // Jika server key ada tapi signatureKey tidak dikirim — tolak (kemungkinan payload palsu)
       if (!signatureKey) {
-        console.warn("[Midtrans Webhook] Payload tanpa signature_key ditolak untuk order:", orderId);
+        logger.warn("MidtransWebhook", "Payload tanpa signature_key ditolak", { orderId });
         return NextResponse.json({ status: "rejected", reason: "missing_signature" }, { status: 400 });
       }
 
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
       );
 
       if (!isValid) {
-        console.warn("[Midtrans Webhook] Signature tidak valid — payload diabaikan untuk order:", orderId);
+        logger.warn("MidtransWebhook", "Signature tidak valid; payload diabaikan", { orderId });
         return NextResponse.json({ status: "ignored", reason: "invalid_signature" }, { status: 200 });
       }
     }
@@ -130,7 +130,7 @@ export async function POST(req: NextRequest) {
       });
       webhookLogId = log.id;
     } catch (err) {
-      console.error("[Midtrans Webhook] Gagal merekam webhookLog ke database:", err);
+      logger.error("MidtransWebhook", "Gagal merekam webhook log; pemrosesan tetap dilanjutkan", err, { orderId });
     }
 
     const order = await prisma.order.findUnique({ where: { id: orderId } });
@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
     // Contoh: admin switch dari Midtrans ke Xendit, lalu Midtrans kirim webhook telat
     const orderGatewayId = order.gatewayId;
     if (orderGatewayId && orderGatewayId !== "midtrans") {
-      console.warn(`[Midtrans Webhook] Order ${orderId} gatewayId=${orderGatewayId}, bukan midtrans — diabaikan.`);
+      logger.warn("MidtransWebhook", "Order milik gateway lain; webhook diabaikan", { orderId, gatewayId: orderGatewayId });
       return NextResponse.json({ status: "ignored", reason: "gateway_mismatch" }, { status: 200 });
     }
 
@@ -253,9 +253,8 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ status: "ok" });
-  } catch (error: any) {
-    captureException(error, { path: "/api/webhook/midtrans", method: "POST" });
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Internal server error" : (error.message || "Internal server error") }, { status: 500 });
+  } catch (error) {
+    return routeError("MidtransWebhook", error, "Internal server error");
   }
 }
 

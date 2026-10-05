@@ -23,7 +23,9 @@ function PendingContent() {
             window.location.replace(`/checkout/success?order=${orderId}`);
           }
         }
-      } catch {}
+      } catch {
+        // Polling: kegagalan jaringan sesaat dicoba lagi pada interval berikutnya.
+      }
     }, 10000);
     return () => clearInterval(interval);
   }, [orderId, orderStatus]);

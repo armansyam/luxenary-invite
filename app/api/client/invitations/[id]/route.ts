@@ -5,6 +5,8 @@ import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { normalizeJsonText } from "@/lib/jsonText";
 import { logger } from "@/lib/logger";
+import { routeError } from "@/lib/routeError";
+import { removeIfExists } from "@/lib/fsSafe";
 import { encryptPin, decryptPin, isPinEncrypted } from "@/lib/pinEncryption";
 import { isReservedSubdomain, isSubdomainExpired } from "@/lib/domainUtils";
 import { DAY_MS, getPrimaryEventDate } from "@/lib/lifecycleDates";
@@ -139,9 +141,8 @@ export async function GET(
       ...lockStatus,
       planMemoriesQuota: await getPlanMemoriesQuota(invitation.order?.planType),
     });
-  } catch (err: any) {
-    const msg = process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : (err.message || "Terjadi kesalahan server");
-    return NextResponse.json({ error: msg }, { status: 500 });
+  } catch (err) {
+    return routeError("ClientInvitation", err, "Gagal memuat undangan.");
   }
 }
 
@@ -223,8 +224,8 @@ export async function PUT(
             const { purgeCloudflareCache } = await import("@/lib/cloudflare");
             await purgeCloudflareCache({ files: urlsToPurge });
           }
-        } catch (purgeErr: any) {
-          console.warn("[DEPLOY_AND_LOCK] Auto purge Cloudflare failed (non-blocking):", purgeErr.message);
+        } catch (purgeErr) {
+          logger.warn("DeployAndLock", "Purge cache Cloudflare gagal; perubahan tetap tersimpan", { invitationId: id, error: purgeErr instanceof Error ? purgeErr.message : String(purgeErr) });
         }
 
         const newLockStatus = getInvitationLockStatus(updated);
@@ -235,12 +236,8 @@ export async function PUT(
           ...updated,
           ...newLockStatus,
         });
-      } catch (deployErr: any) {
-        console.error("[DEPLOY_AND_LOCK Error]", deployErr);
-        return NextResponse.json(
-          { error: deployErr.message || "Gagal memperbarui undangan online." },
-          { status: 500 }
-        );
+      } catch (deployErr) {
+        return routeError("DeployAndLock", deployErr, "Gagal memperbarui undangan online.");
       }
     }
 
@@ -415,7 +412,7 @@ export async function PUT(
         const { deletePublishedHtml } = await import("@/lib/staticPublisher");
         await deletePublishedHtml(currentInv.id); // This cleans up old subdomain and fallback files
       } catch (e) {
-        console.error("Failed to delete old static HTML during edit", e);
+        logger.error("ClientInvitation", "HTML statis lama gagal dihapus saat penyuntingan", e, { invitationId: currentInv.id });
       }
     }
 
@@ -557,14 +554,8 @@ export async function PUT(
 
     // --- ARSITEKTUR PIRING: Hapus piring draft lama jika tema berubah ---
     if (body.themeId !== undefined && body.themeId !== currentInv.themeId) {
-      try {
-        const { promises: fs } = await import("fs");
-        const path = await import("path");
-        const draftPath = path.join(process.cwd(), "data", "drafts", `${id}.html`);
-        await fs.unlink(draftPath).catch(() => {});
-      } catch (err) {
-        console.error("Failed to delete old draft plate:", err);
-      }
+      const path = await import("path");
+      await removeIfExists(path.join(process.cwd(), "data", "drafts", `${id}.html`));
     }
 
     // Save media updates
@@ -594,12 +585,9 @@ export async function PUT(
             });
           }
         } else if (existing) {
-          try {
-            const { deleteFile } = await import("@/lib/storage");
-            await deleteFile(existing.localPath);
-          } catch (e) {
-            console.error("Gagal menghapus file media:", e);
-          }
+          // deleteFile mencatat galatnya sendiri dan tidak melempar.
+          const { deleteFile } = await import("@/lib/storage");
+          await deleteFile(existing.localPath);
           await prisma.invitationMedia.delete({
             where: { id: existing.id },
           });
@@ -631,7 +619,7 @@ export async function PUT(
             await purgeCloudflareCache({ files: urlsToPurge });
           }
         } catch (err) {
-          console.error("Initial publish auto-bake / R2 Sync failed (background):", err);
+          logger.error("ClientInvitation", "Bake HTML atau sinkronisasi R2 setelah terbit pertama gagal", err, { invitationId: id });
         }
       });
     }
@@ -644,9 +632,8 @@ export async function PUT(
       staffPin: displayPin,
       ...getInvitationLockStatus(updated),
     });
-  } catch (err: any) {
-    console.error("Error updating invitation:", err);
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal memperbarui undangan." : err.message }, { status: 500 });
+  } catch (err) {
+    return routeError("ClientInvitation", err, "Gagal memperbarui undangan.");
   }
 }
 
@@ -743,9 +730,8 @@ export async function PATCH(
       invitation: updated,
       ...updated,
     });
-  } catch (err: any) {
-    console.error("Error patching invitation:", err);
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal memperbarui pengaturan undangan." : err.message }, { status: 500 });
+  } catch (err) {
+    return routeError("ClientInvitation", err, "Gagal memperbarui pengaturan undangan.");
   }
 }
 

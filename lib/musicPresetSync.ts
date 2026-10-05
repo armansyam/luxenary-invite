@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 function formatTitleFromFilename(filename: string, ext: string): string {
   const base = path.basename(filename, ext).replace(/[-_]+/g, " ").trim();
@@ -44,6 +45,6 @@ export async function syncPhysicalMusicPresets() {
       }
     }
   } catch (err) {
-    console.warn("[syncPhysicalMusicPresets warning]:", err);
+    logger.warn("MusicPresetSync", "Sinkronisasi preset musik dari disk gagal", { error: err instanceof Error ? err.message : String(err) });
   }
 }

@@ -3440,23 +3440,21 @@ export function getDemoThemeData(themeId: string): DemoThemeData {
     demo.themeName = normalized ? normalized.charAt(0).toUpperCase() + normalized.slice(1) : "Demo Theme";
   }
 
-  try {
-    const publicThemeDir = path.join(process.cwd(), "public", "demo", normalized);
-    if (fs.existsSync(path.join(publicThemeDir, "cover.mp4"))) {
-      demo.landingCoverUrl = `/demo/${normalized}/cover.mp4`;
-    }
-    if (fs.existsSync(path.join(publicThemeDir, "hero.mp4"))) {
-      demo.sidebarPhotoUrl = `/demo/${normalized}/hero.mp4`;
-    }
-    if (fs.existsSync(path.join(publicThemeDir, "background.mp4"))) {
-      demo.globalBgUrl = `/demo/${normalized}/background.mp4`;
-    }
-    if (fs.existsSync(path.join(publicThemeDir, "music.mp3"))) {
-      (demo as any).audioUrl = `/demo/${normalized}/music.mp3`;
-    } else if (fs.existsSync(path.join(publicThemeDir, "music.ogg"))) {
-      (demo as any).audioUrl = `/demo/${normalized}/music.ogg`;
-    }
-  } catch {}
+  const publicThemeDir = path.join(process.cwd(), "public", "demo", normalized);
+  if (fs.existsSync(path.join(publicThemeDir, "cover.mp4"))) {
+    demo.landingCoverUrl = `/demo/${normalized}/cover.mp4`;
+  }
+  if (fs.existsSync(path.join(publicThemeDir, "hero.mp4"))) {
+    demo.sidebarPhotoUrl = `/demo/${normalized}/hero.mp4`;
+  }
+  if (fs.existsSync(path.join(publicThemeDir, "background.mp4"))) {
+    demo.globalBgUrl = `/demo/${normalized}/background.mp4`;
+  }
+  if (fs.existsSync(path.join(publicThemeDir, "music.mp3"))) {
+    (demo as any).audioUrl = `/demo/${normalized}/music.mp3`;
+  } else if (fs.existsSync(path.join(publicThemeDir, "music.ogg"))) {
+    (demo as any).audioUrl = `/demo/${normalized}/music.ogg`;
+  }
 
   return demo;
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminModule } from "@/lib/adminAuth";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -113,9 +114,8 @@ export async function GET(req: NextRequest) {
         paidMonthsCount: monthlyBreakdown.filter((m) => m.isTaxPaid).length,
       },
     });
-  } catch (err: any) {
-    console.error("Tax breakdown GET error:", err);
-    return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
+  } catch (err) {
+    return routeError("AdminTax", err, "Gagal memuat rincian pajak");
   }
 }
 
@@ -210,8 +210,7 @@ export async function POST(req: NextRequest) {
       message: `Status setoran pajak bulan ${monthNum}/${yearNum} berhasil diperbarui.`,
       closing,
     });
-  } catch (err: any) {
-    console.error("Tax status update error:", err);
-    return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
+  } catch (err) {
+    return routeError("AdminTax", err, "Gagal memperbarui status pajak");
   }
 }

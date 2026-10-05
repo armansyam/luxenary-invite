@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminModule } from "@/lib/adminAuth";
+import { routeError } from "@/lib/routeError";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 
@@ -51,11 +52,7 @@ export async function GET(req: NextRequest) {
         totalPages,
       },
     });
-  } catch (error: any) {
-    console.error("GET /api/admin/audit-logs error:", error);
-    return NextResponse.json(
-      { error: process.env.NODE_ENV === "production" ? "Gagal memuat log audit staf" : error.message },
-      { status: 500 }
-    );
+  } catch (error) {
+    return routeError("AdminAuditLogs", error, "Gagal memuat log audit staf");
   }
 }

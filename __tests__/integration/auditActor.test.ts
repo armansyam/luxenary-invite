@@ -189,11 +189,11 @@ describe.skipIf(!IS_TEST_DB)("pelaku catatan audit", () => {
     const del = () => deleteClient(new Request(`http://localhost/api/admin/users?id=${target.id}`, { method: "DELETE" }));
 
     sessionUser = { id: actingAdminId, role: "FINANCE", isAdmin: true, permissions: ["finance"] };
-    expect((await del()).status).toBe(401);
+    expect((await del()).status).toBe(403);
     expect(await prisma.user.count({ where: { id: target.id } })).toBe(1);
 
     sessionUser = remoteSession();
-    expect((await del()).status).toBe(401);
+    expect((await del()).status).toBe(403);
     expect(await prisma.user.count({ where: { id: target.id } })).toBe(1);
 
     sessionUser = { id: actingAdminId, role: "SUPER_ADMIN", isAdmin: true, permissions: [] };

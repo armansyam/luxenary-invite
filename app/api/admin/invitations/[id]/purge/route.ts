@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requireAdminModule } from "@/lib/adminAuth";
+import { routeError } from "@/lib/routeError";
 import { buildAndSavePublishedHtml } from "@/lib/staticPublisher";
 import { purgeCloudflareCache } from "@/lib/cloudflare";
 import { getDynamicServerRootDomain } from "@/lib/serverDomainUtils";
@@ -12,12 +13,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
-    const session = await auth();
-    const { hasAdminPermission } = await import("@/lib/adminPermissions");
-
-    if (!session || !hasAdminPermission(session.user, "invitations")) {
-      return NextResponse.json({ error: "Unauthorized: Akses dibatasi hanya untuk Administrator." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("invitations");
+    if (!guard.ok) return guard.response;
 
     const resolvedParams = await Promise.resolve(params);
     const { id } = resolvedParams;
@@ -52,12 +49,8 @@ export async function POST(
         await buildAndSavePublishedHtml(invitation.id);
       }
       rebakeSuccess = true;
-    } catch (bakeErr: any) {
-      console.error("[Admin Purge] Gagal mengompilasi ulang HTML:", bakeErr);
-      return NextResponse.json(
-        { error: `Gagal membakar ulang HTML: ${bakeErr.message || "Unknown error"}` },
-        { status: 500 }
-      );
+    } catch (bakeErr) {
+      return routeError("AdminPurge", bakeErr, "Gagal membakar ulang HTML undangan");
     }
 
     // 2. Kumpulkan URL spesifik undangan ini
@@ -89,11 +82,7 @@ export async function POST(
       purgedUrls: urlsToPurge,
       cloudflare: cfResult,
     });
-  } catch (err: any) {
-    console.error("[Admin Purge Error]:", err);
-    return NextResponse.json(
-      { error: err.message || "Terjadi kesalahan pada server saat memproses purge cache." },
-      { status: 500 }
-    );
+  } catch (err) {
+    return routeError("AdminPurge", err, "Terjadi kesalahan pada server saat memproses purge cache.");
   }
 }

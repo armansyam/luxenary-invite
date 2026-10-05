@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { routeError } from "@/lib/routeError";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { prisma } from "@/lib/prisma";
 
@@ -51,9 +52,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, locked: true });
-  } catch (error: any) {
-    console.error("[Memories Lock API Error]", error);
-    const msg = process.env.NODE_ENV === "production" ? "Gagal mengunci upload momen" : (error.message || "Gagal mengunci upload momen");
-    return NextResponse.json({ error: msg }, { status: 500 });
+  } catch (error) {
+    return routeError("MemoriesLock", error, "Gagal mengunci upload momen");
   }
 }

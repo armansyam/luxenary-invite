@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { compileAndSaveStaticDemo } from "@/lib/demoPublisher";
+import { isSafePathSegment } from "@/lib/fsSafe";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +13,10 @@ export async function GET(
 ) {
   const { theme } = await params;
   const cleanTheme = theme.toLowerCase().trim();
+  // ID tema dipakai sebagai nama direktori untuk dibaca dan ditulis (compileAndSaveStaticDemo).
+  if (!isSafePathSegment(cleanTheme)) {
+    return new NextResponse("Not Found", { status: 404 });
+  }
 
   // 1. Verify theme exists and is active in database
   try {
@@ -43,7 +49,8 @@ export async function GET(
       );
     }
   } catch (dbErr) {
-    console.warn(`[Demo ${cleanTheme} DB check warning]:`, dbErr);
+    // Demo statis tetap disajikan bila database tidak terjangkau; status aktif tema tidak dapat diperiksa.
+    logger.warn("DemoTheme", "Status tema tidak dapat diperiksa", { themeId: cleanTheme, error: dbErr instanceof Error ? dbErr.message : String(dbErr) });
   }
 
   const staticFilePath = path.join(process.cwd(), "public", "demo", cleanTheme, "index.html");
@@ -58,7 +65,12 @@ export async function GET(
         "Cache-Control": "no-store, max-age=0, must-revalidate",
       },
     });
-  } catch {}
+  } catch (err) {
+    // Belum ada demo statis (ENOENT) adalah jalur normal menuju kompilasi di bawah; galat lain dicatat.
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+      logger.warn("DemoTheme", "Demo statis tidak terbaca; dikompilasi ulang", { themeId: cleanTheme, error: err instanceof Error ? err.message : String(err) });
+    }
+  }
 
   // 3. Fallback: Compile on the fly if active
   try {
@@ -82,7 +94,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error(`[Demo] Failed to compile static demo for ${cleanTheme}:`, error);
+    logger.error("DemoTheme", "Gagal mengompilasi demo statis", error, { themeId: cleanTheme });
     return new NextResponse("Gagal memuat demo tema", { status: 500 });
   }
 }

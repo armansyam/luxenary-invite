@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { routeError } from "@/lib/routeError";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -87,7 +89,7 @@ export async function GET(
         const { applyUpgradePlan } = await import("@/lib/upgradeHelper");
         await applyUpgradePlan(order.id);
       } catch (fulfillErr) {
-        console.error(`[Order Status] Pemenuhan ulang order ${order.id} gagal:`, fulfillErr);
+        logger.error("OrderStatus", "Pemenuhan ulang order gagal", fulfillErr, { orderId: order.id });
       }
     }
 
@@ -143,7 +145,7 @@ export async function GET(
             }
           }
         } catch (reconcileErr) {
-          console.error(`[Order Status] Rekonsiliasi gateway gagal untuk order ${order.id}:`, reconcileErr);
+          logger.error("OrderStatus", "Rekonsiliasi gateway gagal", reconcileErr, { orderId: order.id });
         }
       }
     }
@@ -230,8 +232,8 @@ export async function GET(
       snapToken: isAuthorizedOwner ? order.snapToken : null,
       serverTime: Date.now(),
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message }, { status: 500 });
+  } catch (error) {
+    return routeError("OrderStatus", error, "Gagal memuat status pesanan");
   }
 }
 

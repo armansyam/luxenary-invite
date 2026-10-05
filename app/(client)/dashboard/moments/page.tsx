@@ -313,8 +313,13 @@ export default function MomentsSetupPage() {
       if (res.ok) {
         setGuestMemoriesList((prev) => prev.filter((m) => m.id !== memoryId));
         await fetchGuestMemories(invitation.id);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        feedback.notify(data.error || "Gagal menghapus momen.", "error");
       }
-    } catch {}
+    } catch {
+      feedback.notify("Koneksi terputus. Momen belum terhapus.", "error");
+    }
   };
 
   if (loading) {

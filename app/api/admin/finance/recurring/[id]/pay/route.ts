@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminModule } from "@/lib/adminAuth";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -102,8 +103,7 @@ export async function POST(
         amount: Number(createdExpense.amount),
       },
     });
-  } catch (err: any) {
-    console.error("1-Click pay recurring error:", err);
-    return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
+  } catch (err) {
+    return routeError("RecurringExpensePay", err, "Gagal mencatat pembayaran beban rutin");
   }
 }

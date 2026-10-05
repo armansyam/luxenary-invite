@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 import { normalizePlanType } from "@/lib/planUtils";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -169,8 +170,7 @@ export async function POST(req: Request) {
       message: `Upgrade dari ${currentPlan} ke ${targetPlanUpper}${cleanDomain ? ` + Custom Domain (${cleanDomain})` : ""}. Nominal: Rp ${upgradeAmount.toLocaleString("id-ID")}`,
     });
 
-  } catch (error: any) {
-    console.error("[Upgrade Order Error]", error);
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal membuat order upgrade." : (error.message || "Gagal membuat order upgrade.") }, { status: 500 });
+  } catch (error) {
+    return routeError("PaymentsUpgrade", error, "Gagal membuat order upgrade.");
   }
 }

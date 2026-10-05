@@ -2,7 +2,37 @@
 
 Penilaian struktur (keterpeliharaan, konsistensi, keamanan perubahan ke depan), bukan kesiapan fungsional. Semua angka di bawah diukur dari repositori pada tanggal ini dengan `grep`/`find`/`wc`, bukan perkiraan. Kesiapan produksi (keamanan, data, operasi) dinilai terpisah di `docs/AUDIT_KESIAPAN_PRODUKSI_2026-09-30.md` dan catatan perbaikan di `docs/SYSTEM_ARCHITECTURE.md` bagian 25.11.
 
-## 1. Ringkasan
+## Pembaruan 6 Oktober 2026 (setelah perbaikan)
+
+| Dimensi | 5 Okt | 6 Okt | Perubahan terukur |
+|---|---|---|---|
+| Otorisasi | 7 | 8.5 | Seluruh 47 route admin memakai `requireAdminModule`/`requireSuperAdmin`/`requireAnyAdmin` (0 guard inline). Path traversal ditutup di 6 route (`isSafePathSegment`). Route `/demo/preview` tanpa auth dihapus. |
+| Penanganan galat & observabilitas | 6 | 8.5 | `console.*` server: 0 (route) dan 0 (lib, kecuali `participantUtils` yang ikut ke browser). 77 route memakai `routeError`. `catch` route yang membalas 500 tanpa log: 0 (dari 22). Galat tak terduga diteruskan ke Sentry bila `SENTRY_DSN` diisi; `onRequestError` menangkap galat render. |
+| Keamanan tipe | 5.5 | 6 | `any` 796 → 683; `catch (x: any)` di route 125 → 7. |
+| Konfigurasi & env | 5.5 | 7 | `lib/env.ts` diperiksa saat start (`instrumentation.ts`); pembacaan `process.env` masih tersebar. |
+| Pengujian | 7.5 | 8 | 53 berkas, 534 tes (tambahan: `routeError`, path traversal, env, seksi hadiah). |
+| Struktur frontend | 4.5 | 4.5 | Tidak berubah; lihat "Belum dikerjakan". |
+
+**Nilai struktur keseluruhan: 7.4/10** (dari 6.7).
+
+**Temuan nyata saat perbaikan** (rinci di `docs/SYSTEM_ARCHITECTURE.md` 25.11 butir 19):
+1. Undangan pernikahan tanpa rekening, QRIS, dan alamat menampilkan rekening tetap **BCA 7330497518** atas nama mempelai di HTML terbit. Diperbaiki; HTML yang sudah terbit dibangun ulang dengan `scripts/rebake-fallback-bank.ts --apply`. Halaman bayar menampilkan "BCA" bila nama bank kosong; kini "-".
+2. Path traversal di hapus portofolio (`fs.rm` rekursif), unggah/hapus aset demo, simpan data demo, serta baca portofolio dan aset demo publik.
+3. `/demo/preview?id=` merender undangan apa pun tanpa pemeriksaan akses dan mengirim stack trace.
+4. Berkas unggahan momen yang ditolak kuota tidak pernah dihapus (`deleteFile` menerima path relatif).
+5. Melepas promo di checkout menghapus promo dari tampilan meski server menolak.
+
+**Koreksi atas laporan 5 Oktober:**
+- Status `FAILED` **pernah ditulis** (route tolak order sampai commit `ea9595d`), jadi produksi dapat menyimpan baris `FAILED` dan cabang pembacanya bukan kode mati murni. Menghapus nilai enum butuh migrasi data dengan keputusan pemetaan di mesin status pembayaran; ditunda bersama pemisahan `snapToken` sampai uji sandbox Midtrans.
+- Rekomendasi 7 (memindahkan `lib/demoRegistry.ts` ke berkas data) dicabut: data demo bertipe di TypeScript justru diperiksa compiler; memindahkannya ke JSON menghilangkan pemeriksaan itu tanpa manfaat nyata.
+- Rekomendasi 1 dilaksanakan tanpa pembungkus HOF: guard yang sudah ada (`requireAdminModule`) ditambah `routeError`. Signature ekspor route tidak berubah, sehingga risiko terhadap tipe route Next lebih kecil.
+
+**Belum dikerjakan, dengan alasan:**
+- **Pemecahan dasbor admin (6.190 baris) dan editor undangan (6.485 baris), serta klien API bertipe untuk 170 `fetch`.** Ini perubahan UI besar yang wajib diverifikasi di browser; aturan proyek melarang alat browser tanpa perintah eksplisit ("uji di browser"). Mengerjakannya tanpa verifikasi tampilan bertentangan dengan protokol verifikasi.
+- **109 `catch` kosong sisi klien.** Sudah diklasifikasikan berdasarkan isi blok `try`: 6 jaringan (2 berdampak nyata dan diperbaiki, 4 upaya-terbaik diberi alasan), sisanya API browser yang memang boleh gagal (Fullscreen, `postMessage` ke iframe, `play()`/`pause()` media, `localStorage`, `JSON.parse` dengan nilai bawaan, `clear()` scanner) dan pemuatan kosmetik (nama platform, favicon). 28 di antaranya berada di skrip browser terbangkit (`themeEngine.ts`, `renderTemplate.ts`) yang berjalan di halaman undangan publik.
+- **`jsonb` untuk `eventData`/`featureSettings`.** CHECK JSON yang sudah ada menjamin validitas; konversi ke `jsonb` menyentuh lebih dari 300 baris di 50+ berkas tanpa kebutuhan kueri yang memerlukannya. Tidak sepadan saat ini.
+
+## 1. Ringkasan (5 Oktober 2026)
 
 | Dimensi | Nilai | Alasan singkat |
 |---|---|---|

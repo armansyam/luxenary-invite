@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
 import fs from "fs";
 import path from "path";
 import { uploadPortfolioFile, listPortfolioSlugs, deletePortfolio } from "@/lib/storage";
-import { hasAdminPermission } from "@/lib/adminPermissions";
+import { isSafePathSegment } from "@/lib/fsSafe";
+import { requireAdminModule } from "@/lib/adminAuth";
+import { logger } from "@/lib/logger";
+import { HttpError, routeError } from "@/lib/routeError";
+
+const errorMessage = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
 // Helper for file existence
 async function fileExists(filePath: string): Promise<boolean> {
@@ -19,26 +23,21 @@ async function fileExists(filePath: string): Promise<boolean> {
 // GET: List all isolated portfolios
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session || !hasAdminPermission(session.user, "portfolio")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const guard = await requireAdminModule("portfolio");
+    if (!guard.ok) return guard.response;
 
     const portfolios = await listPortfolioSlugs();
     return NextResponse.json({ portfolios });
   } catch (error) {
-    console.error("GET /api/admin/portfolio error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return routeError("AdminPortfolio", error, "Gagal memuat daftar portofolio");
   }
 }
 
 // POST: Add invitation to isolated portfolio (full static clone)
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session || !hasAdminPermission(session.user, "portfolio")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const guard = await requireAdminModule("portfolio");
+    if (!guard.ok) return guard.response;
 
     const { invitationId } = await req.json();
     if (!invitationId) {
@@ -55,12 +54,15 @@ export async function POST(req: NextRequest) {
     }
 
     const clientName = inv.invitationSlug;
+    if (!isSafePathSegment(clientName)) {
+      throw new HttpError(400, "Slug undangan tidak dapat dipakai sebagai nama portofolio.");
+    }
 
     // 1. Baca HTML Canonical yang sudah di-bake dari folder ids (Single Source of Truth)
     const canonicalHtmlPath = path.join(process.cwd(), "public", "published", "ids", `${invitationId}.html`);
-    
-    // UI Admin Dashboard menjamin tombol ini hanya muncul jika HTML sudah di-publish.
-    // Jika file tidak ada secara fisik karena anomali sistem file, fs.readFile akan melemparkan error (ter-catch di blok bawah)
+    if (!(await fileExists(canonicalHtmlPath))) {
+      throw new HttpError(409, "Undangan belum memiliki HTML terbit. Terbitkan undangan sebelum menyalinnya ke portofolio.");
+    }
     let htmlContent = await fs.promises.readFile(canonicalHtmlPath, "utf-8");
 
     // 2. Helper: download/salin media utama dan upload via Hybrid Storage
@@ -94,7 +96,7 @@ export async function POST(req: NextRequest) {
         }
         return null;
       } catch (err) {
-        console.error("[Portfolio] Gagal proses media:", url, err);
+        logger.warn("AdminPortfolio", "Media gagal disalin; URL asli dipertahankan", { url, error: errorMessage(err) });
         return null;
       }
     };
@@ -137,7 +139,7 @@ export async function POST(req: NextRequest) {
           await uploadPortfolioFile(processedBuffer, relativePath, "image/webp");
         }
       } catch (err) {
-        console.error("[Portfolio] Gagal generate cover.webp:", err);
+        logger.warn("AdminPortfolio", "Gagal membuat cover.webp portofolio", { slug: clientName, error: errorMessage(err) });
       }
     }
 
@@ -180,11 +182,11 @@ export async function POST(req: NextRequest) {
             htmlContent = htmlContent.split(thumbUrl).join(newUrl);
           }
         } catch (memErr) {
-          console.error("[Portfolio] Gagal proses GuestMemory thumbnail:", thumbUrl, memErr);
+          logger.warn("AdminPortfolio", "Thumbnail kenangan tamu gagal disalin", { url: thumbUrl, error: errorMessage(memErr) });
         }
       }
     } catch (sharpErr) {
-      console.error("[Portfolio] Error saat proses GuestMemory:", sharpErr);
+      logger.warn("AdminPortfolio", "Pemrosesan kenangan tamu dilewati", { slug: clientName, error: errorMessage(sharpErr) });
     }
 
     // 5. Proses Google Drive CDN photos
@@ -211,11 +213,11 @@ export async function POST(req: NextRequest) {
           const newUrl = await uploadPortfolioFile(processedBuffer, relativePath, "image/webp");
           htmlContent = htmlContent.split(driveUrl).join(newUrl);
         } catch (driveErr) {
-          console.error("[Portfolio] Gagal download Drive photo:", driveUrl, driveErr);
+          logger.warn("AdminPortfolio", "Foto Google Drive gagal disalin", { url: driveUrl, error: errorMessage(driveErr) });
         }
       }
     } catch (sharpErr) {
-      console.error("[Portfolio] Error saat proses Drive photos:", sharpErr);
+      logger.warn("AdminPortfolio", "Pemrosesan foto Google Drive dilewati", { slug: clientName, error: errorMessage(sharpErr) });
     }
 
     // 6. Simpan HTML yang sudah diisolasi penuh via Hybrid Storage
@@ -236,18 +238,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, clientName });
 
   } catch (error) {
-    console.error("POST /api/admin/portfolio error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return routeError("AdminPortfolio", error, "Gagal menyalin undangan ke portofolio");
   }
 }
 
 // DELETE: Remove isolated portfolio
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session || !hasAdminPermission(session.user, "portfolio")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const guard = await requireAdminModule("portfolio");
+    if (!guard.ok) return guard.response;
 
     const { searchParams } = new URL(req.url);
     const clientName = searchParams.get("clientName");
@@ -255,12 +254,15 @@ export async function DELETE(req: NextRequest) {
     if (!clientName) {
       return NextResponse.json({ error: "clientName required" }, { status: 400 });
     }
+    // Nilai ini menjadi path yang dihapus rekursif; tanpa validasi, `../..` keluar dari folder portofolio.
+    if (!isSafePathSegment(clientName)) {
+      return NextResponse.json({ error: "clientName tidak valid" }, { status: 400 });
+    }
 
     await deletePortfolio(clientName);
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("DELETE /api/admin/portfolio error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return routeError("AdminPortfolio", error, "Gagal menghapus portofolio");
   }
 }

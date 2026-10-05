@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { invalidateInvitationLookup } from "@/lib/cache";
 import { buildAndSavePublishedHtml } from "@/lib/staticPublisher";
 import { hasPlanCapability } from "@/lib/settings";
+import { logger } from "@/lib/logger";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -108,8 +110,8 @@ export async function POST(
     if (nextStatus === "EVENT_FINISHED") {
       try {
         await buildAndSavePublishedHtml(invitation.id);
-      } catch (err: any) {
-        console.warn("[gallery-mode] Gagal bake master HTML:", err.message);
+      } catch (err) {
+        logger.error("GalleryMode", "HTML terbit gagal dibangun ulang saat mengalihkan mode", err, { invitationId: invitation.id });
       }
     }
 
@@ -129,12 +131,7 @@ export async function POST(
         ? "Acara berhasil ditandai selesai. Alamat utama undangan kini otomatis menampilkan Galeri Kenangan Tamu."
         : "Mode Web Undangan berhasil diaktifkan kembali.",
     });
-  } catch (error: any) {
-    console.error("[Gallery Mode Switch Error]", error);
-    const msg =
-      process.env.NODE_ENV === "production"
-        ? "Gagal mengalihkan mode galeri"
-        : error.message || "Gagal mengalihkan mode galeri";
-    return NextResponse.json({ error: msg }, { status: 500 });
+  } catch (error) {
+    return routeError("GalleryMode", error, "Gagal mengalihkan mode galeri");
   }
 }

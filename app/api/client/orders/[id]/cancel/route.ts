@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { logger } from "@/lib/logger";
+import { routeError } from "@/lib/routeError";
 
 export async function POST(
   req: Request,
@@ -61,8 +62,8 @@ export async function POST(
           }
         }
       } catch (err) {
-        console.error("Gagal sinkronisasi cancel dengan Payment Gateway:", err);
         // Tetap lanjut cancel secara lokal walaupun API gateway timeout/gagal
+        logger.error("ClientOrderCancel", "Pembatalan di payment gateway gagal; order tetap dibatalkan lokal", err, { orderId });
       }
     }
 
@@ -83,7 +84,7 @@ export async function POST(
       const { releaseOrderPromoHold } = await import("@/lib/marketing");
       await releaseOrderPromoHold(orderId);
     } catch (promoErr) {
-      console.error("[Cancel Order] Gagal melepaskan promo hold:", promoErr);
+      logger.error("ClientOrderCancel", "Gagal melepaskan promo hold", promoErr, { orderId });
     }
 
     // 5. Emit SSE ke browser klien agar antarmuka kasir langsung reset secara real-time
@@ -95,11 +96,7 @@ export async function POST(
     }
 
     return NextResponse.json({ success: true, message: "Pesanan berhasil dibatalkan." });
-  } catch (error: any) {
-    console.error("Cancel Order Error:", error);
-    return NextResponse.json(
-      { error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan sistem saat membatalkan pesanan" : error.message },
-      { status: 500 }
-    );
+  } catch (error) {
+    return routeError("ClientOrderCancel", error, "Terjadi kesalahan sistem saat membatalkan pesanan");
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createDatabaseSnapshot, listDatabaseSnapshots, deleteDatabaseSnapshot, inspectBackupPath, readBackupPathSetting } from "@/lib/databaseBackup";
 import { prisma } from "@/lib/prisma";
 import { requireAdminModule } from "@/lib/adminAuth";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -23,8 +24,8 @@ export async function GET() {
     ]);
 
     return NextResponse.json({ success: true, snapshots, pathInfo });
-  } catch (error: any) {
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal mengambil daftar snapshot" : (error.message || "Gagal mengambil daftar snapshot") }, { status: 500 });
+  } catch (error) {
+    return routeError("DatabaseBackup", error, "Gagal mengambil daftar snapshot");
   }
 }
 
@@ -48,9 +49,8 @@ export async function POST(req: NextRequest) {
       message: `Snapshot database berhasil dibuat: ${result.filename}`,
       snapshot: result,
     });
-  } catch (error: any) {
-    console.error("[Database Backup Error]", error);
-    return NextResponse.json({ error: error.message || "Gagal membuat snapshot database" }, { status: 500 });
+  } catch (error) {
+    return routeError("DatabaseBackup", error, "Gagal membuat snapshot database");
   }
 }
 
@@ -66,7 +66,7 @@ export async function DELETE(req: NextRequest) {
     }
     await deleteDatabaseSnapshot(filename);
     return NextResponse.json({ success: true, message: `Snapshot ${filename} berhasil dihapus` });
-  } catch (error: any) {
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal menghapus snapshot" : (error.message || "Gagal menghapus snapshot") }, { status: 500 });
+  } catch (error) {
+    return routeError("DatabaseBackup", error, "Gagal menghapus snapshot");
   }
 }

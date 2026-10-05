@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminModule } from "@/lib/adminAuth";
+import { routeError } from "@/lib/routeError";
 import { prisma } from "@/lib/prisma";
 import fs from "fs";
 import path from "path";
@@ -24,9 +25,8 @@ export async function GET() {
       success: true,
       music: musicList,
     });
-  } catch (error: any) {
-    console.error("[Admin Get Music Error]:", error);
-    return NextResponse.json({ error: "Gagal mengambil daftar musik sistem" }, { status: 500 });
+  } catch (error) {
+    return routeError("AdminMusic", error, "Gagal mengambil daftar musik sistem");
   }
 }
 
@@ -108,8 +108,7 @@ export async function POST(req: NextRequest) {
       success: true,
       music: newMusic,
     });
-  } catch (error: any) {
-    console.error("[Admin Upload Music Error]:", error);
-    return NextResponse.json({ error: error.message || "Gagal mengunggah lagu sistem" }, { status: 500 });
+  } catch (error) {
+    return routeError("AdminMusic", error, "Gagal mengunggah lagu sistem");
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminModule } from "@/lib/adminAuth";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -57,9 +58,8 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
         amount: Number(updated.amount),
       },
     });
-  } catch (err: any) {
-    console.error("Expense PUT error:", err);
-    return NextResponse.json({ error: err.message || "Gagal memperbarui pengeluaran." }, { status: 500 });
+  } catch (err) {
+    return routeError("AdminExpense", err, "Gagal memperbarui pengeluaran.");
   }
 }
 
@@ -95,8 +95,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
     await prisma.expense.delete({ where: { id } });
 
     return NextResponse.json({ success: true, message: "Pengeluaran berhasil dihapus." });
-  } catch (err: any) {
-    console.error("Expense DELETE error:", err);
-    return NextResponse.json({ error: err.message || "Gagal menghapus pengeluaran." }, { status: 500 });
+  } catch (err) {
+    return routeError("AdminExpense", err, "Gagal menghapus pengeluaran.");
   }
 }

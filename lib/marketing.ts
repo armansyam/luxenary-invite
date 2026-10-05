@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { logger } from "@/lib/logger";
 
 /**
  * Memproses konsumsi PromoHold dan pencatatan komisi mitra saat order berubah status menjadi PAID.
@@ -83,7 +84,7 @@ export async function processOrderPaidMarketing(
       }
     }
   } catch (error) {
-    console.error(`[Marketing] Gagal memproses paid marketing untuk order ${orderId}:`, error);
+    logger.error("Marketing", "Gagal memproses komisi dan kupon untuk order lunas", error, { orderId });
     throw error;
   }
 }
@@ -107,6 +108,6 @@ export async function releaseOrderPromoHold(
       },
     });
   } catch (error) {
-    console.error(`[Marketing] Gagal merilis promo hold untuk order ${orderId}:`, error);
+    logger.error("Marketing", "Gagal melepas promo hold", error, { orderId });
   }
 }

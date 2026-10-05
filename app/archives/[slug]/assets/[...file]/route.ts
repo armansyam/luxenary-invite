@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { getNasArchivePath, isNasArchiveEnabled } from "@/lib/nasArchive";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -117,7 +118,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("[NAS Asset Route Error]", error);
+    logger.error("ArchiveAsset", "Gagal menyajikan aset arsip", error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

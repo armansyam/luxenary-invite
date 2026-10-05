@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { CommissionType, DiscountType } from "@prisma/client";
-import { adminActorId } from "@/lib/adminAuth";
+import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -41,20 +41,9 @@ function partnerCommissionError(commissionType: unknown, commissionValue: unknow
   return null;
 }
 
-async function checkAdminAuth() {
-  const session = await auth();
-  const { hasAdminPermission } = await import("@/lib/adminPermissions");
-  if (!session?.user || !hasAdminPermission(session.user, "marketing")) {
-    return null;
-  }
-  return session;
-}
-
 export async function GET() {
-  const session = await checkAdminAuth();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-  }
+  const guard = await requireAdminModule("marketing");
+  if (!guard.ok) return guard.response;
 
   try {
     const [promoSetting, coupons, partners, commissions] = await Promise.all([
@@ -100,17 +89,15 @@ export async function GET() {
       partners,
       commissions,
     });
-  } catch (error: any) {
-    console.error("[Admin Marketing GET Error]", error);
-    return NextResponse.json({ error: error.message || "Gagal memuat data pemasaran" }, { status: 500 });
+  } catch (error) {
+    return routeError("AdminMarketing", error, "Gagal memuat data pemasaran");
   }
 }
 
 export async function POST(req: NextRequest) {
-  const session = await checkAdminAuth();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-  }
+  const guard = await requireAdminModule("marketing");
+  if (!guard.ok) return guard.response;
+  const { session } = guard;
 
   try {
     const body = await req.json();
@@ -443,8 +430,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ error: `Action "${action}" tidak dikenali.` }, { status: 400 });
-  } catch (error: any) {
-    console.error("[Admin Marketing POST Error]", error);
-    return NextResponse.json({ error: error.message || "Gagal memproses aksi pemasaran" }, { status: 500 });
+  } catch (error) {
+    return routeError("AdminMarketing", error, "Gagal memproses aksi pemasaran");
   }
 }

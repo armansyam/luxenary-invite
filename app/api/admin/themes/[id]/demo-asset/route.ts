@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
-import { removeIfExists } from "@/lib/fsSafe";
+import { routeError } from "@/lib/routeError";
+import { isSafePathSegment, removeIfExists } from "@/lib/fsSafe";
 import fs from "fs";
 import path from "path";
 
@@ -25,6 +26,10 @@ export async function POST(
 
     if (!slot || !file) {
       return NextResponse.json({ error: "Slot dan file harus disertakan" }, { status: 400 });
+    }
+    // ID tema dan slot menjadi path tujuan tulis dan hapus di `public/demo/`.
+    if (!isSafePathSegment(themeId) || !isSafePathSegment(slot)) {
+      return NextResponse.json({ error: "ID tema atau slot tidak valid" }, { status: 400 });
     }
 
     const targetDir = path.join(process.cwd(), "public", "demo", themeId);
@@ -150,7 +155,7 @@ export async function POST(
         logger.warn("DemoAsset", "Revalidasi atau purge cache Cloudflare gagal setelah unggah aset", { themeId, error: err instanceof Error ? err.message : String(err) });
       }
     } catch (publishErr) {
-      console.error("[DemoAsset-Publish-Error]:", publishErr);
+      logger.error("DemoAsset", "Aset tersimpan tetapi demo statis gagal dikompilasi ulang", publishErr, { themeId, slot });
     }
 
     return NextResponse.json({
@@ -163,12 +168,8 @@ export async function POST(
       isAudio,
       themeId,
     });
-  } catch (err: any) {
-    console.error("[DemoAsset-Upload-Error]:", err);
-    return NextResponse.json(
-      { error: err.message || "Gagal mengunggah aset demo" },
-      { status: 500 }
-    );
+  } catch (err) {
+    return routeError("DemoAsset", err, "Gagal mengunggah aset demo");
   }
 }
 
@@ -188,6 +189,9 @@ export async function DELETE(
 
     if (!slot) {
       return NextResponse.json({ error: "Slot harus disertakan" }, { status: 400 });
+    }
+    if (!isSafePathSegment(themeId) || !isSafePathSegment(slot)) {
+      return NextResponse.json({ error: "ID tema atau slot tidak valid" }, { status: 400 });
     }
 
     const targetDir = path.join(process.cwd(), "public", "demo", themeId);
@@ -269,7 +273,7 @@ export async function DELETE(
         logger.warn("DemoAsset", "Revalidasi atau purge cache Cloudflare gagal setelah hapus aset", { themeId, error: err instanceof Error ? err.message : String(err) });
       }
     } catch (publishErr) {
-      console.error("[DemoAsset-Delete-Publish-Error]:", publishErr);
+      logger.error("DemoAsset", "Aset terhapus tetapi demo statis gagal dikompilasi ulang", publishErr, { themeId, slot });
     }
 
     return NextResponse.json({
@@ -278,11 +282,7 @@ export async function DELETE(
       slot,
       themeId,
     });
-  } catch (err: any) {
-    console.error("[DemoAsset-Delete-Error]:", err);
-    return NextResponse.json(
-      { error: err.message || "Gagal menghapus aset demo" },
-      { status: 500 }
-    );
+  } catch (err) {
+    return routeError("DemoAsset", err, "Gagal menghapus aset demo");
   }
 }

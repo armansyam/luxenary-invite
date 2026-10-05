@@ -56,10 +56,10 @@ describe.skipIf(!IS_TEST_DB)("Penurunan dan pembukaan kembali undangan oleh admi
     await pool.end();
   });
 
-  it("staf tanpa modul invitations (FINANCE) -> 401 dan status tidak berubah", async () => {
+  it("staf tanpa modul invitations (FINANCE) -> 403 dan status tidak berubah", async () => {
     actAs("FINANCE");
     const res = await call({ action: "TAKE_DOWN", reason: "uji" });
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(403);
     expect(await statusOfInvitation()).toBe("PUBLISHED");
   });
 

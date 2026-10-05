@@ -1,19 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
 import { Prisma } from "@prisma/client";
-import { adminActorId } from "@/lib/adminAuth";
+import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
-    const { hasAdminPermission } = await import("@/lib/adminPermissions");
-
-    if (!session?.user || !hasAdminPermission(session.user, "finance")) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("finance");
+    if (!guard.ok) return guard.response;
 
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
@@ -106,20 +102,16 @@ export async function GET(req: NextRequest) {
         totalPages: Math.ceil(total / limit) || 1,
       },
     });
-  } catch (err: any) {
-    console.error("Expenses GET error:", err);
-    return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
+  } catch (err) {
+    return routeError("AdminExpenses", err, "Gagal memuat data pengeluaran");
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    const { hasAdminPermission } = await import("@/lib/adminPermissions");
-
-    if (!session?.user || !hasAdminPermission(session.user, "finance")) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator Finance." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("finance");
+    if (!guard.ok) return guard.response;
+    const { session } = guard;
 
     const body = await req.json();
     const { title, category, amount, expenseDate, paymentSource, referenceNumber, receiptUrl, notes } = body;
@@ -182,8 +174,7 @@ export async function POST(req: NextRequest) {
         amount: Number(newExpense.amount),
       },
     });
-  } catch (err: any) {
-    console.error("Expenses POST error:", err);
-    return NextResponse.json({ error: err.message || "Gagal menyimpan pengeluaran" }, { status: 500 });
+  } catch (err) {
+    return routeError("AdminExpenses", err, "Gagal menyimpan pengeluaran");
   }
 }

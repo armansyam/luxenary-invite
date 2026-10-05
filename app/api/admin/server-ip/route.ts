@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { routeError } from "@/lib/routeError";
 import { requireAdminModule } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
@@ -69,10 +70,7 @@ export async function GET() {
       success: true,
       ip: detectedIp,
     });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message },
-      { status: 500 }
-    );
+  } catch (error) {
+    return routeError("ServerIp", error);
   }
 }

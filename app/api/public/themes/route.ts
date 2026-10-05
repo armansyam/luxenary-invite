@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { routeError } from "@/lib/routeError";
 import { DEMO_REGISTRY } from "@/lib/demoRegistry";
 import type { ThemeCategory } from "@prisma/client";
 import { logger } from "@/lib/logger";
@@ -162,9 +163,8 @@ export async function GET(req: Request) {
         "Cache-Control": "public, max-age=60, s-maxage=86400, stale-while-revalidate=3600",
       },
     });
-  } catch (error: unknown) {
-    const errorMsg = error instanceof Error ? error.message : "Gagal memuat daftar tema";
-    return NextResponse.json({ error: errorMsg }, { status: 500 });
+  } catch (error) {
+    return routeError("PublicThemes", error, "Gagal memuat daftar tema");
   }
 }
 

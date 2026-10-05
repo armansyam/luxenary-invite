@@ -4,6 +4,7 @@ import fs from "fs";
 import { getBackupDirectory, readBackupPathSetting, restoreDatabaseSnapshot, isSnapshotFile } from "@/lib/databaseBackup";
 
 import { requireAdminModule } from "@/lib/adminAuth";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -66,11 +67,7 @@ export async function POST(req: NextRequest) {
       safetySnapshot: result.safetySnapshot,
       restoredFrom: filename,
     });
-  } catch (error: any) {
-    console.error("[Database Restore Error]", error);
-    return NextResponse.json(
-      { error: process.env.NODE_ENV === "production" ? "Gagal melakukan restore database" : (error.message || "Gagal melakukan restore database") },
-      { status: 500 }
-    );
+  } catch (error) {
+    return routeError("DatabaseRestore", error, "Gagal melakukan restore database");
   }
 }

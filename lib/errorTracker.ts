@@ -146,9 +146,16 @@ export function captureException(err: unknown, context?: ErrorContext): void {
   logger.error("ErrorTracker", errorObj.message, errorObj, safeContext);
 
   // 2. Kirim ke Sentry jika DSN aktif secara non-blocking
-  if (process.env.SENTRY_DSN) {
-    sendToSentry(errorObj, safeContext).catch(() => {});
-  }
+  forwardException(errorObj, safeContext);
+}
+
+/** Hanya meneruskan ke Sentry (bila SENTRY_DSN aktif); untuk pemanggil yang sudah mencatat galatnya sendiri. */
+export function forwardException(err: unknown, context?: ErrorContext): void {
+  if (!process.env.SENTRY_DSN) return;
+  const errorObj = err instanceof Error ? err : new Error(String(err));
+  // Pelacak galat tidak boleh memicu galat baru (unhandledRejection) saat Sentry atau payload-nya gagal;
+  // galat aslinya sudah dicatat pemanggil.
+  sendToSentry(errorObj, sanitizeData(context || {})).catch(() => undefined);
 }
 
 export function isErrorTrackingConfigured(): boolean {

@@ -3,6 +3,8 @@ import { auth } from "@/auth";
 import crypto from "crypto";
 import { runLifecycleCleanup, runStaleDataCleanup } from "@/lib/lifecycleCleanup";
 import { hasAdminPermission } from "@/lib/adminPermissions";
+import { logger } from "@/lib/logger";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +14,7 @@ async function isAuthorized(req: NextRequest): Promise<boolean> {
 
   // Warning jika CRON_SECRET tidak dikonfigurasi di production
   if (!cronSecret && process.env.NODE_ENV === "production") {
-    console.error("[SECURITY WARNING] CRON_SECRET tidak diset di production! Endpoint cleanup tidak aman.");
+    logger.error("CronCleanup", "CRON_SECRET tidak diset di production; endpoint cleanup hanya terbuka untuk sesi admin");
   }
 
   // Bearer token check (untuk cron job eksternal seperti cron-job.org atau server cron)
@@ -60,9 +62,8 @@ export async function POST(req: NextRequest) {
         `${lifecycle.archivedInvitations} undangan diarsipkan, ${lifecycle.purgedArchives} arsip kedaluwarsa dibersihkan` +
         (failedCount > 0 ? `, ${failedCount} undangan gagal diarsipkan dan akan dicoba lagi.` : "."),
     });
-  } catch (error: any) {
-    console.error("[Cleanup Cron Error]", error);
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal menjalankan auto-cleanup" : (error.message || "Gagal menjalankan auto-cleanup") }, { status: 500 });
+  } catch (error) {
+    return routeError("CronCleanup", error, "Gagal menjalankan auto-cleanup");
   }
 }
 

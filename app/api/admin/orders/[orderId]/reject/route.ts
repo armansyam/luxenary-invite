@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
 import { paymentEmitter } from "@/lib/paymentEvents";
 import { logger } from "@/lib/logger";
 import { deleteFile } from "@/lib/storage";
-import { adminActorId } from "@/lib/adminAuth";
+import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -13,11 +13,9 @@ export async function POST(
   { params }: { params: Promise<{ orderId: string }> }
 ) {
   try {
-    const session = await auth();
-    const { hasAdminPermission } = await import("@/lib/adminPermissions");
-    if (!session?.user || !hasAdminPermission(session.user, "orders")) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("orders");
+    if (!guard.ok) return guard.response;
+    const { session } = guard;
 
     const { orderId } = await params;
     if (!orderId) {
@@ -39,13 +37,9 @@ export async function POST(
       // Body opsional: tanpa body JSON, alasan memakai nilai bawaan di atas.
     }
 
-    // Hapus file bukti transfer fisik lama yang ditolak
+    // Hapus file bukti transfer fisik lama yang ditolak (deleteFile mencatat galatnya sendiri dan tidak melempar).
     if (order.proofImageUrl) {
-      try {
-        await deleteFile(order.proofImageUrl);
-      } catch (e) {
-        logger.error("AdminRejectOrder", "Gagal menghapus berkas bukti transfer lama", e, { orderId });
-      }
+      await deleteFile(order.proofImageUrl);
     }
 
     // Update order: status tetap PENDING agar order tidak mati, hapus proof agar user bisa upload ulang.
@@ -85,9 +79,8 @@ export async function POST(
       orderId,
       rejectReason: reason,
     });
-  } catch (error: any) {
-    logger.error("AdminRejectOrder", "Penolakan order gagal", error);
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message }, { status: 500 });
+  } catch (error) {
+    return routeError("AdminRejectOrder", error, "Penolakan order gagal");
   }
 }
 

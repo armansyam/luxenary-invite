@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { routeError } from "@/lib/routeError";
 import { auth } from "@/auth";
 import { normalizeRsvpStatus } from "@/lib/rsvpStatus";
 import { hasAdminPermission } from "@/lib/adminPermissions";
@@ -68,7 +69,7 @@ export async function GET(req: NextRequest) {
       rsvps,
       wishes: [],
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal memuat data RSVP" : (error.message || "Gagal memuat data RSVP") }, { status: 500 });
+  } catch (error) {
+    return routeError("ClientRsvps", error, "Gagal memuat data RSVP");
   }
 }

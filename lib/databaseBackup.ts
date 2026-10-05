@@ -7,6 +7,7 @@ import { STORAGE_PROVIDER, s3Client } from "@/lib/storage";
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { logger } from "@/lib/logger";
 import { removeIfExists } from "@/lib/fsSafe";
+import { HttpError } from "@/lib/routeError";
 
 const execFileAsync = promisify(execFile);
 
@@ -316,7 +317,7 @@ export async function restoreDatabaseSnapshot(filename: string): Promise<{ succe
   try {
     await fs.promises.access(snapshotPath);
   } catch {
-    throw new Error(`File snapshot "${safeName}" tidak ditemukan di direktori backup.`);
+    throw new HttpError(404, `File snapshot "${safeName}" tidak ditemukan di direktori backup.`);
   }
 
   // 1. Buat safety backup dari database aktif saat ini sebelum ditimpa

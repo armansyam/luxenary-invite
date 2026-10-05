@@ -1,20 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
 import { Prisma } from "@prisma/client";
 import { removeIfExists } from "@/lib/fsSafe";
-import { adminActorId } from "@/lib/adminAuth";
+import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
+import { logger } from "@/lib/logger";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
+/** Data klien hanya dikelola dari sesi admin asli, bukan dari sesi remote yang sedang memakai akun klien. */
+async function requireClientModule() {
+  const guard = await requireAdminModule("users");
+  if (guard.ok && guard.session.user.isRemote === true) {
+    return { ok: false as const, response: NextResponse.json({ error: "Kelola klien tidak tersedia dari sesi remote." }, { status: 403 }) };
+  }
+  return guard;
+}
+
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
-    const { hasAdminPermission } = await import("@/lib/adminPermissions");
-
-    if (!session?.user || session.user.isRemote === true || !hasAdminPermission(session.user, "users")) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const guard = await requireClientModule();
+    if (!guard.ok) return guard.response;
 
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
@@ -138,24 +144,17 @@ export async function GET(req: NextRequest) {
         totalPages,
       },
     });
-  } catch (error: any) {
-    console.error("GET /api/admin/users error:", error);
-    return NextResponse.json(
-      { error: process.env.NODE_ENV === "production" ? "Gagal memuat data klien" : error.message },
-      { status: 500 }
-    );
+  } catch (error) {
+    return routeError("AdminUsers", error, "Gagal memuat data klien");
   }
 }
 
 export async function DELETE(req: Request) {
   try {
     // Penghapusan permanen: wajib izin modul "users" dan bukan dari sesi remote, sama dengan GET.
-    // `isAdmin` saja meloloskan staf SUPPORT/FINANCE yang tidak memegang modul klien.
-    const session = await auth();
-    const { hasAdminPermission } = await import("@/lib/adminPermissions");
-    if (!session?.user || session.user.isRemote === true || !hasAdminPermission(session.user, "users")) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const guard = await requireClientModule();
+    if (!guard.ok) return guard.response;
+    const { session } = guard;
 
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get("id");
@@ -213,11 +212,11 @@ export async function DELETE(req: Request) {
         // 3. Hapus file media & guest memories dari R2/Local
         if (inv.media && inv.media.length > 0) {
           await Promise.all(inv.media.map(m => m.localPath ? deleteFile(m.localPath) : Promise.resolve()))
-            .catch((e) => console.warn(`[Admin DeleteUser] Partial media file delete failed (inv: ${inv.id}):`, e.message));
+            .catch((e) => logger.warn("AdminDeleteClient", "Sebagian berkas media gagal dihapus", { invitationId: inv.id, error: e instanceof Error ? e.message : String(e) }));
         }
         if (inv.guestMemories && inv.guestMemories.length > 0) {
           await Promise.all(inv.guestMemories.map(mem => mem.mediaUrl ? deleteFile(mem.mediaUrl) : Promise.resolve()))
-            .catch((e) => console.warn(`[Admin DeleteUser] Partial guestMemory file delete failed (inv: ${inv.id}):`, e.message));
+            .catch((e) => logger.warn("AdminDeleteClient", "Sebagian berkas kenangan tamu gagal dihapus", { invitationId: inv.id, error: e instanceof Error ? e.message : String(e) }));
         }
 
         // 4. Hapus folder uploads fisik invitation & guest-memories lokal
@@ -234,8 +233,7 @@ export async function DELETE(req: Request) {
       success: true,
       message: "Akun klien beserta semua data undangan, media, dan transaksinya berhasil dihapus permanen.",
     });
-  } catch (err: any) {
-    console.error("Delete client error:", err);
-    return NextResponse.json({ error: err.message || "Gagal menghapus klien." }, { status: 500 });
+  } catch (err) {
+    return routeError("AdminDeleteClient", err, "Gagal menghapus klien.");
   }
 }

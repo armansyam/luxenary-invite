@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { routeError } from "@/lib/routeError";
 import path from "path";
 import fs from "fs";
 import { getBackupDirectory, readBackupPathSetting } from "@/lib/databaseBackup";
@@ -47,7 +48,7 @@ export async function GET(req: NextRequest) {
         "Content-Length": String(fileBuffer.length),
       },
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal mengunduh file snapshot" : (error.message || "Gagal mengunduh file snapshot") }, { status: 500 });
+  } catch (error) {
+    return routeError("DatabaseDownload", error, "Gagal mengunduh file snapshot");
   }
 }

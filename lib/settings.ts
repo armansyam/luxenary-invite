@@ -106,7 +106,7 @@ export async function getAdminSetting(key: string, defaultValue = ""): Promise<s
     settingsCache.set(key, { value: val, expiresAt: now + SETTINGS_CACHE_TTL_MS });
     return val;
   } catch (err) {
-    console.warn(`[getAdminSetting] Gagal membaca setting key "${key}":`, err);
+    logger.error("Settings", "Pengaturan gagal dibaca; nilai bawaan dipakai", err, { key });
     return defaultValue;
   }
 }
@@ -167,7 +167,7 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
       select: { name: true, series: true }
     });
   } catch (e) {
-    console.warn("[getPublicPlatformSettings error]", e);
+    logger.error("Settings", "Data tema untuk pengaturan publik gagal dibaca", e);
   }
 
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { routeError } from "@/lib/routeError";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { invalidateInvitationLookup } from "@/lib/cache";
 import { DAY_MS, computeLifecycleDates, getPrimaryEventDateString } from "@/lib/lifecycleDates";
@@ -70,8 +71,8 @@ export async function GET() {
       total: items.length,
       items,
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err?.message || "Gagal memuat status subdomain" }, { status: 500 });
+  } catch (err) {
+    return routeError("SubdomainRecycle", err, "Gagal memuat status subdomain");
   }
 }
 
@@ -122,7 +123,7 @@ export async function POST() {
       releasedList,
       message: `${releasedCount} subdomain kedaluwarsa berhasil dilepas kembali ke pool namespace.`,
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err?.message || "Gagal mengeksekusi daur ulang subdomain" }, { status: 500 });
+  } catch (err) {
+    return routeError("SubdomainRecycle", err, "Gagal mengeksekusi daur ulang subdomain");
   }
 }

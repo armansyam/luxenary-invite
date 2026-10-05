@@ -351,12 +351,12 @@ export class MidtransGateway implements PaymentGateway {
         throw new Error(`Midtrans: ${chargeData.status_message}`);
       }
 
-      console.warn("[Midtrans Core API] Gagal charge QRIS, beralih fallback ke Snap:", chargeData);
+      logger.warn("MidtransGateway", "Charge QRIS Core API gagal; beralih ke Snap", { statusCode: chargeData?.status_code, statusMessage: chargeData?.status_message });
     } catch (chargeErr: any) {
       if (chargeErr.message?.includes("already been taken")) {
         throw chargeErr;
       }
-      console.warn("[Midtrans Core API Error]", chargeErr.message);
+      logger.warn("MidtransGateway", "Charge QRIS Core API gagal; beralih ke Snap", { error: chargeErr.message });
     }
 
     // ────────────────────────────────────────────────────────────────────────

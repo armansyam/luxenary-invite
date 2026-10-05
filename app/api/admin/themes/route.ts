@@ -1,26 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requireAdminModule } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
+import { routeError } from "@/lib/routeError";
 import { removeIfExists } from "@/lib/fsSafe";
 
 export const dynamic = "force-dynamic";
 
-async function verifyAdminSession() {
-  const session = await auth();
-  const { hasAdminPermission } = await import("@/lib/adminPermissions");
-  if (!session?.user || !hasAdminPermission(session.user, "themes")) {
-    return false;
-  }
-  return true;
-}
-
 export async function GET() {
   try {
-    const isAuthorized = await verifyAdminSession();
-    if (!isAuthorized) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("themes");
+    if (!guard.ok) return guard.response;
 
     const dbThemes = await prisma.theme.findMany({ orderBy: { sortOrder: "asc" } });
 
@@ -59,17 +49,15 @@ export async function GET() {
     });
 
     return NextResponse.json({ success: true, themes });
-  } catch (error: any) {
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message }, { status: 500 });
+  } catch (error) {
+    return routeError("AdminThemes", error);
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const isAuthorized = await verifyAdminSession();
-    if (!isAuthorized) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("themes");
+    if (!guard.ok) return guard.response;
 
     let id = "";
     let name = "";
@@ -169,7 +157,7 @@ export async function POST(req: NextRequest) {
       const { compileAndSaveStaticDemo } = await import("@/lib/demoPublisher");
       await compileAndSaveStaticDemo(cleanId);
     } catch (demoErr) {
-      console.error("Warning: Gagal membuat demo statis otomatis:", demoErr);
+      logger.error("AdminThemes", "Tema tersimpan tetapi demo statis gagal dibuat", demoErr, { themeId: cleanId });
     }
 
     // 4. Invalidate Next.js cache
@@ -184,17 +172,15 @@ export async function POST(req: NextRequest) {
       theme: newTheme,
       message: `Tema ${newTheme.name} berhasil ditambahkan dan demo statis otomatis terbuat.`
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message }, { status: 500 });
+  } catch (error) {
+    return routeError("AdminThemes", error);
   }
 }
 
 export async function PUT(req: NextRequest) {
   try {
-    const isAuthorized = await verifyAdminSession();
-    if (!isAuthorized) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("themes");
+    if (!guard.ok) return guard.response;
 
     let id = "";
     let name: string | undefined;
@@ -268,7 +254,7 @@ export async function PUT(req: NextRequest) {
         const { compileAndSaveStaticDemo } = await import("@/lib/demoPublisher");
         await compileAndSaveStaticDemo(cleanId);
       } catch (demoErr) {
-        console.error("Warning: Gagal memperbarui demo statis:", demoErr);
+        logger.error("AdminThemes", "Demo statis gagal diperbarui", demoErr, { themeId: cleanId });
       }
     }
 
@@ -294,17 +280,15 @@ export async function PUT(req: NextRequest) {
       theme: updated,
       message: `Tema ${updated.name} berhasil diperbarui.`
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message }, { status: 500 });
+  } catch (error) {
+    return routeError("AdminThemes", error);
   }
 }
 
 export async function DELETE(req: NextRequest) {
   try {
-    const isAuthorized = await verifyAdminSession();
-    if (!isAuthorized) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("themes");
+    if (!guard.ok) return guard.response;
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
@@ -355,7 +339,7 @@ export async function DELETE(req: NextRequest) {
     revalidatePath("/api/public/themes");
 
     return NextResponse.json({ success: true, message: `Tema ${id} beserta file masternya berhasil dihapus permanen (Hard Delete)` });
-  } catch (error: any) {
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message }, { status: 500 });
+  } catch (error) {
+    return routeError("AdminThemes", error);
   }
 }

@@ -1,6 +1,7 @@
 import { EventEmitter } from "events";
 import { Client } from "pg";
 import { pool } from "./prisma";
+import { logger } from "./logger";
 
 /**
  * Singleton PaymentEmitter with Multi-Process PostgreSQL LISTEN/NOTIFY Bridge
@@ -57,12 +58,12 @@ function setupPgSubscriber() {
             originalEmit(orderId, { ...data, _fromPg: true });
           }
         } catch (err) {
-          console.error("[paymentEvents] Failed to parse PG notification:", err);
+          logger.error("PaymentEvents", "Notifikasi PostgreSQL tidak dapat diurai", err);
         }
       });
 
       client.on("error", (err) => {
-        console.error("[paymentEvents] PG subscriber error, reconnecting in 5s:", err.message);
+        logger.error("PaymentEvents", "Subscriber PostgreSQL terputus; menyambung ulang dalam 5 detik", err);
         global.pgSubscriberClient = undefined;
         isSubscribing = false;
         setTimeout(setupPgSubscriber, 5000);
@@ -78,7 +79,7 @@ function setupPgSubscriber() {
     })
     .catch((err) => {
       isSubscribing = false;
-      console.error("[paymentEvents] Failed to connect PG subscriber, retrying in 5s:", err.message);
+      logger.error("PaymentEvents", "Subscriber PostgreSQL gagal tersambung; mencoba ulang dalam 5 detik", err);
       setTimeout(setupPgSubscriber, 5000);
     });
 }
@@ -96,7 +97,7 @@ async function broadcastToPostgres(orderId: string, data: PaymentEventPayload) {
     const payload = JSON.stringify({ orderId, data });
     await pool.query("SELECT pg_notify($1, $2)", [PG_CHANNEL, payload]);
   } catch (err) {
-    console.error("[paymentEvents] Failed to broadcast PG notification:", err);
+    logger.error("PaymentEvents", "Gagal menyiarkan notifikasi pembayaran lintas instance", err);
   }
 }
 

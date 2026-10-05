@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -60,7 +61,7 @@ export async function GET() {
         }
       } catch (sweepErr) {
         // Sweep failure tidak boleh gagalkan seluruh overview response
-        console.error("[Expire Sweep Error]:", sweepErr);
+        logger.error("AdminOverview", "Sapuan order kedaluwarsa gagal", sweepErr);
         lastExpireSweepAt = 0; // Reset agar sweep bisa dicoba lagi di request berikutnya
       }
     }
@@ -315,8 +316,7 @@ export async function GET() {
       customDomainOrders,
     });
 
-  } catch (error: any) {
-    console.error("[Admin Overview Server Error]:", error);
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Failed to load admin overview" : (error.message || "Failed to load admin overview") }, { status: 500 });
+  } catch (error) {
+    return routeError("AdminOverview", error, "Gagal memuat ringkasan admin");
   }
 }

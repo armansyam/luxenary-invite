@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { isSafePathSegment } from "@/lib/fsSafe";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +30,9 @@ export async function GET(
     const { theme, file } = await params;
     const cleanTheme = theme.toLowerCase().trim();
     const cleanFile = path.basename(file); // Mencegah path traversal
+    if (!isSafePathSegment(cleanTheme)) {
+      return new NextResponse("Not Found", { status: 404 });
+    }
 
     // Abaikan route subhalaman khusus jika ada
     if (["galery", "sharemoment", "memories"].includes(cleanFile)) {
@@ -86,7 +91,7 @@ export async function GET(
       },
     });
   } catch (err) {
-    console.error("[DemoAssetRoute-Error]:", err);
+    logger.error("DemoAsset", "Gagal menyajikan aset demo", err);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

@@ -12,6 +12,7 @@ import { computeLifecycleDates } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { canPreviewInvitation } from "@/lib/previewAccess";
 import { isCustomDomainHost } from "@/lib/domainUtils";
+import { logger } from "@/lib/logger";
 import fs from "fs";
 import path from "path";
 
@@ -190,7 +191,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
           });
         }
       } catch (nasErr) {
-        console.warn(`[Public Slug Route] Gagal membaca arsip NAS (${slug}):`, nasErr);
+        logger.warn("PublicSlug", "Arsip NAS tidak terbaca; lanjut ke sumber berikutnya", { slug, error: nasErr instanceof Error ? nasErr.message : String(nasErr) });
       }
     }
 

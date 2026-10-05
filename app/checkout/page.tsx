@@ -494,11 +494,23 @@ function CheckoutContent() {
   // Lepaskan Kode Promo / Referral
   const handleRemovePromo = async () => {
     if (!orderId) return;
+    // Promo hanya dilepas dari tampilan bila server benar-benar melepasnya; jika tidak, harga di layar
+    // akan berbeda dari tagihan (mis. 409 saat order sudah terbayar di gateway).
     try {
-      await fetch(`/api/public/promo/validate?orderId=${orderId}`, {
+      const res = await fetch(`/api/public/promo/validate?orderId=${orderId}`, {
         method: "DELETE",
       });
-    } catch {}
+      // promoError hanya dirender saat belum ada promo terpasang; galat pelepasan memakai error halaman.
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Gagal melepaskan kode promo. Coba lagi.");
+        return;
+      }
+    } catch {
+      setError("Koneksi terputus saat melepaskan kode promo. Coba lagi.");
+      return;
+    }
+    setError(null);
     setAppliedPromo(null);
     setPromoCountdownStr("");
     setPromoError(null);

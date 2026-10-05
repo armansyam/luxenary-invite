@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminModule } from "@/lib/adminAuth";
+import { logger } from "@/lib/logger";
 import nodemailer from "nodemailer";
 import { getPublicPlatformSettings } from "@/lib/settings";
 import { EMAIL_TEMPLATE_CATALOG } from "@/lib/email-templates";
@@ -79,11 +80,12 @@ export async function POST(req: NextRequest) {
       success: true,
       message: `Sampel "${template.name}" berhasil dikirim ke ${recipientEmail}.`,
     });
-  } catch (error: any) {
-    console.error("POST /api/admin/emails/preview-send error:", error);
+  } catch (error) {
+    // Route diagnostik SMTP: pesan galat transport memang ditujukan ke admin yang sedang mengonfigurasi.
+    logger.error("EmailPreviewSend", "Gagal mengirim sampel email", error);
     return NextResponse.json(
       {
-        error: error.message || "Gagal mengirim sampel email. Periksa koneksi SMTP Anda.",
+        error: (error instanceof Error && error.message) || "Gagal mengirim sampel email. Periksa koneksi SMTP Anda.",
       },
       { status: 400 }
     );

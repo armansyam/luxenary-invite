@@ -9,6 +9,7 @@ import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { safeParseParticipants } from "@/lib/participantUtils";
 import { normalizeJsonText } from "@/lib/jsonText";
 import { logger } from "@/lib/logger";
+import { routeError } from "@/lib/routeError";
 
 function slugify(text: string): string {
   return text
@@ -564,10 +565,6 @@ export async function POST(req: Request) {
     if (error.code === "P2003") {
       return NextResponse.json({ error: "Tema yang dipilih tidak tersedia di katalog." }, { status: 400 });
     }
-    console.error("Failed to create/update invitation:", error);
-    return NextResponse.json(
-      { error: process.env.NODE_ENV === "production" ? "Gagal membuat undangan. Terjadi kesalahan server." : error.message },
-      { status: 500 }
-    );
+    return routeError("ClientInvitationCreate", error, "Gagal membuat undangan. Terjadi kesalahan server.");
   }
 }

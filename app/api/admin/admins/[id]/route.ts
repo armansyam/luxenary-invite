@@ -1,17 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
 import bcrypt from "bcryptjs";
-import { adminActorId } from "@/lib/adminAuth";
+import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
+import { routeError } from "@/lib/routeError";
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> | { id: string } }) {
   try {
-    const session = await auth();
-    const { hasAdminPermission } = await import("@/lib/adminPermissions");
-    
-    if (!session?.user || !hasAdminPermission(session.user, "team")) {
-      return NextResponse.json({ error: "Forbidden." }, { status: 403 });
-    }
+    const guard = await requireAdminModule("team");
+    if (!guard.ok) return guard.response;
+    const { session } = guard;
     const actorId = adminActorId(session);
 
     const resolvedParams = await Promise.resolve(params);
@@ -72,20 +69,16 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     ]);
 
     return NextResponse.json({ success: true, admin: updated });
-  } catch (error: any) {
-    console.error("Error updating admin:", error);
-    return NextResponse.json({ error: "Gagal memperbarui admin." }, { status: 500 });
+  } catch (error) {
+    return routeError("AdminTeam", error, "Gagal memperbarui admin.");
   }
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> | { id: string } }) {
   try {
-    const session = await auth();
-    const { hasAdminPermission } = await import("@/lib/adminPermissions");
-    
-    if (!session?.user || !hasAdminPermission(session.user, "team")) {
-      return NextResponse.json({ error: "Forbidden." }, { status: 403 });
-    }
+    const guard = await requireAdminModule("team");
+    if (!guard.ok) return guard.response;
+    const { session } = guard;
     // Saat sesi remote `session.user.id` adalah ID klien, jadi perbandingan diri sendiri memakai pelaku asli.
     const actorId = adminActorId(session);
 
@@ -114,8 +107,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     ]);
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error("Error deleting admin:", error);
-    return NextResponse.json({ error: "Gagal menghapus admin." }, { status: 500 });
+  } catch (error) {
+    return routeError("AdminTeam", error, "Gagal menghapus admin.");
   }
 }

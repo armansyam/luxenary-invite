@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminModule } from "@/lib/adminAuth";
+import { logger } from "@/lib/logger";
 import nodemailer from "nodemailer";
 import { getPublicPlatformSettings } from "@/lib/settings";
 import { buildTestSmtpHtml } from "@/lib/email-templates";
@@ -72,11 +73,12 @@ export async function POST(req: NextRequest) {
       success: true,
       message: `Email uji coba berhasil dikirim ke ${recipientEmail}. Handshake SMTP berfungsi normal.`,
     });
-  } catch (error: any) {
-    console.error("POST /api/admin/test-smtp error:", error);
+  } catch (error) {
+    // Route diagnostik: pesan galat transport memang ditujukan ke admin yang sedang mengonfigurasi SMTP.
+    logger.error("TestSmtp", "Uji koneksi SMTP gagal", error);
     return NextResponse.json(
       {
-        error: error.message || "Gagal menghubungi server SMTP. Periksa kembali host, port, dan kata sandi aplikasi.",
+        error: (error instanceof Error && error.message) || "Gagal menghubungi server SMTP. Periksa kembali host, port, dan kata sandi aplikasi.",
       },
       { status: 400 }
     );

@@ -1,18 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { requireAdminModule } from "@/lib/adminAuth";
+import { routeError } from "@/lib/routeError";
 import { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
-    const { hasAdminPermission } = await import("@/lib/adminPermissions");
-
-    if (!session?.user || !hasAdminPermission(session.user, "invitations")) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("invitations");
+    if (!guard.ok) return guard.response;
 
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
@@ -125,11 +122,7 @@ export async function GET(req: NextRequest) {
         totalPages,
       },
     });
-  } catch (error: any) {
-    console.error("GET /api/admin/invitations error:", error);
-    return NextResponse.json(
-      { error: process.env.NODE_ENV === "production" ? "Gagal memuat daftar undangan" : error.message },
-      { status: 500 }
-    );
+  } catch (error) {
+    return routeError("AdminInvitations", error, "Gagal memuat daftar undangan");
   }
 }

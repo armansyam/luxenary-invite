@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -114,8 +115,8 @@ export async function GET(
         "Accept-Ranges": "bytes",
       },
     });
-  } catch (error: any) {
-    console.error("[Upload Route Handler Error]:", error);
+  } catch (error) {
+    logger.error("UploadsRoute", "Gagal menyajikan berkas unggahan", error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

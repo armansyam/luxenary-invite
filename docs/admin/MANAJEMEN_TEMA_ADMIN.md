@@ -168,7 +168,7 @@ Tombol hijau **"Sinkronisasi Tema & Cache"** di bagian atas tab Manajemen Tema b
 3. **Auto-Purge Tema Zombie:** Memeriksa seluruh baris tema di tabel database. Jika ada record di database yang file fisiknya **tidak ditemukan** di disk, record tersebut otomatis dihapus dari database demi menjaga integritas data. Record yang masih dipakai undangan tidak dihapus: tetap tersimpan dan namanya dikembalikan di `retainedWithoutFile` pada respons sync, sedangkan jumlah yang terhapus ada di `purgedCount`.
 4. **Preservasi Pengaturan Kustom:** Mempertahankan kustomisasi admin (`sortOrder`, thumbnail kustom, deskripsi, dan status aktif/nonaktif tema yang pernah diatur di dashboard).
 5. **Mass Re-Compile:** Mengompilasi ulang seluruh file HTML demo statis di `public/demo/` untuk semua tema aktif.
-6. **Multi-Layer Cache Invalidation:** Me-revalidate seluruh halaman Next.js (`/demo`, `/demo/[theme]`, `/demo/preview`, `/api/public/themes`, dan `/`), serta secara otomatis mengeksekusi purge cache ke **Cloudflare Edge CDN** (jika `CF_ZONE_ID` dan `CF_API_TOKEN` terkonfigurasi di `.env`).
+6. **Multi-Layer Cache Invalidation:** Me-revalidate seluruh halaman Next.js (`/demo`, `/demo/[theme]`, `/api/public/themes`, dan `/`), serta secara otomatis mengeksekusi purge cache ke **Cloudflare Edge CDN** (jika `CF_ZONE_ID` dan `CF_API_TOKEN` terkonfigurasi di `.env`).
 
 ---
 

@@ -2,6 +2,7 @@ import { EventEmitter } from "events";
 import { randomUUID } from "crypto";
 import { Client } from "pg";
 import { pool } from "./prisma";
+import { logger } from "./logger";
 
 /**
  * Event real-time galeri kenangan tamu.
@@ -62,11 +63,11 @@ export function startSseBridge(): void {
           if (origin === INSTANCE_ID || event !== "new_memory") return;
           sseEmitter.emit("new_memory", data as NewMemoryEvent);
         } catch (err) {
-          console.error("[sseEmitter] Payload notifikasi tidak valid:", err);
+          logger.error("SseEmitter", "Payload notifikasi tidak valid", err);
         }
       });
       client.on("error", (err) => {
-        console.error("[sseEmitter] Koneksi LISTEN terputus, mencoba ulang:", err.message);
+        logger.error("SseEmitter", "Koneksi LISTEN terputus; mencoba ulang", err);
         retry();
       });
       client.on("end", retry);
@@ -74,7 +75,7 @@ export function startSseBridge(): void {
       await client.query(`LISTEN ${PG_CHANNEL}`);
     })
     .catch((err) => {
-      console.error("[sseEmitter] Gagal menyambung LISTEN, mencoba ulang:", err.message);
+      logger.error("SseEmitter", "Gagal menyambung LISTEN; mencoba ulang", err);
       retry();
     });
 }

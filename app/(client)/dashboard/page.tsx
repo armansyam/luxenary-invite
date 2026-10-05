@@ -110,7 +110,9 @@ function DashboardHomeContent() {
               router.replace(stateData.redirectUrl);
               return;
             }
-          } catch {}
+          } catch {
+            // Tanpa status onboarding, pengguna diarahkan ke awal setup di bawah (aman untuk akun baru).
+          }
 
           router.replace("/dashboard/setup");
         }

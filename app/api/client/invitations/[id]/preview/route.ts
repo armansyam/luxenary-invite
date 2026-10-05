@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import { composeTemplateData } from "@/lib/themeEngine";
 import { renderTemplateFile } from "@/lib/renderTemplate";
 import { getAdminSetting } from "@/lib/settings";
@@ -90,8 +91,10 @@ export async function GET(
         "Cache-Control": "no-store, max-age=0, must-revalidate",
       },
     });
-  } catch (err: any) {
-    return new NextResponse(`Error rendering preview: ${err?.message || "Internal server error"}`, { status: 500 });
+  } catch (err) {
+    // Balasan teks karena route ini dimuat di dalam iframe pratinjau.
+    logger.error("ClientPreview", "Gagal merender pratinjau undangan", err);
+    return new NextResponse("Gagal merender pratinjau undangan.", { status: 500 });
   }
 }
 

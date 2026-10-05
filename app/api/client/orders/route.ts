@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -17,8 +18,7 @@ export async function GET() {
     });
 
     return NextResponse.json(orders);
-  } catch (error: any) {
-    console.error("[Fetch Orders Error]", error);
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message }, { status: 500 });
+  } catch (error) {
+    return routeError("ClientOrders", error, "Gagal memuat daftar pesanan");
   }
 }

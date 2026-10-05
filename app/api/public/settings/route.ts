@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { routeError } from "@/lib/routeError";
 import { getPublicPlatformSettings } from "@/lib/settings";
 import fs from "fs";
 import path from "path";
@@ -30,7 +31,7 @@ export async function GET() {
       logo: logoExists ? "/assets/brand/logo.webp" : null,
       favicon: faviconExists ? "/assets/brand/favicon.png" : null,
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message }, { status: 500 });
+  } catch (error) {
+    return routeError("PublicSettings", error, "Gagal memuat pengaturan platform");
   }
 }

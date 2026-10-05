@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { routeError } from "@/lib/routeError";
 import { auth } from "@/auth";
 import crypto from "crypto";
 import { createDatabaseSnapshot } from "@/lib/databaseBackup";
@@ -58,7 +59,7 @@ async function handleBackupRequest(req: NextRequest) {
         warning: "Snapshot tersimpan lokal tetapi unggahan off-site ke R2/S3 gagal. Periksa log server.",
       }),
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal menjalankan auto-backup" : (error.message || "Gagal menjalankan auto-backup") }, { status: 500 });
+  } catch (error) {
+    return routeError("CronBackup", error, "Gagal menjalankan auto-backup");
   }
 }

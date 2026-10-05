@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { PlanType } from "@prisma/client";
 import { normalizePlanType } from "@/lib/planUtils";
 import { logger } from "@/lib/logger";
+import { HttpError, routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -85,7 +86,7 @@ export async function POST(req: NextRequest) {
       `;
 
       if (!locked || locked.length === 0) {
-        throw new Error("Kode promo tidak ditemukan.");
+        throw new HttpError(400, "Kode promo tidak ditemukan.");
       }
 
       // Data diambil lewat Prisma bertipe: query mentah mengembalikan kolom enum[] (applicablePlans) sebagai teks "{...}".
@@ -93,21 +94,21 @@ export async function POST(req: NextRequest) {
 
       // 3.2 Cek status aktif
       if (!coupon.isActive) {
-        throw new Error("Kode promo sudah tidak aktif.");
+        throw new HttpError(400, "Kode promo sudah tidak aktif.");
       }
 
       // 3.3 Cek periode berlaku
       if (coupon.validFrom && new Date(coupon.validFrom) > now) {
-        throw new Error("Kode promo belum mulai berlaku.");
+        throw new HttpError(400, "Kode promo belum mulai berlaku.");
       }
       if (coupon.validUntil && new Date(coupon.validUntil) < now) {
-        throw new Error("Masa berlaku kode promo telah berakhir.");
+        throw new HttpError(400, "Masa berlaku kode promo telah berakhir.");
       }
 
       // 3.4 Cek paket yang berlaku (applicablePlans)
       if (coupon.applicablePlans && coupon.applicablePlans.length > 0) {
         if (!coupon.applicablePlans.includes(order.planType as PlanType)) {
-          throw new Error(`Kode promo ini hanya berlaku untuk paket: ${coupon.applicablePlans.join(", ")}.`);
+          throw new HttpError(400, `Kode promo ini hanya berlaku untuk paket: ${coupon.applicablePlans.join(", ")}.`);
         }
       }
 
@@ -127,7 +128,7 @@ export async function POST(req: NextRequest) {
             (partnerEmail && userEmail && partnerEmail === userEmail) ||
             (partnerPhone && userPhone && partnerPhone === userPhone)
           ) {
-            throw new Error("Anda tidak dapat menggunakan kode referral milik sendiri.");
+            throw new HttpError(400, "Anda tidak dapat menggunakan kode referral milik sendiri.");
           }
         }
       }
@@ -143,7 +144,7 @@ export async function POST(req: NextRequest) {
         });
 
         if (userUsageCount >= coupon.perUserLimit) {
-          throw new Error(`Anda telah mencapai batas maksimal pemakaian (${coupon.perUserLimit}x) untuk kode ini.`);
+          throw new HttpError(400, `Anda telah mencapai batas maksimal pemakaian (${coupon.perUserLimit}x) untuk kode ini.`);
         }
       }
 
@@ -160,7 +161,7 @@ export async function POST(req: NextRequest) {
 
         const effectiveUsed = coupon.usageCount + activeHolds;
         if (effectiveUsed >= coupon.quotaLimit) {
-          throw new Error("Kuota pemakaian kode promo ini sudah habis.");
+          throw new HttpError(400, "Kuota pemakaian kode promo ini sudah habis.");
         }
       }
 
@@ -180,7 +181,7 @@ export async function POST(req: NextRequest) {
 
       // Cek minimum belanja (minOrderAmount)
       if (coupon.minOrderAmount && basePackagePrice < Number(coupon.minOrderAmount)) {
-        throw new Error(`Minimal pembelian untuk menggunakan kode ini adalah Rp ${Number(coupon.minOrderAmount).toLocaleString("id-ID")}.`);
+        throw new HttpError(400, `Minimal pembelian untuk menggunakan kode ini adalah Rp ${Number(coupon.minOrderAmount).toLocaleString("id-ID")}.`);
       }
 
       let calculatedDiscount = 0;
@@ -229,9 +230,8 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(result);
-  } catch (err: any) {
-    console.warn("[Promo Validate] Warning:", err.message);
-    return NextResponse.json({ error: err.message || "Gagal memvalidasi kode promo" }, { status: 400 });
+  } catch (err) {
+    return routeError("PromoValidate", err, "Gagal memvalidasi kode promo");
   }
 }
 

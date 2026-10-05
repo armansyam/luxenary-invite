@@ -157,7 +157,7 @@ export async function rateLimitDb(key: string, limit: number, windowMs: number):
     return newCount <= limit;
   } catch (err) {
     // 3. Fallback ke in-memory jika basis data tidak tersedia
-    console.warn("[rateLimitDb] DB rate limit error, falling back to in-memory:", (err as Error).message);
+    logger.warn("RateLimit", "Rate limit database gagal; memakai batas in-memory", { key, error: err instanceof Error ? err.message : String(err) });
     return rateLimit(key, limit, windowMs);
   }
 }

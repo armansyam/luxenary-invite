@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { routeError } from "@/lib/routeError";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -124,8 +125,7 @@ export async function GET() {
       invoiceNumber: latestOrder.invoiceNumber,
       redirectUrl: `/checkout?plan=${latestOrder.planType}&msg=${msg}`,
     });
-  } catch (error: any) {
-    console.error("[Onboarding-State-Error]:", error);
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message }, { status: 500 });
+  } catch (error) {
+    return routeError("OnboardingState", error);
   }
 }

@@ -397,7 +397,9 @@ export default function SettingsPage() {
                 currentPin = detail.staffPin || currentPin;
                 setInvitation(detail);
               }
-            } catch {}
+            } catch {
+              // Detail gagal dimuat: halaman tetap memakai data dasar dari daftar undangan di atas.
+            }
           }
 
           setFormData({

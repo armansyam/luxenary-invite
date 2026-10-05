@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -44,8 +45,7 @@ export async function GET(
         "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
       },
     });
-  } catch (err: any) {
-    console.error("Public Memories Fetch Error:", err);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  } catch (err) {
+    return routeError("PublicMemories", err, "Gagal memuat kenangan tamu");
   }
 }

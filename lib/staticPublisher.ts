@@ -146,9 +146,9 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
   // Sinkronisasi non-blocking ke arsip NAS jika fitur diaktifkan
   import("./nasArchive").then(({ syncInvitationToNasArchive }) => {
     syncInvitationToNasArchive(invitationId).catch((err) => {
-      console.warn("[staticPublisher] NAS archive sync failed:", err);
+      logger.warn("StaticPublisher", "Sinkronisasi arsip NAS gagal", { invitationId, error: err instanceof Error ? err.message : String(err) });
     });
-  }).catch(() => {});
+  }).catch((err) => logger.error("StaticPublisher", "Modul arsip NAS gagal dimuat", err));
 
   return standaloneHtml;
 }

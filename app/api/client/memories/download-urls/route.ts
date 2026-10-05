@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { routeError } from "@/lib/routeError";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { prisma } from "@/lib/prisma";
 
@@ -67,8 +68,7 @@ export async function GET(req: NextRequest) {
       zipName: `Momen_${invitation.groomSlug}_${invitation.brideSlug}.zip`,
       files,
     });
-  } catch (error: any) {
-    console.error("[Download URLs Error]", error);
-    return NextResponse.json({ error: "Gagal mengambil daftar file" }, { status: 500 });
+  } catch (error) {
+    return routeError("MemoriesDownloadUrls", error, "Gagal mengambil daftar file");
   }
 }

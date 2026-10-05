@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminModule, requireSuperAdmin } from "@/lib/adminAuth";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -32,9 +33,8 @@ export async function GET(req: NextRequest) {
       closings: formatted,
       totalClosings: formatted.length,
     });
-  } catch (err: any) {
-    console.error("Closing GET error:", err);
-    return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
+  } catch (err) {
+    return routeError("FinanceClosing", err, "Gagal memuat tutup buku");
   }
 }
 
@@ -140,9 +140,8 @@ export async function POST(req: NextRequest) {
         taxAmount: Number(createdClosing.taxAmount),
       },
     });
-  } catch (err: any) {
-    console.error("Closing POST error:", err);
-    return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
+  } catch (err) {
+    return routeError("FinanceClosing", err, "Gagal menutup buku periode");
   }
 }
 
@@ -192,8 +191,7 @@ export async function DELETE(req: NextRequest) {
       success: true,
       message: `Periode ${closing.periodMonth}/${closing.periodYear} berhasil dibuka kembali (unlocked).`,
     });
-  } catch (err: any) {
-    console.error("Closing DELETE error:", err);
-    return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
+  } catch (err) {
+    return routeError("FinanceClosing", err, "Gagal membuka kembali periode");
   }
 }

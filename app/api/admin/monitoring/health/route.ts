@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requireAdminModule } from "@/lib/adminAuth";
+import { logger } from "@/lib/logger";
+import { routeError } from "@/lib/routeError";
 import { STORAGE_PROVIDER, s3Client } from "@/lib/storage";
 import { PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import fs from "fs";
@@ -35,12 +37,8 @@ function getDirectorySize(dirPath: string): number {
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
-    const { hasAdminPermission } = await import("@/lib/adminPermissions");
-
-    if (!session?.user || !hasAdminPermission(session.user, "logs")) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("logs");
+    if (!guard.ok) return guard.response;
 
     const { searchParams } = new URL(req.url);
     const pingR2 = searchParams.get("pingR2") === "true";
@@ -93,7 +91,7 @@ export async function GET(req: NextRequest) {
         available: true,
       };
     } catch (e) {
-      console.warn("Could not read disk stats:", e);
+      logger.warn("MonitoringHealth", "Statistik disk tidak terbaca", { error: e instanceof Error ? e.message : String(e) });
     }
 
     // 3. Local Folders Size
@@ -138,7 +136,8 @@ export async function GET(req: NextRequest) {
         totalOrders: oCount,
         totalMediaObjects: mCount + gCount,
       };
-    } catch (err: any) {
+    } catch (err) {
+      logger.error("MonitoringHealth", "Pemeriksaan database gagal", err);
       dbStatus = "ERROR";
       dbLatencyMs = Date.now() - dbStartTime;
     }
@@ -202,7 +201,7 @@ export async function GET(req: NextRequest) {
           }
         }
       } catch (listErr) {
-        console.error("R2 ListObjects size calculation error:", listErr);
+        logger.error("MonitoringHealth", "Gagal menghitung ukuran bucket R2", listErr);
       }
     } else {
       // Local fallback calculation
@@ -230,7 +229,7 @@ export async function GET(req: NextRequest) {
         r2LatencyMs = Date.now() - pingStart;
         r2Status = "CONNECTED";
       } catch (r2Err) {
-        console.error("R2 ping failed:", r2Err);
+        logger.error("MonitoringHealth", "Ping R2 gagal", r2Err);
         r2Status = "ERROR";
       }
     }
@@ -339,8 +338,7 @@ export async function GET(req: NextRequest) {
         port: smtpMap["smtp_port"] || "587",
       },
     });
-  } catch (err: any) {
-    console.error("Monitoring health API error:", err);
-    return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
+  } catch (err) {
+    return routeError("MonitoringHealth", err, "Gagal memuat status sistem");
   }
 }

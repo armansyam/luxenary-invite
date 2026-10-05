@@ -7,6 +7,7 @@ import { getAdminSetting } from "./settings";
 import { masterTemplateCache } from "./cache";
 import { escapeHtml } from "./escapeHtml";
 import { logger } from "./logger";
+import { isSafePathSegment } from "./fsSafe";
 
 /**
  * Compiles a single theme demo into a standalone static HTML file in public/demo/[themeId]/index.html
@@ -18,6 +19,9 @@ export async function compileAndSaveStaticDemo(
 ): Promise<string> {
   masterTemplateCache.clear();
   const cleanId = themeId.toLowerCase().trim();
+  if (!isSafePathSegment(cleanId)) {
+    throw new Error(`ID tema tidak valid untuk demo statis: ${JSON.stringify(themeId)}`);
+  }
   let resolvedData = customDemoData;
   let settingUpdatedAt: number = Date.now();
 

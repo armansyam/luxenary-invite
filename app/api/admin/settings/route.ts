@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { routeError } from "@/lib/routeError";
 import { requireAdminModule } from "@/lib/adminAuth";
+import { logger } from "@/lib/logger";
 import { invalidateSettingsCache } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
@@ -118,8 +120,8 @@ export async function GET() {
         },
       }
     );
-  } catch (error: any) {
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message }, { status: 500 });
+  } catch (error) {
+    return routeError("AdminSettings", error, "Gagal memuat pengaturan");
   }
 }
 
@@ -209,7 +211,7 @@ export async function POST(req: NextRequest) {
           });
         }
       } catch (syncErr) {
-        console.warn("[Admin Settings] Gagal sinkronisasi legacy Midtrans keys:", syncErr);
+        logger.warn("AdminSettings", "Sinkronisasi kunci Midtrans lama gagal", { error: syncErr instanceof Error ? syncErr.message : String(syncErr) });
       }
     }
 
@@ -218,14 +220,14 @@ export async function POST(req: NextRequest) {
       const { revalidatePath } = await import("next/cache");
       revalidatePath("/");
     } catch (e) {
-      console.warn("[settings revalidatePath error]", e);
+      logger.warn("AdminSettings", "Revalidasi halaman utama gagal", { error: e instanceof Error ? e.message : String(e) });
     }
 
     // Invalidate in-memory settings cache agar pembaruan langsung terbaca
     invalidateSettingsCache();
 
     return NextResponse.json({ success: true, updated: results });
-  } catch (error: any) {
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message }, { status: 500 });
+  } catch (error) {
+    return routeError("AdminSettings", error, "Gagal menyimpan pengaturan");
   }
 }

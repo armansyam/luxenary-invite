@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { logger } from "@/lib/logger";
+import { routeError } from "@/lib/routeError";
 import { randomUUID } from "crypto";
 import { computeLifecycleDates } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
@@ -318,8 +319,7 @@ export async function POST(req: NextRequest) {
       paymentUrl: `/payment?order=${newOrder.id}`,
       message: "Tagihan terpadu berhasil dibuat.",
     });
-  } catch (error: any) {
-    console.error("[POST /api/client/orders/checkout-bundle error]:", error);
-    return NextResponse.json({ error: `Terjadi kesalahan saat memproses checkout terpadu: ${error?.message || error}` }, { status: 500 });
+  } catch (error) {
+    return routeError("CheckoutBundle", error, "Terjadi kesalahan saat memproses checkout terpadu");
   }
 }

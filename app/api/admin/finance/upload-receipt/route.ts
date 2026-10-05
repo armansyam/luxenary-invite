@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import fs from "fs";
 import { requireAdminModule } from "@/lib/adminAuth";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -58,8 +59,7 @@ export async function POST(req: NextRequest) {
       fileName: file.name,
       fileSize: file.size,
     });
-  } catch (err: any) {
-    console.error("Upload receipt error:", err);
-    return NextResponse.json({ error: err.message || "Gagal mengunggah file struk" }, { status: 500 });
+  } catch (err) {
+    return routeError("UploadReceipt", err, "Gagal mengunggah file struk");
   }
 }

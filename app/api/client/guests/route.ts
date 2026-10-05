@@ -1,8 +1,10 @@
 import { prisma } from "@/lib/prisma";
+import { routeError } from "@/lib/routeError";
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
+import { logger } from "@/lib/logger";
 
 export async function POST(req: Request) {
   try {
@@ -56,7 +58,7 @@ export async function POST(req: Request) {
           }
         }
       } catch (e) {
-        console.error("[guests POST] Error parsing eventData:", e);
+        logger.warn("ClientGuests", "eventData undangan tidak terbaca; sesi tamu tidak divalidasi", { error: e instanceof Error ? e.message : String(e) });
       }
     }
 
@@ -93,7 +95,7 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json(guest);
-  } catch (error: any) {
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal membuat data tamu" : (error.message || "Gagal membuat data tamu") }, { status: 500 });
+  } catch (error) {
+    return routeError("ClientGuests", error, "Gagal membuat data tamu");
   }
 }

@@ -16,8 +16,9 @@ export const metadata: Metadata = {
 export default async function PortfolioPage() {
   const { platformName } = await getPublicPlatformSettings();
 
-  // Fetch daftar portfolio slug (bisa dari R2 atau Lokal)
-  const clonedSlugs = await listPortfolioSlugs();
+  // Fetch daftar portfolio slug (bisa dari R2 atau Lokal). Galat sudah dicatat di listPortfolioSlugs; halaman publik
+  // menampilkan keadaan kosong alih-alih halaman galat selama storage tidak terjangkau.
+  const clonedSlugs = await listPortfolioSlugs().catch(() => [] as string[]);
 
   if (clonedSlugs.length === 0) {
     return (

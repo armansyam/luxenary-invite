@@ -5,6 +5,7 @@ import { paymentEmitter } from "@/lib/paymentEvents";
 import { releaseOrderPromoHold } from "@/lib/marketing";
 import { isGatewayAmountValid, isStaleGatewaySession, settleOrderAsPaid, settlementSourceStatuses } from "@/lib/paymentSettlement";
 import { logger } from "@/lib/logger";
+import { routeError } from "@/lib/routeError";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
@@ -62,10 +63,10 @@ export async function POST(req: NextRequest) {
     // Di dev/staging: webhook tetap bisa masuk tapi dengan warning (sandbox testing).
     if (storedTokens.length === 0) {
       if (process.env.NODE_ENV === "production") {
-        console.error("[Xendit Webhook] KRITIS: XENDIT_WEBHOOK_TOKEN tidak terkonfigurasi. Webhook ditolak.");
+        logger.error("XenditWebhook", "Token webhook Xendit tidak terkonfigurasi; webhook ditolak");
         return NextResponse.json({ error: "Gateway not configured" }, { status: 503 });
       }
-      console.warn("[Xendit Webhook] ⚠️ Webhook token tidak terkonfigurasi — dev/sandbox bypass aktif.");
+      logger.warn("XenditWebhook", "Token webhook tidak terkonfigurasi; verifikasi token dilewati (hanya non-produksi)");
     }
 
     if (storedTokens.length > 0) {
@@ -74,7 +75,7 @@ export async function POST(req: NextRequest) {
       }
       const isValid = storedTokens.some((token) => XenditGateway.verifyWebhookToken(incomingToken, token));
       if (!isValid) {
-        console.warn("[Xendit Webhook] x-callback-token tidak valid — payload diabaikan untuk order:", orderId);
+        logger.warn("XenditWebhook", "x-callback-token tidak valid; payload diabaikan", { orderId });
         return NextResponse.json({ status: "ignored", reason: "invalid_token" }, { status: 200 });
       }
     }
@@ -106,12 +107,11 @@ export async function POST(req: NextRequest) {
       });
       const gwId = orderCheck?.gatewayId;
       if (gwId && gwId !== "xendit") {
-        console.warn(`[Xendit Webhook] Order ${orderId} gatewayId=${gwId}, bukan xendit — diabaikan.`);
+        logger.warn("XenditWebhook", "Order milik gateway lain; webhook diabaikan", { orderId, gatewayId: gwId });
         return NextResponse.json({ status: "ignored", reason: "gateway_mismatch" }, { status: 200 });
       }
     } catch (err) {
-      console.error("[Xendit Webhook] Gagal memverifikasi gateway kepemilikan order:", err);
-      return NextResponse.json({ error: "Database error during gateway verification" }, { status: 500 });
+      return routeError("XenditWebhook", err, "Database error during gateway verification");
     }
 
     if (isPaid) {
@@ -221,16 +221,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ status: "ok" });
-  } catch (error: any) {
-    console.error("[Xendit Webhook Error]", error);
-    return NextResponse.json(
-      {
-        error:
-          process.env.NODE_ENV === "production"
-            ? "Internal server error"
-            : error.message || "Internal server error",
-      },
-      { status: 500 }
-    );
+  } catch (error) {
+    return routeError("XenditWebhook", error, "Internal server error");
   }
 }

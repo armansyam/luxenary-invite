@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminModule } from "@/lib/adminAuth";
+import { logger } from "@/lib/logger";
+import { routeError } from "@/lib/routeError";
 import { prisma } from "@/lib/prisma";
 import fs from "fs";
 import path from "path";
@@ -40,9 +42,8 @@ export async function PATCH(
       success: true,
       music: updated,
     });
-  } catch (error: any) {
-    console.error("[Admin Update Music Error]:", error);
-    return NextResponse.json({ error: "Gagal memperbarui data musik" }, { status: 500 });
+  } catch (error) {
+    return routeError("AdminMusic", error, "Gagal memperbarui data musik");
   }
 }
 
@@ -76,7 +77,7 @@ export async function DELETE(
         try {
           await fs.promises.unlink(filePath);
         } catch (unlinkErr) {
-          console.warn("[Admin Delete Music File Warning]:", unlinkErr);
+          logger.warn("AdminMusic", "Berkas lagu gagal dihapus; baris DB tetap dihapus", { filePath, error: unlinkErr instanceof Error ? unlinkErr.message : String(unlinkErr) });
         }
       }
     }
@@ -85,8 +86,7 @@ export async function DELETE(
       success: true,
       message: "Lagu berhasil dihapus",
     });
-  } catch (error: any) {
-    console.error("[Admin Delete Music Error]:", error);
-    return NextResponse.json({ error: "Gagal menghapus musik" }, { status: 500 });
+  } catch (error) {
+    return routeError("AdminMusic", error, "Gagal menghapus musik");
   }
 }

@@ -7,6 +7,7 @@ import { optimizeWebVideo, optimizeWebAudio } from "@/lib/videoOptimizer";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { logger } from "@/lib/logger";
+import { routeError } from "@/lib/routeError";
 import { removeIfExists } from "@/lib/fsSafe";
 import { prisma } from "@/lib/prisma";
 import { getClientIp, rateLimitDb } from "@/lib/rateLimit";
@@ -232,8 +233,7 @@ export async function POST(req: NextRequest) {
       sizeBytes: finalBuffer.length,
       mediaType: isAudio ? "audio" : isVideo ? "video" : "image",
     });
-  } catch (error: any) {
-    console.error("Upload processing failed:", error);
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal mengunggah media" : (error.message || "Gagal mengunggah media") }, { status: 500 });
+  } catch (error) {
+    return routeError("ClientUpload", error, "Gagal mengunggah media");
   }
 }

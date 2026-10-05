@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { randomBytes } from "crypto";
 import sharp from "sharp";
 import { uploadFile, deleteFile } from "@/lib/storage";
+import { logger } from "@/lib/logger";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -106,12 +108,9 @@ export async function POST(
 
     // Pembersihan hanya dijalankan setelah bukti baru tersimpan, agar kegagalan unggah tidak menghilangkan bukti lama.
     const cleanupSuperseded = async (newProofUrl: string) => {
+      // deleteFile mencatat galatnya sendiri dan tidak melempar.
       if (order.proofImageUrl && order.proofImageUrl !== newProofUrl) {
-        try {
-          await deleteFile(order.proofImageUrl);
-        } catch (err) {
-          console.error("Gagal menghapus bukti pembayaran lama:", err);
-        }
+        await deleteFile(order.proofImageUrl);
       }
 
       // Bersihkan order usang lainnya milik user ini (status PENDING / FAILED non-PAID) beserta file struknya di storage
@@ -128,11 +127,7 @@ export async function POST(
 
         for (const obs of obsoleteOrders) {
           if (obs.proofImageUrl) {
-            try {
-              await deleteFile(obs.proofImageUrl);
-            } catch (e) {
-              console.error("Gagal menghapus file bukti order usang:", e);
-            }
+            await deleteFile(obs.proofImageUrl);
           }
         }
 
@@ -144,7 +139,7 @@ export async function POST(
           });
         }
       } catch (cleanupErr) {
-        console.error("Gagal membersihkan order usang user:", cleanupErr);
+        logger.error("UploadProof", "Bukti tersimpan tetapi pembersihan order usang gagal", cleanupErr, { orderId: order.id });
       }
     };
 
@@ -214,8 +209,7 @@ export async function POST(
         proofUploadedAt: updatedOrder.proofUploadedAt,
       },
     });
-  } catch (error: any) {
-    console.error("[Upload-Proof-Error]:", error);
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal mengunggah bukti transfer" : (error.message || "Gagal mengunggah bukti transfer") }, { status: 500 });
+  } catch (error) {
+    return routeError("UploadProof", error, "Gagal mengunggah bukti transfer");
   }
 }

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import { NextResponse } from "next/server";
 import { isReservedSubdomain, isSubdomainExpired } from "@/lib/domainUtils";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
@@ -68,7 +69,9 @@ export async function GET(req: Request) {
       cleanSubdomain,
       message: "Subdomain tersedia dan siap digunakan!",
     });
-  } catch (err: any) {
+  } catch (err) {
+    // Bentuk respons dipertahankan: formulir membaca `available` dan `message`.
+    logger.error("SubdomainCheck", "Gagal memeriksa ketersediaan subdomain", err);
     return NextResponse.json(
       { available: false, message: "Gagal memeriksa subdomain." },
       { status: 500 }

@@ -5,6 +5,8 @@ import { randomUUID } from "crypto";
 import { deleteFile } from "@/lib/storage";
 import { normalizePlanType } from "@/lib/planUtils";
 import { releaseOrderPromoHold } from "@/lib/marketing";
+import { logger } from "@/lib/logger";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -206,7 +208,7 @@ export async function POST(req: NextRequest) {
               await gw.cancel(existingPending.gatewayTxId || existingPending.id);
             }
           } catch (cancelErr) {
-            console.warn("[Orders Create] Gateway cancel notice:", cancelErr);
+            logger.warn("OrdersCreate", "Pembatalan sesi gateway lama gagal; order baru tetap dibuat", { orderId: existingPending.id, error: cancelErr instanceof Error ? cancelErr.message : String(cancelErr) });
           }
         }
         // Biarkan alur lanjut ke bawah membuat order baru dengan UUID & Invoice baru yang segar!
@@ -225,11 +227,7 @@ export async function POST(req: NextRequest) {
 
           for (const dup of duplicateOrders) {
             if (dup.proofImageUrl) {
-              try {
-                await deleteFile(dup.proofImageUrl);
-              } catch (e) {
-                console.error("Gagal menghapus file bukti order duplikat:", e);
-              }
+              await deleteFile(dup.proofImageUrl);
             }
           }
 
@@ -239,7 +237,7 @@ export async function POST(req: NextRequest) {
             });
           }
         } catch (dupErr) {
-          console.error("Gagal membersihkan duplikat order:", dupErr);
+          logger.error("OrdersCreate", "Pembersihan order duplikat gagal", dupErr, { orderId: existingPending.id });
         }
 
         const isResetProof = isPlanChanged || existingPending.status === "FAILED";
@@ -247,12 +245,9 @@ export async function POST(req: NextRequest) {
         // Diskon dihitung terhadap paket sebelumnya (applicablePlans, minimum belanja, nominal): tidak boleh terbawa ke paket baru.
         if (isPlanChanged) await releaseOrderPromoHold(existingPending.id);
 
+        // deleteFile mencatat galatnya sendiri dan tidak melempar.
         if (isResetProof && existingPending.proofImageUrl) {
-          try {
-            await deleteFile(existingPending.proofImageUrl);
-          } catch (e) {
-            console.error("Gagal menghapus file bukti lama saat reset order:", e);
-          }
+          await deleteFile(existingPending.proofImageUrl);
         }
 
         const updated = await prisma.order.update({
@@ -343,8 +338,7 @@ export async function POST(req: NextRequest) {
       existing: reused,
       serverTime: Date.now(),
     });
-  } catch (error: any) {
-    console.error("[Orders Create Error]", error);
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message }, { status: 500 });
+  } catch (error) {
+    return routeError("OrdersCreate", error, "Gagal membuat pesanan");
   }
 }

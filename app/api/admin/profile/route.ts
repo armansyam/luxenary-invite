@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { adminActorId, requireAnyAdmin } from "@/lib/adminAuth";
+import { routeError } from "@/lib/routeError";
 import bcrypt from "bcryptjs";
 
 export async function PUT(req: Request) {
@@ -62,8 +63,7 @@ export async function PUT(req: Request) {
     });
 
     return NextResponse.json({ success: true, admin: updated });
-  } catch (error: any) {
-    console.error("Error updating profile:", error);
-    return NextResponse.json({ error: "Gagal memperbarui profil." }, { status: 500 });
+  } catch (error) {
+    return routeError("AdminProfile", error, "Gagal memperbarui profil.");
   }
 }

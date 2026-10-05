@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { syncPhysicalMusicPresets } from "@/lib/musicPresetSync";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -17,11 +18,7 @@ export async function GET() {
       success: true,
       music: presets,
     });
-  } catch (error: any) {
-    console.error("[Public Music API Error]:", error);
-    return NextResponse.json({
-      success: false,
-      error: "Gagal memuat pustaka musik sistem",
-    }, { status: 500 });
+  } catch (error) {
+    return routeError("PublicMusic", error, "Gagal memuat pustaka musik sistem");
   }
 }

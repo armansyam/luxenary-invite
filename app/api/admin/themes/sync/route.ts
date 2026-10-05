@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import { prisma } from "@/lib/prisma";
 import { requireAdminModule } from "@/lib/adminAuth";
+import { routeError } from "@/lib/routeError";
 import { purgeCloudflareCache } from "@/lib/cloudflare";
 
 export const dynamic = "force-dynamic";
@@ -214,7 +215,6 @@ export async function POST() {
     // Purge / Invalidate Next.js cache for showroom, public API, and all demo pages
     revalidatePath("/demo");
     revalidatePath("/demo/[theme]", "page");
-    revalidatePath("/demo/preview");
     revalidatePath("/api/public/themes");
     revalidatePath("/");
 
@@ -231,12 +231,7 @@ export async function POST() {
       discoveredThemes: discovered,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: unknown) {
-    const errorMsg = error instanceof Error ? error.message : "Gagal melakukan sinkronisasi tema";
-    console.error("Theme Sync Error:", errorMsg);
-    return NextResponse.json(
-      { success: false, error: errorMsg },
-      { status: 500 }
-    );
+  } catch (error) {
+    return routeError("ThemeSync", error, "Gagal melakukan sinkronisasi tema");
   }
 }

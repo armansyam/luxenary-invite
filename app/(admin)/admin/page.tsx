@@ -248,7 +248,9 @@ export default function AdminPage() {
   const handleAdminLogout = async () => {
     try {
       await fetch("/api/admin/remote-session", { method: "DELETE" });
-    } catch {}
+    } catch {
+      // Logout tetap dilanjutkan; cookie remote ikut kedaluwarsa bersama sesi admin.
+    }
     // Bersihkan state tab dari localStorage agar tidak "bocor" ke sesi login berikutnya
     try {
       localStorage.removeItem("lux_admin_active_tab");
@@ -785,22 +787,25 @@ export default function AdminPage() {
   const loadSnapshots = useCallback(() => {
     setLoadingSnapshots(true);
     fetch("/api/admin/database/backup")
-      .then((r) => r.json())
-      .then((data) => {
+      .then(async (r) => {
+        const data = await r.json();
         if (data.success) {
           setSnapshots(data.snapshots || []);
           if (data.pathInfo) {
             setBackupPathInfo(data.pathInfo);
           }
+        } else if (r.status !== 401 && r.status !== 403) {
+          // 401/403 wajar untuk staf tanpa modul database; galat lain jangan tampil sebagai "belum ada backup".
+          feedback.notify(data.error || "Gagal memuat daftar snapshot database", "error");
         }
       })
-      .catch(() => {})
+      .catch(() => feedback.notify("Gagal memuat daftar snapshot database", "error"))
       .finally(() => {
         setLoadingSnapshots(false);
         setInitialLoaded(true);
         setLoading(false);
       });
-  }, []);
+  }, [feedback]);
 
   const handleCreateSnapshot = async () => {
     setCreatingSnapshot(true);

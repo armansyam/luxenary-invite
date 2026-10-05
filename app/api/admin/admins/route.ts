@@ -1,18 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
 import bcrypt from "bcryptjs";
-import { adminActorId } from "@/lib/adminAuth";
+import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
+import { routeError } from "@/lib/routeError";
 
 export async function GET() {
   try {
-    const session = await auth();
-    const { hasAdminPermission } = await import("@/lib/adminPermissions");
-    
-    // Hanya Super Admin yang boleh melihat daftar admin
-    if (!session?.user || !hasAdminPermission(session.user, "team")) {
-      return NextResponse.json({ error: "Forbidden. Hanya Super Admin yang dapat mengakses data ini." }, { status: 403 });
-    }
+    // Modul "team" hanya terbuka untuk Super Admin.
+    const guard = await requireAdminModule("team");
+    if (!guard.ok) return guard.response;
 
     const admins = await prisma.admin.findMany({
       select: {
@@ -29,21 +25,16 @@ export async function GET() {
     });
 
     return NextResponse.json({ admins });
-  } catch (error: any) {
-    console.error("Error fetching admins:", error);
-    return NextResponse.json({ error: `Gagal mengambil data admin: ${error?.message || "Internal error"}` }, { status: 500 });
+  } catch (error) {
+    return routeError("AdminTeam", error, "Gagal mengambil data admin.");
   }
 }
 
 export async function POST(req: Request) {
   try {
-    const session = await auth();
-    const { hasAdminPermission } = await import("@/lib/adminPermissions");
-    
-    // Hanya Super Admin yang boleh menambah admin baru
-    if (!session?.user || !hasAdminPermission(session.user, "team")) {
-      return NextResponse.json({ error: "Forbidden. Hanya Super Admin yang dapat menambah admin baru." }, { status: 403 });
-    }
+    const guard = await requireAdminModule("team");
+    if (!guard.ok) return guard.response;
+    const { session } = guard;
 
     const { username, email, name, role: newRole, password, permissions } = await req.json();
 
@@ -99,8 +90,7 @@ export async function POST(req: Request) {
     ]);
 
     return NextResponse.json({ success: true, admin: newAdmin });
-  } catch (error: any) {
-    console.error("Error creating admin:", error);
-    return NextResponse.json({ error: "Gagal membuat admin baru." }, { status: 500 });
+  } catch (error) {
+    return routeError("AdminTeam", error, "Gagal membuat admin baru.");
   }
 }

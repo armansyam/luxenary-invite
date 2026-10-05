@@ -8,6 +8,8 @@ import { exceedsDeclaredBodySize } from "@/lib/requestLimits";
 import { parseFeatureSettings } from "@/lib/featureSettings";
 import { publishNewMemory } from "@/lib/sseEmitter";
 import { getMemoriesActiveSchedule, calculateSessionCumulativeQuota } from "@/lib/domainUtils";
+import { logger } from "@/lib/logger";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -342,8 +344,9 @@ export async function POST(req: NextRequest) {
       memory = saveResult.created;
       newTotalPhotos = saveResult.newCount;
     } catch (saveErr: any) {
-      // Jika kuota penuh saat race condition, bersihkan file yang baru diunggah ke R2
-      deleteFile(relativePath).catch(() => {});
+      // Baris tidak tersimpan (kuota penuh saat balapan atau galat DB): bersihkan berkas yang sudah terunggah.
+      // deleteFile menerima URL publik hasil uploadFile, bukan path relatif; galatnya sudah dicatat di dalamnya.
+      void deleteFile(mediaUrl);
 
       if (saveErr.message === "ERR_TOTAL_QUOTA_EXCEEDED") {
         return NextResponse.json(
@@ -374,7 +377,7 @@ export async function POST(req: NextRequest) {
     try {
       await publishNewMemory({ id: memory.id, invitationId: memory.invitationId });
     } catch (sseErr) {
-      console.error("[SSE Emitter Error]", sseErr);
+      logger.warn("MemoriesUpload", "Notifikasi SSE momen baru gagal dikirim", { memoryId: memory.id, error: sseErr instanceof Error ? sseErr.message : String(sseErr) });
     }
 
     // ── TRIGGER NOTIFIKASI AMBANG BATAS ROLL DINAMIS (NON-BLOCKING BACKGROUND) ──
@@ -414,7 +417,7 @@ export async function POST(req: NextRequest) {
           where: { id: invitationId },
           data: { featureSettings: JSON.stringify(updatedFs) },
         })
-        .catch((e) => console.error("[Memories Upload] Gagal menyimpan flag milestone notifikasi:", e));
+        .catch((e) => logger.error("MemoriesUpload", "Gagal menyimpan flag milestone notifikasi", e, { invitationId }));
 
       // Kirim email notifikasi secara asynchronous (tidak memperlambat response upload tamu)
       const groomFirst = (invitation.groomNickname || invitation.groomName || "Mempelai").trim();
@@ -434,9 +437,9 @@ export async function POST(req: NextRequest) {
             recipientEmail: invitation.user.email,
             recipientName: invitation.user.name || coupleNames,
             milestonePercent: targetMilestone,
-          }).catch((err) => console.error("[Memories Upload] Gagal kirim email alert kuota roll:", err));
+          }).catch((err) => logger.error("MemoriesUpload", "Gagal mengirim email peringatan kuota roll", err, { invitationId }));
         })
-        .catch(() => {});
+        .catch((err) => logger.error("MemoriesUpload", "Modul mailer gagal dimuat", err));
     }
 
     const remainingShots = shotsQuota > 0 ? Math.max(0, shotsQuota - (guestUploadedCount + 1)) : 999;
@@ -450,9 +453,7 @@ export async function POST(req: NextRequest) {
       remainingShots,
     });
 
-  } catch (error: any) {
-    console.error("[Memories Upload Error]", error);
-    const msg = process.env.NODE_ENV === "production" ? "Terjadi kesalahan server saat upload" : (error.message || "Terjadi kesalahan server saat upload");
-    return NextResponse.json({ error: msg }, { status: 500 });
+  } catch (error) {
+    return routeError("MemoriesUpload", error, "Terjadi kesalahan server saat upload");
   }
 }

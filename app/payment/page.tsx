@@ -95,7 +95,9 @@ function PaymentContent() {
         });
         setAdminWa(data.supportWhatsapp || "");
       })
-      .catch(() => {});
+      .catch(() => {
+        // Tanpa data rekening, kartu transfer menampilkan "Hubungi Admin untuk Rekening" alih-alih rekening tebakan.
+      });
   }, []);
 
   // Load Order Status & Guard Routing
@@ -764,7 +766,7 @@ function PaymentContent() {
               <div className="p-4 bg-white/5 border border-amber-500/20 rounded-2xl space-y-2">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-stone-400">Nama Bank:</span>
-                  <span className="font-bold text-white">{bankInfo.name || "BCA"}</span>
+                  <span className="font-bold text-white">{bankInfo.name || "-"}</span>
                 </div>
                 <div className="flex items-center justify-between pt-1 border-t border-white/5 text-xs">
                   <span className="text-stone-400">Nomor Rekening:</span>

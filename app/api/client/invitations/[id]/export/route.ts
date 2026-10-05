@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -93,8 +94,7 @@ export async function GET(
     }
 
     return NextResponse.json({ error: "Tipe ekspor tidak valid" }, { status: 400 });
-  } catch (error: any) {
-    console.error("[Export Error]", error);
-    return NextResponse.json({ error: "Gagal mengekspor data" }, { status: 500 });
+  } catch (error) {
+    return routeError("ClientExport", error, "Gagal mengekspor data");
   }
 }

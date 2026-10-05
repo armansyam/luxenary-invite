@@ -57,7 +57,7 @@ export async function applyBundleFulfillment(paidOrderId: string): Promise<boole
   });
 
   if (!invitation) {
-    console.error("[applyBundleFulfillment] Undangan tidak ditemukan untuk order:", paidOrderId);
+    logger.error("BundleFulfillment", "Undangan untuk order add-on tidak ditemukan; pemenuhan dilewati", undefined, { orderId: paidOrderId });
     return false;
   }
 
@@ -223,7 +223,7 @@ export async function applyMemoriesTopup(topupOrderId: string): Promise<void> {
     }
     curFs.memoriesNotified80 = newUsagePercent >= 80;
   } catch (rearmErr) {
-    console.warn("[applyMemoriesTopup] Gagal re-arm milestone notifikasi:", rearmErr);
+    logger.warn("MemoriesTopup", "Gagal mengatur ulang milestone notifikasi kuota", { error: rearmErr instanceof Error ? rearmErr.message : String(rearmErr) });
   }
 
   await prisma.invitation.update({
@@ -254,11 +254,8 @@ export async function purgeObsoleteUserOrders(userId: string, currentOrderId: st
 
     for (const ord of obsolete) {
       if (ord.proofImageUrl) {
-        try {
-          await deleteFile(ord.proofImageUrl);
-        } catch (e) {
-          console.error("Gagal menghapus file bukti order usang:", e);
-        }
+        // deleteFile mencatat galatnya sendiri dan tidak melempar.
+        await deleteFile(ord.proofImageUrl);
       }
     }
 
@@ -274,7 +271,7 @@ export async function purgeObsoleteUserOrders(userId: string, currentOrderId: st
       });
     }
   } catch (err) {
-    console.error("[Purge Obsolete User Orders Error]:", err);
+    logger.error("PurgeObsoleteOrders", "Pembersihan order usang pengguna gagal", err);
   }
 }
 
@@ -326,7 +323,7 @@ async function runPaidOrderFulfillment(paidOrderId: string): Promise<void> {
       recipientEmail,
       recipientName,
       type: "PAID",
-    }).catch(err => console.error("[Payment Webhook] Gagal kirim email PAID:", err));
+    }).catch(err => logger.error("PaymentFulfillment", "Email invoice PAID gagal dikirim", err));
   }
 
   // Single State Enforcement: Bersihkan order usang non-PAID milik user ini

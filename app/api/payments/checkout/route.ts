@@ -3,6 +3,8 @@ import { computeGatewayCharge } from "@/lib/paymentFees";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
+import { logger } from "@/lib/logger";
+import { routeError } from "@/lib/routeError";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -157,7 +159,7 @@ export async function POST(req: Request) {
           }
           // Jika cancel gagal karena alasan lain (network timeout, dll) — log tapi tetap lanjut
           // karena kemungkinan transaksi sudah expired di gateway
-          console.warn(`[Checkout] Cancel ${prevGatewayId} gagal (${cancelResult.error}), lanjut init ulang.`);
+          logger.warn("PaymentsCheckout", "Pembatalan sesi gateway lama gagal; sesi baru tetap dibuat", { orderId: order.id, gatewayId: prevGatewayId, error: cancelResult.error });
         }
       }
     }
@@ -208,7 +210,7 @@ export async function POST(req: Request) {
           appUrl,
         });
       } catch (mailErr) {
-        console.warn("[Payments Checkout] Gagal mengirim email invoice UNPAID:", mailErr);
+        logger.warn("PaymentsCheckout", "Email invoice UNPAID gagal dikirim", { orderId: order.id, error: mailErr instanceof Error ? mailErr.message : String(mailErr) });
       }
     }
 
@@ -220,8 +222,7 @@ export async function POST(req: Request) {
       gateway: activeGatewayId,
       serverTime: serverNow,
     });
-  } catch (error: any) {
-    console.error("[Payments Checkout Error]", error);
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal memulai pembayaran" : (error.message || "Gagal memulai pembayaran") }, { status: 500 });
+  } catch (error) {
+    return routeError("PaymentsCheckout", error, "Gagal memulai pembayaran");
   }
 }

@@ -3,6 +3,8 @@ import path from "path";
 import fs from "fs";
 import sharp from "sharp";
 import { requireAdminModule } from "@/lib/adminAuth";
+import { logger } from "@/lib/logger";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -34,8 +36,8 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({ success: true, logo, favicon });
-  } catch (error: any) {
-    return NextResponse.json({ error: "Gagal memuat status brand" }, { status: 500 });
+  } catch (error) {
+    return routeError("UploadBrand", error, "Gagal memuat status brand");
   }
 }
 
@@ -108,7 +110,7 @@ export async function POST(req: NextRequest) {
             .png({ compressionLevel: 9 })
             .toFile(t.dest);
         } catch (genErr) {
-          console.error(`[Upload Favicon Variant Error] ${t.dest}:`, genErr);
+          logger.error("UploadBrand", "Varian favicon gagal dibuat", genErr, { dest: t.dest });
         }
       }
 
@@ -121,8 +123,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ error: "Tipe brand tidak valid" }, { status: 400 });
-  } catch (error: any) {
-    console.error("[Upload Brand Error]", error);
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal mengupload file brand" : (error.message || "Gagal mengupload file brand") }, { status: 500 });
+  } catch (error) {
+    return routeError("UploadBrand", error, "Gagal mengupload file brand");
   }
 }

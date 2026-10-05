@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { routeError } from "@/lib/routeError";
 import { rateLimitDb, getClientIp } from "@/lib/rateLimit";
 import { normalizeRsvpStatus, RSVP_NAME_MAX, RSVP_MESSAGE_MAX } from "@/lib/rsvpStatus";
 import { exceedsDeclaredBodySize } from "@/lib/requestLimits";
@@ -63,9 +64,8 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, rsvps });
-  } catch (error: any) {
-    const msg = process.env.NODE_ENV === "production" ? "Failed to fetch RSVPs" : (error.message || "Failed to fetch RSVPs");
-    return NextResponse.json({ error: msg }, { status: 500 });
+  } catch (error) {
+    return routeError("PublicRsvp", error, "Gagal memuat ucapan tamu");
   }
 }
 
@@ -252,7 +252,7 @@ export async function POST(req: NextRequest) {
       maxAge: RSVP_COOKIE_MAX_AGE_SECONDS,
     });
     return response;
-  } catch (error: any) {
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal mengirim RSVP" : (error.message || "Gagal mengirim RSVP") }, { status: 500 });
+  } catch (error) {
+    return routeError("PublicRsvp", error, "Gagal mengirim RSVP");
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { routeError } from "@/lib/routeError";
 import { rateLimitDb, getClientIp } from "@/lib/rateLimit";
 import { isReceptionistAuthorized } from "@/lib/receptionistGuard";
 
@@ -137,9 +138,8 @@ export async function POST(req: NextRequest) {
         invitation: guest.invitation,
       },
     });
-  } catch (error: any) {
-    const msg = process.env.NODE_ENV === "production" ? "Gagal memproses QR Code" : (error.message || "Gagal memproses QR Code");
-    return NextResponse.json({ error: msg }, { status: 500 });
+  } catch (error) {
+    return routeError("ReceptionistScan", error, "Gagal memproses QR Code");
   }
 }
 

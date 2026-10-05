@@ -1,18 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { requireAdminModule } from "@/lib/adminAuth";
+import { routeError } from "@/lib/routeError";
 import dns from "dns";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    const { hasAdminPermission } = await import("@/lib/adminPermissions");
-
-    if (!session?.user || !hasAdminPermission(session.user, "custom_domains")) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("custom_domains");
+    if (!guard.ok) return guard.response;
 
     const body = await req.json().catch(() => ({}));
     let domain = (body.domain || "").trim().toLowerCase();
@@ -42,14 +39,14 @@ export async function POST(req: NextRequest) {
     // 1. Resolve A Record
     try {
       detectedA = await dns.promises.resolve4(domain);
-    } catch (e: any) {
+    } catch {
       // Tidak ada A record atau domain belum aktif
     }
 
     // 2. Resolve CNAME Record
     try {
       detectedCname = await dns.promises.resolveCname(domain);
-    } catch (e: any) {
+    } catch {
       // Tidak ada CNAME record
     }
 
@@ -98,11 +95,7 @@ export async function POST(req: NextRequest) {
       expectedCname,
       message,
     });
-  } catch (error: any) {
-    console.error("POST /api/admin/custom-domains/check-dns error:", error);
-    return NextResponse.json(
-      { error: error.message || "Gagal melakukan resolusi DNS" },
-      { status: 500 }
-    );
+  } catch (error) {
+    return routeError("CheckDns", error, "Gagal melakukan resolusi DNS");
   }
 }

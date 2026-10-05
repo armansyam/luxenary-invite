@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isReceptionistAuthorized, readReceptionistToken } from "@/lib/receptionistGuard";
 import { getClientIp, rateLimitDb } from "@/lib/rateLimit";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +39,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, guests }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
-    console.error("[Receptionist Guests] Gagal memuat tamu:", error);
-    return NextResponse.json({ error: "Failed to fetch guests" }, { status: 500 });
+    return routeError("ReceptionistGuests", error, "Gagal memuat daftar tamu");
   }
 }

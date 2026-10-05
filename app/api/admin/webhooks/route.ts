@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminModule } from "@/lib/adminAuth";
+import { routeError } from "@/lib/routeError";
 import { prisma } from "@/lib/prisma";
 import { Prisma, WebhookLogStatus } from "@prisma/client";
 
@@ -49,11 +50,7 @@ export async function GET(req: NextRequest) {
         totalPages,
       },
     });
-  } catch (error: any) {
-    console.error("GET /api/admin/webhooks error:", error);
-    return NextResponse.json(
-      { error: process.env.NODE_ENV === "production" ? "Gagal memuat log webhook" : error.message },
-      { status: 500 }
-    );
+  } catch (error) {
+    return routeError("AdminWebhooks", error, "Gagal memuat log webhook");
   }
 }

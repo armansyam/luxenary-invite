@@ -3,6 +3,8 @@ import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { NextRequest, NextResponse } from "next/server";
 import { normalizePlanType } from "@/lib/planUtils";
+import { logger } from "@/lib/logger";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -157,7 +159,7 @@ export async function POST(req: NextRequest) {
           }, { status: 409 });
         }
       } catch (err) {
-        console.error("[Checkout Confirm] Gagal membatalkan sesi gateway lama:", err);
+        logger.error("CheckoutConfirm", "Gagal membatalkan sesi gateway lama", err, { orderId: order.id });
       }
     }
 
@@ -185,8 +187,7 @@ export async function POST(req: NextRequest) {
       promoCode: appliedPromoCode,
       redirectUrl: `/payment?order=${order.id}`,
     });
-  } catch (error: any) {
-    console.error("[Checkout Confirm Error]", error);
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal mengonfirmasi pesanan" : error.message }, { status: 500 });
+  } catch (error) {
+    return routeError("CheckoutConfirm", error, "Gagal mengonfirmasi pesanan");
   }
 }

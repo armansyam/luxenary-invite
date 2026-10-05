@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminModule } from "@/lib/adminAuth";
+import { logger } from "@/lib/logger";
 import { STORAGE_PROVIDER, s3Client } from "@/lib/storage";
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs";
@@ -71,11 +72,12 @@ export async function POST(req: NextRequest) {
         message: `Penyimpanan lokal disk VPS aktif dan memiliki izin tulis (write permission) normal (${latencyMs}ms).`,
       });
     }
-  } catch (error: any) {
-    console.error("POST /api/admin/test-storage error:", error);
+  } catch (error) {
+    // Route diagnostik: pesan galat SDK/sistem berkas memang ditujukan ke admin yang sedang mengonfigurasi storage.
+    logger.error("TestStorage", "Uji koneksi storage gagal", error);
     return NextResponse.json(
       {
-        error: error.message || "Gagal melakukan uji koneksi storage. Periksa izin akses bucket atau direktori server.",
+        error: (error instanceof Error && error.message) || "Gagal melakukan uji koneksi storage. Periksa izin akses bucket atau direktori server.",
       },
       { status: 400 }
     );

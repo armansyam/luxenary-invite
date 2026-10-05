@@ -1219,14 +1219,12 @@ export async function composeWeddingData(inv: any) {
     const hasQris = Boolean(qrisImageUrl);
     const hasAddress = Boolean(inv.shippingAddress && String(inv.shippingAddress).trim() !== "");
 
-    // Fallback rekening demo hanya jika SEMUA data kosong (tidak ada bank, tidak ada QRIS, dan tidak ada alamat)
-    const rawBanks = hasExplicitBanks
-      ? bankAccounts
-      : (!hasQris && !hasAddress ? [{ bank: "BCA", number: "7330497518", name: isGroomFirst ? groomName : brideName }] : []);
+    // Tidak ada rekening cadangan: undangan asli tidak boleh menampilkan nomor rekening yang bukan milik mempelai.
+    const rawBanks = hasExplicitBanks ? bankAccounts : [];
 
     const bankCardsHtml = rawBanks.map((b: any, idx: number) => `
       <div class="bank-card">
-        <span class="bank-label" data-lux-field="bankAccounts.${idx}.bank">${escapeHtml(b.bank || "BCA")}</span>
+        <span class="bank-label" data-lux-field="bankAccounts.${idx}.bank">${escapeHtml(b.bank || "Rekening Bank")}</span>
         <span class="bank-owner" data-lux-field="bankAccounts.${idx}.name">a.n ${escapeHtml(b.name || (isGroomFirst ? groomName : brideName))}</span>
         <div class="bank-row">
           <span class="bank-number" data-lux-field="bankAccounts.${idx}.number">${escapeHtml(b.number)}</span>
@@ -1274,7 +1272,8 @@ export async function composeWeddingData(inv: any) {
       ${kadoHtml}
     `;
 
-    giftSectionHtml = `
+    // Tanpa rekening, QRIS, maupun alamat, seksi hadiah tidak dirender (bukan judul tanpa isi).
+    giftSectionHtml = !hasDigitalGift && !hasAddress ? "" : `
       <section class="sec-flow" id="gift">
         <span class="sec-eyebrow" data-lux-field="customLabels.giftEyebrow">${giftSectionEyebrow}</span>
         <h2 class="sec-main-title serif" data-lux-field="customLabels.giftTitle">${giftSectionTitle}</h2>

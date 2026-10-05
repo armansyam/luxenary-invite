@@ -3,6 +3,7 @@ import path from "path";
 import { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand, DeleteObjectCommand, PutBucketLifecycleConfigurationCommand } from "@aws-sdk/client-s3";
 import { prisma } from "./prisma";
 import { logger } from "./logger";
+import { isSafePathSegment, removeIfExists } from "./fsSafe";
 
 // Determine Storage Provider
 export const STORAGE_PROVIDER = process.env.STORAGE_PROVIDER || "local";
@@ -223,7 +224,7 @@ export async function syncDraftToR2(invitationId: string): Promise<void> {
       syncInvitationToNasArchive(invitationId).catch((err) => {
         logger.warn("SyncDraftToR2", "Sinkronisasi arsip NAS gagal", { invitationId, error: err instanceof Error ? err.message : String(err) });
       });
-    }).catch(() => {});
+    }).catch((err) => logger.error("SyncDraftToR2", "Modul arsip NAS gagal dimuat", err));
 
     const mimeTypes: Record<string, string> = {
       ".webp": "image/webp",
@@ -255,8 +256,8 @@ export async function syncDraftToR2(invitationId: string): Promise<void> {
         });
         await s3Client.send(command);
         
-        // Remove local file asynchronously
-        fs.promises.unlink(localFilePath).catch(() => {});
+        // Salinan lokal tidak lagi dipakai setelah terunggah ke R2; dihapus tanpa menunggu.
+        void removeIfExists(localFilePath);
         
         return `${customDomain}/${relativePath}`;
       } catch (err) {
@@ -392,16 +393,19 @@ export async function listPortfolioSlugs(): Promise<string[]> {
       return data.Contents
         .filter(obj => obj.Key && obj.Key.endsWith(".html"))
         .map(obj => path.basename(obj.Key!).replace(".html", ""));
-    } catch {
-      return [];
+    } catch (err) {
+      logger.error("PortfolioList", "Gagal membaca daftar portofolio dari R2", err);
+      throw err;
     }
   } else {
     const portfolioDir = path.join(process.cwd(), "public", "portfolio");
     try {
       const files = await fs.promises.readdir(portfolioDir);
       return files.filter(f => f.endsWith(".html")).map(f => f.replace(".html", ""));
-    } catch {
-      return [];
+    } catch (err) {
+      // Folder portofolio belum ada sampai portofolio pertama dibuat.
+      if ((err as NodeJS.ErrnoException).code === "ENOENT") return [];
+      throw err;
     }
   }
 }
@@ -410,6 +414,10 @@ export async function listPortfolioSlugs(): Promise<string[]> {
  * Delete Portfolio and its Assets
  */
 export async function deletePortfolio(slug: string): Promise<void> {
+  // Slug menjadi path yang dihapus rekursif (`public/portfolio/assets/<slug>/`).
+  if (!isSafePathSegment(slug)) {
+    throw new Error(`Slug portofolio tidak valid: ${JSON.stringify(slug)}`);
+  }
   if (STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3") {
     const bucketName = process.env.S3_BUCKET_NAME;
     if (!bucketName || !s3Client) return;

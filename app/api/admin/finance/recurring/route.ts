@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminModule } from "@/lib/adminAuth";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -81,9 +82,8 @@ export async function GET(req: NextRequest) {
           .reduce((acc, curr) => acc + (curr.paidAmount || curr.estimatedAmount), 0),
       },
     });
-  } catch (err: any) {
-    console.error("Recurring expenses GET error:", err);
-    return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
+  } catch (err) {
+    return routeError("RecurringExpenses", err, "Gagal memuat tagihan rutin");
   }
 }
 
@@ -123,9 +123,8 @@ export async function POST(req: NextRequest) {
         estimatedAmount: Number(created.estimatedAmount),
       },
     });
-  } catch (err: any) {
-    console.error("Recurring expense POST error:", err);
-    return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
+  } catch (err) {
+    return routeError("RecurringExpenses", err, "Gagal menambah tagihan rutin");
   }
 }
 
@@ -162,9 +161,8 @@ export async function PUT(req: NextRequest) {
         estimatedAmount: Number(updated.estimatedAmount),
       },
     });
-  } catch (err: any) {
-    console.error("Recurring expense PUT error:", err);
-    return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
+  } catch (err) {
+    return routeError("RecurringExpenses", err, "Gagal memperbarui tagihan rutin");
   }
 }
 
@@ -188,8 +186,7 @@ export async function DELETE(req: NextRequest) {
       success: true,
       message: "Tagihan rutin berhasil dihapus.",
     });
-  } catch (err: any) {
-    console.error("Recurring expense DELETE error:", err);
-    return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
+  } catch (err) {
+    return routeError("RecurringExpenses", err, "Gagal menghapus tagihan rutin");
   }
 }

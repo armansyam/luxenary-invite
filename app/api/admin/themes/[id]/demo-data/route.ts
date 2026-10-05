@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { DEMO_REGISTRY } from "@/lib/demoRegistry";
 import { purgeCloudflareCache } from "@/lib/cloudflare";
 import { logger } from "@/lib/logger";
+import { isSafePathSegment } from "@/lib/fsSafe";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -104,12 +106,8 @@ export async function GET(
       data: resolvedData,
       isCustom,
     });
-  } catch (err: any) {
-    console.error("[DemoData-Get-Error]:", err);
-    return NextResponse.json(
-      { error: err.message || "Gagal memuat data demo" },
-      { status: 500 }
-    );
+  } catch (err) {
+    return routeError("ThemeDemoData", err, "Gagal memuat data demo");
   }
 }
 
@@ -123,6 +121,10 @@ export async function POST(
 
     const { id } = await params;
     const themeId = id.toLowerCase().trim();
+    // ID tema menjadi direktori tujuan demo statis (`public/demo/<id>/index.html`).
+    if (!isSafePathSegment(themeId)) {
+      return NextResponse.json({ error: "ID tema tidak valid" }, { status: 400 });
+    }
     const body = await req.json();
 
     const settingKey = `theme_demo_${themeId}`;
@@ -165,11 +167,7 @@ export async function POST(
       themeId,
       data: body,
     });
-  } catch (err: any) {
-    console.error("[DemoData-Post-Error]:", err);
-    return NextResponse.json(
-      { error: err.message || "Gagal menyimpan data demo" },
-      { status: 500 }
-    );
+  } catch (err) {
+    return routeError("ThemeDemoData", err, "Gagal menyimpan data demo");
   }
 }

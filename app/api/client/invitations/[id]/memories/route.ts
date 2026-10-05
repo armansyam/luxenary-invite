@@ -174,7 +174,7 @@ export async function DELETE(
         const { deleteFile } = await import("@/lib/storage");
         await deleteFile(memory.mediaUrl);
       } catch (fileErr) {
-        console.error("Failed to delete memory file:", fileErr);
+        logger.error("ClientMemories", "Berkas kenangan gagal dihapus; baris DB tetap dihapus", fileErr, { memoryId });
       }
     }
 

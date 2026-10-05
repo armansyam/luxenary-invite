@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { routeError } from "@/lib/routeError";
 import { verifyPin } from "@/lib/pinEncryption";
 import { getClientIp, rateLimitDb } from "@/lib/rateLimit";
 import { generateReceptionistToken } from "@/lib/receptionistAuth";
@@ -56,8 +57,7 @@ export async function POST(req: NextRequest) {
       message: "PIN valid",
       token: sessionToken
     });
-  } catch (error: any) {
-    const msg = process.env.NODE_ENV === "production" ? "Gagal memverifikasi PIN" : (error.message || "Gagal memverifikasi PIN");
-    return NextResponse.json({ error: msg }, { status: 500 });
+  } catch (error) {
+    return routeError("ReceptionistVerifyPin", error, "Gagal memverifikasi PIN");
   }
 }

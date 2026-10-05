@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
+import { logger } from "@/lib/logger";
+import { routeError } from "@/lib/routeError";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 
@@ -53,7 +55,7 @@ export async function POST(req: NextRequest) {
           }
         }
       } catch (e) {
-        console.error("[guests bulk POST] Error parsing eventData:", e);
+        logger.warn("ClientGuestsBulk", "eventData undangan tidak terbaca; sesi tamu tidak divalidasi", { error: e instanceof Error ? e.message : String(e) });
       }
     }
 
@@ -95,8 +97,7 @@ export async function POST(req: NextRequest) {
       success: true, 
       message: `Berhasil mengimpor ${result.count} tamu.` 
     });
-  } catch (error: any) {
-    console.error("[Guests Bulk POST Error]:", error);
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Internal server error" : (error.message || "Internal server error") }, { status: 500 });
+  } catch (error) {
+    return routeError("ClientGuestsBulk", error, "Gagal mengimpor tamu");
   }
 }

@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 const archiver = require("archiver");
 import { streamMemoriesToZip } from "@/lib/storage";
 import { buildZipFileName } from "@/lib/invitationUtils";
+import { logger } from "@/lib/logger";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -63,7 +65,7 @@ export async function GET(req: NextRequest) {
             });
           } catch (lockErr) {
             // Log saja, jangan gagalkan response (ZIP sudah terkirim)
-            console.error("[Memories Lock Error]", lockErr);
+            logger.error("MemoriesDownload", "ZIP terkirim tetapi upload momen gagal dikunci", lockErr);
           }
         });
         archive.on("error", (err: any) => controller.error(err));
@@ -83,8 +85,7 @@ export async function GET(req: NextRequest) {
 
     return new NextResponse(stream, { headers });
 
-  } catch (error: any) {
-    console.error("[Download Memories ZIP Error]", error);
-    return NextResponse.json({ error: "Gagal memproses file ZIP" }, { status: 500 });
+  } catch (error) {
+    return routeError("MemoriesDownload", error, "Gagal memproses file ZIP");
   }
 }

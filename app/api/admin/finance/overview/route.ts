@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requireAdminModule } from "@/lib/adminAuth";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
-    const { hasAdminPermission } = await import("@/lib/adminPermissions");
-
-    if (!session?.user || !hasAdminPermission(session.user, "finance")) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("finance");
+    if (!guard.ok) return guard.response;
 
     const { searchParams } = new URL(req.url);
     const horizon = searchParams.get("timeframe") || searchParams.get("horizon") || "month"; // "day" | "month" | "year"
@@ -298,8 +295,7 @@ export async function GET(req: NextRequest) {
       recurringExpensesStatus: recurringWithStatus,
       recurringBills: recurringWithStatus,
     });
-  } catch (err: any) {
-    console.error("Finance overview error:", err);
-    return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
+  } catch (err) {
+    return routeError("FinanceOverview", err, "Gagal memuat ringkasan keuangan");
   }
 }

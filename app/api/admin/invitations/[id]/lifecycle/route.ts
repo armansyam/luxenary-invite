@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { routeError } from "@/lib/routeError";
 import { extendGalleryExpiry } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { invalidateInvitationLookup } from "@/lib/cache";
 import { purgeCloudflareCache } from "@/lib/cloudflare";
 import { getDynamicServerRootDomain } from "@/lib/serverDomainUtils";
-import { adminActorId } from "@/lib/adminAuth";
+import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -24,11 +24,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
-    const session = await auth();
-    const { hasAdminPermission } = await import("@/lib/adminPermissions");
-    if (!session?.user || !hasAdminPermission(session.user, "invitations")) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("invitations");
+    if (!guard.ok) return guard.response;
+    const { session } = guard;
 
     const resolvedParams = await Promise.resolve(params);
     const id = resolvedParams?.id;
@@ -168,11 +166,7 @@ export async function POST(
     }
 
     return NextResponse.json({ error: `Aksi "${action}" tidak dikenali.` }, { status: 400 });
-  } catch (error: any) {
-    console.error("[Admin Invitation Lifecycle Error]", error);
-    return NextResponse.json(
-      { error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message },
-      { status: 500 }
-    );
+  } catch (error) {
+    return routeError("AdminInvitationLifecycle", error);
   }
 }

@@ -1,19 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { adminActorId } from "@/lib/adminAuth";
-import { logger } from "@/lib/logger";
+import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    const { hasAdminPermission } = await import("@/lib/adminPermissions");
-
-    if (!session?.user || !hasAdminPermission(session.user, "custom_domains")) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
-    }
+    const guard = await requireAdminModule("custom_domains");
+    if (!guard.ok) return guard.response;
+    const { session } = guard;
 
     const body = await req.json().catch(() => ({}));
     const { orderId } = body;
@@ -70,11 +66,7 @@ export async function POST(req: NextRequest) {
       message: `Domain ${domain} berhasil dihubungkan ke undangan ${targetInvitation.subdomain || targetInvitation.invitationSlug}.`,
       customDomain: domain,
     });
-  } catch (error: any) {
-    logger.error("ActivateCustomDomain", "Aktivasi custom domain gagal", error);
-    return NextResponse.json(
-      { error: error.message || "Gagal mengaktifkan custom domain" },
-      { status: 500 }
-    );
+  } catch (error) {
+    return routeError("ActivateCustomDomain", error, "Gagal mengaktifkan custom domain");
   }
 }

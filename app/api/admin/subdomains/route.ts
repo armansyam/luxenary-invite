@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminModule } from "@/lib/adminAuth";
+import { routeError } from "@/lib/routeError";
 import { isReservedSubdomain } from "@/lib/domainUtils";
 import { DAY_MS, computeLifecycleDates, getPrimaryEventDateString } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
@@ -161,11 +162,7 @@ export async function GET(req: Request) {
       inspectorResult,
       subdomains: filteredList,
     });
-  } catch (err: any) {
-    console.error("[Admin-Subdomains-API-Error]:", err);
-    return NextResponse.json(
-      { error: err?.message || "Gagal memuat data monitoring subdomain" },
-      { status: 500 }
-    );
+  } catch (err) {
+    return routeError("AdminSubdomains", err, "Gagal memuat data monitoring subdomain");
   }
 }

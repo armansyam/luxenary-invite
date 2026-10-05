@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { hasPlanCapability } from "@/lib/settings";
 import { hasAdminPermission } from "@/lib/adminPermissions";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -119,11 +120,7 @@ export async function POST(req: NextRequest) {
       customDomain: cleanDomain,
       message: "Custom domain berhasil disimpan dan ditautkan ke undangan Anda.",
     });
-  } catch (error: any) {
-    console.error("[Custom Domain Save Error]", error);
-    return NextResponse.json(
-      { error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message },
-      { status: 500 }
-    );
+  } catch (error) {
+    return routeError("ClientCustomDomain", error, "Gagal menyimpan custom domain");
   }
 }
