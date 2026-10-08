@@ -39,6 +39,34 @@ export function mergeClientFeatureSettings(existing: FeatureSettings, incoming: 
   return merged;
 }
 
+/** Filter kamera tamu yang dikenali DisposableCameraViewfinder. */
+export const MEMORIES_FILTER_IDS = ["aura_90s", "heritage_romance", "botanical_mist", "cinema_noir", "pure_daylight"] as const;
+
+export const isValidMemoriesFilter = (value: unknown): boolean =>
+  typeof value === "string" && (MEMORIES_FILTER_IDS as readonly string[]).includes(value);
+
+/** Jatah foto per tamu: bilangan bulat 1-30. */
+export const isValidShotsQuota = (value: unknown): boolean =>
+  (typeof value === "number" || typeof value === "string") && Number.isInteger(Number(value)) && Number(value) >= 1 && Number(value) <= 30;
+
+/**
+ * Nilai kamera dari klien yang tidak sah diganti nilai tersimpan sebelumnya (atau dibuang bila tidak ada),
+ * sehingga PUT/PATCH featureSettings tidak dapat menembus validasi rute Momen.
+ */
+export function keepValidMemoriesSettings(merged: FeatureSettings, existing: FeatureSettings): FeatureSettings {
+  const result: FeatureSettings = { ...merged };
+  if (result.memoriesFilter !== undefined && !isValidMemoriesFilter(result.memoriesFilter)) {
+    if (isValidMemoriesFilter(existing.memoriesFilter)) result.memoriesFilter = existing.memoriesFilter;
+    else delete result.memoriesFilter;
+  }
+  if (result.memoriesShotsQuota !== undefined) {
+    if (isValidShotsQuota(result.memoriesShotsQuota)) result.memoriesShotsQuota = Number(result.memoriesShotsQuota);
+    else if (isValidShotsQuota(existing.memoriesShotsQuota)) result.memoriesShotsQuota = Number(existing.memoriesShotsQuota);
+    else delete result.memoriesShotsQuota;
+  }
+  return result;
+}
+
 /** Mematikan fitur berbayar yang tidak termasuk kapabilitas paket (tidak bisa dibuka lewat bypass API). */
 export async function gateFeaturesByPlan(features: FeatureSettings, planType: string | null | undefined): Promise<FeatureSettings> {
   const { getPublicPlatformSettings } = await import("@/lib/settings");

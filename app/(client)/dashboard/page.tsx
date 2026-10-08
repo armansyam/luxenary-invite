@@ -597,7 +597,7 @@ function DashboardHomeContent() {
                 )}
               </div>
 
-              <p className="text-[11px] text-stone-500 leading-relaxed">
+              <p className="hidden sm:block text-[11px] text-stone-500 leading-relaxed">
                 Satu masa aktif terpadu mencakup <strong>situs web undangan</strong>, <strong>subdomain</strong>, <strong>kamera disposable tamu</strong>, dan <strong>cloud galeri foto</strong> ({baseRetentionDays} hari default{extraGalleryDays > 0 ? ` + perpanjangan ${extraGalleryDays} hari` : ""}{invitation?.status === 'DRAFT' ? ', dihitung pasca acara resepsi' : ''}).
                 {!hasExtended && daysRemaining !== null && daysRemaining > 7 && (
                   <span className="block text-stone-400 mt-0.5">
@@ -613,7 +613,7 @@ function DashboardHomeContent() {
             </div>
 
             {/* Quick Action Button: Perpanjangan Bertahap (H-7 & Maksimal 1x) */}
-            <div className="shrink-0 flex items-center gap-2">
+            <div className={`shrink-0 items-center gap-2 ${hasExtended || canExtend ? "flex" : "hidden sm:flex"}`}>
               {hasExtended ? (
                 <span className="px-3 py-1.5 bg-stone-100 border border-stone-200 text-stone-600 rounded-xl text-[11px] font-bold inline-flex items-center gap-1.5" title="Batas maksimal perpanjangan (+30 hari) telah digunakan.">
                   <span className="w-1.5 h-1.5 rounded-full bg-stone-400"></span>
@@ -632,7 +632,7 @@ function DashboardHomeContent() {
                   <span>Perpanjang Masa Aktif (+30 Hari)</span>
                 </button>
               ) : (
-                <span className="px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-[11px] font-semibold inline-flex items-center gap-1.5" title="Opsi perpanjangan akan terbuka saat sisa masa aktif 7 hari">
+                <span className="hidden sm:inline-flex px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-[11px] font-semibold items-center gap-1.5" title="Opsi perpanjangan akan terbuka saat sisa masa aktif 7 hari">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                   Masa Aktif Aman
                 </span>
@@ -644,7 +644,7 @@ function DashboardHomeContent() {
             <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-serif font-bold text-stone-900 leading-snug tracking-tight">
               {coupleDisplayName || "Undangan Acara"}
             </h1>
-            <p className="text-xs sm:text-sm text-stone-500">
+            <p className="hidden sm:block text-sm text-stone-500">
               Kelola seluruh konten, galeri, susunan acara, dan tamu undangan Anda dari satu panel kontrol.
             </p>
           </div>
@@ -708,7 +708,7 @@ function DashboardHomeContent() {
           ) : (
             <div className="w-full p-2.5 sm:p-3 bg-amber-50 border border-amber-200/80 rounded-xl text-xs text-amber-900 flex items-center gap-2">
               <svg className="w-4 h-4 shrink-0 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              <p><strong>Belum Terbit.</strong> Tautan undangan akan aktif dan siap dibagikan setelah Anda menekan Publikasi di Studio Editor.</p>
+              <p><strong>Belum Terbit.</strong> Tautan undangan aktif setelah Anda menerbitkannya di <Link href="/dashboard/settings" className="font-bold underline underline-offset-2">Pengaturan</Link>.</p>
             </div>
           )}
 
@@ -732,7 +732,7 @@ function DashboardHomeContent() {
           )}
 
           {/* URL Bars (Undangan + Galeri Kenangan jika aktif) */}
-          <div className={`pt-3 border-t border-stone-200/60 grid grid-cols-1 ${hasCap("guest_memories") ? "sm:grid-cols-2" : "sm:grid-cols-1"} gap-2 text-xs text-stone-600 font-mono`}>
+          <div className={`pt-3 border-t border-stone-200/60 ${invitation?.status === 'PUBLISHED' || invitation?.status === 'EVENT_FINISHED' ? "grid" : "hidden sm:grid"} grid-cols-1 ${hasCap("guest_memories") ? "sm:grid-cols-2" : "sm:grid-cols-1"} gap-2 text-xs text-stone-600 font-mono`}>
             <div className="bg-stone-50 border border-stone-200/70 p-2.5 rounded-xl flex items-center justify-between gap-2">
               {invitation?.status === 'PUBLISHED' || invitation?.status === 'EVENT_FINISHED' ? (
                 <span className="truncate text-stone-800 font-medium">{invUrl}</span>

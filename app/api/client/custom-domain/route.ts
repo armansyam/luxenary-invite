@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { hasPlanCapability } from "@/lib/settings";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { routeError } from "@/lib/routeError";
+import { checkDomainPointsToPlatform } from "@/lib/customDomainDns";
 
 export const dynamic = "force-dynamic";
 
@@ -107,6 +108,24 @@ export async function POST(req: NextRequest) {
 
     if (existingDomain) {
       return NextResponse.json({ error: "Domain tersebut sudah digunakan oleh undangan lain di sistem." }, { status: 400 });
+    }
+
+    // Bukti kepemilikan: hanya pemilik domain yang dapat mengarahkan DNS-nya ke server platform.
+    if (!isAdmin) {
+      const dnsCheck = await checkDomainPointsToPlatform(cleanDomain);
+      if (!dnsCheck.pointsToUs) {
+        const target = [dnsCheck.expectedCname && `CNAME ${dnsCheck.expectedCname}`, dnsCheck.expectedIp && `A ${dnsCheck.expectedIp}`]
+          .filter(Boolean)
+          .join(" atau ");
+        return NextResponse.json(
+          {
+            error: `DNS ${cleanDomain} belum mengarah ke server kami${target ? ` (${target})` : ""}. Atur DNS di penyedia domain Anda, tunggu beberapa menit, lalu simpan lagi.`,
+            detectedA: dnsCheck.detectedA,
+            detectedCname: dnsCheck.detectedCname,
+          },
+          { status: 422 }
+        );
+      }
     }
 
     // 5. Simpan domain langsung ke undangan (Gratis tanpa invoice/pembayaran)

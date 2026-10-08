@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
     const invitation = await prisma.invitation.findUnique({
       where: { id: invitationId },
-      select: { userId: true, eventData: true },
+      select: { userId: true, eventData: true, eventType: true },
     });
 
     if (!invitation) {
@@ -64,7 +64,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Maksimal import adalah 500 tamu sekaligus." }, { status: 400 });
     }
 
-    const createData = guests.map((g: any) => {
+    // Nama dicocokkan tanpa membedakan huruf besar/kecil oleh QR, RSVP, dan resepsionis, jadi nama kembar
+    // (di dalam berkas maupun yang sudah terdaftar) dilewati agar check-in tidak tertukar.
+    const existing = await prisma.guest.findMany({ where: { invitationId }, select: { name: true } });
+    const takenNames = new Set(existing.map((g) => g.name.trim().toLowerCase()));
+    const skippedNames: string[] = [];
+    const uniqueGuests = guests.filter((g: any) => {
+      const key = (g.name?.trim() || "Tamu Undangan").toLowerCase();
+      if (takenNames.has(key)) {
+        skippedNames.push(g.name?.trim() || "Tamu Undangan");
+        return false;
+      }
+      takenNames.add(key);
+      return true;
+    });
+    const defaultSessionInfo = invitation.eventType === "WEDDING" ? "Akad & Resepsi" : null;
+
+    const createData = uniqueGuests.map((g: any) => {
       const cleanName = g.name?.trim() || "Tamu Undangan";
       const slug = cleanName
         .toLowerCase()
@@ -81,7 +97,7 @@ export async function POST(req: NextRequest) {
         slug,
         phone: g.phone || null,
         category: g.category || "UMUM",
-        sessionInfo: g.sessionInfo || "Akad & Resepsi",
+        sessionInfo: g.sessionInfo || defaultSessionInfo,
         guestQuota: Number(g.guestQuota) || 2,
         tableNumber: g.tableNumber ? String(g.tableNumber).trim() : null,
         qrToken,
@@ -93,9 +109,12 @@ export async function POST(req: NextRequest) {
       data: createData,
     });
 
-    return NextResponse.json({ 
-      success: true, 
-      message: `Berhasil mengimpor ${result.count} tamu.` 
+    return NextResponse.json({
+      success: true,
+      skippedNames,
+      message:
+        `Berhasil mengimpor ${result.count} tamu.` +
+        (skippedNames.length > 0 ? ` ${skippedNames.length} nama dilewati karena sudah ada di daftar.` : ""),
     });
   } catch (error) {
     return routeError("ClientGuestsBulk", error, "Gagal mengimpor tamu");

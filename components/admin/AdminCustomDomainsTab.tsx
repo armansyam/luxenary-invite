@@ -7,7 +7,7 @@ interface CustomDomainOrder {
   id: string;
   invoiceNumber: string;
   amount: number | string;
-  status: "PENDING" | "PAID" | "FAILED" | string;
+  status: "PENDING" | "PAID" | "EXPIRED" | string;
   requestedDomain?: string | null;
   createdAt: string;
   user?: {

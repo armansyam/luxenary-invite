@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 // (in-memory, reset saat server restart — aman dan tidak perlu DB tambahan)
 let lastExpireSweepAt = 0;
 const EXPIRE_SWEEP_INTERVAL_MS = 5 * 60 * 1000; // 5 menit
+const STALE_DRAFT_DAYS = 90;
 
 export async function GET() {
   try {
@@ -119,6 +120,7 @@ export async function GET() {
       invitationCount,
       publishedInvitationCount,
       draftInvitationCount,
+      staleDraftCount,
       eventFinishedCount,
       archivedCount,
       orderCount,
@@ -139,6 +141,9 @@ export async function GET() {
       prisma.invitation.count(),
       prisma.invitation.count({ where: { status: "PUBLISHED" } }),
       prisma.invitation.count({ where: { status: "DRAFT" } }),
+      // Draf tidak tersentuh terlalu lama: tidak pernah masuk siklus hidup (hanya undangan terbit yang kedaluwarsa)
+      // dan tidak dihapus otomatis karena klien sudah membayar; ditampilkan agar admin dapat menindaklanjuti.
+      prisma.invitation.count({ where: { status: "DRAFT", updatedAt: { lt: new Date(nowTs.getTime() - STALE_DRAFT_DAYS * 24 * 60 * 60 * 1000) } } }),
       prisma.invitation.count({ where: { status: "EVENT_FINISHED" } }),
       prisma.invitation.count({ where: { status: "ARCHIVED" } }),
       prisma.order.count(),
@@ -173,7 +178,7 @@ export async function GET() {
         },
       }),
       prisma.order.findMany({
-        where: { status: { notIn: ["EXPIRED", "FAILED"] } },
+        where: { status: { not: "EXPIRED" } },
         select: { id: true, amount: true, status: true, planType: true, createdAt: true },
       }),
       prisma.order.findMany({
@@ -292,6 +297,8 @@ export async function GET() {
         invitationCount,
         publishedInvitationCount,
         draftInvitationCount,
+        staleDraftCount,
+        staleDraftDays: STALE_DRAFT_DAYS,
         eventFinishedCount,
         archivedCount,
         orderCount,

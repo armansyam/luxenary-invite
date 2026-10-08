@@ -11,8 +11,10 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     description: 'Platform Undangan Digital Elegan',
     start_url: '/dashboard',
     display: 'standalone',
-    background_color: '#1c1917',
-    theme_color: '#0c0a09',
+    // Sama dengan themeColor di app/layout.tsx dan latar dasbor klien (start_url), agar bar status aplikasi
+    // yang dipasang tidak gelap di atas dasbor yang terang.
+    background_color: '#faf8f5',
+    theme_color: '#faf8f5',
     icons: [
       {
         src: '/favicon.ico',

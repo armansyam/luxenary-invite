@@ -5,6 +5,7 @@ import { getInvitationPublicUrl, resolveEffectiveInvitationUrl } from "@/lib/dom
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 import { useFeedback } from "@/components/ui/Feedback";
 import { normalizeRsvpStatus, type RsvpStatus } from "@/lib/rsvpStatus";
+import { getPrimaryEvent } from "@/lib/lifecycleDates";
 
 interface Guest {
   id: string;
@@ -137,7 +138,7 @@ export default function GuestsPage() {
     name: "",
     phone: "",
     category: "UMUM",
-    sessionInfo: "Akad & Resepsi",
+    sessionInfo: "",
     guestLimit: 2,
     tableNumber: "",
   });
@@ -218,7 +219,7 @@ export default function GuestsPage() {
         category = "UMUM";
       }
 
-      const sessionInfo = sessionIdx !== -1 && cols[sessionIdx] ? cols[sessionIdx].trim() : "Akad & Resepsi";
+      const sessionInfo = sessionIdx !== -1 && cols[sessionIdx] ? cols[sessionIdx].trim() : "";
       const guestQuota = quotaIdx !== -1 && cols[quotaIdx] ? parseInt(cols[quotaIdx], 10) || 2 : 2;
       const tableNumber = tableIdx !== -1 && cols[tableIdx] ? cols[tableIdx].trim() : "";
 
@@ -352,7 +353,7 @@ export default function GuestsPage() {
               name: cleanName,
               phone: phone || null,
               category: "UMUM",
-              sessionInfo: "Akad & Resepsi",
+              sessionInfo: "",
               guestQuota: 2,
               tableNumber: null,
             };
@@ -375,9 +376,13 @@ export default function GuestsPage() {
   const loadGuests = (invId: string) => {
     setLoading(true);
     fetch(`/api/client/guests/${invId}`)
-      .then((res) => res.json())
-      .then((data: Guest[]) => {
-        setGuests(Array.isArray(data) ? data : []);
+      .then(async (res) => {
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !Array.isArray(data)) {
+          setError(data?.error || "Gagal memuat daftar tamu");
+        } else {
+          setGuests(data as Guest[]);
+        }
         setLoading(false);
       })
       .catch(() => {
@@ -450,7 +455,7 @@ export default function GuestsPage() {
           name: "",
           phone: "",
           category: "UMUM",
-          sessionInfo: "Akad & Resepsi",
+          sessionInfo: "",
           guestLimit: 2,
           tableNumber: "",
         });
@@ -467,8 +472,13 @@ export default function GuestsPage() {
     const targetId = guestToDelete.id;
     setLoading(true);
     try {
-      await fetch(`/api/client/guests/${targetId}`, { method: "DELETE" });
+      const res = await fetch(`/api/client/guests/${targetId}`, { method: "DELETE" });
       setGuestToDelete(null);
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setError(data?.error || "Gagal menghapus tamu");
+        return;
+      }
       loadGuests(invitationId);
     } catch {
       setError("Gagal menghapus tamu");
@@ -544,7 +554,14 @@ export default function GuestsPage() {
     }
   };
 
-  const renderWaText = (guestName: string, guestLimit: number = 2, sessionInfo: string = "Akad & Resepsi", qrToken?: string) => {
+  // Sesi bawaan teks WA bila tamu tidak diberi sesi: pernikahan "Akad & Resepsi", acara lain memakai nama sesi
+  // jadwal terima tamu (mis. "Syukuran Khitanan").
+  const defaultSessionInfo =
+    !invitationData?.eventType || invitationData.eventType === "WEDDING"
+      ? "Akad & Resepsi"
+      : (getPrimaryEvent(invitationData.eventData) as { title?: string } | null)?.title || "Acara Utama";
+
+  const renderWaText = (guestName: string, guestLimit: number = 2, sessionInfo: string = defaultSessionInfo, qrToken?: string) => {
     const isWedding = !invitationData?.eventType || invitationData.eventType === "WEDDING";
     const groom = invitationData?.groomNickname || invitationData?.groomName || "Mempelai Pria";
     const bride = invitationData?.brideNickname || invitationData?.brideName || "Mempelai Wanita";
@@ -598,7 +615,7 @@ export default function GuestsPage() {
     const renderedText = renderWaText(
       guest.name,
       guest.guestLimit || guest.guestQuota || 2,
-      guest.sessionInfo || "Akad & Resepsi",
+      guest.sessionInfo || defaultSessionInfo,
       guest.qrToken
     );
 
@@ -672,8 +689,8 @@ export default function GuestsPage() {
   }, [filterStatus, GUEST_STATUS_TABS]);
 
   return (
-    <div className="space-y-2.5 sm:space-y-3 font-sans pb-20">
-      
+    <div className="flex flex-col gap-2.5 sm:gap-3 font-sans pb-20">
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white px-4 py-3 sm:px-6 sm:py-3.5 rounded-2xl border border-stone-200 shadow-xs">
         <div>
@@ -681,7 +698,7 @@ export default function GuestsPage() {
           <h1 className="text-base sm:text-lg font-serif font-bold text-stone-900 mt-0.5 leading-snug">
             Buku Tamu &amp; Pengiriman WhatsApp
           </h1>
-          <p className="text-xs text-stone-500 mt-0.5">
+          <p className="hidden sm:block text-xs text-stone-500 mt-0.5">
             Kelola nama penerima undangan, checklist status pengiriman, dan sesuaikan template pesan WhatsApp
           </p>
         </div>
@@ -691,7 +708,7 @@ export default function GuestsPage() {
           <button
             type="button"
             onClick={() => setShowTemplateModal(true)}
-            className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300/80 text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+            className="flex-1 sm:flex-none px-3.5 py-2.5 sm:py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300/80 text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
           >
             <svg className="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -709,7 +726,7 @@ export default function GuestsPage() {
               setBulkFileName("");
               setShowBulkModal(true);
             }}
-            className="px-3.5 py-2 bg-stone-50 hover:bg-stone-100 text-stone-700 border border-stone-300 text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-xs shrink-0"
+            className="flex-1 sm:flex-none px-3.5 py-2.5 sm:py-2 bg-stone-50 hover:bg-stone-100 text-stone-700 border border-stone-300 text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-xs shrink-0"
           >
             <svg className="w-4 h-4 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -722,7 +739,7 @@ export default function GuestsPage() {
             <button
               type="button"
               onClick={handlePickMultipleContacts}
-              className="px-3.5 py-2 bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-300/80 text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-xs shrink-0"
+              className="flex-1 sm:flex-none px-3.5 py-2.5 sm:py-2 bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-300/80 text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-xs shrink-0"
             >
               <svg className="w-4 h-4 text-purple-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -735,7 +752,7 @@ export default function GuestsPage() {
           <button
             type="button"
             onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-xs shrink-0"
+            className="order-first sm:order-none w-full sm:w-auto px-4 py-3 sm:py-2 bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-xs shrink-0"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -753,9 +770,9 @@ export default function GuestsPage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
           <div className="flex-1 min-w-0 text-xs">
-            <h4 className="text-xs sm:text-sm font-bold text-amber-950">Undangan Masih Berstatus Draft (Belum Dipublikasikan)</h4>
+            <h4 className="text-xs sm:text-sm font-bold text-amber-950">Undangan belum terbit</h4>
             <p className="text-[11px] text-amber-900/80 mt-1 leading-relaxed">
-              Fitur pengiriman WhatsApp dan salin tautan personal tamu dinonaktifkan sementara untuk mencegah terkirimnya tautan prematur. Seluruh aksi pengiriman akan aktif otomatis setelah Anda mempublikasikan undangan resmi Anda di <a href="/dashboard/settings" className="font-bold underline hover:text-amber-950">Menu Pengaturan / Publikasi</a>.
+              Kirim WhatsApp dan salin tautan tamu aktif setelah undangan diterbitkan di <a href="/dashboard/settings" className="font-bold underline hover:text-amber-950">Pengaturan</a>. Daftar tamu sudah bisa diisi sekarang.
             </p>
           </div>
         </div>
@@ -769,7 +786,7 @@ export default function GuestsPage() {
         if (!hasQrCheckin) return null;
 
         return (
-          <div className="bg-emerald-50/70 border border-emerald-200/90 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="order-last sm:order-none bg-emerald-50/70 border border-emerald-200/90 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
             <div className="flex items-start sm:items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -828,8 +845,8 @@ export default function GuestsPage() {
         );
       })()}
 
-      {/* Quick Summary Counter Bar (Clickable Filter Cards) */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* Quick Summary Counter Bar (Clickable Filter Cards); di HP angka yang sama sudah tampil di tab status */}
+      <div className="hidden sm:grid grid-cols-3 gap-3">
         <button
           type="button"
           onClick={() => setFilterStatus("all")}
@@ -917,7 +934,7 @@ export default function GuestsPage() {
                   ref={(el) => { tabRefs.current[idx] = el; }}
                   type="button"
                   onClick={() => setFilterStatus(tab.id as any)}
-                  className={`relative px-3 py-2 text-xs font-bold transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                  className={`relative px-3 py-3 sm:py-2 text-xs font-bold transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
                     isActive ? "text-stone-900" : "text-stone-500 hover:text-stone-800"
                   }`}
                 >
@@ -953,7 +970,7 @@ export default function GuestsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari nama atau nomor HP..."
-              className="w-full pl-9 pr-3 py-2 bg-white border border-stone-200 rounded-xl text-xs text-stone-900 placeholder:text-stone-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30 shadow-2xs"
+              className="w-full pl-9 pr-3 py-2.5 sm:py-2 bg-white border border-stone-200 rounded-xl text-base sm:text-xs text-stone-900 placeholder:text-stone-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30 shadow-2xs"
             />
             <svg className="w-4 h-4 text-stone-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -974,7 +991,7 @@ export default function GuestsPage() {
             <button
               key={tab.id}
               onClick={() => setFilterCategory(tab.id)}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition whitespace-nowrap cursor-pointer ${
+              className={`px-3 py-2.5 sm:px-2.5 sm:py-1 rounded-lg text-xs font-semibold transition whitespace-nowrap cursor-pointer ${
                 filterCategory === tab.id
                   ? "bg-amber-100/80 text-amber-900 border border-amber-300/80 font-bold shadow-2xs"
                   : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
@@ -1279,7 +1296,7 @@ export default function GuestsPage() {
                       { tag: "{link_undangan}", label: "Link Undangan", desc: "URL Khusus Tamu (Domain / Subdomain)" },
                       { tag: "{nama_mempelai}", label: "Nama Mempelai", desc: "Nama Kedua Mempelai" },
                       { tag: "{kuota_tamu}", label: "Kuota Tamu", desc: "2 Pax" },
-                      { tag: "{sesi_acara}", label: "Sesi Acara", desc: "Akad & Resepsi" },
+                      { tag: "{sesi_acara}", label: "Sesi Acara", desc: defaultSessionInfo },
                     ].map((item) => (
                       <button
                         key={item.tag}
@@ -1359,7 +1376,7 @@ export default function GuestsPage() {
 
                       {/* WhatsApp Bubble Preview Box */}
                       <div className="p-3.5 bg-[#d9fdd3] text-stone-900 rounded-2xl rounded-tr-xs border border-emerald-200/80 shadow-xs text-xs whitespace-pre-wrap font-sans leading-relaxed break-words">
-                        {renderWaText("Bpk. Abiyoga", 2, "Akad & Resepsi", "dummy-qr-token")}
+                        {renderWaText("Bpk. Abiyoga", 2, defaultSessionInfo, "dummy-qr-token")}
                         <div className="text-right text-[9px] text-stone-400 mt-1 font-mono">
                           12:00
                         </div>

@@ -100,30 +100,14 @@ export async function GET() {
       });
     }
 
-    // Kasus: Order ditolak admin (FAILED/REJECTED)
-    if (latestOrder.status === "FAILED" && latestOrder.rejectReason) {
-      return NextResponse.json({
-        step: "ORDER_REJECTED",
-        orderId: latestOrder.id,
-        invoiceNumber: latestOrder.invoiceNumber,
-        planType: latestOrder.planType,
-        amount: Number(latestOrder.amount),
-        redirectUrl: `/checkout?order=${latestOrder.id}`,
-        hasPaidOrder: false,
-        rejectReason: latestOrder.rejectReason,
-      });
-    }
-
-    // Kasus 4: Order EXPIRED atau FAILED lainnya (gateway timeout/cancel)
+    // Kasus 4: Order EXPIRED (gateway timeout/cancel). Order yang ditolak admin tetap PENDING dan ditangani di atas.
     // Arahkan ke pembuatan order baru dengan menyertakan pesan kecil
-    const isRejected = latestOrder.status === "FAILED";
-    const msg = isRejected ? "transfer_rejected" : "qris_expired";
     return NextResponse.json({
       step: "ORDER_EXPIRED",
       orderId: latestOrder.id,
       planType: latestOrder.planType,
       invoiceNumber: latestOrder.invoiceNumber,
-      redirectUrl: `/checkout?plan=${latestOrder.planType}&msg=${msg}`,
+      redirectUrl: `/checkout?plan=${latestOrder.planType}&msg=qris_expired`,
     });
   } catch (error) {
     return routeError("OnboardingState", error);

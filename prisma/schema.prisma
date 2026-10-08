@@ -306,7 +306,6 @@ enum OrderStatus {
   PENDING
   PAID
   EXPIRED
-  FAILED
 }
 
 enum PaymentMethod {

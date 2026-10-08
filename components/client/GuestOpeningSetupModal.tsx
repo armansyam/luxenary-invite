@@ -3,6 +3,7 @@
 import React, { useState, useRef } from "react";
 import QRCode from "react-qr-code";
 import { useFeedback } from "@/components/ui/Feedback";
+import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 
 export interface GuestOpeningSetupModalProps {
   isOpen: boolean;
@@ -72,7 +73,7 @@ export default function GuestOpeningSetupModal({
 
   if (!isOpen) return null;
 
-  const coupleTitle = `${invitation?.groomNickname || "Mempelai Pria"} & ${invitation?.brideNickname || "Mempelai Wanita"}`;
+  const coupleTitle = resolveInvitationDisplayName(invitation ?? {});
 
   // Format Tanggal Acara
   const eventDateFormatted = (() => {
@@ -437,7 +438,7 @@ export default function GuestOpeningSetupModal({
                     2. Foto Khusus Layar Pembuka:
                   </span>
                   <span className="text-[10px] text-stone-500">
-                    Foto potret vertikal mempelai yang tampil di layar HP tamu
+                    Foto potret vertikal yang tampil di layar HP tamu
                   </span>
                 </div>
                 {isUploadingPhoto && (

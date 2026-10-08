@@ -67,6 +67,12 @@ describe("getPrimaryEventDate", () => {
     expect(getPrimaryEventDate(noPrimary)?.toISOString()).toBe("2026-12-10T17:00:00.000Z");
   });
 
+  it("jadwal terima tamu (isPrimary) tanpa tanggal tidak diganti diam-diam oleh sesi lain", () => {
+    const primaryUndated = [{ title: "Akad", date: "2026-12-11" }, { title: "Resepsi", date: "", isPrimary: true }];
+    expect(getPrimaryEvent(primaryUndated)).toBeNull();
+    expect(getPrimaryEventDate(primaryUndated)).toBeNull();
+  });
+
   it("mendukung bentuk objek { events: [...] } dan menolak data rusak", () => {
     expect(getPrimaryEventDate({ events })?.toISOString()).toBe("2026-12-13T17:00:00.000Z");
     expect(getPrimaryEventDate("bukan json")).toBeNull();

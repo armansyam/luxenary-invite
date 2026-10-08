@@ -59,10 +59,15 @@ export function getEventDayStart(ev: EventLike | null | undefined): Date | null 
   return Number.isNaN(start.getTime()) ? null : start;
 }
 
-/** Acara utama: bertanda isPrimary, jika tidak ada maka acara pertama yang memiliki tanggal valid. */
+/**
+ * Acara utama = jadwal terima tamu (isPrimary). Bila sesi itu belum bertanggal, hasilnya null: sesi lain tidak
+ * diam-diam menjadi patokan. Undangan lama tanpa penanda memakai acara pertama yang bertanggal.
+ */
 export function getPrimaryEvent(eventData: unknown): EventLike | null {
-  const dated = parseEventList(eventData).filter((ev) => getEventDayStart(ev) !== null);
-  return dated.find((ev) => ev?.isPrimary === true) ?? dated[0] ?? null;
+  const list = parseEventList(eventData);
+  const flagged = list.find((ev) => ev?.isPrimary === true);
+  if (flagged) return getEventDayStart(flagged) !== null ? flagged : null;
+  return list.find((ev) => getEventDayStart(ev) !== null) ?? null;
 }
 
 /** Patokan tunggal seluruh jam retensi: awal hari acara utama pada zona waktu acara. */

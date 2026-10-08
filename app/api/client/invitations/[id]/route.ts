@@ -17,7 +17,7 @@ import { invalidateInvitationLookup } from "@/lib/cache";
 import { safeExternalUrl, normalizeFeatureUrls } from "@/lib/safeUrl";
 import { getDynamicServerRootDomain } from "@/lib/serverDomainUtils";
 import { createPreviewToken } from "@/lib/previewAccess";
-import { parseFeatureSettings, mergeClientFeatureSettings, gateFeaturesByPlan, SERVER_MANAGED_FEATURE_KEYS } from "@/lib/featureSettings";
+import { parseFeatureSettings, mergeClientFeatureSettings, gateFeaturesByPlan, keepValidMemoriesSettings, SERVER_MANAGED_FEATURE_KEYS } from "@/lib/featureSettings";
 
 
 export function getInvitationLockStatus(inv: any) {
@@ -43,11 +43,12 @@ export function getInvitationLockStatus(inv: any) {
     };
   }
 
-  // 3. Hari acara utama (pada zona waktu acara) telah berlalu: terkunci permanen mulai awal hari berikutnya
+  // 3. Hari acara utama (pada zona waktu acara) telah berlalu: terkunci permanen mulai awal hari berikutnya.
+  // Draf dikecualikan: belum pernah dilihat tamu, dan klien harus bisa memperbaiki tanggal yang salah ketik.
   const eventDay = getPrimaryEventDate(inv.eventData);
   const hasPassed = eventDay !== null && Date.now() >= eventDay.getTime() + DAY_MS;
 
-  if (hasPassed) {
+  if (hasPassed && inv.status !== "DRAFT") {
     return {
       isLocked: true,
       isCoreLocked: true,
@@ -344,6 +345,7 @@ export async function PUT(
           parsedFeatures = await gateFeaturesByPlan(parsedFeatures, order?.planType);
         }
 
+        parsedFeatures = keepValidMemoriesSettings(parsedFeatures, existingObj);
         mergedFeatureSettings = JSON.stringify(parsedFeatures);
       }
     }
@@ -398,6 +400,22 @@ export async function PUT(
           return NextResponse.json(
             { error: "Status undangan dikunci oleh sistem. Hubungi Administrator untuk membukanya." },
             { status: 403 }
+          );
+        }
+      }
+      if (!isAdmin && body.status === "PUBLISHED" && currentInv.status !== "PUBLISHED") {
+        const nextEventDay = getPrimaryEventDate(body.eventData !== undefined ? body.eventData : currentInv.eventData);
+        // Jadwal terima tamu adalah patokan seluruh masa aktif; tanpa itu undangan tidak pernah kedaluwarsa.
+        if (nextEventDay === null) {
+          return NextResponse.json(
+            { error: "Tanggal jadwal terima tamu belum diisi. Lengkapi tanggal sesi yang ditandai Jadwal Terima Tamu sebelum menerbitkan undangan." },
+            { status: 400 }
+          );
+        }
+        if (Date.now() >= nextEventDay.getTime() + DAY_MS) {
+          return NextResponse.json(
+            { error: "Tanggal acara utama sudah lewat. Perbaiki tanggal acara sebelum menerbitkan undangan." },
+            { status: 400 }
           );
         }
       }
@@ -472,7 +490,7 @@ export async function PUT(
           const savedPrimary = savedEvents.find((e: any) => e.isPrimary) || savedEvents[0];
           const newPrimary = validatedEvents.find((e: any) => e.isPrimary);
 
-          if (savedPrimary?.date && newPrimary && newPrimary.date !== savedPrimary.date) {
+          if (savedPrimary?.date && (!newPrimary || newPrimary.date !== savedPrimary.date)) {
             return NextResponse.json(
               {
                 error: "Tanggal sesi acara utama telah dikunci pasca publikasi sebagai patokan masa aktif layanan. Hubungi Admin jika perlu penyesuaian tanggal acara utama.",
@@ -689,12 +707,7 @@ export async function PATCH(
         parsedFeatures = await gateFeaturesByPlan(parsedFeatures, order?.planType);
       }
 
-      if (parsedFeatures.memoriesShotsQuota !== undefined) {
-        const sq = Number(parsedFeatures.memoriesShotsQuota);
-        if (!isNaN(sq) && sq >= 1 && sq <= 30) {
-          parsedFeatures.memoriesShotsQuota = sq;
-        }
-      }
+      parsedFeatures = keepValidMemoriesSettings(parsedFeatures, existingObj);
 
       updateData.featureSettings = JSON.stringify(parsedFeatures);
     }

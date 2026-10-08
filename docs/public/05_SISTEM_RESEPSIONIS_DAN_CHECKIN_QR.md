@@ -1,7 +1,7 @@
 # DOKUMENTASI RESMI: SISTEM RESEPSIONIS & CHECK-IN MEJA TAMU
-**Luxenary Invite Platform — Scanner Tiket QR, Kunci Staff PIN, & Manajemen Souvenir**
+**Luxenary Invite Platform — Scanner Tiket QR, Kunci Staff PIN, & Check-In Tamu Umum**
 
-Dokumen ini membedah arsitektur teknis dan alur kerja operasional portal **Resepsionis Meja Tamu** (`/s/[subdomain]/receptionist`, `/[slug]/receptionist`, atau `https://domainklien.com/receptionist`), instrumen digital di pintu masuk venue pernikahan untuk memverifikasi kehadiran tamu secara instan, mengelola alokasi meja VIP, dan mencatat pembagian souvenir.
+Dokumen ini membedah arsitektur teknis dan alur kerja operasional portal **Resepsionis Meja Tamu** (`/s/[subdomain]/receptionist`, `/[slug]/receptionist`, atau `https://domainklien.com/receptionist`), instrumen digital di pintu masuk venue untuk memverifikasi kehadiran tamu secara instan, menampilkan alokasi meja dan kuota pax, serta mencatat tamu umum yang datang tanpa terdaftar.
 
 ---
 
@@ -20,15 +20,26 @@ flowchart TD
     end
     
     subgraph ServerValidation [Validasi Server Database]
-        G --> H[Cek Keaslian Token: qrToken]
-        H -->|Token Valid| I[Update Status: isCheckedIn = true]
-        I --> J[Catat Waktu Kedatangan: checkInTime]
-        I --> K[Kembalikan Data: Nama, Meja, Kategori VIP, Souvenir]
+        G --> H[Baca QR: LUX, id undangan, nama tamu]
+        H -->|Id undangan beda| X[Ditolak: QR acara lain]
+        H -->|Nama ada di daftar| I[Update isTokenRedeemed = true]
+        H -->|Nama tidak ada| W[Buat tamu UMUM lalu check-in]
+        W --> I
+        I -->|Sudah check-in| Y[Ditolak: QR sudah dipakai]
+        I --> K[Kembalikan Data: Nama, Meja, Kategori, Kuota Pax]
     end
     
     ServerValidation --> L[Layar Scanner Menampilkan Kartu Hijau: Tamu Valid]
-    L --> M[Petugas Menyerahkan Souvenir & Mengarahkan ke Meja Tamu]
+    L --> M[Petugas Mengarahkan Tamu ke Meja]
 ```
+
+---
+
+### Isi QR dan aturan penolakan
+
+- Isi QR tamu: `LUX|<id undangan>|<nama tamu>`. Id undangan memastikan QR acara lain tidak lolos; nama tamu dicocokkan tanpa membedakan huruf besar/kecil. Di tengah QR ada inisial acara (2 huruf untuk pernikahan, 1 huruf untuk acara tunggal).
+- Hanya dua kondisi yang ditolak: **QR milik acara lain** dan **QR yang sudah pernah check-in**. Nama yang tidak ada di daftar (tautan `?to=Nama` yang dibuat manual) tetap diterima dan dicatat sebagai tamu `UMUM` (kuota bawaan 1 pax), kategori dari QR tidak dipercaya.
+- Pemindai bekerja offline-first: daftar tamu dan antrean check-in disimpan di perangkat, tamu umum yang dibuat saat offline tetap tampil dan disinkronkan ke server saat sinyal kembali. Kode: `lib/receptionistScan.ts` (keputusan di perangkat), `lib/walkInGuest.ts` (pembuatan tamu umum di server), `lib/checkinQr.ts` (kontrak QR).
 
 ---
 
@@ -55,20 +66,19 @@ Petugas tidak perlu mengunduh aplikasi tambahan dari Play Store atau App Store:
 
 Begitu kode QR terbaca:
 - **Nama Tamu:** Nama lengkap tamu undangan.
-- **Kategori Khusus:** Lencana penanda (misal: `VIP`, `VVIP`, `KELUARGA INTI`, `TEMAN KANTOR`).
-- **Alokasi Meja:** Nomor atau nama meja yang telah disiapkan (contoh: *Meja Mawar 04*).
-- **Kuota Pax Tamu:** Jumlah pendamping yang diizinkan masuk.
-- **Status Check-In:** Indikator apakah ini kedatangan pertama atau QR sudah pernah dipindai sebelumnya (*mencegah pemakaian ganda tiket QR*).
-- **Status Souvenir:** Kotak centang penanda bahwa cinderamata pernikahan telah diserahkan kepada tamu.
+- **Kategori:** Lencana kategori tamu sesuai buku tamu klien (misalnya `VIP`, `KELUARGA`, `TEMAN`, atau `UMUM`).
+- **Alokasi Meja:** `Meja <nomor>` bila klien mengisi nomor meja, atau "Bebas / Tanpa Meja".
+- **Kuota Pax Tamu:** Jumlah orang yang diizinkan masuk (`guestQuota`; tamu umum bernilai 1).
+- **Status Check-In:** Indikator apakah ini kedatangan pertama atau QR sudah pernah dipindai sebelumnya (*mencegah pemakaian ganda tiket QR*). Server hanya menyimpan penanda sudah/belum check-in (`isTokenRedeemed`); jam kedatangan dan pembagian souvenir tidak dicatat.
 
 ---
 
-## 5. Mode Pencarian Manual (Fallback Search Mode)
+## 5. Mode Manual (Scanner Tembak dan Daftar Tamu)
 
 Jika tamu lupa membawa ponsel, baterai ponsel habis, atau tiket QR tidak terbaca:
-- Petugas dapat beralih ke tab **"Pencarian Manual"**.
-- Mengetikkan 2–3 huruf nama tamu pada kotak pencarian.
-- Petugas menekan tombol **"Check-In Manual"** pada baris tamu yang sesuai untuk mencatat kehadiran mereka ke sistem secara sah.
+- Petugas beralih ke mode **Scanner Fisik**: kolom "Scan QR / Ketik Nama..." menerima hasil scanner tembak USB/Bluetooth maupun nama yang diketik, lalu tombol **CARI** memprosesnya dengan aturan yang sama seperti pemindaian kamera (nama tak terdaftar menjadi tamu umum).
+- Tombol **"Daftar Tamu"** membuka daftar seluruh tamu (nama, kategori, meja) dengan filter **Semua** dan **Tamu Umum**. Mengetik di kolom di atas menyaring daftar berdasarkan nama.
+- Tombol **Check-in** pada baris tamu yang sesuai mencatat kehadiran; tamu yang sudah hadir tampil dengan penanda **Hadir**.
 
 ---
 

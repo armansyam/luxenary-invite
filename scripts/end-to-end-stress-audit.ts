@@ -563,11 +563,14 @@ async function runComprehensiveAudit() {
         },
       });
 
-      // Admin Reject orderManual2
+      // Admin Reject orderManual2 (sama dengan route tolak: tetap PENDING, bukti dikosongkan, alasan dicatat)
       await prisma.order.update({
         where: { id: orderManual2.id },
         data: {
-          status: "FAILED",
+          status: "PENDING",
+          proofImageUrl: null,
+          proofUploadedAt: null,
+          rejectReason: "Bukti transfer tidak valid",
         },
       });
 
@@ -578,7 +581,7 @@ async function runComprehensiveAudit() {
         "Admin",
         "TEST-A2-5",
         "Manual Transfer Workflow (Approve vs Reject)",
-        approvedCheck?.status === "PAID" && rejectedCheck?.status === "FAILED",
+        approvedCheck?.status === "PAID" && rejectedCheck?.status === "PENDING" && !!rejectedCheck.rejectReason,
         `Order 1 approved status: ${approvedCheck?.status} | Order 2 rejected status: ${rejectedCheck?.status}`
       );
     } catch (err: any) {

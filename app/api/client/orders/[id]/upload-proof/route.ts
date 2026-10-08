@@ -113,13 +113,13 @@ export async function POST(
         await deleteFile(order.proofImageUrl);
       }
 
-      // Bersihkan order usang lainnya milik user ini (status PENDING / FAILED non-PAID) beserta file struknya di storage
+      // Bersihkan order PENDING usang lainnya milik user ini beserta file struknya di storage
       try {
         const obsoleteOrders = await prisma.order.findMany({
           where: {
             userId: order.userId,
             id: { not: order.id },
-            status: { in: ["PENDING", "FAILED"] },
+            status: "PENDING",
             orderType: "NEW",
           },
           select: { id: true, proofImageUrl: true },
@@ -178,7 +178,7 @@ export async function POST(
 
     // Update bersyarat: order yang baru saja lunas (webhook / persetujuan admin) tidak boleh dikembalikan ke PENDING
     const saved = await prisma.order.updateMany({
-      where: { id: order.id, status: { in: ["PENDING", "FAILED"] } },
+      where: { id: order.id, status: "PENDING" },
       data: {
         paymentMethod: "MANUAL_TRANSFER",
         proofImageUrl: publicUrl,

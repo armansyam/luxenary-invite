@@ -596,6 +596,10 @@ export default function EditInvitation() {
             time: synthTime,
           };
         });
+        // Undangan lama tanpa penanda: tampilkan sesi yang memang dipakai server sebagai jadwal terima tamu.
+        if (loadedEvents.length > 0 && !loadedEvents.some((e: any) => e.isPrimary)) {
+          loadedEvents[0].isPrimary = true;
+        }
         setEvents(loadedEvents);
 
         const st = parseJ(inv.loveStory, []);
@@ -1716,7 +1720,7 @@ export default function EditInvitation() {
             <button
               type="button"
               onClick={() => handleStudioTabClick("form")}
-              className={`relative z-10 flex-1 sm:w-[125px] py-1.5 px-3 rounded-lg font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
+              className={`relative z-10 flex-1 sm:w-[125px] py-2.5 sm:py-1.5 px-3 rounded-lg font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 activeStudioTab === "form" ? "text-white" : "text-stone-600 hover:text-stone-900"
               }`}
             >
@@ -1729,7 +1733,7 @@ export default function EditInvitation() {
             <button
               type="button"
               onClick={() => handleStudioTabClick("live")}
-              className={`relative z-10 flex-1 sm:w-[125px] py-1.5 px-3 rounded-lg font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
+              className={`relative z-10 flex-1 sm:w-[125px] py-2.5 sm:py-1.5 px-3 rounded-lg font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 activeStudioTab === "live" ? "text-white" : "text-stone-600 hover:text-stone-900"
               }`}
             >
@@ -2468,7 +2472,7 @@ export default function EditInvitation() {
                     value={getFeatureSetting("weddingTagline", defaultTagline)}
                     onChange={(e) => updateFeatureSetting("weddingTagline", e.target.value)}
                     placeholder={defaultTagline}
-                    className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs font-bold text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30 uppercase tracking-wider"
+                    className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-base sm:text-xs font-bold text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30 uppercase tracking-wider"
                   />
                   <div className="flex items-center gap-1.5 flex-wrap pt-1">
                     <span className="text-[10px] text-stone-500 font-medium">Pilihan Cepat:</span>
@@ -3719,7 +3723,7 @@ export default function EditInvitation() {
                 <div>
                   <p className="font-bold text-stone-900">Penyesuaian Jadwal &amp; Sesi Acara</p>
                   <p className="text-[11px] text-stone-600 mt-0.5 leading-relaxed">
-                    Anda tetap leluasa menyesuaikan jam dan menambah sesi acara kapan saja. Tanggal dasar masa aktif undangan tetap berpatokan pada jadwal awal saat pertama kali dipublikasikan.
+                    Anda tetap leluasa menyesuaikan jam dan menambah sesi acara kapan saja. Tanggal Jadwal Terima Tamu dikunci sejak undangan terbit karena menjadi patokan masa aktif.
                   </p>
                 </div>
               </div>
@@ -3744,7 +3748,7 @@ export default function EditInvitation() {
                           <svg className="w-3 h-3 text-amber-700" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                           </svg>
-                          Sesi Acara Utama (Patokan Masa Aktif)
+                          Jadwal Terima Tamu
                         </span>
                       ) : !(invitation?.status === "PUBLISHED" || invitation?.status === "EVENT_FINISHED") ? (
                         <button
@@ -3752,7 +3756,7 @@ export default function EditInvitation() {
                           onClick={() => setAsPrimaryEvent(idx)}
                           className="text-[10px] font-semibold text-stone-500 hover:text-amber-900 px-2 py-0.5 rounded-md hover:bg-amber-100/60 border border-stone-200/80 transition cursor-pointer"
                         >
-                          Jadikan Sesi Utama
+                          Jadikan Jadwal Terima Tamu
                         </button>
                       ) : null}
                     </div>
@@ -3766,6 +3770,11 @@ export default function EditInvitation() {
                       </button>
                     )}
                   </div>
+                  {ev.isPrimary && (
+                    <p className="text-[11px] text-amber-900 leading-relaxed">
+                      Tanggal &amp; jam sesi ini adalah <strong>waktu tamu datang</strong>. Masa aktif undangan, hitung mundur, dan kunci buku tamu hari H mengikuti sesi ini.
+                    </p>
+                  )}
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                     <Input label="Nama Sesi Acara" value={ev.title || ""} onChange={(v) => updateEventItem(idx, "title", v)} placeholder="Masukkan nama sesi acara (Misal: Akad Nikah)" />
                     <div>

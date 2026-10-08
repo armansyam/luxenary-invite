@@ -8,6 +8,7 @@ import { exceedsDeclaredBodySize } from "@/lib/requestLimits";
 import { parseFeatureSettings } from "@/lib/featureSettings";
 import { publishNewMemory } from "@/lib/sseEmitter";
 import { getMemoriesActiveSchedule, calculateSessionCumulativeQuota } from "@/lib/domainUtils";
+import { getEventTimezoneOffset, resolveEventTimezone } from "@/lib/lifecycleDates";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
 
@@ -162,7 +163,7 @@ export async function POST(req: NextRequest) {
             notStarted: true,
             sessionName: schedule.nextSession.name,
             startTime: `${schedule.nextSession.date}T${schedule.nextSession.startTime}:00`,
-            message: `Kamera momen sedang ditutup sementara. Sesi ${schedule.nextSession.name} akan dibuka pada ${schedule.nextSession.date} pukul ${schedule.nextSession.startTime} WIB.`,
+            message: `Kamera momen sedang ditutup sementara. Sesi ${schedule.nextSession.name} akan dibuka pada ${schedule.nextSession.date} pukul ${schedule.nextSession.startTime} ${resolveEventTimezone(schedule.nextSession)}.`,
           },
           { status: 403 }
         );
@@ -219,7 +220,8 @@ export async function POST(req: NextRequest) {
 
     // ── 1.b VALIDASI ALOKASI KUOTA SESI (dengan Smart Rollover) ──
     if (schedule.currentSession && schedule.currentSession.allocatedQuota && schedule.currentSession.allocatedQuota > 0) {
-      const sessionStartDate = new Date(`${schedule.currentSession.date}T${schedule.currentSession.startTime || "00:00"}:00`);
+      const sessionOffset = getEventTimezoneOffset(resolveEventTimezone(schedule.currentSession));
+      const sessionStartDate = new Date(`${schedule.currentSession.date}T${schedule.currentSession.startTime || "00:00"}:00${sessionOffset}`);
       const photosBeforeThisSession = await prisma.guestMemory.count({
         where: {
           invitationId,

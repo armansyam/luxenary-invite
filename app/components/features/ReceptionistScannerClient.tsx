@@ -6,6 +6,8 @@ import { Html5Qrcode } from "html5-qrcode";
 
 import { useStaffAuth } from "./StaffLockScreen";
 import { BrandLogo } from "@/components/BrandLogo";
+import { buildCheckinPayload } from "@/lib/checkinQr";
+import { isWalkInGuest, mergeServerGuests, nextDuplicateName, resolveScan, syncTokenFor } from "@/lib/receptionistScan";
 
 interface Guest {
   id: string;
@@ -47,9 +49,10 @@ export default function ReceptionistScannerClient({
   const [offlineQueue, setOfflineQueue] = useState<string[]>([]);
   const [status, setStatus] = useState<"LOADING" | "READY" | "OFFLINE" | "SYNCING">("LOADING");
   const [searchInput, setSearchInput] = useState("");
-  const [scanResult, setScanResult] = useState<{ type: "success" | "error"; message: string; guest?: Guest; showDuplicatePrompt?: boolean; scannedName?: string; } | null>(null);
+  const [scanResult, setScanResult] = useState<{ type: "success" | "error"; message: string; guest?: Guest; showDuplicatePrompt?: boolean; showUnregisteredPrompt?: boolean; scannedName?: string; } | null>(null);
   const [scannerMode, setScannerMode] = useState<"PHYSICAL" | "CAMERA">("PHYSICAL");
   const [showManualList, setShowManualList] = useState(false);
+  const [listFilter, setListFilter] = useState<"ALL" | "WALKIN">("ALL");
 
   // Ambient Screensaver State (Standby Mode)
   const [isScreensaverActive, setIsScreensaverActive] = useState(false);
@@ -69,6 +72,7 @@ export default function ReceptionistScannerClient({
   const isScanningLockedRef = useRef(false);
   const isTransitioningRef = useRef(false);
   const guestsRef = useRef(guests);
+  const queueRef = useRef(offlineQueue);
   const scanResultRef = useRef(scanResult);
   const isScreensaverActiveRef = useRef(isScreensaverActive);
   const onLockRef = useRef(onLock);
@@ -80,6 +84,24 @@ export default function ReceptionistScannerClient({
   useEffect(() => {
     guestsRef.current = guests;
   }, [guests]);
+
+  useEffect(() => {
+    queueRef.current = offlineQueue;
+  }, [offlineQueue]);
+
+  // Daftar tamu dan antrean ditulis lewat ref lebih dulu: dua perubahan beruntun dalam satu putaran render
+  // (mis. tamu umum didaftarkan lalu langsung check-in) tidak boleh saling menimpa dari state yang basi.
+  const persistGuests = useCallback((next: Guest[]) => {
+    guestsRef.current = next;
+    setGuests(next);
+    localStorage.setItem(`guests_${invitationId}`, JSON.stringify(next));
+  }, [invitationId]);
+
+  const persistQueue = useCallback((next: string[]) => {
+    queueRef.current = next;
+    setOfflineQueue(next);
+    localStorage.setItem(`offline_queue_${invitationId}`, JSON.stringify(next));
+  }, [invitationId]);
 
   useEffect(() => {
     scanResultRef.current = scanResult;
@@ -276,9 +298,11 @@ export default function ReceptionistScannerClient({
     const loadData = async () => {
       const cached = localStorage.getItem(`guests_${invitationId}`);
       const cachedQueue = localStorage.getItem(`offline_queue_${invitationId}`);
-      
-      if (cached) setGuests(JSON.parse(cached));
-      if (cachedQueue) setOfflineQueue(JSON.parse(cachedQueue));
+      const cachedGuests: Guest[] = cached ? JSON.parse(cached) : [];
+      const cachedPending: string[] = cachedQueue ? JSON.parse(cachedQueue) : [];
+
+      if (cached) setGuests(cachedGuests);
+      if (cachedQueue) setOfflineQueue(cachedPending);
 
       try {
         const res = await fetch(`/api/receptionist/guests?invitationId=${invitationId}`, {
@@ -292,8 +316,11 @@ export default function ReceptionistScannerClient({
         }
         const data = await res.json();
         if (data.success) {
-          setGuests(data.guests);
-          localStorage.setItem(`guests_${invitationId}`, JSON.stringify(data.guests));
+          // Check-in dan tamu umum yang belum tersinkron dari sesi sebelumnya tidak boleh hilang saat daftar dimuat ulang.
+          const merged = mergeServerGuests<Guest>(data.guests, cachedGuests, cachedPending);
+          guestsRef.current = merged;
+          setGuests(merged);
+          localStorage.setItem(`guests_${invitationId}`, JSON.stringify(merged));
           setStatus("READY");
         } else {
           setStatus("OFFLINE");
@@ -310,31 +337,33 @@ export default function ReceptionistScannerClient({
     if (offlineQueue.length === 0 || !navigator.onLine) return;
     
     setStatus("SYNCING");
-    const newQueue = [...offlineQueue];
-    
-    for (const guestId of offlineQueue) {
-      const guest = guests.find(g => g.id === guestId);
-      if (!guest || !guest.qrToken) continue;
+    const newQueue = [...queueRef.current];
+
+    for (const guestId of queueRef.current) {
+      const guest = guestsRef.current.find(g => g.id === guestId);
+      if (!guest) continue;
 
       try {
         const staffAuthToken = localStorage.getItem(`staff_auth_token_${invitationId}`);
         const res = await fetch("/api/receptionist/scan", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ qrToken: guest.qrToken, invitationId, isCheckIn: true, token: staffAuthToken }),
+          // Tamu umum dikirim sebagai LUX|<id undangan>|<nama>: server mencatatnya sebagai tamu umum bila belum ada.
+          body: JSON.stringify({ qrToken: syncTokenFor(guest, invitationId), invitationId, isCheckIn: true, token: staffAuthToken }),
         });
         const data = await res.json();
         if (data.success) {
           const index = newQueue.indexOf(guestId);
           if (index > -1) newQueue.splice(index, 1);
         }
+        // Batas laju server (30 scan/menit): sisa antrean dicoba pada sinkronisasi berikutnya, bukan dihujani ulang.
+        if (res.status === 429) break;
       } catch (e) {
         console.error("Sync failed for", guest?.name);
       }
     }
 
-    setOfflineQueue(newQueue);
-    localStorage.setItem(`offline_queue_${invitationId}`, JSON.stringify(newQueue));
+    persistQueue(newQueue);
     setStatus("READY");
   };
 
@@ -348,17 +377,11 @@ export default function ReceptionistScannerClient({
         });
         const data = await res.json();
         if (data.success && data.guests) {
-          // Hanya update jika ada penambahan tamu atau perubahan signifikan,
-          // tapi tetap pertahankan status isTokenRedeemed lokal untuk yang sudah check-in offline.
-          setGuests(prevGuests => {
-            const localRedeemed = new Set(prevGuests.filter(g => g.isTokenRedeemed).map(g => g.id));
-            const updated = data.guests.map((serverGuest: Guest) => ({
-              ...serverGuest,
-              isTokenRedeemed: serverGuest.isTokenRedeemed || localRedeemed.has(serverGuest.id)
-            }));
-            localStorage.setItem(`guests_${invitationId}`, JSON.stringify(updated));
-            return updated;
-          });
+          // Status hadir lokal dan tamu umum yang masih mengantre dipertahankan; selebihnya mengikuti server.
+          const updated = mergeServerGuests<Guest>(data.guests, guestsRef.current, queueRef.current);
+          guestsRef.current = updated;
+          setGuests(updated);
+          localStorage.setItem(`guests_${invitationId}`, JSON.stringify(updated));
         }
       } catch (err) {
         console.warn("Background guest sync failed", err);
@@ -372,102 +395,85 @@ export default function ReceptionistScannerClient({
   // 3. Handle Scan / Search
   const handleCheckIn = useCallback((guest: Guest) => {
     setIsScreensaverActive(false);
-    if (guest.isTokenRedeemed) {
-      setScanResult({ 
-        type: "error", 
-        message: `Tamu ${guest.name} sudah melakukan Check-in sebelumnya!`, 
-        guest,
+    const current = guestsRef.current.find(g => g.id === guest.id) ?? guest;
+    if (current.isTokenRedeemed) {
+      setScanResult({
+        type: "error",
+        message: `Tamu ${current.name} sudah melakukan Check-in sebelumnya!`,
+        guest: current,
         showDuplicatePrompt: true,
-        scannedName: guest.name
+        scannedName: current.name
       });
       return;
     }
 
-    const updatedGuests = guests.map(g => g.id === guest.id ? { ...g, isTokenRedeemed: true } : g);
-    setGuests(updatedGuests);
-    localStorage.setItem(`guests_${invitationId}`, JSON.stringify(updatedGuests));
+    const checkedIn: Guest = { ...current, isTokenRedeemed: true };
+    persistGuests(guestsRef.current.map(g => g.id === current.id ? checkedIn : g));
+    if (!queueRef.current.includes(current.id)) persistQueue([...queueRef.current, current.id]);
 
-    const newQueue = [...offlineQueue, guest.id];
-    setOfflineQueue(newQueue);
-    localStorage.setItem(`offline_queue_${invitationId}`, JSON.stringify(newQueue));
-
-    setScanResult({ type: "success", message: `Berhasil Check-in!`, guest });
+    setScanResult({ type: "success", message: `Berhasil Check-in!`, guest: checkedIn });
     setSearchInput("");
     if (inputRef.current) inputRef.current.focus();
-  }, [guests, invitationId, offlineQueue]);
+  }, [persistGuests, persistQueue]);
 
-  const handleDuplicateGuestArrival = (originalName: string) => {
-    // Cari angka terakhir untuk nama yang sama
-    const count = guests.filter(g => g.name.toLowerCase().startsWith(originalName.toLowerCase())).length;
-    const newName = `${originalName} (${count + 1})`;
-    
-    const newGuest: Guest = {
-      id: `local-${Date.now()}`,
-      name: newName,
+  // Tamu di luar daftar klien dicatat sebagai tamu umum (kategori UMUM) dan langsung hadir. Tersimpan di perangkat
+  // dulu, lalu dikirim ke server pada sinkronisasi lewat payload LUX|<id undangan>|<nama>.
+  const registerWalkIn = useCallback((name: string, message: string) => {
+    setIsScreensaverActive(false);
+    const walkIn: Guest = {
+      id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      name,
       category: "UMUM",
       guestQuota: 1,
       tableNumber: null,
-      qrToken: null,
+      qrToken: buildCheckinPayload(invitationId, name),
       isTokenRedeemed: true
     };
-    
-    const updatedGuests = [newGuest, ...guests];
-    setGuests(updatedGuests);
-    localStorage.setItem(`guests_${invitationId}`, JSON.stringify(updatedGuests));
-    
-    const newQueue = [...offlineQueue, newGuest.id];
-    setOfflineQueue(newQueue);
-    localStorage.setItem(`offline_queue_${invitationId}`, JSON.stringify(newQueue));
-    
-    setScanResult({ type: "success", message: `Berhasil Check-in sebagai Tamu Umum Tambahan!`, guest: newGuest });
+    persistGuests([walkIn, ...guestsRef.current]);
+    persistQueue([...queueRef.current, walkIn.id]);
+
+    setScanResult({ type: "success", message, guest: walkIn });
     setSearchInput("");
+    if (inputRef.current) inputRef.current.focus();
+  }, [invitationId, persistGuests, persistQueue]);
+
+  const handleDuplicateGuestArrival = (originalName: string) => {
+    registerWalkIn(nextDuplicateName(originalName, guestsRef.current), "Berhasil Check-in sebagai Tamu Umum Tambahan!");
   };
 
   const processScanToken = useCallback((token: string) => {
     setIsScreensaverActive(false);
-    if (!token) return;
-    let targetName = token;
-    let targetCategory = "Umum";
-    let isLuxToken = false;
-    
-    if (token.startsWith('LUX|')) {
-      const parts = token.split('|');
-      const targetInvId = parts[1];
-      
-      if (targetInvId !== invitationId) {
-        setScanResult({ type: "error", message: "QR Code salah! Ini adalah QR dari acara pernikahan lain." });
-        return;
-      }
-      
-      targetName = parts[2] || token;
-      targetCategory = parts[3] || "Umum";
-      isLuxToken = true;
-    }
+    if (!token.trim()) return;
 
-    let foundGuest = guestsRef.current.find(g => g.qrToken === token || g.name.toLowerCase() === targetName.toLowerCase() || (!isLuxToken && g.name.toLowerCase().includes(token.toLowerCase())));
-    
-    if (foundGuest) {
-      handleCheckIn(foundGuest);
-    } else if (isLuxToken) {
-      const newGuest: Guest = {
-        id: `local-${Date.now()}`,
-        name: targetName,
-        category: targetCategory,
-        guestQuota: 1,
-        tableNumber: null,
-        qrToken: token,
-        isTokenRedeemed: false
-      };
-      
-      const updatedGuests = [...guests, newGuest];
-      setGuests(updatedGuests);
-      localStorage.setItem(`guests_${invitationId}`, JSON.stringify(updatedGuests));
-      
-      setTimeout(() => handleCheckIn(newGuest), 0);
-    } else {
-      setScanResult({ type: "error", message: "Data tamu tidak ditemukan di sistem." });
+    const resolution = resolveScan<Guest>(token, guestsRef.current, invitationId);
+    switch (resolution.kind) {
+      case "match":
+        handleCheckIn(resolution.guest);
+        return;
+      case "walkin":
+        // QR sah untuk acara ini, tetapi namanya tidak ada di daftar klien: tamu umum, bukan penolakan.
+        registerWalkIn(resolution.name, "Tamu umum (di luar daftar) berhasil Check-in!");
+        return;
+      case "wrong-event":
+        setScanResult({ type: "error", message: "QR Code ini bukan milik acara ini." });
+        return;
+      case "invalid":
+        setScanResult({ type: "error", message: "QR Code tidak memuat nama tamu." });
+        return;
+      case "ambiguous":
+        setScanResult({ type: "error", message: `Beberapa tamu cocok (${resolution.names.join(", ")}). Ketik nama lengkap atau pilih dari Daftar Tamu.` });
+        return;
+      case "unknown":
+        // Teks yang diketik petugas: dikonfirmasi dulu agar salah ketik tidak membuat tamu baru.
+        setScanResult({
+          type: "error",
+          message: `Nama "${resolution.name}" tidak ada di daftar tamu.`,
+          showUnregisteredPrompt: true,
+          scannedName: resolution.name
+        });
+        return;
     }
-  }, [invitationId, guests, guestsRef, handleCheckIn]);
+  }, [invitationId, handleCheckIn, registerWalkIn]);
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -808,7 +814,7 @@ export default function ReceptionistScannerClient({
                        <div className="w-24 h-24 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-5 shadow-xl shadow-red-500/30">
                         <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
                       </div>
-                      <h3 className="text-2xl font-bold text-red-900 mb-2">{scanResult.guest?.name || "Akses Ditolak"}</h3>
+                      <h3 className="text-2xl font-bold text-red-900 mb-2">{scanResult.guest?.name || (scanResult.showUnregisteredPrompt ? "Nama Belum Terdaftar" : "Akses Ditolak")}</h3>
                       <p className="text-red-700 font-medium text-base mb-3">{scanResult.message}</p>
                       
                       {scanResult.guest && (
@@ -830,6 +836,18 @@ export default function ReceptionistScannerClient({
                             className="w-full py-3 bg-red-800 hover:bg-red-900 text-white font-bold rounded-xl transition"
                           >
                             Tandai sebagai Orang Berbeda
+                          </button>
+                        </div>
+                      )}
+
+                      {scanResult.showUnregisteredPrompt && scanResult.scannedName && (
+                        <div className="mt-6 pt-6 border-t border-red-200">
+                          <p className="text-sm text-red-800 mb-3">Catat sebagai tamu umum dan langsung check-in?</p>
+                          <button
+                            onClick={() => registerWalkIn(scanResult.scannedName!, "Tamu umum (di luar daftar) berhasil Check-in!")}
+                            className="w-full py-3 bg-red-800 hover:bg-red-900 text-white font-bold rounded-xl transition"
+                          >
+                            Catat sebagai Tamu Umum
                           </button>
                         </div>
                       )}
@@ -952,7 +970,21 @@ export default function ReceptionistScannerClient({
 
                   {showManualList && (
                     <div className="w-full mt-3 border border-stone-200 rounded-xl overflow-y-auto p-2 max-h-[260px] bg-stone-50/50">
-                      {guests.filter(g => searchInput ? g.name.toLowerCase().includes(searchInput.toLowerCase()) : true).map((g) => (
+                      <div className="flex items-center gap-1.5 pb-2 mb-1 border-b border-stone-200/70">
+                        {([["ALL", "Semua"], ["WALKIN", "Tamu Umum"]] as const).map(([id, label]) => (
+                          <button
+                            key={id}
+                            type="button"
+                            onClick={() => setListFilter(id)}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer ${
+                              listFilter === id ? "bg-stone-900 text-white" : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                      {guests.filter(g => (listFilter === "WALKIN" ? isWalkInGuest(g) : true) && (searchInput ? g.name.toLowerCase().includes(searchInput.toLowerCase()) : true)).map((g) => (
                         <div key={g.id} className="flex justify-between items-center p-2.5 hover:bg-white border-b border-stone-100 last:border-0 rounded-lg transition">
                           <div>
                             <p className="font-bold text-stone-900 text-sm">{g.name}</p>

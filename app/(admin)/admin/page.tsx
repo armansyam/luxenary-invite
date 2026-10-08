@@ -157,7 +157,6 @@ const Badge = ({ status }: { status: string }) => {
   const map: Record<string, string> = {
     PAID: "bg-emerald-50 text-emerald-700 border border-emerald-200",
     PENDING: "bg-amber-50 text-amber-700 border border-amber-200",
-    FAILED: "bg-rose-50 text-rose-700 border border-rose-200",
     EXPIRED: "bg-gray-100 text-gray-600 border border-gray-200",
     PUBLISHED: "bg-emerald-50 text-emerald-700 border border-emerald-200",
     EVENT_FINISHED: "bg-purple-50 text-purple-700 border border-purple-200",
@@ -2172,6 +2171,11 @@ export default function AdminPage() {
                             <div className="flex items-center gap-1 mt-1 flex-wrap">
                               <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">{stats.publishedInvitationCount || 0} Live</span>
                               <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">{stats.draftInvitationCount || 0} Draft</span>
+                              {(stats.staleDraftCount ?? 0) > 0 && (
+                                <span className="text-[10px] font-bold text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded" title={`Draf yang tidak diubah lebih dari ${stats.staleDraftDays} hari; tidak dihapus otomatis karena klien sudah membayar`}>
+                                  {stats.staleDraftCount} Draft &gt;{stats.staleDraftDays} hari
+                                </span>
+                              )}
                               <span className="text-[10px] font-bold text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded">{stats.eventFinishedCount ?? 0} Selesai</span>
                               <span className="text-[10px] font-bold text-gray-500 bg-gray-200 px-1.5 py-0.5 rounded">{stats.archivedCount ?? 0} Arsip</span>
                             </div>
@@ -2203,6 +2207,9 @@ export default function AdminPage() {
                           <div className="flex items-center gap-1">
                             <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">{stats.publishedInvitationCount || 0} Live</span>
                             <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">{stats.draftInvitationCount || 0} Draft</span>
+                            {(stats.staleDraftCount ?? 0) > 0 && (
+                              <span className="text-[10px] font-bold text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded">{stats.staleDraftCount} &gt;{stats.staleDraftDays}h</span>
+                            )}
                             <span className="text-[10px] font-bold text-gray-500 bg-gray-200 px-1.5 py-0.5 rounded">{(stats.eventFinishedCount ?? 0) + (stats.archivedCount ?? 0)} lainnya</span>
                           </div>
                         </div>

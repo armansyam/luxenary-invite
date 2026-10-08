@@ -160,6 +160,15 @@ export async function POST(req: Request) {
   }
   const eventType = cleanType as EventType;
 
+  // Tema, label, dan data peserta draf dibangun untuk jenis acaranya; mengganti jenis acara di sini akan
+  // menyisakan tema pernikahan pada acara lain.
+  if (existingDraft?.eventType && existingDraft.eventType !== eventType) {
+    return NextResponse.json(
+      { error: "Undangan Anda sudah dibuat untuk jenis acara lain. Hubungi admin bila jenis acara perlu diganti." },
+      { status: 409 }
+    );
+  }
+
   const participants = normalizeJsonText(participantsJson);
   if (!participants.ok) {
     return NextResponse.json({ error: "participantsJson bukan JSON yang valid." }, { status: 400 });
@@ -270,6 +279,9 @@ export async function POST(req: Request) {
 
   const finalAkadTime = formatTimeWithTz(akadTime);
   const finalResepsiTime = formatTimeWithTz(resepsiTime);
+  // Zona waktu disimpan sebagai field sendiri: tanpa jam, akhiran di teks `time` hilang dan patokan jatuh ke WIB.
+  const cleanTz = typeof timeZone === "string" ? timeZone.trim().toUpperCase() : "";
+  const eventTimezone = cleanTz === "WIB" || cleanTz === "WITA" || cleanTz === "WIT" ? cleanTz : "WIB";
 
   let initialEvents: any[] = [];
   if (effectiveEventDate) {
@@ -279,19 +291,24 @@ export async function POST(req: Request) {
           title: "Akad Nikah",
           date: effectiveEventDate,
           time: finalAkadTime,
-          location: city ? `Lokasi Acara di ${city}` : "",
-          address: city ? `Alamat Acara di ${city}` : "",
+          timezone: eventTimezone,
+          location: "",
+          address: city || "",
           mapsUrl: "",
           badge: "Sakral",
+          isPrimary: false,
         },
+        // Resepsi adalah jadwal terima tamu: patokan masa aktif, hitung mundur, dan kunci tanggal pasca terbit.
         {
           title: "Resepsi Pernikahan",
           date: effectiveEventDate,
           time: finalResepsiTime,
-          location: city ? `Lokasi Acara di ${city}` : "",
-          address: city ? `Alamat Acara di ${city}` : "",
+          timezone: eventTimezone,
+          location: "",
+          address: city || "",
           mapsUrl: "",
           badge: "Umum",
+          isPrimary: true,
         },
       ];
     } else {
@@ -308,10 +325,12 @@ export async function POST(req: Request) {
           title: eventTitleMap[eventType] || "Acara Utama",
           date: effectiveEventDate,
           time: mainTime,
-          location: city ? `Lokasi Acara di ${city}` : "",
-          address: city ? `Alamat Acara di ${city}` : "",
+          timezone: eventTimezone,
+          location: "",
+          address: city || "",
           mapsUrl: "",
           badge: "Utama",
+          isPrimary: true,
         },
       ];
     }

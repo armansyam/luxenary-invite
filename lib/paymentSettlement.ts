@@ -34,7 +34,7 @@ export function isStaleGatewaySession(order: { id: string; gatewayTxId: string |
 
 /**
  * Menentukan status asal yang boleh dilunasi untuk notifikasi pembayaran gateway yang valid.
- * Uang sudah diterima, jadi order yang ditutup aplikasi (EXPIRED/FAILED, mis. QR lama yang tetap dibayar setelah
+ * Uang sudah diterima, jadi order yang ditutup aplikasi (EXPIRED, mis. QR lama yang tetap dibayar setelah
  * paket diganti atau pembatalan ke gateway gagal) tetap dilunasi, kecuali pengguna sudah punya order paket baru
  * berstatus PAID: dua pelunasan paket dasar melanggar invarian satu paket per pengguna dan harus ditinjau manual.
  *
@@ -47,14 +47,14 @@ export async function settlementSourceStatuses(order: {
   status: string;
 }): Promise<OrderStatus[] | null> {
   if (order.status === "PENDING") return ["PENDING"];
-  if (order.status !== "EXPIRED" && order.status !== "FAILED") return null;
+  if (order.status !== "EXPIRED") return null;
   if (order.orderType === "NEW") {
     const otherPaid = await prisma.order.count({
       where: { userId: order.userId, orderType: "NEW", status: "PAID", id: { not: order.id } },
     });
     if (otherPaid > 0) return null;
   }
-  return ["PENDING", "EXPIRED", "FAILED"];
+  return ["PENDING", "EXPIRED"];
 }
 
 /**

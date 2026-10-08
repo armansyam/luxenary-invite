@@ -238,7 +238,7 @@ export async function applyMemoriesTopup(topupOrderId: string): Promise<void> {
 /**
  * purgeObsoleteUserOrders
  * Memastikan prinsip Single State (Opsi B):
- * Saat order PAID, bersihkan semua draft/failed orders lama milik user beserta file struknya di Cloudflare R2
+ * Saat order PAID, bersihkan semua draft/expired orders lama milik user beserta file struknya di Cloudflare R2
  */
 export async function purgeObsoleteUserOrders(userId: string, currentOrderId: string): Promise<void> {
   try {
@@ -246,7 +246,7 @@ export async function purgeObsoleteUserOrders(userId: string, currentOrderId: st
       where: {
         userId,
         id: { not: currentOrderId },
-        status: { in: ["PENDING", "FAILED", "EXPIRED"] },
+        status: { in: ["PENDING", "EXPIRED"] },
         orderType: "NEW",
       },
       select: { id: true, proofImageUrl: true },

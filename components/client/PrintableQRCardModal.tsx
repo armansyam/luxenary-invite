@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import QRCode from "react-qr-code";
 import { useFeedback } from "@/components/ui/Feedback";
+import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
+import { qrInitials } from "@/lib/checkinQr";
 
 export interface PrintableQRCardModalProps {
   isOpen: boolean;
@@ -132,7 +133,14 @@ export default function PrintableQRCardModal({
   const isPublished = invitation?.status === "PUBLISHED";
   const canGenerateQr = hasValidDomain && isPublished && Boolean(shareMomentUrl && shareMomentUrl.trim());
 
-  const coupleTitle = `${invitation?.groomNickname || "Mempelai Pria"} & ${invitation?.brideNickname || "Mempelai Wanita"}`;
+  const coupleTitle = resolveInvitationDisplayName(invitation ?? {});
+
+  // QR dibuat server (satu sumber dengan QR check-in undangan) agar inisial di tengahnya ikut tercetak di PNG.
+  // Pernikahan 2 huruf (kedua mempelai), acara tunggal 1 huruf.
+  const qrMark = qrInitials(invitation ?? {});
+  const qrImageSrc = canGenerateQr
+    ? `/api/public/qr?size=400${qrMark ? `&mark=${encodeURIComponent(qrMark)}` : ""}&data=${encodeURIComponent(shareMomentUrl)}`
+    : "";
 
   // Format Tanggal Acara
   const eventDateFormatted = (() => {
@@ -250,28 +258,24 @@ export default function PrintableQRCardModal({
       ctx.fill();
       ctx.restore();
 
-      // Draw QR Code from SVG
-      if (cardRef.current) {
-        const svg = cardRef.current.querySelector("svg");
-        if (svg) {
-          const svgData = new XMLSerializer().serializeToString(svg);
-          const qrImg = new Image();
-          await new Promise((resolve, reject) => {
-            qrImg.onload = () => {
-              const qrPadding = qrBoxSize * 0.09;
-              ctx.drawImage(
-                qrImg,
-                qrBoxX + qrPadding,
-                qrBoxY + qrPadding,
-                qrBoxSize - qrPadding * 2,
-                qrBoxSize - qrPadding * 2
-              );
-              resolve(true);
-            };
-            qrImg.onerror = reject;
-            qrImg.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
-          });
-        }
+      // Gambar QR (SVG dari server, same-origin sehingga kanvas tidak tercemar)
+      if (qrImageSrc) {
+        const qrImg = new Image();
+        await new Promise((resolve, reject) => {
+          qrImg.onload = () => {
+            const qrPadding = qrBoxSize * 0.09;
+            ctx.drawImage(
+              qrImg,
+              qrBoxX + qrPadding,
+              qrBoxY + qrPadding,
+              qrBoxSize - qrPadding * 2,
+              qrBoxSize - qrPadding * 2
+            );
+            resolve(true);
+          };
+          qrImg.onerror = () => reject(new Error("Gambar QR tidak dapat dimuat"));
+          qrImg.src = qrImageSrc;
+        });
       }
 
       // 3. Eyebrow Header
@@ -311,7 +315,7 @@ export default function PrintableQRCardModal({
       // Instant Download
       const dataUrl = canvas.toDataURL("image/png");
       const a = document.createElement("a");
-      a.download = `Kartu-Meja-QR-${selectedSize}-${selectedCardLayout}-${invitation?.groomSlug || "wedding"}.png`;
+      a.download = `Kartu-Meja-QR-${selectedSize}-${selectedCardLayout}-${invitation?.invitationSlug || "undangan"}.png`;
       a.href = dataUrl;
       a.click();
     } catch (err: any) {
@@ -393,12 +397,10 @@ export default function PrintableQRCardModal({
                   }`}
                 >
                   {canGenerateQr ? (
-                    <QRCode
-                      value={shareMomentUrl}
-                      size={160}
+                    <img
+                      src={qrImageSrc}
+                      alt="QR Kamera Momen Tamu"
                       style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                      viewBox="0 0 160 160"
-                      fgColor="#26211d"
                     />
                   ) : (
                     <div className="w-full h-full border-2 border-dashed border-stone-300 rounded-xl p-3 flex flex-col items-center justify-center bg-stone-50/60 select-none">

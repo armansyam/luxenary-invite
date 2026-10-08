@@ -8,6 +8,7 @@ import {
   computeLifecycleDates,
   formatDateInEventTimezone,
   formatPrimaryEventDate,
+  getPrimaryEvent,
   getPrimaryEventTimezone,
   lifecycleSettingsFromPublic,
   type LifecycleDaySettings,
@@ -41,7 +42,7 @@ export default function SettingsPage() {
     "IDLE" | "SCANNING" | "HALT_MANDATORY" | "REVIEW_OPTIONAL" | "READY_ALL" | "PUBLISHING" | "SUCCESS"
   >("IDLE");
   const [activeScanIndex, setActiveScanIndex] = useState(0);
-  const [haltReason, setHaltReason] = useState<string | null>(null);
+  const [haltReasons, setHaltReasons] = useState<string[]>([]);
   const [emptyOptionals, setEmptyOptionals] = useState<string[]>([]);
   const [copiedOfficialUrl, setCopiedOfficialUrl] = useState(false);
   const [isInitiatingScan, setIsInitiatingScan] = useState(false);
@@ -267,35 +268,21 @@ export default function SettingsPage() {
     },
     {
       id: "eventDate",
-      title: "Tanggal Acara Utama",
-      desc: "Referensi masa berlaku website & hitung mundur",
+      title: "Tanggal Jadwal Terima Tamu",
+      desc: "Tanggal tamu datang: patokan masa aktif & hitung mundur",
       hasToggle: false,
       isToggledOn: () => true,
-      hasData: (inv: any) => {
-        try {
-          const ev = typeof inv?.eventData === "string" ? JSON.parse(inv.eventData) : inv?.eventData;
-          return Array.isArray(ev) && ev.length > 0 && Boolean(ev[0]?.date);
-        } catch {
-          return false;
-        }
-      },
-      missingMessage: "Tanggal acara utama belum ditentukan. Tanggal ini diperlukan sebagai referensi masa berlaku website dan hitung mundur undangan Anda.",
+      hasData: (inv: any) => getPrimaryEvent(inv?.eventData) !== null,
+      missingMessage: "Tanggal sesi Jadwal Terima Tamu belum diisi. Isi tanggalnya di Edit Undangan (seksi Acara); tanggal ini menjadi patokan masa aktif dan hitung mundur.",
     },
     {
       id: "location",
-      title: "Waktu & Lokasi Acara",
-      desc: "Alamat venue dan navigasi peta",
+      title: "Tempat Jadwal Terima Tamu",
+      desc: "Nama tempat tamu datang",
       hasToggle: false,
       isToggledOn: () => true,
-      hasData: (inv: any) => {
-        try {
-          const ev = typeof inv?.eventData === "string" ? JSON.parse(inv.eventData) : inv?.eventData;
-          return Array.isArray(ev) && ev.length > 0 && Boolean(ev[0]?.location);
-        } catch {
-          return false;
-        }
-      },
-      missingMessage: "Lokasi dan waktu acara pernikahan belum diisi. Harap lengkapi detail lokasi pada Edit Undangan.",
+      hasData: (inv: any) => Boolean((getPrimaryEvent(inv?.eventData) as { location?: string } | null)?.location),
+      missingMessage: "Nama tempat pada sesi Jadwal Terima Tamu belum diisi. Harap lengkapi di Edit Undangan (seksi Acara).",
     },
     {
       id: "pin",
@@ -441,7 +428,7 @@ export default function SettingsPage() {
       setLaunchStage("SCANNING");
       setIsInitiatingScan(false);
       setActiveScanIndex(0);
-      setHaltReason(null);
+      setHaltReasons([]);
       setEmptyOptionals([]);
       setFinalReviewChecks({});
 
@@ -458,11 +445,13 @@ export default function SettingsPage() {
             );
 
             if (failedRules.length > 0) {
-              const firstFail = failedRules[0];
-              const msg = typeof (firstFail as any).getMissingMessage === "function"
-                ? (firstFail as any).getMissingMessage(invitation)
-                : firstFail.missingMessage;
-              setHaltReason(msg);
+              setHaltReasons(
+                failedRules.map((rule) =>
+                  typeof (rule as any).getMissingMessage === "function"
+                    ? (rule as any).getMissingMessage(invitation)
+                    : rule.missingMessage
+                )
+              );
               setLaunchStage("HALT_MANDATORY");
             } else {
               setLaunchStage("READY_ALL");
@@ -478,7 +467,7 @@ export default function SettingsPage() {
     setTimeout(() => {
       setLaunchStage("IDLE");
       setIsReturningToIdle(false);
-      setHaltReason(null);
+      setHaltReasons([]);
       setEmptyOptionals([]);
       setFinalReviewChecks({});
     }, 200);
@@ -1218,11 +1207,13 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-1.5">
                   <h4 className="text-sm font-bold text-rose-200">
-                    Pemeriksaan Belum Lengkap
+                    {haltReasons.length} Data Wajib Belum Lengkap
                   </h4>
-                  <p className="text-xs text-rose-300/90 leading-relaxed">
-                    {haltReason || "Terdapat data wajib yang belum diisi. Mohon lengkapi data tersebut sebelum menerbitkan undangan."}
-                  </p>
+                  <ol className="list-decimal pl-4 space-y-1.5 text-xs text-rose-300/90 leading-relaxed">
+                    {haltReasons.map((reason) => (
+                      <li key={reason}>{reason}</li>
+                    ))}
+                  </ol>
                   <p className="text-[11px] text-stone-400 pt-1">
                     Silakan tekan tombol di bawah untuk melengkapi data yang diperlukan. Seluruh form pengaturan akan kembali terbuka secara otomatis.
                   </p>

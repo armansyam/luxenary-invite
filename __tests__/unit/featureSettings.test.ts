@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 
 vi.mock("@/lib/logger", () => ({ logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() } }));
 
-import { parseFeatureSettings } from "@/lib/featureSettings";
+import { parseFeatureSettings, keepValidMemoriesSettings } from "@/lib/featureSettings";
 import { logger } from "@/lib/logger";
 
 describe("parseFeatureSettings", () => {
@@ -36,5 +36,25 @@ describe("parseFeatureSettings", () => {
   it("JSON korup menjadi objek kosong dan dicatat, tidak melempar", () => {
     expect(parseFeatureSettings("{bukan json")).toEqual({});
     expect(logger.warn).toHaveBeenCalled();
+  });
+});
+
+describe("keepValidMemoriesSettings", () => {
+  it("filter dan jatah roll yang sah dipertahankan; jatah berupa string dinormalkan menjadi angka", () => {
+    expect(keepValidMemoriesSettings({ memoriesFilter: "cinema_noir", memoriesShotsQuota: "12" }, {})).toEqual({
+      memoriesFilter: "cinema_noir",
+      memoriesShotsQuota: 12,
+    });
+  });
+  it("nilai tidak sah dikembalikan ke nilai tersimpan sebelumnya", () => {
+    const existing = { memoriesFilter: "aura_90s", memoriesShotsQuota: 5 };
+    expect(keepValidMemoriesSettings({ memoriesFilter: "filter_palsu", memoriesShotsQuota: 9999 }, existing)).toEqual(existing);
+  });
+  it("nilai tidak sah tanpa nilai tersimpan yang sah dibuang", () => {
+    expect(keepValidMemoriesSettings({ memoriesFilter: 7, memoriesShotsQuota: 0, showGallery: true }, { memoriesShotsQuota: 9999 })).toEqual({ showGallery: true });
+  });
+  it("pecahan dan nilai di luar 1-30 ditolak", () => {
+    expect(keepValidMemoriesSettings({ memoriesShotsQuota: 2.5 }, {})).toEqual({});
+    expect(keepValidMemoriesSettings({ memoriesShotsQuota: 31 }, {})).toEqual({});
   });
 });

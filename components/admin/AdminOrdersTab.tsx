@@ -11,7 +11,7 @@ interface OrderItem {
   targetPlanType?: string | null;
   requestedDomain?: string | null;
   amount: number | string;
-  status: "PENDING" | "PAID" | "FAILED" | "EXPIRED" | string;
+  status: "PENDING" | "PAID" | "EXPIRED" | string;
   paymentMethod?: string | null;
   proofImageUrl?: string | null;
   rejectReason?: string | null;
@@ -46,7 +46,7 @@ export default function AdminOrdersTab() {
   const [limit, setLimit] = useState(20);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [statusTab, setStatusTab] = useState<"SEMUA" | "PENDING" | "PAID" | "FAILED">("SEMUA");
+  const [statusTab, setStatusTab] = useState<"SEMUA" | "PENDING" | "PAID" | "EXPIRED">("SEMUA");
   const [dateFilter, setDateFilter] = useState<"ALL" | "TODAY" | "7DAYS" | "THIS_MONTH">("TODAY");
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 1 });
   const [summary, setSummary] = useState({ totalFilteredRevenue: 0, totalFilteredPaidOrders: 0 });
@@ -306,7 +306,7 @@ export default function AdminOrdersTab() {
           {[
             { id: "PENDING", label: "Menunggu Pembayaran" },
             { id: "PAID", label: "Sukses / Lunas" },
-            { id: "FAILED", label: "Gagal / Dibatalkan" },
+            { id: "EXPIRED", label: "Kedaluwarsa" },
             { id: "SEMUA", label: "Semua Transaksi" },
           ].map((tab) => (
             <button
@@ -548,10 +548,10 @@ export default function AdminOrdersTab() {
                             <span>Menunggu Bayar</span>
                           </span>
                         )}
-                        {(ord.status === "FAILED" || ord.status === "EXPIRED") && (
+                        {ord.status === "EXPIRED" && (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-800 border border-rose-200">
                             <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                            <span>{ord.status === "EXPIRED" ? "Kedaluwarsa" : "Ditolak"}</span>
+                            <span>Kedaluwarsa</span>
                           </span>
                         )}
                       </td>
@@ -575,7 +575,7 @@ export default function AdminOrdersTab() {
                           >
                             Verifikasi
                           </button>
-                        ) : ord.status === "FAILED" && ord.rejectReason ? (
+                        ) : ord.status === "PENDING" && ord.rejectReason ? (
                           <span className="text-[11px] text-gray-400 italic" title={ord.rejectReason}>
                             Alasan tercatat
                           </span>

@@ -133,11 +133,11 @@ export async function POST(req: NextRequest) {
     }
     const amount = Number(priceSetting.value);
 
-    // Cek apakah user punya order PENDING atau FAILED yang belum lunas
+    // Cek apakah user punya order PENDING yang belum lunas
     const existingPending = await prisma.order.findFirst({
       where: {
         userId: validUserId,
-        status: { in: ["PENDING", "FAILED"] },
+        status: "PENDING",
         orderType: "NEW",
       },
       orderBy: { createdAt: "desc" },
@@ -181,7 +181,7 @@ export async function POST(req: NextRequest) {
       // selama transaksinya aktif atau sudah dibayar, jadi order lama harus dibatalkan lebih dulu.
       if (regenerate || isExpired || (isPlanChanged && hadGatewaySession)) {
         const softCancelled = await prisma.order.updateMany({
-          where: { id: existingPending.id, status: { in: ["PENDING", "FAILED"] } },
+          where: { id: existingPending.id, status: "PENDING" },
           data: {
             status: "EXPIRED",
             rejectReason: regenerate
@@ -213,12 +213,12 @@ export async function POST(req: NextRequest) {
         }
         // Biarkan alur lanjut ke bawah membuat order baru dengan UUID & Invoice baru yang segar!
       } else {
-        // Cari dan bersihkan file bukti transfer pada duplikat draf order pending/failed lama lainnya
+        // Cari dan bersihkan file bukti transfer pada duplikat draf order pending lama lainnya
         try {
           const duplicateOrders = await prisma.order.findMany({
             where: {
               userId: validUserId,
-              status: { in: ["PENDING", "FAILED"] },
+              status: "PENDING",
               id: { not: existingPending.id },
               orderType: "NEW",
             },
@@ -240,7 +240,7 @@ export async function POST(req: NextRequest) {
           logger.error("OrdersCreate", "Pembersihan order duplikat gagal", dupErr, { orderId: existingPending.id });
         }
 
-        const isResetProof = isPlanChanged || existingPending.status === "FAILED";
+        const isResetProof = isPlanChanged;
 
         // Diskon dihitung terhadap paket sebelumnya (applicablePlans, minimum belanja, nominal): tidak boleh terbawa ke paket baru.
         if (isPlanChanged) await releaseOrderPromoHold(existingPending.id);
@@ -293,7 +293,7 @@ export async function POST(req: NextRequest) {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`order_create:${validUserId}`}))`;
 
       const draft = await tx.order.findFirst({
-        where: { userId: validUserId, status: { in: ["PENDING", "FAILED"] }, orderType: "NEW" },
+        where: { userId: validUserId, status: "PENDING", orderType: "NEW" },
         orderBy: { createdAt: "desc" },
       });
       if (draft) {

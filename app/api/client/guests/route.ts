@@ -62,12 +62,12 @@ export async function POST(req: Request) {
       }
     }
 
-    // Duplicate Name Validation
+    // Duplicate Name Validation: QR, RSVP, dan resepsionis mencocokkan nama tanpa membedakan huruf besar/kecil.
     const trimmedName = name.trim();
     const existingGuest = await prisma.guest.findFirst({
       where: {
         invitationId,
-        name: trimmedName,
+        name: { equals: trimmedName, mode: "insensitive" },
       },
     });
 

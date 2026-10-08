@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
-type OrderStatus = "PENDING" | "PAID" | "FAILED" | "EXPIRED" | null;
+type OrderStatus = "PENDING" | "PAID" | "EXPIRED" | null;
 
 function SuccessContent() {
   const searchParams = useSearchParams();
@@ -44,7 +44,7 @@ function SuccessContent() {
           return; // Stop polling
         }
 
-        if (status === "FAILED" || status === "EXPIRED") {
+        if (status === "EXPIRED") {
           return; // Stop polling, show error state
         }
 
@@ -96,8 +96,8 @@ function SuccessContent() {
     );
   }
 
-  // ── Failed / Expired State ──────────────────────────────────────────────────
-  if (orderStatus === "FAILED" || orderStatus === "EXPIRED") {
+  // ── Expired State ───────────────────────────────────────────────────────────
+  if (orderStatus === "EXPIRED") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-stone-950 to-rose-950 flex flex-col items-center justify-center px-4">
         <div className="text-center max-w-md space-y-5">

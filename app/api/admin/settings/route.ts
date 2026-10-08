@@ -75,7 +75,7 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group
   { key: "subdomain_grace_days", value: "7", label: "Masa Tenggang Subdomain (Hari Pasca Acara)", group: "subdomain" },
   { key: "subdomain_auto_recycle", value: "true", label: "Otomatis Lepas Subdomain ke Pool", group: "subdomain" },
   // Retensi order — terpisah dari retensi undangan
-  { key: "retention_order_days", value: "90", label: "Pembersihan Order Lama EXPIRED/FAILED/PENDING (Hari)", group: "subdomain" },
+  { key: "retention_order_days", value: "90", label: "Pembersihan Order Lama EXPIRED/PENDING (Hari)", group: "subdomain" },
   // Batas upload file media
   { key: "max_upload_mb", value: "5", label: "Batas Upload Foto Tamu Memories (MB)", group: "setup" },
   { key: "max_video_upload_mb", value: "50", label: "Batas Upload Video Studio (MB)", group: "setup" },

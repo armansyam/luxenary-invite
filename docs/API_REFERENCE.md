@@ -39,7 +39,7 @@ Endpoint berikut dapat diakses oleh publik (tamu undangan, browser pengunjung, d
 | `GET` | `/api/public/settings` | Mengambil data pengaturan publik platform (nama platform, logo, WhatsApp CS, limit upload). |
 | `GET` | `/api/public/themes` | Mengambil katalog tema aktif untuk galeri landing page & `/demo`. Mendukung query parameter `?eventType=WEDDING\|BIRTHDAY\|KHITAN\|AQIQAH\|WISUDA\|GATHERING` (cached via Cloudflare `s-maxage=86400`, `max-age=60`). |
 | `GET` | `/api/public/music` | Mengambil daftar pustaka musik latar (*audio presets*) resmi. |
-| `GET` | `/api/public/qr` | Membuat QR SVG di server sendiri. Parameter `data` (wajib, maksimal 600 karakter, UTF-8) dan `size` (80-400, bawaan 160). Rate limit 120 per menit per IP (HTTP 429). Respons di-cache 1 hari. |
+| `GET` | `/api/public/qr` | Membuat QR SVG di server sendiri. Parameter `data` (wajib, maksimal 600 karakter, UTF-8), `size` (80-400, bawaan 160), dan `mark` (opsional, maksimal 2 huruf/angka; digambar dalam lingkaran putih di tengah QR dengan koreksi level H). Rate limit 120 per menit per IP (HTTP 429). Respons di-cache 1 hari. |
 | `POST` | `/api/public/rsvp` | Mengirim konfirmasi kehadiran tamu. Rate limit 10 per menit per IP dan 200 per menit per undangan (HTTP 429). `status` dinormalkan ke `hadir`/`tidak`/`ragu` (nilai lain: 400); `guestName` maksimal 100 dan `message` maksimal 1000 karakter (lebih: 400). Respons pertama menetapkan cookie `lux_rsvp_*` (`httpOnly`); mengirim ulang dengan nama yang sama hanya memperbarui RSVP bila cookie itu ikut terkirim, selain itu 409. |
 | `GET` | `/api/public/resolve-custom-domain` | Verifikasi kepemilikan domain untuk Caddy On-Demand TLS & Next.js middleware rewrite. |
 | `POST` | `/api/public/memories/upload` | Mengunggah foto kenangan candid dari tamu hari-H (murni foto: JPEG/PNG/WebP/GIF). |
@@ -59,8 +59,8 @@ Khusus untuk operasional panitia penerima tamu di meja pintu masuk venue:
 | Metode | Endpoint | Deskripsi & Kegunaan |
 |:---:|---|---|
 | `POST` | `/api/receptionist/verify-pin` | Verifikasi 4-digit Staff PIN panitia untuk membuka akses scanner check-in. |
-| `GET` | `/api/receptionist/guests` | Mengambil daftar seluruh tamu, status kehadiran fisik, dan status souvenir. |
-| `POST` | `/api/receptionist/scan` | Check-in tamu via pemindaian token barcode QR (mencatat jam hadir & kuota pax katering). |
+| `GET` | `/api/receptionist/guests` | Mengambil daftar seluruh tamu undangan beserta kategori, `guestQuota`, `tableNumber`, `qrToken`, dan penanda check-in (`isTokenRedeemed`). Butuh sesi resepsionis (401), 60 permintaan per menit per IP (429), tanpa cache. |
+| `POST` | `/api/receptionist/scan` | Check-in tamu via QR `LUX\|<id undangan>\|<nama>` atau `qrToken` lama. QR acara lain ditolak (400), QR sudah check-in ditolak (400 `alreadyRedeemed`), nama yang tidak terdaftar dibuat sebagai tamu `UMUM`. Butuh sesi resepsionis (401), 30 permintaan per menit per IP (429). |
 
 ---
 
@@ -72,30 +72,32 @@ Memerlukan sesi aktif klien (`role: CLIENT` atau Admin Remote Session):
 |---|:---:|---|---|
 | **Onboarding** | `GET` | `/api/client/onboarding-state` | Decision tree penentu navigasi klien pasca-login (ke `/dashboard`, `/setup`, `/checkout`, atau `/packages`). |
 | **Undangan** | `GET` | `/api/client/invitations` | Mengambil seluruh undangan milik user aktif. |
-| | `POST` | `/api/client/invitations/create` | Membuat draf undangan baru setelah aktivasi invoice. Mendukung parameter `eventType` (`WEDDING`, `BIRTHDAY`, `KHITAN`, `AQIQAH`, `WISUDA`, `GATHERING`), `themeId`, `participantsJson`, `invitationName`, `groomName`/`brideName`/`groomNickname`/`brideNickname`, dan `eventTime`; judul dan slug diturunkan dari data peserta, bukan dikirim sebagai parameter terpisah. Memvalidasi kecocokan `theme.eventType` dengan fallback otomatis ke `DEFAULT_THEME_BY_EVENT`. |
+| | `POST` | `/api/client/invitations/create` | Membuat draf undangan baru setelah aktivasi invoice. Mendukung parameter `eventType` (`WEDDING`, `BIRTHDAY`, `KHITAN`, `AQIQAH`, `WISUDA`, `GATHERING`), `themeId`, `participantsJson`, `invitationName`, `groomName`/`brideName`/`groomNickname`/`brideNickname`, dan `eventTime`; judul dan slug diturunkan dari data peserta, bukan dikirim sebagai parameter terpisah. Memvalidasi kecocokan `theme.eventType` dengan fallback otomatis ke `DEFAULT_THEME_BY_EVENT`. Kota dari wizard disimpan sebagai `address`; `location` (nama tempat) dibiarkan kosong. Draf yang sudah ada tidak dapat berganti jenis acara (HTTP 409). |
 | | `GET` | `/api/client/invitations/{id}` | Mengambil detail konfigurasi lengkap satu undangan beserta relasi media, audio, dan event. |
-| | `PUT` | `/api/client/invitations/{id}` | Memperbarui konten 16 seksi formulir Studio Editor secara menyeluruh. |
-| | `PATCH` | `/api/client/invitations/{id}` | Memperbarui atribut parsial undangan, termasuk perubahan `themeId` dengan pengawalan ketat *cross-event guard* (`theme.eventType === invitation.eventType`). |
+| | `PUT` | `/api/client/invitations/{id}` | Memperbarui konten 16 seksi formulir Studio Editor secara menyeluruh. Draf tidak dikunci oleh tanggal acara yang sudah lewat (tanggal salah ketik dapat diperbaiki), tetapi klien tidak dapat menerbitkan undangan bertanggal lampau atau tanpa tanggal pada sesi jadwal terima tamu (`isPrimary`) (HTTP 400). Setelah terbit, jadwal tidak dapat dikosongkan dan tanggal jadwal terima tamu tidak dapat diubah klien (HTTP 403). `memoriesFilter`/`memoriesShotsQuota` yang tidak sah di `featureSettings` dikembalikan ke nilai tersimpan (`keepValidMemoriesSettings`). |
+| | `PATCH` | `/api/client/invitations/{id}` | Memperbarui atribut parsial undangan, termasuk perubahan `themeId` dengan pengawalan ketat *cross-event guard* (`theme.eventType === invitation.eventType`). Validasi kamera sama dengan PUT. |
 | | `POST` | `/api/client/invitations/{id}/preview` | Preview real-time live perubahan draf undangan ke canvas iframe. |
 | | `GET` | `/api/client/invitations/{id}/export` | Mengunduh berkas rekap data undangan dan respons kehadiran tamu. |
 | **Media** | `POST` | `/api/client/upload` | Mengunggah aset foto, video, lagu, atau QRIS (`slot: QRIS` WebP 800×800) ke Storage lokal / Cloudflare R2. |
 | | `DELETE` | `/api/client/media/{id}` | Menghapus aset media dari galeri undangan. |
 | **Buku Tamu** | `GET` | `/api/client/guests` | Mengambil daftar tamu undangan penyelenggara. |
-| | `POST` | `/api/client/guests` | Menambahkan satu tamu baru secara manual. |
-| | `POST` | `/api/client/guests/bulk` | Mengimpor puluhan/ratusan tamu sekaligus via berkas CSV (dengan parser koma/titik-koma cerdas). |
-| | `DELETE` | `/api/client/guests/{id}` | Menghapus tamu dari daftar buku tamu. |
+| | `POST` | `/api/client/guests` | Menambahkan satu tamu baru secara manual. Nama yang sudah ada (tanpa membedakan huruf besar/kecil) ditolak 400. |
+| | `POST` | `/api/client/guests/bulk` | Mengimpor puluhan/ratusan tamu sekaligus via berkas CSV (dengan parser koma/titik-koma cerdas). Nama kembar di berkas maupun yang sudah terdaftar dilewati dan dilaporkan di `skippedNames`. Sesi kosong menjadi "Akad & Resepsi" hanya untuk pernikahan. |
+| | `PUT` | `/api/client/guests/{id}` | Mengubah data tamu; ganti nama ke nama tamu lain ditolak 400. |
+| | `DELETE` | `/api/client/guests/{id}` | Menghapus tamu dari daftar buku tamu. Tamu yang sudah check-in tidak dapat dihapus klien (HTTP 409). |
 | **RSVP** | `GET` | `/api/client/rsvps` | Mengambil data kehadiran dan ucapan dari tamu untuk dimoderasi. |
 | **Domain** | `GET` | `/api/client/subdomain/check` | Memeriksa ketersediaan nama subdomain secara instan. |
-| | `POST` | `/api/client/custom-domain` | Menyimpan, memperbarui, atau melepaskan tautan custom domain pribadi. |
+| | `POST` | `/api/client/custom-domain` | Menyimpan, memperbarui, atau melepaskan tautan custom domain pribadi. Klien hanya dapat menyimpan domain yang DNS-nya (domain atau `www.`) sudah mengarah ke `cname_target` (CNAME persis) atau `server_public_ip` (A record); bila belum, HTTP 422 beserta record yang terdeteksi. Admin tidak diperiksa. |
 | **Moments** | `GET` | `/api/client/invitations/{id}/memories` | Mengambil feed kenangan tamu, status order perpanjangan pending, dan kalkulasi kuota foto (`baseTotalPhotos`, `extraMemoriesQuota`, `usedPhotos`, `remainingPhotos`). |
-| | `PATCH` | `/api/client/invitations/{id}/memories` | Mengonfigurasi kamera tamu (`memoriesOpeningLayout`, `memoriesCardInstruction`, `memoriesFilter`, `memoriesDateStamp`, jatah roll, dan jadwal `memoriesSessions` dengan pembatas kuota server-side). |
+| | `PATCH` | `/api/client/invitations/{id}/memories` | Mengonfigurasi kamera tamu (`memoriesOpeningLayout`, `memoriesCardInstruction`, `memoriesFilter`, `memoriesDateStamp`, jatah roll, dan jadwal `memoriesSessions` dengan pembatas kuota server-side). Filter tak dikenal atau jatah roll di luar 1-30 ditolak 400. |
+| | `DELETE` | `/api/client/invitations/{id}/memories` | Menghapus satu foto kenangan; `memoryId` dari query string atau body JSON. |
 | | `GET` | `/api/client/memories/download` | Mengunduh seluruh foto kenangan tamu dalam satu berkas `.zip`. |
 | | `GET` | `/api/client/memories/download-urls` | Mengambil daftar URL unduh langsung untuk batch downloader resolusi tinggi. |
 | | `POST` | `/api/client/memories/lock` | Mengunci unggahan momen tamu setelah acara selesai. |
 | **Pesanan** | `GET` | `/api/client/orders` | Mengambil riwayat transaksi pesanan paket atau add-on. |
 | | `GET` | `/api/client/orders/{id}/status` | Mengecek status pelunasan transaksi pesanan secara spesifik. |
 | | `POST` | `/api/client/orders/{id}/cancel` | Membatalkan tagihan pesanan berstatus pending. |
-| | `POST` | `/api/client/orders/{id}/upload-proof` | Klien mengunggah slip bukti transfer manual (gambar atau PDF, maksimal 10 MB). File tidak valid dijawab 400 tanpa menghapus bukti lama; hanya order `PENDING`/`FAILED` yang menerima bukti (409 selain itu); ditolak 409 bila mode pembayaran `GATEWAY`. |
+| | `POST` | `/api/client/orders/{id}/upload-proof` | Klien mengunggah slip bukti transfer manual (gambar atau PDF, maksimal 10 MB). File tidak valid dijawab 400 tanpa menghapus bukti lama; hanya order `PENDING` yang menerima bukti (409 selain itu); ditolak 409 bila mode pembayaran `GATEWAY`. |
 | | `POST` | `/api/client/orders/checkout-bundle` | Penerbitan tagihan terpadu 1-Invoice multi-layanan (Upgrade Paket, Perpanjangan Galeri, dan Top-Up Kuota Foto Acara). |
 
 ---

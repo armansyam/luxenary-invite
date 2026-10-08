@@ -43,13 +43,9 @@ export async function GET(
     return new Response("Forbidden", { status: 403 });
   }
 
-  // Jika sudah PAID/EXPIRED/FAILED (REJECTED) sebelum SSE terbuka, kirim langsung dan tutup koneksi
-  if (order.status === "PAID" || order.status === "EXPIRED" || order.status === "FAILED") {
-    const payload: Record<string, any> = { status: order.status, planType: order.planType };
-    if (order.status === "FAILED" && order.rejectReason) {
-      payload.rejectReason = order.rejectReason;
-      payload.status = "REJECTED"; // Normalisasi nama status ke REJECTED agar klien konsisten
-    }
+  // Jika sudah PAID/EXPIRED sebelum SSE terbuka, kirim langsung dan tutup koneksi
+  if (order.status === "PAID" || order.status === "EXPIRED") {
+    const payload = { status: order.status, planType: order.planType };
     const body = `retry: 0\ndata: ${JSON.stringify(payload)}\n\n`;
     return new Response(body, {
       headers: {
@@ -78,9 +74,9 @@ export async function GET(
               where: { id: orderId },
               select: { status: true, planType: true, rejectReason: true },
             });
-            if (latest && (latest.status === "PAID" || latest.status === "EXPIRED" || latest.status === "FAILED")) {
+            if (latest && (latest.status === "PAID" || latest.status === "EXPIRED")) {
               onPaymentUpdate({
-                status: latest.status === "FAILED" ? "REJECTED" : latest.status,
+                status: latest.status,
                 planType: latest.planType,
                 ...(latest.rejectReason ? { rejectReason: latest.rejectReason } : {}),
               });

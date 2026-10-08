@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
-import dns from "dns";
+import { checkDomainPointsToPlatform } from "@/lib/customDomainDns";
 
 export const dynamic = "force-dynamic";
 
@@ -24,57 +23,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Ambil konfigurasi target DNS server dari AdminSetting
-    const [ipSetting, cnameSetting] = await Promise.all([
-      prisma.adminSetting.findUnique({ where: { key: "server_public_ip" } }),
-      prisma.adminSetting.findUnique({ where: { key: "cname_target" } }),
-    ]);
-
-    const expectedIp = (ipSetting?.value || process.env.SERVER_PUBLIC_IP || "").trim();
-    const expectedCname = (cnameSetting?.value || process.env.NEXT_PUBLIC_ROOT_DOMAIN || "").trim().toLowerCase();
-
-    let detectedA: string[] = [];
-    let detectedCname: string[] = [];
-
-    // 1. Resolve A Record
-    try {
-      detectedA = await dns.promises.resolve4(domain);
-    } catch {
-      // Tidak ada A record atau domain belum aktif
-    }
-
-    // 2. Resolve CNAME Record
-    try {
-      detectedCname = await dns.promises.resolveCname(domain);
-    } catch {
-      // Tidak ada CNAME record
-    }
-
-    // Cek apakah CNAME www jika input adalah root, atau sebaliknya
-    let wwwDetectedA: string[] = [];
-    let wwwDetectedCname: string[] = [];
-    if (!domain.startsWith("www.")) {
-      try {
-        wwwDetectedA = await dns.promises.resolve4(`www.${domain}`);
-      } catch {
-        // Subdomain www bersifat opsional; tidak ada A record berarti belum dikonfigurasi, bukan galat.
-      }
-      try {
-        wwwDetectedCname = await dns.promises.resolveCname(`www.${domain}`);
-      } catch {
-        // Subdomain www bersifat opsional; tidak ada CNAME berarti belum dikonfigurasi, bukan galat.
-      }
-    }
-
-    const matchesA = expectedIp ? detectedA.includes(expectedIp) : false;
-    const matchesCname = expectedCname
-      ? detectedCname.some((c) => c.toLowerCase().includes(expectedCname) || expectedCname.includes(c.toLowerCase()))
-      : false;
-    const wwwMatchesCname = expectedCname
-      ? wwwDetectedCname.some((c) => c.toLowerCase().includes(expectedCname) || expectedCname.includes(c.toLowerCase()))
-      : false;
-
-    const pointsToUs = matchesA || matchesCname || wwwMatchesCname;
+    const { pointsToUs, detectedA, detectedCname, wwwDetectedA, wwwDetectedCname, expectedIp, expectedCname } =
+      await checkDomainPointsToPlatform(domain);
 
     let message = "";
     if (pointsToUs) {

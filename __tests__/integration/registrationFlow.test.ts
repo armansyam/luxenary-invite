@@ -285,6 +285,44 @@ describe.skipIf(!IS_TEST_DB)("alur registrasi", () => {
       }
     });
 
+    it("kota dari wizard disimpan apa adanya sebagai alamat; nama tempat tetap kosong, tidak diisi teks karangan", async () => {
+      for (const eventType of ["WEDDING", "BIRTHDAY"]) {
+        const u = await makeUser(`city-${eventType.toLowerCase()}`);
+        as(u);
+        await makeOrder(u.id, { status: "PAID", paidAt: new Date() });
+        const res = await createInvitation(json("/api/client/invitations/create", "POST", {
+          eventType, groomNickname: "Raka", brideNickname: "Dewi", weddingDate: "2099-11-21", city: "Makassar", planType: "TIER_1",
+        }));
+        expect(res.status, eventType).toBe(200);
+        const inv = await prisma.invitation.findFirstOrThrow({ where: { userId: u.id } });
+        const events: Array<{ location: string; address: string }> = JSON.parse(inv.eventData ?? "[]");
+        expect(events.length).toBeGreaterThan(0);
+        for (const ev of events) {
+          expect(ev.location).toBe("");
+          expect(ev.address).toBe("Makassar");
+        }
+        expect(inv.eventData).not.toMatch(/Lokasi Acara di|Alamat Acara di/);
+      }
+    });
+
+    it("wizard menandai jadwal terima tamu: Resepsi untuk pernikahan, satu-satunya sesi untuk acara lain; zona waktu tetap tersimpan tanpa jam", async () => {
+      const cases: Array<[string, string[]]> = [["WEDDING", ["Akad Nikah", "Resepsi Pernikahan"]], ["KHITAN", ["Syukuran Khitanan"]]];
+      for (const [eventType, titles] of cases) {
+        const u = await makeUser(`primary-${eventType.toLowerCase()}`);
+        as(u);
+        await makeOrder(u.id, { status: "PAID", paidAt: new Date() });
+        const res = await createInvitation(json("/api/client/invitations/create", "POST", {
+          eventType, groomNickname: "Raka", brideNickname: "Dewi", weddingDate: "2099-11-21", city: "Makassar", timeZone: "WITA", planType: "TIER_1",
+        }));
+        expect(res.status, eventType).toBe(200);
+        const inv = await prisma.invitation.findFirstOrThrow({ where: { userId: u.id } });
+        const events: Array<{ title: string; isPrimary: boolean; timezone: string }> = JSON.parse(inv.eventData ?? "[]");
+        expect(events.map((e) => e.title)).toEqual(titles);
+        expect(events.filter((e) => e.isPrimary).map((e) => e.title)).toEqual([titles[titles.length - 1]]);
+        expect(events.every((e) => e.timezone === "WITA")).toBe(true);
+      }
+    });
+
     it("themeId dengan huruf besar disimpan dalam bentuk kanonik", async () => {
       const u = await makeUser("casetheme");
       as(u);

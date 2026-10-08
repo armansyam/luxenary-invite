@@ -726,7 +726,7 @@ export default function DisposableCameraViewfinder({
           <p className="text-xs opacity-70 mt-1">
             {hasStartedCamera
               ? "Ubah nama atau pesan doa yang disematkan pada foto kenangan Anda."
-              : "Nama Anda wajib diisi agar pengantin dan keluarga dapat mengenali momen yang Anda abadikan."}
+              : "Nama Anda wajib diisi agar tuan rumah dan keluarga dapat mengenali momen yang Anda abadikan."}
           </p>
         </div>
 
@@ -841,7 +841,7 @@ export default function DisposableCameraViewfinder({
             </span>
             <h2 className="text-xl font-bold font-serif">Seluruh Roll Kenangan Telah Terisi</h2>
             <p className="text-xs opacity-70 leading-relaxed mt-2">
-              Terima kasih atas antusiasme luar biasa dari seluruh tamu undangan! Kuota foto kenangan untuk momen pernikahan ini telah terpenuhi. Anda tetap dapat menikmati seluruh koleksi momen yang telah diabadikan bersama di Galeri Kenangan.
+              Terima kasih atas antusiasme luar biasa dari seluruh tamu undangan! Kuota foto kenangan untuk acara ini telah terpenuhi. Anda tetap dapat menikmati seluruh koleksi momen yang telah diabadikan bersama di Galeri Kenangan.
             </p>
           </div>
           <div className="space-y-2 pt-2">

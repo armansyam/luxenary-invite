@@ -6,6 +6,10 @@ import { useSession } from "next-auth/react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { DEFAULT_PLAN_NAMES } from "@/lib/planUtils";
 
+// Di HP baris tombol menempel di bawah layar: langkah tema bisa setinggi belasan layar, dan tombol selesai
+// tidak boleh tersembunyi di dasar daftar. Di layar lebar baris mengalir biasa.
+const WIZARD_ACTION_BAR =
+  "flex items-center gap-2 sticky bottom-3 z-20 rounded-2xl border border-stone-200 bg-white/95 p-2 shadow-lg backdrop-blur sm:static sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:pt-2 sm:shadow-none sm:backdrop-blur-none";
 
 // Daftar kota/kabupaten Indonesia dengan zona waktu \u2014 sumber tunggal untuk autocomplete
 const INDONESIAN_CITIES: { name: string; tz: "WIB" | "WITA" | "WIT" }[] = [
@@ -530,7 +534,7 @@ function SetupWizardContent() {
               })}
             </div>
 
-            <div className="flex items-center justify-end pt-2">
+            <div className={`${WIZARD_ACTION_BAR} justify-end`}>
               <button
                 type="button"
                 disabled={loading || !eventType}
@@ -564,7 +568,7 @@ function SetupWizardContent() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                        Nama Panggilan Pria <span className="text-rose-500">*</span>
+                        Nama Panggilan Pria
                       </label>
                       <input
                         type="text"
@@ -577,7 +581,7 @@ function SetupWizardContent() {
 
                     <div>
                       <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                        Nama Panggilan Wanita <span className="text-rose-500">*</span>
+                        Nama Panggilan Wanita
                       </label>
                       <input
                         type="text"
@@ -635,7 +639,7 @@ function SetupWizardContent() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                        Nama Panggilan <span className="text-rose-500">*</span>
+                        Nama Panggilan
                       </label>
                       <input
                         type="text"
@@ -721,7 +725,7 @@ function SetupWizardContent() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                        Nama Panggilan Anak <span className="text-rose-500">*</span>
+                        Nama Panggilan Anak
                       </label>
                       <input
                         type="text"
@@ -806,7 +810,7 @@ function SetupWizardContent() {
                 <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm space-y-6">
                   <div>
                     <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                      Nama Panggilan Bayi <span className="text-rose-500">*</span>
+                      Nama Panggilan Bayi
                     </label>
                     <input
                       type="text"
@@ -876,7 +880,7 @@ function SetupWizardContent() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                        Nama Panggilan <span className="text-rose-500">*</span>
+                        Nama Panggilan
                       </label>
                       <input
                         type="text"
@@ -959,7 +963,7 @@ function SetupWizardContent() {
                 <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm space-y-6">
                   <div>
                     <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                      Judul / Nama Acara <span className="text-rose-500">*</span>
+                      Judul / Nama Acara
                     </label>
                     <input
                       type="text"
@@ -1005,13 +1009,13 @@ function SetupWizardContent() {
               Langkah ini hanya mengisi data awal. Nama dapat dikosongkan dan dilengkapi kapan saja di Studio Editor.
             </div>
 
-            <div className="flex items-center justify-between pt-2">
+            <div className={`${WIZARD_ACTION_BAR} justify-between`}>
               <button
                 type="button"
                 onClick={() => setStep(0)}
-                className="px-6 py-3.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-xl transition cursor-pointer"
+                className="shrink-0 whitespace-nowrap px-4 sm:px-6 py-3.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-xl transition cursor-pointer"
               >
-                &larr; Pilih Jenis Acara
+                &larr; Kembali
               </button>
 
               <button
@@ -1055,20 +1059,25 @@ function SetupWizardContent() {
               <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm space-y-5">
                 <div>
                   <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                    {DATE_LABELS[eventType] || "Tanggal Acara Utama"} <span className="text-rose-500">*</span>
+                    {DATE_LABELS[eventType] || "Tanggal Acara Utama"}
                   </label>
                   <input
                     type="date"
+                    min={new Date().toLocaleDateString("en-CA")}
                     value={weddingDate}
                     onChange={(e) => setWeddingDate(e.target.value)}
                     className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                   />
-                  <p className="text-[11px] text-stone-400 mt-1">Tanggal ini akan digunakan sebagai hitung mundur (countdown) awal.</p>
+                  <p className="text-[11px] text-stone-400 mt-1">
+                    {eventType === "WEDDING"
+                      ? "Isi tanggal tamu datang (resepsi). Tanggal ini menjadi Jadwal Terima Tamu: patokan hitung mundur dan masa aktif undangan. Sesi adat lain bisa ditambah di editor."
+                      : "Isi tanggal tamu datang. Tanggal ini menjadi patokan hitung mundur dan masa aktif undangan."}
+                  </p>
                 </div>
 
                 <div className="relative">
                   <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                    Kota / Wilayah Utama Acara <span className="text-rose-500">*</span>
+                    Kota / Wilayah Utama Acara
                   </label>
                   <input
                     type="text"
@@ -1229,11 +1238,11 @@ function SetupWizardContent() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-2">
+              <div className={`${WIZARD_ACTION_BAR} justify-between`}>
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="px-6 py-3.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-xl transition cursor-pointer"
+                  className="shrink-0 whitespace-nowrap px-4 sm:px-6 py-3.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-xl transition cursor-pointer"
                 >
                   &larr; Kembali
                 </button>
@@ -1423,12 +1432,12 @@ function SetupWizardContent() {
                 </p>
               </div>
 
-              <div className="flex items-center justify-between pt-2">
+              <div className={`${WIZARD_ACTION_BAR} justify-between`}>
                 <button
                   type="button"
                   onClick={() => setStep(2)}
                   disabled={loading}
-                  className="px-6 py-3.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-xl transition cursor-pointer disabled:opacity-50"
+                  className="shrink-0 whitespace-nowrap px-4 sm:px-6 py-3.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-xl transition cursor-pointer disabled:opacity-50"
                 >
                   &larr; Kembali
                 </button>

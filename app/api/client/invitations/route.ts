@@ -27,6 +27,8 @@ export async function GET() {
       brideName: true,
       groomNickname: true,
       brideNickname: true,
+      eventType: true,
+      participantsJson: true,
       themeId: true,
       status: true,
       subdomain: true,

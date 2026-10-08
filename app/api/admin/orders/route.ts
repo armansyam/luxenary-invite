@@ -29,8 +29,8 @@ export async function GET(req: NextRequest) {
       whereClause.status = "PENDING";
     } else if (status === "PAID") {
       whereClause.status = "PAID";
-    } else if (status === "FAILED") {
-      whereClause.status = { in: ["FAILED", "EXPIRED"] };
+    } else if (status === "EXPIRED") {
+      whereClause.status = "EXPIRED";
     }
 
     // 2. Filter Search (Invoice Number, Nama Klien, Email, Telepon)

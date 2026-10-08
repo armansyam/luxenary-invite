@@ -317,7 +317,7 @@ async function purgeExpiredRateLimitRows(dryRun: boolean): Promise<number> {
   return deleted.rowCount ?? 0;
 }
 
-/** Draft HTML tanpa undangan dan order EXPIRED/FAILED/PENDING yang melewati `retention_order_days`. */
+/** Draft HTML tanpa undangan dan order EXPIRED/PENDING yang melewati `retention_order_days`. */
 export async function runStaleDataCleanup(options: LifecycleCleanupOptions = {}): Promise<StaleDataCleanupResult> {
   const now = options.now ?? new Date();
   const dryRun = options.dryRun ?? false;
@@ -337,7 +337,7 @@ export async function runStaleDataCleanup(options: LifecycleCleanupOptions = {})
   const parsedDays = Number.parseInt(await getAdminSetting("retention_order_days", ""), 10);
   const retentionOrderDays = Number.isFinite(parsedDays) && parsedDays >= 1 ? parsedDays : 90;
   const staleWhere = {
-    status: { in: ["EXPIRED", "FAILED", "PENDING"] as Array<"EXPIRED" | "FAILED" | "PENDING"> },
+    status: { in: ["EXPIRED", "PENDING"] as Array<"EXPIRED" | "PENDING"> },
     createdAt: { lt: new Date(now.getTime() - retentionOrderDays * DAY_MS) },
   };
 

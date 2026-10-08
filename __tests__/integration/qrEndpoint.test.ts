@@ -35,7 +35,7 @@ describe.skipIf(!IS_TEST_DB)("endpoint QR publik", () => {
   it("mengembalikan SVG untuk data yang valid", async () => {
     const res = await get("data=Budi%20Santoso&size=160");
     expect(res.status).toBe(200);
-    expect(res.headers.get("content-type")).toBe("image/svg+xml");
+    expect(res.headers.get("content-type")).toBe("image/svg+xml; charset=utf-8");
     const body = await res.text();
     expect(body.startsWith("<svg")).toBe(true);
     expect(body).toContain('width="160"');

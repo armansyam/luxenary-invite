@@ -7,7 +7,19 @@ import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { getAdminSetting } from "@/lib/settings";
 import { safeParseParticipants } from "@/lib/participantUtils";
 import { buildCalendarTitle } from "@/lib/invitationUtils";
+import { buildCheckinQrBaseUrl, buildCheckinQrUrl, qrInitials } from "@/lib/checkinQr";
+import { getPrimaryEvent } from "@/lib/lifecycleDates";
 
+/** Sesi jadwal terima tamu (patokan yang sama dengan masa aktif), atau objek kosong bila belum bertanggal. */
+function primaryEventOf(events: unknown): any {
+  return getPrimaryEvent(events) ?? {};
+}
+
+/** Tanggal jadwal terima tamu untuk tampilan; draf tanpa tanggal tidak diberi tanggal contoh. */
+function primaryEventDateLabel(events: unknown): string {
+  const date = primaryEventOf(events).date;
+  return date ? formatDateId(date) : "Tanggal belum ditentukan";
+}
 
 function nl2br(str: string): string {
   if (!str) return "";
@@ -288,7 +300,7 @@ export async function composeWeddingData(inv: any) {
 
   // Date Resolution: Prioritaskan Sesi Acara Utama (isPrimary: true) sebagai patokan tunggal
   const rawEventsList = Array.isArray(events) ? events : [];
-  const primaryEvent = rawEventsList.find((e: any) => e.isPrimary) || rawEventsList[0] || null;
+  const primaryEvent = primaryEventOf(rawEventsList);
   const primaryEventDate = primaryEvent?.date || "2026-10-05";
   const primaryStartTime = primaryEvent?.startTime || (primaryEvent?.time ? primaryEvent.time.split(/[-–]/)[0].trim() : "08:00");
   const formattedTime = primaryStartTime.length === 5 ? `${primaryStartTime}:00` : "08:00:00";
@@ -297,7 +309,7 @@ export async function composeWeddingData(inv: any) {
   let weddingDateDay = "05";
   let weddingDateMonth = "10";
   let weddingDateYear = "2026";
-  let weddingDate = "Senin, 05 Oktober 2026";
+  let weddingDate = "Tanggal belum ditentukan";
 
   try {
     const d = new Date(primaryEventDate);
@@ -901,6 +913,9 @@ export async function composeWeddingData(inv: any) {
   }
 
   // 6. Section: QR Check-In / Kartu Akses Masuk
+  // Isi QR: LUX|<id undangan>|<nama tamu>. Tanpa ?to= (tautan umum) namanya "Tamu Undangan"; skrip runtime menggantinya.
+  const qrMark = qrInitials(inv);
+  const qrDefaultSrc = escapeHtml(buildCheckinQrUrl(inv.id, "Tamu Undangan", qrMark));
   const qrAccessSectionHtml = showQrCheckin ? `
     <section class="sec-flow" id="checkin">
       <span class="sec-eyebrow">QR CODE CHECK-IN</span>
@@ -913,7 +928,7 @@ export async function composeWeddingData(inv: any) {
         <p class="pass-date">${weddingDate}</p>
         
         <div class="pass-qr-wrapper">
-          <img class="pass-qr-img" id="passQrImg" src="/api/public/qr?size=160&data=Tamu%20Undangan" alt="QR Check-In" style="width:160px; height:160px; display:block; margin:0 auto;">
+          <img class="pass-qr-img" id="passQrImg" src="${qrDefaultSrc}" alt="QR Check-In" style="width:160px; height:160px; display:block; margin:0 auto;">
         </div>
 
         <div class="pass-guest-box">
@@ -1309,7 +1324,7 @@ export async function composeWeddingData(inv: any) {
       <h3 style="font-size:1.4rem; color:#fff; font-family:'Cormorant Garamond',serif; margin-bottom:0.2rem;" id="modalGuestName">Tamu Undangan</h3>
       <p style="font-size:0.75rem; color:rgba(255,255,255,0.65); margin-bottom:1.2rem;">Tunjukkan kode QR ini kepada penerima tamu di lokasi acara.</p>
       <div style="background:#ffffff; padding:14px; display:inline-block; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
-        <img class="pass-qr-img" id="modalQrImg" src="/api/public/qr?size=160&data=Tamu%20Undangan" alt="QR Check-In" style="width:160px; height:160px; display:block; margin:0 auto;">
+        <img class="pass-qr-img" id="modalQrImg" src="${qrDefaultSrc}" alt="QR Check-In" style="width:160px; height:160px; display:block; margin:0 auto;">
       </div>
     </div>
   `;
@@ -1825,6 +1840,7 @@ export async function composeWeddingData(inv: any) {
 
   return {
     invitationId: inv.id,
+    qrCheckinBaseUrl: buildCheckinQrBaseUrl(inv.id, qrMark),
     themeId: inv.themeId || "kalandra",
     weddingTagline: featureSettings.weddingTagline || "THE WEDDING OF",
     
@@ -2112,8 +2128,8 @@ export async function composeBirthdayData(inv: any) {
   const footerPhotoUrl = mediaMap.get("CLOSING_PHOTO") || "";
 
   // Date & Countdown
-  const primaryEvent = events[0] || {};
-  const rawTargetDate = primaryEvent.date || inv.weddingDate || "2026-12-31";
+  const primaryEvent = primaryEventOf(events);
+  const rawTargetDate = primaryEvent.date || "2026-12-31";
   let targetDate = "2026-12-31T19:00:00";
   if (rawTargetDate) {
     const rawTime = (primaryEvent.startTime || primaryEvent.time || "19:00").replace(".", ":");
@@ -2129,7 +2145,7 @@ export async function composeBirthdayData(inv: any) {
   const weddingDateYear = isValidDate ? String(dObj.getFullYear()) : "2026";
   const monthsIndo = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
   const daysIndo = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-  const eventDateFormatted = isValidDate ? `${daysIndo[dObj.getDay()]}, ${dObj.getDate()} ${monthsIndo[dObj.getMonth()]} ${dObj.getFullYear()}` : "Waktu Acara";
+  const eventDateFormatted = isValidDate && primaryEvent.date ? `${daysIndo[dObj.getDay()]}, ${dObj.getDate()} ${monthsIndo[dObj.getMonth()]} ${dObj.getFullYear()}` : "Tanggal belum ditentukan";
   const eventTime = primaryEvent.time || (primaryEvent.startTime ? `${primaryEvent.startTime} - ${primaryEvent.endTime || "Selesai"}` : "19.00 WIB");
   const venueName = primaryEvent.location || primaryEvent.venueName || "Lokasi Acara";
   const venueAddress = primaryEvent.address || "";
@@ -2655,7 +2671,7 @@ export async function composeKhitanData(inv: any) {
   const finalAudioUrl = inv.audioUrl || dbThemeDefaultMusic || "/audio/sample.mp3";
   const platformName = await getAdminSetting("platform_name", "Platform Undangan");
 
-  const eventDateFormatted = events[0]?.date ? formatDateId(events[0].date) : "Sabtu, 12 Desember 2026";
+  const eventDateFormatted = primaryEventDateLabel(events);
   const guestName = inv.recipientName || "Tamu Undangan";
 
   const parentsHtml = `<p>Putra tercinta dari Pasangan:</p><h4 class="serif" style="color: var(--text-main); font-size: 16px; margin: 4px 0;">${escapeHtml(fatherName)} &amp; ${escapeHtml(motherName)}</h4>`;
@@ -2770,7 +2786,7 @@ export async function composeAqiqahData(inv: any) {
   const finalAudioUrl = inv.audioUrl || dbThemeDefaultMusic || "/audio/sample.mp3";
   const platformName = await getAdminSetting("platform_name", "Platform Undangan");
 
-  const eventDateFormatted = events[0]?.date ? formatDateId(events[0].date) : "Ahad, 22 September 2026";
+  const eventDateFormatted = primaryEventDateLabel(events);
   const guestName = inv.recipientName || "Tamu Undangan";
 
   const parentsHtml = `<p>Putra/Putri tercinta dari Pasangan:</p><h4 class="serif" style="color: var(--text-main); font-size: 16px; margin: 4px 0;">${escapeHtml(fatherName)} &amp; ${escapeHtml(motherName)}</h4>`;
@@ -2888,7 +2904,7 @@ export async function composeWisudaData(inv: any) {
   const finalAudioUrl = inv.audioUrl || dbThemeDefaultMusic || "/audio/sample.mp3";
   const platformName = await getAdminSetting("platform_name", "Platform Undangan");
 
-  const eventDateFormatted = events[0]?.date ? formatDateId(events[0].date) : "Sabtu, 24 Oktober 2026";
+  const eventDateFormatted = primaryEventDateLabel(events);
   const guestName = inv.recipientName || "Rekan & Sahabat";
 
   const parentsHtml = fatherName && motherName ? `<p>Putra/Putri tercinta dari:</p><h4 class="serif" style="color: var(--text-main); font-size: 15px; margin: 4px 0;">${escapeHtml(fatherName)} &amp; ${escapeHtml(motherName)}</h4>` : "";
@@ -3004,7 +3020,7 @@ export async function composeGatheringData(inv: any) {
   const finalAudioUrl = inv.audioUrl || dbThemeDefaultMusic || "/audio/sample.mp3";
   const platformName = await getAdminSetting("platform_name", "Platform Undangan");
 
-  const eventDateFormatted = events[0]?.date ? formatDateId(events[0].date) : "Senin, 10 November 2026";
+  const eventDateFormatted = primaryEventDateLabel(events);
   const guestName = inv.recipientName || "Rekan / Tamu Undangan";
   const dresscodeHtml = dresscode ? `<p style="font-size: 12px; color: var(--primary); margin-top: 6px;">Dress Code: <b>${escapeHtml(dresscode)}</b></p>` : "";
 

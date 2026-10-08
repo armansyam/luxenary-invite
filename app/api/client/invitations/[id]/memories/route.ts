@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { buildAndSavePublishedHtml } from "@/lib/staticPublisher";
-import { parseFeatureSettings } from "@/lib/featureSettings";
+import { parseFeatureSettings, isValidMemoriesFilter, isValidShotsQuota } from "@/lib/featureSettings";
 import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
@@ -153,8 +153,11 @@ export async function DELETE(
     }
     const { invitation } = access;
 
+    // Dashboard Momen mengirim { memoryId } di body JSON; query string tetap diterima untuk pemanggil lain.
     const { searchParams } = new URL(req.url);
-    const memoryId = searchParams.get("memoryId");
+    const body = await req.json().catch(() => null);
+    const bodyMemoryId = body && typeof body.memoryId === "string" ? body.memoryId : null;
+    const memoryId = searchParams.get("memoryId") || bodyMemoryId;
 
     if (!memoryId) {
       return NextResponse.json({ error: "Memory ID wajib disertakan." }, { status: 400 });
@@ -221,33 +224,32 @@ export async function PATCH(
     const rawQuota = body.shotsQuota ?? body.memoriesShotsQuota;
     const filterId = body.filterId ?? body.memoriesFilter;
 
-    const VALID_FILTERS = ["aura_90s", "heritage_romance", "botanical_mist", "cinema_noir", "pure_daylight"];
     let validatedFilter: string | undefined = undefined;
     if (filterId !== undefined) {
-      if (typeof filterId === "string" && VALID_FILTERS.includes(filterId)) {
-        validatedFilter = filterId;
+      if (!isValidMemoriesFilter(filterId)) {
+        return NextResponse.json({ error: "Filter kamera tidak dikenal." }, { status: 400 });
       }
+      validatedFilter = filterId;
     }
 
     let shotsQuota: number | undefined = undefined;
     if (rawQuota !== undefined) {
-      const parsed = Number(rawQuota);
-      if (!isNaN(parsed) && parsed >= 1 && parsed <= 30) {
-        shotsQuota = parsed;
+      if (!isValidShotsQuota(rawQuota)) {
+        return NextResponse.json({ error: "Jatah foto per tamu harus 1 sampai 30." }, { status: 400 });
       }
+      shotsQuota = Number(rawQuota);
     }
 
     const currentFs = parseFeatureSettings(invitation.featureSettings);
 
     // Ambil semua field konfigurasi moments yang diizinkan
     const incomingSettings = body.settings && typeof body.settings === "object" ? body.settings : body;
+    // memoriesFilter dan memoriesShotsQuota tidak disalin mentah: keduanya hanya masuk lewat nilai tervalidasi di atas.
     const allowedFields = [
       "showGuestMemories",
-      "memoriesFilter",
       "memoriesDateStamp",
       "memoriesDateFormat",
       "memoriesCoverPhoto",
-      "memoriesShotsQuota",
       "memoriesMaxContributors",
       "memoriesDelayedReveal",
       "memoriesCustomSchedule",

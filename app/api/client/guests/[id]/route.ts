@@ -18,7 +18,7 @@ export async function GET(
     const id = resolvedParams?.id;
 
     if (!id) {
-      return NextResponse.json([]);
+      return NextResponse.json({ error: "ID undangan wajib disertakan." }, { status: 400 });
     }
 
     // Verify invitation ownership
@@ -28,7 +28,7 @@ export async function GET(
     });
 
     if (!invitation) {
-      return NextResponse.json([]);
+      return NextResponse.json({ error: "Undangan tidak ditemukan." }, { status: 404 });
     }
 
     const isOwner = invitation.userId === session.user.id;
@@ -44,9 +44,10 @@ export async function GET(
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json(guests || []);
-  } catch (err: any) {
-    return NextResponse.json([], { status: 200 });
+    return NextResponse.json(guests);
+  } catch (err) {
+    logger.error("ClientGuest", "Gagal memuat daftar tamu", err);
+    return NextResponse.json({ error: "Gagal memuat daftar tamu." }, { status: 500 });
   }
 }
 
@@ -82,7 +83,18 @@ export async function PUT(
 
     const allowedData: Record<string, any> = {};
     if (typeof body.name === "string" && body.name.trim()) {
-      allowedData.name = body.name.trim();
+      const newName = body.name.trim();
+      const clash = await prisma.guest.findFirst({
+        where: { invitationId: existingGuest.invitationId, id: { not: id }, name: { equals: newName, mode: "insensitive" } },
+        select: { id: true },
+      });
+      if (clash) {
+        return NextResponse.json(
+          { error: `Nama "${newName}" sudah dipakai tamu lain. Tambahkan penanda agar tidak tertukar saat check-in.` },
+          { status: 400 }
+        );
+      }
+      allowedData.name = newName;
     }
     if (body.phone !== undefined) allowedData.phone = body.phone || null;
     if (body.category !== undefined) allowedData.category = body.category || null;
@@ -130,6 +142,13 @@ export async function DELETE(
 
     if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    if (existingGuest.isTokenRedeemed && !isAdmin) {
+      return NextResponse.json(
+        { error: "Tamu ini sudah check-in. Data kehadirannya tidak dapat dihapus." },
+        { status: 409 }
+      );
     }
 
     await prisma.guest.delete({ where: { id } });

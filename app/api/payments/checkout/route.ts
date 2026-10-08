@@ -82,7 +82,7 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-    if (order.status !== "PENDING" && order.status !== "FAILED") {
+    if (order.status !== "PENDING") {
       return NextResponse.json({
         error: `Order tidak bisa diproses, status saat ini: ${order.status}`,
       }, { status: 400 });

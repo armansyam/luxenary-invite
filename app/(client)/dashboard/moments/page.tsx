@@ -188,6 +188,7 @@ export default function MomentsSetupPage() {
   const updateSettingFast = async (key: string, value: any) => {
     if (!invitation?.id) return;
     setUpdatingSetting(true);
+    const previousFeatureSettings = invitation.featureSettings;
     // Optimistic update: sinkronkan state lokal seketika (0 ms) sebelum respons server tiba
     setInvitation((prev: any) => {
       if (!prev) return prev;
@@ -219,6 +220,8 @@ export default function MomentsSetupPage() {
       setStatusToast("Pengaturan berhasil disimpan.");
       setTimeout(() => setStatusToast(null), 2500);
     } catch (err: any) {
+      // Server menolak: tampilan kembali ke nilai yang benar-benar tersimpan.
+      setInvitation((prev: any) => (prev ? { ...prev, featureSettings: previousFeatureSettings } : prev));
       setStatusToast(`Gagal: ${err.message}`);
       setTimeout(() => setStatusToast(null), 3000);
     } finally {
@@ -841,7 +844,7 @@ export default function MomentsSetupPage() {
         <div>
           <span className="text-xs font-bold text-stone-900 block">Status Fitur Kamera Tamu di Undangan:</span>
           <span className="text-[11px] text-stone-500">
-            {isEnabled ? "Aktif — Tombol 'Bagikan Momen' tampil di undangan pernikahan dan kamera dapat digunakan." : "Nonaktif — Tamu tidak dapat mengakses kamera virtual."}
+            {isEnabled ? "Aktif — Tombol 'Bagikan Momen' tampil di undangan dan kamera dapat digunakan." : "Nonaktif — Tamu tidak dapat mengakses kamera virtual."}
           </span>
         </div>
         <button
@@ -869,7 +872,7 @@ export default function MomentsSetupPage() {
             </div>
             <div className="min-w-0">
               <span className="block text-[11px] font-medium text-stone-500">Berakhir (Masa Simpan Galeri)</span>
-              <span className="block text-sm font-semibold text-stone-800 truncate">
+              <span className="block text-sm font-semibold text-stone-800">
                 {effectiveExpiry
                   ? effectiveExpiry.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
                   : `${baseRetentionDays} Hari Pasca Acara`}
@@ -882,7 +885,7 @@ export default function MomentsSetupPage() {
             </span>
           ) : daysRemaining !== null && daysRemaining > 7 ? (
             <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full shrink-0">
-              Aman ({daysRemaining} Hari Lagi · H-7)
+              {daysRemaining} hari lagi
             </span>
           ) : (
             <button
@@ -905,7 +908,7 @@ export default function MomentsSetupPage() {
             </div>
             <div className="min-w-0">
               <span className="block text-[11px] font-medium text-stone-500">Filter Kamera Analog</span>
-              <span className="block text-sm font-semibold text-stone-800 truncate">
+              <span className="block text-sm font-semibold text-stone-800">
                 {activePreset.name} ({activePreset.subName})
               </span>
             </div>
@@ -925,7 +928,7 @@ export default function MomentsSetupPage() {
             </div>
             <div className="min-w-0">
               <span className="block text-[11px] font-medium text-stone-500">Layar Pembuka Tamu (/sharemoment)</span>
-              <span className="block text-sm font-semibold text-stone-800 truncate">
+              <span className="block text-sm font-semibold text-stone-800">
                 {activeOpeningName}
               </span>
             </div>
@@ -953,7 +956,7 @@ export default function MomentsSetupPage() {
             </div>
             <div className="min-w-0">
               <span className="block text-[11px] font-medium text-stone-500">Roll Limit per Tamu</span>
-              <span className="block text-sm font-semibold text-stone-800 truncate">
+              <span className="block text-sm font-semibold text-stone-800">
                 {memoriesQuota?.shotsQuota || 5} Foto / Tamu
               </span>
             </div>
@@ -985,7 +988,7 @@ export default function MomentsSetupPage() {
             </div>
             <div className="min-w-0">
               <span className="block text-[11px] font-medium text-stone-500">Kapasitas Quota Total Foto</span>
-              <span className="block text-sm font-semibold text-stone-800 truncate">
+              <span className="block text-sm font-semibold text-stone-800">
                 {memoriesQuota ? `${memoriesQuota.usedPhotos} / ${memoriesQuota.maxTotalPhotos} Foto` : `${guestMemoriesList.length} Foto`}
                 <span className="ml-2 text-xs font-normal text-stone-500">
                   (Tersisa {memoriesQuota?.remainingPhotos ?? 250} foto)

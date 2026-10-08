@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { masterTemplateCache } from "@/lib/cache";
+import { SANITIZE_GUEST_LABEL_JS } from "@/lib/checkinQr";
 
 /** Helper pembacaan master template dengan memory cache untuk meminimalkan I/O disk */
 async function readMasterTemplate(filePath: string): Promise<string> {
@@ -841,12 +842,24 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
 
 (function() {
   // 1. Dynamic Guest Name Resolver via ?to= / ?u= / ?v=
+  // QR check-in berisi LUX|<id undangan>|<nama tamu>; awalan (id undangan dan inisial) dibuat server di qrCheckinBaseUrl.
+  var CHECKIN_QR_BASE = '{{qrCheckinBaseUrl}}';
+  var sanitizeGuestLabel = ${SANITIZE_GUEST_LABEL_JS};
+  function updateCheckinQr(guestName) {
+    if (!CHECKIN_QR_BASE) return;
+    var label = sanitizeGuestLabel(guestName) || 'Tamu Undangan';
+    document.querySelectorAll('#passQrImg, #modalQrImg, .pass-qr-img').forEach(function(img) {
+      img.src = CHECKIN_QR_BASE + encodeURIComponent(label);
+    });
+  }
+
   function resolveGuestName() {
     try {
       const p = new URLSearchParams(window.location.search);
       const gn = p.get('to') || p.get('v') || p.get('u') || '';
+      updateCheckinQr(gn);
       if (!gn) return;
-      
+
       const selectors = [
         '#coverGuestName', '#guestName', '#guestNameDisplay', '.cover-guest-val',
         '#modalGuestName', '#passGuestName', '.guest-recipient-name', '#recipientName'
@@ -861,11 +874,6 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
       if (rsvpInput && !rsvpInput.value) {
         rsvpInput.value = gn;
       }
-
-      // Update QR Code image to guest name
-      document.querySelectorAll('#passQrImg, #modalQrImg, .pass-qr-img').forEach(function(img) {
-        img.src = '/api/public/qr?size=160&data=' + encodeURIComponent(gn);
-      });
     } catch(e){}
   }
 
