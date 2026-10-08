@@ -933,47 +933,6 @@
       line-height: 1.65;
     }
 
-    /* Section Gallery (#gallery) */
-    .gallery-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      max-width: 380px;
-      margin: 0 auto;
-    }
-
-    .gallery-item {
-      position: relative;
-      aspect-ratio: 1/1;
-      border-radius: var(--radius-sm);
-      overflow: hidden;
-      cursor: pointer;
-      box-shadow: var(--shadow-soft);
-      border: 1px solid var(--glass-border);
-    }
-
-    .gallery-item:first-child {
-      grid-column: span 2;
-      aspect-ratio: 16/10;
-      border-radius: 90px 0 0 0;
-    }
-
-    .gallery-item:last-child {
-      border-radius: 0 0 90px 0;
-    }
-
-    .gallery-item img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-      transition: transform 0.5s ease;
-    }
-
-    .gallery-item:hover img {
-      transform: scale(1.05);
-    }
-
     /* Section Gift (#gift) */
     .gift-stack {
       display: flex;
@@ -1604,16 +1563,7 @@
         <!-- ============================================================= -->
         <!-- SEKSI 6: GALERI KENANGAN (#gallery)                           -->
         <!-- ============================================================= -->
-        {{#if showGallery}}
-        <section class="sec-flow sec-gallery" id="gallery">
-          <span class="sec-eyebrow" data-lux-field="customLabels.gallerySectionEyebrow">{{gallerySectionEyebrow}}</span>
-          <h2 class="sec-main-title" data-lux-field="customLabels.gallerySectionTitle">{{gallerySectionTitle}}</h2>
-
-          <div class="gallery-grid">
-            {{galleryPhotosHtml}}
-          </div>
-        </section>
-        {{/if}}
+        {{gallerySectionHtml}}
 
         <!-- ============================================================= -->
         <!-- SEKSI 7: WEDDING GIFT / TANDA KASIH (#gift)                   -->
@@ -1769,7 +1719,7 @@
     </a>
     {{/if}}
     {{#if showGallery}}
-    <a href="#gallery" class="dock-link">
+    <a href="#moments" class="dock-link">
       <svg viewBox="0 0 24 24">
         <path d="M22 16V4c0-1.1-.9-2-2-2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2zm-11-4l2.03 2.71L16 11l4 5H8l3-4zM2 6v14c0 1.1.9 2 2 2h14v-2H4V6H2z"/>
       </svg>

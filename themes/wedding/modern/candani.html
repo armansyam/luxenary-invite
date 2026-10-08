@@ -1133,8 +1133,8 @@
     }
 
     function startCountdown() {
-      const targetStr = "{{targetDate}}" || "2026-10-25T08:30:00";
-      const targetTime = new Date(targetStr).getTime() || new Date(Date.now() + 8640000000).getTime();
+      const targetTime = new Date("{{targetDate}}").getTime();
+      if (isNaN(targetTime)) return;
 
       setInterval(() => {
         const now = new Date().getTime();

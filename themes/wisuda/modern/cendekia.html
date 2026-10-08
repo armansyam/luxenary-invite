@@ -197,7 +197,7 @@
       <div class="cover-content">
         <span class="badge-pill">Graduation Celebration</span>
         <h1 class="cover-title serif">{{graduateName}}</h1>
-        <p class="cover-sub">{{graduateDegree}} • {{universityName}}</p>
+        <p class="cover-sub">{{graduateCoverLine}}</p>
         <div class="guest-box">
           <p class="guest-lbl">Kepada Yth. Bapak/Ibu/Rekan/Sahabat</p>
           <h3 class="guest-name">{{guestName}}</h3>
@@ -214,12 +214,12 @@
         <h2 class="sec-h2 serif">Graduation Day</h2>
 
         <div class="grad-card">
-          <img src="{{graduatePhotoUrl}}" alt="{{graduateName}}" class="grad-avatar" onerror="this.src='/demo/cendekia/hero.webp'" />
+          <img src="{{graduatePhotoUrl}}" alt="{{graduateName}}" class="grad-avatar" onerror="this.onerror=null;this.style.visibility='hidden'" />
           <h3 class="grad-fullname serif">{{graduateName}}</h3>
-          <p class="grad-degree">{{graduateDegree}}</p>
+          {{#if graduateDegree}}<p class="grad-degree">{{graduateDegree}}</p>{{/if}}
           <div class="grad-meta">
-            <p>{{graduateMajor}} — {{graduateFaculty}}</p>
-            <p style="font-weight: 700; color: #ffffff;">{{universityName}}</p>
+            {{#if graduateStudyLine}}<p>{{graduateStudyLine}}</p>{{/if}}
+            {{#if universityName}}<p style="font-weight: 700; color: #ffffff;">{{universityName}}</p>{{/if}}
             {{graduateHonorsBadgeHtml}}
           </div>
           <div class="parents-info">

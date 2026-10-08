@@ -723,30 +723,6 @@
       color: var(--text-muted);
     }
 
-    /* GALLERY MASONRY */
-    .gallery-masonry-grid {
-      columns: 2;
-      column-gap: 8px;
-      margin-top: 1.5rem;
-    }
-    .gallery-masonry-item {
-      break-inside: avoid;
-      margin-bottom: 8px;
-      border-radius: 12px;
-      overflow: hidden;
-      border: 1px solid var(--border-gold);
-      position: relative;
-    }
-    .gallery-masonry-item img {
-      width: 100%;
-      height: auto;
-      display: block;
-      transition: transform 0.4s ease;
-    }
-    .gallery-masonry-item:hover img {
-      transform: scale(1.04);
-    }
-
     /* WEDDING GIFT SECTION */
     .gift-card {
       background: var(--theme-card);
@@ -1217,10 +1193,10 @@
             {{firstParentPrefix}}<br>
             <strong>{{firstFather}}</strong> &amp; <strong>{{firstMother}}</strong>
           </div>
-          {{#if groomIg}}
-          <a href="https://instagram.com/{{groomIg}}" target="_blank" class="couple-ig">
+          {{#if groomInstagram}}
+          <a href="https://instagram.com/{{groomInstagram}}" target="_blank" class="couple-ig">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
-            @{{groomIg}}
+            @{{groomInstagram}}
           </a>
           {{/if}}
         </div>
@@ -1237,10 +1213,10 @@
             {{secondParentPrefix}}<br>
             <strong>{{secondFather}}</strong> &amp; <strong>{{secondMother}}</strong>
           </div>
-          {{#if brideIg}}
-          <a href="https://instagram.com/{{brideIg}}" target="_blank" class="couple-ig">
+          {{#if brideInstagram}}
+          <a href="https://instagram.com/{{brideInstagram}}" target="_blank" class="couple-ig">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
-            @{{brideIg}}
+            @{{brideInstagram}}
           </a>
           {{/if}}
         </div>
@@ -1270,16 +1246,7 @@
       {{/if}}
 
       <!-- SECTION 6: GALLERY / OUR MOMENTS -->
-      {{#if showGallery}}
-      <section id="gallery" class="sec-flow sec-gallery">
-        <span class="sec-eyebrow reveal-on-scroll" data-lux-field="customLabels.galleryEyebrow">{{gallerySectionEyebrow}}</span>
-        <h2 class="sec-main-title reveal-on-scroll" data-lux-field="customLabels.galleryTitle">{{gallerySectionTitle}}</h2>
-        
-        <div class="gallery-masonry-grid reveal-on-scroll">
-          {{galleryItemsHtml}}
-        </div>
-      </section>
-      {{/if}}
+      {{gallerySectionHtml}}
 
       <!-- SECTION 7: WEDDING GIFT -->
       {{#if showGift}}
@@ -1295,7 +1262,7 @@
           <form id="rsvpForm" onsubmit="luxSubmitRsvp(event)">
             <div class="form-group">
               <label for="rsvpName" data-lux-field="customLabels.rsvpNameLabel">Nama Lengkap</label>
-              <input type="text" id="rsvpName" name="name" class="form-in" value="{{guestName}}" required placeholder="Tulis nama Anda">
+              <input type="text" id="rsvpName" name="name" class="form-in" required placeholder="Tulis nama Anda">
             </div>
             <div class="form-group">
               <label for="rsvpStatus" data-lux-field="customLabels.rsvpStatusLabel">Konfirmasi Kehadiran</label>
@@ -1324,7 +1291,7 @@
 
         <!-- WISHES FEED -->
         <div class="wishes-stream-wrap reveal-on-scroll" id="wishesStream">
-          {{wishesItemsHtml}}
+          {{wishesHtml}}
         </div>
       </section>
 

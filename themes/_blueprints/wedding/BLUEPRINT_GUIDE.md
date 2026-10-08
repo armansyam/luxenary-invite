@@ -464,7 +464,8 @@ Ikuti 5 langkah mudah berikut setiap kali ingin merilis tema baru ke ekosistem L
 
 3. **Verifikasi Token Wajib:**
    Pastikan berkas HTML memuat:
-   - `{{gallerySectionHtml}}` (atau `{{galleryPhotosHtml}}`)
+   - `{{gallerySectionHtml}}` (galeri universal: Drive, daftar URL, zoom; mesin tidak menyediakan daftar item foto terpisah)
+   - Hanya pakai kunci yang dihasilkan mesin: token yang tidak dikenal dirender kosong tanpa peringatan dan tertangkap `__tests__/integration/themePlaceholders.test.ts`. Renderer hanya mengenal `{{#if}}`, `{{#unless}}`, dan `{{kunci}}` (tanpa `{{else}}` maupun `{{#each}}`).
    - `{{storySectionHtml}}` (atau `{{storyItemsHtml}}`)
    - `{{giftSectionHtml}}` (atau `{{giftCardsHtml}}`)
    - `{{eventDataHtml}}`

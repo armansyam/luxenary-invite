@@ -240,11 +240,11 @@
         </div>
 
         <div class="baby-card">
-          <img src="{{babyPhotoUrl}}" alt="{{babyName}}" class="baby-avatar" onerror="this.src='/demo/al-khalid/hero.webp'" />
+          <img src="{{babyPhotoUrl}}" alt="{{babyName}}" class="baby-avatar" onerror="this.onerror=null;this.style.visibility='hidden'" />
           <h3 class="baby-fullname serif">{{babyName}}</h3>
           <div class="baby-metrics">
-            <span class="metric-badge">Lahir: {{birthDateFormatted}}</span>
-            <span class="metric-badge">{{birthWeight}} • {{birthLength}}</span>
+            {{#if birthDateFormatted}}<span class="metric-badge">Lahir: {{birthDateFormatted}}</span>{{/if}}
+            {{#if birthMetrics}}<span class="metric-badge">{{birthMetrics}}</span>{{/if}}
           </div>
           <div class="parents-info">
             {{parentsHtml}}

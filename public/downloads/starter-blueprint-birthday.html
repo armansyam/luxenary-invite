@@ -387,7 +387,7 @@
     <!-- SECTION INTRO / PERSON -->
     <section id="home">
       <div class="person-card">
-        <img src="{{personPhotoUrl}}" alt="{{personName}}" class="person-avatar" onerror="this.src='/images/default-avatar.png'" />
+        <img src="{{personPhotoUrl}}" alt="{{personName}}" class="person-avatar" onerror="this.onerror=null;this.style.visibility='hidden'" />
         <h2 class="person-name">{{personName}}</h2>
         <div class="badge-pill" style="margin-top: 8px; margin-bottom: 8px;">
           <span>Ulang Tahun ke-{{personAge}}</span>

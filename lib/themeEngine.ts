@@ -9,6 +9,7 @@ import { safeParseParticipants } from "@/lib/participantUtils";
 import { buildCalendarTitle } from "@/lib/invitationUtils";
 import { buildCheckinQrBaseUrl, buildCheckinQrUrl, qrInitials } from "@/lib/checkinQr";
 import { getPrimaryEvent } from "@/lib/lifecycleDates";
+import { logger } from "@/lib/logger";
 
 /** Sesi jadwal terima tamu (patokan yang sama dengan masa aktif), atau objek kosong bila belum bertanggal. */
 function primaryEventOf(events: unknown): any {
@@ -34,6 +35,35 @@ function formatDateId(dateStr: string | Date): string {
   } catch {
     return String(dateStr);
   }
+}
+
+/**
+ * Foto galeri klien dari folder Google Drive, daftar URL, lalu slot media GALLERY. Sengaja tanpa cadangan foto demo
+ * tema: undangan klien tidak boleh menampilkan foto model orang lain, dan galeri tanpa foto tidak dirender.
+ */
+async function collectGalleryPhotos(inv: any, featureSettings: Record<string, any>): Promise<string[]> {
+  const photos: string[] = [];
+  const driveFolderUrl = String(featureSettings.galleryDriveFolderUrl || "").trim();
+  if (driveFolderUrl) {
+    try {
+      photos.push(...((await getGoogleDriveFolderPhotos(driveFolderUrl)) || []));
+    } catch (err) {
+      logger.warn("ThemeEngine", "Folder Google Drive galeri gagal dibaca; galeri hanya memakai daftar URL", {
+        invitationId: inv.id,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+  for (const line of String(featureSettings.galleryPhotosList || "").split("\n")) {
+    const url = safeExternalUrl(line);
+    if (url.length > 5 && !photos.includes(url)) photos.push(url);
+  }
+  for (const media of inv.media || []) {
+    if (String(media.mediaSlot).startsWith("GALLERY") && media.localPath && !photos.includes(media.localPath)) {
+      photos.push(media.localPath);
+    }
+  }
+  return photos;
 }
 
 const NUMBER_WORDS = ["One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"];
@@ -301,14 +331,15 @@ export async function composeWeddingData(inv: any) {
   // Date Resolution: Prioritaskan Sesi Acara Utama (isPrimary: true) sebagai patokan tunggal
   const rawEventsList = Array.isArray(events) ? events : [];
   const primaryEvent = primaryEventOf(rawEventsList);
-  const primaryEventDate = primaryEvent?.date || "2026-10-05";
+  // Draf tanpa tanggal tidak diberi tanggal contoh: angka sampul kosong dan hitung mundur tidak berjalan.
+  const primaryEventDate = primaryEvent?.date || "";
   const primaryStartTime = primaryEvent?.startTime || (primaryEvent?.time ? primaryEvent.time.split(/[-–]/)[0].trim() : "08:00");
   const formattedTime = primaryStartTime.length === 5 ? `${primaryStartTime}:00` : "08:00:00";
 
-  let targetDate = `${primaryEventDate}T${formattedTime}`;
-  let weddingDateDay = "05";
-  let weddingDateMonth = "10";
-  let weddingDateYear = "2026";
+  const targetDate = primaryEventDate ? `${primaryEventDate}T${formattedTime}` : "";
+  let weddingDateDay = "";
+  let weddingDateMonth = "";
+  let weddingDateYear = "";
   let weddingDate = "Tanggal belum ditentukan";
 
   try {
@@ -525,45 +556,7 @@ export async function composeWeddingData(inv: any) {
   }
 
   // 3. Gathering All Available Photos for OUR MOMENTS Gallery
-  let allPhotos: string[] = [];
-  const galleryDriveFolderUrl = featureSettings.galleryDriveFolderUrl || "";
-  const customPhotosList = featureSettings.galleryPhotosList || "";
-
-  if (galleryDriveFolderUrl && galleryDriveFolderUrl.trim() !== "") {
-    try {
-      const drivePhotos = await getGoogleDriveFolderPhotos(galleryDriveFolderUrl);
-      if (drivePhotos && drivePhotos.length > 0) allPhotos.push(...drivePhotos);
-    } catch (err) {}
-  }
-
-  if (customPhotosList && customPhotosList.trim() !== "") {
-    const manualUrls = String(customPhotosList)
-      .split("\n")
-      .map((s: string) => safeExternalUrl(s))
-      .filter((s: string) => s.length > 5);
-    manualUrls.forEach((u: string) => {
-      if (!allPhotos.includes(u)) allPhotos.push(u);
-    });
-  }
-
-  const galleryMedia = (inv.media || []).filter((m: any) => String(m.mediaSlot).startsWith("GALLERY"));
-  galleryMedia.forEach((gm: any) => {
-    const u = gm.localPath;
-    if (u && !allPhotos.includes(u)) allPhotos.push(u);
-  });
-
-  if (allPhotos.length === 0) {
-    allPhotos = [
-      `/demo/${themeFolder}/gallery_01.webp`,
-      `/demo/${themeFolder}/gallery_02.webp`,
-      `/demo/${themeFolder}/gallery_03.webp`,
-      `/demo/${themeFolder}/gallery_04.webp`,
-      `/demo/${themeFolder}/gallery_05.webp`,
-      `/demo/${themeFolder}/gallery_06.webp`,
-      `/demo/${themeFolder}/gallery_07.webp`,
-      `/demo/${themeFolder}/gallery_08.webp`,
-    ];
-  }
+  const allPhotos = await collectGalleryPhotos(inv, featureSettings);
 
   // 4. Video Player HTML
   const videoGalleryRawUrl = safeExternalUrl(featureSettings.videoGalleryUrl);
@@ -597,7 +590,7 @@ export async function composeWeddingData(inv: any) {
 
   // 5. OUR MOMENT Section (Max 10 photos on page + button to open full lightbox)
   let gallerySectionHtml = "";
-  if (showGallery) {
+  if (showGallery && (allPhotos.length > 0 || videoPlayerHtml)) {
     const photosFeedHtml = allPhotos.map((imgUrl, i) => `
       <div class="moment-photo-item" data-idx="${i}" onclick="luxOpenZoom(${i})">
         <img src="${escapeHtml(imgUrl)}" alt="Our Moment ${i + 1}" loading="lazy" decoding="async" referrerpolicy="no-referrer">
@@ -620,6 +613,7 @@ export async function composeWeddingData(inv: any) {
 
         ${videoPlayerHtml}
 
+        ${allPhotos.length > 0 ? `
         <div class="moments-grid-10">
           ${photosFeedHtml}
         </div>
@@ -627,7 +621,8 @@ export async function composeWeddingData(inv: any) {
         <button type="button" class="btn-outline-box btn-show-gallery" onclick="luxOpenFullGallery()">
           LIHAT SEMUA FOTO (${allPhotos.length} FOTO)
         </button>
-        
+        ` : ""}
+
         <style>
           /* OUR MOMENT UNIVERSAL 4-COLUMN SMART PUZZLE GRID */
           .moments-grid-10 {
@@ -1330,9 +1325,11 @@ export async function composeWeddingData(inv: any) {
   `;
 
   // Google Calendar URL (Prioritaskan lokasi dari Acara Utama)
-  const calendarLocation = primaryEvent?.location || primaryEvent?.address || events[0]?.location || events[0]?.address || "Makassar";
+  const calendarLocation = primaryEvent?.location || primaryEvent?.address || events[0]?.location || events[0]?.address || "";
   const calTitle = buildCalendarTitle("WEDDING", { groomName: firstName, brideName: secondName });
-  const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calTitle)}&dates=${weddingDateYear}${weddingDateMonth}${weddingDateDay}T010000Z/${weddingDateYear}${weddingDateMonth}${weddingDateDay}T140000Z&location=${encodeURIComponent(calendarLocation)}`;
+  const googleCalendarUrl = weddingDateYear
+    ? `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calTitle)}&dates=${weddingDateYear}${weddingDateMonth}${weddingDateDay}T010000Z/${weddingDateYear}${weddingDateMonth}${weddingDateDay}T140000Z&location=${encodeURIComponent(calendarLocation)}`
+    : "";
 
   // ─── Guest Memories (After-Event Moments Drop & Stream) ───
   const showGuestMemories = featureSettings.showGuestMemories !== false;
@@ -1899,6 +1896,11 @@ export async function composeWeddingData(inv: any) {
     brideMother,
     groomInstagram,
     brideInstagram,
+    // Label per mempelai (tidak ikut displayOrder), dipakai kartu tema yang selalu memuat pria lalu wanita.
+    groomRole: "Mempelai Pria",
+    brideRole: "Mempelai Wanita",
+    // Teks sampul saat tautan dibuka tanpa ?to=; skrip runtime menggantinya dengan nama tamu.
+    guestName: "Tamu Undangan",
     groomPhotoUrl: groomPhoto,
     bridePhotoUrl: bridePhoto,
     hasCustomGroomPhoto: Boolean(customGroom),
@@ -2107,30 +2109,27 @@ export async function composeBirthdayData(inv: any) {
   const personInstagram = (p.person?.instagram || "").replace(/^@+/, "");
   const parentName = p.person?.parentName || inv.groomParents || "";
 
-  // Photos
-  const themeFolder = inv.themeId || "festivo";
+  // Photos: sama dengan pernikahan, tanpa foto demo tema (foto model orang lain) sebagai cadangan.
   const customCover = mediaMap.get("LANDING_COVER");
   const customCoverDesktop = mediaMap.get("LANDING_COVER_DESKTOP");
   const customHome = mediaMap.get("HOME_PHOTO");
   const customFixedBg = mediaMap.get("GLOBAL_FIXED_BG");
-  const customPersonPhoto = mediaMap.get("GROOM_PHOTO") || mediaMap.get("HERO_PHOTO") || customCover;
+  const customPersonPhoto = mediaMap.get("GROOM_PHOTO") || customCover;
 
-  const defaultHeroFallback = `/demo/${themeFolder}/hero.webp`;
-  const defaultCoverFallback = `/demo/${themeFolder}/cover.webp`;
-
-  const coverHeroUrl = customCover || defaultCoverFallback;
+  const coverHeroUrl = customCover || customFixedBg || "";
   const landingCoverUrl = coverHeroUrl;
   const landingCoverDesktopUrl = customCoverDesktop || coverHeroUrl;
-  const homePhotoUrl = customHome || defaultHeroFallback;
-  const personPhotoUrl = customPersonPhoto || defaultHeroFallback;
+  const homePhotoUrl = customHome || "";
+  const personPhotoUrl = customPersonPhoto || generateInitialAvatarSvg(personNickname, "Yang Berulang Tahun");
   const sidebarPhotoUrl = personPhotoUrl;
   const globalBgUrl = customFixedBg || "";
-  const footerPhotoUrl = mediaMap.get("CLOSING_PHOTO") || "";
+  const footerPhotoUrl = mediaMap.get("CLOSING_COVER") || "";
 
   // Date & Countdown
   const primaryEvent = primaryEventOf(events);
-  const rawTargetDate = primaryEvent.date || "2026-12-31";
-  let targetDate = "2026-12-31T19:00:00";
+  // Tanpa tanggal tidak ada target hitung mundur, tanggal kalender, maupun jam/tempat contoh.
+  const rawTargetDate = primaryEvent.date || "";
+  let targetDate = "";
   if (rawTargetDate) {
     const rawTime = (primaryEvent.startTime || primaryEvent.time || "19:00").replace(".", ":");
     const cleanTime = rawTime.includes(":") ? rawTime.split(/[^0-9:]/)[0] : "19:00";
@@ -2140,24 +2139,26 @@ export async function composeBirthdayData(inv: any) {
 
   const dObj = new Date(targetDate);
   const isValidDate = !isNaN(dObj.getTime());
-  const weddingDateDay = isValidDate ? String(dObj.getDate()).padStart(2, "0") : "01";
-  const weddingDateMonth = isValidDate ? String(dObj.getMonth() + 1).padStart(2, "0") : "01";
-  const weddingDateYear = isValidDate ? String(dObj.getFullYear()) : "2026";
+  const weddingDateDay = isValidDate ? String(dObj.getDate()).padStart(2, "0") : "";
+  const weddingDateMonth = isValidDate ? String(dObj.getMonth() + 1).padStart(2, "0") : "";
+  const weddingDateYear = isValidDate ? String(dObj.getFullYear()) : "";
   const monthsIndo = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
   const daysIndo = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
   const eventDateFormatted = isValidDate && primaryEvent.date ? `${daysIndo[dObj.getDay()]}, ${dObj.getDate()} ${monthsIndo[dObj.getMonth()]} ${dObj.getFullYear()}` : "Tanggal belum ditentukan";
-  const eventTime = primaryEvent.time || (primaryEvent.startTime ? `${primaryEvent.startTime} - ${primaryEvent.endTime || "Selesai"}` : "19.00 WIB");
-  const venueName = primaryEvent.location || primaryEvent.venueName || "Lokasi Acara";
+  const eventTime = primaryEvent.time || (primaryEvent.startTime ? `${primaryEvent.startTime} - ${primaryEvent.endTime || "Selesai"}` : "");
+  const venueName = primaryEvent.location || primaryEvent.venueName || "";
   const venueAddress = primaryEvent.address || "";
   const mapsUrl = primaryEvent.mapsUrl || "";
 
   // Calendar
-  const calendarLocation = venueName || venueAddress || "Makassar";
+  const calendarLocation = venueName || venueAddress;
   const calTitle = buildCalendarTitle("BIRTHDAY", { personName, personAge });
-  const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calTitle)}&dates=${weddingDateYear}${weddingDateMonth}${weddingDateDay}T010000Z/${weddingDateYear}${weddingDateMonth}${weddingDateDay}T140000Z&location=${encodeURIComponent(calendarLocation)}`;
+  const googleCalendarUrl = isValidDate
+    ? `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calTitle)}&dates=${weddingDateYear}${weddingDateMonth}${weddingDateDay}T010000Z/${weddingDateYear}${weddingDateMonth}${weddingDateDay}T140000Z&location=${encodeURIComponent(calendarLocation)}`
+    : "";
 
   // Countdown HTML
-  const countdownHtml = `
+  const countdownHtml = !isValidDate ? "" : `
     <div class="countdown-timer" data-target="${targetDate}">
       <div class="cd-item"><span class="cd-val" id="cdDays">00</span><span class="cd-lbl">Hari</span></div>
       <div class="cd-item"><span class="cd-val" id="cdHours">00</span><span class="cd-lbl">Jam</span></div>
@@ -2167,17 +2168,7 @@ export async function composeBirthdayData(inv: any) {
   `;
 
   // Gallery
-  const rawGalleryUrls: string[] = [];
-  for (let i = 1; i <= 12; i++) {
-    const p = mediaMap.get(`GALLERY_${i}`);
-    if (p) rawGalleryUrls.push(p);
-  }
-  const galleryPhotos = rawGalleryUrls.length > 0 ? rawGalleryUrls : [
-    `/demo/${themeFolder}/gallery_01.webp`,
-    `/demo/${themeFolder}/gallery_02.webp`,
-    `/demo/${themeFolder}/gallery_03.webp`,
-    `/demo/${themeFolder}/gallery_04.webp`,
-  ];
+  const galleryPhotos = await collectGalleryPhotos(inv, featureSettings);
 
   const galleryItemsHtml = galleryPhotos.map((src, idx) => `
     <div class="gallery-cell" data-src="${safeHref(src)}" onclick="openPhotoModal(this.dataset.src)">
@@ -2185,7 +2176,7 @@ export async function composeBirthdayData(inv: any) {
     </div>
   `).join("");
 
-  const gallerySectionHtml = showGallery ? `
+  const gallerySectionHtml = showGallery && galleryPhotos.length > 0 ? `
     <section class="sec-flow" id="gallery">
       <div class="sec-header">
         <span class="sec-eyebrow">GALLERY</span>
@@ -2326,6 +2317,8 @@ export async function composeBirthdayData(inv: any) {
     secondRole: "",
     groomRole: "",
     brideRole: "",
+    // Teks sampul saat tautan dibuka tanpa ?to=; skrip runtime menggantinya dengan nama tamu.
+    guestName: "Tamu Undangan",
     firstParents: parentName,
     secondParents: "",
     groomParents: parentName,
@@ -2453,28 +2446,36 @@ export async function composeBirthdayData(inv: any) {
 // UNIVERSAL SECTION BUILDERS (NON-WEDDING)
 // ==========================================
 
+/** Kartu sesi tema khitan/aqiqah/wisuda/gathering: tanggal, jam, tempat, dan peta hanya tampil bila diisi klien. */
+function buildUniversalEventCards(events: any[], fallbackName: string): string {
+  const cards = events.map((ev: any) => {
+    const dateLabel = ev.date ? formatDateId(ev.date) : "";
+    const mapsHref = safeHref(ev.mapsUrl);
+    return `
+    <div style="background: color-mix(in srgb, var(--card-bg) 60%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); border-radius: var(--radius-md, 14px); padding: 18px; margin-bottom: 12px; text-align: left;">
+      <span style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 1px;">${escapeHtml(ev.title || "Acara")}</span>
+      <h3 class="serif" style="font-size: 18px; color: var(--text-main); margin: 6px 0 4px;">${escapeHtml(ev.name || ev.title || fallbackName)}</h3>
+      ${dateLabel ? `<p style="font-size: 13px; color: var(--text-main);">${escapeHtml(dateLabel)}</p>` : ""}
+      ${ev.time ? `<p style="font-size: 13px; color: var(--text-muted);">${escapeHtml(ev.time)}</p>` : ""}
+      ${ev.location ? `<p style="font-size: 13px; color: var(--text-main); margin-top: 6px;"><b>${escapeHtml(ev.location)}</b></p>` : ""}
+      ${ev.address ? `<p style="font-size: 12px; color: var(--text-muted);">${escapeHtml(ev.address)}</p>` : ""}
+      ${mapsHref ? `<a href="${mapsHref}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 10px; font-size: 12px; color: var(--primary); text-decoration: underline; font-weight: 600;">Petunjuk Lokasi Google Maps</a>` : ""}
+    </div>
+  `;
+  }).join("");
+  return `<div class="events-stack">${cards}</div>`;
+}
+
 function buildUniversalGallerySection(
-  mediaMap: Map<string, string>,
-  themeFolder: string,
+  galleryPhotos: string[],
   galleryTitle: string = "Dokumentasi Momen",
   showGallery: boolean = true
 ): string {
-  if (!showGallery) return "";
-  const rawGalleryUrls: string[] = [];
-  for (let i = 1; i <= 12; i++) {
-    const p = mediaMap.get(`GALLERY_${i}`);
-    if (p) rawGalleryUrls.push(p);
-  }
-  const galleryPhotos = rawGalleryUrls.length > 0 ? rawGalleryUrls : [
-    `/demo/${themeFolder}/gallery_01.webp`,
-    `/demo/${themeFolder}/gallery_02.webp`,
-    `/demo/${themeFolder}/gallery_03.webp`,
-    `/demo/${themeFolder}/gallery_04.webp`,
-  ];
+  if (!showGallery || galleryPhotos.length === 0) return "";
 
   const galleryItemsHtml = galleryPhotos.map((src, idx) => `
     <div style="aspect-ratio: 1/1; border-radius: var(--radius-md, 14px); overflow: hidden; border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); background: var(--card-bg);">
-      <img src="${src}" alt="Momen ${idx + 1}" style="width: 100%; height: 100%; object-fit: cover; display: block;" loading="lazy" />
+      <img src="${escapeHtml(src)}" alt="Momen ${idx + 1}" style="width: 100%; height: 100%; object-fit: cover; display: block;" loading="lazy" referrerpolicy="no-referrer" />
     </div>
   `).join("");
 
@@ -2517,11 +2518,8 @@ function buildUniversalGiftSection(
   `;
 }
 
-function buildUniversalRsvpSection(
-  invitationId: string,
-  recipientName: string = ""
-): string {
-  const defaultGuest = recipientName && recipientName !== "Tamu Undangan" ? escapeHtml(recipientName) : "";
+// HTML terbit dibangun sekali untuk semua tamu; nama tamu diisi di perangkat dari ?to= oleh skrip runtime (renderTemplate).
+function buildUniversalRsvpSection(invitationId: string): string {
   return `
     <div class="rsvp-card-box" style="text-align: left; margin-bottom: 24px;">
       <span class="sec-lbl" style="display: block; text-align: center; margin-bottom: 4px;">Konfirmasi</span>
@@ -2529,7 +2527,7 @@ function buildUniversalRsvpSection(
       <form onsubmit="handleUniversalRsvpSubmit(event, '${escapeHtml(invitationId || "")}')" style="display: flex; flex-direction: column; gap: 12px; background: var(--card-bg); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); padding: 20px; border-radius: var(--radius-md, 14px);">
         <div>
           <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Nama Lengkap</label>
-          <input type="text" id="universalRsvpName" required placeholder="Nama Anda" value="${defaultGuest}" style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: var(--radius-sm, 8px); background: color-mix(in srgb, var(--bg-canvas) 80%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); color: var(--text-main); font-size: 13px;" />
+          <input type="text" id="universalRsvpName" required placeholder="Nama Anda" style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: var(--radius-sm, 8px); background: color-mix(in srgb, var(--bg-canvas) 80%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); color: var(--text-main); font-size: 13px;" />
         </div>
         <div>
           <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Konfirmasi Kehadiran</label>
@@ -2659,16 +2657,17 @@ export async function composeKhitanData(inv: any) {
 
   const childName = child.name || inv.groomName || "Ananda";
   const childNickname = child.nickname || inv.groomNickname || childName;
-  const childAge = String(child.age || "9");
+  const childAge = String(child.age || "");
   const childBirthOrder = child.birthOrder || "Putra";
   const fatherName = parents.fatherName || inv.groomFather || "Bapak";
   const motherName = parents.motherName || inv.groomMother || "Ibu";
 
   const host = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
-  const landingCoverUrl = mediaMap.get("LANDING_COVER") || `/demo/al-fariz/cover.webp`;
-  const childPhotoUrl = mediaMap.get("GROOM") || mediaMap.get("AVATAR") || `/demo/al-fariz/hero.webp`;
-  const absoluteCover = landingCoverUrl.startsWith("http") ? landingCoverUrl : `${host}${landingCoverUrl.startsWith("/") ? "" : "/"}${landingCoverUrl}`;
-  const finalAudioUrl = inv.audioUrl || dbThemeDefaultMusic || "/audio/sample.mp3";
+  // Foto utama tersimpan di slot GROOM_PHOTO (editor seksi 3); tanpa foto demo tema sebagai cadangan.
+  const landingCoverUrl = mediaMap.get("LANDING_COVER") || mediaMap.get("GLOBAL_FIXED_BG") || "";
+  const childPhotoUrl = mediaMap.get("GROOM_PHOTO") || generateInitialAvatarSvg(childNickname, "Ananda Khitan");
+  const absoluteCover = !landingCoverUrl || landingCoverUrl.startsWith("http") ? landingCoverUrl : `${host}${landingCoverUrl.startsWith("/") ? "" : "/"}${landingCoverUrl}`;
+  const finalAudioUrl = featureSettings.showMusic !== false ? (safeExternalUrl(inv.musicUrl || featureSettings.musicUrl) || dbThemeDefaultMusic || "") : "";
   const platformName = await getAdminSetting("platform_name", "Platform Undangan");
 
   const eventDateFormatted = primaryEventDateLabel(events);
@@ -2676,21 +2675,10 @@ export async function composeKhitanData(inv: any) {
 
   const parentsHtml = `<p>Putra tercinta dari Pasangan:</p><h4 class="serif" style="color: var(--text-main); font-size: 16px; margin: 4px 0;">${escapeHtml(fatherName)} &amp; ${escapeHtml(motherName)}</h4>`;
 
-  const eventsListHtml = events.map((ev: any) => `
-    <div style="background: color-mix(in srgb, var(--card-bg) 60%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); border-radius: var(--radius-md, 14px); padding: 18px; margin-bottom: 12px; text-align: left;">
-      <span style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 1px;">${escapeHtml(ev.title || "Acara")}</span>
-      <h3 class="serif" style="font-size: 18px; color: var(--text-main); margin: 6px 0 4px;">${escapeHtml(ev.name || ev.title || "Walimatul Khitan")}</h3>
-      <p style="font-size: 13px; color: var(--text-muted);">${escapeHtml(ev.time || "09:00 - Selesai")}</p>
-      <p style="font-size: 13px; color: var(--text-main); margin-top: 6px;"><b>${escapeHtml(ev.location || "Kediaman Mempelai")}</b></p>
-      <p style="font-size: 12px; color: var(--text-muted);">${escapeHtml(ev.address || "")}</p>
-      ${ev.mapsUrl ? `<a href="${escapeHtml(ev.mapsUrl)}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 10px; font-size: 12px; color: var(--primary); text-decoration: underline; font-weight: 600;">Petunjuk Lokasi Google Maps</a>` : ""}
-    </div>
-  `).join("");
-
-  const eventSectionHtml = `<div class="events-stack">${eventsListHtml}</div>`;
-  const gallerySectionHtml = buildUniversalGallerySection(mediaMap, "al-fariz", customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false);
+  const eventSectionHtml = buildUniversalEventCards(events, "Walimatul Khitan");
+  const gallerySectionHtml = buildUniversalGallerySection(await collectGalleryPhotos(inv, featureSettings), customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false);
   const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital", childName, featureSettings.showGift !== false);
-  const rsvpSectionHtml = buildUniversalRsvpSection(invitationId, guestName);
+  const rsvpSectionHtml = buildUniversalRsvpSection(invitationId);
   const wishesSectionHtml = buildUniversalWishesSection(inv.rsvps || []);
 
   return {
@@ -2701,6 +2689,7 @@ export async function composeKhitanData(inv: any) {
     childNickname,
     childAge,
     childBirthOrder,
+    childInfoLine: [childBirthOrder, childAge ? `Usia ${childAge} Tahun` : ""].filter(Boolean).join(" • "),
     fatherName,
     motherName,
     parentsHtml,
@@ -2773,17 +2762,17 @@ export async function composeAqiqahData(inv: any) {
 
   const babyName = baby.name || inv.groomName || "Buah Hati";
   const babyNickname = baby.nickname || inv.groomNickname || babyName;
-  const birthDateFormatted = baby.birthDate ? formatDateId(baby.birthDate) : "15 September 2026";
-  const birthWeight = baby.birthWeight || "3.4 kg";
-  const birthLength = baby.birthLength || "50 cm";
+  const birthDateFormatted = baby.birthDate ? formatDateId(baby.birthDate) : "";
+  const birthMetrics = [baby.birthWeight, baby.birthLength].filter(Boolean).join(" • ");
   const fatherName = parents.fatherName || inv.groomFather || "Bapak";
   const motherName = parents.motherName || inv.groomMother || "Ibu";
 
   const host = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
-  const landingCoverUrl = mediaMap.get("LANDING_COVER") || `/demo/al-khalid/cover.webp`;
-  const babyPhotoUrl = mediaMap.get("GROOM") || mediaMap.get("AVATAR") || `/demo/al-khalid/hero.webp`;
-  const absoluteCover = landingCoverUrl.startsWith("http") ? landingCoverUrl : `${host}${landingCoverUrl.startsWith("/") ? "" : "/"}${landingCoverUrl}`;
-  const finalAudioUrl = inv.audioUrl || dbThemeDefaultMusic || "/audio/sample.mp3";
+  // Foto utama tersimpan di slot GROOM_PHOTO (editor seksi 3); tanpa foto demo tema sebagai cadangan.
+  const landingCoverUrl = mediaMap.get("LANDING_COVER") || mediaMap.get("GLOBAL_FIXED_BG") || "";
+  const babyPhotoUrl = mediaMap.get("GROOM_PHOTO") || generateInitialAvatarSvg(babyNickname, "Buah Hati");
+  const absoluteCover = !landingCoverUrl || landingCoverUrl.startsWith("http") ? landingCoverUrl : `${host}${landingCoverUrl.startsWith("/") ? "" : "/"}${landingCoverUrl}`;
+  const finalAudioUrl = featureSettings.showMusic !== false ? (safeExternalUrl(inv.musicUrl || featureSettings.musicUrl) || dbThemeDefaultMusic || "") : "";
   const platformName = await getAdminSetting("platform_name", "Platform Undangan");
 
   const eventDateFormatted = primaryEventDateLabel(events);
@@ -2791,21 +2780,10 @@ export async function composeAqiqahData(inv: any) {
 
   const parentsHtml = `<p>Putra/Putri tercinta dari Pasangan:</p><h4 class="serif" style="color: var(--text-main); font-size: 16px; margin: 4px 0;">${escapeHtml(fatherName)} &amp; ${escapeHtml(motherName)}</h4>`;
 
-  const eventsListHtml = events.map((ev: any) => `
-    <div style="background: color-mix(in srgb, var(--card-bg) 60%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); border-radius: var(--radius-md, 14px); padding: 18px; margin-bottom: 12px; text-align: left;">
-      <span style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 1px;">${escapeHtml(ev.title || "Acara")}</span>
-      <h3 class="serif" style="font-size: 18px; color: var(--text-main); margin: 6px 0 4px;">${escapeHtml(ev.name || ev.title || "Tasyakuran Aqiqah")}</h3>
-      <p style="font-size: 13px; color: var(--text-muted);">${escapeHtml(ev.time || "10:00 - Selesai")}</p>
-      <p style="font-size: 13px; color: var(--text-main); margin-top: 6px;"><b>${escapeHtml(ev.location || "Kediaman")}</b></p>
-      <p style="font-size: 12px; color: var(--text-muted);">${escapeHtml(ev.address || "")}</p>
-      ${ev.mapsUrl ? `<a href="${escapeHtml(ev.mapsUrl)}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 10px; font-size: 12px; color: var(--primary); text-decoration: underline; font-weight: 600;">Petunjuk Lokasi Google Maps</a>` : ""}
-    </div>
-  `).join("");
-
-  const eventSectionHtml = `<div class="events-stack">${eventsListHtml}</div>`;
-  const gallerySectionHtml = buildUniversalGallerySection(mediaMap, "al-khalid", customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false);
+  const eventSectionHtml = buildUniversalEventCards(events, "Tasyakuran Aqiqah");
+  const gallerySectionHtml = buildUniversalGallerySection(await collectGalleryPhotos(inv, featureSettings), customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false);
   const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital", fatherName || babyName, featureSettings.showGift !== false);
-  const rsvpSectionHtml = buildUniversalRsvpSection(invitationId, guestName);
+  const rsvpSectionHtml = buildUniversalRsvpSection(invitationId);
   const wishesSectionHtml = buildUniversalWishesSection(inv.rsvps || []);
 
   return {
@@ -2815,8 +2793,7 @@ export async function composeAqiqahData(inv: any) {
     babyName,
     babyNickname,
     birthDateFormatted,
-    birthWeight,
-    birthLength,
+    birthMetrics,
     fatherName,
     motherName,
     parentsHtml,
@@ -2889,19 +2866,21 @@ export async function composeWisudaData(inv: any) {
 
   const graduateName = grad.name || inv.groomName || "Wisudawan/Wisudawati";
   const graduateNickname = grad.nickname || inv.groomNickname || graduateName;
-  const graduateDegree = grad.degree || "Sarjana Komputer (S.Kom.)";
-  const graduateMajor = grad.major || "Teknik Informatika";
-  const graduateFaculty = grad.faculty || "Fakultas Ilmu Komputer";
-  const universityName = grad.university || "Universitas Hasanuddin";
-  const honors = grad.honors || "Cum Laude";
+  // Gelar, jurusan, kampus, dan predikat hanya dari data klien; nilai contoh akan tercetak sebagai fakta di undangan.
+  const graduateDegree = grad.degree || "";
+  const graduateMajor = grad.major || "";
+  const graduateFaculty = grad.faculty || "";
+  const universityName = grad.university || "";
+  const honors = grad.honors || "";
   const fatherName = parents.fatherName || inv.groomFather || "";
   const motherName = parents.motherName || inv.groomMother || "";
 
   const host = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
-  const landingCoverUrl = mediaMap.get("LANDING_COVER") || `/demo/cendekia/cover.webp`;
-  const graduatePhotoUrl = mediaMap.get("GROOM") || mediaMap.get("AVATAR") || `/demo/cendekia/hero.webp`;
-  const absoluteCover = landingCoverUrl.startsWith("http") ? landingCoverUrl : `${host}${landingCoverUrl.startsWith("/") ? "" : "/"}${landingCoverUrl}`;
-  const finalAudioUrl = inv.audioUrl || dbThemeDefaultMusic || "/audio/sample.mp3";
+  // Foto utama tersimpan di slot GROOM_PHOTO (editor seksi 3); tanpa foto demo tema sebagai cadangan.
+  const landingCoverUrl = mediaMap.get("LANDING_COVER") || mediaMap.get("GLOBAL_FIXED_BG") || "";
+  const graduatePhotoUrl = mediaMap.get("GROOM_PHOTO") || generateInitialAvatarSvg(graduateNickname, "Wisudawan");
+  const absoluteCover = !landingCoverUrl || landingCoverUrl.startsWith("http") ? landingCoverUrl : `${host}${landingCoverUrl.startsWith("/") ? "" : "/"}${landingCoverUrl}`;
+  const finalAudioUrl = featureSettings.showMusic !== false ? (safeExternalUrl(inv.musicUrl || featureSettings.musicUrl) || dbThemeDefaultMusic || "") : "";
   const platformName = await getAdminSetting("platform_name", "Platform Undangan");
 
   const eventDateFormatted = primaryEventDateLabel(events);
@@ -2910,21 +2889,10 @@ export async function composeWisudaData(inv: any) {
   const parentsHtml = fatherName && motherName ? `<p>Putra/Putri tercinta dari:</p><h4 class="serif" style="color: var(--text-main); font-size: 15px; margin: 4px 0;">${escapeHtml(fatherName)} &amp; ${escapeHtml(motherName)}</h4>` : "";
   const graduateHonorsBadgeHtml = honors ? `<span style="display: inline-block; padding: 4px 12px; border-radius: var(--radius-full, 9999px); background: color-mix(in srgb, var(--accent) 20%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); color: var(--accent); font-size: 11px; font-weight: 700; margin-top: 8px;">Predikat: ${escapeHtml(honors)}</span>` : "";
 
-  const eventsListHtml = events.map((ev: any) => `
-    <div style="background: color-mix(in srgb, var(--card-bg) 60%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); border-radius: var(--radius-md, 14px); padding: 18px; margin-bottom: 12px; text-align: left;">
-      <span style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 1px;">${escapeHtml(ev.title || "Acara")}</span>
-      <h3 class="serif" style="font-size: 18px; color: var(--text-main); margin: 6px 0 4px;">${escapeHtml(ev.name || ev.title || "Syukuran Kelulusan")}</h3>
-      <p style="font-size: 13px; color: var(--text-muted);">${escapeHtml(ev.time || "11:00 - Selesai")}</p>
-      <p style="font-size: 13px; color: var(--text-main); margin-top: 6px;"><b>${escapeHtml(ev.location || "Ballroom Kampus / Gedung")}</b></p>
-      <p style="font-size: 12px; color: var(--text-muted);">${escapeHtml(ev.address || "")}</p>
-      ${ev.mapsUrl ? `<a href="${escapeHtml(ev.mapsUrl)}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 10px; font-size: 12px; color: var(--primary); text-decoration: underline; font-weight: 600;">Petunjuk Lokasi Google Maps</a>` : ""}
-    </div>
-  `).join("");
-
-  const eventSectionHtml = `<div class="events-stack">${eventsListHtml}</div>`;
-  const gallerySectionHtml = buildUniversalGallerySection(mediaMap, "cendekia", customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false);
+  const eventSectionHtml = buildUniversalEventCards(events, "Syukuran Kelulusan");
+  const gallerySectionHtml = buildUniversalGallerySection(await collectGalleryPhotos(inv, featureSettings), customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false);
   const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital", graduateName, featureSettings.showGift !== false);
-  const rsvpSectionHtml = buildUniversalRsvpSection(invitationId, guestName);
+  const rsvpSectionHtml = buildUniversalRsvpSection(invitationId);
   const wishesSectionHtml = buildUniversalWishesSection(inv.rsvps || []);
 
   return {
@@ -2934,6 +2902,8 @@ export async function composeWisudaData(inv: any) {
     graduateName,
     graduateNickname,
     graduateDegree,
+    graduateCoverLine: [graduateDegree, universityName].filter(Boolean).join(" • "),
+    graduateStudyLine: [graduateMajor, graduateFaculty].filter(Boolean).join(" — "),
     graduateMajor,
     graduateFaculty,
     universityName,
@@ -3009,36 +2979,26 @@ export async function composeGatheringData(inv: any) {
 
   const eventTitle = evInfo.title || inv.groomName || "Peresmian & Syukuran";
   const eventSubtitle = evInfo.subtitle || inv.groomNickname || "Melangkah Maju Bersama Menuju Masa Depan Gemilang";
-  const organizerName = evInfo.organizer || "Panitia Penyelenggara";
+  const organizerName = evInfo.organizer || "";
   const hostName = evInfo.hostName || "";
-  const dresscode = evInfo.dresscode || "Batik Modern / Smart Casual";
+  const dresscode = evInfo.dresscode || "";
 
   const host = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
-  const landingCoverUrl = mediaMap.get("LANDING_COVER") || `/demo/sinergi/cover.webp`;
-  const eventPhotoUrl = mediaMap.get("GROOM") || mediaMap.get("AVATAR") || `/demo/sinergi/hero.webp`;
-  const absoluteCover = landingCoverUrl.startsWith("http") ? landingCoverUrl : `${host}${landingCoverUrl.startsWith("/") ? "" : "/"}${landingCoverUrl}`;
-  const finalAudioUrl = inv.audioUrl || dbThemeDefaultMusic || "/audio/sample.mp3";
+  // Foto utama tersimpan di slot GROOM_PHOTO (editor seksi 3); tanpa foto demo tema sebagai cadangan.
+  const landingCoverUrl = mediaMap.get("LANDING_COVER") || mediaMap.get("GLOBAL_FIXED_BG") || "";
+  const eventPhotoUrl = mediaMap.get("GROOM_PHOTO") || generateInitialAvatarSvg(eventTitle, "Acara");
+  const absoluteCover = !landingCoverUrl || landingCoverUrl.startsWith("http") ? landingCoverUrl : `${host}${landingCoverUrl.startsWith("/") ? "" : "/"}${landingCoverUrl}`;
+  const finalAudioUrl = featureSettings.showMusic !== false ? (safeExternalUrl(inv.musicUrl || featureSettings.musicUrl) || dbThemeDefaultMusic || "") : "";
   const platformName = await getAdminSetting("platform_name", "Platform Undangan");
 
   const eventDateFormatted = primaryEventDateLabel(events);
   const guestName = inv.recipientName || "Rekan / Tamu Undangan";
   const dresscodeHtml = dresscode ? `<p style="font-size: 12px; color: var(--primary); margin-top: 6px;">Dress Code: <b>${escapeHtml(dresscode)}</b></p>` : "";
 
-  const eventsListHtml = events.map((ev: any) => `
-    <div style="background: color-mix(in srgb, var(--card-bg) 60%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); border-radius: var(--radius-md, 14px); padding: 18px; margin-bottom: 12px; text-align: left;">
-      <span style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 1px;">${escapeHtml(ev.title || "Rangkaian")}</span>
-      <h3 class="serif" style="font-size: 18px; color: var(--text-main); margin: 6px 0 4px;">${escapeHtml(ev.name || ev.title || eventTitle)}</h3>
-      <p style="font-size: 13px; color: var(--text-muted);">${escapeHtml(ev.time || "09:00 - 13:00 WITA")}</p>
-      <p style="font-size: 13px; color: var(--text-main); margin-top: 6px;"><b>${escapeHtml(ev.location || "Auditorium / Gedung Pertemuan")}</b></p>
-      <p style="font-size: 12px; color: var(--text-muted);">${escapeHtml(ev.address || "")}</p>
-      ${ev.mapsUrl ? `<a href="${escapeHtml(ev.mapsUrl)}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 10px; font-size: 12px; color: var(--primary); text-decoration: underline; font-weight: 600;">Petunjuk Lokasi Google Maps</a>` : ""}
-    </div>
-  `).join("");
-
-  const eventSectionHtml = `<div class="events-stack">${eventsListHtml}</div>`;
-  const gallerySectionHtml = buildUniversalGallerySection(mediaMap, "sinergi", customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false);
-  const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital / Donasi", organizerName, featureSettings.showGift !== false);
-  const rsvpSectionHtml = buildUniversalRsvpSection(invitationId, guestName);
+  const eventSectionHtml = buildUniversalEventCards(events, eventTitle);
+  const gallerySectionHtml = buildUniversalGallerySection(await collectGalleryPhotos(inv, featureSettings), customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false);
+  const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital / Donasi", organizerName || eventTitle, featureSettings.showGift !== false);
+  const rsvpSectionHtml = buildUniversalRsvpSection(invitationId);
   const wishesSectionHtml = buildUniversalWishesSection(inv.rsvps || []);
 
   return {

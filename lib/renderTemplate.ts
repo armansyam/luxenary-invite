@@ -108,9 +108,6 @@ export const THEME_MAP: Record<string, ThemeEntry> = {
 
   // General / Gathering Series (1 theme)
   "sinergi": { file: "sinergi.html", eventType: "gathering", style: "modern" },
-
-  // Backward compatibility alias mapping
-  "kila": { file: "kalandra.html", eventType: "wedding", style: "minimalist" },
 };
 
 export const LUXENARY_BANNER = `<!--
@@ -862,18 +859,22 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
 
       const selectors = [
         '#coverGuestName', '#guestName', '#guestNameDisplay', '.cover-guest-val',
-        '#modalGuestName', '#passGuestName', '.guest-recipient-name', '#recipientName'
+        '#modalGuestName', '#passGuestName', '.guest-recipient-name', '#recipientName',
+        // Sampul tema khitan/aqiqah/wisuda/gathering (.guest-name) dan ulang tahun (.guest-name-val, .guest-name-text)
+        '.guest-name', '.guest-name-val', '.guest-name-text'
       ];
       selectors.forEach(function(sel) {
         document.querySelectorAll(sel).forEach(function(el) {
           el.textContent = gn;
         });
       });
-      
-      const rsvpInput = document.getElementById('rsvpName');
-      if (rsvpInput && !rsvpInput.value) {
-        rsvpInput.value = gn;
-      }
+
+      ['rsvpName', 'universalRsvpName'].forEach(function(id) {
+        const rsvpInput = document.getElementById(id);
+        if (rsvpInput && !rsvpInput.value) {
+          rsvpInput.value = gn;
+        }
+      });
     } catch(e){}
   }
 

@@ -232,7 +232,7 @@
         </div>
 
         <div class="child-card">
-          <img src="{{childPhotoUrl}}" alt="{{childName}}" class="child-avatar" onerror="this.src='/demo/al-fariz/hero.webp'" />
+          <img src="{{childPhotoUrl}}" alt="{{childName}}" class="child-avatar" onerror="this.onerror=null;this.style.visibility='hidden'" />
           <h3 class="child-fullname serif">{{childName}}</h3>
           <p class="child-info">{{childBirthOrder}} • Usia {{childAge}} Tahun</p>
           <div class="parents-info">

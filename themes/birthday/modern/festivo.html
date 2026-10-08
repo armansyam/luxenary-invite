@@ -438,7 +438,7 @@
     <section id="home">
       <div class="profile-card">
         <div class="avatar-wrapper">
-          <img src="{{personPhotoUrl}}" alt="{{personName}}" class="avatar-img" onerror="this.src='/images/default-avatar.png'" />
+          <img src="{{personPhotoUrl}}" alt="{{personName}}" class="avatar-img" onerror="this.onerror=null;this.style.visibility='hidden'" />
         </div>
         <h2 class="profile-name">{{personName}}</h2>
         <div class="profile-tagline">Ulang Tahun ke-{{personAge}}</div>

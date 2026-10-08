@@ -1908,8 +1908,7 @@
 
     // Hitung Mundur Hari H (Patokan Sesi Acara Utama)
     function initCountdown() {
-      const targetStr = TARGET_DATE || "2026-10-05T08:00:00";
-      const target = new Date(targetStr).getTime();
+      const target = new Date(TARGET_DATE).getTime();
       if (isNaN(target)) return;
       function update() {
         const diff = target - Date.now();

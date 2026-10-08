@@ -193,7 +193,7 @@
     <div class="cover-screen" id="coverScreen" style="background-image: url('{{landingCoverUrl}}');">
       <div class="cover-overlay"></div>
       <div class="cover-content">
-        <span class="badge-pill">{{#if eventBadge}}{{eventBadge}}{{else}}Undangan Resmi{{/if}}</span>
+        <span class="badge-pill">Undangan Resmi</span>
         <h1 class="cover-title serif">{{eventTitle}}</h1>
         <p class="cover-sub">{{eventSubtitle}}</p>
         <div class="guest-box">
@@ -212,11 +212,11 @@
         <h2 class="sec-h2 serif">{{eventTitle}}</h2>
 
         <div class="event-card">
-          <img src="{{eventPhotoUrl}}" alt="{{eventTitle}}" class="event-logo" onerror="this.src='/demo/sinergi/hero.webp'" />
+          <img src="{{eventPhotoUrl}}" alt="{{eventTitle}}" class="event-logo" onerror="this.onerror=null;this.style.visibility='hidden'" />
           <h3 class="event-name serif">{{eventTitle}}</h3>
           <p class="event-desc">{{eventSubtitle}}</p>
           <div class="host-info">
-            <p style="font-weight: 700; color: #ffffff;">{{organizerName}}</p>
+            {{#if organizerName}}<p style="font-weight: 700; color: #ffffff;">{{organizerName}}</p>{{/if}}
             <p>{{hostName}}</p>
             {{dresscodeHtml}}
           </div>

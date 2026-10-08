@@ -380,7 +380,7 @@
     <!-- HOME / PROFILE -->
     <section id="home">
       <div class="editorial-card">
-        <img src="{{personPhotoUrl}}" alt="{{personName}}" class="editorial-avatar" onerror="this.src='/images/default-avatar.png'" />
+        <img src="{{personPhotoUrl}}" alt="{{personName}}" class="editorial-avatar" onerror="this.onerror=null;this.style.visibility='hidden'" />
         <h2 class="person-full-name serif">{{personName}}</h2>
         <div class="person-milestone">Celebrating {{personAge}} Years</div>
         <p class="editorial-quote">
