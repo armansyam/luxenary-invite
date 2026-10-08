@@ -7,7 +7,8 @@ import { normalizeJsonText } from "@/lib/jsonText";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
 import { removeIfExists } from "@/lib/fsSafe";
-import { encryptPin, decryptPin, isPinEncrypted } from "@/lib/pinEncryption";
+import { encryptPin, decryptPin } from "@/lib/pinEncryption";
+import { STAFF_PIN_PATTERN } from "@/lib/invitationUtils";
 import { isReservedSubdomain, isSubdomainExpired } from "@/lib/domainUtils";
 import { DAY_MS, getPrimaryEventDate } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
@@ -528,6 +529,11 @@ export async function PUT(
       jsonTextFields[field] = parsed.value;
     }
 
+    // PIN membuka portal resepsionis; batas percobaan verify-pin (30 per 15 menit) hanya berarti bila ruang tebakannya cukup besar.
+    if (body.staffPin && !STAFF_PIN_PATTERN.test(String(body.staffPin))) {
+      return NextResponse.json({ error: "PIN harus 4–10 karakter berupa huruf atau angka." }, { status: 400 });
+    }
+
     const updated = await prisma.invitation.update({
       where: { id },
       data: {
@@ -560,11 +566,8 @@ export async function PUT(
         eventData: eventDataToSave,
         featureSettings: mergedFeatureSettings,
         participantsJson: jsonTextFields.participantsJson,
-        // Enkripsi staffPin dengan AES-256 sebelum simpan ke database (cegah re-encrypt jika sudah terenkripsi)
         staffPin: body.staffPin !== undefined
-          ? (body.staffPin
-              ? (isPinEncrypted(String(body.staffPin)) ? String(body.staffPin) : encryptPin(String(body.staffPin)))
-              : null)
+          ? (body.staffPin ? encryptPin(String(body.staffPin)) : null)
           : undefined,
 
       },

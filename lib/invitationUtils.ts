@@ -67,3 +67,5 @@ export function buildZipFileName(inv: {
   }
   return `Guest_Memories_${inv.invitationSlug}.zip`;
 }
+
+export const STAFF_PIN_PATTERN = /^[A-Za-z0-9]{4,10}$/;

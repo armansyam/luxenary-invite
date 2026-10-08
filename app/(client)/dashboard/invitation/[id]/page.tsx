@@ -1137,12 +1137,11 @@ export default function EditInvitation() {
   };
 
   const updateEventItem = (index: number, field: string, value: any) => {
+    // Tidak diurutkan saat mengetik: kartu dirender per indeks, sehingga mengurutkan setelah tanggal diubah
+    // memindahkan isian berikutnya (tempat, jam) ke sesi lain. Server mengurutkan kronologis saat disimpan.
     setEvents((prev) => {
       const next = [...prev];
       next[index] = { ...next[index], [field]: value };
-      if (field === "date" && typeof value === "string" && value.length === 10) {
-        return sortEventsChronologically(next);
-      }
       return next;
     });
     broadcastToAllLiveIframes({ type: "LUX_REMOTE_EDIT_CHANGE", field: `events.${index}.${field}`, value });
@@ -2592,8 +2591,8 @@ export default function EditInvitation() {
                 onUploadEnd={handleUploadEnd}
               />
               <PhotoInput
-                label="Hero Kiri Desktop — Bebas (Opsional)"
-                desc="Foto/Video BEBAS (square, landscape, portrait) — Panel kiri layar lebar. Ukuran panel = sisa layar setelah 460px kartu undangan di kanan. Semua rasio foto otomatis menyesuaikan tanpa distorsi."
+                label="Hero Kiri Desktop — Bebas"
+                desc="Foto/Video BEBAS (square, landscape, portrait) — Panel kiri layar lebar. Ukuran panel = sisa layar setelah 460px kartu undangan di kanan. Semua rasio foto otomatis menyesuaikan tanpa distorsi. Wajib diisi sebelum terbit."
                 value={media["DESKTOP_SIDEBAR"] || ""}
                 onChange={(url) => updateMedia("DESKTOP_SIDEBAR", url)}
                 placeholder="https://.../sidebar-hero.jpg atau .mp4"
@@ -2604,8 +2603,8 @@ export default function EditInvitation() {
                 onUploadEnd={handleUploadEnd}
               />
               <PhotoInput
-                label="Penutup / Footer — Portrait/Square (Opsional)"
-                desc="Foto/Video PORTRAIT atau SQUARE — Background seksi penutup undangan. Jika kosong, pakai desain penutup bawaan tema."
+                label="Penutup / Footer — Portrait/Square"
+                desc="Foto/Video PORTRAIT atau SQUARE — Background seksi penutup undangan. Wajib diisi sebelum terbit."
                 value={media["CLOSING_COVER"] || ""}
                 onChange={(url) => updateMedia("CLOSING_COVER", url)}
                 placeholder="https://.../closing.jpg atau .mp4"
@@ -2616,8 +2615,8 @@ export default function EditInvitation() {
                 onUploadEnd={handleUploadEnd}
               />
               <PhotoInput
-                label="Latar Belakang Global — Portrait/Bebas (Opsional)"
-                desc="Foto/Video PORTRAIT atau bebas — Fixed canvas di balik seluruh kartu undangan. Jika kosong, pakai wallpaper/warna bawaan tema."
+                label="Latar Belakang Global — Portrait/Bebas"
+                desc="Foto/Video PORTRAIT atau bebas — Fixed canvas di balik seluruh kartu undangan. Wajib diisi sebelum terbit."
                 value={media["GLOBAL_FIXED_BG"] || ""}
                 onChange={(url) => updateMedia("GLOBAL_FIXED_BG", url)}
                 placeholder="https://.../fixed-bg.jpg atau .mp4"
@@ -3754,7 +3753,7 @@ export default function EditInvitation() {
                         <button
                           type="button"
                           onClick={() => setAsPrimaryEvent(idx)}
-                          className="text-[10px] font-semibold text-stone-500 hover:text-amber-900 px-2 py-0.5 rounded-md hover:bg-amber-100/60 border border-stone-200/80 transition cursor-pointer"
+                          className="text-xs sm:text-[10px] font-semibold text-stone-500 hover:text-amber-900 px-3 sm:px-2 py-2 sm:py-0.5 rounded-md hover:bg-amber-100/60 border border-stone-200/80 transition cursor-pointer"
                         >
                           Jadikan Jadwal Terima Tamu
                         </button>
@@ -4315,7 +4314,7 @@ export default function EditInvitation() {
                           value={b.bank || ""}
                           onChange={(e) => updateBankItem(idx, "bank", e.target.value)}
                           placeholder="BCA / Mandiri / BSI"
-                          className="w-full p-2 bg-white border border-stone-200 rounded-lg text-xs"
+                          className="w-full p-2 bg-white border border-stone-200 rounded-lg text-base sm:text-xs"
                         />
                       </div>
                       <div className="w-full sm:w-1/3">
@@ -4325,7 +4324,7 @@ export default function EditInvitation() {
                           value={b.number || ""}
                           onChange={(e) => updateBankItem(idx, "number", e.target.value)}
                           placeholder="Contoh: 1234567890"
-                          className="w-full p-2 bg-white border border-stone-200 rounded-lg text-xs font-mono"
+                          className="w-full p-2 bg-white border border-stone-200 rounded-lg text-base sm:text-xs font-mono"
                         />
                       </div>
                       <div className="w-full sm:w-1/3">
@@ -4335,7 +4334,7 @@ export default function EditInvitation() {
                           value={b.name || ""}
                           onChange={(e) => updateBankItem(idx, "name", e.target.value)}
                           placeholder="Nama Pemilik Rekening"
-                          className="w-full p-2 bg-white border border-stone-200 rounded-lg text-xs"
+                          className="w-full p-2 bg-white border border-stone-200 rounded-lg text-base sm:text-xs"
                         />
                       </div>
                       {bankList.length > 1 && (

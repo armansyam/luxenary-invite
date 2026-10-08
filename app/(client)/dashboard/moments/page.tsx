@@ -586,6 +586,16 @@ export default function MomentsSetupPage() {
   const isEventMarkedFinished = invitation?.status === "EVENT_FINISHED";
   const isManuallyClosed = !isEnabled || Boolean(invitation?.memoriesUploadLocked);
   const isReadyForDownload = (isScheduleConcluded || isEventMarkedFinished || isManuallyClosed) && guestMemoriesList.length > 0;
+  const zipDownloadHint =
+    guestMemoriesList.length === 0
+      ? "Belum ada foto candid tamu untuk diunduh."
+      : activeSchedule.isSessionActive && activeSchedule.currentSession
+      ? `Sesi "${activeSchedule.currentSession.name}" sedang berlangsung hingga pkl ${activeSchedule.currentSession.endTime}. Unduh ZIP aktif otomatis setelah sesi selesai.`
+      : activeSchedule.nextSession
+      ? `Masih ada sesi "${activeSchedule.nextSession.name}" yang belum selesai. Unduh ZIP aktif setelah seluruh rangkaian acara berakhir.`
+      : !isScheduleConcluded && !isEventMarkedFinished && !isManuallyClosed
+      ? "Unduh ZIP otomatis aktif setelah jadwal seluruh sesi acara berakhir."
+      : `Jadwal acara telah selesai. Klik untuk mengunduh seluruh ${guestMemoriesList.length} foto candid (.ZIP).`;
 
   // Handler Download ZIP Client-Side via JSZip
   const handleStartDownloadZip = async () => {
@@ -1590,6 +1600,10 @@ export default function MomentsSetupPage() {
           <div>
             <h2 className="text-sm font-bold text-stone-900">Feed Foto Candid Terkumpul ({guestMemoriesList.length} Foto)</h2>
             <p className="text-xs text-stone-500">Pantau foto candid yang diunggah para tamu, hapus foto yang tidak layak.</p>
+            {/* Layar sentuh tidak menampilkan tooltip title, jadi alasan tombol nonaktif ditulis langsung di HP. */}
+            {!isReadyForDownload && guestMemoriesList.length > 0 && (
+              <p className="sm:hidden mt-1 text-[11px] text-amber-800">{zipDownloadHint}</p>
+            )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {/* Tombol Unduh ZIP Dinamis Terikat Jadwal */}
@@ -1613,17 +1627,7 @@ export default function MomentsSetupPage() {
                   ? "bg-stone-800 text-white cursor-wait"
                   : "bg-stone-900 hover:bg-stone-800 text-white shadow-2xs cursor-pointer"
               }`}
-              title={
-                guestMemoriesList.length === 0
-                  ? "Belum ada foto candid tamu untuk diunduh."
-                  : activeSchedule.isSessionActive && activeSchedule.currentSession
-                  ? `Sesi "${activeSchedule.currentSession.name}" sedang berlangsung hingga pkl ${activeSchedule.currentSession.endTime}. Unduh ZIP aktif otomatis setelah sesi selesai.`
-                  : activeSchedule.nextSession
-                  ? `Masih ada sesi "${activeSchedule.nextSession.name}" yang belum selesai. Unduh ZIP aktif setelah seluruh rangkaian acara berakhir.`
-                  : !isScheduleConcluded && !isEventMarkedFinished && !isManuallyClosed
-                  ? "Unduh ZIP otomatis aktif setelah jadwal seluruh sesi acara berakhir."
-                  : `Jadwal acara telah selesai. Klik untuk mengunduh seluruh ${guestMemoriesList.length} foto candid (.ZIP).`
-              }
+              title={zipDownloadHint}
             >
               {downloadPhase === "fetching" || downloadPhase === "downloading" || downloadPhase === "zipping" ? (
                 <>

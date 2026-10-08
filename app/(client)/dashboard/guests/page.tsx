@@ -95,6 +95,7 @@ export default function GuestsPage() {
   const [guests, setGuests] = useState<Guest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [addError, setAddError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [guestToDelete, setGuestToDelete] = useState<{ id: string; name: string } | null>(null);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
@@ -441,6 +442,7 @@ export default function GuestsPage() {
   const handleAddGuest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!invitationId || !newGuest.name.trim()) return;
+    setAddError(null);
     setLoading(true);
     try {
       const res = await fetch(`/api/client/guests`, {
@@ -460,8 +462,11 @@ export default function GuestsPage() {
           tableNumber: "",
         });
       } else {
-        setError("Gagal menambah tamu");
+        const data = await res.json().catch(() => null);
+        setAddError(data?.error || "Gagal menambah tamu");
       }
+    } catch {
+      setAddError("Koneksi terputus. Periksa internet lalu coba lagi.");
     } finally {
       setLoading(false);
     }
@@ -1064,7 +1069,7 @@ export default function GuestsPage() {
                         title={isSent ? "Undangan sudah dikirim" : "Centang jika sudah dikirim"}
                       />
                       <div className="min-w-0">
-                        <h4 className="text-xs sm:text-sm font-bold text-stone-900 truncate">{guest.name}</h4>
+                        <h4 className="text-xs sm:text-sm font-bold text-stone-900 line-clamp-2 break-words">{guest.name}</h4>
                         <span className="text-[11px] text-stone-500 font-mono truncate block md:hidden">
                           {guest.phone || "Tanpa No. WhatsApp"} · {guest.guestQuota || guest.guestLimit || 1} Pax
                         </span>
@@ -1083,7 +1088,9 @@ export default function GuestsPage() {
                       }`}>
                         {guest.category || "UMUM"}
                       </span>
-                      <span className="md:hidden text-[10px] text-stone-400 font-mono">#{idx + 1}</span>
+                      {guest.tableNumber && (
+                        <span className="md:hidden text-[10px] text-stone-600 font-semibold">{guest.tableNumber}</span>
+                      )}
                     </div>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-[10px] text-stone-500">
                       <span className="inline-flex items-center gap-1">
@@ -1107,6 +1114,9 @@ export default function GuestsPage() {
                     <span className="font-semibold text-stone-900">{guest.guestQuota || guest.guestLimit || 1} Pax</span>
                     <span className="text-stone-400 mx-1">·</span>
                     <span className="text-[11px] text-stone-500">{guest.sessionInfo || "Reguler"}</span>
+                    {guest.tableNumber && (
+                      <span className="block text-[11px] text-stone-500">{guest.tableNumber}</span>
+                    )}
                   </div>
 
                   {/* Column 5 / Row 2 di Mobile: Action Buttons */}
@@ -1670,7 +1680,7 @@ export default function GuestsPage() {
               <h3 className="text-base font-bold text-stone-900">Tambah Tamu Undangan</h3>
               <button
                 type="button"
-                onClick={() => setShowAddModal(false)}
+                onClick={() => { setShowAddModal(false); setAddError(null); }}
                 className="p-1.5 text-stone-400 hover:text-stone-700 rounded-lg cursor-pointer"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1702,7 +1712,7 @@ export default function GuestsPage() {
                   value={newGuest.name}
                   onChange={(e) => setNewGuest({ ...newGuest, name: e.target.value })}
                   placeholder="Masukkan nama lengkap tamu yang diundang"
-                  className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                  className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                 />
               </div>
 
@@ -1717,7 +1727,7 @@ export default function GuestsPage() {
                     setNewGuest({ ...newGuest, phone: val });
                   }}
                   placeholder="08123456789 atau 628123456789"
-                  className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                  className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                 />
               </div>
 
@@ -1727,7 +1737,7 @@ export default function GuestsPage() {
                   <select
                     value={newGuest.category}
                     onChange={(e) => setNewGuest({ ...newGuest, category: e.target.value })}
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                   >
                     <option value="VIP">VIP</option>
                     <option value="KELUARGA">Keluarga</option>
@@ -1744,7 +1754,7 @@ export default function GuestsPage() {
                     max={10}
                     value={newGuest.guestLimit}
                     onChange={(e) => setNewGuest({ ...newGuest, guestLimit: parseInt(e.target.value) || 1 })}
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                   />
                 </div>
               </div>
@@ -1757,7 +1767,7 @@ export default function GuestsPage() {
                     value={newGuest.tableNumber}
                     onChange={(e) => setNewGuest({ ...newGuest, tableNumber: e.target.value })}
                     placeholder="Contoh: VIP-1, Meja 5"
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                   />
                 </div>
 
@@ -1768,15 +1778,21 @@ export default function GuestsPage() {
                     value={newGuest.sessionInfo}
                     onChange={(e) => setNewGuest({ ...newGuest, sessionInfo: e.target.value })}
                     placeholder="Tentukan sesi (Opsional)"
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                   />
                 </div>
               </div>
 
+              {addError && (
+                <p role="alert" className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
+                  {addError}
+                </p>
+              )}
+
               <div className="pt-2 flex items-center justify-end gap-2">
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => { setShowAddModal(false); setAddError(null); }}
                   className="px-4 py-2.5 text-xs font-semibold text-stone-600 hover:bg-stone-100 rounded-xl transition cursor-pointer"
                 >
                   Batal

@@ -84,11 +84,12 @@ export default async function FreeGuestMemoriesStandalonePage({ params, searchPa
   const filterId: string = fs.memoriesFilter || "aura_90s";
   const dateStampEnabled: boolean = fs.memoriesDateStamp !== false;
   const dateFormat: string = fs.memoriesDateFormat || "DD MM 'YY";
-  const configuredShotsQuota: number = typeof fs.memoriesShotsQuota === "number" ? fs.memoriesShotsQuota : 5;
-  const maxContributors: number = typeof fs.memoriesMaxContributors === "number" ? fs.memoriesMaxContributors : 100;
+  // Bawaan mengikuti paket, sama seperti rute unggah dan dasbor klien; angka berbeda membuat kamera tamu berhenti lebih awal.
+  const planQuota = await getPlanMemoriesQuota(invitation.order?.planType);
+  const configuredShotsQuota: number = typeof fs.memoriesShotsQuota === "number" ? fs.memoriesShotsQuota : planQuota.shotsQuota;
+  const maxContributors: number = typeof fs.memoriesMaxContributors === "number" ? fs.memoriesMaxContributors : planQuota.maxContributors;
 
   // Hitung Kuota Total Acara & Sisa Pool Riil
-  const planQuota = await getPlanMemoriesQuota(invitation.order?.planType);
   const extraPhotos = typeof fs.extraMemoriesQuota === "number" ? Math.max(0, fs.extraMemoriesQuota) : 0;
   const baseTotalPhotos = planQuota.totalQuota > 0 ? planQuota.totalQuota : (maxContributors * configuredShotsQuota);
   const maxTotalPhotos = baseTotalPhotos + extraPhotos;

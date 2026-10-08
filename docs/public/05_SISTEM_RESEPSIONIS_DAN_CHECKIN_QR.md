@@ -39,7 +39,7 @@ flowchart TD
 
 - Isi QR tamu: `LUX|<id undangan>|<nama tamu>`. Id undangan memastikan QR acara lain tidak lolos; nama tamu dicocokkan tanpa membedakan huruf besar/kecil. Di tengah QR ada inisial acara (2 huruf untuk pernikahan, 1 huruf untuk acara tunggal).
 - Hanya dua kondisi yang ditolak: **QR milik acara lain** dan **QR yang sudah pernah check-in**. Nama yang tidak ada di daftar (tautan `?to=Nama` yang dibuat manual) tetap diterima dan dicatat sebagai tamu `UMUM` (kuota bawaan 1 pax), kategori dari QR tidak dipercaya.
-- Pemindai bekerja offline-first: daftar tamu dan antrean check-in disimpan di perangkat, tamu umum yang dibuat saat offline tetap tampil dan disinkronkan ke server saat sinyal kembali. Kode: `lib/receptionistScan.ts` (keputusan di perangkat), `lib/walkInGuest.ts` (pembuatan tamu umum di server), `lib/checkinQr.ts` (kontrak QR).
+- Pemindai bekerja offline-first: daftar tamu dan antrean check-in disimpan di perangkat, tamu umum yang dibuat saat offline tetap tampil. Antrean dikirim ke server otomatis setiap ada check-in, saat sinyal kembali, dan dicoba ulang tiap 30 detik; badge angka di header hanya untuk kirim manual. Pemindai dapat dipakai di tablet/laptop (horizontal) maupun HP, dengan kamera perangkat atau alat scan barcode fisik (Bluetooth/USB). Kode: `lib/receptionistScan.ts` (keputusan di perangkat), `lib/walkInGuest.ts` (pembuatan tamu umum di server), `lib/checkinQr.ts` (kontrak QR).
 
 ---
 

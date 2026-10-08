@@ -23,6 +23,7 @@ function PaymentContent() {
   // QRIS Gateway State
   const [qrData, setQrData] = useState<string | null>(null);
   const [snapRedirectUrl, setSnapRedirectUrl] = useState<string | null>(null);
+  const [gatewayInitError, setGatewayInitError] = useState<string | null>(null);
   const [qrisExpiry, setQrisExpiry] = useState<number | null>(null);
   const [qrisTotalDuration, setQrisTotalDuration] = useState<number>(0);
   const [countdownStr, setCountdownStr] = useState<string>("");
@@ -196,17 +197,20 @@ function PaymentContent() {
         if (duration > 0) setQrisTotalDuration(duration);
       } else if (res.ok && data.checkoutUrl) {
         setSnapRedirectUrl(data.checkoutUrl);
+      } else {
+        setGatewayInitError(data.error || "Sesi pembayaran belum dapat dibuat.");
       }
     } catch (e) {
       console.error("[Payment] Gagal inisialisasi QRIS:", e);
+      setGatewayInitError("Koneksi terputus saat menyiapkan pembayaran.");
     }
   }, [orderId, qrData, paymentMode, order]);
 
   useEffect(() => {
-    if (order && !qrData && paymentMode === "GATEWAY" && order.status === "PENDING") {
+    if (order && !qrData && !gatewayInitError && paymentMode === "GATEWAY" && order.status === "PENDING") {
       initQrisGateway();
     }
-  }, [order, qrData, paymentMode, initQrisGateway]);
+  }, [order, qrData, gatewayInitError, paymentMode, initQrisGateway]);
 
   // Countdown timer untuk QRIS (menggunakan serverTimeOffset)
   useEffect(() => {
@@ -740,6 +744,18 @@ function PaymentContent() {
                     </div>
                   )}
                 </div>
+              </div>
+            ) : gatewayInitError ? (
+              <div className="bg-white/5 border border-rose-500/30 rounded-3xl p-6 text-center space-y-3">
+                <p className="text-xs text-rose-300">{gatewayInitError}</p>
+                <p className="text-[11px] text-stone-400">Tagihan Anda tetap tersimpan. Coba lagi beberapa saat atau hubungi CS.</p>
+                <button
+                  type="button"
+                  onClick={() => setGatewayInitError(null)}
+                  className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs rounded-xl cursor-pointer"
+                >
+                  Coba Lagi
+                </button>
               </div>
             ) : (
               <div className="bg-white/5 border border-white/10 rounded-3xl p-6 text-center text-xs text-stone-400 font-mono">

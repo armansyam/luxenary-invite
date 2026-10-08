@@ -14,7 +14,7 @@ import {
   type LifecycleDaySettings,
 } from "@/lib/lifecycleDates";
 import { getPlanDisplayName } from "@/lib/planUtils";
-import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
+import { resolveInvitationDisplayName, STAFF_PIN_PATTERN } from "@/lib/invitationUtils";
 import { useFeedback } from "@/components/ui/Feedback";
 
 export default function SettingsPage() {
@@ -215,7 +215,7 @@ export default function SettingsPage() {
         if (!checkMediaSlot(inv, "DESKTOP_SIDEBAR")) missing.push("Sidebar Desktop");
         if (!checkMediaSlot(inv, "GLOBAL_FIXED_BG")) missing.push("Fixed Background");
         if (!checkMediaSlot(inv, "CLOSING_COVER")) missing.push("Foto Penutup");
-        return `Slot visual berikut belum diunggah: ${missing.join(", ")}. Harap lengkapi seluruh media visual di Edit Undangan (Seksi 2) agar tidak menggunakan aset demo bawaan tema.`;
+        return `Slot visual berikut belum diunggah: ${missing.join(", ")}. Harap lengkapi di Edit Undangan (Seksi 2).`;
       },
       missingMessage: "Kelengkapan visual belum terpenuhi. Harap unggah Foto Sampul Pop-Up, Sidebar Desktop, Fixed Background, dan Foto Penutup di Edit Undangan (Seksi 2).",
     },
@@ -290,9 +290,8 @@ export default function SettingsPage() {
       desc: "Sandi petugas resepsionis & check-in QR",
       hasToggle: true,
       isToggledOn: (inv: any) => checkHasQrCheckin(inv),
-      hasData: (inv: any, form: any) =>
-        Boolean((form.staffPin || inv?.staffPin) && (form.staffPin || inv?.staffPin).length >= 4),
-      missingMessage: "PIN Keamanan Panitia minimal 4 digit belum diatur. Harap atur PIN pada kartu pengaturan di bawah.",
+      hasData: (inv: any, form: any) => STAFF_PIN_PATTERN.test(String(form.staffPin || inv?.staffPin || "")),
+      missingMessage: "PIN Keamanan Panitia (4–10 huruf/angka) belum diatur. Harap atur PIN pada kartu pengaturan di bawah.",
     },
     {
       id: "gallery",
@@ -509,6 +508,8 @@ export default function SettingsPage() {
       setSavingSec(null);
     }
   };
+
+  const isStaffPinValid = STAFF_PIN_PATTERN.test(formData.staffPin.trim());
 
   // Penyimpanan Bagian Formulir Mandiri (Subdomain & Staff PIN)
   const handleSaveSection = async (secKey: string) => {
@@ -1686,7 +1687,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between gap-3 border-b border-stone-100 pb-3">
             <div>
               <h3 className="text-sm font-bold text-stone-900">PIN Keamanan Panitia</h3>
-              <p className="text-xs text-stone-500">Sandi rahasia (6 karakter) untuk mengakses Resepsionis, Booth, dan Proyektor</p>
+              <p className="text-xs text-stone-500">Sandi rahasia (4–10 huruf/angka) untuk mengakses Resepsionis, Booth, dan Proyektor</p>
             </div>
             <button
               type="button"
@@ -1725,10 +1726,10 @@ export default function SettingsPage() {
                   value={formData.staffPin}
                   onChange={(e) => setFormData({ ...formData, staffPin: e.target.value })}
                   placeholder="Contoh: 123456"
-                  className="w-full py-3 px-4 rounded-xl border border-stone-200 bg-stone-50 text-sm font-mono font-bold focus:outline-none focus:border-amber-700 focus:ring-2 focus:ring-amber-700/20 transition"
+                  className="w-full py-3 px-4 rounded-xl border border-stone-200 bg-stone-50 text-base sm:text-sm font-mono font-bold focus:outline-none focus:border-amber-700 focus:ring-2 focus:ring-amber-700/20 transition"
                 />
-                <p className="text-[10px] mt-1.5 text-stone-500">
-                  Bisa berupa angka atau huruf. Akan diminta saat membuka link fitur operasional.
+                <p className={`text-[11px] mt-1.5 ${isStaffPinValid ? "text-stone-500" : "text-rose-600"}`}>
+                  4–10 karakter, huruf atau angka saja. Akan diminta saat membuka link fitur operasional.
                 </p>
               </div>
 
@@ -1741,7 +1742,7 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   onClick={() => handleSaveSection("staffPin")}
-                  disabled={savingSec === "staffPin" || !formData.staffPin}
+                  disabled={savingSec === "staffPin" || !isStaffPinValid}
                   className="px-5 py-2 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl text-xs transition cursor-pointer disabled:opacity-50"
                 >
                   {savingSec === "staffPin" ? "Menyimpan..." : "Simpan PIN"}

@@ -389,6 +389,37 @@ describe.skipIf(!IS_TEST_DB)("bug terbukti: buku tamu klien", () => {
   });
 });
 
+// Ditemukan saat simulasi klien 9 Okt 2026: PIN "12" tersimpan dan ditampilkan sebagai PIN aktif.
+describe.skipIf(!IS_TEST_DB)("bug terbukti: PIN resepsionis tanpa batas panjang", () => {
+  let invId = "";
+
+  beforeAll(async () => {
+    invId = (await makeClient("pin", "TIER_2", true)).invitationId;
+    // PIN diatur sebelum terbit; undangan terbit menolak semua PUT klien (studio terkunci).
+    await prisma.invitation.update({ where: { id: invId }, data: { status: "DRAFT" } });
+  });
+
+  const putPin = (staffPin: string) => invitationPut(json(`/api/client/invitations/${invId}`, "PUT", { staffPin }), ctx(invId));
+
+  it("PIN 2 karakter ditolak dan tidak tersimpan", async () => {
+    const res = await putPin("12");
+    expect(res.status).toBe(400);
+    expect((await prisma.invitation.findUniqueOrThrow({ where: { id: invId } })).staffPin).toBeNull();
+  });
+
+  it("nilai berformat ciphertext tidak disimpan mentah", async () => {
+    const res = await putPin(`${"a".repeat(32)}:${"b".repeat(32)}:cc`);
+    expect(res.status).toBe(400);
+  });
+
+  it("kontrol: PIN 6 karakter tersimpan terenkripsi dan dikembalikan sebagai teks biasa", async () => {
+    const res = await putPin("ab12cd");
+    expect(res.status).toBe(200);
+    expect((await res.json()).staffPin).toBe("ab12cd");
+    expect((await prisma.invitation.findUniqueOrThrow({ where: { id: invId } })).staffPin).not.toBe("ab12cd");
+  });
+});
+
 afterAll(async () => {
   await prisma.guestMemory.deleteMany({ where: { invitationId: { in: invitations } } });
   await prisma.invitation.deleteMany({ where: { id: { in: invitations } } });

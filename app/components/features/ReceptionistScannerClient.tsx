@@ -30,7 +30,14 @@ function getCleanCameraLabel(label: string, index: number): string {
   return label || `Kamera ${index + 1}`;
 }
 
-export default function ReceptionistScannerClient({ 
+// Klien bebas mengetik "5", "VIP-1", atau "Meja 5"; awalan hanya ditambahkan bila belum ada.
+function tableLabel(tableNumber?: string | null): string {
+  const value = tableNumber?.trim();
+  if (!value) return "Bebas / Tanpa Meja";
+  return /^meja\b/i.test(value) ? value : `Meja ${value}`;
+}
+
+export default function ReceptionistScannerClient({
   invitationId,
   platformName,
   clientInitials,
@@ -332,40 +339,54 @@ export default function ReceptionistScannerClient({
     loadData();
   }, [invitationId]);
 
-  // 2. Handle Sync (Manual)
-  const syncOfflineQueue = async () => {
-    if (offlineQueue.length === 0 || !navigator.onLine) return;
-    
+  // 2. Sinkronisasi antrean check-in ke server (otomatis, lihat efek di bawah; tombol di header tetap tersedia)
+  const isSyncingRef = useRef(false);
+  const syncOfflineQueue = useCallback(async () => {
+    if (isSyncingRef.current || queueRef.current.length === 0 || !navigator.onLine) return;
+    isSyncingRef.current = true;
     setStatus("SYNCING");
-    const newQueue = [...queueRef.current];
+    const synced = new Set<string>();
 
-    for (const guestId of queueRef.current) {
-      const guest = guestsRef.current.find(g => g.id === guestId);
-      if (!guest) continue;
+    try {
+      for (const guestId of [...queueRef.current]) {
+        const guest = guestsRef.current.find(g => g.id === guestId);
+        if (!guest) continue;
 
-      try {
-        const staffAuthToken = localStorage.getItem(`staff_auth_token_${invitationId}`);
-        const res = await fetch("/api/receptionist/scan", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          // Tamu umum dikirim sebagai LUX|<id undangan>|<nama>: server mencatatnya sebagai tamu umum bila belum ada.
-          body: JSON.stringify({ qrToken: syncTokenFor(guest, invitationId), invitationId, isCheckIn: true, token: staffAuthToken }),
-        });
-        const data = await res.json();
-        if (data.success) {
-          const index = newQueue.indexOf(guestId);
-          if (index > -1) newQueue.splice(index, 1);
+        try {
+          const staffAuthToken = localStorage.getItem(`staff_auth_token_${invitationId}`);
+          const res = await fetch("/api/receptionist/scan", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            // Tamu umum dikirim sebagai LUX|<id undangan>|<nama>: server mencatatnya sebagai tamu umum bila belum ada.
+            body: JSON.stringify({ qrToken: syncTokenFor(guest, invitationId), invitationId, isCheckIn: true, token: staffAuthToken }),
+          });
+          const data = await res.json();
+          if (data.success) synced.add(guestId);
+          // Batas laju server (30 scan/menit) atau sesi PIN berakhir: sisa antrean dicoba pada putaran berikutnya.
+          if (res.status === 429 || res.status === 401) break;
+        } catch {
+          console.error("Sync failed for", guest?.name);
         }
-        // Batas laju server (30 scan/menit): sisa antrean dicoba pada sinkronisasi berikutnya, bukan dihujani ulang.
-        if (res.status === 429) break;
-      } catch (e) {
-        console.error("Sync failed for", guest?.name);
       }
+    } finally {
+      // Dibaca ulang dari ref: check-in yang masuk selama sinkronisasi berjalan tidak boleh ikut terhapus dari antrean.
+      persistQueue(queueRef.current.filter(id => !synced.has(id)));
+      isSyncingRef.current = false;
+      setStatus(navigator.onLine ? "READY" : "OFFLINE");
     }
+  }, [invitationId, persistQueue]);
 
-    persistQueue(newQueue);
-    setStatus("READY");
-  };
+  // Antrean dikirim begitu ada check-in baru, saat sinyal kembali, dan dicoba ulang tiap 30 detik selama masih tersisa.
+  useEffect(() => {
+    if (offlineQueue.length === 0) return;
+    syncOfflineQueue();
+    const retry = setInterval(syncOfflineQueue, 30_000);
+    window.addEventListener("online", syncOfflineQueue);
+    return () => {
+      clearInterval(retry);
+      window.removeEventListener("online", syncOfflineQueue);
+    };
+  }, [offlineQueue.length, syncOfflineQueue]);
 
   // 2b. Background Polling (15 menit) untuk refresh data tamu jika ada tamu baru dari dashboard
   useEffect(() => {
@@ -628,18 +649,18 @@ export default function ReceptionistScannerClient({
 
   return (
     <div 
-      className="h-screen overflow-hidden bg-stone-100 text-stone-900 flex flex-col font-sans selection:bg-amber-500 selection:text-white"
+      className="min-h-screen md:h-screen md:overflow-hidden bg-stone-100 text-stone-900 flex flex-col font-sans selection:bg-amber-500 selection:text-white"
       style={{ colorScheme: 'light' }}
     >
       {/* Header */}
-      <header className="relative bg-stone-900 text-white px-6 py-3.5 shadow-md flex justify-between items-center flex-shrink-0">
+      <header className="relative bg-stone-900 text-white px-4 sm:px-6 py-3.5 shadow-md flex justify-between items-center flex-shrink-0">
         {/* Left: Brand Logo & Platform Name */}
         <div className="flex items-center gap-3 z-10">
           <BrandLogo size="sm" showName brandName={platformName || "Platform Undangan"} />
         </div>
 
         {/* Center: RECEPTIONIST SYSTEM */}
-        <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none text-center">
+        <div className="hidden md:block absolute left-1/2 -translate-x-1/2 pointer-events-none text-center">
           <h1 className="text-xs sm:text-sm md:text-base font-extrabold tracking-widest uppercase text-stone-100 font-sans whitespace-nowrap">
             RECEPTIONIST SYSTEM
           </h1>
@@ -753,11 +774,11 @@ export default function ReceptionistScannerClient({
         </div>
       </header>
 
-      <main className="flex-1 p-4 md:p-6 max-w-6xl mx-auto w-full grid grid-cols-1 md:grid-cols-12 gap-6 min-h-0 overflow-hidden">
+      <main className="flex-1 p-4 md:p-6 max-w-6xl mx-auto w-full grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 min-h-0 md:overflow-hidden">
         
         {/* Left Col: Result Card (Big Display) */}
         <div className="md:col-span-5 h-full flex flex-col min-h-0">
-          <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 h-full flex flex-col justify-between overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-4 sm:p-6 h-full flex flex-col justify-between overflow-hidden">
             <div className="my-auto w-full">
               {!scanResult ? (
                 <div className="text-center text-stone-400 flex flex-col items-center justify-center">
@@ -768,7 +789,7 @@ export default function ReceptionistScannerClient({
                   <p className="text-sm">Silakan lakukan scan QR atau cari nama tamu.</p>
                 </div>
               ) : (
-                <div className={`p-8 rounded-2xl border w-full text-center shadow-inner ${scanResult.type === 'success' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                <div className={`p-5 sm:p-8 rounded-2xl border w-full text-center shadow-inner ${scanResult.type === 'success' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
                   {scanResult.type === 'success' ? (
                     <>
                       <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-5 shadow-xl shadow-green-500/30">
@@ -802,7 +823,7 @@ export default function ReceptionistScannerClient({
                         <div className="text-left">
                           <p className="text-[10px] uppercase font-bold text-stone-400 tracking-wider">Lokasi Meja / Tempat Duduk</p>
                           <p className="text-2xl font-black text-stone-900">
-                            {scanResult.guest?.tableNumber ? `Meja ${scanResult.guest.tableNumber}` : "Bebas / Tanpa Meja"}
+                            {tableLabel(scanResult.guest?.tableNumber)}
                           </p>
                         </div>
                       </div>
@@ -821,7 +842,7 @@ export default function ReceptionistScannerClient({
                         <div className="my-3 p-3.5 bg-white/95 border border-red-200 rounded-xl shadow-sm inline-flex items-center gap-3">
                           <span className="text-xs font-bold text-stone-500 uppercase">Lokasi Duduk:</span>
                           <span className="text-base font-extrabold text-stone-900">
-                            {scanResult.guest.tableNumber ? `Meja ${scanResult.guest.tableNumber}` : "Bebas / Tanpa Meja"}
+                            {tableLabel(scanResult.guest.tableNumber)}
                           </span>
                           <span className="text-xs text-stone-400">&bull;</span>
                           <span className="text-xs font-bold text-stone-700">{scanResult.guest.guestQuota || 1} Pax</span>
@@ -933,7 +954,7 @@ export default function ReceptionistScannerClient({
               </button>
             </div>
             
-            <div className="flex-1 p-6 overflow-y-auto custom-scrollbar">
+            <div className="flex-1 p-4 sm:p-6 overflow-y-auto custom-scrollbar">
               {/* Mode Scanner Fisik */}
               <div className={scannerMode === "PHYSICAL" ? "block" : "hidden"}>
                 <p className="text-xs text-stone-500 mb-4 text-center">Gunakan alat scanner barcode tembak (Bluetooth/USB) atau ketik nama tamu.</p>
@@ -942,12 +963,12 @@ export default function ReceptionistScannerClient({
                     ref={inputRef}
                     type="text"
                     autoFocus
-                    className="flex-1 px-4 py-4 bg-stone-50 border border-stone-300 rounded-xl text-lg font-bold text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition"
+                    className="flex-1 min-w-0 px-4 py-4 bg-stone-50 border border-stone-300 rounded-xl text-lg font-bold text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition"
                     placeholder="Scan QR / Ketik Nama..."
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
                   />
-                  <button type="submit" className="px-8 py-4 bg-stone-900 text-white rounded-xl font-bold tracking-widest hover:bg-stone-800 transition">
+                  <button type="submit" className="shrink-0 px-5 sm:px-8 py-4 bg-stone-900 text-white rounded-xl font-bold tracking-widest hover:bg-stone-800 transition">
                     CARI
                   </button>
                 </form>
