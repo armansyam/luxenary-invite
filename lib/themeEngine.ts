@@ -2107,7 +2107,7 @@ export async function composeBirthdayData(inv: any) {
   const personNickname = p.person?.nickname || inv.groomNickname || personName;
   const personAge = String(p.person?.age || "");
   const personInstagram = (p.person?.instagram || "").replace(/^@+/, "");
-  const parentName = p.person?.parentName || inv.groomParents || "";
+  const parentName = [p.person?.fatherName, p.person?.motherName].filter(Boolean).join(" & ") || inv.groomParents || "";
 
   // Photos: sama dengan pernikahan, tanpa foto demo tema (foto model orang lain) sebagai cadangan.
   const customCover = mediaMap.get("LANDING_COVER");
@@ -2659,8 +2659,8 @@ export async function composeKhitanData(inv: any) {
   const childNickname = child.nickname || inv.groomNickname || childName;
   const childAge = String(child.age || "");
   const childBirthOrder = child.birthOrder || "Putra";
-  const fatherName = parents.fatherName || inv.groomFather || "Bapak";
-  const motherName = parents.motherName || inv.groomMother || "Ibu";
+  const fatherName = parents.father || inv.groomFather || "";
+  const motherName = parents.mother || inv.groomMother || "";
 
   const host = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
   // Foto utama tersimpan di slot GROOM_PHOTO (editor seksi 3); tanpa foto demo tema sebagai cadangan.
@@ -2673,7 +2673,8 @@ export async function composeKhitanData(inv: any) {
   const eventDateFormatted = primaryEventDateLabel(events);
   const guestName = inv.recipientName || "Tamu Undangan";
 
-  const parentsHtml = `<p>Putra tercinta dari Pasangan:</p><h4 class="serif" style="color: var(--text-main); font-size: 16px; margin: 4px 0;">${escapeHtml(fatherName)} &amp; ${escapeHtml(motherName)}</h4>`;
+  const parentNames = [fatherName, motherName].filter(Boolean).map(escapeHtml).join(" &amp; ");
+  const parentsHtml = parentNames ? `<p>Putra tercinta dari:</p><h4 class="serif" style="color: var(--text-main); font-size: 16px; margin: 4px 0;">${parentNames}</h4>` : "";
 
   const eventSectionHtml = buildUniversalEventCards(events, "Walimatul Khitan");
   const gallerySectionHtml = buildUniversalGallerySection(await collectGalleryPhotos(inv, featureSettings), customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false);
@@ -2764,8 +2765,8 @@ export async function composeAqiqahData(inv: any) {
   const babyNickname = baby.nickname || inv.groomNickname || babyName;
   const birthDateFormatted = baby.birthDate ? formatDateId(baby.birthDate) : "";
   const birthMetrics = [baby.birthWeight, baby.birthLength].filter(Boolean).join(" • ");
-  const fatherName = parents.fatherName || inv.groomFather || "Bapak";
-  const motherName = parents.motherName || inv.groomMother || "Ibu";
+  const fatherName = parents.father || inv.groomFather || "";
+  const motherName = parents.mother || inv.groomMother || "";
 
   const host = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
   // Foto utama tersimpan di slot GROOM_PHOTO (editor seksi 3); tanpa foto demo tema sebagai cadangan.
@@ -2778,7 +2779,8 @@ export async function composeAqiqahData(inv: any) {
   const eventDateFormatted = primaryEventDateLabel(events);
   const guestName = inv.recipientName || "Tamu Undangan";
 
-  const parentsHtml = `<p>Putra/Putri tercinta dari Pasangan:</p><h4 class="serif" style="color: var(--text-main); font-size: 16px; margin: 4px 0;">${escapeHtml(fatherName)} &amp; ${escapeHtml(motherName)}</h4>`;
+  const parentNames = [fatherName, motherName].filter(Boolean).map(escapeHtml).join(" &amp; ");
+  const parentsHtml = parentNames ? `<p>Putra/Putri tercinta dari:</p><h4 class="serif" style="color: var(--text-main); font-size: 16px; margin: 4px 0;">${parentNames}</h4>` : "";
 
   const eventSectionHtml = buildUniversalEventCards(events, "Tasyakuran Aqiqah");
   const gallerySectionHtml = buildUniversalGallerySection(await collectGalleryPhotos(inv, featureSettings), customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false);
@@ -2823,7 +2825,7 @@ export async function composeAqiqahData(inv: any) {
 
 export async function composeWisudaData(inv: any) {
   const p = safeParseParticipants(inv.participantsJson);
-  const grad = p.graduate || {};
+  const grad = p.person || {};
   const parents = p.parents || {};
   const invitationId = inv.id;
 
@@ -2870,10 +2872,10 @@ export async function composeWisudaData(inv: any) {
   const graduateDegree = grad.degree || "";
   const graduateMajor = grad.major || "";
   const graduateFaculty = grad.faculty || "";
-  const universityName = grad.university || "";
+  const universityName = grad.institution || "";
   const honors = grad.honors || "";
-  const fatherName = parents.fatherName || inv.groomFather || "";
-  const motherName = parents.motherName || inv.groomMother || "";
+  const fatherName = parents.father || inv.groomFather || "";
+  const motherName = parents.mother || inv.groomMother || "";
 
   const host = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
   // Foto utama tersimpan di slot GROOM_PHOTO (editor seksi 3); tanpa foto demo tema sebagai cadangan.
@@ -2886,7 +2888,8 @@ export async function composeWisudaData(inv: any) {
   const eventDateFormatted = primaryEventDateLabel(events);
   const guestName = inv.recipientName || "Rekan & Sahabat";
 
-  const parentsHtml = fatherName && motherName ? `<p>Putra/Putri tercinta dari:</p><h4 class="serif" style="color: var(--text-main); font-size: 15px; margin: 4px 0;">${escapeHtml(fatherName)} &amp; ${escapeHtml(motherName)}</h4>` : "";
+  const parentNames = [fatherName, motherName].filter(Boolean).map(escapeHtml).join(" &amp; ");
+  const parentsHtml = parentNames ? `<p>Putra/Putri tercinta dari:</p><h4 class="serif" style="color: var(--text-main); font-size: 15px; margin: 4px 0;">${parentNames}</h4>` : "";
   const graduateHonorsBadgeHtml = honors ? `<span style="display: inline-block; padding: 4px 12px; border-radius: var(--radius-full, 9999px); background: color-mix(in srgb, var(--accent) 20%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); color: var(--accent); font-size: 11px; font-weight: 700; margin-top: 8px;">Predikat: ${escapeHtml(honors)}</span>` : "";
 
   const eventSectionHtml = buildUniversalEventCards(events, "Syukuran Kelulusan");
@@ -2978,7 +2981,7 @@ export async function composeGatheringData(inv: any) {
   } catch {}
 
   const eventTitle = evInfo.title || inv.groomName || "Peresmian & Syukuran";
-  const eventSubtitle = evInfo.subtitle || inv.groomNickname || "Melangkah Maju Bersama Menuju Masa Depan Gemilang";
+  const eventSubtitle = evInfo.subtitle || "";
   const organizerName = evInfo.organizer || "";
   const hostName = evInfo.hostName || "";
   const dresscode = evInfo.dresscode || "";

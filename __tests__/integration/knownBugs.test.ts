@@ -420,6 +420,21 @@ describe.skipIf(!IS_TEST_DB)("bug terbukti: PIN resepsionis tanpa batas panjang"
   });
 });
 
+describe.skipIf(!IS_TEST_DB)("nama tokoh utama acara non-pernikahan", () => {
+  it("menyimpan participantsJson dari studio ikut memperbarui kolom groom* yang dibaca audit terbit", async () => {
+    const { userId } = await makeClient("khitan", "TIER_2", false);
+    const draft = await prisma.invitation.create({
+      data: { userId, eventType: "KHITAN", invitationSlug: `${TAG}-khitan`, groomSlug: `${TAG}-gkhitan`, brideSlug: "khitan", status: "DRAFT" },
+    });
+    invitations.push(draft.id);
+    const participantsJson = JSON.stringify({ child: { name: "Muhammad Fatih", nickname: "Fatih" }, parents: { father: "Hasan", mother: "Aminah" } });
+    const res = await invitationPut(json(`/api/client/invitations/${draft.id}`, "PUT", { participantsJson }), ctx(draft.id));
+    expect(res.status).toBe(200);
+    const row = await prisma.invitation.findUniqueOrThrow({ where: { id: draft.id } });
+    expect([row.groomName, row.groomNickname, row.groomFather, row.groomMother]).toEqual(["Muhammad Fatih", "Fatih", "Hasan", "Aminah"]);
+  });
+});
+
 afterAll(async () => {
   await prisma.guestMemory.deleteMany({ where: { invitationId: { in: invitations } } });
   await prisma.invitation.deleteMany({ where: { id: { in: invitations } } });

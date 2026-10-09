@@ -88,7 +88,7 @@ function LoginForm({ platformName, serviceStatus }: { platformName: string; serv
                   rel="noopener noreferrer"
                   className="font-bold text-amber-800 hover:underline"
                 >
-                  Hubungi Admin →
+                  Hubungi Admin
                 </a>
               )}
             </div>
@@ -147,10 +147,10 @@ function LoginForm({ platformName, serviceStatus }: { platformName: string; serv
         {/* Footer */}
         <div className="flex items-center justify-between text-[11px] text-stone-400 border-t border-stone-100 pt-4">
           <Link href="/" className="hover:text-stone-700 transition">
-            ← Beranda
+            Beranda
           </Link>
           <Link href="/demo" className="hover:text-stone-700 transition">
-            Lihat Demo Tema →
+            Lihat Demo Tema
           </Link>
         </div>
       </div>

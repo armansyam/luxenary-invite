@@ -119,7 +119,7 @@ export default function PackageSelectionPage() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-amber-800 text-white rounded-full text-xs font-bold hover:bg-amber-900 transition shrink-0"
                 >
-                  Tanya Kuota via WhatsApp →
+                  Tanya Kuota via WhatsApp
                 </a>
               </div>
             )}

@@ -14,7 +14,7 @@ import {
   type LifecycleDaySettings,
 } from "@/lib/lifecycleDates";
 import { getPlanDisplayName } from "@/lib/planUtils";
-import { resolveInvitationDisplayName, STAFF_PIN_PATTERN } from "@/lib/invitationUtils";
+import { resolveInvitationDisplayName, STAFF_PIN_PATTERN, eventNoun } from "@/lib/invitationUtils";
 import { useFeedback } from "@/components/ui/Feedback";
 
 export default function SettingsPage() {
@@ -176,6 +176,9 @@ export default function SettingsPage() {
     return caps.includes("qr_checkin");
   };
 
+  const isWeddingEvent = !invitation?.eventType || invitation.eventType === "WEDDING";
+  const eventNounLabel = eventNoun(invitation?.eventType);
+
   const AUDIT_RULES = [
     {
       id: "subdomain",
@@ -222,7 +225,7 @@ export default function SettingsPage() {
     {
       id: "couples",
       title: "Profil Lengkap Utama",
-      desc: "Informasi profil mempelai atau penyelenggara",
+      desc: isWeddingEvent ? "Nama lengkap kedua mempelai" : "Nama tokoh utama atau judul acara",
       hasToggle: false,
       isToggledOn: () => true,
       hasData: (inv: any) => {
@@ -296,7 +299,7 @@ export default function SettingsPage() {
     {
       id: "gallery",
       title: "Galeri Foto & Album Media",
-      desc: "Foto pre-wedding dan album kenangan",
+      desc: isWeddingEvent ? "Foto pre-wedding dan album kenangan" : "Foto dokumentasi dan album kenangan",
       hasToggle: true,
       isToggledOn: (inv: any) => getFeatureToggle(inv, "showGallery", true),
       hasData: (inv: any) => {
@@ -356,13 +359,13 @@ export default function SettingsPage() {
     {
       id: "music",
       title: "Musik Latar Pengiring",
-      desc: "Lagu romantis pengiring pembukaan",
+      desc: "Lagu pengiring saat undangan dibuka",
       hasToggle: true,
       isToggledOn: (inv: any) => getFeatureToggle(inv, "showMusic", true),
       hasData: (inv: any) => Boolean(inv?.musicUrl && inv.musicUrl.trim()),
       missingMessage: "Seksi Musik Latar Pengiring dalam status aktif, namun lagu belum dipilih. Silakan pasang musik di Edit Undangan, atau nonaktifkan sakelar seksi ini jika tidak digunakan.",
     },
-  ];
+  ].filter((rule) => rule.id !== "story" || isWeddingEvent);
 
   useEffect(() => {
     fetch("/api/client/invitations", { cache: "no-store" })
@@ -876,7 +879,7 @@ export default function SettingsPage() {
                   )}
                 </p>
                 <p className="text-[10px] text-stone-400 leading-normal">
-                  Referensi hitung mundur dan arsip digital pernikahan.
+                  Referensi hitung mundur dan arsip digital {eventNounLabel}.
                 </p>
               </div>
             </div>
@@ -992,7 +995,7 @@ export default function SettingsPage() {
                   <svg className="w-4 h-4 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                   </svg>
-                  <span>Pemeriksaan otomatis mencakup tautan, nama mempelai, tanggal acara, media, dan PIN keamanan.</span>
+                  <span>Pemeriksaan otomatis mencakup tautan, nama {isWeddingEvent ? "mempelai" : "profil"}, tanggal acara, media, dan PIN keamanan.</span>
                 </div>
 
                 <button
@@ -1523,7 +1526,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between gap-3 border-b border-stone-100 pb-3">
             <div>
               <h3 className="text-sm font-bold text-stone-900">Alamat Tautan Subdomain</h3>
-              <p className="text-xs text-stone-500">Tentukan alamat URL eksklusif undangan pernikahan Anda</p>
+              <p className="text-xs text-stone-500">Tentukan alamat URL eksklusif undangan {eventNounLabel} Anda</p>
             </div>
             {formData.status !== "PUBLISHED" && (
               <button
@@ -1633,7 +1636,7 @@ export default function SettingsPage() {
                       const val = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "");
                       setFormData({ ...formData, subdomain: val });
                     }}
-                    placeholder="mempelai-wanita-pria"
+                    placeholder={isWeddingEvent ? "mempelai-wanita-pria" : "nama-acara"}
                     className="flex-1 py-3 px-1 text-xs text-stone-900 font-mono font-bold bg-transparent focus:outline-none"
                   />
                   <span className="pr-3.5 pl-1 text-xs text-stone-400 font-mono select-none">.{getApexRootDomain()}</span>

@@ -404,7 +404,7 @@ export function HowItWorksInteractive({ activeDomain }: { activeDomain: string }
                 </div>
 
                 <div className="mt-4 text-[10px] text-stone-500 tracking-wider">
-                  QR CHECK-IN RESEPSI →
+                  QR CHECK-IN RESEPSI
                 </div>
               </div>
 
@@ -750,7 +750,7 @@ export function HowItWorksInteractive({ activeDomain }: { activeDomain: string }
 
               <div className="mt-4 p-3 rounded-xl bg-stone-900/60 border border-stone-800/80 text-xs text-stone-400 flex items-center justify-between">
                 <span>✦ Tautan personal menjamin nama tamu tidak tertukar dan langsung menyapa saat amplop dibuka.</span>
-                <span className="text-amber-300 font-semibold cursor-pointer">Impor File Excel / CSV →</span>
+                <span className="text-amber-300 font-semibold cursor-pointer">Impor File Excel / CSV</span>
               </div>
             </div>
           )}

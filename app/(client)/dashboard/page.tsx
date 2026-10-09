@@ -719,7 +719,7 @@ function DashboardHomeContent() {
                 <span>Acara telah selesai. URL website Anda sekarang otomatis menampilkan <strong>Galeri Momen Tamu</strong>.</span>
               </div>
               <Link href="/dashboard/moments" className="text-amber-800 hover:underline font-semibold">
-                Kelola Galeri &amp; Unduh ZIP &rarr;
+                Kelola Galeri &amp; Unduh ZIP
               </Link>
             </div>
           )}

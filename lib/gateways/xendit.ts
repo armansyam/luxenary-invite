@@ -113,7 +113,7 @@ export class XenditGateway implements PaymentGateway {
         if (invitation.invitationSlug) invitationSlug = invitation.invitationSlug;
         const gName = invitation.groomNickname || invitation.groomName || "";
         const bName = invitation.brideNickname || invitation.brideName || "";
-        if (gName || bName) coupleName = `${gName} & ${bName}`.trim();
+        if (gName || bName) coupleName = [gName, bName].filter(Boolean).join(" & ");
       }
     } catch (err) {
       logger.warn("XenditGateway", "Gagal memuat data undangan untuk invoice", { orderId, error: String(err) });

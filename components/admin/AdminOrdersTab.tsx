@@ -720,7 +720,7 @@ export default function AdminOrdersTab() {
                     rel="noreferrer"
                     className="text-[11px] font-semibold text-amber-800 hover:underline"
                   >
-                    Buka Ukuran Penuh di Tab Baru &rarr;
+                    Buka Ukuran Penuh di Tab Baru
                   </a>
                 </div>
               </div>

@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import GuestMomentClient from "@/app/components/features/GuestMomentClient";
-import { getAdminSetting, getPlanMemoriesQuota, hasPlanCapability } from "@/lib/settings";
+import { getPlanMemoriesQuota, hasPlanCapability } from "@/lib/settings";
 import { getMemoriesActiveSchedule } from "@/lib/domainUtils";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 import { parseFeatureSettings } from "@/lib/featureSettings";
@@ -16,17 +16,15 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { subdomain } = await params;
-  const [invitation, platformName] = await Promise.all([
-    prisma.invitation.findUnique({ where: { subdomain } }),
-    getAdminSetting("platform_name", "Platform Undangan"),
-  ]);
+  const invitation = await prisma.invitation.findUnique({ where: { subdomain } });
 
   if (!invitation) return {};
 
   const displayName = resolveInvitationDisplayName(invitation);
   const isWedding = !invitation.eventType || invitation.eventType === "WEDDING";
+  // Nama platform ditambahkan templat judul di app/layout.tsx.
   return {
-    title: `Guest Moment — ${displayName} | ${platformName}`,
+    title: `Kamera Momen — ${displayName}`,
     description: isWedding
       ? `Bagikan foto candid Anda secara real-time di pernikahan ${displayName}.`
       : `Bagikan foto candid Anda secara real-time di acara ${displayName}.`,

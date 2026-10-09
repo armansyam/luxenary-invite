@@ -2575,7 +2575,7 @@ export default function AdminSettingsTab(props: Props) {
               <div className="pt-2 border-t border-black/5 text-[11px] text-gray-500 flex items-center justify-between">
                 <span>Akun terdaftar tetap bisa login.</span>
                 {settingsMap["service_status_contact_wa"] && (
-                  <span className="font-bold text-amber-800">Tanya Kuota via WhatsApp →</span>
+                  <span className="font-bold text-amber-800">Tanya Kuota via WhatsApp</span>
                 )}
               </div>
             </div>

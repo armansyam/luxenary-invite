@@ -73,7 +73,9 @@ export async function POST(
       cfResult = await purgeCloudflareCache({ files: urlsToPurge });
     }
 
-    const coupleName = `${invitation.groomNickname || invitation.groomName || "Pria"} & ${invitation.brideNickname || invitation.brideName || "Wanita"}`;
+    const coupleName =
+      [invitation.groomNickname || invitation.groomName, invitation.brideNickname || invitation.brideName].filter(Boolean).join(" & ") ||
+      invitation.invitationSlug;
 
     return NextResponse.json({
       success: true,

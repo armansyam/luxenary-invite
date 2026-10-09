@@ -60,7 +60,7 @@ async function seedInvitation(themeId: string, eventType: string, index: number)
   ];
 
   const participants = Object.fromEntries(
-    ["person", "child", "parents", "baby", "graduate", "event"].map((k) => [k, tagged(`participants.${k}`, TEXT_KEYS, xss)])
+    ["person", "child", "parents", "baby", "event"].map((k) => [k, tagged(`participants.${k}`, TEXT_KEYS, xss)])
   );
 
   const featureSettings = {

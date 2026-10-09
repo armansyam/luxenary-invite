@@ -248,7 +248,8 @@ export default function ClientDashboardLayout({
             <span className="text-xs font-semibold text-stone-700 hidden sm:block">
               {session?.user?.name || "Mempelai"}
             </span>
-            <a 
+            {waContact && (
+            <a
               href={`https://wa.me/${waContact}?text=${encodeURIComponent('Halo Admin ' + (platformName || 'Platform') + ', saya butuh bantuan.')}`}
               target="_blank" 
               rel="noopener noreferrer"
@@ -258,6 +259,7 @@ export default function ClientDashboardLayout({
               <span className="hidden sm:inline">Hubungi CS</span>
               <span className="sm:hidden">CS</span>
             </a>
+            )}
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}
               className="px-3 py-2.5 sm:py-1.5 text-xs font-semibold text-stone-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition border border-stone-200 hover:border-rose-200 cursor-pointer"

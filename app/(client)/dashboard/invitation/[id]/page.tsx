@@ -6,8 +6,8 @@ import Link from "next/link";
 import { compressImageToWebP } from "@/lib/clientImageCompressor";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { getPlanDisplayName } from "@/lib/planUtils";
-import { safeParseParticipants } from "@/lib/participantUtils";
-import { resolveInvitationDisplayName, getMediaSlotLabel } from "@/lib/invitationUtils";
+import { mirrorParticipantNames, safeParseParticipants } from "@/lib/participantUtils";
+import { resolveInvitationDisplayName, getMediaSlotLabel, eventNoun } from "@/lib/invitationUtils";
 import { useFeedback } from "@/components/ui/Feedback";
 
 // Pilihan tema dimuat secara dinamis dari API /api/public/themes untuk menjamin sinkronisasi status aktif
@@ -1215,33 +1215,11 @@ export default function EditInvitation() {
       const current = safeParseParticipants(prev?.participantsJson);
       const updated = updater(current);
       const jsonStr = JSON.stringify(updated);
-      const nextInv: any = {
+      return {
         ...prev,
         participantsJson: jsonStr,
+        ...mirrorParticipantNames(prev?.eventType, updated),
       };
-      if (prev?.eventType === "BIRTHDAY") {
-        if (updated.person?.name !== undefined) nextInv.groomName = updated.person.name;
-        if (updated.person?.nickname !== undefined) nextInv.groomNickname = updated.person.nickname;
-        if (updated.person?.fatherName !== undefined) nextInv.groomFather = updated.person.fatherName;
-        if (updated.person?.motherName !== undefined) nextInv.groomMother = updated.person.motherName;
-        if (updated.person?.instagram !== undefined) nextInv.groomInstagram = updated.person.instagram;
-      } else if (prev?.eventType === "KHITAN") {
-        if (updated.child?.name !== undefined) nextInv.groomName = updated.child.name;
-        if (updated.child?.nickname !== undefined) nextInv.groomNickname = updated.child.nickname;
-        if (updated.parents?.father !== undefined) nextInv.groomFather = updated.parents.father;
-        if (updated.parents?.mother !== undefined) nextInv.groomMother = updated.parents.mother;
-      } else if (prev?.eventType === "AQIQAH") {
-        if (updated.baby?.name !== undefined) nextInv.groomName = updated.baby.name;
-        if (updated.baby?.nickname !== undefined) nextInv.groomNickname = updated.baby.nickname;
-        if (updated.parents?.father !== undefined) nextInv.groomFather = updated.parents.father;
-        if (updated.parents?.mother !== undefined) nextInv.groomMother = updated.parents.mother;
-      } else if (prev?.eventType === "WISUDA") {
-        if (updated.person?.name !== undefined) nextInv.groomName = updated.person.name;
-        if (updated.person?.nickname !== undefined) nextInv.groomNickname = updated.person.nickname;
-      } else if (prev?.eventType === "GATHERING") {
-        if (updated.event?.title !== undefined) nextInv.groomName = updated.event.title;
-      }
-      return nextInv;
     });
     broadcastToAllLiveIframes({
       type: "LUX_REMOTE_EDIT_CHANGE",
@@ -1359,10 +1337,12 @@ export default function EditInvitation() {
     );
   }
 
+  const isWeddingEvent = !invitation?.eventType || invitation.eventType === "WEDDING";
+  const eventNounLabel = eventNoun(invitation?.eventType);
+
   const FORM_SECTIONS = [
     {
       id: "sec1",
-      num: "1",
       title: "Pilihan Desain Tema",
       shortTitle: "Pilihan Tema",
       summary: selectedThemeObj ? selectedThemeObj.name : "Belum memilih tema",
@@ -1370,7 +1350,6 @@ export default function EditInvitation() {
     },
     {
       id: "sec2",
-      num: "2",
       title: "Sampul, Visual & Musik Latar",
       shortTitle: "Sampul & Musik",
       summary: media["LANDING_COVER"] ? "Sampul Terpasang" : "Belum ada sampul kustom",
@@ -1378,7 +1357,6 @@ export default function EditInvitation() {
     },
     {
       id: "sec3",
-      num: "3",
       title: (!invitation?.eventType || invitation?.eventType === "WEDDING")
         ? "Profil Kedua Mempelai"
         : invitation?.eventType === "BIRTHDAY"
@@ -1408,21 +1386,18 @@ export default function EditInvitation() {
     },
     {
       id: "sec4",
-      num: "4",
       title: "Kutipan Pembuka",
       shortTitle: "Kutipan Pembuka",
       summary: invitation?.openingQuote ? "Kutipan kustom aktif" : "Bawaan blueprint tema",
     },
     {
       id: "sec5",
-      num: "5",
       title: "Rangkaian Acara (Multi-Event)",
       shortTitle: "Rangkaian Acara",
       summary: events.length > 0 ? `${events.length} Sesi Acara` : "Belum ada acara",
     },
     {
       id: "sec6",
-      num: "6",
       title: "Kartu Akses QR & Check-In Tamu",
       shortTitle: "Kartu Akses QR",
       summary: showQrCheckin ? "Aktif (QR Pass)" : "Nonaktif",
@@ -1430,7 +1405,6 @@ export default function EditInvitation() {
     },
     {
       id: "sec7",
-      num: "7",
       title: "Kisah Cinta (Journey of Love)",
       shortTitle: "Kisah Cinta",
       summary: showStory ? `${stories.length} Babak Cerita` : "Nonaktif",
@@ -1438,49 +1412,42 @@ export default function EditInvitation() {
     },
     {
       id: "sec8",
-      num: "8",
       title: (!invitation?.eventType || invitation?.eventType === "WEDDING") ? "Galeri Foto Pre-Wedding & Video Teaser" : "Galeri Foto & Video Teaser",
       shortTitle: "Galeri & Video",
       summary: showGallery ? (getFeatureSetting("galleryDriveFolderUrl", "") ? "Drive Stream CDN" : "Grid Dinamis") : "Nonaktif",
     },
     {
       id: "sec9",
-      num: "9",
       title: "Tanda Kasih & Amplop Digital",
       shortTitle: "Amplop Digital",
       summary: showGift ? `${bankList.length} Rekening Terdaftar` : "Nonaktif",
     },
     {
       id: "sec10",
-      num: "10",
       title: "Panduan Busana (Dress Code Guide)",
       shortTitle: "Panduan Busana",
       summary: showDresscode ? (invitation.dresscode || "Aktif") : "Nonaktif",
     },
     {
       id: "sec11",
-      num: "11",
       title: "Siaran Langsung (Live Streaming)",
       shortTitle: "Live Streaming",
       summary: showLiveStream ? "Aktif" : "Nonaktif",
     },
     {
       id: "sec12",
-      num: "12",
       title: (!invitation?.eventType || invitation?.eventType === "WEDDING") ? "Filter Instagram (Wedding Frame AR)" : "Filter Instagram (Frame AR)",
       shortTitle: "Filter Instagram",
       summary: showFilter ? "Aktif" : "Nonaktif",
     },
     {
       id: "sec13",
-      num: "13",
       title: "Turut Mengundang & Himbauan Tamu",
       shortTitle: "Turut Mengundang",
       summary: showTurutMengundang ? "Aktif" : "Nonaktif",
     },
     {
       id: "sec14",
-      num: "14",
       title: "Galeri Kenangan Tamu (After-Event)",
       shortTitle: "Kenangan Tamu",
       summary: getFeatureSetting("showGuestMemories", true) ? "Live Photo Drop" : "Nonaktif",
@@ -1488,14 +1455,12 @@ export default function EditInvitation() {
     },
     {
       id: "sec15",
-      num: "15",
       title: "Pengaturan Teks UI & Label",
       shortTitle: "Pengaturan Label",
       summary: "Hitung mundur & teks tombol",
     },
     {
       id: "sec16",
-      num: "16",
       title: (!invitation?.eventType || invitation?.eventType === "WEDDING") ? "Mitra & Vendor Pernikahan (Wedding Credits)" : "Mitra & Vendor Acara (Credits)",
       shortTitle: (!invitation?.eventType || invitation?.eventType === "WEDDING") ? "Vendor Pernikahan" : "Vendor Acara",
       summary: getFeatureSetting("showVendors", false)
@@ -1512,7 +1477,12 @@ export default function EditInvitation() {
     },
   ];
 
-  const visibleSections = FORM_SECTIONS.filter((s) => !s.hide);
+  // Nomor seksi mengikuti seksi yang tampil; seksi tersembunyi (kisah cinta non-pernikahan, fitur paket) tidak meninggalkan celah.
+  const visibleSections = FORM_SECTIONS.filter((s) => !s.hide).map((s, i) => ({ ...s, num: String(i + 1) }));
+  const sectionHeading = (id: string) => {
+    const sec = visibleSections.find((s) => s.id === id);
+    return sec ? `${sec.num}. ${sec.title}` : "";
+  };
 
   const renderSectionNavFooter = (currentSecId: string) => {
     const idx = visibleSections.findIndex((s) => s.id === currentSecId);
@@ -1609,7 +1579,7 @@ export default function EditInvitation() {
             <div>
               <h3 className="font-bold text-sm text-white">Periode Acara Berakhir - Retensi 30 Hari</h3>
               <p className="text-xs text-stone-300 mt-0.5 leading-relaxed">
-                Tanggal acara pernikahan telah terlewati. Form editor dikunci. Data tamu dan foto akan dibersihkan dalam 30 hari pasca-acara. Mohon segera unduh foto Anda.
+                Tanggal acara {eventNounLabel} telah terlewati. Form editor dikunci. Data tamu dan foto akan dibersihkan dalam 30 hari pasca-acara. Mohon segera unduh foto Anda.
               </p>
             </div>
           </div>
@@ -2219,7 +2189,7 @@ export default function EditInvitation() {
         >
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-sm sm:text-base font-bold text-stone-900">1. Pilihan Desain Tema</h2>
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">{sectionHeading("sec1")}</h2>
               {collapsed.sec1 && (
                 <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
                   <span className="text-stone-300">•</span>
@@ -2232,7 +2202,7 @@ export default function EditInvitation() {
               )}
             </div>
             {!collapsed.sec1 && (
-              <p className="text-xs text-stone-500 mt-0.5">Pilih tema desain undangan pernikahan Anda.</p>
+              <p className="text-xs text-stone-500 mt-0.5">Pilih tema desain undangan {eventNounLabel} Anda.</p>
             )}
           </div>
           <div onClick={(e) => e.stopPropagation()}>
@@ -2427,7 +2397,7 @@ export default function EditInvitation() {
                               onClick={(e) => e.stopPropagation()}
                               className="inline-block text-[10px] font-bold text-amber-800 hover:underline pt-0.5"
                             >
-                              Lihat Demo →
+                              Lihat Demo
                             </a>
                           </div>
                         </div>
@@ -2525,7 +2495,7 @@ export default function EditInvitation() {
         >
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-sm sm:text-base font-bold text-stone-900">2. Sampul, Visual &amp; Musik Latar</h2>
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">{sectionHeading("sec2")}</h2>
               {collapsed.sec2 && (
                 <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
                   <span className="text-stone-300">•</span>
@@ -2638,11 +2608,11 @@ export default function EditInvitation() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-[11px] text-stone-600 pt-1">
                   <div className="p-2.5 bg-white rounded-lg border border-stone-200/70">
                     <span className="font-bold text-stone-800 block mb-1">Cover Mobile — Portrait 9:16</span>
-                    <span className="font-semibold text-amber-700">Cover Pembuka Mobile</span> — foto/video vertikal fullscreen layar ponsel. Idealnya foto prewedding portrait 9:16 atau 4:5.
+                    <span className="font-semibold text-amber-700">Cover Pembuka Mobile</span> — foto/video vertikal fullscreen layar ponsel. Idealnya foto {isWeddingEvent ? "prewedding" : "utama"} portrait 9:16 atau 4:5.
                   </div>
                   <div className="p-2.5 bg-white rounded-lg border border-stone-200/70">
                     <span className="font-bold text-stone-800 block mb-1">Cover Desktop — Landscape 16:9</span>
-                    <span className="font-semibold text-amber-700">Cover Pembuka Desktop</span> — foto/video horizontal fullscreen monitor. Idealnya foto prewedding outdoor sinematik. Jika kosong, pakai Cover Mobile.
+                    <span className="font-semibold text-amber-700">Cover Pembuka Desktop</span> — foto/video horizontal fullscreen monitor. Idealnya foto {isWeddingEvent ? "prewedding" : "utama"} outdoor sinematik. Jika kosong, pakai Cover Mobile.
                   </div>
                   <div className="p-2.5 bg-white rounded-lg border border-stone-200/70">
                     <span className="font-bold text-stone-800 block mb-1">Hero Kiri Desktop — Bebas (Otomatis)</span>
@@ -2660,11 +2630,11 @@ export default function EditInvitation() {
               </div>
             </div>
 
-            {/* Musik Latar Pernikahan */}
+            {/* Musik Latar */}
             <div className="p-4 sm:p-5 rounded-2xl border border-amber-200/80 bg-amber-50/30 space-y-4">
               <div className="flex items-center justify-between gap-3 border-b border-amber-200/60 pb-3">
                 <div>
-                  <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Musik Latar Pernikahan (Audio Background)</h3>
+                  <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Musik Latar Undangan (Audio Background)</h3>
                   <p className="text-[11px] text-stone-500">Audio yang otomatis diputar saat tamu menekan tombol &ldquo;Buka Undangan&rdquo;</p>
                 </div>
                 <SectionHeaderToggle
@@ -2776,7 +2746,7 @@ export default function EditInvitation() {
 
                   {/* Curated Presets Selection */}
                   <div>
-                    <span className="block text-[11px] font-bold text-stone-700 mb-2">Atau Pilih Lagu Pernikahan Pilihan dari Sistem:</span>
+                    <span className="block text-[11px] font-bold text-stone-700 mb-2">Atau Pilih Lagu dari Sistem:</span>
                     {musicLoading ? (
                       <div className="p-6 text-center bg-stone-50 rounded-xl border border-stone-200 text-xs text-stone-500">
                         <div className="w-5 h-5 border-2 border-stone-300 border-t-amber-800 rounded-full animate-spin mx-auto mb-2" />
@@ -2894,19 +2864,7 @@ export default function EditInvitation() {
         >
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-sm sm:text-base font-bold text-stone-900">
-                {(!invitation?.eventType || invitation?.eventType === "WEDDING")
-                  ? "3. Profil Kedua Mempelai"
-                  : invitation?.eventType === "BIRTHDAY"
-                  ? "3. Profil Yang Berulang Tahun"
-                  : invitation?.eventType === "KHITAN"
-                  ? "3. Profil Anak & Keluarga"
-                  : invitation?.eventType === "AQIQAH"
-                  ? "3. Profil Bayi & Keluarga"
-                  : invitation?.eventType === "WISUDA"
-                  ? "3. Profil Wisudawan"
-                  : "3. Profil Acara"}
-              </h2>
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">{sectionHeading("sec3")}</h2>
               {collapsed.sec3 && (
                 <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
                   <span className="text-stone-300">•</span>
@@ -3432,7 +3390,7 @@ export default function EditInvitation() {
         >
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-sm sm:text-base font-bold text-stone-900">4. Kutipan Pembuka</h2>
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">{sectionHeading("sec4")}</h2>
               {collapsed.sec4 && (
                 <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
                   <span className="text-stone-300">•</span>
@@ -3658,7 +3616,7 @@ export default function EditInvitation() {
         >
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-sm sm:text-base font-bold text-stone-900">5. Rangkaian Acara (Multi-Event)</h2>
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">{sectionHeading("sec5")}</h2>
               {collapsed.sec5 && (
                 <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
                   <span className="text-stone-300">•</span>
@@ -3879,7 +3837,7 @@ export default function EditInvitation() {
                       </div>
                     </div>
 
-                    <Input label="Nama Lokasi / Gedung" value={ev.location || ""} onChange={(v) => updateEventItem(idx, "location", v)} placeholder="Contoh: Gedung Pertemuan / Rumah Mempelai" />
+                    <Input label="Nama Lokasi / Gedung" value={ev.location || ""} onChange={(v) => updateEventItem(idx, "location", v)} placeholder={isWeddingEvent ? "Contoh: Gedung Pertemuan / Rumah Mempelai" : "Contoh: Gedung Pertemuan / Kediaman Keluarga"} />
                     <Input label="Alamat Lengkap" value={ev.address || ""} onChange={(v) => updateEventItem(idx, "address", v)} placeholder="Contoh: Jl. Melati No. 10" />
                     <Input label="Link Google Maps" value={ev.mapsUrl || ""} onChange={(v) => updateEventItem(idx, "mapsUrl", v)} placeholder="https://maps.app.goo.gl/..." />
                     <div className="sm:col-span-2 md:col-span-3">
@@ -3925,7 +3883,7 @@ export default function EditInvitation() {
         >
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-sm sm:text-base font-bold text-stone-900">6. Kartu Akses QR &amp; Check-In Tamu</h2>
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">{sectionHeading("sec6")}</h2>
               {collapsed.sec6 && (
                 <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
                   <span className="text-stone-300">•</span>
@@ -4011,7 +3969,7 @@ export default function EditInvitation() {
         >
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-sm sm:text-base font-bold text-stone-900">7. Kisah Cinta (Journey of Love)</h2>
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">{sectionHeading("sec7")}</h2>
               {collapsed.sec7 && (
                 <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
                   <span className="text-stone-300">•</span>
@@ -4126,7 +4084,7 @@ export default function EditInvitation() {
         >
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-sm sm:text-base font-bold text-stone-900">8. Galeri Foto Pre-Wedding &amp; Video Teaser</h2>
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">{sectionHeading("sec8")}</h2>
               {collapsed.sec8 && (
                 <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
                   <span className="text-stone-300">•</span>
@@ -4155,7 +4113,7 @@ export default function EditInvitation() {
         {!collapsed.sec8 && (
           <div className="p-3.5 sm:p-7 space-y-4 sm:space-y-5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-stone-700">Tampilkan Galeri Pre-Wedding:</span>
+              <span className="text-xs font-bold text-stone-700">Tampilkan Galeri{isWeddingEvent ? " Pre-Wedding" : ""}:</span>
               <SectionHeaderToggle
                 label=""
                 checked={showGallery}
@@ -4173,7 +4131,7 @@ export default function EditInvitation() {
                 />
 
                 <div className="p-4 bg-amber-50/60 border border-amber-200/80 rounded-2xl space-y-2">
-                  <h4 className="text-xs font-bold text-amber-900">Video Teaser Pre-Wedding (YouTube / Vimeo)</h4>
+                  <h4 className="text-xs font-bold text-amber-900">Video Teaser{isWeddingEvent ? " Pre-Wedding" : ""} (YouTube / Vimeo)</h4>
                   <p className="text-[11px] text-stone-600">Tempelkan link video YouTube biasa (misal: <code>https://youtu.be/...</code>) untuk memutar teaser video di atas galeri.</p>
                   <input
                     type="text"
@@ -4213,7 +4171,7 @@ export default function EditInvitation() {
                     rows={4}
                     value={getFeatureSetting("galleryPhotosList", "")}
                     onChange={(e) => updateFeatureSetting("galleryPhotosList", e.target.value)}
-                    placeholder="https://.../foto-prewed-1.jpg&#10;https://.../foto-prewed-2.jpg&#10;https://.../foto-prewed-3.jpg"
+                    placeholder={"https://.../foto-1.jpg\nhttps://.../foto-2.jpg\nhttps://.../foto-3.jpg"}
                     className="w-full p-2.5 bg-white border border-stone-300 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30 font-mono resize-none leading-relaxed"
                   />
                 </div>
@@ -4254,7 +4212,7 @@ export default function EditInvitation() {
         >
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-sm sm:text-base font-bold text-stone-900">9. Tanda Kasih &amp; Amplop Digital</h2>
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">{sectionHeading("sec9")}</h2>
               {collapsed.sec9 && (
                 <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
                   <span className="text-stone-300">•</span>
@@ -4413,7 +4371,7 @@ export default function EditInvitation() {
         >
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-sm sm:text-base font-bold text-stone-900">10. Panduan Busana (Dress Code Guide)</h2>
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">{sectionHeading("sec10")}</h2>
               {collapsed.sec10 && (
                 <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
                   <span className="text-stone-300">•</span>
@@ -4497,7 +4455,7 @@ export default function EditInvitation() {
         >
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-sm sm:text-base font-bold text-stone-900">11. Siaran Langsung (Live Streaming)</h2>
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">{sectionHeading("sec11")}</h2>
               {collapsed.sec11 && (
                 <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
                   <span className="text-stone-300">•</span>
@@ -4593,7 +4551,7 @@ export default function EditInvitation() {
         >
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-sm sm:text-base font-bold text-stone-900">12. Filter Instagram (Wedding Frame AR)</h2>
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">{sectionHeading("sec12")}</h2>
               {collapsed.sec12 && (
                 <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
                   <span className="text-stone-300">•</span>
@@ -4604,7 +4562,7 @@ export default function EditInvitation() {
               )}
             </div>
             {!collapsed.sec12 && (
-              <p className="text-xs text-stone-500 mt-0.5">Tautkan link effect / filter Instagram Story resmi pernikahan Anda</p>
+              <p className="text-xs text-stone-500 mt-0.5">Tautkan link effect / filter Instagram Story resmi {eventNounLabel} Anda</p>
             )}
           </div>
           <div onClick={(e) => e.stopPropagation()}>
@@ -4675,7 +4633,7 @@ export default function EditInvitation() {
         >
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-sm sm:text-base font-bold text-stone-900">13. Turut Mengundang &amp; Himbauan Tamu</h2>
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">{sectionHeading("sec13")}</h2>
               {collapsed.sec13 && (
                 <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
                   <span className="text-stone-300">•</span>
@@ -4772,7 +4730,7 @@ export default function EditInvitation() {
         >
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-sm sm:text-base font-bold text-stone-900">14. Galeri Kenangan Tamu (After-Event)</h2>
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">{sectionHeading("sec14")}</h2>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-200">
                 Live Photo Drop
               </span>
@@ -4884,7 +4842,7 @@ export default function EditInvitation() {
                     href="/dashboard/moments"
                     className="px-3.5 py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-1.5 shadow-2xs self-start sm:self-auto"
                   >
-                    <span>Buka Menu Moments &rarr;</span>
+                    <span>Buka Menu Moments</span>
                   </Link>
                 </div>
 
@@ -4916,7 +4874,7 @@ export default function EditInvitation() {
                   <label className="block text-xs font-bold text-stone-700 mb-1">Deskripsi / Ajakan Berbagi Momen:</label>
                   <textarea
                     rows={2}
-                    value={getCustomLabel("memoriesSubtitle", "Buka kamera dan jepret momen candid seru Anda selama menghadiri pernikahan kami langsung ke album kenangan bersama:")}
+                    value={getCustomLabel("memoriesSubtitle", `Buka kamera dan jepret momen candid seru Anda selama menghadiri ${isWeddingEvent ? "pernikahan" : "acara"} kami langsung ke album kenangan bersama:`)}
                     onChange={(e) => updateCustomLabel("memoriesSubtitle", e.target.value)}
                     className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30 resize-none"
                   />
@@ -4950,7 +4908,7 @@ export default function EditInvitation() {
                       href="/dashboard/moments"
                       className="px-3 py-1.5 rounded-lg bg-amber-800 hover:bg-amber-900 text-white font-bold text-xs flex items-center gap-1 transition"
                     >
-                      <span>Menu Moments &rarr;</span>
+                      <span>Menu Moments</span>
                     </Link>
                   </div>
                 </div>
@@ -4991,7 +4949,7 @@ export default function EditInvitation() {
         >
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-sm sm:text-base font-bold text-stone-900">15. Pengaturan Teks UI &amp; Label</h2>
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">{sectionHeading("sec15")}</h2>
               {collapsed.sec15 && (
                 <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
                   <span className="text-stone-300">•</span>
@@ -5130,18 +5088,22 @@ export default function EditInvitation() {
               <p className="text-[11px] text-stone-500">Kustomisasi judul, subjudul, dan teks pengantar di seluruh seksi undangan sesuai konsep acara Anda.</p>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
-                <Input
-                  label="Judul Seksi Mempelai"
-                  value={getCustomLabel("coupleTitle", activeBlueprint?.coupleSectionTitle || "Mempelai")}
-                  onChange={(v) => updateCustomLabel("coupleTitle", v)}
-                  placeholder={activeBlueprint?.coupleSectionTitle || "Mempelai / The Couple"}
-                />
-                <Input
-                  label="Eyebrow Seksi Mempelai"
-                  value={getCustomLabel("coupleEyebrow", activeBlueprint?.coupleSectionEyebrow || "THE COUPLE")}
-                  onChange={(v) => updateCustomLabel("coupleEyebrow", v)}
-                  placeholder={activeBlueprint?.coupleSectionEyebrow || "DUA INSAN / THE COUPLE"}
-                />
+                {isWeddingEvent && (
+                  <>
+                    <Input
+                      label="Judul Seksi Mempelai"
+                      value={getCustomLabel("coupleTitle", activeBlueprint?.coupleSectionTitle || "Mempelai")}
+                      onChange={(v) => updateCustomLabel("coupleTitle", v)}
+                      placeholder={activeBlueprint?.coupleSectionTitle || "Mempelai / The Couple"}
+                    />
+                    <Input
+                      label="Eyebrow Seksi Mempelai"
+                      value={getCustomLabel("coupleEyebrow", activeBlueprint?.coupleSectionEyebrow || "THE COUPLE")}
+                      onChange={(v) => updateCustomLabel("coupleEyebrow", v)}
+                      placeholder={activeBlueprint?.coupleSectionEyebrow || "DUA INSAN / THE COUPLE"}
+                    />
+                  </>
+                )}
                 <Input
                   label="Judul Seksi Rangkaian Acara"
                   value={getCustomLabel("eventsTitle", activeBlueprint?.eventsSectionTitle || "Rangkaian Acara")}
@@ -5154,12 +5116,14 @@ export default function EditInvitation() {
                   onChange={(v) => updateCustomLabel("eventsEyebrow", v)}
                   placeholder={activeBlueprint?.eventsSectionEyebrow || "AGENDA ACARA / SAVE THE DATE"}
                 />
-                <Input
-                  label="Eyebrow Kisah Kasih (Story)"
-                  value={getCustomLabel("storyEyebrow", activeBlueprint?.storySectionEyebrow || "OUR JOURNEY")}
-                  onChange={(v) => updateCustomLabel("storyEyebrow", v)}
-                  placeholder={activeBlueprint?.storySectionEyebrow || "OUR JOURNEY / KISAH KASIH"}
-                />
+                {isWeddingEvent && (
+                  <Input
+                    label="Eyebrow Kisah Kasih (Story)"
+                    value={getCustomLabel("storyEyebrow", activeBlueprint?.storySectionEyebrow || "OUR JOURNEY")}
+                    onChange={(v) => updateCustomLabel("storyEyebrow", v)}
+                    placeholder={activeBlueprint?.storySectionEyebrow || "OUR JOURNEY / KISAH KASIH"}
+                  />
+                )}
                 <Input
                   label="Eyebrow Galeri Momen"
                   value={getCustomLabel("galleryEyebrow", activeBlueprint?.gallerySectionEyebrow || "MOMEN BAHAGIA")}
@@ -5239,7 +5203,7 @@ export default function EditInvitation() {
         >
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-sm sm:text-base font-bold text-stone-900">{(!invitation?.eventType || invitation?.eventType === "WEDDING") ? "16. Mitra & Vendor Pernikahan (Wedding Credits)" : "16. Mitra & Vendor Acara (Credits)"}</h2>
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">{sectionHeading("sec16")}</h2>
               {collapsed.sec16 && (
                 <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
                   <span className="text-stone-300">•</span>
@@ -5351,7 +5315,7 @@ export default function EditInvitation() {
                       return (
                         <div className="p-8 text-center bg-stone-50/70 rounded-2xl border border-dashed border-stone-200">
                           <p className="text-xs font-medium text-stone-500 mb-2">Belum ada mitra vendor yang ditambahkan.</p>
-                          <p className="text-[11px] text-stone-400 max-w-sm mx-auto mb-4">Klik tombol Tambah Vendor untuk memasukkan logo atau nama vendor fotografer, MUA, dekorasi, atau busana pernikahan Anda.</p>
+                          <p className="text-[11px] text-stone-400 max-w-sm mx-auto mb-4">Klik tombol Tambah Vendor untuk memasukkan logo atau nama vendor fotografer, MUA, dekorasi, atau busana {eventNounLabel} Anda.</p>
                           <button
                             type="button"
                             onClick={() => {
@@ -6267,11 +6231,11 @@ function DresscodeStudioBlock({
           )}
         </div>
 
-        {/* Pilihan Cepat: Palet Tren Pernikahan 1-Klik */}
+        {/* Pilihan Cepat: Palet Tren 1-Klik */}
         <div className="space-y-2 pt-3 border-t border-stone-200/80">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-stone-700 uppercase tracking-wider">
-              Pilihan Cepat: Palet Tren Pernikahan
+              Pilihan Cepat: Palet Tren
             </span>
             <span className="text-[10px] text-stone-400">1-Klik Terapkan</span>
           </div>

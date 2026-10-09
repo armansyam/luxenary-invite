@@ -285,6 +285,29 @@ describe.skipIf(!IS_TEST_DB)("alur registrasi", () => {
       }
     });
 
+    it("nama tokoh utama dari wizard non-pernikahan disalin ke kolom groom* yang dibaca audit terbit, resepsionis, dan QR", async () => {
+      // participantsJson persis seperti yang dikirim wizard (setup/page.tsx); kolom pernikahan dikirim kosong.
+      const cases: Array<[string, unknown, Record<string, string>]> = [
+        ["BIRTHDAY", { person: { name: "Nadia Putri", nickname: "Nadia", fatherName: "Rahman", motherName: "Sari" } }, { groomName: "Nadia Putri", groomNickname: "Nadia", groomFather: "Rahman", groomMother: "Sari" }],
+        ["KHITAN", { child: { name: "Muhammad Fatih", nickname: "Fatih" }, parents: { father: "Hasan", mother: "Aminah" } }, { groomName: "Muhammad Fatih", groomNickname: "Fatih", groomFather: "Hasan", groomMother: "Aminah" }],
+        ["AQIQAH", { baby: { name: "Aisyah Zahra", nickname: "Aisyah" }, parents: { father: "Ilham", mother: "Rina" } }, { groomName: "Aisyah Zahra", groomNickname: "Aisyah", groomFather: "Ilham", groomMother: "Rina" }],
+        ["WISUDA", { person: { name: "Rina Andriani, S.T.", nickname: "Rina", degree: "S.T.", major: "Teknik Sipil", institution: "UNM" } }, { groomName: "Rina Andriani, S.T.", groomNickname: "Rina" }],
+        ["GATHERING", { event: { title: "Reuni Akbar 2010", organizer: "Panitia Reuni" } }, { groomName: "Reuni Akbar 2010" }],
+      ];
+      for (const [eventType, participants, expected] of cases) {
+        const u = await makeUser(`mirror-${eventType.toLowerCase()}`);
+        as(u);
+        await makeOrder(u.id, { status: "PAID", paidAt: new Date() });
+        const res = await createInvitation(json("/api/client/invitations/create", "POST", {
+          eventType, participantsJson: JSON.stringify(participants), groomNickname: "", brideNickname: "", groomName: "", brideName: "", weddingDate: "", city: "", planType: "TIER_1",
+        }));
+        expect(res.status, eventType).toBe(200);
+        const inv = await prisma.invitation.findFirstOrThrow({ where: { userId: u.id } });
+        expect(Object.fromEntries(Object.keys(expected).map((k) => [k, inv[k as keyof typeof inv]])), eventType).toEqual(expected);
+        expect(inv.brideName, eventType).toBe("");
+      }
+    });
+
     it("kota dari wizard disimpan apa adanya sebagai alamat; nama tempat tetap kosong, tidak diisi teks karangan", async () => {
       for (const eventType of ["WEDDING", "BIRTHDAY"]) {
         const u = await makeUser(`city-${eventType.toLowerCase()}`);

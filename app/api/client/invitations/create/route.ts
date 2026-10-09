@@ -6,7 +6,7 @@ import { EventType } from "@prisma/client";
 import { getMonthYearSlug, isSubdomainExpired, isReservedSubdomain } from "@/lib/domainUtils";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
-import { safeParseParticipants } from "@/lib/participantUtils";
+import { mirrorParticipantNames, safeParseParticipants } from "@/lib/participantUtils";
 import { normalizeJsonText } from "@/lib/jsonText";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
@@ -195,6 +195,7 @@ export async function POST(req: Request) {
   }
 
   const finalGroomNick = (groomNickname || groomName || "").trim();
+  const participantNames = mirrorParticipantNames(eventType, safeParseParticipants(participants.value));
   const finalBrideNick = (brideNickname || brideName || "").trim();
   const randomId = Date.now().toString(36).slice(-6);
 
@@ -484,6 +485,7 @@ export async function POST(req: Request) {
             brideName: brideName?.trim() || finalBrideNick || existingDraft.brideName || "",
             groomNickname: finalGroomNick || existingDraft.groomNickname || "",
             brideNickname: finalBrideNick || existingDraft.brideNickname || "",
+            ...participantNames,
             groomSlug: groomSlug || existingDraft.groomSlug,
             brideSlug: brideSlug || existingDraft.brideSlug,
             invitationSlug: invitationSlug || existingDraft.invitationSlug,
@@ -509,6 +511,7 @@ export async function POST(req: Request) {
             brideName: brideName?.trim() || finalBrideNick || "",
             groomNickname: finalGroomNick || "",
             brideNickname: finalBrideNick || "",
+            ...participantNames,
             groomSlug,
             brideSlug,
             invitationSlug,

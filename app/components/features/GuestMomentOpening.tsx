@@ -174,7 +174,7 @@ export default function GuestMomentOpening({
                   href={galleryUrl}
                   className="block w-full py-3 bg-white hover:bg-stone-100 text-stone-950 font-bold text-xs rounded-full shadow-lg transition"
                 >
-                  Lihat Semua Foto di Galeri →
+                  Lihat Semua Foto di Galeri
                 </Link>
               </div>
             )}
@@ -201,7 +201,7 @@ export default function GuestMomentOpening({
                     onClick={onStartCamera}
                     className="px-3.5 py-1.5 bg-amber-400 hover:bg-amber-300 active:scale-95 text-stone-950 font-bold text-[11px] rounded-full transition shrink-0 cursor-pointer shadow"
                   >
-                    Simulasi →
+                    Simulasi
                   </button>
                 ) : (
                   <Link
@@ -228,7 +228,6 @@ export default function GuestMomentOpening({
                   className="w-full py-4 bg-white hover:bg-stone-100 text-stone-950 font-bold text-sm rounded-full shadow-2xl transition-transform active:scale-[0.98] flex items-center justify-center gap-2 group cursor-pointer"
                 >
                   <span>Mulai Abadikan Momen</span>
-                  <span className="transition-transform group-hover:translate-x-1 duration-200">→</span>
                 </button>
                 <p className="text-[11px] text-stone-300">
                   Abadikan momen kebersamaan dengan kamera tamu retro.
@@ -318,7 +317,7 @@ export default function GuestMomentOpening({
                   href={galleryUrl}
                   className="inline-block w-full py-2.5 bg-stone-900 hover:bg-stone-800 text-white font-medium text-xs rounded-full shadow transition"
                 >
-                  Lihat Semua Foto di Galeri →
+                  Lihat Semua Foto di Galeri
                 </Link>
               </div>
             )}
@@ -345,7 +344,7 @@ export default function GuestMomentOpening({
                     onClick={onStartCamera}
                     className="px-3.5 py-1.5 bg-amber-400 hover:bg-amber-300 active:scale-95 text-stone-950 font-bold text-[11px] rounded-full transition shrink-0 cursor-pointer shadow"
                   >
-                    Simulasi →
+                    Simulasi
                   </button>
                 ) : (
                   <Link
@@ -372,7 +371,6 @@ export default function GuestMomentOpening({
                   className="w-full py-4 bg-stone-900 hover:bg-stone-800 active:scale-[0.98] text-white font-bold text-sm rounded-full shadow-xl transition-all flex items-center justify-center gap-2 group cursor-pointer"
                 >
                   <span>Buka Kamera Retro</span>
-                  <span className="group-hover:translate-x-1 transition-transform">→</span>
                 </button>
               </div>
             )}
@@ -467,7 +465,7 @@ export default function GuestMomentOpening({
                 href={galleryUrl}
                 className="inline-block w-full py-3 bg-stone-900 hover:bg-stone-800 text-white font-medium text-xs rounded-full shadow transition"
               >
-                Lihat Semua Foto di Galeri →
+                Lihat Semua Foto di Galeri
               </Link>
             </div>
           )}
@@ -495,7 +493,7 @@ export default function GuestMomentOpening({
                   onClick={onStartCamera}
                   className="px-3.5 py-1.5 bg-amber-400 hover:bg-amber-300 active:scale-95 text-stone-950 font-bold text-[11px] rounded-full transition shrink-0 cursor-pointer shadow"
                 >
-                  Simulasi →
+                  Simulasi
                 </button>
               ) : (
                 <Link
@@ -523,7 +521,6 @@ export default function GuestMomentOpening({
                 className="w-full py-4 bg-stone-900 hover:bg-stone-800 active:scale-[0.98] text-white font-bold text-sm rounded-full shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center justify-center gap-2 group cursor-pointer"
               >
                 <span>Mulai Abadikan Momen</span>
-                <span className="transition-transform group-hover:translate-x-1 duration-200">→</span>
               </button>
 
               <p className="text-[11px] text-stone-400 text-center">

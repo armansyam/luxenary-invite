@@ -421,7 +421,7 @@ function SetupWizardContent() {
                 onClick={() => { router.push("/dashboard"); }}
                 className="text-[11px] font-bold text-rose-900 underline hover:text-black cursor-pointer"
               >
-                Masuk Langsung ke Studio Undangan &rarr;
+                Masuk Langsung ke Studio Undangan
               </button>
             </div>
           </div>
@@ -542,9 +542,9 @@ function SetupWizardContent() {
                   setError(null);
                   setStep(1);
                 }}
-                className="px-8 py-3.5 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold rounded-xl transition shadow-md cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                className="px-6 py-3.5 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold rounded-xl transition shadow-md cursor-pointer flex items-center gap-2 whitespace-nowrap disabled:opacity-50"
               >
-                <span>Lanjut ke Data Acara &rarr;</span>
+                <span>Lanjut ke Data Acara</span>
               </button>
             </div>
           </div>
@@ -575,7 +575,7 @@ function SetupWizardContent() {
                         value={groomNickname}
                         onChange={(e) => setGroomNickname(e.target.value)}
                         placeholder="Contoh: Ryan"
-                        className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                        className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                       />
                     </div>
 
@@ -588,7 +588,7 @@ function SetupWizardContent() {
                         value={brideNickname}
                         onChange={(e) => setBrideNickname(e.target.value)}
                         placeholder="Contoh: Sarah"
-                        className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                        className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                       />
                     </div>
                   </div>
@@ -603,7 +603,7 @@ function SetupWizardContent() {
                         value={groomName}
                         onChange={(e) => setGroomName(e.target.value)}
                         placeholder="Contoh: Ryan Pratama, S.T."
-                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:bg-white focus:outline-none"
+                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
                       />
                     </div>
 
@@ -616,7 +616,7 @@ function SetupWizardContent() {
                         value={brideName}
                         onChange={(e) => setBrideName(e.target.value)}
                         placeholder="Contoh: Sarah Amelia, M.Psi."
-                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:bg-white focus:outline-none"
+                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
                       />
                     </div>
                   </div>
@@ -646,7 +646,7 @@ function SetupWizardContent() {
                         value={personNickname}
                         onChange={(e) => setPersonNickname(e.target.value)}
                         placeholder="Contoh: Aurel"
-                        className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                        className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                       />
                     </div>
 
@@ -661,7 +661,7 @@ function SetupWizardContent() {
                         value={personAge}
                         onChange={(e) => setPersonAge(e.target.value)}
                         placeholder="Contoh: 17"
-                        className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                        className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                       />
                     </div>
                   </div>
@@ -675,7 +675,7 @@ function SetupWizardContent() {
                       value={personName}
                       onChange={(e) => setPersonName(e.target.value)}
                       placeholder="Contoh: Aurelia Putri Sanjaya"
-                      className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:bg-white focus:outline-none"
+                      className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
                     />
                   </div>
 
@@ -689,7 +689,7 @@ function SetupWizardContent() {
                         value={fatherName}
                         onChange={(e) => setFatherName(e.target.value)}
                         placeholder="Nama Ayah / Wali"
-                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:bg-white focus:outline-none"
+                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
                       />
                     </div>
 
@@ -702,7 +702,7 @@ function SetupWizardContent() {
                         value={motherName}
                         onChange={(e) => setMotherName(e.target.value)}
                         placeholder="Nama Ibu"
-                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:bg-white focus:outline-none"
+                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
                       />
                     </div>
                   </div>
@@ -732,7 +732,7 @@ function SetupWizardContent() {
                         value={personNickname}
                         onChange={(e) => setPersonNickname(e.target.value)}
                         placeholder="Contoh: Bilal"
-                        className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                        className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                       />
                     </div>
 
@@ -747,7 +747,7 @@ function SetupWizardContent() {
                         value={personAge}
                         onChange={(e) => setPersonAge(e.target.value)}
                         placeholder="Contoh: 10"
-                        className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                        className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                       />
                     </div>
                   </div>
@@ -761,7 +761,7 @@ function SetupWizardContent() {
                       value={personName}
                       onChange={(e) => setPersonName(e.target.value)}
                       placeholder="Contoh: Bilal Al-Farisi"
-                      className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:bg-white focus:outline-none"
+                      className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
                     />
                   </div>
 
@@ -775,7 +775,7 @@ function SetupWizardContent() {
                         value={fatherName}
                         onChange={(e) => setFatherName(e.target.value)}
                         placeholder="Nama Ayah"
-                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:bg-white focus:outline-none"
+                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
                       />
                     </div>
 
@@ -788,7 +788,7 @@ function SetupWizardContent() {
                         value={motherName}
                         onChange={(e) => setMotherName(e.target.value)}
                         placeholder="Nama Ibu"
-                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:bg-white focus:outline-none"
+                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
                       />
                     </div>
                   </div>
@@ -817,7 +817,7 @@ function SetupWizardContent() {
                       value={personNickname}
                       onChange={(e) => setPersonNickname(e.target.value)}
                       placeholder="Contoh: Rayyan"
-                      className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                      className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                     />
                   </div>
 
@@ -830,7 +830,7 @@ function SetupWizardContent() {
                       value={personName}
                       onChange={(e) => setPersonName(e.target.value)}
                       placeholder="Contoh: Muhammad Rayyan Al-Ghazi"
-                      className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:bg-white focus:outline-none"
+                      className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
                     />
                   </div>
 
@@ -844,7 +844,7 @@ function SetupWizardContent() {
                         value={fatherName}
                         onChange={(e) => setFatherName(e.target.value)}
                         placeholder="Nama Ayah"
-                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:bg-white focus:outline-none"
+                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
                       />
                     </div>
 
@@ -857,7 +857,7 @@ function SetupWizardContent() {
                         value={motherName}
                         onChange={(e) => setMotherName(e.target.value)}
                         placeholder="Nama Ibu"
-                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:bg-white focus:outline-none"
+                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
                       />
                     </div>
                   </div>
@@ -887,7 +887,7 @@ function SetupWizardContent() {
                         value={personNickname}
                         onChange={(e) => setPersonNickname(e.target.value)}
                         placeholder="Contoh: Dimas"
-                        className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                        className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                       />
                     </div>
 
@@ -900,7 +900,7 @@ function SetupWizardContent() {
                         value={degree}
                         onChange={(e) => setDegree(e.target.value)}
                         placeholder="Contoh: S.Kom., M.T."
-                        className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                        className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                       />
                     </div>
                   </div>
@@ -914,7 +914,7 @@ function SetupWizardContent() {
                       value={personName}
                       onChange={(e) => setPersonName(e.target.value)}
                       placeholder="Contoh: Dimas Aditya Pratama, S.Kom."
-                      className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:bg-white focus:outline-none"
+                      className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
                     />
                   </div>
 
@@ -928,7 +928,7 @@ function SetupWizardContent() {
                         value={major}
                         onChange={(e) => setMajor(e.target.value)}
                         placeholder="Contoh: Teknik Informatika"
-                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:bg-white focus:outline-none"
+                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
                       />
                     </div>
 
@@ -941,7 +941,7 @@ function SetupWizardContent() {
                         value={institution}
                         onChange={(e) => setInstitution(e.target.value)}
                         placeholder="Contoh: Universitas Hasanuddin"
-                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:bg-white focus:outline-none"
+                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
                       />
                     </div>
                   </div>
@@ -970,7 +970,7 @@ function SetupWizardContent() {
                       value={eventTitle}
                       onChange={(e) => setEventTitle(e.target.value)}
                       placeholder="Contoh: Reuni Akbar Angkatan 2012"
-                      className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                      className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                     />
                   </div>
 
@@ -984,7 +984,7 @@ function SetupWizardContent() {
                         value={eventSubtitle}
                         onChange={(e) => setEventSubtitle(e.target.value)}
                         placeholder="Contoh: Merajut Kenangan, Menjalin Silaturahmi"
-                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:bg-white focus:outline-none"
+                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
                       />
                     </div>
 
@@ -997,7 +997,7 @@ function SetupWizardContent() {
                         value={organizer}
                         onChange={(e) => setOrganizer(e.target.value)}
                         placeholder="Contoh: Ikatan Alumni SMAN 1"
-                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:bg-white focus:outline-none"
+                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
                       />
                     </div>
                   </div>
@@ -1015,7 +1015,7 @@ function SetupWizardContent() {
                 onClick={() => setStep(0)}
                 className="shrink-0 whitespace-nowrap px-4 sm:px-6 py-3.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-xl transition cursor-pointer"
               >
-                &larr; Kembali
+                Kembali
               </button>
 
               <button
@@ -1025,9 +1025,9 @@ function SetupWizardContent() {
                   setError(null);
                   setStep(2);
                 }}
-                className="px-8 py-3.5 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold rounded-xl transition shadow-md cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                className="flex-1 sm:flex-none justify-center px-5 sm:px-8 py-3.5 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold rounded-xl transition shadow-md cursor-pointer flex items-center gap-2 whitespace-nowrap disabled:opacity-50"
               >
-                <span>Lanjut ke Tanggal Acara &rarr;</span>
+                <span>Lanjut ke Tanggal Acara</span>
               </button>
             </div>
           </div>
@@ -1066,7 +1066,7 @@ function SetupWizardContent() {
                     min={new Date().toLocaleDateString("en-CA")}
                     value={weddingDate}
                     onChange={(e) => setWeddingDate(e.target.value)}
-                    className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                    className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                   />
                   <p className="text-[11px] text-stone-400 mt-1">
                     {eventType === "WEDDING"
@@ -1092,7 +1092,7 @@ function SetupWizardContent() {
                     onBlur={() => setTimeout(() => setShowCitySuggestions(false), 150)}
                     placeholder="Ketik nama kota atau kabupaten..."
                     autoComplete="off"
-                    className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                    className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                   />
                   {showCitySuggestions && (() => {
                     const q = (cityQuery || city).toLowerCase().trim();
@@ -1165,14 +1165,14 @@ function SetupWizardContent() {
                             type="time"
                             value={akadStart}
                             onChange={(e) => setAkadStart(e.target.value)}
-                            className="flex-1 px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg text-xs text-stone-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+                            className="flex-1 px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/20"
                           />
                           <span className="text-stone-400 text-xs font-medium shrink-0">–</span>
                           <input
                             type="time"
                             value={akadEnd}
                             onChange={(e) => setAkadEnd(e.target.value)}
-                            className="flex-1 px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg text-xs text-stone-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+                            className="flex-1 px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/20"
                           />
                         </div>
                         {akadStart && (
@@ -1189,14 +1189,14 @@ function SetupWizardContent() {
                             type="time"
                             value={resepsiStart}
                             onChange={(e) => setResepsiStart(e.target.value)}
-                            className="flex-1 px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg text-xs text-stone-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+                            className="flex-1 px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/20"
                           />
                           <span className="text-stone-400 text-xs font-medium shrink-0">–</span>
                           <input
                             type="time"
                             value={resepsiEnd}
                             onChange={(e) => setResepsiEnd(e.target.value)}
-                            className="flex-1 px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg text-xs text-stone-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+                            className="flex-1 px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/20"
                           />
                         </div>
                         {resepsiStart && (
@@ -1214,14 +1214,14 @@ function SetupWizardContent() {
                           type="time"
                           value={resepsiStart}
                           onChange={(e) => setResepsiStart(e.target.value)}
-                          className="flex-1 px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg text-xs text-stone-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+                          className="flex-1 px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/20"
                         />
                         <span className="text-stone-400 text-xs font-medium shrink-0">–</span>
                         <input
                           type="time"
                           value={resepsiEnd}
                           onChange={(e) => setResepsiEnd(e.target.value)}
-                          className="flex-1 px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg text-xs text-stone-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+                          className="flex-1 px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/20"
                         />
                       </div>
                       {resepsiStart && (
@@ -1244,7 +1244,7 @@ function SetupWizardContent() {
                   onClick={() => setStep(1)}
                   className="shrink-0 whitespace-nowrap px-4 sm:px-6 py-3.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-xl transition cursor-pointer"
                 >
-                  &larr; Kembali
+                  Kembali
                 </button>
 
                 <button
@@ -1253,9 +1253,9 @@ function SetupWizardContent() {
                     setError(null);
                     setStep(3);
                   }}
-                  className="px-8 py-3.5 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold rounded-xl transition shadow-md cursor-pointer flex items-center gap-2"
+                  className="flex-1 sm:flex-none justify-center px-5 sm:px-8 py-3.5 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold rounded-xl transition shadow-md cursor-pointer flex items-center gap-2 whitespace-nowrap"
                 >
-                  <span>Pilih Desain Tema &rarr;</span>
+                  <span>Pilih Desain Tema</span>
                 </button>
               </div>
             </div>
@@ -1406,7 +1406,7 @@ function SetupWizardContent() {
                           onClick={(e) => e.stopPropagation()}
                           className="inline-block text-[10px] font-bold text-amber-800 hover:underline pt-0.5"
                         >
-                          Lihat Demo &rarr;
+                          Lihat Demo
                         </a>
                       </div>
                     </div>
@@ -1439,22 +1439,26 @@ function SetupWizardContent() {
                   disabled={loading}
                   className="shrink-0 whitespace-nowrap px-4 sm:px-6 py-3.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-xl transition cursor-pointer disabled:opacity-50"
                 >
-                  &larr; Kembali
+                  Kembali
                 </button>
 
                 <button
                   type="button"
                   onClick={handleCompleteSetup}
                   disabled={loading}
-                  className="px-8 py-3.5 bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-amber-950/20 cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                  className="flex-1 sm:flex-none justify-center px-5 sm:px-8 py-3.5 bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-amber-950/20 cursor-pointer flex items-center gap-2 whitespace-nowrap disabled:opacity-50"
                 >
                   {loading ? (
                     <>
                       <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                      <span>Menyiapkan Studio Undangan...</span>
+                      <span className="sm:hidden">Menyiapkan…</span>
+                      <span className="hidden sm:inline">Menyiapkan Studio Undangan...</span>
                     </>
                   ) : (
-                    <span>Selesai &amp; Masuk ke Studio Undangan</span>
+                    <>
+                      <span className="sm:hidden">Masuk ke Studio</span>
+                      <span className="hidden sm:inline">Selesai &amp; Masuk ke Studio Undangan</span>
+                    </>
                   )}
                 </button>
               </div>

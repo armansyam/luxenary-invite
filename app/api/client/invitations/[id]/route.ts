@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { normalizeJsonText } from "@/lib/jsonText";
+import { mirrorParticipantNames, safeParseParticipants } from "@/lib/participantUtils";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
 import { removeIfExists } from "@/lib/fsSafe";
@@ -566,6 +567,9 @@ export async function PUT(
         eventData: eventDataToSave,
         featureSettings: mergedFeatureSettings,
         participantsJson: jsonTextFields.participantsJson,
+        ...(jsonTextFields.participantsJson !== undefined
+          ? mirrorParticipantNames(currentInv.eventType, safeParseParticipants(jsonTextFields.participantsJson))
+          : {}),
         staffPin: body.staffPin !== undefined
           ? (body.staffPin ? encryptPin(String(body.staffPin)) : null)
           : undefined,
@@ -726,6 +730,7 @@ export async function PATCH(
         return NextResponse.json({ error: "participantsJson bukan JSON yang valid." }, { status: 400 });
       }
       updateData.participantsJson = participants.value;
+      Object.assign(updateData, mirrorParticipantNames(currentInv.eventType, safeParseParticipants(participants.value)));
     }
 
     const updated = await prisma.invitation.update({

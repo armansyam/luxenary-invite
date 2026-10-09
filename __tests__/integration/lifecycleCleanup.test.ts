@@ -77,6 +77,9 @@ async function makeInvitation(data: Record<string, unknown> = {}) {
 
 const statusOf = async (id: string) => (await prisma.invitation.findUniqueOrThrow({ where: { id } })).status;
 
+// DB uji dipakai bersama; tanpa cakupan ini sapuan +366 hari mengarsipkan seluruh undangan lain di dalamnya.
+const cleanup = (options: { now: Date; dryRun?: boolean }) => runLifecycleCleanup({ ...options, invitationIds: created.invitations });
+
 describe.skipIf(!IS_TEST_DB)("Siklus hidup undangan (DB luxenary_test)", () => {
   beforeAll(async () => {
     themeId = (await prisma.theme.findFirstOrThrow({ where: { eventType: "WEDDING" }, select: { id: true } })).id;
@@ -112,20 +115,20 @@ describe.skipIf(!IS_TEST_DB)("Siklus hidup undangan (DB luxenary_test)", () => {
     const inv = await makeInvitation({ status: "PUBLISHED" });
 
     // 10.00 UTC di hari-H = 19.00 WIT hari-H: aturan UTC lama sudah menutup, aturan zona acara belum
-    await runLifecycleCleanup({ now: new Date("2026-12-12T10:00:00.000Z") });
+    await cleanup({ now: new Date("2026-12-12T10:00:00.000Z") });
     expect(await statusOf(inv.id)).toBe("PUBLISHED");
 
-    await runLifecycleCleanup({ now: at(DAY + 60_000) });
+    await cleanup({ now: at(DAY + 60_000) });
     expect(await statusOf(inv.id)).toBe("EVENT_FINISHED");
   });
 
   it("subdomain kembali ke pool sesuai subdomain_grace_days, terpisah dari jam galeri", async () => {
     const inv = await makeInvitation({ subdomain: `${TAG}-sub` });
 
-    await runLifecycleCleanup({ now: at(6 * DAY) });
+    await cleanup({ now: at(6 * DAY) });
     expect((await prisma.invitation.findUniqueOrThrow({ where: { id: inv.id } })).subdomain).toBe(`${TAG}-sub`);
 
-    await runLifecycleCleanup({ now: at(8 * DAY) });
+    await cleanup({ now: at(8 * DAY) });
     const after = await prisma.invitation.findUniqueOrThrow({ where: { id: inv.id } });
     expect(after.subdomain).toBeNull();
     expect(after.status).toBe("EVENT_FINISHED");
@@ -139,7 +142,7 @@ describe.skipIf(!IS_TEST_DB)("Siklus hidup undangan (DB luxenary_test)", () => {
       await prisma.rsvp.create({ data: { invitationId: inv.id, guestName: "Tamu", status: "hadir" } });
     }
 
-    const result = await runLifecycleCleanup({ now: at(31 * DAY) });
+    const result = await cleanup({ now: at(31 * DAY) });
 
     expect(result.archiveFailures).toEqual([]);
     expect(await statusOf(extended.id)).toBe("EVENT_FINISHED");
@@ -165,7 +168,7 @@ describe.skipIf(!IS_TEST_DB)("Siklus hidup undangan (DB luxenary_test)", () => {
       });
       await prisma.rsvp.create({ data: { invitationId: inv.id, guestName: "Tamu", status: "hadir" } });
 
-      const result = await runLifecycleCleanup({ now: at(31 * DAY) });
+      const result = await cleanup({ now: at(31 * DAY) });
 
       expect(result.archiveFailures.map((f) => f.invitationId)).toContain(inv.id);
       expect(await statusOf(inv.id)).toBe("EVENT_FINISHED");
@@ -177,16 +180,16 @@ describe.skipIf(!IS_TEST_DB)("Siklus hidup undangan (DB luxenary_test)", () => {
     it("arsip sukses -> ARCHIVED, berkas arsip ada; setelah 365 hari sejak acara arsip dibersihkan", async () => {
       const inv = await makeInvitation();
 
-      const first = await runLifecycleCleanup({ now: at(31 * DAY) });
+      const first = await cleanup({ now: at(31 * DAY) });
       expect(first.archiveFailures.map((f) => f.invitationId)).not.toContain(inv.id);
       expect(await statusOf(inv.id)).toBe("ARCHIVED");
       const archiveFile = path.join(nasDir, inv.invitationSlug, "index.html");
       expect(fs.existsSync(archiveFile)).toBe(true);
 
-      await runLifecycleCleanup({ now: at(300 * DAY) });
+      await cleanup({ now: at(300 * DAY) });
       expect(fs.existsSync(archiveFile)).toBe(true);
 
-      const last = await runLifecycleCleanup({ now: at(366 * DAY) });
+      const last = await cleanup({ now: at(366 * DAY) });
       expect(last.purgedArchives).toBeGreaterThanOrEqual(1);
       expect(fs.existsSync(path.join(nasDir, inv.invitationSlug))).toBe(false);
       expect(await statusOf(inv.id)).toBe("ARCHIVED");
@@ -195,10 +198,25 @@ describe.skipIf(!IS_TEST_DB)("Siklus hidup undangan (DB luxenary_test)", () => {
 
   it("dryRun tidak mengubah data", async () => {
     const inv = await makeInvitation({ subdomain: `${TAG}-dry` });
-    const result = await runLifecycleCleanup({ now: at(31 * DAY), dryRun: true });
+    const result = await cleanup({ now: at(31 * DAY), dryRun: true });
     expect(result.archivedInvitations + result.recycledSubdomains).toBeGreaterThanOrEqual(1);
     const after = await prisma.invitation.findUniqueOrThrow({ where: { id: inv.id } });
     expect(after.status).toBe("EVENT_FINISHED");
     expect(after.subdomain).toBe(`${TAG}-dry`);
+  });
+
+  it("undangan di luar invitationIds tidak disentuh walau sudah lewat masa simpan", async () => {
+    const user = await prisma.user.create({ data: { email: `${TAG}_outside@t.local`, name: "Luar" } });
+    const outside = await prisma.invitation.create({
+      data: { userId: user.id, themeId, status: "PUBLISHED", subdomain: `${TAG}-out`, invitationSlug: `${TAG}-out`, groomSlug: `${TAG}-gout`, brideSlug: `${TAG}-bout`, eventData: EVENT_DATA },
+    });
+    try {
+      await cleanup({ now: at(366 * DAY) });
+      const after = await prisma.invitation.findUniqueOrThrow({ where: { id: outside.id } });
+      expect([after.status, after.subdomain]).toEqual(["PUBLISHED", `${TAG}-out`]);
+    } finally {
+      await prisma.invitation.delete({ where: { id: outside.id } });
+      await prisma.user.delete({ where: { id: user.id } });
+    }
   });
 });

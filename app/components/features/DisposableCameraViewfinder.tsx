@@ -775,7 +775,7 @@ export default function DisposableCameraViewfinder({
                 hasStartedCamera ? "flex-1 py-2.5" : "w-full py-3"
               }`}
             >
-              {hasStartedCamera ? "Simpan Perubahan" : "Lanjut ke Kamera →"}
+              {hasStartedCamera ? "Simpan Perubahan" : "Lanjut ke Kamera"}
             </button>
           </div>
         </form>
@@ -1047,7 +1047,7 @@ export default function DisposableCameraViewfinder({
             <div className="flex items-center justify-between w-full px-3 py-0.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-600 dark:text-amber-300">
               <span className="text-[10px] font-medium">Roll Anda Penuh ({shotsQuota}/{shotsQuota})</span>
               <Link href={galleryUrl} className="text-[10px] font-bold underline hover:opacity-80">
-                Lihat Galeri &rarr;
+                Lihat Galeri
               </Link>
             </div>
           ) : isWinding ? (

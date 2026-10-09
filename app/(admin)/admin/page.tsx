@@ -2196,7 +2196,7 @@ export default function AdminPage() {
                           </div>
                           <span className="text-[11px] text-gray-500 font-medium">
                             Klien baru: <span className="font-bold text-teal-700">{stats.newRegistrationsToday ?? 0}</span> hari ini
-                            <button className="ml-2 text-teal-700 font-semibold hover:underline cursor-pointer" onClick={() => setActiveTab("users")}>Lihat →</button>
+                            <button className="ml-2 text-teal-700 font-semibold hover:underline cursor-pointer" onClick={() => setActiveTab("users")}>Lihat</button>
                           </span>
                         </div>
                       </div>

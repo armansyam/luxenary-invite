@@ -298,7 +298,6 @@ export default function GuestOpeningSetupModal({
                     <div className="space-y-2">
                       <div className="w-full py-2.5 bg-[#2b2724] text-white font-medium text-[11px] rounded-full text-center shadow-sm flex items-center justify-center gap-1.5">
                         <span>Mulai motret</span>
-                        <span>→</span>
                       </div>
                       <div className="text-center font-serif font-bold text-[10px] tracking-widest text-stone-400">
                         LUXENARY
@@ -338,7 +337,6 @@ export default function GuestOpeningSetupModal({
                     <div className="relative z-10 space-y-1.5 pb-1">
                       <div className="w-full py-2 bg-white text-stone-950 font-bold text-[10.5px] rounded-full text-center shadow-xl flex items-center justify-center gap-1">
                         <span>Mulai Abadikan Momen</span>
-                        <span>→</span>
                       </div>
                       <p className="text-[7.5px] text-stone-300 text-center leading-tight line-clamp-1">
                         {instructionText}
@@ -375,7 +373,6 @@ export default function GuestOpeningSetupModal({
                     <div className="space-y-1 pb-1">
                       <div className="w-full py-2 bg-stone-900 text-white font-bold text-[10px] rounded-full text-center shadow-md flex items-center justify-center gap-1">
                         <span>Buka Kamera Retro</span>
-                        <span>→</span>
                       </div>
                       <p className="text-[7px] text-stone-500 text-center leading-tight line-clamp-1">
                         {instructionText}
@@ -508,7 +505,6 @@ export default function GuestOpeningSetupModal({
                 className="block w-full py-3 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold text-center rounded-xl transition cursor-pointer shadow-md flex items-center justify-center gap-2"
               >
                 <span>Pratinjau Layar Opening Tamu (Mode Simulasi HP)</span>
-                <span>→</span>
               </a>
             </div>
           </div>

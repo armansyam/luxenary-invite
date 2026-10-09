@@ -18,7 +18,14 @@ export interface LifecycleCleanupOptions {
   now?: Date;
   /** Hanya menghitung yang akan diproses, tanpa mengubah data, berkas, maupun mengirim email. */
   dryRun?: boolean;
+  /**
+   * Membatasi siklus hidup ke undangan tertentu. Cron tidak memakainya; uji integrasi memakainya agar
+   * tidak mengarsipkan undangan lain di DB uji yang sama (pernah menghapus data simulasi klien, 9 Okt 2026).
+   */
+  invitationIds?: string[];
 }
+
+type InvitationScope = { id?: { in: string[] } };
 
 export interface ArchiveFailure {
   invitationId: string;
@@ -45,9 +52,9 @@ async function pathExists(target: string): Promise<boolean> {
 }
 
 /** PUBLISHED -> EVENT_FINISHED saat hari acara utama (zona waktu acara) telah berlalu. */
-async function transitionFinishedInvitations(now: Date, settings: LifecycleSettings, dryRun: boolean): Promise<number> {
+async function transitionFinishedInvitations(now: Date, settings: LifecycleSettings, dryRun: boolean, scope: InvitationScope): Promise<number> {
   const published = await prisma.invitation.findMany({
-    where: { status: "PUBLISHED" },
+    where: { ...scope, status: "PUBLISHED" },
     select: { id: true, eventData: true },
   });
 
@@ -66,11 +73,11 @@ async function transitionFinishedInvitations(now: Date, settings: LifecycleSetti
 }
 
 /** Subdomain kembali ke pool setelah `subdomain_grace_days`; URL yang tersisa adalah slug. */
-async function releaseExpiredSubdomains(now: Date, settings: LifecycleSettings, dryRun: boolean): Promise<number> {
+async function releaseExpiredSubdomains(now: Date, settings: LifecycleSettings, dryRun: boolean, scope: InvitationScope): Promise<number> {
   if (!settings.autoRecycleSubdomain) return 0;
 
   const holders = await prisma.invitation.findMany({
-    where: { subdomain: { not: null }, status: { in: ["EVENT_FINISHED", "ARCHIVED", "TAKEN_DOWN"] } },
+    where: { ...scope, subdomain: { not: null }, status: { in: ["EVENT_FINISHED", "ARCHIVED", "TAKEN_DOWN"] } },
     select: { id: true, eventData: true, invitationSlug: true, subdomain: true },
   });
 
@@ -116,7 +123,7 @@ async function sendRetentionWarningIfDue(inv: WarningTarget, expiresAt: Date, no
   if (dryRun) return true;
 
   const totalPhotos = await prisma.guestMemory.count({ where: { invitationId: inv.id } });
-  const coupleNames = inv.groomName && inv.brideName ? `${inv.groomName} & ${inv.brideName}` : inv.user.name || "Mempelai";
+  const coupleNames = [inv.groomName, inv.brideName].filter(Boolean).join(" & ") || inv.user.name || "Mempelai";
 
   try {
     const { sendRetentionExpiryAlertEmail } = await import("./mailer");
@@ -191,9 +198,9 @@ async function archiveExpiredInvitation(inv: ExpiredInvitation, nasEnabled: bool
 }
 
 /** Arsip undangan dibersihkan setelah `nas_archive_retention_days` sejak acara utama. */
-async function purgeExpiredArchives(now: Date, settings: LifecycleSettings, dryRun: boolean): Promise<number> {
+async function purgeExpiredArchives(now: Date, settings: LifecycleSettings, dryRun: boolean, scope: InvitationScope): Promise<number> {
   const archived = await prisma.invitation.findMany({
-    where: { status: "ARCHIVED" },
+    where: { ...scope, status: "ARCHIVED" },
     select: { invitationSlug: true, eventData: true },
   });
 
@@ -221,12 +228,13 @@ export async function runLifecycleCleanup(options: LifecycleCleanupOptions = {})
   const now = options.now ?? new Date();
   const dryRun = options.dryRun ?? false;
   const settings = await getLifecycleSettings();
+  const scope: InvitationScope = options.invitationIds ? { id: { in: options.invitationIds } } : {};
 
-  const transitionedInvitations = await transitionFinishedInvitations(now, settings, dryRun);
-  const recycledSubdomains = await releaseExpiredSubdomains(now, settings, dryRun);
+  const transitionedInvitations = await transitionFinishedInvitations(now, settings, dryRun, scope);
+  const recycledSubdomains = await releaseExpiredSubdomains(now, settings, dryRun, scope);
 
   const finished = await prisma.invitation.findMany({
-    where: { status: { in: ["EVENT_FINISHED", "TAKEN_DOWN"] } },
+    where: { ...scope, status: { in: ["EVENT_FINISHED", "TAKEN_DOWN"] } },
     select: {
       id: true,
       eventData: true,
@@ -268,7 +276,7 @@ export async function runLifecycleCleanup(options: LifecycleCleanupOptions = {})
     }
   }
 
-  const purgedArchives = await purgeExpiredArchives(now, settings, dryRun);
+  const purgedArchives = await purgeExpiredArchives(now, settings, dryRun, scope);
 
   return { transitionedInvitations, recycledSubdomains, archivedInvitations, archiveFailures, purgedArchives, retentionWarningsSent };
 }

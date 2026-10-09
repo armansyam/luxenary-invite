@@ -1,5 +1,19 @@
 import { safeParseParticipants } from "./participantUtils";
 
+const EVENT_NOUN: Record<string, string> = {
+  WEDDING: "pernikahan",
+  BIRTHDAY: "ulang tahun",
+  KHITAN: "khitanan",
+  AQIQAH: "aqiqah",
+  WISUDA: "wisuda",
+  GATHERING: "acara",
+};
+
+/** Kata benda jenis acara untuk teks antarmuka, mis. "undangan wisuda Anda". */
+export function eventNoun(eventType?: string | null): string {
+  return EVENT_NOUN[eventType || "WEDDING"] || "acara";
+}
+
 export function resolveInvitationDisplayName(inv: {
   eventType?: string | null;
   groomNickname?: string | null;

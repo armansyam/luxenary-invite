@@ -25,12 +25,22 @@ const EVENT_TYPE_OF: Record<string, "WEDDING" | "BIRTHDAY" | "KHITAN" | "AQIQAH"
   gathering: "GATHERING",
 };
 
+// Bentuk participantsJson persis seperti yang ditulis wizard (setup/page.tsx) dan editor studio, bukan bentuk karangan tes.
 const PARTICIPANTS: Record<string, unknown> = {
   BIRTHDAY: { person: { name: "Nadia Putri", nickname: "Nadia", age: 17, fatherName: "Bpk. Rahman", motherName: "Ibu Sari", instagram: "nadia" } },
-  KHITAN: { child: { name: "Muhammad Fatih", nickname: "Fatih", age: 7, birthOrder: "Putra pertama" }, parents: { fatherName: "Bpk. Hasan", motherName: "Ibu Aminah" } },
-  AQIQAH: { baby: { name: "Aisyah Zahra", nickname: "Aisyah", gender: "female", birthDate: "2026-09-01", birthWeight: "3,1 kg", birthLength: "49 cm" }, parents: { fatherName: "Bpk. Ilham", motherName: "Ibu Rina" } },
-  WISUDA: { graduate: { name: "Rizky Pratama", nickname: "Rizky", degree: "S.T.", major: "Teknik Informatika", faculty: "Teknik", university: "Universitas Hasanuddin", honors: "Cum Laude", thesisTitle: "Sistem Undangan Daring" }, parents: { fatherName: "Bpk. Arif", motherName: "Ibu Lina" } },
-  GATHERING: { event: { title: "Reuni Akbar Angkatan 2010", subtitle: "Temu Kangen Alumni", organizer: "Panitia Reuni", hostName: "Ikatan Alumni", dresscode: "Batik" } },
+  KHITAN: { child: { name: "Muhammad Fatih", nickname: "Fatih", age: 7 }, parents: { father: "Bpk. Hasan", mother: "Ibu Aminah" } },
+  AQIQAH: { baby: { name: "Aisyah Zahra", nickname: "Aisyah" }, parents: { father: "Bpk. Ilham", mother: "Ibu Rina" } },
+  WISUDA: { person: { name: "Rizky Pratama, S.T.", nickname: "Rizky", degree: "S.T.", major: "Teknik Informatika", institution: "Universitas Negeri Makassar" } },
+  GATHERING: { event: { title: "Reuni Akbar Angkatan 2010", subtitle: "Temu Kangen Alumni", organizer: "Panitia Reuni" } },
+};
+
+/** Data peserta yang wajib tampil di undangan terbit; dibaca dari participantsJson karena kolom groom* dikosongkan. */
+const PARTICIPANT_TEXT: Record<string, string[]> = {
+  BIRTHDAY: ["Nadia"],
+  KHITAN: ["Fatih", "Bpk. Hasan", "Ibu Aminah"],
+  AQIQAH: ["Aisyah", "Bpk. Ilham", "Ibu Rina"],
+  WISUDA: ["Rizky", "Teknik Informatika", "Universitas Negeri Makassar"],
+  GATHERING: ["Reuni Akbar Angkatan 2010", "Temu Kangen Alumni", "Panitia Reuni"],
 };
 
 const SLOTS = ["LANDING_COVER", "LANDING_COVER_DESKTOP", "HOME_PHOTO", "DESKTOP_SIDEBAR", "CLOSING_COVER", "GLOBAL_FIXED_BG", "GROOM_PHOTO", "BRIDE_PHOTO"] as const;
@@ -89,12 +99,12 @@ async function makeInvitation(eventType: string) {
       invitationSlug: `${RUN}-${eventType}`,
       groomSlug: `${RUN}-g-${eventType}`,
       brideSlug: `${RUN}-b-${eventType}`,
-      groomName: isWedding ? "Andi Mappatunru, S.T." : "Nadia Putri",
+      groomName: isWedding ? "Andi Mappatunru, S.T." : null,
       brideName: isWedding ? "Besse Tenri Ajeng, S.Psi." : null,
-      groomNickname: isWedding ? "Andi" : "Nadia",
+      groomNickname: isWedding ? "Andi" : null,
       brideNickname: isWedding ? "Besse" : null,
-      groomFather: "Bpk. H. Mappatunru",
-      groomMother: "Ibu Hj. Nurhayati",
+      groomFather: isWedding ? "Bpk. H. Mappatunru" : null,
+      groomMother: isWedding ? "Ibu Hj. Nurhayati" : null,
       brideFather: "Bpk. H. Tenri",
       brideMother: "Ibu Hj. Ajeng",
       groomInstagram: "andi",
@@ -182,6 +192,7 @@ describe.skipIf(!IS_TEST_DB)("token template tema terisi oleh mesin", () => {
       expect(html).toContain(slotUrl("GROOM_PHOTO"));
       expect(html).toContain(GALLERY_URLS[0]);
       expect(html).toContain("Gedung Mulo");
+      expect((PARTICIPANT_TEXT[eventType] ?? []).filter((text) => !html.includes(text))).toEqual([]);
     });
   }
 

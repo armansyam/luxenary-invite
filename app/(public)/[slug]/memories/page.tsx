@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { getAdminSetting, hasPlanCapability } from "@/lib/settings";
+import { hasPlanCapability } from "@/lib/settings";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 import { jsonForInlineScript } from "@/lib/safeJson";
 import { parseFeatureSettings } from "@/lib/featureSettings";
@@ -16,17 +16,15 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const [invitation, platformName] = await Promise.all([
-    prisma.invitation.findUnique({ where: { invitationSlug: slug } }),
-    getAdminSetting("platform_name", "Platform Undangan"),
-  ]);
+  const invitation = await prisma.invitation.findUnique({ where: { invitationSlug: slug } });
 
   if (!invitation) return {};
 
   const displayName = resolveInvitationDisplayName(invitation);
   const isWedding = !invitation.eventType || invitation.eventType === "WEDDING";
+  // Nama platform ditambahkan templat judul di app/layout.tsx.
   return {
-    title: `Galeri Kenangan Tamu — ${displayName} | ${platformName}`,
+    title: `Galeri Kenangan Tamu — ${displayName}`,
     description: isWedding
       ? `Kumpulan foto candid dan ucapan dari sahabat & keluarga di pernikahan ${displayName}.`
       : `Kumpulan foto candid dan ucapan dari sahabat & keluarga di acara ${displayName}.`,
@@ -157,7 +155,6 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
               href={invitationUrl}
               className="text-xs font-semibold text-stone-300 hover:text-white flex items-center gap-1.5 transition"
             >
-              <span>&larr;</span>
               <span>Kembali ke Undangan</span>
             </Link>
             <Link
@@ -234,7 +231,6 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
             href={invitationUrl}
             className="text-xs font-semibold text-stone-300 hover:text-white flex items-center gap-1.5 transition cursor-pointer"
           >
-            <span>&larr;</span>
             <span>Kembali ke Undangan</span>
           </Link>
           <Link

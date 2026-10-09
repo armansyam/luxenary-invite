@@ -290,7 +290,6 @@ export default function DemoGuestMemoriesPage() {
                 href={`/demo/${themeParam}`}
                 className="hidden md:flex items-center gap-1.5 text-[11px] font-semibold text-amber-400 hover:text-amber-300 transition px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20"
               >
-                <span>&larr;</span>
                 <span className="capitalize">Undangan Demo ({themeParam})</span>
               </Link>
             )}
