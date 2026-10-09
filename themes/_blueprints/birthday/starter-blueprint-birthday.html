@@ -18,7 +18,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Birthday Celebration of {{personName}}</title>
+  <title>{{eventLabel}} {{mainName}}</title>
 
   <!-- Google Fonts (Self-Hosted Local Zero Latency) -->
   <link rel="stylesheet" href="/fonts/fonts.css" />
@@ -277,44 +277,22 @@
       margin-bottom: 4px;
     }
 
-    .person-parents {
+    .person-info {
       font-size: 13px;
       color: var(--text-muted);
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      margin-top: 4px;
     }
 
-    .event-card {
-      background: var(--card-bg);
-      border-radius: var(--radius-md);
-      padding: 24px;
-      margin-bottom: 16px;
-      border: 1px solid rgba(255, 255, 255, 0.06);
-    }
-
-    .event-date-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    .btn-maps {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 10px 20px;
-      border-radius: var(--radius-full);
-      background: color-mix(in srgb, var(--primary) 15%, transparent);
-      color: var(--primary);
-      border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+    .person-quote {
       font-size: 13px;
-      font-weight: 600;
-      text-decoration: none;
-      margin-top: 16px;
+      font-style: italic;
+      color: var(--text-muted);
+      margin-top: 12px;
     }
+
+    .sec-block { text-align: center; }
+    .sec-lbl { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--primary); display: block; margin-bottom: 8px; }
+    .sec-h2 { font-size: 24px; font-weight: 700; color: var(--text-main); margin-bottom: 16px; }
 
     /* Bottom Dock */
     .bottom-dock {
@@ -359,14 +337,14 @@
   <!-- FIXED BACKGROUND LAYER -->
   <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
   <!-- COVER SCREEN -->
-  <div id="coverScreen" class="cover-screen" style="background-image: url('{{personPhotoUrl}}');">
+  <div id="coverScreen" class="cover-screen" style="background-image: url('{{mainPhotoUrl}}');">
     <div class="cover-overlay"></div>
     <div class="cover-content">
       <div class="badge-pill">
-        <span>Birthday Milestone</span>
+        <span>{{eventLabel}}</span>
       </div>
-      <h1 class="cover-name">{{personNickname}}</h1>
-      <p class="cover-age">Turning {{personAge}}th Celebration</p>
+      <h1 class="cover-name">{{mainNickname}}</h1>
+      {{#if mainInfoLine}}<p class="cover-age">{{mainInfoLine}}</p>{{/if}}
 
       <div class="guest-box">
         <div class="guest-label">Kepada Yth.</div>
@@ -387,93 +365,52 @@
     <!-- SECTION INTRO / PERSON -->
     <section id="home">
       <div class="person-card">
-        <img src="{{personPhotoUrl}}" alt="{{personName}}" class="person-avatar" onerror="this.onerror=null;this.style.visibility='hidden'" />
-        <h2 class="person-name">{{personName}}</h2>
-        <div class="badge-pill" style="margin-top: 8px; margin-bottom: 8px;">
-          <span>Ulang Tahun ke-{{personAge}}</span>
-        </div>
-        {{#if fatherName}}
-        <p class="person-parents">
-          Putra/Putri dari Bpk. {{fatherName}} &amp; Ibu {{motherName}}
-        </p>
-        {{/if}}
+        <img src="{{mainPhotoUrl}}" alt="{{mainName}}" class="person-avatar" onerror="this.onerror=null;this.style.visibility='hidden'" />
+        <h2 class="person-name">{{mainName}}</h2>
+        {{#if mainInfoLine}}<p class="person-info">{{mainInfoLine}}</p>{{/if}}
+        {{#if mainDetailLine}}<p class="person-info">{{mainDetailLine}}</p>{{/if}}
+        {{#if openingQuote}}<p class="person-quote">{{openingQuote}}</p>{{/if}}
+        {{parentsHtml}}
       </div>
     </section>
 
     <!-- SECTION COUNTDOWN -->
+    {{#if countdownHtml}}
     <section id="countdown">
-      <h3 class="section-title">Counting Down</h3>
-      <p class="section-subtitle">Menuju hari bahagia perayaan ulang tahun</p>
+      <h3 class="section-title">Hitung Mundur</h3>
+      <p class="section-subtitle">{{eventIntro}}</p>
       {{countdownHtml}}
     </section>
+    {{/if}}
 
     <!-- SECTION EVENT -->
     <section id="event">
       <h3 class="section-title">Waktu &amp; Tempat</h3>
-      <p class="section-subtitle">Detail pelaksanaan pesta perayaan</p>
-
-      <div class="event-card">
-        <div class="event-date-row">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="16" y1="2" x2="16" y2="6"></line>
-            <line x1="8" y1="2" x2="8" y2="6"></line>
-            <line x1="3" y1="10" x2="21" y2="10"></line>
-          </svg>
-          <div>
-            <div style="font-weight: 700; color: #fff;">{{eventDateFormatted}}</div>
-            <div style="font-size: 13px; color: var(--text-muted);">Pukul {{eventTime}}</div>
-          </div>
-        </div>
-
-        <div style="margin-top: 12px;">
-          <div style="font-weight: 600; color: #fff;">{{venueName}}</div>
-          <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">{{venueAddress}}</div>
-        </div>
-
-        {{#if mapsUrl}}
-        <a href="{{mapsUrl}}" target="_blank" rel="noopener noreferrer" class="btn-maps">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-            <circle cx="12" cy="10" r="3"></circle>
-          </svg>
-          <span>Petunjuk Google Maps</span>
-        </a>
-        {{/if}}
-      </div>
+      <p class="section-subtitle">Jadwal {{eventLabel}}</p>
+      {{eventSectionHtml}}
     </section>
 
-    <!-- SECTION GALLERY -->
-    <section id="gallery">
-      <h3 class="section-title">Galeri Momen</h3>
-      <p class="section-subtitle">Potret kenangan dan momen terbaik</p>
-      {{gallerySectionHtml}}
-    </section>
+    {{qrPassHtml}}
 
-    <!-- SECTION WISHES & RSVP -->
-    <section id="wishes">
-      <h3 class="section-title">Doa &amp; Ucapan</h3>
-      <p class="section-subtitle">Kirimkan ucapan selamat dan konfirmasi kehadiran Anda</p>
+    {{gallerySectionHtml}}
+
+    <section class="sec-block" id="wishes">
       {{rsvpSectionHtml}}
       {{wishesSectionHtml}}
     </section>
 
-    <!-- SECTION GIFT / ENVELOPE -->
-    <section id="gift">
-      <h3 class="section-title">Tanda Kasih</h3>
-      <p class="section-subtitle">Doa restu Anda adalah hadiah terindah, namun jika ingin memberikan tanda kasih dapat melalui:</p>
-      {{giftSectionHtml}}
-    </section>
+    {{giftSectionHtml}}
 
-    <!-- SECTION MEMORIES (GUEST MEMORIES IF ENABLED) -->
+    {{extraSectionsHtml}}
+
     {{memoriesSectionHtml}}
 
     <!-- FOOTER -->
-    <footer style="padding: 40px 24px 80px; text-align: center; border-top: 1px solid rgba(255,255,255,0.06);">
+    <footer style="padding: 40px 24px 80px; text-align: center; border-top: 1px solid color-mix(in srgb, var(--text-main) 6%, transparent);">
       <p style="font-size: 13px; color: var(--text-muted);">Terima kasih atas doa dan kehadiran Anda.</p>
-      <p style="font-size: 14px; font-weight: 700; color: #fff; margin-top: 4px;">{{personName}}</p>
-      <div style="margin-top: 24px; font-size: 11px; color: #64748b;">
-        Created with <span style="color: var(--accent);">Luxenary</span> &bull; Digital Experience
+      <p style="font-size: 14px; font-weight: 700; color: var(--text-main); margin-top: 4px;">{{mainName}}</p>
+      <div style="margin-top: 24px; font-size: 11px; color: var(--text-muted);">
+        {{brandWatermarkHtml}}
       </div>
     </footer>
   </div>
@@ -526,11 +463,6 @@
       const cover = document.getElementById("coverScreen");
       if (cover) {
         cover.classList.add("opened");
-      }
-      // Play audio if available
-      const audio = document.getElementById("bgMusic") || document.querySelector("audio");
-      if (audio && audio.paused) {
-        audio.play().catch(function() {});
       }
     }
   </script>

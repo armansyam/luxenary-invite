@@ -208,6 +208,71 @@ describe.skipIf(!IS_TEST_DB)("token template tema terisi oleh mesin", () => {
     });
   }
 
+  // Tema satu nama boleh dipakai jenis acara non-pernikahan mana pun (isThemeCompatible); setiap kombinasi harus
+  // menampilkan data jenis acaranya sendiri dan fitur paket (QR, Momen), tanpa teks jenis acara lain.
+  const SINGLE_NAME_THEMES = Object.entries(THEME_MAP).filter(([, info]) => info.eventType !== "wedding").map(([id]) => id);
+  const EVENT_LABELS: Record<string, string> = { BIRTHDAY: "Perayaan Ulang Tahun", KHITAN: "Walimatul Khitan", AQIQAH: "Tasyakuran Aqiqah", WISUDA: "Syukuran Kelulusan" };
+  for (const themeId of SINGLE_NAME_THEMES) {
+    for (const eventType of ["BIRTHDAY", "KHITAN", "AQIQAH", "WISUDA", "GATHERING"]) {
+      it(`tema satu nama ${themeId} × ${eventType}`, async () => {
+        const invitationId = invitationByType[eventType];
+        await prisma.invitation.update({ where: { id: invitationId }, data: { themeId } });
+        const data = (await composeTemplateData(invitationId)) as Record<string, unknown>;
+        const missingReads = new Set<string>();
+        const recorder = new Proxy(data, {
+          get(target, key, receiver) {
+            if (typeof key === "string" && !(key in target)) missingReads.add(key);
+            return Reflect.get(target, key, receiver);
+          },
+        });
+        const html = await renderTemplateFile(themeId, recorder, { eventType });
+
+        expect([...templateTokens(themeId)].filter((t) => missingReads.has(t))).toEqual([]);
+        expect(html.match(/\{\{[^}]*\}\}/g) ?? []).toEqual([]);
+        expect((PARTICIPANT_TEXT[eventType] ?? []).filter((text) => !html.includes(text))).toEqual([]);
+        expect(Object.entries(EVENT_LABELS).filter(([type, label]) => type !== eventType && html.includes(label)).map(([, l]) => l)).toEqual([]);
+        if (EVENT_LABELS[eventType]) expect(html).toContain(EVENT_LABELS[eventType]);
+        expect(html).toContain('id="passQrImg"');
+        expect(html).toContain('id="luxAudioPlayer"');
+        expect(html).toContain('id="cdDays"');
+        expect(html).toContain("/sharemoment");
+        expect(html).toContain("Gedung Mulo");
+      });
+    }
+  }
+
+  it("tema satu nama: paket tanpa qr_checkin/guest_memories tidak menampilkan kartu QR maupun Momen; musik mati tidak memuat pemutar", async () => {
+    const invitationId = invitationByType.KHITAN;
+    const inv = await prisma.invitation.findUniqueOrThrow({ where: { id: invitationId }, select: { orderId: true, featureSettings: true } });
+    await prisma.order.update({ where: { id: inv.orderId! }, data: { planType: "TIER_1" } });
+    await prisma.invitation.update({ where: { id: invitationId }, data: { themeId: "al-fariz", featureSettings: JSON.stringify({ ...JSON.parse(inv.featureSettings || "{}"), showMusic: false }) } });
+    try {
+      const html = await renderTemplateFile("al-fariz", (await composeTemplateData(invitationId)) as Record<string, unknown>, { eventType: "KHITAN" });
+      expect(html).not.toContain('id="passQrImg"');
+      expect(html).not.toContain("/sharemoment");
+      expect(html).not.toContain('id="luxAudioPlayer"');
+      expect(html).toContain("Fatih");
+    } finally {
+      await prisma.order.update({ where: { id: inv.orderId! }, data: { planType: "TIER_3" } });
+      await prisma.invitation.update({ where: { id: invitationId }, data: { featureSettings: inv.featureSettings } });
+    }
+  });
+
+  // Blueprint starter adalah titik awal desainer tema baru; token di luar kontrak satu nama akan dirender kosong.
+  for (const folder of ["birthday", "khitan", "aqiqah", "wisuda", "general"]) {
+    it(`blueprint ${folder} hanya memakai kunci kontrak satu nama`, async () => {
+      const file = path.join(process.cwd(), "themes", "_blueprints", folder, `starter-blueprint-${folder}.html`);
+      const html = fs.readFileSync(file, "utf8");
+      expect(fs.readFileSync(path.join(process.cwd(), "public", "downloads", `starter-blueprint-${folder}.html`), "utf8")).toBe(html);
+      const tokens = [...new Set([...html.matchAll(/\{\{\s*(?:#if\s+|#unless\s+)?([\w.]+)\s*\}\}/g)].map((m) => m[1]))];
+      for (const eventType of ["BIRTHDAY", "KHITAN", "AQIQAH", "WISUDA", "GATHERING"]) {
+        await prisma.invitation.update({ where: { id: invitationByType[eventType] }, data: { themeId: "al-fariz" } });
+        const data = (await composeTemplateData(invitationByType[eventType])) as Record<string, unknown>;
+        expect({ eventType, missing: tokens.filter((t) => !(t in data)) }).toEqual({ eventType, missing: [] });
+      }
+    });
+  }
+
   afterAll(() => {
     const bad = Object.entries(findings).filter(([, v]) => v.length);
     if (bad.length) console.log("[themePlaceholders] token tidak terisi:\n" + bad.map(([k, v]) => `  ${k}: ${v.join(", ")}`).join("\n"));

@@ -4,11 +4,11 @@ import { escapeHtml } from "@/lib/escapeHtml";
 import { safeHref, safeExternalUrl } from "@/lib/safeUrl";
 import { safeCssColor } from "@/lib/safeCss";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
-import { getAdminSetting } from "@/lib/settings";
+import { getAdminSetting, hasPlanCapability } from "@/lib/settings";
 import { safeParseParticipants } from "@/lib/participantUtils";
-import { buildCalendarTitle } from "@/lib/invitationUtils";
+import { buildCalendarTitle, DEFAULT_THEME_BY_EVENT } from "@/lib/invitationUtils";
 import { buildCheckinQrBaseUrl, buildCheckinQrUrl, qrInitials } from "@/lib/checkinQr";
-import { getPrimaryEvent } from "@/lib/lifecycleDates";
+import { getEventTimezoneOffset, getPrimaryEvent, resolveEventTimezone } from "@/lib/lifecycleDates";
 import { logger } from "@/lib/logger";
 
 /** Sesi jadwal terima tamu (patokan yang sama dengan masa aktif), atau objek kosong bila belum bertanggal. */
@@ -123,24 +123,23 @@ export async function composeTemplateData(invitationId: string) {
         orderBy: { respondedAt: "desc" },
         take: 30,
       },
+      order: { select: { planType: true } },
     },
   });
 
   if (!inv) return null;
 
   switch (inv.eventType || "WEDDING") {
-    case "WEDDING":
-      return composeWeddingData(inv);
     case "BIRTHDAY":
-      return composeBirthdayData(inv);
+      return applySingleNameContract("BIRTHDAY", await composeBirthdayData(inv), inv);
     case "KHITAN":
-      return composeKhitanData(inv);
+      return applySingleNameContract("KHITAN", await composeKhitanData(inv), inv);
     case "AQIQAH":
-      return composeAqiqahData(inv);
+      return applySingleNameContract("AQIQAH", await composeAqiqahData(inv), inv);
     case "WISUDA":
-      return composeWisudaData(inv);
+      return applySingleNameContract("WISUDA", await composeWisudaData(inv), inv);
     case "GATHERING":
-      return composeGatheringData(inv);
+      return applySingleNameContract("GATHERING", await composeGatheringData(inv), inv);
     default:
       return composeWeddingData(inv);
   }
@@ -210,7 +209,8 @@ export async function composeWeddingData(inv: any) {
   const showGallery = featureSettings.showGallery !== undefined ? Boolean(featureSettings.showGallery) : true;
   const showGift = featureSettings.showGift !== undefined ? Boolean(featureSettings.showGift) : true;
   const showDresscode = featureSettings.showDresscode !== undefined ? Boolean(featureSettings.showDresscode) : true;
-  const showQrCheckin = featureSettings.showQrCheckin !== undefined ? Boolean(featureSettings.showQrCheckin) : true;
+  // Fitur berbayar mengikuti paket order: flag kosong tidak boleh membuka kartu QR untuk paket tanpa qr_checkin.
+  const showQrCheckin = featureSettings.showQrCheckin !== false && await hasPlanCapability(inv.order?.planType, "qr_checkin");
   const showLiveStream = featureSettings.showLiveStream !== undefined ? Boolean(featureSettings.showLiveStream) : true;
   const showTurutMengundang = featureSettings.showTurutMengundang !== undefined ? Boolean(featureSettings.showTurutMengundang) : true;
   const showFilter = featureSettings.showFilter !== undefined ? Boolean(featureSettings.showFilter) : false;
@@ -1332,7 +1332,7 @@ export async function composeWeddingData(inv: any) {
     : "";
 
   // ─── Guest Memories (After-Event Moments Drop & Stream) ───
-  const showGuestMemories = featureSettings.showGuestMemories !== false;
+  const showGuestMemories = featureSettings.showGuestMemories !== false && await hasPlanCapability(inv.order?.planType, "guest_memories");
   const memoriesSectionEyebrow = customLabels.memoriesEyebrow || "AFTER-EVENT MEMORIES";
   const memoriesSectionTitle = customLabels.memoriesTitle || "Abadikan Momen Indah";
   const memoriesSectionSubtitle = customLabels.memoriesSubtitle || "Buka kamera dan jepret momen candid seru Anda selama menghadiri pernikahan kami langsung ke album kenangan bersama:";
@@ -1924,9 +1924,10 @@ export async function composeWeddingData(inv: any) {
     audioUrl: finalAudioUrl,
 
     // Quotes & Dates
-    openingQuote: inv.openingQuote ? nl2br(inv.openingQuote) : nl2br(blueprint.openingQuote),
+    // Teks polos; renderTemplate meng-escape dan mengubah baris baru menjadi <br />.
+    openingQuote: inv.openingQuote || blueprint.openingQuote,
     openingQuoteRef: inv.openingQuoteRef || blueprint.openingQuoteRef,
-    closingQuote: (inv as any).closingQuote ? nl2br((inv as any).closingQuote) : nl2br(blueprint.closingQuote),
+    closingQuote: (inv as any).closingQuote || blueprint.closingQuote,
     closingSub: (inv as any).closingSub || blueprint.closingSub,
     targetDate,
     weddingDate,
@@ -2157,128 +2158,19 @@ export async function composeBirthdayData(inv: any) {
     ? `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calTitle)}&dates=${weddingDateYear}${weddingDateMonth}${weddingDateDay}T010000Z/${weddingDateYear}${weddingDateMonth}${weddingDateDay}T140000Z&location=${encodeURIComponent(calendarLocation)}`
     : "";
 
-  // Countdown HTML
-  const countdownHtml = !isValidDate ? "" : `
-    <div class="countdown-timer" data-target="${targetDate}">
-      <div class="cd-item"><span class="cd-val" id="cdDays">00</span><span class="cd-lbl">Hari</span></div>
-      <div class="cd-item"><span class="cd-val" id="cdHours">00</span><span class="cd-lbl">Jam</span></div>
-      <div class="cd-item"><span class="cd-val" id="cdMinutes">00</span><span class="cd-lbl">Menit</span></div>
-      <div class="cd-item"><span class="cd-val" id="cdSeconds">00</span><span class="cd-lbl">Detik</span></div>
-    </div>
-  `;
-
-  // Gallery
+  // Seksi galeri, amplop, RSVP, dan ucapan memakai builder universal yang sama dengan jenis acara satu nama lain,
+  // sehingga tema satu nama mana pun dapat menampilkan data ulang tahun. Hitung mundur, musik, Momen, QR, dan seksi
+  // tambahan dibangun applySingleNameContract.
   const galleryPhotos = await collectGalleryPhotos(inv, featureSettings);
+  const gallerySectionHtml = buildUniversalGallerySection(galleryPhotos, customLabels.galleryTitle || "Galeri Foto", showGallery);
+  const rsvpSectionHtml = buildUniversalRsvpSection(inv.id);
+  const wishesSectionHtml = buildUniversalWishesSection(inv.rsvps || []);
+  const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital", personName, showGift);
 
-  const galleryItemsHtml = galleryPhotos.map((src, idx) => `
-    <div class="gallery-cell" data-src="${safeHref(src)}" onclick="openPhotoModal(this.dataset.src)">
-      <img src="${safeHref(src)}" alt="Momen ${idx + 1}" loading="lazy" />
-    </div>
-  `).join("");
-
-  const gallerySectionHtml = showGallery && galleryPhotos.length > 0 ? `
-    <section class="sec-flow" id="gallery">
-      <div class="sec-header">
-        <span class="sec-eyebrow">GALLERY</span>
-        <h2 class="sec-title serif">${customLabels.galleryTitle || "Galeri Foto"}</h2>
-      </div>
-      <div class="gallery-mosaic">
-        ${galleryItemsHtml}
-      </div>
-    </section>
-  ` : "";
-
-  // RSVP & Wishes
-  const wishesList = (inv.rsvps || []).map((r: any) => `
-    <div class="wish-item">
-      <div class="wish-header">
-        <span class="wish-name">${escapeHtml(r.name || "Sahabat")}</span>
-        <span class="wish-badge ${r.attendance === "HADIR" ? "badge-hadir" : "badge-absen"}">
-          ${r.attendance === "HADIR" ? `Hadir (${r.guestCount || 1} Tamu)` : "Berhalangan"}
-        </span>
-      </div>
-      ${r.message ? `<p class="wish-text">“${escapeHtml(r.message)}”</p>` : ""}
-    </div>
-  `).join("");
-
-  const wishesHtml = `
-    <div class="wishes-stream" id="wishesList">
-      ${wishesList || `<p class="wishes-empty">Jadilah yang pertama mengirimkan ucapan & doa!</p>`}
-    </div>
-  `;
-
-  const wishesSectionHtml = `
-    <section class="sec-flow" id="wishes">
-      <div class="sec-header">
-        <span class="sec-eyebrow">WISHES &amp; PRAYERS</span>
-        <h2 class="sec-title serif">${customLabels.wishesTitle || "Ucapan & Doa"}</h2>
-      </div>
-      <div class="wishes-card">
-        <form onsubmit="submitRsvp(event)" class="rsvp-form">
-          <input type="text" id="rsvpName" placeholder="Nama Anda" required class="input-field" />
-          <select id="rsvpStatus" class="input-field">
-            <option value="hadir">Konfirmasi Hadir</option>
-            <option value="tidak_hadir">Berhalangan Hadir</option>
-          </select>
-          <input type="number" id="rsvpCount" min="1" max="10" value="1" placeholder="Jumlah Tamu" class="input-field" />
-          <textarea id="rsvpMessage" placeholder="Tuliskan ucapan selamat & doa terbaik Anda..." rows="3" class="input-field"></textarea>
-          <button type="submit" id="btnSubmit" class="btn-submit">${customLabels.rsvpBtnText || "Kirim Ucapan & Konfirmasi"}</button>
-        </form>
-        ${wishesHtml}
-      </div>
-    </section>
-  `;
-
-  // Bank Accounts / Gift
-  const bankCardsHtml = bankAccounts.map((b: any) => `
-    <div class="bank-card">
-      <span class="bank-name">${escapeHtml(b.bank || "Bank")}</span>
-      <span class="bank-number">${escapeHtml(b.number || b.accountNumber || "")}</span>
-      <span class="bank-owner">a.n ${escapeHtml(b.name || b.accountName || personName)}</span>
-      <button class="btn-copy" data-copy="${escapeHtml(b.number || b.accountNumber || "")}" onclick="copyText(this.dataset.copy)">Salin Rekening</button>
-    </div>
-  `).join("");
-
-  const giftSectionHtml = showGift && bankAccounts.length > 0 ? `
-    <section class="sec-flow" id="gift">
-      <div class="sec-header">
-        <span class="sec-eyebrow">BIRTHDAY GIFT</span>
-        <h2 class="sec-title serif">${customLabels.giftTitle || "Kado Digital"}</h2>
-        <p class="sec-sub">Doa restu Anda adalah karunia terindah bagi kami. Namun jika ingin memberikan tanda kasih secara digital, Anda dapat melalui rekening berikut:</p>
-      </div>
-      <div class="bank-grid">
-        ${bankCardsHtml}
-      </div>
-    </section>
-  ` : "";
-
-  // Guest Memories
-  const showGuestMemories = featureSettings.showGuestMemories !== false;
-  const memoriesSectionHtml = showGuestMemories ? `
-    <section class="sec-flow" id="memories">
-      <div class="sec-header">
-        <span class="sec-eyebrow">MOMENTS &amp; MEMORIES</span>
-        <h2 class="sec-title serif">${customLabels.memoriesTitle || "Album Kenangan Tamu"}</h2>
-        <p class="sec-sub">Bagikan momen keseruan Anda selama menghadiri perayaan ulang tahun ini:</p>
-      </div>
-      <div class="memories-actions" style="text-align:center; margin-top:1rem;">
-        <a href="/invitations/${inv.invitationSlug}/sharemoment" class="btn-action-outline">
-          Unggah Foto Momen
-        </a>
-      </div>
-    </section>
-  ` : "";
-
-  // Music Player
-  const clientUploadedSong = safeExternalUrl(mediaMap.get("AUDIO_TRACK") || inv.musicUrl);
-  const finalAudioUrl = clientUploadedSong || dbThemeDefaultMusic || blueprint.defaultMusicUrl || "/music/canon-in-d.ogg";
-
-  const musicPlayerHtml = `
-    <audio id="luxAudioPlayer" loop preload="none">
-      <source src="${escapeHtml(finalAudioUrl)}" type="audio/ogg" />
-      <source src="${escapeHtml(finalAudioUrl)}" type="audio/mpeg" />
-    </audio>
-  `;
+  // Musik: lagu klien → musik bawaan tema; sakelar Musik di studio mematikannya. Pemutar dibangun applySingleNameContract.
+  const finalAudioUrl = featureSettings.showMusic !== false
+    ? (safeExternalUrl(inv.musicUrl || featureSettings.musicUrl) || dbThemeDefaultMusic || blueprint.defaultMusicUrl || "")
+    : "";
 
   const platformName = await getAdminSetting("platform_name", "Platform Undangan");
   const absoluteCover = coverHeroUrl.startsWith("http") ? coverHeroUrl : `https://${inv.invitationSlug || "inv"}/${coverHeroUrl.replace(/^\//, "")}`;
@@ -2365,14 +2257,10 @@ export async function composeBirthdayData(inv: any) {
     googleCalendarUrl,
 
     // Composed HTML Blocks
-    countdownHtml,
     gallerySectionHtml,
-    wishesHtml,
     wishesSectionHtml,
-    rsvpSectionHtml: wishesSectionHtml,
+    rsvpSectionHtml,
     giftSectionHtml,
-    memoriesSectionHtml,
-    musicPlayerHtml,
     storySectionHtml: "",
     storyItemsHtml: "",
     weddingFilterHtml: "",
@@ -2527,22 +2415,22 @@ function buildUniversalRsvpSection(invitationId: string): string {
       <form onsubmit="handleUniversalRsvpSubmit(event, '${escapeHtml(invitationId || "")}')" style="display: flex; flex-direction: column; gap: 12px; background: var(--card-bg); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); padding: 20px; border-radius: var(--radius-md, 14px);">
         <div>
           <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Nama Lengkap</label>
-          <input type="text" id="universalRsvpName" required placeholder="Nama Anda" style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: var(--radius-sm, 8px); background: color-mix(in srgb, var(--bg-canvas) 80%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); color: var(--text-main); font-size: 13px;" />
+          <input type="text" id="universalRsvpName" required placeholder="Nama Anda" style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: var(--radius-sm, 8px); background: color-mix(in srgb, var(--bg-canvas, var(--card-bg)) 80%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); color: var(--text-main); font-size: 13px;" />
         </div>
         <div>
           <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Konfirmasi Kehadiran</label>
-          <select id="universalRsvpStatus" style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: var(--radius-sm, 8px); background: color-mix(in srgb, var(--bg-canvas) 80%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); color: var(--text-main); font-size: 13px;">
+          <select id="universalRsvpStatus" style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: var(--radius-sm, 8px); background: color-mix(in srgb, var(--bg-canvas, var(--card-bg)) 80%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); color: var(--text-main); font-size: 13px;">
             <option value="hadir">Hadir</option>
             <option value="tidak_hadir">Berhalangan Hadir</option>
           </select>
         </div>
         <div>
           <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Jumlah Tamu</label>
-          <input type="number" id="universalRsvpCount" min="1" max="10" value="1" style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: var(--radius-sm, 8px); background: color-mix(in srgb, var(--bg-canvas) 80%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); color: var(--text-main); font-size: 13px;" />
+          <input type="number" id="universalRsvpCount" min="1" max="10" value="1" style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: var(--radius-sm, 8px); background: color-mix(in srgb, var(--bg-canvas, var(--card-bg)) 80%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); color: var(--text-main); font-size: 13px;" />
         </div>
         <div>
           <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Ucapan &amp; Doa</label>
-          <textarea id="universalRsvpMessage" rows="3" placeholder="Tuliskan ucapan dan doa terbaik Anda..." style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: var(--radius-sm, 8px); background: color-mix(in srgb, var(--bg-canvas) 80%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); color: var(--text-main); font-size: 13px; resize: vertical;"></textarea>
+          <textarea id="universalRsvpMessage" rows="3" placeholder="Tuliskan ucapan dan doa terbaik Anda..." style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: var(--radius-sm, 8px); background: color-mix(in srgb, var(--bg-canvas, var(--card-bg)) 80%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); color: var(--text-main); font-size: 13px; resize: vertical;"></textarea>
         </div>
         <button type="submit" id="universalRsvpBtn" style="padding: 12px; border-radius: var(--radius-full, 9999px); background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #ffffff; font-size: 13px; font-weight: 700; border: none; cursor: pointer; margin-top: 4px;">Kirim Konfirmasi</button>
         <div id="universalRsvpAlert" style="display: none; text-align: center; font-size: 12px; font-weight: 600; color: var(--primary); margin-top: 6px;"></div>
@@ -2610,6 +2498,233 @@ function buildUniversalWishesSection(rsvps: any[] = []): string {
       </div>
     </div>
   `;
+}
+
+// ==========================================
+// KONTRAK TEMA SATU NAMA (ULANG TAHUN, KHITAN, AQIQAH, WISUDA, GATHERING)
+// ==========================================
+
+/** Hitung mundur ke jadwal terima tamu menurut zona waktu acara; tidak dirender bila tanggal belum diisi. */
+function buildUniversalCountdown(primary: any): string {
+  const day = typeof primary?.date === "string" ? primary.date.split("T")[0] : "";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return "";
+  const rawTime = String(primary.startTime || primary.time || "").match(/\d{1,2}[:.]\d{2}/)?.[0]?.replace(".", ":") || "00:00";
+  const time = rawTime.length === 4 ? `0${rawTime}` : rawTime;
+  const target = `${day}T${time}:00${getEventTimezoneOffset(resolveEventTimezone(primary))}`;
+  const cell = (id: string, label: string) => `
+      <div style="min-width: 64px; padding: 12px 8px; border-radius: var(--radius-md, 14px); background: color-mix(in srgb, var(--card-bg) 70%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);">
+        <span id="${id}" style="display: block; font-size: 22px; font-weight: 800; color: var(--text-main);">00</span>
+        <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">${label}</span>
+      </div>`;
+  return `
+    <div class="countdown-timer" data-target="${escapeHtml(target)}" style="display: flex; justify-content: center; gap: 8px; margin: 16px 0;">
+      ${cell("cdDays", "Hari")}${cell("cdHours", "Jam")}${cell("cdMinutes", "Menit")}${cell("cdSeconds", "Detik")}
+    </div>
+    <script>
+      (function () {
+        var box = document.querySelector('.countdown-timer[data-target]');
+        if (!box || box.__luxCountdown) return;
+        box.__luxCountdown = true;
+        var target = new Date(box.getAttribute('data-target')).getTime();
+        if (isNaN(target)) return;
+        var pad = function (n) { return String(n).padStart(2, '0'); };
+        var set = function (id, v) { var el = document.getElementById(id); if (el) el.textContent = pad(v); };
+        var tick = function () {
+          var diff = Math.max(0, target - Date.now());
+          set('cdDays', Math.floor(diff / 86400000));
+          set('cdHours', Math.floor(diff / 3600000) % 24);
+          set('cdMinutes', Math.floor(diff / 60000) % 60);
+          set('cdSeconds', Math.floor(diff / 1000) % 60);
+        };
+        tick();
+        setInterval(tick, 1000);
+      })();
+    </script>
+  `;
+}
+
+/** Audio + tombol putar; pemutaran, autoplay setelah sampul dibuka, dan status tombol ditangani skrip runtime. */
+function buildUniversalMusicPlayer(audioUrl: string): string {
+  if (!audioUrl) return "";
+  return `
+    <audio id="luxAudioPlayer" loop preload="none"><source src="${escapeHtml(audioUrl)}" /></audio>
+    <button type="button" id="musicFab" aria-label="Putar atau jeda musik" onclick="window.luxToggleAudio && window.luxToggleAudio()" style="position: fixed; right: 16px; bottom: 88px; z-index: 900; width: 44px; height: 44px; border-radius: var(--radius-full, 9999px); border: 1px solid color-mix(in srgb, var(--primary) 50%, transparent); background: color-mix(in srgb, var(--card-bg) 85%, transparent); color: var(--primary); display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(6px);">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+    </button>
+    <style>#musicFab.playing svg { animation: luxMusicSpin 4s linear infinite; } @keyframes luxMusicSpin { to { transform: rotate(360deg); } }</style>
+  `;
+}
+
+/** Kartu QR check-in tamu; nama tamu dan isi QR diisi skrip runtime dari ?to= (#passGuestName, #passQrImg). */
+function buildUniversalQrPass(inv: any, eventLabel: string, mainName: string, dateLabel: string): string {
+  const qrSrc = escapeHtml(buildCheckinQrUrl(inv.id, "Tamu Undangan", qrInitials(inv)));
+  return `
+    <section class="sec-block" id="checkin">
+      <span class="sec-lbl">Kartu Akses</span>
+      <h2 class="sec-h2 serif">QR Check-In Tamu</h2>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Tunjukkan kode QR ini kepada penerima tamu di lokasi acara.</p>
+      <div style="background: var(--card-bg); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); border-radius: var(--radius-lg, 20px); padding: 20px; text-align: center;">
+        <span style="font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--primary);">${escapeHtml(eventLabel)}</span>
+        <h3 class="serif" style="font-size: 20px; color: var(--text-main); margin: 6px 0 2px;">${escapeHtml(mainName)}</h3>
+        ${dateLabel ? `<p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">${escapeHtml(dateLabel)}</p>` : ""}
+        <!-- Latar putih wajib: pemindai QR membutuhkan kontras gelap di atas terang, apa pun palet temanya. -->
+        <div style="display: inline-block; padding: 12px; border-radius: var(--radius-md, 14px); background: #ffffff;">
+          <img class="pass-qr-img" id="passQrImg" src="${qrSrc}" alt="QR Check-In" style="width: 160px; height: 160px; display: block;" />
+        </div>
+        <p style="font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin-top: 14px;">Kepada Yth.</p>
+        <h4 class="serif" id="passGuestName" style="font-size: 17px; color: var(--text-main);">Tamu Undangan</h4>
+      </div>
+    </section>
+  `;
+}
+
+/** Ajakan kamera tamu dan tautan galeri; alamat mengikuti subdomain atau slug undangan. */
+function buildUniversalMemoriesCta(inv: any, customLabels: Record<string, string>): string {
+  const base = inv.subdomain ? `/s/${encodeURIComponent(inv.subdomain)}` : `/${encodeURIComponent(inv.invitationSlug)}`;
+  return `
+    <section class="sec-block" id="memories">
+      <span class="sec-lbl">${escapeHtml(customLabels.memoriesEyebrow || "Momen Tamu")}</span>
+      <h2 class="sec-h2 serif">${escapeHtml(customLabels.memoriesTitle || "Abadikan Momen Bersama")}</h2>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 18px;">${escapeHtml(customLabels.memoriesSubtitle || "Buka kamera dan bagikan momen Anda selama acara ke album kenangan bersama.")}</p>
+      <a href="${base}/sharemoment" style="display: inline-block; padding: 12px 28px; border-radius: var(--radius-full, 9999px); background: linear-gradient(135deg, var(--primary), var(--secondary, var(--primary))); color: var(--text-main); font-size: 13px; font-weight: 700; text-decoration: none;">Buka Kamera Momen</a>
+      <div style="margin-top: 12px;"><a href="${base}/memories" style="font-size: 12px; color: var(--primary); text-decoration: underline;">Lihat galeri foto tamu</a></div>
+    </section>
+  `;
+}
+
+/** Seksi opsional dari studio: dress code, siaran langsung, filter Instagram, turut mengundang, vendor. */
+function buildUniversalExtraSections(inv: any, featureSettings: Record<string, any>): string {
+  const sections: string[] = [];
+  const block = (id: string, label: string, title: string, body: string) => `
+    <section class="sec-block" id="${id}">
+      <span class="sec-lbl">${label}</span>
+      <h2 class="sec-h2 serif">${title}</h2>
+      ${body}
+    </section>`;
+
+  const colors = String(featureSettings.dressCodeColors || "").split(",").map((c) => safeCssColor(c.trim())).filter(Boolean);
+  const dressNote = String(featureSettings.dressCodeNote || inv.dresscode || "").trim();
+  if (featureSettings.showDresscode !== false && (colors.length > 0 || dressNote)) {
+    const swatches = colors.map((c) => `<span style="width: 28px; height: 28px; border-radius: 50%; display: inline-block; background: ${escapeHtml(c)}; border: 2px solid color-mix(in srgb, var(--text-main) 60%, transparent);"></span>`).join("");
+    sections.push(block("dresscode", "Dress Code", "Panduan Busana", `${swatches ? `<div style="display: flex; justify-content: center; gap: 10px; margin: 12px 0;">${swatches}</div>` : ""}${dressNote ? `<p style="font-size: 13px; color: var(--text-muted);">${escapeHtml(dressNote)}</p>` : ""}`));
+  }
+
+  const liveLinks = [
+    ["YouTube", safeHref(featureSettings.liveStreamYoutubeUrl || inv.liveStreamUrl)],
+    ["Instagram", safeHref(featureSettings.liveStreamInstagramUrl)],
+    ["Zoom", safeHref(featureSettings.liveStreamZoomUrl)],
+  ].filter(([, href]) => href);
+  if (featureSettings.showLiveStream !== false && liveLinks.length > 0) {
+    const buttons = liveLinks.map(([name, href]) => `<a href="${href}" target="_blank" rel="noopener noreferrer" style="padding: 10px 18px; border-radius: var(--radius-full, 9999px); border: 1px solid color-mix(in srgb, var(--primary) 50%, transparent); color: var(--primary); font-size: 12px; font-weight: 700; text-decoration: none;">${name} Live</a>`).join("");
+    sections.push(block("live", "Siaran Langsung", "Saksikan Secara Daring", `<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 12px;">${buttons}</div>`));
+  }
+
+  const filterUrl = safeHref(featureSettings.instagramFilterUrl);
+  if (featureSettings.showFilter && filterUrl) {
+    sections.push(block("frame", "Filter Instagram", "Abadikan dengan Bingkai Resmi", `<a href="${filterUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 12px; padding: 10px 22px; border-radius: var(--radius-full, 9999px); border: 1px solid color-mix(in srgb, var(--primary) 50%, transparent); color: var(--primary); font-size: 12px; font-weight: 700; text-decoration: none;">Buka Filter Instagram</a>`));
+  }
+
+  const invitedBy = String(featureSettings.turutMengundang || "").split("\n").map((l) => l.trim()).filter(Boolean);
+  if (featureSettings.showTurutMengundang !== false && invitedBy.length > 0) {
+    sections.push(block("turut-mengundang", "Turut Mengundang", "Keluarga &amp; Kerabat", invitedBy.map((l) => `<p style="font-size: 13px; color: var(--text-main); padding: 6px 0; border-bottom: 1px dashed color-mix(in srgb, var(--primary) 20%, transparent);">${escapeHtml(l)}</p>`).join("")));
+  }
+
+  let vendors: any[] = [];
+  if (Array.isArray(featureSettings.vendors)) vendors = featureSettings.vendors;
+  else if (typeof featureSettings.vendors === "string") {
+    try { vendors = JSON.parse(featureSettings.vendors); } catch { vendors = []; }
+  }
+  const validVendors = vendors.filter((v) => v && (String(v.name || "").trim() || String(v.logoUrl || "").trim()));
+  if (featureSettings.showVendors !== false && validVendors.length > 0) {
+    const items = validVendors.map((v) => {
+      const logo = safeExternalUrl(v.logoUrl);
+      return `<div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">${logo ? `<img src="${escapeHtml(logo)}" alt="${escapeHtml(v.name || "Vendor")}" style="max-height: 44px; max-width: 120px; object-fit: contain;" loading="lazy" />` : ""}${v.name ? `<span style="font-size: 12px; color: var(--text-main);">${escapeHtml(v.name)}</span>` : ""}${v.category ? `<span style="font-size: 10px; color: var(--text-muted);">${escapeHtml(v.category)}</span>` : ""}</div>`;
+    }).join("");
+    sections.push(block("vendors", "Vendor", "Didukung Oleh", `<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin-top: 12px;">${items}</div>`));
+  }
+
+  return sections.join("");
+}
+
+const SINGLE_NAME_LABELS: Record<string, { eventLabel: string; eventIntro: string }> = {
+  BIRTHDAY: { eventLabel: "Perayaan Ulang Tahun", eventIntro: "Syukur & Kebahagiaan" },
+  KHITAN: { eventLabel: "Walimatul Khitan", eventIntro: "Tasyakuran & Doa Bersama" },
+  AQIQAH: { eventLabel: "Tasyakuran Aqiqah", eventIntro: "Tasyakuran & Doa Bersama" },
+  WISUDA: { eventLabel: "Syukuran Kelulusan", eventIntro: "Syukur & Kebanggaan" },
+  GATHERING: { eventLabel: "Undangan Resmi", eventIntro: "Undangan & Sambutan" },
+};
+
+/**
+ * Kunci yang dipakai tema satu nama. Setiap composer non-pernikahan menghasilkan nama tokoh utama dengan kuncinya
+ * sendiri (personName, childName, babyName, graduateName, eventTitle); fungsi ini menyeragamkannya dan menambahkan seksi
+ * yang sama untuk semua jenis acara, sehingga tema satu nama mana pun dapat dipakai jenis acara non-pernikahan mana pun.
+ */
+async function applySingleNameContract(eventType: string, data: Record<string, any>, inv: any): Promise<Record<string, any>> {
+  const featureSettings: Record<string, any> = data.featureSettings || {};
+  const customLabels: Record<string, string> = data.customLabels || {};
+  const p = safeParseParticipants(inv.participantsJson);
+  const events = (() => {
+    try {
+      const parsed = typeof inv.eventData === "string" ? JSON.parse(inv.eventData) : inv.eventData;
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  })();
+  const primary = primaryEventOf(events);
+
+  const main: Record<string, { name: string; nickname: string; photo: string; info: string; detail: string }> = {
+    BIRTHDAY: { name: data.personName, nickname: data.personNickname, photo: data.personPhotoUrl, info: data.personAge ? `Ulang Tahun ke-${data.personAge}` : "", detail: "" },
+    KHITAN: { name: data.childName, nickname: data.childNickname, photo: data.childPhotoUrl, info: data.childInfoLine, detail: "" },
+    AQIQAH: { name: data.babyName, nickname: data.babyNickname, photo: data.babyPhotoUrl, info: [data.birthDateFormatted, data.birthMetrics].filter(Boolean).join(" • "), detail: "" },
+    WISUDA: { name: data.graduateName, nickname: data.graduateNickname, photo: data.graduatePhotoUrl, info: data.graduateCoverLine, detail: data.graduateStudyLine },
+    GATHERING: { name: data.eventTitle, nickname: data.eventTitle, photo: data.eventPhotoUrl, info: data.eventSubtitle, detail: data.organizerName ? `Diselenggarakan oleh ${data.organizerName}` : "" },
+  };
+  const m = main[eventType];
+  const labels = SINGLE_NAME_LABELS[eventType];
+
+  const fatherName = p.person?.fatherName || p.parents?.father || "";
+  const motherName = p.person?.motherName || p.parents?.mother || "";
+  const parentNames = [fatherName, motherName].filter(Boolean).map(escapeHtml).join(" &amp; ");
+  const parentsHtml = data.parentsHtml !== undefined
+    ? data.parentsHtml
+    : parentNames ? `<p>Putra/Putri tercinta dari:</p><h4 class="serif" style="color: var(--text-main); font-size: 16px; margin: 4px 0;">${parentNames}</h4>` : "";
+
+  const defaultBlueprint = getThemeBlueprint(DEFAULT_THEME_BY_EVENT[eventType] || "kalandra");
+  const quote = inv.openingQuote || defaultBlueprint.openingQuote || "";
+  const quoteRef = inv.openingQuote ? (inv.openingQuoteRef || "") : (defaultBlueprint.openingQuoteRef || "");
+
+  const planType = inv.order?.planType;
+  const showQr = featureSettings.showQrCheckin !== false && await hasPlanCapability(planType, "qr_checkin");
+  const showMemories = featureSettings.showGuestMemories !== false && await hasPlanCapability(planType, "guest_memories");
+  const dateLabel = primary.date ? formatDateId(primary.date) : "";
+  const platformName = await getAdminSetting("platform_name", "Platform Undangan");
+
+  return {
+    ...data,
+    mainName: m.name || "",
+    mainNickname: m.nickname || m.name || "",
+    mainPhotoUrl: m.photo || "",
+    mainInfoLine: m.info || "",
+    mainDetailLine: m.detail || "",
+    eventLabel: labels.eventLabel,
+    eventIntro: labels.eventIntro,
+    openingQuote: quote,
+    openingQuoteRef: quoteRef,
+    parentsHtml,
+    eventDateFormatted: primaryEventDateLabel(events),
+    eventTime: primary.time || "",
+    venueName: primary.location || "",
+    venueAddress: primary.address || "",
+    mapsUrl: safeHref(primary.mapsUrl),
+    eventSectionHtml: data.eventSectionHtml || buildUniversalEventCards(events, labels.eventLabel),
+    brandWatermarkHtml: data.brandWatermarkHtml || `<span style="font-size: 10px; color: var(--primary);">Powered by ${escapeHtml(platformName)}</span>`,
+    countdownHtml: buildUniversalCountdown(primary),
+    musicPlayerHtml: buildUniversalMusicPlayer(data.audioUrl || ""),
+    qrPassHtml: showQr ? buildUniversalQrPass(inv, labels.eventLabel, m.name || "", dateLabel) : "",
+    memoriesSectionHtml: showMemories ? buildUniversalMemoriesCta(inv, customLabels) : "",
+    extraSectionsHtml: buildUniversalExtraSections(inv, featureSettings),
+  };
 }
 
 export async function composeKhitanData(inv: any) {

@@ -11,7 +11,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tasyakuran Aqiqah {{babyName}}</title>
+  <title>{{eventLabel}} {{mainName}}</title>
   <link rel="stylesheet" href="/fonts/fonts.css" />
 
   <style>
@@ -218,8 +218,8 @@
     <div class="cover-screen" id="coverScreen" style="background-image: url('{{landingCoverUrl}}');">
       <div class="cover-overlay"></div>
       <div class="cover-content">
-        <span class="badge-pill">Tasyakuran Aqiqah</span>
-        <h1 class="cover-title serif">{{babyName}}</h1>
+        <span class="badge-pill">{{eventLabel}}</span>
+        <h1 class="cover-title serif">{{mainName}}</h1>
         <p class="cover-sub">{{eventDateFormatted}}</p>
         <div class="guest-box">
           <p class="guest-lbl">Kepada Yth. Bapak/Ibu/Saudara/i</p>
@@ -233,18 +233,21 @@
     <main>
       <!-- Hero -->
       <section class="sec-block" style="padding-top: 60px;">
-        <span class="sec-lbl">Rasa Syukur Atas Kelahiran</span>
-        <h2 class="sec-h2 serif">Tasyakuran Aqiqah</h2>
+        <span class="sec-lbl">{{eventIntro}}</span>
+        <h2 class="sec-h2 serif">{{eventLabel}}</h2>
+        {{#if openingQuote}}
         <div class="doa-box">
-          "Barakallahu laka fil mauhubi laka, wa syakartal wahiba, wa balagha asyuddahu, wa ruziqa birrahu. Semoga Allah memberkahimu atas anak yang dianugerahkan kepadamu, dan engkau dikaruniai kebaktiannya."
+          {{openingQuote}}
+          {{#if openingQuoteRef}}<span style="display: block; margin-top: 8px; font-style: normal; font-size: 11px; letter-spacing: 1px; text-transform: uppercase;">{{openingQuoteRef}}</span>{{/if}}
         </div>
+        {{/if}}
 
         <div class="baby-card">
-          <img src="{{babyPhotoUrl}}" alt="{{babyName}}" class="baby-avatar" onerror="this.onerror=null;this.style.visibility='hidden'" />
-          <h3 class="baby-fullname serif">{{babyName}}</h3>
+          <img src="{{mainPhotoUrl}}" alt="{{mainName}}" class="baby-avatar" onerror="this.onerror=null;this.style.visibility='hidden'" />
+          <h3 class="baby-fullname serif">{{mainName}}</h3>
           <div class="baby-metrics">
-            {{#if birthDateFormatted}}<span class="metric-badge">Lahir: {{birthDateFormatted}}</span>{{/if}}
-            {{#if birthMetrics}}<span class="metric-badge">{{birthMetrics}}</span>{{/if}}
+            {{#if mainInfoLine}}<span class="metric-badge">{{mainInfoLine}}</span>{{/if}}
+            {{#if mainDetailLine}}<span class="metric-badge">{{mainDetailLine}}</span>{{/if}}
           </div>
           <div class="parents-info">
             {{parentsHtml}}
@@ -253,11 +256,14 @@
       </section>
 
       <!-- Event Section -->
-      <section class="sec-block">
+      <section class="sec-block" id="event">
         <span class="sec-lbl">Waktu & Tempat</span>
-        <h2 class="sec-h2 serif">Agenda Tasyakuran</h2>
+        <h2 class="sec-h2 serif">Agenda Acara</h2>
+        {{countdownHtml}}
         {{eventSectionHtml}}
       </section>
+
+      {{qrPassHtml}}
 
       <!-- Gallery -->
       {{gallerySectionHtml}}
@@ -265,16 +271,20 @@
       <!-- Gift Section -->
       {{giftSectionHtml}}
 
+      {{extraSectionsHtml}}
+
       <!-- RSVP & Wishes -->
-      <section class="sec-block">
+      <section class="sec-block" id="rsvp">
         {{rsvpSectionHtml}}
         {{wishesSectionHtml}}
       </section>
+
+      {{memoriesSectionHtml}}
     </main>
 
     <!-- Footer -->
     <footer style="padding: 32px 20px; text-align: center; font-size: 11px; color: var(--text-muted);">
-      <p>Tasyakuran Aqiqah {{babyName}}</p>
+      <p>{{eventLabel}} {{mainNickname}}</p>
       <p style="margin-top: 6px;">{{brandWatermarkHtml}}</p>
     </footer>
   </div>
@@ -283,8 +293,8 @@
     function openInvitation() {
       const cover = document.getElementById('coverScreen');
       if (cover) cover.classList.add('opened');
-      if (window.luxAudioPlay) window.luxAudioPlay();
     }
   </script>
+  {{musicPlayerHtml}}
 </body>
 </html>

@@ -433,6 +433,19 @@ describe.skipIf(!IS_TEST_DB)("nama tokoh utama acara non-pernikahan", () => {
     const row = await prisma.invitation.findUniqueOrThrow({ where: { id: draft.id } });
     expect([row.groomName, row.groomNickname, row.groomFather, row.groomMother]).toEqual(["Muhammad Fatih", "Fatih", "Hasan", "Aminah"]);
   });
+
+  it("undangan khitan boleh memakai tema satu nama milik jenis acara lain, tetapi tidak tema pernikahan", async () => {
+    const { userId } = await makeClient("khitantheme", "TIER_2", false);
+    const draft = await prisma.invitation.create({
+      data: { userId, eventType: "KHITAN", themeId: "al-fariz", invitationSlug: `${TAG}-khitantheme`, groomSlug: `${TAG}-gkt`, brideSlug: "khitan", status: "DRAFT" },
+    });
+    invitations.push(draft.id);
+    const put = (themeId: string) => invitationPut(json(`/api/client/invitations/${draft.id}`, "PUT", { themeId }), ctx(draft.id));
+    expect((await put("festivo")).status).toBe(200);
+    expect((await put("cendekia")).status).toBe(200);
+    expect((await put("kalandra")).status).toBe(400);
+    expect((await prisma.invitation.findUniqueOrThrow({ where: { id: draft.id } })).themeId).toBe("cendekia");
+  });
 });
 
 afterAll(async () => {

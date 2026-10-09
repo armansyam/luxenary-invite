@@ -1,5 +1,25 @@
 import { safeParseParticipants } from "./participantUtils";
 
+export const DEFAULT_THEME_BY_EVENT: Record<string, string> = {
+  WEDDING: "kalandra",
+  BIRTHDAY: "kalandra-birthday",
+  KHITAN: "al-fariz",
+  AQIQAH: "al-khalid",
+  WISUDA: "cendekia",
+  GATHERING: "sinergi",
+};
+
+/**
+ * Tema dibagi dua keluarga: pernikahan (dua nama, mempelai) dan satu nama (ulang tahun, khitan, aqiqah, wisuda,
+ * gathering). Tema satu nama hanya memakai kontrak data bersama (`applySingleNameContract` di lib/themeEngine.ts),
+ * sehingga boleh dipakai jenis acara non-pernikahan mana pun.
+ */
+export function isThemeCompatible(themeEventType?: string | null, invitationEventType?: string | null): boolean {
+  const themeIsWedding = (themeEventType || "WEDDING").toUpperCase() === "WEDDING";
+  const invitationIsWedding = (invitationEventType || "WEDDING").toUpperCase() === "WEDDING";
+  return themeIsWedding === invitationIsWedding;
+}
+
 const EVENT_NOUN: Record<string, string> = {
   WEDDING: "pernikahan",
   BIRTHDAY: "ulang tahun",

@@ -65,6 +65,8 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
   const [confirmCloseToGallery, setConfirmCloseToGallery] = useState<InvitationItem | null>(null);
   const [takeDownTarget, setTakeDownTarget] = useState<InvitationItem | null>(null);
   const [takeDownReason, setTakeDownReason] = useState("");
+  const [resetTarget, setResetTarget] = useState<InvitationItem | null>(null);
+  const [resetReason, setResetReason] = useState("");
   const [lifecycleSettings, setLifecycleSettings] = useState<LifecycleDaySettings>(lifecycleSettingsFromPublic(null));
 
   useEffect(() => {
@@ -222,6 +224,26 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
       }
     } catch (err: any) {
       setActionMsg({ ok: false, msg: err.message || "Gagal memperpanjang masa aktif" });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleResetEventType = async (inv: InvitationItem, reason: string) => {
+    try {
+      setActionLoading(true);
+      setActionMsg(null);
+      const res = await fetch(`/api/admin/invitations/${inv.id}/reset-event-type`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || "Gagal mereset jenis acara");
+      setActionMsg({ ok: true, msg: data.message });
+      fetchInvitations();
+    } catch (err: any) {
+      setActionMsg({ ok: false, msg: err.message || "Gagal mereset jenis acara" });
     } finally {
       setActionLoading(false);
     }
@@ -566,6 +588,21 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
                             </svg>
                           </button>
 
+                          {/* Reset jenis acara (draf yang belum pernah terbit) */}
+                          {inv.status === "DRAFT" && (
+                            <button
+                              type="button"
+                              onClick={() => { setResetReason(""); setResetTarget(inv); }}
+                              disabled={actionLoading}
+                              className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-100 transition disabled:opacity-50 cursor-pointer"
+                              title="Reset jenis acara (klien mulai ulang dari wizard)"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                              </svg>
+                            </button>
+                          )}
+
                           {/* Tutup ke Galeri (Khusus PUBLISHED) */}
                           {inv.status === "PUBLISHED" && (
                             <button
@@ -736,7 +773,7 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
             <div className="text-center space-y-1.5">
               <h3 className="text-sm font-bold text-stone-900">Tutup Undangan & Alihkan ke Galeri?</h3>
               <p className="text-xs text-stone-600 leading-relaxed">
-                Undangan <strong className="font-semibold text-stone-900">{confirmCloseToGallery.groomName} & {confirmCloseToGallery.brideName}</strong> akan ditutup dan pengunjung dialihkan ke Galeri Momen (<code className="bg-stone-100 px-1 rounded text-purple-700">/memories</code>).
+                Undangan <strong className="font-semibold text-stone-900">{resolveInvitationDisplayName(confirmCloseToGallery)}</strong> akan ditutup dan pengunjung dialihkan ke Galeri Momen (<code className="bg-stone-100 px-1 rounded text-purple-700">/memories</code>).
               </p>
             </div>
             <div className="flex items-center gap-2 pt-1">
@@ -768,7 +805,7 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
             <div className="text-center space-y-1.5">
               <h3 className="text-sm font-bold text-stone-900">Turunkan Undangan?</h3>
               <p className="text-xs text-stone-600 leading-relaxed">
-                Undangan <strong className="font-semibold text-stone-900">{takeDownTarget.groomName} & {takeDownTarget.brideName}</strong> tidak lagi dapat dibuka publik (halaman menjawab 410) dan klien tidak dapat menayangkannya kembali sendiri. Aksi tercatat di audit log.
+                Undangan <strong className="font-semibold text-stone-900">{resolveInvitationDisplayName(takeDownTarget)}</strong> tidak lagi dapat dibuka publik (halaman menjawab 410) dan klien tidak dapat menayangkannya kembali sendiri. Aksi tercatat di audit log.
               </p>
             </div>
             <div className="space-y-1">
@@ -798,6 +835,50 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
                 className="flex-1 py-2.5 px-4 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition cursor-pointer disabled:opacity-50"
               >
                 Ya, Turunkan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Jenis Acara Modal */}
+      {resetTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-stone-200 space-y-4">
+            <div className="text-center space-y-1.5">
+              <h3 className="text-sm font-bold text-stone-900">Reset Jenis Acara?</h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                Draf <strong className="font-semibold text-stone-900">{resolveInvitationDisplayName(resetTarget)}</strong> beserta foto, tamu, dan isiannya dihapus permanen. Pembayaran paket tetap berlaku: saat klien membuka dasbor, wizard dimulai lagi dari pemilihan jenis acara. Aksi tercatat di audit log.
+              </p>
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="resetReason" className="text-[11px] font-semibold text-stone-700">Alasan reset</label>
+              <textarea
+                id="resetReason"
+                value={resetReason}
+                onChange={(e) => setResetReason(e.target.value)}
+                maxLength={500}
+                rows={3}
+                placeholder="Contoh: klien salah memilih Pernikahan, seharusnya Aqiqah"
+                className="w-full text-base sm:text-xs border border-stone-200 rounded-xl p-2.5 outline-none focus:border-rose-300 resize-none"
+              />
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setResetTarget(null)}
+                disabled={actionLoading}
+                className="flex-1 py-2.5 px-4 text-xs font-semibold text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-xl transition cursor-pointer disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => { handleResetEventType(resetTarget, resetReason); setResetTarget(null); }}
+                disabled={actionLoading || !resetReason.trim()}
+                className="flex-1 py-2.5 px-4 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition cursor-pointer disabled:opacity-50"
+              >
+                Ya, Reset
               </button>
             </div>
           </div>

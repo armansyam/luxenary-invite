@@ -18,7 +18,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Graduation Celebration of {{graduateName}}</title>
+  <title>{{eventLabel}} {{mainName}}</title>
   <link rel="stylesheet" href="/fonts/fonts.css" />
 
   <style>
@@ -202,9 +202,9 @@
     <div class="cover-screen" id="coverScreen" style="background-image: url('{{landingCoverUrl}}');">
       <div class="cover-overlay"></div>
       <div class="cover-content">
-        <span class="badge-pill">Graduation Celebration</span>
-        <h1 class="cover-title serif">{{graduateName}}</h1>
-        <p class="cover-sub">{{graduateDegree}} • {{universityName}}</p>
+        <span class="badge-pill">{{eventLabel}}</span>
+        <h1 class="cover-title serif">{{mainName}}</h1>
+        {{#if mainInfoLine}}<p class="cover-sub">{{mainInfoLine}}</p>{{/if}}
         <div class="guest-box">
           <p class="guest-lbl">Kepada Yth. Bapak/Ibu/Rekan/Sahabat</p>
           <h3 class="guest-name">{{guestName}}</h3>
@@ -217,18 +217,15 @@
     <main>
       <!-- Hero -->
       <section class="sec-block" style="padding-top: 60px;">
-        <span class="sec-lbl">Syukuran Kelulusan</span>
-        <h2 class="sec-h2 serif">Graduation Day</h2>
+        <span class="sec-lbl">{{eventIntro}}</span>
+        <h2 class="sec-h2 serif">{{eventLabel}}</h2>
+        {{#if openingQuote}}<p style="font-size: 13px; font-style: italic; color: var(--text-muted); margin-bottom: 8px;">{{openingQuote}}</p>{{/if}}
 
         <div class="grad-card">
-          <img src="{{graduatePhotoUrl}}" alt="{{graduateName}}" class="grad-avatar" onerror="this.onerror=null;this.style.visibility='hidden'" />
-          <h3 class="grad-fullname serif">{{graduateName}}</h3>
-          <p class="grad-degree">{{graduateDegree}}</p>
-          <div class="grad-meta">
-            <p>{{graduateMajor}} — {{graduateFaculty}}</p>
-            <p style="font-weight: 700; color: #ffffff;">{{universityName}}</p>
-            {{graduateHonorsBadgeHtml}}
-          </div>
+          <img src="{{mainPhotoUrl}}" alt="{{mainName}}" class="grad-avatar" onerror="this.onerror=null;this.style.visibility='hidden'" />
+          <h3 class="grad-fullname serif">{{mainName}}</h3>
+          {{#if mainInfoLine}}<p class="grad-degree">{{mainInfoLine}}</p>{{/if}}
+          {{#if mainDetailLine}}<div class="grad-meta"><p>{{mainDetailLine}}</p></div>{{/if}}
           <div class="parents-info">
             {{parentsHtml}}
           </div>
@@ -236,11 +233,14 @@
       </section>
 
       <!-- Event Section -->
-      <section class="sec-block">
+      <section class="sec-block" id="event">
         <span class="sec-lbl">Waktu & Tempat</span>
-        <h2 class="sec-h2 serif">Agenda Syukuran</h2>
+        <h2 class="sec-h2 serif">Agenda Acara</h2>
+        {{countdownHtml}}
         {{eventSectionHtml}}
       </section>
+
+      {{qrPassHtml}}
 
       <!-- Gallery -->
       {{gallerySectionHtml}}
@@ -248,16 +248,20 @@
       <!-- Gift Section -->
       {{giftSectionHtml}}
 
+      {{extraSectionsHtml}}
+
       <!-- RSVP & Wishes -->
-      <section class="sec-block">
+      <section class="sec-block" id="rsvp">
         {{rsvpSectionHtml}}
         {{wishesSectionHtml}}
       </section>
+
+      {{memoriesSectionHtml}}
     </main>
 
     <!-- Footer -->
     <footer style="padding: 32px 20px; text-align: center; font-size: 11px; color: var(--text-muted);">
-      <p>Graduation Celebration of {{graduateName}}</p>
+      <p>{{eventLabel}} {{mainNickname}}</p>
       <p style="margin-top: 6px;">{{brandWatermarkHtml}}</p>
     </footer>
   </div>
@@ -266,8 +270,8 @@
     function openInvitation() {
       const cover = document.getElementById('coverScreen');
       if (cover) cover.classList.add('opened');
-      if (window.luxAudioPlay) window.luxAudioPlay();
     }
   </script>
+  {{musicPlayerHtml}}
 </body>
 </html>

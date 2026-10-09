@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { DEFAULT_PLAN_NAMES } from "@/lib/planUtils";
+import { isThemeCompatible } from "@/lib/invitationUtils";
 
 // Di HP baris tombol menempel di bawah layar: langkah tema bisa setinggi belasan layar, dan tombol selesai
 // tidak boleh tersembunyi di dasar daftar. Di layar lebar baris mengalir biasa.
@@ -1264,14 +1265,10 @@ function SetupWizardContent() {
 
         {/* STEP 3: Pilihan Tema dengan Kategori & Thumbnail Preview */}
         {step === 3 && (() => {
-          // Filter themes by eventType
-          const eventThemes = availableThemes.filter((t: any) => {
-            const tEvent = (t.eventType || "WEDDING").toUpperCase();
-            return tEvent === eventType;
-          });
-          const themesForDisplay = eventThemes.length > 0 ? eventThemes : availableThemes;
+          // Pernikahan memakai tema pernikahan; acara lain boleh memilih tema satu nama mana pun.
+          const themesForDisplay = availableThemes.filter((t: any) => isThemeCompatible(t.eventType, eventType));
 
-          // Dapatkan daftar kategori yang benar-benar ada pada eventThemes
+          // Dapatkan daftar kategori yang benar-benar ada pada tema yang ditampilkan
           const availableCats = new Set<string>(themesForDisplay.map((t: any) => t.category?.toLowerCase() || ""));
           const categories: Array<{ id: "all" | "minimalist" | "modern" | "traditional"; label: string }> = [
             { id: "all", label: "Semua" },

@@ -7,7 +7,7 @@ import { compressImageToWebP } from "@/lib/clientImageCompressor";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { getPlanDisplayName } from "@/lib/planUtils";
 import { mirrorParticipantNames, safeParseParticipants } from "@/lib/participantUtils";
-import { resolveInvitationDisplayName, getMediaSlotLabel, eventNoun } from "@/lib/invitationUtils";
+import { resolveInvitationDisplayName, getMediaSlotLabel, eventNoun, isThemeCompatible } from "@/lib/invitationUtils";
 import { useFeedback } from "@/components/ui/Feedback";
 
 // Pilihan tema dimuat secara dinamis dari API /api/public/themes untuk menjamin sinkronisasi status aktif
@@ -2221,13 +2221,8 @@ export default function EditInvitation() {
           <div className="p-3.5 sm:p-7 space-y-5 sm:space-y-6">
             {/* Theme Mockups for this Category / Store */}
             {(() => {
-              // Seluruh tema desain bebas dipilih di semua paket (All-Access Themes), difilter presisi sesuai eventType
-              const clientEventType = (invitation?.eventType || "WEDDING").toUpperCase();
-              const eventThemes = themesList.filter((t) => {
-                const tEvent = (t.eventType || "WEDDING").toUpperCase();
-                return tEvent === clientEventType;
-              });
-              const availableThemes = eventThemes.length > 0 ? eventThemes : themesList;
+              // Seluruh tema bebas dipilih di semua paket; pernikahan memakai tema pernikahan, acara lain tema satu nama mana pun.
+              const availableThemes = themesList.filter((t) => isThemeCompatible(t.eventType, invitation?.eventType));
 
               // Dapatkan daftar kategori unik sesuai paket klien
               const CATEGORY_ORDER = ["MINIMALIST", "MODERN", "TRADITIONAL"];

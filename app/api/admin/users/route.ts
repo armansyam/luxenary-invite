@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
-import { removeIfExists } from "@/lib/fsSafe";
 import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
-import { logger } from "@/lib/logger";
+import { removeInvitationFiles } from "@/lib/invitationFiles";
 import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
@@ -197,36 +196,8 @@ export async function DELETE(req: Request) {
       }),
     ]);
 
-    if (targetUser.invitations && targetUser.invitations.length > 0) {
-      const path = await import("path");
-      const { deletePublishedHtml } = await import("@/lib/staticPublisher");
-      const { deleteFile } = await import("@/lib/storage");
-
-      for (const inv of targetUser.invitations) {
-        // 1. Hapus published HTML (public/published/ids/<id>.html)
-        await deletePublishedHtml(inv.id);
-
-        // 2. Hapus draft HTML (data/drafts/<id>.html) jika ada
-        await removeIfExists(path.join(process.cwd(), "data", "drafts", `${inv.id}.html`));
-
-        // 3. Hapus file media & guest memories dari R2/Local
-        if (inv.media && inv.media.length > 0) {
-          await Promise.all(inv.media.map(m => m.localPath ? deleteFile(m.localPath) : Promise.resolve()))
-            .catch((e) => logger.warn("AdminDeleteClient", "Sebagian berkas media gagal dihapus", { invitationId: inv.id, error: e instanceof Error ? e.message : String(e) }));
-        }
-        if (inv.guestMemories && inv.guestMemories.length > 0) {
-          await Promise.all(inv.guestMemories.map(mem => mem.mediaUrl ? deleteFile(mem.mediaUrl) : Promise.resolve()))
-            .catch((e) => logger.warn("AdminDeleteClient", "Sebagian berkas kenangan tamu gagal dihapus", { invitationId: inv.id, error: e instanceof Error ? e.message : String(e) }));
-        }
-
-        // 4. Hapus folder uploads fisik invitation & guest-memories lokal
-        // Portfolio sudah menyalin aset ke folder tersendiri (public/portfolio/assets/ atau R2),
-        // sehingga menghapus uploads asli tidak merusak portfolio yang sudah dipublish.
-        const uploadsDir = path.join(process.cwd(), "public", "uploads", "invitations", inv.id);
-        const guestMemoriesDir = path.join(process.cwd(), "public", "uploads", "guest-memories", inv.id);
-        await removeIfExists(uploadsDir, { recursive: true });
-        await removeIfExists(guestMemoriesDir, { recursive: true });
-      }
+    for (const inv of targetUser.invitations) {
+      await removeInvitationFiles(inv, "AdminDeleteClient");
     }
 
     return NextResponse.json({

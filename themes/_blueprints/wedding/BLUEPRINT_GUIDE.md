@@ -90,7 +90,7 @@ Semua token diapit kurung kurawal ganda `{{...}}`. Saat dirender oleh engine, to
 | `{{coverGuestLabel}}`| Keterangan penerima tamu (*Kepada Yth. Bapak/Ibu/Saudara/i*) | `data-lux-field="customLabels.coverGuestLabel"` |
 | — | Nama tamu undangan di cover (dinamis via `?to=`) | `data-lux-field="guestName"` |
 | `{{openBtn}}` | Label tombol buka (cth: *Buka Undangan*) | `data-lux-field="customLabels.openBtn"` |
-| `{{qrCoverButtonHtml}}`| Tombol akses kartu QR Pass (otomatis dirender jika QR aktif) | — |
+| `{{qrCoverButtonHtml}}`| Tombol akses kartu QR Pass (dirender jika QR aktif di studio dan paket memiliki fitur `qr_checkin`) | — |
 
 ### B. Seksi 1: Salam Pembuka & Kutipan Suci (Quote & Opening)
 
@@ -99,7 +99,7 @@ Semua token diapit kurung kurawal ganda `{{...}}`. Saat dirender oleh engine, to
 | `{{openingGreeting}}` | Salam pembuka (Arab `﷽`, Latin, Salam Sejahtera, Om Swastiastu, atau kosong) | `data-lux-field="customLabels.openingGreeting"` |
 | `{{quoteSectionEyebrow}}` | Subjudul / Eyebrow kutipan (cth: *UNTUK MEMULAI KELUARGA*) | `data-lux-field="customLabels.quoteEyebrow"` |
 | `{{quoteSectionTitle}}` | Judul seksi doa (cth: *Doa & Harapan*, *Pappaseng & Doa*) | `data-lux-field="customLabels.quoteTitle"` |
-| `{{openingQuote}}` | Teks ayat suci / mutiara kata cinta | `data-lux-field="openingQuote"` |
+| `{{openingQuote}}` | Teks ayat suci / mutiara kata cinta. Teks biasa: renderer meng-escape lalu mengubah baris baru menjadi `<br />`, jangan menyisipkan HTML | `data-lux-field="openingQuote"` |
 | `{{openingQuoteRef}}` | Sumber rujukan kutipan (cth: *QS. AR-RUM: 21*) | `data-lux-field="openingQuoteRef"` |
 | `{{googleCalendarUrl}}` | URL generator tambah ke Google Calendar | — |
 

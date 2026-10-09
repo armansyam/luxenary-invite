@@ -2112,6 +2112,9 @@ export async function renderTemplateFile(
 
   const RAW_HTML_KEY_REGEX = /(Html|html|Svg|svg|Style|Styles|Css|css|Script|Scripts)$/;
   const URL_KEY_REGEX = /(Url|url|Src|src|Link|link)$/;
+  // Teks klien yang boleh berbaris banyak: di-escape di sini lalu baris barunya dijadikan <br />. Composer mengirim teks
+  // polos; dulu composer mengirim hasil nl2br yang lalu di-escape ulang, sehingga "<br />" tercetak sebagai teks.
+  const MULTILINE_TEXT_KEYS = new Set(["openingQuote", "closingQuote"]);
 
   return tpl.replace(/\{[\s\n]*\{[\s\n]*([\w.]+)[\s\n]*\}[\s\n]*\}/g, (_, key: string) => {
     let val = data[key];
@@ -2142,6 +2145,10 @@ export async function renderTemplateFile(
         return "";
       }
       return strVal;
+    }
+
+    if (MULTILINE_TEXT_KEYS.has(key)) {
+      return escapeHtmlSafe(String(val)).replace(/\r\n|\r|\n/g, "<br />");
     }
 
     // Seluruh field teks pengguna di-escape untuk proteksi mutlak dari Stored XSS

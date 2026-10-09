@@ -6,6 +6,7 @@ import { EventType } from "@prisma/client";
 import { getMonthYearSlug, isSubdomainExpired, isReservedSubdomain } from "@/lib/domainUtils";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
+import { DEFAULT_THEME_BY_EVENT, isThemeCompatible } from "@/lib/invitationUtils";
 import { mirrorParticipantNames, safeParseParticipants } from "@/lib/participantUtils";
 import { normalizeJsonText } from "@/lib/jsonText";
 import { logger } from "@/lib/logger";
@@ -186,9 +187,9 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-    if (requestedTheme.eventType && requestedTheme.eventType !== eventType) {
+    if (!isThemeCompatible(requestedTheme.eventType, eventType)) {
       return NextResponse.json(
-        { error: `Tema '${requestedTheme.name}' dirancang khusus untuk acara ${requestedTheme.eventType}, tidak dapat digunakan untuk ${eventType}.` },
+        { error: `Tema '${requestedTheme.name}' tidak dapat dipakai untuk jenis acara ini: tema pernikahan hanya untuk pernikahan, tema satu nama untuk acara lain.` },
         { status: 400 }
       );
     }
@@ -339,14 +340,6 @@ export async function POST(req: Request) {
 
   const invitationStatus = "DRAFT";
 
-  const DEFAULT_THEME_BY_EVENT: Record<EventType, string> = {
-    WEDDING: "kalandra",
-    BIRTHDAY: "kalandra-birthday",
-    KHITAN: "al-fariz",
-    AQIQAH: "al-khalid",
-    WISUDA: "cendekia",
-    GATHERING: "sinergi",
-  };
   const chosenTheme = themeId?.trim() || DEFAULT_THEME_BY_EVENT[eventType] || "kalandra";
   let customDemoData: any = null;
   try {

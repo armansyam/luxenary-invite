@@ -9,7 +9,7 @@ import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
 import { removeIfExists } from "@/lib/fsSafe";
 import { encryptPin, decryptPin } from "@/lib/pinEncryption";
-import { STAFF_PIN_PATTERN } from "@/lib/invitationUtils";
+import { STAFF_PIN_PATTERN, isThemeCompatible } from "@/lib/invitationUtils";
 import { isReservedSubdomain, isSubdomainExpired } from "@/lib/domainUtils";
 import { DAY_MS, getPrimaryEventDate } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
@@ -375,12 +375,10 @@ export async function PUT(
         );
       }
 
-      // 3. EventType Cross-Guard: Cegah memasang tema yang tidak cocok dengan tipe acara
-      const currentEventType = (currentInv.eventType || "WEDDING").toUpperCase();
-      const targetThemeEventType = (requestedTheme.eventType || "WEDDING").toUpperCase();
-      if (targetThemeEventType !== currentEventType) {
+      // 3. Keluarga tema: pernikahan hanya memakai tema pernikahan; acara lain boleh memakai tema satu nama mana pun.
+      if (!isThemeCompatible(requestedTheme.eventType, currentInv.eventType)) {
         return NextResponse.json(
-          { error: `Tema '${requestedTheme.name}' dirancang khusus untuk acara ${targetThemeEventType}, tidak cocok untuk undangan ${currentEventType} Anda.` },
+          { error: `Tema '${requestedTheme.name}' tidak cocok untuk undangan Anda: tema pernikahan hanya untuk pernikahan, tema satu nama untuk acara lain.` },
           { status: 400 }
         );
       }

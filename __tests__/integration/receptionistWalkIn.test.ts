@@ -236,9 +236,14 @@ describe.skipIf(!IS_TEST_DB)("undangan pernikahan membuat QR check-in berformat 
   beforeAll(async () => {
     const owner = await prisma.user.create({ data: { email: `${TAG}-render@t.local`, name: TAG } });
     ownerId2 = owner.id;
+    // QR check-in hanya tampil untuk paket dengan fitur qr_checkin; undangan nyata selalu terikat order lunas.
+    const order = await prisma.order.create({
+      data: { userId: owner.id, invoiceNumber: `${TAG}-render`, planType: "TIER_3", amount: 200000, status: "PAID", orderType: "NEW", paidAt: new Date() },
+    });
     const inv = await prisma.invitation.create({
       data: {
         userId: owner.id,
+        orderId: order.id,
         invitationSlug: `${TAG}-render`,
         groomSlug: `${TAG}-gr`,
         brideSlug: `${TAG}-br`,
@@ -255,6 +260,7 @@ describe.skipIf(!IS_TEST_DB)("undangan pernikahan membuat QR check-in berformat 
 
   afterAll(async () => {
     await prisma.invitation.deleteMany({ where: { id: invId } });
+    await prisma.order.deleteMany({ where: { userId: ownerId2 } });
     await prisma.user.deleteMany({ where: { id: ownerId2 } });
   });
 

@@ -11,7 +11,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The Birthday of {{personName}}</title>
+  <title>{{eventLabel}} {{mainName}}</title>
   <link rel="stylesheet" href="/fonts/fonts.css" />
 
   <style>
@@ -273,45 +273,10 @@
       margin: 0 auto;
     }
 
-    /* SCHEDULE BOX */
-    .schedule-box {
-      border: 1px solid var(--card-border);
-      background: var(--card-bg);
-      border-radius: var(--radius-sm);
-      padding: 24px;
-    }
-
-    .schedule-row {
-      display: flex;
-      align-items: flex-start;
-      gap: 16px;
-      margin-bottom: 16px;
-    }
-
-    .btn-maps-editorial {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      width: 100%;
-      padding: 12px 20px;
-      border: 1px solid var(--primary);
-      background: transparent;
-      color: var(--primary);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      text-decoration: none;
-      border-radius: var(--radius-sm);
-      margin-top: 16px;
-      transition: background 0.2s ease, color 0.2s ease;
-    }
-
-    .btn-maps-editorial:hover {
-      background: var(--primary);
-      color: #fafaf9;
-    }
+    /* Seksi bersama tema satu nama (galeri, amplop, RSVP, kartu QR, dll.) dari mesin tema */
+    .sec-block { text-align: center; }
+    .sec-lbl { font-size: 10px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 8px; }
+    .sec-h2 { font-size: 28px; font-weight: 400; color: var(--text-main); letter-spacing: -0.5px; margin-bottom: 16px; }
 
     /* BOTTOM DOCK */
     .bottom-dock {
@@ -358,12 +323,12 @@
   <!-- FIXED BACKGROUND LAYER -->
   <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
   <!-- COVER SCREEN -->
-  <div id="coverScreen" class="cover-screen" style="background-image: url('{{personPhotoUrl}}');">
+  <div id="coverScreen" class="cover-screen" style="background-image: url('{{mainPhotoUrl}}');">
     <div class="cover-overlay"></div>
     <div class="cover-content">
-      <div class="cover-tagline">A Milestone Celebration</div>
-      <h1 class="cover-title serif">{{personNickname}}</h1>
-      <p class="cover-age-text">The {{personAge}}th Birthday</p>
+      <div class="cover-tagline">{{eventLabel}}</div>
+      <h1 class="cover-title serif">{{mainNickname}}</h1>
+      {{#if mainInfoLine}}<p class="cover-age-text">{{mainInfoLine}}</p>{{/if}}
 
       <div class="guest-wrap">
         <div class="guest-title">Special Guest</div>
@@ -380,99 +345,54 @@
     <!-- HOME / PROFILE -->
     <section id="home">
       <div class="editorial-card">
-        <img src="{{personPhotoUrl}}" alt="{{personName}}" class="editorial-avatar" onerror="this.onerror=null;this.style.visibility='hidden'" />
-        <h2 class="person-full-name serif">{{personName}}</h2>
-        <div class="person-milestone">Celebrating {{personAge}} Years</div>
-        <p class="editorial-quote">
-          "With gratitude for every lesson, joy in every memory, and hope for every tomorrow. Thank you for celebrating this milestone with me."
-        </p>
+        <img src="{{mainPhotoUrl}}" alt="{{mainName}}" class="editorial-avatar" onerror="this.onerror=null;this.style.visibility='hidden'" />
+        <h2 class="person-full-name serif">{{mainName}}</h2>
+        {{#if mainInfoLine}}<div class="person-milestone">{{mainInfoLine}}</div>{{/if}}
+        {{#if mainDetailLine}}<div class="person-milestone">{{mainDetailLine}}</div>{{/if}}
+        {{#if openingQuote}}<p class="editorial-quote">{{openingQuote}}</p>{{/if}}
+        {{parentsHtml}}
       </div>
     </section>
 
     <!-- COUNTDOWN -->
+    {{#if countdownHtml}}
     <section id="countdown" style="background: var(--bg-light);">
       <div class="sec-header-editorial">
-        <span class="sec-sub-tag">Counting Down</span>
-        <h3 class="sec-main-title serif">The Celebration Begins</h3>
+        <span class="sec-sub-tag">Hitung Mundur</span>
+        <h3 class="sec-main-title serif">Menuju Acara</h3>
       </div>
       {{countdownHtml}}
     </section>
+    {{/if}}
 
     <!-- EVENT -->
     <section id="event">
       <div class="sec-header-editorial">
-        <span class="sec-sub-tag">Time &amp; Location</span>
-        <h3 class="sec-main-title serif">Event Details</h3>
+        <span class="sec-sub-tag">Waktu &amp; Tempat</span>
+        <h3 class="sec-main-title serif">Jadwal Acara</h3>
       </div>
-
-      <div class="schedule-box">
-        <div class="schedule-row">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="16" y1="2" x2="16" y2="6"></line>
-            <line x1="8" y1="2" x2="8" y2="6"></line>
-            <line x1="3" y1="10" x2="21" y2="10"></line>
-          </svg>
-          <div>
-            <div style="font-weight: 600; color: var(--text-main);">{{eventDateFormatted}}</div>
-            <div style="font-size: 13px; color: var(--text-muted);">{{eventTime}}</div>
-          </div>
-        </div>
-
-        <div class="schedule-row">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2">
-            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-            <circle cx="12" cy="10" r="3"></circle>
-          </svg>
-          <div>
-            <div style="font-weight: 600; color: var(--text-main);">{{venueName}}</div>
-            <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">{{venueAddress}}</div>
-          </div>
-        </div>
-
-        {{#if mapsUrl}}
-        <a href="{{mapsUrl}}" target="_blank" rel="noopener noreferrer" class="btn-maps-editorial">
-          View on Google Maps
-        </a>
-        {{/if}}
-      </div>
+      {{eventSectionHtml}}
     </section>
 
-    <!-- GALLERY -->
-    <section id="gallery" style="background: var(--bg-light);">
-      <div class="sec-header-editorial">
-        <span class="sec-sub-tag">Moments</span>
-        <h3 class="sec-main-title serif">Captured Memories</h3>
-      </div>
-      {{gallerySectionHtml}}
-    </section>
+    {{qrPassHtml}}
 
-    <!-- WISHES & RSVP -->
-    <section id="wishes">
-      <div class="sec-header-editorial">
-        <span class="sec-sub-tag">Wishes &amp; Attendance</span>
-        <h3 class="sec-main-title serif">Send Your Greetings</h3>
-      </div>
+    {{gallerySectionHtml}}
+
+    <section class="sec-block" id="wishes">
       {{rsvpSectionHtml}}
       {{wishesSectionHtml}}
     </section>
 
-    <!-- GIFT -->
-    <section id="gift" style="background: var(--bg-light);">
-      <div class="sec-header-editorial">
-        <span class="sec-sub-tag">Digital Gift</span>
-        <h3 class="sec-main-title serif">Token of Appreciation</h3>
-      </div>
-      {{giftSectionHtml}}
-    </section>
+    {{giftSectionHtml}}
 
-    <!-- MEMORIES -->
+    {{extraSectionsHtml}}
+
     {{memoriesSectionHtml}}
 
     <!-- FOOTER -->
     <footer style="padding: 48px 24px 90px; text-align: center; border-top: 1px solid var(--card-border);">
       <p style="font-size: 13px; color: var(--text-muted);">Honored by your presence and well wishes.</p>
-      <p style="font-size: 17px; font-weight: 400; color: var(--text-main); margin-top: 6px;" class="serif">{{personName}}</p>
+      <p style="font-size: 17px; font-weight: 400; color: var(--text-main); margin-top: 6px;" class="serif">{{mainName}}</p>
       <div style="margin-top: 28px; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #a8a29e;">
         Luxenary &bull; Editorial Invitation
       </div>
@@ -526,8 +446,6 @@
     function openInvitation() {
       const cover = document.getElementById("coverScreen");
       if (cover) cover.classList.add("opened");
-      const audio = document.getElementById("bgMusic") || document.querySelector("audio");
-      if (audio && audio.paused) audio.play().catch(function() {});
     }
   </script>
 
