@@ -23,6 +23,13 @@ const nextConfig: NextConfig = {
   // deploy.sh membangun ke direktori cadangan (.next-a atau .next-b) selagi aplikasi lama tetap melayani dari direktori
   // aktifnya, lalu pindah saat restart. Tanpa ini build menimpa .next yang sedang dipakai dan permintaan gagal selama build.
   distDir: process.env.NEXT_DIST_DIR || ".next",
+  // Typecheck build hanya boleh membaca tipe rute dari direktori build-nya sendiri. Bila tipe direktori aktif ikut
+  // terbaca, rute yang dihapus di rilis baru masih dirujuk build lama dan build gagal (TS2307, deploy 10 Okt 2026).
+  typescript: {
+    tsconfigPath: process.env.NEXT_DIST_DIR === ".next-a" || process.env.NEXT_DIST_DIR === ".next-b"
+      ? `tsconfig${process.env.NEXT_DIST_DIR}.json`
+      : "tsconfig.json",
+  },
   poweredByHeader: false,
   // Rute membaca data runtime lewat process.cwd() (data/, public/) sehingga file tracing menelusuri ±325 MB per rute
   // dan build melambat seiring bertambahnya draft dan demo. Produksi memakai `next start` dari direktori proyek
