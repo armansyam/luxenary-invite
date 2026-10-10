@@ -5,6 +5,7 @@ import { routeError } from "@/lib/routeError";
 import { buildAndSavePublishedHtml } from "@/lib/staticPublisher";
 import { purgeCloudflareCache } from "@/lib/cloudflare";
 import { getDynamicServerRootDomain } from "@/lib/serverDomainUtils";
+import { participantNames } from "@/lib/participantUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -27,10 +28,8 @@ export async function POST(
         invitationSlug: true,
         customDomain: true,
         status: true,
-        groomNickname: true,
-        groomName: true,
-        brideNickname: true,
-        brideName: true,
+        eventType: true,
+        participantsJson: true,
       },
     });
 
@@ -73,9 +72,7 @@ export async function POST(
       cfResult = await purgeCloudflareCache({ files: urlsToPurge });
     }
 
-    const coupleName =
-      [invitation.groomNickname || invitation.groomName, invitation.brideNickname || invitation.brideName].filter(Boolean).join(" & ") ||
-      invitation.invitationSlug;
+    const coupleName = participantNames(invitation.eventType, invitation.participantsJson).short || invitation.invitationSlug;
 
     return NextResponse.json({
       success: true,

@@ -7,6 +7,7 @@ import { isSafePathSegment } from "@/lib/fsSafe";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
 import { HttpError, routeError } from "@/lib/routeError";
+import { participantNames } from "@/lib/participantUtils";
 
 const errorMessage = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
@@ -228,7 +229,7 @@ export async function POST(req: NextRequest) {
     // Rekam identitas murni tanpa fallback string statis atau query eksternal
     const metadata = {
       slug: clientName,
-      coupleName: `${inv.groomNickname || inv.groomName} & ${inv.brideNickname || inv.brideName}`,
+      coupleName: participantNames(inv.eventType, inv.participantsJson).short,
       themeId: inv.themeId
     };
 

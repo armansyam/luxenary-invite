@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     // Verify ownership
     const invitation = await prisma.invitation.findUnique({
       where: { id: invitationId },
-      select: { userId: true, eventType: true, groomSlug: true, brideSlug: true, invitationSlug: true }
+      select: { userId: true, invitationSlug: true }
     });
 
     if (!invitation) {

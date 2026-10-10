@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
+import { participantNames } from "@/lib/participantUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,7 @@ export async function POST(
     }
 
     const actorId = adminActorId(session);
+    const ownerLabel = participantNames(invitation.eventType, invitation.participantsJson).full || invitation.invitationSlug;
 
     let updatedInvitation;
     if (lockImmediately) {
@@ -46,7 +48,7 @@ export async function POST(
           data: {
             adminId: actorId,
             action: "LOCK_INVITATION",
-            details: `Mengunci kembali undangan ID: ${id} (${invitation.groomName} & ${invitation.brideName})`,
+            details: `Mengunci kembali undangan ID: ${id} (${ownerLabel})`,
           },
         }),
       ]);
@@ -72,7 +74,7 @@ export async function POST(
           data: {
             adminId: actorId,
             action: "UNLOCK_INVITATION",
-            details: `Membuka kunci darurat undangan ID: ${id} (${invitation.groomName} & ${invitation.brideName}) selama ${durationHours} jam hingga ${unlockExpiry.toISOString()}`,
+            details: `Membuka kunci darurat undangan ID: ${id} (${ownerLabel}) selama ${durationHours} jam hingga ${unlockExpiry.toISOString()}`,
           },
         }),
       ]);

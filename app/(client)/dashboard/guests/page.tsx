@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { getInvitationPublicUrl, resolveEffectiveInvitationUrl } from "@/lib/domainUtils";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
+import { participantNames } from "@/lib/participantUtils";
 import { useFeedback } from "@/components/ui/Feedback";
 import { normalizeRsvpStatus, type RsvpStatus } from "@/lib/rsvpStatus";
 import { getPrimaryEvent } from "@/lib/lifecycleDates";
@@ -560,8 +561,9 @@ export default function GuestsPage() {
 
   const renderWaText = (guestName: string, guestLimit: number = 2, sessionInfo: string = defaultSessionInfo, qrToken?: string) => {
     const isWedding = !invitationData?.eventType || invitationData.eventType === "WEDDING";
-    const groom = invitationData?.groomNickname || invitationData?.groomName || "Mempelai Pria";
-    const bride = invitationData?.brideNickname || invitationData?.brideName || "Mempelai Wanita";
+    const names = participantNames("WEDDING", invitationData?.participantsJson);
+    const groom = names.first || "Mempelai Pria";
+    const bride = names.second || "Mempelai Wanita";
     
     const feat: Record<string, any> = invitationData?.featureSettings ?? {};
     const displayOrder = feat.displayOrder || "GROOM_FIRST";
@@ -1338,8 +1340,6 @@ export default function GuestsPage() {
                 const domainInfo = resolveEffectiveInvitationUrl({
                   customDomain: invitationData?.customDomain,
                   subdomain: invitationData?.subdomain,
-                  groomSlug: invitationData?.groomSlug,
-                  brideSlug: invitationData?.brideSlug,
                   invitationSlug: invitationData?.invitationSlug,
                 });
 

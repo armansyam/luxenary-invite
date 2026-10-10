@@ -53,10 +53,10 @@ describe.skipIf(!IS_TEST_DB)("Kontrak keamanan (DB luxenary_test)", () => {
     loner = await mk("loner");
 
     const a = await prisma.invitation.create({
-      data: { userId: owner.id, invitationSlug: `${TAG}-a`, groomSlug: `${TAG}-ga`, brideSlug: `${TAG}-ba`, staffPin: STORED_PIN },
+      data: { userId: owner.id, invitationSlug: `${TAG}-a`, staffPin: STORED_PIN },
     });
     const b = await prisma.invitation.create({
-      data: { userId: attacker.id, invitationSlug: `${TAG}-b`, groomSlug: `${TAG}-gb`, brideSlug: `${TAG}-bb`, staffPin: STORED_PIN },
+      data: { userId: attacker.id, invitationSlug: `${TAG}-b`, staffPin: STORED_PIN },
     });
     invA = a.id;
     invB = b.id;
@@ -220,10 +220,10 @@ describe.skipIf(!IS_TEST_DB)("Kontrak keamanan (DB luxenary_test)", () => {
 
     beforeAll(async () => {
       const draft = await prisma.invitation.create({
-        data: { userId: owner.id, invitationSlug: `${TAG}-m6d`, groomSlug: `${TAG}-gm6d`, brideSlug: `${TAG}-bm6d`, status: "DRAFT" },
+        data: { userId: owner.id, invitationSlug: `${TAG}-m6d`, status: "DRAFT" },
       });
       const takenDown = await prisma.invitation.create({
-        data: { userId: owner.id, invitationSlug: `${TAG}-m6t`, groomSlug: `${TAG}-gm6t`, brideSlug: `${TAG}-bm6t`, status: "TAKEN_DOWN" },
+        data: { userId: owner.id, invitationSlug: `${TAG}-m6t`, status: "TAKEN_DOWN" },
       });
       invDraft = draft.id;
       invTakenDown = takenDown.id;

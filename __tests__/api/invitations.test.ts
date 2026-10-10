@@ -72,8 +72,7 @@ const INV_ID = "inv-test-001";
 const mockInvitation = {
   id: INV_ID,
   userId: OWNER_USER_ID,
-  groomName: "Budi",
-  brideName: "Sari",
+  participantsJson: { groom: { name: "Budi" }, bride: { name: "Sari" } },
   status: "DRAFT",
   media: [],
   order: { planType: "TIER_1" },

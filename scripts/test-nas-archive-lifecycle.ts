@@ -69,12 +69,9 @@ async function runTest() {
       data: {
         userId: user.id,
         invitationSlug: testSlug,
-        groomSlug: "dimas",
-        brideSlug: "clarissa",
         themeId: "candani",
         status: "PUBLISHED",
-        groomName: "Raden Mas Dimas",
-        brideName: "Raden Ajeng Clarissa",
+        participantsJson: { groom: { name: "Raden Mas Dimas" }, bride: { name: "Raden Ajeng Clarissa" } },
         eventData: [
           { title: "Akad", date: "2026-12-26" },
         ],

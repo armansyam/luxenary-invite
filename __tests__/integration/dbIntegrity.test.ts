@@ -28,7 +28,7 @@ describe.skipIf(!IS_TEST_DB)("integritas skema database", () => {
     const user = await prisma.user.create({ data: { email: `${TAG}@example.test`, name: TAG } });
     userId = user.id;
     const inv = await prisma.invitation.create({
-      data: { userId, themeId: THEME_ID, invitationSlug: `${TAG}-inv`, groomSlug: `${TAG}-g`, brideSlug: `${TAG}-b` },
+      data: { userId, themeId: THEME_ID, invitationSlug: `${TAG}-inv` },
     });
     invitationId = inv.id;
     const order = await prisma.order.create({
@@ -60,7 +60,7 @@ describe.skipIf(!IS_TEST_DB)("integritas skema database", () => {
   it("undangan dengan tema yang tidak ada ditolak FK", async () => {
     await expect(
       prisma.invitation.create({
-        data: { userId, themeId: `${TAG}-tidak-ada`, invitationSlug: `${TAG}-x`, groomSlug: `${TAG}-xg`, brideSlug: `${TAG}-xb` },
+        data: { userId, themeId: `${TAG}-tidak-ada`, invitationSlug: `${TAG}-x` },
       })
     ).rejects.toMatchObject({ code: "P2003" });
   });
@@ -100,7 +100,7 @@ describe.skipIf(!IS_TEST_DB)("integritas skema database", () => {
     ).rejects.toMatchObject({ code: "P2003" });
 
     const inv = await prisma.invitation.create({
-      data: { userId, themeId: THEME_ID, invitationSlug: `${TAG}-l`, groomSlug: `${TAG}-lg`, brideSlug: `${TAG}-lb` },
+      data: { userId, themeId: THEME_ID, invitationSlug: `${TAG}-l` },
     });
     const addOn = await prisma.order.create({
       data: { userId, invoiceNumber: `${TAG}-ADDON`, planType: "TIER_1", orderType: "MEMORIES_TOPUP", amount: 35000, status: "PAID", linkedInvitationId: inv.id },
@@ -118,7 +118,7 @@ describe.skipIf(!IS_TEST_DB)("integritas skema database", () => {
       data: { userId, invoiceNumber: `${TAG}-BASE`, planType: "TIER_1", amount: 99000, status: "PAID" },
     });
     const inv = await prisma.invitation.create({
-      data: { userId, orderId: base.id, themeId: THEME_ID, invitationSlug: `${TAG}-u`, groomSlug: `${TAG}-ug`, brideSlug: `${TAG}-ub` },
+      data: { userId, orderId: base.id, themeId: THEME_ID, invitationSlug: `${TAG}-u` },
     });
     const upgrade = await prisma.order.create({
       data: {

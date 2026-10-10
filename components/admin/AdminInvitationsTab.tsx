@@ -18,14 +18,8 @@ interface InvitationItem {
   id: string;
   userId: string;
   eventType?: string | null;
-  participantsJson?: string | null;
-  groomSlug: string;
-  brideSlug: string;
+  participantsJson?: unknown;
   invitationSlug: string;
-  groomName?: string | null;
-  brideName?: string | null;
-  groomNickname?: string | null;
-  brideNickname?: string | null;
   themeId: string;
   status: "DRAFT" | "PUBLISHED" | "EVENT_FINISHED" | "ARCHIVED" | "TAKEN_DOWN" | string;
   subdomain?: string | null;

@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { routeError } from "@/lib/routeError";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { prisma } from "@/lib/prisma";
+import { buildZipFileName } from "@/lib/invitationUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ export async function GET(req: NextRequest) {
     // Verify ownership
     const invitation = await prisma.invitation.findUnique({
       where: { id: invitationId },
-      select: { userId: true, groomSlug: true, brideSlug: true },
+      select: { userId: true, invitationSlug: true },
     });
 
     if (!invitation) {
@@ -65,7 +66,7 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({
-      zipName: `Momen_${invitation.groomSlug}_${invitation.brideSlug}.zip`,
+      zipName: buildZipFileName(invitation),
       files,
     });
   } catch (error) {

@@ -263,7 +263,18 @@ function SetupWizardContent() {
     setError(null);
 
     let participantsJson: string | null = null;
-    if (eventType === "BIRTHDAY") {
+    if (eventType === "WEDDING") {
+      participantsJson = JSON.stringify({
+        groom: {
+          name: groomName.trim() || groomNickname.trim(),
+          nickname: groomNickname.trim() || groomName.trim(),
+        },
+        bride: {
+          name: brideName.trim() || brideNickname.trim(),
+          nickname: brideNickname.trim() || brideName.trim(),
+        },
+      });
+    } else if (eventType === "BIRTHDAY") {
       participantsJson = JSON.stringify({
         person: {
           name: personName.trim() || personNickname.trim(),
@@ -323,11 +334,6 @@ function SetupWizardContent() {
         body: JSON.stringify({
           eventType,
           participantsJson,
-          groomNickname: groomNickname.trim(),
-          brideNickname: brideNickname.trim(),
-          groomName: groomName.trim() || groomNickname.trim(),
-          brideName: brideName.trim() || brideNickname.trim(),
-          invitationName: eventTitle.trim() || undefined,
           weddingDate,
           eventDate: weddingDate,
           city: city.trim(),

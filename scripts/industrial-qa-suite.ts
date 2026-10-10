@@ -134,10 +134,7 @@ export class IndustrialQASuite {
           data: {
             userId: userA.id,
             invitationSlug: `${this.prefix}-inv-a`,
-            groomSlug: "groom-a",
-            brideSlug: "bride-a",
-            groomName: "Groom A",
-            brideName: "Bride A",
+            participantsJson: { groom: { name: "Groom A" }, bride: { name: "Bride A" } },
             status: "DRAFT",
           },
         });
@@ -150,7 +147,7 @@ export class IndustrialQASuite {
             userId: userB.id, // Boundary guard: userId harus cocok dengan penyerang
           },
           data: {
-            groomName: "Hacked by Tenant B",
+            participantsJson: { groom: { name: "Hacked by Tenant B" } },
           },
         });
 
@@ -164,13 +161,13 @@ export class IndustrialQASuite {
 
         const invAfter = await prisma.invitation.findUnique({
           where: { id: invA.id },
-          select: { groomName: true, userId: true },
+          select: { participantsJson: true, userId: true },
         });
 
         const isolationIntact =
           unauthorizedUpdate.count === 0 &&
           unauthorizedDelete.count === 0 &&
-          invAfter?.groomName === "Groom A" &&
+          (invAfter?.participantsJson as { groom?: { name?: string } } | null)?.groom?.name === "Groom A" &&
           invAfter?.userId === userA.id;
 
         passed = isolationIntact;
@@ -481,10 +478,7 @@ export class IndustrialQASuite {
             userId: user.id,
             orderId: initialOrder.id,
             invitationSlug: `${this.prefix}-upg-inv`,
-            groomSlug: "groom",
-            brideSlug: "bride",
-            groomName: "Groom",
-            brideName: "Bride",
+            participantsJson: { groom: { name: "Groom" }, bride: { name: "Bride" } },
             status: "DRAFT",
           },
         });
@@ -560,10 +554,7 @@ export class IndustrialQASuite {
           data: {
             userId: user.id,
             invitationSlug: `${this.prefix}-gate-inv`,
-            groomSlug: "groom",
-            brideSlug: "bride",
-            groomName: "Groom",
-            brideName: "Bride",
+            participantsJson: { groom: { name: "Groom" }, bride: { name: "Bride" } },
             status: "PUBLISHED",
           },
         });
@@ -630,10 +621,7 @@ export class IndustrialQASuite {
           data: {
             userId: user.id,
             invitationSlug: `${this.prefix}-pax-inv`,
-            groomSlug: "groom",
-            brideSlug: "bride",
-            groomName: "Groom",
-            brideName: "Bride",
+            participantsJson: { groom: { name: "Groom" }, bride: { name: "Bride" } },
             status: "PUBLISHED",
           },
         });
@@ -744,8 +732,6 @@ export class IndustrialQASuite {
             userId: user.id,
             invitationSlug: `${this.prefix}-sub-1`,
             subdomain: targetSubdomain,
-            groomSlug: "g1",
-            brideSlug: "b1",
           },
         });
         this.trackedInvitationIds.push(inv1.id);
@@ -758,8 +744,6 @@ export class IndustrialQASuite {
               userId: user.id,
               invitationSlug: `${this.prefix}-sub-2`,
               subdomain: targetSubdomain, // Duplikat!
-              groomSlug: "g2",
-              brideSlug: "b2",
             },
           });
         } catch {
@@ -796,10 +780,7 @@ export class IndustrialQASuite {
           data: {
             userId: user.id,
             invitationSlug: `${this.prefix}-static-inv`,
-            groomSlug: "andi",
-            brideSlug: "siti",
-            groomName: "Andi Wijaya",
-            brideName: "Siti Rahma",
+            participantsJson: { groom: { name: "Andi Wijaya" }, bride: { name: "Siti Rahma" } },
             themeId: "artisan",
             status: "DRAFT",
           },
@@ -912,10 +893,7 @@ export class IndustrialQASuite {
           data: {
             userId: user.id,
             invitationSlug: testSlug,
-            groomSlug: "gnas",
-            brideSlug: "bnas",
-            groomName: "Groom NAS",
-            brideName: "Bride NAS",
+            participantsJson: { groom: { name: "Groom NAS" }, bride: { name: "Bride NAS" } },
             themeId: "candani",
             status: "EVENT_FINISHED",
             eventData: [{ title: "Akad", date: "2026-12-26" }],
@@ -1100,8 +1078,6 @@ export class IndustrialQASuite {
           data: {
             userId: user.id,
             invitationSlug: `${this.prefix}-casc-inv`,
-            groomSlug: "g",
-            brideSlug: "b",
           },
         });
 

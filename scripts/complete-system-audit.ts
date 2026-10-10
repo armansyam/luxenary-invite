@@ -108,10 +108,7 @@ async function runCompleteSystemAudit() {
       data: {
         userId: testUserId,
         orderId: testOrderTier1Id,
-        groomName: "Santoso",
-        groomSlug: "santoso",
-        brideName: "Dewi",
-        brideSlug: "dewi",
+        participantsJson: { groom: { name: "Santoso" }, bride: { name: "Dewi" } },
         invitationSlug: testSlug,
         subdomain: testSubdomain,
         themeId: "artisan",
@@ -133,10 +130,7 @@ async function runCompleteSystemAudit() {
       await prisma.invitation.create({
         data: {
           userId: testUserId,
-          groomName: "Santoso",
-          groomSlug: "santoso",
-          brideName: "Dewi",
-          brideSlug: "dewi",
+          participantsJson: { groom: { name: "Santoso" }, bride: { name: "Dewi" } },
           invitationSlug: `${testSlug}-dup`,
           subdomain: testSubdomain, // Duplikat subdomain!
           themeId: "solaria",

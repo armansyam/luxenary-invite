@@ -5,6 +5,7 @@ import { routeError } from "@/lib/routeError";
 import { isReservedSubdomain } from "@/lib/domainUtils";
 import { DAY_MS, computeLifecycleDates, getPrimaryEventDateString } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
+import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -33,12 +34,8 @@ export async function GET(req: Request) {
       select: {
         id: true,
         subdomain: true,
-        groomName: true,
-        brideName: true,
-        groomNickname: true,
-        brideNickname: true,
-        groomSlug: true,
-        brideSlug: true,
+        eventType: true,
+        participantsJson: true,
         invitationSlug: true,
         status: true,
         themeId: true,
@@ -79,7 +76,7 @@ export async function GET(req: Request) {
       if (inv.status === "DRAFT") totalDraft++;
       if (isExpired) totalExpired++;
 
-      const coupleName = `${inv.groomNickname || inv.groomName || "Pria"} & ${inv.brideNickname || inv.brideName || "Wanita"}`;
+      const coupleName = resolveInvitationDisplayName(inv);
 
       return {
         id: inv.id,

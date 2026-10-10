@@ -36,8 +36,6 @@ export async function GET() {
         id: true,
         status: true,
         subdomain: true,
-        groomSlug: true,
-        brideSlug: true,
         invitationSlug: true,
         orderId: true,
       },

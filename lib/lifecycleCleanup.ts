@@ -10,6 +10,7 @@ import { isNasArchiveEnabled, purgeNasArchive, syncInvitationToNasArchive } from
 import { DAY_MS, computeLifecycleDates, formatDateInEventTimezone, getPrimaryEventTimezone, type LifecycleSettings } from "./lifecycleDates";
 import { getLifecycleSettings } from "./lifecycleSettings";
 import { applyUpgradePlan } from "./upgradeHelper";
+import { participantNames } from "./participantUtils";
 
 const CONTEXT = "LifecycleCleanup";
 const RETENTION_WARNING_LEAD_MS = 3 * DAY_MS;
@@ -100,8 +101,8 @@ interface WarningTarget {
   invitationSlug: string;
   eventData: unknown;
   retentionWarningSentAt: Date | null;
-  groomName: string | null;
-  brideName: string | null;
+  eventType: string;
+  participantsJson: unknown;
   user: { email: string; name: string } | null;
 }
 
@@ -114,7 +115,7 @@ async function sendRetentionWarningIfDue(inv: WarningTarget, expiresAt: Date, no
   if (dryRun) return true;
 
   const totalPhotos = await prisma.guestMemory.count({ where: { invitationId: inv.id } });
-  const coupleNames = [inv.groomName, inv.brideName].filter(Boolean).join(" & ") || inv.user.name || "Mempelai";
+  const coupleNames = participantNames(inv.eventType, inv.participantsJson).full || inv.user.name || inv.invitationSlug;
 
   try {
     const { sendRetentionExpiryAlertEmail } = await import("./mailer");
@@ -233,8 +234,8 @@ export async function runLifecycleCleanup(options: LifecycleCleanupOptions = {})
       galleryExpiresAt: true,
       invitationSlug: true,
       subdomain: true,
-      groomName: true,
-      brideName: true,
+      eventType: true,
+      participantsJson: true,
       user: { select: { email: true, name: true } },
     },
   });

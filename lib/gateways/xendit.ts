@@ -10,6 +10,7 @@ import crypto from "crypto";
 import { PaymentGateway } from "@/lib/gateways/types";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { participantNames } from "@/lib/participantUtils";
 
 export class XenditGateway implements PaymentGateway {
   private async getConfig() {
@@ -63,10 +64,8 @@ export class XenditGateway implements PaymentGateway {
               invitationSlug: true,
               subdomain: true,
               customDomain: true,
-              groomName: true,
-              groomNickname: true,
-              brideName: true,
-              brideNickname: true,
+              eventType: true,
+              participantsJson: true,
               shippingAddress: true,
             },
           },
@@ -99,10 +98,8 @@ export class XenditGateway implements PaymentGateway {
             invitationSlug: true,
             subdomain: true,
             customDomain: true,
-            groomName: true,
-            groomNickname: true,
-            brideName: true,
-            brideNickname: true,
+            eventType: true,
+            participantsJson: true,
             shippingAddress: true,
           },
         });
@@ -111,9 +108,8 @@ export class XenditGateway implements PaymentGateway {
       if (invitation) {
         if (invitation.shippingAddress) shippingAddress = invitation.shippingAddress.trim();
         if (invitation.invitationSlug) invitationSlug = invitation.invitationSlug;
-        const gName = invitation.groomNickname || invitation.groomName || "";
-        const bName = invitation.brideNickname || invitation.brideName || "";
-        if (gName || bName) coupleName = [gName, bName].filter(Boolean).join(" & ");
+        const names = participantNames(invitation.eventType, invitation.participantsJson).short;
+        if (names) coupleName = names;
       }
     } catch (err) {
       logger.warn("XenditGateway", "Gagal memuat data undangan untuk invoice", { orderId, error: String(err) });

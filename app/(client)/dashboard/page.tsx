@@ -123,8 +123,6 @@ function DashboardHomeContent() {
   const resolvedDomain = resolveEffectiveInvitationUrl({
     customDomain: invitation?.customDomain,
     subdomain: invitation?.subdomain,
-    groomSlug: invitation?.groomSlug,
-    brideSlug: invitation?.brideSlug,
     invitationSlug: invitation?.invitationSlug,
   });
   const invUrl = resolvedDomain.url;

@@ -21,12 +21,6 @@ export async function GET() {
     select: {
       id: true,
       invitationSlug: true,
-      groomSlug: true,
-      brideSlug: true,
-      groomName: true,
-      brideName: true,
-      groomNickname: true,
-      brideNickname: true,
       eventType: true,
       participantsJson: true,
       themeId: true,

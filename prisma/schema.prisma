@@ -109,13 +109,12 @@ model Invitation {
   themeId              String            @default("kalandra")
   eventType            EventType         @default(WEDDING)
   /// Kolom jsonb: participantsJson dan featureSettings berupa objek; eventData, loveStory, dan bankAccounts berupa
-  /// array (ditegakkan CHECK, migrasi 20261010120000).
+  /// array (ditegakkan CHECK, migrasi 20261010120000). participantsJson satu-satunya sumber nama peserta untuk semua
+  /// jenis acara; bentuk per jenis acara ada di lib/participantUtils.ts.
   participantsJson     Json?
   subdomain            String?           @unique
   customDomain         String?           @unique
   invitationSlug       String            @unique
-  groomSlug            String
-  brideSlug            String
   status               InvitationStatus  @default(DRAFT)
   publishedAt          DateTime?
   eventData            Json?
@@ -128,18 +127,6 @@ model Invitation {
   openingQuoteRef      String?
   dresscode            String?
   musicUrl             String?
-  groomName            String?
-  groomNickname        String?
-  groomParents         String?
-  groomFather          String?
-  groomMother          String?
-  groomInstagram       String?
-  brideName            String?
-  brideNickname        String?
-  brideParents         String?
-  brideFather          String?
-  brideMother          String?
-  brideInstagram       String?
   liveStreamUrl        String?
   isLockedPermanently  Boolean           @default(false)
   adminUnlockedUntil   DateTime?

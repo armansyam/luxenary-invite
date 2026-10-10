@@ -18,6 +18,7 @@ import { POST as guestsPost } from "@/app/api/client/guests/route";
 import { POST as guestsBulkPost } from "@/app/api/client/guests/bulk/route";
 import { PUT as guestPut, DELETE as guestDelete } from "@/app/api/client/guests/[id]/route";
 import { composeTemplateData } from "@/lib/themeEngine";
+import { participantNames } from "@/lib/participantUtils";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
 const TAG = `vitest_kb_${Date.now()}`;
@@ -40,10 +41,7 @@ async function makeClient(suffix: string, planType: "TIER_2" | "TIER_3", withInv
         userId: user.id,
         orderId: order.id,
         invitationSlug: `${TAG}-${suffix}`,
-        groomSlug: `${TAG}-g${suffix}`,
-        brideSlug: `${TAG}-b${suffix}`,
-        groomName: "Raka",
-        brideName: "Dewi",
+        participantsJson: { groom: { name: "Raka" }, bride: { name: "Dewi" } },
         status: "PUBLISHED",
         featureSettings: { showGuestMemories: true },
       },
@@ -161,8 +159,7 @@ describe.skipIf(!IS_TEST_DB)("bug terbukti: tanggal acara lampau mengunci draf t
     const created = await createPost(
       json("/api/client/invitations/create", "POST", {
         eventType: "WEDDING",
-        groomNickname: "Raka",
-        brideNickname: "Dewi",
+        participantsJson: { groom: { nickname: "Raka" }, bride: { nickname: "Dewi" } },
         weddingDate: "2020-01-01",
         city: "Makassar",
         timeZone: "WITA",
@@ -216,8 +213,6 @@ describe.skipIf(!IS_TEST_DB)("jadwal terima tamu (sesi isPrimary) sebagai patoka
       data: {
         userId,
         invitationSlug: `${TAG}-noday`,
-        groomSlug: `${TAG}-gnoday`,
-        brideSlug: `${TAG}-bnoday`,
         status: "DRAFT",
         eventData: [{ title: "Akad Nikah", date: "2099-03-01" }, { title: "Resepsi", date: "", isPrimary: true }],
       },
@@ -261,8 +256,6 @@ describe.skipIf(!IS_TEST_DB)("jadwal terima tamu (sesi isPrimary) sebagai patoka
           userId,
           eventType,
           invitationSlug: `${TAG}-c${eventType.toLowerCase()}`,
-          groomSlug: `${TAG}-gc${eventType.toLowerCase()}`,
-          brideSlug: `${TAG}-bc${eventType.toLowerCase()}`,
           status: "DRAFT",
           eventData: [
             { title: "Pengajian", date: "2099-01-05", startTime: "08:00" },
@@ -285,7 +278,7 @@ describe.skipIf(!IS_TEST_DB)("bug terbukti: jenis acara draf dapat diganti lewat
   beforeAll(async () => {
     await makeClient("evt", "TIER_2", false);
     const first = await createPost(
-      json("/api/client/invitations/create", "POST", { eventType: "WEDDING", groomNickname: "Raka", brideNickname: "Dewi", weddingDate: "2099-01-01", city: "Makassar", themeId: "kalandra" })
+      json("/api/client/invitations/create", "POST", { eventType: "WEDDING", participantsJson: { groom: { nickname: "Raka" }, bride: { nickname: "Dewi" } }, weddingDate: "2099-01-01", city: "Makassar", themeId: "kalandra" })
     );
     if (first.status === 200) {
       invitationId = (await first.json()).invitationId;
@@ -323,8 +316,6 @@ describe.skipIf(!IS_TEST_DB)("bug terbukti: buku tamu klien", () => {
       data: {
         userId: sessionUser!.id,
         invitationSlug: `${TAG}-bday`,
-        groomSlug: `${TAG}-gbday`,
-        brideSlug: `${TAG}-bbday`,
         eventType: "BIRTHDAY",
         status: "DRAFT",
       },
@@ -419,23 +410,24 @@ describe.skipIf(!IS_TEST_DB)("bug terbukti: PIN resepsionis tanpa batas panjang"
 });
 
 describe.skipIf(!IS_TEST_DB)("nama tokoh utama acara non-pernikahan", () => {
-  it("menyimpan participantsJson dari studio ikut memperbarui kolom groom* yang dibaca audit terbit", async () => {
+  it("participantsJson dari studio tersimpan utuh dan menjadi sumber nama untuk audit terbit, resepsionis, dan QR", async () => {
     const { userId } = await makeClient("khitan", "TIER_2", false);
     const draft = await prisma.invitation.create({
-      data: { userId, eventType: "KHITAN", invitationSlug: `${TAG}-khitan`, groomSlug: `${TAG}-gkhitan`, brideSlug: "khitan", status: "DRAFT" },
+      data: { userId, eventType: "KHITAN", invitationSlug: `${TAG}-khitan`, status: "DRAFT" },
     });
     invitations.push(draft.id);
-    const participantsJson = JSON.stringify({ child: { name: "Muhammad Fatih", nickname: "Fatih" }, parents: { father: "Hasan", mother: "Aminah" } });
-    const res = await invitationPut(json(`/api/client/invitations/${draft.id}`, "PUT", { participantsJson }), ctx(draft.id));
+    const participants = { child: { name: "Muhammad Fatih", nickname: "Fatih" }, parents: { father: "Hasan", mother: "Aminah" } };
+    const res = await invitationPut(json(`/api/client/invitations/${draft.id}`, "PUT", { participantsJson: JSON.stringify(participants) }), ctx(draft.id));
     expect(res.status).toBe(200);
     const row = await prisma.invitation.findUniqueOrThrow({ where: { id: draft.id } });
-    expect([row.groomName, row.groomNickname, row.groomFather, row.groomMother]).toEqual(["Muhammad Fatih", "Fatih", "Hasan", "Aminah"]);
+    expect(row.participantsJson).toEqual(participants);
+    expect(participantNames(row.eventType, row.participantsJson)).toEqual({ full: "Muhammad Fatih", short: "Fatih", first: "Fatih", second: "" });
   });
 
   it("undangan khitan boleh memakai tema satu nama milik jenis acara lain, tetapi tidak tema pernikahan", async () => {
     const { userId } = await makeClient("khitantheme", "TIER_2", false);
     const draft = await prisma.invitation.create({
-      data: { userId, eventType: "KHITAN", themeId: "al-fariz", invitationSlug: `${TAG}-khitantheme`, groomSlug: `${TAG}-gkt`, brideSlug: "khitan", status: "DRAFT" },
+      data: { userId, eventType: "KHITAN", themeId: "al-fariz", invitationSlug: `${TAG}-khitantheme`, status: "DRAFT" },
     });
     invitations.push(draft.id);
     const put = (themeId: string) => invitationPut(json(`/api/client/invitations/${draft.id}`, "PUT", { themeId }), ctx(draft.id));

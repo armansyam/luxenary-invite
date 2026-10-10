@@ -33,8 +33,7 @@ export async function GET(
       },
       select: {
         id: true,
-        groomNickname: true,
-        brideNickname: true,
+        invitationSlug: true,
       },
     });
 
@@ -42,7 +41,7 @@ export async function GET(
       return NextResponse.json({ error: "Undangan tidak ditemukan atau akses ditolak" }, { status: 404 });
     }
 
-    const couplePrefix = `${invitation.groomNickname || "Mempelai"}-${invitation.brideNickname || "Mempelai"}`;
+    const couplePrefix = invitation.invitationSlug;
 
     if (type === "wishes") {
       const rsvps = await prisma.rsvp.findMany({

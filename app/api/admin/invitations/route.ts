@@ -37,11 +37,21 @@ export async function GET(req: NextRequest) {
 
     // 2. Search Filter
     if (search) {
+      // Nama peserta tersimpan di jsonb ({peran: {name, nickname}} atau {event: {title}}); hanya nilai dari kunci nama yang
+      // dicocokkan agar pencarian "groom" tidak mengembalikan semua undangan pernikahan.
+      const pattern = `%${search.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+      const nameMatches = await prisma.$queryRaw<{ id: string }[]>`
+        SELECT i.id FROM invitations i
+        CROSS JOIN LATERAL jsonb_each(
+          CASE WHEN jsonb_typeof(i."participantsJson") = 'object' THEN i."participantsJson" ELSE '{}'::jsonb END
+        ) AS role(key, val)
+        CROSS JOIN LATERAL jsonb_each_text(
+          CASE WHEN jsonb_typeof(role.val) = 'object' THEN role.val ELSE '{}'::jsonb END
+        ) AS field(key, val)
+        WHERE field.key IN ('name', 'nickname', 'title') AND field.val ILIKE ${pattern}
+      `;
       whereClause.OR = [
-        { groomName: { contains: search, mode: "insensitive" } },
-        { brideName: { contains: search, mode: "insensitive" } },
-        { groomNickname: { contains: search, mode: "insensitive" } },
-        { brideNickname: { contains: search, mode: "insensitive" } },
+        { id: { in: nameMatches.map((row) => row.id) } },
         { subdomain: { contains: search, mode: "insensitive" } },
         { invitationSlug: { contains: search, mode: "insensitive" } },
         { user: { name: { contains: search, mode: "insensitive" } } },
@@ -70,13 +80,7 @@ export async function GET(req: NextRequest) {
           userId: true,
           eventType: true,
           participantsJson: true,
-          groomSlug: true,
-          brideSlug: true,
           invitationSlug: true,
-          groomName: true,
-          brideName: true,
-          groomNickname: true,
-          brideNickname: true,
           themeId: true,
           status: true,
           subdomain: true,

@@ -20,7 +20,7 @@ import AdminDatabaseTab from "@/components/admin/AdminDatabaseTab";
 import { startRemoteSession } from "./actions/remote";
 import { compressImageToWebP } from "@/lib/clientImageCompressor";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
-import { resolveInvitationDisplayName, buildCanonicalPath } from "@/lib/invitationUtils";
+import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import {
   computeLifecycleDates,
@@ -2398,7 +2398,7 @@ export default function AdminPage() {
                                 </p>
                                 <div className="flex items-center gap-2 mt-0.5">
                                   <span className="text-[11px] text-gray-500 font-mono">
-                                    {buildCanonicalPath(inv)}
+                                    /{inv.invitationSlug}
                                   </span>
                                   <span className="text-[10px] font-semibold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60 uppercase">
                                     {inv.themeId}

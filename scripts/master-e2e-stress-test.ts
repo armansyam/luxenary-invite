@@ -69,10 +69,7 @@ async function main() {
         themeId: "candani",
         invitationSlug: `qa-wedding-${Date.now()}`,
         subdomain: `qa-sub-${Date.now()}`,
-        groomName: "Dimas Pratama",
-        brideName: "Clarissa Putri",
-        groomSlug: "dimas",
-        brideSlug: "clarissa",
+        participantsJson: { groom: { name: "Dimas Pratama" }, bride: { name: "Clarissa Putri" } },
         status: "PUBLISHED",
         featureSettings: {
           showGuestMemories: true,

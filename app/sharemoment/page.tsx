@@ -23,8 +23,6 @@ export default async function RootSharemomentRedirectPage() {
           subdomain: true,
           customDomain: true,
           invitationSlug: true,
-          groomSlug: true,
-          brideSlug: true,
           status: true,
         },
       },
@@ -39,8 +37,6 @@ export default async function RootSharemomentRedirectPage() {
   const resolved = resolveEffectiveInvitationUrl({
     customDomain: inv.customDomain,
     subdomain: inv.subdomain,
-    groomSlug: inv.groomSlug,
-    brideSlug: inv.brideSlug,
     invitationSlug: inv.invitationSlug,
   });
 

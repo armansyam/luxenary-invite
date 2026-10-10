@@ -28,6 +28,10 @@ const EVENT_TYPE_OF: Record<string, "WEDDING" | "BIRTHDAY" | "KHITAN" | "AQIQAH"
 
 // Bentuk participantsJson persis seperti yang ditulis wizard (setup/page.tsx) dan editor studio, bukan bentuk karangan tes.
 const PARTICIPANTS: Record<string, unknown> = {
+  WEDDING: {
+    groom: { name: "Andi Mappatunru, S.T.", nickname: "Andi", father: "Bpk. H. Mappatunru", mother: "Ibu Hj. Nurhayati", instagram: "andi" },
+    bride: { name: "Besse Tenri Ajeng, S.Psi.", nickname: "Besse", father: "Bpk. H. Tenri", mother: "Ibu Hj. Ajeng", instagram: "besse" },
+  },
   BIRTHDAY: { person: { name: "Nadia Putri", nickname: "Nadia", age: 17, fatherName: "Bpk. Rahman", motherName: "Ibu Sari", instagram: "nadia" } },
   KHITAN: { child: { name: "Muhammad Fatih", nickname: "Fatih", age: 7 }, parents: { father: "Bpk. Hasan", mother: "Ibu Aminah" } },
   AQIQAH: { baby: { name: "Aisyah Zahra", nickname: "Aisyah" }, parents: { father: "Bpk. Ilham", mother: "Ibu Rina" } },
@@ -89,7 +93,6 @@ async function makeInvitation(eventType: string) {
     data: { userId: user.id, invoiceNumber: `${RUN}-${eventType}`, planType: "TIER_3", amount: 200000, status: "PAID", orderType: "NEW", paidAt: new Date() },
   });
   ids.orders.push(order.id);
-  const isWedding = eventType === "WEDDING";
   const inv = await prisma.invitation.create({
     data: {
       userId: user.id,
@@ -98,18 +101,6 @@ async function makeInvitation(eventType: string) {
       status: "PUBLISHED",
       subdomain: `${RUN}-${eventType}`.toLowerCase().replace(/_/g, "-"),
       invitationSlug: `${RUN}-${eventType}`,
-      groomSlug: `${RUN}-g-${eventType}`,
-      brideSlug: `${RUN}-b-${eventType}`,
-      groomName: isWedding ? "Andi Mappatunru, S.T." : null,
-      brideName: isWedding ? "Besse Tenri Ajeng, S.Psi." : null,
-      groomNickname: isWedding ? "Andi" : null,
-      brideNickname: isWedding ? "Besse" : null,
-      groomFather: isWedding ? "Bpk. H. Mappatunru" : null,
-      groomMother: isWedding ? "Ibu Hj. Nurhayati" : null,
-      brideFather: "Bpk. H. Tenri",
-      brideMother: "Ibu Hj. Ajeng",
-      groomInstagram: "andi",
-      brideInstagram: "besse",
       openingQuote: "Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu pasangan.",
       openingQuoteRef: "QS. Ar-Rum: 21",
       musicUrl: "/music/canon-in-d.ogg",
@@ -144,8 +135,6 @@ async function makeEmptyInvitation(eventType: string) {
       orderId: order.id,
       eventType: eventType as never,
       invitationSlug: `${RUN}-${eventType}-empty`,
-      groomSlug: `${RUN}-g-${eventType}-empty`,
-      brideSlug: `${RUN}-b-${eventType}-empty`,
       featureSettings: { showGallery: true, showGift: true, showStory: true },
       eventData: [{ title: "Acara", date: "", time: "", location: "", isPrimary: true }],
     },

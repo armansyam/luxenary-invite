@@ -65,30 +65,88 @@ export interface GatheringParticipants {
   };
 }
 
-type NameMirrorField = "groomName" | "groomNickname" | "groomFather" | "groomMother" | "groomInstagram";
+export interface WeddingPerson {
+  name?: string;
+  nickname?: string;
+  father?: string;
+  mother?: string;
+  instagram?: string;
+}
+
+export interface WeddingParticipants {
+  groom?: WeddingPerson;
+  bride?: WeddingPerson;
+}
+
+/** Nama yang dipakai di luar tema: judul kartu, resepsionis, QR, email, dan deskripsi tagihan. */
+export interface ParticipantNames {
+  /** Nama lengkap; pernikahan "Pria & Wanita". */
+  full: string;
+  /** Nama panggilan (jatuh ke nama lengkap); pernikahan "Pria & Wanita". */
+  short: string;
+  /** Nama orang pertama dan kedua untuk inisial QR (kedua kosong untuk acara satu nama). */
+  first: string;
+  second: string;
+}
+
+const trimmed = (value: unknown): string => (typeof value === "string" ? value.trim() : "");
+
+/** Tokoh utama acara satu nama di dalam objek peserta. */
+function singlePerson(eventType: string | null | undefined, p: Record<string, any>): { name: string; nickname: string } {
+  if (eventType === "GATHERING") return { name: trimmed(p.event?.title), nickname: trimmed(p.event?.title) };
+  const person = eventType === "KHITAN" ? p.child : eventType === "AQIQAH" ? p.baby : p.person;
+  return { name: trimmed(person?.name), nickname: trimmed(person?.nickname) };
+}
+
+export function participantNames(eventType: string | null | undefined, raw: unknown): ParticipantNames {
+  const p = safeParseParticipants(raw);
+  if (!eventType || eventType === "WEDDING") {
+    const groom = { name: trimmed(p.groom?.name), nickname: trimmed(p.groom?.nickname) };
+    const bride = { name: trimmed(p.bride?.name), nickname: trimmed(p.bride?.nickname) };
+    return {
+      full: [groom.name, bride.name].filter(Boolean).join(" & "),
+      short: [groom.nickname || groom.name, bride.nickname || bride.name].filter(Boolean).join(" & "),
+      first: groom.nickname || groom.name,
+      second: bride.nickname || bride.name,
+    };
+  }
+  const main = singlePerson(eventType, p);
+  return { full: main.name, short: main.nickname || main.name, first: main.nickname || main.name, second: "" };
+}
 
 /**
- * Acara non-pernikahan menyimpan nama tokoh utama di participantsJson, tetapi resepsionis, QR check-in,
- * notifikasi, dan audit terbit membaca kolom groom*. Semua jalur simpan memakai pemetaan ini agar keduanya selalu sama.
+ * Field data template pernikahan (dipakai sunting langsung di pratinjau, data-lux-field) dan lokasinya di objek peserta.
  */
-export function mirrorParticipantNames(eventType: string | null | undefined, p: Record<string, any>): Partial<Record<NameMirrorField, string>> {
-  let entries: [NameMirrorField, unknown][] = [];
-  if (eventType === "BIRTHDAY") {
-    entries = [["groomName", p.person?.name], ["groomNickname", p.person?.nickname], ["groomFather", p.person?.fatherName], ["groomMother", p.person?.motherName], ["groomInstagram", p.person?.instagram]];
-  } else if (eventType === "KHITAN") {
-    entries = [["groomName", p.child?.name], ["groomNickname", p.child?.nickname], ["groomFather", p.parents?.father], ["groomMother", p.parents?.mother]];
-  } else if (eventType === "AQIQAH") {
-    entries = [["groomName", p.baby?.name], ["groomNickname", p.baby?.nickname], ["groomFather", p.parents?.father], ["groomMother", p.parents?.mother]];
-  } else if (eventType === "WISUDA") {
-    entries = [["groomName", p.person?.name], ["groomNickname", p.person?.nickname]];
-  } else if (eventType === "GATHERING") {
-    entries = [["groomName", p.event?.title]];
-  }
-  const mirrored: Partial<Record<NameMirrorField, string>> = {};
-  for (const [field, value] of entries) {
-    if (typeof value === "string") mirrored[field] = value.trim();
-  }
-  return mirrored;
+export const WEDDING_PARTICIPANT_FIELDS: Record<string, [keyof WeddingParticipants, keyof WeddingPerson]> = {
+  groomName: ["groom", "name"],
+  groomNickname: ["groom", "nickname"],
+  groomFather: ["groom", "father"],
+  groomMother: ["groom", "mother"],
+  groomInstagram: ["groom", "instagram"],
+  brideName: ["bride", "name"],
+  brideNickname: ["bride", "nickname"],
+  brideFather: ["bride", "father"],
+  brideMother: ["bride", "mother"],
+  brideInstagram: ["bride", "instagram"],
+};
+
+export function isWeddingField(field: string): boolean {
+  return Object.prototype.hasOwnProperty.call(WEDDING_PARTICIPANT_FIELDS, field);
+}
+
+export function weddingFieldValue(raw: unknown, field: string): string {
+  if (!isWeddingField(field)) return "";
+  const [role, key] = WEDDING_PARTICIPANT_FIELDS[field];
+  const value = safeParseParticipants(raw)[role]?.[key];
+  return typeof value === "string" ? value : "";
+}
+
+/** Salinan objek peserta dengan satu field template pernikahan (mis. "groomName") diganti nilainya. */
+export function withWeddingField(raw: unknown, field: string, value: string): Record<string, any> {
+  const participants = safeParseParticipants(raw);
+  if (!isWeddingField(field)) return participants;
+  const [role, key] = WEDDING_PARTICIPANT_FIELDS[field];
+  return { ...participants, [role]: { ...(participants[role] || {}), [key]: value } };
 }
 
 /** Objek peserta dari kolom jsonb `participantsJson` (atau string JSON dari body permintaan). */

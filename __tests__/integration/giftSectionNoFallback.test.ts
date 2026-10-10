@@ -19,10 +19,7 @@ async function createInvitation(suffix: string, bankAccounts: Prisma.InputJsonAr
     data: {
       userId,
       invitationSlug: `${TAG}-${suffix}`,
-      groomSlug: `${TAG}-g`,
-      brideSlug: `${TAG}-b`,
-      groomName: "Budi",
-      brideName: "Ani",
+      participantsJson: { groom: { name: "Budi" }, bride: { name: "Ani" } },
       status: "PUBLISHED",
       bankAccounts,
     },

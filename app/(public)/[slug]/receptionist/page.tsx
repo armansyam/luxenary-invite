@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import ReceptionistScannerClient from "@/app/components/features/ReceptionistScannerClient";
 import StaffLockScreen from "@/app/components/features/StaffLockScreen";
 import { getAdminSetting, hasPlanCapability } from "@/lib/settings";
+import { participantNames } from "@/lib/participantUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -26,10 +27,8 @@ export default async function SlugReceptionistPage({ params }: PageProps) {
         id: true,
         staffPin: true,
         status: true,
-        groomNickname: true,
-        brideNickname: true,
-        groomName: true,
-        brideName: true,
+        eventType: true,
+        participantsJson: true,
         order: { select: { planType: true } },
       },
     }),
@@ -77,8 +76,7 @@ export default async function SlugReceptionistPage({ params }: PageProps) {
     );
   }
 
-  const groomFirst = (invitation.groomNickname || invitation.groomName || "").trim();
-  const brideFirst = (invitation.brideNickname || invitation.brideName || "").trim();
+  const { first: groomFirst, second: brideFirst } = participantNames(invitation.eventType, invitation.participantsJson);
 
   let clientInitials = "";
   if (groomFirst && brideFirst) {

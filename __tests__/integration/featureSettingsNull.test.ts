@@ -37,8 +37,6 @@ describe.skipIf(!IS_TEST_DB)("featureSettings NULL pada unggahan momen tamu", ()
         themeId: "kalandra",
         status: "PUBLISHED",
         invitationSlug: RUN,
-        groomSlug: `${RUN}-g`,
-        brideSlug: `${RUN}-b`,
         featureSettings: Prisma.DbNull,
       },
     });

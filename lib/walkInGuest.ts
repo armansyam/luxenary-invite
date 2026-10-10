@@ -3,9 +3,9 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { HttpError } from "@/lib/routeError";
 
-/** Bentuk tamu yang dikembalikan rute scan: tamu beserta data mempelai untuk tampilan hasil check-in. */
+/** Bentuk tamu yang dikembalikan rute scan: tamu beserta id undangannya. */
 const guestWithInvitation = {
-  invitation: { select: { id: true, groomName: true, brideName: true } },
+  invitation: { select: { id: true } },
 } satisfies Prisma.GuestInclude;
 
 function findGuestByName(invitationId: string, name: string) {

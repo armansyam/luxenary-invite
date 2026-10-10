@@ -49,7 +49,7 @@ describe.skipIf(!IS_TEST_DB)("constraint skema database", () => {
     const user = await prisma.user.create({ data: { email: `${TAG}@example.test`, name: TAG } });
     userId = user.id;
     const inv = await prisma.invitation.create({
-      data: { userId, invitationSlug: `${TAG}-inv`, groomSlug: `${TAG}-g`, brideSlug: `${TAG}-b`, status: "DRAFT" },
+      data: { userId, invitationSlug: `${TAG}-inv`, status: "DRAFT" },
     });
     invitationId = inv.id;
     const order = await prisma.order.create({ data: { userId, invoiceNumber: `${TAG}-INV`, planType: "TIER_1", amount: 1000 } });

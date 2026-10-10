@@ -51,7 +51,7 @@ async function makeOrder(userId: string, over: Record<string, any> = {}) {
 
 async function makeInvitation(userId: string, orderId: string | null, tag: string) {
   const inv = await prisma.invitation.create({
-    data: { userId, orderId, themeId: "kalandra", invitationSlug: `${RUN}-${tag}`, groomSlug: `${RUN}-g-${tag}`, brideSlug: `${RUN}-b-${tag}`, featureSettings: {} },
+    data: { userId, orderId, themeId: "kalandra", invitationSlug: `${RUN}-${tag}`, featureSettings: {} },
   });
   ids.invitations.push(inv.id);
   return inv;

@@ -5,7 +5,7 @@ import { safeHref, safeExternalUrl } from "@/lib/safeUrl";
 import { safeCssColor } from "@/lib/safeCss";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { getAdminSetting, hasPlanCapability } from "@/lib/settings";
-import { safeParseParticipants } from "@/lib/participantUtils";
+import { safeParseParticipants, type WeddingParticipants, type WeddingPerson } from "@/lib/participantUtils";
 import { parseFeatureSettings } from "@/lib/featureSettings";
 import { buildCalendarTitle, DEFAULT_THEME_BY_EVENT } from "@/lib/invitationUtils";
 import { buildCheckinQrBaseUrl, buildCheckinQrUrl, qrInitials } from "@/lib/checkinQr";
@@ -195,59 +195,30 @@ export async function composeWeddingData(inv: any) {
   const showVendors = featureSettings.showVendors !== undefined ? Boolean(featureSettings.showVendors) : true;
 
   // Dynamic Couple Display Order Resolution
-  const isGroomFirst = featureSettings.displayOrder === "GROOM_FIRST" || (!featureSettings.displayOrder && Boolean(inv.groomName));
+  const isGroomFirst = featureSettings.displayOrder !== "BRIDE_FIRST";
 
-  const groomName = (inv.groomName && inv.groomName.trim()) || (inv.groomNickname && inv.groomNickname.trim()) || "Mempelai Pria";
-  const brideName = (inv.brideName && inv.brideName.trim()) || (inv.brideNickname && inv.brideNickname.trim()) || "Mempelai Wanita";
-  const groomNickname = (inv.groomNickname && inv.groomNickname.trim()) || (inv.groomName && inv.groomName.trim()) || "Pria";
-  const brideNickname = (inv.brideNickname && inv.brideNickname.trim()) || (inv.brideName && inv.brideName.trim()) || "Wanita";
-  const groomDisplayName = (inv.groomName && inv.groomName.trim()) || (inv.groomNickname && inv.groomNickname.trim()) || groomName;
-  const brideDisplayName = (inv.brideName && inv.brideName.trim()) || (inv.brideNickname && inv.brideNickname.trim()) || brideName;
-  const rawGroomFather = ((inv as any).groomFather && (inv as any).groomFather.trim()) || "";
-  const rawGroomMother = ((inv as any).groomMother && (inv as any).groomMother.trim()) || "";
-  const rawBrideFather = ((inv as any).brideFather && (inv as any).brideFather.trim()) || "";
-  const rawBrideMother = ((inv as any).brideMother && (inv as any).brideMother.trim()) || "";
+  const participants = safeParseParticipants(inv.participantsJson) as WeddingParticipants;
+  const personField = (role: "groom" | "bride", key: keyof WeddingPerson) => String(participants[role]?.[key] ?? "").trim();
 
-  let groomFather = rawGroomFather;
-  let groomMother = rawGroomMother;
-  let brideFather = rawBrideFather;
-  let brideMother = rawBrideMother;
+  const groomName = personField("groom", "name") || personField("groom", "nickname") || "Mempelai Pria";
+  const brideName = personField("bride", "name") || personField("bride", "nickname") || "Mempelai Wanita";
+  const groomNickname = personField("groom", "nickname") || personField("groom", "name") || "Pria";
+  const brideNickname = personField("bride", "nickname") || personField("bride", "name") || "Wanita";
+  const groomDisplayName = groomName;
+  const brideDisplayName = brideName;
+  const groomFather = personField("groom", "father");
+  const groomMother = personField("groom", "mother");
+  const brideFather = personField("bride", "father");
+  const brideMother = personField("bride", "mother");
 
-  // Intelligent fallback: If father/mother not separated yet, parse from combined legacy string
-  if (!groomFather && !groomMother && inv.groomParents) {
-    const cleaned = inv.groomParents.replace(/^(putra|anak|putri|son|daughter)\s+(ke-[0-9a-z]+|pertama|kedua|ketiga|keempat|kelima|sulung|bungsu)?\s*(dari|of|saking)?\s*/i, "").trim();
-    const splitIdx = cleaned.search(/\s+(&|dan|and)\s+/i);
-    if (splitIdx !== -1) {
-      groomFather = cleaned.substring(0, splitIdx).trim();
-      groomMother = cleaned.substring(splitIdx).trim().replace(/^(&|dan|and)\s*/i, "").trim();
-    } else {
-      groomFather = cleaned;
-    }
-  }
-
-  if (!brideFather && !brideMother && inv.brideParents) {
-    const cleaned = inv.brideParents.replace(/^(putra|anak|putri|son|daughter)\s+(ke-[0-9a-z]+|pertama|kedua|ketiga|keempat|kelima|sulung|bungsu)?\s*(dari|of|saking)?\s*/i, "").trim();
-    const splitIdx = cleaned.search(/\s+(&|dan|and)\s+/i);
-    if (splitIdx !== -1) {
-      brideFather = cleaned.substring(0, splitIdx).trim();
-      brideMother = cleaned.substring(splitIdx).trim().replace(/^(&|dan|and)\s*/i, "").trim();
-    } else {
-      brideFather = cleaned;
-    }
-  }
-
-  // Dynamic automatic parents fallback if groomParents/brideParents not explicitly given
-  const groomAutoParents = (groomFather || groomMother)
+  const groomParents = (groomFather || groomMother)
     ? `Putra dari ${groomFather}${groomFather && groomMother ? " & " : ""}${groomMother}`
     : "";
-  const brideAutoParents = (brideFather || brideMother)
+  const brideParents = (brideFather || brideMother)
     ? `Putri dari ${brideFather}${brideFather && brideMother ? " & " : ""}${brideMother}`
     : "";
-
-  const groomParents = (inv.groomParents && inv.groomParents.trim()) || groomAutoParents;
-  const brideParents = (inv.brideParents && inv.brideParents.trim()) || brideAutoParents;
-  const groomInstagram = (inv.groomInstagram || "").trim().replace(/^@+/, "");
-  const brideInstagram = (inv.brideInstagram || "").trim().replace(/^@+/, "");
+  const groomInstagram = personField("groom", "instagram").replace(/^@+/, "");
+  const brideInstagram = personField("bride", "instagram").replace(/^@+/, "");
 
   // Resolve Photos (Theme-Aware Fallbacks without Stranger Model Fallbacks on Personal Slots)
   const themeFolder = inv.themeId || "kalandra";
@@ -2065,11 +2036,11 @@ export async function composeBirthdayData(inv: any) {
   const showTurutMengundang = featureSettings.showTurutMengundang !== undefined ? Boolean(featureSettings.showTurutMengundang) : true;
 
   // Persona Fields
-  const personName = p.person?.name || inv.groomName || "Sahabat";
-  const personNickname = p.person?.nickname || inv.groomNickname || personName;
+  const personName = p.person?.name || "Sahabat";
+  const personNickname = p.person?.nickname || personName;
   const personAge = String(p.person?.age || "");
   const personInstagram = (p.person?.instagram || "").replace(/^@+/, "");
-  const parentName = [p.person?.fatherName, p.person?.motherName].filter(Boolean).join(" & ") || inv.groomParents || "";
+  const parentName = [p.person?.fatherName, p.person?.motherName].filter(Boolean).join(" & ");
 
   // Photos: sama dengan pernikahan, tanpa foto demo tema (foto model orang lain) sebagai cadangan.
   const customCover = mediaMap.get("LANDING_COVER");
@@ -2707,12 +2678,12 @@ export async function composeKhitanData(inv: any) {
     if (dbTheme?.defaultMusicUrl) dbThemeDefaultMusic = dbTheme.defaultMusicUrl;
   } catch {}
 
-  const childName = child.name || inv.groomName || "Ananda";
-  const childNickname = child.nickname || inv.groomNickname || childName;
+  const childName = child.name || "Ananda";
+  const childNickname = child.nickname || childName;
   const childAge = String(child.age || "");
   const childBirthOrder = child.birthOrder || "Putra";
-  const fatherName = parents.father || inv.groomFather || "";
-  const motherName = parents.mother || inv.groomMother || "";
+  const fatherName = parents.father || "";
+  const motherName = parents.mother || "";
 
   const host = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
   // Foto utama tersimpan di slot GROOM_PHOTO (editor seksi 3); tanpa foto demo tema sebagai cadangan.
@@ -2796,12 +2767,12 @@ export async function composeAqiqahData(inv: any) {
     if (dbTheme?.defaultMusicUrl) dbThemeDefaultMusic = dbTheme.defaultMusicUrl;
   } catch {}
 
-  const babyName = baby.name || inv.groomName || "Buah Hati";
-  const babyNickname = baby.nickname || inv.groomNickname || babyName;
+  const babyName = baby.name || "Buah Hati";
+  const babyNickname = baby.nickname || babyName;
   const birthDateFormatted = baby.birthDate ? formatDateId(baby.birthDate) : "";
   const birthMetrics = [baby.birthWeight, baby.birthLength].filter(Boolean).join(" • ");
-  const fatherName = parents.father || inv.groomFather || "";
-  const motherName = parents.mother || inv.groomMother || "";
+  const fatherName = parents.father || "";
+  const motherName = parents.mother || "";
 
   const host = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
   // Foto utama tersimpan di slot GROOM_PHOTO (editor seksi 3); tanpa foto demo tema sebagai cadangan.
@@ -2884,16 +2855,16 @@ export async function composeWisudaData(inv: any) {
     if (dbTheme?.defaultMusicUrl) dbThemeDefaultMusic = dbTheme.defaultMusicUrl;
   } catch {}
 
-  const graduateName = grad.name || inv.groomName || "Wisudawan/Wisudawati";
-  const graduateNickname = grad.nickname || inv.groomNickname || graduateName;
+  const graduateName = grad.name || "Wisudawan/Wisudawati";
+  const graduateNickname = grad.nickname || graduateName;
   // Gelar, jurusan, kampus, dan predikat hanya dari data klien; nilai contoh akan tercetak sebagai fakta di undangan.
   const graduateDegree = grad.degree || "";
   const graduateMajor = grad.major || "";
   const graduateFaculty = grad.faculty || "";
   const universityName = grad.institution || "";
   const honors = grad.honors || "";
-  const fatherName = parents.father || inv.groomFather || "";
-  const motherName = parents.mother || inv.groomMother || "";
+  const fatherName = parents.father || "";
+  const motherName = parents.mother || "";
 
   const host = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
   // Foto utama tersimpan di slot GROOM_PHOTO (editor seksi 3); tanpa foto demo tema sebagai cadangan.
@@ -2981,7 +2952,7 @@ export async function composeGatheringData(inv: any) {
     if (dbTheme?.defaultMusicUrl) dbThemeDefaultMusic = dbTheme.defaultMusicUrl;
   } catch {}
 
-  const eventTitle = evInfo.title || inv.groomName || "Peresmian & Syukuran";
+  const eventTitle = evInfo.title || "Peresmian & Syukuran";
   const eventSubtitle = evInfo.subtitle || "";
   const organizerName = evInfo.organizer || "";
   const hostName = evInfo.hostName || "";

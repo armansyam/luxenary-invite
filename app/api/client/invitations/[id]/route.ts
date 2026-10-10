@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { normalizeJsonInput } from "@/lib/jsonText";
-import { mirrorParticipantNames, safeParseParticipants } from "@/lib/participantUtils";
+import { participantNames } from "@/lib/participantUtils";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
 import { removeIfExists } from "@/lib/fsSafe";
@@ -27,7 +27,6 @@ export function getInvitationLockStatus(inv: any) {
   if (inv.adminUnlockedUntil && new Date(inv.adminUnlockedUntil) > new Date()) {
     return {
       isLocked: false,
-      isCoreLocked: false,
       isEmergencyUnlocked: true,
       unlockExpiresAt: inv.adminUnlockedUntil,
       lockReason: null,
@@ -38,7 +37,6 @@ export function getInvitationLockStatus(inv: any) {
   if (inv.isLockedPermanently) {
     return {
       isLocked: true,
-      isCoreLocked: true,
       isEmergencyUnlocked: false,
       unlockExpiresAt: null,
       lockReason: "LOCKED_PERMANENT",
@@ -53,7 +51,6 @@ export function getInvitationLockStatus(inv: any) {
   if (hasPassed && inv.status !== "DRAFT") {
     return {
       isLocked: true,
-      isCoreLocked: true,
       isEmergencyUnlocked: false,
       unlockExpiresAt: null,
       lockReason: "EVENT_DATE_PASSED",
@@ -64,18 +61,15 @@ export function getInvitationLockStatus(inv: any) {
   if (inv.status === "PUBLISHED" || inv.status === "EVENT_FINISHED") {
     return {
       isLocked: true,
-      isCoreLocked: true,
       isEmergencyUnlocked: false,
       unlockExpiresAt: null,
       lockReason: "PUBLISHED",
     };
   }
 
-  // 5. Before Hari H & Draft: General fields editable, but core couple names & date are protected
-  const hasExistingNames = Boolean(inv.groomName && inv.brideName);
+  // 5. Draf sebelum hari acara: seluruh isian, termasuk nama peserta, masih dapat diperbaiki.
   return {
     isLocked: false,
-    isCoreLocked: hasExistingNames,
     isEmergencyUnlocked: false,
     unlockExpiresAt: null,
     lockReason: null,
@@ -253,42 +247,18 @@ export async function PUT(
       );
     }
 
-    // Auto-generate slugs if names are provided
-    let newGroomSlug = undefined;
-    let newBrideSlug = undefined;
-
-    // Check if core names can be modified (only if emergency unlocked or names not set yet)
-    const canEditCore = lockStatus.isEmergencyUnlocked || !lockStatus.isCoreLocked;
-
-    let groomNameToSave = undefined;
-    let brideNameToSave = undefined;
-    let groomNicknameToSave = undefined;
-    let brideNicknameToSave = undefined;
-
-    if (canEditCore) {
-      if (body.groomName !== undefined) groomNameToSave = body.groomName;
-      if (body.brideName !== undefined) brideNameToSave = body.brideName;
-      if (body.groomNickname !== undefined) groomNicknameToSave = body.groomNickname;
-      if (body.brideNickname !== undefined) brideNicknameToSave = body.brideNickname;
-
-      if (body.groomNickname || body.groomName) {
-        newGroomSlug = String(body.groomNickname || body.groomName).toLowerCase().replace(/[^a-z0-9]/g, "");
-      }
-      if (body.brideNickname || body.brideName) {
-        newBrideSlug = String(body.brideNickname || body.brideName).toLowerCase().replace(/[^a-z0-9]/g, "");
-      }
-    }
-
     let newSubdomain = body.subdomain !== undefined
       ? (body.subdomain && String(body.subdomain).trim()
           ? String(body.subdomain).trim().toLowerCase().replace(/[^a-z0-9-]/g, "")
           : null)
       : undefined;
 
-    if (newSubdomain === undefined && !currentInv.subdomain) {
-      if (newGroomSlug && newBrideSlug) {
-        newSubdomain = `${newGroomSlug}-${newBrideSlug}`;
-      }
+    // Undangan pernikahan tanpa subdomain mendapat subdomain dari nama panggilan mempelai saat studio menyimpan peserta.
+    if (newSubdomain === undefined && !currentInv.subdomain && currentInv.eventType === "WEDDING" && body.participantsJson !== undefined) {
+      const { first, second } = participantNames("WEDDING", body.participantsJson);
+      const groomPart = first.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const bridePart = second.toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (groomPart && bridePart) newSubdomain = `${groomPart}-${bridePart}`;
     }
 
     // --- BUG FIX: Check Subdomain Uniqueness & Reserved Subdomains ---
@@ -500,20 +470,6 @@ export async function PUT(
     const updated = await prisma.invitation.update({
       where: { id },
       data: {
-        groomName: groomNameToSave,
-        brideName: brideNameToSave,
-        groomNickname: groomNicknameToSave,
-        brideNickname: brideNicknameToSave,
-        groomSlug: newGroomSlug,
-        brideSlug: newBrideSlug,
-        groomParents: body.groomParents !== undefined ? body.groomParents : undefined,
-        groomFather: body.groomFather !== undefined ? body.groomFather : undefined,
-        groomMother: body.groomMother !== undefined ? body.groomMother : undefined,
-        brideParents: body.brideParents !== undefined ? body.brideParents : undefined,
-        brideFather: body.brideFather !== undefined ? body.brideFather : undefined,
-        brideMother: body.brideMother !== undefined ? body.brideMother : undefined,
-        groomInstagram: body.groomInstagram !== undefined ? body.groomInstagram : undefined,
-        brideInstagram: body.brideInstagram !== undefined ? body.brideInstagram : undefined,
         openingQuote: body.openingQuote !== undefined ? body.openingQuote : undefined,
         openingQuoteRef: body.openingQuoteRef !== undefined ? body.openingQuoteRef : undefined,
         themeId: body.themeId !== undefined ? body.themeId : undefined,
@@ -529,9 +485,6 @@ export async function PUT(
         eventData: eventDataToSave,
         featureSettings: mergedFeatureSettings,
         participantsJson: jsonFields.participantsJson,
-        ...(jsonFields.participantsJson !== undefined
-          ? mirrorParticipantNames(currentInv.eventType, safeParseParticipants(jsonFields.participantsJson))
-          : {}),
         staffPin: body.staffPin !== undefined
           ? (body.staffPin ? encryptPin(String(body.staffPin)) : null)
           : undefined,
@@ -662,9 +615,8 @@ export async function PATCH(
     }
 
     if (body.participantsJson !== undefined) {
-      // Nama peserta acara adalah data inti yang dikunci setelah publikasi, sama seperti groomName/brideName pada PUT.
-      const lock = getInvitationLockStatus(currentInv);
-      if (!isAdmin && lock.isCoreLocked && !lock.isEmergencyUnlocked) {
+      // Nama peserta acara mengikuti kunci studio: terkunci setelah terbit kecuali admin membuka kunci darurat.
+      if (!isAdmin && getInvitationLockStatus(currentInv).isLocked) {
         return NextResponse.json({ error: "Data peserta acara terkunci. Hubungi Administrator untuk membuka kunci darurat." }, { status: 403 });
       }
       const participants = normalizeJsonInput(body.participantsJson, "object");
@@ -672,7 +624,6 @@ export async function PATCH(
         return NextResponse.json({ error: "participantsJson harus berupa objek JSON yang valid." }, { status: 400 });
       }
       updateData.participantsJson = participants.value;
-      Object.assign(updateData, mirrorParticipantNames(currentInv.eventType, safeParseParticipants(participants.value)));
     }
 
     const updated = await prisma.invitation.update({

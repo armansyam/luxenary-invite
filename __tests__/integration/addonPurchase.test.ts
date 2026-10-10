@@ -36,8 +36,6 @@ async function makeClient(tag: string, planType: "TIER_2" | "TIER_3", eventDate:
       themeId: "kalandra",
       status: "PUBLISHED",
       invitationSlug: `${RUN}-${tag}`,
-      groomSlug: `${RUN}-g-${tag}`,
-      brideSlug: `${RUN}-b-${tag}`,
       featureSettings: {},
       eventData: [{ title: "Resepsi", date: eventDate, time: "11:00 - 14:00 WITA", timezone: "WITA", location: "Gedung", isPrimary: true }],
     },

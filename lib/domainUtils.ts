@@ -120,8 +120,6 @@ export function getInvitationPublicUrl(subdomain: string, guestSlug?: string): s
 export interface ResolveInvitationUrlOptions {
   customDomain?: string | null;
   subdomain?: string | null;
-  groomSlug?: string | null;
-  brideSlug?: string | null;
   invitationSlug?: string | null;
   guestSlug?: string | null;
 }

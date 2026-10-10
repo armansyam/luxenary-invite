@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 
 interface PortfolioTabProps {
   invitations: any[];
@@ -104,8 +105,7 @@ export function AdminPortfolioTab({ invitations }: PortfolioTabProps) {
   const filteredEligible = eligibleInvitations.filter(
     (inv) =>
       inv.invitationSlug?.toLowerCase().includes(search.toLowerCase()) ||
-      inv.groomName?.toLowerCase().includes(search.toLowerCase()) ||
-      inv.brideName?.toLowerCase().includes(search.toLowerCase())
+      resolveInvitationDisplayName(inv).toLowerCase().includes(search.toLowerCase())
   );
 
   const STEPS = [
@@ -275,7 +275,7 @@ export function AdminPortfolioTab({ invitations }: PortfolioTabProps) {
                   <div key={inv.id} className="p-3.5 border border-gray-200 rounded-xl flex items-center justify-between hover:border-blue-300 transition-colors">
                     <div>
                       <p className="font-medium text-gray-900 text-sm">{inv.invitationSlug}</p>
-                      <p className="text-xs text-gray-500">{inv.groomName} & {inv.brideName}</p>
+                      <p className="text-xs text-gray-500">{resolveInvitationDisplayName(inv)}</p>
                     </div>
                     <button
                       onClick={() => handleAddToPortfolio(inv.id, inv.invitationSlug)}

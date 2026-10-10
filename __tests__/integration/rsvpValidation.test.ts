@@ -36,7 +36,7 @@ describe.skipIf(!IS_TEST_DB)("validasi RSVP publik", () => {
     await pool.query("DELETE FROM rate_limit_counters WHERE key LIKE 'rsvp_post:%'");
     const user = await prisma.user.create({ data: { email: `${TAG}@example.test`, name: TAG } });
     const inv = await prisma.invitation.create({
-      data: { userId: user.id, invitationSlug: `${TAG}-inv`, groomSlug: `${TAG}-g`, brideSlug: `${TAG}-b`, status: "PUBLISHED" },
+      data: { userId: user.id, invitationSlug: `${TAG}-inv`, status: "PUBLISHED" },
     });
     invitationId = inv.id;
   });

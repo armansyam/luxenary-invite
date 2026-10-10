@@ -60,11 +60,8 @@ async function runTest01() {
         orderId: paidOrder.id,
         themeId: "candani",
         invitationSlug: `test-wedding-${Date.now()}`,
-        groomSlug: "test-groom",
-        brideSlug: "test-bride",
         status: "DRAFT", // Masih DRAFT setelah dibeli
-        groomName: "Test Groom",
-        brideName: "Test Bride",
+        participantsJson: { groom: { name: "Test Groom" }, bride: { name: "Test Bride" } },
         isLockedPermanently: false,
         memoriesUploadLocked: false
       }

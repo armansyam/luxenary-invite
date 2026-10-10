@@ -15,6 +15,7 @@ import {
 } from "@/lib/lifecycleDates";
 import { getPlanDisplayName } from "@/lib/planUtils";
 import { resolveInvitationDisplayName, STAFF_PIN_PATTERN, eventNoun } from "@/lib/invitationUtils";
+import { participantNames, safeParseParticipants } from "@/lib/participantUtils";
 import { useFeedback } from "@/components/ui/Feedback";
 
 export default function SettingsPage() {
@@ -224,14 +225,10 @@ export default function SettingsPage() {
       isToggledOn: () => true,
       hasData: (inv: any) => {
         if (inv?.eventType && inv.eventType !== "WEDDING") {
-          return Boolean(inv?.groomName && !inv.groomName.startsWith("Mempelai"));
+          return Boolean(participantNames(inv.eventType, inv.participantsJson).full);
         }
-        return Boolean(
-          inv?.groomName &&
-            !inv.groomName.startsWith("Mempelai Pria") &&
-            inv?.brideName &&
-            !inv.brideName.startsWith("Mempelai Wanita")
-        );
+        const p = safeParseParticipants(inv?.participantsJson);
+        return Boolean(String(p.groom?.name ?? "").trim() && String(p.bride?.name ?? "").trim());
       },
       missingMessage: "Profil utama belum diisi dengan benar. Harap lengkapi nama profil di Edit Undangan (Seksi 3).",
     },
@@ -742,7 +739,7 @@ export default function SettingsPage() {
             <div className="space-y-1.5">
               <h2 className="text-2xl sm:text-3xl font-serif font-bold text-stone-100 leading-tight">
                 {(!invitation?.eventType || invitation.eventType === "WEDDING")
-                  ? `Selamat Berbahagia untuk ${invitation?.groomName || "Mempelai Pria"} & ${invitation?.brideName || "Mempelai Wanita"}`
+                  ? `Selamat Berbahagia untuk ${resolveInvitationDisplayName(invitation)}`
                   : `Selamat & Sukses untuk ${resolveInvitationDisplayName(invitation)}`}
               </h2>
               <p className="text-xs sm:text-sm text-stone-300/90 leading-relaxed max-w-2xl">

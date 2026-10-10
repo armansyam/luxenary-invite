@@ -90,7 +90,7 @@ describe.skipIf(!IS_TEST_DB)("pelaku catatan audit", () => {
     const user = await prisma.user.create({ data: { email: `${TAG}@t.local`, name: TAG } });
     userId = user.id;
     const inv = await prisma.invitation.create({
-      data: { userId, invitationSlug: `${TAG}-inv`, groomSlug: `${TAG}-g`, brideSlug: `${TAG}-b`, groomName: TAG, brideName: TAG, status: "PUBLISHED" },
+      data: { userId, invitationSlug: `${TAG}-inv`, participantsJson: { groom: { name: TAG }, bride: { name: TAG } }, status: "PUBLISHED" },
     });
     invitationId = inv.id;
   });

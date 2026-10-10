@@ -29,8 +29,6 @@ describe.skipIf(!IS_TEST_DB)("GET /api/client/invitations: jenis acara", () => {
         status: "DRAFT",
         eventType: "BIRTHDAY",
         invitationSlug: RUN,
-        groomSlug: `${RUN}-g`,
-        brideSlug: `${RUN}-b`,
         participantsJson: { person: { name: "Rani Kartika", nickname: "Rani", age: 7 } },
       },
     });
@@ -62,7 +60,7 @@ describe.skipIf(!IS_TEST_DB)("GET /api/client/invitations: jenis acara", () => {
 
 describe("resolveInvitationDisplayName", () => {
   it("pernikahan memakai nama panggilan, acara lain memakai peserta", () => {
-    expect(resolveInvitationDisplayName({ eventType: "WEDDING", groomNickname: "Raka", brideNickname: "Dewi" })).toBe("Raka & Dewi");
+    expect(resolveInvitationDisplayName({ eventType: "WEDDING", participantsJson: { groom: { nickname: "Raka" }, bride: { nickname: "Dewi" } } })).toBe("Raka & Dewi");
     expect(resolveInvitationDisplayName({ eventType: "KHITAN", participantsJson: JSON.stringify({ child: { nickname: "Fajar" } }) })).toBe("Fajar — Khitanan");
     expect(resolveInvitationDisplayName({ eventType: "GATHERING", participantsJson: JSON.stringify({ event: { title: "Syukuran Kantor" } }) })).toBe("Syukuran Kantor");
   });

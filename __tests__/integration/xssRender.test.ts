@@ -59,9 +59,12 @@ async function seedInvitation(themeId: string, eventType: string, index: number)
     },
   ];
 
-  const participants = Object.fromEntries(
-    ["person", "child", "parents", "baby", "event"].map((k) => [k, tagged(`participants.${k}`, TEXT_KEYS, xss)])
-  );
+  const participants = {
+    ...Object.fromEntries(["person", "child", "parents", "baby", "event"].map((k) => [k, tagged(`participants.${k}`, TEXT_KEYS, xss)])),
+    ...Object.fromEntries(
+      ["groom", "bride"].map((k) => [k, tagged(`participants.${k}`, ["name", "nickname", "father", "mother", "instagram"], xss)])
+    ),
+  };
 
   const featureSettings = {
     customLabels: tagged("customLabels", ["coupleSectionTitle", "eventsSectionTitle", "wishesSectionTitle", "storySectionTitle", "giftSectionTitle"], xss),
@@ -99,20 +102,6 @@ async function seedInvitation(themeId: string, eventType: string, index: number)
       eventType: eventType as any,
       status: "PUBLISHED",
       invitationSlug: `${RUN}-${index}`,
-      groomSlug: `${RUN}-g${index}`,
-      brideSlug: `${RUN}-b${index}`,
-      groomName: xss("inv.groomName"),
-      brideName: xss("inv.brideName"),
-      groomNickname: xss("inv.groomNickname"),
-      brideNickname: xss("inv.brideNickname"),
-      groomParents: xss("inv.groomParents"),
-      groomFather: xss("inv.groomFather"),
-      groomMother: xss("inv.groomMother"),
-      brideParents: xss("inv.brideParents"),
-      brideFather: xss("inv.brideFather"),
-      brideMother: xss("inv.brideMother"),
-      groomInstagram: xss("inv.groomInstagram"),
-      brideInstagram: xss("inv.brideInstagram"),
       openingQuote: xss("inv.openingQuote"),
       openingQuoteRef: xss("inv.openingQuoteRef"),
       dresscode: xss("inv.dresscode"),

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { startRemoteSession } from "@/app/(admin)/admin/actions/remote";
+import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 
 interface ClientUser {
   id: string;
@@ -24,8 +25,8 @@ interface ClientUser {
     invitationSlug: string;
     status: string;
     themeId: string;
-    groomName?: string | null;
-    brideName?: string | null;
+    eventType?: string | null;
+    participantsJson?: unknown;
   }>;
   _count?: {
     orders: number;
@@ -363,10 +364,8 @@ export default function AdminClientsTab({ platformName }: { platformName?: strin
                         {usr.invitations && usr.invitations.length > 0 ? (
                           <div className="flex items-center gap-2">
                             <div className="flex flex-col">
-                              <span className="font-semibold text-gray-900 truncate max-w-[140px]" title={usr.invitations[0].groomName && usr.invitations[0].brideName ? `${usr.invitations[0].groomName} & ${usr.invitations[0].brideName}` : usr.invitations[0].invitationSlug}>
-                                {usr.invitations[0].groomName && usr.invitations[0].brideName
-                                  ? `${usr.invitations[0].groomName.split(" ")[0]} & ${usr.invitations[0].brideName.split(" ")[0]}`
-                                  : usr.invitations[0].invitationSlug}
+                              <span className="font-semibold text-gray-900 truncate max-w-[140px]" title={resolveInvitationDisplayName(usr.invitations[0])}>
+                                {resolveInvitationDisplayName(usr.invitations[0])}
                               </span>
                               <span className="text-[10px] text-gray-400 font-mono truncate max-w-[140px]">
                                 {usr.invitations[0].subdomain ? `${usr.invitations[0].subdomain}` : `/${usr.invitations[0].invitationSlug}`}
@@ -533,7 +532,7 @@ export default function AdminClientsTab({ platformName }: { platformName?: strin
                     <div key={inv.id} className="p-3 bg-white border border-gray-200 rounded-xl flex items-center justify-between text-xs">
                       <div>
                         <div className="font-semibold text-gray-900">
-                          {inv.groomName || "Pria"} &amp; {inv.brideName || "Wanita"}
+                          {resolveInvitationDisplayName(inv)}
                         </div>
                         <div className="text-[11px] text-gray-500 font-mono">
                           {inv.subdomain ? `${inv.subdomain}` : `/${inv.invitationSlug}`} &bull; Tema: {inv.themeId}

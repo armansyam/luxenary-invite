@@ -7,7 +7,7 @@ import { getMonthYearSlug, isSubdomainExpired, isReservedSubdomain } from "@/lib
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { DEFAULT_THEME_BY_EVENT, isThemeCompatible } from "@/lib/invitationUtils";
-import { mirrorParticipantNames, safeParseParticipants } from "@/lib/participantUtils";
+import { participantNames } from "@/lib/participantUtils";
 import { normalizeJsonInput } from "@/lib/jsonText";
 import { parseFeatureSettings } from "@/lib/featureSettings";
 import { logger } from "@/lib/logger";
@@ -21,81 +21,28 @@ function slugify(text: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-function generateSlugByEventType(
-  eventType: string,
-  body: any,
-  dateSegment: string,
-  randomId: string
-): { groomSlug: string; brideSlug: string; baseSlug: string } {
-  const p = safeParseParticipants(body.participantsJson);
+const SINGLE_NAME_SLUG_SUFFIX: Record<string, string> = {
+  BIRTHDAY: "birthday",
+  KHITAN: "khitan",
+  AQIQAH: "aqiqah",
+  WISUDA: "wisuda",
+};
 
-  switch (eventType) {
-    case "WEDDING": {
-      const g = slugify((body.groomNickname || body.groomName || "").trim());
-      const b = slugify((body.brideNickname || body.brideName || "").trim());
-      if (!g && !b) {
-        return { groomSlug: "undangan", brideSlug: randomId, baseSlug: `undangan-${randomId}` };
-      }
-      const groom = g || "mempelai";
-      const bride = b || "mempelai";
-      return {
-        groomSlug: groom,
-        brideSlug: bride,
-        baseSlug: `${groom}-${bride}${dateSegment ? `-${dateSegment}` : ""}`,
-      };
-    }
-    case "BIRTHDAY": {
-      const rawNick = p.person?.nickname || p.person?.name || body.groomNickname || "birthday";
-      const nick = slugify(rawNick) || "birthday";
-      return {
-        groomSlug: nick,
-        brideSlug: "birthday",
-        baseSlug: `${nick}-birthday${dateSegment ? `-${dateSegment}` : ""}`,
-      };
-    }
-    case "KHITAN": {
-      const rawNick = p.child?.nickname || p.child?.name || body.groomNickname || "khitan";
-      const nick = slugify(rawNick) || "khitan";
-      return {
-        groomSlug: nick,
-        brideSlug: "khitan",
-        baseSlug: `${nick}-khitan${dateSegment ? `-${dateSegment}` : ""}`,
-      };
-    }
-    case "AQIQAH": {
-      const rawNick = p.baby?.nickname || p.baby?.name || body.groomNickname || "aqiqah";
-      const nick = slugify(rawNick) || "aqiqah";
-      return {
-        groomSlug: nick,
-        brideSlug: "aqiqah",
-        baseSlug: `${nick}-aqiqah${dateSegment ? `-${dateSegment}` : ""}`,
-      };
-    }
-    case "WISUDA": {
-      const rawNick = p.person?.nickname || p.person?.name || body.groomNickname || "wisuda";
-      const nick = slugify(rawNick) || "wisuda";
-      return {
-        groomSlug: nick,
-        brideSlug: "wisuda",
-        baseSlug: `${nick}-wisuda${dateSegment ? `-${dateSegment}` : ""}`,
-      };
-    }
-    case "GATHERING": {
-      const rawTitle = p.event?.title || body.invitationName || "gathering";
-      const title = slugify(rawTitle) || "gathering";
-      return {
-        groomSlug: title,
-        brideSlug: "gathering",
-        baseSlug: `${title}${dateSegment ? `-${dateSegment}` : ""}`,
-      };
-    }
-    default:
-      return {
-        groomSlug: "undangan",
-        brideSlug: randomId,
-        baseSlug: `undangan-${randomId}`,
-      };
+function buildBaseSlug(eventType: string, participants: unknown, dateSegment: string, randomId: string): string {
+  const withDate = (slug: string) => `${slug}${dateSegment ? `-${dateSegment}` : ""}`;
+  const { first, second } = participantNames(eventType, participants);
+
+  if (eventType === "WEDDING") {
+    const groom = slugify(first);
+    const bride = slugify(second);
+    if (!groom && !bride) return `undangan-${randomId}`;
+    return withDate(`${groom || "mempelai"}-${bride || "mempelai"}`);
   }
+  if (eventType === "GATHERING") return withDate(slugify(first) || "gathering");
+
+  const suffix = SINGLE_NAME_SLUG_SUFFIX[eventType];
+  if (!suffix) return `undangan-${randomId}`;
+  return withDate(`${slugify(first) || suffix}-${suffix}`);
 }
 
 export async function POST(req: Request) {
@@ -139,10 +86,6 @@ export async function POST(req: Request) {
 
   const body = await req.json();
   const {
-    groomName,
-    brideName,
-    groomNickname,
-    brideNickname,
     themeId,
     weddingDate,
     eventDate,
@@ -196,9 +139,6 @@ export async function POST(req: Request) {
     }
   }
 
-  const finalGroomNick = (groomNickname || groomName || "").trim();
-  const participantNames = mirrorParticipantNames(eventType, safeParseParticipants(participants.value));
-  const finalBrideNick = (brideNickname || brideName || "").trim();
   const randomId = Date.now().toString(36).slice(-6);
 
   const effectiveEventDate = weddingDate || eventDate || "";
@@ -218,12 +158,7 @@ export async function POST(req: Request) {
     dateSegment = getMonthYearSlug(effectiveEventDate);
   }
 
-  const { groomSlug, brideSlug, baseSlug } = generateSlugByEventType(
-    eventType,
-    body,
-    dateSegment,
-    randomId
-  );
+  const baseSlug = buildBaseSlug(eventType, participants.value, dateSegment, randomId);
 
   let invitationSlug = baseSlug;
   const existingBase = await prisma.invitation.findUnique({ where: { invitationSlug: baseSlug } });
@@ -467,13 +402,6 @@ export async function POST(req: Request) {
             orderId: paidOrder?.id ?? existingDraft.orderId ?? undefined,
             eventType: eventType || existingDraft.eventType,
             participantsJson: participantsJson !== undefined ? participants.value : undefined,
-            groomName: groomName?.trim() || finalGroomNick || existingDraft.groomName || "",
-            brideName: brideName?.trim() || finalBrideNick || existingDraft.brideName || "",
-            groomNickname: finalGroomNick || existingDraft.groomNickname || "",
-            brideNickname: finalBrideNick || existingDraft.brideNickname || "",
-            ...participantNames,
-            groomSlug: groomSlug || existingDraft.groomSlug,
-            brideSlug: brideSlug || existingDraft.brideSlug,
             invitationSlug: invitationSlug || existingDraft.invitationSlug,
             subdomain: finalSubdomain !== null ? finalSubdomain : existingDraft.subdomain,
             themeId: themeId?.trim() ? chosenTheme.toLowerCase() : (existingDraft.themeId || chosenTheme.toLowerCase()),
@@ -493,13 +421,6 @@ export async function POST(req: Request) {
             eventType: eventType,
             participantsJson: participants.value,
             musicUrl: initialMusicUrl || undefined,
-            groomName: groomName?.trim() || finalGroomNick || "",
-            brideName: brideName?.trim() || finalBrideNick || "",
-            groomNickname: finalGroomNick || "",
-            brideNickname: finalBrideNick || "",
-            ...participantNames,
-            groomSlug,
-            brideSlug,
             invitationSlug,
             subdomain: finalSubdomain,
             themeId: chosenTheme.toLowerCase(),

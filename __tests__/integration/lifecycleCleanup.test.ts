@@ -63,10 +63,7 @@ async function makeInvitation(data: Record<string, unknown> = {}) {
       themeId,
       status: "EVENT_FINISHED",
       invitationSlug: `${TAG}-${counter}`,
-      groomSlug: `${TAG}-g${counter}`,
-      brideSlug: `${TAG}-b${counter}`,
-      groomName: "Budi",
-      brideName: "Sari",
+      participantsJson: { groom: { name: "Budi" }, bride: { name: "Sari" } },
       eventData: EVENT_DATA,
       ...data,
     } as any,
@@ -208,7 +205,7 @@ describe.skipIf(!IS_TEST_DB)("Siklus hidup undangan (DB luxenary_test)", () => {
   it("undangan di luar invitationIds tidak disentuh walau sudah lewat masa simpan", async () => {
     const user = await prisma.user.create({ data: { email: `${TAG}_outside@t.local`, name: "Luar" } });
     const outside = await prisma.invitation.create({
-      data: { userId: user.id, themeId, status: "PUBLISHED", subdomain: `${TAG}-out`, invitationSlug: `${TAG}-out`, groomSlug: `${TAG}-gout`, brideSlug: `${TAG}-bout`, eventData: EVENT_DATA },
+      data: { userId: user.id, themeId, status: "PUBLISHED", subdomain: `${TAG}-out`, invitationSlug: `${TAG}-out`, eventData: EVENT_DATA },
     });
     try {
       await cleanup({ now: at(366 * DAY) });

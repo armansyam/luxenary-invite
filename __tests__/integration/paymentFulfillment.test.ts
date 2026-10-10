@@ -69,8 +69,6 @@ async function makeInvitation(userId: string, orderId: string | null, tag: strin
       userId,
       orderId,
       invitationSlug: `${RUN}-${tag}`,
-      groomSlug: `${RUN}-g-${tag}`,
-      brideSlug: `${RUN}-b-${tag}`,
       featureSettings: {},
     },
   });

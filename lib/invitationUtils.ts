@@ -1,4 +1,4 @@
-import { safeParseParticipants } from "./participantUtils";
+import { participantNames, safeParseParticipants } from "./participantUtils";
 
 export const DEFAULT_THEME_BY_EVENT: Record<string, string> = {
   WEDDING: "kalandra",
@@ -36,13 +36,11 @@ export function eventNoun(eventType?: string | null): string {
 
 export function resolveInvitationDisplayName(inv: {
   eventType?: string | null;
-  groomNickname?: string | null;
-  brideNickname?: string | null;
   participantsJson?: unknown;
   invitationSlug?: string | null;
 }): string {
   if (!inv.eventType || inv.eventType === "WEDDING") {
-    return `${inv.groomNickname || "Pria"} & ${inv.brideNickname || "Wanita"}`;
+    return participantNames("WEDDING", inv.participantsJson).short || inv.invitationSlug || "Undangan";
   }
   const p = safeParseParticipants(inv.participantsJson);
   if (inv.eventType === "BIRTHDAY") return `${p.person?.nickname || p.person?.name || "—"} — Ulang Tahun ke-${p.person?.age || "?"}`;
@@ -51,18 +49,6 @@ export function resolveInvitationDisplayName(inv: {
   if (inv.eventType === "WISUDA")   return `${p.person?.nickname || p.person?.name || "—"} — Wisuda`;
   if (inv.eventType === "GATHERING")return p.event?.title || "Gathering";
   return inv.invitationSlug || "Undangan";
-}
-
-export function buildCanonicalPath(inv: {
-  eventType?: string | null;
-  groomSlug?: string | null;
-  brideSlug?: string | null;
-  invitationSlug: string;
-}): string {
-  if (!inv.eventType || inv.eventType === "WEDDING") {
-    return `/${inv.groomSlug || "mempelai"}-${inv.brideSlug || "mempelai"}/${inv.invitationSlug}`;
-  }
-  return `/${inv.invitationSlug}`;
 }
 
 export function buildCalendarTitle(eventType: string, participants: any): string {
@@ -90,15 +76,7 @@ export function getMediaSlotLabel(slot: string, eventType?: string | null): stri
   return slot;
 }
 
-export function buildZipFileName(inv: {
-  eventType?: string | null;
-  groomSlug?: string | null;
-  brideSlug?: string | null;
-  invitationSlug: string;
-}): string {
-  if (!inv.eventType || inv.eventType === "WEDDING") {
-    return `Guest_Memories_${inv.groomSlug || "mempelai"}_${inv.brideSlug || "mempelai"}.zip`;
-  }
+export function buildZipFileName(inv: { invitationSlug: string }): string {
   return `Guest_Memories_${inv.invitationSlug}.zip`;
 }
 

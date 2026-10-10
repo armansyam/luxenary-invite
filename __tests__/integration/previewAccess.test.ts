@@ -29,7 +29,7 @@ describe.skipIf(!IS_TEST_DB)("akses pratinjau undangan DRAFT", () => {
     const other = await prisma.user.create({ data: { email: `${RUN}-other@t.local`, name: "Other" } });
     ids.owner = owner.id;
     ids.other = other.id;
-    const base = { userId: owner.id, themeId: "kalandra", groomSlug: "g", brideSlug: "b", groomName: "Pria", brideName: "Wanita" };
+    const base = { userId: owner.id, themeId: "kalandra", participantsJson: { groom: { name: "Pria" }, bride: { name: "Wanita" } } };
     const draft = await prisma.invitation.create({
       data: {
         ...base,

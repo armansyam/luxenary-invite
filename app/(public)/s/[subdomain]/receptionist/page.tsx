@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import ReceptionistScannerClient from "@/app/components/features/ReceptionistScannerClient";
 import StaffLockScreen from "@/app/components/features/StaffLockScreen";
 import { getAdminSetting, hasPlanCapability } from "@/lib/settings";
+import { participantNames } from "@/lib/participantUtils";
 
 interface PageProps {
   params: Promise<{ subdomain: string }>;
@@ -19,10 +20,8 @@ export default async function ReceptionistPage({ params }: PageProps) {
         id: true,
         staffPin: true,
         status: true,
-        groomNickname: true,
-        brideNickname: true,
-        groomName: true,
-        brideName: true,
+        eventType: true,
+        participantsJson: true,
         order: { select: { planType: true } },
       },
     }),
@@ -70,8 +69,7 @@ export default async function ReceptionistPage({ params }: PageProps) {
     );
   }
 
-  const groomFirst = (invitation.groomNickname || invitation.groomName || "").trim();
-  const brideFirst = (invitation.brideNickname || invitation.brideName || "").trim();
+  const { first: groomFirst, second: brideFirst } = participantNames(invitation.eventType, invitation.participantsJson);
   
   let clientInitials = "";
   if (groomFirst && brideFirst) {

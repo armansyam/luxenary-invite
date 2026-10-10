@@ -25,6 +25,7 @@ import { POST as validatePromo, DELETE as releasePromo } from "@/app/api/public/
 import { POST as cancelOrder } from "@/app/api/client/orders/[id]/cancel/route";
 import { POST as uploadProof } from "@/app/api/client/orders/[id]/upload-proof/route";
 import { POST as createInvitation } from "@/app/api/client/invitations/create/route";
+import { participantNames } from "@/lib/participantUtils";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
 const TAG = `reg${Date.now()}`;
@@ -251,7 +252,7 @@ describe.skipIf(!IS_TEST_DB)("alur registrasi", () => {
       const u = await makeUser("notheme");
       as(u);
       await makeOrder(u.id, { status: "PAID", paidAt: new Date() });
-      const res = await createInvitation(json("/api/client/invitations/create", "POST", { eventType: "WEDDING", groomName: "Adi", brideName: "Sari" }));
+      const res = await createInvitation(json("/api/client/invitations/create", "POST", { eventType: "WEDDING", participantsJson: { groom: { name: "Adi" }, bride: { name: "Sari" } } }));
       expect(res.status).toBe(200);
       const inv = await prisma.invitation.findFirstOrThrow({ where: { userId: u.id } });
       expect(inv.themeId).toBe("kalandra");
@@ -261,7 +262,7 @@ describe.skipIf(!IS_TEST_DB)("alur registrasi", () => {
       const u = await makeUser("noevent");
       as(u);
       await makeOrder(u.id, { status: "PAID", paidAt: new Date() });
-      for (const body of [{ groomName: "Adi", brideName: "Sari" }, { eventType: "" }, { eventType: "PESTA" }, { eventType: 7 }]) {
+      for (const body of [{ participantsJson: { groom: { name: "Adi" }, bride: { name: "Sari" } } }, { eventType: "" }, { eventType: "PESTA" }, { eventType: 7 }]) {
         const res = await createInvitation(json("/api/client/invitations/create", "POST", body));
         expect(res.status).toBe(400);
       }
@@ -274,7 +275,7 @@ describe.skipIf(!IS_TEST_DB)("alur registrasi", () => {
         as(u);
         await makeOrder(u.id, { status: "PAID", paidAt: new Date() });
         const res = await createInvitation(json("/api/client/invitations/create", "POST", {
-          eventType, groomNickname: "", brideNickname: "", groomName: "", brideName: "", weddingDate: "", city: "", themeId: "", planType: "TIER_1",
+          eventType, participantsJson: null, weddingDate: "", city: "", themeId: "", planType: "TIER_1",
         }));
         expect(res.status, eventType).toBe(200);
         const inv = await prisma.invitation.findFirstOrThrow({ where: { userId: u.id } });
@@ -285,26 +286,28 @@ describe.skipIf(!IS_TEST_DB)("alur registrasi", () => {
       }
     });
 
-    it("nama tokoh utama dari wizard non-pernikahan disalin ke kolom groom* yang dibaca audit terbit, resepsionis, dan QR", async () => {
-      // participantsJson persis seperti yang dikirim wizard (setup/page.tsx); kolom pernikahan dikirim kosong.
-      const cases: Array<[string, unknown, Record<string, string>]> = [
-        ["BIRTHDAY", { person: { name: "Nadia Putri", nickname: "Nadia", fatherName: "Rahman", motherName: "Sari" } }, { groomName: "Nadia Putri", groomNickname: "Nadia", groomFather: "Rahman", groomMother: "Sari" }],
-        ["KHITAN", { child: { name: "Muhammad Fatih", nickname: "Fatih" }, parents: { father: "Hasan", mother: "Aminah" } }, { groomName: "Muhammad Fatih", groomNickname: "Fatih", groomFather: "Hasan", groomMother: "Aminah" }],
-        ["AQIQAH", { baby: { name: "Aisyah Zahra", nickname: "Aisyah" }, parents: { father: "Ilham", mother: "Rina" } }, { groomName: "Aisyah Zahra", groomNickname: "Aisyah", groomFather: "Ilham", groomMother: "Rina" }],
-        ["WISUDA", { person: { name: "Rina Andriani, S.T.", nickname: "Rina", degree: "S.T.", major: "Teknik Sipil", institution: "UNM" } }, { groomName: "Rina Andriani, S.T.", groomNickname: "Rina" }],
-        ["GATHERING", { event: { title: "Reuni Akbar 2010", organizer: "Panitia Reuni" } }, { groomName: "Reuni Akbar 2010" }],
+    it("data peserta dari wizard tersimpan utuh di participantsJson dan menjadi dasar slug serta nama tampilan", async () => {
+      // participantsJson persis seperti yang dikirim wizard (setup/page.tsx).
+      const cases: Array<[string, unknown, string, string]> = [
+        ["WEDDING", { groom: { name: "Raka Putra", nickname: "Raka" }, bride: { name: "Dewi Ayu", nickname: "Dewi" } }, "raka-dewi", "Raka Putra & Dewi Ayu"],
+        ["BIRTHDAY", { person: { name: "Nadia Putri", nickname: "Nadia", fatherName: "Rahman", motherName: "Sari" } }, "nadia-birthday", "Nadia Putri"],
+        ["KHITAN", { child: { name: "Muhammad Fatih", nickname: "Fatih" }, parents: { father: "Hasan", mother: "Aminah" } }, "fatih-khitan", "Muhammad Fatih"],
+        ["AQIQAH", { baby: { name: "Aisyah Zahra", nickname: "Aisyah" }, parents: { father: "Ilham", mother: "Rina" } }, "aisyah-aqiqah", "Aisyah Zahra"],
+        ["WISUDA", { person: { name: "Rina Andriani, S.T.", nickname: "Rina", degree: "S.T.", major: "Teknik Sipil", institution: "UNM" } }, "rina-wisuda", "Rina Andriani, S.T."],
+        ["GATHERING", { event: { title: "Reuni Akbar 2010", organizer: "Panitia Reuni" } }, "reuni-akbar-2010", "Reuni Akbar 2010"],
       ];
-      for (const [eventType, participants, expected] of cases) {
-        const u = await makeUser(`mirror-${eventType.toLowerCase()}`);
+      for (const [eventType, participants, slugBase, fullName] of cases) {
+        const u = await makeUser(`participants-${eventType.toLowerCase()}`);
         as(u);
         await makeOrder(u.id, { status: "PAID", paidAt: new Date() });
         const res = await createInvitation(json("/api/client/invitations/create", "POST", {
-          eventType, participantsJson: JSON.stringify(participants), groomNickname: "", brideNickname: "", groomName: "", brideName: "", weddingDate: "", city: "", planType: "TIER_1",
+          eventType, participantsJson: JSON.stringify(participants), weddingDate: "", city: "", planType: "TIER_1",
         }));
         expect(res.status, eventType).toBe(200);
         const inv = await prisma.invitation.findFirstOrThrow({ where: { userId: u.id } });
-        expect(Object.fromEntries(Object.keys(expected).map((k) => [k, inv[k as keyof typeof inv]])), eventType).toEqual(expected);
-        expect(inv.brideName, eventType).toBe("");
+        expect(inv.participantsJson, eventType).toEqual(participants);
+        expect(inv.invitationSlug.startsWith(slugBase), `${eventType}: ${inv.invitationSlug}`).toBe(true);
+        expect(participantNames(inv.eventType, inv.participantsJson).full, eventType).toBe(fullName);
       }
     });
 
@@ -314,7 +317,7 @@ describe.skipIf(!IS_TEST_DB)("alur registrasi", () => {
         as(u);
         await makeOrder(u.id, { status: "PAID", paidAt: new Date() });
         const res = await createInvitation(json("/api/client/invitations/create", "POST", {
-          eventType, groomNickname: "Raka", brideNickname: "Dewi", weddingDate: "2099-11-21", city: "Makassar", planType: "TIER_1",
+          eventType, participantsJson: { groom: { nickname: "Raka" }, bride: { nickname: "Dewi" } }, weddingDate: "2099-11-21", city: "Makassar", planType: "TIER_1",
         }));
         expect(res.status, eventType).toBe(200);
         const inv = await prisma.invitation.findFirstOrThrow({ where: { userId: u.id } });
@@ -335,7 +338,7 @@ describe.skipIf(!IS_TEST_DB)("alur registrasi", () => {
         as(u);
         await makeOrder(u.id, { status: "PAID", paidAt: new Date() });
         const res = await createInvitation(json("/api/client/invitations/create", "POST", {
-          eventType, groomNickname: "Raka", brideNickname: "Dewi", weddingDate: "2099-11-21", city: "Makassar", timeZone: "WITA", planType: "TIER_1",
+          eventType, participantsJson: { groom: { nickname: "Raka" }, bride: { nickname: "Dewi" } }, weddingDate: "2099-11-21", city: "Makassar", timeZone: "WITA", planType: "TIER_1",
         }));
         expect(res.status, eventType).toBe(200);
         const inv = await prisma.invitation.findFirstOrThrow({ where: { userId: u.id } });
@@ -350,7 +353,7 @@ describe.skipIf(!IS_TEST_DB)("alur registrasi", () => {
       const u = await makeUser("casetheme");
       as(u);
       await makeOrder(u.id, { status: "PAID", paidAt: new Date() });
-      const res = await createInvitation(json("/api/client/invitations/create", "POST", { eventType: "WEDDING", groomName: "Adi", brideName: "Sari", themeId: "Kalandra" }));
+      const res = await createInvitation(json("/api/client/invitations/create", "POST", { eventType: "WEDDING", participantsJson: { groom: { name: "Adi" }, bride: { name: "Sari" } }, themeId: "Kalandra" }));
       expect(res.status).toBe(200);
       expect((await prisma.invitation.findFirstOrThrow({ where: { userId: u.id } })).themeId).toBe("kalandra");
     });
@@ -360,11 +363,11 @@ describe.skipIf(!IS_TEST_DB)("alur registrasi", () => {
       as(u);
       const base = await makeOrder(u.id, { status: "PAID", paidAt: new Date() });
       await prisma.invitation.create({
-        data: { userId: u.id, orderId: base.id, status: "PUBLISHED", invitationSlug: `${TAG}-second`, groomSlug: "a", brideSlug: "b" },
+        data: { userId: u.id, orderId: base.id, status: "PUBLISHED", invitationSlug: `${TAG}-second` },
       });
       await makeOrder(u.id, { status: "PAID", paidAt: new Date(), orderType: "UPGRADE", planType: "TIER_2", amount: 50000 });
 
-      const res = await createInvitation(json("/api/client/invitations/create", "POST", { eventType: "WEDDING", groomName: "Budi", brideName: "Ani" }));
+      const res = await createInvitation(json("/api/client/invitations/create", "POST", { eventType: "WEDDING", participantsJson: { groom: { name: "Budi" }, bride: { name: "Ani" } } }));
       expect(res.status).toBe(403);
       expect(await prisma.invitation.count({ where: { userId: u.id } })).toBe(1);
     });

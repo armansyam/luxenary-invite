@@ -5,7 +5,7 @@ import { requireAdminModule } from "@/lib/adminAuth";
 import { invalidateInvitationLookup } from "@/lib/cache";
 import { DAY_MS, computeLifecycleDates, getPrimaryEventDateString } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
-import { buildCanonicalPath, resolveInvitationDisplayName } from "@/lib/invitationUtils";
+import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -27,10 +27,6 @@ export async function GET() {
         id: true,
         eventType: true,
         participantsJson: true,
-        groomNickname: true,
-        brideNickname: true,
-        groomSlug: true,
-        brideSlug: true,
         invitationSlug: true,
         subdomain: true,
         eventData: true,
@@ -55,7 +51,7 @@ export async function GET() {
         id: inv.id,
         coupleName: resolveInvitationDisplayName(inv),
         subdomain: inv.subdomain,
-        canonicalPath: buildCanonicalPath(inv),
+        canonicalPath: `/${inv.invitationSlug}`,
         eventDate,
         hasSubdomain,
         isExpired,
@@ -89,8 +85,6 @@ export async function POST() {
       select: {
         id: true,
         subdomain: true,
-        groomSlug: true,
-        brideSlug: true,
         invitationSlug: true,
         eventData: true,
       },

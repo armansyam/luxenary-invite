@@ -41,10 +41,7 @@ async function makeDraft(data: Record<string, unknown> = {}) {
       orderId: order.id,
       eventType: "WEDDING",
       invitationSlug: `${TAG}-${seq}`,
-      groomSlug: `${TAG}-g${seq}`,
-      brideSlug: `${TAG}-b${seq}`,
-      groomName: "Raka",
-      brideName: "Dewi",
+      participantsJson: { groom: { name: "Raka" }, bride: { name: "Dewi" } },
       status: "DRAFT",
       ...data,
     } as never,
@@ -134,6 +131,6 @@ describe.skipIf(!IS_TEST_DB)("reset jenis acara oleh admin", () => {
     }));
     expect(again.status).toBe(200);
     const fresh = await prisma.invitation.findFirstOrThrow({ where: { userId: user.id } });
-    expect([fresh.eventType, fresh.orderId, fresh.groomName]).toEqual(["AQIQAH", order.id, "Aisyah"]);
+    expect([fresh.eventType, fresh.orderId, (fresh.participantsJson as { baby?: { name?: string } })?.baby?.name]).toEqual(["AQIQAH", order.id, "Aisyah"]);
   });
 });

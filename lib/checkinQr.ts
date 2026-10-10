@@ -5,7 +5,7 @@
  * Isi QR: `LUX|<id undangan>|<nama tamu>[|<kategori>]`. Id undangan mencegah QR acara lain lolos; nama tamu
  * dicocokkan dengan daftar tamu, dan nama yang tidak terdaftar dicatat sebagai tamu umum.
  */
-import { safeParseParticipants } from "./participantUtils";
+import { participantNames } from "./participantUtils";
 
 export const CHECKIN_PREFIX = "LUX";
 export const GUEST_LABEL_MAX = 100;
@@ -64,22 +64,8 @@ export function normalizeQrMark(raw: unknown): string {
 
 interface InitialsSource {
   eventType?: string | null;
-  groomName?: string | null;
-  groomNickname?: string | null;
-  brideName?: string | null;
-  brideNickname?: string | null;
-  participantsJson?: string | null;
-  featureSettings?: string | Record<string, unknown> | null;
-}
-
-function parseDisplayOrder(featureSettings: InitialsSource["featureSettings"]): string {
-  if (!featureSettings) return "";
-  try {
-    const parsed = typeof featureSettings === "string" ? JSON.parse(featureSettings) : featureSettings;
-    return typeof parsed?.displayOrder === "string" ? parsed.displayOrder : "";
-  } catch {
-    return "";
-  }
+  participantsJson?: unknown;
+  featureSettings?: unknown;
 }
 
 /**
@@ -88,29 +74,13 @@ function parseDisplayOrder(featureSettings: InitialsSource["featureSettings"]): 
  */
 export function qrInitials(inv: InitialsSource): string {
   const eventType = inv.eventType || "WEDDING";
+  const names = participantNames(eventType, inv.participantsJson);
+  if (eventType !== "WEDDING") return firstLetter(names.first);
 
-  if (eventType === "WEDDING") {
-    const groom = firstLetter(inv.groomNickname || inv.groomName);
-    const bride = firstLetter(inv.brideNickname || inv.brideName);
-    const displayOrder = parseDisplayOrder(inv.featureSettings);
-    const groomFirst = displayOrder === "GROOM_FIRST" || (!displayOrder && Boolean(inv.groomName));
-    return normalizeQrMark(groomFirst ? groom + bride : bride + groom);
-  }
-
-  const p = safeParseParticipants(inv.participantsJson);
-  switch (eventType) {
-    case "BIRTHDAY":
-    case "WISUDA":
-      return firstLetter(p.person?.nickname || p.person?.name);
-    case "KHITAN":
-      return firstLetter(p.child?.nickname || p.child?.name);
-    case "AQIQAH":
-      return firstLetter(p.baby?.nickname || p.baby?.name);
-    case "GATHERING":
-      return firstLetter(p.event?.title);
-    default:
-      return "";
-  }
+  const groom = firstLetter(names.first);
+  const bride = firstLetter(names.second);
+  const brideFirst = (inv.featureSettings as { displayOrder?: unknown } | null)?.displayOrder === "BRIDE_FIRST";
+  return normalizeQrMark(brideFirst ? bride + groom : groom + bride);
 }
 
 /** Awalan URL gambar QR check-in; nama tamu (sudah di-encode) ditambahkan di belakangnya oleh halaman undangan. */

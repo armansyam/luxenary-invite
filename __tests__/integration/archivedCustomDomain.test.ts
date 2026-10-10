@@ -71,8 +71,6 @@ describe.skipIf(!IS_TEST_DB)("arsip di custom domain", () => {
         themeId: "kalandra",
         status: "ARCHIVED",
         invitationSlug: TAG,
-        groomSlug: `${TAG}-g`,
-        brideSlug: `${TAG}-b`,
         customDomain: DOMAIN,
         eventData: [{ title: "Akad", date: recent, timezone: "WIB", isPrimary: true }],
       },

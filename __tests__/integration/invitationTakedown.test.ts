@@ -43,7 +43,7 @@ describe.skipIf(!IS_TEST_DB)("Penurunan dan pembukaan kembali undangan oleh admi
     const user = await prisma.user.create({ data: { email: `${TAG}@t.local`, name: TAG } });
     userId = user.id;
     const inv = await prisma.invitation.create({
-      data: { userId, invitationSlug: `${TAG}-inv`, groomSlug: `${TAG}-g`, brideSlug: `${TAG}-b`, status: "PUBLISHED" },
+      data: { userId, invitationSlug: `${TAG}-inv`, status: "PUBLISHED" },
     });
     invitationId = inv.id;
   });

@@ -63,20 +63,23 @@ describe("inisial di tengah QR", () => {
   });
 
   it("pernikahan: 2 huruf, urutan mengikuti tampilan undangan", () => {
-    const base = { eventType: "WEDDING", groomName: "Raka Putra", groomNickname: "Raka", brideName: "Dewi Ayu", brideNickname: "Dewi" };
+    const base = {
+      eventType: "WEDDING",
+      participantsJson: { groom: { name: "Raka Putra", nickname: "Raka" }, bride: { name: "Dewi Ayu", nickname: "Dewi" } },
+    };
     expect(qrInitials(base)).toBe("RD");
-    expect(qrInitials({ ...base, featureSettings: JSON.stringify({ displayOrder: "BRIDE_FIRST" }) })).toBe("DR");
+    expect(qrInitials({ ...base, featureSettings: { displayOrder: "BRIDE_FIRST" } })).toBe("DR");
     expect(qrInitials({ ...base, featureSettings: { displayOrder: "GROOM_FIRST" } })).toBe("RD");
   });
 
   it("pernikahan tanpa panggilan memakai nama lengkap; satu nama saja jadi 1 huruf", () => {
-    expect(qrInitials({ eventType: "WEDDING", groomName: "Raka Putra", brideName: "Dewi Ayu" })).toBe("RD");
-    expect(qrInitials({ eventType: "WEDDING", groomName: "Raka Putra" })).toBe("R");
+    expect(qrInitials({ eventType: "WEDDING", participantsJson: { groom: { name: "Raka Putra" }, bride: { name: "Dewi Ayu" } } })).toBe("RD");
+    expect(qrInitials({ eventType: "WEDDING", participantsJson: { groom: { name: "Raka Putra" } } })).toBe("R");
     expect(qrInitials({ eventType: "WEDDING" })).toBe("");
   });
 
   it("eventType kosong dianggap pernikahan", () => {
-    expect(qrInitials({ groomName: "Raka", brideName: "Dewi" })).toBe("RD");
+    expect(qrInitials({ participantsJson: { groom: { name: "Raka" }, bride: { name: "Dewi" } } })).toBe("RD");
   });
 
   it("acara tunggal: 1 huruf dari nama utama", () => {

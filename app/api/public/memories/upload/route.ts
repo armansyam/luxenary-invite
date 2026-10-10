@@ -11,6 +11,7 @@ import { getMemoriesActiveSchedule, calculateSessionCumulativeQuota } from "@/li
 import { getEventTimezoneOffset, resolveEventTimezone } from "@/lib/lifecycleDates";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
+import { participantNames } from "@/lib/participantUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -102,10 +103,8 @@ export async function POST(req: NextRequest) {
         extraMemoriesQuota: true,
         memoriesNotifiedMilestones: true,
         eventData: true,
-        groomNickname: true,
-        groomName: true,
-        brideNickname: true,
-        brideName: true,
+        eventType: true,
+        participantsJson: true,
         user: { select: { email: true, name: true } },
         order: { select: { planType: true } },
       },
@@ -417,9 +416,7 @@ export async function POST(req: NextRequest) {
         .catch((e) => logger.error("MemoriesUpload", "Gagal menyimpan flag milestone notifikasi", e, { invitationId }));
 
       // Kirim email notifikasi secara asynchronous (tidak memperlambat response upload tamu)
-      const groomFirst = (invitation.groomNickname || invitation.groomName || "Mempelai").trim();
-      const brideFirst = (invitation.brideNickname || invitation.brideName || "").trim();
-      const coupleNames = brideFirst ? `${groomFirst} & ${brideFirst}` : groomFirst;
+      const coupleNames = participantNames(invitation.eventType, invitation.participantsJson).short || invitation.invitationSlug;
       const remainingPhotos = Math.max(0, totalEventQuota - newTotalPhotos);
 
       import("@/lib/mailer")
