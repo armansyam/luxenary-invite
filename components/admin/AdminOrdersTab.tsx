@@ -17,7 +17,7 @@ interface OrderItem {
   rejectReason?: string | null;
   paidAt?: string | null;
   createdAt: string;
-  itemsJson?: string | null;
+  itemsJson?: { type?: string; label?: string; price?: number; photos?: number; targetPlan?: string }[] | null;
   user?: {
     name?: string | null;
     email?: string | null;
@@ -412,14 +412,9 @@ export default function AdminOrdersTab() {
                       {/* Item / Layanan */}
                       <td className="px-4 py-3 font-semibold text-gray-800 whitespace-nowrap">
                         {(() => {
-                          let bundleItems: any[] = [];
-                          if (ord.itemsJson) {
-                            try {
-                              bundleItems = JSON.parse(ord.itemsJson);
-                            } catch {}
-                          }
+                          const bundleItems = ord.itemsJson ?? [];
 
-                          if (Array.isArray(bundleItems) && bundleItems.length > 1) {
+                          if (bundleItems.length > 1) {
                             return (
                               <div className="flex flex-col gap-1 items-start">
                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-300">
@@ -437,7 +432,7 @@ export default function AdminOrdersTab() {
                           }
 
                           // Jika order tunggal dari Tagihan Terpadu / Add-on
-                          if (Array.isArray(bundleItems) && bundleItems.length === 1) {
+                          if (bundleItems.length === 1) {
                             const singleItem = bundleItems[0];
                             if (singleItem.type === "MEMORIES_TOPUP") {
                               return (
@@ -456,7 +451,7 @@ export default function AdminOrdersTab() {
                             if (singleItem.type === "UPGRADE") {
                               return (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-800 border border-sky-200">
-                                  <span>Upgrade ➔ {singleItem.targetPlan}</span>
+                                  <span>Upgrade ke {singleItem.targetPlan}</span>
                                 </span>
                               );
                             }
@@ -669,11 +664,8 @@ export default function AdminOrdersTab() {
 
               {/* Rincian Multi-Item Bundle */}
               {(() => {
-                let bundleItems: any[] = [];
-                if (inspectOrder.itemsJson) {
-                  try { bundleItems = JSON.parse(inspectOrder.itemsJson); } catch {}
-                }
-                if (Array.isArray(bundleItems) && bundleItems.length > 0) {
+                const bundleItems = inspectOrder.itemsJson ?? [];
+                if (bundleItems.length > 0) {
                   return (
                     <div className="pt-2 mt-2 border-t border-gray-200 space-y-1.5">
                       <span className="text-[11px] font-bold text-gray-700 block">Item Layanan Terpadu:</span>

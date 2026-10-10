@@ -6,6 +6,7 @@ import { safeCssColor } from "@/lib/safeCss";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { getAdminSetting, hasPlanCapability } from "@/lib/settings";
 import { safeParseParticipants } from "@/lib/participantUtils";
+import { parseFeatureSettings } from "@/lib/featureSettings";
 import { buildCalendarTitle, DEFAULT_THEME_BY_EVENT } from "@/lib/invitationUtils";
 import { buildCheckinQrBaseUrl, buildCheckinQrUrl, qrInitials } from "@/lib/checkinQr";
 import { getEventTimezoneOffset, getPrimaryEvent, resolveEventTimezone } from "@/lib/lifecycleDates";
@@ -152,33 +153,10 @@ export async function composeWeddingData(inv: any) {
     if (m.localPath) mediaMap.set(String(m.mediaSlot), m.localPath);
   }
 
-  let events = [];
-  try {
-    events = typeof inv.eventData === "string" ? JSON.parse(inv.eventData) : inv.eventData || [];
-  } catch (e) {
-    events = [];
-  }
-
-  let loveStories = [];
-  try {
-    loveStories = typeof inv.loveStory === "string" ? JSON.parse(inv.loveStory) : inv.loveStory || [];
-  } catch (e) {
-    loveStories = [];
-  }
-
-  let bankAccounts = [];
-  try {
-    bankAccounts = typeof inv.bankAccounts === "string" ? JSON.parse(inv.bankAccounts) : inv.bankAccounts || [];
-  } catch (e) {
-    bankAccounts = [];
-  }
-
-  let featureSettings: any = {};
-  try {
-    featureSettings = typeof inv.featureSettings === "string" ? JSON.parse(inv.featureSettings) : inv.featureSettings || {};
-  } catch (e) {
-    featureSettings = {};
-  }
+  const events: any[] = Array.isArray(inv.eventData) ? inv.eventData : [];
+  const loveStories: any[] = Array.isArray(inv.loveStory) ? inv.loveStory : [];
+  const bankAccounts: any[] = Array.isArray(inv.bankAccounts) ? inv.bankAccounts : [];
+  const featureSettings: any = parseFeatureSettings(inv.featureSettings);
 
   // Theme Blueprint Defaults Resolution
   let customDemoData: any = null;
@@ -2050,26 +2028,9 @@ export async function composeBirthdayData(inv: any) {
     if (m.localPath) mediaMap.set(String(m.mediaSlot), m.localPath);
   }
 
-  let events: any[] = [];
-  try {
-    events = typeof inv.eventData === "string" ? JSON.parse(inv.eventData) : inv.eventData || [];
-  } catch (e) {
-    events = [];
-  }
-
-  let bankAccounts: any[] = [];
-  try {
-    bankAccounts = typeof inv.bankAccounts === "string" ? JSON.parse(inv.bankAccounts) : inv.bankAccounts || [];
-  } catch (e) {
-    bankAccounts = [];
-  }
-
-  let featureSettings: any = {};
-  try {
-    featureSettings = typeof inv.featureSettings === "string" ? JSON.parse(inv.featureSettings) : inv.featureSettings || {};
-  } catch (e) {
-    featureSettings = {};
-  }
+  const events: any[] = Array.isArray(inv.eventData) ? inv.eventData : [];
+  const bankAccounts: any[] = Array.isArray(inv.bankAccounts) ? inv.bankAccounts : [];
+  const featureSettings: any = parseFeatureSettings(inv.featureSettings);
 
   const customLabels = featureSettings.customLabels || {};
 
@@ -2663,14 +2624,7 @@ async function applySingleNameContract(eventType: string, data: Record<string, a
   const featureSettings: Record<string, any> = data.featureSettings || {};
   const customLabels: Record<string, string> = data.customLabels || {};
   const p = safeParseParticipants(inv.participantsJson);
-  const events = (() => {
-    try {
-      const parsed = typeof inv.eventData === "string" ? JSON.parse(inv.eventData) : inv.eventData;
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  })();
+  const events: any[] = Array.isArray(inv.eventData) ? inv.eventData : [];
   const primary = primaryEventOf(events);
 
   const main: Record<string, { name: string; nickname: string; photo: string; info: string; detail: string }> = {
@@ -2738,26 +2692,9 @@ export async function composeKhitanData(inv: any) {
     if (m.localPath) mediaMap.set(String(m.mediaSlot), m.localPath);
   }
 
-  let events: any[] = [];
-  try {
-    events = typeof inv.eventData === "string" ? JSON.parse(inv.eventData) : inv.eventData || [];
-  } catch (e) {
-    events = [];
-  }
-
-  let bankAccounts: any[] = [];
-  try {
-    bankAccounts = typeof inv.bankAccounts === "string" ? JSON.parse(inv.bankAccounts) : inv.bankAccounts || [];
-  } catch (e) {
-    bankAccounts = [];
-  }
-
-  let featureSettings: any = {};
-  try {
-    featureSettings = typeof inv.featureSettings === "string" ? JSON.parse(inv.featureSettings) : inv.featureSettings || {};
-  } catch (e) {
-    featureSettings = {};
-  }
+  const events: any[] = Array.isArray(inv.eventData) ? inv.eventData : [];
+  const bankAccounts: any[] = Array.isArray(inv.bankAccounts) ? inv.bankAccounts : [];
+  const featureSettings: any = parseFeatureSettings(inv.featureSettings);
 
   const customLabels = featureSettings.customLabels || {};
 
@@ -2844,26 +2781,9 @@ export async function composeAqiqahData(inv: any) {
     if (m.localPath) mediaMap.set(String(m.mediaSlot), m.localPath);
   }
 
-  let events: any[] = [];
-  try {
-    events = typeof inv.eventData === "string" ? JSON.parse(inv.eventData) : inv.eventData || [];
-  } catch (e) {
-    events = [];
-  }
-
-  let bankAccounts: any[] = [];
-  try {
-    bankAccounts = typeof inv.bankAccounts === "string" ? JSON.parse(inv.bankAccounts) : inv.bankAccounts || [];
-  } catch (e) {
-    bankAccounts = [];
-  }
-
-  let featureSettings: any = {};
-  try {
-    featureSettings = typeof inv.featureSettings === "string" ? JSON.parse(inv.featureSettings) : inv.featureSettings || {};
-  } catch (e) {
-    featureSettings = {};
-  }
+  const events: any[] = Array.isArray(inv.eventData) ? inv.eventData : [];
+  const bankAccounts: any[] = Array.isArray(inv.bankAccounts) ? inv.bankAccounts : [];
+  const featureSettings: any = parseFeatureSettings(inv.featureSettings);
 
   const customLabels = featureSettings.customLabels || {};
 
@@ -2949,26 +2869,9 @@ export async function composeWisudaData(inv: any) {
     if (m.localPath) mediaMap.set(String(m.mediaSlot), m.localPath);
   }
 
-  let events: any[] = [];
-  try {
-    events = typeof inv.eventData === "string" ? JSON.parse(inv.eventData) : inv.eventData || [];
-  } catch (e) {
-    events = [];
-  }
-
-  let bankAccounts: any[] = [];
-  try {
-    bankAccounts = typeof inv.bankAccounts === "string" ? JSON.parse(inv.bankAccounts) : inv.bankAccounts || [];
-  } catch (e) {
-    bankAccounts = [];
-  }
-
-  let featureSettings: any = {};
-  try {
-    featureSettings = typeof inv.featureSettings === "string" ? JSON.parse(inv.featureSettings) : inv.featureSettings || {};
-  } catch (e) {
-    featureSettings = {};
-  }
+  const events: any[] = Array.isArray(inv.eventData) ? inv.eventData : [];
+  const bankAccounts: any[] = Array.isArray(inv.bankAccounts) ? inv.bankAccounts : [];
+  const featureSettings: any = parseFeatureSettings(inv.featureSettings);
 
   const customLabels = featureSettings.customLabels || {};
 
@@ -3063,26 +2966,9 @@ export async function composeGatheringData(inv: any) {
     if (m.localPath) mediaMap.set(String(m.mediaSlot), m.localPath);
   }
 
-  let events: any[] = [];
-  try {
-    events = typeof inv.eventData === "string" ? JSON.parse(inv.eventData) : inv.eventData || [];
-  } catch (e) {
-    events = [];
-  }
-
-  let bankAccounts: any[] = [];
-  try {
-    bankAccounts = typeof inv.bankAccounts === "string" ? JSON.parse(inv.bankAccounts) : inv.bankAccounts || [];
-  } catch (e) {
-    bankAccounts = [];
-  }
-
-  let featureSettings: any = {};
-  try {
-    featureSettings = typeof inv.featureSettings === "string" ? JSON.parse(inv.featureSettings) : inv.featureSettings || {};
-  } catch (e) {
-    featureSettings = {};
-  }
+  const events: any[] = Array.isArray(inv.eventData) ? inv.eventData : [];
+  const bankAccounts: any[] = Array.isArray(inv.bankAccounts) ? inv.bankAccounts : [];
+  const featureSettings: any = parseFeatureSettings(inv.featureSettings);
 
   const customLabels = featureSettings.customLabels || {};
 

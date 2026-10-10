@@ -74,10 +74,10 @@ async function main() {
         groomSlug: "dimas",
         brideSlug: "clarissa",
         status: "PUBLISHED",
-        featureSettings: JSON.stringify({
+        featureSettings: {
           showGuestMemories: true,
           memoriesShotsQuota: 2, // Jatah roll tamu = 2 foto
-        }),
+        },
       },
     });
 
@@ -216,9 +216,9 @@ async function main() {
         status: "PENDING",
         orderType: "MEMORIES_TOPUP",
         linkedInvitationId: testInvitation.id,
-        itemsJson: JSON.stringify([
+        itemsJson: [
           { type: "MEMORIES_TOPUP", label: "Top-Up Kuota Foto (+100 Foto)", price: 35000, photos: 100 },
-        ]),
+        ],
       },
     });
 

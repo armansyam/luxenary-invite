@@ -85,7 +85,8 @@ model Order {
   gatewayId           String?
   gatewayTxId         String?
   requestedDomain     String?
-  itemsJson           String?
+  /// Array butir add-on (BundleItem di lib/upgradeHelper.ts); bentuk array ditegakkan CHECK.
+  itemsJson           Json?
   invitation          Invitation?          @relation("InvitationOrder")
   linkedInvitation    Invitation?          @relation("OrderLinkedInvitation", fields: [linkedInvitationId], references: [id], onDelete: SetNull)
   user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -107,9 +108,9 @@ model Invitation {
   userId               String
   themeId              String            @default("kalandra")
   eventType            EventType         @default(WEDDING)
-  /// Kolom teks yang berisi JSON (participantsJson, eventData, loveStory, bankAccounts, featureSettings):
-  /// validitas JSON dijaga CHECK di database (migrasi 20261005120000), bukan tipe kolom.
-  participantsJson     String?
+  /// Kolom jsonb: participantsJson dan featureSettings berupa objek; eventData, loveStory, dan bankAccounts berupa
+  /// array (ditegakkan CHECK, migrasi 20261010120000).
+  participantsJson     Json?
   subdomain            String?           @unique
   customDomain         String?           @unique
   invitationSlug       String            @unique
@@ -117,11 +118,11 @@ model Invitation {
   brideSlug            String
   status               InvitationStatus  @default(DRAFT)
   publishedAt          DateTime?
-  eventData            String?
-  loveStory            String?
-  bankAccounts         String?
+  eventData            Json?
+  loveStory            Json?
+  bankAccounts         Json?
   shippingAddress      String?
-  featureSettings      String?
+  featureSettings      Json?
   staffPin             String?
   openingQuote         String?
   openingQuoteRef      String?
@@ -148,6 +149,8 @@ model Invitation {
   extraGalleryDays           Int   @default(0)
   /// Ambang kuota Momen (persen) yang sudah dikirimi email ke pemilik.
   memoriesNotifiedMilestones Int[] @default([])
+  /// Email peringatan berakhirnya masa galeri sudah terkirim (sekali per undangan).
+  retentionWarningSentAt     DateTime?
   createdAt            DateTime          @default(now())
   updatedAt            DateTime          @updatedAt
   galleryExpiresAt     DateTime?

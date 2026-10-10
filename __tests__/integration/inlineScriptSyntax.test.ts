@@ -79,8 +79,8 @@ describe.skipIf(!IS_TEST_DB)("Sintaks JavaScript inline pada seluruh tema", () =
           brideName: "Clarissa",
           groomNickname: "Dimas",
           brideNickname: "Clarissa",
-          eventData: JSON.stringify([{ title: "Akad", date: "2026-12-12", time: "08:00", isPrimary: true }]),
-          featureSettings: JSON.stringify({ showGuestMemories: true, showGallery: true, showStory: true, showGift: true, showMusic: true }),
+          eventData: [{ title: "Akad", date: "2026-12-12", time: "08:00", isPrimary: true }],
+          featureSettings: { showGuestMemories: true, showGallery: true, showStory: true, showGift: true, showMusic: true },
         },
       });
       ids.invitations.push(inv.id);

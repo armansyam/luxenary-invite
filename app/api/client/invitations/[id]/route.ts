@@ -1,9 +1,9 @@
 import { prisma } from "@/lib/prisma";
-import { InvitationStatus } from "@prisma/client";
+import { InvitationStatus, Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
-import { normalizeJsonText } from "@/lib/jsonText";
+import { normalizeJsonInput } from "@/lib/jsonText";
 import { mirrorParticipantNames, safeParseParticipants } from "@/lib/participantUtils";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
@@ -11,15 +11,15 @@ import { removeIfExists } from "@/lib/fsSafe";
 import { encryptPin, decryptPin } from "@/lib/pinEncryption";
 import { STAFF_PIN_PATTERN, isThemeCompatible } from "@/lib/invitationUtils";
 import { isReservedSubdomain, isSubdomainExpired } from "@/lib/domainUtils";
-import { DAY_MS, getPrimaryEventDate } from "@/lib/lifecycleDates";
+import { DAY_MS, getPrimaryEventDate, getPrimaryEventDateString } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { getPlanMemoriesQuota } from "@/lib/settings";
 import { VALID_MEDIA_SLOTS } from "@/lib/mediaSlots";
 import { invalidateInvitationLookup } from "@/lib/cache";
-import { safeExternalUrl, normalizeFeatureUrls } from "@/lib/safeUrl";
+import { safeExternalUrl } from "@/lib/safeUrl";
 import { getDynamicServerRootDomain } from "@/lib/serverDomainUtils";
 import { createPreviewToken } from "@/lib/previewAccess";
-import { parseFeatureSettings, gateFeaturesByPlan, keepValidMemoriesSettings } from "@/lib/featureSettings";
+import { mergeFeatureSettingsInput } from "@/lib/featureSettings";
 
 
 export function getInvitationLockStatus(inv: any) {
@@ -164,9 +164,7 @@ export async function PUT(
     const id = resolvedParams?.id;
     const body = await req.json();
 
-    const toStr = (v: any) => (v ? (typeof v === "object" ? JSON.stringify(v) : String(v)) : null);
-
-    const currentInv = await prisma.invitation.findUnique({ where: { id } });
+    const currentInv = await prisma.invitation.findUnique({ where: { id }, include: { order: { select: { planType: true } } } });
     if (!currentInv) {
       return NextResponse.json({ error: "Undangan tidak ditemukan" }, { status: 404 });
     }
@@ -318,35 +316,13 @@ export async function PUT(
       }
     }
 
-    let mergedFeatureSettings: string | null | undefined = undefined;
-    if (body.featureSettings !== undefined) {
-      const existingObj = parseFeatureSettings(currentInv.featureSettings);
-      if (body.featureSettings === null) {
-        mergedFeatureSettings = null;
-      } else {
-        let incomingObj: Record<string, any>;
-        try {
-          incomingObj = typeof body.featureSettings === "object" ? body.featureSettings : JSON.parse(body.featureSettings || "{}");
-        } catch {
-          return NextResponse.json({ error: "featureSettings bukan JSON yang valid." }, { status: 400 });
-        }
-        if (!incomingObj || typeof incomingObj !== "object" || Array.isArray(incomingObj)) {
-          return NextResponse.json({ error: "featureSettings harus berupa objek." }, { status: 400 });
-        }
-
-        let parsedFeatures = normalizeFeatureUrls({ ...existingObj, ...incomingObj });
-
-        // Gating fitur per paket di sisi server: mencegah pembukaan fitur berbayar lewat API langsung.
-        if (!isAdmin) {
-          const order = currentInv.orderId
-            ? await prisma.order.findUnique({ where: { id: currentInv.orderId }, select: { planType: true } })
-            : null;
-          parsedFeatures = await gateFeaturesByPlan(parsedFeatures, order?.planType);
-        }
-
-        parsedFeatures = keepValidMemoriesSettings(parsedFeatures, existingObj);
-        mergedFeatureSettings = JSON.stringify(parsedFeatures);
-      }
+    let mergedFeatureSettings: Prisma.InputJsonValue | typeof Prisma.DbNull | undefined = undefined;
+    if (body.featureSettings === null) {
+      mergedFeatureSettings = Prisma.DbNull;
+    } else if (body.featureSettings !== undefined) {
+      const merged = await mergeFeatureSettingsInput(currentInv.featureSettings, body.featureSettings, currentInv.order?.planType, isAdmin);
+      if (!merged.ok) return NextResponse.json({ error: merged.error }, { status: 400 });
+      mergedFeatureSettings = merged.value;
     }
 
     // --- THEME VALIDATION & PUBLISH LOCK: Server-side validation ---
@@ -435,7 +411,8 @@ export async function PUT(
     let eventDataToSave = undefined;
     if (body.eventData !== undefined) {
       try {
-        const incomingEvents = Array.isArray(body.eventData) ? body.eventData : JSON.parse(toStr(body.eventData) || "[]");
+        const incomingEvents = typeof body.eventData === "string" ? JSON.parse(body.eventData || "[]") : body.eventData;
+        if (!Array.isArray(incomingEvents)) throw new Error("eventData bukan daftar sesi");
         let validatedEvents = incomingEvents.map((ev: any) => ({
           ...ev,
           title: typeof ev.title === "string" ? ev.title.trim() : (ev.title || ""),
@@ -474,20 +451,10 @@ export async function PUT(
 
         // Kunci Tanggal Sesi Utama Pasca Publikasi (Hanya Admin yang dapat mengubah):
         if (currentInv.status === "PUBLISHED" && !isAdmin) {
-          let savedEvents: any[] = [];
-          try {
-            savedEvents = typeof currentInv.eventData === "string"
-              ? JSON.parse(currentInv.eventData || "[]")
-              : (Array.isArray(currentInv.eventData) ? currentInv.eventData : []);
-          } catch (err) {
-            // eventData dijaga CHECK JSON di database, jadi ini seharusnya tidak terjadi; tanpa data tersimpan tidak ada tanggal yang dikunci.
-            logger.warn("InvitationUpdate", "eventData tersimpan tidak terbaca; kunci tanggal utama dilewati", { invitationId: id, error: err instanceof Error ? err.message : String(err) });
-          }
-
-          const savedPrimary = savedEvents.find((e: any) => e.isPrimary) || savedEvents[0];
+          const savedPrimaryDate = getPrimaryEventDateString(currentInv.eventData);
           const newPrimary = validatedEvents.find((e: any) => e.isPrimary);
 
-          if (savedPrimary?.date && (!newPrimary || newPrimary.date !== savedPrimary.date)) {
+          if (savedPrimaryDate && (!newPrimary || newPrimary.date !== savedPrimaryDate)) {
             return NextResponse.json(
               {
                 error: "Tanggal sesi acara utama telah dikunci pasca publikasi sebagai patokan masa aktif layanan. Hubungi Admin jika perlu penyesuaian tanggal acara utama.",
@@ -508,21 +475,21 @@ export async function PUT(
           return timeA.localeCompare(timeB);
         });
 
-        eventDataToSave = JSON.stringify(validatedEvents);
+        eventDataToSave = validatedEvents;
       } catch {
         // Data acara yang tidak dapat divalidasi tidak boleh disimpan mentah: kunci tanggal sesi utama dan sanitasi URL ada di blok ini.
         return NextResponse.json({ error: "Format eventData tidak valid." }, { status: 400 });
       }
     }
 
-    const jsonTextFields: Partial<Record<"loveStory" | "bankAccounts" | "participantsJson", string | null>> = {};
-    for (const field of ["loveStory", "bankAccounts", "participantsJson"] as const) {
+    const jsonFields: Partial<Record<"loveStory" | "bankAccounts" | "participantsJson", Prisma.InputJsonValue | typeof Prisma.DbNull>> = {};
+    for (const [field, shape] of [["loveStory", "array"], ["bankAccounts", "array"], ["participantsJson", "object"]] as const) {
       if (body[field] === undefined) continue;
-      const parsed = normalizeJsonText(body[field]);
+      const parsed = normalizeJsonInput(body[field], shape);
       if (!parsed.ok) {
-        return NextResponse.json({ error: `${field} bukan JSON yang valid.` }, { status: 400 });
+        return NextResponse.json({ error: `${field} harus berupa ${shape === "array" ? "daftar" : "objek"} JSON yang valid.` }, { status: 400 });
       }
-      jsonTextFields[field] = parsed.value;
+      jsonFields[field] = parsed.value;
     }
 
     // PIN membuka portal resepsionis; batas percobaan verify-pin (30 per 15 menit) hanya berarti bila ruang tebakannya cukup besar.
@@ -554,16 +521,16 @@ export async function PUT(
         musicUrl: body.musicUrl !== undefined ? safeExternalUrl(body.musicUrl) : undefined,
         status: body.status !== undefined ? body.status : undefined,
         ...(body.status === "PUBLISHED" && currentInv.status !== "PUBLISHED" ? { publishedAt: new Date() } : {}),
-        loveStory: jsonTextFields.loveStory,
+        loveStory: jsonFields.loveStory,
         dresscode: body.dresscode !== undefined ? body.dresscode : undefined,
-        bankAccounts: jsonTextFields.bankAccounts,
+        bankAccounts: jsonFields.bankAccounts,
         shippingAddress: body.shippingAddress !== undefined ? body.shippingAddress : undefined,
         liveStreamUrl: body.liveStreamUrl !== undefined ? safeExternalUrl(body.liveStreamUrl) : undefined,
         eventData: eventDataToSave,
         featureSettings: mergedFeatureSettings,
-        participantsJson: jsonTextFields.participantsJson,
-        ...(jsonTextFields.participantsJson !== undefined
-          ? mirrorParticipantNames(currentInv.eventType, safeParseParticipants(jsonTextFields.participantsJson))
+        participantsJson: jsonFields.participantsJson,
+        ...(jsonFields.participantsJson !== undefined
+          ? mirrorParticipantNames(currentInv.eventType, safeParseParticipants(jsonFields.participantsJson))
           : {}),
         staffPin: body.staffPin !== undefined
           ? (body.staffPin ? encryptPin(String(body.staffPin)) : null)
@@ -674,7 +641,7 @@ export async function PATCH(
     }
 
     const body = await req.json();
-    const currentInv = await prisma.invitation.findUnique({ where: { id } });
+    const currentInv = await prisma.invitation.findUnique({ where: { id }, include: { order: { select: { planType: true } } } });
     if (!currentInv) {
       return NextResponse.json({ error: "Undangan tidak ditemukan" }, { status: 404 });
     }
@@ -686,32 +653,12 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden. Anda tidak memiliki hak mengedit undangan ini." }, { status: 403 });
     }
 
-    let updateData: any = {};
+    const updateData: Prisma.InvitationUpdateInput = {};
 
     if (body.featureSettings !== undefined) {
-      const existingObj = parseFeatureSettings(currentInv.featureSettings);
-      let incomingObj: Record<string, any>;
-      try {
-        incomingObj = typeof body.featureSettings === "object" ? body.featureSettings : JSON.parse(body.featureSettings || "{}");
-      } catch {
-        return NextResponse.json({ error: "featureSettings bukan JSON yang valid." }, { status: 400 });
-      }
-      if (!incomingObj || typeof incomingObj !== "object" || Array.isArray(incomingObj)) {
-        return NextResponse.json({ error: "featureSettings harus berupa objek." }, { status: 400 });
-      }
-
-      let parsedFeatures = normalizeFeatureUrls({ ...existingObj, ...incomingObj });
-
-      if (!isAdmin) {
-        const order = currentInv.orderId
-          ? await prisma.order.findUnique({ where: { id: currentInv.orderId }, select: { planType: true } })
-          : null;
-        parsedFeatures = await gateFeaturesByPlan(parsedFeatures, order?.planType);
-      }
-
-      parsedFeatures = keepValidMemoriesSettings(parsedFeatures, existingObj);
-
-      updateData.featureSettings = JSON.stringify(parsedFeatures);
+      const merged = await mergeFeatureSettingsInput(currentInv.featureSettings, body.featureSettings, currentInv.order?.planType, isAdmin);
+      if (!merged.ok) return NextResponse.json({ error: merged.error }, { status: 400 });
+      updateData.featureSettings = merged.value;
     }
 
     if (body.participantsJson !== undefined) {
@@ -720,9 +667,9 @@ export async function PATCH(
       if (!isAdmin && lock.isCoreLocked && !lock.isEmergencyUnlocked) {
         return NextResponse.json({ error: "Data peserta acara terkunci. Hubungi Administrator untuk membuka kunci darurat." }, { status: 403 });
       }
-      const participants = normalizeJsonText(body.participantsJson);
+      const participants = normalizeJsonInput(body.participantsJson, "object");
       if (!participants.ok) {
-        return NextResponse.json({ error: "participantsJson bukan JSON yang valid." }, { status: 400 });
+        return NextResponse.json({ error: "participantsJson harus berupa objek JSON yang valid." }, { status: 400 });
       }
       updateData.participantsJson = participants.value;
       Object.assign(updateData, mirrorParticipantNames(currentInv.eventType, safeParseParticipants(participants.value)));

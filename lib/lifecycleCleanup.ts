@@ -98,8 +98,8 @@ async function releaseExpiredSubdomains(now: Date, settings: LifecycleSettings, 
 interface WarningTarget {
   id: string;
   invitationSlug: string;
-  eventData: string | null;
-  featureSettings: string | null;
+  eventData: unknown;
+  retentionWarningSentAt: Date | null;
   groomName: string | null;
   brideName: string | null;
   user: { email: string; name: string } | null;
@@ -110,16 +110,7 @@ async function sendRetentionWarningIfDue(inv: WarningTarget, expiresAt: Date, no
   const remainingMs = expiresAt.getTime() - now.getTime();
   if (remainingMs <= 0 || remainingMs > RETENTION_WARNING_LEAD_MS || !inv.user?.email) return false;
 
-  let features: Record<string, unknown> = {};
-  if (typeof inv.featureSettings === "string" && inv.featureSettings.trim()) {
-    try {
-      features = JSON.parse(inv.featureSettings);
-    } catch (err) {
-      logger.warn(CONTEXT, "featureSettings tidak dapat dibaca, peringatan retensi dilewati", { invitationId: inv.id, error: String(err) });
-      return false;
-    }
-  }
-  if (features.retentionWarningSentAt) return false;
+  if (inv.retentionWarningSentAt) return false;
   if (dryRun) return true;
 
   const totalPhotos = await prisma.guestMemory.count({ where: { invitationId: inv.id } });
@@ -141,7 +132,7 @@ async function sendRetentionWarningIfDue(inv: WarningTarget, expiresAt: Date, no
 
     await prisma.invitation.update({
       where: { id: inv.id },
-      data: { featureSettings: JSON.stringify({ ...features, retentionWarningSentAt: now.toISOString() }) },
+      data: { retentionWarningSentAt: now },
     });
     return true;
   } catch (err) {
@@ -238,7 +229,7 @@ export async function runLifecycleCleanup(options: LifecycleCleanupOptions = {})
     select: {
       id: true,
       eventData: true,
-      featureSettings: true,
+      retentionWarningSentAt: true,
       galleryExpiresAt: true,
       invitationSlug: true,
       subdomain: true,

@@ -4,6 +4,7 @@ import React, { useState, useRef } from "react";
 import QRCode from "react-qr-code";
 import { useFeedback } from "@/components/ui/Feedback";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
+import { formatPrimaryEventDate, getPrimaryEventDateString } from "@/lib/lifecycleDates";
 
 export interface GuestOpeningSetupModalProps {
   isOpen: boolean;
@@ -47,15 +48,7 @@ export default function GuestOpeningSetupModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Parse Feature Settings
-  const initialFs = (() => {
-    try {
-      return typeof invitation?.featureSettings === "object"
-        ? invitation.featureSettings
-        : JSON.parse(invitation?.featureSettings || "{}");
-    } catch {
-      return {};
-    }
-  })();
+  const initialFs: Record<string, any> = invitation?.featureSettings ?? {};
 
   const [selectedOpeningLayout, setSelectedOpeningLayout] = useState<OpeningLayoutStyle>(
     initialFs?.memoriesOpeningLayout || "editorial_showcase"
@@ -76,44 +69,15 @@ export default function GuestOpeningSetupModal({
   const coupleTitle = resolveInvitationDisplayName(invitation ?? {});
 
   // Format Tanggal Acara
-  const eventDateFormatted = (() => {
-    try {
-      if (invitation?.eventData) {
-        const parsed = typeof invitation.eventData === "string" ? JSON.parse(invitation.eventData) : invitation.eventData;
-        const list = Array.isArray(parsed) ? parsed : parsed?.events;
-        if (Array.isArray(list) && list[0]?.date) {
-          const d = new Date(list[0].date);
-          if (!isNaN(d.getTime())) {
-            return d.toLocaleDateString("id-ID", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            }).toUpperCase();
-          }
-        }
-      }
-    } catch {}
-    return "HARI BAHAGIA KAMI";
-  })();
+  const eventDateFormatted = formatPrimaryEventDate(invitation?.eventData, { weekday: true })?.toUpperCase() ?? "HARI BAHAGIA KAMI";
 
   // Format Retro Date Stamp: "02  09  '26"
   const getRetroDateStamp = () => {
-    try {
-      if (invitation?.eventData) {
-        const parsed = typeof invitation.eventData === "string" ? JSON.parse(invitation.eventData) : invitation.eventData;
-        const list = Array.isArray(parsed) ? parsed : parsed?.events;
-        if (Array.isArray(list) && list[0]?.date) {
-          const d = new Date(list[0].date);
-          if (!isNaN(d.getTime())) {
-            const day = String(d.getDate()).padStart(2, "0");
-            const month = String(d.getMonth() + 1).padStart(2, "0");
-            const yearShort = String(d.getFullYear()).slice(-2);
-            return `${day}  ${month}  '${yearShort}`;
-          }
-        }
-      }
-    } catch {}
+    const eventDay = getPrimaryEventDateString(invitation?.eventData);
+    if (eventDay && /^\d{4}-\d{2}-\d{2}$/.test(eventDay)) {
+      const [year, month, day] = eventDay.split("-");
+      return `${day}  ${month}  '${year.slice(-2)}`;
+    }
     const now = new Date();
     return `${String(now.getDate()).padStart(2, "0")}  ${String(now.getMonth() + 1).padStart(2, "0")}  '${String(now.getFullYear()).slice(-2)}`;
   };

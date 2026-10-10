@@ -21,7 +21,7 @@ async function runTest02() {
     console.log(`✅ Ditemukan undangan DRAFT (ID: ${invitation.id}) milik User (ID: ${invitation.userId})`);
 
     // 2. Simulasi Klien Mengisi Data Acara (Event Data)
-    const dummyEventData = JSON.stringify([
+    const dummyEventData = [
       {
         id: "event-akad-123",
         title: "Akad Nikah",
@@ -42,12 +42,12 @@ async function runTest02() {
         locationAddress: "Jl. Sudirman No. 123",
         mapsUrl: "https://maps.google.com/..."
       }
-    ]);
+    ];
 
-    const dummyLoveStory = JSON.stringify([
+    const dummyLoveStory = [
       { title: "Awal Bertemu", year: "2020", description: "Kami bertemu di kampus..." },
       { title: "Lamaran", year: "2023", description: "Dia melamar saya di pantai..." }
-    ]);
+    ];
 
     // 3. Generate PIN Resepsionis (Enkripsi simetris dua arah AES-256-GCM)
     const rawPin = "123456";

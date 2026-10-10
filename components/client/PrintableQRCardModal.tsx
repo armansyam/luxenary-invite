@@ -4,6 +4,7 @@ import React, { useState, useRef } from "react";
 import { useFeedback } from "@/components/ui/Feedback";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 import { qrInitials } from "@/lib/checkinQr";
+import { formatPrimaryEventDate } from "@/lib/lifecycleDates";
 
 export interface PrintableQRCardModalProps {
   isOpen: boolean;
@@ -103,15 +104,7 @@ export default function PrintableQRCardModal({
   const cardRef = useRef<HTMLDivElement>(null);
 
   // Parse Feature Settings
-  const initialFs = (() => {
-    try {
-      return typeof invitation?.featureSettings === "object"
-        ? invitation.featureSettings
-        : JSON.parse(invitation?.featureSettings || "{}");
-    } catch {
-      return {};
-    }
-  })();
+  const initialFs: Record<string, any> = invitation?.featureSettings ?? {};
 
   const [selectedSize, setSelectedSize] = useState<CardSize>("A4");
   const [selectedCardLayout, setSelectedCardLayout] = useState<CardLayoutStyle>(
@@ -143,26 +136,7 @@ export default function PrintableQRCardModal({
     : "";
 
   // Format Tanggal Acara
-  const eventDateFormatted = (() => {
-    try {
-      if (invitation?.eventData) {
-        const parsed = typeof invitation.eventData === "string" ? JSON.parse(invitation.eventData) : invitation.eventData;
-        const list = Array.isArray(parsed) ? parsed : parsed?.events;
-        if (Array.isArray(list) && list[0]?.date) {
-          const d = new Date(list[0].date);
-          if (!isNaN(d.getTime())) {
-            return d.toLocaleDateString("id-ID", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            }).toUpperCase();
-          }
-        }
-      }
-    } catch {}
-    return "HARI BAHAGIA KAMI";
-  })();
+  const eventDateFormatted = formatPrimaryEventDate(invitation?.eventData, { weekday: true })?.toUpperCase() ?? "HARI BAHAGIA KAMI";
 
   // Simpan Perubahan Pengaturan ke Database
   const persistFeatureSettings = async (overrides: Record<string, any>) => {

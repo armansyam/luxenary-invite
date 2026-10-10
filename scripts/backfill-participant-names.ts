@@ -9,6 +9,7 @@
  *   npx tsx scripts/backfill-participant-names.ts --apply   # tulis perubahan
  */
 import "dotenv/config";
+import { Prisma } from "@prisma/client";
 import { prisma, pool } from "../lib/prisma";
 import { mirrorParticipantNames, safeParseParticipants } from "../lib/participantUtils";
 
@@ -16,7 +17,7 @@ const apply = process.argv.includes("--apply");
 
 async function main() {
   const invitations = await prisma.invitation.findMany({
-    where: { eventType: { not: "WEDDING" }, participantsJson: { not: null } },
+    where: { eventType: { not: "WEDDING" }, participantsJson: { not: Prisma.DbNull } },
     select: {
       id: true, eventType: true, invitationSlug: true, participantsJson: true,
       groomName: true, groomNickname: true, groomFather: true, groomMother: true, groomInstagram: true,

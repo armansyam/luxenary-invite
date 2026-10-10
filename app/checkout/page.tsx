@@ -281,14 +281,9 @@ function CheckoutContent() {
             setServerTimeOffset(currentOffset);
           }
 
-          let parsedItems: any[] = [];
-          if (orderStatusData.itemsJson) {
-            try {
-              parsedItems = JSON.parse(orderStatusData.itemsJson);
-            } catch {}
-          }
+          const parsedItems: any[] = Array.isArray(orderStatusData.itemsJson) ? orderStatusData.itemsJson : [];
 
-          if (Array.isArray(parsedItems) && parsedItems.length > 0) {
+          if (parsedItems.length > 0) {
             const itemLabels = parsedItems.map((it: any) => it.label).join(" • ");
             setCurrentPlanType(orderStatusData.planType || "BUNDLE");
             setPlanData({

@@ -38,7 +38,7 @@ export function resolveInvitationDisplayName(inv: {
   eventType?: string | null;
   groomNickname?: string | null;
   brideNickname?: string | null;
-  participantsJson?: string | null;
+  participantsJson?: unknown;
   invitationSlug?: string | null;
 }): string {
   if (!inv.eventType || inv.eventType === "WEDDING") {

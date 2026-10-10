@@ -75,9 +75,9 @@ async function runTest() {
         status: "PUBLISHED",
         groomName: "Raden Mas Dimas",
         brideName: "Raden Ajeng Clarissa",
-        eventData: JSON.stringify([
+        eventData: [
           { title: "Akad", date: "2026-12-26" },
-        ]),
+        ],
         media: {
           create: [
             {

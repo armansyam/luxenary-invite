@@ -35,13 +35,13 @@ describe.skipIf(!IS_TEST_DB)("akses pratinjau undangan DRAFT", () => {
         ...base,
         invitationSlug: slugs.draft,
         status: "DRAFT",
-        bankAccounts: JSON.stringify([{ bank: "BANK-UJI", number: REKENING, name: "Pria" }]),
-        featureSettings: JSON.stringify({ showGift: true }),
+        bankAccounts: [{ bank: "BANK-UJI", number: REKENING, name: "Pria" }],
+        featureSettings: { showGift: true },
       },
     });
     ids.draft = draft.id;
     const down = await prisma.invitation.create({
-      data: { ...base, invitationSlug: slugs.takenDown, status: "TAKEN_DOWN", featureSettings: JSON.stringify({}) },
+      data: { ...base, invitationSlug: slugs.takenDown, status: "TAKEN_DOWN", featureSettings: {} },
     });
     ids.takenDown = down.id;
   });

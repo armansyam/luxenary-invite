@@ -38,7 +38,7 @@ export function resolveEventTimezone(ev: { timezone?: unknown; time?: unknown } 
   return "WIB";
 }
 
-type EventLike = { date?: unknown; timezone?: unknown; time?: unknown; isPrimary?: unknown };
+type EventLike = { date?: unknown; timezone?: unknown; time?: unknown; isPrimary?: unknown; endTime?: unknown; isUntilDone?: unknown };
 
 function parseEventList(eventData: unknown): EventLike[] {
   try {
@@ -76,6 +76,16 @@ export function getPrimaryEventDate(eventData: unknown): Date | null {
   return ev ? getEventDayStart(ev) : null;
 }
 
+/** Jam selesai acara utama (endTime HH:MM pada zona waktu acara); 23:59 bila "sampai selesai" atau tanpa jam selesai. */
+export function getPrimaryEventEnd(eventData: unknown): Date | null {
+  const ev = getPrimaryEvent(eventData);
+  const dayStart = ev ? getEventDayStart(ev) : null;
+  if (!ev || !dayStart) return null;
+  const match = !ev.isUntilDone && typeof ev.endTime === "string" ? /^(\d{1,2}):(\d{2})/.exec(ev.endTime.trim()) : null;
+  const [hours, minutes] = match ? [Number(match[1]), Number(match[2])] : [23, 59];
+  return new Date(dayStart.getTime() + (hours * 60 + minutes) * 60_000);
+}
+
 /** Tanggal kalender acara utama apa adanya (YYYY-MM-DD), untuk ditampilkan tanpa konversi zona. */
 export function getPrimaryEventDateString(eventData: unknown): string | null {
   const ev = getPrimaryEvent(eventData);
@@ -85,10 +95,16 @@ export function getPrimaryEventDateString(eventData: unknown): string | null {
 }
 
 /** Tanggal acara utama untuk tampilan ("12 Desember 2026") tanpa pergeseran zona waktu peramban. */
-export function formatPrimaryEventDate(eventData: unknown): string | null {
+export function formatPrimaryEventDate(eventData: unknown, options: { weekday?: boolean } = {}): string | null {
   const day = getPrimaryEventDateString(eventData);
   if (!day || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return null;
-  return new Date(`${day}T00:00:00Z`).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+  return new Date(`${day}T00:00:00Z`).toLocaleDateString("id-ID", {
+    ...(options.weekday ? { weekday: "long" as const } : {}),
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
 }
 
 /** Zona waktu acara utama undangan (WIB bila tidak ada acara bertanggal). */

@@ -417,10 +417,7 @@ export default function GuestsPage() {
           setInvitationData(inv);
 
           // Extract existing saved WA template if any
-          let feat: any = {};
-          try {
-            feat = typeof inv.featureSettings === "string" ? JSON.parse(inv.featureSettings) : (inv.featureSettings || {});
-          } catch {}
+          const feat: Record<string, any> = inv.featureSettings ?? {};
 
           if (feat.waTemplate) {
             // Prioritas tertinggi: template yang sudah disimpan client
@@ -522,12 +519,7 @@ export default function GuestsPage() {
     setError(null);
 
     try {
-      let currentFeat: any = {};
-      try {
-        currentFeat = typeof invitationData?.featureSettings === "string"
-          ? JSON.parse(invitationData.featureSettings)
-          : (invitationData?.featureSettings || {});
-      } catch {}
+      const currentFeat: Record<string, any> = invitationData?.featureSettings ?? {};
 
       const updatedFeat = {
         ...currentFeat,
@@ -571,12 +563,8 @@ export default function GuestsPage() {
     const groom = invitationData?.groomNickname || invitationData?.groomName || "Mempelai Pria";
     const bride = invitationData?.brideNickname || invitationData?.brideName || "Mempelai Wanita";
     
-    let feat: any = {};
-    try {
-      feat = typeof invitationData?.featureSettings === "string" ? JSON.parse(invitationData.featureSettings) : (invitationData?.featureSettings || {});
-    } catch {}
-
-    const displayOrder = feat.displayOrder || "BRIDE_FIRST";
+    const feat: Record<string, any> = invitationData?.featureSettings ?? {};
+    const displayOrder = feat.displayOrder || "GROOM_FIRST";
     const weddingCouple = displayOrder === "BRIDE_FIRST" ? `${bride} & ${groom}` : `${groom} & ${bride}`;
     const coupleName = isWedding ? weddingCouple : resolveInvitationDisplayName(invitationData);
 

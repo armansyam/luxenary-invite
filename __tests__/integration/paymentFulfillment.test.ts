@@ -71,7 +71,7 @@ async function makeInvitation(userId: string, orderId: string | null, tag: strin
       invitationSlug: `${RUN}-${tag}`,
       groomSlug: `${RUN}-g-${tag}`,
       brideSlug: `${RUN}-b-${tag}`,
-      featureSettings: JSON.stringify({}),
+      featureSettings: {},
     },
   });
   ids.invitations.push(inv.id);
@@ -307,7 +307,7 @@ describe.skipIf(!IS_TEST_DB)("Integrasi pembayaran & pemenuhan (DB luxenary_test
         status: "PAID",
         orderType: "MEMORIES_TOPUP",
         linkedInvitationId: null,
-        itemsJson: JSON.stringify([{ type: "MEMORIES_TOPUP", photos: 100 }]),
+        itemsJson: [{ type: "MEMORIES_TOPUP", photos: 100 }],
       });
 
       await applyBundleFulfillment(bundle.id);
@@ -329,7 +329,7 @@ describe.skipIf(!IS_TEST_DB)("Integrasi pembayaran & pemenuhan (DB luxenary_test
         status: "PAID",
         orderType: "MEMORIES_TOPUP",
         linkedInvitationId: ownerInv.id,
-        itemsJson: JSON.stringify([{ type: "MEMORIES_TOPUP", photos: 50 }]),
+        itemsJson: [{ type: "MEMORIES_TOPUP", photos: 50 }],
       });
 
       await applyBundleFulfillment(bundle.id);
@@ -346,13 +346,13 @@ describe.skipIf(!IS_TEST_DB)("Integrasi pembayaran & pemenuhan (DB luxenary_test
       const inv = await makeInvitation(owner.id, ownerOrder.id, "a-rearm");
       await prisma.invitation.update({
         where: { id: inv.id },
-        data: { memoriesNotifiedMilestones: [50, 80, 100], featureSettings: JSON.stringify({ showGift: false }) },
+        data: { memoriesNotifiedMilestones: [50, 80, 100], featureSettings: { showGift: false } },
       });
       const bundle = await makeOrder(owner.id, {
         status: "PAID",
         orderType: "MEMORIES_TOPUP",
         linkedInvitationId: inv.id,
-        itemsJson: JSON.stringify([{ type: "MEMORIES_TOPUP", photos: 100 }]),
+        itemsJson: [{ type: "MEMORIES_TOPUP", photos: 100 }],
       });
 
       await applyBundleFulfillment(bundle.id);
@@ -360,7 +360,7 @@ describe.skipIf(!IS_TEST_DB)("Integrasi pembayaran & pemenuhan (DB luxenary_test
       const after = await prisma.invitation.findUniqueOrThrow({ where: { id: inv.id } });
       expect(after.extraMemoriesQuota).toBe(100);
       expect(after.memoriesNotifiedMilestones).toEqual([]);
-      expect(JSON.parse(after.featureSettings!)).toEqual({ showGift: false });
+      expect(after.featureSettings).toEqual({ showGift: false });
     });
   });
 

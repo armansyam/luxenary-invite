@@ -23,7 +23,7 @@ const PLAN_NAMES: Record<string, string> = {
   TIER_3: "Eternity",
 };
 
-interface BundleItem {
+type BundleItem = {
   type: "UPGRADE" | "GALLERY_EXTENSION" | "MEMORIES_TOPUP";
   label: string;
   price: number;
@@ -34,7 +34,7 @@ interface BundleItem {
   days?: number;
   batches?: number;
   photos?: number;
-}
+};
 
 /**
  * POST /api/client/orders/checkout-bundle
@@ -295,7 +295,7 @@ export async function POST(req: NextRequest) {
         paymentMethod: resolvedPaymentMethod,
         expiredAt,
         checkoutConfirmedAt: new Date(),
-        itemsJson: JSON.stringify(items),
+        itemsJson: items,
       },
     });
 

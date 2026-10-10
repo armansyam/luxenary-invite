@@ -74,7 +74,7 @@ describe.skipIf(!IS_TEST_DB)("arsip di custom domain", () => {
         groomSlug: `${TAG}-g`,
         brideSlug: `${TAG}-b`,
         customDomain: DOMAIN,
-        eventData: JSON.stringify([{ title: "Akad", date: recent, timezone: "WIB", isPrimary: true }]),
+        eventData: [{ title: "Akad", date: recent, timezone: "WIB", isPrimary: true }],
       },
     });
     invitationId = inv.id;

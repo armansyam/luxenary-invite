@@ -4,6 +4,7 @@
  * (hanya berjalan di database `luxenary_test`)
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { Prisma } from "@prisma/client";
 import { prisma, pool } from "@/lib/prisma";
 import { composeTemplateData } from "@/lib/themeEngine";
 
@@ -13,7 +14,7 @@ const TAG = `vitest_gift_${Date.now()}`;
 let userId = "";
 const created: string[] = [];
 
-async function createInvitation(suffix: string, bankAccounts: string | null) {
+async function createInvitation(suffix: string, bankAccounts: Prisma.InputJsonArray | typeof Prisma.DbNull) {
   const inv = await prisma.invitation.create({
     data: {
       userId,
@@ -44,14 +45,14 @@ describe.skipIf(!IS_TEST_DB)("seksi hadiah tanpa rekening cadangan", () => {
   });
 
   it("tanpa rekening, QRIS, dan alamat: seksi hadiah kosong dan tidak ada nomor rekening tebakan", async () => {
-    const id = await createInvitation("kosong", null);
+    const id = await createInvitation("kosong", Prisma.DbNull);
     const data = await composeTemplateData(id);
     expect(data?.giftSectionHtml).toBe("");
     expect(JSON.stringify(data)).not.toContain("7330497518");
   });
 
   it("rekening yang diisi mempelai tetap ditampilkan", async () => {
-    const id = await createInvitation("isi", JSON.stringify([{ bank: "Mandiri", number: "1112223334", name: "Ani" }]));
+    const id = await createInvitation("isi", [{ bank: "Mandiri", number: "1112223334", name: "Ani" }]);
     const data = await composeTemplateData(id);
     expect(data?.giftSectionHtml).toContain("1112223334");
     expect(data?.giftSectionHtml).toContain("Mandiri");

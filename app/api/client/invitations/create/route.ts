@@ -8,7 +8,8 @@ import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { DEFAULT_THEME_BY_EVENT, isThemeCompatible } from "@/lib/invitationUtils";
 import { mirrorParticipantNames, safeParseParticipants } from "@/lib/participantUtils";
-import { normalizeJsonText } from "@/lib/jsonText";
+import { normalizeJsonInput } from "@/lib/jsonText";
+import { parseFeatureSettings } from "@/lib/featureSettings";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
 
@@ -170,9 +171,9 @@ export async function POST(req: Request) {
     );
   }
 
-  const participants = normalizeJsonText(participantsJson);
+  const participants = normalizeJsonInput(participantsJson, "object");
   if (!participants.ok) {
-    return NextResponse.json({ error: "participantsJson bukan JSON yang valid." }, { status: 400 });
+    return NextResponse.json({ error: "participantsJson harus berupa objek JSON yang valid." }, { status: 400 });
   }
 
   if (themeId && typeof themeId === "string" && themeId.trim()) {
@@ -439,15 +440,7 @@ export async function POST(req: Request) {
 
     invitation = await prisma.$transaction(async (tx) => {
       if (existingDraft) {
-        let existingFs: any = {};
-        if (existingDraft.featureSettings) {
-          try {
-            existingFs = typeof existingDraft.featureSettings === "string" ? JSON.parse(existingDraft.featureSettings) : existingDraft.featureSettings;
-          } catch (err) {
-            // Kolom featureSettings dijaga CHECK JSON di database, jadi ini seharusnya tidak terjadi; draf dimulai dari kosong.
-            logger.warn("InvitationCreate", "featureSettings draf tidak terbaca; dimulai dari kosong", { draftId: existingDraft.id, error: err instanceof Error ? err.message : String(err) });
-          }
-        }
+        const existingFs = parseFeatureSettings(existingDraft.featureSettings);
 
         const isThemeChanged = Boolean(themeId?.trim() && themeId.trim().toLowerCase() !== existingDraft.themeId?.toLowerCase());
         const effectiveMusicUrl = isThemeChanged
@@ -473,7 +466,7 @@ export async function POST(req: Request) {
           data: {
             orderId: paidOrder?.id ?? existingDraft.orderId ?? undefined,
             eventType: eventType || existingDraft.eventType,
-            participantsJson: participantsJson !== undefined ? participants.value : existingDraft.participantsJson,
+            participantsJson: participantsJson !== undefined ? participants.value : undefined,
             groomName: groomName?.trim() || finalGroomNick || existingDraft.groomName || "",
             brideName: brideName?.trim() || finalBrideNick || existingDraft.brideName || "",
             groomNickname: finalGroomNick || existingDraft.groomNickname || "",
@@ -487,8 +480,8 @@ export async function POST(req: Request) {
             musicUrl: effectiveMusicUrl,
             openingQuote: blueprint.openingQuote || existingDraft.openingQuote,
             openingQuoteRef: blueprint.openingQuoteRef || existingDraft.openingQuoteRef,
-            eventData: initialEvents.length > 0 ? JSON.stringify(initialEvents) : existingDraft.eventData,
-            featureSettings: JSON.stringify(mergedFs),
+            eventData: initialEvents.length > 0 ? initialEvents : undefined,
+            featureSettings: mergedFs,
             status: "DRAFT",
           },
         });
@@ -512,8 +505,8 @@ export async function POST(req: Request) {
             themeId: chosenTheme.toLowerCase(),
             openingQuote: blueprint.openingQuote,
             openingQuoteRef: blueprint.openingQuoteRef,
-            eventData: JSON.stringify(initialEvents),
-            featureSettings: JSON.stringify({
+            eventData: initialEvents,
+            featureSettings: {
               weddingTagline: defaultCoverBadge,
               musicUrl: initialMusicUrl || undefined,
               showStory: eventType === "WEDDING",
@@ -522,7 +515,7 @@ export async function POST(req: Request) {
               showDresscode: true,
               showMusic: true,
               customLabels: defaultCustomLabels,
-            }),
+            },
             status: invitationStatus,
           },
         });

@@ -119,14 +119,14 @@ async function seedInvitation(themeId: string, eventType: string, index: number)
       shippingAddress: xss("inv.shippingAddress"),
       liveStreamUrl: urlXss("inv.liveStreamUrl"),
       musicUrl: urlXss("inv.musicUrl"),
-      eventData: JSON.stringify(events),
-      loveStory: JSON.stringify([
+      eventData: events,
+      loveStory: [
         tagged("loveStory.0", TEXT_KEYS, xss),
         { ...tagged("loveStory.1", TEXT_KEYS, xss), ...tagged("loveStory.1", URL_KEYS, urlXss) },
-      ]),
-      bankAccounts: JSON.stringify([{ ...tagged("bank", TEXT_KEYS, xss), ...tagged("bank", URL_KEYS, urlXss) }]),
-      participantsJson: JSON.stringify(participants),
-      featureSettings: JSON.stringify(featureSettings),
+      ],
+      bankAccounts: [{ ...tagged("bank", TEXT_KEYS, xss), ...tagged("bank", URL_KEYS, urlXss) }],
+      participantsJson: participants,
+      featureSettings,
     },
   });
   ids.invitations.push(inv.id);

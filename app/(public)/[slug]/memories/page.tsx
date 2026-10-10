@@ -6,6 +6,7 @@ import { hasPlanCapability } from "@/lib/settings";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 import { jsonForInlineScript } from "@/lib/safeJson";
 import { parseFeatureSettings } from "@/lib/featureSettings";
+import { getPrimaryEventEnd } from "@/lib/lifecycleDates";
 import { createHash } from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -69,18 +70,8 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
   if (isCustomSchedule && fs.memoriesEndTime) {
     const parsed = new Date(fs.memoriesEndTime);
     if (!isNaN(parsed.getTime())) eventEndTime = parsed;
-  } else if (invitation.eventData) {
-    try {
-      const ev = typeof invitation.eventData === "object" ? invitation.eventData : JSON.parse(invitation.eventData);
-      const receptionDate = ev.receptionDate || ev.date;
-      const receptionEndTime = ev.receptionEndTime || ev.endTime || "23:59";
-      if (receptionDate) {
-        const parsed = new Date(`${receptionDate}T${receptionEndTime}:00`);
-        if (!isNaN(parsed.getTime())) eventEndTime = parsed;
-      }
-    } catch {
-      // eventData yang tidak terbaca berarti jam berakhir acara tidak diketahui; ruang gelap tidak diaktifkan.
-    }
+  } else {
+    eventEndTime = getPrimaryEventEnd(invitation.eventData);
   }
 
   const now = new Date();

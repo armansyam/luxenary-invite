@@ -484,15 +484,7 @@ function PaymentContent() {
         <div className="bg-white/5 border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-6 backdrop-blur-xs space-y-4">
           <div className="flex items-center justify-between">
             {(() => {
-              let parsedItems: any[] | null = null;
-              if (order.itemsJson) {
-                try {
-                  const items = JSON.parse(order.itemsJson);
-                  if (Array.isArray(items) && items.length > 0) {
-                    parsedItems = items;
-                  }
-                } catch {}
-              }
+              const parsedItems: any[] | null = Array.isArray(order.itemsJson) && order.itemsJson.length > 0 ? order.itemsJson : null;
 
               if (parsedItems) {
                 return (

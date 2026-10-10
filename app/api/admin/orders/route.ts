@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { requireAdminModule } from "@/lib/adminAuth";
-import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
@@ -78,16 +77,8 @@ export async function GET(req: NextRequest) {
 
       for (const ord of exportOrders) {
         let itemLabel: string = ord.planType || "";
-        if (ord.itemsJson) {
-          try {
-            const bItems = JSON.parse(ord.itemsJson);
-            if (Array.isArray(bItems) && bItems.length > 0) {
-              itemLabel = bItems.map((b: { label?: string }) => b.label).join(" + ");
-            }
-          } catch (err) {
-            // itemsJson dijaga CHECK JSON di database, jadi ini seharusnya tidak terjadi; baris ekspor memakai nama paket.
-            logger.warn("AdminOrdersExport", "itemsJson order tidak terbaca; memakai nama paket", { orderId: ord.id, error: err instanceof Error ? err.message : String(err) });
-          }
+        if (Array.isArray(ord.itemsJson) && ord.itemsJson.length > 0) {
+          itemLabel = (ord.itemsJson as { label?: string }[]).map((b) => b.label).join(" + ");
         }
 
         const row = [

@@ -135,9 +135,7 @@ function DashboardHomeContent() {
   const allowedCaps: string[] = packageConfig?.capabilities || (planType === "TIER_3" ? ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"] : planType === "TIER_2" ? ["music", "gallery", "qr_checkin", "guest_memories"] : ["music", "gallery"]);
   const hasCap = (cap: string) => allowedCaps.includes(cap);
 
-  const featureSettings = (() => {
-    try { return JSON.parse(invitation?.featureSettings || "{}"); } catch { return {}; }
-  })();
+  const featureSettings: Record<string, any> = invitation?.featureSettings ?? {};
 
 
   const displayOrder: string = featureSettings?.displayOrder || "GROOM_FIRST";

@@ -7,6 +7,7 @@ import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 let session: any = null;
 vi.mock("@/auth", () => ({ auth: vi.fn(async () => session) }));
 
+import { Prisma } from "@prisma/client";
 import { prisma, pool } from "@/lib/prisma";
 import { PUT, PATCH } from "@/app/api/client/invitations/[id]/route";
 import { hasPlanCapability } from "@/lib/settings";
@@ -24,10 +25,10 @@ const req = (method: string, body: unknown) =>
 const ctx = () => ({ params: Promise.resolve({ id: ids.invitation }) });
 const stored = async () => {
   const inv = await prisma.invitation.findUniqueOrThrow({ where: { id: ids.invitation } });
-  return JSON.parse(inv.featureSettings || "{}");
+  return inv.featureSettings as Record<string, unknown>;
 };
-const resetFs = (fs: object) =>
-  prisma.invitation.update({ where: { id: ids.invitation }, data: { featureSettings: JSON.stringify(fs), status: "DRAFT", extraMemoriesQuota: 10, extraGalleryDays: 30 } });
+const resetFs = (fs: Record<string, unknown>) =>
+  prisma.invitation.update({ where: { id: ids.invitation }, data: { featureSettings: fs as Prisma.InputJsonObject, status: "DRAFT", extraMemoriesQuota: 10, extraGalleryDays: 30 } });
 const quota = () => prisma.invitation.findUniqueOrThrow({ where: { id: ids.invitation }, select: { extraMemoriesQuota: true, extraGalleryDays: true } });
 
 describe.skipIf(!IS_TEST_DB)("featureSettings: manipulasi klien pada rute undangan", () => {

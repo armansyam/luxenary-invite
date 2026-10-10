@@ -47,7 +47,7 @@ async function makeInvitation(status: string, date: string, timezone = "WITA") {
       brideName: "Dewi",
       status: status as never,
       publishedAt: status === "DRAFT" ? null : new Date(),
-      eventData: JSON.stringify([{ title: "Resepsi", date, time: "11:00", timezone, location: "Gedung", isPrimary: true }]),
+      eventData: [{ title: "Resepsi", date, time: "11:00", timezone, location: "Gedung", isPrimary: true }],
     },
   });
   sessionUser = { id: user.id, role: "CLIENT" };

@@ -311,7 +311,7 @@ export async function PATCH(
     await prisma.invitation.update({
       where: { id },
       data: {
-        featureSettings: JSON.stringify(updatedFs),
+        featureSettings: updatedFs,
       },
     });
 

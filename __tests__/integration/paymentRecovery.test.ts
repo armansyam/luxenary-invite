@@ -51,7 +51,7 @@ async function makeOrder(userId: string, over: Record<string, any> = {}) {
 
 async function makeInvitation(userId: string, orderId: string | null, tag: string) {
   const inv = await prisma.invitation.create({
-    data: { userId, orderId, themeId: "kalandra", invitationSlug: `${RUN}-${tag}`, groomSlug: `${RUN}-g-${tag}`, brideSlug: `${RUN}-b-${tag}`, featureSettings: JSON.stringify({}) },
+    data: { userId, orderId, themeId: "kalandra", invitationSlug: `${RUN}-${tag}`, groomSlug: `${RUN}-g-${tag}`, brideSlug: `${RUN}-b-${tag}`, featureSettings: {} },
   });
   ids.invitations.push(inv.id);
   return inv;
@@ -114,7 +114,7 @@ describe.skipIf(!IS_TEST_DB)("pemulihan pembayaran", () => {
     const inv = await makeInvitation(u.id, null, "retry");
     await prisma.invitation.update({
       where: { id: inv.id },
-      data: { eventData: JSON.stringify([{ title: "Akad", date: "2099-01-01", time: "09:00", isPrimary: true }]) },
+      data: { eventData: [{ title: "Akad", date: "2099-01-01", time: "09:00", isPrimary: true }] },
     });
     const extension = await makeOrder(u.id, { orderType: "GALLERY_EXTENSION", status: "PAID", paidAt: new Date(), linkedInvitationId: inv.id });
     const expiryOf = async () => (await prisma.invitation.findUniqueOrThrow({ where: { id: inv.id } })).galleryExpiresAt;

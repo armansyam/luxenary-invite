@@ -45,7 +45,7 @@ async function makeClient(suffix: string, planType: "TIER_2" | "TIER_3", withInv
         groomName: "Raka",
         brideName: "Dewi",
         status: "PUBLISHED",
-        featureSettings: JSON.stringify({ showGuestMemories: true }),
+        featureSettings: { showGuestMemories: true },
       },
     });
     invitations.push(inv.id);
@@ -62,7 +62,7 @@ const json = (url: string, method: string, body?: unknown) =>
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
-const storedFs = async (id: string) => JSON.parse((await prisma.invitation.findUniqueOrThrow({ where: { id } })).featureSettings || "{}");
+const storedFs = async (id: string) => ((await prisma.invitation.findUniqueOrThrow({ where: { id } })).featureSettings ?? {}) as Record<string, any>;
 
 describe.skipIf(!IS_TEST_DB)("bug terbukti: pengaturan dan penghapusan momen tamu", () => {
   let invId = "";
@@ -187,7 +187,7 @@ describe.skipIf(!IS_TEST_DB)("bug terbukti: tanggal acara lampau mengunci draf t
     expect(invitationId).not.toBe("");
     const row = await prisma.invitation.findUniqueOrThrow({ where: { id: invitationId } });
     expect(row.status).toBe("DRAFT");
-    expect(JSON.parse(row.eventData || "[]")[0].date).toBe("2020-01-01");
+    expect((row.eventData as Array<{ date: string }>)[0].date).toBe("2020-01-01");
   });
 
   it("kontrol: keadaan terkunci memang karena tanggal lampau (bukan karena sebab lain)", async () => {
@@ -219,7 +219,7 @@ describe.skipIf(!IS_TEST_DB)("jadwal terima tamu (sesi isPrimary) sebagai patoka
         groomSlug: `${TAG}-gnoday`,
         brideSlug: `${TAG}-bnoday`,
         status: "DRAFT",
-        eventData: JSON.stringify([{ title: "Akad Nikah", date: "2099-03-01" }, { title: "Resepsi", date: "", isPrimary: true }]),
+        eventData: [{ title: "Akad Nikah", date: "2099-03-01" }, { title: "Resepsi", date: "", isPrimary: true }],
       },
     });
     invitations.push(draft.id);
@@ -236,7 +236,7 @@ describe.skipIf(!IS_TEST_DB)("jadwal terima tamu (sesi isPrimary) sebagai patoka
     ];
     await prisma.invitation.update({
       where: { id: invitationId },
-      data: { eventData: JSON.stringify(schedule), adminUnlockedUntil: new Date(Date.now() + 60 * 60 * 1000) },
+      data: { eventData: schedule, adminUnlockedUntil: new Date(Date.now() + 60 * 60 * 1000) },
     });
 
     const emptied = await invitationPut(json(`/api/client/invitations/${invitationId}`, "PUT", { eventData: [] }), ctx(invitationId));
@@ -249,9 +249,7 @@ describe.skipIf(!IS_TEST_DB)("jadwal terima tamu (sesi isPrimary) sebagai patoka
       ctx(invitationId)
     );
     expect(added.status).toBe(200);
-    const saved: Array<{ title: string; isPrimary: boolean }> = JSON.parse(
-      (await prisma.invitation.findUniqueOrThrow({ where: { id: invitationId } })).eventData || "[]"
-    );
+    const saved = (await prisma.invitation.findUniqueOrThrow({ where: { id: invitationId } })).eventData as Array<{ title: string; isPrimary: boolean }>;
     expect(saved.filter((e) => e.isPrimary).map((e) => e.title)).toEqual(["Resepsi"]);
   });
 
@@ -266,10 +264,10 @@ describe.skipIf(!IS_TEST_DB)("jadwal terima tamu (sesi isPrimary) sebagai patoka
           groomSlug: `${TAG}-gc${eventType.toLowerCase()}`,
           brideSlug: `${TAG}-bc${eventType.toLowerCase()}`,
           status: "DRAFT",
-          eventData: JSON.stringify([
+          eventData: [
             { title: "Pengajian", date: "2099-01-05", startTime: "08:00" },
             { title: "Syukuran", date: "2099-02-10", startTime: "10:00", isPrimary: true },
-          ]),
+          ],
         },
       });
       invitations.push(inv.id);

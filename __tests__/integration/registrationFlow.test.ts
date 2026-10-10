@@ -281,7 +281,7 @@ describe.skipIf(!IS_TEST_DB)("alur registrasi", () => {
         expect(inv.eventType).toBe(eventType);
         expect(inv.status).toBe("DRAFT");
         expect(inv.themeId).not.toBe("");
-        expect(inv.eventData === null || JSON.parse(inv.eventData).length === 0).toBe(true);
+        expect(((inv.eventData as unknown[] | null) ?? []).length).toBe(0);
       }
     });
 
@@ -318,13 +318,13 @@ describe.skipIf(!IS_TEST_DB)("alur registrasi", () => {
         }));
         expect(res.status, eventType).toBe(200);
         const inv = await prisma.invitation.findFirstOrThrow({ where: { userId: u.id } });
-        const events: Array<{ location: string; address: string }> = JSON.parse(inv.eventData ?? "[]");
+        const events = (inv.eventData ?? []) as Array<{ location: string; address: string }>;
         expect(events.length).toBeGreaterThan(0);
         for (const ev of events) {
           expect(ev.location).toBe("");
           expect(ev.address).toBe("Makassar");
         }
-        expect(inv.eventData).not.toMatch(/Lokasi Acara di|Alamat Acara di/);
+        expect(JSON.stringify(inv.eventData)).not.toMatch(/Lokasi Acara di|Alamat Acara di/);
       }
     });
 
@@ -339,7 +339,7 @@ describe.skipIf(!IS_TEST_DB)("alur registrasi", () => {
         }));
         expect(res.status, eventType).toBe(200);
         const inv = await prisma.invitation.findFirstOrThrow({ where: { userId: u.id } });
-        const events: Array<{ title: string; isPrimary: boolean; timezone: string }> = JSON.parse(inv.eventData ?? "[]");
+        const events = (inv.eventData ?? []) as Array<{ title: string; isPrimary: boolean; timezone: string }>;
         expect(events.map((e) => e.title)).toEqual(titles);
         expect(events.filter((e) => e.isPrimary).map((e) => e.title)).toEqual([titles[titles.length - 1]]);
         expect(events.every((e) => e.timezone === "WITA")).toBe(true);

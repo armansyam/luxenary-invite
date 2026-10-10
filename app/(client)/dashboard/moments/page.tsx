@@ -149,13 +149,8 @@ export default function MomentsSetupPage() {
           const inv = invitations[0];
           setInvitation(inv);
 
-          if (inv.featureSettings) {
-            try {
-              const parsedFs = typeof inv.featureSettings === "object" ? inv.featureSettings : JSON.parse(inv.featureSettings);
-              if (Array.isArray(parsedFs.memoriesSessions)) {
-                setSessions(parsedFs.memoriesSessions);
-              }
-            } catch {}
+          if (Array.isArray(inv.featureSettings?.memoriesSessions)) {
+            setSessions(inv.featureSettings.memoriesSessions);
           }
 
           fetch("/api/public/settings")
@@ -173,17 +168,7 @@ export default function MomentsSetupPage() {
   }, [router, fetchGuestMemories]);
 
   // Helper Feature Settings
-  const getFeatureSetting = (key: string, defaultVal: any) => {
-    if (!invitation?.featureSettings) return defaultVal;
-    try {
-      const parsed = typeof invitation.featureSettings === "object"
-        ? invitation.featureSettings
-        : JSON.parse(invitation.featureSettings);
-      return parsed[key] !== undefined ? parsed[key] : defaultVal;
-    } catch {
-      return defaultVal;
-    }
-  };
+  const getFeatureSetting = (key: string, defaultVal: any) => invitation?.featureSettings?.[key] ?? defaultVal;
 
   const updateSettingFast = async (key: string, value: any) => {
     if (!invitation?.id) return;
@@ -192,15 +177,9 @@ export default function MomentsSetupPage() {
     // Optimistic update: sinkronkan state lokal seketika (0 ms) sebelum respons server tiba
     setInvitation((prev: any) => {
       if (!prev) return prev;
-      let currentFs: Record<string, any> = {};
-      try {
-        currentFs = typeof prev.featureSettings === "object" && prev.featureSettings !== null
-          ? { ...prev.featureSettings }
-          : JSON.parse(prev.featureSettings || "{}");
-      } catch {}
       return {
         ...prev,
-        featureSettings: JSON.stringify({ ...currentFs, [key]: value }),
+        featureSettings: { ...(prev.featureSettings ?? {}), [key]: value },
       };
     });
     try {
@@ -215,7 +194,7 @@ export default function MomentsSetupPage() {
       }
       setInvitation((prev: any) => ({
         ...prev,
-        featureSettings: JSON.stringify(data.featureSettings),
+        featureSettings: data.featureSettings,
       }));
       setStatusToast("Pengaturan berhasil disimpan.");
       setTimeout(() => setStatusToast(null), 2500);
@@ -244,18 +223,10 @@ export default function MomentsSetupPage() {
         throw new Error(data.error || "Gagal menyimpan jatah roll.");
       }
       setRollModalMsg({ type: "success", text: `Jatah roll berhasil disimpan: ${rollModalInput} foto per tamu.` });
-      setInvitation((prev: any) => {
-        if (!prev) return prev;
-        const currentFs = typeof prev.featureSettings === "object" ? prev.featureSettings : JSON.parse(prev.featureSettings || "{}");
-        return {
-          ...prev,
-          featureSettings: JSON.stringify({
-            ...currentFs,
-            memoriesShotsQuota: rollModalInput,
-            shotsQuota: rollModalInput,
-          }),
-        };
-      });
+      setInvitation((prev: any) => prev && ({
+        ...prev,
+        featureSettings: { ...(prev.featureSettings ?? {}), memoriesShotsQuota: rollModalInput },
+      }));
       await fetchGuestMemories(invitation.id);
       setTimeout(() => {
         setIsRollModalOpen(false);
@@ -421,15 +392,7 @@ export default function MomentsSetupPage() {
     return `${String(now.getDate()).padStart(2, "0")}  ${String(now.getMonth() + 1).padStart(2, "0")}  '${String(now.getFullYear()).slice(-2)}`;
   };
 
-  const events = (() => {
-    try {
-      if (!invitation?.eventData) return [];
-      const parsed = typeof invitation.eventData === "string" ? JSON.parse(invitation.eventData) : invitation.eventData;
-      return Array.isArray(parsed) ? parsed : parsed?.events || [];
-    } catch {
-      return [];
-    }
-  })();
+  const events: any[] = Array.isArray(invitation?.eventData) ? invitation.eventData : [];
 
   const totalEventQuota = memoriesQuota?.maxTotalPhotos || (planType === "TIER_3" ? 1000 : 250);
 
@@ -447,7 +410,7 @@ export default function MomentsSetupPage() {
       if (res.ok && data.success) {
         setInvitation((prev: any) => ({
           ...prev,
-          featureSettings: JSON.stringify(data.featureSettings),
+          featureSettings: data.featureSettings,
         }));
         setSessionSaveStatus("saved");
         setTimeout(() => setSessionSaveStatus("idle"), 2500);
@@ -575,7 +538,7 @@ export default function MomentsSetupPage() {
   // Evaluasi jadwal sesi multi-sesi secara real-time berdasarkan data sesi aktif
   const activeSchedule = getMemoriesActiveSchedule(
     {
-      ...(typeof invitation?.featureSettings === "object" ? invitation?.featureSettings : JSON.parse(invitation?.featureSettings || "{}")),
+      ...(invitation?.featureSettings ?? {}),
       memoriesSessions: sessions,
     },
     invitation?.eventData

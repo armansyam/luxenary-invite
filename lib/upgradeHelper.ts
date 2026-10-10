@@ -38,15 +38,8 @@ export async function applyBundleFulfillment(paidOrderId: string): Promise<boole
     },
   });
 
-  if (!order || !order.itemsJson) return false;
-
-  let items: BundleItem[] = [];
-  try {
-    items = JSON.parse(order.itemsJson);
-    if (!Array.isArray(items) || items.length === 0) return false;
-  } catch {
-    return false;
-  }
+  if (!order || !Array.isArray(order.itemsJson) || order.itemsJson.length === 0) return false;
+  const items = order.itemsJson as BundleItem[];
 
   // Cari undangan terkait
   const invitation = await prisma.invitation.findFirst({

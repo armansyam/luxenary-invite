@@ -537,18 +537,7 @@ export default function EditInvitation() {
         setInvitation(inv);
         setMedia(inv.mediaMap || {});
 
-        const parseJ = (v: any, def: any) => {
-          if (!v) return def;
-          if (typeof v === "object") return v;
-          try {
-            return JSON.parse(v);
-          } catch {
-            return def;
-          }
-        };
-
-        const ev = parseJ(inv.eventData, []);
-        const rawList = Array.isArray(ev) ? ev : [];
+        const rawList: any[] = Array.isArray(inv.eventData) ? inv.eventData : [];
         const loadedEvents = rawList.map((item: any) => {
           let startTime = item.startTime || "";
           let endTime = item.endTime || "";
@@ -602,12 +591,10 @@ export default function EditInvitation() {
         }
         setEvents(loadedEvents);
 
-        const st = parseJ(inv.loveStory, []);
-        const loadedStories = Array.isArray(st) ? st : [];
+        const loadedStories: any[] = Array.isArray(inv.loveStory) ? inv.loveStory : [];
         setStories(loadedStories);
 
-        const bk = parseJ(inv.bankAccounts, []);
-        const loadedBanks = Array.isArray(bk) ? bk : [];
+        const loadedBanks: any[] = Array.isArray(inv.bankAccounts) ? inv.bankAccounts : [];
         setBankList(loadedBanks);
 
         // Jika tema belum dipilih, pastikan Seksi 1 terbuka otomatis untuk mengarahkan user memilih tema
@@ -735,16 +722,10 @@ export default function EditInvitation() {
 
   const updateFeatureSetting = (key: string, value: any) => {
     setInvitation((prev: any) => {
-      let current = {};
-      try {
-        current = typeof prev.featureSettings === "object" ? prev.featureSettings : JSON.parse(prev.featureSettings || "{}");
-      } catch {
-        current = {};
-      }
       return {
         ...prev,
         featureSettings: {
-          ...current,
+          ...(prev.featureSettings ?? {}),
           [key]: value,
         },
       };
@@ -752,36 +733,13 @@ export default function EditInvitation() {
     broadcastToAllLiveIframes({ type: "LUX_REMOTE_EDIT_CHANGE", field: key, value });
   };
 
-  const getFeatureSetting = (key: string, fallback: any = "") => {
-    if (!invitation?.featureSettings) return fallback;
-    try {
-      const parsed = typeof invitation.featureSettings === "object" ? invitation.featureSettings : JSON.parse(invitation.featureSettings);
-      return parsed[key] !== undefined ? parsed[key] : fallback;
-    } catch {
-      return fallback;
-    }
-  };
+  const getFeatureSetting = (key: string, fallback: any = "") => invitation?.featureSettings?.[key] ?? fallback;
 
-  const getSavedFeatureSetting = (key: string, fallback: any = "") => {
-    if (!savedSnapshot?.invitation?.featureSettings) return fallback;
-    try {
-      const parsed = typeof savedSnapshot.invitation.featureSettings === "object"
-        ? savedSnapshot.invitation.featureSettings
-        : JSON.parse(savedSnapshot.invitation.featureSettings);
-      return parsed[key] !== undefined ? parsed[key] : fallback;
-    } catch {
-      return fallback;
-    }
-  };
+  const getSavedFeatureSetting = (key: string, fallback: any = "") => savedSnapshot?.invitation?.featureSettings?.[key] ?? fallback;
 
   const updateCustomLabel = (key: string, value: string) => {
     setInvitation((prev: any) => {
-      let currentFs: any = {};
-      try {
-        currentFs = typeof prev.featureSettings === "object" ? prev.featureSettings : JSON.parse(prev.featureSettings || "{}");
-      } catch {
-        currentFs = {};
-      }
+      const currentFs: Record<string, any> = prev.featureSettings ?? {};
       const customLabels = currentFs.customLabels || {};
       return {
         ...prev,
@@ -818,12 +776,7 @@ export default function EditInvitation() {
         if (field.startsWith("customLabels.")) {
           const labelKey = field.replace("customLabels.", "");
           setInvitation((prev: any) => {
-            let currentFs: any = {};
-            try {
-              currentFs = typeof prev.featureSettings === "object" ? prev.featureSettings : JSON.parse(prev.featureSettings || "{}");
-            } catch {
-              currentFs = {};
-            }
+            const currentFs: Record<string, any> = prev.featureSettings ?? {};
             const customLabels = currentFs.customLabels || {};
             return {
               ...prev,
@@ -917,7 +870,7 @@ export default function EditInvitation() {
 
     // Sec 3: Profil Mempelai / Persona Acara
     const dirty3 = (
-      (invitation.participantsJson || "") !== (savedSnapshot.invitation?.participantsJson || "") ||
+      JSON.stringify(safeParseParticipants(invitation.participantsJson)) !== JSON.stringify(safeParseParticipants(savedSnapshot.invitation?.participantsJson)) ||
       (invitation.groomName || "") !== (savedSnapshot.invitation?.groomName || "") ||
       (invitation.brideName || "") !== (savedSnapshot.invitation?.brideName || "") ||
       (invitation.groomNickname || "") !== (savedSnapshot.invitation?.groomNickname || "") ||
@@ -930,7 +883,7 @@ export default function EditInvitation() {
       (invitation.brideMother || "") !== (savedSnapshot.invitation?.brideMother || "") ||
       (invitation.groomInstagram || "") !== (savedSnapshot.invitation?.groomInstagram || "") ||
       (invitation.brideInstagram || "") !== (savedSnapshot.invitation?.brideInstagram || "") ||
-      getFeatureSetting("displayOrder", "BRIDE_FIRST") !== getSavedFeatureSetting("displayOrder", "BRIDE_FIRST") ||
+      getFeatureSetting("displayOrder", "GROOM_FIRST") !== getSavedFeatureSetting("displayOrder", "GROOM_FIRST") ||
       (media["BRIDE_PHOTO"] || "") !== (savedSnapshot.media?.["BRIDE_PHOTO"] || "") ||
       (media["GROOM_PHOTO"] || "") !== (savedSnapshot.media?.["GROOM_PHOTO"] || "")
     );
@@ -1007,15 +960,7 @@ export default function EditInvitation() {
     );
 
     // Sec 14: Galeri Kenangan Tamu (After-Event)
-    const dirty15 = (() => {
-      try {
-        const curFs = typeof invitation.featureSettings === "object" ? invitation.featureSettings : JSON.parse(invitation.featureSettings || "{}");
-        const prevFs = typeof savedSnapshot.invitation?.featureSettings === "object" ? savedSnapshot.invitation.featureSettings : JSON.parse(savedSnapshot.invitation?.featureSettings || "{}");
-        return JSON.stringify(curFs.customLabels || {}) !== JSON.stringify(prevFs.customLabels || {});
-      } catch {
-        return false;
-      }
-    })();
+    const dirty15 = JSON.stringify(invitation.featureSettings?.customLabels || {}) !== JSON.stringify(savedSnapshot.invitation?.featureSettings?.customLabels || {});
 
     const dirty14 = (
       Boolean(getFeatureSetting("showGuestMemories", true)) !== Boolean(getSavedFeatureSetting("showGuestMemories", true)) ||
@@ -1036,9 +981,8 @@ export default function EditInvitation() {
 
     // Sec 16: Mitra & Vendor Pernikahan (Wedding Credits)
     const dirty16 = (() => {
-      try {
-        const curFs = typeof invitation.featureSettings === "object" ? invitation.featureSettings : JSON.parse(invitation.featureSettings || "{}");
-        const prevFs = typeof savedSnapshot.invitation?.featureSettings === "object" ? savedSnapshot.invitation.featureSettings : JSON.parse(savedSnapshot.invitation?.featureSettings || "{}");
+        const curFs: Record<string, any> = invitation.featureSettings ?? {};
+        const prevFs: Record<string, any> = savedSnapshot.invitation?.featureSettings ?? {};
         const curShow = Boolean(curFs.showVendors);
         const prevShow = Boolean(prevFs.showVendors);
         const curVendors = JSON.stringify(curFs.vendors || []);
@@ -1050,9 +994,6 @@ export default function EditInvitation() {
         const curEye = curFs.customLabels?.vendorEyebrow || "";
         const prevEye = prevFs.customLabels?.vendorEyebrow || "";
         return curShow !== prevShow || curVendors !== prevVendors || curTitle !== prevTitle || curSub !== prevSub || curEye !== prevEye;
-      } catch {
-        return false;
-      }
     })();
 
     return {
@@ -1212,12 +1153,10 @@ export default function EditInvitation() {
 
   const updateParticipantData = (updater: (prev: Record<string, any>) => Record<string, any>) => {
     setInvitation((prev: any) => {
-      const current = safeParseParticipants(prev?.participantsJson);
-      const updated = updater(current);
-      const jsonStr = JSON.stringify(updated);
+      const updated = updater(safeParseParticipants(prev?.participantsJson));
       return {
         ...prev,
-        participantsJson: jsonStr,
+        participantsJson: updated,
         ...mirrorParticipantNames(prev?.eventType, updated),
       };
     });
@@ -1244,7 +1183,8 @@ export default function EditInvitation() {
   const currentThemeId = invitation.themeId === "kila" ? "kalandra" : (invitation.themeId || "");
   const selectedThemeObj = currentThemeId ? (themesList.find((t) => t.id === currentThemeId) || null) : null;
   const activeBlueprint = getThemeBlueprint(currentThemeId || "kalandra");
-  const displayOrder = getFeatureSetting("displayOrder", "BRIDE_FIRST");
+  // Tanpa pilihan tersimpan, mesin tema menampilkan mempelai pria lebih dulu (lib/themeEngine.ts).
+  const displayOrder = getFeatureSetting("displayOrder", "GROOM_FIRST");
 
   const planType = invitation.order?.planType || "";
   const packageConfig = platformSettings?.packages?.find((p: any) => p.id === planType);

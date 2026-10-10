@@ -137,12 +137,7 @@ export async function POST(
         return NextResponse.json({ error: "newDate wajib diisi." }, { status: 400 });
       }
 
-      let events: any[] = [];
-      try {
-        events = typeof invitation.eventData === "string" ? JSON.parse(invitation.eventData) : invitation.eventData || [];
-      } catch {
-        events = [];
-      }
+      let events: any[] = Array.isArray(invitation.eventData) ? invitation.eventData : [];
 
       if (events.length > 0) {
         const target = events.find((e: any) => e.isPrimary) || events[0];
@@ -155,7 +150,7 @@ export async function POST(
       await prisma.invitation.update({
         where: { id },
         data: {
-          eventData: JSON.stringify(events),
+          eventData: events,
         },
       });
 

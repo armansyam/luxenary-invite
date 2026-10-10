@@ -1,4 +1,5 @@
 import { logger } from "@/lib/logger";
+import { normalizeFeatureUrls } from "@/lib/safeUrl";
 
 type FeatureSettings = Record<string, any>;
 
@@ -48,6 +49,32 @@ export function keepValidMemoriesSettings(merged: FeatureSettings, existing: Fea
     else delete result.memoriesShotsQuota;
   }
   return result;
+}
+
+/**
+ * Menggabungkan featureSettings dari body PUT/PATCH (objek atau string JSON) ke yang tersimpan: URL disanitasi, fitur
+ * berbayar di luar paket dimatikan untuk non-admin, dan pengaturan kamera yang tidak sah diganti nilai tersimpan.
+ */
+export async function mergeFeatureSettingsInput(
+  stored: unknown,
+  incoming: unknown,
+  planType: string | null | undefined,
+  isAdmin: boolean,
+): Promise<{ ok: true; value: FeatureSettings } | { ok: false; error: string }> {
+  let incomingObj: unknown = incoming;
+  if (typeof incoming === "string") {
+    try {
+      incomingObj = JSON.parse(incoming || "{}");
+    } catch {
+      return { ok: false, error: "featureSettings bukan JSON yang valid." };
+    }
+  }
+  if (!isPlainObject(incomingObj)) return { ok: false, error: "featureSettings harus berupa objek." };
+
+  const existing = parseFeatureSettings(stored);
+  let merged = normalizeFeatureUrls({ ...existing, ...incomingObj });
+  if (!isAdmin) merged = await gateFeaturesByPlan(merged, planType);
+  return { ok: true, value: keepValidMemoriesSettings(merged, existing) };
 }
 
 /** Mematikan fitur berbayar yang tidak termasuk kapabilitas paket (tidak bisa dibuka lewat bypass API). */

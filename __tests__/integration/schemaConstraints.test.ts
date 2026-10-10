@@ -8,6 +8,7 @@ import { NextRequest } from "next/server";
 let sessionUser: { id: string; email?: string; role: string; isAdmin: boolean; permissions: string[] } | null = null;
 vi.mock("@/auth", () => ({ auth: vi.fn(async () => (sessionUser ? { user: sessionUser } : null)) }));
 
+import { Prisma } from "@prisma/client";
 import { prisma, pool } from "@/lib/prisma";
 import { PUT as invitationPut } from "@/app/api/client/invitations/[id]/route";
 import { POST as marketingPost } from "@/app/api/admin/marketing/route";
@@ -118,15 +119,23 @@ describe.skipIf(!IS_TEST_DB)("constraint skema database", () => {
     });
   });
 
-  describe("kolom teks berisi JSON", () => {
-    it.each(["eventData", "participantsJson", "loveStory", "bankAccounts", "featureSettings"] as const)("%s menolak teks yang bukan JSON", async (column) => {
-      await expect(prisma.invitation.update({ where: { id: invitationId }, data: { [column]: "bukan json" } })).rejects.toThrow();
-      await expect(prisma.invitation.update({ where: { id: invitationId }, data: { [column]: "" } })).rejects.toThrow();
+  describe("kolom jsonb berbentuk tetap", () => {
+    // String JSON yang lolos tanpa di-parse (JSON.stringify tertinggal) tersimpan sebagai string jsonb dan harus ditolak.
+    it.each([
+      ["eventData", "chk_invitations_eventData_array", {}],
+      ["loveStory", "chk_invitations_loveStory_array", {}],
+      ["bankAccounts", "chk_invitations_bankAccounts_array", {}],
+      ["participantsJson", "chk_invitations_participantsJson_object", []],
+      ["featureSettings", "chk_invitations_featureSettings_object", []],
+    ] as const)("%s menolak string JSON dan bentuk yang salah", async (column, constraint, wrongShape) => {
+      await expect(prisma.invitation.update({ where: { id: invitationId }, data: { [column]: "[]" } })).rejects.toThrow(new RegExp(constraint));
+      await expect(prisma.invitation.update({ where: { id: invitationId }, data: { [column]: wrongShape } })).rejects.toThrow(new RegExp(constraint));
     });
 
-    it("JSON valid dan NULL diterima", async () => {
-      await expect(prisma.invitation.update({ where: { id: invitationId }, data: { eventData: "[]", loveStory: '[{"title":"a"}]' } })).resolves.toBeDefined();
-      await expect(prisma.invitation.update({ where: { id: invitationId }, data: { eventData: null, loveStory: null } })).resolves.toBeDefined();
+    it("bentuk yang benar dan NULL diterima", async () => {
+      await expect(prisma.invitation.update({ where: { id: invitationId }, data: { eventData: [], loveStory: [{ title: "a" }], participantsJson: { person: {} } } })).resolves.toBeDefined();
+      await expect(prisma.invitation.update({ where: { id: invitationId }, data: { eventData: Prisma.DbNull, loveStory: Prisma.DbNull } })).resolves.toBeDefined();
+      await expect(prisma.order.update({ where: { id: orderId }, data: { itemsJson: "[]" } })).rejects.toThrow(/chk_orders_itemsJson_array/);
     });
   });
 
@@ -143,7 +152,7 @@ describe.skipIf(!IS_TEST_DB)("constraint skema database", () => {
       const res = await put({ loveStory: '[{"title":"Awal"}]', participantsJson: "" });
       expect(res.status).toBe(200);
       const row = await prisma.invitation.findUniqueOrThrow({ where: { id: invitationId }, select: { loveStory: true, participantsJson: true } });
-      expect(row.loveStory).toBe('[{"title":"Awal"}]');
+      expect(row.loveStory).toEqual([{ title: "Awal" }]);
       expect(row.participantsJson).toBeNull();
     });
 

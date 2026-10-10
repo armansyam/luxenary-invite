@@ -91,13 +91,15 @@ export function mirrorParticipantNames(eventType: string | null | undefined, p: 
   return mirrored;
 }
 
-export function safeParseParticipants(raw: string | null | undefined): Record<string, any> {
-  if (!raw || raw.trim() === "") return {};
-  try {
-    const parsed = JSON.parse(raw);
-    return typeof parsed === "object" && parsed !== null ? parsed : {};
-  } catch {
-    console.error("[safeParseParticipants] JSON malformed:", raw?.slice(0, 100));
-    return {};
+/** Objek peserta dari kolom jsonb `participantsJson` (atau string JSON dari body permintaan). */
+export function safeParseParticipants(raw: unknown): Record<string, any> {
+  let value = raw;
+  if (typeof raw === "string") {
+    try {
+      value = JSON.parse(raw);
+    } catch {
+      return {};
+    }
   }
+  return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, any>) : {};
 }

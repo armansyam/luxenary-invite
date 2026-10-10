@@ -8,6 +8,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import fs from "fs";
 import path from "path";
+import { Prisma } from "@prisma/client";
 import { prisma, pool } from "@/lib/prisma";
 import { composeTemplateData } from "@/lib/themeEngine";
 import { renderTemplateFile, THEME_MAP } from "@/lib/renderTemplate";
@@ -49,8 +50,8 @@ const GALLERY_URLS = [1, 2, 3].map((n) => `https://example.test/galeri-${n}.jpg`
 // Nilai contoh yang dulu tercetak sebagai fakta di undangan klien yang datanya kosong.
 const FAKE_FACTS = ["Cum Laude", "Universitas Hasanuddin", "Sarjana Komputer", "3.4 kg", "50 cm", "15 September 2026", "Kediaman Mempelai", "Ballroom Kampus", "Auditorium / Gedung Pertemuan", "Batik Modern", "Panitia Penyelenggara", "Lokasi Acara", "2026-12-31", "2026-10-05"];
 
-function featureSettings() {
-  return JSON.stringify({
+function featureSettings(): Prisma.InputJsonObject {
+  return {
     musicUrl: "/music/canon-in-d.ogg",
     showGift: true,
     showMusic: true,
@@ -66,7 +67,7 @@ function featureSettings() {
     turutMengundang: "Bpk. H. Andi Mappasessu & Ibu Hj. Andi Tenri\nKeluarga Besar Bone",
     galleryPhotosList: GALLERY_URLS.join("\n"),
     vendorsList: [{ category: "Dekorasi", name: "Sanggar Bunga" }],
-  });
+  };
 }
 
 /** Seluruh token {{kunci}} di template (tanpa #if/#unless/penutup), termasuk {{else}} yang tidak didukung renderer. */
@@ -114,14 +115,14 @@ async function makeInvitation(eventType: string) {
       musicUrl: "/music/canon-in-d.ogg",
       dresscode: "Earth Tone",
       liveStreamUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-      participantsJson: PARTICIPANTS[eventType] ? JSON.stringify(PARTICIPANTS[eventType]) : null,
-      loveStory: JSON.stringify([{ title: "Pertama Bertemu", date: "2019", content: "Bertemu di kampus." }, { title: "Lamaran", date: "2025", content: "Keluarga datang melamar." }]),
-      bankAccounts: JSON.stringify([{ bank: "BCA", number: "7890123456", name: "Andi" }]),
+      participantsJson: (PARTICIPANTS[eventType] as Prisma.InputJsonObject | undefined) ?? Prisma.DbNull,
+      loveStory: [{ title: "Pertama Bertemu", date: "2019", content: "Bertemu di kampus." }, { title: "Lamaran", date: "2025", content: "Keluarga datang melamar." }],
+      bankAccounts: [{ bank: "BCA", number: "7890123456", name: "Andi" }],
       featureSettings: featureSettings(),
-      eventData: JSON.stringify([
+      eventData: [
         { title: "Akad Nikah", date: "2099-12-12", time: "08:00 - 10:00 WITA", startTime: "08:00", endTime: "10:00", timezone: "WITA", location: "Masjid Raya", address: "Jl. Masjid Raya 1", mapsUrl: "https://maps.google.com/?q=masjid", badge: "Sakral", isPrimary: false },
         { title: "Resepsi", date: "2099-12-12", time: "11:00 - 14:00 WITA", startTime: "11:00", endTime: "14:00", timezone: "WITA", location: "Gedung Mulo", address: "Jl. Sudirman 25", mapsUrl: "https://maps.google.com/?q=mulo", badge: "Umum", isPrimary: true },
-      ]),
+      ],
       media: { create: SLOTS.map((slot) => ({ mediaSlot: slot, localPath: slotUrl(slot) })) },
     },
   });
@@ -145,8 +146,8 @@ async function makeEmptyInvitation(eventType: string) {
       invitationSlug: `${RUN}-${eventType}-empty`,
       groomSlug: `${RUN}-g-${eventType}-empty`,
       brideSlug: `${RUN}-b-${eventType}-empty`,
-      featureSettings: JSON.stringify({ showGallery: true, showGift: true, showStory: true }),
-      eventData: JSON.stringify([{ title: "Acara", date: "", time: "", location: "", isPrimary: true }]),
+      featureSettings: { showGallery: true, showGift: true, showStory: true },
+      eventData: [{ title: "Acara", date: "", time: "", location: "", isPrimary: true }],
     },
   });
   ids.invitations.push(inv.id);
@@ -245,7 +246,7 @@ describe.skipIf(!IS_TEST_DB)("token template tema terisi oleh mesin", () => {
     const invitationId = invitationByType.KHITAN;
     const inv = await prisma.invitation.findUniqueOrThrow({ where: { id: invitationId }, select: { orderId: true, featureSettings: true } });
     await prisma.order.update({ where: { id: inv.orderId! }, data: { planType: "TIER_1" } });
-    await prisma.invitation.update({ where: { id: invitationId }, data: { themeId: "al-fariz", featureSettings: JSON.stringify({ ...JSON.parse(inv.featureSettings || "{}"), showMusic: false }) } });
+    await prisma.invitation.update({ where: { id: invitationId }, data: { themeId: "al-fariz", featureSettings: { ...(inv.featureSettings as Prisma.JsonObject), showMusic: false } } });
     try {
       const html = await renderTemplateFile("al-fariz", (await composeTemplateData(invitationId)) as Record<string, unknown>, { eventType: "KHITAN" });
       expect(html).not.toContain('id="passQrImg"');
@@ -254,7 +255,7 @@ describe.skipIf(!IS_TEST_DB)("token template tema terisi oleh mesin", () => {
       expect(html).toContain("Fatih");
     } finally {
       await prisma.order.update({ where: { id: inv.orderId! }, data: { planType: "TIER_3" } });
-      await prisma.invitation.update({ where: { id: invitationId }, data: { featureSettings: inv.featureSettings } });
+      await prisma.invitation.update({ where: { id: invitationId }, data: { featureSettings: inv.featureSettings as Prisma.InputJsonObject } });
     }
   });
 

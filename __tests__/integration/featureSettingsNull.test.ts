@@ -4,6 +4,7 @@
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { NextRequest } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma, pool } from "@/lib/prisma";
 import { POST } from "@/app/api/public/memories/upload/route";
 
@@ -38,7 +39,7 @@ describe.skipIf(!IS_TEST_DB)("featureSettings NULL pada unggahan momen tamu", ()
         invitationSlug: RUN,
         groomSlug: `${RUN}-g`,
         brideSlug: `${RUN}-b`,
-        featureSettings: null,
+        featureSettings: Prisma.DbNull,
       },
     });
     ids.invitation = inv.id;

@@ -36,10 +36,10 @@ const SETTINGS: Record<string, string> = {
 
 // Acara utama 12 Desember 2026 di WIT: awal hari = 2026-12-11T15:00Z
 const EVENT_DAY_START = new Date("2026-12-11T15:00:00.000Z");
-const EVENT_DATA = JSON.stringify([
+const EVENT_DATA = [
   { title: "Akad", date: "2026-12-10", timezone: "WIB", isPrimary: false },
   { title: "Resepsi", date: "2026-12-12", timezone: "WIT", isPrimary: true },
-]);
+];
 const at = (offsetMs: number) => new Date(EVENT_DAY_START.getTime() + offsetMs);
 
 const created = { users: [] as string[], invitations: [] as string[] };

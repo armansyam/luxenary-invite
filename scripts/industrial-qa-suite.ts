@@ -918,7 +918,7 @@ export class IndustrialQASuite {
             brideName: "Bride NAS",
             themeId: "candani",
             status: "EVENT_FINISHED",
-            eventData: JSON.stringify([{ title: "Akad", date: "2026-12-26" }]),
+            eventData: [{ title: "Akad", date: "2026-12-26" }],
             media: {
               create: [
                 {

@@ -31,7 +31,7 @@ describe.skipIf(!IS_TEST_DB)("GET /api/client/invitations: jenis acara", () => {
         invitationSlug: RUN,
         groomSlug: `${RUN}-g`,
         brideSlug: `${RUN}-b`,
-        participantsJson: JSON.stringify({ person: { name: "Rani Kartika", nickname: "Rani", age: 7 } }),
+        participantsJson: { person: { name: "Rani Kartika", nickname: "Rani", age: 7 } },
       },
     });
     ids.invitation = inv.id;
@@ -54,7 +54,7 @@ describe.skipIf(!IS_TEST_DB)("GET /api/client/invitations: jenis acara", () => {
     const mine = list.find((i) => i.id === ids.invitation);
 
     expect(mine.eventType).toBe("BIRTHDAY");
-    expect(typeof mine.participantsJson).toBe("string");
+    expect(mine.participantsJson).toEqual({ person: { name: "Rani Kartika", nickname: "Rani", age: 7 } });
     expect(resolveInvitationDisplayName(mine)).toBe("Rani — Ulang Tahun ke-7");
     expect(resolveInvitationDisplayName(mine)).not.toMatch(/Mempelai/i);
   });

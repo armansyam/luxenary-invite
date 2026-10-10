@@ -142,14 +142,8 @@ export default function SettingsPage() {
   };
 
   const getFeatureToggle = (inv: any, key: string, defaultValue: boolean = true): boolean => {
-    try {
-      if (!inv?.featureSettings) return defaultValue;
-      const fs = typeof inv.featureSettings === "string" ? JSON.parse(inv.featureSettings) : inv.featureSettings;
-      if (fs[key] !== undefined) return Boolean(fs[key]);
-      return defaultValue;
-    } catch {
-      return defaultValue;
-    }
+    const value = inv?.featureSettings?.[key];
+    return value !== undefined ? Boolean(value) : defaultValue;
   };
 
   const evaluateRule = (rule: any, inv: any, form: any): "PASSED" | "DISABLED" | "FAILED" => {
@@ -303,18 +297,11 @@ export default function SettingsPage() {
       hasToggle: true,
       isToggledOn: (inv: any) => getFeatureToggle(inv, "showGallery", true),
       hasData: (inv: any) => {
-        try {
-          if (Array.isArray(inv?.media) && inv.media.some((m: any) => m.mediaSlot === "GALLERY")) return true;
-          if (inv?.featureSettings) {
-            const f = typeof inv.featureSettings === "string" ? JSON.parse(inv.featureSettings) : inv.featureSettings;
-            if (Array.isArray(f?.galleryPhotos) && f.galleryPhotos.length > 0) return true;
-            if (typeof f?.galleryPhotosList === "string" && f.galleryPhotosList.trim()) return true;
-            if (typeof f?.galleryDriveFolderUrl === "string" && f.galleryDriveFolderUrl.trim()) return true;
-          }
-          return false;
-        } catch {
-          return false;
-        }
+        if (Array.isArray(inv?.media) && inv.media.some((m: any) => m.mediaSlot === "GALLERY")) return true;
+        const f = inv?.featureSettings;
+        if (Array.isArray(f?.galleryPhotos) && f.galleryPhotos.length > 0) return true;
+        if (typeof f?.galleryPhotosList === "string" && f.galleryPhotosList.trim()) return true;
+        return typeof f?.galleryDriveFolderUrl === "string" && f.galleryDriveFolderUrl.trim() !== "";
       },
       missingMessage: "Seksi Galeri Foto dalam status aktif, namun belum ada foto yang diunggah. Silakan unggah foto di Edit Undangan, atau nonaktifkan sakelar seksi ini jika tidak digunakan.",
     },
@@ -324,15 +311,8 @@ export default function SettingsPage() {
       desc: "Perjalanan cinta kedua mempelai",
       hasToggle: true,
       isToggledOn: (inv: any) => getFeatureToggle(inv, "showStory", true),
-      hasData: (inv: any) => {
-        try {
-          if (!inv?.loveStory) return false;
-          const ls = typeof inv.loveStory === "string" ? JSON.parse(inv.loveStory) : inv.loveStory;
-          return Array.isArray(ls) && ls.length > 0 && ls.some((s: any) => s?.title?.trim() || s?.story?.trim() || s?.desc?.trim());
-        } catch {
-          return false;
-        }
-      },
+      hasData: (inv: any) =>
+        Array.isArray(inv?.loveStory) && inv.loveStory.some((s: any) => s?.title?.trim() || s?.content?.trim()),
       missingMessage: "Seksi Cerita Kisah Kasih dalam status aktif, namun belum ada cerita yang diisi. Silakan tulis kisah cinta di Edit Undangan, atau nonaktifkan sakelar seksi ini jika tidak digunakan.",
     },
     {
@@ -341,19 +321,11 @@ export default function SettingsPage() {
       desc: "Nomor rekening atau amplop digital",
       hasToggle: true,
       isToggledOn: (inv: any) => getFeatureToggle(inv, "showGift", true),
-      hasData: (inv: any) => {
-        try {
-          if (inv?.featureSettings) {
-            const f = typeof inv.featureSettings === "string" ? JSON.parse(inv.featureSettings) : inv.featureSettings;
-            if (f?.qrisImageUrl) return true;
-          }
-          if (!inv?.bankAccounts) return false;
-          const ba = typeof inv.bankAccounts === "string" ? JSON.parse(inv.bankAccounts) : inv.bankAccounts;
-          return Array.isArray(ba) && ba.length > 0 && ba.some((b: any) => b?.accountNumber?.trim() || b?.bankName?.trim());
-        } catch {
-          return false;
-        }
-      },
+      // Kunci rekening sama dengan yang ditulis editor studio: { bank, number, name }.
+      hasData: (inv: any) =>
+        Boolean(inv?.featureSettings?.qrisImageUrl) ||
+        Boolean(inv?.shippingAddress?.trim()) ||
+        (Array.isArray(inv?.bankAccounts) && inv.bankAccounts.some((b: any) => b?.number?.trim())),
       missingMessage: "Seksi Rekening & Hadiah Digital dalam status aktif, namun belum ada rekening atau amplop digital yang diisi. Silakan lengkapi di Edit Undangan, atau nonaktifkan sakelar seksi ini jika tidak digunakan.",
     },
     {

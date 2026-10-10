@@ -117,10 +117,12 @@ async function runCompleteSystemAudit() {
         themeId: "artisan",
         status: "DRAFT",
         staffPin: encryptPin("123456"),
-        eventData: JSON.stringify({
-          receptionDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          venue: "Grand Ballroom Hotel Jakarta",
-        }),
+        eventData: [{
+          title: "Resepsi",
+          date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+          location: "Grand Ballroom Hotel Jakarta",
+          isPrimary: true,
+        }],
       },
     });
     testInvitationId = testInvitation.id;
