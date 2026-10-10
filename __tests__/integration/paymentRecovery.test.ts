@@ -58,7 +58,7 @@ async function makeInvitation(userId: string, orderId: string | null, tag: strin
 }
 
 const quotaOf = async (invitationId: string) =>
-  JSON.parse((await prisma.invitation.findUniqueOrThrow({ where: { id: invitationId } })).featureSettings || "{}").extraMemoriesQuota ?? 0;
+  (await prisma.invitation.findUniqueOrThrow({ where: { id: invitationId }, select: { extraMemoriesQuota: true } })).extraMemoriesQuota;
 
 function paidWebhook(orderId: string, amount = "100000.00") {
   const statusCode = "200";

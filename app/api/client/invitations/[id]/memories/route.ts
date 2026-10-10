@@ -100,7 +100,7 @@ export async function GET(
 
     const maxContributors = typeof fs.memoriesMaxContributors === "number" ? fs.memoriesMaxContributors : planQuota.maxContributors;
     const shotsQuota = typeof fs.memoriesShotsQuota === "number" ? fs.memoriesShotsQuota : planQuota.shotsQuota;
-    const extraPhotos = typeof fs.extraMemoriesQuota === "number" ? Math.max(0, fs.extraMemoriesQuota) : 0;
+    const extraPhotos = invitation.extraMemoriesQuota;
     const baseTotalPhotos = planQuota.totalQuota > 0 ? planQuota.totalQuota : (maxContributors * shotsQuota);
     const maxTotalPhotos = baseTotalPhotos + extraPhotos;
 
@@ -284,7 +284,7 @@ export async function PATCH(
     if (Array.isArray(incomingSettings.memoriesSessions)) {
       const { getPlanMemoriesQuota } = await import("@/lib/settings");
       const planQuota = await getPlanMemoriesQuota(invitation.order?.planType);
-      const extraPhotos = typeof currentFs.extraMemoriesQuota === "number" ? Math.max(0, currentFs.extraMemoriesQuota) : 0;
+      const extraPhotos = invitation.extraMemoriesQuota;
       const baseTotalPhotos = planQuota.totalQuota > 0 ? planQuota.totalQuota : (planQuota.maxContributors * planQuota.shotsQuota);
       const maxTotalPhotos = baseTotalPhotos + extraPhotos;
 

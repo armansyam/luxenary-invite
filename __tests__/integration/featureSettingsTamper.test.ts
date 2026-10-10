@@ -1,5 +1,5 @@
 /**
- * Kunci server-managed di featureSettings (kuota add-on berbayar) tidak boleh ditulis pemilik undangan lewat
+ * Kuota add-on berbayar (kolom extraMemoriesQuota/extraGalleryDays) tidak dapat ditulis pemilik undangan lewat
  * PUT/PATCH; gating paket berlaku di PATCH; JSON rusak ditolak, bukan disimpan mentah (DB luxenary_test).
  */
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
@@ -10,7 +10,6 @@ vi.mock("@/auth", () => ({ auth: vi.fn(async () => session) }));
 import { prisma, pool } from "@/lib/prisma";
 import { PUT, PATCH } from "@/app/api/client/invitations/[id]/route";
 import { hasPlanCapability } from "@/lib/settings";
-import { mergeClientFeatureSettings, SERVER_MANAGED_FEATURE_KEYS } from "@/lib/featureSettings";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
 const RUN = `vitest_fstamper_${Date.now()}`;
@@ -27,25 +26,9 @@ const stored = async () => {
   const inv = await prisma.invitation.findUniqueOrThrow({ where: { id: ids.invitation } });
   return JSON.parse(inv.featureSettings || "{}");
 };
-const resetFs = (fs: object) => prisma.invitation.update({ where: { id: ids.invitation }, data: { featureSettings: JSON.stringify(fs), status: "DRAFT" } });
-
-describe("mergeClientFeatureSettings", () => {
-  it("non-admin: kunci server-managed dipertahankan atau dibuang, kunci lain diperbarui", () => {
-    const merged = mergeClientFeatureSettings({ extraMemoriesQuota: 10, showGift: false }, { extraMemoriesQuota: 999, extraGalleryDays: 365, showGift: true }, false);
-    expect(merged.extraMemoriesQuota).toBe(10);
-    expect("extraGalleryDays" in merged).toBe(false);
-    expect(merged.showGift).toBe(true);
-  });
-
-  it("admin boleh mengubah kunci server-managed", () => {
-    expect(mergeClientFeatureSettings({ extraMemoriesQuota: 10 }, { extraMemoriesQuota: 50 }, true).extraMemoriesQuota).toBe(50);
-  });
-
-  it("daftar kunci mencakup kuota foto dan hari galeri", () => {
-    expect(SERVER_MANAGED_FEATURE_KEYS).toContain("extraMemoriesQuota");
-    expect(SERVER_MANAGED_FEATURE_KEYS).toContain("extraGalleryDays");
-  });
-});
+const resetFs = (fs: object) =>
+  prisma.invitation.update({ where: { id: ids.invitation }, data: { featureSettings: JSON.stringify(fs), status: "DRAFT", extraMemoriesQuota: 10, extraGalleryDays: 30 } });
+const quota = () => prisma.invitation.findUniqueOrThrow({ where: { id: ids.invitation }, select: { extraMemoriesQuota: true, extraGalleryDays: true } });
 
 describe.skipIf(!IS_TEST_DB)("featureSettings: manipulasi klien pada rute undangan", () => {
   beforeAll(async () => {
@@ -64,7 +47,8 @@ describe.skipIf(!IS_TEST_DB)("featureSettings: manipulasi klien pada rute undang
         brideSlug: `${RUN}-b`,
         groomName: "Pria",
         brideName: "Wanita",
-        featureSettings: JSON.stringify({ extraMemoriesQuota: 10, extraGalleryDays: 30 }),
+        extraMemoriesQuota: 10,
+        extraGalleryDays: 30,
       },
     });
     ids.invitation = inv.id;
@@ -79,28 +63,26 @@ describe.skipIf(!IS_TEST_DB)("featureSettings: manipulasi klien pada rute undang
     await pool.end();
   });
 
-  it("PATCH tidak dapat menaikkan kuota foto yang dibeli", async () => {
-    await resetFs({ extraMemoriesQuota: 10, extraGalleryDays: 30 });
-    const res = await PATCH(req("PATCH", { featureSettings: { extraMemoriesQuota: 99999, extraGalleryDays: 999, showGift: true } }), ctx());
+  it("PATCH tidak dapat menaikkan kuota foto maupun hari galeri yang dibeli", async () => {
+    await resetFs({});
+    const res = await PATCH(req("PATCH", { featureSettings: { extraMemoriesQuota: 99999, extraGalleryDays: 999, showGift: true }, extraMemoriesQuota: 99999 }), ctx());
     expect(res.status).toBe(200);
-    const fs = await stored();
-    expect(fs.extraMemoriesQuota).toBe(10);
-    expect(fs.extraGalleryDays).toBe(30);
-    expect(fs.showGift).toBe(true);
+    expect(await quota()).toEqual({ extraMemoriesQuota: 10, extraGalleryDays: 30 });
+    expect((await stored()).showGift).toBe(true);
   });
 
   it("PUT tidak dapat menaikkan kuota foto yang dibeli", async () => {
-    await resetFs({ extraMemoriesQuota: 10 });
-    const res = await PUT(req("PUT", { featureSettings: { extraMemoriesQuota: 99999 } }), ctx());
+    await resetFs({});
+    const res = await PUT(req("PUT", { featureSettings: { extraMemoriesQuota: 99999 }, extraMemoriesQuota: 99999, extraGalleryDays: 999 }), ctx());
     expect(res.status).toBe(200);
-    expect((await stored()).extraMemoriesQuota).toBe(10);
+    expect(await quota()).toEqual({ extraMemoriesQuota: 10, extraGalleryDays: 30 });
   });
 
   it("PUT dengan featureSettings null tidak menghapus add-on berbayar", async () => {
-    await resetFs({ extraMemoriesQuota: 10, showGift: true });
+    await resetFs({ showGift: true });
     const res = await PUT(req("PUT", { featureSettings: null }), ctx());
     expect(res.status).toBe(200);
-    expect(await stored()).toEqual({ extraMemoriesQuota: 10 });
+    expect(await quota()).toEqual({ extraMemoriesQuota: 10, extraGalleryDays: 30 });
   });
 
   it("PATCH menerapkan gating paket pada fitur berbayar", async () => {
@@ -112,12 +94,12 @@ describe.skipIf(!IS_TEST_DB)("featureSettings: manipulasi klien pada rute undang
   });
 
   it("JSON rusak ditolak 400 dan tidak disimpan mentah", async () => {
-    await resetFs({ extraMemoriesQuota: 10 });
+    await resetFs({ showGift: true });
     const put = await PUT(req("PUT", { featureSettings: "{bukan json" }), ctx());
     const patch = await PATCH(req("PATCH", { featureSettings: "{bukan json" }), ctx());
     expect(put.status).toBe(400);
     expect(patch.status).toBe(400);
-    expect(await stored()).toEqual({ extraMemoriesQuota: 10 });
+    expect(await stored()).toEqual({ showGift: true });
   });
 
   it("eventData yang tidak dapat divalidasi ditolak 400", async () => {
@@ -129,14 +111,5 @@ describe.skipIf(!IS_TEST_DB)("featureSettings: manipulasi klien pada rute undang
     await prisma.invitation.update({ where: { id: ids.invitation }, data: { status: "PUBLISHED" } });
     const res = await PATCH(req("PATCH", { participantsJson: { person: { name: "Nama Baru" } } }), ctx());
     expect(res.status).toBe(403);
-  });
-
-  it("admin dapat mengubah kuota foto", async () => {
-    await resetFs({ extraMemoriesQuota: 10 });
-    session = { user: { id: "admin-x", role: "SUPER_ADMIN", isAdmin: true } };
-    const res = await PATCH(req("PATCH", { featureSettings: { extraMemoriesQuota: 50 } }), ctx());
-    session = { user: { id: ids.owner, role: "CLIENT", isAdmin: false } };
-    expect(res.status).toBe(200);
-    expect((await stored()).extraMemoriesQuota).toBe(50);
   });
 });

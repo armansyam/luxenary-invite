@@ -389,7 +389,7 @@ export default function MomentsSetupPage() {
   const isEnabled = getFeatureSetting("showGuestMemories", true);
   const lifecycleSettings = lifecycleSettingsFromPublic(platformSettings);
   const baseRetentionDays = lifecycleSettings.galleryRetentionDays;
-  const extraGalleryDays = Number(getFeatureSetting("extraGalleryDays", 0)) || 0;
+  const extraGalleryDays: number = invitation?.extraGalleryDays ?? 0;
 
   const eventDayString = getPrimaryEventDateString(invitation?.eventData);
   const effectiveExpiry =

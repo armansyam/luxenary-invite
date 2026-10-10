@@ -181,18 +181,7 @@ export async function POST(req: NextRequest) {
     const extMonths = Number(extensionMonths);
     if (!isNaN(extMonths) && extMonths > 0) {
       if (!isAdmin) {
-        let curFs: any = {};
-        try {
-          curFs = typeof invitation.featureSettings === "object"
-            ? (invitation.featureSettings || {})
-            : JSON.parse((invitation.featureSettings as string) || "{}");
-        } catch (err) {
-          // featureSettings dijaga CHECK JSON di database, jadi ini seharusnya tidak terjadi; dihitung seolah belum ada perpanjangan.
-          logger.warn("CheckoutBundle", "featureSettings tidak terbaca saat memeriksa batas perpanjangan", { invitationId: invitation.id, error: err instanceof Error ? err.message : String(err) });
-        }
-
-        const extraGalleryDays = Number(curFs.extraGalleryDays) || 0;
-        if (extraGalleryDays >= 30) {
+        if (invitation.extraGalleryDays >= 30) {
           return NextResponse.json({
             error: "Batas maksimal perpanjangan masa aktif (+30 hari) telah tercapai untuk undangan ini.",
           }, { status: 400 });

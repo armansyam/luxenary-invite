@@ -88,7 +88,7 @@ export default async function FreeGuestMemoriesStandalonePage({ params, searchPa
   const maxContributors: number = typeof fs.memoriesMaxContributors === "number" ? fs.memoriesMaxContributors : planQuota.maxContributors;
 
   // Hitung Kuota Total Acara & Sisa Pool Riil
-  const extraPhotos = typeof fs.extraMemoriesQuota === "number" ? Math.max(0, fs.extraMemoriesQuota) : 0;
+  const extraPhotos = invitation.extraMemoriesQuota;
   const baseTotalPhotos = planQuota.totalQuota > 0 ? planQuota.totalQuota : (maxContributors * configuredShotsQuota);
   const maxTotalPhotos = baseTotalPhotos + extraPhotos;
 

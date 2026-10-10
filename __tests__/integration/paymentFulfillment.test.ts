@@ -313,8 +313,7 @@ describe.skipIf(!IS_TEST_DB)("Integrasi pembayaran & pemenuhan (DB luxenary_test
       await applyBundleFulfillment(bundle.id);
 
       const after = await prisma.invitation.findUniqueOrThrow({ where: { id: victimInv.id } });
-      const fs = JSON.parse(after.featureSettings || "{}");
-      expect(fs.extraMemoriesQuota ?? 0).toBe(0);
+      expect(after.extraMemoriesQuota).toBe(0);
     });
 
     it("order bundle dengan linkedInvitationId valid -> hanya undangan miliknya yang berubah", async () => {
@@ -337,8 +336,31 @@ describe.skipIf(!IS_TEST_DB)("Integrasi pembayaran & pemenuhan (DB luxenary_test
 
       const ownerAfter = await prisma.invitation.findUniqueOrThrow({ where: { id: ownerInv.id } });
       const otherAfter = await prisma.invitation.findUniqueOrThrow({ where: { id: otherInv.id } });
-      expect(JSON.parse(ownerAfter.featureSettings || "{}").extraMemoriesQuota).toBe(50);
-      expect(JSON.parse(otherAfter.featureSettings || "{}").extraMemoriesQuota ?? 0).toBe(0);
+      expect(ownerAfter.extraMemoriesQuota).toBe(50);
+      expect(otherAfter.extraMemoriesQuota).toBe(0);
+    });
+
+    it("top-up kuota foto membuka lagi ambang notifikasi di atas persentase pemakaian baru, pengaturan studio tetap", async () => {
+      const owner = await makeUser("a-rearm");
+      const ownerOrder = await makeOrder(owner.id, { status: "PAID" });
+      const inv = await makeInvitation(owner.id, ownerOrder.id, "a-rearm");
+      await prisma.invitation.update({
+        where: { id: inv.id },
+        data: { memoriesNotifiedMilestones: [50, 80, 100], featureSettings: JSON.stringify({ showGift: false }) },
+      });
+      const bundle = await makeOrder(owner.id, {
+        status: "PAID",
+        orderType: "MEMORIES_TOPUP",
+        linkedInvitationId: inv.id,
+        itemsJson: JSON.stringify([{ type: "MEMORIES_TOPUP", photos: 100 }]),
+      });
+
+      await applyBundleFulfillment(bundle.id);
+
+      const after = await prisma.invitation.findUniqueOrThrow({ where: { id: inv.id } });
+      expect(after.extraMemoriesQuota).toBe(100);
+      expect(after.memoriesNotifiedMilestones).toEqual([]);
+      expect(JSON.parse(after.featureSettings!)).toEqual({ showGift: false });
     });
   });
 

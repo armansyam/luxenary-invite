@@ -77,7 +77,6 @@ async function main() {
         featureSettings: JSON.stringify({
           showGuestMemories: true,
           memoriesShotsQuota: 2, // Jatah roll tamu = 2 foto
-          extraMemoriesQuota: 0,
         }),
       },
     });
@@ -232,14 +231,13 @@ async function main() {
 
     const refreshedInv = await prisma.invitation.findUnique({
       where: { id: testInvitation.id },
-      select: { featureSettings: true },
+      select: { extraMemoriesQuota: true },
     });
-    const parsedFs = JSON.parse(refreshedInv?.featureSettings as string || "{}");
-    const isTopupApplied = parsedFs.extraMemoriesQuota === 100;
+    const isTopupApplied = refreshedInv?.extraMemoriesQuota === 100;
 
     results["CASE_4_MEMORIES_TOPUP"] = {
       pass: isGuestRollMaxed && isTopupApplied,
-      detail: `Shots Tamu: ${shotsCount}/2 (Maxed: ${isGuestRollMaxed}). Saldo Top-Up DB: ${parsedFs.extraMemoriesQuota} foto (Expected: 100)`,
+      detail: `Shots Tamu: ${shotsCount}/2 (Maxed: ${isGuestRollMaxed}). Saldo Top-Up DB: ${refreshedInv?.extraMemoriesQuota} foto (Expected: 100)`,
     };
     console.log(`  ${results["CASE_4_MEMORIES_TOPUP"].pass ? "✅" : "❌"} ${results["CASE_4_MEMORIES_TOPUP"].detail}`);
 

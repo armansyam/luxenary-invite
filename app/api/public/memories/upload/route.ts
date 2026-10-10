@@ -99,6 +99,8 @@ export async function POST(req: NextRequest) {
         memoriesUploadLocked: true,
         invitationSlug: true,
         featureSettings: true,
+        extraMemoriesQuota: true,
+        memoriesNotifiedMilestones: true,
         eventData: true,
         groomNickname: true,
         groomName: true,
@@ -199,7 +201,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 1. VALIDASI TOTAL KUOTA FOTO ACARA (Total Event Capacity) ──
-    const extraPhotos = typeof fs.extraMemoriesQuota === "number" ? Math.max(0, fs.extraMemoriesQuota) : 0;
+    const extraPhotos = invitation.extraMemoriesQuota;
     const baseEventQuota = planQuota.totalQuota > 0 ? planQuota.totalQuota : (planQuota.maxContributors * planQuota.shotsQuota);
     const totalEventQuota = baseEventQuota + extraPhotos;
     const currentTotalPhotos = await prisma.guestMemory.count({
@@ -388,9 +390,7 @@ export async function POST(req: NextRequest) {
       ? settings.memoriesNotifyMilestones
       : [50, 80, 100];
 
-    const alreadyNotified: number[] = Array.isArray(fs.memoriesNotifiedMilestones)
-      ? fs.memoriesNotifiedMilestones
-      : (fs.memoriesNotified80 ? [80] : []);
+    const alreadyNotified = invitation.memoriesNotifiedMilestones;
 
     // Temukan milestone yang telah tercapai oleh akumulasi foto saat ini dan belum pernah ternotifikasi
     const newlyReachedMilestones = configuredMilestones.filter((m) => {
@@ -407,17 +407,12 @@ export async function POST(req: NextRequest) {
       // Ambil milestone tertinggi yang tercapai dalam batch upload ini
       const targetMilestone = newlyReachedMilestones[newlyReachedMilestones.length - 1];
       const updatedMilestones = Array.from(new Set([...alreadyNotified, ...newlyReachedMilestones]));
-      const updatedFs = {
-        ...fs,
-        memoriesNotifiedMilestones: updatedMilestones,
-        memoriesNotified80: updatedMilestones.includes(80),
-      };
 
       // Tandai milestone di DB agar notifikasi hanya dikirim 1 kali per ambang batas
       prisma.invitation
         .update({
           where: { id: invitationId },
-          data: { featureSettings: JSON.stringify(updatedFs) },
+          data: { memoriesNotifiedMilestones: updatedMilestones },
         })
         .catch((e) => logger.error("MemoriesUpload", "Gagal menyimpan flag milestone notifikasi", e, { invitationId }));
 

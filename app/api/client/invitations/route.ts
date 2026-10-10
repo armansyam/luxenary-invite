@@ -37,6 +37,7 @@ export async function GET() {
       customDomain: true,
       featureSettings: true,
       galleryExpiresAt: true,
+      extraGalleryDays: true,
       memoriesUploadLocked: true,
       createdAt: true,
       order: {

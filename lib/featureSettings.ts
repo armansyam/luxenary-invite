@@ -22,23 +22,6 @@ export function parseFeatureSettings(raw: unknown): FeatureSettings {
   }
 }
 
-/**
- * Kunci yang ditulis server saat add-on dibayar atau notifikasi kuota terkirim. Pemilik undangan tidak boleh
- * mengubahnya lewat PUT/PATCH: `extraMemoriesQuota` menentukan kuota foto yang sudah dibeli.
- */
-export const SERVER_MANAGED_FEATURE_KEYS = ["extraMemoriesQuota", "extraGalleryDays", "memoriesNotifiedMilestones", "memoriesNotified80"] as const;
-
-/** Menggabungkan featureSettings dari klien ke yang tersimpan; kunci server-managed hanya boleh diubah admin. */
-export function mergeClientFeatureSettings(existing: FeatureSettings, incoming: FeatureSettings, isAdmin: boolean): FeatureSettings {
-  const merged: FeatureSettings = { ...existing, ...incoming };
-  if (isAdmin) return merged;
-  for (const key of SERVER_MANAGED_FEATURE_KEYS) {
-    if (key in existing) merged[key] = existing[key];
-    else delete merged[key];
-  }
-  return merged;
-}
-
 /** Filter kamera tamu yang dikenali DisposableCameraViewfinder. */
 export const MEMORIES_FILTER_IDS = ["aura_90s", "heritage_romance", "botanical_mist", "cinema_noir", "pure_daylight"] as const;
 

@@ -143,6 +143,11 @@ model Invitation {
   isLockedPermanently  Boolean           @default(false)
   adminUnlockedUntil   DateTime?
   memoriesUploadLocked Boolean           @default(false)
+  /// Kuota foto Momen tambahan dan hari perpanjangan galeri yang sudah dibayar (add-on); hanya ditulis server.
+  extraMemoriesQuota         Int   @default(0)
+  extraGalleryDays           Int   @default(0)
+  /// Ambang kuota Momen (persen) yang sudah dikirimi email ke pemilik.
+  memoriesNotifiedMilestones Int[] @default([])
   createdAt            DateTime          @default(now())
   updatedAt            DateTime          @updatedAt
   galleryExpiresAt     DateTime?

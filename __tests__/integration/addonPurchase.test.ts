@@ -86,7 +86,7 @@ describe.skipIf(!IS_TEST_DB)("perpanjangan masa aktif galeri", () => {
 
     await payAndFulfill(json.orderId);
     const after = await prisma.invitation.findUniqueOrThrow({ where: { id: invitationId } });
-    expect(JSON.parse(after.featureSettings || "{}").extraGalleryDays).toBe(30);
+    expect(after.extraGalleryDays).toBe(30);
     expect(after.galleryExpiresAt!.getTime() - expiryBefore.getTime()).toBe(30 * DAY_MS);
 
     const again = await buy({ invitationId, extensionMonths: 1 });

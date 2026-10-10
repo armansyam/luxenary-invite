@@ -19,7 +19,7 @@ import { invalidateInvitationLookup } from "@/lib/cache";
 import { safeExternalUrl, normalizeFeatureUrls } from "@/lib/safeUrl";
 import { getDynamicServerRootDomain } from "@/lib/serverDomainUtils";
 import { createPreviewToken } from "@/lib/previewAccess";
-import { parseFeatureSettings, mergeClientFeatureSettings, gateFeaturesByPlan, keepValidMemoriesSettings, SERVER_MANAGED_FEATURE_KEYS } from "@/lib/featureSettings";
+import { parseFeatureSettings, gateFeaturesByPlan, keepValidMemoriesSettings } from "@/lib/featureSettings";
 
 
 export function getInvitationLockStatus(inv: any) {
@@ -322,10 +322,7 @@ export async function PUT(
     if (body.featureSettings !== undefined) {
       const existingObj = parseFeatureSettings(currentInv.featureSettings);
       if (body.featureSettings === null) {
-        // Menghapus seluruh featureSettings juga menghapus add-on berbayar yang tersimpan di dalamnya.
-        mergedFeatureSettings = isAdmin
-          ? null
-          : JSON.stringify(Object.fromEntries(SERVER_MANAGED_FEATURE_KEYS.filter((k) => k in existingObj).map((k) => [k, existingObj[k]])));
+        mergedFeatureSettings = null;
       } else {
         let incomingObj: Record<string, any>;
         try {
@@ -337,7 +334,7 @@ export async function PUT(
           return NextResponse.json({ error: "featureSettings harus berupa objek." }, { status: 400 });
         }
 
-        let parsedFeatures = normalizeFeatureUrls(mergeClientFeatureSettings(existingObj, incomingObj, isAdmin));
+        let parsedFeatures = normalizeFeatureUrls({ ...existingObj, ...incomingObj });
 
         // Gating fitur per paket di sisi server: mencegah pembukaan fitur berbayar lewat API langsung.
         if (!isAdmin) {
@@ -703,7 +700,7 @@ export async function PATCH(
         return NextResponse.json({ error: "featureSettings harus berupa objek." }, { status: 400 });
       }
 
-      let parsedFeatures = normalizeFeatureUrls(mergeClientFeatureSettings(existingObj, incomingObj, isAdmin));
+      let parsedFeatures = normalizeFeatureUrls({ ...existingObj, ...incomingObj });
 
       if (!isAdmin) {
         const order = currentInv.orderId

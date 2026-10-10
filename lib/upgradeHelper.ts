@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { deleteFile } from "@/lib/storage";
 import { sendInvoiceEmail } from "@/lib/mailer";
-import { hasPlanCapability } from "./settings";
+import { hasPlanCapability, getPlanMemoriesQuota } from "./settings";
 import { extendGalleryExpiry } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
-import type { PlanType } from "@prisma/client";
+import type { PlanType, Prisma } from "@prisma/client";
 import { logger } from "@/lib/logger";
 
 /** Bentuk butir `orders.itemsJson` yang ditulis checkout-bundle. */
@@ -21,8 +21,8 @@ type BundleItem = {
  * Memproses pemenuhan pesanan multi-layanan (itemsJson) secara atomik dalam 1 transaksi database.
  * Urutan eksekusi presisi:
  * 1. UPGRADE TIER DAHULU (akun dinaikkan ke tier baru)
- * 2. TOP-UP KUOTA FOTO (menambah extraMemoriesQuota di featureSettings)
- * 3. PERPANJANGAN GALERI (menambah extraGalleryDays & menghitung galleryExpiresAt pasca acara)
+ * 2. TOP-UP KUOTA FOTO (menambah kolom extraMemoriesQuota)
+ * 3. PERPANJANGAN GALERI (menambah kolom extraGalleryDays & menghitung galleryExpiresAt pasca acara)
  * 4. CUSTOM DOMAIN (memasang domain pribadi jika ada)
  */
 export async function applyBundleFulfillment(paidOrderId: string): Promise<boolean> {
@@ -75,59 +75,28 @@ export async function applyBundleFulfillment(paidOrderId: string): Promise<boole
       }
     }
 
-    // 2. Baca featureSettings eksisting
-    let curFs: Record<string, any> = {};
-    try {
-      curFs = typeof invitation.featureSettings === "object"
-        ? (invitation.featureSettings || {})
-        : JSON.parse((invitation.featureSettings as string) || "{}");
-    } catch {
-      curFs = {};
-    }
-
-    // 3. Eksekusi TOP-UP KUOTA FOTO jika ada
+    // 2. Eksekusi TOP-UP KUOTA FOTO jika ada
     const topupItem = items.find(i => i.type === "MEMORIES_TOPUP");
-    if (topupItem && typeof topupItem.photos === "number" && topupItem.photos > 0) {
-      curFs.extraMemoriesQuota = (curFs.extraMemoriesQuota || 0) + topupItem.photos;
+    const addedPhotos = topupItem && typeof topupItem.photos === "number" && topupItem.photos > 0 ? topupItem.photos : 0;
 
-      // Re-arm milestone notifikasi kuota yang berada di atas persentase baru
-      try {
-        const { getPlanMemoriesQuota } = await import("@/lib/settings");
-        const planQuota = await getPlanMemoriesQuota(invitation.order?.planType);
-        const baseQuota = planQuota.totalQuota > 0 ? planQuota.totalQuota : (planQuota.maxContributors * planQuota.shotsQuota);
-        const newTotalQuota = baseQuota + curFs.extraMemoriesQuota;
-        const currentPhotos = await tx.guestMemory.count({
-          where: { invitationId: invitation.id },
-        });
-        const newUsagePercent = newTotalQuota > 0 ? (currentPhotos / newTotalQuota) * 100 : 0;
-        if (Array.isArray(curFs.memoriesNotifiedMilestones)) {
-          curFs.memoriesNotifiedMilestones = curFs.memoriesNotifiedMilestones.filter((m: number) => m <= newUsagePercent);
-        }
-        curFs.memoriesNotified80 = newUsagePercent >= 80;
-      } catch (rearmErr) {
-        logger.warn("BundleFulfillment", "Gagal mengatur ulang milestone notifikasi kuota", { invitationId: invitation.id, error: rearmErr instanceof Error ? rearmErr.message : String(rearmErr) });
-      }
-    }
-
-    // 4. Eksekusi PERPANJANGAN GALERI jika ada
+    // 3. Eksekusi PERPANJANGAN GALERI jika ada
     const extItem = items.find(i => i.type === "GALLERY_EXTENSION");
-    let newExpiry: Date | null = invitation.galleryExpiresAt ? new Date(invitation.galleryExpiresAt) : null;
+    const extraDays = extItem ? Number(extItem.days) || (Number(extItem.months) ? Number(extItem.months) * 30 : 30) : 0;
+    const newExpiry = extItem ? extendGalleryExpiry(invitation, extraDays, await getLifecycleSettings()) : null;
 
-    if (extItem) {
-      const extraDays = Number(extItem.days) || (Number(extItem.months) ? Number(extItem.months) * 30 : 30);
-      curFs.extraGalleryDays = (curFs.extraGalleryDays || 0) + extraDays;
-
-      newExpiry = extendGalleryExpiry(invitation, extraDays, await getLifecycleSettings());
-    }
-
-    // 5. Simpan seluruh pembaruan ke invitation
-    await tx.invitation.update({
+    // 4. Simpan seluruh pembaruan ke invitation
+    const updated = await tx.invitation.update({
       where: { id: invitation.id },
       data: {
-        featureSettings: JSON.stringify(curFs),
+        extraMemoriesQuota: { increment: addedPhotos },
+        extraGalleryDays: { increment: extraDays },
         ...(newExpiry ? { galleryExpiresAt: newExpiry, memoriesUploadLocked: false } : {}),
       },
+      select: { extraMemoriesQuota: true, memoriesNotifiedMilestones: true },
     });
+    if (addedPhotos > 0) {
+      await rearmQuotaMilestones(tx, invitation.id, invitation.order?.planType, updated.extraMemoriesQuota, updated.memoriesNotifiedMilestones);
+    }
   });
 
   return true;
@@ -171,7 +140,7 @@ export async function applyGalleryExtension(extensionOrderId: string): Promise<v
 /**
  * applyMemoriesTopup
  * Dipanggil setelah order MEMORIES_TOPUP berhasil PAID (fallback jika tanpa itemsJson).
- * Menambahkan kuota foto ke invitation.featureSettings.extraMemoriesQuota.
+ * Menambahkan kuota foto ke invitation.extraMemoriesQuota.
  */
 export async function applyMemoriesTopup(topupOrderId: string): Promise<void> {
   const order = await prisma.order.findUnique({
@@ -187,51 +156,46 @@ export async function applyMemoriesTopup(topupOrderId: string): Promise<void> {
 
   const invitation = await prisma.invitation.findUnique({
     where: { id: order.linkedInvitationId },
-    select: { id: true, featureSettings: true, order: { select: { planType: true } } },
+    select: { id: true, order: { select: { planType: true } } },
   });
 
   if (!invitation) return;
-
-  let curFs: Record<string, any> = {};
-  try {
-    curFs = typeof invitation.featureSettings === "object"
-      ? (invitation.featureSettings || {})
-      : JSON.parse((invitation.featureSettings as string) || "{}");
-  } catch {
-    curFs = {};
-  }
 
   const topupSetting = await prisma.adminSetting.findUnique({
     where: { key: "addon_memories_topup_photos" },
   });
   const photosToAdd = Number(topupSetting?.value) || 100;
 
-  curFs.extraMemoriesQuota = (curFs.extraMemoriesQuota || 0) + photosToAdd;
-
-  // Re-arm milestone notifikasi kuota yang berada di atas persentase baru
-  try {
-    const { getPlanMemoriesQuota } = await import("@/lib/settings");
-    const planQuota = await getPlanMemoriesQuota(invitation.order?.planType);
-    const baseQuota = planQuota.totalQuota > 0 ? planQuota.totalQuota : (planQuota.maxContributors * planQuota.shotsQuota);
-    const newTotalQuota = baseQuota + curFs.extraMemoriesQuota;
-    const currentPhotos = await prisma.guestMemory.count({
-      where: { invitationId: invitation.id },
+  await prisma.$transaction(async (tx) => {
+    const updated = await tx.invitation.update({
+      where: { id: invitation.id },
+      data: { extraMemoriesQuota: { increment: photosToAdd } },
+      select: { extraMemoriesQuota: true, memoriesNotifiedMilestones: true },
     });
-    const newUsagePercent = newTotalQuota > 0 ? (currentPhotos / newTotalQuota) * 100 : 0;
-    if (Array.isArray(curFs.memoriesNotifiedMilestones)) {
-      curFs.memoriesNotifiedMilestones = curFs.memoriesNotifiedMilestones.filter((m: number) => m <= newUsagePercent);
-    }
-    curFs.memoriesNotified80 = newUsagePercent >= 80;
-  } catch (rearmErr) {
-    logger.warn("MemoriesTopup", "Gagal mengatur ulang milestone notifikasi kuota", { error: rearmErr instanceof Error ? rearmErr.message : String(rearmErr) });
-  }
-
-  await prisma.invitation.update({
-    where: { id: invitation.id },
-    data: {
-      featureSettings: JSON.stringify(curFs),
-    },
+    await rearmQuotaMilestones(tx, invitation.id, invitation.order?.planType, updated.extraMemoriesQuota, updated.memoriesNotifiedMilestones);
   });
+}
+
+/**
+ * Setelah kuota foto bertambah, ambang notifikasi di atas persentase pemakaian baru dibuka lagi agar pemilik
+ * diberi tahu kembali saat roll yang lebih besar mendekati penuh.
+ */
+async function rearmQuotaMilestones(
+  tx: Prisma.TransactionClient,
+  invitationId: string,
+  planType: string | null | undefined,
+  extraQuota: number,
+  milestones: number[],
+): Promise<void> {
+  const planQuota = await getPlanMemoriesQuota(planType);
+  const baseQuota = planQuota.totalQuota > 0 ? planQuota.totalQuota : planQuota.maxContributors * planQuota.shotsQuota;
+  const totalQuota = baseQuota + extraQuota;
+  const photos = await tx.guestMemory.count({ where: { invitationId } });
+  const usagePercent = totalQuota > 0 ? (photos / totalQuota) * 100 : 0;
+  const kept = milestones.filter((m) => m <= usagePercent);
+  if (kept.length !== milestones.length) {
+    await tx.invitation.update({ where: { id: invitationId }, data: { memoriesNotifiedMilestones: kept } });
+  }
 }
 
 

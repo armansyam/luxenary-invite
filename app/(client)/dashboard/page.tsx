@@ -448,7 +448,7 @@ function DashboardHomeContent() {
 
   const currentPlan = normalizePlanType(invitation?.order?.planType || "TIER_1");
   const hasMemories = currentPlan === "TIER_2" || currentPlan === "TIER_3";
-  const extraGalleryDays = Number(featureSettings?.extraGalleryDays) || 0;
+  const extraGalleryDays: number = invitation?.extraGalleryDays ?? 0;
   const hasExtended = extraGalleryDays >= 30;
   const isRenewalWindow = daysRemaining !== null && daysRemaining <= 7 && daysRemaining > 0;
   const canExtend = !hasExtended && isRenewalWindow;
