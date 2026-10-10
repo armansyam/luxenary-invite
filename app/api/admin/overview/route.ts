@@ -26,32 +26,11 @@ export async function GET() {
       try {
         const pendingOrders = await prisma.order.findMany({
           where: { status: "PENDING" },
-          select: { id: true, snapToken: true, paymentMethod: true, expiredAt: true }
+          select: { id: true, expiredAt: true }
         });
 
-        const expiredIds: string[] = [];
-        for (const ord of pendingOrders) {
-          let isExpired = false;
-
-          // 1. Cek expiry dari QRIS snapToken (jika ada)
-          if (ord.paymentMethod === "GATEWAY" && typeof ord.snapToken === "string" && ord.snapToken.startsWith("{")) {
-            try {
-              const tokenData = JSON.parse(ord.snapToken);
-              if (tokenData && tokenData.expiry && now > tokenData.expiry + 120000) {
-                isExpired = true;
-              }
-            } catch {
-              // snapToken yang diawali "{" tetapi bukan JSON valid tidak membawa waktu kedaluwarsa QR; yang berlaku expiredAt di bawah.
-            }
-          }
-
-          // 2. Cek expiry database (fallback: manual transfer ditinggalkan > batas waktu)
-          if (!isExpired && ord.expiredAt && ord.expiredAt.getTime() < now) {
-            isExpired = true;
-          }
-
-          if (isExpired) expiredIds.push(ord.id);
-        }
+        // Hanya batas hidup order yang mematikan order; sesi QRIS yang habis diterbitkan ulang di halaman pembayaran.
+        const expiredIds = pendingOrders.filter((ord) => ord.expiredAt && ord.expiredAt.getTime() < now).map((ord) => ord.id);
 
         if (expiredIds.length > 0) {
           await prisma.order.updateMany({

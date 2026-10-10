@@ -262,7 +262,6 @@ export async function DELETE(req: NextRequest) {
         amount: true,
         discountAmount: true,
         promoCodeApplied: true,
-        snapToken: true,
         gatewayId: true,
         gatewayTxId: true,
       },
@@ -277,7 +276,7 @@ export async function DELETE(req: NextRequest) {
     // Diskon yang sudah dikunci saat konfirmasi sudah tertanam di nominal order dan sesi gateway. Melepas hold saja
     // akan membebaskan kuota kupon sementara order tetap berdiskon, jadi order dikembalikan ke harga normal.
     if (order.status === "PENDING" && order.promoCodeApplied) {
-      const hasGatewaySession = Boolean(order.snapToken || order.gatewayTxId);
+      const hasGatewaySession = Boolean(order.gatewayTxId);
       if (hasGatewaySession) {
         const { getGatewayById, getActiveGateway } = await import("@/lib/gatewayRegistry");
         const gateway = order.gatewayId ? await getGatewayById(order.gatewayId) : await getActiveGateway();
@@ -301,7 +300,7 @@ export async function DELETE(req: NextRequest) {
           promoCodeApplied: null,
           promoCouponId: null,
           checkoutConfirmedAt: null,
-          ...(hasGatewaySession ? { snapToken: null, gatewayTxId: null, chargedAmount: null } : {}),
+          ...(hasGatewaySession ? { gatewayQrString: null, gatewayCheckoutUrl: null, gatewaySessionExpiresAt: null, gatewayTxId: null, chargedAmount: null } : {}),
         },
       });
     }

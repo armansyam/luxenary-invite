@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
     // 4. Update Order: finalisasi amount, paymentMethod, set checkoutConfirmedAt
     // Sesi gateway yang sudah terbit dengan nominal atau metode lama harus dibatalkan: QR lama tidak boleh tetap bisa
     // dibayar, dan /payment akan menerbitkan sesi baru dengan nominal yang benar.
-    const hasGatewaySession = Boolean(order.snapToken || order.gatewayTxId);
+    const hasGatewaySession = Boolean(order.gatewayTxId);
     const sessionOutdated = hasGatewaySession && (finalBaseAmount !== Number(order.amount) || resolvedMethodOnConfirm !== "GATEWAY");
     if (sessionOutdated) {
       try {
@@ -166,7 +166,7 @@ export async function POST(req: NextRequest) {
     const confirmed = await prisma.order.updateMany({
       where: { id: order.id, status: "PENDING" },
       data: {
-        ...(sessionOutdated ? { snapToken: null, gatewayTxId: null, chargedAmount: null } : {}),
+        ...(sessionOutdated ? { gatewayQrString: null, gatewayCheckoutUrl: null, gatewaySessionExpiresAt: null, gatewayTxId: null, chargedAmount: null } : {}),
         amount: finalBaseAmount,
         discountAmount: appliedDiscount > 0 ? appliedDiscount : null,
         promoCodeApplied: appliedPromoCode,

@@ -373,11 +373,11 @@ describe.skipIf(!IS_TEST_DB)("alur registrasi", () => {
   describe("perubahan rincian saat sesi gateway sudah terbit", () => {
     const setMode = (value: string) =>
       prisma.adminSetting.upsert({ where: { key: "payment_mode" }, create: { key: "payment_mode", value }, update: { value } });
-    const SESSION = JSON.stringify({ qrString: "qr", sessionId: "tx-lama", expiry: Date.now() + 600000 });
+    const SESSION_QR = "qr-lama";
     const withSession = (userId: string) =>
       makeOrder(userId, {
-        paymentMethod: "GATEWAY", gatewayId: "midtrans", gatewayTxId: "tx-lama", snapToken: SESSION,
-        chargedAmount: 99000, checkoutConfirmedAt: new Date(),
+        paymentMethod: "GATEWAY", gatewayId: "midtrans", gatewayTxId: "tx-lama", gatewayQrString: SESSION_QR,
+        gatewaySessionExpiresAt: new Date(Date.now() + 600000), chargedAmount: 99000, checkoutConfirmedAt: new Date(),
       });
     const confirm = (orderId: string) => confirmOrder(json("/api/payments/checkout/confirm", "POST", { orderId }));
     const read = (id: string) => prisma.order.findUniqueOrThrow({ where: { id } });
@@ -402,7 +402,8 @@ describe.skipIf(!IS_TEST_DB)("alur registrasi", () => {
       expect(gw.cancel).toHaveBeenCalledWith("tx-lama");
       const after = await read(order.id);
       expect(Number(after.amount)).toBe(79200);
-      expect(after.snapToken).toBeNull();
+      expect(after.gatewayQrString).toBeNull();
+      expect(after.gatewaySessionExpiresAt).toBeNull();
       expect(after.gatewayTxId).toBeNull();
       expect(after.chargedAmount).toBeNull();
     });
@@ -417,7 +418,7 @@ describe.skipIf(!IS_TEST_DB)("alur registrasi", () => {
       expect(gw.cancel).not.toHaveBeenCalled();
       const after = await read(order.id);
       expect(after.gatewayTxId).toBe("tx-lama");
-      expect(after.snapToken).toBe(SESSION);
+      expect(after.gatewayQrString).toBe(SESSION_QR);
       expect(Number(after.chargedAmount)).toBe(99000);
     });
 
@@ -450,7 +451,7 @@ describe.skipIf(!IS_TEST_DB)("alur registrasi", () => {
       expect(gw.cancel).toHaveBeenCalledWith("tx-lama");
       const after = await read(order.id);
       expect(after.paymentMethod).toBe("MANUAL_TRANSFER");
-      expect(after.snapToken).toBeNull();
+      expect(after.gatewayQrString).toBeNull();
     });
   });
 });

@@ -65,7 +65,11 @@ model Order {
   targetPlanType      PlanType?
   linkedInvitationId  String?
   paymentMethod       PaymentMethod        @default(GATEWAY)
-  snapToken           String?
+  /// Sesi gateway aktif: string QRIS atau URL checkout, dan kapan sesi itu habis. Terpisah dari expiredAt (batas
+  /// hidup order); sesi yang habis diterbitkan ulang selama order belum kedaluwarsa.
+  gatewayQrString         String?
+  gatewayCheckoutUrl      String?
+  gatewaySessionExpiresAt DateTime?
   proofImageUrl       String?
   proofUploadedAt     DateTime?
   rejectReason        String?

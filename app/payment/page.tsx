@@ -144,22 +144,13 @@ function PaymentContent() {
         setPaymentMode("GATEWAY");
       }
 
-      // Parse Snap Token jika QRIS atau URL Snap
-      if (data.snapToken) {
-        try {
-          const parsed = JSON.parse(data.snapToken);
-          if (parsed.qrString) {
-            setQrData(parsed.qrString);
-            setQrisExpiry(parsed.expiry);
-            const duration = parsed.expiry - data.serverTime;
-            if (duration > 0) setQrisTotalDuration(duration);
-          }
-        } catch {
-          // Token format URL direct (Snap)
-          if (typeof data.snapToken === "string" && data.snapToken.startsWith("http")) {
-            setSnapRedirectUrl(data.snapToken);
-          }
-        }
+      if (data.gatewayQrString && data.gatewaySessionExpiresAt) {
+        setQrData(data.gatewayQrString);
+        setQrisExpiry(data.gatewaySessionExpiresAt);
+        const duration = data.gatewaySessionExpiresAt - data.serverTime;
+        if (duration > 0) setQrisTotalDuration(duration);
+      } else if (data.gatewayCheckoutUrl) {
+        setSnapRedirectUrl(data.gatewayCheckoutUrl);
       }
 
       // Cek apakah sesi QRIS sudah berakhir
@@ -177,7 +168,7 @@ function PaymentContent() {
     loadOrder();
   }, [loadOrder]);
 
-  // Inisialisasi QRIS jika belum ada snapToken
+  // Inisialisasi QRIS jika order belum punya sesi gateway
   const initQrisGateway = useCallback(async () => {
     if (!orderId || qrData || paymentMode !== "GATEWAY" || !order || order.paymentMethod === "MANUAL_TRANSFER") return;
     try {

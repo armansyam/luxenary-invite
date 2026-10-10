@@ -88,6 +88,18 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
+    if (order.expiredAt && order.expiredAt.getTime() <= Date.now()) {
+      const expired = await prisma.order.updateMany({ where: { id: order.id, status: "PENDING" }, data: { status: "EXPIRED" } });
+      if (expired.count > 0) {
+        const { releaseOrderPromoHold } = await import("@/lib/marketing");
+        await releaseOrderPromoHold(order.id);
+      }
+      return NextResponse.json({
+        error: "Tagihan ini sudah kedaluwarsa. Silakan muat ulang halaman untuk mendapatkan tagihan baru.",
+        isExpired: true,
+      }, { status: 400 });
+    }
+
     const platformMode = (await prisma.adminSetting.findUnique({ where: { key: "payment_mode" } }))?.value;
     if (platformMode === "MANUAL" || order.paymentMethod === "MANUAL_TRANSFER" || order.proofImageUrl) {
       return NextResponse.json(
@@ -111,22 +123,22 @@ export async function POST(req: Request) {
     // yang belum kedaluwarsa: langsung kembalikan sesi yang sama tanpa panggil ulang gateway.
     // Ini mencegah error "order_id already been taken" pada Midtrans & gateway stateful lainnya.
     // ──────────────────────────────────────────────────────────────────────
-    if (order.status === "PENDING" && order.snapToken && order.gatewayId === activeGatewayId) {
-      try {
-        const parsed = JSON.parse(order.snapToken);
-        const now = Date.now();
-        if (parsed.qrString && parsed.expiry > now) {
-          return NextResponse.json({
-            qrString: parsed.qrString,
-            sessionId: parsed.sessionId,
-            expiryTimestamp: parsed.expiry,
-            serverTime: now,
-            gateway: activeGatewayId,
-          });
-        }
-      } catch {
-        // Jika bukan JSON (misal format redirect lama), lanjutkan alur inisialisasi ulang
-      }
+    const now = Date.now();
+    if (
+      order.status === "PENDING" &&
+      order.gatewayId === activeGatewayId &&
+      order.gatewaySessionExpiresAt &&
+      order.gatewaySessionExpiresAt.getTime() > now &&
+      (order.gatewayQrString || order.gatewayCheckoutUrl)
+    ) {
+      return NextResponse.json({
+        qrString: order.gatewayQrString ?? undefined,
+        checkoutUrl: order.gatewayCheckoutUrl ?? undefined,
+        sessionId: order.gatewayTxId,
+        expiryTimestamp: order.gatewaySessionExpiresAt.getTime(),
+        serverTime: now,
+        gateway: activeGatewayId,
+      });
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -169,13 +181,10 @@ export async function POST(req: Request) {
 
     const { checkoutUrl, qrString, sessionId, expiryTimestamp, gatewayTxId } = await gw.init(orderId, finalAmount, appUrl);
 
-    /**
-     * Tentukan waktu kedaluwarsa yang valid:
-     * - Utamakan `expiryTimestamp` dari respons gateway (paling akurat, sinkron dengan sistem gateway)
-     * - Fallback: hitung dari setting admin `payment_expiry_minutes` relatif terhadap waktu server
-     */
+    // Kedaluwarsa sesi dari gateway bila ada, selain itu `payment_expiry_minutes`. Batas hidup order (expiredAt)
+    // tidak disentuh: sesi yang habis diterbitkan ulang lewat /api/payments/qris/regenerate.
     const serverNow = Date.now();
-    const expiryMs = expiryTimestamp ?? (serverNow + expiryMinutes * 60 * 1000);
+    const expiryMs = Math.min(expiryTimestamp ?? (serverNow + expiryMinutes * 60 * 1000), order.expiredAt?.getTime() ?? Infinity);
 
     // Simpan ke DB — termasuk gatewayId dan gatewayTxId untuk keperluan cancel berikutnya
     await prisma.order.update({
@@ -189,8 +198,9 @@ export async function POST(req: Request) {
         gatewayTxId: gatewayTxId || orderId, // Fallback ke orderId jika gateway tidak mengembalikan txId spesifik
         // Nominal yang benar-benar ditagihkan ke gateway (termasuk biaya layanan mode BUYER) — dipakai webhook untuk validasi
         chargedAmount: finalAmount,
-        snapToken: qrString ? JSON.stringify({ qrString, sessionId, expiry: expiryMs }) : checkoutUrl,
-        expiredAt: new Date(expiryMs),
+        gatewayQrString: qrString ?? null,
+        gatewayCheckoutUrl: qrString ? null : (checkoutUrl ?? null),
+        gatewaySessionExpiresAt: new Date(expiryMs),
       },
     });
 

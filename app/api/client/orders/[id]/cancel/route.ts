@@ -47,7 +47,7 @@ export async function POST(
     // Midtrans akan menerima error 404/500 dan menganggap integrasi kita rusak (bisa gagal verifikasi production).
     
     // 2. Hubungi Gateway untuk membatalkan tagihan aktif (QRIS/VA) agar tidak bisa dibayar ganda
-    if (order.snapToken || order.gatewayTxId) {
+    if (order.gatewayTxId) {
       try {
         const { getGatewayById, getActiveGateway } = await import("@/lib/gatewayRegistry");
         const gateway = order.gatewayId ? await getGatewayById(order.gatewayId) : await getActiveGateway();

@@ -144,21 +144,8 @@ export async function POST(req: NextRequest) {
     });
 
     if (existingPending) {
-      const nowMs = Date.now();
-      let isExpired = false;
-      if (existingPending.expiredAt && nowMs > existingPending.expiredAt.getTime()) {
-        isExpired = true;
-      }
-      if (!isExpired && existingPending.snapToken) {
-        try {
-          const parsed = JSON.parse(existingPending.snapToken);
-          if (parsed?.expiry && nowMs > parsed.expiry) {
-            isExpired = true;
-          }
-        } catch {
-          // snapToken berisi URL checkout (bukan JSON sesi QR) pada sesi Snap; tidak ada waktu kedaluwarsa QR untuk diperiksa.
-        }
-      }
+      // Sesi QRIS yang habis tidak mengakhiri order (diterbitkan ulang di /payment); hanya batas hidup order.
+      const isExpired = Boolean(existingPending.expiredAt && Date.now() > existingPending.expiredAt.getTime());
 
       // FIX: Jangan izinkan ubah paket jika status masih PENDING dan sudah ada bukti transfer (menunggu verifikasi admin)
       if (existingPending.status === "PENDING" && existingPending.proofImageUrl) {
@@ -174,7 +161,7 @@ export async function POST(req: NextRequest) {
       }
 
       const isPlanChanged = existingPending.planType !== planType;
-      const hadGatewaySession = !!(existingPending.snapToken || existingPending.gatewayTxId);
+      const hadGatewaySession = Boolean(existingPending.gatewayTxId);
 
       // Jika regenerate diminta, atau tagihan sudah expired, atau paket diubah padahal sudah pernah diproses gateway:
       // Wajib matikan order lama (Soft Cancel ke EXPIRED) dan terbitkan order baru: Midtrans melarang order_id dipakai ulang
@@ -259,9 +246,8 @@ export async function POST(req: NextRequest) {
             proofImageUrl: isResetProof ? null : existingPending.proofImageUrl,
             proofUploadedAt: isResetProof ? null : existingPending.proofUploadedAt,
             rejectReason: isResetProof ? null : existingPending.rejectReason,
-            snapToken: isPlanChanged ? null : existingPending.snapToken,
             ...(isPlanChanged
-              ? { discountAmount: null, promoCodeApplied: null, promoCouponId: null, checkoutConfirmedAt: null, chargedAmount: null }
+              ? { discountAmount: null, promoCodeApplied: null, promoCouponId: null, checkoutConfirmedAt: null, chargedAmount: null, gatewayQrString: null, gatewayCheckoutUrl: null, gatewaySessionExpiresAt: null }
               : {}),
             expiredAt: isPlanChanged ? new Date(Date.now() + 24 * 60 * 60 * 1000) : (existingPending.expiredAt || new Date(Date.now() + 24 * 60 * 60 * 1000)),
           },
@@ -275,7 +261,6 @@ export async function POST(req: NextRequest) {
           existing: true,
           planChanged: isPlanChanged,
           proofImageUrl: updated.proofImageUrl,
-          snapToken: updated.snapToken,
           serverTime: Date.now(),
         });
       }
@@ -309,7 +294,9 @@ export async function POST(req: NextRequest) {
             promoCouponId: null,
             checkoutConfirmedAt: null,
             chargedAmount: null,
-            snapToken: null,
+            gatewayQrString: null,
+            gatewayCheckoutUrl: null,
+            gatewaySessionExpiresAt: null,
             gatewayTxId: null,
           },
         });

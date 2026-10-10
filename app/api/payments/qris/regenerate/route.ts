@@ -108,7 +108,8 @@ export async function POST(req: NextRequest) {
 
     const { checkoutUrl, qrString, sessionId, expiryTimestamp, gatewayTxId } = await gw.init(orderId, finalAmount, appUrl);
 
-    const expiryMs = expiryTimestamp ?? (serverNow + expiryMinutes * 60 * 1000);
+    // Sesi baru tidak boleh melewati batas hidup order, dan batas hidup order (expiredAt) tidak diperpanjang.
+    const expiryMs = Math.min(expiryTimestamp ?? (serverNow + expiryMinutes * 60 * 1000), order.expiredAt?.getTime() ?? Infinity);
 
     // Update order dengan sesi QRIS baru TANPA merubah ID atau menghapus diskon
     await prisma.order.update({
@@ -120,8 +121,9 @@ export async function POST(req: NextRequest) {
         gatewayId: activeGatewayId,
         gatewayTxId: gatewayTxId || orderId,
         chargedAmount: finalAmount,
-        snapToken: qrString ? JSON.stringify({ qrString, sessionId, expiry: expiryMs }) : checkoutUrl,
-        expiredAt: new Date(expiryMs),
+        gatewayQrString: qrString ?? null,
+        gatewayCheckoutUrl: qrString ? null : (checkoutUrl ?? null),
+        gatewaySessionExpiresAt: new Date(expiryMs),
       },
     });
 

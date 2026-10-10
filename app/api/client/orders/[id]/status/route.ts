@@ -43,7 +43,9 @@ export async function GET(
         promoCodeApplied: true,
         discountAmount: true,
         createdAt: true,
-        snapToken: true,
+        gatewayQrString: true,
+        gatewayCheckoutUrl: true,
+        gatewaySessionExpiresAt: true,
         orderType: true,
         requestedDomain: true,
         itemsJson: true,
@@ -77,8 +79,8 @@ export async function GET(
 
     // --- AUTO EXPIRE LOGIC ---
     // Batas hidup order adalah 24 jam (order.expiredAt).
-    // Kedaluwarsa sesi QRIS (tokenData.expiry 15-60 menit) TIDAK mematikan order,
-    // melainkan hanya menandai isQrisSessionExpired agar frontend menampilkan tombol regenerasi QRIS.
+    // Kedaluwarsa sesi gateway (gatewaySessionExpiresAt, 15-60 menit) TIDAK mematikan order,
+    // melainkan hanya menandai isQrisSessionExpired agar frontend menampilkan tombol penerbitan ulang sesi.
     let finalStatus = order.status;
     let isQrisSessionExpired = false;
     const nowMs = Date.now();
@@ -94,16 +96,9 @@ export async function GET(
     }
 
     if (order.status === "PENDING") {
-      // 1. Cek sesi QRIS
-      if (order.snapToken) {
-        try {
-          const tokenData = JSON.parse(order.snapToken);
-          if (tokenData && tokenData.expiry && nowMs > tokenData.expiry) {
-            isQrisSessionExpired = true;
-          }
-        } catch {
-          // snapToken berisi URL checkout (bukan JSON sesi QR) pada sesi Snap; tidak ada waktu kedaluwarsa QR untuk diperiksa.
-        }
+      // 1. Cek sesi gateway (QRIS maupun URL checkout)
+      if (order.gatewaySessionExpiresAt && nowMs > order.gatewaySessionExpiresAt.getTime()) {
+        isQrisSessionExpired = true;
       }
 
       // 2. Cek batas hidup keseluruhan order (24 jam)
@@ -229,7 +224,9 @@ export async function GET(
       discountAmount: order.discountAmount ? Number(order.discountAmount) : 0,
       itemsJson: order.itemsJson || null,
       isQrisSessionExpired,
-      snapToken: isAuthorizedOwner ? order.snapToken : null,
+      gatewayQrString: isAuthorizedOwner ? order.gatewayQrString : null,
+      gatewayCheckoutUrl: isAuthorizedOwner ? order.gatewayCheckoutUrl : null,
+      gatewaySessionExpiresAt: isAuthorizedOwner ? order.gatewaySessionExpiresAt?.getTime() ?? null : null,
       serverTime: Date.now(),
     });
   } catch (error) {

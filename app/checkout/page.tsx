@@ -271,7 +271,7 @@ function CheckoutContent() {
           if (orderStatusData.buyerEmail) {
             setBuyerEmail(orderStatusData.buyerEmail);
           }
-          if (orderStatusData.buyerPhone && (orderStatusData.status === "PAID" || orderStatusData.snapToken || orderStatusData.proofImageUrl)) {
+          if (orderStatusData.buyerPhone && (orderStatusData.status === "PAID" || orderStatusData.gatewayQrString || orderStatusData.gatewayCheckoutUrl || orderStatusData.proofImageUrl)) {
             setBuyerPhone(formatWhatsAppNumber(orderStatusData.buyerPhone));
           }
 
