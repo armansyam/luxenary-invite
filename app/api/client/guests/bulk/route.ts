@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
-import { logger } from "@/lib/logger";
+import { getPrimaryEventDate } from "@/lib/lifecycleDates";
 import { routeError } from "@/lib/routeError";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
@@ -34,29 +34,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden. Anda bukan pemilik undangan ini." }, { status: 403 });
     }
 
-    // D-Day Lock Backend Validation berdasarkan Sesi Acara Utama
-    if (invitation.eventData) {
-      try {
-        const ev = typeof invitation.eventData === "string" ? JSON.parse(invitation.eventData) : invitation.eventData;
-        if (ev && ev.length > 0) {
-          const primaryEv = ev.find((e: any) => e.isPrimary) || ev[0];
-          const eventDateStr = primaryEv?.date;
-          if (eventDateStr) {
-            const eventDate = new Date(eventDateStr);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            eventDate.setHours(0, 0, 0, 0);
-            if (today >= eventDate) {
-              return NextResponse.json(
-                { error: "Daftar tamu sudah dikunci karena acara sedang/telah berlangsung. Tamu tambahan hanya dapat diinput oleh Resepsionis di lokasi." },
-                { status: 403 }
-              );
-            }
-          }
-        }
-      } catch (e) {
-        logger.warn("ClientGuestsBulk", "eventData undangan tidak terbaca; sesi tamu tidak divalidasi", { error: e instanceof Error ? e.message : String(e) });
-      }
+    // Mulai hari terima tamu (pada zona waktu acara) tamu baru hanya dicatat Resepsionis di lokasi.
+    const guestDay = getPrimaryEventDate(invitation.eventData);
+    if (guestDay && Date.now() >= guestDay.getTime()) {
+      return NextResponse.json(
+        { error: "Daftar tamu sudah dikunci karena acara sedang/telah berlangsung. Tamu tambahan hanya dapat diinput oleh Resepsionis di lokasi." },
+        { status: 403 }
+      );
     }
 
     // Limit bulk insert to prevent abuse

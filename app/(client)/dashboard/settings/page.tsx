@@ -525,10 +525,14 @@ export default function SettingsPage() {
       if (secKey === "subdomain") {
         payload = { subdomain: formData.subdomain ? formData.subdomain.trim().toLowerCase() : null };
       } else if (secKey === "staffPin") {
-        payload = { staffPin: formData.staffPin ? formData.staffPin.trim() : null };
+        payload = { staffPin: formData.staffPin.trim() };
       }
 
-      const res = await fetch(`/api/client/invitations/${invitation.id}`, {
+      // PIN punya endpoint sendiri agar tetap dapat diganti setelah undangan terbit (studio terkunci).
+      const endpoint = secKey === "staffPin"
+        ? `/api/client/invitations/${invitation.id}/staff-pin`
+        : `/api/client/invitations/${invitation.id}`;
+      const res = await fetch(endpoint, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

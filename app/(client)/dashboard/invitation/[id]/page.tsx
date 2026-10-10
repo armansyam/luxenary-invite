@@ -1303,6 +1303,23 @@ export default function EditInvitation() {
             </div>
           )}
 
+          {isPublishedLock && (
+            <div className="max-w-lg mx-auto p-4 bg-white rounded-2xl border border-stone-200 text-left space-y-2">
+              <h3 className="text-xs font-bold text-stone-900">Tetap dapat Anda ubah sendiri</h3>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Link href="/dashboard/guests" className="flex-1 px-4 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 border border-stone-200 text-xs font-bold text-stone-800 text-center transition">
+                  Kelola Daftar Tamu
+                </Link>
+                {hasCap("qr_checkin") && (
+                  <Link href="/dashboard/settings" className="flex-1 px-4 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 border border-stone-200 text-xs font-bold text-stone-800 text-center transition">
+                    Ganti PIN Panitia
+                  </Link>
+                )}
+              </div>
+              <p className="text-[11px] text-stone-500">Daftar tamu dapat diubah sampai sehari sebelum acara; pada hari acara tamu baru dicatat Resepsionis.</p>
+            </div>
+          )}
+
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
             <a
               href={`https://wa.me/${adminWhatsapp.replace(/\D/g, '').replace(/^0/, '62')}?text=${encodeURIComponent(
