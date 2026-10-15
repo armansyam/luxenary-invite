@@ -23,6 +23,8 @@ import { PUT as updateExpense, DELETE as deleteExpense } from "@/app/api/admin/f
 import { GET as taxRecap, POST as markTax } from "@/app/api/admin/finance/tax/route";
 import { POST as purgeInvitation } from "@/app/api/admin/invitations/[id]/purge/route";
 import { POST as marketingAction } from "@/app/api/admin/marketing/route";
+import { POST as uploadMusic } from "@/app/api/admin/music/route";
+import { GET as serveUpload } from "@/app/uploads/[...path]/route";
 import { normalizeCustomDomain } from "@/lib/domainUtils";
 import { getPlanMemoriesQuota, getPublicPlatformSettings, invalidateSettingsCache } from "@/lib/settings";
 import { DAY_MS } from "@/lib/lifecycleDates";
@@ -327,6 +329,27 @@ describe.skipIf(!IS_TEST_DB)("pencairan komisi mitra", () => {
     expect(Number(after.totalPaidOut)).toBe(100000);
     expect((await prisma.affiliateCommission.findUniqueOrThrow({ where: { id: commission.id } })).status).toBe("PAID");
     expect(await prisma.expense.count({ where: { title: `Payout Komisi Mitra: ${RUN} Mitra` } })).toBe(2);
+  });
+});
+
+describe.skipIf(!IS_TEST_DB)("unggah musik oleh admin", () => {
+  it("lagu baru disimpan di bawah /uploads (rute dinamis), bukan public/music yang hanya dipindai saat server start", async () => {
+    sessionUser = { id: "admin-vitest", email: "admin@test.local", role: "SUPER_ADMIN", isAdmin: true, permissions: [] };
+    const form = new FormData();
+    form.append("file", new File([new Uint8Array(Buffer.from("ID3 uji"))], "uji.mp3", { type: "audio/mpeg" }));
+    form.append("title", `${RUN} Lagu Uji`);
+    const res = await uploadMusic(new NextRequest("http://localhost/api/admin/music", { method: "POST", body: form }));
+    const json = await res.json();
+    expect(res.status).toBe(200);
+    expect(json.music.url).toMatch(/^\/uploads\/music\/.+\.mp3$/);
+
+    const segments = json.music.url.split("/").slice(2);
+    const served = await serveUpload(new NextRequest(`http://localhost${json.music.url}`), { params: Promise.resolve({ path: segments }) });
+    expect(served.status).toBe(200);
+    expect(served.headers.get("content-type")).toBe("audio/mpeg");
+
+    await prisma.musicPreset.delete({ where: { id: json.music.id } });
+    fs.rmSync(path.join(process.cwd(), "public", json.music.url), { force: true });
   });
 });
 
