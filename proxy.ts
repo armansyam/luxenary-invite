@@ -230,6 +230,18 @@ export const proxy = auth(async (req) => {
         return NextResponse.rewrite(rewriteUrl);
       }
 
+      // HTML terbit dan halaman /s/<sub> menautkan ke /s/<sub>/..., bentuk yang sah di apex. Di host subdomain undangan
+      // itu sendiri, kembalikan ke bentuk pendek agar tamu tidak keluar dari subdomain. Tujuan dibangun dari header
+      // Host: req.url sudah diganti Auth.js dengan NEXTAUTH_URL (apex).
+      if (segments[0] === "s" && segments[1]?.toLowerCase() === subdomain) {
+        const rest = segments.slice(2).join("/");
+        if (rest === "" || ["memories", "sharemoment", "receptionist", "galery", "gallery"].includes(rest)) {
+          const shortUrl = new URL(`/${rest}`, `${req.nextUrl.protocol}//${host}`);
+          shortUrl.search = req.nextUrl.search;
+          return NextResponse.redirect(shortUrl, 307);
+        }
+      }
+
       // Rute lain yang tidak dikenali di subdomain klien dialihkan ke apex domain
       const protocol = req.nextUrl.protocol;
       const portSuffix = host.includes(":") ? `:${host.split(":")[1]}` : "";

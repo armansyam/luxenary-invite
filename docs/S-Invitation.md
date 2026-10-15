@@ -1025,6 +1025,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 7. **Isolasi Subdomain Total (Strict Subdomain Isolation Guard di `middleware.ts`):**
    - Mengalihkan seluruh subdomain sistem (`demo`, `app`, `www`, dll.) serta seluruh rute halaman platform (`/packages`, `/login`, `/dashboard`, `/admin`, dll.) ke domain kanonikal `https://luxvite.id`.
    - Mengisolasi subdomain klien aktif secara murni untuk 5 fungsi acara (undangan, tamu personal, galeri momen, resepsionis QR, upload foto tamu) sehingga mustahil terjadi tabrakan rute (*URL collision*).
+   - Tautan galeri dan kamera di HTML terbit berbentuk `/s/<sub>/memories` dan `/s/<sub>/sharemoment` karena file HTML yang sama juga dilayani dari apex. Di host subdomain milik undangan itu sendiri, proxy mengalihkan (307) bentuk tersebut ke `/memories`, `/sharemoment`, `/receptionist`, atau `/galery` di host yang sama sehingga tamu tidak keluar dari subdomain. Bentuk `/s/<subdomain-lain>/...` tetap dialihkan ke apex. Diuji di `__tests__/unit/subdomainProxy.test.ts`.
 
 ---
 
