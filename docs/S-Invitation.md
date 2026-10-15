@@ -1437,3 +1437,4 @@ Rincian teknis di `docs/SYSTEM_ARCHITECTURE.md` bagian 27. Ringkasan fungsional:
 9. Laporan keuangan memakai batas waktu WIB dan tanggal lunas (`paidAt`).
 10. Ekspor CSV kebal formula spreadsheet.
 11. Jadwal Kamera Momen hanya dari sesi acara; mode jadwal kustom lama dihapus.
+12. (15 Okt) Label kustom studio dan path media tidak dapat lagi menyisipkan skrip ke undangan; sinkronisasi R2 saat terbit hanya memproses berkas milik undangan sendiri; unggahan audio/video harus berupa berkas media yang dikenali.
