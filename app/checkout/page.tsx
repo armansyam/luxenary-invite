@@ -398,7 +398,7 @@ function CheckoutContent() {
         setPromoCountdownStr(`${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`);
       } else {
         const d = new Date(appliedPromo.validUntil!);
-        setPromoCountdownStr(`Berlaku s/d ${d.toLocaleDateString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} WIB`);
+        setPromoCountdownStr(`Berlaku s/d ${d.toLocaleDateString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" })} WIB`);
       }
     }, 1000);
 
