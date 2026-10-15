@@ -188,28 +188,17 @@ export default function EditInvitation() {
   }, [studioNotification]);
 
   const PLAN_HIERARCHY: Record<string, number> = { TIER_1: 1, TIER_2: 2, TIER_3: 3 };
-  const PLAN_PRICES: Record<string, number> = {
-    TIER_1: Number(
-      platformSettings?.packages?.find((p: any) => p.id === "TIER_1")?.price ??
-      platformSettings?.pricing?.price_tier1 ?? 49000
-    ),
-    TIER_2: Number(
-      platformSettings?.packages?.find((p: any) => p.id === "TIER_2")?.price ??
-      platformSettings?.pricing?.price_tier2 ?? 99000
-    ),
-    TIER_3: Number(
-      platformSettings?.packages?.find((p: any) => p.id === "TIER_3")?.price ??
-      platformSettings?.pricing?.price_tier3 ?? 149000
-    ),
+  // Sama dengan /api/payments/upgrade: selisih harga paket dari pengaturan admin. 0 = pengaturan belum termuat.
+  const packageOf = (id: string) => platformSettings?.packages?.find((p: any) => p.id === id);
+  const upgradeDiff = (target: string, current: string) => {
+    const to = Number(packageOf(target)?.price) || 0;
+    const from = Number(packageOf(current)?.price) || 0;
+    return to > 0 && from > 0 ? to - from : 0;
   };
   const PLAN_COLOR: Record<string, string> = {
     TIER_1: "bg-amber-50 text-amber-800 border-amber-200",
     TIER_2: "bg-stone-100 text-stone-800 border-stone-200",
     TIER_3: "bg-amber-100/70 text-amber-950 border-amber-300",
-  };
-  const PLAN_FEATURES: Record<string, string[]> = {
-    TIER_2: ["Akses semua tema desain pilihan", "Dilengkapi QR Check-in Resepsionis", "Kamera Saku Digital Tamu"],
-    TIER_3: ["Akses seluruh tema tanpa batas", "Termasuk Custom Domain Pribadi (.com / .id)", "Kamera Tamu dengan kuota terbesar"],
   };
 
   const handleUpgrade = async () => {
@@ -5497,7 +5486,7 @@ export default function EditInvitation() {
               {(["TIER_2", "TIER_3"] as const)
                 .filter((t) => (PLAN_HIERARCHY[t] || 0) > (PLAN_HIERARCHY[planType] || 1))
                 .map((tier) => {
-                  const diff = (PLAN_PRICES[tier] ?? 0) - (PLAN_PRICES[planType] ?? 0);
+                  const diff = upgradeDiff(tier, planType);
                   const isSelected = upgradeTarget === tier;
                   return (
                     <button
@@ -5521,11 +5510,11 @@ export default function EditInvitation() {
                         </div>
                         <div className="text-right">
                           <span className="text-[11px] text-stone-500 block">Tambah bayar</span>
-                          <p className="font-bold text-amber-900 text-sm">Rp {diff.toLocaleString("id-ID")}</p>
+                          <p className="font-bold text-amber-900 text-sm">{diff > 0 ? `Rp ${diff.toLocaleString("id-ID")}` : "Memuat harga..."}</p>
                         </div>
                       </div>
                       <ul className="space-y-1 pl-6">
-                        {((platformSettings?.packages?.find((p: any) => p.id === tier)?.features) || PLAN_FEATURES[tier] || []).map((f: string, i: number) => (
+                        {((packageOf(tier)?.features as string[] | undefined)?.length ? packageOf(tier).features : [packageOf(tier)?.desc].filter(Boolean)).map((f: string, i: number) => (
                           <li key={i} className="text-xs text-stone-600 flex items-start gap-1.5">
                             <svg className="w-3.5 h-3.5 text-amber-700 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/></svg>
                             <span>{f}</span>
@@ -5558,8 +5547,8 @@ export default function EditInvitation() {
                         Upgrade Sekarang{upgradeTarget ? ` ke ${getPlanDisplayName(upgradeTarget, platformSettings?.packages)}` : ""}
                         {(() => {
                           if (!upgradeTarget) return "";
-                          const diff = (PLAN_PRICES[upgradeTarget] ?? 0) - (PLAN_PRICES[planType] ?? 0);
-                          return ` (Rp ${diff.toLocaleString("id-ID")})`;
+                          const diff = upgradeDiff(upgradeTarget, planType);
+                          return diff > 0 ? ` (Rp ${diff.toLocaleString("id-ID")})` : "";
                         })()}
                       </span>
                     </>
