@@ -2754,8 +2754,8 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
 
 1. **Header Edge Caching Terpadu (`app/(public)/s/[subdomain]/route.ts` & `[slug]/route.ts`):**
    - Rute publik undangan yang telah berstatus `PUBLISHED` secara eksplisit mengirimkan header:
-     `Cache-Control: public, max-age=60, s-maxage=604800, stale-while-revalidate=86400`
-   - Memungkinkan 300+ data center Cloudflare Edge di seluruh dunia menyimpan salinan dokumen HTML statis selama 7 hari, mengeliminasi beban CPU VPS dan query PostgreSQL hingga 0% saat ribuan tamu mengakses secara serentak di hari-H.
+     `Cache-Control: public, max-age=60, s-maxage=3600, stale-while-revalidate=300`
+   - Cloudflare menyimpan salinan HTML selama 1 jam (sejak 15 Okt 2026; sebelumnya 7 hari). Tautan tamu (`?to=Nama`, `/Nama`) adalah kunci cache terpisah yang tidak ikut terhapus oleh purge URL dasar, sehingga masa ini sekaligus batas lama undangan yang diturunkan atau diubah masih tampil. Lonjakan hari-H tetap diserap edge dan cache memori L1.
    - Mode `DRAFT` atau `preview` tetap memancarkan `no-store, no-cache, must-revalidate` untuk menjamin interaktivitas kanvas studio secara real-time.
 
 2. **Pemisahan Data Dinamis Doa & Ucapan (Decoupled Dynamic Wishes Feed):**

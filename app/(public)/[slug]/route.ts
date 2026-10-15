@@ -218,8 +218,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
   };
 
   if (invitation.status === "PUBLISHED" && !isPreview) {
-    // Edge Cache Cloudflare: s-maxage 7 hari, browser cache 60 detik, revalidasi di background
-    responseHeaders["Cache-Control"] = "public, max-age=60, s-maxage=604800, stale-while-revalidate=86400";
+    // Edge cache 1 jam: tautan tamu (?to=Nama) adalah kunci cache terpisah yang tidak ikut terhapus purge URL dasar,
+    // jadi masa cache ini sekaligus batas lama undangan yang diturunkan/diubah masih tampil di tautan tamu.
+    responseHeaders["Cache-Control"] = "public, max-age=60, s-maxage=3600, stale-while-revalidate=300";
   } else {
     // Mode Draft/Preview live editing: jangan di-cache agar instan terlihat saat edit
     responseHeaders["Cache-Control"] = "no-store, no-cache, must-revalidate";

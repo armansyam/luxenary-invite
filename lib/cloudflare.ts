@@ -2,7 +2,7 @@ import { invalidateInvitationLookup } from "./cache";
 import { getDynamicServerRootDomain } from "./serverDomainUtils";
 
 /**
- * Halaman undangan terbit di-cache edge 7 hari (s-maxage), jadi setiap perubahan status atau isi wajib membersihkan
+ * Halaman undangan terbit di-cache edge 1 jam (s-maxage), jadi setiap perubahan status atau isi wajib membersihkan
  * cache lookup L1 dan URL publiknya (subdomain, slug, custom domain). Dipanggil juga dari cron, di luar request:
  * domain akar lalu diambil dari NEXT_PUBLIC_ROOT_DOMAIN.
  */
