@@ -19,6 +19,12 @@ async function runTest() {
 
   const testSlug = `test-vault-${Date.now()}`;
   const nasPath = path.resolve(process.cwd(), "data", "test-archives");
+  // Nilai asli dipulihkan di akhir, berhasil atau gagal: mematikan arsip membuat undangan kedaluwarsa diarsipkan tanpa salinan.
+  const originalSettings = await prisma.adminSetting.findMany({
+    where: { key: { in: ["nas_archive_enabled", "nas_archive_path"] } },
+    select: { key: true, value: true },
+  });
+  let testUserId: string | null = null;
 
   try {
     // 1. Setup Admin Setting for testing
@@ -46,18 +52,14 @@ async function runTest() {
 
     // 2. Cari atau buat dummy invitation dengan status PUBLISHED
     console.log("\n[Step 2] Menyiapkan data undangan uji coba...");
-    let user = await prisma.user.findFirst();
-    let isEphemeralUser = false;
-    if (!user) {
-      user = await prisma.user.create({
-        data: {
-          name: "Test Vault User",
-          email: `test-vault-${Date.now()}@example.com`,
-          role: "CLIENT",
-        },
-      });
-      isEphemeralUser = true;
-    }
+    const user = await prisma.user.create({
+      data: {
+        name: "Test Vault User",
+        email: `test-vault-${Date.now()}@example.com`,
+        role: "CLIENT",
+      },
+    });
+    testUserId = user.id;
 
     // Buat file dummy cover di public/uploads
     const dummyUploadDir = path.join(process.cwd(), "public", "uploads", "invitations", "test-vault-id");
@@ -162,9 +164,6 @@ async function runTest() {
       try { await fs.promises.unlink(pubPath); } catch {}
     }
 
-    if (isEphemeralUser) {
-      await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-    }
     if (fs.existsSync(dummyUploadDir)) {
       await fs.promises.rm(dummyUploadDir, { recursive: true, force: true });
     }
@@ -172,17 +171,7 @@ async function runTest() {
       await fs.promises.rm(nasPath, { recursive: true, force: true });
     }
 
-    // Kembalikan status setting ke default (dormant: false)
-    await prisma.adminSetting.update({
-      where: { key: "nas_archive_enabled" },
-      data: { value: "false" },
-    });
-    await prisma.adminSetting.update({
-      where: { key: "nas_archive_path" },
-      data: { value: "./data/archives" },
-    });
-
-    console.log("  ✅ Pembersihan data uji selesai. Setting dikembalikan ke default dormant (false).");
+    console.log("  ✅ Pembersihan data uji selesai.");
 
     console.log("\n================================================================================");
     console.log("🎉 SEMUA PENGUJIAN NAS ARCHIVE LIFECYCLE BERHASIL LULUS 100% (PASS)");
@@ -194,8 +183,18 @@ async function runTest() {
       await prisma.invitation.deleteMany({ where: { invitationSlug: testSlug } });
       if (fs.existsSync(nasPath)) await fs.promises.rm(nasPath, { recursive: true, force: true });
     } catch {}
-    process.exit(1);
+    process.exitCode = 1;
   } finally {
+    if (testUserId) await prisma.user.delete({ where: { id: testUserId } }).catch(() => {});
+    for (const key of ["nas_archive_enabled", "nas_archive_path"]) {
+      const original = originalSettings.find((s) => s.key === key);
+      if (original) {
+        await prisma.adminSetting.update({ where: { key }, data: { value: original.value } });
+      } else {
+        await prisma.adminSetting.deleteMany({ where: { key } });
+      }
+    }
+    console.log("  Pengaturan arsip dikembalikan ke nilai sebelum pengujian.");
     await prisma.$disconnect();
     await pool.end();
   }
