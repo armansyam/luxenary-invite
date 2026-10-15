@@ -29,6 +29,8 @@ import { readPortfolioMediaSource } from "@/lib/storage";
 import { POST as createTheme } from "@/app/api/admin/themes/route";
 import memoriesPage from "@/app/(public)/[slug]/memories/page";
 import shareMomentPage from "@/app/(public)/[slug]/sharemoment/page";
+import { POST as createAdmin } from "@/app/api/admin/admins/route";
+import bcrypt from "bcryptjs";
 import { GET as publicMemories } from "@/app/api/public/memories/[invitationId]/route";
 import { normalizeCustomDomain } from "@/lib/domainUtils";
 import { getPlanMemoriesQuota, getPublicPlatformSettings, invalidateSettingsCache } from "@/lib/settings";
@@ -450,6 +452,23 @@ describe.skipIf(!IS_TEST_DB)("galeri kenangan tamu publik", () => {
     await prisma.invitation.update({ where: { id: invitationId }, data: { featureSettings: { memoriesDelayedReveal: false } } });
     const revealed = await publicMemories(new NextRequest(`http://localhost/api/public/memories/${invitationId}`), { params: Promise.resolve({ invitationId }) });
     expect(await revealed.json()).toHaveLength(1);
+  });
+});
+
+describe.skipIf(!IS_TEST_DB)("password akun admin", () => {
+  it("password yang disimpan lewat panel cocok dengan input login yang dipangkas", async () => {
+    // Catatan audit merujuk tabel admins, jadi pelaku harus akun admin sungguhan.
+    const actor = await prisma.admin.create({ data: { username: `${RUN}_super`, email: `${RUN}_super@admin.local`, name: "Super Uji", role: "SUPER_ADMIN", permissions: [] } });
+    ids.admins.push(actor.id);
+    sessionUser = { id: actor.id, email: actor.email, role: "SUPER_ADMIN", isAdmin: true, permissions: [] };
+    const res = await createAdmin(jsonRequest("http://localhost/api/admin/admins", "POST", {
+      username: `${RUN}_pw`, email: `${RUN}_pw@admin.local`, name: "Uji Password", role: "SUPPORT", password: " rahasia-uji-123 ",
+    }));
+    const json = await res.json();
+    expect(res.status).toBe(200);
+    ids.admins.push(json.admin.id);
+    const stored = await prisma.admin.findUniqueOrThrow({ where: { id: json.admin.id }, select: { passwordHash: true } });
+    expect(await bcrypt.compare(" rahasia-uji-123 ".trim(), stored.passwordHash!)).toBe(true);
   });
 });
 

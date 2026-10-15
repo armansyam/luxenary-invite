@@ -20,6 +20,7 @@ const geistMono = Geist_Mono({
 
 import { getPublicPlatformSettings } from "@/lib/settings";
 import { getDynamicServerAppUrl } from "@/lib/serverDomainUtils";
+import { jsonForInlineScript } from "@/lib/safeJson";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -135,7 +136,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
+            __html: jsonForInlineScript({
               "@context": "https://schema.org",
               "@type": "WebSite",
               "name": brandName,
