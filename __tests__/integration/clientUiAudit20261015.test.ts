@@ -14,6 +14,7 @@ vi.mock("@/auth", () => ({ auth: vi.fn(async () => (sessionUser ? { user: sessio
 
 import GuestMomentOpening from "@/app/components/features/GuestMomentOpening";
 import UnifiedAddonModal from "@/components/client/UnifiedAddonModal";
+import { wrapCanvasText } from "@/components/client/PrintableQRCardModal";
 import { mergeFeatureSettingsInput } from "@/lib/featureSettings";
 import { prisma, pool } from "@/lib/prisma";
 import { PATCH as patchInvitation } from "@/app/api/client/invitations/[id]/route";
@@ -71,6 +72,19 @@ describe("modal upgrade & add-on", () => {
     expect(html).toContain("Kamera tamu 300 foto");
     expect(html).not.toContain("Kuota 200 Foto");
     expect(html).not.toContain("Serenade");
+  });
+});
+
+describe("kartu QR siap cetak", () => {
+  it("kalimat petunjuk bawaan dipecah per kata agar tidak melewati area cetak", () => {
+    // Lebar terukur dengan sharp untuk teks bawaan pada huruf 69 px (A4): ~2475 px, area cetak 0,88 x 2480 = 2182 px.
+    const text = "Pindai kode QR untuk mengabadikan momen istimewa dari sudut pandang Anda.";
+    const pxPerChar = 2475 / text.length;
+    const ctx = { measureText: (s: string) => ({ width: s.length * pxPerChar }) as TextMetrics };
+    const lines = wrapCanvasText(ctx, text, 2182);
+    expect(lines.length).toBe(2);
+    expect(lines.join(" ")).toBe(text);
+    for (const line of lines) expect(ctx.measureText(line).width).toBeLessThanOrEqual(2182);
   });
 });
 
