@@ -22,6 +22,7 @@ import { POST as createExpense } from "@/app/api/admin/finance/expenses/route";
 import { PUT as updateExpense, DELETE as deleteExpense } from "@/app/api/admin/finance/expenses/[id]/route";
 import { GET as taxRecap, POST as markTax } from "@/app/api/admin/finance/tax/route";
 import { POST as purgeInvitation } from "@/app/api/admin/invitations/[id]/purge/route";
+import { POST as marketingAction } from "@/app/api/admin/marketing/route";
 import { normalizeCustomDomain } from "@/lib/domainUtils";
 import { getPlanMemoriesQuota, getPublicPlatformSettings, invalidateSettingsCache } from "@/lib/settings";
 import { DAY_MS } from "@/lib/lifecycleDates";
@@ -288,6 +289,44 @@ describe.skipIf(!IS_TEST_DB)("purge cache undangan oleh admin", () => {
     expect(res.status).toBe(200);
     expect((await res.json()).rebakeSuccess).toBe(false);
     expect(fs.existsSync(path.join(process.cwd(), "public", "published", "ids", `${invitationId}.html`))).toBe(false);
+  });
+});
+
+describe.skipIf(!IS_TEST_DB)("pencairan komisi mitra", () => {
+  const partnerIds: string[] = [];
+
+  afterAll(async () => {
+    await prisma.affiliateCommission.deleteMany({ where: { partnerId: { in: partnerIds } } });
+    await prisma.expense.deleteMany({ where: { title: { startsWith: `Payout Komisi Mitra: ${RUN}` } } });
+    await prisma.partnerAffiliate.deleteMany({ where: { id: { in: partnerIds } } });
+  });
+
+  it("dua pencairan serentak hanya satu yang berhasil; pencairan sebagian tidak melunasi komisi", async () => {
+    const userId = await makeUser("payout");
+    const order = await prisma.order.create({ data: { userId, invoiceNumber: `${RUN}-payout`, planType: "TIER_2", amount: 150000, status: "PAID", paidAt: new Date() } });
+    ids.orders.push(order.id);
+    const partner = await prisma.partnerAffiliate.create({ data: { name: `${RUN} Mitra`, commissionType: "NOMINAL", commissionValue: 100000, pendingBalance: 100000 } });
+    partnerIds.push(partner.id);
+    const commission = await prisma.affiliateCommission.create({ data: { partnerId: partner.id, orderId: order.id, orderAmount: 150000, commissionAmount: 100000, status: "PENDING" } });
+
+    const admin = await prisma.admin.create({ data: { username: `${RUN}_mkt`, email: `${RUN}_mkt@admin.local`, name: "Marketing Uji", role: "ADMIN", permissions: ["marketing"] } });
+    ids.admins.push(admin.id);
+    sessionUser = { id: admin.id, email: admin.email, role: "ADMIN", isAdmin: true, permissions: ["marketing"] };
+
+    const payout = (amount: number) => marketingAction(jsonRequest("http://localhost/api/admin/marketing", "POST", { action: "PAYOUT_PARTNER", partnerId: partner.id, amount }));
+
+    const partial = await payout(40000);
+    expect(partial.status).toBe(200);
+    expect((await prisma.affiliateCommission.findUniqueOrThrow({ where: { id: commission.id } })).status).toBe("PENDING");
+
+    const results = await Promise.all([payout(60000), payout(60000)]);
+    expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
+
+    const after = await prisma.partnerAffiliate.findUniqueOrThrow({ where: { id: partner.id } });
+    expect(Number(after.pendingBalance)).toBe(0);
+    expect(Number(after.totalPaidOut)).toBe(100000);
+    expect((await prisma.affiliateCommission.findUniqueOrThrow({ where: { id: commission.id } })).status).toBe("PAID");
+    expect(await prisma.expense.count({ where: { title: `Payout Komisi Mitra: ${RUN} Mitra` } })).toBe(2);
   });
 });
 
