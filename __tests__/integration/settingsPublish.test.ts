@@ -103,6 +103,31 @@ describe("simpan dari Studio", () => {
     }
   });
 
+  it("setiap pengaturan yang diubah sebuah seksi Studio ikut dipantau tombol Simpan seksi itu", () => {
+    const lines = fs.readFileSync(path.join(process.cwd(), "app/(client)/dashboard/invitation/[id]/page.tsx"), "utf-8").split("\n");
+    const dirtyStart = lines.findIndex((l) => l.includes("const isDirty = useMemo"));
+    const dirtyEnd = lines.findIndex((l, i) => i > dirtyStart && l.includes("}, [invitation, media, events"));
+    const dirtyBlock = lines.slice(dirtyStart, dirtyEnd).join("\n");
+    const sections: [number, string][] = [];
+    lines.forEach((l, i) => {
+      const m = l.match(/id="section-(sec\d+)"/);
+      if (m) sections.push([i, m[1]]);
+    });
+    const sectionAt = (i: number) => sections.filter(([start]) => start <= i).pop()?.[1];
+    const untracked: string[] = [];
+    lines.forEach((l, i) => {
+      const sec = sectionAt(i);
+      if (!sec) return;
+      for (const m of l.matchAll(/update(FeatureSetting|CustomLabel)\("([\w.]+)"/g)) {
+        // Seksi 15 membandingkan seluruh customLabels sekaligus.
+        if (m[1] === "CustomLabel" && sec === "sec15") continue;
+        // Dipantau lewat getFeatureSetting("kunci") atau akses properti (invitation.musicUrl, curFs.vendors, ...).
+        if (!dirtyBlock.includes(`"${m[2]}"`) && !new RegExp(`\\.${m[2]}\\b`).test(dirtyBlock)) untracked.push(`${sec}:${m[2]}`);
+      }
+    });
+    expect([...new Set(untracked)]).toEqual([]);
+  });
+
   it("payload simpan Studio tidak membawa subdomain, status, PIN, atau domain kustom", () => {
     const src = fs.readFileSync(path.join(process.cwd(), "app/(client)/dashboard/invitation/[id]/page.tsx"), "utf-8");
     const save = src.slice(src.indexOf("const saveSection"), src.indexOf("const handleDeployAndLock"));

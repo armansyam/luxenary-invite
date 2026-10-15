@@ -915,7 +915,8 @@ export default function EditInvitation() {
     // Sec 7: Kisah Cinta
     const dirty7 = (
       JSON.stringify(stories) !== JSON.stringify(savedSnapshot.stories || []) ||
-      Boolean(getFeatureSetting("showStory", true)) !== Boolean(getSavedFeatureSetting("showStory", true))
+      Boolean(getFeatureSetting("showStory", true)) !== Boolean(getSavedFeatureSetting("showStory", true)) ||
+      getCustomLabel("storyTitle", "") !== getSavedCustomLabel("storyTitle", "")
     );
 
     // Sec 8: Galeri & Video
@@ -923,7 +924,8 @@ export default function EditInvitation() {
       getFeatureSetting("videoGalleryUrl", "") !== getSavedFeatureSetting("videoGalleryUrl", "") ||
       getFeatureSetting("galleryDriveFolderUrl", "") !== getSavedFeatureSetting("galleryDriveFolderUrl", "") ||
       getFeatureSetting("galleryPhotosList", "") !== getSavedFeatureSetting("galleryPhotosList", "") ||
-      Boolean(getFeatureSetting("showGallery", true)) !== Boolean(getSavedFeatureSetting("showGallery", true))
+      Boolean(getFeatureSetting("showGallery", true)) !== Boolean(getSavedFeatureSetting("showGallery", true)) ||
+      getCustomLabel("galleryTitle", "") !== getSavedCustomLabel("galleryTitle", "")
     );
 
     // Sec 9: Rekening & Hadiah
@@ -969,6 +971,7 @@ export default function EditInvitation() {
 
     const dirty14 = (
       Boolean(getFeatureSetting("showGuestMemories", true)) !== Boolean(getSavedFeatureSetting("showGuestMemories", true)) ||
+      getFeatureSetting("memoriesWebLayout", "stories") !== getSavedFeatureSetting("memoriesWebLayout", "stories") ||
       getFeatureSetting("memoriesFilter", "aura_90s") !== getSavedFeatureSetting("memoriesFilter", "aura_90s") ||
       Boolean(getFeatureSetting("memoriesDateStamp", true)) !== Boolean(getSavedFeatureSetting("memoriesDateStamp", true)) ||
       getFeatureSetting("memoriesDateFormat", "DD MM 'YY") !== getSavedFeatureSetting("memoriesDateFormat", "DD MM 'YY") ||
