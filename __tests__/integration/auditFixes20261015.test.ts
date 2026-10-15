@@ -26,6 +26,7 @@ import { POST as marketingAction } from "@/app/api/admin/marketing/route";
 import { POST as uploadMusic } from "@/app/api/admin/music/route";
 import { GET as serveUpload } from "@/app/uploads/[...path]/route";
 import { readPortfolioMediaSource } from "@/lib/storage";
+import { POST as createTheme } from "@/app/api/admin/themes/route";
 import { normalizeCustomDomain } from "@/lib/domainUtils";
 import { getPlanMemoriesQuota, getPublicPlatformSettings, invalidateSettingsCache } from "@/lib/settings";
 import { DAY_MS } from "@/lib/lifecycleDates";
@@ -382,6 +383,24 @@ describe.skipIf(!IS_TEST_DB)("unggah musik oleh admin", () => {
 
     await prisma.musicPreset.delete({ where: { id: json.music.id } });
     fs.rmSync(path.join(process.cwd(), "public", json.music.url), { force: true });
+  });
+});
+
+describe.skipIf(!IS_TEST_DB)("unggah master tema oleh admin", () => {
+  it("jenis acara di luar enum ditolak sebelum berkas ditulis keluar dari themes/", async () => {
+    sessionUser = { id: "admin-vitest", email: "admin@test.local", role: "SUPER_ADMIN", isAdmin: true, permissions: [] };
+    const themeId = `vitest${Date.now()}`;
+    const form = new FormData();
+    form.append("id", themeId);
+    form.append("name", "Uji Traversal");
+    form.append("category", "modern");
+    form.append("eventType", "../scratch-vitest");
+    form.append("file", new File(["<html></html>"], "uji.html", { type: "text/html" }));
+
+    const res = await createTheme(new NextRequest("http://localhost/api/admin/themes", { method: "POST", body: form }));
+    expect(res.status).toBe(400);
+    expect(fs.existsSync(path.join(process.cwd(), "scratch-vitest"))).toBe(false);
+    expect(await prisma.theme.findUnique({ where: { id: themeId } })).toBeNull();
   });
 });
 
