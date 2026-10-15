@@ -82,6 +82,14 @@ export async function POST(req: NextRequest) {
     // Verifikasi konten aktual file, bukan hanya header Content-Type dari browser.
     // Mencegah file berbahaya (HTML, SVG, executable) yang berpura-pura sebagai media.
     const detectedType = await fileTypeFromBuffer(buffer);
+    // Audio/video diteruskan ke ffmpeg, yang menebak format dari isi berkas: playlist teks (HLS/concat) yang tidak
+    // dikenali file-type dapat membuat ffmpeg membuka berkas lokal atau URL lain, jadi jenisnya wajib terdeteksi.
+    if (!detectedType && (isAudio || isVideo)) {
+      return NextResponse.json(
+        { error: "Format file audio/video tidak dikenali. Unggah MP3, WAV, M4A, MP4, WebM, atau MOV." },
+        { status: 415 }
+      );
+    }
     if (detectedType) {
       const mime = detectedType.mime;
       if (isAudio && !mime.startsWith("audio/") && !mime.startsWith("video/")) {
