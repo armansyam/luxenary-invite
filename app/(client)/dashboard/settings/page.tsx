@@ -450,9 +450,8 @@ export default function SettingsPage() {
     setErrorMsg(null);
 
     try {
-      const { media, user, order, guests, rsvps, wishes, ...cleanInvitation } = invitation;
+      // Hanya status & subdomain: mengirim ulang snapshot halaman akan menimpa suntingan Studio yang lebih baru.
       const payload = {
-        ...cleanInvitation,
         subdomain: formData.subdomain ? formData.subdomain.trim().toLowerCase() : null,
         status: "PUBLISHED",
       };
@@ -594,7 +593,7 @@ export default function SettingsPage() {
       id: "canonical",
       badge: "Pintu Utama / URL Asli",
       title: "Pintu Utama Website Undangan (Single Source of Truth)",
-      desc: "Jangkar URL permanen berbasis slug resmi yang selalu aktif selama masa retensi akun dan tidak akan pernah terhapus.",
+      desc: "Tautan utama berbasis slug resmi. Tetap aktif setelah masa subdomain berakhir, selama undangan masih tersimpan.",
       url: canonicalUrl,
       checkLabel: "Saya telah memverifikasi URL Asli / Pintu Utama permanen ini dapat diakses dengan sempurna.",
     },
@@ -1018,7 +1017,7 @@ export default function SettingsPage() {
                   <div>
                     <h3 className="text-sm font-bold text-stone-100">Memeriksa Kesiapan Peluncuran...</h3>
                     <p className="text-xs text-stone-400 mt-0.5">
-                      Memverifikasi Bagian {Math.min(activeScanIndex + 1, 10)} dari 10 ({Math.round((Math.min(activeScanIndex + 1, 10) / 10) * 100)}%)
+                      Memverifikasi Bagian {Math.min(activeScanIndex + 1, AUDIT_RULES.length)} dari {AUDIT_RULES.length} ({Math.round((Math.min(activeScanIndex + 1, AUDIT_RULES.length) / AUDIT_RULES.length) * 100)}%)
                     </p>
                   </div>
                 </div>
@@ -1757,13 +1756,13 @@ export default function SettingsPage() {
               <div>
                 <h4 className="text-xs font-bold text-stone-900">Fitur Custom Domain Belum Aktif</h4>
                 <p className="text-[11px] text-stone-600 mt-1 leading-relaxed max-w-xl">
-                  Layanan integrasi nama domain pribadi (.com / .id) dan retensi galeri kenangan tamu 1 tahun penuh belum aktif untuk paket Anda. Hubungi administrator atau tingkatkan paket Anda untuk menikmati fitur ini.
+                  Layanan integrasi nama domain pribadi (.com / .id) belum aktif untuk paket Anda. Hubungi administrator atau tingkatkan paket Anda untuk menikmati fitur ini.
                 </p>
               </div>
             </div>
             <div className="shrink-0">
               <a
-                href={invitation?.id ? `/dashboard/invitation/${invitation.id}` : "#"}
+                href="/dashboard?upgrade=true"
                 className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>

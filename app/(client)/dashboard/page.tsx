@@ -29,7 +29,8 @@ function DashboardHomeContent() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [memoriesQuota, setMemoriesQuota] = useState<any>(null);
-  const [isAddonModalOpen, setIsAddonModalOpen] = useState(false);
+  // Tombol upgrade di halaman lain (mis. Pengaturan) mengarah ke /dashboard?upgrade=true.
+  const [isAddonModalOpen, setIsAddonModalOpen] = useState(searchParams?.get("upgrade") === "true");
 
   const fetchGuestMemories = useCallback(async (invId?: string) => {
     const targetId = invId || invitation?.id;
