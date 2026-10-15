@@ -19,6 +19,9 @@ import { POST as checkoutBundle } from "@/app/api/client/orders/checkout-bundle/
 import { renderTemplateFile, THEME_MAP } from "@/lib/renderTemplate";
 import { composeTemplateData } from "@/lib/themeEngine";
 import { POST as uploadMedia } from "@/app/api/client/upload/route";
+import { releaseInvitationSubdomain } from "@/lib/subdomainRelease";
+import { purgeObsoleteUserOrders } from "@/lib/upgradeHelper";
+import { buildAndSavePublishedHtml, deletePublishedHtml, getPublishedHtml } from "@/lib/staticPublisher";
 import { DAY_MS } from "@/lib/lifecycleDates";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
@@ -153,6 +156,38 @@ describe.skipIf(!IS_TEST_DB)("label kustom klien", () => {
     expect(data.dressCodeHtml).toContain("Batik");
     expect(data.dressCodeHtml).not.toMatch(/#a67c52|#2b2725|#faf7f2/);
     expect(await renderTemplateFile("kalandra", data, { editMode: false })).not.toContain("kegiatan akademis di kampus");
+  });
+});
+
+describe.skipIf(!IS_TEST_DB)("order usang saat order lain lunas", () => {
+  it("order yang pernah punya sesi gateway ditutup (EXPIRED), bukan dihapus; draf tanpa sesi dihapus", async () => {
+    const { userId, orderId } = await makeClient("purge-keep");
+    const withSession = await prisma.order.create({
+      data: { userId, invoiceNumber: `${RUN}-sess`, planType: "TIER_1", amount: 1, status: "PENDING", orderType: "NEW", gatewayTxId: "tx-old" },
+    });
+    const bareDraft = await prisma.order.create({
+      data: { userId, invoiceNumber: `${RUN}-bare`, planType: "TIER_1", amount: 1, status: "PENDING", orderType: "NEW" },
+    });
+    ids.orders.push(withSession.id, bareDraft.id);
+    await purgeObsoleteUserOrders(userId, orderId);
+    expect((await prisma.order.findUnique({ where: { id: withSession.id } }))?.status).toBe("EXPIRED");
+    expect(await prisma.order.findUnique({ where: { id: bareDraft.id } })).toBeNull();
+  });
+});
+
+describe.skipIf(!IS_TEST_DB)("pelepasan subdomain", () => {
+  it("HTML terbit dibangun ulang sehingga tautan kamera/galeri tidak lagi memakai subdomain lama", async () => {
+    const { invitationId } = await makeClient("release-sub", { planType: "TIER_3", status: "PUBLISHED" });
+    const sub = `rel${Date.now().toString(36)}`;
+    const inv = await prisma.invitation.update({ where: { id: invitationId }, data: { subdomain: sub, status: "EVENT_FINISHED" } });
+    const before = await buildAndSavePublishedHtml(invitationId);
+    expect(before).toContain(`/s/${sub}/`);
+
+    await releaseInvitationSubdomain(inv);
+    const after = await getPublishedHtml(invitationId);
+    expect(after).not.toContain(`/s/${sub}/`);
+    expect((await prisma.invitation.findUniqueOrThrow({ where: { id: invitationId } })).subdomain).toBeNull();
+    await deletePublishedHtml(invitationId);
   });
 });
 

@@ -4,7 +4,8 @@ import { isSubdomainExpired } from "@/lib/domainUtils";
 import { getPublishedHtml, buildAndSavePublishedHtml } from "@/lib/staticPublisher";
 import { composeTemplateData } from "@/lib/themeEngine";
 import { renderTemplateFile } from "@/lib/renderTemplate";
-import { invitationLookupCache, invalidateInvitationLookup } from "@/lib/cache";
+import { invitationLookupCache } from "@/lib/cache";
+import { releaseInvitationSubdomain } from "@/lib/subdomainRelease";
 import { hasPlanCapability } from "@/lib/settings";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { getDynamicServerApexUrl } from "@/lib/serverDomainUtils";
@@ -135,11 +136,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
 
   if (!isPreview && (invitation.status === "ARCHIVED" || (lifecycleSettings.autoRecycleSubdomain && isPastGrace))) {
     if (lifecycleSettings.autoRecycleSubdomain && isPastGrace) {
-      await prisma.invitation.update({
-        where: { id: invitation.id },
-        data: { subdomain: null },
-      });
-      invalidateInvitationLookup(invitation.invitationSlug, invitation.subdomain);
+      await releaseInvitationSubdomain(invitation);
     }
     const rootUrl = await getDynamicServerApexUrl(subdomain);
     return NextResponse.redirect(`${rootUrl}/${invitation.invitationSlug}`, 307);

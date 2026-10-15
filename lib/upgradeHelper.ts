@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { deleteFile } from "@/lib/storage";
 import { sendInvoiceEmail } from "@/lib/mailer";
 import { getPlanMemoriesQuota } from "./settings";
 import { extendGalleryExpiry } from "@/lib/lifecycleDates";
@@ -118,38 +117,23 @@ async function rearmQuotaMilestones(
 
 /**
  * purgeObsoleteUserOrders
- * Memastikan prinsip Single State (Opsi B):
- * Saat order PAID, bersihkan semua draft/expired orders lama milik user beserta file struknya di Cloudflare R2
+ * Satu paket aktif per pengguna: saat order PAID, order paket lain yang masih PENDING milik pengguna ditutup.
  */
 export async function purgeObsoleteUserOrders(userId: string, currentOrderId: string): Promise<void> {
   try {
-    const obsolete = await prisma.order.findMany({
-      where: {
-        userId,
-        id: { not: currentOrderId },
-        status: { in: ["PENDING", "EXPIRED"] },
-        orderType: "NEW",
-      },
-      select: { id: true, proofImageUrl: true },
+    const others = { userId, id: { not: currentOrderId }, orderType: "NEW" as const };
+    // Hanya draf yang tidak pernah sampai ke gateway dan tanpa bukti transfer yang dihapus. Order yang pernah punya sesi
+    // gateway atau bukti tetap disimpan (ditandai EXPIRED): QR lamanya bisa saja tetap dibayar, dan webhook
+    // pelunasan (settlementSourceStatuses) membutuhkan barisnya. Baris lama dibersihkan runStaleDataCleanup.
+    const deleted = await prisma.order.deleteMany({
+      where: { ...others, status: "PENDING", gatewayTxId: null, proofImageUrl: null },
     });
-
-    for (const ord of obsolete) {
-      if (ord.proofImageUrl) {
-        // deleteFile mencatat galatnya sendiri dan tidak melempar.
-        await deleteFile(ord.proofImageUrl);
-      }
-    }
-
-    if (obsolete.length > 0) {
-      const obsoleteIds = obsolete.map((o) => o.id);
-      // Lepas relasi ke invitation agar tidak melanggar foreign key constraint PostgreSQL
-      await prisma.invitation.updateMany({
-        where: { orderId: { in: obsoleteIds } },
-        data: { orderId: null },
-      });
-      await prisma.order.deleteMany({
-        where: { id: { in: obsoleteIds } },
-      });
+    const expired = await prisma.order.updateMany({
+      where: { ...others, status: "PENDING" },
+      data: { status: "EXPIRED", rejectReason: "Digantikan pesanan lain yang sudah lunas" },
+    });
+    if (deleted.count + expired.count > 0) {
+      logger.info("PurgeObsoleteOrders", "Order paket usang dibereskan", { userId, deleted: deleted.count, expired: expired.count });
     }
   } catch (err) {
     logger.error("PurgeObsoleteOrders", "Pembersihan order usang pengguna gagal", err);

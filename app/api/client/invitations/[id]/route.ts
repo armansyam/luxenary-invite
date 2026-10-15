@@ -19,6 +19,7 @@ import { invalidateInvitationLookup } from "@/lib/cache";
 import { safeExternalUrl, safeMediaUrl } from "@/lib/safeUrl";
 import { deleteFile, isInvitationOwnedUpload } from "@/lib/storage";
 import { purgeInvitationEdgeCache } from "@/lib/cloudflare";
+import { releaseInvitationSubdomain } from "@/lib/subdomainRelease";
 import { createPreviewToken } from "@/lib/previewAccess";
 import { mergeFeatureSettingsInput } from "@/lib/featureSettings";
 
@@ -261,11 +262,7 @@ export async function PUT(
       if (existingSub && existingSub.id !== id) {
         const { subdomainGraceDays, autoRecycleSubdomain } = await getLifecycleSettings();
         if (autoRecycleSubdomain && isSubdomainExpired(existingSub.eventData, subdomainGraceDays)) {
-          await prisma.invitation.update({
-            where: { id: existingSub.id },
-            data: { subdomain: null },
-          });
-          await purgeInvitationEdgeCache(existingSub);
+          await releaseInvitationSubdomain(existingSub);
         } else {
           return NextResponse.json(
             { error: `Tautan/Subdomain "${newSubdomain}" sudah digunakan oleh orang lain. Silakan ubah nama panggilan.` },

@@ -11,6 +11,7 @@ import { DAY_MS, computeLifecycleDates, formatDateInEventTimezone, getPrimaryEve
 import { getLifecycleSettings } from "./lifecycleSettings";
 import { applyUpgradePlan } from "./upgradeHelper";
 import { participantNames } from "./participantUtils";
+import { releaseInvitationSubdomain } from "./subdomainRelease";
 
 const CONTEXT = "LifecycleCleanup";
 const RETENTION_WARNING_LEAD_MS = 3 * DAY_MS;
@@ -85,7 +86,7 @@ async function releaseExpiredSubdomains(now: Date, settings: LifecycleSettings, 
 
   const holders = await prisma.invitation.findMany({
     where: { ...scope, subdomain: { not: null }, status: { in: ["EVENT_FINISHED", "ARCHIVED", "TAKEN_DOWN"] } },
-    select: { id: true, eventData: true, invitationSlug: true, subdomain: true },
+    select: { id: true, status: true, eventData: true, invitationSlug: true, subdomain: true, customDomain: true },
   });
 
   let released = 0;
@@ -94,8 +95,12 @@ async function releaseExpiredSubdomains(now: Date, settings: LifecycleSettings, 
     if (!dates || now <= dates.subdomainReleaseAt) continue;
 
     if (!dryRun) {
-      await prisma.invitation.update({ where: { id: inv.id }, data: { subdomain: null } });
-      await purgeInvitationEdgeCache(inv);
+      try {
+        await releaseInvitationSubdomain(inv);
+      } catch (err) {
+        logger.error(CONTEXT, "Pelepasan subdomain gagal; undangan lain tetap diproses", err, { invitationId: inv.id });
+        continue;
+      }
     }
     released++;
   }

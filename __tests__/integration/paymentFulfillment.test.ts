@@ -180,7 +180,7 @@ describe.skipIf(!IS_TEST_DB)("Integrasi pembayaran & pemenuhan (DB luxenary_test
     });
 
     it("order lama tanpa chargedAmount: bayar >= amount -> PAID, bayar < amount -> PENDING", async () => {
-      // User berbeda: pelunasan satu order menghapus order PENDING lain milik user yang sama (purgeObsoleteUserOrders)
+      // User berbeda: pelunasan satu order menutup order PENDING lain milik user yang sama (purgeObsoleteUserOrders)
       const u1 = await makeUser("c4a");
       const u2 = await makeUser("c4b");
       const paid = await makeOrder(u1.id, { amount: 500000 });

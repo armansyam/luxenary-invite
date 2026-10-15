@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { routeError } from "@/lib/routeError";
 import { requireAdminModule } from "@/lib/adminAuth";
-import { invalidateInvitationLookup } from "@/lib/cache";
+import { releaseInvitationSubdomain } from "@/lib/subdomainRelease";
 import { DAY_MS, computeLifecycleDates, getPrimaryEventDateString } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
@@ -84,8 +84,10 @@ export async function POST() {
       where: { subdomain: { not: null } },
       select: {
         id: true,
+        status: true,
         subdomain: true,
         invitationSlug: true,
+        customDomain: true,
         eventData: true,
       },
     });
@@ -99,11 +101,7 @@ export async function POST() {
       const dates = computeLifecycleDates({ eventData: inv.eventData }, settings);
 
       if (dates && Date.now() > dates.subdomainReleaseAt.getTime()) {
-        await prisma.invitation.update({
-          where: { id: inv.id },
-          data: { subdomain: null },
-        });
-        invalidateInvitationLookup(inv.invitationSlug, inv.subdomain);
+        await releaseInvitationSubdomain(inv);
 
         releasedCount++;
         releasedList.push(inv.subdomain);
