@@ -121,6 +121,11 @@ export function formatDateInEventTimezone(date: Date, timezone: EventTimezone): 
   return date.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: TIMEZONE_IANA[timezone] });
 }
 
+/** Jam (HH.MM) pada zona waktu acara, bukan zona server. */
+export function formatTimeInEventTimezone(date: Date, timezone: EventTimezone): string {
+  return date.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: TIMEZONE_IANA[timezone] });
+}
+
 export interface LifecycleSettings {
   /** Hari sejak acara utama hingga subdomain dikembalikan ke pool (`subdomain_grace_days`). */
   subdomainGraceDays: number;

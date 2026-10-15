@@ -6,7 +6,7 @@ import { hasPlanCapability } from "@/lib/settings";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 import { jsonForInlineScript } from "@/lib/safeJson";
 import { parseFeatureSettings } from "@/lib/featureSettings";
-import { getPrimaryEventEnd } from "@/lib/lifecycleDates";
+import { formatDateInEventTimezone, formatTimeInEventTimezone, getPrimaryEventEnd, getPrimaryEventTimezone } from "@/lib/lifecycleDates";
 import { createHash } from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -45,7 +45,9 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
     },
   });
 
-  if (!invitation) {
+  // Galeri hanya untuk undangan yang sedang disajikan ke tamu: undangan yang diturunkan admin (TAKEN_DOWN) atau
+  // belum terbit tidak boleh tetap membuka foto tamunya lewat URL ini.
+  if (!invitation || (invitation.status !== "PUBLISHED" && invitation.status !== "EVENT_FINISHED")) {
     notFound();
   }
 
@@ -65,6 +67,7 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
 
   const isDelayedReveal = Boolean(fs.memoriesDelayedReveal);
   const eventEndTime = getPrimaryEventEnd(invitation.eventData);
+  const eventTimezone = getPrimaryEventTimezone(invitation.eventData);
 
   const now = new Date();
   const isDarkroomActive = isDelayedReveal && eventEndTime !== null && now < eventEndTime;
@@ -178,7 +181,7 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
               <div className="text-left">
                 <span className="text-[10px] uppercase font-mono tracking-wider text-stone-500 block">Jadwal Rilis Galeri:</span>
                   {eventEndTime
-                    ? `${eventEndTime.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })} • ${eventEndTime.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} WIB`
+                    ? `${formatDateInEventTimezone(eventEndTime, eventTimezone)} • ${formatTimeInEventTimezone(eventEndTime, eventTimezone)} ${eventTimezone}`
                     : "Setelah Resepsi Selesai"}
               </div>
               <div className="px-3 py-1.5 bg-amber-500/15 border border-amber-500/30 rounded-xl text-[11px] font-mono font-bold text-amber-300">

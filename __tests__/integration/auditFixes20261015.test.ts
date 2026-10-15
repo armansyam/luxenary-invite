@@ -27,6 +27,8 @@ import { POST as uploadMusic } from "@/app/api/admin/music/route";
 import { GET as serveUpload } from "@/app/uploads/[...path]/route";
 import { readPortfolioMediaSource } from "@/lib/storage";
 import { POST as createTheme } from "@/app/api/admin/themes/route";
+import memoriesPage from "@/app/(public)/[slug]/memories/page";
+import { GET as publicMemories } from "@/app/api/public/memories/[invitationId]/route";
 import { normalizeCustomDomain } from "@/lib/domainUtils";
 import { getPlanMemoriesQuota, getPublicPlatformSettings, invalidateSettingsCache } from "@/lib/settings";
 import { DAY_MS } from "@/lib/lifecycleDates";
@@ -401,6 +403,36 @@ describe.skipIf(!IS_TEST_DB)("unggah master tema oleh admin", () => {
     expect(res.status).toBe(400);
     expect(fs.existsSync(path.join(process.cwd(), "scratch-vitest"))).toBe(false);
     expect(await prisma.theme.findUnique({ where: { id: themeId } })).toBeNull();
+  });
+});
+
+describe.skipIf(!IS_TEST_DB)("galeri kenangan tamu publik", () => {
+  const addMemory = (invitationId: string) =>
+    prisma.guestMemory.create({ data: { invitationId, senderName: "Tamu Uji", senderEmail: "tamu@uji.local", mediaUrl: "/uploads/uji.webp" } });
+
+  it("undangan yang diturunkan admin tidak membuka halaman galerinya", async () => {
+    const userId = await makeUser("gallery-takedown");
+    const invitationId = await makeInvitation(userId, "gallery-takedown", "TIER_2");
+    await prisma.invitation.update({ where: { id: invitationId }, data: { status: "TAKEN_DOWN" } });
+    await addMemory(invitationId);
+    await expect(memoriesPage({ params: Promise.resolve({ slug: `${RUN}-gallery-takedown` }) })).rejects.toMatchObject({
+      digest: expect.stringContaining("404"),
+    });
+  });
+
+  it("API foto tamu tidak membocorkan foto selama kamar gelap aktif", async () => {
+    const userId = await makeUser("gallery-darkroom");
+    const invitationId = await makeInvitation(userId, "gallery-darkroom", "TIER_2");
+    await prisma.invitation.update({ where: { id: invitationId }, data: { status: "PUBLISHED", featureSettings: { memoriesDelayedReveal: true } } });
+    await addMemory(invitationId);
+
+    const res = await publicMemories(new NextRequest(`http://localhost/api/public/memories/${invitationId}`), { params: Promise.resolve({ invitationId }) });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual([]);
+
+    await prisma.invitation.update({ where: { id: invitationId }, data: { featureSettings: { memoriesDelayedReveal: false } } });
+    const revealed = await publicMemories(new NextRequest(`http://localhost/api/public/memories/${invitationId}`), { params: Promise.resolve({ invitationId }) });
+    expect(await revealed.json()).toHaveLength(1);
   });
 });
 
