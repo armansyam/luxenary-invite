@@ -385,7 +385,7 @@ export const defaultSettings: DefaultSettingItem[] = [
   {
     "id": "pricing_subtitle_luxenary_default",
     "key": "pricing_subtitle",
-    "value": "Biaya satu kali bayar dengan masa aktif undangan 1 tahun (archive), penyimpanan galeri foto tamu 30 hari, dan portofolio resmi permanen.",
+    "value": "Biaya satu kali bayar dengan masa aktif undangan {{archiveRetention}} (archive), penyimpanan galeri foto tamu {{galleryRetention}}, dan portofolio resmi permanen.",
     "label": "Subjudul Section Harga (Homepage)",
     "group": "pricing",
     "updatedAt": "2026-09-28T06:50:00.000Z"

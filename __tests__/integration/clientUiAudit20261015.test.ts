@@ -18,6 +18,8 @@ import { wrapCanvasText } from "@/components/client/PrintableQRCardModal";
 import { AUDIT_ACTION_OPTIONS } from "@/components/admin/AdminMonitoringTab";
 import fs from "fs";
 import path from "path";
+import { getPublicPlatformSettings } from "@/lib/settings";
+import { formatRetentionLabel } from "@/lib/lifecycleDates";
 import { mergeFeatureSettingsInput } from "@/lib/featureSettings";
 import { prisma, pool } from "@/lib/prisma";
 import { PATCH as patchInvitation } from "@/app/api/client/invitations/[id]/route";
@@ -75,6 +77,15 @@ describe("modal upgrade & add-on", () => {
     expect(html).toContain("Kamera tamu 300 foto");
     expect(html).not.toContain("Kuota 200 Foto");
     expect(html).not.toContain("Serenade");
+  });
+});
+
+describe.skipIf(!IS_TEST_DB)("subjudul harga beranda", () => {
+  it("masa simpan dirender dari pengaturan, bukan angka mati", async () => {
+    const s = await getPublicPlatformSettings();
+    expect(s.pricingSubtitle).not.toContain("{{");
+    expect(s.pricingSubtitle).toContain(formatRetentionLabel(s.galleryRetentionDays));
+    expect(s.pricingSubtitle).toContain(formatRetentionLabel(s.archiveRetentionDays));
   });
 });
 
