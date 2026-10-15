@@ -250,7 +250,7 @@ export function HowItWorksInteractive({ activeDomain }: { activeDomain: string }
       }, 9000);
 
       schedule(() => {
-        setTab4Cursor({ x: 50, y: 65, clicking: false, visible: true, label: "Resmi Mengudara! 🎉" });
+        setTab4Cursor({ x: 50, y: 65, clicking: false, visible: true, label: "Resmi Mengudara!" });
       }, 9400);
 
       // Step 6: Fade cursor & reset loop
@@ -500,13 +500,13 @@ export function HowItWorksInteractive({ activeDomain }: { activeDomain: string }
                     </div>
                     <div className="flex gap-2">
                       <span className="px-3 py-1 rounded-full bg-stone-800 text-stone-400 text-xs font-semibold">
-                        Minimalis (6)
+                        Minimalis
                       </span>
                       <span className="px-3 py-1 rounded-full bg-stone-800 text-stone-400 text-xs font-semibold">
-                        Modern (13)
+                        Modern
                       </span>
                       <span className="px-3 py-1 rounded-full bg-amber-600/30 border border-amber-500/50 text-amber-300 text-xs font-semibold">
-                        Tradisional (15)
+                        Tradisional
                       </span>
                     </div>
                   </div>
@@ -548,7 +548,7 @@ export function HowItWorksInteractive({ activeDomain }: { activeDomain: string }
                         : "border border-stone-800 opacity-80"
                     }`}>
                       <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-stone-950/80 text-[10px] font-bold text-stone-300 z-10">
-                        TRADITIONAL
+                        MODERN
                       </div>
                       {selectedTheme === "candani" && (
                         <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-amber-400 text-stone-950 text-xs font-bold flex items-center justify-center z-10">
@@ -576,7 +576,7 @@ export function HowItWorksInteractive({ activeDomain }: { activeDomain: string }
                         : "border border-stone-800 opacity-80"
                     }`}>
                       <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-stone-950/80 text-[10px] font-bold text-stone-300 z-10">
-                        TRADITIONAL
+                        MODERN
                       </div>
                       {selectedTheme === "badrika" && (
                         <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-amber-400 text-stone-950 text-xs font-bold flex items-center justify-center z-10">
@@ -1068,8 +1068,10 @@ export function HowItWorksInteractive({ activeDomain }: { activeDomain: string }
                   {/* STAGE 4: PUBLISHED (SUKSES MENGUDARA) */}
                   {auditStage === "PUBLISHED" && (
                     <div className="relative z-10 p-5 rounded-2xl bg-gradient-to-br from-emerald-950/60 via-stone-950 to-stone-900 border border-emerald-500/40 shadow-xl space-y-3.5 text-center">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto text-xl shadow-inner">
-                        🎉
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto shadow-inner">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
                       </div>
                       <div className="space-y-1">
                         <h3 className="text-base sm:text-lg font-serif font-bold text-white">
