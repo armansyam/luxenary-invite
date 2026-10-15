@@ -13,7 +13,7 @@ const AVAILABLE_CAPABILITIES = [
 
 // Sama dengan seed prisma/defaultSettings.ts; token diganti label masa simpan oleh lib/settings.ts.
 const PRICING_SUBTITLE_DEFAULT =
-  "Biaya satu kali bayar dengan masa aktif undangan {{archiveRetention}} (archive), penyimpanan galeri foto tamu {{galleryRetention}}, dan portofolio resmi permanen.";
+  "Biaya satu kali bayar dengan masa aktif undangan {{archiveRetention}} (archive) dan penyimpanan galeri foto tamu {{galleryRetention}}.";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Props {

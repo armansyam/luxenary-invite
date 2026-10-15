@@ -279,7 +279,7 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
       "Didesain khusus dengan sentuhan estetika mewah dan eksklusif. Hadirkan pengalaman berkesan dengan layout split desktop, custom subdomain, buku tamu real-time, dan video booth ucapan.",
     pricingSubtitle: resolveRetentionTokens(
       map["pricing_subtitle"] ||
-        `Biaya satu kali bayar dengan masa aktif undangan ${archiveLabel} (archive), penyimpanan galeri foto tamu ${galleryLabel}, dan portofolio resmi permanen.`
+        `Biaya satu kali bayar dengan masa aktif undangan ${archiveLabel} (archive), dan penyimpanan galeri foto tamu ${galleryLabel}.`
     ),
     supportEmail: map["support_email"] || "",
     supportWhatsapp: map["support_whatsapp"] || "",
