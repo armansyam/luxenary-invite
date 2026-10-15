@@ -110,6 +110,15 @@ describe("filter audit staf", () => {
   });
 });
 
+describe("pengaturan admin konsisten dengan server", () => {
+  it("subjudul harga tidak lagi memakai teks masa simpan yang tertanam, dan kartu ambang notifikasi memakai grupnya sendiri", () => {
+    const src = fs.readFileSync(path.join(process.cwd(), "components/admin/AdminSettingsTab.tsx"), "utf-8");
+    expect(src).not.toContain("masa aktif undangan 1 tahun (archive), penyimpanan galeri foto tamu 30 hari");
+    expect(src).toContain('saveSettings(["memories_notify_milestones"], setSavingMemoriesMilestones, "memories_milestones")');
+    expect(src).not.toContain("Terkonfigurasi di .env");
+  });
+});
+
 describe("masa berlaku kupon promo", () => {
   it("membuka lalu menyimpan ulang kupon tidak menggeser jam berlaku", () => {
     const previousTz = process.env.TZ;
@@ -227,6 +236,12 @@ describe("template WhatsApp buku tamu", () => {
       await prisma.order.deleteMany({ where: { id: order.id } });
       await prisma.user.deleteMany({ where: { id: user.id } });
     }
+  });
+
+  it.skipIf(!IS_TEST_DB)("tanpa template admin, pengaturan publik tidak mengirim teks pernikahan bawaan", async () => {
+    const row = await prisma.adminSetting.findUnique({ where: { key: "wa_template_message" } });
+    const s = await getPublicPlatformSettings();
+    expect(s.waTemplateMessage).toBe(row?.value?.trim() || "");
   });
 
   it("halaman buku tamu menyimpan template lewat PATCH", () => {

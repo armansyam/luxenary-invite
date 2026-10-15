@@ -308,7 +308,8 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
       .sort((a, b) => a - b),
     paymentGatewayFeePercent: Number(map["payment_gateway_fee_percent"] || (map["payment_fee_rate"] ? Number(map["payment_fee_rate"]) * 100 : 0.7)),
     paymentGatewayFeePayer: ((map["payment_fee_payer"] || map["payment_gateway_fee_payer"] || "MERCHANT") === "BUYER" ? "BUYER" : "MERCHANT"),
-    waTemplateMessage: map["wa_template_message"] || "Assalamu'alaikum {{GUEST_NAME}},\n\nKami mengundang Bapak/Ibu dalam pernikahan kami.\n\nUndangan: {{INVITATION_URL}}\n\nHormat kami,\n{{GROOM_NAME}} & {{BRIDE_NAME}}",
+    // Kosong = admin belum menetapkan template; Buku Tamu klien lalu memakai preset sesuai jenis acara (lib/waPresets.ts).
+    waTemplateMessage: map["wa_template_message"]?.trim() || "",
     maxUploadMb: Number(map["max_upload_mb"] || 5),
     maxVideoUploadMb: Number(map["max_video_upload_mb"] || 50),
     maxPhotoUploadMb: Number(map["max_photo_upload_mb"] || 15),
