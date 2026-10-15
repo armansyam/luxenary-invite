@@ -230,10 +230,9 @@ export async function PUT(
       );
     }
 
+    // Label DNS: huruf kecil, angka, tanda hubung di tengah, maksimal 63 karakter; hasil kosong berarti tanpa subdomain.
     let newSubdomain = body.subdomain !== undefined
-      ? (body.subdomain && String(body.subdomain).trim()
-          ? String(body.subdomain).trim().toLowerCase().replace(/[^a-z0-9-]/g, "")
-          : null)
+      ? String(body.subdomain ?? "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/^-+|-+$/g, "").slice(0, 63) || null
       : undefined;
 
     // Undangan pernikahan tanpa subdomain mendapat subdomain dari nama panggilan mempelai saat studio menyimpan peserta.

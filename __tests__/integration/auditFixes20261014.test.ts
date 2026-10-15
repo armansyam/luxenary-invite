@@ -18,6 +18,7 @@ import { POST as rejectOrder } from "@/app/api/admin/orders/[orderId]/reject/rou
 import { POST as checkoutBundle } from "@/app/api/client/orders/checkout-bundle/route";
 import { renderTemplateFile, THEME_MAP } from "@/lib/renderTemplate";
 import { composeTemplateData } from "@/lib/themeEngine";
+import { POST as uploadMedia } from "@/app/api/client/upload/route";
 import { DAY_MS } from "@/lib/lifecycleDates";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
@@ -142,6 +143,28 @@ describe.skipIf(!IS_TEST_DB)("label kustom klien", () => {
     });
     const html = await renderTemplateFile("kalandra", (await composeTemplateData(invitationId)) as any, { editMode: false });
     expect(html.match(/<img src=x onerror=alert\('[a-zA-Z]+'\)>/g) ?? []).toEqual([]);
+  });
+
+  it("tanpa kisah dan warna dari klien tidak ada kisah atau warna dress code contoh", async () => {
+    const { invitationId } = await makeClient("no-sample", { planType: "TIER_3" });
+    await prisma.invitation.update({ where: { id: invitationId }, data: { featureSettings: { showStory: true, dressCodeNote: "Batik" } } });
+    const data = (await composeTemplateData(invitationId)) as any;
+    expect(data.storySectionHtml).toBe("");
+    expect(data.dressCodeHtml).toContain("Batik");
+    expect(data.dressCodeHtml).not.toMatch(/#a67c52|#2b2725|#faf7f2/);
+    expect(await renderTemplateFile("kalandra", data, { editMode: false })).not.toContain("kegiatan akademis di kampus");
+  });
+});
+
+describe.skipIf(!IS_TEST_DB)("unggah media klien", () => {
+  it("unggahan tanpa undangan yang ada ditolak, tidak ditulis ke folder bersama", async () => {
+    await makeClient("upload-orphan");
+    const form = new FormData();
+    form.append("file", new Blob([Buffer.from("x")], { type: "image/png" }), "x.png");
+    form.append("slot", "GALLERY");
+    const res = await uploadMedia(new NextRequest("http://localhost/api/client/upload", { method: "POST", body: form }));
+    expect(res.status).toBe(404);
+    expect(fs.existsSync(path.join(process.cwd(), "public", "uploads", "invitations", "general", "gallery.webp"))).toBe(false);
   });
 });
 

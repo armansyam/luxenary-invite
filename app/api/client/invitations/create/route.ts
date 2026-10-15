@@ -174,8 +174,8 @@ export async function POST(req: Request) {
   // 2. Subdomain Assignment (Nullable if skipped)
   let finalSubdomain = null;
 
-  if (requestedSubdomain) {
-    let desiredSubdomain = slugify(requestedSubdomain);
+  const desiredSubdomain = requestedSubdomain ? slugify(String(requestedSubdomain)).slice(0, 63).replace(/-+$/, "") : "";
+  if (desiredSubdomain) {
 
     if (isReservedSubdomain(desiredSubdomain)) {
       return NextResponse.json(

@@ -55,6 +55,10 @@ export function getEventDayStart(ev: EventLike | null | undefined): Date | null 
   const raw = typeof ev?.date === "string" ? ev.date.trim() : "";
   const day = raw.includes("T") ? raw.split("T")[0] : raw;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null;
+  // Date menggulirkan tanggal mustahil ("2026-02-30" menjadi 2 Maret); tanggal seperti itu bukan patokan yang sah.
+  const [y, m, d] = day.split("-").map(Number);
+  const calendar = new Date(Date.UTC(y, m - 1, d));
+  if (calendar.getUTCFullYear() !== y || calendar.getUTCMonth() !== m - 1 || calendar.getUTCDate() !== d) return null;
   const start = new Date(`${day}T00:00:00${TIMEZONE_OFFSET[resolveEventTimezone(ev)]}`);
   return Number.isNaN(start.getTime()) ? null : start;
 }

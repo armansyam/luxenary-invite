@@ -249,9 +249,23 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     });
   };
 
-  const capsTier1: string[] = map["capabilities_tier1"] ? JSON.parse(map["capabilities_tier1"]) : ["music", "gallery"];
-  const capsTier2: string[] = map["capabilities_tier2"] ? JSON.parse(map["capabilities_tier2"]) : ["music", "gallery", "qr_checkin", "guest_memories"];
-  const capsTier3: string[] = map["capabilities_tier3"] ? JSON.parse(map["capabilities_tier3"]) : ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"];
+  // Satu nilai rusak di admin tidak boleh menjatuhkan landing, paket, dan /api/public/settings sekaligus.
+  const parseCaps = (key: string, fallback: string[]): string[] => {
+    if (!map[key]) return fallback;
+    let parsed: unknown = null;
+    try {
+      parsed = JSON.parse(map[key]);
+    } catch (err) {
+      logger.error("Settings", "Pengaturan kapabilitas paket bukan JSON; kapabilitas bawaan dipakai", err, { key });
+      return fallback;
+    }
+    if (Array.isArray(parsed)) return parsed;
+    logger.error("Settings", "Pengaturan kapabilitas paket bukan array; kapabilitas bawaan dipakai", undefined, { key });
+    return fallback;
+  };
+  const capsTier1 = parseCaps("capabilities_tier1", ["music", "gallery"]);
+  const capsTier2 = parseCaps("capabilities_tier2", ["music", "gallery", "qr_checkin", "guest_memories"]);
+  const capsTier3 = parseCaps("capabilities_tier3", ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"]);
 
   const allActiveThemeNames = themes.map(t => t.name);
 
