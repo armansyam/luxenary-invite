@@ -55,14 +55,13 @@ async function main() {
     const d = discovered[i];
     const existing = await prisma.theme.findUnique({ where: { id: d.id } });
 
+    // Nama, urutan, dan status aktif yang diubah admin lewat panel dipertahankan; skrip ini berjalan di setiap deploy.
     await prisma.theme.upsert({
       where: { id: d.id },
       update: {
-        name: d.name,
         category: d.category,
         series: d.series,
         eventType: d.eventType,
-        sortOrder: i + 1,
         ...(existing ? {} : { isActive: true }),
       },
       create: {

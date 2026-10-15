@@ -1,6 +1,6 @@
 /**
- * `prisma db seed` dijalankan pada setiap deploy. Seed tidak boleh menghapus tema atau menimpa
- * suntingan admin (tema, preset musik, nilai pengaturan); tema dikelola oleh scripts/sync-themes.ts.
+ * `prisma db seed` dan scripts/sync-themes.ts dijalankan pada setiap deploy. Keduanya tidak boleh menghapus tema atau
+ * menimpa suntingan admin (nama/urutan/status tema, preset musik, nilai pengaturan).
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { execFileSync } from "child_process";
@@ -10,9 +10,11 @@ const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
 const CUSTOM_THEME_ID = `vitest_seed_theme_${Date.now()}`;
 const EDITED_NAME = "Kalandra Disunting Admin";
 
-function runSeed() {
+// Deploy menjalankan keduanya berurutan: `prisma db seed` lalu `npm run themes:sync`.
+function runDeployDataSteps() {
   // NODE_V8_COVERAGE (diset oleh vitest --coverage) membuat proses tsx anak macet; seed tidak perlu diukur.
   const { NODE_V8_COVERAGE: _coverageDir, ...childEnv } = process.env;
+  execFileSync("npx", ["tsx", "scripts/sync-themes.ts"], { cwd: process.cwd(), env: childEnv, stdio: "pipe", timeout: 120_000 });
   execFileSync("npx", ["tsx", "prisma/seed.ts"], {
     cwd: process.cwd(),
     env: { ...childEnv, SEED_ADMIN_EMAIL: "" },
@@ -22,7 +24,7 @@ function runSeed() {
 }
 
 describe.skipIf(!IS_TEST_DB)("Seed tidak menimpa atau menghapus data yang dikelola admin", () => {
-  let original: { name: string; isActive: boolean } | null = null;
+  let original: { name: string; isActive: boolean; sortOrder: number } | null = null;
   let themeCount = 0;
   let music: { id: string; title: string; isActive: boolean; sortOrder: number } | null = null;
   let settingKey = "";
@@ -30,8 +32,8 @@ describe.skipIf(!IS_TEST_DB)("Seed tidak menimpa atau menghapus data yang dikelo
 
   beforeAll(async () => {
     const base = await prisma.theme.findUniqueOrThrow({ where: { id: "kalandra" } });
-    original = { name: base.name, isActive: base.isActive };
-    await prisma.theme.update({ where: { id: "kalandra" }, data: { name: EDITED_NAME, isActive: false } });
+    original = { name: base.name, isActive: base.isActive, sortOrder: base.sortOrder };
+    await prisma.theme.update({ where: { id: "kalandra" }, data: { name: EDITED_NAME, isActive: false, sortOrder: 555 } });
     await prisma.theme.create({
       data: { id: CUSTOM_THEME_ID, name: "Tema Kustom Admin", category: base.category, series: base.series, eventType: base.eventType, description: "dibuat admin", isActive: true, sortOrder: 999 },
     });
@@ -46,8 +48,8 @@ describe.skipIf(!IS_TEST_DB)("Seed tidak menimpa atau menghapus data yang dikelo
     settingOriginal = setting.value;
     await prisma.adminSetting.update({ where: { key: settingKey }, data: { value: "Nama Platform Disunting Admin" } });
 
-    runSeed();
-  }, 180_000);
+    runDeployDataSteps();
+  }, 240_000);
 
   afterAll(async () => {
     await prisma.theme.deleteMany({ where: { id: CUSTOM_THEME_ID } });
@@ -63,9 +65,10 @@ describe.skipIf(!IS_TEST_DB)("Seed tidak menimpa atau menghapus data yang dikelo
     expect(await prisma.theme.count()).toBe(themeCount);
   });
 
-  it("nama dan isActive tema yang disunting admin tidak dikembalikan", async () => {
+  it("nama, urutan, dan isActive tema yang disunting admin tidak dikembalikan", async () => {
     const t = await prisma.theme.findUniqueOrThrow({ where: { id: "kalandra" } });
     expect(t.name).toBe(EDITED_NAME);
+    expect(t.sortOrder).toBe(555);
     expect(t.isActive).toBe(false);
   });
 
