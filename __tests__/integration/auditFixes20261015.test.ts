@@ -2,6 +2,9 @@
  * Regresi audit 15 Okt 2026 (DB luxenary_test): custom domain dari order UPGRADE dipasang ke undangan yang
  * ditautkan order itu, masa hidup tagihan upgrade/add-on 24 jam, validasi nama domain, dan URL foto sampul kamera tamu.
  */
+import fs from "fs";
+import path from "path";
+import sharp from "sharp";
 import { describe, it, expect, vi, afterAll } from "vitest";
 import { NextRequest } from "next/server";
 
@@ -14,6 +17,7 @@ import { POST as upgradeOrder } from "@/app/api/payments/upgrade/route";
 import { POST as checkoutBundle } from "@/app/api/client/orders/checkout-bundle/route";
 import { PATCH as patchMemories } from "@/app/api/client/invitations/[id]/memories/route";
 import { GET as publicThemes } from "@/app/api/public/themes/route";
+import { POST as uploadReceipt } from "@/app/api/admin/finance/upload-receipt/route";
 import { normalizeCustomDomain } from "@/lib/domainUtils";
 import { getPlanMemoriesQuota, getPublicPlatformSettings, invalidateSettingsCache } from "@/lib/settings";
 import { DAY_MS } from "@/lib/lifecycleDates";
@@ -152,6 +156,30 @@ describe.skipIf(!IS_TEST_DB)("kapasitas kamera tamu yang diiklankan", () => {
       expect(capacityLines.length).toBeGreaterThan(0);
       for (const line of capacityLines) expect(line).toContain(`Kapasitas Total ${enforced} Foto`);
     }
+  });
+});
+
+describe.skipIf(!IS_TEST_DB)("unggah struk keuangan admin", () => {
+  const upload = (file: File) => {
+    sessionUser = { id: "finance-vitest", email: "finance@test.local", role: "FINANCE", isAdmin: true, permissions: ["finance"] };
+    const form = new FormData();
+    form.append("file", file);
+    return uploadReceipt(new NextRequest("http://localhost/api/admin/finance/upload-receipt", { method: "POST", body: form }));
+  };
+
+  it("SVG yang mengaku PNG ditolak dan tidak tersimpan", async () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>`;
+    const res = await upload(new File([svg], "struk.svg", { type: "image/png" }));
+    expect(res.status).toBe(400);
+  });
+
+  it("gambar sungguhan disimpan dengan ekstensi dari isi berkas, bukan dari nama", async () => {
+    const png = await sharp({ create: { width: 4, height: 4, channels: 3, background: "#ffffff" } }).png().toBuffer();
+    const res = await upload(new File([new Uint8Array(png)], "struk.svg", { type: "image/svg+xml" }));
+    const json = await res.json();
+    expect(res.status).toBe(200);
+    expect(json.url).toMatch(/\.png$/);
+    fs.rmSync(path.join(process.cwd(), "public", json.url), { force: true });
   });
 });
 
