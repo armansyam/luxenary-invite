@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
+import { wibParts } from "@/lib/financePeriods";
 
 export const dynamic = "force-dynamic";
 
@@ -121,8 +122,12 @@ export async function POST(req: NextRequest) {
     }
 
     const dateVal = expenseDate ? new Date(expenseDate) : new Date();
-    const expMonth = dateVal.getMonth() + 1;
-    const expYear = dateVal.getFullYear();
+    if (Number.isNaN(dateVal.getTime())) {
+      return NextResponse.json({ error: "Tanggal pengeluaran tidak valid." }, { status: 400 });
+    }
+    // Bulan WIB, sama dengan batas periode yang dipakai tutup buku.
+    const { year: expYear, monthIndex } = wibParts(dateVal);
+    const expMonth = monthIndex + 1;
 
     // Validasi Tutup Buku
     const closing = await prisma.financialClosing.findUnique({

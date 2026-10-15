@@ -18,6 +18,8 @@ import { POST as checkoutBundle } from "@/app/api/client/orders/checkout-bundle/
 import { PATCH as patchMemories } from "@/app/api/client/invitations/[id]/memories/route";
 import { GET as publicThemes } from "@/app/api/public/themes/route";
 import { POST as uploadReceipt } from "@/app/api/admin/finance/upload-receipt/route";
+import { POST as createExpense } from "@/app/api/admin/finance/expenses/route";
+import { PUT as updateExpense, DELETE as deleteExpense } from "@/app/api/admin/finance/expenses/[id]/route";
 import { normalizeCustomDomain } from "@/lib/domainUtils";
 import { getPlanMemoriesQuota, getPublicPlatformSettings, invalidateSettingsCache } from "@/lib/settings";
 import { DAY_MS } from "@/lib/lifecycleDates";
@@ -180,6 +182,57 @@ describe.skipIf(!IS_TEST_DB)("unggah struk keuangan admin", () => {
     expect(res.status).toBe(200);
     expect(json.url).toMatch(/\.png$/);
     fs.rmSync(path.join(process.cwd(), "public", json.url), { force: true });
+  });
+});
+
+describe.skipIf(!IS_TEST_DB)("pengeluaran dan tutup buku", () => {
+  // Periode jauh di masa depan agar tidak bertabrakan dengan data lain di DB uji.
+  const closedYear = 2091;
+  const expenseIds: string[] = [];
+
+  let adminSeq = 0;
+  const asFinanceAdmin = async () => {
+    const tag = `${RUN}_fin${++adminSeq}`;
+    const admin = await prisma.admin.create({ data: { username: tag, email: `${tag}@admin.local`, name: "Finance Uji", role: "FINANCE", permissions: ["finance"] } });
+    ids.admins.push(admin.id);
+    sessionUser = { id: admin.id, email: admin.email, role: "FINANCE", isAdmin: true, permissions: ["finance"] };
+    return admin.id;
+  };
+
+  afterAll(async () => {
+    await prisma.expense.deleteMany({ where: { id: { in: expenseIds } } });
+    await prisma.financialClosing.deleteMany({ where: { periodYear: closedYear } });
+  });
+
+  it("pengeluaran tidak dapat dipindahkan ke bulan yang sudah ditutup, dan ubah/hapus tercatat di audit", async () => {
+    const adminId = await asFinanceAdmin();
+    await prisma.financialClosing.create({
+      data: { periodMonth: 3, periodYear: closedYear, grossRevenue: 0, totalExpenses: 0, netProfit: 0, taxAmount: 0, closedById: adminId },
+    });
+    const created = await createExpense(jsonRequest("http://localhost/api/admin/finance/expenses", "POST", { title: "Uji Pindah", amount: 1000, expenseDate: `${closedYear}-05-10` }));
+    const { expense } = await created.json();
+    expenseIds.push(expense.id);
+
+    const params = { params: Promise.resolve({ id: expense.id }) };
+    const moved = await updateExpense(jsonRequest(`http://localhost/api/admin/finance/expenses/${expense.id}`, "PUT", { expenseDate: `${closedYear}-03-15` }), params);
+    expect(moved.status).toBe(400);
+    expect((await prisma.expense.findUniqueOrThrow({ where: { id: expense.id } })).expenseDate.toISOString().slice(0, 10)).toBe(`${closedYear}-05-10`);
+
+    expect((await updateExpense(jsonRequest(`http://localhost/api/admin/finance/expenses/${expense.id}`, "PUT", { notes: "dikoreksi" }), params)).status).toBe(200);
+    expect((await deleteExpense(new NextRequest(`http://localhost/api/admin/finance/expenses/${expense.id}`, { method: "DELETE" }), params)).status).toBe(200);
+    const actions = (await prisma.adminAuditLog.findMany({ where: { adminId }, select: { action: true } })).map((l) => l.action);
+    expect(actions).toEqual(expect.arrayContaining(["CREATE_EXPENSE", "UPDATE_EXPENSE", "DELETE_EXPENSE"]));
+  });
+
+  it("periode ditentukan menurut bulan WIB: 1 April 01.00 WIB termasuk April, bukan Maret yang ditutup", async () => {
+    await asFinanceAdmin();
+    const res = await createExpense(jsonRequest("http://localhost/api/admin/finance/expenses", "POST", { title: "Uji WIB", amount: 1000, expenseDate: `${closedYear}-03-31T18:00:00Z` }));
+    const json = await res.json();
+    if (json.expense) expenseIds.push(json.expense.id);
+    expect(res.status).toBe(200);
+
+    const inMarch = await createExpense(jsonRequest("http://localhost/api/admin/finance/expenses", "POST", { title: "Uji WIB Maret", amount: 1000, expenseDate: `${closedYear}-03-31T16:00:00Z` }));
+    expect(inMarch.status).toBe(400);
   });
 });
 
