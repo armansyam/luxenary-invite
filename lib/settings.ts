@@ -230,8 +230,10 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     const nameTier1 = map["name_tier1"] || "Serenade";
     const nameTier2 = map["name_tier2"] || "Symphony";
 
+    const quotaLabel = planTotalPhotos(planId).toLocaleString("id-ID");
+
     return separatedList.map(item => {
-      let resolvedItem = resolveRetentionTokens(item);
+      let resolvedItem = resolveRetentionTokens(item).replace(/\{\{memoriesQuota\}\}/g, quotaLabel);
       if (resolvedItem.includes(".luxvite.id")) {
         resolvedItem = resolvedItem.replace(/\.luxvite\.id/g, `.${targetDomain}`);
       }

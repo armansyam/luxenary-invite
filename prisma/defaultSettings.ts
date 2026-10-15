@@ -209,7 +209,7 @@ export const defaultSettings: DefaultSettingItem[] = [
   {
     "id": "c2305658-3033-45d9-8816-2bf17905bd59",
     "key": "features_tier2",
-    "value": "Mencakup seluruh fitur pada Paket Serenade\nSistem Resepsionis & Check-In Tamu dengan QR Code\nGuest Camera — Kamera Saku Tamu (Kapasitas Total 250 Foto)\nGaleri foto momen tamu tayang live di venue\nMasa aktif undangan {{archiveRetention}} (archive)\nPenyimpanan galeri foto tamu {{galleryRetention}} (unduh ZIP)",
+    "value": "Mencakup seluruh fitur pada Paket Serenade\nSistem Resepsionis & Check-In Tamu dengan QR Code\nGuest Camera — Kamera Saku Tamu (Kapasitas Total {{memoriesQuota}} Foto)\nGaleri foto momen tamu tayang live di venue\nMasa aktif undangan {{archiveRetention}} (archive)\nPenyimpanan galeri foto tamu {{galleryRetention}} (unduh ZIP)",
     "label": null,
     "group": "pricing",
     "updatedAt": "2026-09-16T06:28:33.045Z"
@@ -217,7 +217,7 @@ export const defaultSettings: DefaultSettingItem[] = [
   {
     "id": "ac0f3512-1ff6-4fdc-8b9b-e915467b4d74",
     "key": "features_tier3",
-    "value": "Mencakup seluruh fitur pada Paket Symphony\nDukungan integrasi domain website pribadi (.com / .id)\nGuest Camera — Kuota Maksimal (Kapasitas Total 1.000 Foto)\nAkses unduh seluruh arsip foto momen tamu (Format ZIP)\nMasa aktif undangan {{archiveRetention}} (archive)\nPenyimpanan galeri foto tamu {{galleryRetention}} (unduh ZIP)\nLayanan bantuan & pendampingan teknis prioritas",
+    "value": "Mencakup seluruh fitur pada Paket Symphony\nDukungan integrasi domain website pribadi (.com / .id)\nGuest Camera — Kuota Maksimal (Kapasitas Total {{memoriesQuota}} Foto)\nAkses unduh seluruh arsip foto momen tamu (Format ZIP)\nMasa aktif undangan {{archiveRetention}} (archive)\nPenyimpanan galeri foto tamu {{galleryRetention}} (unduh ZIP)\nLayanan bantuan & pendampingan teknis prioritas",
     "label": null,
     "group": "pricing",
     "updatedAt": "2026-09-16T06:28:33.045Z"

@@ -15,6 +15,7 @@ import { POST as checkoutBundle } from "@/app/api/client/orders/checkout-bundle/
 import { PATCH as patchMemories } from "@/app/api/client/invitations/[id]/memories/route";
 import { GET as publicThemes } from "@/app/api/public/themes/route";
 import { normalizeCustomDomain } from "@/lib/domainUtils";
+import { getPlanMemoriesQuota, getPublicPlatformSettings, invalidateSettingsCache } from "@/lib/settings";
 import { DAY_MS } from "@/lib/lifecycleDates";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
@@ -138,6 +139,19 @@ describe.skipIf(!IS_TEST_DB)("foto sampul kamera tamu", () => {
     expect(res.status).toBe(400);
     const inv = await prisma.invitation.findUniqueOrThrow({ where: { id: invitationId }, select: { featureSettings: true } });
     expect(JSON.stringify(inv.featureSettings)).not.toContain("script");
+  });
+});
+
+describe.skipIf(!IS_TEST_DB)("kapasitas kamera tamu yang diiklankan", () => {
+  it("teks fitur paket memuat kuota yang ditegakkan, bukan angka mati", async () => {
+    invalidateSettingsCache();
+    const { packages } = await getPublicPlatformSettings();
+    for (const pkg of packages.filter((p) => p.capabilities.includes("guest_memories"))) {
+      const enforced = (await getPlanMemoriesQuota(pkg.id)).totalQuota.toLocaleString("id-ID");
+      const capacityLines = pkg.features.filter((f: string) => f.includes("Kapasitas Total"));
+      expect(capacityLines.length).toBeGreaterThan(0);
+      for (const line of capacityLines) expect(line).toContain(`Kapasitas Total ${enforced} Foto`);
+    }
   });
 });
 
