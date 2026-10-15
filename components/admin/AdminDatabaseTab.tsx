@@ -135,7 +135,7 @@ export default function AdminDatabaseTab(props: Props) {
     <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs">
       <span className="text-xs text-gray-500 font-medium block">Total Snapshot Tersedia</span>
       <span className="text-2xl font-bold text-gray-900 mt-1 inline-block">{snapshots.length}</span>
-      <span className="text-[11px] text-gray-400 block mt-0.5">File snapshot (.sql) di server</span>
+      <span className="text-[11px] text-gray-400 block mt-0.5">File snapshot (.dump) di server</span>
     </div>
     <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs">
       <span className="text-xs text-gray-500 font-medium block">Path Direktori Backup</span>
@@ -151,7 +151,7 @@ export default function AdminDatabaseTab(props: Props) {
   }`}>
     <div className="flex items-start justify-between gap-4 mb-3 border-b border-gray-100 pb-3.5">
       <div>
-        <h3 className="font-bold text-gray-900 text-lg">Upload &amp; Restore Snapshot (.db)</h3>
+        <h3 className="font-bold text-gray-900 text-lg">Upload &amp; Restore Snapshot</h3>
         <p className="text-sm text-gray-500 mt-0.5">
           Pulihkan database dari file backup eksternal. Safety backup dibuat otomatis sebelum data ditimpa.
         </p>
@@ -176,7 +176,7 @@ export default function AdminDatabaseTab(props: Props) {
       <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between text-xs text-gray-600">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-          <span>Format didukung: <strong>.sql, .backup</strong>. Engine aktif saat ini: <strong>PostgreSQL</strong></span>
+          <span>Format didukung: <strong>.dump, .sql, .backup</strong>. Engine aktif saat ini: <strong>PostgreSQL</strong></span>
         </div>
         <button
           type="button"
@@ -195,16 +195,16 @@ export default function AdminDatabaseTab(props: Props) {
               {pendingRestoreFile ? (
                 <span className="text-amber-800 font-bold">File terpilih: {pendingRestoreFile.name} ({(pendingRestoreFile.size / 1024).toFixed(1)} KB)</span>
               ) : (
-                "Belum ada file dipilih (format didukung: .sql, .backup)"
+                "Belum ada file dipilih (format didukung: .dump, .sql, .backup)"
               )}
             </p>
           </div>
 
           <label className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-semibold rounded-xl cursor-pointer transition text-center shrink-0">
-            Pilih File .db
+            Pilih File Snapshot
             <input
               type="file"
-              accept=".sql,.backup"
+              accept=".dump,.sql,.backup"
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];
@@ -260,13 +260,13 @@ export default function AdminDatabaseTab(props: Props) {
   {/* ── Card 2: Pengaturan Jadwal Auto-Backup (Dinamis) ── */}
   <SettingsCard
     title="Jadwal Auto-Backup Database"
-    description="Atur waktu otomatis pembuatan snapshot database setiap hari dan batas rotasi retensi file."
+    description="Aktifkan snapshot harian otomatis dan atur batas rotasi retensi file. Jam eksekusi mengikuti crontab server yang memanggil /api/cron/backup."
     isEditing={Boolean(editSection["backup"])}
     onEdit={() => toggleEditSection("backup")}
-    onCancel={() => cancelEdit("backup", ["backup_auto_enabled", "backup_auto_time", "backup_path", "backup_retention_count"])}
-    onSave={() => saveSettings(["backup_auto_enabled", "backup_auto_time", "backup_path", "backup_retention_count"], setSavingBackupSettings, "backup")}
+    onCancel={() => cancelEdit("backup", ["backup_auto_enabled", "backup_path", "backup_retention_count"])}
+    onSave={() => saveSettings(["backup_auto_enabled", "backup_path", "backup_retention_count"], setSavingBackupSettings, "backup")}
     saving={savingBackupSettings}
-    isDirty={isSectionDirty(["backup_auto_enabled", "backup_auto_time", "backup_path", "backup_retention_count"])}
+    isDirty={isSectionDirty(["backup_auto_enabled", "backup_path", "backup_retention_count"])}
     saveSuccess={settingsSaved["backup"]}
     saveSuccessMessage="Pengaturan auto-backup berhasil disimpan"
     viewContent={
@@ -282,7 +282,7 @@ export default function AdminDatabaseTab(props: Props) {
         <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
           <span className="text-xs text-gray-500 block font-medium">Jam Eksekusi</span>
           <span className="text-sm font-bold text-gray-800 mt-0.5 inline-block">
-            Pukul {settingsMap["backup_auto_time"] || "02:00"} WIB
+            Sesuai crontab server
           </span>
         </div>
         <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
@@ -310,15 +310,6 @@ export default function AdminDatabaseTab(props: Props) {
           <option value="true">Aktif (Jalankan Backup Otomatis)</option>
           <option value="false">Nonaktif</option>
         </select>
-      </FieldRow>
-
-      <FieldRow label="Waktu Eksekusi Harian" description="Format 24 jam (HH:mm), contoh: 02:00">
-        <input
-          type="time"
-          value={settingsMap["backup_auto_time"] || "02:00"}
-          onChange={(e) => setSetting("backup_auto_time", e.target.value)}
-          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
-        />
       </FieldRow>
 
       <div className="md:col-span-2">
@@ -479,7 +470,7 @@ export default function AdminDatabaseTab(props: Props) {
         <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
           <span className="text-xs text-gray-500 block font-medium">Masa Simpan Arsip</span>
           <span className="text-sm font-bold text-gray-800 mt-0.5 inline-block">
-            {settingsMap["nas_archive_retention_days"] || "365"} Hari (1 Tahun)
+            {settingsMap["nas_archive_retention_days"] || "365"} Hari
           </span>
         </div>
       </div>
@@ -600,7 +591,7 @@ export default function AdminDatabaseTab(props: Props) {
                       <a
                         href={`/api/admin/database/download?filename=${encodeURIComponent(snap.filename)}`}
                         className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold text-[11px] transition inline-flex items-center gap-1"
-                        title="Download file .db"
+                        title="Download file snapshot"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
