@@ -121,6 +121,11 @@ if ! npx prisma generate; then
   echo "❌ prisma generate gagal! Deployment dihentikan sebelum menyentuh database."
   exit 1
 fi
+TOTAL_MB=$(free -m 2>/dev/null | awk '/^Mem:/{print $2}')
+if [ -n "$TOTAL_MB" ] && [ "$TOTAL_MB" -lt 3072 ]; then
+  export SKIP_BUILD_TYPECHECK=1
+  echo "ℹ️ RAM host ${TOTAL_MB} MB: typecheck dilewati di server (gerbang tsc --noEmit dijalankan CI untuk commit ini)."
+fi
 if ! NODE_OPTIONS="--max-old-space-size=1536" npm run build; then
   echo "❌ Build Next.js gagal! Database tidak disentuh dan PM2 tidak di-restart."
   exit 1

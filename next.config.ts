@@ -25,7 +25,10 @@ const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
   // Typecheck build hanya boleh membaca tipe rute dari direktori build-nya sendiri. Bila tipe direktori aktif ikut
   // terbaca, rute yang dihapus di rilis baru masih dirujuk build lama dan build gagal (TS2307, deploy 10 Okt 2026).
+  // deploy.sh menyetel SKIP_BUILD_TYPECHECK=1 di host berRAM kecil: tsc membutuhkan ±700 MB di samping next build dan
+  // pada deploy 15 Okt 2026 swap 2 GB VPS habis di tahap itu. Gerbang `tsc --noEmit` untuk commit yang sama berjalan di CI.
   typescript: {
+    ignoreBuildErrors: process.env.SKIP_BUILD_TYPECHECK === "1",
     tsconfigPath: process.env.NEXT_DIST_DIR === ".next-a" || process.env.NEXT_DIST_DIR === ".next-b"
       ? `tsconfig${process.env.NEXT_DIST_DIR}.json`
       : "tsconfig.json",
