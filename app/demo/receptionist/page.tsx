@@ -89,6 +89,7 @@ export default function DemoReceptionistPage() {
   const [cameraList, setCameraList] = useState<{ id: string; label: string }[]>([]);
   const [selectedCameraIndex, setSelectedCameraIndex] = useState(0);
   const [isCameraLoading, setIsCameraLoading] = useState(false);
+  const [cameraRetryKey, setCameraRetryKey] = useState(0);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [scanCooldown, setScanCooldown] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -452,7 +453,7 @@ export default function DemoReceptionistPage() {
       isCancelled = true;
       safeStopScanner();
     };
-  }, [scannerMode, selectedCameraIndex, isLocked, isScreensaverActive, safeStopScanner]);
+  }, [scannerMode, selectedCameraIndex, cameraRetryKey, isLocked, isScreensaverActive, safeStopScanner]);
 
   const handleSwitchCamera = () => {
     if (cameraList.length <= 1) return;
@@ -986,8 +987,7 @@ export default function DemoReceptionistPage() {
                         type="button"
                         onClick={() => {
                           setCameraError(null);
-                          setIsCameraLoading(true);
-                          setSelectedCameraIndex((prev) => prev);
+                          setCameraRetryKey((k) => k + 1);
                         }}
                         className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-lg transition mt-2 cursor-pointer"
                       >
