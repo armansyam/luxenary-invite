@@ -19,10 +19,11 @@ vi.mock("@/lib/storage", async (importOriginal) => ({
     uploads.set(relativePath, buffer);
     return `/portfolio/${relativePath}`;
   }),
+  listPortfolioSlugs: vi.fn(async () => []),
 }));
 
 import { prisma, pool } from "@/lib/prisma";
-import { POST as addPortfolio } from "@/app/api/admin/portfolio/route";
+import { GET as listPortfolio, POST as addPortfolio } from "@/app/api/admin/portfolio/route";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
 const RUN = `vitest_portfolio_${Date.now()}`;
@@ -69,6 +70,16 @@ describe.skipIf(!IS_TEST_DB)("metadata portofolio", () => {
     } finally {
       fs.rmSync(htmlPath, { force: true });
     }
+  });
+
+  it("kandidat portofolio berasal dari seluruh undangan terbit, bukan 50 undangan terbaru di overview", async () => {
+    const published = await prisma.invitation.count({ where: { status: "PUBLISHED" } });
+    const res = await listPortfolio(new NextRequest("http://localhost/api/admin/portfolio"));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.candidates).toHaveLength(published);
+    expect(body.candidates.every((c: { status: string }) => c.status === "PUBLISHED")).toBe(true);
+    if (created.invitationId) expect(body.candidates.map((c: { id: string }) => c.id)).toContain(created.invitationId);
   });
 });
 

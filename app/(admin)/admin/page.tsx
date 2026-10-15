@@ -1168,7 +1168,12 @@ export default function AdminPage() {
           loadSnapshots();
         }
         setTimeout(() => setSettingsSaved((p) => ({ ...p, [group]: false })), 4000);
+      } else {
+        const data = await res.json().catch(() => null);
+        showAdminToast(data?.error || `Pengaturan gagal disimpan (HTTP ${res.status}).`, false);
       }
+    } catch {
+      showAdminToast("Koneksi terputus. Pengaturan belum tersimpan.", false);
     } finally {
       savingFn(false);
     }
@@ -2009,7 +2014,7 @@ export default function AdminPage() {
                       {/* Desktop Col 1: Revenue Hero */}
                       <div className="px-6 py-5 flex flex-col gap-1.5">
                         <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Pendapatan Bersih</span>
+                          <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Pendapatan Lunas</span>
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${(stats.conversionRate ?? conversionRate) > 0 ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-400"}`}>
                             {stats.conversionRate ?? conversionRate}% konversi
                           </span>
@@ -2317,7 +2322,7 @@ export default function AdminPage() {
                       <div className="flex items-center justify-between border-b border-gray-100 pb-3.5">
                         <div>
                           <h3 className="font-bold text-gray-900 text-base">Popularitas Tema Pilihan Mempelai</h3>
-                          <p className="text-xs text-gray-400 mt-0.5">Ranking tema yang paling diminati oleh pasangan pengantin</p>
+                          <p className="text-xs text-gray-400 mt-0.5">Ranking tema pada {invitations.length} undangan terbaru</p>
                         </div>
                         <button
                           type="button"
@@ -2380,7 +2385,7 @@ export default function AdminPage() {
                           onClick={() => setActiveTab("invitations")}
                           className="text-xs font-semibold text-amber-800 hover:underline cursor-pointer"
                         >
-                          Lihat Semua ({invitations.length})
+                          Lihat Semua ({stats.invitationCount || 0})
                         </button>
                       </div>
 
@@ -2412,7 +2417,7 @@ export default function AdminPage() {
                               <div className="flex items-center gap-2 shrink-0">
                                 <Badge status={inv.status} />
                                 <a
-                                  href={getInvitationPublicUrl(inv.subdomain || inv.invitationSlug || "wedding")}
+                                  href={inv.subdomain ? getInvitationPublicUrl(inv.subdomain) : `/${inv.invitationSlug}`}
                                   target="_blank"
                                   rel="noreferrer"
                                   className="p-1.5 text-gray-400 hover:text-amber-800 hover:bg-gray-100 rounded-lg transition"
@@ -2441,15 +2446,16 @@ export default function AdminPage() {
                           onClick={() => setActiveTab("orders")}
                           className="text-xs font-semibold text-amber-800 hover:underline cursor-pointer"
                         >
-                          Lihat Semua ({orderList.length})
+                          Lihat Semua ({stats.orderCount ?? orderList.length})
                         </button>
                       </div>
 
-                      {orderList.length === 0 ? (
+                      {/* `orders` = 50 order terbaru beserta invoice & klien; `allOrders` hanya ringkasan angka tanpa urutan. */}
+                      {orders.length === 0 ? (
                         <p className="text-sm text-gray-400 italic py-6 text-center">Belum ada transaksi terekam</p>
                       ) : (
                         <div className="divide-y divide-gray-100">
-                          {orderList.slice(0, 5).map((ord) => (
+                          {orders.slice(0, 5).map((ord) => (
                             <div key={ord.id} className="py-3 flex items-center justify-between gap-3">
                               <div className="min-w-0">
                                 <p className="font-mono text-xs font-bold text-gray-800 truncate">{ord.invoiceNumber}</p>
@@ -2476,10 +2482,11 @@ export default function AdminPage() {
                     <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs flex flex-col justify-between">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-bold text-gray-900">Database &amp; Snapshot</span>
-                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
                       </div>
                       <p className="text-xs text-gray-500">
-                        {snapshots.length} snapshot tersimpan di <code>{backupPathInfo?.resolvedPath || settingsMap["backup_path"] || "./data/backups"}</code>.
+                        {backupPathInfo
+                          ? <>{snapshots.length} snapshot tersimpan di <code>{backupPathInfo.resolvedPath}</code>.</>
+                          : "Buka tab Database untuk melihat daftar snapshot dan lokasi backup."}
                       </p>
                       <button
                         type="button"
@@ -3195,7 +3202,7 @@ export default function AdminPage() {
           )}
 
               {activeTab === "portfolio" && (
-                <AdminPortfolioTab invitations={invitations} />
+                <AdminPortfolioTab />
               )}
 
               {/* ── Team & Access ── */}

@@ -21,14 +21,21 @@ async function fileExists(filePath: string): Promise<boolean> {
   }
 }
 
-// GET: List all isolated portfolios
+// GET: daftar portofolio terisolasi + seluruh undangan terbit sebagai kandidat (bukan hanya 50 terbaru dari overview).
 export async function GET(req: NextRequest) {
   try {
     const guard = await requireAdminModule("portfolio");
     if (!guard.ok) return guard.response;
 
-    const portfolios = await listPortfolioSlugs();
-    return NextResponse.json({ portfolios });
+    const [portfolios, candidates] = await Promise.all([
+      listPortfolioSlugs(),
+      prisma.invitation.findMany({
+        where: { status: "PUBLISHED" },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, status: true, invitationSlug: true, eventType: true, participantsJson: true },
+      }),
+    ]);
+    return NextResponse.json({ portfolios, candidates });
   } catch (error) {
     return routeError("AdminPortfolio", error, "Gagal memuat daftar portofolio");
   }
