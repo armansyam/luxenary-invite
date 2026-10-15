@@ -112,7 +112,7 @@ export default async function PrivacyPage() {
           </section>
 
           <p className="pt-8 text-xs text-stone-400 italic">
-            Terakhir diperbarui: {new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}
+            Terakhir diperbarui: 1 Oktober 2026
           </p>
         </div>
       </main>
