@@ -1229,7 +1229,7 @@ export default function EditInvitation() {
             <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
               {isPublishedLock
                 ? `Undangan resmi ${coupleName} saat ini telah aktif mengudara. Untuk melindungi keutuhan data dan keterhubungan QR Code fisik yang telah disebar kepada para tamu, form editor dikunci secara otomatis.`
-                : "Acara telah lewat dan undangan ini kini berstatus Published Forever sebagai portofolio. Akses edit telah ditutup untuk menjaga keaslian arsip."}
+                : "Acara telah lewat dan undangan ini kini tersimpan sebagai arsip. Akses edit ditutup untuk menjaga keaslian arsip."}
             </p>
           </div>
 
@@ -1530,32 +1530,6 @@ export default function EditInvitation() {
         </div>
       )}
 
-      {/* Post-Event Permanent Lock Banner */}
-      {invitation.isLocked && (
-        <div className="p-5 bg-stone-900 text-white rounded-2xl sm:rounded-3xl border border-stone-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-sm flex-shrink-0 mt-0.5">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-            </div>
-            <div>
-              <h3 className="font-bold text-sm text-white">Periode Acara Berakhir - Retensi 30 Hari</h3>
-              <p className="text-xs text-stone-300 mt-0.5 leading-relaxed">
-                Tanggal acara {eventNounLabel} telah terlewati. Form editor dikunci. Data tamu dan foto akan dibersihkan dalam 30 hari pasca-acara. Mohon segera unduh foto Anda.
-              </p>
-            </div>
-          </div>
-          <a
-            href={`https://wa.me/${adminWhatsapp.replace(/\D/g, '').replace(/^0/, '62')}?text=Halo%20Admin,%20mohon%20bantuan%20buka%20kunci%20darurat%20undangan%20saya`}
-            target="_blank"
-            rel="noreferrer"
-            className="px-4 py-2.5 bg-amber-700 hover:bg-amber-600 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 flex-shrink-0 shadow-sm"
-          >
-            <span>Hubungi Admin</span>
-            
-          </a>
-        </div>
-      )}
-
       {/* Unified Studio Control & Header Card */}
       <div className="bg-white rounded-none sm:rounded-2xl shadow-none sm:shadow-xs border-b sm:border border-stone-200 overflow-hidden">
         {/* Tier 1: Title, Couple Info, Badges & Primary Actions */}
@@ -1577,7 +1551,7 @@ export default function EditInvitation() {
                 <>
                   <span className="text-stone-300">•</span>
                   <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${PLAN_COLOR[planType] || "bg-stone-50 text-stone-700 border-stone-200"}`}>
-                    {planType}
+                    {getPlanDisplayName(planType, platformSettings?.packages)}
                   </span>
                   {planType !== "TIER_3" && (
                     <button

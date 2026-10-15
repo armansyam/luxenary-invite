@@ -110,6 +110,18 @@ describe("filter audit staf", () => {
   });
 });
 
+describe.skipIf(!IS_TEST_DB)("deskripsi tema di wizard setup", () => {
+  it("API tema mengirim `desc` dan wizard membacanya dari field itu", async () => {
+    const { GET } = await import("@/app/api/public/themes/route");
+    const themes = await (await GET(new Request("http://localhost/api/public/themes") as any)).json();
+    expect(Array.isArray(themes) && themes.length > 0).toBe(true);
+    expect(themes.every((t: Record<string, unknown>) => "desc" in t && !("description" in t))).toBe(true);
+    const src = fs.readFileSync(path.join(process.cwd(), "app/(client)/dashboard/setup/page.tsx"), "utf-8");
+    expect(src).not.toContain("theme.description");
+    expect(src).toContain("{theme.desc}");
+  });
+});
+
 describe("pengaturan admin konsisten dengan server", () => {
   it("subjudul harga tidak lagi memakai teks masa simpan yang tertanam, dan kartu ambang notifikasi memakai grupnya sendiri", () => {
     const src = fs.readFileSync(path.join(process.cwd(), "components/admin/AdminSettingsTab.tsx"), "utf-8");
