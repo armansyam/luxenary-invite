@@ -3015,16 +3015,6 @@
       border-radius: 5px;
     }
 
-.lux-landing-root .exp-rec-souvenir-row {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 0.48rem;
-      color: #86efac;
-      padding-top: 4px;
-      border-top: 1px solid rgba(255,255,255,0.05);
-    }
-
 .lux-landing-root .exp-rec-stats-panel {
       background: #121417;
       border: 1px solid rgba(255,255,255,0.08);
