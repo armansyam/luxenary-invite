@@ -771,8 +771,8 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 ## 15. Arsitektur Halaman Legal & Pusat Dukungan Dinamis (Zero Hardcode)
 1. **Pusat Informasi & Saluran Bantuan Publik:**
    - Menyediakan 4 rute publik esensial yang terhubung 100% dinamis ke `getPublicPlatformSettings()` dari database:
-     - `/terms`: Syarat & Ketentuan Layanan, lisensi kekayaan intelektual, batas retensi arsip, dan penguncian tema pasca-terbit.
-     - `/privacy`: Kebijakan privasi data klien & data tamu (buku tamu, RSVP, ucapan) serta kepatuhan pemrosesan gateway pihak ketiga tanpa penyimpanan kredensial perbankan di server platform.
+     - `/terms`: Syarat & Ketentuan Layanan, lisensi kekayaan intelektual, batas retensi arsip, penguncian tema pasca-terbit, dan pasal 7 Portofolio (penayangan salinan undangan terbit atas pilihan Administrator, penghapusan atas permintaan klien).
+     - `/privacy`: Kebijakan privasi data klien & data tamu (buku tamu, RSVP, ucapan), pengecualian penayangan portofolio, serta kepatuhan pemrosesan gateway pihak ketiga tanpa penyimpanan kredensial perbankan di server platform.
      - `/refund`: Kebijakan pengembalian dana (*No Refund Policy*) untuk produk komputasi perangkat lunak instan, pengecualian force majeure kegagalan sistem, dan panduan klaim resmi.
      - `/contact`: Pusat bantuan pelanggan dengan kartu aksi cepat WhatsApp resmi (auto-prefix `62` & click-to-chat URL) dan Email resmi, jam operasional, serta FAQ ringkas.
 2. **Kepatuhan Zero Hardcode & UI Vector Clean:**

@@ -139,7 +139,17 @@ export default async function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-stone-800 mb-2">7. Kontak & Bantuan</h2>
+            <h2 className="text-lg font-semibold text-stone-800 mb-2">7. Portofolio</h2>
+            <p>
+              {platformName} dapat menampilkan undangan Klien yang telah diterbitkan pada halaman portofolio sebagai contoh karya. Yang ditampilkan adalah salinan undangan sebagaimana tampil kepada tamu, termasuk desain, nama, foto, teks, serta ucapan dan foto tamu yang muncul di dalamnya. Pemilihan undangan untuk portofolio dilakukan oleh Administrator.
+            </p>
+            <p className="mt-2">
+              Klien dapat meminta penghapusan undangannya dari portofolio kapan saja melalui kontak dukungan di bawah. Salinan yang sudah tersimpan sementara pada peramban atau jaringan pengiriman konten dapat tetap tampil sampai masa simpannya berakhir.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-stone-800 mb-2">8. Kontak & Bantuan</h2>
             <p>
               Jika Anda memiliki pertanyaan mengenai Syarat & Ketentuan ini atau memerlukan bantuan, silakan hubungi tim layanan pelanggan kami:
             </p>
@@ -172,7 +182,7 @@ export default async function TermsPage() {
           </section>
 
           <p className="pt-8 text-xs text-stone-400 italic">
-            Terakhir diperbarui: 1 Oktober 2026
+            Terakhir diperbarui: 15 Oktober 2026
           </p>
         </div>
       </main>

@@ -41,8 +41,8 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
       - `/demo/memories` (Galeri Kenangan Tamu Roll Stack 1 Card / Tamu, Touch-Swipe Multi-Foto Lightbox & Simulasi Unduh ZIP)
       - *Otomasi Demo:* Seluruh tema showroom (`/demo/[theme]`) otomatis mengarahkan tombol fitur ke rute demo terpadu tanpa perlu setup manual.
    - Halaman Pendukung Dinamis:
-     - `/terms` (Syarat & Ketentuan Layanan)
-     - `/privacy` (Kebijakan Privasi Data)
+     - `/terms` (Syarat & Ketentuan Layanan; pasal 7 mengatur penayangan undangan terbit di portofolio)
+     - `/privacy` (Kebijakan Privasi Data; memuat pengecualian penayangan portofolio)
      - `/refund` (Kebijakan Pengembalian Dana)
      - `/contact` (Pusat Bantuan & Kontak WhatsApp/Email Resmi)
      - `/sitemap.xml` & `/robots.txt` (Dynamic SEO XML Sitemap agregasi statis, showroom tema, dan portofolio)
