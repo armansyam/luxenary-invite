@@ -21,6 +21,7 @@ import { POST as uploadReceipt } from "@/app/api/admin/finance/upload-receipt/ro
 import { POST as createExpense } from "@/app/api/admin/finance/expenses/route";
 import { PUT as updateExpense, DELETE as deleteExpense } from "@/app/api/admin/finance/expenses/[id]/route";
 import { GET as taxRecap, POST as markTax } from "@/app/api/admin/finance/tax/route";
+import { POST as purgeInvitation } from "@/app/api/admin/invitations/[id]/purge/route";
 import { normalizeCustomDomain } from "@/lib/domainUtils";
 import { getPlanMemoriesQuota, getPublicPlatformSettings, invalidateSettingsCache } from "@/lib/settings";
 import { DAY_MS } from "@/lib/lifecycleDates";
@@ -273,6 +274,20 @@ describe.skipIf(!IS_TEST_DB)("rekap dan setoran pajak", () => {
     expect(closing.closedById).toBe(admin.id);
     expect((await prisma.expense.findUniqueOrThrow({ where: { id: expense.id } })).isLocked).toBe(true);
     expect(await prisma.adminAuditLog.count({ where: { adminId: admin.id, action: "CLOSE_FINANCIAL_PERIOD" } })).toBe(1);
+  });
+});
+
+describe.skipIf(!IS_TEST_DB)("purge cache undangan oleh admin", () => {
+  it("undangan arsip tidak dibangun ulang ke hot storage", async () => {
+    const userId = await makeUser("purge-archived");
+    const invitationId = await makeInvitation(userId, "purge-archived");
+    await prisma.invitation.update({ where: { id: invitationId }, data: { status: "ARCHIVED" } });
+    sessionUser = { id: "admin-vitest", email: "admin@test.local", role: "SUPER_ADMIN", isAdmin: true, permissions: [] };
+
+    const res = await purgeInvitation(new NextRequest(`http://localhost/api/admin/invitations/${invitationId}/purge`, { method: "POST" }), { params: Promise.resolve({ id: invitationId }) });
+    expect(res.status).toBe(200);
+    expect((await res.json()).rebakeSuccess).toBe(false);
+    expect(fs.existsSync(path.join(process.cwd(), "public", "published", "ids", `${invitationId}.html`))).toBe(false);
   });
 });
 

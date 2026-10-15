@@ -37,19 +37,23 @@ export async function POST(
       return NextResponse.json({ error: "Undangan tidak ditemukan." }, { status: 404 });
     }
 
-    // 1. Re-bake berkas HTML statis (Single Source of Truth)
+    // 1. Re-bake berkas HTML statis (Single Source of Truth). Hanya undangan yang memang disajikan ke tamu: membangun ulang
+    // draf, arsip, atau undangan yang diturunkan akan menulis kembali HTML yang sengaja dihapus dari hot storage.
+    const isServed = invitation.status === "PUBLISHED" || invitation.status === "EVENT_FINISHED";
     let rebakeSuccess = false;
-    try {
-      const provider = process.env.STORAGE_PROVIDER || "local";
-      if (provider === "r2" || provider === "s3") {
-        const { syncDraftToR2 } = await import("@/lib/storage");
-        await syncDraftToR2(invitation.id);
-      } else {
-        await buildAndSavePublishedHtml(invitation.id);
+    if (isServed) {
+      try {
+        const provider = process.env.STORAGE_PROVIDER || "local";
+        if (provider === "r2" || provider === "s3") {
+          const { syncDraftToR2 } = await import("@/lib/storage");
+          await syncDraftToR2(invitation.id);
+        } else {
+          await buildAndSavePublishedHtml(invitation.id);
+        }
+        rebakeSuccess = true;
+      } catch (bakeErr) {
+        return routeError("AdminPurge", bakeErr, "Gagal membakar ulang HTML undangan");
       }
-      rebakeSuccess = true;
-    } catch (bakeErr) {
-      return routeError("AdminPurge", bakeErr, "Gagal membakar ulang HTML undangan");
     }
 
     // 2. Kumpulkan URL spesifik undangan ini
@@ -76,7 +80,9 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      message: `Undangan ${coupleName} berhasil dibakar ulang dan cache Cloudflare untuk ${urlsToPurge.length} URL telah dibersihkan.`,
+      message: rebakeSuccess
+        ? `Undangan ${coupleName} berhasil dibakar ulang dan cache Cloudflare untuk ${urlsToPurge.length} URL telah dibersihkan.`
+        : `Undangan ${coupleName} berstatus ${invitation.status} sehingga tidak dibakar ulang; cache Cloudflare untuk ${urlsToPurge.length} URL telah dibersihkan.`,
       rebakeSuccess,
       purgedUrls: urlsToPurge,
       cloudflare: cfResult,
