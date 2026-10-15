@@ -170,7 +170,7 @@ Memerlukan autentikasi admin (`role: ADMIN` atau `SUPER_ADMIN`):
 | **Storage** | `POST` | `/api/admin/r2-cors` | Menerapkan konfigurasi CORS JSON otomatis ke bucket Cloudflare R2. |
 | **Settings** | `GET` / `PUT` | `/api/admin/settings` | Membaca dan memperbarui pengaturan konfigurasi platform (paket, gateway, limits). |
 | | `POST` | `/api/admin/upload-brand` | Mengunggah logo platform, favicon, atau aset branding resmi. |
-| | `GET` / `PUT` | `/api/admin/profile` | Memperbarui profil akun administrator yang sedang login. |
+| | `GET` / `PUT` | `/api/admin/profile` | Memperbarui profil akun administrator yang sedang login. Mengganti password butuh `currentPassword` yang benar (400 bila salah), mencabut semua JWT akun itu termasuk sesi yang sedang dipakai, dan dijawab 409 untuk akun tanpa password aktif. |
 
 ---
 

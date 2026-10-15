@@ -47,6 +47,14 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       updateData.passwordHash = await bcrypt.hash(String(password).trim(), 10);
     }
 
+    // Password, peran, atau izin yang berubah mencabut JWT lama akun ini; izin disimpan di token saat login.
+    const sortedJson = (list: string[]) => JSON.stringify([...list].sort());
+    const permissionsChanged = updateData.permissions !== undefined && sortedJson(updateData.permissions) !== sortedJson(existing.permissions);
+    const roleChanged = Boolean(newRole) && newRole !== existing.role;
+    if (updateData.passwordHash || roleChanged || permissionsChanged) {
+      updateData.sessionVersion = { increment: 1 };
+    }
+
     const [updated] = await prisma.$transaction([
       prisma.admin.update({
         where: { id },

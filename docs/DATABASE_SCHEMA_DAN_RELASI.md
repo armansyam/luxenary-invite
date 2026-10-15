@@ -130,7 +130,8 @@ Menyimpan kredensial tim pengelola platform:
 - `id` (UUID, Primary Key): Identitas unik admin.
 - `username` (String, Unique): Username login dashboard admin.
 - `email` (String, Unique): Email pemulihan dan verifikasi.
-- `passwordHash` (String, Nullable): Hash password terenkripsi (Argon2 / BCrypt).
+- `passwordHash` (String, Nullable): Hash password terenkripsi (Argon2 / BCrypt). `NULL` berarti akun tidak dapat login (dinonaktifkan seed karena password bawaan lama).
+- `sessionVersion` (Int, bawaan 0): versi sesi; dibandingkan dengan klaim `sv` di JWT pada setiap permintaan admin dan dinaikkan saat password, peran, atau izin berubah.
 - `role` (Enum `AdminRole`):
   - `SUPER_ADMIN`: Hak akses mutlak (seluruh 13 modul sistem, konfigurasi platform, database, tim).
   - `ADMIN`: Template operasional harian (undangan, klien, tema, portofolio, custom domain, transaksi).
