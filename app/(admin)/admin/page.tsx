@@ -17,18 +17,10 @@ import AdminCustomDomainsTab from "@/components/admin/AdminCustomDomainsTab";
 import AdminMonitoringTab from "@/components/admin/AdminMonitoringTab";
 import AdminSettingsTab from "@/components/admin/AdminSettingsTab";
 import AdminDatabaseTab from "@/components/admin/AdminDatabaseTab";
-import { startRemoteSession } from "./actions/remote";
 import { compressImageToWebP } from "@/lib/clientImageCompressor";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 import { hasAdminPermission } from "@/lib/adminPermissions";
-import {
-  computeLifecycleDates,
-  formatDateInEventTimezone,
-  formatPrimaryEventDate,
-  getPrimaryEventTimezone,
-  parseLifecycleSettings,
-} from "@/lib/lifecycleDates";
 import { useFeedback } from "@/components/ui/Feedback";
 
 const tabs = [
@@ -215,12 +207,8 @@ export default function AdminPage() {
     }
     return "overview";
   });
-  const [manageClient, setManageClient] = useState<any | null>(null);
-  const [deletingClient, setDeletingClient] = useState(false);
-  const [clientActionMsg, setClientActionMsg] = useState<{ ok: boolean; msg: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialLoaded, setInitialLoaded] = useState(false);
-  const [impersonatingClient, setImpersonatingClient] = useState(false);
   const [adminToast, setAdminToast] = useState<{ ok: boolean; msg: string } | null>(null);
 
   const showAdminToast = (msg: string, ok: boolean = true) => {
@@ -228,20 +216,6 @@ export default function AdminPage() {
     setTimeout(() => {
       setAdminToast((prev) => (prev?.msg === msg ? null : prev));
     }, 4000);
-  };
-
-  const handleImpersonateClient = async (clientId: string) => {
-    try {
-      setImpersonatingClient(true);
-      setClientActionMsg(null);
-      // Server Action: menetapkan cookie httpOnly lalu redirect ke /dashboard
-      // Ini berjalan di server → cookie ditulis sebelum redirect → middleware pasti membacanya
-      await startRemoteSession(clientId);
-    } catch (err: any) {
-      console.error(err);
-      setClientActionMsg({ ok: false, msg: err.message || "Gagal memulai sesi remote klien" });
-      setImpersonatingClient(false);
-    }
   };
 
   const handleAdminLogout = async () => {
@@ -538,23 +512,6 @@ export default function AdminPage() {
     }
   };
 
-  // Order Proof Verification & Reject Modal State
-  const [previewProofOrder, setPreviewProofOrder] = useState<any | null>(null);
-  const [rejectModalOrder, setRejectModalOrder] = useState<any | null>(null);
-  const [rejectReasonInput, setRejectReasonInput] = useState<string>("");
-  const [processingOrderAction, setProcessingOrderAction] = useState(false);
-  const [confirmApproveOrderId, setConfirmApproveOrderId] = useState<string | null>(null);
-  const [orderActionFeedback, setOrderActionFeedback] = useState<{ id: string; type: "success" | "error"; msg: string } | null>(null);
-
-  // Auto-revert inline confirmation jika tidak diklik dalam 5 detik
-  useEffect(() => {
-    if (!confirmApproveOrderId) return;
-    const t = setTimeout(() => {
-      setConfirmApproveOrderId(null);
-    }, 5000);
-    return () => clearTimeout(t);
-  }, [confirmApproveOrderId]);
-
   // Mobile menu open state
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -694,26 +651,6 @@ export default function AdminPage() {
         if (!isBackground) setLoading(false);
       });
   }, []);
-
-  const handleDeleteClient = async (id: string) => {
-    setDeletingClient(true);
-    setClientActionMsg(null);
-    try {
-      const res = await fetch(`/api/admin/users?id=${id}`, { method: "DELETE" });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setClientActionMsg({ ok: true, msg: data.message });
-        setManageClient(null);
-        loadOverviewData();
-      } else {
-        setClientActionMsg({ ok: false, msg: data.error || "Gagal menghapus klien." });
-      }
-    } catch (e: any) {
-      setClientActionMsg({ ok: false, msg: e.message || "Gagal menghapus klien." });
-    } finally {
-      setDeletingClient(false);
-    }
-  };
 
   const loadSettings = useCallback(() => {
     fetch("/api/admin/settings")
@@ -1631,55 +1568,6 @@ export default function AdminPage() {
     setLocalPreviews({});
   };
 
-
-  const handleApproveOrder = async (orderId: string) => {
-    setProcessingOrderAction(true);
-    setOrderActionFeedback(null);
-    try {
-      const res = await fetch(`/api/admin/orders/${orderId}/approve`, { method: "POST" });
-      if (res.ok) {
-        setConfirmApproveOrderId(null);
-        setPreviewProofOrder(null);
-        loadOverviewData(true);
-      } else {
-        const d = await res.json();
-        setOrderActionFeedback({ id: orderId, type: "error", msg: d.error || "Gagal menyetujui transaksi." });
-      }
-    } catch (err: any) {
-      setOrderActionFeedback({ id: orderId, type: "error", msg: err.message || "Gagal menyetujui transaksi." });
-    } finally {
-      setProcessingOrderAction(false);
-    }
-  };
-
-  const handleRejectOrder = async () => {
-    if (!rejectModalOrder) return;
-    setProcessingOrderAction(true);
-    try {
-      const res = await fetch(`/api/admin/orders/${rejectModalOrder.id}/reject`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason: rejectReasonInput || "Bukti transfer tidak valid atau dana belum masuk." }),
-      });
-      if (res.ok) {
-        setRejectModalOrder(null);
-        setPreviewProofOrder(null);
-        setRejectReasonInput("");
-        setConfirmApproveOrderId(null);
-        showAdminToast("Transaksi berhasil ditolak", true);
-        loadOverviewData(true);
-      } else {
-        const d = await res.json();
-        showAdminToast("Error: " + d.error, false);
-      }
-    } catch (err: any) {
-      showAdminToast("Gagal: " + err.message, false);
-    } finally {
-      setProcessingOrderAction(false);
-    }
-  };
-
-  // Google Drive integration telah dihapus — tidak diperlukan lagi
 
   // Overview computed metrics & analytics
   const orderList = allOrders.length > 0 ? allOrders : orders;
@@ -5888,292 +5776,6 @@ export default function AdminPage() {
                     </svg>
                   )}
                   <span>{demoStudioSaving ? "Menyimpan ke Demo..." : "Simpan Perubahan Demo"}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Modal Pratinjau Bukti Transfer ── */}
-      {previewProofOrder && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150">
-          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] shadow-2xl flex flex-col overflow-hidden border border-gray-100">
-            {/* Header */}
-            <div className="px-6 py-4 bg-stone-950 text-white flex items-center justify-between shrink-0">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-bold text-base text-white">Bukti Transfer Pembayaran</h3>
-                  <span className="font-mono text-xs bg-amber-500/20 border border-amber-500/40 text-amber-300 px-2 py-0.5 rounded-full font-bold">
-                    {previewProofOrder.invoiceNumber}
-                  </span>
-                </div>
-                <p className="text-xs text-stone-400 mt-0.5">
-                  {previewProofOrder.user?.name || "Klien"} ({previewProofOrder.user?.email}) &bull; Rp {Number(previewProofOrder.amount).toLocaleString("id-ID")}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setPreviewProofOrder(null)}
-                className="p-1 text-stone-400 hover:text-white rounded-lg transition cursor-pointer"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Body: Image Preview */}
-            <div className="flex-1 overflow-y-auto p-6 bg-stone-900 flex items-center justify-center min-h-[300px]">
-              {previewProofOrder.proofImageUrl ? (
-                <div className="relative group max-h-[60vh]">
-                  <img
-                    src={previewProofOrder.proofImageUrl}
-                    alt="Bukti Transfer"
-                    className="max-h-[58vh] max-w-full rounded-2xl shadow-xl object-contain mx-auto border border-white/10"
-                  />
-                  <div className="absolute top-3 right-3">
-                    <a
-                      href={previewProofOrder.proofImageUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1.5 bg-black/70 hover:bg-black text-white text-xs font-bold rounded-xl backdrop-blur-xs transition flex items-center gap-1.5 border border-white/20"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                      <span>Buka Ukuran Penuh</span>
-                    </a>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-stone-400 text-xs italic">Bukti gambar tidak tersedia</p>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between shrink-0">
-              <button
-                type="button"
-                onClick={() => setPreviewProofOrder(null)}
-                className="px-4 py-2 border border-gray-300 rounded-xl text-xs font-semibold text-gray-700 hover:bg-white transition cursor-pointer"
-              >
-                Tutup
-              </button>
-
-              {previewProofOrder.status === "PENDING" && (
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRejectModalOrder(previewProofOrder);
-                      setRejectReasonInput("Bukti transfer tidak valid atau nominal tidak sesuai.");
-                    }}
-                    disabled={processingOrderAction}
-                    className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 rounded-xl text-xs font-bold transition cursor-pointer disabled:opacity-50"
-                  >
-                    Tolak Transaksi
-                  </button>
-
-                  {orderActionFeedback && orderActionFeedback.id === previewProofOrder.id && orderActionFeedback.type === "success" ? (
-                    <div className="px-5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 animate-in zoom-in-95 duration-150">
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                      </svg>
-                      {orderActionFeedback.msg}
-                    </div>
-                  ) : confirmApproveOrderId === previewProofOrder.id ? (
-                    <div className="flex items-center gap-1.5 p-1 bg-emerald-950/10 border border-emerald-500/40 rounded-xl animate-in zoom-in-95 duration-150">
-                      <button
-                        type="button"
-                        onClick={() => handleApproveOrder(previewProofOrder.id)}
-                        disabled={processingOrderAction}
-                        className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition shadow-sm cursor-pointer disabled:opacity-50 flex items-center gap-1.5 active:scale-95"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                        </svg>
-                        {processingOrderAction ? "Memproses..." : "Ya, Lunas"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setConfirmApproveOrderId(null)}
-                        disabled={processingOrderAction}
-                        className="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-xs font-semibold transition cursor-pointer"
-                      >
-                        Batal
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setConfirmApproveOrderId(previewProofOrder.id)}
-                      disabled={processingOrderAction}
-                      className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer disabled:opacity-50 flex items-center gap-1.5 active:scale-95"
-                    >
-                      Konfirmasi LUNAS
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Modal Tolak Transaksi ── */}
-      {rejectModalOrder && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150">
-          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl p-6 border border-gray-100 space-y-4">
-            <div>
-              <h3 className="font-bold text-gray-900 text-base">Tolak Pembayaran</h3>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Invoice: <span className="font-mono font-bold text-gray-800">{rejectModalOrder.invoiceNumber}</span>
-              </p>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-gray-700">
-                Alasan Penolakan (akan disimpan di sistem):
-              </label>
-              <textarea
-                rows={3}
-                value={rejectReasonInput}
-                onChange={(e) => setRejectReasonInput(e.target.value)}
-                placeholder="Contoh: Bukti transfer buram / dana belum masuk rekening / nominal tidak sesuai"
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition resize-none"
-              />
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
-              <button
-                type="button"
-                onClick={() => setRejectModalOrder(null)}
-                className="px-4 py-2 border border-gray-300 rounded-xl text-xs font-semibold text-gray-700 hover:bg-gray-50 transition cursor-pointer"
-              >
-                Batalkan
-              </button>
-              <button
-                type="button"
-                onClick={handleRejectOrder}
-                disabled={processingOrderAction}
-                className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer disabled:opacity-50"
-              >
-                {processingOrderAction ? "Memproses..." : "Tolak Pesanan"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* --- Kelola Klien Modal --- */}
-      {manageClient && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setManageClient(null)}></div>
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-              <div>
-                <h3 className="font-bold text-gray-900 text-lg">Kelola Klien</h3>
-                <p className="text-xs text-gray-500">ID: {manageClient.id}</p>
-              </div>
-              <button onClick={() => setManageClient(null)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition cursor-pointer">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-            </div>
-            
-            <div className="p-6 overflow-y-auto">
-              {clientActionMsg && (
-                <div className={`mb-5 p-3 rounded-xl text-sm font-medium ${clientActionMsg.ok ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
-                  {clientActionMsg.msg}
-                </div>
-              )}
-              
-              {(() => {
-                const activeInv = manageClient.invitations?.[0];
-                const eventDateStr = formatPrimaryEventDate(activeInv?.eventData) ?? "-";
-                const lifecycleDates = activeInv
-                  ? computeLifecycleDates(
-                      { eventData: activeInv.eventData, galleryExpiresAt: activeInv.galleryExpiresAt },
-                      parseLifecycleSettings(settingsMap)
-                    )
-                  : null;
-                const eventTimezone = getPrimaryEventTimezone(activeInv?.eventData);
-                const lifecycleDateStr = (date?: Date) => (date ? formatDateInEventTimezone(date, eventTimezone) : "-");
-
-                return (
-                  <div className="space-y-4">
-                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                      <div className="text-xs text-gray-400 font-medium mb-1">Nama Lengkap</div>
-                      <div className="text-sm font-bold text-gray-900">{manageClient.name}</div>
-                    </div>
-                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                      <div className="text-xs text-gray-400 font-medium mb-1">Email</div>
-                      <div className="text-sm font-mono text-gray-700">{manageClient.email}</div>
-                    </div>
-                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                      <div className="text-xs text-gray-400 font-medium mb-1">Tanggal Terdaftar</div>
-                      <div className="text-sm text-gray-700">{new Date(manageClient.createdAt).toLocaleString("id-ID")}</div>
-                    </div>
-                    
-                    {/* Data Undangan Tambahan */}
-                    {activeInv && (
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                          <div className="text-xs text-gray-400 font-medium mb-1">Tanggal Acara Utama</div>
-                          <div className="text-sm font-bold text-indigo-700">{eventDateStr}</div>
-                        </div>
-                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                          <div className="text-xs text-gray-400 font-medium mb-1">Subdomain Dilepas</div>
-                          <div className="text-sm font-bold text-rose-600">{lifecycleDateStr(lifecycleDates?.subdomainReleaseAt)}</div>
-                        </div>
-                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                          <div className="text-xs text-gray-400 font-medium mb-1">Galeri Foto Berakhir</div>
-                          <div className="text-sm font-bold text-rose-600">{lifecycleDateStr(lifecycleDates?.galleryExpiresAt)}</div>
-                        </div>
-                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                          <div className="text-xs text-gray-400 font-medium mb-1">Undangan Tersimpan Hingga</div>
-                          <div className="text-sm font-bold text-rose-600">{lifecycleDateStr(lifecycleDates?.archiveExpiresAt)}</div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-
-
-              <div className="mt-6 pt-4 border-t border-gray-100">
-                <button
-                  type="button"
-                  onClick={() => handleImpersonateClient(manageClient.id)}
-                  disabled={impersonatingClient}
-                  className="w-full px-4 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                  {impersonatingClient ? "Menghubungkan ke Dasbor..." : "Remote Dasbor Klien Ini"}
-                </button>
-              </div>
-
-              <div className="mt-6 pt-6 border-t border-gray-100">
-                <h4 className="text-sm font-bold text-rose-600 mb-2">Zona Berbahaya</h4>
-                <p className="text-xs text-gray-500 mb-4">
-                  Menghapus akun klien akan menghapus semua undangan, pengaturan, aset media, dan histori transaksi klien ini secara permanen. Tindakan ini tidak dapat dibatalkan.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => handleDeleteClient(manageClient.id)}
-                  disabled={deletingClient}
-                  className="w-full px-4 py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {deletingClient ? (
-                    <>
-                      <span className="w-4 h-4 border-2 border-rose-600 border-t-transparent rounded-full animate-spin"></span>
-                      Menghapus...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                      Hapus Akun Klien Permanen
-                    </>
-                  )}
                 </button>
               </div>
             </div>
