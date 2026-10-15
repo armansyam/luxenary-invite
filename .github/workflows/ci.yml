@@ -57,11 +57,12 @@ jobs:
       - name: Dependency Audit (production, critical gate)
         run: npm audit --omit=dev --audit-level=critical
 
-      - name: TypeScript Gate (tsc --noEmit)
-        run: npx tsc --noEmit
-
+      # Tipe Prisma Client (mis. `Prisma`, payload model) baru ada setelah generate; tsc sebelum langkah ini selalu gagal.
       - name: Prisma Generate
         run: npx prisma generate
+
+      - name: TypeScript Gate (tsc --noEmit)
+        run: npx tsc --noEmit
 
       - name: Prisma Migrate (Test DB)
         run: npx prisma migrate deploy
