@@ -1188,6 +1188,8 @@ export default function EditInvitation() {
   const currentThemeId = invitation.themeId === "kila" ? "kalandra" : (invitation.themeId || "");
   const selectedThemeObj = currentThemeId ? (themesList.find((t) => t.id === currentThemeId) || null) : null;
   const activeBlueprint = getThemeBlueprint(currentThemeId || "kalandra");
+  // Urutan sama dengan lib/themeEngine.ts saat klien belum memilih lagu: musik tema (DB) → blueprint → pustaka pertama.
+  const themeFallbackMusicUrl: string = selectedThemeObj?.defaultMusicUrl || activeBlueprint.defaultMusicUrl || musicPresets[0]?.url || "";
   // Tanpa pilihan tersimpan, mesin tema menampilkan mempelai pria lebih dulu (lib/themeEngine.ts).
   const displayOrder = getFeatureSetting("displayOrder", "GROOM_FIRST");
 
@@ -2580,7 +2582,7 @@ export default function EditInvitation() {
                   <div className="p-3 bg-white rounded-xl border border-stone-200 flex items-center justify-between gap-3 shadow-2xs">
                     <div className="flex items-center gap-3 min-w-0">
                       {(() => {
-                        const currentMusicUrl = invitation.musicUrl || musicPresets[0]?.url || "";
+                        const currentMusicUrl = invitation.musicUrl || themeFallbackMusicUrl;
                         const isPlaying = playingAudioUrl === currentMusicUrl && Boolean(currentMusicUrl);
                         return (
                           <button
@@ -2612,11 +2614,11 @@ export default function EditInvitation() {
                               ? "Lagu dari YouTube"
                               : invitation.musicUrl
                               ? "Musik Kustom (Tautan Eksternal)"
-                              : (musicPresets[0]?.title || "Belum ada musik dipilih"))}
+                              : (musicPresets.find((p) => p.url === themeFallbackMusicUrl)?.title || (themeFallbackMusicUrl ? "Musik Bawaan Tema" : "Belum ada musik dipilih")))}
                         </p>
                         <span className="text-[10px] text-stone-500 block truncate">
                           {musicPresets.find((p) => p.url === invitation.musicUrl)?.genre ||
-                            (invitation.musicUrl ? invitation.musicUrl : (musicPresets[0]?.genre || "Pustaka Musik Sistem"))}
+                            (invitation.musicUrl ? invitation.musicUrl : (musicPresets.find((p) => p.url === themeFallbackMusicUrl)?.genre || "Dipakai otomatis sampai Anda memilih lagu"))}
                         </span>
                       </div>
                     </div>
@@ -2689,7 +2691,7 @@ export default function EditInvitation() {
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         {musicPresets.map((preset) => {
-                          const currentSelectedUrl = invitation.musicUrl || musicPresets[0]?.url || "";
+                          const currentSelectedUrl = invitation.musicUrl || themeFallbackMusicUrl;
                           const isSelected = currentSelectedUrl === preset.url;
                           const isPlaying = playingAudioUrl === preset.url;
 

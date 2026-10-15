@@ -140,6 +140,7 @@ export async function GET(req: Request) {
         parentTheme: t.parentTheme || null,
         tagline,
         desc: tagline,
+        defaultMusicUrl: t.defaultMusicUrl || null,
         thumbnailMobile: thumbMobile,
         thumbnailDesktop: thumbDesktop,
         // Cover card data — DB-first, then registry, then fallback

@@ -116,6 +116,11 @@ describe.skipIf(!IS_TEST_DB)("deskripsi tema di wizard setup", () => {
     const themes = await (await GET(new Request("http://localhost/api/public/themes") as any)).json();
     expect(Array.isArray(themes) && themes.length > 0).toBe(true);
     expect(themes.every((t: Record<string, unknown>) => "desc" in t && !("description" in t))).toBe(true);
+    // Studio memakai musik bawaan tema untuk label "Lagu Terpasang" saat klien belum memilih lagu.
+    const dbDefaults = await prisma.theme.findMany({ select: { id: true, defaultMusicUrl: true } });
+    for (const t of themes as { id: string; defaultMusicUrl: string | null }[]) {
+      expect(t.defaultMusicUrl).toBe(dbDefaults.find((d) => d.id === t.id)?.defaultMusicUrl || null);
+    }
     const src = fs.readFileSync(path.join(process.cwd(), "app/(client)/dashboard/setup/page.tsx"), "utf-8");
     expect(src).not.toContain("theme.description");
     expect(src).toContain("{theme.desc}");
