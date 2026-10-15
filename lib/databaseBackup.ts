@@ -2,6 +2,7 @@ import path from "path";
 import fs from "fs";
 import { prisma } from "@/lib/prisma";
 import { execFile } from "child_process";
+import { randomBytes } from "crypto";
 import { promisify } from "util";
 import { STORAGE_PROVIDER, s3Client } from "@/lib/storage";
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
@@ -193,6 +194,32 @@ export function getLibpqDbUrl(rawUrl: string): string {
   }
 }
 
+/**
+ * URL libpq tanpa password + env PGPASSWORD. Password di argumen pg_dump/pg_restore terlihat oleh semua pengguna
+ * VPS lewat `ps`, dan server ini dipakai bersama aplikasi lain.
+ */
+function libpqConnection(rawUrl: string): { url: string; env: NodeJS.ProcessEnv } {
+  const clean = getLibpqDbUrl(rawUrl);
+  try {
+    const parsed = new URL(clean);
+    const password = decodeURIComponent(parsed.password);
+    parsed.password = "";
+    return { url: parsed.toString(), env: { ...process.env, PGPASSWORD: password } };
+  } catch {
+    return { url: clean, env: process.env };
+  }
+}
+
+/**
+ * Bucket off-site khusus backup. Snapshot DB berisi hash password, data klien, dan kunci gateway, jadi tidak boleh masuk
+ * bucket media yang dibuka publik lewat custom domain; tanpa bucket privat terpisah, unggahan off-site dilewati.
+ */
+function backupBucketName(): string | null {
+  const bucket = process.env.S3_BACKUP_BUCKET_NAME?.trim();
+  if (!bucket || bucket === process.env.S3_BUCKET_NAME?.trim()) return null;
+  return bucket;
+}
+
 // Buat snapshot database instan
 // Snapshot baru berformat custom pg_dump (-F c) dan diberi ekstensi .dump; pulihkan dengan pg_restore, bukan psql.
 // .sql dan .backup tetap dikenali karena snapshot lama memakai ekstensi tersebut.
@@ -209,20 +236,20 @@ export async function readBackupPathSetting(): Promise<string | undefined> {
 
 export async function createDatabaseSnapshot(customLabel?: string): Promise<{ filename: string; sizeBytes: number; sizeFormatted: string; path: string; offsiteSynced?: boolean }> {
   const backupDir = await getBackupDirectory(await readBackupPathSetting());
-  const rawDbUrl = await getActiveDbUrl();
-  const libpqDbUrl = getLibpqDbUrl(rawDbUrl);
+  const db = libpqConnection(await getActiveDbUrl());
 
-  // Format penamaan: snapshot_{YYYY-MM-DD_HH-mm-ss}_{label}.dump
+  // Format penamaan: snapshot_{YYYY-MM-DD_HH-mm-ss}_{label}_{acak}.dump. Bagian acak membuat nama tidak dapat ditebak
+  // dari jadwal cron bila salinan pernah terekspos.
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
   const timestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
   const labelSuffix = customLabel ? `_${customLabel.replace(/[^a-zA-Z0-9_-]/g, "")}` : "";
-  const filename = `snapshot_${timestamp}${labelSuffix}.dump`;
+  const filename = `snapshot_${timestamp}${labelSuffix}_${randomBytes(8).toString("hex")}.dump`;
   const targetPath = path.join(backupDir, filename);
 
   // Jalankan pg_dump untuk membackup database
   try {
-    await execFileAsync("pg_dump", [libpqDbUrl, "-F", "c", "-f", targetPath]);
+    await execFileAsync("pg_dump", [db.url, "-F", "c", "-f", targetPath], { env: db.env });
   } catch (error: any) {
     const detail = error.stderr ? String(error.stderr).trim() : (error.message || String(error));
     throw new Error(`Gagal membuat backup PostgreSQL: ${detail}`);
@@ -244,12 +271,16 @@ export async function createDatabaseSnapshot(customLabel?: string): Promise<{ fi
 
   // Replikasi Off-Site ke Cloudflare R2 / S3 jika terkonfigurasi (Disaster Recovery)
   let offsiteSynced = false;
-  if ((STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3") && s3Client && process.env.S3_BUCKET_NAME) {
+  const offsiteBucket = backupBucketName();
+  if ((STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3") && s3Client && !offsiteBucket) {
+    logger.error("BackupEngine", `S3_BACKUP_BUCKET_NAME (bucket privat, bukan bucket media) belum diatur; ${filename} hanya tersimpan di disk lokal`);
+  }
+  if ((STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3") && s3Client && offsiteBucket) {
     try {
       const fileBuffer = await fs.promises.readFile(targetPath);
       await s3Client.send(
         new PutObjectCommand({
-          Bucket: process.env.S3_BUCKET_NAME,
+          Bucket: offsiteBucket,
           Key: `backups/database/${filename}`,
           Body: fileBuffer,
           ContentType: "application/octet-stream",
@@ -324,11 +355,9 @@ export async function restoreDatabaseSnapshot(filename: string): Promise<{ succe
   const safety = await createDatabaseSnapshot("pre_restore");
 
   // 2. Timpa database aktif dengan file snapshot menggunakan pg_restore
-  const rawDbUrl = await getActiveDbUrl();
-  const libpqDbUrl = getLibpqDbUrl(rawDbUrl);
+  const db = libpqConnection(await getActiveDbUrl());
   try {
-    // Kita hapus database dulu dan buat ulang (secara clean) atau timpa menggunakan pg_restore -c
-    await execFileAsync("pg_restore", ["--clean", "--if-exists", "-d", libpqDbUrl, snapshotPath]);
+    await execFileAsync("pg_restore", ["--clean", "--if-exists", "-d", db.url, snapshotPath], { env: db.env });
   } catch (error: any) {
     const detail = error.stderr ? String(error.stderr).trim() : (error.message || String(error));
     throw new Error(`Gagal mengembalikan backup PostgreSQL: ${detail}`);
@@ -351,11 +380,12 @@ export async function deleteDatabaseSnapshot(filename: string): Promise<{ succes
   await removeIfExists(targetPath);
 
   // Sinkronisasi hapus dari R2/S3 jika terkonfigurasi
-  if ((STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3") && s3Client && process.env.S3_BUCKET_NAME) {
+  const offsiteBucket = backupBucketName();
+  if ((STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3") && s3Client && offsiteBucket) {
     try {
       await s3Client.send(
         new DeleteObjectCommand({
-          Bucket: process.env.S3_BUCKET_NAME,
+          Bucket: offsiteBucket,
           Key: `backups/database/${safeName}`,
         })
       );
@@ -394,14 +424,15 @@ export async function pruneOldSnapshots(keepCount: number, backupDir: string) {
 
   if (snapshots.length > keepCount) {
     const toDelete = snapshots.slice(keepCount);
+    const offsiteBucket = backupBucketName();
     for (const item of toDelete) {
       await removeIfExists(item.path);
       // Hapus juga dari R2 jika ada; kegagalan dicatat karena salinan off-site yang tidak terhapus menumpuk tanpa batas.
-      if ((STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3") && s3Client && process.env.S3_BUCKET_NAME) {
+      if ((STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3") && s3Client && offsiteBucket) {
         try {
           await s3Client.send(
             new DeleteObjectCommand({
-              Bucket: process.env.S3_BUCKET_NAME,
+              Bucket: offsiteBucket,
               Key: `backups/database/${item.name}`,
             })
           );

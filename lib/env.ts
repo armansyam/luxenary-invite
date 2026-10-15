@@ -39,6 +39,9 @@ export function checkServerEnv(env: Env = process.env): EnvReport {
     if (!present(env, "S3_CUSTOM_DOMAIN") && !present(env, "S3_PUBLIC_URL")) {
       problems.push(`S3_CUSTOM_DOMAIN (atau S3_PUBLIC_URL) belum diisi: URL berkas yang diunggah ke ${provider} tidak dapat dibentuk`);
     }
+    if (!present(env, "S3_BACKUP_BUCKET_NAME") || env.S3_BACKUP_BUCKET_NAME?.trim() === env.S3_BUCKET_NAME?.trim()) {
+      problems.push("S3_BACKUP_BUCKET_NAME (bucket privat terpisah dari bucket media) belum diisi: snapshot database tidak disalin off-site");
+    }
   }
 
   // Nama yang mirip tetapi tidak pernah dibaca kode; nilainya diam-diam diabaikan.
