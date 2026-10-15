@@ -170,6 +170,7 @@ Sub-routes publik:
   /dimas-clarissa-030326/sharemoment  → Upload foto tamu
   /[slug]/receptionist               → Scanner QR tamu (PIN-protected, Custom Domain & Canonical)
   /s/[subdomain]/receptionist         → Scanner QR tamu via subdomain (PIN-protected)
+                                        (dibuka dari host subdomain-nya sendiri, bentuk /s/[subdomain]/... dialihkan ke /receptionist, /memories, /sharemoment di host yang sama)
 
 Pre-Flight Checklist & Smart Audit (/dashboard/settings):
   - Evaluasi sekuensial 12 komponen data sebelum rilis resmi (termasuk verifikasi seluruh slot unggahan visual & foto kedua mempelai).

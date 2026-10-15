@@ -322,6 +322,8 @@ Request masuk
     │   ├─ /memories         → Rewrite → /s/{subdomain}/memories
     │   ├─ /receptionist     → Rewrite → /s/{subdomain}/receptionist
     │   ├─ /sharemoment      → Rewrite → /s/{subdomain}/sharemoment
+    │   ├─ /s/{subdomain}[/memories|/sharemoment|/receptionist|/galery|/gallery]
+    │   │                    → Redirect 307 ke bentuk pendek di host yang sama (tautan di HTML terbit dan halaman /s/ berbentuk ini)
     │   └─ /{guest}          → Rewrite → /s/{subdomain}?to={guest}
     │
     ├─ Host = custom domain klien (e.g. dimas-clarissa.com) — INFRASTRUKTUR SIAP
