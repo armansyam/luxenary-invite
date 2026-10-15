@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
 
     const inv = await prisma.invitation.findUnique({
       where: { id: invitationId },
-      include: { media: true },
+      include: { media: true, theme: { select: { category: true } } },
     });
 
     if (!inv || !inv.invitationSlug) {
@@ -205,7 +205,8 @@ export async function POST(req: NextRequest) {
     const metadata = {
       slug: clientName,
       coupleName: participantNames(inv.eventType, inv.participantsJson).short,
-      themeId: inv.themeId
+      themeId: inv.themeId,
+      category: inv.theme.category,
     };
 
     const metadataBuffer = Buffer.from(JSON.stringify(metadata, null, 2), "utf-8");

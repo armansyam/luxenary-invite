@@ -11,7 +11,9 @@ function SuccessContent() {
   const orderId = searchParams.get("order");
 
   const [orderStatus, setOrderStatus] = useState<OrderStatus>(null);
+  const [retryHref, setRetryHref] = useState("/dashboard");
   const [pollCount, setPollCount] = useState(0);
+  const [pollRound, setPollRound] = useState(0);
   const [timedOut, setTimedOut] = useState(false);
   const [platformName, setPlatformName] = useState("Platform Undangan");
 
@@ -29,46 +31,51 @@ function SuccessContent() {
       return () => clearTimeout(t);
     }
 
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let count = 0;
+
+    const scheduleNext = () => {
+      count += 1;
+      setPollCount(count);
+      if (count >= 20) setTimedOut(true);
+      else timer = setTimeout(poll, 3000);
+    };
+
     const poll = async () => {
       try {
         const res = await fetch(`/api/client/orders/${orderId}/status`, { cache: "no-store" });
         const data = await res.json();
+        if (cancelled) return;
         const status: OrderStatus = data.status;
         setOrderStatus(status);
 
+        // Halaman ini juga menjadi tujuan balik gateway untuk upgrade dan add-on, yang sudah punya undangan.
+        const invitationHref = data.linkedInvitationId ? `/dashboard/invitation/${data.linkedInvitationId}` : "/dashboard";
+
         if (status === "PAID") {
-          // Redirect to setup wizard with orderId
-          setTimeout(() => {
-            router.replace(`/dashboard/setup?order=${orderId}`);
-          }, 1800);
-          return; // Stop polling
+          const target = data.orderType === "NEW" ? `/dashboard/setup?order=${orderId}` : invitationHref;
+          timer = setTimeout(() => router.replace(target), 1800);
+          return;
         }
 
         if (status === "EXPIRED") {
-          return; // Stop polling, show error state
+          setRetryHref(data.orderType === "NEW" && data.planType ? `/checkout?plan=${data.planType}` : invitationHref);
+          return;
         }
 
-        // Still PENDING — continue polling
-        setPollCount((c) => {
-          const next = c + 1;
-          if (next >= 20) {
-            setTimedOut(true);
-          } else {
-            setTimeout(poll, 3000);
-          }
-          return next;
-        });
+        scheduleNext();
       } catch {
-        setPollCount((c) => {
-          if (c < 20) setTimeout(poll, 3000);
-          return c + 1;
-        });
+        if (!cancelled) scheduleNext();
       }
     };
 
     poll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId]);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [orderId, pollRound, router]);
 
   // ── Paid State ──────────────────────────────────────────────────────────────
   if (orderStatus === "PAID") {
@@ -115,7 +122,7 @@ function SuccessContent() {
           </div>
           <div className="flex flex-col gap-3">
             <a
-              href={`/checkout?plan=TIER_3`}
+              href={retryHref}
               className="block w-full py-3.5 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-sm transition shadow-lg text-center"
             >
               Coba Bayar Ulang
@@ -153,7 +160,7 @@ function SuccessContent() {
               Kembali ke Dashboard
             </a>
             <button
-              onClick={() => { setPollCount(0); setTimedOut(false); }}
+              onClick={() => { setPollCount(0); setTimedOut(false); setPollRound((r) => r + 1); }}
               className="text-amber-400 text-xs hover:text-amber-300 transition cursor-pointer"
             >
               Cek status lagi

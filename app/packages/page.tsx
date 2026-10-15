@@ -83,7 +83,7 @@ export default function PackageSelectionPage() {
         {/* Multi-event reassurance badge */}
         <div className="max-w-2xl mx-auto mb-8 p-3.5 bg-amber-50/80 border border-amber-200/80 rounded-2xl flex items-center justify-center gap-2.5 text-center text-xs text-amber-950">
           <span className="w-2 h-2 rounded-full bg-amber-600 shrink-0"></span>
-          <span><strong>Multi-Acara Fleksibel:</strong> Seluruh paket di bawah mendukung semua jenis acara — Pernikahan, Ulang Tahun, Khitanan, Wisuda, dan Syukuran.</span>
+          <span><strong>Multi-Acara Fleksibel:</strong> Seluruh paket di bawah mendukung semua jenis acara — Pernikahan, Ulang Tahun, Khitanan, Aqiqah, Wisuda, dan Syukuran.</span>
         </div>
 
         {/* Dynamic Service Status Notice */}
