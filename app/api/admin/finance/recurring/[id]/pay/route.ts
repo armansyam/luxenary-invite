@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdminModule } from "@/lib/adminAuth";
+import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
 import { wibParts } from "@/lib/financePeriods";
 
@@ -95,7 +95,7 @@ export async function POST(
         referenceNumber,
         receiptUrl: body.receiptUrl || null,
         notes: body.notes || `Pembayaran otomatis 1-klik untuk tagihan rutin: ${recurring.name}`,
-        createdById: session.user.id || null,
+        createdById: adminActorId(session),
         isLocked: false,
       },
     });

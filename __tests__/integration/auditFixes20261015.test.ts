@@ -20,6 +20,7 @@ import { GET as publicThemes } from "@/app/api/public/themes/route";
 import { POST as uploadReceipt } from "@/app/api/admin/finance/upload-receipt/route";
 import { POST as createExpense } from "@/app/api/admin/finance/expenses/route";
 import { PUT as updateExpense, DELETE as deleteExpense } from "@/app/api/admin/finance/expenses/[id]/route";
+import { GET as taxRecap, POST as markTax } from "@/app/api/admin/finance/tax/route";
 import { normalizeCustomDomain } from "@/lib/domainUtils";
 import { getPlanMemoriesQuota, getPublicPlatformSettings, invalidateSettingsCache } from "@/lib/settings";
 import { DAY_MS } from "@/lib/lifecycleDates";
@@ -233,6 +234,45 @@ describe.skipIf(!IS_TEST_DB)("pengeluaran dan tutup buku", () => {
 
     const inMarch = await createExpense(jsonRequest("http://localhost/api/admin/finance/expenses", "POST", { title: "Uji WIB Maret", amount: 1000, expenseDate: `${closedYear}-03-31T16:00:00Z` }));
     expect(inMarch.status).toBe(400);
+  });
+});
+
+describe.skipIf(!IS_TEST_DB)("rekap dan setoran pajak", () => {
+  // Bukan tahun kabisat: 28 Feb 18.00 UTC jatuh pada 1 Maret WIB.
+  const taxYear = 2093;
+
+  afterAll(async () => {
+    await prisma.expense.deleteMany({ where: { title: `${RUN}-pajak` } });
+    await prisma.financialClosing.deleteMany({ where: { periodYear: taxYear } });
+  });
+
+  it("omzet diakui pada bulan lunas (WIB), dan tutup buku otomatis dari setoran pajak mengunci pengeluaran", async () => {
+    const userId = await makeUser("pajak");
+    // Dibuat 28 Feb, lunas 1 Maret 01.00 WIB (28 Feb 18.00 UTC).
+    const order = await prisma.order.create({
+      data: {
+        userId, invoiceNumber: `${RUN}-pajak`, planType: "TIER_2", amount: 200000, status: "PAID", orderType: "NEW",
+        createdAt: new Date(`${taxYear}-02-28T10:00:00Z`), paidAt: new Date(`${taxYear}-02-28T18:00:00Z`),
+      },
+    });
+    ids.orders.push(order.id);
+    const expense = await prisma.expense.create({ data: { title: `${RUN}-pajak`, amount: 5000, expenseDate: new Date(`${taxYear}-03-10`) } });
+
+    const admin = await prisma.admin.create({ data: { username: `${RUN}_tax`, email: `${RUN}_tax@admin.local`, name: "Pajak Uji", role: "FINANCE", permissions: ["finance"] } });
+    ids.admins.push(admin.id);
+    sessionUser = { id: admin.id, email: admin.email, role: "FINANCE", isAdmin: true, permissions: ["finance"] };
+
+    const recap = await (await taxRecap(new NextRequest(`http://localhost/api/admin/finance/tax?year=${taxYear}`))).json();
+    expect(recap.monthlyBreakdown[1].grossRevenue).toBe(0);
+    expect(recap.monthlyBreakdown[2].grossRevenue).toBe(200000);
+
+    const res = await markTax(jsonRequest("http://localhost/api/admin/finance/tax", "POST", { month: 3, year: taxYear, taxPaid: true }));
+    expect(res.status).toBe(200);
+    const closing = await prisma.financialClosing.findUniqueOrThrow({ where: { periodMonth_periodYear: { periodMonth: 3, periodYear: taxYear } } });
+    expect(Number(closing.grossRevenue)).toBe(200000);
+    expect(closing.closedById).toBe(admin.id);
+    expect((await prisma.expense.findUniqueOrThrow({ where: { id: expense.id } })).isLocked).toBe(true);
+    expect(await prisma.adminAuditLog.count({ where: { adminId: admin.id, action: "CLOSE_FINANCIAL_PERIOD" } })).toBe(1);
   });
 });
 
