@@ -16,6 +16,7 @@ declare module "next-auth" {
     originalRole?: AppRole;
     permissions?: string[];
     phoneNumber?: string | null;
+    sessionVersion?: number;
   }
 
   interface Session {
@@ -43,5 +44,7 @@ declare module "next-auth/jwt" {
     originalRole?: AppRole;
     permissions?: string[];
     phoneNumber?: string | null;
+    /** Versi sesi admin saat login; dibandingkan dengan Admin.sessionVersion di callback jwt. */
+    sv?: number;
   }
 }

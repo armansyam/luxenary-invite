@@ -85,6 +85,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           role: admin.role || "SUPER_ADMIN",
           permissions: admin.permissions || [],
           isAdmin: true,
+          sessionVersion: admin.sessionVersion,
         };
       },
     }),
@@ -140,11 +141,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return true;
     },
     async jwt({ token, user, account, profile }) {
-      // Akun admin yang sudah dihapus: mengembalikan null mengakhiri sesi. Tanpa ini JWT lama (default 30 hari)
-      // tetap membawa isAdmin dan role dari saat login.
+      // Akun admin yang sudah dihapus, atau yang password/peran/izinnya berubah sesudah token terbit: mengembalikan
+      // null mengakhiri sesi. Tanpa ini JWT lama (default 30 hari) tetap membawa isAdmin dan role dari saat login.
+      // Token tanpa `sv` (terbit sebelum kolom ada) tidak cocok dan berakhir sekali.
       if (!user && (token as any).isAdmin && token.id) {
-        const admin = await prisma.admin.findUnique({ where: { id: token.id as string }, select: { id: true } });
-        if (!admin) return null;
+        const admin = await prisma.admin.findUnique({ where: { id: token.id as string }, select: { id: true, sessionVersion: true } });
+        if (!admin || admin.sessionVersion !== token.sv) return null;
       }
       // Klien yang dihapus admin juga diakhiri sesinya, bukan dibuatkan akun baru diam-diam pada permintaan berikutnya.
       if (!user && !(token as any).isAdmin && (token.id || token.email)) {
@@ -164,6 +166,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         (token as any).role = (user as any).role || "CLIENT";
         (token as any).isAdmin = (user as any).isAdmin || false;
         (token as any).permissions = (user as any).permissions || [];
+        if ((user as any).isAdmin) token.sv = (user as any).sessionVersion ?? 0;
       }
       if (account?.provider === "google" && profile?.sub) {
         // Kegagalan DB di sini sengaja tidak ditelan: token dengan id/role bawaan Google akan tidak cocok dengan data pengguna.

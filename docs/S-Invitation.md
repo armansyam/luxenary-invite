@@ -1026,6 +1026,9 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Mengalihkan seluruh subdomain sistem (`demo`, `app`, `www`, dll.) serta seluruh rute halaman platform (`/packages`, `/login`, `/dashboard`, `/admin`, dll.) ke domain kanonikal `https://luxvite.id`.
    - Mengisolasi subdomain klien aktif secara murni untuk 5 fungsi acara (undangan, tamu personal, galeri momen, resepsionis QR, upload foto tamu) sehingga mustahil terjadi tabrakan rute (*URL collision*).
    - Tautan galeri dan kamera di HTML terbit berbentuk `/s/<sub>/memories` dan `/s/<sub>/sharemoment` karena file HTML yang sama juga dilayani dari apex. Di host subdomain milik undangan itu sendiri, proxy mengalihkan (307) bentuk tersebut ke `/memories`, `/sharemoment`, `/receptionist`, atau `/galery` di host yang sama sehingga tamu tidak keluar dari subdomain. Bentuk `/s/<subdomain-lain>/...` tetap dialihkan ke apex. Diuji di `__tests__/unit/subdomainProxy.test.ts`.
+8. **Sesi dan Kredensial Admin (`auth.ts`, `lib/adminCredentials.ts`, `prisma/seed.ts`):**
+   - Sesi admin (JWT 30 hari) membawa klaim `sv` yang dibandingkan dengan `admins.sessionVersion` pada setiap permintaan; versi naik saat password, peran, atau izin akun berubah, sehingga token lama berakhir. JWT yang terbit sebelum kolom ada berakhir sekali.
+   - Seed menonaktifkan akun admin yang masih berpassword bawaan lama (`passwordHash = NULL`, sesi dicabut). Atur ulang dengan `npx tsx scripts/set-admin-password.ts <email>`; password acak ditulis ke berkas ber-izin 600 dan tidak dicetak. Diuji di `adminSessionRevocation.test.ts` dan `adminCredentials.test.ts`.
 
 ---
 

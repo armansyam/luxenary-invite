@@ -34,13 +34,18 @@ export async function PUT(req: Request) {
         if (!isValid) {
           return NextResponse.json({ error: "Password saat ini salah." }, { status: 400 });
         }
-      } else if (currentPassword !== "default_admin_password_bypass_check") {
-          // Edge case: if admin had no passwordHash (e.g. initial setup)
-          return NextResponse.json({ error: "Password saat ini salah." }, { status: 400 });
+      } else {
+        // Akun tanpa password aktif (dinonaktifkan seed karena password bawaan) tidak dapat memverifikasi password lama.
+        return NextResponse.json(
+          { error: "Akun ini tidak memiliki password aktif. Atur ulang lewat skrip set-admin-password di server." },
+          { status: 409 }
+        );
       }
 
       // Dipangkas seperti di halaman login admin; spasi di ujung membuat password tidak pernah cocok.
       updateData.passwordHash = await bcrypt.hash(String(newPassword).trim(), 10);
+      // Mencabut semua JWT akun ini, termasuk sesi yang sedang dipakai untuk mengganti password.
+      updateData.sessionVersion = { increment: 1 };
     }
 
     const updated = await prisma.admin.update({

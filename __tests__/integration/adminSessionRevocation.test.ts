@@ -23,10 +23,10 @@ const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
 const RUN = `vitest_adminrev_${Date.now()}`;
 let adminId = "";
 
-async function sessionCookie(id: string) {
+async function sessionCookie(id: string, sv?: number) {
   const salt = "authjs.session-token";
   const jwt = await encode({
-    token: { id, sub: id, role: "SUPER_ADMIN", isAdmin: true, permissions: [] },
+    token: { id, sub: id, role: "SUPER_ADMIN", isAdmin: true, permissions: [], ...(sv === undefined ? {} : { sv }) },
     secret: process.env.AUTH_SECRET as string,
     salt,
   });
@@ -48,7 +48,7 @@ describe.skipIf(!IS_TEST_DB)("pencabutan sesi admin", () => {
   });
 
   it("admin yang masih ada: role dan izin diambil dari DB, bukan dari token", async () => {
-    cookieHeader = await sessionCookie(adminId);
+    cookieHeader = await sessionCookie(adminId, 0);
     const session = await auth();
     expect(session?.user?.id).toBe(adminId);
     expect(session?.user?.role).toBe("ADMIN");
@@ -56,8 +56,29 @@ describe.skipIf(!IS_TEST_DB)("pencabutan sesi admin", () => {
     expect(guard.ok).toBe(true);
   });
 
-  it("admin yang sudah dihapus: sesi tidak memuat pengguna dan guard menolak 401", async () => {
+  it("token tanpa versi sesi (terbit sebelum kolom ada) ditolak", async () => {
     cookieHeader = await sessionCookie(adminId);
+    expect((await auth())?.user).toBeUndefined();
+    const guard = await requireAdminModule("orders");
+    expect(guard.ok).toBe(false);
+    if (!guard.ok) expect(guard.response.status).toBe(401);
+  });
+
+  it("versi sesi dinaikkan: token lama ditolak, token dengan versi baru diterima", async () => {
+    await prisma.admin.update({ where: { id: adminId }, data: { sessionVersion: { increment: 1 } } });
+
+    cookieHeader = await sessionCookie(adminId, 0);
+    expect((await auth())?.user).toBeUndefined();
+    const stale = await requireAdminModule("orders");
+    expect(stale.ok).toBe(false);
+
+    cookieHeader = await sessionCookie(adminId, 1);
+    expect((await auth())?.user?.id).toBe(adminId);
+    expect((await requireAdminModule("orders")).ok).toBe(true);
+  });
+
+  it("admin yang sudah dihapus: sesi tidak memuat pengguna dan guard menolak 401", async () => {
+    cookieHeader = await sessionCookie(adminId, 1);
     await prisma.admin.delete({ where: { id: adminId } });
     const session = await auth();
     expect(session?.user).toBeUndefined();

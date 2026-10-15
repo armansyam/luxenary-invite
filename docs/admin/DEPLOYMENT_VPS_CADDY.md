@@ -280,7 +280,7 @@ npx prisma db seed
 > Seed hanya membuat akun jika `SEED_ADMIN_EMAIL` diset di `.env` (opsional: `SEED_ADMIN_PASSWORD` minimal 12 karakter, `SEED_ADMIN_USERNAME`, `SEED_ADMIN_NAME`).  
 > Jika `SEED_ADMIN_PASSWORD` kosong, seed membuat password acak dan **menampilkannya sekali** di output terminal; simpan segera.  
 > - **URL Admin:** `https://domainanda.id/admin/login`  
-> Setiap kali seed berjalan, akun admin yang masih memakai password lama `admin123` diberi peringatan `🚨` di output; ganti passwordnya di Portal Admin.
+> Setiap kali seed berjalan, akun admin yang masih memakai password lama `admin123` dinonaktifkan (hash dikosongkan, sesi dicabut) dan dilaporkan dengan `🚨` di output. Atur ulang dengan `npx tsx scripts/set-admin-password.ts <email>`; kredensial baru ditulis ke berkas ber-izin 600 di home pengguna dan tidak dicetak.
 
 ---
 

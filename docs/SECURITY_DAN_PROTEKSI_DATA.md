@@ -76,3 +76,5 @@ Server tidak pernah mempercayai ekstensi file (`.jpg`, `.png`) maupun header `Co
 3. **Pemberian Hak Akses (Role-Based Access Control):**
    - Seluruh rute `/api/admin/*` diproteksi guard ganda: autentikasi sesi JWT dan pengecekan role `ADMIN` atau `SUPER_ADMIN`.
    - Modul kendali jarak jauh (*Remote Session*) mencatat log audit lengkap ke tabel `admin_audit_logs`.
+   - Sesi admin berumur JWT 30 hari, dicabut per akun lewat `admins.sessionVersion`: naik saat password, peran, atau izin berubah, dan token yang versinya tidak cocok (atau tidak memuat versi) berakhir pada permintaan berikutnya.
+   - Akun admin yang masih berpassword bawaan lama dinonaktifkan oleh seed dan hanya dapat diaktifkan lagi lewat `scripts/set-admin-password.ts`.

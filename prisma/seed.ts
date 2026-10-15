@@ -6,6 +6,7 @@ import crypto from "crypto";
 import path from "path";
 import * as dotenv from "dotenv";
 import { defaultAdminSettings, defaultMusicPresets } from "./defaultSettings";
+import { disableLegacyDefaultPasswordAdmins } from "../lib/adminCredentials";
 
 dotenv.config({ path: path.join(__dirname, "../.env") });
 
@@ -86,12 +87,10 @@ async function main() {
     }
   }
 
-  // Peringatan keras jika masih ada akun admin yang memakai password bawaan lama.
-  const allAdmins = await prisma.admin.findMany({ select: { email: true, passwordHash: true } });
-  for (const adm of allAdmins) {
-    if (adm.passwordHash && await bcrypt.compare('admin123', adm.passwordHash)) {
-      console.error(`🚨 AKUN ADMIN MEMAKAI PASSWORD BAWAAN LAMA: ${adm.email} — segera ganti password di Portal Admin.`);
-    }
+  // Akun admin yang masih memakai password bawaan lama dinonaktifkan, bukan hanya diperingatkan: login ditolak sampai
+  // password diatur ulang lewat scripts/set-admin-password.ts.
+  for (const email of await disableLegacyDefaultPasswordAdmins(prisma)) {
+    console.error(`🚨 AKUN ADMIN DINONAKTIFKAN (password bawaan lama): ${email} — atur ulang dengan npx tsx scripts/set-admin-password.ts ${email}`);
   }
 
   console.log('✨ Master database seed executed successfully!')
