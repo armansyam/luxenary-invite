@@ -65,7 +65,9 @@ export async function POST(req: NextRequest) {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "") || `song-${Date.now()}`;
 
-    const musicDir = path.join(process.cwd(), "public", "music");
+    // Next hanya melayani berkas public/ yang ada saat server start; berkas baru di public/music baru tersedia setelah
+    // restart. Unggahan admin disimpan di bawah public/uploads yang dilayani rute dinamis app/uploads.
+    const musicDir = path.join(process.cwd(), "public", "uploads", "music");
     await fs.promises.mkdir(musicDir, { recursive: true });
 
     let finalFileName = `${slug}.mp3`;
@@ -84,7 +86,7 @@ export async function POST(req: NextRequest) {
     const optimizedBuffer = await optimizeWebAudio(rawBuffer, slug);
     await fs.promises.writeFile(targetFilePath, optimizedBuffer);
 
-    const publicUrl = `/music/${finalFileName}`;
+    const publicUrl = `/uploads/music/${finalFileName}`;
 
     // Calculate next sort order
     const maxSort = await prisma.musicPreset.aggregate({

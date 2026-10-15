@@ -5,6 +5,7 @@ import { hasPlanCapability } from "@/lib/settings";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { routeError } from "@/lib/routeError";
 import { checkDomainPointsToPlatform } from "@/lib/customDomainDns";
+import { normalizeCustomDomain } from "@/lib/domainUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -79,14 +80,8 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const cleanDomain = customDomain
-      .toLowerCase()
-      .replace(/^https?:\/\//, "")
-      .replace(/\/$/, "")
-      .replace(/\s/g, "")
-      .trim();
-
-    if (!cleanDomain.includes(".") || cleanDomain.length < 4) {
+    const cleanDomain = normalizeCustomDomain(customDomain);
+    if (!cleanDomain) {
       return NextResponse.json({ error: "Format domain tidak valid. Contoh: namakamu.com" }, { status: 400 });
     }
 

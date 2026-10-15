@@ -33,8 +33,8 @@ const SIZE_PRESETS: Record<CardSize, SizeConfig> = {
     name: "A3 (Standing Banner / Easel)",
     dimensions: "29.7 × 42.0 cm",
     description: "Standing frame/easel kayu di samping resepsionis atau gerbang masuk",
-    canvasWidth: 2480,
-    canvasHeight: 3508,
+    canvasWidth: 3508,
+    canvasHeight: 4961,
     aspectRatio: "1 / 1.414",
   },
   A4: {
@@ -93,6 +93,23 @@ const CARD_LAYOUTS: { id: CardLayoutStyle; name: string; tag: string; desc: stri
   },
 ];
 
+/** Kanvas tidak membungkus teks sendiri: baris dipecah per kata agar tidak melewati lebar area cetak. */
+export function wrapCanvasText(ctx: Pick<CanvasRenderingContext2D, "measureText">, text: string, maxWidth: number): string[] {
+  const lines: string[] = [];
+  let line = "";
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    const candidate = line ? `${line} ${word}` : word;
+    if (line && ctx.measureText(candidate).width > maxWidth) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = candidate;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
 export default function PrintableQRCardModal({
   isOpen,
   onClose,
@@ -141,8 +158,8 @@ export default function PrintableQRCardModal({
   const persistFeatureSettings = async (overrides: Record<string, any>) => {
     if (!invitation?.id) return;
     try {
+      // Hanya kunci kartu: server menggabungkannya ke featureSettings tersimpan tanpa menimpa pengaturan lain.
       const nextFs = {
-        ...initialFs,
         memoriesCardLayout: selectedCardLayout,
         memoriesCardEyebrow: eyebrowText,
         memoriesCardInstruction: instructionText,
@@ -265,25 +282,32 @@ export default function PrintableQRCardModal({
         ? `bold ${canvas.width * 0.052}px sans-serif`
         : `bold ${canvas.width * 0.056}px serif`;
       ctx.letterSpacing = selectedCardLayout === "modern_minimalist" ? "2px" : "1px";
-      ctx.fillText(`${coupleTitle.toUpperCase()}`, canvas.width / 2, contentStartY + canvas.height * 0.045);
+      const titleLineHeight = canvas.height * 0.04;
+      const titleLines = wrapCanvasText(ctx, coupleTitle.toUpperCase(), innerW);
+      const titleY = contentStartY + canvas.height * 0.045;
+      titleLines.forEach((line, i) => ctx.fillText(line, canvas.width / 2, titleY + i * titleLineHeight));
+      const afterTitleY = titleY + (titleLines.length - 1) * titleLineHeight;
 
       // 5. Date Subtitle
       ctx.fillStyle = selectedCardLayout === "royal_heritage" ? "#a3825a" : "#7c7269";
       ctx.font = `600 ${canvas.width * 0.024}px sans-serif`;
       ctx.letterSpacing = "3px";
-      ctx.fillText(eventDateFormatted, canvas.width / 2, contentStartY + canvas.height * 0.08);
+      ctx.fillText(eventDateFormatted, canvas.width / 2, afterTitleY + canvas.height * 0.035);
 
       // 6. Descriptive Instructions
       ctx.fillStyle = "#4a423d";
       ctx.font = `normal ${canvas.width * 0.028}px sans-serif`;
       ctx.letterSpacing = "0px";
-      ctx.fillText(instructionText, canvas.width / 2, contentStartY + canvas.height * 0.125);
+      const instructionLineHeight = canvas.height * 0.03;
+      wrapCanvasText(ctx, instructionText, innerW).forEach((line, i) =>
+        ctx.fillText(line, canvas.width / 2, afterTitleY + canvas.height * 0.08 + i * instructionLineHeight)
+      );
 
-      // 7. Footer Watermark Branding
+      // 7. Footer
       ctx.fillStyle = "#8a8077";
       ctx.font = `bold ${canvas.width * 0.022}px serif`;
       ctx.letterSpacing = "4px";
-      ctx.fillText("LUXENARY · MOMENTS", canvas.width / 2, canvas.height - margin - canvas.height * 0.02);
+      ctx.fillText("GUEST · MOMENTS", canvas.width / 2, canvas.height - margin - canvas.height * 0.02);
 
       // Instant Download
       const dataUrl = canvas.toDataURL("image/png");
@@ -422,7 +446,7 @@ export default function PrintableQRCardModal({
 
               {/* Footer Watermark */}
               <div className="pt-2 text-[9px] font-serif font-bold tracking-[0.2em] text-[#8a8077] uppercase">
-                LUXENARY · MOMENTS
+                GUEST · MOMENTS
               </div>
             </div>
 

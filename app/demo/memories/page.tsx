@@ -148,6 +148,22 @@ export default function DemoGuestMemoriesPage() {
   const [showZipModal, setShowZipModal] = useState(false);
   const [isZipping, setIsZipping] = useState(false);
   const [themeParam, setThemeParam] = useState<string>("");
+  const [memoriesPlanNames, setMemoriesPlanNames] = useState("");
+
+  useEffect(() => {
+    fetch("/api/public/settings")
+      .then((r) => r.json())
+      .then((d) => {
+        if (!Array.isArray(d?.packages)) return;
+        setMemoriesPlanNames(
+          d.packages
+            .filter((p: { capabilities?: string[] }) => p.capabilities?.includes("guest_memories"))
+            .map((p: { name: string }) => p.name)
+            .join(" & ")
+        );
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     try {
@@ -604,7 +620,7 @@ export default function DemoGuestMemoriesPage() {
 
             <h3 className="text-base font-bold text-white mb-2">Simulasi Unduh Arsip ZIP</h3>
             <p className="text-xs text-stone-400 mb-6 leading-relaxed">
-              Pada Paket Eternity, kedua mempelai dapat mengunduh seluruh {totalPhotosCount} foto kenangan tamu dalam 1 file arsip ZIP beresolusi tinggi (Original Quality).
+              {memoriesPlanNames ? `Pada Paket ${memoriesPlanNames}, kedua` : "Kedua"} mempelai dapat mengunduh seluruh {totalPhotosCount} foto kenangan tamu dalam 1 file arsip ZIP beresolusi tinggi (Original Quality).
             </p>
 
             <button

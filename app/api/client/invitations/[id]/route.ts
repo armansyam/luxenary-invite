@@ -19,6 +19,7 @@ import { invalidateInvitationLookup } from "@/lib/cache";
 import { safeExternalUrl, safeMediaUrl } from "@/lib/safeUrl";
 import { deleteFile, isInvitationOwnedUpload } from "@/lib/storage";
 import { purgeInvitationEdgeCache } from "@/lib/cloudflare";
+import { releaseInvitationSubdomain } from "@/lib/subdomainRelease";
 import { createPreviewToken } from "@/lib/previewAccess";
 import { mergeFeatureSettingsInput } from "@/lib/featureSettings";
 
@@ -230,10 +231,9 @@ export async function PUT(
       );
     }
 
+    // Label DNS: huruf kecil, angka, tanda hubung di tengah, maksimal 63 karakter; hasil kosong berarti tanpa subdomain.
     let newSubdomain = body.subdomain !== undefined
-      ? (body.subdomain && String(body.subdomain).trim()
-          ? String(body.subdomain).trim().toLowerCase().replace(/[^a-z0-9-]/g, "")
-          : null)
+      ? String(body.subdomain ?? "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/^-+|-+$/g, "").slice(0, 63) || null
       : undefined;
 
     // Undangan pernikahan tanpa subdomain mendapat subdomain dari nama panggilan mempelai saat studio menyimpan peserta.
@@ -262,11 +262,7 @@ export async function PUT(
       if (existingSub && existingSub.id !== id) {
         const { subdomainGraceDays, autoRecycleSubdomain } = await getLifecycleSettings();
         if (autoRecycleSubdomain && isSubdomainExpired(existingSub.eventData, subdomainGraceDays)) {
-          await prisma.invitation.update({
-            where: { id: existingSub.id },
-            data: { subdomain: null },
-          });
-          await purgeInvitationEdgeCache(existingSub);
+          await releaseInvitationSubdomain(existingSub);
         } else {
           return NextResponse.json(
             { error: `Tautan/Subdomain "${newSubdomain}" sudah digunakan oleh orang lain. Silakan ubah nama panggilan.` },

@@ -43,6 +43,33 @@ export function resolveLocalUploadPath(url: string | null | undefined): string |
   return absolute.startsWith(uploadsRoot + path.sep) ? absolute : null;
 }
 
+const GOOGLE_DRIVE_CDN_HOST = "lh3.googleusercontent.com";
+
+/**
+ * Isi media yang disalin server ke portofolio: berkas di public/uploads, atau HTTPS dari penyimpanan platform dan CDN
+ * Google Drive saja. URL media berasal dari input klien; mengambil host lain dari server membuka akses ke layanan
+ * internal (SSRF) dan hasilnya ikut diterbitkan di portofolio publik. Redirect ditolak karena dapat mengarah ke host
+ * internal. Null bila sumber tidak diizinkan atau berkas lokal tidak ada.
+ */
+export async function readPortfolioMediaSource(url: string): Promise<Buffer | null> {
+  const localPath = resolveLocalUploadPath(url);
+  if (localPath) return fs.existsSync(localPath) ? fs.promises.readFile(localPath) : null;
+
+  let parsed: URL;
+  let storageHost = "";
+  try {
+    parsed = new URL(url);
+    if (storagePublicBaseUrl()) storageHost = new URL(storagePublicBaseUrl()).host;
+  } catch {
+    return null;
+  }
+  if (parsed.protocol !== "https:" || (parsed.host !== storageHost && parsed.host !== GOOGLE_DRIVE_CDN_HOST)) return null;
+
+  const res = await fetch(parsed, { redirect: "error" });
+  if (!res.ok) throw new Error(`Gagal fetch: ${url}`);
+  return Buffer.from(await res.arrayBuffer());
+}
+
 /** Apakah URL media adalah berkas unggahan milik undangan ini (lokal atau R2), sehingga boleh dihapus atas namanya. */
 export function isInvitationOwnedUpload(url: string | null | undefined, invitationId: string): boolean {
   if (!url) return false;

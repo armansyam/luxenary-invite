@@ -467,13 +467,9 @@ export async function composeWeddingData(inv: any) {
   // 2. Dynamic Journey of Love / Story Module
   let storySectionHtml = "";
   let storyItemsHtml = "";
-  if (showStory) {
-    const rawStories = Array.isArray(loveStories) && loveStories.length > 0
-      ? loveStories
-      : [
-        { title: "Awal Bertemu", date: "2020", content: "Pertama kali dipertemukan dalam sebuah kegiatan akademis di kampus." },
-        { title: "Lamaran Resmi", date: "2025", content: "Momen sakral saat kedua keluarga besar saling bersilaturahmi dan bersepakat." },
-      ];
+  // Tanpa kisah dari klien seksi tidak dirender: kisah contoh akan tercetak sebagai fakta di undangan nyata.
+  const rawStories = Array.isArray(loveStories) ? loveStories : [];
+  if (showStory && rawStories.length > 0) {
 
     storyItemsHtml = rawStories.map((st: any, idx: number) => {
       const numWord = NUMBER_WORDS[idx] || String(idx + 1);
@@ -1104,14 +1100,14 @@ export async function composeWeddingData(inv: any) {
   if (showDresscode && (dressCodeColors || dressCodeNote)) {
     const colorBadges = dressCodeColors
       ? String(dressCodeColors).split(",").map((c: string) => `<span style="width:28px; height:28px; border-radius:50%; background:${escapeHtml(safeCssColor(c))}; display:inline-block; border:2px solid rgba(255,255,255,0.7); box-shadow:0 4px 10px rgba(0,0,0,0.35);"></span>`).join("")
-      : `<span style="width:28px; height:28px; border-radius:50%; background:#a67c52; display:inline-block; border:2px solid rgba(255,255,255,0.7);"></span><span style="width:28px; height:28px; border-radius:50%; background:#2b2725; display:inline-block; border:2px solid rgba(255,255,255,0.7);"></span><span style="width:28px; height:28px; border-radius:50%; background:#faf7f2; display:inline-block; border:2px solid rgba(255,255,255,0.7);"></span>`;
+      : "";
 
     dressCodeHtml = `
       <section class="sec-flow" id="dresscode">
         <span class="sec-eyebrow" data-lux-field="customLabels.dressCodeEyebrow">${escapeHtml(dressCodeEyebrow)}</span>
         <h2 class="sec-main-title serif" data-lux-field="customLabels.dressCodeTitle">${escapeHtml(dressCodeTitle)}</h2>
         <p class="sec-sub" data-lux-field="customLabels.dressCodeSubtitle">${escapeHtml(dressCodeSubtitle)}</p>
-        <div style="display:flex; justify-content:center; gap:12px; margin: 1.5rem 0;">${colorBadges}</div>
+        ${colorBadges ? `<div style="display:flex; justify-content:center; gap:12px; margin: 1.5rem 0;">${colorBadges}</div>` : ""}
         ${dressCodeNote ? `<p style="margin:0; font-size:0.8rem; color:rgba(255,255,255,0.75); line-height:1.5;">${escapeHtml(dressCodeNote)}</p>` : ""}
       </section>
     `;

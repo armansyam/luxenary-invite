@@ -8,9 +8,9 @@ async function runTest02() {
   console.log("🚀 [TEST-02] Memulai simulasi: Setup Undangan -> Publish...");
 
   try {
-    // 1. Ambil Undangan DRAFT terbaru
+    // 1. Ambil Undangan DRAFT terbaru milik akun uji TEST-01; undangan klien sungguhan tidak boleh tersentuh.
     const invitation = await prisma.invitation.findFirst({
-      where: { status: "DRAFT" },
+      where: { status: "DRAFT", user: { email: { endsWith: "@test.luxenary.com" } } },
       orderBy: { createdAt: 'desc' }
     });
 

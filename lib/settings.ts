@@ -230,8 +230,10 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     const nameTier1 = map["name_tier1"] || "Serenade";
     const nameTier2 = map["name_tier2"] || "Symphony";
 
+    const quotaLabel = planTotalPhotos(planId).toLocaleString("id-ID");
+
     return separatedList.map(item => {
-      let resolvedItem = resolveRetentionTokens(item);
+      let resolvedItem = resolveRetentionTokens(item).replace(/\{\{memoriesQuota\}\}/g, quotaLabel);
       if (resolvedItem.includes(".luxvite.id")) {
         resolvedItem = resolvedItem.replace(/\.luxvite\.id/g, `.${targetDomain}`);
       }
@@ -249,9 +251,23 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     });
   };
 
-  const capsTier1: string[] = map["capabilities_tier1"] ? JSON.parse(map["capabilities_tier1"]) : ["music", "gallery"];
-  const capsTier2: string[] = map["capabilities_tier2"] ? JSON.parse(map["capabilities_tier2"]) : ["music", "gallery", "qr_checkin", "guest_memories"];
-  const capsTier3: string[] = map["capabilities_tier3"] ? JSON.parse(map["capabilities_tier3"]) : ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"];
+  // Satu nilai rusak di admin tidak boleh menjatuhkan landing, paket, dan /api/public/settings sekaligus.
+  const parseCaps = (key: string, fallback: string[]): string[] => {
+    if (!map[key]) return fallback;
+    let parsed: unknown = null;
+    try {
+      parsed = JSON.parse(map[key]);
+    } catch (err) {
+      logger.error("Settings", "Pengaturan kapabilitas paket bukan JSON; kapabilitas bawaan dipakai", err, { key });
+      return fallback;
+    }
+    if (Array.isArray(parsed)) return parsed;
+    logger.error("Settings", "Pengaturan kapabilitas paket bukan array; kapabilitas bawaan dipakai", undefined, { key });
+    return fallback;
+  };
+  const capsTier1 = parseCaps("capabilities_tier1", ["music", "gallery"]);
+  const capsTier2 = parseCaps("capabilities_tier2", ["music", "gallery", "qr_checkin", "guest_memories"]);
+  const capsTier3 = parseCaps("capabilities_tier3", ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"]);
 
   const allActiveThemeNames = themes.map(t => t.name);
 
@@ -263,7 +279,7 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
       "Didesain khusus dengan sentuhan estetika mewah dan eksklusif. Hadirkan pengalaman berkesan dengan layout split desktop, custom subdomain, buku tamu real-time, dan video booth ucapan.",
     pricingSubtitle: resolveRetentionTokens(
       map["pricing_subtitle"] ||
-        `Biaya satu kali bayar dengan masa aktif undangan ${archiveLabel} (archive), penyimpanan galeri foto tamu ${galleryLabel}, dan portofolio resmi permanen.`
+        `Biaya satu kali bayar dengan masa aktif undangan ${archiveLabel} (archive), dan penyimpanan galeri foto tamu ${galleryLabel}.`
     ),
     supportEmail: map["support_email"] || "",
     supportWhatsapp: map["support_whatsapp"] || "",
@@ -292,7 +308,8 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
       .sort((a, b) => a - b),
     paymentGatewayFeePercent: Number(map["payment_gateway_fee_percent"] || (map["payment_fee_rate"] ? Number(map["payment_fee_rate"]) * 100 : 0.7)),
     paymentGatewayFeePayer: ((map["payment_fee_payer"] || map["payment_gateway_fee_payer"] || "MERCHANT") === "BUYER" ? "BUYER" : "MERCHANT"),
-    waTemplateMessage: map["wa_template_message"] || "Assalamu'alaikum {{GUEST_NAME}},\n\nKami mengundang Bapak/Ibu dalam pernikahan kami.\n\nUndangan: {{INVITATION_URL}}\n\nHormat kami,\n{{GROOM_NAME}} & {{BRIDE_NAME}}",
+    // Kosong = admin belum menetapkan template; Buku Tamu klien lalu memakai preset sesuai jenis acara (lib/waPresets.ts).
+    waTemplateMessage: map["wa_template_message"]?.trim() || "",
     maxUploadMb: Number(map["max_upload_mb"] || 5),
     maxVideoUploadMb: Number(map["max_video_upload_mb"] || 50),
     maxPhotoUploadMb: Number(map["max_photo_upload_mb"] || 15),

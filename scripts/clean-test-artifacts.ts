@@ -23,6 +23,14 @@ export interface CleanReport {
 }
 
 export async function runTestCleanup(): Promise<CleanReport> {
+  // Penghapusan di bawah memakai pola nama (email `client_…`, kupon `FLASH_…`) yang juga cocok dengan klien dan kupon
+  // sungguhan, jadi hanya boleh menyentuh database pengembangan atau uji. Nama database diambil setelah '@' terakhir
+  // karena password di DATABASE_URL dapat memuat '@' mentah.
+  const dbName = (process.env.DATABASE_URL ?? "").split("@").pop()?.split("/")[1]?.split("?")[0] ?? "";
+  if (!/_(dev|test)$/.test(dbName)) {
+    throw new Error(`Pembersihan data uji ditolak: database "${dbName}" bukan *_dev atau *_test.`);
+  }
+
   const startTime = performance.now();
   console.log("================================================================================");
   console.log("🧹 [CLEANUP SUITE] PEMBERSIHAN TOTAL DATA UJI & BERKAS FISIK YATIM (ORPHANS) 🧹");

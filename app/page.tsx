@@ -305,8 +305,8 @@ export default async function Home() {
                   <div className="studio-grid-header">
                     <span className="grid-header-title">1. Pilihan Seri Desain &amp; Palet Warna</span>
                     <div className="mini-cat-pills">
-                      <span className="mini-cat">Modern 6</span>
-                      <span className="mini-cat active">Traditional 6</span>
+                      <span className="mini-cat">Modern</span>
+                      <span className="mini-cat active">Traditional</span>
                     </div>
                   </div>
 
@@ -324,7 +324,7 @@ export default async function Home() {
 
                     {/* Card 2: Candani */}
                     <div className="studio-theme-card">
-                      <div className="theme-card-badge">TRADITIONAL</div>
+                      <div className="theme-card-badge">MODERN</div>
                       <img src="/assets/homepage/studio_theme_candani.webp" alt="Tema Candani" />
                       <div className="theme-card-body">
                         <span className="theme-card-name">Candani</span>
@@ -334,7 +334,7 @@ export default async function Home() {
 
                     {/* Card 3: Badrika */}
                     <div className="studio-theme-card">
-                      <div className="theme-card-badge">TRADITIONAL</div>
+                      <div className="theme-card-badge">MODERN</div>
                       <img src="/assets/homepage/studio_theme_badrika.webp" alt="Tema Badrika" />
                       <div className="theme-card-body">
                         <span className="theme-card-name">Badrika</span>
@@ -811,10 +811,6 @@ export default async function Home() {
                         <span className="exp-rec-pill-meta">MEJA 04</span>
                         <span className="exp-rec-pill-meta">2 PAX</span>
                       </div>
-                      <div className="exp-rec-souvenir-row">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                        <span>1 Paket Souvenir Diberikan</span>
-                      </div>
                     </div>
 
                     <div className="exp-rec-stats-panel">
@@ -1138,7 +1134,7 @@ export default async function Home() {
               Pilih Paket yang Sesuai dengan Cerita Anda
             </h2>
             <p className="harga-desc reveal reveal-delay-2">
-              {pricingSubtitle || "Biaya satu kali bayar dengan masa aktif undangan 1 tahun (archive), penyimpanan galeri foto tamu 30 hari, dan portofolio resmi permanen."}
+              {pricingSubtitle}
             </p>
             <Link href="/demo?tab=features" className="harga-detail-link reveal reveal-delay-3">
               Lihat Detail Fitur
@@ -1150,7 +1146,8 @@ export default async function Home() {
               pricingPackages.map((pkg, idx) => {
                 const delayClass = idx === 0 ? "" : idx === 1 ? "reveal-delay-1" : "reveal-delay-2";
                 const isK = pkg.price >= 1000;
-                const displayNum = isK ? Math.round(pkg.price / 1000) : pkg.price;
+                // Tanpa pembulatan ke ribuan penuh: Rp 99.500 tampil 99,5K, bukan 100K.
+                const displayNum = isK ? (pkg.price / 1000).toLocaleString("id-ID", { maximumFractionDigits: 1 }) : pkg.price;
                 return (
                   <div
                     key={pkg.id}

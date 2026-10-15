@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { routeError } from "@/lib/routeError";
 import { DEMO_REGISTRY } from "@/lib/demoRegistry";
-import type { ThemeCategory } from "@prisma/client";
+import { EventType, type ThemeCategory } from "@prisma/client";
 import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +11,9 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const eventParam = searchParams.get("eventType") || searchParams.get("event");
     const requestedEvent = eventParam && eventParam.toLowerCase() !== "all" ? eventParam.toUpperCase() : undefined;
+    if (requestedEvent && !(Object.values(EventType) as string[]).includes(requestedEvent)) {
+      return NextResponse.json([]);
+    }
 
     const whereClause: any = { isActive: true };
     if (requestedEvent) {
@@ -137,6 +140,7 @@ export async function GET(req: Request) {
         parentTheme: t.parentTheme || null,
         tagline,
         desc: tagline,
+        defaultMusicUrl: t.defaultMusicUrl || null,
         thumbnailMobile: thumbMobile,
         thumbnailDesktop: thumbDesktop,
         // Cover card data — DB-first, then registry, then fallback

@@ -1,5 +1,5 @@
 # Pembaruan dependensi berkala agar kerentanan (mis. advisori Next.js, sharp) tidak menumpuk.
-# Setiap PR melewati CI (audit, tsc, build, tes, E2E alur) pada Node 20 dan 24 sebelum dapat digabung.
+# Setiap PR melewati CI (audit, tsc, build, tes, E2E alur) pada Node 22 dan 24 sebelum dapat digabung.
 version: 2
 updates:
   - package-ecosystem: npm

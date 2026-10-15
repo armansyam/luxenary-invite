@@ -33,8 +33,9 @@ export async function GET() {
         const expiredIds = pendingOrders.filter((ord) => ord.expiredAt && ord.expiredAt.getTime() < now).map((ord) => ord.id);
 
         if (expiredIds.length > 0) {
+          // Bersyarat PENDING: order yang lunas di antara pembacaan dan penulisan ini tidak boleh ditimpa menjadi EXPIRED.
           await prisma.order.updateMany({
-            where: { id: { in: expiredIds } },
+            where: { id: { in: expiredIds }, status: "PENDING" },
             data: { status: "EXPIRED" }
           });
           console.info(`[Expire Sweep] ${expiredIds.length} order ditandai EXPIRED.`);
@@ -228,7 +229,7 @@ export async function GET() {
         orderBy: { createdAt: "desc" },
         include: {
           user: { select: { name: true, email: true, phoneNumber: true } },
-          invitation: { select: { subdomain: true, customDomain: true } }
+          linkedInvitation: { select: { subdomain: true, customDomain: true } }
         }
       }),
     ]);
@@ -293,7 +294,8 @@ export async function GET() {
       invitations: recentInvitations,
       themes,
       logs: webhookLogs,
-      customDomainOrders,
+      // Domain diminta lewat order UPGRADE, jadi undangannya adalah linkedInvitation, bukan relasi order NEW.
+      customDomainOrders: customDomainOrders.map(({ linkedInvitation, ...o }) => ({ ...o, invitation: linkedInvitation })),
     });
 
   } catch (error) {

@@ -42,8 +42,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       updateData.permissions = resolveAdminPermissions(targetRole, permissions);
     }
 
-    if (password) {
-      updateData.passwordHash = await bcrypt.hash(password, 10);
+    // Dipangkas seperti di halaman login admin; spasi di ujung membuat password tidak pernah cocok.
+    if (password && String(password).trim()) {
+      updateData.passwordHash = await bcrypt.hash(String(password).trim(), 10);
     }
 
     const [updated] = await prisma.$transaction([

@@ -56,6 +56,9 @@ export default async function PrivacyPage() {
             <p>
               Data yang Anda masukkan murni digunakan untuk tujuan operasional pembuatan dan penayangan undangan digital Anda. Kami tidak akan pernah menjual, menyewakan, atau mendistribusikan data pribadi Anda maupun data tamu Anda kepada pihak ketiga untuk tujuan pemasaran.
             </p>
+            <p className="mt-2">
+              Pengecualian: undangan yang telah diterbitkan dapat dipilih Administrator untuk ditampilkan di halaman portofolio publik sebagai contoh karya. Salinan tersebut memuat isi undangan sebagaimana tampil kepada tamu, termasuk ucapan dan foto tamu yang muncul di dalamnya. Klien dapat meminta penghapusan dari portofolio melalui kontak di bagian akhir kebijakan ini.
+            </p>
           </section>
 
           <section>
@@ -112,7 +115,7 @@ export default async function PrivacyPage() {
           </section>
 
           <p className="pt-8 text-xs text-stone-400 italic">
-            Terakhir diperbarui: {new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}
+            Terakhir diperbarui: 15 Oktober 2026
           </p>
         </div>
       </main>

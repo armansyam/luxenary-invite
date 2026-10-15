@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { getPlanDisplayName } from "@/lib/planUtils";
 
 interface PartnerAffiliate {
   id: string;
@@ -75,6 +76,12 @@ interface AffiliateCommission {
   };
 }
 
+// <input type="datetime-local"> reads and writes wall-clock time in the browser's zone; toISOString() is UTC.
+export function toDateTimeLocalValue(iso: string): string {
+  const d = new Date(iso);
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
+
 export function AdminMarketingTab() {
   const [activeSubTab, setActiveSubTab] = useState<"coupons" | "partners" | "commissions">("coupons");
   const [promoEnabled, setPromoEnabled] = useState<boolean>(false);
@@ -84,6 +91,16 @@ export function AdminMarketingTab() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [togglingMaster, setTogglingMaster] = useState<boolean>(false);
+  const [packages, setPackages] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    fetch("/api/public/settings")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data?.packages)) setPackages(data.packages);
+      })
+      .catch(() => {});
+  }, []);
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -214,8 +231,8 @@ export function AdminMarketingTab() {
         maxDiscountAmount: coupon.maxDiscountAmount ? String(coupon.maxDiscountAmount) : "",
         quotaLimit: coupon.quotaLimit !== null ? String(coupon.quotaLimit) : "",
         applicablePlans: coupon.applicablePlans || [],
-        validFrom: coupon.validFrom ? new Date(coupon.validFrom).toISOString().slice(0, 16) : "",
-        validUntil: coupon.validUntil ? new Date(coupon.validUntil).toISOString().slice(0, 16) : "",
+        validFrom: coupon.validFrom ? toDateTimeLocalValue(coupon.validFrom) : "",
+        validUntil: coupon.validUntil ? toDateTimeLocalValue(coupon.validUntil) : "",
         isActive: coupon.isActive,
         partnerId: coupon.partnerId || "",
       });
@@ -793,7 +810,7 @@ export function AdminMarketingTab() {
                             <span className="text-[10px] text-gray-400 block mt-1">
                               {c.applicablePlans.length === 0
                                 ? "Semua Paket"
-                                : c.applicablePlans.join(", ")}
+                                : c.applicablePlans.map((p) => getPlanDisplayName(p, packages)).join(", ")}
                             </span>
                           </td>
                           <td className="py-3.5 px-4">
@@ -998,7 +1015,7 @@ export function AdminMarketingTab() {
                           <td className="py-3.5 px-4 font-mono font-semibold text-gray-900">
                             {c.order?.invoiceNumber || c.orderId}
                             <span className="text-[10px] text-gray-400 block font-normal font-sans">
-                              Paket: {c.order?.planType}
+                              Paket: {getPlanDisplayName(c.order?.planType, packages)}
                             </span>
                           </td>
                           <td className="py-3.5 px-4 font-medium text-gray-800">
@@ -1158,11 +1175,6 @@ export function AdminMarketingTab() {
                 <label className="font-bold text-gray-700 block mb-1">Berlaku untuk Paket</label>
                 <div className="flex flex-wrap gap-3 mt-1">
                   {(["TIER_1", "TIER_2", "TIER_3"] as const).map((tier) => {
-                    const labels: Record<string, string> = {
-                      TIER_1: "Serenade (Tier 1)",
-                      TIER_2: "Symphony (Tier 2)",
-                      TIER_3: "Eternity (Tier 3)",
-                    };
                     const isChecked = couponForm.applicablePlans.includes(tier);
                     return (
                       <label key={tier} className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer select-none">
@@ -1177,7 +1189,7 @@ export function AdminMarketingTab() {
                           }}
                           className="rounded border-gray-300 text-amber-600 focus:ring-amber-500 w-3.5 h-3.5"
                         />
-                        {labels[tier]}
+                        {getPlanDisplayName(tier, packages)}
                       </label>
                     );
                   })}

@@ -1,0 +1,154 @@
+/**
+ * Regresi audit 15 Okt 2026, halaman Pengaturan klien: tombol rilis hanya mengirim status & subdomain sehingga
+ * suntingan Studio yang lebih baru (tab lain) tidak tertimpa snapshot halaman, dan tombol upgrade benar-benar
+ * membuka modal upgrade di dasbor.
+ */
+import fs from "fs";
+import path from "path";
+import { describe, it, expect, vi, afterAll } from "vitest";
+
+let sessionUser: Record<string, unknown> | null = null;
+vi.mock("@/auth", () => ({ auth: vi.fn(async () => (sessionUser ? { user: sessionUser } : null)) }));
+// Rilis pertama memicu sinkron R2 dan purge Cloudflare di latar; uji tidak boleh menyentuh layanan nyata.
+vi.mock("@/lib/storage", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/storage")>()),
+  syncDraftToR2: vi.fn(async () => {}),
+  deleteFile: vi.fn(async () => {}),
+}));
+vi.mock("@/lib/staticPublisher", () => ({ buildAndSavePublishedHtml: vi.fn(async () => {}), deletePublishedHtml: vi.fn(async () => {}) }));
+vi.mock("@/lib/cloudflare", () => ({ purgeInvitationEdgeCache: vi.fn(async () => {}) }));
+
+import { prisma, pool } from "@/lib/prisma";
+import { PUT as putInvitation } from "@/app/api/client/invitations/[id]/route";
+
+const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
+const RUN = `vitest_settingspub_${Date.now()}`;
+const created = { userId: "", orderId: "", invitationId: "" };
+
+describe("rilis undangan dari halaman Pengaturan", () => {
+  it("payload rilis hanya status dan subdomain", () => {
+    const src = fs.readFileSync(path.join(process.cwd(), "app/(client)/dashboard/settings/page.tsx"), "utf-8");
+    const publish = src.slice(src.indexOf("const executePublish"), src.indexOf("const isStaffPinValid"));
+    expect(publish).not.toContain("...cleanInvitation");
+    expect(publish).toMatch(/const payload = \{\s*subdomain:[^}]*status: "PUBLISHED",\s*\};/);
+  });
+
+  it.skipIf(!IS_TEST_DB)("rilis tidak menimpa kisah yang disunting setelah halaman Pengaturan dibuka", async () => {
+    const user = await prisma.user.create({ data: { email: `${RUN}@test.local`, name: RUN } });
+    created.userId = user.id;
+    sessionUser = { id: user.id, email: user.email, role: "CLIENT", isAdmin: false, permissions: [] };
+    const order = await prisma.order.create({
+      data: { userId: user.id, invoiceNumber: RUN, planType: "TIER_1", amount: 100000, status: "PAID", orderType: "NEW", paidAt: new Date() },
+    });
+    created.orderId = order.id;
+    const future = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+    const inv = await prisma.invitation.create({
+      data: {
+        userId: user.id,
+        orderId: order.id,
+        themeId: "kalandra",
+        status: "DRAFT",
+        invitationSlug: RUN,
+        eventData: [{ title: "Resepsi", date: future, isPrimary: true, location: "Gedung" }],
+        loveStory: [{ title: "Ditulis di Studio setelah Pengaturan dibuka", content: "isi" }],
+      },
+    });
+    created.invitationId = inv.id;
+
+    const sub = RUN.replace(/_/g, "-").slice(0, 40);
+    const res = await putInvitation(
+      new Request(`http://localhost/api/client/invitations/${inv.id}`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ subdomain: sub, status: "PUBLISHED" }),
+      }),
+      { params: Promise.resolve({ id: inv.id }) },
+    );
+    expect(res.status).toBe(200);
+    const stored = await prisma.invitation.findUniqueOrThrow({ where: { id: inv.id }, select: { status: true, subdomain: true, publishedAt: true, loveStory: true } });
+    expect(stored.status).toBe("PUBLISHED");
+    expect(stored.subdomain).toBe(sub);
+    expect(stored.publishedAt).not.toBeNull();
+    expect(stored.loveStory).toEqual([{ title: "Ditulis di Studio setelah Pengaturan dibuka", content: "isi" }]);
+  });
+});
+
+describe("simpan dari Studio", () => {
+  it.skipIf(!IS_TEST_DB)("subdomain otomatis dari nama panggilan hanya terbentuk bila payload tidak membawa subdomain", async () => {
+    const user = await prisma.user.create({ data: { email: `${RUN}_studio@test.local`, name: RUN } });
+    sessionUser = { id: user.id, email: user.email, role: "CLIENT", isAdmin: false, permissions: [] };
+    const order = await prisma.order.create({
+      data: { userId: user.id, invoiceNumber: `${RUN}_studio`, planType: "TIER_1", amount: 100000, status: "PAID", orderType: "NEW", paidAt: new Date() },
+    });
+    const tag = Date.now().toString(36);
+    const inv = await prisma.invitation.create({
+      data: { userId: user.id, orderId: order.id, themeId: "kalandra", status: "DRAFT", invitationSlug: `${RUN}_studio`, eventType: "WEDDING" },
+    });
+    const participants = { groom: { name: `Raka ${tag}`, nickname: `raka${tag}` }, bride: { name: `Sinta ${tag}`, nickname: `sinta${tag}` } };
+    const put = (body: Record<string, unknown>) =>
+      putInvitation(
+        new Request(`http://localhost/api/client/invitations/${inv.id}`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }),
+        { params: Promise.resolve({ id: inv.id }) },
+      );
+    try {
+      expect((await put({ subdomain: null, participantsJson: participants })).status).toBe(200);
+      expect((await prisma.invitation.findUniqueOrThrow({ where: { id: inv.id } })).subdomain).toBeNull();
+
+      expect((await put({ participantsJson: participants })).status).toBe(200);
+      expect((await prisma.invitation.findUniqueOrThrow({ where: { id: inv.id } })).subdomain).toBe(`raka${tag}-sinta${tag}`);
+    } finally {
+      await prisma.invitation.deleteMany({ where: { id: inv.id } });
+      await prisma.order.deleteMany({ where: { id: order.id } });
+      await prisma.user.deleteMany({ where: { id: user.id } });
+    }
+  });
+
+  it("setiap pengaturan yang diubah sebuah seksi Studio ikut dipantau tombol Simpan seksi itu", () => {
+    const lines = fs.readFileSync(path.join(process.cwd(), "app/(client)/dashboard/invitation/[id]/page.tsx"), "utf-8").split("\n");
+    const dirtyStart = lines.findIndex((l) => l.includes("const isDirty = useMemo"));
+    const dirtyEnd = lines.findIndex((l, i) => i > dirtyStart && l.includes("}, [invitation, media, events"));
+    const dirtyBlock = lines.slice(dirtyStart, dirtyEnd).join("\n");
+    const sections: [number, string][] = [];
+    lines.forEach((l, i) => {
+      const m = l.match(/id="section-(sec\d+)"/);
+      if (m) sections.push([i, m[1]]);
+    });
+    const sectionAt = (i: number) => sections.filter(([start]) => start <= i).pop()?.[1];
+    const untracked: string[] = [];
+    lines.forEach((l, i) => {
+      const sec = sectionAt(i);
+      if (!sec) return;
+      for (const m of l.matchAll(/update(FeatureSetting|CustomLabel)\("([\w.]+)"/g)) {
+        // Seksi 15 membandingkan seluruh customLabels sekaligus.
+        if (m[1] === "CustomLabel" && sec === "sec15") continue;
+        // Dipantau lewat getFeatureSetting("kunci") atau akses properti (invitation.musicUrl, curFs.vendors, ...).
+        if (!dirtyBlock.includes(`"${m[2]}"`) && !new RegExp(`\\.${m[2]}\\b`).test(dirtyBlock)) untracked.push(`${sec}:${m[2]}`);
+      }
+    });
+    expect([...new Set(untracked)]).toEqual([]);
+  });
+
+  it("payload simpan Studio tidak membawa subdomain, status, PIN, atau domain kustom", () => {
+    const src = fs.readFileSync(path.join(process.cwd(), "app/(client)/dashboard/invitation/[id]/page.tsx"), "utf-8");
+    const save = src.slice(src.indexOf("const saveSection"), src.indexOf("const handleDeployAndLock"));
+    expect(save).toMatch(/const \{ subdomain, status, staffPin, customDomain, \.\.\.editable \} = invToSave;/);
+    expect(save).toContain("...editable,");
+  });
+});
+
+describe("tombol upgrade dari halaman Pengaturan", () => {
+  it("dasbor membuka modal upgrade saat dibuka dengan ?upgrade=true, dan kedua tombol mengarah ke sana", () => {
+    const dashboard = fs.readFileSync(path.join(process.cwd(), "app/(client)/dashboard/page.tsx"), "utf-8");
+    expect(dashboard).toContain('useState(searchParams?.get("upgrade") === "true")');
+    const settings = fs.readFileSync(path.join(process.cwd(), "app/(client)/dashboard/settings/page.tsx"), "utf-8");
+    expect(settings.match(/\/dashboard\?upgrade=true/g)?.length).toBe(2);
+  });
+});
+
+afterAll(async () => {
+  if (created.invitationId) await prisma.invitation.deleteMany({ where: { id: created.invitationId } });
+  if (created.orderId) await prisma.order.deleteMany({ where: { id: created.orderId } });
+  if (created.userId) await prisma.user.deleteMany({ where: { id: created.userId } });
+  await prisma.$disconnect();
+  await pool.end();
+});

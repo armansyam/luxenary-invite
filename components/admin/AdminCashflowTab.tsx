@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { wibDateKey } from "@/lib/financePeriods";
 
 interface MetricSummary {
   revenue: number;
@@ -95,7 +96,7 @@ export function AdminCashflowTab() {
   const [formTitle, setFormTitle] = useState("");
   const [formCategory, setFormCategory] = useState("OPERATIONAL");
   const [formAmount, setFormAmount] = useState("");
-  const [formDate, setFormDate] = useState(new Date().toISOString().split("T")[0]);
+  const [formDate, setFormDate] = useState(() => wibDateKey(new Date()));
   const [formSource, setFormSource] = useState("BCA_OPERASIONAL");
   const [formRef, setFormRef] = useState("");
   const [formNotes, setFormNotes] = useState("");
@@ -176,14 +177,15 @@ export function AdminCashflowTab() {
     }
   }, [expensePage, searchQuery, categoryFilter, sourceFilter]);
 
-  // Debounced Search
+  // Filter baru selalu mulai dari halaman 1; reset ini tidak boleh ikut berjalan saat hanya halaman yang berganti.
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setExpensePage(1);
-      fetchExpenses();
-    }, 350);
+    setExpensePage(1);
+  }, [searchQuery, categoryFilter, sourceFilter]);
+
+  useEffect(() => {
+    const timer = setTimeout(fetchExpenses, 350);
     return () => clearTimeout(timer);
-  }, [searchQuery, categoryFilter, sourceFilter, fetchExpenses]);
+  }, [fetchExpenses]);
 
   // Handle Receipt Upload
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -223,7 +225,7 @@ export function AdminCashflowTab() {
     setFormTitle("");
     setFormCategory("OPERATIONAL");
     setFormAmount("");
-    setFormDate(new Date().toISOString().split("T")[0]);
+    setFormDate(wibDateKey(new Date()));
     setFormSource("BCA_OPERASIONAL");
     setFormRef("");
     setFormNotes("");
@@ -238,7 +240,7 @@ export function AdminCashflowTab() {
     setFormTitle(exp.title);
     setFormCategory(exp.category);
     setFormAmount(String(exp.amount));
-    setFormDate(new Date(exp.expenseDate).toISOString().split("T")[0]);
+    setFormDate(wibDateKey(new Date(exp.expenseDate)));
     setFormSource(exp.paymentSource || "BCA_OPERASIONAL");
     setFormRef(exp.referenceNumber || "");
     setFormNotes(exp.notes || "");

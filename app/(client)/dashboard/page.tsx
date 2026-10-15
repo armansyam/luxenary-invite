@@ -9,7 +9,7 @@ import { resolveEffectiveInvitationUrl } from "@/lib/domainUtils";
 import { computeLifecycleDates, formatPrimaryEventDate, lifecycleSettingsFromPublic } from "@/lib/lifecycleDates";
 import UnifiedAddonModal from "@/components/client/UnifiedAddonModal";
 import { getPlanDisplayName, getPlanDisplayDescription, normalizePlanType } from "@/lib/planUtils";
-import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
+import { eventNoun, resolveInvitationDisplayName } from "@/lib/invitationUtils";
 import { useFeedback } from "@/components/ui/Feedback";
 
 function DashboardHomeContent() {
@@ -29,7 +29,8 @@ function DashboardHomeContent() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [memoriesQuota, setMemoriesQuota] = useState<any>(null);
-  const [isAddonModalOpen, setIsAddonModalOpen] = useState(false);
+  // Tombol upgrade di halaman lain (mis. Pengaturan) mengarah ke /dashboard?upgrade=true.
+  const [isAddonModalOpen, setIsAddonModalOpen] = useState(searchParams?.get("upgrade") === "true");
 
   const fetchGuestMemories = useCallback(async (invId?: string) => {
     const targetId = invId || invitation?.id;
@@ -379,7 +380,7 @@ function DashboardHomeContent() {
           <div className="space-y-1">
             <p className="font-semibold text-stone-700">Privasi &amp; Keamanan Data Klien Terjamin</p>
             <p className="leading-relaxed">
-              Akun klien Anda disimpan permanen di sistem. Anda dapat masuk kembali kapan saja untuk mengakses riwayat dan mengunduh rekapan doa restu ini. Sesuai kebijakan retensi terpadu 14 hari pasca acara, file foto dan alamat domain telah dilepaskan secara aman.
+              Akun klien Anda disimpan permanen di sistem. Anda dapat masuk kembali kapan saja untuk mengakses riwayat dan mengunduh rekapan doa restu ini. Sesuai kebijakan retensi terpadu {baseRetentionDays} hari pasca acara, file foto dan alamat domain telah dilepaskan secara aman.
             </p>
           </div>
         </div>
@@ -427,29 +428,11 @@ function DashboardHomeContent() {
     ? Math.ceil((effectiveExpiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
 
-  const currentPlan = normalizePlanType(invitation?.order?.planType || "TIER_1");
-  const hasMemories = currentPlan === "TIER_2" || currentPlan === "TIER_3";
+  const hasMemories = hasCap("guest_memories");
   const extraGalleryDays: number = invitation?.extraGalleryDays ?? 0;
   const hasExtended = extraGalleryDays >= 30;
   const isRenewalWindow = daysRemaining !== null && daysRemaining <= 7 && daysRemaining > 0;
   const canExtend = !hasExtended && isRenewalWindow;
-
-  const pkgTier1 = platformSettings?.packages?.find((p: any) => p.id === "TIER_1");
-  const pkgTier2 = platformSettings?.packages?.find((p: any) => p.id === "TIER_2");
-  const pkgTier3 = platformSettings?.packages?.find((p: any) => p.id === "TIER_3");
-
-  const addonPricingSettings = platformSettings ? {
-    priceTier1: pkgTier1?.price ?? 49000,
-    priceTier2: pkgTier2?.price ?? 99000,
-    priceTier3: pkgTier3?.price ?? 149000,
-    nameTier1: pkgTier1?.name || "Serenade",
-    nameTier2: pkgTier2?.name || "Symphony",
-    nameTier3: pkgTier3?.name || "Eternity",
-    galleryExtensionPricePerMonth: platformSettings.galleryExtensionPricePerMonth ?? 50000,
-    addonMemoriesTopupPrice: platformSettings.addonMemoriesTopupPrice ?? 35000,
-    addonMemoriesTopupPhotos: platformSettings.addonMemoriesTopupPhotos ?? 100,
-    addonMemoriesTopupEnabled: platformSettings.addonMemoriesTopupEnabled !== false,
-  } : undefined;
 
   return (
     <div className="space-y-3 sm:space-y-4 font-sans">
@@ -488,7 +471,7 @@ function DashboardHomeContent() {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 bg-stone-100 border border-stone-200/80 text-stone-600 text-[10px] sm:text-[11px] font-semibold rounded-full uppercase tracking-wider">
-                Undangan Pernikahan
+                Undangan {eventNoun(invitation?.eventType)}
               </span>
               {invitation?.status === 'PUBLISHED' ? (
                 <div className="flex items-center gap-1.5 flex-wrap">
@@ -708,7 +691,7 @@ function DashboardHomeContent() {
           {invitation?.status === 'EVENT_FINISHED' && !hasCap("guest_memories") && (
             <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-amber-600"></span>
-              <span>Acara pernikahan telah selesai dilaksanakan. Undangan utama Anda kini telah ditutup secara resmi.</span>
+              <span>Rangkaian acara telah selesai dilaksanakan. Undangan utama Anda kini telah ditutup secara resmi.</span>
             </div>
           )}
 
@@ -880,7 +863,7 @@ function DashboardHomeContent() {
           invitationId={invitation.id}
           currentPlan={invitation.order?.planType || "TIER_1"}
           currentQuota={memoriesQuota?.maxTotalPhotos || 250}
-          pricingSettings={addonPricingSettings}
+          pricingSettings={platformSettings}
           hasExtended={hasExtended}
           daysRemaining={daysRemaining}
         />

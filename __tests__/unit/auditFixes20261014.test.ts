@@ -9,7 +9,7 @@ import { safeMediaUrl } from "@/lib/safeUrl";
 import { csvCell } from "@/lib/csv";
 import { createRemoteCookieValue, readRemoteClientId } from "@/lib/remoteSession";
 import { wibDateKey, wibDayStart, wibMonthStart } from "@/lib/financePeriods";
-import { DAY_MS, DEFAULT_LIFECYCLE_SETTINGS, computeLifecycleDates, extendGalleryExpiry } from "@/lib/lifecycleDates";
+import { DAY_MS, DEFAULT_LIFECYCLE_SETTINGS, computeLifecycleDates, extendGalleryExpiry, getEventDayStart } from "@/lib/lifecycleDates";
 import { getMemoriesActiveSchedule } from "@/lib/domainUtils";
 
 const uploadsRoot = path.join(process.cwd(), "public", "uploads");
@@ -42,6 +42,14 @@ describe("safeMediaUrl", () => {
     expect(safeMediaUrl("https://cdn.example.com/a.webp")).toBe("https://cdn.example.com/a.webp");
     expect(safeMediaUrl("/uploads/../../.env")).toBe("");
     expect(safeMediaUrl("javascript:alert(1)")).toBe("");
+  });
+});
+
+describe("tanggal acara mustahil", () => {
+  it("tidak digulirkan ke bulan berikutnya", () => {
+    expect(getEventDayStart({ date: "2026-02-30" })).toBeNull();
+    expect(getEventDayStart({ date: "2026-04-31" })).toBeNull();
+    expect(getEventDayStart({ date: "2028-02-29" })?.toISOString()).toBe("2028-02-28T17:00:00.000Z");
   });
 });
 

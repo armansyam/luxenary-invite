@@ -503,12 +503,21 @@ export default function AdminInvitationsTab() {
                             </div>
                           </div>
                         )}
-                        {(inv.status === "ARCHIVED" || inv.status === "TAKEN_DOWN") && (
+                        {inv.status === "ARCHIVED" && (
                           <div className="flex items-center gap-2">
                             <span className="w-2 h-2 rounded-full bg-stone-400 shrink-0" />
                             <div>
                               <div className="font-semibold text-stone-700">Selesai / Arsip</div>
-                              <div className="text-[10px] text-stone-400">Arsip Permanen</div>
+                              <div className="text-[10px] text-stone-400">Masa tayang berakhir</div>
+                            </div>
+                          </div>
+                        )}
+                        {inv.status === "TAKEN_DOWN" && (
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                            <div>
+                              <div className="font-semibold text-rose-800">Diturunkan Admin</div>
+                              <div className="text-[10px] text-stone-400">Tidak dapat dibuka publik</div>
                             </div>
                           </div>
                         )}
@@ -554,11 +563,14 @@ export default function AdminInvitationsTab() {
                             <div className="text-[10px] text-stone-400 mt-0.5">Retensi foto tamu</div>
                           </div>
                         )}
-                        {(inv.status === "ARCHIVED" || inv.status === "TAKEN_DOWN") && (
+                        {inv.status === "ARCHIVED" && (
                           <div>
-                            <div className="font-semibold text-amber-800">Cold Vault (1 Thn)</div>
-                            <div className="text-[10px] text-stone-400">Arsip Mandiri NAS</div>
+                            <div className="font-semibold text-amber-800">Arsip {formatRetentionLabel(lifecycleSettings.archiveRetentionDays)}</div>
+                            <div className="text-[10px] text-stone-400">Dihitung dari tanggal acara</div>
                           </div>
+                        )}
+                        {inv.status === "TAKEN_DOWN" && (
+                          <span className="text-gray-400 italic text-[11px]">- Ditahan admin -</span>
                         )}
                       </td>
 

@@ -158,7 +158,7 @@ export async function POST() {
       await prisma.theme.upsert({
         where: { id: d.id },
         update: {
-          name: d.name,
+          name: existing?.name || d.name,
           category: d.category,
           eventType: (d.eventType as any) || "WEDDING",
           series: d.series,

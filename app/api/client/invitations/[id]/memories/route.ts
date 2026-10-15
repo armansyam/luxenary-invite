@@ -6,6 +6,7 @@ import { buildAndSavePublishedHtml } from "@/lib/staticPublisher";
 import { parseFeatureSettings, isValidMemoriesFilter, isValidShotsQuota } from "@/lib/featureSettings";
 import { logger } from "@/lib/logger";
 import { releaseOrderPromoHold } from "@/lib/marketing";
+import { safeMediaUrl } from "@/lib/safeUrl";
 
 export const dynamic = "force-dynamic";
 
@@ -187,8 +188,8 @@ export async function DELETE(
       where: { id: memoryId },
     });
 
-    // Auto-rebake if published
-    if (invitation.status === "PUBLISHED") {
+    // HTML terbit memuat thumbnail momen tamu; foto yang dihapus pemilik tidak boleh tetap tampil di sana.
+    if (invitation.status === "PUBLISHED" || invitation.status === "EVENT_FINISHED") {
       try {
         await buildAndSavePublishedHtml(invitation.id);
       } catch (err) {
@@ -270,6 +271,15 @@ export async function PATCH(
       if (incomingSettings[key] !== undefined) {
         fieldsToUpdate[key] = incomingSettings[key];
       }
+    }
+
+    // Foto sampul kamera tamu dipakai sebagai src/latar di halaman publik: aturannya sama dengan URL media undangan.
+    for (const key of ["memoriesCoverPhoto", "openingCoverPhoto"]) {
+      const value = fieldsToUpdate[key];
+      if (value === undefined || value === "" || value === null) continue;
+      const safe = safeMediaUrl(value);
+      if (!safe) return NextResponse.json({ error: "URL foto sampul tidak valid." }, { status: 400 });
+      fieldsToUpdate[key] = safe;
     }
 
     // Pastikan sinkronisasi dua arah antara memoriesOpeningLayout dan openingLayout

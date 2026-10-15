@@ -59,7 +59,7 @@ const jsonPost = (url: string, body: Record<string, unknown> = {}) =>
   new NextRequest(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
 
 let orderSeq = 0;
-const createOrder = (data: { proofImageUrl?: string; requestedDomain?: string } = {}) =>
+const createOrder = (data: { proofImageUrl?: string; requestedDomain?: string; orderType?: "UPGRADE"; linkedInvitationId?: string } = {}) =>
   prisma.order.create({
     data: {
       userId,
@@ -174,7 +174,8 @@ describe.skipIf(!IS_TEST_DB)("pelaku catatan audit", () => {
 
   it("aktivasi custom domain dan catatan auditnya satu transaksi atas nama admin asli", async () => {
     const domain = `${TAG}.contoh.test`;
-    const order = await createOrder({ requestedDomain: domain });
+    // requestedDomain hanya ditulis order UPGRADE (/api/payments/upgrade), yang menautkan undangannya.
+    const order = await createOrder({ requestedDomain: domain, orderType: "UPGRADE", linkedInvitationId: invitationId });
     sessionUser = remoteSession();
     const res = await activateDomainPost(jsonPost("http://localhost/api/admin/custom-domains/activate", { orderId: order.id }));
     expect(res.status).toBe(200);

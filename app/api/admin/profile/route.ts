@@ -39,7 +39,8 @@ export async function PUT(req: Request) {
           return NextResponse.json({ error: "Password saat ini salah." }, { status: 400 });
       }
 
-      updateData.passwordHash = await bcrypt.hash(newPassword, 10);
+      // Dipangkas seperti di halaman login admin; spasi di ujung membuat password tidak pernah cocok.
+      updateData.passwordHash = await bcrypt.hash(String(newPassword).trim(), 10);
     }
 
     const updated = await prisma.admin.update({

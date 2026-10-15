@@ -52,6 +52,7 @@ function PaymentContent() {
   // Time Sync Offset
   const [serverTimeOffset, setServerTimeOffset] = useState<number>(0);
   const [platformName, setPlatformName] = useState<string>("");
+  const [packages, setPackages] = useState<{ id: string; name: string }[]>([]);
 
   // Platform payment mode ref — agar dapat diakses dari loadOrder callback
   // tanpa membuat loadOrder harus bergantung pada state (mencegah infinite loop)
@@ -79,6 +80,9 @@ function PaymentContent() {
       .then((data) => {
         if (data.platformName) {
           setPlatformName(data.platformName);
+        }
+        if (Array.isArray(data.packages)) {
+          setPackages(data.packages);
         }
         if (data.paymentMode) {
           const resolvedMode = data.paymentMode === "MANUAL" ? "MANUAL" : "GATEWAY";
@@ -535,7 +539,7 @@ function PaymentContent() {
                 );
               }
               if (order.orderType === "UPGRADE") {
-                const targetName = getPlanDisplayName(order.targetPlanType || order.planType);
+                const targetName = getPlanDisplayName(order.targetPlanType || order.planType, packages);
                 return (
                   <div>
                     <span className="text-[11px] text-sky-400 font-mono font-semibold block uppercase tracking-wider">Upgrade Paket</span>
@@ -543,7 +547,7 @@ function PaymentContent() {
                   </div>
                 );
               }
-              const displayPlanName = getPlanDisplayName(order.planType);
+              const displayPlanName = getPlanDisplayName(order.planType, packages);
               return (
                 <div>
                   <span className="text-[11px] text-stone-400 block font-mono uppercase tracking-wider">Paket Undangan</span>
@@ -682,7 +686,7 @@ function PaymentContent() {
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-bold tracking-widest uppercase">
                     Gateway Pembayaran Resmi
                   </div>
-                  <h3 className="text-white font-bold text-base sm:text-lg">Selesaikan Pembayaran via Midtrans</h3>
+                  <h3 className="text-white font-bold text-base sm:text-lg">Selesaikan Pembayaran</h3>
                   <div className="text-amber-400 font-serif font-bold text-2xl sm:text-3xl">
                     Rp {Number(order.amount).toLocaleString("id-ID")}
                   </div>
@@ -696,7 +700,7 @@ function PaymentContent() {
                     href={snapRedirectUrl}
                     className="block w-full py-3.5 px-6 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-bold text-xs sm:text-sm rounded-xl shadow-lg transition transform active:scale-95"
                   >
-                    Buka Halaman Pembayaran Midtrans
+                    Buka Halaman Pembayaran
                   </a>
                   <p className="text-[10px] text-stone-400">
                     Klik tombol di atas untuk membuka tagihan resmi. Selesai membayar, status otomatis terverifikasi.

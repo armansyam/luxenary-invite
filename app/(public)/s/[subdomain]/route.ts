@@ -4,7 +4,8 @@ import { isSubdomainExpired } from "@/lib/domainUtils";
 import { getPublishedHtml, buildAndSavePublishedHtml } from "@/lib/staticPublisher";
 import { composeTemplateData } from "@/lib/themeEngine";
 import { renderTemplateFile } from "@/lib/renderTemplate";
-import { invitationLookupCache, invalidateInvitationLookup } from "@/lib/cache";
+import { invitationLookupCache } from "@/lib/cache";
+import { releaseInvitationSubdomain } from "@/lib/subdomainRelease";
 import { hasPlanCapability } from "@/lib/settings";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { getDynamicServerApexUrl } from "@/lib/serverDomainUtils";
@@ -135,11 +136,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
 
   if (!isPreview && (invitation.status === "ARCHIVED" || (lifecycleSettings.autoRecycleSubdomain && isPastGrace))) {
     if (lifecycleSettings.autoRecycleSubdomain && isPastGrace) {
-      await prisma.invitation.update({
-        where: { id: invitation.id },
-        data: { subdomain: null },
-      });
-      invalidateInvitationLookup(invitation.invitationSlug, invitation.subdomain);
+      await releaseInvitationSubdomain(invitation);
     }
     const rootUrl = await getDynamicServerApexUrl(subdomain);
     return NextResponse.redirect(`${rootUrl}/${invitation.invitationSlug}`, 307);
@@ -169,8 +166,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
   };
 
   if (invitation.status === "PUBLISHED" && !isPreview) {
-    // Edge Cache Cloudflare: s-maxage 7 hari, browser cache 60 detik, revalidasi di background
-    responseHeaders["Cache-Control"] = "public, max-age=60, s-maxage=604800, stale-while-revalidate=86400";
+    // Edge cache 1 jam: tautan tamu (/Nama, ?to=Nama) adalah kunci cache terpisah yang tidak ikut terhapus purge URL
+    // dasar, jadi masa cache ini sekaligus batas lama undangan yang diturunkan/diubah masih tampil di tautan tamu.
+    responseHeaders["Cache-Control"] = "public, max-age=60, s-maxage=3600, stale-while-revalidate=300";
   } else {
     // Mode Draft/Preview live editing: jangan di-cache agar instan terlihat saat edit
     responseHeaders["Cache-Control"] = "no-store, no-cache, must-revalidate";

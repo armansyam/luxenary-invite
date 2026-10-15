@@ -1399,7 +1399,7 @@ function SetupWizardContent() {
                       <div className="space-y-0.5 mt-0.5">
                         <p className="text-[9px] font-bold uppercase tracking-wider text-stone-400">{theme.series}</p>
                         <h3 className="text-sm font-serif font-bold text-stone-900 leading-tight">{theme.name}</h3>
-                        <p className="text-[10px] text-stone-400 line-clamp-2 leading-snug">{theme.description}</p>
+                        <p className="text-[10px] text-stone-400 line-clamp-2 leading-snug">{theme.desc}</p>
                         <a
                           href={`/demo/${theme.id}`}
                           target="_blank"

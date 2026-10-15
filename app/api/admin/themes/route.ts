@@ -4,6 +4,7 @@ import { requireAdminModule } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
 import { removeIfExists } from "@/lib/fsSafe";
+import { EventType } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -103,6 +104,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "ID Tema dan Nama Tema wajib diisi" }, { status: 400 });
     }
 
+    // eventType menjadi nama folder tujuan berkas master; nilai di luar enum (mis. "../..") keluar dari themes/.
+    eventType = eventType.toUpperCase();
+    if (!(Object.values(EventType) as string[]).includes(eventType)) {
+      return NextResponse.json({ error: "Jenis acara tema tidak valid." }, { status: 400 });
+    }
+
     const cleanId = id.toLowerCase().trim().replace(/[^a-z0-9_-]/g, "");
     if (!cleanId) {
       return NextResponse.json({ error: "ID Tema tidak valid." }, { status: 400 });
@@ -128,7 +135,7 @@ export async function POST(req: NextRequest) {
     const path = await import("path");
 
     // 1. Simpan fisik master file ke folder themes/[eventType]/[kategori]/[id].html
-    const eventFolder = eventType.toUpperCase() === "GATHERING" ? "general" : eventType.toLowerCase();
+    const eventFolder = eventType === "GATHERING" ? "general" : eventType.toLowerCase();
     const targetDir = path.join(process.cwd(), "themes", eventFolder, cat);
     await fs.mkdir(targetDir, { recursive: true });
     const targetFilePath = path.join(targetDir, `${cleanId}.html`);
@@ -143,7 +150,7 @@ export async function POST(req: NextRequest) {
         id: cleanId,
         name: name.trim(),
         category: cat,
-        eventType: (eventType as any) || "WEDDING",
+        eventType: eventType as EventType,
         description: description || "",
         series: series || (cat === "traditional" ? "Traditional" : cat === "minimalist" ? "Minimalist" : "Modern"),
         isActive: isActive !== false,
@@ -240,7 +247,8 @@ export async function PUT(req: NextRequest) {
         return NextResponse.json({ error: "Format file tidak valid. Wajib berekstensi .html." }, { status: 400 });
       }
 
-      const eventFolder = (existing.eventType || "WEDDING").toLowerCase();
+      // Folder sama dengan POST, DELETE, dan scripts/sync-themes.ts: GATHERING disimpan di themes/general/.
+      const eventFolder = existing.eventType === "GATHERING" ? "general" : existing.eventType.toLowerCase();
       const targetDir = path.join(process.cwd(), "themes", eventFolder, targetCat);
       await fs.mkdir(targetDir, { recursive: true });
       const targetFilePath = path.join(targetDir, `${cleanId}.html`);

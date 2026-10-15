@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import fs from "fs";
 import path from "path";
-import { uploadPortfolioFile, listPortfolioSlugs, deletePortfolio } from "@/lib/storage";
+import { uploadPortfolioFile, listPortfolioSlugs, deletePortfolio, readPortfolioMediaSource as readMediaSource } from "@/lib/storage";
 import { isSafePathSegment } from "@/lib/fsSafe";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
@@ -21,14 +21,21 @@ async function fileExists(filePath: string): Promise<boolean> {
   }
 }
 
-// GET: List all isolated portfolios
+// GET: daftar portofolio terisolasi + seluruh undangan terbit sebagai kandidat (bukan hanya 50 terbaru dari overview).
 export async function GET(req: NextRequest) {
   try {
     const guard = await requireAdminModule("portfolio");
     if (!guard.ok) return guard.response;
 
-    const portfolios = await listPortfolioSlugs();
-    return NextResponse.json({ portfolios });
+    const [portfolios, candidates] = await Promise.all([
+      listPortfolioSlugs(),
+      prisma.invitation.findMany({
+        where: { status: "PUBLISHED" },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, status: true, invitationSlug: true, eventType: true, participantsJson: true },
+      }),
+    ]);
+    return NextResponse.json({ portfolios, candidates });
   } catch (error) {
     return routeError("AdminPortfolio", error, "Gagal memuat daftar portofolio");
   }
@@ -47,7 +54,7 @@ export async function POST(req: NextRequest) {
 
     const inv = await prisma.invitation.findUnique({
       where: { id: invitationId },
-      include: { media: true },
+      include: { media: true, theme: { select: { category: true } } },
     });
 
     if (!inv || !inv.invitationSlug) {
@@ -72,24 +79,14 @@ export async function POST(req: NextRequest) {
       try {
         const fileName = path.basename(new URL(url, "http://localhost").pathname);
         const relativePath = `assets/${clientName}/${fileName}`;
-        let buffer: Buffer | null = null;
-        
+
         let mimeType = "application/octet-stream";
         if (fileName.endsWith(".webp")) mimeType = "image/webp";
         else if (fileName.endsWith(".png")) mimeType = "image/png";
         else if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) mimeType = "image/jpeg";
         else if (fileName.endsWith(".mp3")) mimeType = "audio/mpeg";
 
-        if (url.startsWith("http")) {
-          const res = await fetch(url);
-          if (!res.ok) throw new Error(`Gagal fetch: ${url}`);
-          buffer = Buffer.from(await res.arrayBuffer());
-        } else if (url.startsWith("/uploads/")) {
-          const localSrc = path.join(process.cwd(), "public", url);
-          if (await fileExists(localSrc)) {
-            buffer = await fs.promises.readFile(localSrc);
-          }
-        }
+        const buffer = await readMediaSource(url);
 
         if (buffer) {
           const newUrl = await uploadPortfolioFile(buffer, relativePath, mimeType);
@@ -123,14 +120,7 @@ export async function POST(req: NextRequest) {
       try {
         const sharp = (await import("sharp")).default;
         const relativePath = `assets/${clientName}/cover.webp`;
-        let rawBuffer: Buffer | null = null;
-        if (coverUrl.startsWith("http")) {
-          const res = await fetch(coverUrl);
-          if (res.ok) rawBuffer = Buffer.from(await res.arrayBuffer());
-        } else if (coverUrl.startsWith("/uploads/")) {
-          const localSrc = path.join(process.cwd(), "public", coverUrl);
-          if (await fileExists(localSrc)) rawBuffer = await fs.promises.readFile(localSrc);
-        }
+        const rawBuffer = await readMediaSource(coverUrl);
 
         if (rawBuffer) {
           const processedBuffer = await sharp(rawBuffer)
@@ -164,14 +154,7 @@ export async function POST(req: NextRequest) {
         const relativePath = `assets/${clientName}/${localFileName}`;
 
         try {
-          let rawBuffer: Buffer | null = null;
-          if (thumbUrl.startsWith("http")) {
-            const res = await fetch(thumbUrl);
-            if (res.ok) rawBuffer = Buffer.from(await res.arrayBuffer());
-          } else if (thumbUrl.startsWith("/uploads/")) {
-            const localSrc = path.join(process.cwd(), "public", thumbUrl);
-            if (await fileExists(localSrc)) rawBuffer = await fs.promises.readFile(localSrc);
-          }
+          const rawBuffer = await readMediaSource(thumbUrl);
 
           if (rawBuffer) {
             const processedBuffer = await sharp(rawBuffer)
@@ -202,9 +185,8 @@ export async function POST(req: NextRequest) {
         const relativePath = `assets/${clientName}/${localFileName}`;
 
         try {
-          const res = await fetch(driveUrl);
-          if (!res.ok) continue;
-          const rawBuffer = Buffer.from(await res.arrayBuffer());
+          const rawBuffer = await readMediaSource(driveUrl);
+          if (!rawBuffer) continue;
 
           const processedBuffer = await sharp(rawBuffer)
             .resize(1200, undefined, { fit: "inside", withoutEnlargement: true })
@@ -230,7 +212,8 @@ export async function POST(req: NextRequest) {
     const metadata = {
       slug: clientName,
       coupleName: participantNames(inv.eventType, inv.participantsJson).short,
-      themeId: inv.themeId
+      themeId: inv.themeId,
+      category: inv.theme.category,
     };
 
     const metadataBuffer = Buffer.from(JSON.stringify(metadata, null, 2), "utf-8");

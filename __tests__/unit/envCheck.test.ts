@@ -12,11 +12,19 @@ const complete = {
   S3_ACCESS_KEY: "key",
   S3_SECRET_KEY: "secret",
   S3_CUSTOM_DOMAIN: "https://cdn.example.com",
+  S3_BACKUP_BUCKET_NAME: "bucket-backup",
 };
 
 describe("checkServerEnv", () => {
   it("konfigurasi lengkap tidak menghasilkan temuan", () => {
     expect(checkServerEnv(complete)).toEqual({ fatal: [], problems: [] });
+  });
+
+  it("backup database tidak boleh memakai bucket media publik", () => {
+    for (const backup of [undefined, "bucket"]) {
+      const { problems } = checkServerEnv({ ...complete, S3_BACKUP_BUCKET_NAME: backup });
+      expect(problems.some((p) => p.startsWith("S3_BACKUP_BUCKET_NAME"))).toBe(true);
+    }
   });
 
   it("database dan secret auth yang kosong bersifat fatal", () => {

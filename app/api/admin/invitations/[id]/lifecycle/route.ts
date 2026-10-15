@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { routeError } from "@/lib/routeError";
-import { extendGalleryExpiry, getPrimaryEventDate } from "@/lib/lifecycleDates";
+import { extendGalleryExpiry, getEventDayStart, getPrimaryEventDate } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { purgeInvitationEdgeCache } from "@/lib/cloudflare";
 import { buildAndSavePublishedHtml } from "@/lib/staticPublisher";
@@ -135,8 +135,8 @@ export async function POST(
 
     if (action === "UPDATE_EVENT_DATE") {
       const cleanDate = typeof newDate === "string" ? newDate.trim() : "";
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(cleanDate) || Number.isNaN(new Date(`${cleanDate}T00:00:00Z`).getTime())) {
-        return NextResponse.json({ error: "newDate wajib berformat YYYY-MM-DD." }, { status: 400 });
+      if (getEventDayStart({ date: cleanDate }) === null) {
+        return NextResponse.json({ error: "newDate wajib tanggal nyata berformat YYYY-MM-DD." }, { status: 400 });
       }
 
       let events: any[] = Array.isArray(invitation.eventData) ? invitation.eventData : [];

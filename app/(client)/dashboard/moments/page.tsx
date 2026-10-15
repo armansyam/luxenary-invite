@@ -9,6 +9,7 @@ import { computeLifecycleDates, getPrimaryEventDateString, lifecycleSettingsFrom
 import UnifiedAddonModal from "@/components/client/UnifiedAddonModal";
 import PrintableQRCardModal from "@/components/client/PrintableQRCardModal";
 import GuestOpeningSetupModal from "@/components/client/GuestOpeningSetupModal";
+import { MomentCoverImage } from "@/app/components/features/GuestMomentOpening";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 import { useFeedback } from "@/components/ui/Feedback";
 
@@ -372,7 +373,11 @@ export default function MomentsSetupPage() {
   const activeOpeningName = activeOpeningObj.name;
 
   const coupleTitle = invitation ? resolveInvitationDisplayName(invitation) : "Undangan";
-  const coverPhoto = getFeatureSetting("memoriesCoverPhoto", "") || invitation?.media?.find((m: any) => m.mediaSlot === "LANDING_COVER")?.localPath || "/demo/candani/gallery_01.webp";
+  const coverPhoto: string = getFeatureSetting("memoriesCoverPhoto", "") || invitation?.media?.find((m: any) => m.mediaSlot === "LANDING_COVER")?.localPath || "";
+  // Sebelum terbit belum ada alamat publik; uji kamera memakai rute slug yang tetap melayani undangan DRAFT.
+  const testCameraUrl = sharemomentUrl || (invitation?.invitationSlug ? `/${invitation.invitationSlug}/sharemoment` : "");
+  const topupPhotos: number = platformSettings?.addonMemoriesTopupPhotos ?? 0;
+  const isTopupEnabled = platformSettings?.addonMemoriesTopupEnabled !== false;
   const instructionText = getFeatureSetting("memoriesCardInstruction", "Pindai kode QR untuk mengabadikan momen istimewa dari sudut pandang Anda.");
 
   const getRetroDateStamp = () => {
@@ -659,7 +664,7 @@ export default function MomentsSetupPage() {
 
         <div className="flex items-center gap-2.5 flex-wrap">
           <Link
-            href={`${sharemomentUrl}?test=true`}
+            href={`${testCameraUrl}?test=true`}
             target="_blank"
             className="px-3.5 py-2 rounded-xl border border-amber-300 bg-amber-50/70 hover:bg-amber-100 text-amber-950 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
           >
@@ -722,7 +727,7 @@ export default function MomentsSetupPage() {
               className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition cursor-pointer shadow-xs disabled:opacity-50 ${
                 invitation.status === "EVENT_FINISHED"
                   ? "bg-white hover:bg-stone-50 text-stone-800 border border-stone-300"
-                  : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-purple-600/20"
+                  : "bg-amber-800 hover:bg-amber-900 text-white"
               }`}
             >
               {isTogglingGalleryMode ? (
@@ -800,7 +805,7 @@ export default function MomentsSetupPage() {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              <span>{isFull ? "Buka Kunci Roll (+100 Foto)" : "Top-Up +100 Foto"}</span>
+              <span>{!isTopupEnabled ? "Lihat Layanan Tambahan" : isFull ? `Buka Kunci Roll (+${topupPhotos} Foto)` : `Top-Up +${topupPhotos} Foto`}</span>
             </button>
           </div>
         );
@@ -957,9 +962,11 @@ export default function MomentsSetupPage() {
               <span className="block text-[11px] font-medium text-stone-500">Kapasitas Quota Total Foto</span>
               <span className="block text-sm font-semibold text-stone-800">
                 {memoriesQuota ? `${memoriesQuota.usedPhotos} / ${memoriesQuota.maxTotalPhotos} Foto` : `${guestMemoriesList.length} Foto`}
-                <span className="ml-2 text-xs font-normal text-stone-500">
-                  (Tersisa {memoriesQuota?.remainingPhotos ?? 250} foto)
-                </span>
+                {memoriesQuota && (
+                  <span className="ml-2 text-xs font-normal text-stone-500">
+                    (Tersisa {memoriesQuota.remainingPhotos} foto)
+                  </span>
+                )}
               </span>
             </div>
           </div>
@@ -1043,7 +1050,7 @@ export default function MomentsSetupPage() {
                   <div className="absolute inset-0 bg-[#faf8f5] flex flex-col justify-between pt-9 pb-3 px-3.5">
                     {/* Foto Mempelai / Acara (4:5) */}
                     <div className="w-full aspect-[4/5] rounded-[22px] overflow-hidden shadow-sm border border-stone-200/60 relative shrink-0">
-                      <img src={coverPhoto} alt={coupleTitle} className="w-full h-full object-cover object-center" />
+                      <MomentCoverImage src={coverPhoto} alt={coupleTitle} className="w-full h-full object-cover object-center" />
                     </div>
 
                     {/* Tipografi Acara & Tanggal */}
@@ -1074,7 +1081,7 @@ export default function MomentsSetupPage() {
                   <div className="absolute inset-0 flex flex-col justify-between pt-9 pb-3 px-3.5 text-white overflow-hidden">
                     {/* Fullscreen Photo & Cinematic Vignette */}
                     <div className="absolute inset-0 z-0">
-                      <img
+                      <MomentCoverImage
                         src={coverPhoto}
                         alt={coupleTitle}
                         className="w-full h-full object-cover filter brightness-[0.70]"
@@ -1114,7 +1121,7 @@ export default function MomentsSetupPage() {
                     {/* Polaroid Frame Card */}
                     <div className="my-auto bg-white p-2 pb-2.5 rounded-xl shadow-xl border border-stone-300/80 -rotate-1 text-center space-y-1">
                       <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-stone-100 shadow-inner">
-                        <img
+                        <MomentCoverImage
                           src={coverPhoto}
                           alt={coupleTitle}
                           className="w-full h-full object-cover filter sepia-[0.15]"
@@ -1542,7 +1549,7 @@ export default function MomentsSetupPage() {
           <div className="py-6 text-center border border-dashed border-stone-200 rounded-xl">
             <p className="text-xs font-semibold text-stone-600">Belum ada sesi kamera aktif yang diatur</p>
             <p className="text-[11px] text-stone-400 mt-0.5">
-              Klik &quot;Auto-Sync Acara&quot; untuk menyelaraskan dengan jadwal pernikahan atau &quot;+ Sesi Baru&quot; untuk menambah manual.
+              Klik &quot;Tarik Sesi dari Undangan&quot; untuk menyelaraskan dengan susunan acara atau &quot;+ Sesi Baru&quot; untuk menambah manual.
             </p>
           </div>
         )}
@@ -1702,7 +1709,7 @@ export default function MomentsSetupPage() {
           isOpen={isOpeningModalOpen}
           onClose={() => setIsOpeningModalOpen(false)}
           invitation={invitation}
-          shareMomentUrl={sharemomentUrl}
+          shareMomentUrl={testCameraUrl}
           onInvitationUpdated={async (updatedInv) => {
             if (updatedInv) {
               setInvitation(updatedInv);

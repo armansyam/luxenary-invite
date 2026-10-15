@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { normalizeRsvpStatus } from "@/lib/rsvpStatus";
+import { csvCell } from "@/lib/csv";
 
 export default function RsvpPage() {
   const [loading, setLoading] = useState(true);
@@ -78,21 +79,22 @@ export default function RsvpPage() {
     if (rsvps.length === 0) return;
     const headers = ["Nama Tamu", "Status Kehadiran", "Jumlah Pax", "Pesan / Doa", "Waktu Respon"];
     const rows = rsvps.map((r) => [
-      `"${r.guestName || ""}"`,
-      `"${(r.status || "").toUpperCase()}"`,
+      csvCell(r.guestName),
+      csvCell((r.status || "").toUpperCase()),
       r.guestCount || 1,
-      `"${(r.message || "").replace(/"/g, '""')}"`,
-      `"${new Date(r.respondedAt).toLocaleString("id-ID")}"`,
+      csvCell(r.message),
+      csvCell(new Date(r.respondedAt).toLocaleString("id-ID")),
     ]);
 
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+    const url = URL.createObjectURL(new Blob(["﻿" + csvContent], { type: "text/csv;charset=utf-8;" }));
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.setAttribute("href", url);
     link.setAttribute("download", `Rekap_RSVP_${platformName.replace(/\s+/g, "_")}_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (

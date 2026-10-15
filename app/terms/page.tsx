@@ -23,7 +23,10 @@ export default async function TermsPage() {
   const galleryDays = settings.galleryRetentionDays;
   const customDomainLabel = formatRetentionLabel(settings.customDomainRetentionDays);
   const rootDomain = await getDynamicServerRootDomain();
-  const tier3Name = getPlanDisplayName("TIER_3", settings.packages);
+  const memoriesPlanNames = settings.packages
+    .filter((p) => p.capabilities.includes("guest_memories"))
+    .map((p) => getPlanDisplayName(p.id, settings.packages))
+    .join(" & ");
 
   return (
     <div className="min-h-screen bg-[#faf8f5] font-sans flex flex-col text-stone-800" style={{ colorScheme: "only light", backgroundColor: "#faf8f5", color: "#292524" }}>
@@ -93,7 +96,7 @@ export default async function TermsPage() {
                   4. Galeri Kenangan Tamu (/memories) & Hak Unduh Arsip Foto ZIP
                 </h3>
                 <p className="text-xs text-stone-600 leading-relaxed">
-                  Khusus Paket {tier3Name} yang dilengkapi fitur Galeri Kenangan Tamu, seluruh foto candid yang diunggah para tamu tersimpan aman di cloud server dan dapat dibuka selama <strong>{galleryDays % 30 === 0 ? `${galleryDays / 30} bulan (${galleryDays} hari)` : `${galleryDays} hari`} pasca-acara</strong> secara gratis. Klien memiliki fasilitas untuk <strong>mengunduh seluruh foto resolusi asli dalam 1 file ZIP</strong> ke galeri ponsel/laptop pribadi agar tersimpan selamanya, atau dapat memperpanjang masa aktif via Add-on Perpanjangan Masa Aktif.
+                  {memoriesPlanNames ? `Khusus Paket ${memoriesPlanNames} yang dilengkapi fitur` : "Untuk paket yang dilengkapi fitur"} Galeri Kenangan Tamu, seluruh foto candid yang diunggah para tamu tersimpan aman di cloud server dan dapat dibuka selama <strong>{galleryDays % 30 === 0 ? `${galleryDays / 30} bulan (${galleryDays} hari)` : `${galleryDays} hari`} pasca-acara</strong> secara gratis. Klien memiliki fasilitas untuk <strong>mengunduh seluruh foto resolusi asli dalam 1 file ZIP</strong> ke galeri ponsel/laptop pribadi agar tersimpan selamanya, atau dapat memperpanjang masa aktif via Add-on Perpanjangan Masa Aktif.
                 </p>
               </div>
 
@@ -136,7 +139,17 @@ export default async function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-stone-800 mb-2">7. Kontak & Bantuan</h2>
+            <h2 className="text-lg font-semibold text-stone-800 mb-2">7. Portofolio</h2>
+            <p>
+              {platformName} dapat menampilkan undangan Klien yang telah diterbitkan pada halaman portofolio sebagai contoh karya. Yang ditampilkan adalah salinan undangan sebagaimana tampil kepada tamu, termasuk desain, nama, foto, teks, serta ucapan dan foto tamu yang muncul di dalamnya. Pemilihan undangan untuk portofolio dilakukan oleh Administrator.
+            </p>
+            <p className="mt-2">
+              Klien dapat meminta penghapusan undangannya dari portofolio kapan saja melalui kontak dukungan di bawah. Salinan yang sudah tersimpan sementara pada peramban atau jaringan pengiriman konten dapat tetap tampil sampai masa simpannya berakhir.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-stone-800 mb-2">8. Kontak & Bantuan</h2>
             <p>
               Jika Anda memiliki pertanyaan mengenai Syarat & Ketentuan ini atau memerlukan bantuan, silakan hubungi tim layanan pelanggan kami:
             </p>
@@ -169,7 +182,7 @@ export default async function TermsPage() {
           </section>
 
           <p className="pt-8 text-xs text-stone-400 italic">
-            Terakhir diperbarui: {new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}
+            Terakhir diperbarui: 15 Oktober 2026
           </p>
         </div>
       </main>

@@ -38,7 +38,7 @@ export async function POST(req: Request) {
 
     const { username, email, name, role: newRole, password, permissions } = await req.json();
 
-    if (!username || !email || !name || !newRole || !password) {
+    if (!username || !email || !name || !newRole || !password || !String(password).trim()) {
       return NextResponse.json({ error: "Semua kolom wajib diisi." }, { status: 400 });
     }
 
@@ -56,7 +56,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Username atau Email sudah terdaftar." }, { status: 400 });
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    // Dipangkas seperti di halaman login admin (dan seed); spasi di ujung membuat password tidak pernah cocok.
+    const passwordHash = await bcrypt.hash(String(password).trim(), 10);
     const { resolveAdminPermissions } = await import("@/lib/adminPermissions");
     const effectivePermissions = newRole === "SUPER_ADMIN" ? [] : resolveAdminPermissions(newRole, permissions);
 

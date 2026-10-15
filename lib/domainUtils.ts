@@ -218,9 +218,16 @@ export function getMonthYearSlug(dateInput?: string | Date | null): string {
 }
 
 /**
- * Apakah masa tenggang subdomain (`subdomain_grace_days`) sudah lewat, dihitung dari awal hari acara utama
- * pada zona waktu acara. Menerima eventData (JSON string atau array). Tanpa tanggal valid: false.
+ * Nama host custom domain dari masukan klien (skema `http(s)://` dan garis miring penutup dibuang), atau null bila
+ * bukan nama host DNS yang sah. Nilai ini dipakai apa adanya di URL tautan tamu dan pembersihan cache tepi.
  */
+export function normalizeCustomDomain(input: unknown): string | null {
+  if (typeof input !== "string") return null;
+  const host = input.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/+$/, "");
+  const valid = /^(?=.{4,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,63}|xn--[a-z0-9-]{1,59})$/;
+  return valid.test(host) ? host : null;
+}
+
 /**
  * Apakah header Host sebuah permintaan adalah custom domain milik undangan ini (port dan awalan `www.` diabaikan).
  * Dipakai rute slug untuk tahu bahwa pengunjung datang lewat custom domain klien dan tidak boleh dialihkan ke domain utama.
@@ -232,6 +239,10 @@ export function isCustomDomainHost(hostHeader: string | null | undefined, custom
   return host !== "" && host === normalize(customDomain);
 }
 
+/**
+ * Apakah masa tenggang subdomain (`subdomain_grace_days`) sudah lewat, dihitung dari awal hari acara utama
+ * pada zona waktu acara. Menerima eventData (JSON string atau array). Tanpa tanggal valid: false.
+ */
 export function isSubdomainExpired(eventData: unknown, graceDays: number, now: Date = new Date()): boolean {
   const eventDay = getPrimaryEventDate(eventData);
   if (!eventDay) return false;

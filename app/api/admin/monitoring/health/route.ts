@@ -253,30 +253,12 @@ export async function GET(req: NextRequest) {
     smtpSettings.forEach((s) => (smtpMap[s.key] = s.value));
     const isSmtpConfigured = Boolean(smtpMap["smtp_host"] && smtpMap["smtp_user"]);
 
-    // 7. System Availability & 60-Day Status Segments
-    const now = new Date();
-    const availabilityDays = 60;
-    const historySegments = [];
-
-    for (let i = availabilityDays - 1; i >= 0; i--) {
-      const d = new Date(now.getTime() - i * 24 * 3600 * 1000);
-      const dateStr = d.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
-      historySegments.push({
-        dayIndex: i,
-        date: dateStr,
-        status: "OPERATIONAL" as const,
-        uptimePercent: 100,
-        latencyMs: Math.round(18 + ((i * 7) % 15)),
-      });
-    }
-
+    // 7. Aplikasi tidak mencatat riwayat ketersediaan; riwayat uptime dan insiden ada di layanan heartbeat eksternal
+    // (HEALTHCHECK_PING_URL, dipanggil scripts/health-watch.sh). Di sini hanya angka yang benar-benar terukur.
     const availability = {
-      overallUptimePercent: 99.98,
-      status: "OPERATIONAL",
       hostUptimeSeconds,
       processUptimeSeconds: Math.floor(processUptimeSeconds),
-      daysCount: availabilityDays,
-      history: historySegments,
+      externalMonitorConfigured: Boolean(process.env.HEALTHCHECK_PING_URL?.trim()),
     };
 
     return NextResponse.json({

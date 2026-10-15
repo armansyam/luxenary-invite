@@ -771,8 +771,8 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 ## 15. Arsitektur Halaman Legal & Pusat Dukungan Dinamis (Zero Hardcode)
 1. **Pusat Informasi & Saluran Bantuan Publik:**
    - Menyediakan 4 rute publik esensial yang terhubung 100% dinamis ke `getPublicPlatformSettings()` dari database:
-     - `/terms`: Syarat & Ketentuan Layanan, lisensi kekayaan intelektual, batas retensi arsip, dan penguncian tema pasca-terbit.
-     - `/privacy`: Kebijakan privasi data klien & data tamu (buku tamu, RSVP, ucapan) serta kepatuhan pemrosesan gateway pihak ketiga tanpa penyimpanan kredensial perbankan di server platform.
+     - `/terms`: Syarat & Ketentuan Layanan, lisensi kekayaan intelektual, batas retensi arsip, penguncian tema pasca-terbit, dan pasal 7 Portofolio (penayangan salinan undangan terbit atas pilihan Administrator, penghapusan atas permintaan klien).
+     - `/privacy`: Kebijakan privasi data klien & data tamu (buku tamu, RSVP, ucapan), pengecualian penayangan portofolio, serta kepatuhan pemrosesan gateway pihak ketiga tanpa penyimpanan kredensial perbankan di server platform.
      - `/refund`: Kebijakan pengembalian dana (*No Refund Policy*) untuk produk komputasi perangkat lunak instan, pengecualian force majeure kegagalan sistem, dan panduan klaim resmi.
      - `/contact`: Pusat bantuan pelanggan dengan kartu aksi cepat WhatsApp resmi (auto-prefix `62` & click-to-chat URL) dan Email resmi, jam operasional, serta FAQ ringkas.
 2. **Kepatuhan Zero Hardcode & UI Vector Clean:**
@@ -1438,3 +1438,4 @@ Rincian teknis di `docs/SYSTEM_ARCHITECTURE.md` bagian 27. Ringkasan fungsional:
 10. Ekspor CSV kebal formula spreadsheet.
 11. Jadwal Kamera Momen hanya dari sesi acara; mode jadwal kustom lama dihapus.
 12. (15 Okt) Label kustom studio dan path media tidak dapat lagi menyisipkan skrip ke undangan; sinkronisasi R2 saat terbit hanya memproses berkas milik undangan sendiri; unggahan audio/video harus berupa berkas media yang dikenali.
+13. (15 Okt, audit baris-per-baris) Template WhatsApp tetap bisa disimpan setelah undangan terbit; template bawaan mengikuti jenis acara dan template admin (bila diisi). Rilis dan simpan Studio tidak lagi menimpa data yang diubah di tab lain, dan subdomain otomatis dari nama panggilan mempelai kembali bekerja. Tombol Simpan seksi Studio aktif untuk judul kisah, judul galeri, dan tata letak Momen. Lagu terpasang di Studio sama dengan yang diputar undangan. Tombol upgrade membuka modal upgrade; harga dan fitur upgrade hanya dari pengaturan paket. Admin: galat simpan pengaturan terlihat, aktivitas transaksi menampilkan invoice dan klien, kandidat portofolio mencakup semua undangan terbit, masa berlaku kupon tidak bergeser saat disunting. Rincian di `docs/SYSTEM_ARCHITECTURE.md` bagian 27 butir 18.

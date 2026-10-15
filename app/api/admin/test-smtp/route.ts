@@ -39,8 +39,9 @@ export async function POST(req: NextRequest) {
         user: settings.smtpUser,
         pass: settings.smtpPassword || "",
       },
+      // Sama dengan lib/mailer.ts: uji yang melewati verifikasi sertifikat dapat lolos padahal email sungguhan gagal.
       tls: {
-        rejectUnauthorized: false,
+        rejectUnauthorized: process.env.NODE_ENV === "production",
       },
     });
 

@@ -3,18 +3,15 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 
-interface PortfolioTabProps {
-  invitations: any[];
-}
-
 interface Toast {
   id: number;
   type: "success" | "error";
   message: string;
 }
 
-export function AdminPortfolioTab({ invitations }: PortfolioTabProps) {
+export function AdminPortfolioTab() {
   const [portfolios, setPortfolios] = useState<string[]>([]);
+  const [invitations, setInvitations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
   const [processingSlug, setProcessingSlug] = useState<string | null>(null);
@@ -35,7 +32,12 @@ export function AdminPortfolioTab({ invitations }: PortfolioTabProps) {
     try {
       const res = await fetch("/api/admin/portfolio");
       const data = await res.json();
-      if (res.ok) setPortfolios(data.portfolios || []);
+      if (res.ok) {
+        setPortfolios(data.portfolios || []);
+        setInvitations(data.candidates || []);
+      } else {
+        showToast("error", data.error || "Gagal memuat daftar portofolio");
+      }
     } catch {
       showToast("error", "Gagal memuat daftar portofolio");
     } finally {

@@ -7,6 +7,7 @@
  * Aman diimpor di Client Component (Preview UI), API Routes, maupun Server Mailer.
  * ─────────────────────────────────────────────────────────────────────────────
  */
+import { escapeHtml } from "./escapeHtml";
 
 export interface InvoiceEmailOptions {
   orderId: string;
@@ -96,7 +97,7 @@ export function buildInvoiceEmailHtml(
   });
 
   const isPaid = opts.type === "PAID";
-  const baseUrl = opts.appUrl || (typeof window !== "undefined" ? window.location.origin : process.env.NEXTAUTH_URL) || "http://localhost:3000";
+  const baseUrl = opts.appUrl || (typeof window !== "undefined" ? window.location.origin : process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL) || "http://localhost:3000";
 
   const isGallery = opts.orderType === "GALLERY_EXTENSION";
   const categoryTitle = isGallery
@@ -148,7 +149,7 @@ export function buildInvoiceEmailHtml(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${subject}</title>
+  <title>${escapeHtml(subject)}</title>
   <style>
     body { margin: 0; padding: 0; background-color: #F7F5F0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #1C1917; -webkit-font-smoothing: antialiased; }
     .container { max-width: 600px; margin: 0 auto; padding: 36px 16px; }
@@ -192,7 +193,7 @@ export function buildInvoiceEmailHtml(
         </tr>
         <tr>
           <td class="info-label">Ditujukan Kepada</td>
-          <td class="info-val">${opts.recipientName || opts.recipientEmail}</td>
+          <td class="info-val">${escapeHtml(opts.recipientName || opts.recipientEmail)}</td>
         </tr>
         <tr>
           <td class="info-label">Metode Pembayaran</td>
@@ -276,13 +277,13 @@ export function buildMemoriesQuotaHtml(
   const badgeColor = isFull ? "#991B1B" : "#92400E";
   const badgeBorder = isFull ? "#FECACA" : "#FDE68A";
 
-  const baseUrl = opts.appUrl || (typeof window !== "undefined" ? window.location.origin : process.env.NEXTAUTH_URL) || "http://localhost:3000";
+  const baseUrl = opts.appUrl || (typeof window !== "undefined" ? window.location.origin : process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL) || "http://localhost:3000";
   const topupUrl = `${baseUrl}/dashboard/moments`;
 
   const greetingHtml = isFull
-    ? `<p style="margin: 0 0 8px 0; color: #1C1917;">Halo <strong>${opts.recipientName || opts.coupleNames}</strong>,</p>
+    ? `<p style="margin: 0 0 8px 0; color: #1C1917;">Halo <strong>${escapeHtml(opts.recipientName || opts.coupleNames)}</strong>,</p>
        <p style="margin: 0; color: #44403C; line-height: 1.6;">Seluruh kapasitas roll kamera kenangan untuk pernikahan Anda saat ini telah terisi penuh sebanyak <strong>${opts.usedPhotos} dari ${opts.totalQuota} foto</strong> (tersisa <strong>0 foto</strong>). Tamu baru saat ini tidak dapat mengunggah foto lagi kecuali kuota roll diperluas.</p>`
-    : `<p style="margin: 0 0 8px 0; color: #1C1917;">Halo <strong>${opts.recipientName || opts.coupleNames}</strong>,</p>
+    : `<p style="margin: 0 0 8px 0; color: #1C1917;">Halo <strong>${escapeHtml(opts.recipientName || opts.coupleNames)}</strong>,</p>
        <p style="margin: 0; color: #44403C; line-height: 1.6;">Tamu undangan pernikahan Anda sangat antusias! Saat ini roll kamera kenangan telah terisi sebanyak <strong>${opts.usedPhotos} dari ${opts.totalQuota} foto</strong> (tersisa <strong>${opts.remainingPhotos} foto</strong>).</p>`;
 
   const text = `${platformName} - PROGRES ROLL KAMERA TAMU\n` +
@@ -298,7 +299,7 @@ export function buildMemoriesQuotaHtml(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${subject}</title>
+  <title>${escapeHtml(subject)}</title>
   <style>
     body { margin: 0; padding: 0; background-color: #F7F5F0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #1C1917; -webkit-font-smoothing: antialiased; }
     .container { max-width: 560px; margin: 0 auto; padding: 36px 16px; }
@@ -382,7 +383,7 @@ export function buildTestSmtpHtml(opts: TestSmtpOptions): { subject: string; htm
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${subject}</title>
+  <title>${escapeHtml(subject)}</title>
   <style>
     body { margin: 0; padding: 0; background-color: #F7F5F0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #1C1917; -webkit-font-smoothing: antialiased; }
     .container { max-width: 560px; margin: 0 auto; padding: 36px 16px; }
@@ -431,7 +432,7 @@ export function buildRetentionExpiryHtml(
   }
 ): { subject: string; html: string; text: string } {
   const platformName = settings?.platformName || "LUXVITE";
-  const baseUrl = opts.appUrl || (typeof window !== "undefined" ? window.location.origin : process.env.NEXTAUTH_URL) || "http://localhost:3000";
+  const baseUrl = opts.appUrl || (typeof window !== "undefined" ? window.location.origin : process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL) || "http://localhost:3000";
 
   const extendUrl = `${baseUrl}/dashboard/moments`;
   const downloadUrl = `${baseUrl}/dashboard/moments`;
@@ -453,7 +454,7 @@ export function buildRetentionExpiryHtml(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${subject}</title>
+  <title>${escapeHtml(subject)}</title>
   <style>
     body { margin: 0; padding: 0; background-color: #F7F5F0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #1C1917; -webkit-font-smoothing: antialiased; }
     .container { max-width: 580px; margin: 0 auto; padding: 36px 16px; }
@@ -481,7 +482,7 @@ export function buildRetentionExpiryHtml(
       </div>
 
       <div class="message-box">
-        <p style="margin: 0 0 10px 0; font-weight: 700; color: #1C1917;">Halo ${opts.recipientName || opts.coupleNames},</p>
+        <p style="margin: 0 0 10px 0; font-weight: 700; color: #1C1917;">Halo ${escapeHtml(opts.recipientName || opts.coupleNames)},</p>
         <p style="margin: 0; line-height: 1.6;">
           Masa aktif penyimpanan foto kenangan momen pernikahan Anda di cloud storage akan berakhir pada <strong>${opts.expiryDateFormatted}</strong> (tersisa <strong>${opts.daysRemaining} hari lagi</strong>). Sesuai kebijakan retensi sistem, seluruh foto candid yang diunggah para tamu akan diarsipkan dan dibersihkan dari server demi menjaga privasi dan efisiensi penyimpanan data.
         </p>

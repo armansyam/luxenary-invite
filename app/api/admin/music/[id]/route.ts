@@ -70,8 +70,8 @@ export async function DELETE(
       where: { id },
     });
 
-    // Clean up physical file if it's stored locally in /public/music/
-    if (existing.url.startsWith("/music/")) {
+    // Berkas lokal: preset bawaan di /public/music/, unggahan admin di /public/uploads/music/
+    if (existing.url.startsWith("/music/") || existing.url.startsWith("/uploads/music/")) {
       const filePath = path.join(process.cwd(), "public", existing.url);
       if (fs.existsSync(filePath)) {
         try {

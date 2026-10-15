@@ -11,6 +11,10 @@ const AVAILABLE_CAPABILITIES = [
   { id: "custom_domain", label: "Integrasi Custom Domain Pribadi (.com / .id)" },
 ];
 
+// Sama dengan seed prisma/defaultSettings.ts; token diganti label masa simpan oleh lib/settings.ts.
+const PRICING_SUBTITLE_DEFAULT =
+  "Biaya satu kali bayar dengan masa aktif undangan {{archiveRetention}} (archive) dan penyimpanan galeri foto tamu {{galleryRetention}}.";
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Props {
   session: any;
@@ -951,7 +955,8 @@ export default function AdminSettingsTab(props: Props) {
           <div className="space-y-3.5">
             <div className="p-3.5 bg-stone-50 rounded-xl border border-stone-200">
               <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Subjudul Section Harga (Homepage)</span>
-              <p className="text-xs text-gray-700 leading-relaxed">{settingsMap["pricing_subtitle"] || "Biaya satu kali bayar dengan masa aktif undangan 1 tahun (archive), penyimpanan galeri foto tamu 30 hari, dan portofolio resmi permanen."}</p>
+              <p className="text-xs text-gray-700 leading-relaxed">{settingsMap["pricing_subtitle"] || PRICING_SUBTITLE_DEFAULT}</p>
+              <p className="text-[10px] text-gray-400 mt-1">{"{{archiveRetention}}"} dan {"{{galleryRetention}}"} otomatis diganti masa simpan arsip dan galeri dari tab Operasional.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
             <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-2">
@@ -963,7 +968,7 @@ export default function AdminSettingsTab(props: Props) {
                   </span>
                 </div>
                 <span className="text-sm font-bold text-gray-900 font-mono">
-                  Rp {Number(settingsMap["price_tier1"] || 49000).toLocaleString("id-ID")}
+                  Rp {Number(settingsMap["price_tier1"] || 0).toLocaleString("id-ID")}
                 </span>
               </div>
               <p className="text-xs text-gray-600 leading-relaxed">{settingsMap["desc_tier1"] || "Paket Intim & Esensial — Undangan Digital Berkelas, Musik & RSVP Online"}</p>
@@ -982,13 +987,13 @@ export default function AdminSettingsTab(props: Props) {
                   </span>
                 </div>
                 <span className="text-sm font-bold text-gray-900 font-mono">
-                  Rp {Number(settingsMap["price_tier2"] || 99000).toLocaleString("id-ID")}
+                  Rp {Number(settingsMap["price_tier2"] || 0).toLocaleString("id-ID")}
                 </span>
               </div>
               <p className="text-xs text-gray-600 leading-relaxed">{settingsMap["desc_tier2"] || "Paket Harmoni Pesta — Dilengkapi Resepsionis QR Check-In & Kamera Momen Tamu"}</p>
               <div className="text-[11px] font-mono px-2.5 py-1 rounded-lg border text-slate-700 bg-white border-slate-200">
                 {getCaps("capabilities_tier2").includes("guest_memories")
-                  ? `Kamera: ${settingsMap["memories_total_quota_tier2"] || 250} Foto Acara`
+                  ? `Kamera: ${settingsMap["memories_total_quota_tier2"] || 200} Foto Acara`
                   : "Kamera Tamu: Nonaktif"}
               </div>
             </div>
@@ -1001,13 +1006,13 @@ export default function AdminSettingsTab(props: Props) {
                   </span>
                 </div>
                 <span className="text-sm font-bold text-gray-900 font-mono">
-                  Rp {Number(settingsMap["price_tier3"] || 149000).toLocaleString("id-ID")}
+                  Rp {Number(settingsMap["price_tier3"] || 0).toLocaleString("id-ID")}
                 </span>
               </div>
               <p className="text-xs text-gray-600 leading-relaxed">{settingsMap["desc_tier3"] || "Paket Mahakarya Abadi — All-Inclusive dengan Custom Domain Pribadi (.com/.id) & Kuota Maksimal"}</p>
               <div className="text-[11px] font-mono px-2.5 py-1 rounded-lg border text-purple-700 bg-white border-purple-200">
                 {getCaps("capabilities_tier3").includes("guest_memories")
-                  ? `Kamera: ${settingsMap["memories_total_quota_tier3"] || 1000} Foto Acara`
+                  ? `Kamera: ${settingsMap["memories_total_quota_tier3"] || 500} Foto Acara`
                   : "Kamera Tamu: Nonaktif"}
               </div>
             </div>
@@ -1017,10 +1022,10 @@ export default function AdminSettingsTab(props: Props) {
       >
     <div className="space-y-4">
       <div className="p-3.5 bg-stone-50 rounded-xl border border-stone-200">
-        <FieldRow label="Subjudul Section Harga (Homepage)" description="Kalimat penjelasan tepat di bawah judul 'Pilih Paket yang Sesuai dengan Cerita Anda' di halaman beranda.">
+        <FieldRow label="Subjudul Section Harga (Homepage)" description="Kalimat di bawah judul 'Pilih Paket yang Sesuai dengan Cerita Anda' di beranda. Tulis {{archiveRetention}} dan {{galleryRetention}} agar masa simpan selalu mengikuti pengaturan.">
           <input
             type="text"
-            value={settingsMap["pricing_subtitle"] ?? "Biaya satu kali bayar dengan masa aktif undangan 1 tahun (archive), penyimpanan galeri foto tamu 30 hari, dan portofolio resmi permanen."}
+            value={settingsMap["pricing_subtitle"] ?? PRICING_SUBTITLE_DEFAULT}
             onChange={(e) => setSetting("pricing_subtitle", e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
           />
@@ -1045,7 +1050,7 @@ export default function AdminSettingsTab(props: Props) {
         <FieldRow label="Harga (IDR)">
           <input
             type="number"
-            value={settingsMap["price_tier1"] || "49000"}
+            value={settingsMap["price_tier1"] ?? ""}
             onChange={(e) => setSetting("price_tier1", e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
           />
@@ -1123,7 +1128,7 @@ export default function AdminSettingsTab(props: Props) {
         <FieldRow label="Harga (IDR)">
           <input
             type="number"
-            value={settingsMap["price_tier2"] || "99000"}
+            value={settingsMap["price_tier2"] ?? ""}
             onChange={(e) => setSetting("price_tier2", e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition"
           />
@@ -1171,7 +1176,7 @@ export default function AdminSettingsTab(props: Props) {
                 min={50}
                 max={5000}
                 step={50}
-                value={settingsMap["memories_total_quota_tier2"] || "250"}
+                value={settingsMap["memories_total_quota_tier2"] || "200"}
                 onChange={(e) => setSetting("memories_total_quota_tier2", e.target.value)}
                 className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs font-mono font-bold text-gray-900 bg-white focus:outline-none focus:border-slate-500"
               />
@@ -1201,7 +1206,7 @@ export default function AdminSettingsTab(props: Props) {
         <FieldRow label="Harga (IDR)">
           <input
             type="number"
-            value={settingsMap["price_tier3"] || "149000"}
+            value={settingsMap["price_tier3"] ?? ""}
             onChange={(e) => setSetting("price_tier3", e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
           />
@@ -1249,7 +1254,7 @@ export default function AdminSettingsTab(props: Props) {
                 min={100}
                 max={10000}
                 step={100}
-                value={settingsMap["memories_total_quota_tier3"] || "1000"}
+                value={settingsMap["memories_total_quota_tier3"] || "500"}
                 onChange={(e) => setSetting("memories_total_quota_tier3", e.target.value)}
                 className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs font-mono font-bold text-gray-900 bg-white focus:outline-none focus:border-purple-500"
               />
@@ -1290,7 +1295,7 @@ export default function AdminSettingsTab(props: Props) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="p-4 bg-purple-50/60 rounded-xl border border-purple-200 flex flex-col justify-between">
               <div>
-                <span className="text-xs font-bold text-purple-900 block mb-1">Perpanjangan Masa Aktif (Undangan & Galeri)</span>
+                <span className="text-xs font-bold text-purple-900 block mb-1">Perpanjangan Masa Simpan Galeri Foto Tamu</span>
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-xl font-mono font-bold text-purple-950">
                     Rp {Number(settingsMap["gallery_extension_price_per_month"] || 50000).toLocaleString("id-ID")}
@@ -1298,7 +1303,7 @@ export default function AdminSettingsTab(props: Props) {
                   <span className="text-xs text-purple-800 font-medium">/ 30 Hari (Bulan)</span>
                 </div>
                 <p className="text-xs text-stone-600 mt-2 leading-relaxed">
-                  Tarif perpanjangan masa aktif website undangan & penyimpanan foto momen tamu per 30 hari via kasir terpadu.
+                  Tarif per 30 hari untuk memperpanjang penyimpanan foto momen tamu. Masa subdomain dan arsip undangan tidak ikut berubah.
                 </p>
               </div>
             </div>
@@ -1327,8 +1332,8 @@ export default function AdminSettingsTab(props: Props) {
       >
         <div className="space-y-4">
           <FieldRow
-            label="Tarif Perpanjangan Masa Aktif (Bulanan / 30 Hari)"
-            description="Nominal tagihan dinamis per bulan (+30 hari) untuk mempertahankan masa aktif website undangan dan penyimpanan galeri foto momen tamu di cloud (Rupiah)."
+            label="Tarif Perpanjangan Galeri Foto Tamu (per 30 Hari)"
+            description="Nominal tagihan per 30 hari untuk memperpanjang penyimpanan galeri foto momen tamu (Rupiah). Masa subdomain dan arsip undangan tidak ikut diperpanjang."
           >
             <input
               type="number"
@@ -1647,7 +1652,7 @@ export default function AdminSettingsTab(props: Props) {
         <div className="p-3.5 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <div className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
-              <span>Galeri Template Email Transaksional (7 Varian)</span>
+              <span>Galeri Template Email Transaksional</span>
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
                 Warm White Cream
               </span>
@@ -1866,7 +1871,7 @@ export default function AdminSettingsTab(props: Props) {
     isEditing={Boolean(editSection["memories_milestones"])}
     onEdit={() => toggleEditSection("memories_milestones")}
     onCancel={() => cancelEdit("memories_milestones", ["memories_notify_milestones"])}
-    onSave={() => saveSettings(["memories_notify_milestones"], setSavingMemoriesMilestones, "setup")}
+    onSave={() => saveSettings(["memories_notify_milestones"], setSavingMemoriesMilestones, "memories_milestones")}
     saving={savingMemoriesMilestones}
     isDirty={isSectionDirty(["memories_notify_milestones"])}
     saveSuccess={settingsSaved["memories_milestones"]}
@@ -2148,9 +2153,9 @@ export default function AdminSettingsTab(props: Props) {
       <div>
         <div className="flex items-center gap-2">
           <h3 className="text-base font-bold text-gray-900">Google OAuth 2.0 (Login & Registrasi Klien)</h3>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-            Terkonfigurasi di .env
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 border border-stone-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-stone-400"></span>
+            Dikelola lewat .env
           </span>
         </div>
         <p className="text-xs text-gray-500 mt-1 leading-relaxed">
@@ -2598,15 +2603,22 @@ export default function AdminSettingsTab(props: Props) {
     saveSuccess={settingsSaved["wa_template"]}
     saveSuccessMessage="Template WhatsApp berhasil disimpan"
     viewContent={
-      <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 whitespace-pre-wrap text-sm text-gray-700">
-        {settingsMap["wa_template_message"] || "Assalamu'alaikum {{GUEST_NAME}},\n\nKami mengundang Bapak/Ibu dalam pernikahan kami.\n\nUndangan: {{INVITATION_URL}}\n\nHormat kami,\n{{COUPLE_NAMES}}"}
-      </div>
+      settingsMap["wa_template_message"]?.trim() ? (
+        <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 whitespace-pre-wrap text-sm text-gray-700">
+          {settingsMap["wa_template_message"]}
+        </div>
+      ) : (
+        <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 text-xs text-gray-500">
+          Belum diatur. Klien memakai template bawaan yang menyesuaikan jenis acara (pernikahan, khitanan, wisuda, dan lainnya).
+        </div>
+      )
     }
   >
-    <FieldRow label="Isi Pesan WhatsApp" description="Pesan ini akan menjadi default untuk semua klien.">
+    <FieldRow label="Isi Pesan WhatsApp" description="Jika diisi, pesan ini menjadi bawaan untuk semua klien dari semua jenis acara. Kosongkan agar klien memakai template yang menyesuaikan jenis acaranya.">
       <textarea
         rows={6}
-        value={settingsMap["wa_template_message"] || "Assalamu'alaikum {{GUEST_NAME}},\n\nKami mengundang Bapak/Ibu dalam pernikahan kami.\n\nUndangan: {{INVITATION_URL}}\n\nHormat kami,\n{{COUPLE_NAMES}}"}
+        value={settingsMap["wa_template_message"] ?? ""}
+        placeholder={"Kepada Yth. {{GUEST_NAME}},\n\nKami mengundang Anda ke acara kami:\n{{INVITATION_URL}}\n\nHormat kami,\n{{COUPLE_NAMES}}"}
         onChange={(e) => setSetting("wa_template_message", e.target.value)}
         className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
       />

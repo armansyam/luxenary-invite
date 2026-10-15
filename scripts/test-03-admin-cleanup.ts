@@ -10,9 +10,10 @@ async function runTest03() {
   console.log("🚀 [TEST-03] Memulai simulasi: Admin Cleanup...");
 
   try {
-    // 1. Ambil Undangan PUBLISHED terbaru dari TEST-02
+    // 1. Ambil Undangan PUBLISHED terbaru milik akun uji TEST-01/02. Tanpa filter akun, undangan dan seluruh order
+    // klien sungguhan yang terakhir terbit akan dihapus.
     const invitation = await prisma.invitation.findFirst({
-      where: { status: "PUBLISHED" },
+      where: { status: "PUBLISHED", user: { email: { endsWith: "@test.luxenary.com" } } },
       orderBy: { createdAt: 'desc' },
       include: { order: true }
     });
@@ -31,7 +32,6 @@ async function runTest03() {
     console.log(`⏱️  Simulasi waktu: Undangan berhasil diubah statusnya menjadi ARCHIVED (Expired).`);
 
     // 3. Simulasi Proses Cleanup Otomatis (Cron Job/Admin)
-    // Hanya bersihkan undangan uji coba yang ARCHIVED (agar aman dan tidak menyentuh data non-uji)
     const expiredInvitations = await prisma.invitation.findMany({
       where: {
         id: invitation.id,

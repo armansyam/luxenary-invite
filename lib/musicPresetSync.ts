@@ -23,11 +23,16 @@ export async function syncPhysicalMusicPresets() {
       return [".mp3", ".ogg", ".wav", ".m4a", ".flac", ".aac"].includes(ext);
     });
 
+    const known = await prisma.musicPreset.findMany({
+      where: { url: { in: audioFiles.map((f) => `/music/${f}`) } },
+      select: { url: true },
+    });
+    const knownUrls = new Set(known.map((p) => p.url));
+
     for (const f of audioFiles) {
       const ext = path.extname(f).toLowerCase();
       const fileUrl = `/music/${f}`;
-      const exists = await prisma.musicPreset.findFirst({ where: { url: fileUrl } });
-      if (!exists) {
+      if (!knownUrls.has(fileUrl)) {
         const title = formatTitleFromFilename(f, ext);
         const count = await prisma.musicPreset.count();
 

@@ -116,7 +116,6 @@ export async function POST(req: NextRequest) {
       "addon_memories_topup_photos",
       "addon_memories_topup_enabled",
       "payment_mode",
-      "payment_expiry_minutes",
     ];
 
     const settings = await prisma.adminSetting.findMany({
@@ -283,9 +282,9 @@ export async function POST(req: NextRequest) {
     const activePaymentMode = settingsMap["payment_mode"] || "GATEWAY";
     const resolvedPaymentMethod = activePaymentMode === "MANUAL" ? "MANUAL_TRANSFER" : "GATEWAY";
 
-    // Waktu kadaluarsa order (default 24 jam / 1440 menit)
-    const expiryMinutes = Number(settingsMap["payment_expiry_minutes"]) || 1440;
-    const expiredAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
+    // Batas hidup order 24 jam seperti order NEW. payment_expiry_minutes adalah umur sesi QRIS/checkout gateway,
+    // yang diterbitkan ulang selama order masih hidup.
+    const expiredAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     // Tentukan orderType utama (harus cocok dengan enum OrderType: NEW, UPGRADE, GALLERY_EXTENSION, MEMORIES_TOPUP)
     const primaryOrderType = effectiveTargetPlan

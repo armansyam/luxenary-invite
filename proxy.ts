@@ -72,6 +72,12 @@ async function resolveCustomDomain(host: string): Promise<CustomDomainResolution
 export const proxy = auth(async (req) => {
   const { pathname } = req.nextUrl;
 
+  // HTML terbit tersimpan di public/published hanya untuk dibaca rute slug/subdomain, yang memeriksa status undangan.
+  // Next melayani isi public/ yang ada saat build apa adanya, sehingga undangan yang diturunkan tetap terbuka di sini.
+  if (pathname.startsWith("/published/")) {
+    return new NextResponse("Not Found", { status: 404 });
+  }
+
   // ── Guard Brute-Force Login: 5 percobaan per IP per 15 menit ──
   // Hanya berlaku untuk endpoint autentikasi credentials (login admin/client)
   if (pathname === "/api/auth/callback/credentials" && req.method === "POST") {

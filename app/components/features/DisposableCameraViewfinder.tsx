@@ -241,6 +241,18 @@ export default function DisposableCameraViewfinder({
     setShotsTaken(isNaN(taken) ? 0 : taken);
   }, [invitationId]);
 
+  // Hitungan jepretan lokal hanya cermin tampilan; server tetap menghitung foto per token tamu. Mode uji tidak
+  // menulis ke localStorage agar uji coba klien tidak memotong roll aslinya di perangkat yang sama.
+  const setShotsTakenPersisted = useCallback((update: (prev: number) => number) => {
+    setShotsTaken((prev) => {
+      const next = Math.max(0, update(prev));
+      if (!isTestMode && guestToken) {
+        localStorage.setItem(`lux_shots_taken_${invitationId}_${guestToken}`, String(next));
+      }
+      return next;
+    });
+  }, [invitationId, guestToken, isTestMode]);
+
   // ── 2. INISIALISASI STREAM WEBRTC KAMERA ──
   const startCamera = useCallback(async () => {
     setCameraError(null);
@@ -531,12 +543,7 @@ export default function DisposableCameraViewfinder({
       // 6. Ekspor ke Blob JPEG ~300KB
       const base64File = canvas.toDataURL("image/jpeg", 0.78);
 
-      // Update counter lokal
-      const nextTaken = shotsTaken + 1;
-      setShotsTaken(nextTaken);
-      if (typeof window !== "undefined") {
-        localStorage.setItem(`lux_shots_taken_${invitationId}_${guestToken}`, String(nextTaken));
-      }
+      setShotsTakenPersisted((prev) => prev + 1);
 
       // 7. Unggah ke Server
       uploadSnappedPhoto(base64File);
@@ -610,11 +617,14 @@ export default function DisposableCameraViewfinder({
       } else if (res.status === 423) {
         setToastMessage(data.message || "Pengiriman momen telah ditutup.");
       } else {
-        setToastMessage(data.message || data.error || "Gagal mengunggah foto.");
+        // Foto tidak tersimpan di server: jatahnya dikembalikan agar tamu dapat memotret ulang.
+        setShotsTakenPersisted((prev) => prev - 1);
+        setToastMessage(data.message || data.error || "Gagal mengunggah foto. Jatah roll dikembalikan, silakan potret ulang.");
       }
     } catch {
       setPendingUploads((p) => Math.max(0, p - 1));
-      setToastMessage("Koneksi bermasalah. Foto tersimpan di antrean perangkat.");
+      setShotsTakenPersisted((prev) => prev - 1);
+      setToastMessage("Koneksi bermasalah, foto belum terkirim. Jatah roll dikembalikan, silakan potret ulang.");
     } finally {
       setTimeout(() => setToastMessage(null), 3500);
     }
@@ -675,12 +685,7 @@ export default function DisposableCameraViewfinder({
         }
         const base64File = canvas.toDataURL("image/jpeg", 0.78);
 
-        // Update counter lokal konsisten dengan shutter utama
-        const nextTaken = shotsTaken + 1;
-        setShotsTaken(nextTaken);
-        if (typeof window !== "undefined") {
-          localStorage.setItem(`lux_shots_taken_${invitationId}_${guestToken}`, String(nextTaken));
-        }
+        setShotsTakenPersisted((prev) => prev + 1);
 
         uploadSnappedPhoto(base64File);
       };

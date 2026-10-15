@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { CommissionType, DiscountType } from "@prisma/client";
 import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
-import { routeError } from "@/lib/routeError";
+import { HttpError, routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -380,8 +380,21 @@ export async function POST(req: NextRequest) {
         }, { status: 400 });
       }
 
-      // Eksekusi payout atomik dalam transaksi
+      // Eksekusi payout atomik dalam transaksi. Saldo dipotong bersyarat (saldo saat ini masih mencukupi): klik ganda atau
+      // dua admin bersamaan tidak boleh mencairkan saldo yang sama dua kali.
+      const actorId = adminActorId(session);
       const payoutResult = await prisma.$transaction(async (tx) => {
+        const debited = await tx.partnerAffiliate.updateMany({
+          where: { id: partner.id, pendingBalance: { gte: payoutAmount } },
+          data: {
+            pendingBalance: { decrement: payoutAmount },
+            totalPaidOut: { increment: payoutAmount },
+          },
+        });
+        if (debited.count === 0) {
+          throw new HttpError(409, "Saldo komisi mitra baru saja berubah (mungkin sudah dicairkan). Muat ulang lalu coba lagi.");
+        }
+
         // 1. Buat catatan pengeluaran di tabel expenses
         const expense = await tx.expense.create({
           data: {
@@ -392,29 +405,31 @@ export async function POST(req: NextRequest) {
             paymentSource: paymentSource || "TRANSFER_BANK",
             referenceNumber: referenceNumber || null,
             notes: notes || `Transfer pencairan komisi mitra ke ${partner.bankName || "Bank"} ${partner.accountNumber || ""} a.n. ${partner.accountName || partner.name}`,
-            createdById: adminActorId(session),
+            createdById: actorId,
           },
         });
 
-        // 2. Tandai komisi PENDING menjadi PAID
-        await tx.affiliateCommission.updateMany({
-          where: {
-            partnerId: partner.id,
-            status: "PENDING",
-          },
-          data: {
-            status: "PAID",
-            paidAt: new Date(),
-            payoutExpenseId: expense.id,
-          },
-        });
+        // 2. Komisi PENDING ditandai PAID hanya bila saldo habis; pencairan sebagian menyisakan komisi yang belum lunas.
+        const updatedPartner = await tx.partnerAffiliate.findUniqueOrThrow({ where: { id: partner.id } });
+        if (Number(updatedPartner.pendingBalance) <= 0) {
+          await tx.affiliateCommission.updateMany({
+            where: {
+              partnerId: partner.id,
+              status: "PENDING",
+            },
+            data: {
+              status: "PAID",
+              paidAt: new Date(),
+              payoutExpenseId: expense.id,
+            },
+          });
+        }
 
-        // 3. Kurangi pendingBalance dan tambah totalPaidOut pada mitra
-        const updatedPartner = await tx.partnerAffiliate.update({
-          where: { id: partner.id },
+        await tx.adminAuditLog.create({
           data: {
-            pendingBalance: { decrement: payoutAmount },
-            totalPaidOut: { increment: payoutAmount },
+            adminId: actorId,
+            action: "PAYOUT_PARTNER",
+            details: `Pencairan komisi mitra ${partner.name} sebesar Rp ${payoutAmount.toLocaleString("id-ID")}; sisa saldo Rp ${Number(updatedPartner.pendingBalance).toLocaleString("id-ID")}`,
           },
         });
 

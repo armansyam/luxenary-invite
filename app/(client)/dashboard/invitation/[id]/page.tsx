@@ -188,28 +188,17 @@ export default function EditInvitation() {
   }, [studioNotification]);
 
   const PLAN_HIERARCHY: Record<string, number> = { TIER_1: 1, TIER_2: 2, TIER_3: 3 };
-  const PLAN_PRICES: Record<string, number> = {
-    TIER_1: Number(
-      platformSettings?.packages?.find((p: any) => p.id === "TIER_1")?.price ??
-      platformSettings?.pricing?.price_tier1 ?? 49000
-    ),
-    TIER_2: Number(
-      platformSettings?.packages?.find((p: any) => p.id === "TIER_2")?.price ??
-      platformSettings?.pricing?.price_tier2 ?? 99000
-    ),
-    TIER_3: Number(
-      platformSettings?.packages?.find((p: any) => p.id === "TIER_3")?.price ??
-      platformSettings?.pricing?.price_tier3 ?? 149000
-    ),
+  // Sama dengan /api/payments/upgrade: selisih harga paket dari pengaturan admin. 0 = pengaturan belum termuat.
+  const packageOf = (id: string) => platformSettings?.packages?.find((p: any) => p.id === id);
+  const upgradeDiff = (target: string, current: string) => {
+    const to = Number(packageOf(target)?.price) || 0;
+    const from = Number(packageOf(current)?.price) || 0;
+    return to > 0 && from > 0 ? to - from : 0;
   };
   const PLAN_COLOR: Record<string, string> = {
     TIER_1: "bg-amber-50 text-amber-800 border-amber-200",
     TIER_2: "bg-stone-100 text-stone-800 border-stone-200",
     TIER_3: "bg-amber-100/70 text-amber-950 border-amber-300",
-  };
-  const PLAN_FEATURES: Record<string, string[]> = {
-    TIER_2: ["Akses semua tema desain pilihan", "Dilengkapi QR Check-in Resepsionis", "Kamera Saku Digital Tamu"],
-    TIER_3: ["Akses seluruh tema tanpa batas", "Termasuk Custom Domain Pribadi (.com / .id)", "Kamera Tamu dengan kuota terbesar"],
   };
 
   const handleUpgrade = async () => {
@@ -625,8 +614,12 @@ export default function EditInvitation() {
     setSaving(true);
     setSavingSec(secKey || null);
     try {
+      // Subdomain, status, PIN, dan domain dikelola di Pengaturan. Mengirim nilai saat Studio dibuka akan menimpa
+      // perubahan dari tab lain dan mematikan subdomain otomatis dari nama panggilan (rute hanya menurunkannya
+      // bila subdomain tidak dikirim).
+      const { subdomain, status, staffPin, customDomain, ...editable } = invToSave;
       const payload = {
-        ...invToSave,
+        ...editable,
         eventData: events,
         loveStory: stories,
         bankAccounts: bankList,
@@ -911,7 +904,8 @@ export default function EditInvitation() {
     // Sec 7: Kisah Cinta
     const dirty7 = (
       JSON.stringify(stories) !== JSON.stringify(savedSnapshot.stories || []) ||
-      Boolean(getFeatureSetting("showStory", true)) !== Boolean(getSavedFeatureSetting("showStory", true))
+      Boolean(getFeatureSetting("showStory", true)) !== Boolean(getSavedFeatureSetting("showStory", true)) ||
+      getCustomLabel("storyTitle", "") !== getSavedCustomLabel("storyTitle", "")
     );
 
     // Sec 8: Galeri & Video
@@ -919,7 +913,8 @@ export default function EditInvitation() {
       getFeatureSetting("videoGalleryUrl", "") !== getSavedFeatureSetting("videoGalleryUrl", "") ||
       getFeatureSetting("galleryDriveFolderUrl", "") !== getSavedFeatureSetting("galleryDriveFolderUrl", "") ||
       getFeatureSetting("galleryPhotosList", "") !== getSavedFeatureSetting("galleryPhotosList", "") ||
-      Boolean(getFeatureSetting("showGallery", true)) !== Boolean(getSavedFeatureSetting("showGallery", true))
+      Boolean(getFeatureSetting("showGallery", true)) !== Boolean(getSavedFeatureSetting("showGallery", true)) ||
+      getCustomLabel("galleryTitle", "") !== getSavedCustomLabel("galleryTitle", "")
     );
 
     // Sec 9: Rekening & Hadiah
@@ -965,6 +960,7 @@ export default function EditInvitation() {
 
     const dirty14 = (
       Boolean(getFeatureSetting("showGuestMemories", true)) !== Boolean(getSavedFeatureSetting("showGuestMemories", true)) ||
+      getFeatureSetting("memoriesWebLayout", "stories") !== getSavedFeatureSetting("memoriesWebLayout", "stories") ||
       getFeatureSetting("memoriesFilter", "aura_90s") !== getSavedFeatureSetting("memoriesFilter", "aura_90s") ||
       Boolean(getFeatureSetting("memoriesDateStamp", true)) !== Boolean(getSavedFeatureSetting("memoriesDateStamp", true)) ||
       getFeatureSetting("memoriesDateFormat", "DD MM 'YY") !== getSavedFeatureSetting("memoriesDateFormat", "DD MM 'YY") ||
@@ -1184,6 +1180,8 @@ export default function EditInvitation() {
   const currentThemeId = invitation.themeId === "kila" ? "kalandra" : (invitation.themeId || "");
   const selectedThemeObj = currentThemeId ? (themesList.find((t) => t.id === currentThemeId) || null) : null;
   const activeBlueprint = getThemeBlueprint(currentThemeId || "kalandra");
+  // Urutan sama dengan lib/themeEngine.ts saat klien belum memilih lagu: musik tema (DB) → blueprint → pustaka pertama.
+  const themeFallbackMusicUrl: string = selectedThemeObj?.defaultMusicUrl || activeBlueprint.defaultMusicUrl || musicPresets[0]?.url || "";
   // Tanpa pilihan tersimpan, mesin tema menampilkan mempelai pria lebih dulu (lib/themeEngine.ts).
   const displayOrder = getFeatureSetting("displayOrder", "GROOM_FIRST");
 
@@ -1225,7 +1223,7 @@ export default function EditInvitation() {
             <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
               {isPublishedLock
                 ? `Undangan resmi ${coupleName} saat ini telah aktif mengudara. Untuk melindungi keutuhan data dan keterhubungan QR Code fisik yang telah disebar kepada para tamu, form editor dikunci secara otomatis.`
-                : "Acara telah lewat dan undangan ini kini berstatus Published Forever sebagai portofolio. Akses edit telah ditutup untuk menjaga keaslian arsip."}
+                : "Acara telah lewat dan undangan ini kini tersimpan sebagai arsip. Akses edit ditutup untuk menjaga keaslian arsip."}
             </p>
           </div>
 
@@ -1526,32 +1524,6 @@ export default function EditInvitation() {
         </div>
       )}
 
-      {/* Post-Event Permanent Lock Banner */}
-      {invitation.isLocked && (
-        <div className="p-5 bg-stone-900 text-white rounded-2xl sm:rounded-3xl border border-stone-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-sm flex-shrink-0 mt-0.5">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-            </div>
-            <div>
-              <h3 className="font-bold text-sm text-white">Periode Acara Berakhir - Retensi 30 Hari</h3>
-              <p className="text-xs text-stone-300 mt-0.5 leading-relaxed">
-                Tanggal acara {eventNounLabel} telah terlewati. Form editor dikunci. Data tamu dan foto akan dibersihkan dalam 30 hari pasca-acara. Mohon segera unduh foto Anda.
-              </p>
-            </div>
-          </div>
-          <a
-            href={`https://wa.me/${adminWhatsapp.replace(/\D/g, '').replace(/^0/, '62')}?text=Halo%20Admin,%20mohon%20bantuan%20buka%20kunci%20darurat%20undangan%20saya`}
-            target="_blank"
-            rel="noreferrer"
-            className="px-4 py-2.5 bg-amber-700 hover:bg-amber-600 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 flex-shrink-0 shadow-sm"
-          >
-            <span>Hubungi Admin</span>
-            
-          </a>
-        </div>
-      )}
-
       {/* Unified Studio Control & Header Card */}
       <div className="bg-white rounded-none sm:rounded-2xl shadow-none sm:shadow-xs border-b sm:border border-stone-200 overflow-hidden">
         {/* Tier 1: Title, Couple Info, Badges & Primary Actions */}
@@ -1573,7 +1545,7 @@ export default function EditInvitation() {
                 <>
                   <span className="text-stone-300">•</span>
                   <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${PLAN_COLOR[planType] || "bg-stone-50 text-stone-700 border-stone-200"}`}>
-                    {planType}
+                    {getPlanDisplayName(planType, platformSettings?.packages)}
                   </span>
                   {planType !== "TIER_3" && (
                     <button
@@ -2602,7 +2574,7 @@ export default function EditInvitation() {
                   <div className="p-3 bg-white rounded-xl border border-stone-200 flex items-center justify-between gap-3 shadow-2xs">
                     <div className="flex items-center gap-3 min-w-0">
                       {(() => {
-                        const currentMusicUrl = invitation.musicUrl || musicPresets[0]?.url || "";
+                        const currentMusicUrl = invitation.musicUrl || themeFallbackMusicUrl;
                         const isPlaying = playingAudioUrl === currentMusicUrl && Boolean(currentMusicUrl);
                         return (
                           <button
@@ -2634,11 +2606,11 @@ export default function EditInvitation() {
                               ? "Lagu dari YouTube"
                               : invitation.musicUrl
                               ? "Musik Kustom (Tautan Eksternal)"
-                              : (musicPresets[0]?.title || "Belum ada musik dipilih"))}
+                              : (musicPresets.find((p) => p.url === themeFallbackMusicUrl)?.title || (themeFallbackMusicUrl ? "Musik Bawaan Tema" : "Belum ada musik dipilih")))}
                         </p>
                         <span className="text-[10px] text-stone-500 block truncate">
                           {musicPresets.find((p) => p.url === invitation.musicUrl)?.genre ||
-                            (invitation.musicUrl ? invitation.musicUrl : (musicPresets[0]?.genre || "Pustaka Musik Sistem"))}
+                            (invitation.musicUrl ? invitation.musicUrl : (musicPresets.find((p) => p.url === themeFallbackMusicUrl)?.genre || "Dipakai otomatis sampai Anda memilih lagu"))}
                         </span>
                       </div>
                     </div>
@@ -2711,7 +2683,7 @@ export default function EditInvitation() {
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         {musicPresets.map((preset) => {
-                          const currentSelectedUrl = invitation.musicUrl || musicPresets[0]?.url || "";
+                          const currentSelectedUrl = invitation.musicUrl || themeFallbackMusicUrl;
                           const isSelected = currentSelectedUrl === preset.url;
                           const isPlaying = playingAudioUrl === preset.url;
 
@@ -5514,7 +5486,7 @@ export default function EditInvitation() {
               {(["TIER_2", "TIER_3"] as const)
                 .filter((t) => (PLAN_HIERARCHY[t] || 0) > (PLAN_HIERARCHY[planType] || 1))
                 .map((tier) => {
-                  const diff = (PLAN_PRICES[tier] ?? 0) - (PLAN_PRICES[planType] ?? 0);
+                  const diff = upgradeDiff(tier, planType);
                   const isSelected = upgradeTarget === tier;
                   return (
                     <button
@@ -5538,11 +5510,11 @@ export default function EditInvitation() {
                         </div>
                         <div className="text-right">
                           <span className="text-[11px] text-stone-500 block">Tambah bayar</span>
-                          <p className="font-bold text-amber-900 text-sm">Rp {diff.toLocaleString("id-ID")}</p>
+                          <p className="font-bold text-amber-900 text-sm">{diff > 0 ? `Rp ${diff.toLocaleString("id-ID")}` : "Memuat harga..."}</p>
                         </div>
                       </div>
                       <ul className="space-y-1 pl-6">
-                        {((platformSettings?.packages?.find((p: any) => p.id === tier)?.features) || PLAN_FEATURES[tier] || []).map((f: string, i: number) => (
+                        {((packageOf(tier)?.features as string[] | undefined)?.length ? packageOf(tier).features : [packageOf(tier)?.desc].filter(Boolean)).map((f: string, i: number) => (
                           <li key={i} className="text-xs text-stone-600 flex items-start gap-1.5">
                             <svg className="w-3.5 h-3.5 text-amber-700 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/></svg>
                             <span>{f}</span>
@@ -5575,8 +5547,8 @@ export default function EditInvitation() {
                         Upgrade Sekarang{upgradeTarget ? ` ke ${getPlanDisplayName(upgradeTarget, platformSettings?.packages)}` : ""}
                         {(() => {
                           if (!upgradeTarget) return "";
-                          const diff = (PLAN_PRICES[upgradeTarget] ?? 0) - (PLAN_PRICES[planType] ?? 0);
-                          return ` (Rp ${diff.toLocaleString("id-ID")})`;
+                          const diff = upgradeDiff(upgradeTarget, planType);
+                          return diff > 0 ? ` (Rp ${diff.toLocaleString("id-ID")})` : "";
                         })()}
                       </span>
                     </>

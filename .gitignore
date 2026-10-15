@@ -75,6 +75,8 @@ logs/
 !/public/uploads/guest-memories/.gitkeep
 /public/uploads/proofs/*
 !/public/uploads/proofs/.gitkeep
+/public/uploads/music/
+/public/uploads/finance/
 
 # published baked invitation HTML (konten klien — jangan commit ke repo)
 /public/published/

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { routeError } from "@/lib/routeError";
+import { parseFeatureSettings } from "@/lib/featureSettings";
+import { getPrimaryEventEnd } from "@/lib/lifecycleDates";
 
 export const dynamic = "force-dynamic";
 
@@ -17,9 +19,18 @@ export async function GET(
     }
 
     // Galeri hanya untuk undangan yang sudah terbit: draf dan undangan yang diturunkan tidak boleh membocorkan fotonya.
-    const invitation = await prisma.invitation.findUnique({ where: { id: invitationId }, select: { status: true } });
+    const invitation = await prisma.invitation.findUnique({
+      where: { id: invitationId },
+      select: { status: true, featureSettings: true, eventData: true },
+    });
     if (!invitation || invitation.status === "DRAFT" || invitation.status === "TAKEN_DOWN") {
       return NextResponse.json({ error: "Not Found" }, { status: 404 });
+    }
+
+    // Kamar gelap (rilis tertunda): foto baru dibuka setelah acara utama selesai, sama dengan halaman galeri.
+    const eventEnd = getPrimaryEventEnd(invitation.eventData);
+    if (parseFeatureSettings(invitation.featureSettings).memoriesDelayedReveal && eventEnd !== null && new Date() < eventEnd) {
+      return NextResponse.json([], { headers: { "Cache-Control": "no-store" } });
     }
 
     const memories = await prisma.guestMemory.findMany({

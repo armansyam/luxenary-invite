@@ -5,6 +5,15 @@ import Link from "next/link";
 
 export type OpeningLayoutType = "editorial_showcase" | "cinematic_hero" | "polaroid_nostalgia";
 
+/** Foto sampul layar pembuka; tanpa foto (atau gagal dimuat) tampil bidang polos, bukan foto pasangan lain. */
+export function MomentCoverImage({ src, alt, className }: { src?: string | null; alt: string; className: string }) {
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  if (!src || failedSrc === src) {
+    return <div className={`${className} bg-stone-300`} aria-hidden="true" />;
+  }
+  return <img src={src} alt={alt} className={className} onError={() => setFailedSrc(src)} />;
+}
+
 export interface GuestMomentOpeningProps {
   coupleName: string;
   coverUrl?: string;
@@ -99,9 +108,6 @@ export default function GuestMomentOpening({
     return `${day}  ${month}  '${yearShort}`;
   };
 
-  const defaultCoverFallback = "/demo/candani/gallery_01.webp";
-  const activeCover = coverUrl || defaultCoverFallback;
-
   // ─────────────────────────────────────────────────────────────
   // MODEL 2: CINEMATIC HERO (Full Bleed Background & Glassmorphism)
   // ─────────────────────────────────────────────────────────────
@@ -110,13 +116,10 @@ export default function GuestMomentOpening({
       <div className="relative min-h-screen flex flex-col justify-between items-center px-4 sm:px-6 py-6 sm:py-10 select-none overflow-x-hidden text-white">
         {/* Background Fullscreen Image with Overlay */}
         <div className="fixed inset-0 z-0">
-          <img
-            src={activeCover}
+          <MomentCoverImage
+            src={coverUrl}
             alt={coupleName}
             className="w-full h-full object-cover object-center filter brightness-[0.75]"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = defaultCoverFallback;
-            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-stone-950/70" />
         </div>
@@ -279,13 +282,10 @@ export default function GuestMomentOpening({
           <div className="w-full bg-white p-4 pb-6 rounded-2xl shadow-2xl border border-stone-300/80 -rotate-1 hover:rotate-0 transition-transform duration-300">
             {/* Foto Polaroid */}
             <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-stone-100 shadow-inner">
-              <img
-                src={activeCover}
+              <MomentCoverImage
+                src={coverUrl}
                 alt={coupleName}
                 className="w-full h-full object-cover object-center filter sepia-[0.15] contrast-[1.05]"
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = defaultCoverFallback;
-                }}
               />
               {/* Retro Film Date Stamp di sudut foto */}
               <div className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/60 rounded font-mono text-[9px] font-bold text-amber-400 tracking-wider">
@@ -424,14 +424,7 @@ export default function GuestMomentOpening({
       <main className="w-full max-w-sm flex flex-col items-center my-auto py-2 space-y-5">
         {/* Foto Mempelai Murni (Tanpa Frame Card / Tanpa Border Putih) */}
         <div className="relative w-full aspect-[4/5] rounded-[24px] overflow-hidden shadow-md">
-          <img
-            src={activeCover}
-            alt={coupleName}
-            className="w-full h-full object-cover object-center"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = defaultCoverFallback;
-            }}
-          />
+          <MomentCoverImage src={coverUrl} alt={coupleName} className="w-full h-full object-cover object-center" />
         </div>
 
         {/* Typographic Header & Retro Date */}

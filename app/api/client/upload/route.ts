@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
-    const rawInvitationId = (formData.get("invitationId") as string) || "general";
+    const rawInvitationId = (formData.get("invitationId") as string) || "";
     const rawSlot = (formData.get("slot") as string) || "photo";
 
     if (!file) {
@@ -48,24 +48,20 @@ export async function POST(req: NextRequest) {
     }
 
     // Sanitize folder and slot identifiers to prevent path traversal
-    const safeInvitationId = rawInvitationId.replace(/[^a-zA-Z0-9_-]/g, "") || "general";
+    const safeInvitationId = rawInvitationId.replace(/[^a-zA-Z0-9_-]/g, "");
 
-    let invStatus = "DRAFT";
-
-    if (safeInvitationId !== "general") {
-      const inv = await prisma.invitation.findUnique({
-        where: { id: safeInvitationId },
-        select: { userId: true, status: true },
-      });
-      if (inv) {
-        invStatus = inv.status;
-        const isOwner = inv.userId === session.user.id;
-        const isAdmin = hasAdminPermission(session.user, "invitations");
-        if (!isOwner && !isAdmin) {
-          return NextResponse.json({ error: "Forbidden. Anda tidak memiliki akses ke undangan ini." }, { status: 403 });
-        }
-      }
+    // Folder tujuan selalu milik undangan yang ada dan dipegang pengunggah: id kosong atau tak dikenal dulu menulis ke
+    // folder bersama ("general") atau folder bernama bebas yang bisa saling timpa antar pengguna.
+    const inv = safeInvitationId
+      ? await prisma.invitation.findUnique({ where: { id: safeInvitationId }, select: { userId: true, status: true } })
+      : null;
+    if (!inv) {
+      return NextResponse.json({ error: "Undangan tujuan unggahan tidak ditemukan." }, { status: 404 });
     }
+    if (inv.userId !== session.user.id && !hasAdminPermission(session.user, "invitations")) {
+      return NextResponse.json({ error: "Forbidden. Anda tidak memiliki akses ke undangan ini." }, { status: 403 });
+    }
+    const invStatus = inv.status;
 
     const slotKey = rawSlot.toUpperCase();
     const baseSlug = SLOT_FILE_NAMES[slotKey] || rawSlot.toLowerCase().replace(/[^a-z0-9_-]/g, "") || "photo";

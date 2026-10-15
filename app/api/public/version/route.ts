@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { exec } from "child_process";
 import packageJson from "@/package.json";
 
+// Commit tidak berubah selama proses hidup; tanpa memo, setiap permintaan publik memunculkan proses git baru.
+let commitHash: Promise<string> | null = null;
+
 function getCurrentCommitHash(): Promise<string> {
-  return new Promise((resolve) => {
+  return (commitHash ??= new Promise((resolve) => {
     const envCommit = process.env.VERCEL_GIT_COMMIT_SHA || process.env.GIT_COMMIT_SHA || process.env.COMMIT_HASH;
     if (envCommit) return resolve(envCommit.substring(0, 7));
 
@@ -11,7 +14,7 @@ function getCurrentCommitHash(): Promise<string> {
       if (err || !stdout) return resolve("");
       resolve(stdout.trim());
     });
-  });
+  }));
 }
 
 export async function GET() {

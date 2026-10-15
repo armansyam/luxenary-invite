@@ -9,6 +9,7 @@
  *   npx tsx scripts/refresh-theme-drafts.ts                          # dry run, semua tema
  *   npx tsx scripts/refresh-theme-drafts.ts --themes=kalandra,bone   # dry run, tema tertentu
  *   npx tsx scripts/refresh-theme-drafts.ts --apply                  # salin ulang piring, bangun ulang, purge cache
+ *   npx tsx scripts/refresh-theme-drafts.ts --apply --keep-drafts    # piring dibiarkan; hanya perbaikan mesin tema
  */
 import "dotenv/config";
 import fs from "fs";
@@ -18,6 +19,7 @@ import { buildAndSavePublishedHtml } from "../lib/staticPublisher";
 import { purgeCloudflareCache } from "../lib/cloudflare";
 
 const apply = process.argv.includes("--apply");
+const keepDrafts = process.argv.includes("--keep-drafts");
 const themesArg = process.argv.find((a) => a.startsWith("--themes="))?.slice("--themes=".length);
 const themeFilter = themesArg ? themesArg.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean) : null;
 
@@ -28,7 +30,8 @@ async function main() {
   });
   const draftsDir = path.join(process.cwd(), "data", "drafts");
   const withDraft = invitations.filter((inv) => fs.existsSync(path.join(draftsDir, `${inv.id}.html`)));
-  const published = invitations.filter((inv) => inv.status === "PUBLISHED");
+  // EVENT_FINISHED tetap disajikan ke tamu (mode galeri pasca-acara), jadi HTML-nya ikut dibangun ulang.
+  const published = invitations.filter((inv) => inv.status === "PUBLISHED" || inv.status === "EVENT_FINISHED");
 
   console.log(`Undangan cocok: ${invitations.length}; punya piring draft: ${withDraft.length}; terbit (dibangun ulang): ${published.length}`);
   for (const inv of published) console.log(`- ${inv.themeId} ${inv.invitationSlug} (${inv.id})`);
@@ -38,7 +41,9 @@ async function main() {
     return;
   }
 
-  for (const inv of withDraft) fs.rmSync(path.join(draftsDir, `${inv.id}.html`), { force: true });
+  if (!keepDrafts) {
+    for (const inv of withDraft) fs.rmSync(path.join(draftsDir, `${inv.id}.html`), { force: true });
+  }
 
   const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || "").split(":")[0].toLowerCase();
   const urls: string[] = [];
@@ -60,7 +65,7 @@ async function main() {
     const purge = await purgeCloudflareCache({ files: urls });
     console.log(`Purge Cloudflare (${urls.length} URL):`, purge.success ? "berhasil" : purge.reason || "gagal");
   }
-  console.log(`Selesai: ${withDraft.length} piring disalin ulang, ${published.length - failed} HTML terbit dibangun ulang, ${failed} gagal.`);
+  console.log(`Selesai: ${keepDrafts ? 0 : withDraft.length} piring disalin ulang, ${published.length - failed} HTML terbit dibangun ulang, ${failed} gagal.`);
   if (failed > 0) process.exitCode = 1;
 }
 

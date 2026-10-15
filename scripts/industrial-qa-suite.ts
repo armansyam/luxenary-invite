@@ -862,6 +862,11 @@ export class IndustrialQASuite {
       let detail = "";
 
       const testNasPath = path.join(process.cwd(), "data", `test-qa-archives-${this.runId}`);
+      // Dipulihkan di finally: membiarkan arsip mati atau menunjuk folder uji yang sudah dihapus merusak pengarsipan nyata.
+      const originalNasSettings = await prisma.adminSetting.findMany({
+        where: { key: { in: ["nas_archive_enabled", "nas_archive_path"] } },
+        select: { key: true, value: true },
+      });
 
       try {
         await prisma.adminSetting.upsert({
@@ -936,11 +941,14 @@ export class IndustrialQASuite {
       } catch (err: any) {
         detail = `Exception: ${err?.message}`;
       } finally {
-        await prisma.adminSetting.upsert({
-          where: { key: "nas_archive_enabled" },
-          update: { value: "false" },
-          create: { key: "nas_archive_enabled", value: "false" },
-        }).catch(() => {});
+        for (const key of ["nas_archive_enabled", "nas_archive_path"]) {
+          const original = originalNasSettings.find((s) => s.key === key);
+          if (original) {
+            await prisma.adminSetting.update({ where: { key }, data: { value: original.value } });
+          } else {
+            await prisma.adminSetting.deleteMany({ where: { key } });
+          }
+        }
         invalidateSettingsCache();
         if (fs.existsSync(testNasPath)) {
           try { fs.rmSync(testNasPath, { recursive: true, force: true }); } catch {}

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdminModule } from "@/lib/adminAuth";
+import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
+import { wibMonthStart, wibParts } from "@/lib/financePeriods";
 
 export const dynamic = "force-dynamic";
 
@@ -11,24 +12,20 @@ export async function GET(req: NextRequest) {
     if (!guard.ok) return guard.response;
 
     const { searchParams } = new URL(req.url);
-    const now = new Date();
-    const targetYear = parseInt(searchParams.get("year") || String(now.getFullYear()), 10);
+    const targetYear = parseInt(searchParams.get("year") || String(wibParts(new Date()).year), 10);
 
-    const startOfYear = new Date(targetYear, 0, 1);
-    const endOfYear = new Date(targetYear, 11, 31, 23, 59, 59, 999);
-
-    // Ambil semua order PAID di tahun tersebut
+    // Omzet diakui saat lunas (paidAt) per bulan WIB, sama dengan rute tutup buku.
     const ordersInYear = await prisma.order.findMany({
       where: {
         status: "PAID",
-        createdAt: {
-          gte: startOfYear,
-          lte: endOfYear,
+        paidAt: {
+          gte: wibMonthStart(targetYear, 0),
+          lt: wibMonthStart(targetYear + 1, 0),
         },
       },
       select: {
         amount: true,
-        createdAt: true,
+        paidAt: true,
       },
     });
 
@@ -64,10 +61,7 @@ export async function GET(req: NextRequest) {
       const closing = closingsInYear.find((c) => c.periodMonth === monthNum);
 
       // Hitung gross turnover (omzet) dari order paid
-      const monthlyOrders = ordersInYear.filter((o) => {
-        const orderMonth = new Date(o.createdAt).getMonth() + 1;
-        return orderMonth === monthNum;
-      });
+      const monthlyOrders = ordersInYear.filter((o) => o.paidAt && wibParts(o.paidAt).monthIndex + 1 === monthNum);
 
       // Jika ada snapshot di closing, gunakan snapshot resmi; jika belum ada closing, gunakan realtime order sum
       const grossRevenue = closing
@@ -155,30 +149,40 @@ export async function POST(req: NextRequest) {
         updatedNotes = updatedNotes ? `${updatedNotes} | NTPN: ${ntpn}` : `NTPN: ${ntpn}`;
       }
 
-      closing = await prisma.financialClosing.update({
-        where: { id: closing.id },
-        data: {
-          taxPaid: isPaid,
-          taxPaidAt: paymentDate,
-          notes: updatedNotes,
-        },
-      });
+      [closing] = await prisma.$transaction([
+        prisma.financialClosing.update({
+          where: { id: closing.id },
+          data: {
+            taxPaid: isPaid,
+            taxPaidAt: paymentDate,
+            notes: updatedNotes,
+          },
+        }),
+        prisma.adminAuditLog.create({
+          data: {
+            adminId: adminActorId(session),
+            action: "UPDATE_TAX_STATUS",
+            details: `Status setoran pajak ${monthNum}/${yearNum}: ${isPaid ? "lunas" : "belum lunas"}${ntpn ? ` (NTPN ${ntpn})` : ""}`,
+          },
+        }),
+      ]);
     } else {
-      // Jika belum pernah tutup buku, hitung snapshot otomatis lalu buat closing
-      const startOfMonth = new Date(yearNum, monthNum - 1, 1);
-      const endOfMonth = new Date(yearNum, monthNum, 0, 23, 59, 59, 999);
+      // Belum pernah tutup buku: periode ditutup di sini dengan aturan yang sama dengan rute tutup buku (omzet per paidAt,
+      // bulan WIB, pengeluaran dikunci, tercatat di audit), karena angka snapshot ini menjadi dasar pajak yang disimpan.
+      const startOfMonth = wibMonthStart(yearNum, monthNum - 1);
+      const startOfNextMonth = wibMonthStart(yearNum, monthNum);
 
       const [revenueAgg, expenseAgg] = await Promise.all([
         prisma.order.aggregate({
           where: {
             status: "PAID",
-            createdAt: { gte: startOfMonth, lte: endOfMonth },
+            paidAt: { gte: startOfMonth, lt: startOfNextMonth },
           },
           _sum: { amount: true },
         }),
         prisma.expense.aggregate({
           where: {
-            expenseDate: { gte: startOfMonth, lte: endOfMonth },
+            expenseDate: { gte: startOfMonth, lt: startOfNextMonth },
           },
           _sum: { amount: true },
         }),
@@ -188,21 +192,35 @@ export async function POST(req: NextRequest) {
       const totalExp = Number(expenseAgg._sum?.amount || 0);
       const net = grossRev - totalExp;
       const taxDue = Math.round(grossRev * 0.005);
+      const actorId = adminActorId(session);
 
-      closing = await prisma.financialClosing.create({
-        data: {
-          periodMonth: monthNum,
-          periodYear: yearNum,
-          grossRevenue: grossRev,
-          totalExpenses: totalExp,
-          netProfit: net,
-          taxAmount: taxDue,
-          taxPaid: isPaid,
-          taxPaidAt: paymentDate,
-          closedById: session.user.id || "admin",
-          notes: ntpn ? `NTPN/BPN Setoran: ${ntpn}` : "Status pajak disetor",
-        },
-      });
+      [closing] = await prisma.$transaction([
+        prisma.financialClosing.create({
+          data: {
+            periodMonth: monthNum,
+            periodYear: yearNum,
+            grossRevenue: grossRev,
+            totalExpenses: totalExp,
+            netProfit: net,
+            taxAmount: taxDue,
+            taxPaid: isPaid,
+            taxPaidAt: paymentDate,
+            closedById: actorId,
+            notes: ntpn ? `NTPN/BPN Setoran: ${ntpn}` : "Status pajak disetor",
+          },
+        }),
+        prisma.expense.updateMany({
+          where: { expenseDate: { gte: startOfMonth, lt: startOfNextMonth } },
+          data: { isLocked: true },
+        }),
+        prisma.adminAuditLog.create({
+          data: {
+            adminId: actorId,
+            action: "CLOSE_FINANCIAL_PERIOD",
+            details: `Tutup buku periode ${monthNum}/${yearNum} saat mencatat setoran pajak: omzet Rp ${grossRev.toLocaleString("id-ID")}, beban Rp ${totalExp.toLocaleString("id-ID")}`,
+          },
+        }),
+      ]);
     }
 
     return NextResponse.json({
