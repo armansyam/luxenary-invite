@@ -625,8 +625,12 @@ export default function EditInvitation() {
     setSaving(true);
     setSavingSec(secKey || null);
     try {
+      // Subdomain, status, PIN, dan domain dikelola di Pengaturan. Mengirim nilai saat Studio dibuka akan menimpa
+      // perubahan dari tab lain dan mematikan subdomain otomatis dari nama panggilan (rute hanya menurunkannya
+      // bila subdomain tidak dikirim).
+      const { subdomain, status, staffPin, customDomain, ...editable } = invToSave;
       const payload = {
-        ...invToSave,
+        ...editable,
         eventData: events,
         loveStory: stories,
         bankAccounts: bankList,

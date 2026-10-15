@@ -73,6 +73,44 @@ describe("rilis undangan dari halaman Pengaturan", () => {
   });
 });
 
+describe("simpan dari Studio", () => {
+  it.skipIf(!IS_TEST_DB)("subdomain otomatis dari nama panggilan hanya terbentuk bila payload tidak membawa subdomain", async () => {
+    const user = await prisma.user.create({ data: { email: `${RUN}_studio@test.local`, name: RUN } });
+    sessionUser = { id: user.id, email: user.email, role: "CLIENT", isAdmin: false, permissions: [] };
+    const order = await prisma.order.create({
+      data: { userId: user.id, invoiceNumber: `${RUN}_studio`, planType: "TIER_1", amount: 100000, status: "PAID", orderType: "NEW", paidAt: new Date() },
+    });
+    const tag = Date.now().toString(36);
+    const inv = await prisma.invitation.create({
+      data: { userId: user.id, orderId: order.id, themeId: "kalandra", status: "DRAFT", invitationSlug: `${RUN}_studio`, eventType: "WEDDING" },
+    });
+    const participants = { groom: { name: `Raka ${tag}`, nickname: `raka${tag}` }, bride: { name: `Sinta ${tag}`, nickname: `sinta${tag}` } };
+    const put = (body: Record<string, unknown>) =>
+      putInvitation(
+        new Request(`http://localhost/api/client/invitations/${inv.id}`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }),
+        { params: Promise.resolve({ id: inv.id }) },
+      );
+    try {
+      expect((await put({ subdomain: null, participantsJson: participants })).status).toBe(200);
+      expect((await prisma.invitation.findUniqueOrThrow({ where: { id: inv.id } })).subdomain).toBeNull();
+
+      expect((await put({ participantsJson: participants })).status).toBe(200);
+      expect((await prisma.invitation.findUniqueOrThrow({ where: { id: inv.id } })).subdomain).toBe(`raka${tag}-sinta${tag}`);
+    } finally {
+      await prisma.invitation.deleteMany({ where: { id: inv.id } });
+      await prisma.order.deleteMany({ where: { id: order.id } });
+      await prisma.user.deleteMany({ where: { id: user.id } });
+    }
+  });
+
+  it("payload simpan Studio tidak membawa subdomain, status, PIN, atau domain kustom", () => {
+    const src = fs.readFileSync(path.join(process.cwd(), "app/(client)/dashboard/invitation/[id]/page.tsx"), "utf-8");
+    const save = src.slice(src.indexOf("const saveSection"), src.indexOf("const handleDeployAndLock"));
+    expect(save).toMatch(/const \{ subdomain, status, staffPin, customDomain, \.\.\.editable \} = invToSave;/);
+    expect(save).toContain("...editable,");
+  });
+});
+
 describe("tombol upgrade dari halaman Pengaturan", () => {
   it("dasbor membuka modal upgrade saat dibuka dengan ?upgrade=true, dan kedua tombol mengarah ke sana", () => {
     const dashboard = fs.readFileSync(path.join(process.cwd(), "app/(client)/dashboard/page.tsx"), "utf-8");
