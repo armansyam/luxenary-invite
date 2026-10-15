@@ -51,18 +51,9 @@ interface SystemHealthData {
     };
   };
   availability?: {
-    overallUptimePercent: number;
-    status: string;
     hostUptimeSeconds: number;
     processUptimeSeconds: number;
-    daysCount: number;
-    history: Array<{
-      dayIndex: number;
-      date: string;
-      status: "OPERATIONAL" | "DEGRADED" | "DOWN";
-      uptimePercent: number;
-      latencyMs: number;
-    }>;
+    externalMonitorConfigured: boolean;
   };
   disk: {
     totalGb: number;
@@ -528,69 +519,14 @@ export default function AdminMonitoringTab() {
             </div>
           )}
 
-          {/* TIMELINE KESTABILAN SISTEM & STATUS DOWNTIME (60 HARI ALA UPTIMEROBOT) */}
+          {/* KESTABILAN LAYANAN: hanya angka yang terukur; riwayat uptime ada di pemantau heartbeat eksternal */}
           <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 p-6 shadow-xs space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-base font-bold text-gray-900">Kestabilan Layanan &amp; Riwayat Uptime</h3>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>{healthData?.availability?.overallUptimePercent || 99.98}% Operasional</span>
-                  </span>
-                </div>
-                <p className="text-xs text-gray-500 mt-0.5">Pemantauan detak jantung proses, latensi respon API, dan riwayat ketersediaan server 60 hari terakhir</p>
-              </div>
-
-              <div className="flex items-center gap-3 text-xs">
-                <div className="flex items-center gap-1.5 text-gray-600 font-medium">
-                  <span className="w-2.5 h-2.5 rounded-xs bg-emerald-500" />
-                  <span>100% Normal</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-gray-400">
-                  <span className="w-2.5 h-2.5 rounded-xs bg-amber-400" />
-                  <span>Degradasi</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-gray-400">
-                  <span className="w-2.5 h-2.5 rounded-xs bg-rose-500" />
-                  <span>Downtime</span>
-                </div>
-              </div>
+            <div className="pb-3 border-b border-gray-100">
+              <h3 className="text-base font-bold text-gray-900">Kestabilan Layanan</h3>
+              <p className="text-xs text-gray-500 mt-0.5">Lama server dan aplikasi berjalan sejak dinyalakan ulang. Riwayat uptime dan insiden dicatat layanan pemantau eksternal (HEALTHCHECK_PING_URL).</p>
             </div>
 
-            {/* Bilah Bar Segmen 60 Hari */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto py-1">
-                {(healthData?.availability?.history || Array.from({ length: 60 }).map((_, i) => ({
-                  dayIndex: 59 - i,
-                  date: `${60 - i}h lalu`,
-                  status: "OPERATIONAL" as const,
-                  uptimePercent: 100,
-                  latencyMs: 24,
-                }))).map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="flex-1 min-w-[5px] h-9 sm:h-10 rounded-xs bg-emerald-500 hover:bg-emerald-400 hover:scale-110 transition cursor-pointer relative group"
-                    title={`${item.date}: ${item.uptimePercent}% Uptime (${item.latencyMs} ms)`}
-                  >
-                    <div className="hidden group-hover:block absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-20 px-2 py-1 bg-stone-900 text-white text-[10px] font-mono rounded shadow-lg whitespace-nowrap pointer-events-none">
-                      <div className="font-semibold">{item.date}</div>
-                      <div className="text-emerald-300">{item.uptimePercent}% Operasional</div>
-                      <div className="text-stone-400">{item.latencyMs} ms latensi</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex items-center justify-between text-[11px] text-gray-400 font-medium pt-1">
-                <span>60 hari yang lalu</span>
-                <span className="text-emerald-700 font-semibold font-mono">Status Sistem Saat Ini: Normal (0 Insiden Tercatat)</span>
-                <span>Hari Ini</span>
-              </div>
-            </div>
-
-            {/* 3 Indikator Uptime Ringkas */}
-            <div className="pt-2 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
               <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
                 <span className="text-[10px] text-gray-400 uppercase font-bold block">Uptime Host Server VPS</span>
                 <span className="text-sm font-bold font-mono text-gray-900 mt-0.5 block">
@@ -607,12 +543,14 @@ export default function AdminMonitoringTab() {
                 <span className="text-[10px] text-gray-500 mt-0.5 block">Runtime Node.js Engine</span>
               </div>
 
-              <div className="p-3 bg-emerald-50/70 rounded-xl border border-emerald-100">
-                <span className="text-[10px] text-emerald-800 uppercase font-bold block">Riwayat Insiden / Crash</span>
-                <span className="text-sm font-bold font-mono text-emerald-700 mt-0.5 block">
-                  0 Kejadian Down
+              <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <span className="text-[10px] text-gray-400 uppercase font-bold block">Pemantau Uptime Eksternal</span>
+                <span className="text-sm font-bold font-mono text-gray-900 mt-0.5 block">
+                  {healthData?.availability?.externalMonitorConfigured ? "Terhubung" : "Belum diatur"}
                 </span>
-                <span className="text-[10px] text-emerald-600 mt-0.5 block">Sistem terpantau stabil</span>
+                <span className="text-[10px] text-gray-500 mt-0.5 block">
+                  {healthData?.availability?.externalMonitorConfigured ? "Insiden dikirim ke layanan pemantau" : "Isi HEALTHCHECK_PING_URL di .env server"}
+                </span>
               </div>
             </div>
           </div>
@@ -636,7 +574,7 @@ export default function AdminMonitoringTab() {
                   <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 text-center">
                     <span className="text-[10px] uppercase font-bold text-gray-400 block">Total RAM</span>
                     <span className="text-base font-bold font-mono text-gray-900 mt-0.5 block">
-                      {healthData?.process?.hostMemory?.totalGb ?? 8} GB
+                      {healthData?.process?.hostMemory?.totalGb ?? 0} GB
                     </span>
                   </div>
 
