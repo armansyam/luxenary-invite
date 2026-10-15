@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getGoogleDriveFolderPhotos } from "@/lib/driveHelper";
 import { escapeHtml } from "@/lib/escapeHtml";
+import { jsonForInlineScript } from "@/lib/safeJson";
 import { safeHref, safeExternalUrl } from "@/lib/safeUrl";
 import { safeCssColor } from "@/lib/safeCss";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
@@ -491,8 +492,8 @@ export async function composeWeddingData(inv: any) {
 
     storySectionHtml = `
       <section class="sec-flow sec-journey" id="story">
-        <span class="sec-eyebrow reveal" data-lux-field="customLabels.storyEyebrow" style="text-align:center;">${storySectionEyebrow}</span>
-        <h2 class="sec-main-title journey-title serif reveal delay-1" data-lux-field="customLabels.storyTitle">${storySectionTitle}</h2>
+        <span class="sec-eyebrow reveal" data-lux-field="customLabels.storyEyebrow" style="text-align:center;">${escapeHtml(storySectionEyebrow)}</span>
+        <h2 class="sec-main-title journey-title serif reveal delay-1" data-lux-field="customLabels.storyTitle">${escapeHtml(storySectionTitle)}</h2>
         <div class="journey-timeline journey-chapters reveal-up delay-2">
           ${storyItemsHtml}
         </div>
@@ -554,10 +555,10 @@ export async function composeWeddingData(inv: any) {
 
     gallerySectionHtml = `
       <section class="sec-flow" id="moments">
-        <span class="sec-eyebrow" data-lux-field="customLabels.galleryEyebrow">${gallerySectionEyebrow}</span>
-        <h2 class="sec-main-title serif" data-lux-field="customLabels.galleryTitle">${gallerySectionTitle}</h2>
+        <span class="sec-eyebrow" data-lux-field="customLabels.galleryEyebrow">${escapeHtml(gallerySectionEyebrow)}</span>
+        <h2 class="sec-main-title serif" data-lux-field="customLabels.galleryTitle">${escapeHtml(gallerySectionTitle)}</h2>
         <p class="moment-quote serif" data-lux-field="customLabels.galleryQuote">
-          “${galleryQuote}”
+          “${escapeHtml(galleryQuote)}”
         </p>
 
         ${videoPlayerHtml}
@@ -677,7 +678,7 @@ export async function composeWeddingData(inv: any) {
       </div>
 
       <script>
-        window.LUX_ALL_PHOTOS = ${JSON.stringify(allPhotos)};
+        window.LUX_ALL_PHOTOS = ${jsonForInlineScript(allPhotos)};
         window.luxActivePhotoIdx = 0;
 
         function ensureModalsOnBody() {
@@ -1107,9 +1108,9 @@ export async function composeWeddingData(inv: any) {
 
     dressCodeHtml = `
       <section class="sec-flow" id="dresscode">
-        <span class="sec-eyebrow" data-lux-field="customLabels.dressCodeEyebrow">${dressCodeEyebrow}</span>
-        <h2 class="sec-main-title serif" data-lux-field="customLabels.dressCodeTitle">${dressCodeTitle}</h2>
-        <p class="sec-sub" data-lux-field="customLabels.dressCodeSubtitle">${dressCodeSubtitle}</p>
+        <span class="sec-eyebrow" data-lux-field="customLabels.dressCodeEyebrow">${escapeHtml(dressCodeEyebrow)}</span>
+        <h2 class="sec-main-title serif" data-lux-field="customLabels.dressCodeTitle">${escapeHtml(dressCodeTitle)}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.dressCodeSubtitle">${escapeHtml(dressCodeSubtitle)}</p>
         <div style="display:flex; justify-content:center; gap:12px; margin: 1.5rem 0;">${colorBadges}</div>
         ${dressCodeNote ? `<p style="margin:0; font-size:0.8rem; color:rgba(255,255,255,0.75); line-height:1.5;">${escapeHtml(dressCodeNote)}</p>` : ""}
       </section>
@@ -1125,10 +1126,10 @@ export async function composeWeddingData(inv: any) {
     const liveTimeStr = rawEventsList[0]?.time ? ` • ${escapeHtml(rawEventsList[0].time)}` : "";
     liveStreamingHtml = `
       <section class="sec-flow" id="live">
-        <span class="sec-eyebrow" data-lux-field="customLabels.streamingEyebrow">${streamingEyebrow}</span>
-        <h2 class="sec-main-title serif" data-lux-field="customLabels.streamingTitle">${streamingTitle}</h2>
+        <span class="sec-eyebrow" data-lux-field="customLabels.streamingEyebrow">${escapeHtml(streamingEyebrow)}</span>
+        <h2 class="sec-main-title serif" data-lux-field="customLabels.streamingTitle">${escapeHtml(streamingTitle)}</h2>
         <p class="sec-sub">${weddingDate}${liveTimeStr}</p>
-        <p class="sec-sub" style="margin-top:0.4rem;" data-lux-field="customLabels.streamingSubtitle">${streamingSubtitle}</p>
+        <p class="sec-sub" style="margin-top:0.4rem;" data-lux-field="customLabels.streamingSubtitle">${escapeHtml(streamingSubtitle)}</p>
         <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:0.8rem; margin-top:1.5rem;">
           ${liveStreamYoutubeUrl ? `<a href="${liveStreamYoutubeUrl}" target="_blank" rel="noopener noreferrer" class="btn-map-outline">YOUTUBE LIVE</a>` : ""}
           ${liveStreamInstagramUrl ? `<a href="${liveStreamInstagramUrl}" target="_blank" rel="noopener noreferrer" class="btn-map-outline">INSTAGRAM LIVE</a>` : ""}
@@ -1159,9 +1160,9 @@ export async function composeWeddingData(inv: any) {
     const lines = turutMengundangList.split("\n").filter((l: string) => l.trim() !== "");
     turutMengundangHtml = `
       <section class="sec-flow" id="turut-mengundang">
-        <span class="sec-eyebrow" data-lux-field="customLabels.turutMengundangEyebrow">${turutMengundangEyebrow}</span>
-        <h2 class="sec-main-title serif" data-lux-field="customLabels.turutMengundangTitle">${turutMengundangTitle}</h2>
-        <p class="sec-sub" data-lux-field="customLabels.turutMengundangSubtitle">${turutMengundangSubtitle}</p>
+        <span class="sec-eyebrow" data-lux-field="customLabels.turutMengundangEyebrow">${escapeHtml(turutMengundangEyebrow)}</span>
+        <h2 class="sec-main-title serif" data-lux-field="customLabels.turutMengundangTitle">${escapeHtml(turutMengundangTitle)}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.turutMengundangSubtitle">${escapeHtml(turutMengundangSubtitle)}</p>
         <div style="display:flex; flex-direction:column; gap:0.6rem; margin-top:1.5rem; font-size:0.88rem; color:rgba(255,255,255,0.85);">
           ${lines.map((line: string) => `<p style="margin:0; padding:0.4rem 0; border-bottom:1px dashed rgba(255,255,255,0.12);">${escapeHtml(line.trim())}</p>`).join("")}
         </div>
@@ -1234,10 +1235,10 @@ export async function composeWeddingData(inv: any) {
     // Tanpa rekening, QRIS, maupun alamat, seksi hadiah tidak dirender (bukan judul tanpa isi).
     giftSectionHtml = !hasDigitalGift && !hasAddress ? "" : `
       <section class="sec-flow" id="gift">
-        <span class="sec-eyebrow" data-lux-field="customLabels.giftEyebrow">${giftSectionEyebrow}</span>
-        <h2 class="sec-main-title serif" data-lux-field="customLabels.giftTitle">${giftSectionTitle}</h2>
+        <span class="sec-eyebrow" data-lux-field="customLabels.giftEyebrow">${escapeHtml(giftSectionEyebrow)}</span>
+        <h2 class="sec-main-title serif" data-lux-field="customLabels.giftTitle">${escapeHtml(giftSectionTitle)}</h2>
         <p class="sec-sub" data-lux-field="customLabels.giftDesc">
-          ${giftSectionDesc}
+          ${escapeHtml(giftSectionDesc)}
         </p>
 
         ${tabsHtml}
@@ -1329,10 +1330,10 @@ export async function composeWeddingData(inv: any) {
       <section class="sec-flow slide-section" id="section-memories" data-section-alias="guest-memories" style="position: relative; padding: 3rem 1rem;">
         <a id="guest-memories" style="display:none;"></a>
         <div class="sec-content-box reveal-on-scroll" style="max-width: 580px; margin: 0 auto; text-align: center;">
-          <span class="sec-eyebrow" data-lux-field="customLabels.memoriesEyebrow">${memoriesSectionEyebrow}</span>
-          <h2 class="sec-main-title serif" data-lux-field="customLabels.memoriesTitle">${memoriesSectionTitle}</h2>
+          <span class="sec-eyebrow" data-lux-field="customLabels.memoriesEyebrow">${escapeHtml(memoriesSectionEyebrow)}</span>
+          <h2 class="sec-main-title serif" data-lux-field="customLabels.memoriesTitle">${escapeHtml(memoriesSectionTitle)}</h2>
           <p class="moment-quote serif" data-lux-field="customLabels.memoriesSubtitle" style="max-width: 480px; margin: 0 auto 1.5rem auto; font-size: 0.82rem; line-height: 1.6; opacity: 0.8;">
-            ${memoriesSectionSubtitle}
+            ${escapeHtml(memoriesSectionSubtitle)}
           </p>
 
           <!-- 1. TOMBOL BUKA KAMERA KENANGAN -->
@@ -1867,7 +1868,8 @@ export async function composeWeddingData(inv: any) {
     closingPhotoUrl: closingPhotoUrl,
     hasClosingPhoto: Boolean(closingPhotoUrl),
     closingPhotoClass: closingPhotoUrl ? "has-closing-photo" : "no-closing-photo",
-    closingBgStyle: closingPhotoUrl ? `background-image: url('${closingPhotoUrl}');` : "",
+    // Kunci berakhiran "Style" disisipkan mentah oleh renderTemplate ke atribut style="...", jadi URL di-escape di sini.
+    closingBgStyle: closingPhotoUrl ? `background-image: url('${escapeHtml(closingPhotoUrl)}');` : "",
     sidebarPhotoUrl: sidebarUrl,
     globalBgUrl: fixedBgUrl,
     audioUrl: finalAudioUrl,

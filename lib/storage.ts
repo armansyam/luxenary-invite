@@ -262,9 +262,10 @@ export async function syncDraftToR2(invitationId: string): Promise<void> {
       ".mp3": "audio/mpeg",
     };
 
+    // URL media diisi klien; tanpa cek kepemilikan, path unggahan undangan lain ikut dipindah ke R2 lalu dihapus dari disk.
     const syncSingleUrl = async (url: string | null): Promise<string | null> => {
       const localFilePath = resolveLocalUploadPath(url);
-      if (!url || !localFilePath) return url;
+      if (!url || !localFilePath || !isInvitationOwnedUpload(url, invitationId)) return url;
 
       const cleanUrl = url.split("?")[0];
       try {

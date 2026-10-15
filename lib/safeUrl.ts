@@ -31,10 +31,14 @@ export function safeExternalUrl(input: unknown): string {
   }
 }
 
-/** URL media undangan: aturan safeExternalUrl, dan path lokal tidak boleh memuat segmen `..`. */
+// Path lokal yang dihasilkan sistem (/uploads/..., /demo/..., ?t=cache-buster): tanpa kutip, <, >, spasi, atau backslash
+// yang dapat keluar dari atribut HTML, url() CSS, atau <script> saat path ini disisipkan ke tema.
+const SAFE_LOCAL_PATH = /^\/[A-Za-z0-9._~%\/-]+(?:\?[A-Za-z0-9._~=&%-]*)?$/;
+
+/** URL media undangan: aturan safeExternalUrl; path lokal hanya karakter path biasa dan tanpa segmen `..`. */
 export function safeMediaUrl(input: unknown): string {
   const url = safeExternalUrl(input);
-  if (url.startsWith("/") && url.split("?")[0].split("/").includes("..")) return "";
+  if (url.startsWith("/") && (!SAFE_LOCAL_PATH.test(url) || url.split("?")[0].split("/").includes(".."))) return "";
   return url;
 }
 

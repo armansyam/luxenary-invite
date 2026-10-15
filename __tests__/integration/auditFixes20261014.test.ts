@@ -17,6 +17,7 @@ import { PUT as putInvitation } from "@/app/api/client/invitations/[id]/route";
 import { POST as rejectOrder } from "@/app/api/admin/orders/[orderId]/reject/route";
 import { POST as checkoutBundle } from "@/app/api/client/orders/checkout-bundle/route";
 import { renderTemplateFile, THEME_MAP } from "@/lib/renderTemplate";
+import { composeTemplateData } from "@/lib/themeEngine";
 import { DAY_MS } from "@/lib/lifecycleDates";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
@@ -100,6 +101,47 @@ describe.skipIf(!IS_TEST_DB)("URL media tidak dapat keluar dari atribut HTML", (
     const html = await renderTemplateFile(themeId, { groomPhotoUrl: payload, bridePhotoUrl: payload } as any, { editMode: false, invitationId: "probe" });
     expect(html).not.toContain('onerror="alert(document.domain)"');
     expect(html).toContain("x%22%20onerror=%22alert(document.domain)%22");
+  });
+
+  it("path lokal berisi kutip atau tag ditolak saat disimpan", async () => {
+    const { invitationId } = await makeClient("media-quote");
+    expect((await putMedia(invitationId, { CLOSING_COVER: `/uploads/x" onmouseover="alert(1)` })).status).toBe(400);
+    expect((await putMedia(invitationId, { GALLERY: "/uploads/a</script><script>alert(1)</script>.jpg" })).status).toBe(400);
+    expect(await prisma.invitationMedia.count({ where: { invitationId } })).toBe(0);
+  });
+
+  it("media jahat yang sudah tersimpan tidak keluar dari style maupun <script> saat dirender", async () => {
+    const { invitationId } = await makeClient("media-stored", { planType: "TIER_3" });
+    await prisma.invitationMedia.createMany({
+      data: [
+        { invitationId, mediaSlot: "CLOSING_COVER", localPath: `/uploads/x" onmouseover="alert('closing')" a="` },
+        { invitationId, mediaSlot: "GALLERY", localPath: "/uploads/a</script><script>alert('gallery')</script>.jpg" },
+      ],
+    });
+    const html = await renderTemplateFile("kalandra", (await composeTemplateData(invitationId)) as any, { editMode: false });
+    expect(html).not.toContain(`" onmouseover="alert('closing')"`);
+    expect(html).not.toContain("</script><script>alert('gallery')");
+  });
+});
+
+describe.skipIf(!IS_TEST_DB)("label kustom klien", () => {
+  it("label yang disisipkan themeEngine di-escape", async () => {
+    const { invitationId } = await makeClient("labels", { planType: "TIER_3" });
+    const keys = ["storyTitle", "galleryQuote", "dressCodeTitle", "streamingSubtitle", "turutMengundangTitle", "giftDesc", "memoriesTitle"];
+    await prisma.invitation.update({
+      where: { id: invitationId },
+      data: {
+        featureSettings: {
+          customLabels: Object.fromEntries(keys.map((k) => [k, `<img src=x onerror=alert('${k}')>`])),
+          dressCodeNote: "putih",
+          turutMengundang: "Keluarga A",
+          liveStreamYoutubeUrl: "https://youtu.be/abcdefghijk",
+        },
+        bankAccounts: [{ bank: "BCA", number: "1", name: "A" }],
+      },
+    });
+    const html = await renderTemplateFile("kalandra", (await composeTemplateData(invitationId)) as any, { editMode: false });
+    expect(html.match(/<img src=x onerror=alert\('[a-zA-Z]+'\)>/g) ?? []).toEqual([]);
   });
 });
 
