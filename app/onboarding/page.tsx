@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { BrandLogo } from "@/components/BrandLogo";
 
 export default function OnboardingHub() {
@@ -32,11 +33,7 @@ export default function OnboardingHub() {
 
       <div className="absolute bottom-10 left-0 right-0 text-center">
         <button
-          onClick={() => {
-            fetch("/api/auth/signout", { method: "POST" }).then(() => {
-              router.push("/");
-            });
-          }}
+          onClick={() => signOut({ callbackUrl: "/" })}
           className="text-stone-400 hover:text-stone-700 text-[10px] transition cursor-pointer underline"
         >
           Batalkan & Keluar
