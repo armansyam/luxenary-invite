@@ -69,6 +69,7 @@ export default function ReceptionistScannerClient({
   const [selectedCameraIndex, setSelectedCameraIndex] = useState(0);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isCameraLoading, setIsCameraLoading] = useState(false);
+  const [cameraRetryKey, setCameraRetryKey] = useState(0);
   const [scanCooldown, setScanCooldown] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showLockConfirm, setShowLockConfirm] = useState(false);
@@ -360,7 +361,9 @@ export default function ReceptionistScannerClient({
             body: JSON.stringify({ qrToken: syncTokenFor(guest, invitationId), invitationId, isCheckIn: true, token: staffAuthToken }),
           });
           const data = await res.json();
-          if (data.success) synced.add(guestId);
+          // 400/404: tamu sudah dihapus dari daftar atau QR bukan milik acara ini; dikirim ulang pun tidak akan
+          // pernah berhasil, jadi dikeluarkan dari antrean alih-alih tersangkut selamanya.
+          if (data.success || res.status === 400 || res.status === 404) synced.add(guestId);
           // Batas laju server (30 scan/menit) atau sesi PIN berakhir: sisa antrean dicoba pada putaran berikutnya.
           if (res.status === 429 || res.status === 401) break;
         } catch {
@@ -618,7 +621,7 @@ export default function ReceptionistScannerClient({
       isCancelled = true;
       safeStopScanner();
     };
-  }, [scannerMode, selectedCameraIndex, isScreensaverActive, playBeep, invitationId, safeStopScanner, processScanToken]);
+  }, [scannerMode, selectedCameraIndex, cameraRetryKey, isScreensaverActive, playBeep, invitationId, safeStopScanner, processScanToken]);
 
   const handleSwitchCamera = () => {
     if (cameraList.length <= 1) return;
@@ -1089,8 +1092,7 @@ export default function ReceptionistScannerClient({
                           type="button"
                           onClick={() => {
                             setCameraError(null);
-                            setIsCameraLoading(true);
-                            setSelectedCameraIndex((prev) => prev);
+                            setCameraRetryKey((k) => k + 1);
                           }}
                           className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-lg transition mt-2"
                         >
@@ -1207,9 +1209,11 @@ export default function ReceptionistScannerClient({
             <div className="absolute w-80 h-80 sm:w-[420px] sm:h-[420px] rounded-full bg-amber-500/5 blur-3xl pointer-events-none -z-10 animate-pulse"></div>
 
             {/* Inisial Raksasa Watermark Monogram */}
-            <div className="font-serif text-8xl sm:text-9xl md:text-[140px] font-extralight tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-stone-100/40 via-stone-300/15 to-transparent drop-shadow-2xl leading-none mb-3">
-              {clientInitials || "L & I"}
-            </div>
+            {clientInitials && (
+              <div className="font-serif text-8xl sm:text-9xl md:text-[140px] font-extralight tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-stone-100/40 via-stone-300/15 to-transparent drop-shadow-2xl leading-none mb-3">
+                {clientInitials}
+              </div>
+            )}
 
             {/* Garis Aksen Emas Halus */}
             <div className="w-28 sm:w-44 h-px bg-gradient-to-r from-transparent via-amber-400/40 to-transparent my-3"></div>
@@ -1222,7 +1226,7 @@ export default function ReceptionistScannerClient({
             )}
 
             <p className="text-[11px] tracking-[0.3em] uppercase text-stone-500 mt-2 font-medium">
-              Wedding Reception &bull; Guest Check-in
+              Penerimaan Tamu &bull; Check-in
             </p>
           </div>
 
