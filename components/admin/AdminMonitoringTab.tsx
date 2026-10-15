@@ -106,6 +106,36 @@ interface SystemHealthData {
   };
 }
 
+// Nilai harus sama persis dengan `action` yang ditulis rute admin ke admin_audit_logs; filter memakai kecocokan tepat.
+export const AUDIT_ACTION_OPTIONS: [string, string][] = [
+  ["ADMIN_LOGIN", "Login Administrator"],
+  ["REMOTE_SESSION_START", "Remote Dasbor Klien"],
+  ["APPROVE_MANUAL_ORDER", "Konfirmasi Transfer Manual"],
+  ["REJECT_MANUAL_ORDER", "Penolakan Transfer Manual"],
+  ["ACTIVATE_CUSTOM_DOMAIN", "Aktivasi Domain"],
+  ["UNLOCK_INVITATION", "Buka Kunci Darurat"],
+  ["LOCK_INVITATION", "Kunci Undangan"],
+  ["DEPLOY_AND_LOCK", "Terbitkan & Kunci"],
+  ["CLOSE_TO_GALLERY", "Tutup ke Galeri"],
+  ["EXTEND_GALLERY", "Perpanjang Galeri"],
+  ["UPDATE_EVENT_DATE", "Ubah Tanggal Acara"],
+  ["TAKE_DOWN_INVITATION", "Turunkan Undangan"],
+  ["REOPEN_INVITATION", "Buka Kembali Undangan"],
+  ["RESET_EVENT_TYPE", "Reset Jenis Acara"],
+  ["DELETE_CLIENT", "Hapus Akun Klien"],
+  ["CREATE_ADMIN", "Tambah Admin"],
+  ["UPDATE_ADMIN", "Ubah Admin"],
+  ["DELETE_ADMIN", "Hapus Admin"],
+  ["UPDATE_PROFILE", "Ubah Profil Sendiri"],
+  ["PAYOUT_PARTNER", "Pencairan Komisi Mitra"],
+  ["CREATE_EXPENSE", "Catat Pengeluaran"],
+  ["UPDATE_EXPENSE", "Ubah Pengeluaran"],
+  ["DELETE_EXPENSE", "Hapus Pengeluaran"],
+  ["CLOSE_FINANCIAL_PERIOD", "Tutup Buku"],
+  ["REOPEN_FINANCIAL_PERIOD", "Buka Kembali Buku"],
+  ["UPDATE_TAX_STATUS", "Ubah Status Pajak"],
+];
+
 function formatUptime(seconds: number): string {
   const days = Math.floor(seconds / (3600 * 24));
   const hours = Math.floor((seconds % (3600 * 24)) / 3600);
@@ -142,7 +172,7 @@ export default function AdminMonitoringTab() {
   const [loadingHealth, setLoadingHealth] = useState(false);
   const [testingR2, setTestingR2] = useState(false);
   const [r2TestResult, setR2TestResult] = useState<{
-    latencyMs: number;
+    ok: boolean;
     message: string;
   } | null>(null);
 
@@ -179,11 +209,18 @@ export default function AdminMonitoringTab() {
       const data = await res.json();
       if (res.ok) {
         setHealthData(data);
-        if (pingR2 && data.r2Storage?.latencyMs !== null) {
-          setR2TestResult({
-            latencyMs: data.r2Storage.latencyMs,
-            message: `Handshake ke bucket "${data.r2Storage.bucketName || 'R2'}" berhasil. Latensi: ${data.r2Storage.latencyMs}ms.`,
-          });
+        if (pingR2) {
+          setR2TestResult(
+            data.r2Storage?.status === "CONNECTED" && data.r2Storage.latencyMs !== null
+              ? {
+                  ok: true,
+                  message: `Handshake ke bucket "${data.r2Storage.bucketName || 'R2'}" berhasil. Latensi: ${data.r2Storage.latencyMs}ms.`,
+                }
+              : {
+                  ok: false,
+                  message: `Uji akses storage gagal (status: ${data.r2Storage?.status || "tidak diketahui"}). Periksa kredensial dan nama bucket.`,
+                }
+          );
         }
       }
     } catch (err) {
@@ -379,7 +416,9 @@ export default function AdminMonitoringTab() {
                     ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                     : "bg-amber-50 text-amber-700 border border-amber-200"
                 }`}>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span className={`w-1.5 h-1.5 rounded-full ${
+                    healthData?.r2Storage?.status === "CONNECTED" || healthData?.r2Storage?.status === "CONFIGURED" ? "bg-emerald-500" : "bg-amber-500"
+                  }`} />
                   {healthData?.r2Storage?.isR2 ? "R2 Cloud" : "Local Disk"}
                 </span>
               </div>
@@ -425,9 +464,15 @@ export default function AdminMonitoringTab() {
             <div className="bg-white rounded-2xl border border-gray-200/80 p-5 shadow-xs space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Database PostgreSQL</span>
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  Koneksi Stabil
+                <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                  !healthData
+                    ? "bg-stone-50 text-stone-500 border-stone-200"
+                    : healthData.database?.status === "CONNECTED"
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                    : "bg-rose-50 text-rose-700 border-rose-200"
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${!healthData ? "bg-stone-400" : healthData.database?.status === "CONNECTED" ? "bg-emerald-500" : "bg-rose-500"}`} />
+                  {!healthData ? "Memeriksa" : healthData.database?.status === "CONNECTED" ? "Terhubung" : "Gagal Terhubung"}
                 </span>
               </div>
               <div>
@@ -441,7 +486,11 @@ export default function AdminMonitoringTab() {
               </div>
               <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500 font-mono">
                 <span>Driver: @prisma/adapter-pg</span>
-                <span className="text-emerald-700 font-semibold">Aktif</span>
+                {healthData && (
+                  <span className={`font-semibold ${healthData.database?.status === "CONNECTED" ? "text-emerald-700" : "text-rose-700"}`}>
+                    {healthData.database?.status === "CONNECTED" ? "Aktif" : "Error"}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -502,17 +551,23 @@ export default function AdminMonitoringTab() {
 
           {/* Alert Notifikasi Pengujian R2 */}
           {r2TestResult && (
-            <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 flex items-center justify-between animate-in fade-in duration-200">
+            <div className={`p-3.5 border rounded-xl text-xs flex items-center justify-between animate-in fade-in duration-200 ${
+              r2TestResult.ok ? "bg-emerald-50 border-emerald-200 text-emerald-900" : "bg-rose-50 border-rose-200 text-rose-900"
+            }`}>
               <div className="flex items-center gap-2">
-                <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg className={`w-4 h-4 shrink-0 ${r2TestResult.ok ? "text-emerald-600" : "text-rose-600"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  {r2TestResult.ok ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  )}
                 </svg>
                 <span className="font-medium">{r2TestResult.message}</span>
               </div>
               <button
                 type="button"
                 onClick={() => setR2TestResult(null)}
-                className="text-emerald-700 hover:text-emerald-900 font-bold ml-3 cursor-pointer"
+                className="opacity-70 hover:opacity-100 font-bold ml-3 cursor-pointer"
               >
                 ×
               </button>
@@ -631,7 +686,7 @@ export default function AdminMonitoringTab() {
                 <div className="flex items-center justify-between text-gray-500">
                   <span>Load Average (1m, 5m, 15m):</span>
                   <span className="font-mono font-semibold text-gray-800">
-                    {healthData?.process?.loadAvg?.join(", ") || "0.1, 0.2, 0.2"}
+                    {healthData?.process?.loadAvg?.join(", ") || "..."}
                   </span>
                 </div>
               </div>
@@ -787,10 +842,10 @@ export default function AdminMonitoringTab() {
               <div className="p-2.5 bg-stone-50 rounded-xl border border-stone-200 text-[11px] text-stone-600 space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-stone-800">Retensi Aset R2:</span>
-                  <span className="font-mono text-[10px] text-stone-500">{healthData?.r2Storage?.bucketName || "luxenary-invitation"}</span>
+                  <span className="font-mono text-[10px] text-stone-500">{healthData?.r2Storage?.bucketName || "-"}</span>
                 </div>
                 <p className="text-[10px] text-stone-500 leading-relaxed">
-                  R2 hanya menyimpan aset media undangan aktif. Foto tamu dibersihkan pasca 30 hari via cron job, arsip permanen hanya di portofolio lokal.
+                  Foto tamu dibersihkan cron job setelah masa simpan galeri berakhir (diatur di Pengaturan, dapat diperpanjang lewat add-on).
                 </p>
               </div>
             </div>
@@ -851,16 +906,9 @@ export default function AdminMonitoringTab() {
                 className="px-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-amber-500"
               >
                 <option value="ALL">Semua Aksi</option>
-                <option value="ADMIN_LOGIN">Login Administrator</option>
-                <option value="ORDER_APPROVE">Konfirmasi Transaksi</option>
-                <option value="ORDER_REJECT">Penolakan Transaksi</option>
-                <option value="EMERGENCY_UNLOCK">Buka Kunci Darurat</option>
-                <option value="CUSTOM_DOMAIN_ACTIVATE">Aktivasi Domain</option>
-                <option value="THEME_CREATE">Upload Tema Baru</option>
-                <option value="THEME_DELETE">Hapus Tema</option>
-                <option value="STAFF_INVITE">Undang Staf Baru</option>
-                <option value="STAFF_ROLE_CHANGE">Ubah Peran Staf</option>
-                <option value="STAFF_REVOKE">Cabut Akses Staf</option>
+                {AUDIT_ACTION_OPTIONS.map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
               </select>
             </div>
             <span className="text-xs text-gray-400">Total riwayat tercatat: <strong className="text-gray-700">{auditTotal} entri</strong></span>

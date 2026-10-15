@@ -15,6 +15,9 @@ vi.mock("@/auth", () => ({ auth: vi.fn(async () => (sessionUser ? { user: sessio
 import GuestMomentOpening from "@/app/components/features/GuestMomentOpening";
 import UnifiedAddonModal from "@/components/client/UnifiedAddonModal";
 import { wrapCanvasText } from "@/components/client/PrintableQRCardModal";
+import { AUDIT_ACTION_OPTIONS } from "@/components/admin/AdminMonitoringTab";
+import fs from "fs";
+import path from "path";
 import { mergeFeatureSettingsInput } from "@/lib/featureSettings";
 import { prisma, pool } from "@/lib/prisma";
 import { PATCH as patchInvitation } from "@/app/api/client/invitations/[id]/route";
@@ -72,6 +75,25 @@ describe("modal upgrade & add-on", () => {
     expect(html).toContain("Kamera tamu 300 foto");
     expect(html).not.toContain("Kuota 200 Foto");
     expect(html).not.toContain("Serenade");
+  });
+});
+
+describe("filter audit staf", () => {
+  it("setiap pilihan filter adalah aksi yang benar-benar ditulis kode ke admin_audit_logs", () => {
+    const sources: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else if (/\.tsx?$/.test(entry.name) && !full.endsWith("AdminMonitoringTab.tsx")) sources.push(fs.readFileSync(full, "utf-8"));
+      }
+    };
+    walk(path.join(process.cwd(), "app"));
+    walk(path.join(process.cwd(), "lib"));
+    sources.push(fs.readFileSync(path.join(process.cwd(), "auth.ts"), "utf-8"));
+    const corpus = sources.join("\n");
+    const missing = AUDIT_ACTION_OPTIONS.map(([value]) => value).filter((value) => !corpus.includes(`"${value}"`));
+    expect(missing).toEqual([]);
   });
 });
 
