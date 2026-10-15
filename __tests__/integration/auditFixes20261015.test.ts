@@ -28,6 +28,7 @@ import { GET as serveUpload } from "@/app/uploads/[...path]/route";
 import { readPortfolioMediaSource } from "@/lib/storage";
 import { POST as createTheme } from "@/app/api/admin/themes/route";
 import memoriesPage from "@/app/(public)/[slug]/memories/page";
+import shareMomentPage from "@/app/(public)/[slug]/sharemoment/page";
 import { GET as publicMemories } from "@/app/api/public/memories/[invitationId]/route";
 import { normalizeCustomDomain } from "@/lib/domainUtils";
 import { getPlanMemoriesQuota, getPublicPlatformSettings, invalidateSettingsCache } from "@/lib/settings";
@@ -416,6 +417,22 @@ describe.skipIf(!IS_TEST_DB)("galeri kenangan tamu publik", () => {
     await prisma.invitation.update({ where: { id: invitationId }, data: { status: "TAKEN_DOWN" } });
     await addMemory(invitationId);
     await expect(memoriesPage({ params: Promise.resolve({ slug: `${RUN}-gallery-takedown` }) })).rejects.toMatchObject({
+      digest: expect.stringContaining("404"),
+    });
+  });
+
+  it("halaman kamera tamu tidak mengirim foto dan email tamu ke browser; undangan yang diturunkan 404", async () => {
+    const userId = await makeUser("camera-props");
+    const invitationId = await makeInvitation(userId, "camera-props", "TIER_2");
+    await prisma.invitation.update({ where: { id: invitationId }, data: { status: "PUBLISHED" } });
+    await addMemory(invitationId);
+
+    const element = (await shareMomentPage({ params: Promise.resolve({ slug: `${RUN}-camera-props` }) })) as { props: Record<string, unknown> };
+    expect(element.props).not.toHaveProperty("memories");
+    expect(JSON.stringify(element.props)).not.toContain("tamu@uji.local");
+
+    await prisma.invitation.update({ where: { id: invitationId }, data: { status: "TAKEN_DOWN" } });
+    await expect(shareMomentPage({ params: Promise.resolve({ slug: `${RUN}-camera-props` }) })).rejects.toMatchObject({
       digest: expect.stringContaining("404"),
     });
   });

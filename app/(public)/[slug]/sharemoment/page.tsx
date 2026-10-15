@@ -40,9 +40,6 @@ export default async function FreeGuestMemoriesStandalonePage({ params, searchPa
     where: { invitationSlug: slug },
     include: {
       order: { select: { planType: true } },
-      guestMemories: {
-        orderBy: { createdAt: "desc" },
-      },
       media: {
         where: { mediaSlot: { in: ["LANDING_COVER", "HOME_PHOTO", "GROOM_PHOTO", "BRIDE_PHOTO", "GALLERY"] } },
         take: 5,
@@ -50,7 +47,8 @@ export default async function FreeGuestMemoriesStandalonePage({ params, searchPa
     },
   });
 
-  if (!invitation) {
+  // DRAFT tetap dibuka: studio memakai halaman ini (?test=true) untuk pratinjau sebelum terbit.
+  if (!invitation || invitation.status === "TAKEN_DOWN") {
     notFound();
   }
 
@@ -60,7 +58,6 @@ export default async function FreeGuestMemoriesStandalonePage({ params, searchPa
     redirect(`/${slug}`);
   }
 
-  const memories: any[] = invitation.guestMemories || [];
   const coupleName = resolveInvitationDisplayName(invitation);
 
   // Parse featureSettings terlebih dahulu untuk membaca custom memoriesCoverPhoto
@@ -110,7 +107,6 @@ export default async function FreeGuestMemoriesStandalonePage({ params, searchPa
       invitationId={invitation.id}
       coupleName={coupleName}
       coverUrl={coverUrl}
-      memories={memories}
       galleryUrl={galleryUrl}
       backUrl={backUrl}
       isUploadLocked={invitation.memoriesUploadLocked}
