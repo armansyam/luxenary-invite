@@ -4,6 +4,7 @@ import React, { useState, useRef } from "react";
 import { useFeedback } from "@/components/ui/Feedback";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 import { getPrimaryEventDateString } from "@/lib/lifecycleDates";
+import { MomentCoverImage } from "@/app/components/features/GuestMomentOpening";
 
 export interface GuestOpeningSetupModalProps {
   isOpen: boolean;
@@ -80,16 +81,14 @@ export default function GuestOpeningSetupModal({
     return `${String(now.getDate()).padStart(2, "0")}  ${String(now.getMonth() + 1).padStart(2, "0")}  '${String(now.getFullYear()).slice(-2)}`;
   };
 
-  const defaultCoverFallback = "/demo/candani/gallery_01.webp";
-  const activeCover = coverPhoto || defaultCoverFallback;
-
   // Simpan Perubahan Pengaturan ke Database
   const persistFeatureSettings = async (overrides: Record<string, any>) => {
     if (!invitation?.id) return;
     setIsSavingSettings(true);
     try {
+      // Hanya kunci layar pembuka: server menggabungkannya ke featureSettings tersimpan, sehingga pengaturan lain
+      // yang diubah sejak modal dibuka tidak tertimpa salinan lama.
       const nextFs = {
-        ...initialFs,
         memoriesOpeningLayout: selectedOpeningLayout,
         memoriesCardInstruction: instructionText,
         memoriesCoverPhoto: coverPhoto,
@@ -102,15 +101,17 @@ export default function GuestOpeningSetupModal({
         body: JSON.stringify({ featureSettings: nextFs }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        const updated = data.invitation || data;
-        if (onInvitationUpdated && updated) {
-          onInvitationUpdated(updated);
-        }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        feedback.notify(data.error || "Pengaturan layar pembuka gagal disimpan.", "error");
+        return;
       }
-    } catch (err) {
-      console.error("Gagal menyimpan feature settings:", err);
+      const updated = data.invitation || data;
+      if (onInvitationUpdated && updated) {
+        onInvitationUpdated(updated);
+      }
+    } catch {
+      feedback.notify("Koneksi terputus. Pengaturan layar pembuka belum tersimpan.", "error");
     } finally {
       setIsSavingSettings(false);
     }
@@ -243,7 +244,7 @@ export default function GuestOpeningSetupModal({
                   <div className="absolute inset-0 bg-[#faf8f5] flex flex-col justify-between pt-9 pb-3 px-3.5">
                     {/* Foto Mempelai / Acara (Rounded Corners 4:5 Sesuai Referensi) */}
                     <div className="w-full aspect-[4/5] rounded-[22px] overflow-hidden shadow-sm border border-stone-200/60 relative shrink-0">
-                      <img src={activeCover} alt={coupleTitle} className="w-full h-full object-cover object-center" />
+                      <MomentCoverImage src={coverPhoto} alt={coupleTitle} className="w-full h-full object-cover object-center" />
                     </div>
 
                     {/* Tipografi Acara & Tanggal */}
@@ -262,7 +263,7 @@ export default function GuestOpeningSetupModal({
                         <span>Mulai motret</span>
                       </div>
                       <div className="text-center font-serif font-bold text-[10px] tracking-widest text-stone-400">
-                        LUXENARY
+                        GUEST · MOMENTS
                       </div>
                       <div className="w-20 h-1 bg-stone-300 rounded-full mx-auto mt-1" />
                     </div>
@@ -274,8 +275,8 @@ export default function GuestOpeningSetupModal({
                   <div className="absolute inset-0 flex flex-col justify-between pt-9 pb-3 px-3.5 text-white overflow-hidden">
                     {/* Background Fullscreen Image with Overlay */}
                     <div className="absolute inset-0 z-0">
-                      <img
-                        src={activeCover}
+                      <MomentCoverImage
+                        src={coverPhoto}
                         alt={coupleTitle}
                         className="w-full h-full object-cover filter brightness-[0.70]"
                       />
@@ -314,8 +315,8 @@ export default function GuestOpeningSetupModal({
                     {/* Polaroid Frame Card */}
                     <div className="my-auto bg-white p-2 pb-2.5 rounded-xl shadow-xl border border-stone-300/80 -rotate-1 text-center space-y-1">
                       <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-stone-100 shadow-inner">
-                        <img
-                          src={activeCover}
+                        <MomentCoverImage
+                          src={coverPhoto}
                           alt={coupleTitle}
                           className="w-full h-full object-cover filter sepia-[0.15]"
                         />
@@ -407,11 +408,7 @@ export default function GuestOpeningSetupModal({
 
               <div className="flex items-center gap-3.5">
                 <div className="w-16 h-20 rounded-xl overflow-hidden border border-stone-300 bg-stone-200 shrink-0 shadow-inner relative">
-                  <img
-                    src={activeCover}
-                    alt="Cover"
-                    className="w-full h-full object-cover"
-                  />
+                  <MomentCoverImage src={coverPhoto} alt="Cover" className="w-full h-full object-cover" />
                 </div>
 
                 <div className="space-y-1.5 flex-1 min-w-0">

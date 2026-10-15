@@ -2,7 +2,8 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { normalizePlanType } from "@/lib/planUtils";
+import { getPlanDisplayName, normalizePlanType } from "@/lib/planUtils";
+import type { PublicPlatformSettings } from "@/lib/settings";
 
 interface UnifiedAddonModalProps {
   isOpen: boolean;
@@ -10,18 +11,11 @@ interface UnifiedAddonModalProps {
   invitationId: string;
   currentPlan: string;
   currentQuota: number;
-  pricingSettings?: {
-    priceTier1?: number;
-    priceTier2?: number;
-    priceTier3?: number;
-    nameTier1?: string;
-    nameTier2?: string;
-    nameTier3?: string;
-    galleryExtensionPricePerMonth: number;
-    addonMemoriesTopupPrice: number;
-    addonMemoriesTopupPhotos: number;
-    addonMemoriesTopupEnabled: boolean;
-  };
+  // Harga dan nama paket dari /api/public/settings, sumber yang sama dengan yang ditagih checkout-bundle.
+  pricingSettings?: Pick<
+    PublicPlatformSettings,
+    "packages" | "galleryExtensionPricePerMonth" | "addonMemoriesTopupPrice" | "addonMemoriesTopupPhotos" | "addonMemoriesTopupEnabled"
+  > | null;
   hasExtended?: boolean;
   daysRemaining?: number | null;
 }
@@ -39,18 +33,20 @@ export default function UnifiedAddonModal({
   const router = useRouter();
   const currentPlan = normalizePlanType(rawCurrentPlan);
 
-  // Settings fallbacks
+  const packages = pricingSettings?.packages;
+  const pkg = (id: "TIER_1" | "TIER_2" | "TIER_3") => packages?.find((p) => p.id === id);
+
   const prices = useMemo(() => ({
-    TIER_1: pricingSettings?.priceTier1 ?? 99000,
-    TIER_2: pricingSettings?.priceTier2 ?? 150000,
-    TIER_3: pricingSettings?.priceTier3 ?? 200000,
-  }), [pricingSettings]);
+    TIER_1: packages?.find((p) => p.id === "TIER_1")?.price ?? 0,
+    TIER_2: packages?.find((p) => p.id === "TIER_2")?.price ?? 0,
+    TIER_3: packages?.find((p) => p.id === "TIER_3")?.price ?? 0,
+  }), [packages]);
 
   const planNames = useMemo(() => ({
-    TIER_1: pricingSettings?.nameTier1 || "Serenade",
-    TIER_2: pricingSettings?.nameTier2 || "Symphony",
-    TIER_3: pricingSettings?.nameTier3 || "Eternity",
-  }), [pricingSettings]);
+    TIER_1: getPlanDisplayName("TIER_1", packages),
+    TIER_2: getPlanDisplayName("TIER_2", packages),
+    TIER_3: getPlanDisplayName("TIER_3", packages),
+  }), [packages]);
 
   const monthlyExtPrice = pricingSettings?.galleryExtensionPricePerMonth ?? 50000;
   const topupPricePerBatch = pricingSettings?.addonMemoriesTopupPrice ?? 35000;
@@ -217,7 +213,7 @@ export default function UnifiedAddonModal({
                       <span className="font-bold">Naik ke {planNames.TIER_2}</span>
                       <span className="text-[11px] font-mono font-bold text-amber-900">+Rp {(prices.TIER_2 - prices.TIER_1).toLocaleString("id-ID")}</span>
                     </div>
-                    <p className="text-[10px] text-stone-500 mt-1">Buka Resepsionis QR & Kamera Tamu (Kuota 200 Foto).</p>
+                    <p className="text-[10px] text-stone-500 mt-1">{pkg("TIER_2")?.desc}</p>
                   </div>
                 )}
 
@@ -233,7 +229,7 @@ export default function UnifiedAddonModal({
                     <span className="font-bold">Naik ke {planNames.TIER_3}</span>
                     <span className="text-[11px] font-mono font-bold text-amber-900">+Rp {(prices.TIER_3 - prices[currentPlan as keyof typeof prices]).toLocaleString("id-ID")}</span>
                   </div>
-                  <p className="text-[10px] text-stone-500 mt-1">All-Inclusive: Kuota 500 Foto + Custom Domain Pribadi.</p>
+                  <p className="text-[10px] text-stone-500 mt-1">{pkg("TIER_3")?.desc}</p>
                 </div>
               </div>
             )}

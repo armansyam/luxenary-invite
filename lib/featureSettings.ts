@@ -1,5 +1,5 @@
 import { logger } from "@/lib/logger";
-import { normalizeFeatureUrls } from "@/lib/safeUrl";
+import { normalizeFeatureUrls, safeMediaUrl } from "@/lib/safeUrl";
 
 type FeatureSettings = Record<string, any>;
 
@@ -73,6 +73,10 @@ export async function mergeFeatureSettingsInput(
 
   const existing = parseFeatureSettings(stored);
   let merged = normalizeFeatureUrls({ ...existing, ...incomingObj });
+  // Aturan yang sama dengan PATCH rute Momen; modal layar pembuka menyimpan sampul lewat rute ini.
+  for (const key of ["memoriesCoverPhoto", "openingCoverPhoto"]) {
+    if (typeof merged[key] === "string") merged[key] = safeMediaUrl(merged[key]);
+  }
   if (!isAdmin) merged = await gateFeaturesByPlan(merged, planType);
   return { ok: true, value: keepValidMemoriesSettings(merged, existing) };
 }
