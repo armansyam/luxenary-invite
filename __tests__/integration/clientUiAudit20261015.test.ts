@@ -23,7 +23,8 @@ import { getPublicPlatformSettings } from "@/lib/settings";
 import { formatRetentionLabel } from "@/lib/lifecycleDates";
 import { mergeFeatureSettingsInput } from "@/lib/featureSettings";
 import { prisma, pool } from "@/lib/prisma";
-import { PATCH as patchInvitation } from "@/app/api/client/invitations/[id]/route";
+import { PATCH as patchInvitation, PUT as putInvitation } from "@/app/api/client/invitations/[id]/route";
+import { waPresets } from "@/lib/waPresets";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
 const RUN = `vitest_clientui_${Date.now()}`;
@@ -179,6 +180,60 @@ describe("sampul layar pembuka lewat PATCH undangan umum", () => {
     expect(stored.memoriesCoverPhoto).toBe("");
     expect(stored.memoriesOpeningLayout).toBe("polaroid_nostalgia");
     expect(stored.memoriesFilter).toBe("cinema_noir");
+  });
+});
+
+describe("template WhatsApp buku tamu", () => {
+  it("preset pernikahan tidak berubah, preset acara lain tidak menyebut pernikahan", () => {
+    expect(waPresets("WEDDING")[0].text).toBe(
+      "Kepada Yth.\nBapak/Ibu/Saudara/i {nama_tamu}\n\nTanpa mengurangi rasa hormat, perkenankan kami mengundang Bapak/Ibu/Saudara/i untuk menghadiri acara pernikahan kami:\n\n{link_undangan}\n\nMerupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.\n\nTerima kasih.\n\nSalam hangat,\n{nama_mempelai}",
+    );
+    for (const eventType of ["BIRTHDAY", "KHITAN", "AQIQAH", "WISUDA", "GATHERING"]) {
+      for (const preset of waPresets(eventType)) {
+        expect(preset.text).not.toMatch(/pernikahan|perjalanan baru/);
+        expect(preset.text).not.toContain("acara acara");
+      }
+    }
+    expect(waPresets("KHITAN")[0].text).toContain("menghadiri acara khitanan kami:");
+  });
+
+  it.skipIf(!IS_TEST_DB)("template tetap bisa disimpan setelah undangan terbit tanpa menimpa pengaturan lain", async () => {
+    const user = await prisma.user.create({ data: { email: `${RUN}_wa@test.local`, name: RUN } });
+    sessionUser = { id: user.id, email: user.email, role: "CLIENT", isAdmin: false, permissions: [] };
+    const order = await prisma.order.create({
+      data: { userId: user.id, invoiceNumber: `${RUN}_wa`, planType: "TIER_1", amount: 100000, status: "PAID", orderType: "NEW", paidAt: new Date() },
+    });
+    const inv = await prisma.invitation.create({
+      data: { userId: user.id, orderId: order.id, themeId: "kalandra", status: "PUBLISHED", publishedAt: new Date(), invitationSlug: `${RUN}_wa`, featureSettings: { displayOrder: "BRIDE_FIRST" } },
+    });
+    try {
+      const body = JSON.stringify({ featureSettings: { waTemplate: "Halo {nama_tamu}" } });
+      const put = await putInvitation(
+        new Request(`http://localhost/api/client/invitations/${inv.id}`, { method: "PUT", headers: { "content-type": "application/json" }, body }),
+        { params: Promise.resolve({ id: inv.id }) },
+      );
+      expect(put.status).toBe(403);
+
+      const patch = await patchInvitation(
+        new Request(`http://localhost/api/client/invitations/${inv.id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body }),
+        { params: Promise.resolve({ id: inv.id }) },
+      );
+      expect(patch.status).toBe(200);
+      const stored = (await prisma.invitation.findUniqueOrThrow({ where: { id: inv.id }, select: { featureSettings: true } })).featureSettings as Record<string, unknown>;
+      expect(stored.waTemplate).toBe("Halo {nama_tamu}");
+      expect(stored.displayOrder).toBe("BRIDE_FIRST");
+    } finally {
+      await prisma.invitation.deleteMany({ where: { id: inv.id } });
+      await prisma.order.deleteMany({ where: { id: order.id } });
+      await prisma.user.deleteMany({ where: { id: user.id } });
+    }
+  });
+
+  it("halaman buku tamu menyimpan template lewat PATCH", () => {
+    const src = fs.readFileSync(path.join(process.cwd(), "app/(client)/dashboard/guests/page.tsx"), "utf-8");
+    const save = src.slice(src.indexOf("const handleSaveTemplate"), src.indexOf("const defaultSessionInfo"));
+    expect(save).toContain('method: "PATCH"');
+    expect(save).not.toContain('method: "PUT"');
   });
 });
 

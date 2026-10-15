@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { resolveEffectiveInvitationUrl } from "@/lib/domainUtils";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
+import { waPresets } from "@/lib/waPresets";
 import { participantNames } from "@/lib/participantUtils";
 import { useFeedback } from "@/components/ui/Feedback";
 import { normalizeRsvpStatus, type RsvpStatus } from "@/lib/rsvpStatus";
@@ -42,51 +43,6 @@ function rsvpOf(guest: Guest): { state: RsvpStatus; label: string } | null {
     state === "hadir" ? `Konfirmasi hadir (${latest.guestCount || 1} pax)` : state === "tidak" ? "Konfirmasi tidak hadir" : "Konfirmasi ragu";
   return { state, label };
 }
-
-const DEFAULT_WA_TEMPLATE = `Kepada Yth.
-Bapak/Ibu/Saudara/i {nama_tamu}
-
-Tanpa mengurangi rasa hormat, perkenankan kami mengundang Bapak/Ibu/Saudara/i untuk menghadiri acara pernikahan kami:
-
-{link_undangan}
-
-Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.
-
-Terima kasih.
-
-Salam hangat,
-{nama_mempelai}`;
-
-const WA_PRESETS = [
-  {
-    id: "formal",
-    name: "Formal & Sakral",
-    badge: "Populer",
-    desc: "Bahasa sopan standar undangan pernikahan",
-    text: `Kepada Yth.\nBapak/Ibu/Saudara/i {nama_tamu}\n\nTanpa mengurangi rasa hormat, perkenankan kami mengundang Bapak/Ibu/Saudara/i untuk menghadiri acara pernikahan kami:\n\n{link_undangan}\n\nMerupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.\n\nTerima kasih.\n\nSalam hangat,\n{nama_mempelai}`,
-  },
-  {
-    id: "islami",
-    name: "Islami Penuh Berkah",
-    badge: "Islami",
-    desc: "Dengan salam pembuka & penutup bernuansa Islami",
-    text: `Assalamu'alaikum Warahmatullahi Wabarakatuh\n\nKepada Yth.\nBapak/Ibu/Saudara/i {nama_tamu}\n\nDengan memohon rahmat dan ridho Allah SWT, kami bermaksud menyelenggarakan perayaan pernikahan kami:\n\n{link_undangan}\n\nKehadiran dan doa restu Bapak/Ibu/Saudara/i merupakan kehormatan serta kebahagiaan bagi kami.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh.\n\nSalam hormat,\n{nama_mempelai}`,
-  },
-  {
-    id: "modern",
-    name: "Modern & Santai",
-    badge: "Teman / Sahabat",
-    desc: "Cocok untuk teman sebaya, sahabat, atau rekan kerja",
-    text: `Halo {nama_tamu}!\n\nKami mengundang kamu untuk hadir dan merayakan momen bahagia pernikahan kami:\n\n{link_undangan}\n\nInfo Kehadiran: {kuota_tamu} ({sesi_acara})\n\nBuka tautan di atas untuk melihat detail acara, lokasi maps, dan konfirmasi kehadiran (RSVP).\n\nCan't wait to celebrate with you!\n\nSalam hangat,\n{nama_mempelai}`,
-  },
-  {
-    id: "singkat",
-    name: "Singkat & Elegan",
-    badge: "Ringkas",
-    desc: "Format ringkas langsung ke inti tautan undangan",
-    text: `Kepada Yth. {nama_tamu},\n\nKami mengundang Anda untuk hadir di hari bahagia pernikahan kami:\n\n{link_undangan}\n\nMohon doa restu untuk perjalanan baru kami.\n\nSalam bahagia,\n{nama_mempelai}`,
-  },
-];
 
 export default function GuestsPage() {
   const feedback = useFeedback();
@@ -130,8 +86,8 @@ export default function GuestsPage() {
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [beamStyle, setBeamStyle] = useState({ left: 0, width: 0 });
 
-  // WhatsApp Template Customization States
-  const [waTemplate, setWaTemplate] = useState(DEFAULT_WA_TEMPLATE);
+  // null = klien belum menyimpan template sendiri; pakai template admin, lalu preset formal sesuai jenis acara.
+  const [waTemplate, setWaTemplate] = useState<string | null>(null);
   const [adminWaTemplate, setAdminWaTemplate] = useState<string | null>(null);
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [templateSaveSuccess, setTemplateSaveSuccess] = useState(false);
@@ -420,11 +376,7 @@ export default function GuestsPage() {
           // Extract existing saved WA template if any
           const feat: Record<string, any> = inv.featureSettings ?? {};
 
-          if (feat.waTemplate) {
-            // Prioritas tertinggi: template yang sudah disimpan client
-            setWaTemplate(feat.waTemplate);
-          }
-          // Jika belum ada, template akan di-set ke adminWaTemplate saat adminWaTemplate tersedia (useEffect berikutnya)
+          if (feat.waTemplate) setWaTemplate(feat.waTemplate);
 
           loadGuests(inv.id);
         } else {
@@ -436,6 +388,10 @@ export default function GuestsPage() {
         setLoading(false);
       });
   }, []);
+
+  const presets = waPresets(invitationData?.eventType);
+  const defaultTemplate = adminWaTemplate || presets[0].text;
+  const currentTemplate = waTemplate ?? defaultTemplate;
 
   const handleAddGuest = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -499,17 +455,25 @@ export default function GuestsPage() {
       prev.map((g) => (g.id === guestId ? { ...g, waStatus: nextStatus } : g))
     );
 
+    const rollback = (message: string) => {
+      setGuests((prev) =>
+        prev.map((g) => (g.id === guestId ? { ...g, waStatus: currentStatus } : g))
+      );
+      setError(message);
+    };
+
     try {
-      await fetch(`/api/client/guests/${guestId}`, {
+      const res = await fetch(`/api/client/guests/${guestId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ waStatus: nextStatus }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        rollback(data?.error || "Status kirim tamu gagal disimpan.");
+      }
     } catch {
-      // Rollback on error
-      setGuests((prev) =>
-        prev.map((g) => (g.id === guestId ? { ...g, waStatus: currentStatus } : g))
-      );
+      rollback("Koneksi terputus. Status kirim tamu belum tersimpan.");
     }
   };
 
@@ -520,33 +484,23 @@ export default function GuestsPage() {
     setError(null);
 
     try {
-      const currentFeat: Record<string, any> = invitationData?.featureSettings ?? {};
-
-      const updatedFeat = {
-        ...currentFeat,
-        waTemplate: waTemplate.trim(),
-      };
-
+      // PATCH, bukan PUT: PUT ditolak setelah undangan terbit (studio terkunci), padahal template dipakai setelah terbit.
       const res = await fetch(`/api/client/invitations/${invitationId}`, {
-        method: "PUT",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          featureSettings: updatedFeat,
-        }),
+        body: JSON.stringify({ featureSettings: { waTemplate: currentTemplate.trim() } }),
       });
+      const data = await res.json().catch(() => null);
 
       if (res.ok) {
-        setInvitationData((prev: any) => ({
-          ...prev,
-          featureSettings: updatedFeat,
-        }));
+        setInvitationData((prev: any) => ({ ...prev, featureSettings: data?.featureSettings ?? prev?.featureSettings }));
         setTemplateSaveSuccess(true);
         setTimeout(() => setTemplateSaveSuccess(false), 3000);
       } else {
-        setError("Gagal menyimpan template pesan WhatsApp");
+        feedback.notify(data?.error || "Gagal menyimpan template pesan WhatsApp", "error");
       }
-    } catch (err: any) {
-      setError(err.message || "Gagal menyimpan template");
+    } catch {
+      feedback.notify("Koneksi terputus. Template belum tersimpan.", "error");
     } finally {
       setSavingTemplate(false);
     }
@@ -584,9 +538,7 @@ export default function GuestsPage() {
       ? resolved.url
       : "[Tautan resmi aktif otomatis setelah undangan dipublikasikan]";
 
-    const template = waTemplate || DEFAULT_WA_TEMPLATE;
-
-    return template
+    return currentTemplate
       // Format client: {nama_tamu}, {link_undangan}, dll
       .replace(/{nama_tamu}/g, guestName)
       .replace(/{link_undangan}/g, fullGuestUrl)
@@ -643,7 +595,7 @@ export default function GuestsPage() {
   };
 
   const insertVariableTag = (tag: string) => {
-    setWaTemplate((prev) => prev + tag);
+    setWaTemplate((prev) => (prev ?? defaultTemplate) + tag);
   };
 
   const filteredGuests = guests.filter((g) => {
@@ -1250,7 +1202,7 @@ export default function GuestsPage() {
                         type="button"
                         onClick={() => setWaTemplate(adminWaTemplate)}
                         className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between col-span-2 ${
-                          waTemplate === adminWaTemplate
+                          currentTemplate === adminWaTemplate
                             ? "border-violet-600 bg-violet-50/70 ring-1 ring-violet-600/30"
                             : "border-violet-300 bg-violet-50/40 hover:bg-violet-50 hover:border-violet-400"
                         }`}
@@ -1262,13 +1214,13 @@ export default function GuestsPage() {
                         <span className="text-[10px] text-violet-600 line-clamp-1">{adminWaTemplate.slice(0, 80)}{adminWaTemplate.length > 80 ? "…" : ""}</span>
                       </button>
                     )}
-                    {WA_PRESETS.map((preset) => (
+                    {presets.map((preset) => (
                       <button
                         key={preset.id}
                         type="button"
                         onClick={() => setWaTemplate(preset.text)}
                         className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
-                          waTemplate === preset.text
+                          currentTemplate === preset.text
                             ? "border-emerald-700 bg-emerald-50/70 ring-1 ring-emerald-700/30"
                             : "border-stone-200 bg-stone-50 hover:bg-white hover:border-stone-300"
                         }`}
@@ -1293,7 +1245,9 @@ export default function GuestsPage() {
                     {[
                       { tag: "{nama_tamu}", label: "Nama Tamu", desc: "Contoh: Bpk. Abiyoga" },
                       { tag: "{link_undangan}", label: "Link Undangan", desc: "URL Khusus Tamu (Domain / Subdomain)" },
-                      { tag: "{nama_mempelai}", label: "Nama Mempelai", desc: "Nama Kedua Mempelai" },
+                      invitationData?.eventType && invitationData.eventType !== "WEDDING"
+                        ? { tag: "{nama_mempelai}", label: "Nama Acara", desc: resolveInvitationDisplayName(invitationData) }
+                        : { tag: "{nama_mempelai}", label: "Nama Mempelai", desc: "Nama Kedua Mempelai" },
                       { tag: "{kuota_tamu}", label: "Kuota Tamu", desc: "2 Pax" },
                       { tag: "{sesi_acara}", label: "Sesi Acara", desc: defaultSessionInfo },
                     ].map((item) => (
@@ -1315,7 +1269,7 @@ export default function GuestsPage() {
                   <label className="block text-[11px] font-bold text-stone-700 mb-1">Teks Format Pesan WhatsApp:</label>
                   <textarea
                     rows={10}
-                    value={waTemplate}
+                    value={currentTemplate}
                     onChange={(e) => setWaTemplate(e.target.value)}
                     placeholder="Tulis format pesan WhatsApp..."
                     className="w-full p-3 bg-stone-50 border border-stone-200 rounded-2xl text-xs text-stone-900 font-mono leading-relaxed focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700/30"
@@ -1324,7 +1278,7 @@ export default function GuestsPage() {
                     <span>Gunakan tanda bintang *teks* untuk cetak tebal, _teks_ untuk miring</span>
                     <button
                       type="button"
-                      onClick={() => setWaTemplate(adminWaTemplate || DEFAULT_WA_TEMPLATE)}
+                      onClick={() => setWaTemplate(defaultTemplate)}
                       className="text-stone-500 hover:text-stone-800 underline cursor-pointer"
                     >
                       {adminWaTemplate ? "Reset ke Template Admin" : "Reset ke Template Standar"}
