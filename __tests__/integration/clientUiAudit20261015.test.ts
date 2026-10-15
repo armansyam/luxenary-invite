@@ -16,6 +16,7 @@ import GuestMomentOpening from "@/app/components/features/GuestMomentOpening";
 import UnifiedAddonModal from "@/components/client/UnifiedAddonModal";
 import { wrapCanvasText } from "@/components/client/PrintableQRCardModal";
 import { AUDIT_ACTION_OPTIONS } from "@/components/admin/AdminMonitoringTab";
+import { toDateTimeLocalValue } from "@/components/admin/AdminMarketingTab";
 import fs from "fs";
 import path from "path";
 import { getPublicPlatformSettings } from "@/lib/settings";
@@ -105,6 +106,27 @@ describe("filter audit staf", () => {
     const corpus = sources.join("\n");
     const missing = AUDIT_ACTION_OPTIONS.map(([value]) => value).filter((value) => !corpus.includes(`"${value}"`));
     expect(missing).toEqual([]);
+  });
+});
+
+describe("masa berlaku kupon promo", () => {
+  it("membuka lalu menyimpan ulang kupon tidak menggeser jam berlaku", () => {
+    const previousTz = process.env.TZ;
+    process.env.TZ = "Asia/Jakarta";
+    try {
+      const stored = new Date("2026-10-20T10:00").toISOString();
+      expect(stored).toBe("2026-10-20T03:00:00.000Z");
+      const formValue = toDateTimeLocalValue(stored);
+      expect(formValue).toBe("2026-10-20T10:00");
+      expect(new Date(formValue).toISOString()).toBe(stored);
+    } finally {
+      process.env.TZ = previousTz;
+    }
+  });
+
+  it("form kupon tidak lagi memakai nama paket bawaan yang tertanam", () => {
+    const src = fs.readFileSync(path.join(process.cwd(), "components/admin/AdminMarketingTab.tsx"), "utf-8");
+    for (const name of ["Serenade", "Symphony", "Eternity"]) expect(src).not.toContain(name);
   });
 });
 
