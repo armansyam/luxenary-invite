@@ -2013,7 +2013,6 @@ export const DEFAULT_MINIMALIST_BLUEPRINT: ThemeBlueprint = {
 /**
  * Fallback generic blueprint in case an unlisted themeId is queried.
  */
-export const DEFAULT_GENERIC_BLUEPRINT: ThemeBlueprint = DEFAULT_TRADITIONAL_BLUEPRINT;
 
 /**
  * Resolves a ThemeBlueprint for a specific themeId, gracefully overlaying any

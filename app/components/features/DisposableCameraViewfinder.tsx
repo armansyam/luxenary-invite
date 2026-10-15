@@ -13,8 +13,6 @@ export interface DisposableCameraViewfinderProps {
   filterId?: string; // "aura_90s" | "heritage_romance" | "botanical_mist" | "cinema_noir" | "pure_daylight"
   shotsQuota?: number; // 0 = unlimited
   totalEventCap?: number;
-  maxContributors?: number;
-  currentContributorsCount?: number;
   isContributorLimitReached?: boolean;
   dateStampEnabled?: boolean;
   dateFormat?: string; // "DD MM 'YY" | "DD · MMM · YYYY"
@@ -153,8 +151,6 @@ export default function DisposableCameraViewfinder({
   backUrl,
   filterId = "aura_90s",
   shotsQuota = 5,
-  maxContributors = 100,
-  currentContributorsCount = 0,
   isContributorLimitReached = false,
   dateStampEnabled = true,
   dateFormat = "DD MM 'YY",
@@ -786,14 +782,6 @@ export default function DisposableCameraViewfinder({
   // Perhitungan Sisa Jepretan
   const isUnlimited = shotsQuota <= 0;
   const remainingShots = Math.max(0, shotsQuota - shotsTaken);
-
-  // Perhitungan Waktu Jadwal
-  const now = new Date();
-  const parsedStartTime = startTime ? new Date(startTime) : null;
-  const isBeforeEvent = !isTestMode && parsedStartTime !== null && !isNaN(parsedStartTime.getTime()) && now < parsedStartTime;
-
-  const parsedEndTime = endTime ? new Date(endTime) : null;
-  const isAfterEvent = !isTestMode && parsedEndTime !== null && !isNaN(parsedEndTime.getTime()) && now > new Date(parsedEndTime.getTime() + 15 * 60 * 1000);
 
   // ── RENDER LAYAR PEMBUKA EDITORIAL (JIKA BELUM MENEKAN MULAI MOTRET) ──
   if (!hasStartedCamera) {

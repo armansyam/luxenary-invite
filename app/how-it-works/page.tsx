@@ -21,8 +21,6 @@ export default async function HowItWorksPage() {
   const settings = await getPublicPlatformSettings();
   const activeDomain = await getDynamicServerRootDomain();
   const brandName = settings.platformName || "Sistem Undangan";
-  const supportWhatsapp = settings.supportWhatsapp || "";
-  const cleanWaNumber = supportWhatsapp.replace(/\D/g, "").replace(/^0/, "62");
 
   return (
     <div className="min-h-screen bg-[#faf8f5] text-stone-900 font-sans pb-24" style={{ colorScheme: "only light", backgroundColor: "#faf8f5", color: "#1c1917" }}>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { getInvitationPublicUrl, resolveEffectiveInvitationUrl } from "@/lib/domainUtils";
+import { resolveEffectiveInvitationUrl } from "@/lib/domainUtils";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 import { participantNames } from "@/lib/participantUtils";
 import { useFeedback } from "@/components/ui/Feedback";
@@ -559,7 +559,7 @@ export default function GuestsPage() {
       ? "Akad & Resepsi"
       : (getPrimaryEvent(invitationData.eventData) as { title?: string } | null)?.title || "Acara Utama";
 
-  const renderWaText = (guestName: string, guestLimit: number = 2, sessionInfo: string = defaultSessionInfo, qrToken?: string) => {
+  const renderWaText = (guestName: string, guestLimit: number = 2, sessionInfo: string = defaultSessionInfo) => {
     const isWedding = !invitationData?.eventType || invitationData.eventType === "WEDDING";
     const names = participantNames("WEDDING", invitationData?.participantsJson);
     const groom = names.first || "Mempelai Pria";
@@ -610,8 +610,7 @@ export default function GuestsPage() {
     const renderedText = renderWaText(
       guest.name,
       guest.guestLimit || guest.guestQuota || 2,
-      guest.sessionInfo || defaultSessionInfo,
-      guest.qrToken
+      guest.sessionInfo || defaultSessionInfo
     );
 
     const text = encodeURIComponent(renderedText);
@@ -1035,7 +1034,7 @@ export default function GuestsPage() {
 
           {/* Table Body (High Density List Rows) */}
           <div className="divide-y divide-stone-100">
-            {filteredGuests.map((guest, idx) => {
+            {filteredGuests.map((guest) => {
               const isPublished = invitationData?.status === "PUBLISHED" || invitationData?.status === "EVENT_FINISHED";
               const waUrl = isPublished ? generateWaLink(guest) : "";
               const isSent = guest.waStatus === "SENT";
@@ -1374,7 +1373,7 @@ export default function GuestsPage() {
 
                       {/* WhatsApp Bubble Preview Box */}
                       <div className="p-3.5 bg-[#d9fdd3] text-stone-900 rounded-2xl rounded-tr-xs border border-emerald-200/80 shadow-xs text-xs whitespace-pre-wrap font-sans leading-relaxed break-words">
-                        {renderWaText("Bpk. Abiyoga", 2, defaultSessionInfo, "dummy-qr-token")}
+                        {renderWaText("Bpk. Abiyoga", 2, defaultSessionInfo)}
                         <div className="text-right text-[9px] text-stone-400 mt-1 font-mono">
                           12:00
                         </div>

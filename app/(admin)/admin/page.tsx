@@ -230,7 +230,7 @@ export default function AdminPage() {
     }, 4000);
   };
 
-  const handleImpersonateClient = async (clientId: string, clientEmail: string, clientName: string) => {
+  const handleImpersonateClient = async (clientId: string) => {
     try {
       setImpersonatingClient(true);
       setClientActionMsg(null);
@@ -309,7 +309,6 @@ export default function AdminPage() {
   const [stats, setStats] = useState<any>({ invitationCount: 0, orderCount: 0, guestCount: 0, userCount: 0, publishedInvitationCount: 0, draftInvitationCount: 0, rsvpCount: 0 });
   const [orders, setOrders] = useState<any[]>([]);
   const [allOrders, setAllOrders] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
   const [invitations, setInvitations] = useState<any[]>([]);
   const [themes, setThemes] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
@@ -668,7 +667,6 @@ export default function AdminPage() {
           setStats(data.stats || {});
           setOrders(data.orders || []);
           setAllOrders(data.allOrders || []);
-          setUsers(data.users || []);
           setInvitations(data.invitations || []);
           if (Array.isArray(data.themes) && data.themes.length > 0) {
             setThemes(data.themes);
@@ -2550,7 +2548,7 @@ export default function AdminPage() {
 
               {/* ── Invitations / Projek Undangan ── */}
               {activeTab === "invitations" && (
-                <AdminInvitationsTab onNavigateToThemes={() => setActiveTab("themes")} />
+                <AdminInvitationsTab />
               )}
 
               {/* ── Custom Domain Management ── */}
@@ -6138,7 +6136,7 @@ export default function AdminPage() {
               <div className="mt-6 pt-4 border-t border-gray-100">
                 <button
                   type="button"
-                  onClick={() => handleImpersonateClient(manageClient.id, manageClient.email, manageClient.name)}
+                  onClick={() => handleImpersonateClient(manageClient.id)}
                   disabled={impersonatingClient}
                   className="w-full px-4 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >

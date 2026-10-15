@@ -5,6 +5,7 @@ import { EventType } from "@prisma/client";
 
 import { getMonthYearSlug, isSubdomainExpired, isReservedSubdomain } from "@/lib/domainUtils";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
+import { purgeInvitationEdgeCache } from "@/lib/cloudflare";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { DEFAULT_THEME_BY_EVENT, isThemeCompatible } from "@/lib/invitationUtils";
 import { participantNames } from "@/lib/participantUtils";
@@ -190,12 +191,13 @@ export async function POST(req: Request) {
     });
 
     if (existingSubdomain && existingSubdomain.id !== existingDraft?.id) {
-      const { subdomainGraceDays } = await getLifecycleSettings();
-      if (isSubdomainExpired(existingSubdomain.eventData, subdomainGraceDays)) {
+      const { subdomainGraceDays, autoRecycleSubdomain } = await getLifecycleSettings();
+      if (autoRecycleSubdomain && isSubdomainExpired(existingSubdomain.eventData, subdomainGraceDays)) {
         await prisma.invitation.update({
           where: { id: existingSubdomain.id },
           data: { subdomain: null },
         });
+        await purgeInvitationEdgeCache(existingSubdomain);
         finalSubdomain = desiredSubdomain;
       } else {
         const suffix = Date.now().toString(36).slice(-4);

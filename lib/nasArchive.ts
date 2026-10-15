@@ -5,6 +5,7 @@ import { getAdminSetting } from "./settings";
 import { composeTemplateData } from "./themeEngine";
 import { renderTemplateFile } from "./renderTemplate";
 import { logger } from "./logger";
+import { resolveLocalUploadPath } from "./storage";
 
 /**
  * Memeriksa apakah fitur Cold Storage NAS diaktifkan (via DB Admin Setting atau .env)
@@ -133,8 +134,8 @@ export async function syncInvitationToNasArchive(invitationId: string): Promise<
         let buffer: Buffer | null = null;
 
         // Baca dari disk lokal jika file masih ada di VPS (DRAFT/lokal)
-        if (cleanUrl.startsWith("/uploads/")) {
-          const localSrc = path.join(process.cwd(), "public", cleanUrl);
+        const localSrc = resolveLocalUploadPath(cleanUrl);
+        if (localSrc) {
           if (await fileExists(localSrc)) {
             buffer = await fs.promises.readFile(localSrc);
           }

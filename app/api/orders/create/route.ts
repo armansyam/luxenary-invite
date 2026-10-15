@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     const planType = normalizePlanType(rawPlanType);
 
     // 3. Verifikasi Single Source of Truth — User terdaftar di database
-    let targetUser = await prisma.user.findFirst({
+    const targetUser = await prisma.user.findFirst({
       where: {
         OR: [
           ...(session.user.id ? [{ id: session.user.id }] : []),
@@ -63,19 +63,6 @@ export async function POST(req: NextRequest) {
         ],
       },
     });
-
-    // Self-healing: Jika user memiliki sesi OAuth Google resmi namun record DB belum ada
-    // (misal setelah database dibersihkan / di-reset), daftarkan ulang akun klien secara otomatis
-    if (!targetUser && session?.user?.email) {
-      targetUser = await prisma.user.create({
-        data: {
-          email: session.user.email.toLowerCase(),
-          name: session.user.name || "Mempelai",
-          avatarUrl: session.user.image || null,
-          role: "CLIENT",
-        },
-      });
-    }
 
     if (!targetUser) {
       return NextResponse.json(

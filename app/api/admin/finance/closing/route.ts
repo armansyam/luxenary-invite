@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdminModule, requireSuperAdmin } from "@/lib/adminAuth";
+import { adminActorId, requireAdminModule, requireSuperAdmin } from "@/lib/adminAuth";
+import { wibMonthStart } from "@/lib/financePeriods";
 import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
@@ -71,16 +72,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const startOfMonth = new Date(yearNum, monthNum - 1, 1);
-    const endOfMonth = new Date(yearNum, monthNum, 0, 23, 59, 59, 999);
+    const startOfMonth = wibMonthStart(yearNum, monthNum - 1);
+    const startOfNextMonth = wibMonthStart(yearNum, monthNum);
 
-    // Agregasi Omzet (Revenue dari Order PAID)
+    // Omzet diakui saat lunas (paidAt), sama dengan ringkasan keuangan; createdAt menggeser order yang dibuat akhir bulan
+    // tetapi dibayar bulan berikutnya ke periode yang salah.
     const revenueAgg = await prisma.order.aggregate({
       where: {
         status: "PAID",
-        createdAt: {
+        paidAt: {
           gte: startOfMonth,
-          lte: endOfMonth,
+          lt: startOfNextMonth,
         },
       },
       _sum: { amount: true },
@@ -91,7 +93,7 @@ export async function POST(req: NextRequest) {
       where: {
         expenseDate: {
           gte: startOfMonth,
-          lte: endOfMonth,
+          lt: startOfNextMonth,
         },
       },
       _sum: { amount: true },
@@ -102,7 +104,8 @@ export async function POST(req: NextRequest) {
     const netProfit = grossRevenue - totalExpenses;
     const taxAmount = Math.round(grossRevenue * 0.005); // PPh Final 0.5%
 
-    // Transaksi database: Simpan closing + kunci mutasi pengeluaran
+    // Transaksi database: Simpan closing + kunci mutasi pengeluaran + catatan audit atas nama admin asli
+    const actorId = adminActorId(session);
     const [createdClosing] = await prisma.$transaction([
       prisma.financialClosing.create({
         data: {
@@ -112,19 +115,26 @@ export async function POST(req: NextRequest) {
           totalExpenses,
           netProfit,
           taxAmount,
-          closedById: session.user.id || "admin",
-          notes: notes || `Tutup buku resmi periode ${monthNum}/${yearNum} oleh ${session.user.name || session.user.email || "Admin"}`,
+          closedById: actorId,
+          notes: notes || `Tutup buku resmi periode ${monthNum}/${yearNum}`,
         },
       }),
       prisma.expense.updateMany({
         where: {
           expenseDate: {
             gte: startOfMonth,
-            lte: endOfMonth,
+            lt: startOfNextMonth,
           },
         },
         data: {
           isLocked: true,
+        },
+      }),
+      prisma.adminAuditLog.create({
+        data: {
+          adminId: actorId,
+          action: "CLOSE_FINANCIAL_PERIOD",
+          details: `Tutup buku periode ${monthNum}/${yearNum}: omzet Rp ${grossRevenue.toLocaleString("id-ID")}, beban Rp ${totalExpenses.toLocaleString("id-ID")}`,
         },
       }),
     ]);
@@ -166,10 +176,10 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Data tutup buku tidak ditemukan." }, { status: 404 });
     }
 
-    const startOfMonth = new Date(closing.periodYear, closing.periodMonth - 1, 1);
-    const endOfMonth = new Date(closing.periodYear, closing.periodMonth, 0, 23, 59, 59, 999);
+    const startOfMonth = wibMonthStart(closing.periodYear, closing.periodMonth - 1);
+    const startOfNextMonth = wibMonthStart(closing.periodYear, closing.periodMonth);
 
-    // Hapus closing dan buka kunci expense
+    // Hapus closing, buka kunci expense, dan catat siapa yang membuka kembali periode
     await prisma.$transaction([
       prisma.financialClosing.delete({
         where: { id },
@@ -178,11 +188,18 @@ export async function DELETE(req: NextRequest) {
         where: {
           expenseDate: {
             gte: startOfMonth,
-            lte: endOfMonth,
+            lt: startOfNextMonth,
           },
         },
         data: {
           isLocked: false,
+        },
+      }),
+      prisma.adminAuditLog.create({
+        data: {
+          adminId: adminActorId(guard.session),
+          action: "REOPEN_FINANCIAL_PERIOD",
+          details: `Membuka kembali tutup buku periode ${closing.periodMonth}/${closing.periodYear}`,
         },
       }),
     ]);

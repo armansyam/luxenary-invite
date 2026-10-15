@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { normalizePlanType } from "@/lib/planUtils";
 
@@ -10,7 +10,6 @@ interface UnifiedAddonModalProps {
   invitationId: string;
   currentPlan: string;
   currentQuota: number;
-  galleryExpiresAt?: string | null;
   pricingSettings?: {
     priceTier1?: number;
     priceTier2?: number;
@@ -33,7 +32,6 @@ export default function UnifiedAddonModal({
   invitationId,
   currentPlan: rawCurrentPlan = "TIER_1",
   currentQuota = 250,
-  galleryExpiresAt,
   pricingSettings,
   hasExtended = false,
   daysRemaining = null,

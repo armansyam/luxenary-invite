@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
+import { wibDateKey, wibDayStart, wibMonthStart, wibParts } from "@/lib/financePeriods";
+import { DAY_MS } from "@/lib/lifecycleDates";
 
 export const dynamic = "force-dynamic";
 
@@ -13,27 +15,26 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const horizon = searchParams.get("timeframe") || searchParams.get("horizon") || "month"; // "day" | "month" | "year"
     const now = new Date();
-    const targetYear = parseInt(searchParams.get("year") || String(now.getFullYear()), 10);
-    const targetMonth = parseInt(searchParams.get("month") || String(now.getMonth() + 1), 10);
+    const today = wibParts(now);
+    const targetYear = parseInt(searchParams.get("year") || String(today.year), 10);
+    const targetMonth = parseInt(searchParams.get("month") || String(today.monthIndex + 1), 10);
 
-    // Rentang Tanggal Sesuai Horizon
+    // Rentang tanggal sesuai horizon, batas dalam WIB; endDate eksklusif.
     let startDate: Date;
     let endDate: Date;
 
     if (horizon === "day") {
       // 30 Hari Terakhir
-      endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-      startDate = new Date(endDate);
-      startDate.setDate(startDate.getDate() - 29);
-      startDate.setHours(0, 0, 0, 0);
+      endDate = new Date(wibDayStart(now).getTime() + DAY_MS);
+      startDate = new Date(endDate.getTime() - 30 * DAY_MS);
     } else if (horizon === "year") {
       // 5 Tahun Terakhir
-      startDate = new Date(targetYear - 4, 0, 1, 0, 0, 0, 0);
-      endDate = new Date(targetYear, 11, 31, 23, 59, 59, 999);
+      startDate = wibMonthStart(targetYear - 4, 0);
+      endDate = wibMonthStart(targetYear + 1, 0);
     } else {
       // Default: 12 Bulan dalam targetYear
-      startDate = new Date(targetYear, 0, 1, 0, 0, 0, 0);
-      endDate = new Date(targetYear, 11, 31, 23, 59, 59, 999);
+      startDate = wibMonthStart(targetYear, 0);
+      endDate = wibMonthStart(targetYear + 1, 0);
     }
 
     // Query Data Pemasukan dari Order PAID
@@ -42,7 +43,7 @@ export async function GET(req: NextRequest) {
         status: "PAID",
         paidAt: {
           gte: startDate,
-          lte: endDate,
+          lt: endDate,
         },
       },
       select: {
@@ -57,7 +58,7 @@ export async function GET(req: NextRequest) {
       where: {
         expenseDate: {
           gte: startDate,
-          lte: endDate,
+          lt: endDate,
         },
       },
       select: {
@@ -77,18 +78,17 @@ export async function GET(req: NextRequest) {
     // Kalkulasi MoM (Month-over-Month) Revenue Growth jika horizon bulan
     let momGrowth = 0;
     if (horizon === "month") {
-      const currentMonthStart = new Date(targetYear, targetMonth - 1, 1);
-      const currentMonthEnd = new Date(targetYear, targetMonth, 0, 23, 59, 59, 999);
-      const prevMonthStart = new Date(targetYear, targetMonth - 2, 1);
-      const prevMonthEnd = new Date(targetYear, targetMonth - 1, 0, 23, 59, 59, 999);
+      const prevMonthStart = wibMonthStart(targetYear, targetMonth - 2);
+      const currentMonthStart = wibMonthStart(targetYear, targetMonth - 1);
+      const nextMonthStart = wibMonthStart(targetYear, targetMonth);
 
       const [curRev, prevRev] = await Promise.all([
         prisma.order.aggregate({
-          where: { status: "PAID", paidAt: { gte: currentMonthStart, lte: currentMonthEnd } },
+          where: { status: "PAID", paidAt: { gte: currentMonthStart, lt: nextMonthStart } },
           _sum: { amount: true },
         }),
         prisma.order.aggregate({
-          where: { status: "PAID", paidAt: { gte: prevMonthStart, lte: prevMonthEnd } },
+          where: { status: "PAID", paidAt: { gte: prevMonthStart, lt: currentMonthStart } },
           _sum: { amount: true },
         }),
       ]);
@@ -114,23 +114,20 @@ export async function GET(req: NextRequest) {
     if (horizon === "day") {
       // 30 Titik Tanggal
       const daysMap = new Map<string, { label: string; revenue: number; expense: number }>();
-      const cursor = new Date(startDate);
-      while (cursor <= endDate) {
-        const key = cursor.toISOString().split("T")[0];
-        const label = cursor.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
-        daysMap.set(key, { label, revenue: 0, expense: 0 });
-        cursor.setDate(cursor.getDate() + 1);
+      for (let t = startDate.getTime(); t < endDate.getTime(); t += DAY_MS) {
+        const day = new Date(t);
+        const label = day.toLocaleDateString("id-ID", { day: "numeric", month: "short", timeZone: "Asia/Jakarta" });
+        daysMap.set(wibDateKey(day), { label, revenue: 0, expense: 0 });
       }
 
       paidOrders.forEach((o) => {
         if (!o.paidAt) return;
-        const key = o.paidAt.toISOString().split("T")[0];
-        const item = daysMap.get(key);
+        const item = daysMap.get(wibDateKey(o.paidAt));
         if (item) item.revenue += Number(o.amount || 0);
       });
 
       expenses.forEach((e) => {
-        const key = e.expenseDate.toISOString().split("T")[0];
+        const key = wibDateKey(e.expenseDate);
         const item = daysMap.get(key);
         if (item) item.expense += Number(e.amount || 0);
       });
@@ -145,15 +142,15 @@ export async function GET(req: NextRequest) {
     } else if (horizon === "year") {
       // 5 Titik Tahun
       for (let y = targetYear - 4; y <= targetYear; y++) {
-        const yStart = new Date(y, 0, 1);
-        const yEnd = new Date(y, 11, 31, 23, 59, 59, 999);
+        const yStart = wibMonthStart(y, 0);
+        const yEnd = wibMonthStart(y + 1, 0);
 
         const rev = paidOrders
-          .filter((o) => o.paidAt && o.paidAt >= yStart && o.paidAt <= yEnd)
+          .filter((o) => o.paidAt && o.paidAt >= yStart && o.paidAt < yEnd)
           .reduce((sum, o) => sum + Number(o.amount || 0), 0);
 
         const exp = expenses
-          .filter((e) => e.expenseDate >= yStart && e.expenseDate <= yEnd)
+          .filter((e) => e.expenseDate >= yStart && e.expenseDate < yEnd)
           .reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
         chartSeries.push({
@@ -168,15 +165,15 @@ export async function GET(req: NextRequest) {
       // 12 Bulan (Jan - Des)
       const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
       for (let m = 0; m < 12; m++) {
-        const mStart = new Date(targetYear, m, 1);
-        const mEnd = new Date(targetYear, m + 1, 0, 23, 59, 59, 999);
+        const mStart = wibMonthStart(targetYear, m);
+        const mEnd = wibMonthStart(targetYear, m + 1);
 
         const rev = paidOrders
-          .filter((o) => o.paidAt && o.paidAt >= mStart && o.paidAt <= mEnd)
+          .filter((o) => o.paidAt && o.paidAt >= mStart && o.paidAt < mEnd)
           .reduce((sum, o) => sum + Number(o.amount || 0), 0);
 
         const exp = expenses
-          .filter((e) => e.expenseDate >= mStart && e.expenseDate <= mEnd)
+          .filter((e) => e.expenseDate >= mStart && e.expenseDate < mEnd)
           .reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
         chartSeries.push({
@@ -216,17 +213,14 @@ export async function GET(req: NextRequest) {
       orderBy: { dueDayOfMonth: "asc" },
     });
 
-    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-
     const thisMonthExpenses = await prisma.expense.findMany({
       where: {
-        expenseDate: { gte: currentMonthStart, lte: currentMonthEnd },
+        expenseDate: { gte: wibMonthStart(today.year, today.monthIndex), lt: wibMonthStart(today.year, today.monthIndex + 1) },
       },
       select: { title: true, amount: true, expenseDate: true, category: true },
     });
 
-    const todayDay = now.getDate();
+    const todayDay = today.day;
     const recurringWithStatus = recurringList.map((rec) => {
       // Cek apakah sudah ada pembayaran beban yang mirip namanya di bulan ini
       const isPaid = thisMonthExpenses.some(

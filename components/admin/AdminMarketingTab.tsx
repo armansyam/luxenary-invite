@@ -87,7 +87,6 @@ export function AdminMarketingTab() {
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
 
   // Modal states
   const [couponModalOpen, setCouponModalOpen] = useState<boolean>(false);
@@ -468,16 +467,9 @@ export function AdminMarketingTab() {
         (c.description && c.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (c.partner && c.partner.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
-      if (!matchesSearch) return false;
-
-      if (statusFilter === "ACTIVE") return c.isActive;
-      if (statusFilter === "INACTIVE") return !c.isActive;
-      if (statusFilter === "PARTNER") return Boolean(c.partnerId);
-      if (statusFilter === "INTERNAL") return !c.partnerId;
-
-      return true;
+      return matchesSearch;
     });
-  }, [coupons, searchQuery, statusFilter]);
+  }, [coupons, searchQuery]);
 
   const filteredPartners = useMemo(() => {
     return partners.filter((p) => {

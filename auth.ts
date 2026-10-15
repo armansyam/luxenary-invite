@@ -4,6 +4,8 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { authConfig } from "./auth.config";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { hasAdminPermission } from "@/lib/adminPermissions";
+import { REMOTE_COOKIE_NAME, readRemoteClientId } from "@/lib/remoteSession";
 import dns from "node:dns";
 
 // Ensure IPv4 first to prevent IPv6 route-to-host timeouts (EHOSTUNREACH) on outbound OAuth discovery
@@ -144,6 +146,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const admin = await prisma.admin.findUnique({ where: { id: token.id as string }, select: { id: true } });
         if (!admin) return null;
       }
+      // Klien yang dihapus admin juga diakhiri sesinya, bukan dibuatkan akun baru diam-diam pada permintaan berikutnya.
+      if (!user && !(token as any).isAdmin && (token.id || token.email)) {
+        const client = await prisma.user.findFirst({
+          where: {
+            OR: [
+              ...(token.id ? [{ id: token.id as string }] : []),
+              ...(token.email ? [{ email: token.email.toLowerCase().trim() }] : []),
+            ],
+          },
+          select: { id: true },
+        });
+        if (!client) return null;
+      }
       if (user) {
         token.id = user.id;
         (token as any).role = (user as any).role || "CLIENT";
@@ -192,7 +207,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           try {
             const { prisma } = await import("@/lib/prisma");
             const cleanEmail = session.user.email.toLowerCase().trim();
-            let dbUser = await prisma.user.findFirst({
+            const dbUser = await prisma.user.findFirst({
               where: {
                 OR: [
                   ...(token.id ? [{ id: token.id as string }] : []),
@@ -201,25 +216,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               },
               select: { id: true, role: true, email: true },
             });
-
-            if (!dbUser) {
-              const { getServiceAvailability } = await import("@/lib/settings");
-              const availability = await getServiceAvailability();
-              if (!availability.isOpen) {
-                // Batalkan pembuatan user otomatis jika status pendaftaran sedang ditutup
-                return session;
-              }
-
-              dbUser = await prisma.user.create({
-                data: {
-                  email: cleanEmail,
-                  name: session.user.name || "Mempelai",
-                  avatarUrl: session.user.image || null,
-                  role: "CLIENT",
-                },
-                select: { id: true, role: true, email: true },
-              });
-            }
 
             if (dbUser) {
               (session.user as any).id = dbUser.id;
@@ -231,12 +227,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
       }
 
-      // Mode Remote Admin: Override workspace ke target klien jika cookie lux_remote_client_id aktif
-      if ((session?.user as any)?.isAdmin) {
+      // Mode Remote Admin: workspace diganti ke klien hanya bila cookie bertanda tangan milik admin ini dan admin masih
+      // berizin modul Klien atau Projek Undangan (izin dibaca ulang dari DB di atas).
+      const sessionUser = session?.user as any;
+      if (sessionUser?.isAdmin && (hasAdminPermission(sessionUser, "users") || hasAdminPermission(sessionUser, "invitations"))) {
         try {
           const { cookies } = await import("next/headers");
           const cookieStore = await cookies();
-          const remoteClientId = cookieStore.get("lux_remote_client_id")?.value;
+          const remoteClientId = readRemoteClientId(cookieStore.get(REMOTE_COOKIE_NAME)?.value, String(token.id || token.sub || ""));
           if (remoteClientId) {
             const clientUser = await prisma.user.findUnique({
               where: { id: remoteClientId },

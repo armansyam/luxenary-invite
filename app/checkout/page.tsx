@@ -86,7 +86,6 @@ function CheckoutContent() {
   const [reloadKey, setReloadKey] = useState<number>(0);
   const [retentionDays, setRetentionDays] = useState<number>(DEFAULT_LIFECYCLE_SETTINGS.archiveRetentionDays);
   const [cancellingOrder, setCancellingOrder] = useState(false);
-  const [requestedDomain, setRequestedDomain] = useState<string | null>(null);
 
   // Buyer Contact Profile States
   const [buyerName, setBuyerName] = useState<string>("");
@@ -131,48 +130,6 @@ function CheckoutContent() {
   }, [status, planParam, orderIdParam, isAdmin, router]);
 
 
-  // Handle Regenerate Order — deklarasi di atas initializeCheckout agar bisa dipanggil di dalamnya
-  const handleRegenerateOrder = useCallback(async () => {
-    setLoading(true);
-    setIsGatewayExpired(false);
-    setError(null);
-
-    // Untuk pesanan add-on atau upgrade, jangan buat order paket baru
-    if (currentOrderType === "GALLERY_EXTENSION" || currentOrderType === "MEMORIES_TOPUP" || currentOrderType === "UPGRADE") {
-      const returnUrl = currentOrderType === "MEMORIES_TOPUP" ? "/dashboard/moments?msg=order_expired" : "/dashboard?msg=order_expired";
-      router.replace(returnUrl);
-      return;
-    }
-
-    // Gunakan currentPlanType (dari state) bukan planParam (dari URL) agar paket tidak salah
-    const targetPlan = currentPlanType || planParam || "";
-    if (!targetPlan) {
-      router.replace("/packages");
-      return;
-    }
-    try {
-      const res = await fetch("/api/orders/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          planType: targetPlan,
-          regenerate: true,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok && data.orderId) {
-        setOrderId(data.orderId);
-        setInvoiceNumber(data.invoiceNumber);
-        if (data.serverTime) {
-          setServerTimeOffset(data.serverTime - Date.now());
-        }
-        router.replace(`/checkout?order=${data.orderId}&msg=qris_expired`);
-      } else {
-        router.replace(`/checkout?plan=${targetPlan}&msg=qris_expired`);
-      }
-    } catch {}
-    setReloadKey(prev => prev + 1);
-  }, [currentOrderType, currentPlanType, planParam, router]);
 
   // Load / Create Order Flow
   const initializeCheckout = useCallback(async () => {
@@ -262,9 +219,6 @@ function CheckoutContent() {
           setOrderId(orderStatusData.id);
           setInvoiceNumber(orderStatusData.invoiceNumber);
           setCurrentOrderType(orderStatusData.orderType || "NEW_INVITATION");
-          if (orderStatusData.requestedDomain) {
-            setRequestedDomain(orderStatusData.requestedDomain);
-          }
           if (orderStatusData.buyerName) {
             setBuyerName(orderStatusData.buyerName);
           }
@@ -577,7 +531,7 @@ function CheckoutContent() {
 
 
   // Copy helper
-  const handleCopy = (text: string, type: "amount") => {
+  const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopiedAmount(true);
     setTimeout(() => setCopiedAmount(false), 2000);
@@ -920,7 +874,7 @@ function CheckoutContent() {
                   </span>
                   <button
                     type="button"
-                    onClick={() => handleCopy(totalAmount.toString(), "amount")}
+                    onClick={() => handleCopy(totalAmount.toString())}
                     className="p-1.5 text-stone-400 hover:text-white transition cursor-pointer"
                     title="Salin Nominal"
                     aria-label="Salin Nominal"

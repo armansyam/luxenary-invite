@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { deleteFile } from "@/lib/storage";
 import { sendInvoiceEmail } from "@/lib/mailer";
-import { hasPlanCapability, getPlanMemoriesQuota } from "./settings";
+import { getPlanMemoriesQuota } from "./settings";
 import { extendGalleryExpiry } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import type { PlanType, Prisma } from "@prisma/client";
@@ -23,7 +23,6 @@ type BundleItem = {
  * 1. UPGRADE TIER DAHULU (akun dinaikkan ke tier baru)
  * 2. TOP-UP KUOTA FOTO (menambah kolom extraMemoriesQuota)
  * 3. PERPANJANGAN GALERI (menambah kolom extraGalleryDays & menghitung galleryExpiresAt pasca acara)
- * 4. CUSTOM DOMAIN (memasang domain pribadi jika ada)
  */
 export async function applyBundleFulfillment(paidOrderId: string): Promise<boolean> {
   const order = await prisma.order.findUnique({
@@ -33,7 +32,6 @@ export async function applyBundleFulfillment(paidOrderId: string): Promise<boole
       userId: true,
       linkedInvitationId: true,
       targetPlanType: true,
-      requestedDomain: true,
       itemsJson: true,
     },
   });
@@ -59,13 +57,13 @@ export async function applyBundleFulfillment(paidOrderId: string): Promise<boole
     const upgradeItem = items.find(i => i.type === "UPGRADE");
     const targetPlan = upgradeItem?.targetPlan || order.targetPlanType;
     if (targetPlan) {
-      // Perbarui order registrasi induk klien jika ada
-      if (invitation.orderId) {
-        await tx.order.update({
-          where: { id: invitation.orderId },
-          data: { planType: targetPlan },
-        });
+      if (!invitation.orderId) {
+        throw new Error(`Undangan ${invitation.id} tidak memiliki order paket dasar; upgrade dari order ${paidOrderId} tidak dapat diterapkan`);
       }
+      await tx.order.update({
+        where: { id: invitation.orderId },
+        data: { planType: targetPlan },
+      });
     }
 
     // 2. Eksekusi TOP-UP KUOTA FOTO jika ada
@@ -93,80 +91,6 @@ export async function applyBundleFulfillment(paidOrderId: string): Promise<boole
   });
 
   return true;
-}
-
-/**
- * applyGalleryExtension
- * Dipanggil setelah order GALLERY_EXTENSION berhasil PAID.
- * Menambahkan 30 hari ke galleryExpiresAt pada invitation yang bersangkutan.
- */
-export async function applyGalleryExtension(extensionOrderId: string): Promise<void> {
-  const order = await prisma.order.findUnique({
-    where: { id: extensionOrderId },
-    select: {
-      orderType: true,
-      linkedInvitationId: true,
-      userId: true,
-    },
-  });
-
-  if (!order || order.orderType !== "GALLERY_EXTENSION" || !order.linkedInvitationId) return;
-
-  const invitation = await prisma.invitation.findUnique({
-    where: { id: order.linkedInvitationId },
-    select: { id: true, eventData: true, galleryExpiresAt: true },
-  });
-
-  if (!invitation) return;
-
-  const newExpiry = extendGalleryExpiry(invitation, 30, await getLifecycleSettings());
-
-  await prisma.invitation.update({
-    where: { id: invitation.id },
-    data: {
-      galleryExpiresAt: newExpiry,
-      memoriesUploadLocked: false,
-    },
-  });
-}
-
-/**
- * applyMemoriesTopup
- * Dipanggil setelah order MEMORIES_TOPUP berhasil PAID (fallback jika tanpa itemsJson).
- * Menambahkan kuota foto ke invitation.extraMemoriesQuota.
- */
-export async function applyMemoriesTopup(topupOrderId: string): Promise<void> {
-  const order = await prisma.order.findUnique({
-    where: { id: topupOrderId },
-    select: {
-      orderType: true,
-      linkedInvitationId: true,
-      userId: true,
-    },
-  });
-
-  if (!order || order.orderType !== "MEMORIES_TOPUP" || !order.linkedInvitationId) return;
-
-  const invitation = await prisma.invitation.findUnique({
-    where: { id: order.linkedInvitationId },
-    select: { id: true, order: { select: { planType: true } } },
-  });
-
-  if (!invitation) return;
-
-  const topupSetting = await prisma.adminSetting.findUnique({
-    where: { key: "addon_memories_topup_photos" },
-  });
-  const photosToAdd = Number(topupSetting?.value) || 100;
-
-  await prisma.$transaction(async (tx) => {
-    const updated = await tx.invitation.update({
-      where: { id: invitation.id },
-      data: { extraMemoriesQuota: { increment: photosToAdd } },
-      select: { extraMemoriesQuota: true, memoriesNotifiedMilestones: true },
-    });
-    await rearmQuotaMilestones(tx, invitation.id, invitation.order?.planType, updated.extraMemoriesQuota, updated.memoriesNotifiedMilestones);
-  });
 }
 
 /**
@@ -267,65 +191,42 @@ async function runPaidOrderFulfillment(paidOrderId: string): Promise<void> {
 
   if (!order) return;
 
-  // Kirim email bukti pembayaran lunas (PAID) secara asynchronous non-blocking
+  // Single State Enforcement: Bersihkan order usang non-PAID milik user ini
+  if (order.userId) {
+    await purgeObsoleteUserOrders(order.userId, paidOrderId);
+  }
+
+  // Add-on dan upgrade dari checkout terpadu selalu membawa itemsJson; upgrade lama (/api/payments/upgrade) tidak.
+  // Custom domain (requestedDomain) tidak dipasang otomatis: admin mengaktifkannya, atau klien lewat verifikasi DNS.
+  if (Array.isArray(order.itemsJson) && order.itemsJson.length > 0) {
+    await applyBundleFulfillment(paidOrderId);
+  } else if (order.orderType === "UPGRADE" && order.linkedInvitationId && order.targetPlanType) {
+    const invitation = await prisma.invitation.findUnique({
+      where: { id: order.linkedInvitationId },
+      select: { orderId: true },
+    });
+    if (!invitation?.orderId) {
+      logger.error("PaymentFulfillment", "Undangan atau order paket dasar untuk upgrade tidak ditemukan", undefined, { orderId: paidOrderId });
+    } else {
+      await prisma.order.update({
+        where: { id: invitation.orderId },
+        data: { planType: order.targetPlanType },
+      });
+    }
+  }
+
+  // Email lunas dikirim setelah pemenuhan berhasil: bila pemenuhan gagal, klaim dilepas dan dicoba ulang (cron),
+  // sehingga email sebelum pemenuhan akan terkirim berulang kali.
   if (order.user?.email) {
-    const recipientEmail = order.user.email;
-    const recipientName = order.user.name || undefined;
     sendInvoiceEmail({
       orderId: order.id,
       orderType: order.orderType,
       plan: order.planType,
       amount: Number(order.amount),
       paymentMethod: order.paymentMethod || "QRIS / Payment Gateway",
-      recipientEmail,
-      recipientName,
+      recipientEmail: order.user.email,
+      recipientName: order.user.name || undefined,
       type: "PAID",
-    }).catch(err => logger.error("PaymentFulfillment", "Email invoice PAID gagal dikirim", err));
-  }
-
-  // Single State Enforcement: Bersihkan order usang non-PAID milik user ini
-  if (order.userId) {
-    await purgeObsoleteUserOrders(order.userId, paidOrderId);
-  }
-
-  // Jika order memiliki itemsJson (pesanan multi-layanan / bundle terpadu)
-  if (order.itemsJson) {
-    const fulfilled = await applyBundleFulfillment(paidOrderId);
-    if (fulfilled) return;
-  }
-
-  if (order.orderType === "GALLERY_EXTENSION") {
-    await applyGalleryExtension(paidOrderId);
-    return;
-  }
-
-  if (order.orderType === "MEMORIES_TOPUP") {
-    await applyMemoriesTopup(paidOrderId);
-    return;
-  }
-
-
-  if (order.orderType !== "UPGRADE") return;
-  if (!order.linkedInvitationId || !order.targetPlanType) return;
-
-  const invitation = await prisma.invitation.findUnique({
-    where: { id: order.linkedInvitationId },
-    select: { id: true, orderId: true },
-  });
-  if (!invitation?.orderId) return;
-
-  // Update planType di order LAMA → tier baru aktif
-  await prisma.order.update({
-    where: { id: invitation.orderId },
-    data: { planType: order.targetPlanType },
-  });
-
-  // Jika paket upgrade menyertakan custom domain dan target tier memiliki kapabilitas custom_domain
-  const canHaveCustomDomain = await hasPlanCapability(order.targetPlanType, "custom_domain");
-  if (canHaveCustomDomain && order.requestedDomain) {
-    await prisma.invitation.update({
-      where: { id: invitation.id },
-      data: { customDomain: order.requestedDomain },
-    });
+    }).catch((err) => logger.error("PaymentFulfillment", "Email invoice PAID gagal dikirim", err));
   }
 }

@@ -9,6 +9,7 @@ import { hasPlanCapability } from "@/lib/settings";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { getDynamicServerApexUrl } from "@/lib/serverDomainUtils";
 import { canPreviewInvitation } from "@/lib/previewAccess";
+import { eventNoun } from "@/lib/invitationUtils";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ subdomain: string }> }) {
   const { subdomain } = await params;
@@ -102,7 +103,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
   <div class="card">
     <span class="badge">Belum Dipublikasikan</span>
     <h1>Undangan Sedang Disiapkan</h1>
-    <p>Halaman undangan pernikahan ini masih dalam tahap penyusunan dan belum dipublikasikan secara resmi oleh penyelenggara.</p>
+    <p>Halaman undangan ${eventNoun(invitation.eventType)} ini masih dalam tahap penyusunan dan belum dipublikasikan secara resmi oleh penyelenggara.</p>
   </div>
 </body>
 </html>`;
@@ -161,15 +162,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
 
   if (!html) {
     return new NextResponse("Not Found", { status: 404 });
-  }
-
-  // Handle guest parameter dynamically if present
-  const searchParams = req.nextUrl.searchParams;
-  const to = searchParams.get('to') || searchParams.get('v');
-  
-  if (to) {
-    // If the template engine uses a specific placeholder for the guest name, we can inject it here.
-    // For now, the client-side JS typically reads the URL params, but if needed, we can replace it.
   }
 
   const responseHeaders: Record<string, string> = {

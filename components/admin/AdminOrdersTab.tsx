@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useTransition } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getPlanDisplayName } from "@/lib/planUtils";
 
 interface OrderItem {
@@ -25,25 +25,12 @@ interface OrderItem {
   } | null;
 }
 
-interface OrdersResponse {
-  orders: OrderItem[];
-  summary?: {
-    totalFilteredRevenue: number;
-    totalFilteredPaidOrders: number;
-  };
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
 
 export default function AdminOrdersTab() {
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
+  const limit = 20;
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusTab, setStatusTab] = useState<"SEMUA" | "PENDING" | "PAID" | "EXPIRED">("SEMUA");

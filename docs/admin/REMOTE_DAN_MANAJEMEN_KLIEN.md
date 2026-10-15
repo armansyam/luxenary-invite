@@ -86,6 +86,7 @@ flowchart TD
 | Properti | Nilai Faktual | Keterangan |
 |---|---|---|
 | **Nama Cookie** | `lux_remote_client_id` | Penanda ID Klien yang sedang di-remote oleh Admin |
+| **Nilai** | `<clientId>.<expiresAtMs>.<hmac>` | HMAC-SHA256 dengan `AUTH_SECRET`, terikat ke ID admin pemulainya (`lib/remoteSession.ts`) |
 | **HttpOnly** | `true` | Tidak dapat dibaca atau dimanipulasi oleh skrip JavaScript di browser |
 | **Secure** | `true` pada production (`process.env.NODE_ENV === "production"`) | Hanya dikirim melalui protokol HTTPS |
 | **SameSite** | `lax` | Mencegah eksploitasi CSRF lintas situs |
@@ -219,6 +220,7 @@ Enum `InvitationStatus` hanya berisi `DRAFT`, `PUBLISHED`, `TAKEN_DOWN`, `ARCHIV
   if ((session?.user as any)?.isAdmin) { ... }
   ```
   Jika akun yang sedang login adalah klien biasa (`isAdmin: false`), blok kode ini **sama sekali tidak dijalankan**. Klien biasa akan tetap terkunci pada datanya sendiri.
+  Untuk admin, nilai cookie diverifikasi `readRemoteClientId` (tanda tangan HMAC, admin yang sama, belum kedaluwarsa) dan admin wajib memiliki izin modul `users` atau `invitations`. Cookie yang ditulis tangan, disalin dari admin lain, atau sudah lewat 1 jam diabaikan.
 
 ### 2. Perlindungan Terhadap Kebocoran Kredensial
 * Password klien tidak pernah diminta, di-bypass, atau dimodifikasi.

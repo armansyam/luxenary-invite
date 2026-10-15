@@ -119,7 +119,6 @@ const EVENT_PRESETS_BY_TYPE: Record<string, string[]> = {
     "Gala Dinner & Hiburan",
   ],
 };
-const EVENT_PRESETS = EVENT_PRESETS_BY_TYPE.WEDDING;
 
 function formatIndonesianDatePreview(dateStr?: string): string {
   if (!dateStr) return "";
@@ -209,8 +208,8 @@ export default function EditInvitation() {
     TIER_3: "bg-amber-100/70 text-amber-950 border-amber-300",
   };
   const PLAN_FEATURES: Record<string, string[]> = {
-    TIER_2: ["Akses semua tema desain pilihan", "Dilengkapi QR Check-in Resepsionis", "Kamera Saku Digital Tamu (250 Foto)"],
-    TIER_3: ["Akses seluruh tema tanpa batas", "Termasuk Custom Domain Pribadi (.com / .id)", "Kamera Tamu Kuota Maksimal (1.000 Foto)", "Prioritas Akses Server"],
+    TIER_2: ["Akses semua tema desain pilihan", "Dilengkapi QR Check-in Resepsionis", "Kamera Saku Digital Tamu"],
+    TIER_3: ["Akses seluruh tema tanpa batas", "Termasuk Custom Domain Pribadi (.com / .id)", "Kamera Tamu dengan kuota terbesar"],
   };
 
   const handleUpgrade = async () => {
@@ -972,9 +971,6 @@ export default function EditInvitation() {
       Number(getFeatureSetting("memoriesShotsQuota", 5)) !== Number(getSavedFeatureSetting("memoriesShotsQuota", 5)) ||
       Number(getFeatureSetting("memoriesMaxContributors", 100)) !== Number(getSavedFeatureSetting("memoriesMaxContributors", 100)) ||
       Boolean(getFeatureSetting("memoriesDelayedReveal", false)) !== Boolean(getSavedFeatureSetting("memoriesDelayedReveal", false)) ||
-      Boolean(getFeatureSetting("memoriesCustomSchedule", false)) !== Boolean(getSavedFeatureSetting("memoriesCustomSchedule", false)) ||
-      getFeatureSetting("memoriesStartTime", "") !== getSavedFeatureSetting("memoriesStartTime", "") ||
-      getFeatureSetting("memoriesEndTime", "") !== getSavedFeatureSetting("memoriesEndTime", "") ||
       getFeatureSetting("guestMemoriesDriveFolderUrl", "") !== getSavedFeatureSetting("guestMemoriesDriveFolderUrl", "") ||
       getCustomLabel("memoriesTitle", "Abadikan Momen Indah") !== getSavedCustomLabel("memoriesTitle", "Abadikan Momen Indah") ||
       getCustomLabel("memoriesEyebrow", "AFTER-EVENT MEMORIES") !== getSavedCustomLabel("memoriesEyebrow", "AFTER-EVENT MEMORIES") ||
@@ -1018,8 +1014,6 @@ export default function EditInvitation() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invitation, media, events, stories, bankList, savedSnapshot]);
-
-  const hasAnyDirty = Object.values(isDirty).some(Boolean);
 
   // Event Handlers & Chronological Auto-Sort
   const sortEventsChronologically = (list: any[]) => {
@@ -1207,7 +1201,6 @@ export default function EditInvitation() {
   const showLiveStream = getFeatureSetting("showLiveStream", false);
   const showFilter = getFeatureSetting("showFilter", false);
   const showTurutMengundang = getFeatureSetting("showTurutMengundang", true);
-  const showGuestMemoriesGlobal = hasCap("guest_memories") && getFeatureSetting("showGuestMemories", true);
   if (invitation.isLocked && !invitation.isEmergencyUnlocked) {
     const isPublishedLock = invitation.lockReason === "PUBLISHED" || (!invitation.lockReason && (invitation.status === "PUBLISHED" || invitation.status === "EVENT_FINISHED"));
     const coupleName = resolveInvitationDisplayName(invitation);

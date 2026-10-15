@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { startRemoteSession } from "@/app/(admin)/admin/actions/remote";
 
 import {
@@ -37,15 +37,11 @@ interface InvitationItem {
   } | null;
 }
 
-interface AdminInvitationsTabProps {
-  onNavigateToThemes?: () => void;
-}
-
-export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitationsTabProps = {}) {
+export default function AdminInvitationsTab() {
   const [invitations, setInvitations] = useState<InvitationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
+  const limit = 20;
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "DRAFT" | "PUBLISHED" | "EVENT_FINISHED" | "ARCHIVED">("ALL");

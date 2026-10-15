@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
-import { logger } from "@/lib/logger";
-import { routeError } from "@/lib/routeError";
+import { HttpError, routeError } from "@/lib/routeError";
+import { hasPlanCapability } from "@/lib/settings";
 import { randomUUID } from "crypto";
-import { computeLifecycleDates } from "@/lib/lifecycleDates";
+import { computeLifecycleDates, getPrimaryEventDate } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
-import { normalizePlanType } from "@/lib/planUtils";
+import { DEFAULT_PLAN_NAMES, normalizePlanType } from "@/lib/planUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -17,11 +17,7 @@ const PLAN_HIERARCHY: Record<string, number> = {
   TIER_3: 3,
 };
 
-const PLAN_NAMES: Record<string, string> = {
-  TIER_1: "Serenade",
-  TIER_2: "Symphony",
-  TIER_3: "Eternity",
-};
+const MAX_TOPUP_BATCHES = 20;
 
 type BundleItem = {
   type: "UPGRADE" | "GALLERY_EXTENSION" | "MEMORIES_TOPUP";
@@ -82,7 +78,10 @@ export async function POST(req: NextRequest) {
     }
 
     const currentOrder = invitation.order;
-    const currentPlan = normalizePlanType(currentOrder?.planType);
+    if (!currentOrder || currentOrder.status !== "PAID") {
+      return NextResponse.json({ error: "Undangan ini belum memiliki paket aktif yang lunas." }, { status: 400 });
+    }
+    const currentPlan = normalizePlanType(currentOrder.planType);
 
     // 2. Cegah spam / duplikasi jika ada pesanan pending yang sudah memiliki bukti transfer
     const existingPendingWithProof = await prisma.order.findFirst({
@@ -130,21 +129,21 @@ export async function POST(req: NextRequest) {
       settingsMap[s.key] = s.value;
     }
 
-    const priceMap: Record<string, number> = {
-      TIER_1: Number(settingsMap["price_tier1"]) || 99000,
-      TIER_2: Number(settingsMap["price_tier2"]) || 150000,
-      TIER_3: Number(settingsMap["price_tier3"]) || 200000,
+    // Harga tidak pernah diisi angka karangan: pengaturan yang hilang atau tidak sah menghentikan tagihan.
+    const configuredPrice = (key: string): number => {
+      const value = Number(settingsMap[key]);
+      if (!Number.isFinite(value) || value <= 0) {
+        throw new HttpError(503, `Harga layanan (${key}) belum dikonfigurasi. Hubungi administrator.`);
+      }
+      return value;
     };
 
     const planNames: Record<string, string> = {
-      TIER_1: settingsMap["name_tier1"] || PLAN_NAMES.TIER_1,
-      TIER_2: settingsMap["name_tier2"] || PLAN_NAMES.TIER_2,
-      TIER_3: settingsMap["name_tier3"] || PLAN_NAMES.TIER_3,
+      TIER_1: settingsMap["name_tier1"] || DEFAULT_PLAN_NAMES.TIER_1,
+      TIER_2: settingsMap["name_tier2"] || DEFAULT_PLAN_NAMES.TIER_2,
+      TIER_3: settingsMap["name_tier3"] || DEFAULT_PLAN_NAMES.TIER_3,
     };
 
-    const monthlyExtPrice = Number(settingsMap["gallery_extension_price_per_month"]) || 50000;
-    const topupPricePerBatch = Number(settingsMap["addon_memories_topup_price"]) || 35000;
-    const topupPhotosPerBatch = Number(settingsMap["addon_memories_topup_photos"]) || 100;
     const isTopupEnabled = settingsMap["addon_memories_topup_enabled"] !== "false";
 
     const items: BundleItem[] = [];
@@ -163,9 +162,12 @@ export async function POST(req: NextRequest) {
         }, { status: 400 });
       }
 
-      const priceFrom = priceMap[currentPlan] ?? 0;
-      const priceTo = priceMap[canonicalTarget] ?? 0;
-      const diffPrice = Math.max(0, priceTo - priceFrom);
+      const priceFrom = configuredPrice(`price_tier${currentPlan.slice(-1)}`);
+      const priceTo = configuredPrice(`price_tier${canonicalTarget.slice(-1)}`);
+      const diffPrice = priceTo - priceFrom;
+      if (diffPrice <= 0) {
+        return NextResponse.json({ error: "Harga paket tujuan tidak lebih tinggi dari paket saat ini. Hubungi administrator." }, { status: 400 });
+      }
 
       effectiveTargetPlan = canonicalTarget;
       items.push({
@@ -180,6 +182,12 @@ export async function POST(req: NextRequest) {
     // 5. Kalkulasi Item 2: Perpanjangan Masa Aktif Galeri (maksimal 1x 30 hari di H-7)
     const extMonths = Number(extensionMonths);
     if (!isNaN(extMonths) && extMonths > 0) {
+      // Tenggat galeri dihitung dari jadwal terima tamu; tanpa tanggal itu perpanjangan tidak punya patokan.
+      if (!getPrimaryEventDate(invitation.eventData)) {
+        return NextResponse.json({
+          error: "Tanggal jadwal terima tamu belum diisi. Perpanjangan masa aktif baru dapat dibeli setelah tanggal acara ditetapkan.",
+        }, { status: 400 });
+      }
       if (!isAdmin) {
         if (invitation.extraGalleryDays >= 30) {
           return NextResponse.json({
@@ -209,7 +217,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const extPrice = monthlyExtPrice;
+      const extPrice = configuredPrice("gallery_extension_price_per_month");
 
       items.push({
         type: "GALLERY_EXTENSION",
@@ -222,13 +230,20 @@ export async function POST(req: NextRequest) {
 
     // 6. Kalkulasi Item 3: Top-Up Kuota Foto Acara
     const topupCount = Number(topupBatches);
-    if (!isNaN(topupCount) && topupCount > 0) {
+    if (topupCount !== 0 && !Number.isNaN(topupCount)) {
+      if (!Number.isInteger(topupCount) || topupCount < 1 || topupCount > MAX_TOPUP_BATCHES) {
+        return NextResponse.json({ error: `Jumlah paket top-up harus bilangan bulat 1 sampai ${MAX_TOPUP_BATCHES}.` }, { status: 400 });
+      }
       if (!isTopupEnabled) {
         return NextResponse.json({ error: "Layanan add-on top-up kuota foto sedang dinonaktifkan." }, { status: 400 });
       }
+      // Kuota tambahan hanya bermakna bila paket (setelah upgrade di tagihan yang sama) memiliki kamera tamu.
+      if (!(await hasPlanCapability(effectiveTargetPlan || currentPlan, "guest_memories"))) {
+        return NextResponse.json({ error: "Paket Anda belum memiliki fitur kamera tamu. Upgrade paket terlebih dahulu." }, { status: 400 });
+      }
 
-      const totalExtraPhotos = topupCount * topupPhotosPerBatch;
-      const totalTopupPrice = topupCount * topupPricePerBatch;
+      const totalExtraPhotos = topupCount * configuredPrice("addon_memories_topup_photos");
+      const totalTopupPrice = topupCount * configuredPrice("addon_memories_topup_price");
 
       items.push({
         type: "MEMORIES_TOPUP",

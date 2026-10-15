@@ -118,8 +118,6 @@ export default async function GuestMemoriesStandalonePage({ params, searchParams
       endTime={schedule.endTime ? schedule.endTime.toISOString() : null}
       filterId={filterId}
       shotsQuota={effectiveShotsQuota}
-      maxContributors={maxContributors}
-      currentContributorsCount={currentContributorsCount}
       isContributorLimitReached={isContributorLimitReached}
       dateStampEnabled={dateStampEnabled}
       dateFormat={dateFormat}

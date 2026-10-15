@@ -1,10 +1,8 @@
 "use client";
 
-import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import QRCode from "react-qr-code";
 
 import { resolveEffectiveInvitationUrl, getMemoriesActiveSchedule } from "@/lib/domainUtils";
 import { computeLifecycleDates, getPrimaryEventDateString, lifecycleSettingsFromPublic } from "@/lib/lifecycleDates";
@@ -85,7 +83,6 @@ const OPENING_LAYOUTS = [
 
 export default function MomentsSetupPage() {
   const feedback = useFeedback();
-  const { data: session } = useSession();
   const router = useRouter();
 
   const [invitation, setInvitation] = useState<any>(null);
@@ -95,13 +92,11 @@ export default function MomentsSetupPage() {
   // Memories State
   const [guestMemoriesList, setGuestMemoriesList] = useState<any[]>([]);
   const [loadingMemories, setLoadingMemories] = useState(false);
-  const [pendingGalleryOrder, setPendingGalleryOrder] = useState<any>(null);
   const [memoriesQuota, setMemoriesQuota] = useState<any>(null);
 
   // Download ZIP State
   const [downloadPhase, setDownloadPhase] = useState<"idle" | "fetching" | "downloading" | "zipping" | "done" | "error">("idle");
   const [downloadProgress, setDownloadProgress] = useState(0);
-  const [downloadError, setDownloadError] = useState<string | null>(null);
   const [isSyncHelpModalOpen, setIsSyncHelpModalOpen] = useState(false);
 
   // Sessions State & Autosave Debouncing
@@ -131,7 +126,6 @@ export default function MomentsSetupPage() {
       const data = await res.json();
       if (data.success) {
         setGuestMemoriesList(data.memories || []);
-        if (data.pendingOrder !== undefined) setPendingGalleryOrder(data.pendingOrder);
         if (data.quota) setMemoriesQuota(data.quota);
       }
     } catch (e) {
@@ -372,8 +366,6 @@ export default function MomentsSetupPage() {
     : null;
 
   const hasExtended = extraGalleryDays >= 30;
-  const isRenewalWindow = daysRemaining !== null && daysRemaining <= 7 && daysRemaining > 0;
-  const canExtend = !hasExtended && isRenewalWindow;
 
   const openingLayoutId = getFeatureSetting("memoriesOpeningLayout", "editorial_showcase");
   const activeOpeningObj = OPENING_LAYOUTS.find((l) => l.id === openingLayoutId) || OPENING_LAYOUTS[0];
@@ -464,6 +456,7 @@ export default function MomentsSetupPage() {
         date: cleanDate,
         startTime: sTime || "08:00",
         endTime: eTime || "22:00",
+        timezone: ev.timezone || undefined,
         allocatedQuota: allocated,
       };
     });
@@ -567,7 +560,6 @@ export default function MomentsSetupPage() {
 
     setDownloadPhase("fetching");
     setDownloadProgress(0);
-    setDownloadError(null);
 
     try {
       const res = await fetch(`/api/client/memories/download-urls?invitationId=${invitation.id}`);
@@ -586,18 +578,21 @@ export default function MomentsSetupPage() {
       const JSZip = (await import("jszip")).default;
       const zip = new JSZip();
 
+      // Setelah ZIP terunduh, unggahan momen dikunci; ZIP yang kehilangan foto tidak boleh dianggap selesai.
+      let failedFiles = 0;
       for (let i = 0; i < files.length; i++) {
         const { url, filename } = files[i];
         try {
           const resp = await fetch(url);
-          if (resp.ok) {
-            const blob = await resp.blob();
-            zip.file(filename, blob);
-          }
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          zip.file(filename, await resp.blob());
         } catch {
-          console.warn(`Skip file gagal: ${filename}`);
+          failedFiles++;
         }
         setDownloadProgress(Math.round(((i + 1) / files.length) * 85));
+      }
+      if (failedFiles > 0) {
+        throw new Error(`${failedFiles} dari ${files.length} foto gagal diambil. Periksa koneksi internet lalu unduh ulang; unggahan tamu belum dikunci.`);
       }
 
       setDownloadPhase("zipping");
@@ -629,8 +624,7 @@ export default function MomentsSetupPage() {
         setDownloadProgress(0);
       }, 4000);
     } catch (err: any) {
-      console.error("[Download ZIP Error]", err);
-      setDownloadError(err.message || "Gagal mengunduh file ZIP.");
+      feedback.notify(err.message || "Gagal mengunduh file ZIP.", "error");
       setDownloadPhase("error");
       setTimeout(() => {
         setDownloadPhase("idle");
@@ -1802,7 +1796,6 @@ export default function MomentsSetupPage() {
           invitationId={invitation.id}
           currentPlan={planType}
           currentQuota={memoriesQuota?.maxTotalPhotos || (planType === "TIER_3" ? 1000 : 250)}
-          galleryExpiresAt={effectiveExpiry ? effectiveExpiry.toISOString() : null}
           pricingSettings={platformSettings}
           hasExtended={hasExtended}
           daysRemaining={daysRemaining}

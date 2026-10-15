@@ -1,7 +1,7 @@
 # Luxenary Invite — S-Invite Platform
 
 > **Platform Undangan Digital Multi-Event B2C Self-Service (Wedding, Birthday, Khitan, Aqiqah, Wisuda, Gathering)**  
-> Next.js 16.3.7 · Prisma 7.9/7.10 (PostgreSQL) · NextAuth v5 · Gateway 2-Arah (Midtrans & Xendit) · Nodemailer SMTP · Cloudflare R2  
+> Next.js 16.3.8 · Prisma 7.9/7.10 (PostgreSQL) · NextAuth v5 · Gateway 2-Arah (Midtrans & Xendit) · Nodemailer SMTP · Cloudflare R2  
 > **Versi Dokumen: 6.3.6 | Diperbarui: 29 September 2026**
 
 > [!IMPORTANT]
@@ -246,7 +246,7 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 
 | Komponen | Teknologi |
 |:--|:--|
-| **Framework** | Next.js 16.3.7 (App Router) |
+| **Framework** | Next.js 16.3.8 (App Router) |
 | **Bahasa** | TypeScript 5 |
 | **Styling** | Tailwind CSS v4 + Vanilla CSS |
 | **Database** | PostgreSQL via Prisma (`@prisma/client` 7.9.1, CLI `prisma` 7.10.0) dan `pg` |
@@ -314,7 +314,7 @@ Luxenary-Invite/
 │   │   └── s/[subdomain]/     # Sub-routes via subdomain
 │   ├── api/
 │   │   ├── admin/             # overview, orders, themes, settings, portfolio, invitations/[id]/lifecycle
-│   │   ├── client/            # invitations, guests, media, rsvps, upload, checkout-bundle
+│   │   ├── client/            # invitations, guests, rsvps, upload, checkout-bundle
 │   │   ├── public/            # settings, themes, rsvp, memories, resolve-custom-domain, version
 │   │   ├── payments/          # checkout, status-stream
 │   │   ├── orders/            # create invoice
@@ -574,6 +574,7 @@ npx vitest run
 - **Acara non-pernikahan (9 Okt 2026)**: undangan ulang tahun, khitan, aqiqah, wisuda, dan gathering yang dibuat lewat wizard kini dapat diterbitkan (audit terbit sebelumnya selalu menolak karena nama hanya tersimpan di `participantsJson`), dan nama, gelar, kampus, serta orang tua tampil di undangan. Form editor dan Pengaturan mengikuti jenis acara, nomor seksi tidak lagi melompat. Skrip backfill nama yang semula diperlukan sudah dihapus; kolom nama lama digantikan migrasi `20261010140000` (lihat poin 10–11 Okt di bawah). Isi nomor WhatsApp dukungan (`support_whatsapp`) di admin agar tombol "Hubungi CS" tampil. Rincian di `docs/SYSTEM_ARCHITECTURE.md` bagian 25.11 butir 26.
 - **Reset jenis acara & tema satu nama (9 Okt 2026)**: admin dapat mereset jenis acara draf yang belum pernah terbit (tab Undangan, alasan wajib); draf dihapus, order tetap lunas, dan klien mulai ulang dari wizard. Tema dibagi dua kategori: tema pernikahan untuk pernikahan, tema satu nama untuk semua acara lain (ulang tahun, khitan, aqiqah, wisuda, acara umum dapat memakai tema non-pernikahan mana pun). Tema satu nama kini memiliki musik, hitung mundur, kartu QR check-in, ajakan Kamera Momen, dan seksi tambahan studio; QR dan Momen mengikuti fitur paket untuk semua tema. Wajib `npx tsx scripts/refresh-theme-drafts.ts --apply` setelah deploy. Rincian di `docs/SYSTEM_ARCHITECTURE.md` bagian 25.11 butir 27.
 - **Perubahan pasca-terbit & skema tanpa tambalan (10–11 Okt 2026)**: setelah terbit, klien tetap dapat mengganti PIN panitia (endpoint `staff-pin`) dan mengelola daftar tamu sampai hari terima tamu (zona waktu acara). Sesi QR/checkout gateway disimpan terpisah dari umur order 24 jam (regenerate QR tidak lagi selalu 410). Kuota add-on berbayar ada di kolom sendiri dan ditambah secara atomik. Kolom JSON kini jsonb dengan CHECK bentuk. Nama peserta semua jenis acara hanya di `participantsJson`: 14 kolom `groom*`/`bride*` dihapus setelah datanya dipindah; draf yang sudah bernama kini dapat memperbaiki nama mempelai (sebelumnya diam-diam diabaikan); pencarian admin mencari nama di dalam data peserta. Deploy: `prisma migrate deploy` (5 migrasi `20261010100000`–`20261010140000`), lalu `npx tsx scripts/refresh-theme-drafts.ts --apply` dan restart. Rincian di `docs/SYSTEM_ARCHITECTURE.md` bagian 25.11 butir 28.
+- **Audit pra-rilis (14 Okt 2026)**: kredensial SMTP dipisah dari pengaturan publik (`getSmtpSettings`); hapus berkas dikurung ke folder undangan dan `public/uploads` (endpoint `DELETE /api/client/media/{id}` dihapus); nilai URL di tema di-encode; `galleryExpiresAt` tidak pernah memendekkan galeri bawaan; cookie remote admin bertanda tangan HMAC dan akun klien terhapus langsung keluar; cache edge dibersihkan di setiap perubahan status (`purgeInvitationEdgeCache`); harga add-on/upgrade wajib dari Admin Setting (503 bila kosong); transisi status order bersyarat `PENDING`; keuangan memakai batas WIB dan `paidAt`; ekspor CSV kebal formula. Rincian di `docs/SYSTEM_ARCHITECTURE.md` bagian 27.
 - **Galat route seragam dan env saat start**: route admin memakai `requireAdminModule` (401 belum login, 403 tanpa modul); `catch` terakhir route memakai `routeError` (`lib/routeError.ts`); `instrumentation.ts` memeriksa env (`lib/env.ts`) saat start dan meneruskan galat render ke pelacak galat (Sentry bila `SENTRY_DSN` diisi). Segmen path dari URL divalidasi `isSafePathSegment` (`lib/fsSafe.ts`).
 - **Pelaku audit tunggal**: setiap catatan audit admin memakai `adminActorId(session)` (`lib/adminAuth.ts`), sehingga sesi remote tetap tercatat atas nama admin asli; hapus permanen klien wajib modul `users`, bukan dari sesi remote, dan tercatat (`DELETE_CLIENT`).
 - **Catatan audit dan galat yang terlihat**: audit buka/kunci darurat dan pengeluaran ditulis atas nama admin yang bertindak dan satu transaksi dengan perubahannya; galat pembacaan pengaturan penting, penghapusan salinan backup R2, dan pembangunan ulang HTML terbit dicatat di log, bukan ditelan (`lib/fsSafe.ts`, `readBackupPathSetting()`).

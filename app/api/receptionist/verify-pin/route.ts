@@ -4,6 +4,7 @@ import { routeError } from "@/lib/routeError";
 import { verifyPin } from "@/lib/pinEncryption";
 import { getClientIp, rateLimitDb } from "@/lib/rateLimit";
 import { generateReceptionistToken } from "@/lib/receptionistAuth";
+import { hasPlanCapability } from "@/lib/settings";
 
 const PIN_WINDOW_MS = 15 * 60 * 1000;
 
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Undangan tidak ditemukan" }, { status: 404 });
     }
 
-    if (invitation.order?.planType === "TIER_1") {
+    if (!(await hasPlanCapability(invitation.order?.planType, "qr_checkin"))) {
       return NextResponse.json(
         { error: "Fitur Sistem Resepsionis & QR Check-in tidak tersedia pada paket dasar Anda. Silakan upgrade paket untuk mengaktifkan fitur ini." },
         { status: 403 }

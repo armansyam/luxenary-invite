@@ -16,8 +16,8 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { invitationId, name, phone, category, sessionInfo, guestLimit, tableNumber } = body;
 
-    if (!invitationId || !name) {
-      return NextResponse.json({ error: "invitationId and name are required" }, { status: 400 });
+    if (typeof invitationId !== "string" || typeof name !== "string" || !invitationId || !name.trim()) {
+      return NextResponse.json({ error: "invitationId dan nama tamu wajib diisi." }, { status: 400 });
     }
 
     const invitation = await prisma.invitation.findUnique({

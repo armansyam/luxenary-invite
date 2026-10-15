@@ -56,19 +56,6 @@ function formatRupiah(num: number | undefined | null): string {
   }).format(safeNum);
 }
 
-function formatCompactRupiah(num: number): string {
-  if (Math.abs(num) >= 1_000_000_000) {
-    return (num / 1_000_000_000).toFixed(1).replace(/\.0$/, "") + " M";
-  }
-  if (Math.abs(num) >= 1_000_000) {
-    return (num / 1_000_000).toFixed(1).replace(/\.0$/, "") + " jt";
-  }
-  if (Math.abs(num) >= 1_000) {
-    return (num / 1_000).toFixed(0) + " rb";
-  }
-  return num.toString();
-}
-
 function formatDateIndo(dateStr: string): string {
   try {
     const d = new Date(dateStr);

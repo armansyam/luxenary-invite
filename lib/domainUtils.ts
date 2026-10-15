@@ -5,7 +5,7 @@
  * - Production: https://[subdomain].[root_domain]
  */
 
-import { DAY_MS, getEventTimezoneOffset, getPrimaryEventDate, resolveEventTimezone } from "./lifecycleDates";
+import { DAY_MS, getEventTimezoneOffset, getPrimaryEventDate, getPrimaryEventTimezone, resolveEventTimezone } from "./lifecycleDates";
 
 /**
  * Subdomain cadangan sistem yang dilindungi dan dilarang digunakan oleh klien.
@@ -279,8 +279,10 @@ export function getMemoriesActiveSchedule(featureSettingsInput: any, eventDataIn
 
   const rawSessions: MemoriesSession[] = [];
 
-  // 1. Prioritaskan konfigurasi multi-session eksplisit jika ada
+  // 1. Prioritaskan konfigurasi multi-session eksplisit jika ada. Sesi tanpa zona waktu memakai zona waktu acara utama:
+  // jam sesi diketik sebagai jam setempat acara, bukan WIB.
   if (Array.isArray(fs.memoriesSessions) && fs.memoriesSessions.length > 0) {
+    const eventTimezone = getPrimaryEventTimezone(eventDataInput);
     for (const s of fs.memoriesSessions) {
       if (s && s.date) {
         rawSessions.push({
@@ -289,24 +291,10 @@ export function getMemoriesActiveSchedule(featureSettingsInput: any, eventDataIn
           date: s.date,
           startTime: s.startTime || "08:00",
           endTime: s.endTime || "22:00",
+          timezone: s.timezone ? resolveEventTimezone(s) : eventTimezone,
           allocatedQuota: Number(s.allocatedQuota) || 0,
         });
       }
-    }
-  } else if (fs.memoriesCustomSchedule && fs.memoriesStartTime && fs.memoriesEndTime) {
-    // Mode kustom mandiri rentang tunggal
-    const sDate = new Date(fs.memoriesStartTime);
-    const eDate = new Date(fs.memoriesEndTime);
-    if (!isNaN(sDate.getTime()) && !isNaN(eDate.getTime())) {
-      const pad = (n: number) => String(n).padStart(2, "0");
-      rawSessions.push({
-        id: "custom_single",
-        name: "Sesi Kamera Kustom",
-        date: `${sDate.getFullYear()}-${pad(sDate.getMonth() + 1)}-${pad(sDate.getDate())}`,
-        startTime: `${pad(sDate.getHours())}:${pad(sDate.getMinutes())}`,
-        endTime: `${pad(eDate.getHours())}:${pad(eDate.getMinutes())}`,
-        allocatedQuota: 0,
-      });
     }
   } else {
     // 2. Auto-sintesis sesi dari susunan acara undangan (eventData)
@@ -346,7 +334,7 @@ export function getMemoriesActiveSchedule(featureSettingsInput: any, eventDataIn
   }
 
   const now = new Date();
-  const parsed = rawSessions.map((s, index) => {
+  const parsed = rawSessions.map((s) => {
     const cleanDate = s.date.includes("T") ? s.date.split("T")[0] : s.date;
     const offset = getEventTimezoneOffset(resolveEventTimezone(s));
     const sTime = (s.startTime || "00:00").slice(0, 5);
@@ -356,7 +344,6 @@ export function getMemoriesActiveSchedule(featureSettingsInput: any, eventDataIn
     const graceEndDate = new Date(endDate.getTime() + 15 * 60 * 1000); // 15 menit toleransi pasca-sesi
     return {
       ...s,
-      index,
       startDate,
       endDate,
       graceEndDate,
@@ -373,8 +360,9 @@ export function getMemoriesActiveSchedule(featureSettingsInput: any, eventDataIn
   let activeSessionIndex = -1;
   let isSessionActive = parsed.length === 0;
 
-  // Evaluasi status sesi saat ini terhadap waktu faktual
-  for (const s of parsed) {
+  // Evaluasi status sesi saat ini terhadap waktu faktual. Indeks mengacu ke daftar kronologis (`sessions` di bawah),
+  // karena kuota kumulatif menjumlah sesi-sesi sebelumnya secara berurutan.
+  for (const [chronologicalIndex, s] of parsed.entries()) {
     if (now >= s.startDate && now <= s.graceEndDate) {
       currentSession = {
         id: s.id,
@@ -382,10 +370,10 @@ export function getMemoriesActiveSchedule(featureSettingsInput: any, eventDataIn
         date: s.date,
         startTime: s.startTime,
         endTime: s.endTime,
-        timezone: (s as any).timezone || "WIB",
+        timezone: s.timezone || "WIB",
         allocatedQuota: s.allocatedQuota,
       };
-      activeSessionIndex = s.index;
+      activeSessionIndex = chronologicalIndex;
       isSessionActive = true;
       break;
     }
@@ -401,7 +389,7 @@ export function getMemoriesActiveSchedule(featureSettingsInput: any, eventDataIn
           date: s.date,
           startTime: s.startTime,
           endTime: s.endTime,
-          timezone: (s as any).timezone || "WIB",
+          timezone: s.timezone || "WIB",
           allocatedQuota: s.allocatedQuota,
         };
         break;
@@ -414,12 +402,12 @@ export function getMemoriesActiveSchedule(featureSettingsInput: any, eventDataIn
   return {
     startTime,
     endTime,
-    isCustom: Boolean(fs.memoriesCustomSchedule || (Array.isArray(fs.memoriesSessions) && fs.memoriesSessions.length > 0)),
+    isCustom: Array.isArray(fs.memoriesSessions) && fs.memoriesSessions.length > 0,
     isSessionActive,
     currentSession,
     nextSession,
     isAllFinished,
-    sessions: rawSessions,
+    sessions: parsed.map(({ id, name, date, startTime, endTime, timezone, allocatedQuota }) => ({ id, name, date, startTime, endTime, timezone, allocatedQuota })),
     activeSessionIndex,
   };
 }

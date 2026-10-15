@@ -77,18 +77,14 @@ export async function POST(req: Request) {
       select: { key: true, value: true },
     });
 
-    const priceMap: Record<string, number> = {
-      TIER_1: Number(settings.find(s => s.key === "price_tier1")?.value) || 99000,
-      TIER_2: Number(settings.find(s => s.key === "price_tier2")?.value) || 150000,
-      TIER_3: Number(settings.find(s => s.key === "price_tier3")?.value) || 200000,
-    };
+    const tierPrice = (plan: string) => Number(settings.find((s) => s.key === `price_tier${plan.slice(-1)}`)?.value);
     const activePaymentMode = settings.find(s => s.key === "payment_mode")?.value || "GATEWAY";
     const resolvedPaymentMethod = activePaymentMode === "MANUAL" ? "MANUAL_TRANSFER" : "GATEWAY";
 
-    const priceFrom = priceMap[currentPlan] ?? 0;
-    const priceTo = priceMap[targetPlanUpper] ?? 0;
+    const priceFrom = tierPrice(currentPlan);
+    const priceTo = tierPrice(targetPlanUpper);
 
-    if (priceTo <= priceFrom) {
+    if (!(priceFrom > 0) || !(priceTo > 0) || priceTo <= priceFrom) {
       return NextResponse.json({
         error: "Harga paket tujuan tidak valid. Pastikan harga paket sudah dikonfigurasi di admin.",
       }, { status: 400 });

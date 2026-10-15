@@ -57,6 +57,10 @@ async function makeInvitation(userId: string, orderId: string | null, tag: strin
   return inv;
 }
 
+// Bentuk itemsJson yang ditulis /api/client/orders/checkout-bundle, satu-satunya pembuat order add-on.
+const TOPUP_ITEMS = [{ type: "MEMORIES_TOPUP", label: "Top-Up Kuota Foto Acara (+100 Foto)", price: 35000, batches: 1, photos: 100 }];
+const EXTENSION_ITEMS = [{ type: "GALLERY_EXTENSION", label: "Perpanjangan Masa Aktif (+30 Hari)", price: 50000, months: 1, days: 30 }];
+
 const quotaOf = async (invitationId: string) =>
   (await prisma.invitation.findUniqueOrThrow({ where: { id: invitationId }, select: { extraMemoriesQuota: true } })).extraMemoriesQuota;
 
@@ -100,7 +104,7 @@ describe.skipIf(!IS_TEST_DB)("pemulihan pembayaran", () => {
   it("applyUpgradePlan idempoten: dua pemanggilan menambah kuota top-up sekali", async () => {
     const u = await makeUser("idem");
     const inv = await makeInvitation(u.id, null, "idem");
-    const topup = await makeOrder(u.id, { orderType: "MEMORIES_TOPUP", status: "PAID", paidAt: new Date(), linkedInvitationId: inv.id });
+    const topup = await makeOrder(u.id, { orderType: "MEMORIES_TOPUP", status: "PAID", paidAt: new Date(), linkedInvitationId: inv.id, itemsJson: TOPUP_ITEMS });
 
     await applyUpgradePlan(topup.id);
     await applyUpgradePlan(topup.id);
@@ -116,7 +120,7 @@ describe.skipIf(!IS_TEST_DB)("pemulihan pembayaran", () => {
       where: { id: inv.id },
       data: { eventData: [{ title: "Akad", date: "2099-01-01", time: "09:00", isPrimary: true }] },
     });
-    const extension = await makeOrder(u.id, { orderType: "GALLERY_EXTENSION", status: "PAID", paidAt: new Date(), linkedInvitationId: inv.id });
+    const extension = await makeOrder(u.id, { orderType: "GALLERY_EXTENSION", status: "PAID", paidAt: new Date(), linkedInvitationId: inv.id, itemsJson: EXTENSION_ITEMS });
     const expiryOf = async () => (await prisma.invitation.findUniqueOrThrow({ where: { id: inv.id } })).galleryExpiresAt;
 
     lifecycleFailure.failNext = true;
@@ -132,7 +136,7 @@ describe.skipIf(!IS_TEST_DB)("pemulihan pembayaran", () => {
   it("webhook untuk order PAID yang belum terpenuhi menjalankan pemenuhan sekali", async () => {
     const u = await makeUser("replay");
     const inv = await makeInvitation(u.id, null, "replay");
-    const topup = await makeOrder(u.id, { orderType: "MEMORIES_TOPUP", status: "PAID", paidAt: new Date(), linkedInvitationId: inv.id, chargedAmount: 100000 });
+    const topup = await makeOrder(u.id, { orderType: "MEMORIES_TOPUP", status: "PAID", paidAt: new Date(), linkedInvitationId: inv.id, chargedAmount: 100000, itemsJson: TOPUP_ITEMS });
 
     expect((await midtransWebhook(paidWebhook(topup.id))).status).toBe(200);
     expect((await midtransWebhook(paidWebhook(topup.id))).status).toBe(200);
@@ -171,6 +175,7 @@ describe.skipIf(!IS_TEST_DB)("pemulihan pembayaran", () => {
       status: "PAID",
       paidAt: new Date(Date.now() - 3600_000),
       linkedInvitationId: inv.id,
+      itemsJson: TOPUP_ITEMS,
     });
     await pool.query("INSERT INTO rate_limit_counters (key, count, expires_at) VALUES ($1, 1, now() - interval '1 hour')", [`${RUN}:expired`]);
 

@@ -67,7 +67,6 @@ export default function SettingsPage() {
   const [cnameTarget, setCnameTarget] = useState("");
   const [serverPublicIp, setServerPublicIp] = useState("");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [showBuyModal, setShowBuyModal] = useState(false);
   const [isDomainOwned, setIsDomainOwned] = useState(false);
   const [isCustomDomainEnabled, setIsCustomDomainEnabled] = useState(true);
   const [lifecycleSettings, setLifecycleSettings] = useState<LifecycleDaySettings>(lifecycleSettingsFromPublic(null));

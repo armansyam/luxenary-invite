@@ -37,9 +37,6 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group
   { key: "midtrans_production_server_key", value: "", label: "Server Key Midtrans (Produksi)", group: "midtrans" },
   { key: "xendit_api_key", value: "", label: "Secret API Key Xendit", group: "xendit" },
   { key: "xendit_webhook_token", value: "", label: "Webhook Token Xendit", group: "xendit" },
-  { key: "google_auth_enabled", value: "true", label: "Aktifkan Login Google", group: "google" },
-  { key: "google_client_id", value: "", label: "Google Client ID", group: "google" },
-  { key: "google_client_secret", value: "", label: "Google Client Secret", group: "google" },
   { key: "desc_tier1", value: "Paket Intim & Esensial — Undangan Digital Berkelas, Musik & RSVP Online", label: "Deskripsi Paket Tier 1", group: "pricing" },
   { key: "desc_tier2", value: "Paket Harmoni Pesta — Dilengkapi Resepsionis QR Check-In & Kamera Momen Tamu", label: "Deskripsi Paket Tier 2", group: "pricing" },
   { key: "desc_tier3", value: "Paket Mahakarya Abadi — All-Inclusive dengan Custom Domain Pribadi (.com/.id) & Kuota Maksimal", label: "Deskripsi Paket Tier 3", group: "pricing" },
@@ -136,8 +133,6 @@ export async function POST(req: NextRequest) {
     
     // Map of setting keys to environment variables
     const envKeyMap: Record<string, string> = {
-      google_client_id: "GOOGLE_CLIENT_ID",
-      google_client_secret: "GOOGLE_CLIENT_SECRET",
       platform_url: "APP_URL",
       nas_archive_enabled: "NAS_ARCHIVE_ENABLED",
       nas_archive_path: "NAS_ARCHIVE_PATH",

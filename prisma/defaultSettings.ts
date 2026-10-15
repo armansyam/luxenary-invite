@@ -231,30 +231,6 @@ export const defaultSettings: DefaultSettingItem[] = [
     "updatedAt": "2026-09-16T06:28:33.031Z"
   },
   {
-    "id": "43866a96-20b4-4255-ae6e-7e250027e160",
-    "key": "google_auth_enabled",
-    "value": "true",
-    "label": "Aktifkan Login Google",
-    "group": "google",
-    "updatedAt": "2026-09-16T06:28:32.997Z"
-  },
-  {
-    "id": "7e65d2ea-84ee-429c-aa0f-eeb15c187913",
-    "key": "google_client_id",
-    "value": "",
-    "label": "Google Client ID",
-    "group": "google",
-    "updatedAt": "2026-09-16T06:28:32.998Z"
-  },
-  {
-    "id": "f5fdef5d-0f43-4bf0-a5c6-a259d930042d",
-    "key": "google_client_secret",
-    "value": "",
-    "label": "Google Client Secret",
-    "group": "google",
-    "updatedAt": "2026-09-16T06:28:32.999Z"
-  },
-  {
     "id": "e2af3a04-f910-4339-ac12-67882682e893",
     "key": "hero_subtitle",
     "value": "Didesain khusus dengan sentuhan estetika mewah dan eksklusif. Hadirkan pengalaman berkesan dengan layout split desktop, custom subdomain, buku tamu real-time, dan video booth ucapan.",

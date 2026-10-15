@@ -396,7 +396,7 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
      - **Mode MANUAL:** Klien dapat beralih seketika antara `PUBLISHED` dan `EVENT_FINISHED` dari dasbor Momen (`POST /api/client/invitations/[id]/gallery-mode`, parameter `targetMode`). Undangan berstatus `DRAFT` ditolak (HTTP 400), dan beralih ke galeri menuntut hak akses `guest_memories` pada paket (HTTP 403 bila tidak ada).
 2. **Empat Jam Retensi Terpisah** (seluruhnya dari awal hari acara utama pada zona waktu acara; bawaan kode/seed, nilai aktif dari Admin Setting):
    - **Subdomain** (`subdomain_grace_days`, 7): subdomain dikembalikan ke pool agar dapat dipakai pasangan lain; sesudahnya URL yang dipakai adalah slug.
-   - **Galeri foto tamu** (`retention_cleanup_days`, 30; atau `galleryExpiresAt` hasil add-on): foto candid dibersihkan dari R2/lokal agar R2 lega.
+   - **Galeri foto tamu** (`retention_cleanup_days`, 30; atau `galleryExpiresAt` hasil add-on bila lebih lambat dari batas itu): foto candid dibersihkan dari R2/lokal agar R2 lega.
    - **Arsip undangan** (`nas_archive_retention_days`, 365): undangan diamankan di arsip mandiri lalu dibersihkan setelah masa ini.
    - **Custom domain** (`retention_custom_domain_days`, 365): domain dibeli klien sendiri; platform hanya menyiapkan integrasi. Selama masa ini undangan yang sudah diarsipkan tetap tampil di domain klien (tanpa dialihkan ke URL kanonik) bila salinan arsip tersedia; tanpa salinan arsip, perilaku lama (portofolio atau beranda) berlaku.
    - Tamu dan pengantin dapat mengunduh seluruh koleksi foto kenangan dalam format ZIP via JSZip client-side tanpa membebani bandwidth VPS.
@@ -586,6 +586,7 @@ Sistem pengiriman email otomatis menggunakan **Nodemailer** yang membaca kredens
 1. **Konfigurasi SMTP Mandiri**:
    - `smtp_host`, `smtp_port`, `smtp_user`, `smtp_password`, `smtp_from_email`, `smtp_from_name`.
    - *Graceful non-blocking*: Jika SMTP belum dikonfigurasi, sistem mencatat log aman tanpa mengganggu transaksi pembayaran.
+   - Kredensial dibaca lewat `getSmtpSettings()` (`lib/settings.ts`), terpisah dari `getPublicPlatformSettings()`, sehingga tidak pernah ikut data pengaturan publik.
 2. **Template Email Responsif & Mewah (Warm White Cream & Royal Amber Gold)**:
    - Desain editorial elegan berpalet krem hangat (`#F7F5F0`), kartu putih (`#FFFFFF`), border halus (`#EAE4D9`), dan aksen emas bangsawan (`#B45309`, `#C9A227`). Menghindari mode gelap pekat agar lebih ramah dibaca dan konsisten di seluruh klien email.
    - Tanpa emoji default OS untuk menjaga citra SaaS profesional.
@@ -674,7 +675,7 @@ Dalam pengelolaan Klien dan Undangan di Dashboard Admin (`app/(admin)/admin/page
 3. **Pemberantasan Tombol *Backdoor* Gratisan:** Seluruh perpanjangan (*Gallery Extension*) wajib melalui jalur *Payment Gateway* yang sah. Tombol `+30H Galeri` ditiadakan dari UI Admin untuk melindungi integritas laporan keuangan (*Revenue Report*).
 4. **Logika Fitur Kunci Darurat:** Opsi `Buka Kunci Darurat` hanya muncul jika sistem secara objektif mendeteksi undangan telah terkunci permanen. Jika status masih `DRAFT` atau "Bisa Diedit", tombol tersebut secara otomatis disembunyikan.
 5. **Kalkulasi Kedaluwarsa Dinamis (On-The-Fly):** Kolom `Invitation.expiresAt` telah dihapus (migrasi `20260930120000_lifecycle_cleanup`); seluruh tenggat dihitung `computeLifecycleDates` dari `Tanggal Acara Utama` + jam retensi masing-masing (subdomain, galeri, arsip, custom domain).
-6. **Mekanisme Remote Klien & Segmentasi Leads (Restore 1-Klik) (`docs/admin/REMOTE_DAN_MANAJEMEN_KLIEN.md`):** Admin dapat meremote Dasbor Klien secara utuh tanpa meminta password melalui arsitektur *httpOnly Cookie Session Override (`lux_remote_client_id`)*. Tombol Remote hanya aktif untuk klien yang memiliki ruang kerja aktif (undangan/pesanan lunas). Calon klien (leads) yang belum checkout disegmentasikan secara terpisah dengan opsi follow-up WhatsApp dan tombol remote dinonaktifkan. Server Action `startRemoteSession(clientId)` menetapkan cookie dan mengarahkan ke `/dashboard`. Callback `session` di `auth.ts` secara dinamis memetakan workspace ke profil klien target (`id`, `name`, `email`, `role`) sembari mempertahankan penanda hak akses Admin (`originalRole`). Di halaman `/admin`, proteksi *Immunity Guard* mencegah sidebar admin hilang saat cookie remote aktif, dan dilengkapi banner sticky amber dengan tombol 1-klik hentikan remote. Saat Admin logout dari dashboard admin, cookie remote otomatis dibersihkan secara tuntas.
+6. **Mekanisme Remote Klien & Segmentasi Leads (Restore 1-Klik) (`docs/admin/REMOTE_DAN_MANAJEMEN_KLIEN.md`):** Admin dapat meremote Dasbor Klien secara utuh tanpa meminta password melalui arsitektur *httpOnly Cookie Session Override (`lux_remote_client_id`)*. Nilai cookie ditandatangani HMAC (`AUTH_SECRET`), terikat ke admin pemulainya, berlaku 1 jam, dan hanya dihormati untuk admin berizin modul `users` atau `invitations` (`lib/remoteSession.ts`). Tombol Remote hanya aktif untuk klien yang memiliki ruang kerja aktif (undangan/pesanan lunas). Calon klien (leads) yang belum checkout disegmentasikan secara terpisah dengan opsi follow-up WhatsApp dan tombol remote dinonaktifkan. Server Action `startRemoteSession(clientId)` menetapkan cookie dan mengarahkan ke `/dashboard`. Callback `session` di `auth.ts` secara dinamis memetakan workspace ke profil klien target (`id`, `name`, `email`, `role`) sembari mempertahankan penanda hak akses Admin (`originalRole`). Di halaman `/admin`, proteksi *Immunity Guard* mencegah sidebar admin hilang saat cookie remote aktif, dan dilengkapi banner sticky amber dengan tombol 1-klik hentikan remote. Saat Admin logout dari dashboard admin, cookie remote otomatis dibersihkan secara tuntas.
 7. **Realtime SSE Checkout & Dark Luxury Transition Modal (PostgreSQL LISTEN/NOTIFY Multi-Process Bridge):** Pintu masuk ruang kerja undangan `/dashboard/setup` terlindungi secara absolut (Zero Visual Leak) hanya jika order berstatus `PAID`. Halaman checkout menggunakan Server-Sent Events (SSE) murni (`/api/payments/status-stream/[orderId]`) yang didukung jembatan event cross-process PostgreSQL `LISTEN/NOTIFY` (`lib/paymentEvents.ts`). Baik pembayaran otomatis QRIS maupun verifikasi manual transfer memicu `NOTIFY payment_events` yang tersiar seketika (<5ms) ke seluruh instance PM2 cluster, menghilangkan polling browser dan beban loop database sepenuhnya. Instance yang memegang SSE klien langsung mendorong event `PAID` atau `REJECTED` (lengkap dengan `rejectReason`). Jika `PAID`, modal transisi sukses bertema Dark Luxury muncul dengan animasi checkmark dan rincian invoice, lalu mengalihkan pengguna ke dasbor setelah jeda 1.8 detik. Heartbeat pasif 15 detik menjamin stabilitas proxy Caddy dan fail-safe reconnect.
 8. **Resolusi Dinamis Mode Pembayaran Add-on Dasbor Klien:** Seluruh modul add-on klien (perpanjangan galeri kenangan, domain kustom, upgrade paket) membaca konfigurasi `payment_mode` dari `AdminSetting` secara dinamis tanpa hardcoding.
 9. **Arsitektur Tab Modular & Standar Desain Clean SaaS (Zero OS Emojis):** Seluruh antarmuka admin dipecah menjadi komponen modular terisolasi (`AdminOrdersTab`, `AdminClientsTab`, `AdminInvitationsTab`, `AdminCustomDomainsTab`, `AdminMonitoringTab`, `AdminMarketingTab`, `AdminFinanceTab`). Seluruh emoji OS bawaan (seperti 🔒, ✏️, 💾, 💳, 🌐, ⚡) dihapus total dan digantikan oleh ikon vektor SVG modern serta indikator titik (*subtle 1.5px dot indicators*).
@@ -960,7 +961,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Ditandai dengan badge `★ Jadwal Terima Tamu` pada Seksi 5 Studio Editor, dengan keterangan bahwa tanggal & jam sesi itu adalah waktu tamu datang; tombol sesi lain berbunyi "Jadikan Jadwal Terima Tamu". Wizard menandai Resepsi untuk pernikahan (sesi adat lain seperti Mappacci atau Mappenre Botting ditambahkan di editor) dan satu-satunya sesi untuk acara lain. Undangan tidak dapat diterbitkan sebelum sesi ini bertanggal (dicek server), dan sesi bertanda utama tanpa tanggal tidak digantikan sesi lain.
    - Sesi utama ini menjadi jangkar tunggal (*single source of truth*) kalkulasi:
      * Masa subdomain (`mainDate + subdomain_grace_days`) dan masa arsip undangan (`mainDate + nas_archive_retention_days`).
-     * Batas kedaluwarsa galeri foto kenangan tamu (`mainDate + retention_cleanup_days`, atau `galleryExpiresAt` bila diperpanjang).
+     * Batas kedaluwarsa galeri foto kenangan tamu (`mainDate + retention_cleanup_days`, atau `galleryExpiresAt` bila diperpanjang dan lebih lambat dari batas itu).
      * Countdown Timer di cover HTML live (`targetDate = mainDate + startTime`).
      * Header tanggal pernikahan di tema (`weddingDate`).
      * Jadwal Google Calendar pengingat tamu.
@@ -1420,3 +1421,19 @@ Ringkasan fungsional perubahan 1 Oktober 2026 (rincian teknis: `docs/SYSTEM_ARCH
 
 
 
+
+## 34. Perbaikan Audit Pra-Rilis (14 Oktober 2026)
+
+Rincian teknis di `docs/SYSTEM_ARCHITECTURE.md` bagian 27. Ringkasan fungsional:
+
+1. Kredensial SMTP tidak lagi termuat di pengaturan publik.
+2. Hapus media hanya menyentuh berkas milik undangan itu; URL media tidak sah ditolak (HTTP 400). Endpoint `DELETE /api/client/media/{id}` dihapus.
+3. Nilai URL di tema di-encode agar tidak dapat menyisipkan skrip.
+4. Perpanjangan galeri tidak pernah memendekkan masa galeri bawaan setelah tanggal acara diubah.
+5. Sesi remote admin memakai cookie bertanda tangan; akun klien yang dihapus langsung keluar.
+6. Cache edge dibersihkan pada setiap perubahan status, subdomain, dan tanggal acara.
+7. Tagihan add-on mewajibkan paket lunas dan harga dari Admin Setting; top-up 1-20 batch hanya untuk paket dengan Kamera Momen.
+8. Perubahan status order bersyarat `PENDING`, aman terhadap klik ganda dan webhook bersamaan.
+9. Laporan keuangan memakai batas waktu WIB dan tanggal lunas (`paidAt`).
+10. Ekspor CSV kebal formula spreadsheet.
+11. Jadwal Kamera Momen hanya dari sesi acara; mode jadwal kustom lama dihapus.

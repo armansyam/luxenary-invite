@@ -27,6 +27,12 @@ export async function POST(
       return NextResponse.json({ error: "Order tidak ditemukan" }, { status: 404 });
     }
 
+    if (order.status !== "PENDING") {
+      return NextResponse.json({
+        error: `Order tidak dapat ditolak. Status saat ini: ${order.status}. Hanya order PENDING yang dapat ditolak.`,
+      }, { status: 400 });
+    }
+
     let reason = "Bukti transfer tidak valid atau dana belum masuk.";
     try {
       const body = await req.json();
@@ -37,33 +43,37 @@ export async function POST(
       // Body opsional: tanpa body JSON, alasan memakai nilai bawaan di atas.
     }
 
-    // Hapus file bukti transfer fisik lama yang ditolak (deleteFile mencatat galatnya sendiri dan tidak melempar).
-    if (order.proofImageUrl) {
-      await deleteFile(order.proofImageUrl);
-    }
-
-    // Update order: status tetap PENDING agar order tidak mati, hapus proof agar user bisa upload ulang.
-    // Perubahan dan catatan auditnya satu transaksi, atas nama admin yang bertindak (bukan email session, yang
-    // milik klien saat sesi remote).
-    await prisma.$transaction([
-      prisma.order.update({
-        where: { id: orderId },
+    // Order tetap PENDING agar klien bisa unggah ulang; bukti dilepas. Update bersyarat: order yang baru saja lunas
+    // (webhook atau admin lain) tidak boleh dikembalikan ke PENDING. Perubahan dan auditnya satu transaksi, atas nama
+    // admin yang bertindak (bukan email session, yang milik klien saat sesi remote).
+    const rejected = await prisma.$transaction(async (tx) => {
+      const updated = await tx.order.updateMany({
+        where: { id: orderId, status: "PENDING" },
         data: {
-          status: "PENDING",
           proofImageUrl: null,
           proofUploadedAt: null,
           rejectReason: reason,
         },
-      }),
-      prisma.adminAuditLog.create({
+      });
+      if (updated.count === 0) return false;
+      await tx.adminAuditLog.create({
         data: {
           adminId: adminActorId(session),
           action: "REJECT_MANUAL_ORDER",
           details: `Menolak transaksi order ${order.invoiceNumber || orderId}. Alasan: ${reason}`,
           ipAddress: req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || null,
         },
-      }),
-    ]);
+      });
+      return true;
+    });
+    if (!rejected) {
+      return NextResponse.json({ error: "Order sudah diproses oleh proses lain. Muat ulang daftar order." }, { status: 409 });
+    }
+
+    // Berkas bukti dihapus setelah penolakan tersimpan (deleteFile mencatat galatnya sendiri dan tidak melempar).
+    if (order.proofImageUrl) {
+      await deleteFile(order.proofImageUrl);
+    }
 
     // Push notifikasi real-time ke browser klien via SSE
     // Klien menerima event REJECTED secara instan — tidak perlu polling

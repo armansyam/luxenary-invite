@@ -2,7 +2,6 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { DEFAULT_PLAN_NAMES } from "@/lib/planUtils";
 import { isThemeCompatible } from "@/lib/invitationUtils";
@@ -66,7 +65,6 @@ function SetupWizardContent() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session } = useSession();
 
   const queryPlan = searchParams.get("plan");
   const queryOrder = searchParams.get("order");

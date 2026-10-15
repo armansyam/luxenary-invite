@@ -20,6 +20,41 @@ export const s3Client = STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3"
     })
   : null;
 
+/** Basis URL publik berkas di R2/S3 tanpa garis miring akhir; kosong bila belum dikonfigurasi. */
+export function storagePublicBaseUrl(): string {
+  return (process.env.S3_CUSTOM_DOMAIN || process.env.S3_PUBLIC_URL || "").replace(/\/$/, "");
+}
+
+/**
+ * Path absolut berkas lokal untuk URL `/uploads/...`, atau null bila URL bukan unggahan lokal atau keluar dari
+ * public/uploads (mis. `/uploads/../../.env`). URL media dapat berasal dari input klien, jadi setiap baca/hapus berkas
+ * lokal wajib lewat sini.
+ */
+export function resolveLocalUploadPath(url: string | null | undefined): string | null {
+  if (!url || !url.startsWith("/uploads/")) return null;
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(url.split("?")[0]);
+  } catch {
+    return null;
+  }
+  const uploadsRoot = path.join(process.cwd(), "public", "uploads");
+  const absolute = path.resolve(uploadsRoot, "." + decoded.slice("/uploads".length));
+  return absolute.startsWith(uploadsRoot + path.sep) ? absolute : null;
+}
+
+/** Apakah URL media adalah berkas unggahan milik undangan ini (lokal atau R2), sehingga boleh dihapus atas namanya. */
+export function isInvitationOwnedUpload(url: string | null | undefined, invitationId: string): boolean {
+  if (!url) return false;
+  const clean = url.split("?")[0];
+  const local = resolveLocalUploadPath(clean);
+  if (local) {
+    return local.startsWith(path.join(process.cwd(), "public", "uploads", "invitations", invitationId) + path.sep);
+  }
+  const base = storagePublicBaseUrl();
+  return Boolean(base) && clean.startsWith(`${base}/invitations/${invitationId}/`) && !clean.includes("/../");
+}
+
 /**
  * Unified Upload Handler (VPS vs R2)
  * @param buffer - File Buffer
@@ -45,10 +80,9 @@ export async function uploadFile(buffer: Buffer, relativePath: string, mimeType:
 
     await s3Client.send(command);
 
-    const publicUrl = (process.env.S3_CUSTOM_DOMAIN || process.env.S3_PUBLIC_URL)?.replace(/\/$/, "");
-    return `${publicUrl}/${relativePath}`;
-  } 
-  
+    return `${storagePublicBaseUrl()}/${relativePath}`;
+  }
+
   else {
     // Local Upload (Default)
     const absolutePath = path.join(process.cwd(), "public", "uploads", relativePath);
@@ -78,20 +112,12 @@ export async function deleteFile(publicUrl: string | null): Promise<boolean> {
       const bucketName = process.env.S3_BUCKET_NAME;
       if (!bucketName || !s3Client) return false;
 
-      // Safely extract S3 object key from URL pathname (e.g. "proofs/xxx.webp")
-      let relativePath = "";
-      try {
-        const parsed = new URL(publicUrl);
-        relativePath = decodeURIComponent(parsed.pathname.replace(/^\//, ""));
-      } catch {
-        const customDomain = process.env.S3_CUSTOM_DOMAIN || process.env.S3_PUBLIC_URL || "";
-        const domainPrefix = customDomain.replace(/\/$/, "");
-        if (publicUrl.startsWith(domainPrefix)) {
-          relativePath = publicUrl.substring(domainPrefix.length + 1);
-        }
-      }
-
-      if (!relativePath) return false;
+      // Hanya objek di bawah basis URL bucket sendiri; URL eksternal (Google Drive, dsb.) bukan milik kita.
+      const base = storagePublicBaseUrl();
+      const cleanUrl = publicUrl.split("?")[0];
+      if (!base || !cleanUrl.startsWith(`${base}/`)) return false;
+      const relativePath = decodeURIComponent(cleanUrl.slice(base.length + 1));
+      if (!relativePath || relativePath.split("/").includes("..")) return false;
 
       const command = new DeleteObjectCommand({
         Bucket: bucketName,
@@ -103,9 +129,8 @@ export async function deleteFile(publicUrl: string | null): Promise<boolean> {
     } 
     
     // Local File Deletion
-    if (publicUrl.startsWith("/uploads/")) {
-      const cleanPath = publicUrl.split("?")[0];
-      const absolutePath = path.join(process.cwd(), "public", cleanPath);
+    const absolutePath = resolveLocalUploadPath(publicUrl);
+    if (absolutePath) {
       if (fs.existsSync(absolutePath)) {
         await fs.promises.unlink(absolutePath);
         return true;
@@ -133,28 +158,30 @@ export async function streamMemoriesToZip(archive: any, invitationId: string): P
       throw new Error("S3 Credentials not configured properly in .env");
     }
 
-    let listCommand = new ListObjectsV2Command({
-      Bucket: bucketName,
-      Prefix: relativePrefix,
-    });
+    // ListObjectsV2 mengembalikan paling banyak 1000 objek per halaman; kuota foto (dengan top-up) bisa melebihinya.
+    const listAll = async (prefix: string) => {
+      const keys: { Key?: string }[] = [];
+      let continuationToken: string | undefined;
+      do {
+        const page = await s3Client.send(
+          new ListObjectsV2Command({ Bucket: bucketName, Prefix: prefix, ContinuationToken: continuationToken })
+        );
+        keys.push(...(page.Contents ?? []));
+        continuationToken = page.IsTruncated ? page.NextContinuationToken : undefined;
+      } while (continuationToken);
+      return keys;
+    };
 
-    let listData = await s3Client.send(listCommand);
-    
+    let objects = await listAll(relativePrefix);
     // Fallback: periksa folder legacy jika prefix baru kosong
-    if (!listData.Contents || listData.Contents.length === 0) {
-      listCommand = new ListObjectsV2Command({
-        Bucket: bucketName,
-        Prefix: legacyPrefix,
-      });
-      listData = await s3Client.send(listCommand);
-    }
+    if (objects.length === 0) objects = await listAll(legacyPrefix);
 
-    if (!listData.Contents || listData.Contents.length === 0) {
+    if (objects.length === 0) {
       throw new Error("EMPTY");
     }
 
     // Stream each object into the archiver
-    for (const object of listData.Contents) {
+    for (const object of objects) {
       if (!object.Key) continue;
       const getCommand = new GetObjectCommand({
         Bucket: bucketName,
@@ -209,7 +236,7 @@ export async function syncDraftToR2(invitationId: string): Promise<void> {
   if (STORAGE_PROVIDER !== "r2" && STORAGE_PROVIDER !== "s3") return;
   
   const bucketName = process.env.S3_BUCKET_NAME;
-  const customDomain = process.env.S3_CUSTOM_DOMAIN;
+  const customDomain = storagePublicBaseUrl();
   if (!bucketName || !customDomain || !s3Client) return;
 
   try {
@@ -236,10 +263,10 @@ export async function syncDraftToR2(invitationId: string): Promise<void> {
     };
 
     const syncSingleUrl = async (url: string | null): Promise<string | null> => {
-      if (!url || !url.startsWith("/uploads/")) return url;
-      
+      const localFilePath = resolveLocalUploadPath(url);
+      if (!url || !localFilePath) return url;
+
       const cleanUrl = url.split("?")[0];
-      const localFilePath = path.join(process.cwd(), "public", cleanUrl);
       try {
         const buffer = await fs.promises.readFile(localFilePath);
         const ext = path.extname(cleanUrl).toLowerCase();

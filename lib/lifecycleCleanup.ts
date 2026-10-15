@@ -4,8 +4,8 @@ import { prisma, pool } from "./prisma";
 import { logger } from "./logger";
 import { getAdminSetting } from "./settings";
 import { buildAndSavePublishedHtml, deletePublishedHtml } from "./staticPublisher";
-import { deleteFile } from "./storage";
-import { invalidateInvitationLookup } from "./cache";
+import { deleteFile, isInvitationOwnedUpload } from "./storage";
+import { purgeInvitationEdgeCache } from "./cloudflare";
 import { isNasArchiveEnabled, purgeNasArchive, syncInvitationToNasArchive } from "./nasArchive";
 import { DAY_MS, computeLifecycleDates, formatDateInEventTimezone, getPrimaryEventTimezone, type LifecycleSettings } from "./lifecycleDates";
 import { getLifecycleSettings } from "./lifecycleSettings";
@@ -56,7 +56,7 @@ async function pathExists(target: string): Promise<boolean> {
 async function transitionFinishedInvitations(now: Date, settings: LifecycleSettings, dryRun: boolean, scope: InvitationScope): Promise<number> {
   const published = await prisma.invitation.findMany({
     where: { ...scope, status: "PUBLISHED" },
-    select: { id: true, eventData: true },
+    select: { id: true, eventData: true, invitationSlug: true, subdomain: true, customDomain: true },
   });
 
   let transitioned = 0;
@@ -65,8 +65,14 @@ async function transitionFinishedInvitations(now: Date, settings: LifecycleSetti
     if (!dates || now < dates.eventFinishedAt) continue;
 
     if (!dryRun) {
-      await buildAndSavePublishedHtml(inv.id);
-      await prisma.invitation.update({ where: { id: inv.id }, data: { status: "EVENT_FINISHED" } });
+      try {
+        await buildAndSavePublishedHtml(inv.id);
+        await prisma.invitation.update({ where: { id: inv.id }, data: { status: "EVENT_FINISHED" } });
+        await purgeInvitationEdgeCache(inv);
+      } catch (err) {
+        logger.error(CONTEXT, "Transisi EVENT_FINISHED gagal; undangan lain tetap diproses", err, { invitationId: inv.id });
+        continue;
+      }
     }
     transitioned++;
   }
@@ -89,7 +95,7 @@ async function releaseExpiredSubdomains(now: Date, settings: LifecycleSettings, 
 
     if (!dryRun) {
       await prisma.invitation.update({ where: { id: inv.id }, data: { subdomain: null } });
-      invalidateInvitationLookup(inv.invitationSlug, inv.subdomain);
+      await purgeInvitationEdgeCache(inv);
     }
     released++;
   }
@@ -158,12 +164,13 @@ async function purgeGuestMemories(invitationId: string): Promise<void> {
 
 interface ExpiredInvitation extends WarningTarget {
   subdomain: string | null;
+  customDomain: string | null;
 }
 
 /**
- * Menutup masa galeri: foto tamu dibersihkan, undangan diarsipkan dan DIVERIFIKASI, baru kemudian
- * artefak hot storage dihapus. Bila arsip gagal, tidak ada yang dihapus dan undangan dicoba lagi pada
- * eksekusi berikutnya.
+ * Menutup masa galeri: foto tamu dibersihkan (masa simpannya memang berakhir, arsip tidak memuatnya), lalu undangan
+ * diarsipkan dan DIVERIFIKASI, baru kemudian artefak hot storage lainnya dihapus. Bila arsip gagal, HTML dan media
+ * undangan tidak disentuh dan undangan dicoba lagi pada eksekusi berikutnya.
  */
 async function archiveExpiredInvitation(inv: ExpiredInvitation, nasEnabled: boolean): Promise<ArchiveFailure | null> {
   await purgeGuestMemories(inv.id);
@@ -180,12 +187,12 @@ async function archiveExpiredInvitation(inv: ExpiredInvitation, nasEnabled: bool
 
   if (nasEnabled) {
     const media = await prisma.invitationMedia.findMany({ where: { invitationId: inv.id }, select: { localPath: true } });
-    await Promise.all(media.map((item) => deleteFile(item.localPath)));
+    await Promise.all(media.map((item) => (isInvitationOwnedUpload(item.localPath, inv.id) ? deleteFile(item.localPath) : Promise.resolve(false))));
   }
 
   await prisma.rsvp.deleteMany({ where: { invitationId: inv.id } });
   await prisma.invitation.update({ where: { id: inv.id }, data: { status: "ARCHIVED", memoriesUploadLocked: true } });
-  invalidateInvitationLookup(inv.invitationSlug, inv.subdomain);
+  await purgeInvitationEdgeCache(inv);
   return null;
 }
 
@@ -234,6 +241,7 @@ export async function runLifecycleCleanup(options: LifecycleCleanupOptions = {})
       galleryExpiresAt: true,
       invitationSlug: true,
       subdomain: true,
+      customDomain: true,
       eventType: true,
       participantsJson: true,
       user: { select: { email: true, name: true } },
@@ -259,7 +267,12 @@ export async function runLifecycleCleanup(options: LifecycleCleanupOptions = {})
       continue;
     }
 
-    const failure = await archiveExpiredInvitation(inv, nasEnabled);
+    let failure: ArchiveFailure | null;
+    try {
+      failure = await archiveExpiredInvitation(inv, nasEnabled);
+    } catch (err) {
+      failure = { invitationId: inv.id, slug: inv.invitationSlug, reason: err instanceof Error ? err.message : String(err) };
+    }
     if (failure) {
       logger.error(CONTEXT, "Arsip gagal; undangan tidak dibersihkan dan akan dicoba lagi", undefined, { ...failure });
       archiveFailures.push(failure);

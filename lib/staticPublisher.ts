@@ -28,30 +28,9 @@ async function ensurePublishedDir() {
 }
 
 /**
- * Returns the absolute filepath for an invitation's standalone published HTML.
- */
-export async function getPublishedFilePath(invitationId: string, _category?: string): Promise<string> {
-  await ensurePublishedDir();
-  return path.join(PUBLISHED_DIR, "ids", `${invitationId}.html`);
-}
-
-/**
- * Checks if a standalone published HTML file exists for this invitation.
- */
-export async function hasPublishedHtml(invitationId: string, _category?: string): Promise<boolean> {
-  const p = path.join(PUBLISHED_DIR, "ids", `${invitationId}.html`);
-  try {
-    await fs.promises.access(p);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
  * Reads the standalone published HTML file content.
  */
-export async function getPublishedHtml(invitationId: string, _category?: string): Promise<string | null> {
+export async function getPublishedHtml(invitationId: string): Promise<string | null> {
   // L1 Memory Cache: respons instan <0.05ms tanpa I/O disk saat lonjakan tamu
   const cached = publishedHtmlCache.get(invitationId);
   if (cached) return cached;

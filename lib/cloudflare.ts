@@ -1,3 +1,25 @@
+import { invalidateInvitationLookup } from "./cache";
+import { getDynamicServerRootDomain } from "./serverDomainUtils";
+
+/**
+ * Halaman undangan terbit di-cache edge 7 hari (s-maxage), jadi setiap perubahan status atau isi wajib membersihkan
+ * cache lookup L1 dan URL publiknya (subdomain, slug, custom domain). Dipanggil juga dari cron, di luar request:
+ * domain akar lalu diambil dari NEXT_PUBLIC_ROOT_DOMAIN.
+ */
+export async function purgeInvitationEdgeCache(inv: {
+  invitationSlug: string | null;
+  subdomain: string | null;
+  customDomain?: string | null;
+}): Promise<Awaited<ReturnType<typeof purgeCloudflareCache>> | null> {
+  invalidateInvitationLookup(inv.invitationSlug, inv.subdomain);
+  const rootDomain = (await getDynamicServerRootDomain("")).split(":")[0].toLowerCase();
+  const urls: string[] = [];
+  if (rootDomain && inv.subdomain) urls.push(`https://${inv.subdomain}.${rootDomain}/`);
+  if (rootDomain && inv.invitationSlug) urls.push(`https://${rootDomain}/${inv.invitationSlug}`);
+  if (inv.customDomain) urls.push(`https://${inv.customDomain}/`);
+  return urls.length > 0 ? purgeCloudflareCache({ files: urls }) : null;
+}
+
 /**
  * Cloudflare Cache Purge Utility
  * Digunakan untuk membersihkan edge cache Cloudflare secara terprogram.

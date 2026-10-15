@@ -31,6 +31,13 @@ export function safeExternalUrl(input: unknown): string {
   }
 }
 
+/** URL media undangan: aturan safeExternalUrl, dan path lokal tidak boleh memuat segmen `..`. */
+export function safeMediaUrl(input: unknown): string {
+  const url = safeExternalUrl(input);
+  if (url.startsWith("/") && url.split("?")[0].split("/").includes("..")) return "";
+  return url;
+}
+
 const FEATURE_URL_KEYS = [
   "liveStreamYoutubeUrl",
   "liveStreamInstagramUrl",

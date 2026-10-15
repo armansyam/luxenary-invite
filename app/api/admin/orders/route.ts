@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
+import { csvCell } from "@/lib/csv";
 
 export const dynamic = "force-dynamic";
 
@@ -82,16 +83,16 @@ export async function GET(req: NextRequest) {
         }
 
         const row = [
-          `"${ord.invoiceNumber || ""}"`,
-          `"${new Date(ord.createdAt).toLocaleString("id-ID")}"`,
-          `"${(ord.user?.name || "").replace(/"/g, '""')}"`,
-          `"${ord.user?.email || ""}"`,
-          `"${ord.user?.phoneNumber || ""}"`,
-          `"${itemLabel.replace(/"/g, '""')}"`,
-          `"${ord.paymentMethod === "MANUAL_TRANSFER" ? "Transfer Bank" : "QRIS / Gateway"}"`,
+          csvCell(ord.invoiceNumber),
+          csvCell(new Date(ord.createdAt).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })),
+          csvCell(ord.user?.name),
+          csvCell(ord.user?.email),
+          csvCell(ord.user?.phoneNumber),
+          csvCell(itemLabel),
+          csvCell(ord.paymentMethod === "MANUAL_TRANSFER" ? "Transfer Bank" : "QRIS / Gateway"),
           Number(ord.amount || 0),
-          `"${ord.status}"`,
-          `"${ord.paidAt ? new Date(ord.paidAt).toLocaleString("id-ID") : "-"}"`,
+          csvCell(ord.status),
+          csvCell(ord.paidAt ? new Date(ord.paidAt).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" }) : "-"),
         ];
         csvRows.push(row.join(","));
       }

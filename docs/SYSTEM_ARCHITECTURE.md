@@ -39,7 +39,7 @@
 
 | Komponen | Detail |
 |---|---|
-| **Framework** | Next.js 16.3.7 (App Router, TypeScript strict) |
+| **Framework** | Next.js 16.3.8 (App Router, TypeScript strict) |
 | **Runtime** | Node.js di VPS (bukan Vercel/Edge Function) |
 | **Database** | PostgreSQL via Prisma ORM + `@prisma/adapter-pg` |
 | **ORM** | Prisma v7.9.1 (Konfigurasi URL via `prisma.config.ts`, bukan schema) |
@@ -408,7 +408,8 @@ Storage provider ditentukan oleh environment variable:
 
 Fungsi utama di lib/storage.ts:
   uploadFile(buffer, relativePath, mimeType, forceLocal?) → URL publik (R2 URL atau /uploads/...)
-  deleteFile(publicUrl)                                   → Hapus file cerdas (auto-detect R2 Key vs FS unlink)
+  deleteFile(publicUrl)                                   → Hapus file: R2 hanya di bawah base URL publik tanpa segmen `..`; lokal hanya di dalam public/uploads (resolveLocalUploadPath)
+  isInvitationOwnedUpload(url, invitationId)              → true hanya untuk berkas di folder undangan itu; syarat sebelum media slot dihapus
   streamMemoriesToZip(archive, invitationId)              → Stream ZIP foto tamu langsung dari R2 (zero disk RAM)
   syncDraftToR2(invitationId)                             → Migrasi otomatis aset lokal ke R2 saat publish
 ```
@@ -440,7 +441,7 @@ Empat jam retensi **terpisah**, seluruhnya dihitung dari **awal hari acara utama
 |---|---|---|
 | EVENT_FINISHED | tetap H+1 | `PUBLISHED` menjadi `EVENT_FINISHED` pada awal hari berikutnya menurut zona acara |
 | Subdomain | `subdomain_grace_days` (7) | Subdomain kembali ke pool; sesudahnya URL yang dipakai adalah slug. Rute `/s/` mengalihkan ke slug |
-| Galeri | `retention_cleanup_days` (30) atau `galleryExpiresAt` (add-on perpanjangan) | Foto tamu dibersihkan agar R2 lega, undangan menjadi `ARCHIVED` |
+| Galeri | `retention_cleanup_days` (30), atau `galleryExpiresAt` (add-on perpanjangan) hanya bila lebih lambat dari batas bawaan itu | Foto tamu dibersihkan agar R2 lega, undangan menjadi `ARCHIVED` |
 | Arsip | `nas_archive_retention_days` (365) | Arsip mandiri undangan dibersihkan setelah masa ini |
 | Custom domain | `retention_custom_domain_days` (365) | Resolver custom domain berhenti melayani; undangan `ARCHIVED` tetap tampil di domain klien selama masa ini bila salinan arsip tersedia (lihat bagian 25 butir 13) |
 
@@ -1148,11 +1149,11 @@ Sub-Tab Pengaturan Admin (5 Grup, v6.1.0):
 ### 9.1 Mekanisme Remote Klien (Cookie-Based Workspace Override)
 Fitur *Remote* memungkinkan Admin untuk masuk ke dasbor Klien dan mengendalikannya secara penuh tanpa mengetahui *password* klien. Sistem ini dirancang menggunakan arsitektur **httpOnly Cookie (`lux_remote_client_id`)** dan resolusi sesi dinamis tanpa perlu memanipulasi atau merusak JWT Admin:
 
-1. **Inisiasi (Admin Dashboard):** Admin mengklik tombol Remote (ikon monitor) pada baris undangan atau detail klien. Tombol Remote hanya aktif pada klien yang sudah memiliki ruang kerja (memiliki undangan atau pesanan berbayar). Untuk calon klien (leads) yang belum checkout, tombol Remote dinonaktifkan guna mencegah admin terlempar ke halaman checkout kosong. Server Action `startRemoteSession(clientId)` di `app/(admin)/admin/actions/remote.ts` memverifikasi hak akses Admin via `auth()`, memastikan klien ada di database, menetapkan cookie `lux_remote_client_id` (httpOnly, Secure, SameSite: Lax, path: "/", maxAge: 1 jam), dan memanggil `redirect("/dashboard")` dari server.
+1. **Inisiasi (Admin Dashboard):** Admin mengklik tombol Remote (ikon monitor) pada baris undangan atau detail klien. Tombol Remote hanya aktif pada klien yang sudah memiliki ruang kerja (memiliki undangan atau pesanan berbayar). Untuk calon klien (leads) yang belum checkout, tombol Remote dinonaktifkan guna mencegah admin terlempar ke halaman checkout kosong. Server Action `startRemoteSession(clientId)` di `app/(admin)/admin/actions/remote.ts` memverifikasi hak akses Admin via `auth()`, memastikan klien ada di database, menetapkan cookie `lux_remote_client_id` (httpOnly, Secure, SameSite: Lax, path: "/", maxAge: 1 jam) bernilai `<clientId>.<expiresAtMs>.<hmac>` yang ditandatangani `AUTH_SECRET` dan terikat ke ID admin pemulainya (`lib/remoteSession.ts`), dan memanggil `redirect("/dashboard")` dari server.
 2. **Perizinan Gerbang (Middleware & AuthConfig):**
    - Di `proxy.ts`, proteksi rute `/dashboard` memberikan bypass bagi Admin yang memiliki cookie `lux_remote_client_id`. `auth.config.ts` tidak lagi memasang callback `authorized()`: proxy memakai handler kustom sehingga Auth.js mengabaikan hasil boolean callback itu, dan aturannya sudah menyimpang dari proxy.
    - `startRemoteSession` mewajibkan izin modul `users` atau `invitations` dan menulis `AdminAuditLog` bertindakan `REMOTE_SESSION_START` (pelaku = `originalAdminId`).
-3. **Resolusi Workspace Dinamis (`auth.ts`):** Pada setiap pemanggilan `auth()` di sisi server (Route Handlers & Server Components), callback `session` mendeteksi cookie `lux_remote_client_id`. Sistem memuat data klien target dari Prisma (`id`, `name`, `email`, `role`) dan menyematkannya ke `session.user` dengan atribut `isRemote: true`, `originalAdminId`, dan `originalRole: token.role`. Hal ini membuat seluruh ratusan API klien (`/api/client/**`) otomatis membaca dan mengelola data klien yang di-remote secara transparan tanpa mengubah JWT session token.
+3. **Resolusi Workspace Dinamis (`auth.ts`):** Pada setiap pemanggilan `auth()` di sisi server (Route Handlers & Server Components), callback `session` memverifikasi cookie `lux_remote_client_id` dengan `readRemoteClientId` (tanda tangan, admin yang sama, belum kedaluwarsa) dan mewajibkan izin modul `users` atau `invitations`; cookie yang ditulis tangan atau milik admin lain diabaikan. Sistem memuat data klien target dari Prisma (`id`, `name`, `email`, `role`) dan menyematkannya ke `session.user` dengan atribut `isRemote: true`, `originalAdminId`, dan `originalRole: token.role`. Hal ini membuat seluruh ratusan API klien (`/api/client/**`) otomatis membaca dan mengelola data klien yang di-remote secara transparan tanpa mengubah JWT session token.
 4. **Indikator UI & Proteksi Dasbor (`layout.tsx` & `/admin`):**
    - Komponen `app/(client)/dashboard/layout.tsx` mengambil status sesi via `GET /api/admin/remote-session` dan menampilkan banner merah bertuliskan *"MODE REMOTE AKTIF: Anda sedang mengendalikan dashboard milik [Nama Klien]"*.
    - Komponen `app/(admin)/admin/page.tsx` memiliki *Immunity Guard*: jika Admin kembali ke halaman admin saat cookie remote aktif, `userRole` tetap mempertahankan hak akses Admin asli sehingga sidebar navigasi admin tidak pernah hilang. Selain itu, banner peringatan amber sticky ditampilkan di bagian atas `/admin` dengan tombol 1-klik untuk menghentikan sesi remote.
@@ -3156,3 +3157,24 @@ Tanggal acara untuk kalender dan hitung mundur diambil dari Sesi Acara Utama (`i
 
 
 
+
+## 27. Perbaikan Audit Pra-Rilis (14 Oktober 2026)
+
+Diuji dengan `__tests__/unit/auditFixes20261014.test.ts` dan `__tests__/integration/auditFixes20261014.test.ts` (database `luxenary_test`).
+
+1. **Kredensial SMTP tidak lagi ikut pengaturan publik.** `getPublicPlatformSettings()` tidak memuat `smtp_*`; mailer, uji SMTP, dan kirim pratinjau email membaca `getSmtpSettings()` (`lib/settings.ts`).
+2. **Penghapusan berkas terkurung.** `deleteFile` menolak URL R2 di luar base URL publik atau bersegmen `..`, dan path lokal di luar `public/uploads`. Media slot, penghapusan undangan, dan pembersihan siklus hidup hanya menghapus berkas milik folder undangan itu (`isInvitationOwnedUpload`). URL media yang disimpan klien divalidasi `safeMediaUrl` (HTTP 400 bila tidak sah). Endpoint `DELETE /api/client/media/{id}` dihapus karena tidak dipanggil dan tidak memeriksa kunci studio.
+3. **Placeholder URL di tema.** `renderTemplate` meng-encode persen karakter kontrol, spasi, `" ' < > \` dan backtick pada nilai URL, sehingga nilai itu tidak dapat keluar dari atribut HTML, `url()` CSS, maupun string JS.
+4. **Batas galeri.** `galleryExpiresAt` tersimpan hanya dipakai bila lebih lambat dari `hari acara utama + retention_cleanup_days`; perpanjangan yang dibeli sebelum tanggal acara diundur tidak lagi memotong galeri sebelum acara.
+5. **Sesi remote ditandatangani.** Lihat bagian 9.1: cookie HMAC terikat admin, izin modul `users`/`invitations` diperiksa pada tiap sesi. JWT klien yang akunnya sudah dihapus menjadi tidak sah (callback `jwt` mengembalikan `null`), dan callback `session` tidak lagi membuat akun otomatis; `/api/orders/create` juga tidak membuat user.
+6. **Cache edge setelah perubahan status.** `purgeInvitationEdgeCache(inv)` (`lib/cloudflare.ts`) membersihkan lookup L1 serta URL subdomain, slug, dan custom domain. Dipanggil oleh unpublish/ganti subdomain, mode galeri, aksi lifecycle admin, dan cron siklus hidup (per undangan; satu undangan gagal tidak menghentikan cron).
+7. **Klaim ulang subdomain** yang sudah lepas hanya bila `autoRecycleSubdomain` aktif; subdomain otomatis pernikahan yang terpakai diberi akhiran alih-alih ditolak.
+8. **Tagihan add-on.** `checkout-bundle` mewajibkan order paket sudah `PAID`, harga dari Admin Setting (HTTP 503 bila belum diisi, tanpa harga cadangan di kode), selisih harga > 0, top-up 1-20 batch dan hanya untuk paket dengan `guest_memories`, perpanjangan galeri hanya bila acara utama bertanggal. Upgrade paket juga tanpa harga cadangan. Email lunas dikirim setelah layanan diterapkan; `requestedDomain` tidak lagi otomatis menjadi custom domain.
+9. **Transisi status bersyarat.** Tolak order admin, regenerate QRIS, checkout gateway, dan kedaluwarsa otomatis memakai `updateMany ... where status = PENDING` (HTTP 409 bila sudah berubah), sehingga klik ganda atau webhook bersamaan tidak menimpa status `PAID`.
+10. **Keuangan per WIB.** Ringkasan dan tutup buku memakai batas hari/bulan Asia/Jakarta (`lib/financePeriods.ts`) dan pendapatan berdasarkan `paidAt`; tutup/buka buku tercatat di audit log.
+11. **Ekspor CSV** klien dan admin melewati `csvCell()` (`lib/csv.ts`) untuk menetralkan formula spreadsheet.
+12. **Aksi lifecycle admin** menulis audit log, memvalidasi input (tanggal `YYYY-MM-DD`, perpanjangan 1-3650 hari), dan membangun ulang HTML terbit saat tanggal acara diubah. Buka kunci darurat dibatasi 1-720 jam.
+13. **Resepsionis** mewajibkan kapabilitas paket `qr_checkin` saat verifikasi PIN.
+14. **Jadwal Kamera Momen** hanya dari sesi acara (mode lama `memoriesCustomSchedule` dihapus), diurutkan kronologis, dan sesi tanpa zona waktu memakai zona acara utama.
+15. **Kode mati dihapus:** setting `google_auth_*` (Google OAuth tetap dari `.env`), `stopRemoteSession`, `applyGalleryExtension`/`applyMemoriesTopup`, `invalidateMasterTemplateCache`, `getPublishedFilePath`, `hasPublishedHtml`, `DEFAULT_GENERIC_BLUEPRINT`, `GATEWAY_CATALOG`, serta state/impor tak terpakai di halaman dasbor dan admin.
+16. **Dependency (14 Okt 2026).** `next` dan `eslint-config-next` 16.3.7 → 16.3.8 (cache poisoning SSG/ISR, SSRF Image Optimization, bocor metadata image, Draft Mode), `sharp` → 0.35.5 (CVE librsvg), `source-map-js` → 1.2.2. Sisa `npm audit --omit=dev`: `deepmerge-ts` dan `mysql2` yang dibawa CLI `prisma` 7.10.0 (versi 7 terbaru masih mengunci `deepmerge-ts@7.1.5`). Keduanya tidak dipakai saat runtime (aplikasi memakai `@prisma/client` + `@prisma/adapter-pg`, PostgreSQL). Saran `npm audit fix --force` menurunkan ke Prisma 6 dan tidak boleh dijalankan.

@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
+import { useState, useEffect } from "react";
 
 // 10 Komponen Kesiapan Publikasi Faktual (Sinkron dengan app/(client)/dashboard/settings/page.tsx)
 const FACTUAL_AUDIT_RULES = [

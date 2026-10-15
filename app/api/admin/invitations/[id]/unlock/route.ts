@@ -24,6 +24,9 @@ export async function POST(
 
     const body = await req.json().catch(() => ({}));
     const { durationHours = 24, lockImmediately = false } = body;
+    if (!lockImmediately && (!Number.isInteger(durationHours) || durationHours < 1 || durationHours > 720)) {
+      return NextResponse.json({ error: "Durasi buka kunci harus bilangan bulat 1 sampai 720 jam." }, { status: 400 });
+    }
 
     const invitation = await prisma.invitation.findUnique({ where: { id } });
     if (!invitation) {

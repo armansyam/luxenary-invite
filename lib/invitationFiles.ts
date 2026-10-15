@@ -1,7 +1,7 @@
 import path from "path";
 import { removeIfExists } from "./fsSafe";
 import { deletePublishedHtml } from "./staticPublisher";
-import { deleteFile } from "./storage";
+import { deleteFile, isInvitationOwnedUpload } from "./storage";
 import { logger } from "./logger";
 
 export interface InvitationFileOwner {
@@ -20,7 +20,7 @@ export async function removeInvitationFiles(inv: InvitationFileOwner, context: s
   await removeIfExists(path.join(process.cwd(), "data", "drafts", `${inv.id}.html`));
 
   if (inv.media.length > 0) {
-    await Promise.all(inv.media.map((m) => (m.localPath ? deleteFile(m.localPath) : Promise.resolve())))
+    await Promise.all(inv.media.map((m) => (isInvitationOwnedUpload(m.localPath, inv.id) ? deleteFile(m.localPath) : Promise.resolve())))
       .catch((e) => logger.warn(context, "Sebagian berkas media gagal dihapus", { invitationId: inv.id, error: e instanceof Error ? e.message : String(e) }));
   }
   if (inv.guestMemories.length > 0) {

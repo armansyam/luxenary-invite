@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { routeError } from "@/lib/routeError";
-import { extendGalleryExpiry } from "@/lib/lifecycleDates";
+import { extendGalleryExpiry, getPrimaryEventDate } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
-import { invalidateInvitationLookup } from "@/lib/cache";
-import { purgeCloudflareCache } from "@/lib/cloudflare";
-import { getDynamicServerRootDomain } from "@/lib/serverDomainUtils";
+import { purgeInvitationEdgeCache } from "@/lib/cloudflare";
+import { buildAndSavePublishedHtml } from "@/lib/staticPublisher";
 import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
 /**
  * POST /api/admin/invitations/[id]/lifecycle
- * Endpoint khusus Super Admin untuk mengelola siklus hidup undangan:
+ * Endpoint admin berizin modul Projek Undangan untuk mengelola siklus hidup undangan (setiap aksi tercatat di audit):
  * - CLOSE_TO_GALLERY: Menutup undangan seketika dan mengalihkan URL ke Galeri Momen
  * - EXTEND_GALLERY: Memperpanjang masa simpan galeri foto tamu (+30 hari)
  * - UPDATE_EVENT_DATE: Mengedit tanggal acara pernikahan secara darurat oleh Admin
@@ -44,15 +43,24 @@ export async function POST(
     }
 
     const now = new Date();
+    const label = invitation.invitationSlug || invitation.id;
+    const actorId = adminActorId(session);
+    const ipAddress = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || null;
+    const auditLog = (auditAction: string, details: string) =>
+      prisma.adminAuditLog.create({ data: { adminId: actorId, action: auditAction, details, ipAddress } });
 
     if (action === "CLOSE_TO_GALLERY") {
-      // 1. Status langsung di-update ke EVENT_FINISHED (subdomain HTML sudah dihapus via single-source-of-truth flow)
-
-      // 2. Set status EVENT_FINISHED
-      const updated = await prisma.invitation.update({
-        where: { id },
-        data: { status: "EVENT_FINISHED" },
-      });
+      if (invitation.status !== "PUBLISHED") {
+        return NextResponse.json({ error: "Hanya undangan yang sedang tayang (PUBLISHED) yang dapat ditutup ke galeri." }, { status: 409 });
+      }
+      const [updated] = await prisma.$transaction([
+        prisma.invitation.update({
+          where: { id },
+          data: { status: "EVENT_FINISHED" },
+        }),
+        auditLog("CLOSE_TO_GALLERY", `Menutup undangan ${label} ke Galeri Momen`),
+      ]);
+      await purgeInvitationEdgeCache(invitation);
 
       return NextResponse.json({
         success: true,
@@ -77,29 +85,16 @@ export async function POST(
       }
 
       const targetStatus = taking ? "TAKEN_DOWN" : "PUBLISHED";
-      const label = invitation.invitationSlug || invitation.id;
-      const actorId = adminActorId(session);
 
       const [updated] = await prisma.$transaction([
         prisma.invitation.update({ where: { id }, data: { status: targetStatus } }),
-        prisma.adminAuditLog.create({
-          data: {
-            adminId: actorId,
-            action: taking ? "TAKE_DOWN_INVITATION" : "REOPEN_INVITATION",
-            details: taking ? `Menurunkan undangan ${label}. Alasan: ${reason}` : `Membuka kembali undangan ${label}`,
-            ipAddress: req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || null,
-          },
-        }),
+        auditLog(
+          taking ? "TAKE_DOWN_INVITATION" : "REOPEN_INVITATION",
+          taking ? `Menurunkan undangan ${label}. Alasan: ${reason}` : `Membuka kembali undangan ${label}`
+        ),
       ]);
 
-      invalidateInvitationLookup(invitation.invitationSlug, invitation.subdomain);
-
-      const rootDomain = (await getDynamicServerRootDomain("")).split(":")[0].toLowerCase();
-      const urlsToPurge: string[] = [];
-      if (rootDomain && invitation.subdomain) urlsToPurge.push(`https://${invitation.subdomain}.${rootDomain}/`);
-      if (rootDomain && invitation.invitationSlug) urlsToPurge.push(`https://${rootDomain}/${invitation.invitationSlug}`);
-      if (invitation.customDomain) urlsToPurge.push(`https://${invitation.customDomain}/`);
-      const cloudflare = urlsToPurge.length > 0 ? await purgeCloudflareCache({ files: urlsToPurge }) : null;
+      const cloudflare = await purgeInvitationEdgeCache(invitation);
 
       return NextResponse.json({
         success: true,
@@ -111,19 +106,25 @@ export async function POST(
 
     if (action === "EXTEND_GALLERY") {
       const extraDays = Number(days);
-      if (!Number.isFinite(extraDays) || extraDays < 1) {
-        return NextResponse.json({ error: "Jumlah hari perpanjangan harus berupa angka minimal 1." }, { status: 400 });
+      if (!Number.isInteger(extraDays) || extraDays < 1 || extraDays > 3650) {
+        return NextResponse.json({ error: "Jumlah hari perpanjangan harus bilangan bulat 1 sampai 3650." }, { status: 400 });
+      }
+      if (!getPrimaryEventDate(invitation.eventData)) {
+        return NextResponse.json({ error: "Undangan belum memiliki tanggal jadwal terima tamu; perpanjangan galeri tidak punya patokan." }, { status: 400 });
       }
 
       const newExpiry = extendGalleryExpiry(invitation, extraDays, await getLifecycleSettings(), now);
 
-      const updated = await prisma.invitation.update({
-        where: { id },
-        data: {
-          galleryExpiresAt: newExpiry,
-          memoriesUploadLocked: false,
-        },
-      });
+      const [updated] = await prisma.$transaction([
+        prisma.invitation.update({
+          where: { id },
+          data: {
+            galleryExpiresAt: newExpiry,
+            memoriesUploadLocked: false,
+          },
+        }),
+        auditLog("EXTEND_GALLERY", `Memperpanjang galeri ${label} +${extraDays} hari hingga ${newExpiry.toISOString()}`),
+      ]);
 
       return NextResponse.json({
         success: true,
@@ -133,26 +134,36 @@ export async function POST(
     }
 
     if (action === "UPDATE_EVENT_DATE") {
-      if (!newDate) {
-        return NextResponse.json({ error: "newDate wajib diisi." }, { status: 400 });
+      const cleanDate = typeof newDate === "string" ? newDate.trim() : "";
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(cleanDate) || Number.isNaN(new Date(`${cleanDate}T00:00:00Z`).getTime())) {
+        return NextResponse.json({ error: "newDate wajib berformat YYYY-MM-DD." }, { status: 400 });
       }
 
       let events: any[] = Array.isArray(invitation.eventData) ? invitation.eventData : [];
 
       if (events.length > 0) {
         const target = events.find((e: any) => e.isPrimary) || events[0];
-        target.date = String(newDate).trim();
+        target.date = cleanDate;
         target.isPrimary = true;
       } else {
-        events = [{ title: "Acara Utama", date: String(newDate).trim(), isPrimary: true }];
+        events = [{ title: "Acara Utama", date: cleanDate, isPrimary: true }];
       }
 
-      await prisma.invitation.update({
-        where: { id },
-        data: {
-          eventData: events,
-        },
-      });
+      await prisma.$transaction([
+        prisma.invitation.update({
+          where: { id },
+          data: {
+            eventData: events,
+          },
+        }),
+        auditLog("UPDATE_EVENT_DATE", `Mengubah tanggal acara utama ${label} menjadi ${cleanDate}`),
+      ]);
+
+      // Tanggal tampil di HTML terbit; tanpa bake ulang dan purge, tamu tetap melihat tanggal lama.
+      if (invitation.status === "PUBLISHED" || invitation.status === "EVENT_FINISHED") {
+        await buildAndSavePublishedHtml(id);
+      }
+      await purgeInvitationEdgeCache(invitation);
 
       return NextResponse.json({
         success: true,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { routeError } from "@/lib/routeError";
+import { csvCell } from "@/lib/csv";
 
 export const dynamic = "force-dynamic";
 
@@ -51,12 +52,10 @@ export async function GET(
 
       let csv = "No,Nama Tamu,Konfirmasi Kehadiran,Jumlah Pax,Ucapan & Doa Restu,Waktu Kirim\n";
       rsvps.forEach((r, idx) => {
-        const cleanName = `"${(r.guestName || "").replace(/"/g, '""')}"`;
-        const cleanStatus = `"${(r.status || "").replace(/"/g, '""')}"`;
         const pax = r.guestCount || 1;
-        const cleanMessage = `"${(r.message || "").replace(/"/g, '""').replace(/\r?\n/g, ' ')}"`;
-        const dateStr = `"${new Date(r.respondedAt).toLocaleString("id-ID")}"`;
-        csv += `${idx + 1},${cleanName},${cleanStatus},${pax},${cleanMessage},${dateStr}\n`;
+        const message = (r.message || "").replace(/\r?\n/g, " ");
+        const dateStr = new Date(r.respondedAt).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" });
+        csv += `${idx + 1},${csvCell(r.guestName)},${csvCell(r.status)},${pax},${csvCell(message)},${csvCell(dateStr)}\n`;
       });
 
       return new NextResponse(csv, {
@@ -75,13 +74,9 @@ export async function GET(
 
       let csv = "No,Nama Tamu,Kategori,Nomor WhatsApp,Meja,Status Check-in,Jumlah Kuota\n";
       guests.forEach((g, idx) => {
-        const cleanName = `"${(g.name || "").replace(/"/g, '""')}"`;
-        const cleanCategory = `"${(g.category || "-").replace(/"/g, '""')}"`;
-        const phone = `"${(g.phone || "-").replace(/"/g, '""')}"`;
-        const table = `"${(g.tableNumber || "-").replace(/"/g, '""')}"`;
         const checkinStatus = g.isTokenRedeemed ? "Hadir (Checked-In)" : "Belum Check-in";
         const quota = g.guestQuota || 1;
-        csv += `${idx + 1},${cleanName},${cleanCategory},${phone},${table},"${checkinStatus}",${quota}\n`;
+        csv += `${idx + 1},${csvCell(g.name)},${csvCell(g.category || "-")},${csvCell(g.phone || "-")},${csvCell(g.tableNumber || "-")},${csvCell(checkinStatus)},${quota}\n`;
       });
 
       return new NextResponse(csv, {

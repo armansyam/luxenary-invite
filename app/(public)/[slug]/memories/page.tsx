@@ -64,15 +64,7 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
   const fs = parseFeatureSettings(invitation.featureSettings);
 
   const isDelayedReveal = Boolean(fs.memoriesDelayedReveal);
-  const isCustomSchedule = Boolean(fs.memoriesCustomSchedule);
-
-  let eventEndTime: Date | null = null;
-  if (isCustomSchedule && fs.memoriesEndTime) {
-    const parsed = new Date(fs.memoriesEndTime);
-    if (!isNaN(parsed.getTime())) eventEndTime = parsed;
-  } else {
-    eventEndTime = getPrimaryEventEnd(invitation.eventData);
-  }
+  const eventEndTime = getPrimaryEventEnd(invitation.eventData);
 
   const now = new Date();
   const isDarkroomActive = isDelayedReveal && eventEndTime !== null && now < eventEndTime;

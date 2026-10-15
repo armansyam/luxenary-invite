@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams } from "next/navigation";
 import { Html5Qrcode } from "html5-qrcode";
 
 import { useStaffAuth } from "./StaffLockScreen";

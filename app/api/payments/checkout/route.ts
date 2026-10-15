@@ -186,12 +186,12 @@ export async function POST(req: Request) {
     const serverNow = Date.now();
     const expiryMs = Math.min(expiryTimestamp ?? (serverNow + expiryMinutes * 60 * 1000), order.expiredAt?.getTime() ?? Infinity);
 
-    // Simpan ke DB — termasuk gatewayId dan gatewayTxId untuk keperluan cancel berikutnya
-    await prisma.order.update({
-      where: { id: orderId },
+    // Simpan ke DB — termasuk gatewayId dan gatewayTxId untuk keperluan cancel berikutnya. Bersyarat PENDING: order yang
+    // lunas selama init gateway tidak boleh dikembalikan ke PENDING.
+    const saved = await prisma.order.updateMany({
+      where: { id: orderId, status: "PENDING" },
       data: {
         paymentMethod: "GATEWAY",
-        status: "PENDING",
         rejectReason: null,
         // Rekam gateway yang menangani order ini + ID transaksi di sisi gateway
         gatewayId: activeGatewayId,
@@ -203,6 +203,9 @@ export async function POST(req: Request) {
         gatewaySessionExpiresAt: new Date(expiryMs),
       },
     });
+    if (saved.count === 0) {
+      return NextResponse.json({ error: "Pesanan sudah diproses. Muat ulang halaman untuk melihat status terbarunya." }, { status: 409 });
+    }
 
     // Kirim email instruksi tagihan (UNPAID) secara terjamin
     if (order.user?.email) {

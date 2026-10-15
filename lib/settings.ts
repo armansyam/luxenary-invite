@@ -54,12 +54,6 @@ export interface PublicPlatformSettings {
   memoriesNotifyMilestones: number[];
   paymentGatewayFeePercent: number;
   paymentGatewayFeePayer: "BUYER" | "MERCHANT";
-  smtpHost: string;
-  smtpPort: number;
-  smtpUser: string;
-  smtpPassword?: string;
-  smtpFromEmail: string;
-  smtpFromName: string;
   waTemplateMessage: string;
   maxUploadMb: number;
   maxVideoUploadMb: number;
@@ -180,7 +174,17 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
 
   const activeDomain = await getDynamicServerRootDomain();
 
-  const parseFeatures = (key: string, defaultFirstLine: string, caps: string[], planId: string) => {
+  // Kapasitas yang diiklankan memakai aturan yang sama dengan getPlanMemoriesQuota (yang menegakkannya).
+  const planTotalPhotos = (planId: string): number => {
+    const total = map[`memories_total_quota_${planId}`]?.trim() ? parseInt(map[`memories_total_quota_${planId}`], 10) : NaN;
+    if (Number.isFinite(total)) return Math.max(0, total);
+    const contributors = parseInt(map[`memories_max_contributors_${planId}`] ?? "", 10);
+    const shots = parseInt(map[`memories_shots_quota_${planId}`] ?? "", 10);
+    if (contributors > 0 && shots > 0) return contributors * shots;
+    return DEFAULT_MEMORIES_QUOTAS[normalizePlanType(`TIER_${planId.slice(-1)}`)].totalQuota;
+  };
+
+  const parseFeatures =(key: string, defaultFirstLine: string, caps: string[], planId: string) => {
     let rawList: string[];
     if (map[key]) {
       rawList = map[key].split("\n").map(s => s.trim()).filter(s => s.length > 0);
@@ -196,10 +200,7 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
         rawList.push("Sistem Resepsionis & Check-In Tamu dengan QR Code");
       }
       if (caps.includes("guest_memories")) {
-        const totalQ = Number(map[`memories_total_quota_${planId}`]);
-        const defaultTotal = planId === "TIER_3" ? 1000 : (planId === "TIER_2" ? 250 : 100);
-        const totalPhotos = !isNaN(totalQ) && totalQ > 0 ? totalQ : defaultTotal;
-        rawList.push(`Kamera Digital Tamu bergaya analog (Kapasitas Total ${totalPhotos} Foto)`);
+        rawList.push(`Kamera Digital Tamu bergaya analog (Kapasitas Total ${planTotalPhotos(planId)} Foto)`);
       }
       if (caps.includes("custom_domain")) {
         rawList.push("Dukungan integrasi domain website pribadi (.com / .id)");
@@ -208,10 +209,7 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
 
     const hasGalleryItem = rawList.some(item => /galeri\s+kenangan|guest\s+memories|guest\s*gal|guest\s*camera|disposable\s*camera|kamera/i.test(item));
     if (caps.includes("guest_memories") && !hasGalleryItem) {
-      const totalQ = Number(map[`memories_total_quota_${planId}`]);
-      const defaultTotal = planId === "TIER_3" ? 1000 : (planId === "TIER_2" ? 250 : 100);
-      const totalPhotos = !isNaN(totalQ) && totalQ > 0 ? totalQ : defaultTotal;
-      rawList.push(`Guest Camera — Kamera Saku Tamu (Kapasitas Total ${totalPhotos} Foto — Aktif ${galleryLabel} setelah acara)`);
+      rawList.push(`Guest Camera — Kamera Saku Tamu (Kapasitas Total ${planTotalPhotos(planId)} Foto — Aktif ${galleryLabel} setelah acara)`);
     }
 
     // Hanya tangani string lama yang masih menggabungkan 1 baris (legacy combined) jika ada
@@ -294,12 +292,6 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
       .sort((a, b) => a - b),
     paymentGatewayFeePercent: Number(map["payment_gateway_fee_percent"] || (map["payment_fee_rate"] ? Number(map["payment_fee_rate"]) * 100 : 0.7)),
     paymentGatewayFeePayer: ((map["payment_fee_payer"] || map["payment_gateway_fee_payer"] || "MERCHANT") === "BUYER" ? "BUYER" : "MERCHANT"),
-    smtpHost: map["smtp_host"] || "",
-    smtpPort: Number(map["smtp_port"] || 587),
-    smtpUser: map["smtp_user"] || "",
-    smtpPassword: map["smtp_password"] || "",
-    smtpFromEmail: map["smtp_from_email"] || "",
-    smtpFromName: map["smtp_from_name"] || map["platform_name"] || "Billing",
     waTemplateMessage: map["wa_template_message"] || "Assalamu'alaikum {{GUEST_NAME}},\n\nKami mengundang Bapak/Ibu dalam pernikahan kami.\n\nUndangan: {{INVITATION_URL}}\n\nHormat kami,\n{{GROOM_NAME}} & {{BRIDE_NAME}}",
     maxUploadMb: Number(map["max_upload_mb"] || 5),
     maxVideoUploadMb: Number(map["max_video_upload_mb"] || 50),
@@ -367,6 +359,35 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
   };
 }
 
+export interface SmtpSettings {
+  smtpHost: string;
+  smtpPort: number;
+  smtpUser: string;
+  smtpPassword: string;
+  smtpFromEmail: string;
+  smtpFromName: string;
+}
+
+/**
+ * Kredensial SMTP khusus pemakaian server (pengirim email). Sengaja terpisah dari getPublicPlatformSettings, yang
+ * dikirim apa adanya ke klien oleh /api/public/settings.
+ */
+export async function getSmtpSettings(): Promise<SmtpSettings> {
+  const [host, port, user, password, fromEmail, fromName, platformName] = await Promise.all(
+    ["smtp_host", "smtp_port", "smtp_user", "smtp_password", "smtp_from_email", "smtp_from_name", "platform_name"].map((key) =>
+      getAdminSetting(key, "")
+    )
+  );
+  return {
+    smtpHost: host,
+    smtpPort: Number(port || 587),
+    smtpUser: user,
+    smtpPassword: password,
+    smtpFromEmail: fromEmail,
+    smtpFromName: fromName || platformName || "Billing",
+  };
+}
+
 /**
  * Checks whether a given planType has a specific capability.
  * Reads dynamically from AdminSetting DB with sensible fallbacks.
@@ -407,6 +428,13 @@ export async function hasPlanCapability(planType: string | null | undefined, cap
   return (defaultCaps[canonical] || []).includes(capability);
 }
 
+/** Bawaan kuota kamera tamu per paket bila pengaturan belum diisi; sama dengan nilai seed (prisma/defaultSettings.ts). */
+const DEFAULT_MEMORIES_QUOTAS: Record<"TIER_1" | "TIER_2" | "TIER_3", { totalQuota: number; maxContributors: number; shotsQuota: number }> = {
+  TIER_1: { totalQuota: 0, maxContributors: 0, shotsQuota: 0 },
+  TIER_2: { totalQuota: 200, maxContributors: 50, shotsQuota: 5 },
+  TIER_3: { totalQuota: 500, maxContributors: 200, shotsQuota: 15 },
+};
+
 export interface PlanMemoriesQuota {
   totalQuota: number;
   maxContributors: number;
@@ -425,41 +453,32 @@ export async function getPlanMemoriesQuota(planType: string | null | undefined):
     return { totalQuota: 0, maxContributors: 0, shotsQuota: 0, hasAccess: false };
   }
 
-  try {
-    const tierKey = canonical.toLowerCase().replace("_", ""); // "tier1", "tier2", "tier3"
-    const [totalQuotaSetting, maxContribSetting, shotsQuotaSetting] = await Promise.all([
-      prisma.adminSetting.findUnique({ where: { key: `memories_total_quota_${tierKey}` } }),
-      prisma.adminSetting.findUnique({ where: { key: `memories_max_contributors_${tierKey}` } }),
-      prisma.adminSetting.findUnique({ where: { key: `memories_shots_quota_${tierKey}` } }),
-    ]);
+  const tierKey = canonical.toLowerCase().replace("_", ""); // "tier1", "tier2", "tier3"
+  const [totalQuotaSetting, maxContribSetting, shotsQuotaSetting] = await Promise.all([
+    prisma.adminSetting.findUnique({ where: { key: `memories_total_quota_${tierKey}` } }),
+    prisma.adminSetting.findUnique({ where: { key: `memories_max_contributors_${tierKey}` } }),
+    prisma.adminSetting.findUnique({ where: { key: `memories_shots_quota_${tierKey}` } }),
+  ]);
 
-    const defaultQuotas: Record<string, { totalQuota: number; maxContributors: number; shotsQuota: number }> = {
-      TIER_1: { totalQuota: 0, maxContributors: 0, shotsQuota: 0 },
-      TIER_2: { totalQuota: 200, maxContributors: 50, shotsQuota: 5 },
-      TIER_3: { totalQuota: 500, maxContributors: 200, shotsQuota: 15 },
-    };
+  const fallback = DEFAULT_MEMORIES_QUOTAS[canonical];
+  const positiveInt = (value: string | undefined) => {
+    const parsed = parseInt(value ?? "", 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  };
 
-    const fallback = defaultQuotas[canonical] || { totalQuota: 200, maxContributors: 50, shotsQuota: 5 };
+  const configuredShots = positiveInt(shotsQuotaSetting?.value);
+  const configuredContributors = positiveInt(maxContribSetting?.value);
+  const shotsQuota = configuredShots ?? fallback.shotsQuota;
+  const maxContributors = configuredContributors ?? fallback.maxContributors;
 
-    const shotsQuota = shotsQuotaSetting?.value
-      ? Math.max(1, parseInt(shotsQuotaSetting.value, 10) || fallback.shotsQuota)
-      : fallback.shotsQuota;
+  // Urutan: total yang diatur admin, lalu kontributor × jatah bila keduanya diatur admin, lalu bawaan paket.
+  const configuredTotal = totalQuotaSetting?.value?.trim() ? parseInt(totalQuotaSetting.value, 10) : NaN;
+  const totalQuota = Number.isFinite(configuredTotal)
+    ? Math.max(0, configuredTotal)
+    : configuredContributors && configuredShots
+    ? configuredContributors * configuredShots
+    : fallback.totalQuota;
 
-    const maxContributors = maxContribSetting?.value
-      ? Math.max(1, parseInt(maxContribSetting.value, 10) || fallback.maxContributors)
-      : fallback.maxContributors;
-
-    // Prioritaskan memories_total_quota jika ada; jika tidak, gunakan perkalian maxContributors * shotsQuota
-    let totalQuota = fallback.totalQuota;
-    if (totalQuotaSetting?.value && !isNaN(Number(totalQuotaSetting.value))) {
-      totalQuota = Math.max(0, parseInt(totalQuotaSetting.value, 10));
-    } else if (maxContributors > 0 && shotsQuota > 0) {
-      totalQuota = maxContributors * shotsQuota;
-    }
-
-    return { totalQuota, maxContributors, shotsQuota, hasAccess: true };
-  } catch {
-    return { totalQuota: 250, maxContributors: 50, shotsQuota: 5, hasAccess: true };
-  }
+  return { totalQuota, maxContributors, shotsQuota, hasAccess: true };
 }
 

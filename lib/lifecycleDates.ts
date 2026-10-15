@@ -208,8 +208,9 @@ export interface LifecycleDates {
 }
 
 /**
- * Seluruh tenggat siklus hidup satu undangan. `galleryExpiresAt` kolom (hasil add-on perpanjangan)
- * menggantikan tenggat galeri bawaan. Null bila undangan belum memiliki tanggal acara valid.
+ * Seluruh tenggat siklus hidup satu undangan. `galleryExpiresAt` kolom (hasil add-on perpanjangan) hanya berlaku bila
+ * lebih lambat dari tenggat galeri bawaan: perpanjangan tidak pernah memendekkan masa galeri, mis. bila dibeli sebelum
+ * tanggal acara diisi atau tanggal acara digeser admin. Null bila undangan belum memiliki tanggal acara valid.
  */
 export function computeLifecycleDates(
   invitation: { eventData: unknown; galleryExpiresAt?: Date | string | null },
@@ -219,11 +220,13 @@ export function computeLifecycleDates(
   if (!eventDay) return null;
   const after = (days: number) => new Date(eventDay.getTime() + days * DAY_MS);
   const extended = invitation.galleryExpiresAt ? new Date(invitation.galleryExpiresAt) : null;
+  const defaultGalleryExpiry = after(settings.galleryRetentionDays);
   return {
     eventDay,
     eventFinishedAt: after(1),
     subdomainReleaseAt: after(settings.subdomainGraceDays),
-    galleryExpiresAt: extended && !Number.isNaN(extended.getTime()) ? extended : after(settings.galleryRetentionDays),
+    galleryExpiresAt:
+      extended && !Number.isNaN(extended.getTime()) && extended > defaultGalleryExpiry ? extended : defaultGalleryExpiry,
     archiveExpiresAt: after(settings.archiveRetentionDays),
     customDomainExpiresAt: after(settings.customDomainRetentionDays),
   };

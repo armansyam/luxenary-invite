@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { getPublicPlatformSettings } from "./settings";
+import { getPublicPlatformSettings, getSmtpSettings } from "./settings";
 import { logger } from "./logger";
 import {
   InvoiceEmailOptions,
@@ -17,7 +17,7 @@ export { buildInvoiceEmailHtml, buildMemoriesQuotaHtml, buildRetentionExpiryHtml
 
 export async function sendInvoiceEmail(opts: InvoiceEmailOptions): Promise<{ success: boolean; error?: string }> {
   try {
-    const settings = await getPublicPlatformSettings();
+    const settings = { ...(await getPublicPlatformSettings()), ...(await getSmtpSettings()) };
 
     // Graceful check: Jika SMTP belum dikonfigurasi, skip dengan aman tanpa throw error
     if (!settings.smtpHost || !settings.smtpUser) {
@@ -68,7 +68,7 @@ export async function sendInvoiceEmail(opts: InvoiceEmailOptions): Promise<{ suc
 
 export async function sendMemoriesQuotaAlertEmail(opts: MemoriesQuotaAlertOptions): Promise<{ success: boolean; error?: string }> {
   try {
-    const settings = await getPublicPlatformSettings();
+    const settings = { ...(await getPublicPlatformSettings()), ...(await getSmtpSettings()) };
 
     // Graceful check: Jika SMTP belum dikonfigurasi, skip dengan aman
     if (!settings.smtpHost || !settings.smtpUser) {
@@ -115,7 +115,7 @@ export async function sendMemoriesQuotaAlertEmail(opts: MemoriesQuotaAlertOption
 
 export async function sendRetentionExpiryAlertEmail(opts: RetentionExpiryAlertOptions): Promise<{ success: boolean; error?: string }> {
   try {
-    const settings = await getPublicPlatformSettings();
+    const settings = { ...(await getPublicPlatformSettings()), ...(await getSmtpSettings()) };
 
     // Graceful check: Jika SMTP belum dikonfigurasi, skip dengan aman
     if (!settings.smtpHost || !settings.smtpUser) {

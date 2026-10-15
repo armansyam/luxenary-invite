@@ -502,15 +502,6 @@ export default function DemoReceptionistPage() {
     }
   };
 
-  const scrollToGenerator = () => {
-    const el = document.getElementById("qr-generator-card");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-      const nameInput = document.getElementById("gen-guest-name");
-      nameInput?.focus();
-    }
-  };
-
   // Download QR PNG
   const handleDownloadQrPng = () => {
     if (!qrSvgRef.current) return;

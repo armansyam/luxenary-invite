@@ -5,6 +5,7 @@ import { hasAdminPermission } from "@/lib/adminPermissions";
 import { buildAndSavePublishedHtml } from "@/lib/staticPublisher";
 import { parseFeatureSettings, isValidMemoriesFilter, isValidShotsQuota } from "@/lib/featureSettings";
 import { logger } from "@/lib/logger";
+import { releaseOrderPromoHold } from "@/lib/marketing";
 
 export const dynamic = "force-dynamic";
 
@@ -76,10 +77,11 @@ export async function GET(
     if (pendingOrder) {
       // Auto-expire jika batas waktu sudah lewat dan belum ada bukti transfer
       if (pendingOrder.expiredAt && now > pendingOrder.expiredAt && !pendingOrder.proofImageUrl) {
-        await prisma.order.update({
-          where: { id: pendingOrder.id },
+        const expired = await prisma.order.updateMany({
+          where: { id: pendingOrder.id, status: "PENDING" },
           data: { status: "EXPIRED", rejectReason: "Batas waktu pembayaran habis" },
         });
+        if (expired.count > 0) await releaseOrderPromoHold(pendingOrder.id);
       } else {
         activePendingOrder = {
           id: pendingOrder.id,
@@ -252,9 +254,6 @@ export async function PATCH(
       "memoriesCoverPhoto",
       "memoriesMaxContributors",
       "memoriesDelayedReveal",
-      "memoriesCustomSchedule",
-      "memoriesStartTime",
-      "memoriesEndTime",
       "memoriesSessions",
       "memoriesSmartRollover",
       "memoriesOpeningLayout",

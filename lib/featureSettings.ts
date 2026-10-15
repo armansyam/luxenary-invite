@@ -7,7 +7,7 @@ const isPlainObject = (value: unknown): value is FeatureSettings =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
 /**
- * Kolom Invitation.featureSettings bertipe String? (JSON) dan dapat NULL.
+ * Kolom Invitation.featureSettings (jsonb) dapat NULL, dan body permintaan dapat mengirim string JSON.
  * `typeof null === "object"`, sehingga pola `typeof x === "object" ? x : JSON.parse(x)` mengembalikan null
  * dan membuat pembacaan properti berikutnya melempar TypeError. Selalu mengembalikan objek.
  */
@@ -78,20 +78,10 @@ export async function mergeFeatureSettingsInput(
 }
 
 /** Mematikan fitur berbayar yang tidak termasuk kapabilitas paket (tidak bisa dibuka lewat bypass API). */
-export async function gateFeaturesByPlan(features: FeatureSettings, planType: string | null | undefined): Promise<FeatureSettings> {
-  const { getPublicPlatformSettings } = await import("@/lib/settings");
-  const platformSettings = await getPublicPlatformSettings();
-  const plan = planType || "TIER_1";
-  const packageConfig = platformSettings.packages?.find((p) => p.id === plan);
-  const allowedCaps: string[] =
-    packageConfig?.capabilities ||
-    (plan === "TIER_3"
-      ? ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"]
-      : plan === "TIER_2"
-      ? ["music", "gallery", "qr_checkin"]
-      : ["music", "gallery"]);
+async function gateFeaturesByPlan(features: FeatureSettings, planType: string | null | undefined): Promise<FeatureSettings> {
+  const { hasPlanCapability } = await import("@/lib/settings");
   const gated: FeatureSettings = { ...features };
-  if (gated.showQrCheckin && !allowedCaps.includes("qr_checkin")) gated.showQrCheckin = false;
-  if (gated.showGuestMemories && !allowedCaps.includes("guest_memories")) gated.showGuestMemories = false;
+  if (gated.showQrCheckin && !(await hasPlanCapability(planType || "TIER_1", "qr_checkin"))) gated.showQrCheckin = false;
+  if (gated.showGuestMemories && !(await hasPlanCapability(planType || "TIER_1", "guest_memories"))) gated.showGuestMemories = false;
   return gated;
 }

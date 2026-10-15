@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import GuestMomentClient from "@/app/components/features/GuestMomentClient";
 
 export default function DemoShareMomentPage() {

@@ -89,6 +89,8 @@ export async function GET(
       }, 15000);
 
       const onPaymentUpdate = (data: { status: string; planType?: string; rejectReason?: string }) => {
+        // Saat dipanggil dari polling heartbeat, listener `once` belum terpakai dan harus dilepas agar tidak menumpuk.
+        paymentEmitter.off(orderId, onPaymentUpdate);
         try {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
           clearInterval(heartbeat);

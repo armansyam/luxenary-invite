@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { adminActorId } from "@/lib/adminAuth";
+import { REMOTE_COOKIE_NAME, REMOTE_SESSION_TTL_SECONDS, createRemoteCookieValue } from "@/lib/remoteSession";
 
 /**
  * Memulai sesi Remote: Admin memasang "kacamata" Klien.
@@ -38,22 +39,13 @@ export async function startRemoteSession(clientId: string) {
   });
 
   const cookieStore = await cookies();
-  cookieStore.set("lux_remote_client_id", clientId, {
+  cookieStore.set(REMOTE_COOKIE_NAME, createRemoteCookieValue(clientUser.id, adminActorId(session)), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60, // 1 jam
+    maxAge: REMOTE_SESSION_TTL_SECONDS,
   });
 
   redirect("/dashboard");
-}
-
-/**
- * Menghentikan sesi Remote: Hapus cookie dan pulangkan Admin.
- */
-export async function stopRemoteSession() {
-  const cookieStore = await cookies();
-  cookieStore.delete("lux_remote_client_id");
-  redirect("/admin");
 }

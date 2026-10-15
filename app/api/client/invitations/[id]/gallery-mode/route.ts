@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { prisma } from "@/lib/prisma";
-import { invalidateInvitationLookup } from "@/lib/cache";
+import { purgeInvitationEdgeCache } from "@/lib/cloudflare";
 import { buildAndSavePublishedHtml } from "@/lib/staticPublisher";
 import { hasPlanCapability } from "@/lib/settings";
 import { logger } from "@/lib/logger";
@@ -41,6 +41,7 @@ export async function POST(
         status: true,
         subdomain: true,
         invitationSlug: true,
+        customDomain: true,
         order: { select: { planType: true } },
       },
     });
@@ -120,8 +121,7 @@ export async function POST(
       data: { status: nextStatus },
     });
 
-    // Invalidate L1 lookup cache agar proxy langsung membaca status mutakhir
-    invalidateInvitationLookup(invitation.subdomain, invitation.invitationSlug);
+    await purgeInvitationEdgeCache(invitation);
 
     return NextResponse.json({
       success: true,

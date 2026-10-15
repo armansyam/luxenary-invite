@@ -2138,13 +2138,15 @@ export async function renderTemplateFile(
       return String(val);
     }
 
-    // Key URL: sterilkan dari javascript: pseudoprotocol
+    // Key URL disisipkan ke atribut HTML, url() CSS, dan string JS sekaligus, sehingga escape entitas HTML tidak cocok
+    // (merusak "&" di string JS). Karakter pemutus konteks dan karakter kontrol di-percent-encode: URL sah tetap valid,
+    // tetapi nilai seperti `x" onerror="...` tidak dapat keluar dari atribut, dan skema tidak dapat disamarkan.
     if (URL_KEY_REGEX.test(key)) {
       const strVal = String(val).trim();
       if (/^javascript:/i.test(strVal) || /^data:(?!image\/)/i.test(strVal)) {
         return "";
       }
-      return strVal;
+      return strVal.replace(/[\u0000- \u007F"'<>`\\]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase().padStart(2, "0")}`);
     }
 
     if (MULTILINE_TEXT_KEYS.has(key)) {

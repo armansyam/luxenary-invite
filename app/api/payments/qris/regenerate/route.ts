@@ -62,16 +62,17 @@ export async function POST(req: NextRequest) {
     // Jika sudah habis, order benar-benar EXPIRED dan harus checkout ulang.
     // ──────────────────────────────────────────────────────────────────────
     if (order.expiredAt && new Date(order.expiredAt).getTime() <= serverNow) {
-      // Release promo hold jika ada
-      await prisma.promoHold.updateMany({
-        where: { orderId: order.id, status: "HELD" },
-        data: { status: "RELEASED" },
-      });
-
-      await prisma.order.update({
-        where: { id: order.id },
+      // Bersyarat: pembayaran yang baru saja masuk (webhook) tidak boleh ditimpa menjadi EXPIRED.
+      const expired = await prisma.order.updateMany({
+        where: { id: order.id, status: "PENDING" },
         data: { status: "EXPIRED" },
       });
+      if (expired.count > 0) {
+        await prisma.promoHold.updateMany({
+          where: { orderId: order.id, status: "HELD" },
+          data: { status: "RELEASED" },
+        });
+      }
 
       return NextResponse.json({
         error: "Batas waktu pesanan ini telah habis (Expired). Silakan buat pesanan baru dari halaman paket.",
@@ -111,12 +112,12 @@ export async function POST(req: NextRequest) {
     // Sesi baru tidak boleh melewati batas hidup order, dan batas hidup order (expiredAt) tidak diperpanjang.
     const expiryMs = Math.min(expiryTimestamp ?? (serverNow + expiryMinutes * 60 * 1000), order.expiredAt?.getTime() ?? Infinity);
 
-    // Update order dengan sesi QRIS baru TANPA merubah ID atau menghapus diskon
-    await prisma.order.update({
-      where: { id: orderId },
+    // Sesi QRIS baru disimpan TANPA merubah ID atau menghapus diskon. Bersyarat PENDING: init gateway memakan waktu, dan
+    // order yang lunas di sela itu tidak boleh dikembalikan ke PENDING.
+    const saved = await prisma.order.updateMany({
+      where: { id: orderId, status: "PENDING" },
       data: {
         paymentMethod: "GATEWAY",
-        status: "PENDING",
         rejectReason: null,
         gatewayId: activeGatewayId,
         gatewayTxId: gatewayTxId || orderId,
@@ -126,6 +127,9 @@ export async function POST(req: NextRequest) {
         gatewaySessionExpiresAt: new Date(expiryMs),
       },
     });
+    if (saved.count === 0) {
+      return NextResponse.json({ error: "Pesanan sudah diproses. Muat ulang halaman untuk melihat status terbarunya." }, { status: 409 });
+    }
 
     return NextResponse.json({
       success: true,

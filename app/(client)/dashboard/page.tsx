@@ -1,11 +1,11 @@
 "use client";
 
-import { useSession, signOut } from "next-auth/react";
+import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { useState, useEffect, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { getInvitationPublicUrl, resolveEffectiveInvitationUrl } from "@/lib/domainUtils";
+import { resolveEffectiveInvitationUrl } from "@/lib/domainUtils";
 import { computeLifecycleDates, formatPrimaryEventDate, lifecycleSettingsFromPublic } from "@/lib/lifecycleDates";
 import UnifiedAddonModal from "@/components/client/UnifiedAddonModal";
 import { getPlanDisplayName, getPlanDisplayDescription, normalizePlanType } from "@/lib/planUtils";
@@ -14,14 +14,11 @@ import { useFeedback } from "@/components/ui/Feedback";
 
 function DashboardHomeContent() {
   const feedback = useFeedback();
-  const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
   const msgParam = searchParams?.get("msg");
   const [invitation, setInvitation] = useState<any>(null);
   const [platformSettings, setPlatformSettings] = useState<any>(null);
-  const [guestMemoriesList, setGuestMemoriesList] = useState<any[]>([]);
-  const [loadingMemories, setLoadingMemories] = useState(false);
   const [stats, setStats] = useState({
     guestCount: 0,
     waSentCount: 0,
@@ -31,30 +28,20 @@ function DashboardHomeContent() {
   });
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
-  const [pendingGalleryOrder, setPendingGalleryOrder] = useState<any>(null);
   const [memoriesQuota, setMemoriesQuota] = useState<any>(null);
   const [isAddonModalOpen, setIsAddonModalOpen] = useState(false);
 
   const fetchGuestMemories = useCallback(async (invId?: string) => {
     const targetId = invId || invitation?.id;
     if (!targetId) return;
-    setLoadingMemories(true);
     try {
       const res = await fetch(`/api/client/invitations/${targetId}/memories`);
       const data = await res.json();
-      if (data.success) {
-        setGuestMemoriesList(data.memories || []);
-        if (data.pendingOrder !== undefined) {
-          setPendingGalleryOrder(data.pendingOrder);
-        }
-        if (data.quota) {
-          setMemoriesQuota(data.quota);
-        }
+      if (data.success && data.quota) {
+        setMemoriesQuota(data.quota);
       }
     } catch (e) {
       console.error("Failed to fetch guest memories:", e);
-    } finally {
-      setLoadingMemories(false);
     }
   }, [invitation?.id]);
 
@@ -133,10 +120,8 @@ function DashboardHomeContent() {
   const allowedCaps: string[] = packageConfig?.capabilities || (planType === "TIER_3" ? ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"] : planType === "TIER_2" ? ["music", "gallery", "qr_checkin", "guest_memories"] : ["music", "gallery"]);
   const hasCap = (cap: string) => allowedCaps.includes(cap);
 
-  const featureSettings: Record<string, any> = invitation?.featureSettings ?? {};
 
 
-  const displayOrder: string = featureSettings?.displayOrder || "GROOM_FIRST";
   const coupleDisplayName = invitation
     ? resolveInvitationDisplayName(invitation)
     : null;
@@ -895,7 +880,6 @@ function DashboardHomeContent() {
           invitationId={invitation.id}
           currentPlan={invitation.order?.planType || "TIER_1"}
           currentQuota={memoriesQuota?.maxTotalPhotos || 250}
-          galleryExpiresAt={effectiveExpiry ? effectiveExpiry.toISOString() : null}
           pricingSettings={addonPricingSettings}
           hasExtended={hasExtended}
           daysRemaining={daysRemaining}

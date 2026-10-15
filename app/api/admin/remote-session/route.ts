@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { isAdminSession, requireAnyAdmin } from "@/lib/adminAuth";
 import { cookies } from "next/headers";
-import { prisma } from "@/lib/prisma";
+import { REMOTE_COOKIE_NAME } from "@/lib/remoteSession";
 
 /**
  * GET /api/admin/remote-session
@@ -12,27 +12,16 @@ import { prisma } from "@/lib/prisma";
 export async function GET() {
   const session = await auth();
 
-  if (!session?.user || !isAdminSession(session)) {
+  // Sesi remote ditetapkan callback session (auth.ts) setelah cookie diverifikasi; di sini cukup dibaca hasilnya.
+  if (!session?.user || !isAdminSession(session) || session.user.isRemote !== true) {
     return NextResponse.json({ isRemote: false });
   }
-
-  const cookieStore = await cookies();
-  const remoteClientId = cookieStore.get("lux_remote_client_id")?.value;
-
-  if (!remoteClientId) {
-    return NextResponse.json({ isRemote: false });
-  }
-
-  const clientUser = await prisma.user.findUnique({
-    where: { id: remoteClientId },
-    select: { name: true, email: true },
-  });
 
   return NextResponse.json({
     isRemote: true,
-    clientId: remoteClientId,
-    clientName: clientUser?.name || "Klien",
-    clientEmail: clientUser?.email || "",
+    clientId: session.user.id,
+    clientName: session.user.name || "Klien",
+    clientEmail: session.user.email || "",
   });
 }
 
@@ -45,7 +34,7 @@ export async function DELETE() {
   if (!guard.ok) return guard.response;
 
   const cookieStore = await cookies();
-  cookieStore.delete("lux_remote_client_id");
+  cookieStore.delete(REMOTE_COOKIE_NAME);
 
   return NextResponse.json({ ok: true });
 }

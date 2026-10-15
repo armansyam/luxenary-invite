@@ -79,7 +79,6 @@ Memerlukan sesi aktif klien (`role: CLIENT` atau Admin Remote Session):
 | | `POST` | `/api/client/invitations/{id}/preview` | Preview real-time live perubahan draf undangan ke canvas iframe. |
 | | `GET` | `/api/client/invitations/{id}/export` | Mengunduh berkas rekap data undangan dan respons kehadiran tamu. |
 | **Media** | `POST` | `/api/client/upload` | Mengunggah aset foto, video, lagu, atau QRIS (`slot: QRIS` WebP 800×800) ke Storage lokal / Cloudflare R2. |
-| | `DELETE` | `/api/client/media/{id}` | Menghapus aset media dari galeri undangan. |
 | **Buku Tamu** | `GET` | `/api/client/guests` | Mengambil daftar tamu undangan penyelenggara. |
 | | `POST` | `/api/client/guests` | Menambahkan satu tamu baru secara manual. Nama yang sudah ada (tanpa membedakan huruf besar/kecil) ditolak 400. |
 | | `POST` | `/api/client/guests/bulk` | Mengimpor puluhan/ratusan tamu sekaligus via berkas CSV (dengan parser koma/titik-koma cerdas). Nama kembar di berkas maupun yang sudah terdaftar dilewati dan dilaporkan di `skippedNames`. Sesi kosong menjadi "Akad & Resepsi" hanya untuk pernikahan. |

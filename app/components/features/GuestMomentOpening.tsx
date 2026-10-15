@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 export type OpeningLayoutType = "editorial_showcase" | "cinematic_hero" | "polaroid_nostalgia";
@@ -51,7 +51,6 @@ export default function GuestMomentOpening({
   const parsedStartTime = startTime ? new Date(startTime) : null;
   const parsedEndTime = endTime ? new Date(endTime) : null;
   const targetCountdownIso = nextSessionStartTime || startTime;
-  const parsedTargetTime = targetCountdownIso ? new Date(targetCountdownIso) : null;
 
   // Real-time countdown timer untuk jadwal pembukaan / sesi berikutnya
   useEffect(() => {

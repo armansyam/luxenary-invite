@@ -101,7 +101,12 @@ export async function PUT(
     if (body.sessionInfo !== undefined) allowedData.sessionInfo = body.sessionInfo || null;
     if (body.tableNumber !== undefined) allowedData.tableNumber = body.tableNumber || null;
     if (body.guestQuota !== undefined) allowedData.guestQuota = Number(body.guestQuota) || 1;
-    if (body.waStatus !== undefined) allowedData.waStatus = body.waStatus;
+    if (body.waStatus !== undefined) {
+      if (body.waStatus !== "PENDING" && body.waStatus !== "SENT") {
+        return NextResponse.json({ error: "Status WhatsApp tidak valid." }, { status: 400 });
+      }
+      allowedData.waStatus = body.waStatus;
+    }
 
     const guest = await prisma.guest.update({
       where: { id },

@@ -16,8 +16,9 @@ import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { getPlanMemoriesQuota } from "@/lib/settings";
 import { VALID_MEDIA_SLOTS } from "@/lib/mediaSlots";
 import { invalidateInvitationLookup } from "@/lib/cache";
-import { safeExternalUrl } from "@/lib/safeUrl";
-import { getDynamicServerRootDomain } from "@/lib/serverDomainUtils";
+import { safeExternalUrl, safeMediaUrl } from "@/lib/safeUrl";
+import { deleteFile, isInvitationOwnedUpload } from "@/lib/storage";
+import { purgeInvitationEdgeCache } from "@/lib/cloudflare";
 import { createPreviewToken } from "@/lib/previewAccess";
 import { mergeFeatureSettingsInput } from "@/lib/featureSettings";
 
@@ -199,26 +200,8 @@ export async function PUT(
           },
         });
 
-        // Invalidate L1 memory lookup cache
-        invalidateInvitationLookup(currentInv.invitationSlug, currentInv.subdomain);
-
-        // Otomatis bersihkan (purge) edge cache Cloudflare untuk URL spesifik undangan ini (Anti-Stale Cache)
         try {
-          const rootDomain = (await getDynamicServerRootDomain("")).split(":")[0].toLowerCase();
-          const urlsToPurge: string[] = [];
-          if (rootDomain && currentInv.subdomain) {
-            urlsToPurge.push(`https://${currentInv.subdomain}.${rootDomain}/`);
-          }
-          if (rootDomain && currentInv.invitationSlug) {
-            urlsToPurge.push(`https://${rootDomain}/${currentInv.invitationSlug}`);
-          }
-          if (currentInv.customDomain) {
-            urlsToPurge.push(`https://${currentInv.customDomain}/`);
-          }
-          if (urlsToPurge.length > 0) {
-            const { purgeCloudflareCache } = await import("@/lib/cloudflare");
-            await purgeCloudflareCache({ files: urlsToPurge });
-          }
+          await purgeInvitationEdgeCache(currentInv);
         } catch (purgeErr) {
           logger.warn("DeployAndLock", "Purge cache Cloudflare gagal; perubahan tetap tersimpan", { invitationId: id, error: purgeErr instanceof Error ? purgeErr.message : String(purgeErr) });
         }
@@ -254,11 +237,17 @@ export async function PUT(
       : undefined;
 
     // Undangan pernikahan tanpa subdomain mendapat subdomain dari nama panggilan mempelai saat studio menyimpan peserta.
+    // Subdomain turunan ini tidak diminta klien, jadi bentrok atau nama sistem tidak boleh menggagalkan penyimpanan nama:
+    // nama sistem dilewati, nama yang sudah dipakai diberi akhiran seperti pada wizard pembuatan undangan.
     if (newSubdomain === undefined && !currentInv.subdomain && currentInv.eventType === "WEDDING" && body.participantsJson !== undefined) {
       const { first, second } = participantNames("WEDDING", body.participantsJson);
       const groomPart = first.toLowerCase().replace(/[^a-z0-9]/g, "");
       const bridePart = second.toLowerCase().replace(/[^a-z0-9]/g, "");
-      if (groomPart && bridePart) newSubdomain = `${groomPart}-${bridePart}`;
+      const derived = groomPart && bridePart ? `${groomPart}-${bridePart}` : "";
+      if (derived && !isReservedSubdomain(derived)) {
+        const holder = await prisma.invitation.findUnique({ where: { subdomain: derived }, select: { id: true } });
+        newSubdomain = holder && holder.id !== id ? `${derived}-${Date.now().toString(36).slice(-4)}` : derived;
+      }
     }
 
     // --- BUG FIX: Check Subdomain Uniqueness & Reserved Subdomains ---
@@ -271,12 +260,13 @@ export async function PUT(
       }
       const existingSub = await prisma.invitation.findUnique({ where: { subdomain: newSubdomain } });
       if (existingSub && existingSub.id !== id) {
-        const { subdomainGraceDays } = await getLifecycleSettings();
-        if (isSubdomainExpired(existingSub.eventData, subdomainGraceDays)) {
+        const { subdomainGraceDays, autoRecycleSubdomain } = await getLifecycleSettings();
+        if (autoRecycleSubdomain && isSubdomainExpired(existingSub.eventData, subdomainGraceDays)) {
           await prisma.invitation.update({
             where: { id: existingSub.id },
             data: { subdomain: null },
           });
+          await purgeInvitationEdgeCache(existingSub);
         } else {
           return NextResponse.json(
             { error: `Tautan/Subdomain "${newSubdomain}" sudah digunakan oleh orang lain. Silakan ubah nama panggilan.` },
@@ -375,6 +365,7 @@ export async function PUT(
       } catch (e) {
         logger.error("ClientInvitation", "HTML statis lama gagal dihapus saat penyuntingan", e, { invitationId: currentInv.id });
       }
+      await purgeInvitationEdgeCache(currentInv);
     }
 
     // --- EVENT DATA VALIDATION: Sesi Utama, Kunci Tanggal Pasca Publikasi, & Auto-Sort Kronologis ---
@@ -462,6 +453,14 @@ export async function PUT(
       jsonFields[field] = parsed.value;
     }
 
+    if (body.media && typeof body.media === "object" && !Array.isArray(body.media)) {
+      for (const [slot, url] of Object.entries(body.media)) {
+        if (typeof url === "string" && url.trim() && !safeMediaUrl(url)) {
+          return NextResponse.json({ error: `URL media ${slot} tidak valid.` }, { status: 400 });
+        }
+      }
+    }
+
     // PIN membuka portal resepsionis; batas percobaan verify-pin (30 per 15 menit) hanya berarti bila ruang tebakannya cukup besar.
     if (body.staffPin && !STAFF_PIN_PATTERN.test(String(body.staffPin))) {
       return NextResponse.json({ error: "PIN harus 4–10 karakter berupa huruf atau angka." }, { status: 400 });
@@ -503,7 +502,7 @@ export async function PUT(
       // Gunakan konstanta terpusat dari lib/mediaSlots.ts (Single Source of Truth)
       for (const [slot, url] of Object.entries(body.media)) {
         if (!(VALID_MEDIA_SLOTS as readonly string[]).includes(slot)) continue;
-        const urlStr = typeof url === "string" ? url.trim() : "";
+        const urlStr = safeMediaUrl(url);
 
         const existing = await prisma.invitationMedia.findFirst({
           where: { invitationId: id, mediaSlot: slot as any },
@@ -525,9 +524,8 @@ export async function PUT(
             });
           }
         } else if (existing) {
-          // deleteFile mencatat galatnya sendiri dan tidak melempar.
-          const { deleteFile } = await import("@/lib/storage");
-          await deleteFile(existing.localPath);
+          // Hanya berkas unggahan undangan ini yang ikut dihapus; URL eksternal atau milik undangan lain dibiarkan.
+          if (isInvitationOwnedUpload(existing.localPath, id)) await deleteFile(existing.localPath);
           await prisma.invitationMedia.delete({
             where: { id: existing.id },
           });
@@ -550,14 +548,7 @@ export async function PUT(
           }
 
           // Bersihkan cache jika subdomain sebelumnya sempat diakses sebelum rilis
-          const rootDomain = (await getDynamicServerRootDomain("")).split(":")[0].toLowerCase();
-          const urlsToPurge: string[] = [];
-          if (rootDomain && updated.subdomain) urlsToPurge.push(`https://${updated.subdomain}.${rootDomain}/`);
-          if (rootDomain && updated.invitationSlug) urlsToPurge.push(`https://${rootDomain}/${updated.invitationSlug}`);
-          if (urlsToPurge.length > 0) {
-            const { purgeCloudflareCache } = await import("@/lib/cloudflare");
-            await purgeCloudflareCache({ files: urlsToPurge });
-          }
+          await purgeInvitationEdgeCache(updated);
         } catch (err) {
           logger.error("ClientInvitation", "Bake HTML atau sinkronisasi R2 setelah terbit pertama gagal", err, { invitationId: id });
         }

@@ -12,6 +12,7 @@ import { computeLifecycleDates } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { canPreviewInvitation } from "@/lib/previewAccess";
 import { isCustomDomainHost } from "@/lib/domainUtils";
+import { eventNoun } from "@/lib/invitationUtils";
 import { logger } from "@/lib/logger";
 import fs from "fs";
 import path from "path";
@@ -125,19 +126,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
   <div class="card">
     <span class="badge">Belum Dipublikasikan</span>
     <h1>Undangan Sedang Disiapkan</h1>
-    <p>Halaman ${
-      !invitation.eventType || invitation.eventType === "WEDDING"
-        ? "undangan pernikahan"
-        : invitation.eventType === "BIRTHDAY"
-        ? "undangan ulang tahun"
-        : invitation.eventType === "KHITAN"
-        ? "undangan khitanan"
-        : invitation.eventType === "AQIQAH"
-        ? "undangan aqiqah"
-        : invitation.eventType === "WISUDA"
-        ? "undangan wisuda"
-        : "undangan acara"
-    } ini masih dalam tahap penyusunan dan belum dipublikasikan secara resmi oleh penyelenggara.</p>
+    <p>Halaman undangan ${eventNoun(invitation.eventType)} ini masih dalam tahap penyusunan dan belum dipublikasikan secara resmi oleh penyelenggara.</p>
   </div>
 </body>
 </html>`;
@@ -222,16 +211,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
 
   if (!html) {
     return new NextResponse("Not Found", { status: 404 });
-  }
-
-  // Handle guest parameter dynamically if present
-  const searchParams = req.nextUrl.searchParams;
-  const to = searchParams.get('to') || searchParams.get('v');
-  
-  if (to) {
-    // If the template engine uses a specific placeholder for the guest name, we can inject it here.
-    // For now, the client-side JS typically reads the URL params, but if needed, we can replace it.
-    // html = html.replace(/<span id="guest-name">.*?<\/span>/, `<span id="guest-name">${to}</span>`);
   }
 
   const responseHeaders: Record<string, string> = {

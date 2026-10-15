@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import QRCode from "react-qr-code";
 import { useFeedback } from "@/components/ui/Feedback";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
-import { formatPrimaryEventDate, getPrimaryEventDateString } from "@/lib/lifecycleDates";
+import { getPrimaryEventDateString } from "@/lib/lifecycleDates";
 
 export interface GuestOpeningSetupModalProps {
   isOpen: boolean;
@@ -69,7 +68,6 @@ export default function GuestOpeningSetupModal({
   const coupleTitle = resolveInvitationDisplayName(invitation ?? {});
 
   // Format Tanggal Acara
-  const eventDateFormatted = formatPrimaryEventDate(invitation?.eventData, { weekday: true })?.toUpperCase() ?? "HARI BAHAGIA KAMI";
 
   // Format Retro Date Stamp: "02  09  '26"
   const getRetroDateStamp = () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import { useState, useRef } from "react";
 import { useFeedback } from "@/components/ui/Feedback";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 import { qrInitials } from "@/lib/checkinQr";
@@ -116,7 +116,6 @@ export default function PrintableQRCardModal({
     initialFs?.memoriesCardInstruction || "Pindai kode QR untuk mengabadikan momen istimewa dari sudut pandang Anda."
   );
 
-  const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isGeneratingPng, setIsGeneratingPng] = useState(false);
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
 
@@ -141,7 +140,6 @@ export default function PrintableQRCardModal({
   // Simpan Perubahan Pengaturan ke Database
   const persistFeatureSettings = async (overrides: Record<string, any>) => {
     if (!invitation?.id) return;
-    setIsSavingSettings(true);
     try {
       const nextFs = {
         ...initialFs,
@@ -162,11 +160,12 @@ export default function PrintableQRCardModal({
         if (onInvitationUpdated) onInvitationUpdated(updated);
         setStatusNotice("Pengaturan kartu berhasil disimpan!");
         setTimeout(() => setStatusNotice(null), 3000);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        feedback.notify(data.error || "Gagal menyimpan pengaturan kartu.", "error");
       }
     } catch {
       feedback.notify("Gagal menyimpan pengaturan kartu.", "error");
-    } finally {
-      setIsSavingSettings(false);
     }
   };
 

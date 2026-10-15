@@ -2,15 +2,13 @@
 
 import { BrandLogo } from "@/components/BrandLogo";
 import { useState, useEffect, Suspense, useCallback, useRef } from "react";
-import { useSession, signOut } from "next-auth/react";
+import { signOut } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { compressImageToWebP } from "@/lib/clientImageCompressor";
 import { getPlanDisplayName } from "@/lib/planUtils";
 
 function PaymentContent() {
-  const { data: session, status } = useSession();
-  const sessionUserId = (session?.user as any)?.id;
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get("order");

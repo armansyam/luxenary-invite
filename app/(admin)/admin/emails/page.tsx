@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { EMAIL_TEMPLATE_CATALOG, EmailTemplateMeta } from "@/lib/email-templates";
+import { EMAIL_TEMPLATE_CATALOG } from "@/lib/email-templates";
 
 export default function AdminEmailPreviewPage() {
   const [selectedKey, setSelectedKey] = useState<string>("PAID_INVITATION");

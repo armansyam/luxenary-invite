@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createDatabaseSnapshot, listDatabaseSnapshots, deleteDatabaseSnapshot, inspectBackupPath, readBackupPathSetting } from "@/lib/databaseBackup";
-import { prisma } from "@/lib/prisma";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
 

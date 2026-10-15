@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
 import nodemailer from "nodemailer";
-import { getPublicPlatformSettings } from "@/lib/settings";
+import { getPublicPlatformSettings, getSmtpSettings } from "@/lib/settings";
 import { EMAIL_TEMPLATE_CATALOG } from "@/lib/email-templates";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Template email '${templateKey}' tidak ditemukan.` }, { status: 404 });
     }
 
-    const settings = await getPublicPlatformSettings();
+    const settings = { ...(await getPublicPlatformSettings()), ...(await getSmtpSettings()) };
 
     if (!settings.smtpHost || !settings.smtpUser) {
       return NextResponse.json(
