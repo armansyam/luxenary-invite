@@ -100,18 +100,6 @@ const nextConfig: NextConfig = {
         ],
       },
 
-      // ── HTML undangan baked (subdomains, slugs, ids) ──
-      // s-maxage = di-cache Cloudflare selama 7 hari
-      // stale-while-revalidate = Cloudflare serve stale sambil refresh di background
-      {
-        source: "/published/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=3600, s-maxage=604800, stale-while-revalidate=86400",
-          },
-        ],
-      },
       // ── HTML portofolio terisolasi + aset ──
       // Lebih agresif karena konten ini sangat jarang berubah
       {
