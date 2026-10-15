@@ -31,14 +31,14 @@ async function runCompleteSystemAudit() {
 
   try {
     // ---------------------------------------------------------------------------
-    // KASUS 1: Registrasi Akun & Validasi Role Klien
+    // KASUS 1: Role bawaan akun baru. Registrasi sungguhan lewat OAuth dan rute order diuji di
+    // __tests__/integration/lifecycleChain.test.ts; role sengaja tidak diisi agar nilai bawaan skema yang diperiksa.
     // ---------------------------------------------------------------------------
-    console.log("▶ [KASUS 1] Registrasi Akun Klien Baru & Verifikasi Role Default...");
+    console.log("▶ [KASUS 1] Akun Baru Tanpa Role Eksplisit & Verifikasi Role Bawaan Skema...");
     const testUser = await prisma.user.create({
       data: {
         email: `audit_client_${testRunId}@luxenary.com`,
         name: "Bpk. Audit Santoso",
-        role: "CLIENT",
       },
     });
     testUserId = testUser.id;
@@ -51,10 +51,10 @@ async function runCompleteSystemAudit() {
     const isCase1Passed = userVerify?.role === "CLIENT" && userVerify?.email === testUser.email;
     results.push({
       step: 1,
-      name: "REGISTRASI_AKUN_DAN_ROLE",
+      name: "ROLE_BAWAAN_AKUN_BARU",
       pass: isCase1Passed,
       metrics: { userId: userVerify?.id, role: userVerify?.role },
-      detail: isCase1Passed ? "Akun berhasil dibuat dengan role CLIENT permanen." : "Role gagal diverifikasi.",
+      detail: isCase1Passed ? "Akun tanpa role eksplisit menerima role bawaan CLIENT dari skema." : "Role bawaan skema bukan CLIENT.",
     });
     console.log(`  ${isCase1Passed ? "✅" : "❌"} ${results[results.length - 1].detail}`);
 
