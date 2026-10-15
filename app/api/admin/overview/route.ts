@@ -33,8 +33,9 @@ export async function GET() {
         const expiredIds = pendingOrders.filter((ord) => ord.expiredAt && ord.expiredAt.getTime() < now).map((ord) => ord.id);
 
         if (expiredIds.length > 0) {
+          // Bersyarat PENDING: order yang lunas di antara pembacaan dan penulisan ini tidak boleh ditimpa menjadi EXPIRED.
           await prisma.order.updateMany({
-            where: { id: { in: expiredIds } },
+            where: { id: { in: expiredIds }, status: "PENDING" },
             data: { status: "EXPIRED" }
           });
           console.info(`[Expire Sweep] ${expiredIds.length} order ditandai EXPIRED.`);
