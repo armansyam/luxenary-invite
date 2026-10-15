@@ -36,8 +36,8 @@ Endpoint berikut dapat diakses oleh publik (tamu undangan, browser pengunjung, d
 
 | Metode | Endpoint | Deskripsi & Kegunaan |
 |:---:|---|---|
-| `GET` | `/api/public/settings` | Mengambil data pengaturan publik platform (nama platform, logo, WhatsApp CS, limit upload). |
-| `GET` | `/api/public/themes` | Mengambil katalog tema aktif untuk galeri landing page & `/demo`. Mendukung query parameter `?eventType=WEDDING\|BIRTHDAY\|KHITAN\|AQIQAH\|WISUDA\|GATHERING` (cached via Cloudflare `s-maxage=86400`, `max-age=60`). |
+| `GET` | `/api/public/settings` | Mengambil data pengaturan publik platform (nama platform, logo, WhatsApp CS, limit upload, `packages`). `waTemplateMessage` kosong bila admin belum mengisi template WA; klien lalu memakai preset per jenis acara. |
+| `GET` | `/api/public/themes` | Mengambil katalog tema aktif untuk galeri landing page & `/demo` (tiap item memuat `desc`, `tagline`, `defaultMusicUrl`). Mendukung query parameter `?eventType=WEDDING\|BIRTHDAY\|KHITAN\|AQIQAH\|WISUDA\|GATHERING` (cached via Cloudflare `s-maxage=86400`, `max-age=60`). |
 | `GET` | `/api/public/music` | Mengambil daftar pustaka musik latar (*audio presets*) resmi. |
 | `GET` | `/api/public/qr` | Membuat QR SVG di server sendiri. Parameter `data` (wajib, maksimal 600 karakter, UTF-8), `size` (80-400, bawaan 160), dan `mark` (opsional, maksimal 2 huruf/angka; digambar dalam lingkaran putih di tengah QR dengan koreksi level H). Rate limit 120 per menit per IP (HTTP 429). Respons di-cache 1 hari. |
 | `POST` | `/api/public/rsvp` | Mengirim konfirmasi kehadiran tamu. Rate limit 10 per menit per IP dan 200 per menit per undangan (HTTP 429). `status` dinormalkan ke `hadir`/`tidak`/`ragu` (nilai lain: 400); `guestName` maksimal 100 dan `message` maksimal 1000 karakter (lebih: 400). Respons pertama menetapkan cookie `lux_rsvp_*` (`httpOnly`); mengirim ulang dengan nama yang sama hanya memperbarui RSVP bila cookie itu ikut terkirim, selain itu 409. |
@@ -157,7 +157,7 @@ Memerlukan autentikasi admin (`role: ADMIN` atau `SUPER_ADMIN`):
 | | `POST` | `/api/admin/themes/{id}/demo-data` | Menyimpan custom mock dataset untuk rendering preview demo statis tema tertentu. |
 | **Pustaka Musik**| `GET` / `POST` | `/api/admin/music` | Mengambil katalog musik latar dan mengunggah berkas audio MP3/OGG resmi. |
 | | `PUT` / `DELETE` | `/api/admin/music/{id}` | Memperbarui metadata lagu atau menghapus berkas musik dari disk dan database. |
-| **Portfolio** | `GET` / `POST` | `/api/admin/portfolio` | Mengelola katalog showcase etalase publik (kloning mandiri aset & HTML undangan terpilih). |
+| **Portfolio** | `GET` / `POST` | `/api/admin/portfolio` | Mengelola katalog showcase etalase publik (kloning mandiri aset & HTML undangan terpilih). `GET` → `{ portfolios, candidates }`; `candidates` = seluruh undangan `PUBLISHED` (id, status, invitationSlug, eventType, participantsJson). |
 | **Diagnostik** | `GET` | `/api/admin/monitoring/health` | Health check real-time: status koneksi PostgreSQL, latensi disk, konsumsi memori, dan uptime Node.js. |
 | | `GET` | `/api/admin/server-ip` | Mendeteksi alamat IP publik server VPS untuk panduan DNS klien. |
 | | `POST` | `/api/admin/test-smtp` | Menguji pengiriman email transaksional via gateway SMTP. |
