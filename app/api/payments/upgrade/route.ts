@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 import { normalizePlanType } from "@/lib/planUtils";
+import { normalizeCustomDomain } from "@/lib/domainUtils";
 import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
@@ -91,13 +92,9 @@ export async function POST(req: Request) {
     }
 
     const upgradeAmount = priceTo - priceFrom;
-    let cleanDomain: string | null = null;
-
-    if (requestedDomain && typeof requestedDomain === "string") {
-      const sanitized = requestedDomain.toLowerCase().replace(/^https?:\/\//, "").replace(/\/$/, "").replace(/\s/g, "").trim();
-      if (sanitized.includes(".")) {
-        cleanDomain = sanitized;
-      }
+    const cleanDomain = requestedDomain ? normalizeCustomDomain(requestedDomain) : null;
+    if (requestedDomain && !cleanDomain) {
+      return NextResponse.json({ error: "Format domain tidak valid. Contoh: namakamu.com" }, { status: 400 });
     }
 
     // 4. Cegah spam / duplikasi jika ada permintaan upgrade yang sedang menunggu verifikasi admin
@@ -151,6 +148,7 @@ export async function POST(req: Request) {
         paymentMethod: resolvedPaymentMethod, // Dinamis dari AdminSetting payment_mode
         requestedDomain: cleanDomain || undefined,
         checkoutConfirmedAt: new Date(),
+        expiredAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
       },
     });
 

@@ -228,7 +228,7 @@ export async function GET() {
         orderBy: { createdAt: "desc" },
         include: {
           user: { select: { name: true, email: true, phoneNumber: true } },
-          invitation: { select: { subdomain: true, customDomain: true } }
+          linkedInvitation: { select: { subdomain: true, customDomain: true } }
         }
       }),
     ]);
@@ -293,7 +293,8 @@ export async function GET() {
       invitations: recentInvitations,
       themes,
       logs: webhookLogs,
-      customDomainOrders,
+      // Domain diminta lewat order UPGRADE, jadi undangannya adalah linkedInvitation, bukan relasi order NEW.
+      customDomainOrders: customDomainOrders.map(({ linkedInvitation, ...o }) => ({ ...o, invitation: linkedInvitation })),
     });
 
   } catch (error) {

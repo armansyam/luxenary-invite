@@ -20,14 +20,7 @@ export async function POST(req: NextRequest) {
 
     const order = await prisma.order.findUnique({
       where: { id: orderId },
-      include: {
-        invitation: true,
-        user: {
-          include: {
-            invitations: { take: 1, orderBy: { createdAt: "desc" } },
-          },
-        },
-      },
+      include: { invitation: true, linkedInvitation: true },
     });
 
     if (!order) {
@@ -39,8 +32,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Pesanan ini tidak memiliki nama domain yang diminta (requestedDomain kosong)." }, { status: 400 });
     }
 
-    // Tentukan invitation target
-    const targetInvitation = order.invitation || order.user?.invitations?.[0];
+    // requestedDomain hanya ditulis order UPGRADE, yang menunjuk undangannya lewat linkedInvitationId. Undangan terbaru
+    // milik klien bukan pengganti yang sah: klien dengan beberapa undangan akan mendapati domainnya di undangan lain.
+    const targetInvitation = order.linkedInvitation || order.invitation;
     if (!targetInvitation) {
       return NextResponse.json({ error: "Tidak ditemukan proyek undangan yang terhubung dengan klien ini." }, { status: 404 });
     }
