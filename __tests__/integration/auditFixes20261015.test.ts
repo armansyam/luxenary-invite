@@ -13,6 +13,7 @@ import { POST as activateDomain } from "@/app/api/admin/custom-domains/activate/
 import { POST as upgradeOrder } from "@/app/api/payments/upgrade/route";
 import { POST as checkoutBundle } from "@/app/api/client/orders/checkout-bundle/route";
 import { PATCH as patchMemories } from "@/app/api/client/invitations/[id]/memories/route";
+import { GET as publicThemes } from "@/app/api/public/themes/route";
 import { normalizeCustomDomain } from "@/lib/domainUtils";
 import { DAY_MS } from "@/lib/lifecycleDates";
 
@@ -137,6 +138,14 @@ describe.skipIf(!IS_TEST_DB)("foto sampul kamera tamu", () => {
     expect(res.status).toBe(400);
     const inv = await prisma.invitation.findUniqueOrThrow({ where: { id: invitationId }, select: { featureSettings: true } });
     expect(JSON.stringify(inv.featureSettings)).not.toContain("script");
+  });
+});
+
+describe.skipIf(!IS_TEST_DB)("katalog tema publik", () => {
+  it("jenis acara yang tidak dikenal menghasilkan daftar kosong, bukan galat 500", async () => {
+    const res = await publicThemes(new Request("http://localhost/api/public/themes?eventType=bukan_jenis"));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual([]);
   });
 });
 
