@@ -25,6 +25,7 @@ import { POST as purgeInvitation } from "@/app/api/admin/invitations/[id]/purge/
 import { POST as marketingAction } from "@/app/api/admin/marketing/route";
 import { POST as uploadMusic } from "@/app/api/admin/music/route";
 import { GET as serveUpload } from "@/app/uploads/[...path]/route";
+import { readPortfolioMediaSource } from "@/lib/storage";
 import { normalizeCustomDomain } from "@/lib/domainUtils";
 import { getPlanMemoriesQuota, getPublicPlatformSettings, invalidateSettingsCache } from "@/lib/settings";
 import { DAY_MS } from "@/lib/lifecycleDates";
@@ -82,6 +83,37 @@ describe("normalizeCustomDomain", () => {
   it("menolak path, port, karakter HTML, label berawalan tanda hubung, dan bukan string", () => {
     for (const bad of ["nama.com/jalur", "nama.com:8443", "nama.com\"><svg>", "-nama.com", "nama", "a.b", "nama..com", 42, null]) {
       expect(normalizeCustomDomain(bad)).toBeNull();
+    }
+  });
+});
+
+describe("sumber media portofolio (SSRF)", () => {
+  it("URL internal, HTTP biasa, host asing, dan traversal lokal tidak diambil", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    try {
+      for (const url of [
+        "http://127.0.0.1:3001/api/health",
+        "http://169.254.169.254/latest/meta-data/",
+        "https://evil.example.com/a.webp",
+        "http://lh3.googleusercontent.com/d/abc=w100",
+        "/uploads/../../.env",
+      ]) {
+        expect(await readPortfolioMediaSource(url)).toBeNull();
+      }
+      expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it("CDN Google Drive diambil tanpa mengikuti redirect", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("gambar"));
+    try {
+      const buffer = await readPortfolioMediaSource("https://lh3.googleusercontent.com/d/abc=w1200");
+      expect(buffer?.toString()).toBe("gambar");
+      expect(fetchSpy).toHaveBeenCalledWith(expect.any(URL), { redirect: "error" });
+    } finally {
+      fetchSpy.mockRestore();
     }
   });
 });
