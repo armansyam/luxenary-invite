@@ -26,6 +26,7 @@ vi.mock("@/lib/lifecycleSettings", async (importOriginal) => {
 
 import { prisma, pool } from "@/lib/prisma";
 import { POST as midtransWebhook } from "@/app/api/webhook/midtrans/route";
+import { MidtransGateway } from "@/lib/gateways/midtrans";
 import { applyUpgradePlan } from "@/lib/upgradeHelper";
 import { runStaleDataCleanup } from "@/lib/lifecycleCleanup";
 
@@ -83,6 +84,7 @@ function paidWebhook(orderId: string, amount = "100000.00") {
 
 describe.skipIf(!IS_TEST_DB)("pemulihan pembayaran", () => {
   beforeAll(async () => {
+    vi.spyOn(MidtransGateway.prototype, "verify").mockResolvedValue({ status: "PAID" });
     await prisma.adminSetting.upsert({
       where: { key: "midtrans_server_key" },
       update: { value: SERVER_KEY },

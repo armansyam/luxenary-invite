@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { logger } from "@/lib/logger";
+import { rateLimitDb } from "@/lib/rateLimit";
 import { routeError } from "@/lib/routeError";
 import { NextResponse } from "next/server";
 
@@ -30,6 +31,10 @@ export async function POST(req: Request) {
     const sessionUserId = session.user.id;
     const sessionEmail = session.user.email;
     const isAdmin = hasAdminPermission(session.user, "orders");
+
+    if (!(await rateLimitDb(`payments_checkout:${sessionUserId}`, 15, 60000))) {
+      return NextResponse.json({ error: "Terlalu banyak permintaan pembayaran. Silakan coba lagi sebentar." }, { status: 429 });
+    }
 
     const { orderId, customerName, customerPhone } = await req.json();
     if (!orderId) {
