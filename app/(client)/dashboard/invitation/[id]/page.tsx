@@ -9,6 +9,7 @@ import { getPlanDisplayName } from "@/lib/planUtils";
 import { isWeddingField, participantNames, safeParseParticipants, weddingFieldValue, withWeddingField } from "@/lib/participantUtils";
 import { resolveInvitationDisplayName, getMediaSlotLabel, eventNoun, isThemeCompatible } from "@/lib/invitationUtils";
 import { useFeedback } from "@/components/ui/Feedback";
+import { getApexRootDomain } from "@/lib/domainUtils";
 
 // Pilihan tema dimuat secara dinamis dari API /api/public/themes untuk menjamin sinkronisasi status aktif
 
@@ -2269,7 +2270,7 @@ export default function EditInvitation() {
                                   <span/><span/><span/>
                                 </div>
                                 <div className="stp-tablet-url">
-                                  luxenary.id/{th.id}
+                                  {getApexRootDomain()}/{th.id}
                                 </div>
                                 <div style={{ width: "18px" }}/>
                               </div>

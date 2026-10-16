@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { BrandLogo } from "@/components/BrandLogo";
 import { DEFAULT_PLAN_NAMES } from "@/lib/planUtils";
 import { isThemeCompatible } from "@/lib/invitationUtils";
+import { getApexRootDomain } from "@/lib/domainUtils";
 
 // Di HP baris tombol menempel di bawah layar: langkah tema bisa setinggi belasan layar, dan tombol selesai
 // tidak boleh tersembunyi di dasar daftar. Di layar lebar baris mengalir biasa.
@@ -1361,7 +1362,7 @@ function SetupWizardContent() {
                         <div className="stp-tablet">
                           <div className="stp-tablet-bar">
                             <div className="stp-tablet-dots"><span/><span/><span/></div>
-                            <div className="stp-tablet-url">luxenary.id/{theme.id}</div>
+                            <div className="stp-tablet-url">{getApexRootDomain()}/{theme.id}</div>
                             <div style={{ width: "18px" }}/>
                           </div>
                           <div className="stp-tablet-screen">

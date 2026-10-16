@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { getInvitationPublicUrl } from "@/lib/domainUtils";
+import { getInvitationPublicUrl, getApexRootDomain } from "@/lib/domainUtils";
 import { BrandLogo } from "@/components/BrandLogo";
 
 import { AdminTeamManagement } from "@/components/admin/AdminTeamManagement";
@@ -2734,7 +2734,7 @@ export default function AdminPage() {
                                       <div className="stp-tablet">
                                         <div className="stp-tablet-bar">
                                           <div className="stp-tablet-dots"><span/><span/><span/></div>
-                                          <div className="stp-tablet-url">luxenary.id/{theme.id}</div>
+                                          <div className="stp-tablet-url">{getApexRootDomain()}/{theme.id}</div>
                                           <div style={{ width: "18px" }}/>
                                         </div>
                                         <div className="stp-tablet-screen">
