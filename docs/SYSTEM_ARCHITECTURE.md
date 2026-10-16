@@ -1907,7 +1907,7 @@ Setiap inisialisasi tagihan ke payment gateway (Midtrans & Xendit) mengirimkan i
   - Jika mode `production` aktif: gateway otomatis menggunakan kredensial slot Produksi dan menembak ke server live Midtrans (`api.midtrans.com` dan `app.midtrans.com`).
   - Dilengkapi tata letak form berurutan Client Key di atas dan Server Key di bawah (1:1 dengan dashboard Midtrans) serta *auto-swap guard* pencegah kunci tertukar.
 - **Verifikasi Webhook Terpadu:**
-  - Endpoint webhook (`/api/webhook/midtrans`) memverifikasi signature terhadap seluruh kandidat Server Key (Sandbox maupun Produksi) sehingga pengujian simulasi dan transaksi nyata berjalan simultan tanpa kendala autentikasi.
+  - Endpoint webhook (`/api/webhook/midtrans`) memverifikasi signature terhadap seluruh kandidat Server Key (Sandbox maupun Produksi) sehingga pengujian simulasi dan transaksi nyata berjalan simultan tanpa kendala autentikasi. Karena kunci sandbox yang tersimpan ikut lolos validasi signature, event `settlement`/`capture` yang nominalnya cocok masih dikonfirmasi ke API status Midtrans pada lingkungan aktif (`MidtransGateway.verify`, timeout 8 detik) sebelum order dilunasi. API menjawab selain PAID atau tidak terjangkau: order tetap `PENDING`, webhook dijawab 503 (`status_unconfirmed` / `gateway_status_unavailable`) agar Midtrans mengirim ulang, dan baris `webhook_logs` tetap `received`.
 
 ### 15.11 — Rekonsiliasi Real-Time & Deteksi Host Dinamis
 - **Deteksi Host & Protokol Dinamis (Zero Domain Hardcode):**

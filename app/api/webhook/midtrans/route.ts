@@ -191,6 +191,20 @@ export async function POST(req: NextRequest) {
         }
         return NextResponse.json({ status: "ignored", reason: "order_closed" }, { status: 200 });
       }
+      // Signature saja tidak cukup: kunci server sandbox yang tersimpan juga lolos validasi. Status transaksi
+      // dikonfirmasi ke API Midtrans pada lingkungan aktif; non-2xx membuat Midtrans mengirim ulang notifikasi.
+      let confirmedStatus: "PAID" | "FAILED" | "PENDING";
+      try {
+        confirmedStatus = (await new MidtransGateway().verify(orderId)).status;
+      } catch (err) {
+        logger.error("MidtransWebhook", `Status order ${orderId} gagal dikonfirmasi ke API Midtrans; order tidak dilunasi.`, err, { orderId });
+        return NextResponse.json({ status: "retry", reason: "gateway_status_unavailable" }, { status: 503 });
+      }
+      if (confirmedStatus !== "PAID") {
+        logger.warn("MidtransWebhook", `API Midtrans tidak mengonfirmasi pelunasan order ${orderId} (${confirmedStatus}); order tidak dilunasi.`, { orderId, confirmedStatus });
+        return NextResponse.json({ status: "retry", reason: "status_unconfirmed" }, { status: 503 });
+      }
+
       if (order.status !== "PENDING") {
         logger.warn("MidtransWebhook", `Order ${orderId} berstatus ${order.status} dilunasi karena pembayaran gateway valid diterima.`, { orderId });
       }
