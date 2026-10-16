@@ -5,7 +5,8 @@ import type { NextConfig } from "next";
 // naikkan ke Content-Security-Policy penuh (idealnya dengan nonce).
 const cspReportOnly = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://app.midtrans.com https://app.sandbox.midtrans.com",
+  // static.cloudflareinsights.com: beacon Web Analytics yang disisipkan Cloudflare ke halaman yang melewati proxy-nya.
+  "script-src 'self' 'unsafe-inline' https://app.midtrans.com https://app.sandbox.midtrans.com https://static.cloudflareinsights.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https:",
   "media-src 'self' blob: https:",
