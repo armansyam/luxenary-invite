@@ -1,5 +1,6 @@
 import { getActiveGateway, getActiveGatewayId, getGatewayById } from "@/lib/gatewayRegistry";
 import { computeGatewayCharge } from "@/lib/paymentFees";
+import { awaitConcurrentGatewaySession } from "@/lib/paymentSession";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
@@ -179,7 +180,16 @@ export async function POST(req: Request) {
     // Nominal tagihan dan masa berlaku dari AdminSetting — satu sumber kebenaran, dibagi dengan penerbitan ulang QRIS
     const { finalAmount, expiryMinutes } = await computeGatewayCharge(Number(order.amount));
 
-    const { checkoutUrl, qrString, sessionId, expiryTimestamp, gatewayTxId } = await gw.init(orderId, finalAmount, appUrl);
+    let initResult: Awaited<ReturnType<typeof gw.init>>;
+    try {
+      initResult = await gw.init(orderId, finalAmount, appUrl);
+    } catch (initError) {
+      // Permintaan bersamaan untuk order yang sama: yang kedua ditolak gateway, sesi dari yang pertama dipakai bersama.
+      const concurrent = await awaitConcurrentGatewaySession(orderId, activeGatewayId, prevGatewayTxId);
+      if (!concurrent) throw initError;
+      return NextResponse.json({ ...concurrent, serverTime: Date.now(), gateway: activeGatewayId });
+    }
+    const { checkoutUrl, qrString, sessionId, expiryTimestamp, gatewayTxId } = initResult;
 
     // Kedaluwarsa sesi dari gateway bila ada, selain itu `payment_expiry_minutes`. Batas hidup order (expiredAt)
     // tidak disentuh: sesi yang habis diterbitkan ulang lewat /api/payments/qris/regenerate.

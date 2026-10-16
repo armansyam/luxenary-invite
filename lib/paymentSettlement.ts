@@ -57,13 +57,23 @@ export async function settlementSourceStatuses(order: {
   return ["PENDING", "EXPIRED"];
 }
 
+/** Setelah settleOrderAsPaid mengembalikan false: true bila order memang sudah PAID, false bila pelunasannya ditolak. */
+export async function isOrderPaid(orderId: string): Promise<boolean> {
+  const current = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true } });
+  return current?.status === "PAID";
+}
+
 /**
  * Transisi PENDING -> PAID beserta efek samping marketing (hold promo, kupon, komisi mitra)
  * dalam SATU transaksi. Jika marketing gagal, seluruh transisi dibatalkan: order tetap PENDING
  * sehingga gateway mengirim ulang webhook dan tidak ada data setengah jadi.
  *
+ * Order paket dasar (NEW) dilunasi di bawah kunci per pengguna dan ditolak bila pengguna sudah punya order NEW lunas lain:
+ * dua QR hidup yang dibayar bersamaan tidak saling melihat tanpa kunci ini dan keduanya menjadi PAID.
+ *
  * @param options.from status asal yang boleh dilunasi (bawaan hanya PENDING)
- * @returns false jika order tidak berada di status asal yang diizinkan (sudah diproses proses lain).
+ * @returns false jika order tidak berada di status asal yang diizinkan (sudah diproses proses lain) atau ditolak karena
+ * pengguna sudah punya paket lunas; bedakan keduanya dengan isOrderPaid.
  */
 export async function settleOrderAsPaid(
   orderId: string,
@@ -71,6 +81,16 @@ export async function settleOrderAsPaid(
   options: { from?: OrderStatus[] } = {}
 ): Promise<boolean> {
   return prisma.$transaction(async (tx) => {
+    const target = await tx.order.findUnique({ where: { id: orderId }, select: { userId: true, orderType: true } });
+    if (!target) return false;
+    if (target.orderType === "NEW") {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`order_settle:${target.userId}`}))`;
+      const otherPaid = await tx.order.count({
+        where: { userId: target.userId, orderType: "NEW", status: "PAID", id: { not: orderId } },
+      });
+      if (otherPaid > 0) return false;
+    }
+
     const updated = await tx.order.updateMany({
       where: { id: orderId, status: { in: options.from ?? ["PENDING"] } },
       data: { ...data, status: "PAID", paidAt: new Date() },

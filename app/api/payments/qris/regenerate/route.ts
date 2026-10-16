@@ -1,6 +1,7 @@
 import { getActiveGateway, getActiveGatewayId, getGatewayById } from "@/lib/gatewayRegistry";
 import { prisma } from "@/lib/prisma";
 import { computeGatewayCharge } from "@/lib/paymentFees";
+import { awaitConcurrentGatewaySession } from "@/lib/paymentSession";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { logger } from "@/lib/logger";
@@ -107,7 +108,16 @@ export async function POST(req: NextRequest) {
     // Nominal (termasuk biaya layanan BUYER) dan masa berlaku sama persis dengan checkout awal
     const { finalAmount, expiryMinutes } = await computeGatewayCharge(Number(order.amount));
 
-    const { checkoutUrl, qrString, sessionId, expiryTimestamp, gatewayTxId } = await gw.init(orderId, finalAmount, appUrl);
+    let initResult: Awaited<ReturnType<typeof gw.init>>;
+    try {
+      initResult = await gw.init(orderId, finalAmount, appUrl);
+    } catch (initError) {
+      // Permintaan bersamaan untuk order yang sama: yang kedua ditolak gateway, sesi dari yang pertama dipakai bersama.
+      const concurrent = await awaitConcurrentGatewaySession(orderId, activeGatewayId, prevGatewayTxId);
+      if (!concurrent) throw initError;
+      return NextResponse.json({ success: true, ...concurrent, gateway: activeGatewayId, serverTime: Date.now() });
+    }
+    const { checkoutUrl, qrString, sessionId, expiryTimestamp, gatewayTxId } = initResult;
 
     // Sesi baru tidak boleh melewati batas hidup order, dan batas hidup order (expiredAt) tidak diperpanjang.
     const expiryMs = Math.min(expiryTimestamp ?? (serverNow + expiryMinutes * 60 * 1000), order.expiredAt?.getTime() ?? Infinity);

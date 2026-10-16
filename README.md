@@ -288,7 +288,7 @@ Sistem mendukung 4 kondisi transaksi dengan integrasi 2-arah eksklusif (Midtrans
 |:--|:--|
 | `User` | Akun klien (Google OAuth, role: CLIENT / ADMIN, nomor WhatsApp `phoneNumber`) |
 | `Admin` | Akun tim admin (SUPER_ADMIN, FINANCE, SUPPORT) |
-| `Order` | Invoice pembelian paket & add-on (`NEW`, `UPGRADE`, `GALLERY_EXTENSION`, `MEMORIES_TOPUP`); `fulfilledAt` menandai pemenuhan layanan setelah `PAID` (idempoten, diulang webhook/polling/cron bila gagal) |
+| `Order` | Invoice pembelian paket & add-on (`NEW`, `UPGRADE`, `GALLERY_EXTENSION`, `MEMORIES_TOPUP`); `fulfilledAt` menandai pemenuhan layanan setelah `PAID` (idempoten, diulang webhook/polling/cron bila gagal); satu order `NEW` lunas per pengguna ditegakkan saat pelunasan (kunci per pengguna), pembayaran ganda dicatat di `WebhookLog` untuk pengembalian dana manual |
 | `Invitation` | Inti undangan (`DRAFT`, `PUBLISHED`, `EVENT_FINISHED`, `TAKEN_DOWN`, `ARCHIVED`); nama peserta semua jenis acara hanya di `participantsJson` (jsonb), kuota add-on di kolom `extraMemoriesQuota`/`extraGalleryDays` |
 | `InvitationMedia` | Media per slot (9 slot: LANDING_COVER, LANDING_COVER_DESKTOP, HOME_PHOTO, GROOM_PHOTO, dll) |
 | `Guest` | Daftar tamu + nomor kontak `phone` + QR token |

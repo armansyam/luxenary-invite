@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { paymentEmitter } from "@/lib/paymentEvents";
 import { applyUpgradePlan } from "@/lib/upgradeHelper";
-import { settleOrderAsPaid } from "@/lib/paymentSettlement";
+import { isOrderPaid, settleOrderAsPaid } from "@/lib/paymentSettlement";
 import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
@@ -49,6 +49,11 @@ export async function POST(
     // Transisi PENDING -> PAID + konsumsi PromoHold + komisi mitra dalam satu transaksi
     const settled = await settleOrderAsPaid(orderId);
     if (!settled) {
+      if (!(await isOrderPaid(orderId))) {
+        return NextResponse.json({
+          error: "Pengguna ini sudah memiliki paket lunas lain, sehingga order ini tidak dapat dilunasi. Tinjau dan kembalikan dana bila perlu.",
+        }, { status: 409 });
+      }
       return NextResponse.json({
         error: "Order sudah diproses oleh proses lain. Muat ulang daftar order.",
       }, { status: 409 });
