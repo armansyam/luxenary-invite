@@ -5,6 +5,7 @@ import { awaitConcurrentGatewaySession } from "@/lib/paymentSession";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { logger } from "@/lib/logger";
+import { rateLimitDb } from "@/lib/rateLimit";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +25,10 @@ export async function POST(req: NextRequest) {
     const sessionUserId = session.user.id;
     const sessionEmail = session.user.email;
     const isAdmin = hasAdminPermission(session.user, "orders");
+
+    if (!(await rateLimitDb(`payments_qris_regenerate:${sessionUserId}`, 15, 60000))) {
+      return NextResponse.json({ error: "Terlalu banyak permintaan pembayaran. Silakan coba lagi sebentar." }, { status: 429 });
+    }
 
     const body = await req.json().catch(() => ({}));
     const { orderId } = body;

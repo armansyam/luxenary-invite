@@ -40,6 +40,16 @@ export const RESERVED_SUBDOMAINS = new Set([
   "storage",
   "r2",
   "s3",
+  "secure",
+  "bayar",
+  "payment",
+  "billing",
+  "account",
+  "verify",
+  "official",
+  "wa",
+  "whatsapp",
+  "help",
 ]);
 
 export function isReservedSubdomain(subdomain: string): boolean {

@@ -276,7 +276,7 @@ FORMAT TAUTAN NAMA TAMU (Clean Guest Path Routing Tanpa Embel-Embel)
 ```
 
 > **Proteksi Subdomain Khusus (`RESERVED_SUBDOMAINS`):**  
-> Subdomain sistem (`cdn` untuk Cloudflare R2, `admin`, `api`, `auth`, `receptionist`, `dashboard`, `demo`, `login`, `checkout`, `pay`, `app`, `www`, `cname`, `host`, `alias`, `invite`, `static`, `assets`, `media`, `storage`, `r2`, `s3`) dikunci secara terpusat di `lib/domainUtils.ts`, divalidasi ketat pada endpoint pembuatan/pembaruan undangan (`create` & `[id]`), serta dilewati di `middleware.ts` sehingga tidak dapat diklaim oleh klien atau di-rewrite ke portal undangan.
+> Subdomain sistem (`cdn` untuk Cloudflare R2, `admin`, `api`, `auth`, `receptionist`, `dashboard`, `demo`, `login`, `checkout`, `pay`, `app`, `www`, `cname`, `host`, `alias`, `invite`, `static`, `assets`, `media`, `storage`, `r2`, `s3`, serta nama berisiko phishing `secure`, `bayar`, `payment`, `billing`, `account`, `verify`, `official`, `wa`, `whatsapp`, `help`) dikunci secara terpusat di `lib/domainUtils.ts`, divalidasi ketat pada endpoint pembuatan/pembaruan undangan (`create` & `[id]`), serta dilewati di `middleware.ts` sehingga tidak dapat diklaim oleh klien atau di-rewrite ke portal undangan.
 
 
 ### 3.2 — Format invitationSlug (Sistem Baru Sept 2026)
@@ -3013,7 +3013,7 @@ Luxenary-Invite dielevasi dari sistem undangan pernikahan murni menjadi platform
    - Menghasilkan respon HTML undangan terbit dalam waktu < 0.05ms tanpa menyiksa database atau I/O disk saat lonjakan ribuan tamu undangan membuka tautan secara bersamaan.
    - Invalidation otomatis terjadi saat klien menekan tombol *Simpan Perubahan* atau *Publikasi*.
 2. **Rate Limiting Multi-Driver (`lib/rateLimit.ts`):**
-   - Membatasi brute-force dan spam pada login credentials, RSVP, upload, dan endpoint receptionist dengan counter jendela tetap (*fixed window*). `rateLimitDb` memakai cascade Redis REST (Upstash, bila dikonfigurasi), lalu PostgreSQL UPSERT atomik (`rate_limit_counters`), lalu memori sebagai fallback terakhir. Kunci dibentuk dari IP klien tepercaya (bagian 25.1).
+   - Membatasi brute-force dan spam pada login credentials, RSVP, upload, dan endpoint receptionist dengan counter jendela tetap (*fixed window*). `rateLimitDb` memakai cascade Redis REST (Upstash, bila dikonfigurasi), lalu PostgreSQL UPSERT atomik (`rate_limit_counters`), lalu memori sebagai fallback terakhir. Kunci dibentuk dari IP klien tepercaya (bagian 25.1). Pengecualian: `POST /api/payments/checkout` dan `POST /api/payments/qris/regenerate` dibatasi per pengguna login (`payments_checkout:<userId>`, `payments_qris_regenerate:<userId>`), 15 permintaan per menit per rute, lalu 429.
 
 ### 24.4 Infrastruktur VPS Produksi (`amsdev@103.150.92.238`)
 1. **Domain:** `https://luxvite.id` via Reverse Proxy Caddy On-Demand TLS + Cloudflare DNS/Proxy.
