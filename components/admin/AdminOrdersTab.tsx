@@ -351,7 +351,7 @@ export default function AdminOrdersTab() {
             <thead className="bg-gray-50/80">
               <tr>
                 {["Invoice", "Klien", "Item / Layanan", "Metode", "Jumlah", "Bukti Transfer", "Status", "Waktu", "Aksi"].map((h) => (
-                  <th key={h} className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th key={h} className={`px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider${h === "Aksi" ? " sticky right-0 border-l border-gray-100 bg-gray-50" : ""}`}>
                     {h}
                   </th>
                 ))}
@@ -377,7 +377,7 @@ export default function AdminOrdersTab() {
                 orders.map((ord) => {
                   const waLink = getWhatsAppLink(ord.user?.phoneNumber, ord.user?.name, ord.invoiceNumber);
                   return (
-                    <tr key={ord.id} className="hover:bg-gray-50/60 transition">
+                    <tr key={ord.id} className="group hover:bg-gray-50/60 transition">
                       {/* Invoice No */}
                       <td className="px-4 py-3 font-mono font-bold text-gray-900 whitespace-nowrap">
                         {ord.invoiceNumber}
@@ -555,7 +555,7 @@ export default function AdminOrdersTab() {
                       </td>
 
                       {/* Aksi */}
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td className="sticky right-0 border-l border-gray-100 bg-white group-hover:bg-gray-50 px-4 py-3 whitespace-nowrap">
                         {ord.status === "PENDING" && ord.proofImageUrl ? (
                           <button
                             type="button"

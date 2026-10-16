@@ -407,7 +407,7 @@ export default function AdminInvitationsTab() {
             <thead className="bg-gray-50/80">
               <tr>
                 {["Klien & Pasangan", "Domain & Tema", "Status Projek", "Masa Tayang & Expired", "Aksi"].map((h) => (
-                  <th key={h} className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th key={h} className={`px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider${h === "Aksi" ? " sticky right-0 border-l border-gray-100 bg-gray-50" : ""}`}>
                     {h}
                   </th>
                 ))}
@@ -437,7 +437,7 @@ export default function AdminInvitationsTab() {
                   const defaultGalleryExpiry = computeLifecycleDates({ eventData: inv.eventData }, lifecycleSettings)?.galleryExpiresAt ?? null;
 
                   return (
-                    <tr key={inv.id} className="hover:bg-gray-50/80 transition">
+                    <tr key={inv.id} className="group hover:bg-gray-50/80 transition">
                       {/* Pasangan & Klien */}
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-2">
@@ -575,7 +575,7 @@ export default function AdminInvitationsTab() {
                       </td>
 
                       {/* Aksi */}
-                      <td className="px-5 py-3.5 whitespace-nowrap">
+                      <td className="sticky right-0 border-l border-gray-100 bg-white group-hover:bg-gray-50 px-5 py-3.5 whitespace-nowrap">
                         <div className="flex items-center gap-1.5">
                           {/* Remote Dasbor */}
                           <button

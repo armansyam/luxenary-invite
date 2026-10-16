@@ -472,7 +472,7 @@ export default function AdminCustomDomainsTab({
                 <thead className="bg-gray-50/80">
                   <tr>
                     {["Subdomain URL", "Klien", "Mempelai", "Paket & Tema", "Status Undangan", "Tanggal Acara", "Aksi"].map((h) => (
-                      <th key={h} className="px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th key={h} className={`px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider${h === "Aksi" ? " sticky right-0 border-l border-gray-100 bg-gray-50" : ""}`}>
                         {h}
                       </th>
                     ))}
@@ -487,7 +487,7 @@ export default function AdminCustomDomainsTab({
                     </tr>
                   ) : (
                     subdomainsList.map((item) => (
-                      <tr key={item.id} className="hover:bg-gray-50/80 transition">
+                      <tr key={item.id} className="group hover:bg-gray-50/80 transition">
                         {/* Subdomain */}
                         <td className="px-5 py-3.5 whitespace-nowrap">
                           <div className="flex items-center gap-1.5">
@@ -555,7 +555,7 @@ export default function AdminCustomDomainsTab({
                         </td>
 
                         {/* Aksi */}
-                        <td className="px-5 py-3.5 whitespace-nowrap">
+                        <td className="sticky right-0 border-l border-gray-100 bg-white group-hover:bg-gray-50 px-5 py-3.5 whitespace-nowrap">
                           <a
                             href={getSubdomainUrl(item.subdomain)}
                             target="_blank"
@@ -629,7 +629,7 @@ export default function AdminCustomDomainsTab({
                 <thead className="bg-gray-50/80">
                   <tr>
                     {["Klien", "Subdomain Asli", "Domain Diminta", "Pembayaran", "Status DNS Resolver", "Status Terhubung", "Aksi"].map((h) => (
-                      <th key={h} className="px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th key={h} className={`px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wider${h === "Aksi" ? " sticky right-0 border-l border-gray-100 bg-gray-50" : ""}`}>
                         {h}
                       </th>
                     ))}
@@ -652,7 +652,7 @@ export default function AdminCustomDomainsTab({
                       const isActivating = activatingOrder[ord.id];
 
                       return (
-                        <tr key={ord.id} className="hover:bg-gray-50/80 transition">
+                        <tr key={ord.id} className="group hover:bg-gray-50/80 transition">
                           {/* Klien */}
                           <td className="px-5 py-3.5 whitespace-nowrap">
                             <div className="font-semibold text-gray-900">{ord.user?.name || "Klien"}</div>
@@ -750,7 +750,7 @@ export default function AdminCustomDomainsTab({
                           </td>
 
                           {/* Aksi */}
-                          <td className="px-5 py-3.5 whitespace-nowrap">
+                          <td className="sticky right-0 border-l border-gray-100 bg-white group-hover:bg-gray-50 px-5 py-3.5 whitespace-nowrap">
                             {!isPaid ? (
                               <span className="text-gray-400 text-[11px] italic">Menunggu Lunas</span>
                             ) : isConnected ? (

@@ -192,6 +192,7 @@ export default function GuestOpeningSetupModal({
           <button
             type="button"
             onClick={onClose}
+            aria-label="Tutup"
             className="w-9 h-9 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500 hover:text-stone-800 flex items-center justify-center transition cursor-pointer"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -518,6 +518,9 @@ Admin Portal → Tab Tema → Klik "Sinkronisasi Tema & Cache"
 #         -> prisma migrate deploy (tanpa fallback db push) -> seed + themes:sync -> pm2 reload -> health check.
 # Build, backup, atau migrasi yang gagal menghentikan deploy sebelum PM2 di-reload; health check yang gagal
 # menandai deploy gagal (exit 1) dan mencetak perintah rollback beserta lokasi backup pra-migrasi.
+# Bila npm ci, prisma generate, atau build gagal, kode dan dependensi dikembalikan ke rilis yang berjalan
+# (git reset --keep, npm ci, prisma generate) agar restart PM2 berikutnya tidak memuat dependensi baru dengan build lama.
+# Caddy (di luar repo): blok luxvite.id menulis access log ke /var/log/caddy/luxvite-access.log (50 MiB x 3 berkas, 72 jam).
 chmod +x deploy.sh
 ./deploy.sh
 

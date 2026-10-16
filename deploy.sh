@@ -21,6 +21,18 @@ if [ -z "$DEPLOY_REEXEC" ] && [ "$(git rev-parse HEAD)" != "$PREVIOUS_COMMIT" ];
   exec bash "$0" "$@"
 fi
 
+# Setelah git pull, npm ci menghapus lalu memasang ulang node_modules dan prisma generate menimpa klien Prisma, sedangkan
+# PM2 masih menjalankan build lama. Bila tahap itu atau build gagal, kode dan dependensi dikembalikan ke rilis yang
+# berjalan agar restart PM2 berikutnya (mis. setelah crash) tidak memuat dependensi baru dengan build lama.
+restore_previous_release() {
+  echo "↩️ Memulihkan kode dan dependensi ke rilis sebelumnya ($PREVIOUS_COMMIT)..."
+  if git reset --keep "$PREVIOUS_COMMIT" && npm ci && npx prisma generate; then
+    echo "✅ Rilis sebelumnya dipulihkan; aplikasi yang berjalan tidak terpengaruh."
+  else
+    echo "🚨 Pemulihan rilis sebelumnya GAGAL; node_modules mungkin tidak utuh. Jalankan manual: git reset --keep $PREVIOUS_COMMIT && npm ci && npx prisma generate"
+  fi
+}
+
 # 2. Setup Direktori Runtime
 echo "📁 Menyiapkan direktori runtime..."
 mkdir -p logs public/uploads data/drafts
@@ -103,6 +115,7 @@ echo "🟢 Runtime Node untuk deploy: $(node -v) | npm $(npm -v) | $(command -v 
 echo "📦 Menginstal dependensi (npm ci)..."
 if ! npm ci; then
   echo "❌ npm ci gagal! Deployment dihentikan sebelum menyentuh database."
+  restore_previous_release
   exit 1
 fi
 
@@ -119,6 +132,7 @@ rm -rf "$NEW_DIST"
 echo "🏗️ Membangun (Build) aplikasi Next.js ke $NEW_DIST... (aplikasi aktif tetap melayani dari $ACTIVE_DIST)"
 if ! npx prisma generate; then
   echo "❌ prisma generate gagal! Deployment dihentikan sebelum menyentuh database."
+  restore_previous_release
   exit 1
 fi
 TOTAL_MB=$(free -m 2>/dev/null | awk '/^Mem:/{print $2}')
@@ -128,6 +142,7 @@ if [ -n "$TOTAL_MB" ] && [ "$TOTAL_MB" -lt 3072 ]; then
 fi
 if ! NODE_OPTIONS="--max-old-space-size=1536" npm run build; then
   echo "❌ Build Next.js gagal! Database tidak disentuh dan PM2 tidak di-restart."
+  restore_previous_release
   exit 1
 fi
 
