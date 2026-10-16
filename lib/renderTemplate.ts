@@ -122,7 +122,7 @@ export const LUXENARY_BANNER = `<!--
   --------------------------------------------------------------
   Sistem dan desain tema ini adalah milik eksklusif Luxenary.
   Dilarang keras menyalin, menduplikasi, atau menjual ulang 
-  tanpa izin resmi dari pihak Luxenary (luxenary.id).
+  tanpa izin resmi dari pihak Luxenary (luxvite.id).
   
   Hak cipta dilindungi undang-undang.
   ==============================================================

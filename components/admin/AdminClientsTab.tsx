@@ -279,7 +279,7 @@ export default function AdminClientsTab({ platformName }: { platformName?: strin
             <thead className="bg-gray-50/80">
               <tr>
                 {["Klien", "Kontak WhatsApp", "Paket Terakhir", "Total Belanja", "Undangan", "Terdaftar", "Aksi"].map((h) => (
-                  <th key={h} className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th key={h} className={`px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider${h === "Aksi" ? " sticky right-0 border-l border-gray-100 bg-gray-50" : ""}`}>
                     {h}
                   </th>
                 ))}
@@ -305,7 +305,7 @@ export default function AdminClientsTab({ platformName }: { platformName?: strin
                 users.map((usr) => {
                   const waLink = getWhatsAppLink(usr.phoneNumber, usr.name);
                   return (
-                    <tr key={usr.id} className="hover:bg-gray-50/80 transition">
+                    <tr key={usr.id} className="group hover:bg-gray-50/80 transition">
                       {/* Klien (Avatar + Nama + Email) */}
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-3">
@@ -392,7 +392,7 @@ export default function AdminClientsTab({ platformName }: { platformName?: strin
                       </td>
 
                       {/* Aksi */}
-                      <td className="px-5 py-3.5 whitespace-nowrap">
+                      <td className="sticky right-0 border-l border-gray-100 bg-white group-hover:bg-gray-50 px-5 py-3.5 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           {Boolean((usr.invitations && usr.invitations.length > 0) || (usr.latestOrder && usr.totalSpent > 0)) ? (
                             <button

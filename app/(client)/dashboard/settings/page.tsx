@@ -552,12 +552,10 @@ export default function SettingsPage() {
     if (!slug) return "";
     if (typeof window !== "undefined") {
       const { protocol, hostname, port } = window.location;
-      const portSuffix = port ? `:${port}` : "";
       if (hostname === "localhost" || hostname.endsWith(".localhost")) {
-        return `${protocol}//localhost${portSuffix}/${slug}`;
+        return `${protocol}//localhost${port ? `:${port}` : ""}/${slug}`;
       }
-      const root = getApexRootDomain();
-      return `${protocol}//${root}${portSuffix}/${slug}`;
+      return `${protocol}//${getApexRootDomain()}/${slug}`;
     }
     return `https://${getApexRootDomain()}/${slug}`;
   };
