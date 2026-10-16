@@ -126,7 +126,7 @@ export async function GET(
             const checkRes = await gw.verify(order.gatewayTxId || order.id);
             if (checkRes.status === "PAID") {
               // Transisi atomik PENDING -> PAID + marketing; false jika webhook sudah lebih dulu memprosesnya
-              const { settleOrderAsPaid } = await import("@/lib/paymentSettlement");
+              const { settleOrderAsPaid, isOrderPaid } = await import("@/lib/paymentSettlement");
               const settled = await settleOrderAsPaid(order.id);
 
               if (settled) {
@@ -136,7 +136,8 @@ export async function GET(
                 const { paymentEmitter } = await import("@/lib/paymentEvents");
                 paymentEmitter.emit(order.id, { status: "PAID", planType: order.planType });
               }
-              finalStatus = "PAID";
+              // Pelunasan ditolak (pengguna sudah punya paket lunas lain) tidak boleh ditampilkan sebagai PAID.
+              if (settled || (await isOrderPaid(order.id))) finalStatus = "PAID";
             }
           }
         } catch (reconcileErr) {

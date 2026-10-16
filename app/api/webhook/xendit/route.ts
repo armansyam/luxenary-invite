@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { applyUpgradePlan } from "@/lib/upgradeHelper";
 import { paymentEmitter } from "@/lib/paymentEvents";
 import { releaseOrderPromoHold } from "@/lib/marketing";
-import { isGatewayAmountValid, isStaleGatewaySession, settleOrderAsPaid, settlementSourceStatuses } from "@/lib/paymentSettlement";
+import { isGatewayAmountValid, isOrderPaid, isStaleGatewaySession, settleOrderAsPaid, settlementSourceStatuses } from "@/lib/paymentSettlement";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
 import { NextRequest, NextResponse } from "next/server";
@@ -168,9 +168,20 @@ export async function POST(req: NextRequest) {
       // aman terhadap webhook duplikat bersamaan)
       const settled = await settleOrderAsPaid(orderId, { paymentMethod: "GATEWAY" }, { from: sources });
 
-      // Order sudah diproses sebelumnya — return idempotent
       if (!settled) {
-        return NextResponse.json({ status: "ok", note: "already_processed" });
+        // Order sudah diproses sebelumnya — return idempotent
+        if (await isOrderPaid(orderId)) {
+          return NextResponse.json({ status: "ok", note: "already_processed" });
+        }
+        // Uang diterima tetapi pengguna sudah punya paket lunas lain (pembayaran ganda): perlu pengembalian dana manual.
+        logger.error("XenditWebhook", `Pembayaran ganda untuk order ${orderId}: pengguna sudah punya paket lunas; perlu pengembalian dana manual.`, undefined, { orderId });
+        if (webhookLogId) {
+          await prisma.webhookLog.update({
+            where: { id: webhookLogId },
+            data: { status: "paid_on_closed_order", processedAt: new Date() },
+          });
+        }
+        return NextResponse.json({ status: "ignored", reason: "duplicate_payment" }, { status: 200 });
       }
 
       // Update webhook log
