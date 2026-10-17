@@ -23,6 +23,7 @@ vi.mock("@/lib/paymentEvents", () => ({
 
 import { prisma, pool } from "@/lib/prisma";
 import { POST as midtransWebhook } from "@/app/api/webhook/midtrans/route";
+import { MidtransGateway } from "@/lib/gateways/midtrans";
 import { applyBundleFulfillment } from "@/lib/upgradeHelper";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
@@ -106,6 +107,7 @@ function signedWebhook(
 
 describe.skipIf(!IS_TEST_DB)("Integrasi pembayaran & pemenuhan (DB luxenary_test)", () => {
   beforeAll(async () => {
+    vi.spyOn(MidtransGateway.prototype, "verify").mockResolvedValue({ status: "PAID" });
     await prisma.adminSetting.upsert({
       where: { key: "midtrans_server_key" },
       update: { value: SERVER_KEY },

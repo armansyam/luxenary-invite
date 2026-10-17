@@ -445,6 +445,7 @@ export class MidtransGateway implements PaymentGateway {
 
     const response = await fetch(`${apiUrl}/${reference}/status`, {
       headers: { Authorization: `Basic ${basicAuth}` },
+      signal: AbortSignal.timeout(8000),
     });
 
     const data = await response.json();

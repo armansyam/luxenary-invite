@@ -502,7 +502,13 @@ async function runCompleteSystemAudit() {
       metrics: { publishedDeleted: isPublishedHtmlGone, draftDeleted: isDraftGone, uploadsDeleted: isUploadsGone, status: archivedInv?.status, subdomainReleased: archivedInv?.subdomain === null },
       detail: isCase13Passed
         ? "Ketiga invarian pembersihan berkas fisik (Published HTML, Draft, Uploads) sukses dibersihkan tanpa disk leak. Subdomain dilepas kembali ke pool."
-        : "Ada berkas yang tertinggal pada disk VPS.",
+        : `Pembersihan tidak tuntas: ${[
+            !isPublishedHtmlGone && `berkas ${publishedFile}`,
+            !isDraftGone && `berkas ${draftFile}`,
+            !isUploadsGone && `direktori ${uploadsDir}`,
+            archivedInv?.status !== "ARCHIVED" && `status=${archivedInv?.status}`,
+            archivedInv?.subdomain !== null && `subdomain=${archivedInv?.subdomain}`,
+          ].filter(Boolean).join(", ")}.`,
     });
     console.log(`  ${isCase13Passed ? "✅" : "❌"} ${results[results.length - 1].detail}`);
 

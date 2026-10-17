@@ -50,6 +50,7 @@ import { POST as checkout } from "@/app/api/payments/checkout/route";
 import { POST as regenerateQris } from "@/app/api/payments/qris/regenerate/route";
 import { POST as createOrder } from "@/app/api/orders/create/route";
 import { POST as midtransWebhook } from "@/app/api/webhook/midtrans/route";
+import { MidtransGateway } from "@/lib/gateways/midtrans";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
 const SERVER_KEY = "SB-Mid-server-scenariokey";
@@ -93,6 +94,7 @@ const paidNewCount = (userId: string) => prisma.order.count({ where: { userId, o
 
 describe.skipIf(!IS_TEST_DB)("skenario pembayaran gateway", () => {
   beforeAll(async () => {
+    vi.spyOn(MidtransGateway.prototype, "verify").mockResolvedValue({ status: "PAID" });
     for (const [key, { value, group }] of Object.entries(SETTINGS)) {
       savedSettings.set(key, (await prisma.adminSetting.findUnique({ where: { key } }))?.value ?? null);
       await prisma.adminSetting.upsert({ where: { key }, update: { value }, create: { key, value, group } });
