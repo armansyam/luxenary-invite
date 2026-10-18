@@ -8,8 +8,13 @@ import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from "vites
 import { NextRequest } from "next/server";
 
 let currentUserId = "";
+let asAdmin = false;
 vi.mock("@/auth", () => ({
-  auth: vi.fn(async () => ({ user: { id: currentUserId, email: `${currentUserId}@t.local`, role: "CLIENT", isAdmin: false } })),
+  auth: vi.fn(async () =>
+    asAdmin
+      ? { user: { id: "admin-vitest", email: "admin@vitest.local", role: "SUPER_ADMIN", isAdmin: true, permissions: [] } }
+      : { user: { id: currentUserId, email: `${currentUserId}@t.local`, role: "CLIENT", isAdmin: false } }
+  ),
 }));
 
 const cancelMock = vi.fn();
@@ -25,6 +30,7 @@ import { POST as createOrder } from "@/app/api/orders/create/route";
 import { POST as validatePromo } from "@/app/api/public/promo/validate/route";
 import { POST as confirmOrder } from "@/app/api/payments/checkout/confirm/route";
 import { POST as rsvpPost } from "@/app/api/public/rsvp/route";
+import { POST as adminMarketingPost } from "@/app/api/admin/marketing/route";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
 const RUN = `vitest_a1018c_${Date.now()}`;
@@ -107,6 +113,23 @@ describe.skipIf(!IS_TEST_DB)("putaran 3 audit 18 Okt", () => {
       const order = await prisma.order.findUniqueOrThrow({ where: { id: created.orderId } });
       expect(order.checkoutConfirmedAt).toBeNull();
     });
+  });
+
+  it("admin tidak dapat membuat kupon persen di atas 99 (paket gratis tidak didukung)", async () => {
+    asAdmin = true;
+    const codes = [`${RUN}A`.toUpperCase().slice(-12), `${RUN}B`.toUpperCase().slice(-12)];
+    try {
+      const create = (code: string, discountValue: number) =>
+        adminMarketingPost(json("/api/admin/marketing", "POST", { action: "CREATE_COUPON", code, discountType: "PERCENT", discountValue }));
+      const full = await create(codes[0], 100);
+      expect(full.status).toBe(400);
+      expect((await full.json()).error).toContain("99");
+      const ok = await create(codes[1], 99);
+      expect(ok.status).toBe(200);
+    } finally {
+      asAdmin = false;
+      await prisma.promoCoupon.deleteMany({ where: { code: { in: codes.map((c) => c.replace(/[^A-Z0-9-]/g, "")) } } });
+    }
   });
 
   it("tebakan kode promo dibatasi 10 per menit per akun", async () => {
