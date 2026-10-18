@@ -1411,12 +1411,12 @@ export async function composeWeddingData(inv: any) {
 
             <div>
               <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: #d6d3d1;">Nama Anda *</label>
-              <input type="text" id="luxMemSenderName" name="senderName" required placeholder="Contoh: Budi Santoso & Istri" style="width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); color: #fff; font-size: 14px; box-sizing: border-box; outline: none;">
+              <input type="text" id="luxMemSenderName" name="senderName" required placeholder="Contoh: Budi Santoso & Istri" style="width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); color: #fff; font-size: 16px; box-sizing: border-box; outline: none;">
             </div>
 
             <div>
               <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: #d6d3d1;">Email Anda * <span style="font-weight: 400; opacity: 0.7; font-size: 11px;">(Untuk verifikasi pengirim)</span></label>
-              <input type="email" id="luxMemSenderEmail" name="senderEmail" required placeholder="contoh: budi@gmail.com" style="width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); color: #fff; font-size: 14px; box-sizing: border-box; outline: none;">
+              <input type="email" id="luxMemSenderEmail" name="senderEmail" required placeholder="contoh: budi@gmail.com" style="width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); color: #fff; font-size: 16px; box-sizing: border-box; outline: none;">
             </div>
 
             <div>
@@ -1446,7 +1446,7 @@ export async function composeWeddingData(inv: any) {
 
             <div>
               <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: #d6d3d1;">Pesan / Catatan Singkat <span style="font-weight: 400; opacity: 0.7; font-size: 11px;">(Opsional)</span></label>
-              <textarea id="luxMemMessage" name="message" rows="2" placeholder="Ceritakan momen seru ini..." style="width: 100%; padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); color: #fff; font-size: 13px; box-sizing: border-box; resize: none; outline: none;"></textarea>
+              <textarea id="luxMemMessage" name="message" rows="2" placeholder="Ceritakan momen seru ini..." style="width: 100%; padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); color: #fff; font-size: 16px; box-sizing: border-box; resize: none; outline: none;"></textarea>
             </div>
 
             <!-- Feedback & Progress -->

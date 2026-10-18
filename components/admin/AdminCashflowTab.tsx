@@ -603,7 +603,7 @@ export function AdminCashflowTab() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari keperluan/struk..."
-                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-stone-300 bg-stone-50/50 focus:bg-white focus:outline-hidden focus:border-stone-900 transition-colors"
+                className="w-full pl-8 pr-3 py-1.5 text-base sm:text-xs rounded-lg border border-stone-300 bg-stone-50/50 focus:bg-white focus:outline-hidden focus:border-stone-900 transition-colors"
               />
               <svg
                 className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2"

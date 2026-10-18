@@ -743,7 +743,7 @@ export default function DisposableCameraViewfinder({
               value={senderName}
               onChange={(e) => setSenderName(e.target.value)}
               placeholder="Misal: Budi Santoso"
-              className={`w-full px-3.5 py-2.5 rounded-xl text-xs focus:outline-none transition ${themeStyles.modalInput}`}
+              className={`w-full px-3.5 py-2.5 rounded-xl text-base sm:text-xs focus:outline-none transition ${themeStyles.modalInput}`}
             />
           </div>
 
@@ -756,7 +756,7 @@ export default function DisposableCameraViewfinder({
               value={guestMessage}
               onChange={(e) => setGuestMessage(e.target.value)}
               placeholder="Selamat menempuh hidup baru sahabatku..."
-              className={`w-full px-3.5 py-2 rounded-xl text-xs focus:outline-none resize-none transition ${themeStyles.modalInput}`}
+              className={`w-full px-3.5 py-2 rounded-xl text-base sm:text-xs focus:outline-none resize-none transition ${themeStyles.modalInput}`}
             />
           </div>
 

@@ -277,12 +277,12 @@ export default function AdminCustomDomainsTab({
           {/* Header Title & Actions */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 sm:p-6 rounded-2xl sm:rounded-3xl border border-gray-200 shadow-xs">
             <div>
-              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-amber-900 text-[10px] font-bold uppercase tracking-wider mb-1.5">
+              <div className="hidden sm:inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-amber-900 text-[10px] font-bold uppercase tracking-wider mb-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse" />
                 <span>Namespace &amp; Subdomain Controller</span>
               </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Subdomain Sistem (*.{rootDomain})</h2>
-              <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+              <h2 className="text-lg sm:text-2xl font-bold text-gray-900">Subdomain Sistem (*.{rootDomain})</h2>
+              <p className="hidden sm:block text-sm text-gray-500 mt-0.5">
                 Monitor status subdomain aktif, cek kepemilikan nama secara langsung, dan kelola daur ulang domain kedaluwarsa.
               </p>
             </div>

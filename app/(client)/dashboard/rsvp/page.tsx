@@ -103,11 +103,12 @@ export default function RsvpPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white px-4 py-3 sm:px-6 sm:py-3.5 rounded-2xl border border-stone-200 shadow-xs">
         <div>
-          <span className="text-[10px] font-bold tracking-widest text-amber-800 uppercase block">Konfirmasi Kehadiran</span>
-          <h1 className="text-base sm:text-lg font-serif font-bold text-stone-900 mt-0.5 leading-snug">
-            Rekap Konfirmasi Kehadiran &amp; Doa
+          <span className="hidden sm:block text-[10px] font-bold tracking-widest text-amber-800 uppercase">Konfirmasi Kehadiran</span>
+          <h1 className="text-base sm:text-lg font-serif font-bold text-stone-900 sm:mt-0.5 leading-snug">
+            <span className="sm:hidden">RSVP &amp; Doa Restu</span>
+            <span className="hidden sm:inline">Rekap Konfirmasi Kehadiran &amp; Doa</span>
           </h1>
-          <p className="text-xs text-stone-500 mt-0.5">
+          <p className="hidden sm:block text-xs text-stone-500 mt-0.5">
             Data konfirmasi kehadiran (RSVP) dan doa restu tersinkronisasi otomatis secara live saat tamu mengisi di website undangan
           </p>
         </div>
@@ -117,8 +118,9 @@ export default function RsvpPage() {
           <button
             type="button"
             onClick={loadRsvps}
-            className="p-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg text-xs font-semibold transition cursor-pointer"
+            className="p-2 min-w-11 min-h-11 sm:min-w-0 sm:min-h-0 flex items-center justify-center bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg text-xs font-semibold transition cursor-pointer"
             title="Muat Ulang Data"
+            aria-label="Muat ulang data"
           >
             <svg className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -131,7 +133,7 @@ export default function RsvpPage() {
             onClick={handleExportCSV}
             disabled={rsvps.length === 0 || loading}
             title={rsvps.length === 0 ? "Belum ada data RSVP untuk diekspor" : "Unduh data RSVP ke format CSV"}
-            className="px-3.5 py-2 bg-stone-900 hover:bg-stone-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+            className="flex-1 sm:flex-none min-h-11 sm:min-h-0 px-3.5 py-2 bg-stone-900 hover:bg-stone-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
           >
             <svg className="w-4 h-4 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -142,8 +144,8 @@ export default function RsvpPage() {
       </div>
 
       {/* Stats Counter Bar (Clickable Filter Cards) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        
+      <div className="hidden sm:grid grid-cols-4 gap-3">
+
         {/* Total Responses */}
         <button
           type="button"
@@ -254,7 +256,7 @@ export default function RsvpPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari nama atau doa restu..."
-            className="w-full pl-8 pr-3 py-1.5 bg-white border border-stone-200/80 rounded-xl text-xs text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-600/10 shadow-2xs"
+            className="w-full pl-8 pr-3 py-2 sm:py-1.5 bg-white border border-stone-200/80 rounded-xl text-base sm:text-xs text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-600/10 shadow-2xs"
           />
           <svg className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />

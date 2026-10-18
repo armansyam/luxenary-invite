@@ -640,9 +640,10 @@ export default function GuestsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white px-4 py-3 sm:px-6 sm:py-3.5 rounded-2xl border border-stone-200 shadow-xs">
         <div>
-          <span className="text-[10px] font-bold tracking-widest text-amber-800 uppercase block">Manajemen Undangan</span>
-          <h1 className="text-base sm:text-lg font-serif font-bold text-stone-900 mt-0.5 leading-snug">
-            Buku Tamu &amp; Pengiriman WhatsApp
+          <span className="hidden sm:block text-[10px] font-bold tracking-widest text-amber-800 uppercase">Manajemen Undangan</span>
+          <h1 className="text-base sm:text-lg font-serif font-bold text-stone-900 sm:mt-0.5 leading-snug">
+            <span className="sm:hidden">Buku Tamu</span>
+            <span className="hidden sm:inline">Buku Tamu &amp; Pengiriman WhatsApp</span>
           </h1>
           <p className="hidden sm:block text-xs text-stone-500 mt-0.5">
             Kelola nama penerima undangan, checklist status pengiriman, dan sesuaikan template pesan WhatsApp
@@ -1030,7 +1031,9 @@ export default function GuestsPage() {
                         {guest.category || "UMUM"}
                       </span>
                       {guest.tableNumber && (
-                        <span className="md:hidden text-[10px] text-stone-600 font-semibold">{guest.tableNumber}</span>
+                        <span className="md:hidden text-[10px] text-stone-600 font-semibold">
+                          {/^\d+$/.test(guest.tableNumber.trim()) ? `Meja ${guest.tableNumber.trim()}` : guest.tableNumber}
+                        </span>
                       )}
                     </div>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-[10px] text-stone-500">
@@ -1272,7 +1275,7 @@ export default function GuestsPage() {
                     value={currentTemplate}
                     onChange={(e) => setWaTemplate(e.target.value)}
                     placeholder="Tulis format pesan WhatsApp..."
-                    className="w-full p-3 bg-stone-50 border border-stone-200 rounded-2xl text-xs text-stone-900 font-mono leading-relaxed focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700/30"
+                    className="w-full p-3 bg-stone-50 border border-stone-200 rounded-2xl text-base sm:text-xs text-stone-900 font-mono leading-relaxed focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700/30"
                   />
                   <div className="flex items-center justify-between mt-1 text-[10px] text-stone-400">
                     <span>Gunakan tanda bintang *teks* untuk cetak tebal, _teks_ untuk miring</span>

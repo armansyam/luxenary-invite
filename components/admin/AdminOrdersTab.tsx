@@ -206,12 +206,12 @@ export default function AdminOrdersTab() {
       {/* ── Header Title & Actions ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 sm:p-6 rounded-2xl sm:rounded-3xl border border-gray-200 shadow-xs">
         <div>
-          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-amber-900 text-[10px] font-bold uppercase tracking-wider mb-1.5">
+          <div className="hidden sm:inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-amber-900 text-[10px] font-bold uppercase tracking-wider mb-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse" />
             <span>Manajemen Transaksi &amp; Kasir</span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Daftar Transaksi</h2>
-          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+          <h2 className="text-lg sm:text-2xl font-bold text-gray-900">Daftar Transaksi</h2>
+          <p className="hidden sm:block text-sm text-gray-500 mt-0.5">
             Kelola verifikasi pembayaran manual, invoice gateway, dan unduh laporan kasir.
           </p>
         </div>
@@ -257,7 +257,7 @@ export default function AdminOrdersTab() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari nomor invoice, nama klien, email, atau telepon..."
-              className="w-full pl-10 pr-9 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-900 placeholder:text-gray-400 focus:bg-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
+              className="w-full pl-10 pr-9 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-base sm:text-xs text-gray-900 placeholder:text-gray-400 focus:bg-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
             />
             {search && (
               <button

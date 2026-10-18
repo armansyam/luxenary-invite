@@ -470,7 +470,7 @@ function DashboardHomeContent() {
         <div className="relative z-10 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 bg-stone-100 border border-stone-200/80 text-stone-600 text-[10px] sm:text-[11px] font-semibold rounded-full uppercase tracking-wider">
+              <span className="hidden sm:inline px-2.5 py-0.5 bg-stone-100 border border-stone-200/80 text-stone-600 text-[11px] font-semibold rounded-full uppercase tracking-wider">
                 Undangan {eventNoun(invitation?.eventType)}
               </span>
               {invitation?.status === 'PUBLISHED' ? (
@@ -533,14 +533,15 @@ function DashboardHomeContent() {
           </div>
 
           {/* Unified Retention & Service Active Card (Ditempatkan di Bagian Atas agar Sangat Jelas) */}
-          <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-stone-50/90 border border-stone-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 shadow-xs">
+          <div className="sm:p-4 sm:rounded-2xl sm:bg-stone-50/90 sm:border sm:border-stone-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 sm:shadow-xs">
             <div className="space-y-1.5">
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <span className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
                   <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span>Masa Aktif Layanan:</span>
+                  <span className="hidden sm:inline">Masa Aktif Layanan:</span>
+                  <span className="sm:hidden">Masa aktif</span>
                 </span>
 
                 {effectiveExpiry ? (
@@ -696,7 +697,7 @@ function DashboardHomeContent() {
           )}
 
           {/* URL Bars (Undangan + Galeri Kenangan jika aktif) */}
-          <div className={`pt-3 border-t border-stone-200/60 ${invitation?.status === 'PUBLISHED' || invitation?.status === 'EVENT_FINISHED' ? "grid" : "hidden sm:grid"} grid-cols-1 ${hasCap("guest_memories") ? "sm:grid-cols-2" : "sm:grid-cols-1"} gap-2 text-xs text-stone-600 font-mono`}>
+          <div className={`pt-3 border-t border-stone-200/60 hidden sm:grid grid-cols-1 ${hasCap("guest_memories") ? "sm:grid-cols-2" : "sm:grid-cols-1"} gap-2 text-xs text-stone-600 font-mono`}>
             <div className="bg-stone-50 border border-stone-200/70 p-2.5 rounded-xl flex items-center justify-between gap-2">
               {invitation?.status === 'PUBLISHED' || invitation?.status === 'EVENT_FINISHED' ? (
                 <span className="truncate text-stone-800 font-medium">{invUrl}</span>
@@ -720,34 +721,34 @@ function DashboardHomeContent() {
       </div>
 
       {/* 2. Live Metrics Grid (2x2 on Mobile, 4 Cols on Desktop) */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-        
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/80 shadow-xs space-y-1">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
+
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-stone-200/80 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-stone-500">
             <span className="text-[11px] font-bold uppercase tracking-wider">Total Tamu</span>
-            <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="hidden sm:block w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
           </div>
           <p className="text-xl sm:text-2xl font-bold text-stone-900">{stats.guestCount}</p>
-          <span className="text-[10px] text-stone-400 block">Tamu terdaftar</span>
+          <span className="text-[10px] text-stone-400 hidden sm:block">Tamu terdaftar</span>
         </div>
 
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/80 shadow-xs space-y-1">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-stone-200/80 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-stone-500">
             <span className="text-[11px] font-bold uppercase tracking-wider">WA Terkirim</span>
-            <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="hidden sm:block w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
           </div>
           <p className="text-xl sm:text-2xl font-bold text-emerald-700">{stats.waSentCount}</p>
-          <span className="text-[10px] text-stone-400 block">Pesan terkirim</span>
+          <span className="text-[10px] text-stone-400 hidden sm:block">Pesan terkirim</span>
         </div>
 
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/80 shadow-xs space-y-1">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-stone-200/80 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-stone-500">
             <span className="text-[11px] font-bold uppercase tracking-wider">Konfirmasi Hadir</span>
-            <svg className="w-4 h-4 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="hidden sm:block w-4 h-4 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
@@ -756,10 +757,10 @@ function DashboardHomeContent() {
           <span className="text-[10px] text-stone-500 block">{stats.checkedInCount} tamu sudah check-in</span>
         </div>
 
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/80 shadow-xs space-y-1">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-stone-200/80 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-stone-500">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Status Lisensi</span>
-            <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <span className="text-[11px] font-bold uppercase tracking-wider">Paket</span>
+            <svg className="hidden sm:block w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
             </svg>
           </div>
@@ -781,15 +782,15 @@ function DashboardHomeContent() {
               </button>
             )}
           </div>
-          <span className="text-[10px] text-stone-400 block">
+          <span className="text-[10px] text-stone-400 hidden sm:block">
             {packageConfig?.desc || getPlanDisplayDescription(invitation?.order?.planType, platformSettings?.packages) || "Belum ada paket aktif"}
           </span>
         </div>
       </div>
 
       {/* 3. Core Quick Action Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-        
+      <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+
         {/* Card 1: Studio Editor */}
         <div className="bg-white p-5 rounded-2xl border border-stone-200/80 shadow-xs flex flex-col justify-between space-y-4 hover:border-amber-700/40 transition">
           <div className="space-y-2">

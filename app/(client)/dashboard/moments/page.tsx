@@ -638,7 +638,7 @@ export default function MomentsSetupPage() {
   };
 
   return (
-    <div className="space-y-6 pb-36">
+    <div className="space-y-3 sm:space-y-6 pb-36">
       {/* Toast Notifikasi */}
       {statusToast && (
         <div className="fixed top-4 right-4 z-50 bg-stone-900 text-white px-4 py-2.5 rounded-xl text-xs font-semibold shadow-lg transition-all">
@@ -647,26 +647,29 @@ export default function MomentsSetupPage() {
       )}
 
       {/* Header Halaman Moments */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 sm:p-6 rounded-2xl sm:rounded-3xl border border-stone-200/90 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-stone-200/90 shadow-xs">
         <div>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="hidden sm:flex items-center gap-2 mb-1">
             <span className="text-[11px] font-bold uppercase tracking-wider text-amber-900 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
               Pusat Komando Moments
             </span>
             <span className="text-stone-300">•</span>
             <span className="text-xs text-stone-500 font-medium">Virtual Disposable Camera</span>
           </div>
-          <h1 className="text-lg sm:text-xl font-bold text-stone-900">Pengaturan Kamera Tamu &amp; Galeri Kenangan</h1>
-          <p className="text-xs text-stone-500 mt-0.5">
+          <h1 className="text-base sm:text-xl font-bold text-stone-900">
+            <span className="sm:hidden">Kamera Tamu &amp; Galeri</span>
+            <span className="hidden sm:inline">Pengaturan Kamera Tamu &amp; Galeri Kenangan</span>
+          </h1>
+          <p className="hidden sm:block text-xs text-stone-500 mt-0.5">
             Kelola filter analog seragam, jatah roll per tamu, jadwal acara, dan unduh foto kenangan candid.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap">
+        <div className="grid grid-cols-2 sm:flex items-center gap-2 sm:gap-2.5 sm:flex-wrap">
           <Link
             href={`${testCameraUrl}?test=true`}
             target="_blank"
-            className="px-3.5 py-2 rounded-xl border border-amber-300 bg-amber-50/70 hover:bg-amber-100 text-amber-950 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
+            className="min-h-11 sm:min-h-0 px-3.5 py-2 rounded-xl border border-amber-300 bg-amber-50/70 hover:bg-amber-100 text-amber-950 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-2xs"
           >
             <svg className="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -678,25 +681,26 @@ export default function MomentsSetupPage() {
           <button
             type="button"
             onClick={() => setIsPrintQrModalOpen(true)}
-            className="px-3.5 py-2 rounded-xl bg-white hover:bg-stone-50 text-stone-700 border border-stone-300 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
+            className="min-h-11 sm:min-h-0 px-3.5 py-2 rounded-xl bg-white hover:bg-stone-50 text-stone-700 border border-stone-300 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-2xs"
           >
             <svg className="w-3.5 h-3.5 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
             </svg>
-            <span>Cetak Standing Banner &amp; Kartu QR</span>
+            <span className="sm:hidden">Cetak Kartu QR</span>
+            <span className="hidden sm:inline">Cetak Standing Banner &amp; Kartu QR</span>
           </button>
         </div>
       </div>
 
       {/* ── MODE TAMPILAN URL UTAMA (UNDANGAN VS GALERI KENANGAN) ── */}
       {hasAccess && (invitation?.status === "PUBLISHED" || invitation?.status === "EVENT_FINISHED") && (
-        <div className="bg-white p-5 sm:p-6 rounded-2xl sm:rounded-3xl border border-stone-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-stone-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-stone-500 bg-stone-100 border border-stone-200 px-2 py-0.5 rounded-md">
+              <span className="hidden sm:inline text-[10px] font-mono font-bold uppercase tracking-wider text-stone-500 bg-stone-100 border border-stone-200 px-2 py-0.5 rounded-md">
                 Pintu Utama Domain &amp; Slug
               </span>
-              <span className="text-stone-300">•</span>
+              <span className="hidden sm:inline text-stone-300">•</span>
               {invitation.status === "EVENT_FINISHED" ? (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-800 border border-purple-200">
                   <span className="w-1.5 h-1.5 rounded-full bg-purple-600" />
@@ -712,19 +716,19 @@ export default function MomentsSetupPage() {
             <h2 className="text-sm sm:text-base font-bold text-stone-900">
               Pengalihan Tampilan Alamat Utama
             </h2>
-            <p className="text-xs text-stone-500 max-w-xl leading-relaxed">
+            <p className="hidden sm:block text-xs text-stone-500 max-w-xl leading-relaxed">
               {invitation.status === "EVENT_FINISHED"
                 ? "Acara telah ditandai selesai. Setiap tamu yang membuka link utama undangan otomatis diarahkan ke Galeri Foto Kenangan Tamu (/memories)."
                 : "Acara sedang berjalan. Link utama saat ini menampilkan Web Undangan resmi. Jika resepsi telah usai, Anda dapat beralih ke Mode Galeri secara instan."}
             </p>
           </div>
 
-          <div className="shrink-0 flex items-center gap-2">
+          <div className="sm:shrink-0 flex items-center gap-2">
             <button
               type="button"
               onClick={handleToggleGalleryMode}
               disabled={isTogglingGalleryMode}
-              className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition cursor-pointer shadow-xs disabled:opacity-50 ${
+              className={`w-full sm:w-auto min-h-11 sm:min-h-0 px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow-xs disabled:opacity-50 ${
                 invitation.status === "EVENT_FINISHED"
                   ? "bg-white hover:bg-stone-50 text-stone-800 border border-stone-300"
                   : "bg-amber-800 hover:bg-amber-900 text-white"
@@ -814,8 +818,11 @@ export default function MomentsSetupPage() {
       {/* Switch Status Aktifkan Fitur Kamera */}
       <div className="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/90 shadow-xs flex items-center justify-between gap-4">
         <div>
-          <span className="text-xs font-bold text-stone-900 block">Status Fitur Kamera Tamu di Undangan:</span>
-          <span className="text-[11px] text-stone-500">
+          <span className="text-xs font-bold text-stone-900 block">
+            <span className="sm:hidden">Kamera tamu {isEnabled ? "aktif" : "nonaktif"}</span>
+            <span className="hidden sm:inline">Status Fitur Kamera Tamu di Undangan:</span>
+          </span>
+          <span className="hidden sm:inline text-[11px] text-stone-500">
             {isEnabled ? "Aktif — Tombol 'Bagikan Momen' tampil di undangan dan kamera dapat digunakan." : "Nonaktif — Tamu tidak dapat mengakses kamera virtual."}
           </span>
         </div>
@@ -835,15 +842,15 @@ export default function MomentsSetupPage() {
       {/* LIST GROUP CARD (MOREMENTS-STYLE) */}
       <div className="bg-white rounded-2xl sm:rounded-3xl border border-stone-200/90 shadow-xs overflow-hidden divide-y divide-stone-100">
         {/* 1. Berakhir */}
-        <div className="p-4 sm:px-5 sm:py-4 flex items-center justify-between gap-3 hover:bg-stone-50/50 transition-colors">
+        <div className="px-4 py-3 sm:px-5 sm:py-4 flex items-center justify-between gap-3 hover:bg-stone-50/50 transition-colors">
           <div className="flex items-center gap-3.5 min-w-0">
-            <div className="w-10 h-10 rounded-full bg-stone-100 text-stone-700 flex items-center justify-center shrink-0">
+            <div className="hidden sm:flex w-10 h-10 rounded-full bg-stone-100 text-stone-700 items-center justify-center shrink-0">
               <svg className="w-5 h-5 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
             <div className="min-w-0">
-              <span className="block text-[11px] font-medium text-stone-500">Berakhir (Masa Simpan Galeri)</span>
+              <span className="block text-[11px] font-medium text-stone-500">Berakhir<span className="hidden sm:inline"> (Masa Simpan Galeri)</span></span>
               <span className="block text-sm font-semibold text-stone-800">
                 {effectiveExpiry
                   ? effectiveExpiry.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
@@ -871,9 +878,9 @@ export default function MomentsSetupPage() {
         </div>
 
         {/* 2. Filter Kamera */}
-        <div className="p-4 sm:px-5 sm:py-4 flex items-center justify-between gap-3 hover:bg-stone-50/50 transition-colors">
+        <div className="px-4 py-3 sm:px-5 sm:py-4 flex items-center justify-between gap-3 hover:bg-stone-50/50 transition-colors">
           <div className="flex items-center gap-3.5 min-w-0">
-            <div className="w-10 h-10 rounded-full bg-stone-100 text-stone-700 flex items-center justify-center shrink-0">
+            <div className="hidden sm:flex w-10 h-10 rounded-full bg-stone-100 text-stone-700 items-center justify-center shrink-0">
               <svg className="w-5 h-5 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
               </svg>
@@ -891,15 +898,15 @@ export default function MomentsSetupPage() {
         </div>
 
         {/* 3. Layar Pembuka Tamu */}
-        <div className="p-4 sm:px-5 sm:py-4 flex items-center justify-between gap-3 hover:bg-stone-50/50 transition-colors">
+        <div className="px-4 py-3 sm:px-5 sm:py-4 flex items-center justify-between gap-3 hover:bg-stone-50/50 transition-colors">
           <div className="flex items-center gap-3.5 min-w-0">
-            <div className="w-10 h-10 rounded-full bg-stone-100 text-stone-700 flex items-center justify-center shrink-0">
+            <div className="hidden sm:flex w-10 h-10 rounded-full bg-stone-100 text-stone-700 items-center justify-center shrink-0">
               <svg className="w-5 h-5 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
             </div>
             <div className="min-w-0">
-              <span className="block text-[11px] font-medium text-stone-500">Layar Pembuka Tamu (/sharemoment)</span>
+              <span className="block text-[11px] font-medium text-stone-500">Layar Pembuka Tamu<span className="hidden sm:inline"> (/sharemoment)</span></span>
               <span className="block text-sm font-semibold text-stone-800">
                 {activeOpeningName}
               </span>
@@ -913,14 +920,15 @@ export default function MomentsSetupPage() {
             <svg className="w-3.5 h-3.5 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
-            <span>Sesuaikan Teks &amp; Foto</span>
+            <span className="sm:hidden">Ubah</span>
+            <span className="hidden sm:inline">Sesuaikan Teks &amp; Foto</span>
           </button>
         </div>
 
         {/* 4. Roll limit per user tamu */}
-        <div className="p-4 sm:px-5 sm:py-4 flex items-center justify-between gap-3 hover:bg-stone-50/50 transition-colors">
+        <div className="px-4 py-3 sm:px-5 sm:py-4 flex items-center justify-between gap-3 hover:bg-stone-50/50 transition-colors">
           <div className="flex items-center gap-3.5 min-w-0">
-            <div className="w-10 h-10 rounded-full bg-stone-100 text-stone-700 flex items-center justify-center shrink-0">
+            <div className="hidden sm:flex w-10 h-10 rounded-full bg-stone-100 text-stone-700 items-center justify-center shrink-0">
               <svg className="w-5 h-5 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -951,19 +959,19 @@ export default function MomentsSetupPage() {
         </div>
 
         {/* 5. Quota Total Foto */}
-        <div className="p-4 sm:px-5 sm:py-4 flex items-center justify-between gap-3 hover:bg-stone-50/50 transition-colors">
+        <div className="px-4 py-3 sm:px-5 sm:py-4 flex items-center justify-between gap-3 hover:bg-stone-50/50 transition-colors">
           <div className="flex items-center gap-3.5 min-w-0">
-            <div className="w-10 h-10 rounded-full bg-stone-100 text-stone-700 flex items-center justify-center shrink-0">
+            <div className="hidden sm:flex w-10 h-10 rounded-full bg-stone-100 text-stone-700 items-center justify-center shrink-0">
               <svg className="w-5 h-5 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
             <div className="min-w-0">
-              <span className="block text-[11px] font-medium text-stone-500">Kapasitas Quota Total Foto</span>
+              <span className="block text-[11px] font-medium text-stone-500">Kuota<span className="hidden sm:inline"> Total Foto</span></span>
               <span className="block text-sm font-semibold text-stone-800">
                 {memoriesQuota ? `${memoriesQuota.usedPhotos} / ${memoriesQuota.maxTotalPhotos} Foto` : `${guestMemoriesList.length} Foto`}
                 {memoriesQuota && (
-                  <span className="ml-2 text-xs font-normal text-stone-500">
+                  <span className="hidden sm:inline ml-2 text-xs font-normal text-stone-500">
                     (Tersisa {memoriesQuota.remainingPhotos} foto)
                   </span>
                 )}
@@ -984,24 +992,25 @@ export default function MomentsSetupPage() {
       </div>
 
       {/* Pratinjau Layar Pembuka Smartphone Tamu (Live Phone Mockup & 3 Layout Selector) */}
-      <div className="bg-white p-5 sm:p-7 rounded-2xl sm:rounded-3xl border border-stone-200/90 shadow-xs space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-stone-100">
+      <div className="bg-white p-4 sm:p-7 rounded-2xl sm:rounded-3xl border border-stone-200/90 shadow-xs space-y-3 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:pb-4 sm:border-b border-stone-100">
           <div>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="hidden sm:flex items-center gap-2 mb-1">
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-900 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
                 Live Smartphone Preview
               </span>
               <span className="text-stone-300">•</span>
               <span className="text-xs text-stone-500 font-medium">Layar Pembuka Tamu (/sharemoment)</span>
             </div>
-            <h2 className="text-base sm:text-lg font-bold text-stone-900">
-              Pratinjau &amp; Pilihan Gaya Layar Pembuka Tamu
+            <h2 className="text-sm sm:text-lg font-bold text-stone-900">
+              <span className="sm:hidden">Gaya Layar Pembuka Tamu</span>
+              <span className="hidden sm:inline">Pratinjau &amp; Pilihan Gaya Layar Pembuka Tamu</span>
             </h2>
-            <p className="text-xs text-stone-500 mt-0.5">
+            <p className="hidden sm:block text-xs text-stone-500 mt-0.5">
               Pilih salah satu dari 3 desain layar pembuka di bawah ini. Tamu yang memindai QR Code di meja akan disambut dengan tampilan ini di smartphone mereka.
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="hidden sm:flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={() => setIsOpeningModalOpen(true)}
@@ -1017,7 +1026,7 @@ export default function MomentsSetupPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
           {/* KOLOM KIRI: Mobile Phone Mockup Langsung (Murni Tanpa Card Wrapper) */}
-          <div className="lg:col-span-5 flex flex-col items-center justify-center py-4 select-none">
+          <div className="hidden sm:flex lg:col-span-5 flex-col items-center justify-center py-4 select-none">
             {/* 1. MOCKUP SMARTPHONE IPHONE 16 PRO */}
             <div
               className="w-[268px] h-[536px] bg-[#0d0c0b] rounded-[42px] p-2.5 relative flex flex-col justify-between shadow-[0_25px_60px_-15px_rgba(0,0,0,0.22),0_0_0_1px_rgba(0,0,0,0.06),0_0_0_5px_#1c1917,0_0_0_6.5px_rgba(201,162,39,0.35)] shrink-0"
@@ -1160,7 +1169,7 @@ export default function MomentsSetupPage() {
 
           {/* KOLOM KANAN: 3 Layout Selector Cards */}
           <div className="lg:col-span-7 space-y-3.5">
-            <span className="text-xs font-bold text-stone-800 block">
+            <span className="hidden sm:block text-xs font-bold text-stone-800">
               Pilih Gaya Tampilan Layar Pembuka:
             </span>
 
@@ -1173,7 +1182,7 @@ export default function MomentsSetupPage() {
                     type="button"
                     onClick={() => updateSettingFast("memoriesOpeningLayout", op.id)}
                     disabled={updatingSetting}
-                    className={`w-full p-4 rounded-2xl border text-left transition flex items-start justify-between cursor-pointer ${
+                    className={`w-full p-3.5 sm:p-4 rounded-2xl border text-left transition flex items-start justify-between cursor-pointer ${
                       isSelected
                         ? "bg-amber-50/90 border-amber-700 ring-2 ring-amber-700 shadow-xs"
                         : "bg-white border-stone-200 hover:border-stone-300 hover:bg-stone-50/60"
@@ -1208,7 +1217,7 @@ export default function MomentsSetupPage() {
               })}
             </div>
 
-            <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="hidden sm:flex p-4 bg-stone-50 rounded-2xl border border-stone-200/80 flex-row items-center justify-between gap-3 text-xs">
               <div>
                 <strong className="block font-bold text-stone-800">Ubah Foto Cover &amp; Teks Sapaan</strong>
                 <p className="text-[11px] text-stone-500 mt-0.5">
@@ -1224,7 +1233,7 @@ export default function MomentsSetupPage() {
               </button>
             </div>
 
-            <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="hidden sm:flex p-4 bg-stone-50 rounded-2xl border border-stone-200/80 flex-row items-center justify-between gap-3 text-xs">
               <div>
                 <strong className="block font-bold text-stone-800">Cetak Standing Banner &amp; Kartu QR</strong>
                 <p className="text-[11px] text-stone-500 mt-0.5">
@@ -1244,18 +1253,21 @@ export default function MomentsSetupPage() {
       </div>
 
       {/* Grid 5 Pilihan Filter Analog Acara */}
-      <div className="bg-white p-5 sm:p-6 rounded-2xl sm:rounded-3xl border border-stone-200/90 shadow-xs space-y-4">
+      <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-stone-200/90 shadow-xs space-y-3 sm:space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
           <div>
-            <h2 className="text-sm font-bold text-stone-900">Pilih Preset Filter Analog Acara:</h2>
-            <p className="text-xs text-stone-500">Filter ini seragam diterapkan ke kamera virtual seluruh tamu undangan Anda.</p>
+            <h2 className="text-sm font-bold text-stone-900">
+              <span className="sm:hidden">Filter Kamera</span>
+              <span className="hidden sm:inline">Pilih Preset Filter Analog Acara:</span>
+            </h2>
+            <p className="hidden sm:block text-xs text-stone-500">Filter ini seragam diterapkan ke kamera virtual seluruh tamu undangan Anda.</p>
           </div>
-          <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200 self-start sm:self-auto">
+          <span className="hidden sm:inline text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200 self-auto">
             1-Click Live Update
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
           {FILTER_PRESETS_LIST.map((flt) => {
             const isSelected = activeFilterId === flt.id;
             return (
@@ -1264,13 +1276,13 @@ export default function MomentsSetupPage() {
                 type="button"
                 onClick={() => updateSettingFast("memoriesFilter", flt.id)}
                 disabled={updatingSetting}
-                className={`p-3 rounded-2xl border text-left transition flex flex-col justify-between cursor-pointer ${
+                className={`p-2.5 sm:p-3 rounded-2xl border text-left transition flex flex-col justify-between cursor-pointer ${
                   isSelected
                     ? "bg-amber-50/90 border-amber-700 ring-2 ring-amber-700 shadow-xs"
                     : "bg-white border-stone-200 hover:border-stone-300"
                 }`}
               >
-                <div className={`h-16 w-full rounded-xl bg-gradient-to-tr ${flt.previewBg} mb-2.5 relative overflow-hidden flex items-end p-2 shadow-inner`}>
+                <div className={`h-12 sm:h-16 w-full rounded-xl bg-gradient-to-tr ${flt.previewBg} mb-2 sm:mb-2.5 relative overflow-hidden flex items-end p-2 shadow-inner`}>
                   <span className="text-[8px] font-mono text-amber-300 font-bold bg-stone-950/70 px-1.5 py-0.5 rounded">
                     15 09 &apos;26
                   </span>
@@ -1281,7 +1293,7 @@ export default function MomentsSetupPage() {
                       {flt.name}
                     </span>
                   </div>
-                  <p className="text-[10px] text-stone-500 leading-snug line-clamp-2">
+                  <p className="hidden sm:block text-[10px] text-stone-500 leading-snug line-clamp-2">
                     {flt.desc}
                   </p>
                 </div>
@@ -1292,10 +1304,10 @@ export default function MomentsSetupPage() {
       </div>
 
       {/* Stempel Tanggal LED & Foto Layar Pembuka */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-stone-200/90 shadow-xs space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/90 shadow-xs space-y-3">
           <div>
-            <h3 className="text-xs font-bold text-stone-900">Stempel Tanggal Retro (LED Date Stamp)</h3>
+            <h3 className="text-xs font-bold text-stone-900">Stempel Tanggal<span className="hidden sm:inline"> Retro (LED Date Stamp)</span></h3>
             <p className="text-[11px] text-stone-500">Cetak cap tanggal retro menyala di sudut kanan bawah foto tamu.</p>
           </div>
           <div className="flex items-center justify-between gap-3 pt-2 border-t border-stone-100">
@@ -1303,7 +1315,7 @@ export default function MomentsSetupPage() {
               value={getFeatureSetting("memoriesDateFormat", "DD MM 'YY")}
               onChange={(e) => updateSettingFast("memoriesDateFormat", e.target.value)}
               disabled={!getFeatureSetting("memoriesDateStamp", true)}
-              className="p-1.5 bg-stone-50 border border-stone-200 rounded-lg text-xs font-mono text-stone-800 disabled:opacity-40"
+              className="p-1.5 bg-stone-50 border border-stone-200 rounded-lg text-base sm:text-xs font-mono text-stone-800 disabled:opacity-40"
             >
               <option value="DD MM 'YY">Format: 15 09 &apos;26</option>
               <option value="DD · MMM · YYYY">Format: 15 · SEP · 2026</option>
@@ -1322,9 +1334,9 @@ export default function MomentsSetupPage() {
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-stone-200/90 shadow-xs space-y-3">
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/90 shadow-xs space-y-3">
           <div>
-            <h3 className="text-xs font-bold text-stone-900">Delayed Reveal (Kamar Gelap Bersama)</h3>
+            <h3 className="text-xs font-bold text-stone-900">Delayed Reveal<span className="hidden sm:inline"> (Kamar Gelap Bersama)</span></h3>
             <p className="text-[11px] text-stone-500">Foto dicuci rahasia dan baru dirilis serentak saat seluruh acara selesai.</p>
           </div>
           <div className="flex items-center justify-between gap-3 pt-2 border-t border-stone-100">
@@ -1347,22 +1359,25 @@ export default function MomentsSetupPage() {
       </div>
 
       {/* ── JADWAL WAKTU MULTI-SESI & ALOKASI KUOTA FOTO ── */}
-      <div className="bg-white p-5 sm:p-6 rounded-2xl sm:rounded-3xl border border-stone-200/90 shadow-xs space-y-4">
+      <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-stone-200/90 shadow-xs space-y-3 sm:space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-stone-100">
           <div>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="hidden sm:flex items-center gap-2 mb-1">
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-900 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
                 Jadwal &amp; Kuota Sesi
               </span>
               <span className="text-stone-300">•</span>
               <span className="text-xs text-stone-500 font-medium">Multi-Session Schedule</span>
             </div>
-            <h2 className="text-sm sm:text-base font-bold text-stone-900">Jadwal Sesi Kamera &amp; Alokasi Kuota Foto</h2>
-            <p className="text-xs text-stone-500 mt-0.5">
+            <h2 className="text-sm sm:text-base font-bold text-stone-900">
+              <span className="sm:hidden">Jadwal Sesi &amp; Kuota</span>
+              <span className="hidden sm:inline">Jadwal Sesi Kamera &amp; Alokasi Kuota Foto</span>
+            </h2>
+            <p className="hidden sm:block text-xs text-stone-500 mt-0.5">
               Atur sesi acara (misal: Akad &amp; Resepsi) serta alokasikan kuota foto per sesi agar tidak habis di sesi awal.
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             {sessionSaveStatus === "saving" && (
               <span className="text-[11px] text-amber-700 flex items-center gap-1 font-medium bg-amber-50 px-2 py-1 rounded-lg border border-amber-200/70">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
@@ -1430,7 +1445,7 @@ export default function MomentsSetupPage() {
                       onChange={(e) => handleUpdateSession(idx, "name", e.target.value)}
                       onBlur={handleBlurSession}
                       placeholder="Nama Sesi (misal: Akad Nikah)"
-                      className="p-1.5 px-2.5 bg-white border border-stone-200 rounded-lg text-xs font-bold text-stone-900 focus:outline-none focus:ring-1 focus:ring-amber-700/40 w-full sm:max-w-xs"
+                      className="p-1.5 px-2.5 bg-white border border-stone-200 rounded-lg text-base sm:text-xs font-bold text-stone-900 focus:outline-none focus:ring-1 focus:ring-amber-700/40 w-full sm:max-w-xs"
                     />
                   </div>
                   <button
@@ -1445,15 +1460,15 @@ export default function MomentsSetupPage() {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 text-xs">
-                  <div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                  <div className="col-span-2 sm:col-span-1">
                     <label className="block text-[10px] font-bold text-stone-500 mb-0.5">Tanggal:</label>
                     <input
                       type="date"
                       value={sess.date || ""}
                       onChange={(e) => handleUpdateSession(idx, "date", e.target.value)}
                       onBlur={handleBlurSession}
-                      className="w-full p-1.5 bg-white border border-stone-200 rounded-lg text-xs font-mono text-stone-900 focus:outline-none focus:ring-1 focus:ring-amber-700/40"
+                      className="w-full p-1.5 bg-white border border-stone-200 rounded-lg text-base sm:text-xs font-mono text-stone-900 focus:outline-none focus:ring-1 focus:ring-amber-700/40"
                     />
                   </div>
                   <div>
@@ -1463,7 +1478,7 @@ export default function MomentsSetupPage() {
                       value={sess.startTime || "08:00"}
                       onChange={(e) => handleUpdateSession(idx, "startTime", e.target.value)}
                       onBlur={handleBlurSession}
-                      className="w-full p-1.5 bg-white border border-stone-200 rounded-lg text-xs font-mono text-stone-900 focus:outline-none focus:ring-1 focus:ring-amber-700/40"
+                      className="w-full p-1.5 bg-white border border-stone-200 rounded-lg text-base sm:text-xs font-mono text-stone-900 focus:outline-none focus:ring-1 focus:ring-amber-700/40"
                     />
                   </div>
                   <div>
@@ -1473,10 +1488,10 @@ export default function MomentsSetupPage() {
                       value={sess.endTime || "22:00"}
                       onChange={(e) => handleUpdateSession(idx, "endTime", e.target.value)}
                       onBlur={handleBlurSession}
-                      className="w-full p-1.5 bg-white border border-stone-200 rounded-lg text-xs font-mono text-stone-900 focus:outline-none focus:ring-1 focus:ring-amber-700/40"
+                      className="w-full p-1.5 bg-white border border-stone-200 rounded-lg text-base sm:text-xs font-mono text-stone-900 focus:outline-none focus:ring-1 focus:ring-amber-700/40"
                     />
                   </div>
-                  <div>
+                  <div className="col-span-2 sm:col-span-1">
                     <div className="flex items-center justify-between mb-0.5">
                       <label className="block text-[10px] font-bold text-stone-500">Alokasi Kuota Foto:</label>
                       {(() => {
@@ -1505,7 +1520,7 @@ export default function MomentsSetupPage() {
                         value={sess.allocatedQuota || 0}
                         onChange={(e) => handleUpdateSession(idx, "allocatedQuota", e.target.value)}
                         onBlur={handleBlurSession}
-                        className="w-full p-1.5 bg-white border border-stone-200 rounded-lg text-xs font-mono font-bold text-stone-900 focus:outline-none focus:ring-1 focus:ring-amber-700/40"
+                        className="w-full p-1.5 bg-white border border-stone-200 rounded-lg text-base sm:text-xs font-mono font-bold text-stone-900 focus:outline-none focus:ring-1 focus:ring-amber-700/40"
                       />
                       <span className="text-[10px] text-stone-400 font-medium shrink-0">Foto</span>
                     </div>
@@ -1556,11 +1571,14 @@ export default function MomentsSetupPage() {
       </div>
 
       {/* Real-time Submissions Gallery & Moderasi Foto */}
-      <div className="bg-white p-5 sm:p-6 rounded-2xl sm:rounded-3xl border border-stone-200/90 shadow-xs space-y-4">
+      <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-stone-200/90 shadow-xs space-y-3 sm:space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-bold text-stone-900">Feed Foto Candid Terkumpul ({guestMemoriesList.length} Foto)</h2>
-            <p className="text-xs text-stone-500">Pantau foto candid yang diunggah para tamu, hapus foto yang tidak layak.</p>
+            <h2 className="text-sm font-bold text-stone-900">
+              <span className="sm:hidden">Foto Tamu ({guestMemoriesList.length})</span>
+              <span className="hidden sm:inline">Feed Foto Candid Terkumpul ({guestMemoriesList.length} Foto)</span>
+            </h2>
+            <p className="hidden sm:block text-xs text-stone-500">Pantau foto candid yang diunggah para tamu, hapus foto yang tidak layak.</p>
             {/* Layar sentuh tidak menampilkan tooltip title, jadi alasan tombol nonaktif ditulis langsung di HP. */}
             {!isReadyForDownload && guestMemoriesList.length > 0 && (
               <p className="sm:hidden mt-1 text-[11px] text-amber-800">{zipDownloadHint}</p>
@@ -1658,7 +1676,7 @@ export default function MomentsSetupPage() {
             <p className="text-[11px] text-stone-400 mt-0.5">Foto yang dijepret tamu di hari-H akan otomatis muncul di sini.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-1.5 sm:gap-3">
             {guestMemoriesList.map((photo) => (
               <div key={photo.id} className="group relative rounded-xl overflow-hidden border border-stone-200 bg-stone-100 aspect-square shadow-2xs">
                 <img
@@ -1666,13 +1684,14 @@ export default function MomentsSetupPage() {
                   alt={photo.senderName || "Foto Tamu"}
                   className="w-full h-full object-cover group-hover:scale-105 transition duration-200"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-2 flex flex-col justify-between">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-1.5 sm:p-2 flex flex-col justify-between">
                   <div className="flex justify-end">
                     <button
                       type="button"
                       onClick={() => handleDeletePhoto(photo.id)}
-                      className="p-1 bg-red-600/90 text-white rounded-md hover:bg-red-700 transition cursor-pointer"
+                      className="p-2 sm:p-1 bg-stone-950/55 sm:bg-red-600/90 text-white rounded-md hover:bg-red-700 transition cursor-pointer"
                       title="Hapus foto ini"
+                      aria-label="Hapus foto ini"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

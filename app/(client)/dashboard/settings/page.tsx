@@ -716,29 +716,30 @@ export default function SettingsPage() {
       {/* ──────── HERO LAUNCHPAD: STATUS PUBLIKASI & AUDIT SEKUANSIAL ──────── */}
       {formData.status === "PUBLISHED" ? (
         /* BANNER SELEBRASI RESMI: KATA SAMBUTAN FORMAL & HUB TAUTAN RESMI */
-        <div className="bg-stone-900 text-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xl border border-stone-800 relative overflow-hidden space-y-6">
+        <div className="bg-stone-900 text-white rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-xl border border-stone-800 relative overflow-hidden space-y-6">
           <div className="absolute top-0 right-0 w-80 h-80 bg-amber-600/10 rounded-full blur-3xl pointer-events-none" />
 
-          <div className="relative z-10 space-y-5">
+          <div className="relative z-10 space-y-4 sm:space-y-5">
             {/* Header Lencana */}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="px-3 py-1 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold rounded-full uppercase tracking-wider flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>Undangan Resmi Telah Mengudara · Terverifikasi Sistem</span>
+                <span className="sm:hidden">Sudah Terbit</span>
+                <span className="hidden sm:inline">Undangan Resmi Telah Mengudara · Terverifikasi Sistem</span>
               </span>
-              <span className="text-[11px] text-stone-400 font-mono">
+              <span className="hidden sm:inline text-[11px] text-stone-400 font-mono">
                 {invitation?.themeId ? `Tema: ${invitation.themeId}` : ""}
               </span>
             </div>
 
             {/* Sambutan Formal & Netral Layanan Klien */}
             <div className="space-y-1.5">
-              <h2 className="text-2xl sm:text-3xl font-serif font-bold text-stone-100 leading-tight">
+              <h2 className="text-xl sm:text-3xl font-serif font-bold text-stone-100 leading-tight">
                 {(!invitation?.eventType || invitation.eventType === "WEDDING")
                   ? `Selamat Berbahagia untuk ${resolveInvitationDisplayName(invitation)}`
                   : `Selamat & Sukses untuk ${resolveInvitationDisplayName(invitation)}`}
               </h2>
-              <p className="text-xs sm:text-sm text-stone-300/90 leading-relaxed max-w-2xl">
+              <p className="hidden sm:block text-sm text-stone-300/90 leading-relaxed max-w-2xl">
                 {(!invitation?.eventType || invitation.eventType === "WEDDING")
                   ? "Website undangan pernikahan resmi Anda kini telah aktif mengudara dan siap dibagikan kepada keluarga, sahabat, serta seluruh tamu kehormatan."
                   : "Website undangan resmi Anda kini telah aktif mengudara dan siap dibagikan kepada keluarga, sahabat, serta seluruh tamu kehormatan."}
@@ -752,9 +753,10 @@ export default function SettingsPage() {
                   <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
-                  <span>Tautan Undangan Resmi (Enkripsi SSL Aktif)</span>
+                  <span className="sm:hidden">Tautan Undangan</span>
+                  <span className="hidden sm:inline">Tautan Undangan Resmi (Enkripsi SSL Aktif)</span>
                 </span>
-                <span className="text-[10px] font-medium text-emerald-400 bg-emerald-950/80 border border-emerald-500/30 px-2 py-0.5 rounded-md">
+                <span className="hidden sm:inline text-[10px] font-medium text-emerald-400 bg-emerald-950/80 border border-emerald-500/30 px-2 py-0.5 rounded-md">
                   Aktif &amp; Terlindungi
                 </span>
               </div>
@@ -769,11 +771,11 @@ export default function SettingsPage() {
                   {officialUrl}
                 </a>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="grid grid-cols-[1fr_1fr_auto] sm:flex items-center gap-2 shrink-0">
                   <button
                     type="button"
                     onClick={handleCopyOfficialUrl}
-                    className="px-3.5 py-2 bg-stone-800 hover:bg-stone-700 text-stone-200 rounded-xl text-xs font-semibold transition border border-stone-700 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    className="min-h-11 sm:min-h-0 px-3.5 py-2 bg-stone-800 hover:bg-stone-700 text-stone-200 rounded-xl text-xs font-semibold whitespace-nowrap transition border border-stone-700 flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                   >
                     <svg className="w-3.5 h-3.5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
@@ -789,7 +791,7 @@ export default function SettingsPage() {
                     }
                     target="_blank"
                     rel="noreferrer"
-                    className="px-3.5 py-2 bg-stone-800 hover:bg-stone-700 text-amber-400 rounded-xl text-xs font-semibold transition border border-stone-700 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    className="min-h-11 sm:min-h-0 px-3.5 py-2 bg-stone-800 hover:bg-stone-700 text-amber-400 rounded-xl text-xs font-semibold whitespace-nowrap transition border border-stone-700 flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                   >
                     <span>Buka Web</span>
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -800,8 +802,9 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={handleShareWa}
-                    className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    className="min-h-11 min-w-11 sm:min-h-0 sm:min-w-0 px-3.5 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                     title="Bagikan Tautan ke WhatsApp"
+                    aria-label="Bagikan tautan ke WhatsApp"
                   >
                     <svg className="w-3.5 h-3.5 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -831,7 +834,7 @@ export default function SettingsPage() {
                 ) : (
                   <p className="text-stone-200 font-medium">Tanggal acara utama belum diatur.</p>
                 )}
-                <p className="text-[10px] text-stone-400 leading-normal">
+                <p className="hidden sm:block text-[10px] text-stone-400 leading-normal">
                   {invitation?.galleryExpiresAt
                     ? "Masa simpan galeri telah diperpanjang melalui paket add-on."
                     : "Dihitung otomatis dari tanggal acara utama sesuai zona waktu acara. Alamat slug tetap menjadi tautan utama setelah subdomain berakhir."}
@@ -847,14 +850,14 @@ export default function SettingsPage() {
                     <span className="text-stone-400 italic">Belum ditentukan</span>
                   )}
                 </p>
-                <p className="text-[10px] text-stone-400 leading-normal">
+                <p className="hidden sm:block text-[10px] text-stone-400 leading-normal">
                   Referensi hitung mundur dan arsip digital {eventNounLabel}.
                 </p>
               </div>
             </div>
 
             {/* Banner Keterhubungan Buku Tamu */}
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-950/40 to-stone-900 border border-amber-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="hidden md:flex p-4 rounded-2xl bg-gradient-to-r from-amber-950/40 to-stone-900 border border-amber-500/25 flex-row items-center justify-between gap-4">
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0 mt-0.5">
                   <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1490,8 +1493,8 @@ export default function SettingsPage() {
           transitionProperty: "opacity, transform, max-height, margin, visibility, filter",
         }}
       >
-        {/* CARD 1: SUBDOMAIN */}
-        <div className="bg-white p-5 sm:p-7 rounded-2xl sm:rounded-3xl border border-stone-200 shadow-xs space-y-4">
+        {/* CARD 1: SUBDOMAIN — setelah terbit, tautan yang sama sudah tampil di hero, jadi kartu ini disembunyikan di HP */}
+        <div className={`${formData.status === "PUBLISHED" ? "hidden sm:block" : ""} bg-white p-4 sm:p-7 rounded-2xl sm:rounded-3xl border border-stone-200 shadow-xs space-y-4`}>
           <div className="flex items-center justify-between gap-3 border-b border-stone-100 pb-3">
             <div>
               <h3 className="text-sm font-bold text-stone-900">Alamat Tautan Subdomain</h3>

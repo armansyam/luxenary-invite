@@ -1827,22 +1827,23 @@ export default function AdminPage() {
               {activeTab === "overview" && (
                 <div className="space-y-6">
                   {/* Top Bar: Title & Quick Shortcuts */}
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-5 sm:p-6 rounded-2xl sm:rounded-3xl border border-gray-200 shadow-xs">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4 bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-gray-200 shadow-xs">
                     <div>
-                      <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-amber-900 text-[10px] font-bold uppercase tracking-wider mb-1.5">
+                      <div className="hidden sm:inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-amber-900 text-[10px] font-bold uppercase tracking-wider mb-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse" />
                         <span>Pusat Kendali Administrator</span>
                       </div>
-                      <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-                        {settingsMap["platform_name"] ? `${settingsMap["platform_name"]} Executive Dashboard` : "Executive Dashboard"}
+                      <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
+                        <span className="sm:hidden">Ringkasan</span>
+                        <span className="hidden sm:inline">{settingsMap["platform_name"] ? `${settingsMap["platform_name"]} Executive Dashboard` : "Executive Dashboard"}</span>
                       </h2>
-                      <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+                      <p className="hidden sm:block text-sm text-gray-500 mt-0.5">
                         Ringkasan performa finansial, analitik paket, aktivitas mempelai &amp; status operasional sistem.
                       </p>
                     </div>
 
                     {/* Quick Action Buttons */}
-                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 shrink-0 [&>button]:justify-center [&>button]:min-h-11 sm:[&>button]:min-h-0">
                       <button
                         type="button"
                         onClick={() => loadOverviewData()}
@@ -2262,16 +2263,19 @@ export default function AdminPage() {
                   {/* ── Recent Live Activity (2 Cards: Recent Invitations & Recent Orders) ── */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                     {/* Widget 3: Undangan Mempelai Terbaru */}
-                    <div className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200 p-6 space-y-4">
+                    <div className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200 p-4 sm:p-6 space-y-3 sm:space-y-4">
                       <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                         <div className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-amber-600" />
-                          <h3 className="font-bold text-gray-900 text-base">Undangan Mempelai Terkini</h3>
+                          <h3 className="font-bold text-gray-900 text-sm sm:text-base">
+                            <span className="sm:hidden">Undangan Terbaru</span>
+                            <span className="hidden sm:inline">Undangan Mempelai Terkini</span>
+                          </h3>
                         </div>
                         <button
                           type="button"
                           onClick={() => setActiveTab("invitations")}
-                          className="text-xs font-semibold text-amber-800 hover:underline cursor-pointer"
+                          className="text-xs font-semibold text-amber-800 hover:underline cursor-pointer whitespace-nowrap"
                         >
                           Lihat Semua ({stats.invitationCount || 0})
                         </button>
@@ -2288,7 +2292,7 @@ export default function AdminPage() {
                                   {resolveInvitationDisplayName(inv)}
                                 </p>
                                 <div className="flex items-center gap-2 mt-0.5">
-                                  <span className="text-[11px] text-gray-500 font-mono">
+                                  <span className="hidden sm:inline text-[11px] text-gray-500 font-mono">
                                     /{inv.invitationSlug}
                                   </span>
                                   <span className="text-[10px] font-semibold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60 uppercase">
@@ -2323,16 +2327,19 @@ export default function AdminPage() {
                     </div>
 
                     {/* Widget 4: Transaksi Terkini */}
-                    <div className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200 p-6 space-y-4">
+                    <div className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200 p-4 sm:p-6 space-y-3 sm:space-y-4">
                       <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                         <div className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-emerald-600" />
-                          <h3 className="font-bold text-gray-900 text-base">Aktivitas Transaksi Pembayaran</h3>
+                          <h3 className="font-bold text-gray-900 text-sm sm:text-base">
+                            <span className="sm:hidden">Transaksi Terbaru</span>
+                            <span className="hidden sm:inline">Aktivitas Transaksi Pembayaran</span>
+                          </h3>
                         </div>
                         <button
                           type="button"
                           onClick={() => setActiveTab("orders")}
-                          className="text-xs font-semibold text-amber-800 hover:underline cursor-pointer"
+                          className="text-xs font-semibold text-amber-800 hover:underline cursor-pointer whitespace-nowrap"
                         >
                           Lihat Semua ({stats.orderCount ?? orderList.length})
                         </button>
@@ -2365,7 +2372,7 @@ export default function AdminPage() {
                   </div>
 
                   {/* ── System Status & Shortcuts (3 Mini Cards) ── */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="hidden md:grid md:grid-cols-3 gap-4">
                     {/* Database & Snapshot */}
                     <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs flex flex-col justify-between">
                       <div className="flex items-center justify-between mb-2">
@@ -2500,8 +2507,11 @@ export default function AdminPage() {
                     <div className="space-y-6">
                       <div className="flex items-center justify-between flex-wrap gap-3">
                     <div>
-                      <h2 className="text-2xl font-bold text-gray-900">Katalog &amp; Manajemen Tema</h2>
-                      <p className="text-sm text-gray-500 mt-0.5">Kelola daftar tema per kategori (Modern &amp; Traditional), status aktif, dan urutan</p>
+                      <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
+                        <span className="sm:hidden">Katalog Tema</span>
+                        <span className="hidden sm:inline">Katalog &amp; Manajemen Tema</span>
+                      </h2>
+                      <p className="hidden sm:block text-sm text-gray-500 mt-0.5">Kelola daftar tema per kategori (Modern &amp; Traditional), status aktif, dan urutan</p>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <button
@@ -2714,7 +2724,7 @@ export default function AdminPage() {
                             <p className="text-xs text-stone-400 mt-1">Coba ganti kategori atau kosongkan pencarian</p>
                           </div>
                         ) : (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-5">
                           {displayedThemes.map((theme) => {
                             const cat = (theme.category || "modern").toLowerCase();
                             return (
@@ -2727,8 +2737,8 @@ export default function AdminPage() {
                                 }`}
                               >
                                 <div>
-                                  {/* 1. Visual Showcase: Device Pair Mockup */}
-                                  <div className="p-3 pb-1">
+                                  {/* 1. Visual Showcase: Device Pair Mockup — di HP disembunyikan; status & Preview tetap ada di baris aksi */}
+                                  <div className="hidden sm:block p-3 pb-1">
                                     <div className="stp-scene">
                                       {/* Tablet frame */}
                                       <div className="stp-tablet">
@@ -2819,7 +2829,7 @@ export default function AdminPage() {
 
 
                                   {/* 2. Theme Identity & Description (Hirarki Tengah) */}
-                                  <div className="p-4 space-y-1.5">
+                                  <div className="px-4 pt-3 pb-2 sm:p-4 space-y-1.5">
                                     <div className="flex items-start justify-between gap-2">
                                       <div>
                                         <div className="flex items-center gap-1.5 flex-wrap">
@@ -2843,7 +2853,7 @@ export default function AdminPage() {
                                         <span className="text-[11px] font-mono text-gray-400">/{theme.id}</span>
                                       </div>
                                     </div>
-                                    <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">
+                                    <p className="hidden sm:block text-xs text-gray-500 leading-relaxed line-clamp-2">
                                       {theme.description || (settingsMap["platform_name"] ? `Desain eksklusif ${settingsMap["platform_name"]}` : "Desain eksklusif")}
                                     </p>
                                   </div>

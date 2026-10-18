@@ -663,7 +663,7 @@ export function AdminMarketingTab() {
               placeholder="Cari data..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 pr-3 py-1.5 text-xs bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-amber-500 w-48 sm:w-60"
+              className="pl-8 pr-3 py-1.5 text-base sm:text-xs bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-amber-500 w-48 sm:w-60"
             />
             <svg
               className="w-4 h-4 text-gray-400 absolute left-2.5 top-2"
