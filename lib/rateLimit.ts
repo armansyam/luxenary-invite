@@ -163,6 +163,42 @@ export async function rateLimitDb(key: string, limit: number, windowMs: number):
 }
 
 /**
+ * Apakah `key` sudah mencapai `limit` dalam jendelanya, tanpa menambah hitungan. Pasangan rateLimitDb untuk batas yang
+ * hanya boleh dihitung pada kejadian tertentu (mis. percobaan PIN yang gagal). Memakai driver yang sama dengan rateLimitDb.
+ */
+export async function isRateLimitExhausted(key: string, limit: number): Promise<boolean> {
+  const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
+  const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (redisUrl && redisToken) {
+    try {
+      const res = await fetch(`${redisUrl}/get/${encodeURIComponent(`rl:${key}`)}`, {
+        headers: { Authorization: `Bearer ${redisToken}` },
+        signal: AbortSignal.timeout(1500),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        return parseInt(json?.result ?? "0", 10) >= limit;
+      }
+    } catch {
+      // Redis tak terjangkau: rateLimitDb juga jatuh ke PostgreSQL, jadi pembacaan mengikuti.
+    }
+  }
+
+  try {
+    const { pool } = await import("@/lib/prisma");
+    const result = await pool.query<{ count: number }>(
+      "SELECT count FROM rate_limit_counters WHERE key = $1 AND expires_at > NOW()",
+      [key]
+    );
+    return (result.rows[0]?.count ?? 0) >= limit;
+  } catch (err) {
+    logger.warn("RateLimit", "Pembacaan batas laju dari database gagal; memakai batas in-memory", { key, error: err instanceof Error ? err.message : String(err) });
+    const record = rateLimitCache.get(key);
+    return Boolean(record && Date.now() <= record.resetTime && record.count >= limit);
+  }
+}
+
+/**
  * IP klien dari header proxy yang DIPERCAYA, dipilih lewat env TRUSTED_PROXY:
  *  - "cloudflare" (default): hanya cf-connecting-ip.
  *  - "nginx": hanya x-real-ip (nginx wajib menimpanya: proxy_set_header X-Real-IP $remote_addr).

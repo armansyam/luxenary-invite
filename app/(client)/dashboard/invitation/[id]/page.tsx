@@ -769,6 +769,10 @@ export default function EditInvitation() {
   // Two-Way Dual-View Sync: Listen to Live Visual Editor messages & relay to sibling iframe
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
+      // Pesan sunting hanya sah dari iframe pratinjau milik halaman ini; jendela lain (popup situs luar) dapat mengisi
+      // kolom undangan, termasuk rekening, lalu memicu simpan atas nama klien yang sedang login.
+      if (e.origin !== window.location.origin) return;
+      if (!e.source || !getAllLiveWindows().includes(e.source as Window)) return;
       if (!e.data || typeof e.data !== "object") return;
       if (e.data.type === "LUX_INLINE_EDIT_CHANGE") {
         const { field, value, senderRole } = e.data;
@@ -849,7 +853,7 @@ export default function EditInvitation() {
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [invitation, events, stories, bankList, media, relayToSiblingLiveIframes]);
+  }, [invitation, events, stories, bankList, media, relayToSiblingLiveIframes, getAllLiveWindows]);
 
   // Precise Per-Section Dirty State Tracking
   const isDirty = useMemo(() => {

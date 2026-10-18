@@ -22,7 +22,7 @@ function couponInputError(input: {
 }): string | null {
   const value = Number(input.discountValue);
   if (!Number.isFinite(value) || value <= 0) return "Nilai diskon harus lebih besar dari 0";
-  if (input.discountType === "PERCENT" && value > 100) return "Diskon persen tidak boleh lebih dari 100";
+  if (input.discountType === "PERCENT" && value > 99) return "Diskon persen maksimal 99: paket gratis tidak didukung";
   if (input.maxDiscountAmount && !(Number(input.maxDiscountAmount) >= 0)) return "Batas diskon maksimal tidak valid";
   const hasQuota = input.quotaLimit !== null && input.quotaLimit !== undefined && input.quotaLimit !== "";
   if (hasQuota && !(Number.isInteger(Number(input.quotaLimit)) && Number(input.quotaLimit) >= 0)) {

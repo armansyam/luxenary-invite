@@ -11,7 +11,7 @@ import { removeIfExists } from "@/lib/fsSafe";
 import { encryptPin, decryptPin } from "@/lib/pinEncryption";
 import { STAFF_PIN_PATTERN, isThemeCompatible } from "@/lib/invitationUtils";
 import { isReservedSubdomain, isSubdomainExpired } from "@/lib/domainUtils";
-import { DAY_MS, getPrimaryEventDate, getPrimaryEventDateString } from "@/lib/lifecycleDates";
+import { DAY_MS, getPrimaryEventDate, getPrimaryEventDateString, isClockTimeInput, normalizeEventDateInput } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { getPlanMemoriesQuota } from "@/lib/settings";
 import { VALID_MEDIA_SLOTS } from "@/lib/mediaSlots";
@@ -370,10 +370,18 @@ export async function PUT(
       try {
         const incomingEvents = typeof body.eventData === "string" ? JSON.parse(body.eventData || "[]") : body.eventData;
         if (!Array.isArray(incomingEvents)) throw new Error("eventData bukan daftar sesi");
+        for (const ev of incomingEvents) {
+          if (normalizeEventDateInput(ev?.date) === null) {
+            return NextResponse.json({ error: "Tanggal acara harus berupa tanggal nyata berformat TTTT-BB-HH." }, { status: 400 });
+          }
+          if (!isClockTimeInput(ev?.startTime) || !isClockTimeInput(ev?.endTime)) {
+            return NextResponse.json({ error: "Jam mulai dan jam selesai harus berformat JJ:MM." }, { status: 400 });
+          }
+        }
         let validatedEvents = incomingEvents.map((ev: any) => ({
           ...ev,
           title: typeof ev.title === "string" ? ev.title.trim() : (ev.title || ""),
-          date: typeof ev.date === "string" ? ev.date.trim() : (ev.date || ""),
+          date: normalizeEventDateInput(ev.date) ?? "",
           time: typeof ev.time === "string" ? ev.time.trim() : (ev.time || ""),
           startTime: typeof ev.startTime === "string" ? ev.startTime.trim() : (ev.startTime || ""),
           endTime: typeof ev.endTime === "string" ? ev.endTime.trim() : (ev.endTime || ""),

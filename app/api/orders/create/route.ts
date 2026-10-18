@@ -5,6 +5,7 @@ import { randomUUID } from "crypto";
 import { deleteFile } from "@/lib/storage";
 import { normalizePlanType } from "@/lib/planUtils";
 import { releaseOrderPromoHold } from "@/lib/marketing";
+import { purgeObsoleteUserOrders } from "@/lib/upgradeHelper";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
 
@@ -187,32 +188,8 @@ export async function POST(req: NextRequest) {
         }
         // Biarkan alur lanjut ke bawah membuat order baru dengan UUID & Invoice baru yang segar!
       } else {
-        // Cari dan bersihkan file bukti transfer pada duplikat draf order pending lama lainnya
-        try {
-          const duplicateOrders = await prisma.order.findMany({
-            where: {
-              userId: validUserId,
-              status: "PENDING",
-              id: { not: existingPending.id },
-              orderType: "NEW",
-            },
-            select: { id: true, proofImageUrl: true },
-          });
-
-          for (const dup of duplicateOrders) {
-            if (dup.proofImageUrl) {
-              await deleteFile(dup.proofImageUrl);
-            }
-          }
-
-          if (duplicateOrders.length > 0) {
-            await prisma.order.deleteMany({
-              where: { id: { in: duplicateOrders.map((o) => o.id) } },
-            });
-          }
-        } catch (dupErr) {
-          logger.error("OrdersCreate", "Pembersihan order duplikat gagal", dupErr, { orderId: existingPending.id });
-        }
+        // Draf duplikat dihapus; yang pernah punya sesi gateway atau bukti hanya ditutup, karena QR lamanya masih bisa dibayar.
+        await purgeObsoleteUserOrders(validUserId, existingPending.id);
 
         const isResetProof = isPlanChanged;
 

@@ -137,6 +137,17 @@ export async function POST(req: NextRequest) {
 
     const finalBaseAmount = Math.max(0, basePrice - appliedDiscount);
 
+    // Harga paket bisa turun di antara terapkan kode dan konfirmasi; tagihan Rp 0 tidak punya jalur pembayaran.
+    if (finalBaseAmount <= 0) {
+      if (order.promoHold && order.promoHold.status === "HELD") {
+        await prisma.promoHold.update({ where: { id: order.promoHold.id }, data: { status: "RELEASED" } });
+      }
+      return NextResponse.json({
+        error: "Kode promo ini membuat tagihan menjadi Rp 0, yang belum didukung pembayaran online. Rincian harga dikembalikan normal.",
+        promoRevoked: true,
+      }, { status: 400 });
+    }
+
     // Re-resolusi paymentMethod dari platform AdminSetting — sinkronisasi saat konfirmasi
     // Platform setting selalu menang atas order-level default untuk memastikan konsistensi
     const paymentModeSettingConfirm = await prisma.adminSetting.findUnique({ where: { key: "payment_mode" } });

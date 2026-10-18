@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 import { normalizePlanType } from "@/lib/planUtils";
 import { normalizeCustomDomain } from "@/lib/domainUtils";
+import { expireSupersededOrders } from "@/lib/paymentSession";
 import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
@@ -117,19 +118,7 @@ export async function POST(req: Request) {
     }
 
     // Tandai expired pesanan upgrade PENDING lama yang belum dibayar dan tanpa bukti transfer
-    await prisma.order.updateMany({
-      where: {
-        userId,
-        orderType: "UPGRADE",
-        linkedInvitationId: invitation.id,
-        status: "PENDING",
-        proofImageUrl: null,
-      },
-      data: {
-        status: "EXPIRED",
-        rejectReason: "Digantikan oleh pesanan upgrade baru",
-      },
-    });
+    await expireSupersededOrders({ userId, orderType: "UPGRADE", linkedInvitationId: invitation.id }, "Digantikan oleh pesanan upgrade baru");
 
     // 5. Buat order UPGRADE baru
     const invoiceNumber = `UPG-${Date.now().toString(36).toUpperCase()}-${userId.slice(0, 6).toUpperCase()}`;

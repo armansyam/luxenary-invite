@@ -176,7 +176,7 @@ export default function AdminDatabaseTab(props: Props) {
       <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between text-xs text-gray-600">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-          <span>Format didukung: <strong>.dump, .sql, .backup</strong>. Engine aktif saat ini: <strong>PostgreSQL</strong></span>
+          <span>Format didukung: <strong>.dump, .backup</strong> (arsip pg_dump -F c). Engine aktif saat ini: <strong>PostgreSQL</strong></span>
         </div>
         <button
           type="button"
@@ -195,7 +195,7 @@ export default function AdminDatabaseTab(props: Props) {
               {pendingRestoreFile ? (
                 <span className="text-amber-800 font-bold">File terpilih: {pendingRestoreFile.name} ({(pendingRestoreFile.size / 1024).toFixed(1)} KB)</span>
               ) : (
-                "Belum ada file dipilih (format didukung: .dump, .sql, .backup)"
+                "Belum ada file dipilih (format didukung: .dump, .backup)"
               )}
             </p>
           </div>
@@ -204,7 +204,7 @@ export default function AdminDatabaseTab(props: Props) {
             Pilih File Snapshot
             <input
               type="file"
-              accept=".dump,.sql,.backup"
+              accept=".dump,.backup"
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];

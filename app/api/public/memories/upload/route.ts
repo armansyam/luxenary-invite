@@ -12,8 +12,11 @@ import { getEventTimezoneOffset, resolveEventTimezone } from "@/lib/lifecycleDat
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
 import { participantNames } from "@/lib/participantUtils";
+import { RSVP_NAME_MAX, RSVP_MESSAGE_MAX } from "@/lib/rsvpStatus";
 
 export const dynamic = "force-dynamic";
+
+const SENDER_ID_MAX = 254;
 
 /**
  * Validasi MIME type berdasarkan magic bytes (4 byte pertama file buffer)
@@ -86,6 +89,19 @@ export async function POST(req: NextRequest) {
         const base64Data = data.base64File.replace(/^data:[^;]+;base64,/, "");
         buffer = Buffer.from(base64Data, "base64");
       }
+    }
+
+    // Isian berasal dari tamu anonim; multipart bisa membawa File dan JSON bisa membawa objek, sehingga tipe dan
+    // panjangnya diperiksa sebelum menyentuh DB. senderEmail memuat token tamu `gst_...` dari kamera atau email dari form.
+    const guestFields: unknown[] = [invitationId, senderName, senderEmail, caption];
+    if (guestFields.some((value) => typeof value !== "string")) {
+      return NextResponse.json({ error: "Data tidak valid." }, { status: 400 });
+    }
+    senderName = senderName.trim() || "Guest";
+    senderEmail = senderEmail.trim() || "guest@system";
+    caption = caption.trim();
+    if (senderName.length > RSVP_NAME_MAX || senderEmail.length > SENDER_ID_MAX || caption.length > RSVP_MESSAGE_MAX) {
+      return NextResponse.json({ error: "Nama, identitas, atau pesan terlalu panjang." }, { status: 400 });
     }
 
     if (!invitationId || !buffer || buffer.length === 0) {

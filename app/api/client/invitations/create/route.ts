@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { EventType } from "@prisma/client";
 
 import { getMonthYearSlug, isSubdomainExpired, isReservedSubdomain } from "@/lib/domainUtils";
+import { normalizeEventDateInput } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { releaseInvitationSubdomain } from "@/lib/subdomainRelease";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
@@ -142,7 +143,10 @@ export async function POST(req: Request) {
 
   const randomId = Date.now().toString(36).slice(-6);
 
-  const effectiveEventDate = weddingDate || eventDate || "";
+  const effectiveEventDate = normalizeEventDateInput(weddingDate || eventDate || "");
+  if (effectiveEventDate === null) {
+    return NextResponse.json({ error: "Tanggal acara harus berupa tanggal nyata berformat TTTT-BB-HH." }, { status: 400 });
+  }
 
   // 1. Permanent Canonical Slug: dynamic per eventType
   let dateSegment = "";

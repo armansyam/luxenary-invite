@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
       // Nominal yang dibayar harus sama dengan nominal yang ditagihkan saat init gateway
       const orderForAmount = await prisma.order.findUnique({
         where: { id: orderId },
-        select: { id: true, userId: true, orderType: true, status: true, fulfilledAt: true, amount: true, chargedAmount: true },
+        select: { id: true, userId: true, orderType: true, status: true, fulfilledAt: true, amount: true, chargedAmount: true, gatewayTxId: true },
       });
       if (!orderForAmount) {
         return NextResponse.json({ error: "Order not found" }, { status: 404 });
@@ -159,6 +159,19 @@ export async function POST(req: NextRequest) {
           });
         }
         return NextResponse.json({ status: "ignored", reason: "order_closed" }, { status: 200 });
+      }
+      // Token callback adalah rahasia statis; status invoice dikonfirmasi ke API Xendit sebelum melunasi. Non-2xx
+      // membuat Xendit mengirim ulang notifikasi. ID invoice dari DB, bukan dari payload.
+      let confirmedStatus: "PAID" | "FAILED" | "PENDING";
+      try {
+        confirmedStatus = (await new XenditGateway().verify(orderForAmount.gatewayTxId ?? String(body.id ?? ""))).status;
+      } catch (err) {
+        logger.error("XenditWebhook", `Status order ${orderId} gagal dikonfirmasi ke API Xendit; order tidak dilunasi.`, err, { orderId });
+        return NextResponse.json({ status: "retry", reason: "gateway_status_unavailable" }, { status: 503 });
+      }
+      if (confirmedStatus !== "PAID") {
+        logger.warn("XenditWebhook", `API Xendit tidak mengonfirmasi pelunasan order ${orderId} (${confirmedStatus}); order tidak dilunasi.`, { orderId, confirmedStatus });
+        return NextResponse.json({ status: "retry", reason: "status_unconfirmed" }, { status: 503 });
       }
       if (orderForAmount.status !== "PENDING") {
         logger.warn("XenditWebhook", `Order ${orderId} berstatus ${orderForAmount.status} dilunasi karena pembayaran gateway valid diterima.`, { orderId });

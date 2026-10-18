@@ -6,6 +6,13 @@ import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import type { PlanType, Prisma } from "@prisma/client";
 import { logger } from "@/lib/logger";
 
+const PLAN_RANK: Record<PlanType, number> = { TIER_1: 1, TIER_2: 2, TIER_3: 3 };
+
+/** Pembayaran upgrade yang masuk setelah pembeli sudah memegang paket yang sama atau lebih tinggi tidak boleh menurunkannya. */
+function isHigherPlan(target: PlanType, current: PlanType | null | undefined): boolean {
+  return PLAN_RANK[target] > (current ? PLAN_RANK[current] : 0);
+}
+
 /** Bentuk butir `orders.itemsJson` yang ditulis checkout-bundle. */
 type BundleItem = {
   type: string;
@@ -59,10 +66,17 @@ export async function applyBundleFulfillment(paidOrderId: string): Promise<boole
       if (!invitation.orderId) {
         throw new Error(`Undangan ${invitation.id} tidak memiliki order paket dasar; upgrade dari order ${paidOrderId} tidak dapat diterapkan`);
       }
-      await tx.order.update({
-        where: { id: invitation.orderId },
-        data: { planType: targetPlan },
-      });
+      const base = await tx.order.findUnique({ where: { id: invitation.orderId }, select: { planType: true } });
+      if (isHigherPlan(targetPlan, base?.planType)) {
+        await tx.order.update({
+          where: { id: invitation.orderId },
+          data: { planType: targetPlan },
+        });
+      } else {
+        logger.warn("BundleFulfillment", "Upgrade lunas tetapi paket undangan sudah sama atau lebih tinggi; paket tidak diturunkan", {
+          orderId: paidOrderId, current: base?.planType, target: targetPlan,
+        });
+      }
     }
 
     // 2. Eksekusi TOP-UP KUOTA FOTO jika ada
@@ -187,14 +201,18 @@ async function runPaidOrderFulfillment(paidOrderId: string): Promise<void> {
   } else if (order.orderType === "UPGRADE" && order.linkedInvitationId && order.targetPlanType) {
     const invitation = await prisma.invitation.findUnique({
       where: { id: order.linkedInvitationId },
-      select: { orderId: true },
+      select: { orderId: true, order: { select: { planType: true } } },
     });
     if (!invitation?.orderId) {
       logger.error("PaymentFulfillment", "Undangan atau order paket dasar untuk upgrade tidak ditemukan", undefined, { orderId: paidOrderId });
-    } else {
+    } else if (isHigherPlan(order.targetPlanType, invitation.order?.planType)) {
       await prisma.order.update({
         where: { id: invitation.orderId },
         data: { planType: order.targetPlanType },
+      });
+    } else {
+      logger.warn("PaymentFulfillment", "Upgrade lunas tetapi paket undangan sudah sama atau lebih tinggi; paket tidak diturunkan", {
+        orderId: paidOrderId, current: invitation.order?.planType, target: order.targetPlanType,
       });
     }
   }

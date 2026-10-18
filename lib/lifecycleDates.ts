@@ -50,6 +50,29 @@ function parseEventList(eventData: unknown): EventLike[] {
   }
 }
 
+/**
+ * Tanggal acara dari isian pengguna: "" bila kosong, "YYYY-MM-DD" bila tanggal kalender nyata (bagian setelah "T"
+ * dibuang), null bila selain itu. Tanggal ikut ke skrip hitung mundur dan penghitung masa aktif, jadi isian bebas ditolak.
+ */
+export function normalizeEventDateInput(value: unknown): string | null {
+  if (value === undefined || value === null) return "";
+  if (typeof value !== "string") return null;
+  const raw = value.trim();
+  if (!raw) return "";
+  const day = raw.includes("T") ? raw.split("T")[0] : raw;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null;
+  const [y, m, d] = day.split("-").map(Number);
+  const calendar = new Date(Date.UTC(y, m - 1, d));
+  if (calendar.getUTCFullYear() !== y || calendar.getUTCMonth() !== m - 1 || calendar.getUTCDate() !== d) return null;
+  return day;
+}
+
+/** Jam acara dari isian pengguna: kosong atau JJ:MM (titik sebagai pemisah tetap diterima untuk data lama). */
+export function isClockTimeInput(value: unknown): boolean {
+  if (value === undefined || value === null || value === "") return true;
+  return typeof value === "string" && /^([01]?\d|2[0-3])[:.][0-5]\d$/.test(value.trim());
+}
+
 /** Awal hari (00:00) tanggal acara pada zona waktu acara; null bila tanggal bukan format YYYY-MM-DD. */
 export function getEventDayStart(ev: EventLike | null | undefined): Date | null {
   const raw = typeof ev?.date === "string" ? ev.date.trim() : "";
