@@ -947,7 +947,7 @@ export async function composeWeddingData(inv: any) {
 
       // 2. Universal Countdown Timer
       (function luxInitCountdown() {
-        const targetStr = "${targetDate}";
+        const targetStr = ${jsonForInlineScript(targetDate)};
         if (!targetStr) return;
         const target = new Date(targetStr).getTime();
         if (isNaN(target)) return;
