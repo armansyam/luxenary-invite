@@ -123,6 +123,9 @@ export async function POST(req: NextRequest) {
     if (!normalizedStatus) {
       return NextResponse.json({ error: "status harus hadir, tidak, atau ragu" }, { status: 400 });
     }
+    if (!guestName.trim()) {
+      return NextResponse.json({ error: "Nama tidak boleh kosong." }, { status: 400 });
+    }
     if (guestName.trim().length > RSVP_NAME_MAX) {
       return NextResponse.json({ error: `Nama maksimal ${RSVP_NAME_MAX} karakter` }, { status: 400 });
     }

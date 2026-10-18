@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { PlanType } from "@prisma/client";
 import { normalizePlanType } from "@/lib/planUtils";
 import { logger } from "@/lib/logger";
+import { rateLimitDb } from "@/lib/rateLimit";
 import { HttpError, routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +25,10 @@ export async function POST(req: NextRequest) {
     }
 
     const userId = session.user.id;
+    // Pesan "kode tidak ditemukan" membedakan kode yang ada dari yang tidak; tanpa batas, akun mana pun dapat menebak kode.
+    if (!(await rateLimitDb(`promo_validate:${userId}`, 10, 60_000))) {
+      return NextResponse.json({ error: "Terlalu banyak percobaan kode promo. Silakan coba lagi sebentar." }, { status: 429 });
+    }
     const body = await req.json().catch(() => ({}));
     const { code: rawCode, orderId } = body;
 
@@ -196,6 +201,11 @@ export async function POST(req: NextRequest) {
 
       // Pastikan diskon tidak melebihi harga layanan
       calculatedDiscount = Math.max(0, Math.min(calculatedDiscount, basePackagePrice));
+
+      // Tagihan Rp 0 tidak punya jalur pembayaran: gateway menolak nominal nol dan order akan macet di halaman bayar.
+      if (basePackagePrice > 0 && calculatedDiscount >= basePackagePrice) {
+        throw new HttpError(400, "Kode promo ini membuat tagihan menjadi Rp 0, yang belum didukung pembayaran online. Gunakan kode lain atau hubungi admin.");
+      }
 
       // 3.9 Bersihkan PromoHold lama pada order ini jika ada
       await tx.promoHold.deleteMany({

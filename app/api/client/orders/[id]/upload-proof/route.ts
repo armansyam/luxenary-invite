@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { randomBytes } from "crypto";
 import sharp from "sharp";
 import { uploadFile, deleteFile } from "@/lib/storage";
-import { logger } from "@/lib/logger";
+import { purgeObsoleteUserOrders } from "@/lib/upgradeHelper";
 import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
@@ -113,34 +113,9 @@ export async function POST(
         await deleteFile(order.proofImageUrl);
       }
 
-      // Bersihkan order PENDING usang lainnya milik user ini beserta file struknya di storage
-      try {
-        const obsoleteOrders = await prisma.order.findMany({
-          where: {
-            userId: order.userId,
-            id: { not: order.id },
-            status: "PENDING",
-            orderType: "NEW",
-          },
-          select: { id: true, proofImageUrl: true },
-        });
-
-        for (const obs of obsoleteOrders) {
-          if (obs.proofImageUrl) {
-            await deleteFile(obs.proofImageUrl);
-          }
-        }
-
-        if (obsoleteOrders.length > 0) {
-          await prisma.order.deleteMany({
-            where: {
-              id: { in: obsoleteOrders.map((o) => o.id) },
-            },
-          });
-        }
-      } catch (cleanupErr) {
-        logger.error("UploadProof", "Bukti tersimpan tetapi pembersihan order usang gagal", cleanupErr, { orderId: order.id });
-      }
+      // Order paket lain yang masih PENDING ditutup tanpa dihapus bila pernah punya sesi gateway atau bukti: QR lamanya
+      // bisa tetap dibayar dan webhook pelunasan membutuhkan barisnya (sama dengan pemenuhan order lunas).
+      await purgeObsoleteUserOrders(order.userId, order.id);
     };
 
     let publicUrl: string;

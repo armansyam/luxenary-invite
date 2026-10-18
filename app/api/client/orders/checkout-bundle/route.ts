@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { HttpError, routeError } from "@/lib/routeError";
 import { hasPlanCapability } from "@/lib/settings";
+import { expireSupersededOrders } from "@/lib/paymentSession";
 import { randomUUID } from "crypto";
 import { computeLifecycleDates, getPrimaryEventDate } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
@@ -261,18 +262,7 @@ export async function POST(req: NextRequest) {
     const totalAmount = items.reduce((acc, curr) => acc + curr.price, 0);
 
     // 8. Tandai expired pesanan PENDING lama yang belum dibayar dan tanpa bukti transfer
-    await prisma.order.updateMany({
-      where: {
-        userId,
-        linkedInvitationId: invitation.id,
-        status: "PENDING",
-        proofImageUrl: null,
-      },
-      data: {
-        status: "EXPIRED",
-        rejectReason: "Digantikan oleh checkout tagihan terpadu baru",
-      },
-    });
+    await expireSupersededOrders({ userId, linkedInvitationId: invitation.id }, "Digantikan oleh checkout tagihan terpadu baru");
 
     // 9. Generate Invoice Number unik
     const prefix = effectiveTargetPlan ? "UPG" : "BDL";
