@@ -25,6 +25,21 @@ export async function getDynamicServerAppUrl(defaultFallback = "http://localhost
 }
 
 /**
+ * Origin aplikasi untuk URL yang dikirim ke pihak ketiga, mis. halaman balik dan alamat notifikasi gateway pembayaran.
+ * Memakai NEXT_PUBLIC_APP_URL, lalu NEXT_PUBLIC_ROOT_DOMAIN; header Host yang dapat dipalsukan hanya menjadi pilihan
+ * terakhir (pengembangan lokal tanpa env).
+ */
+export async function getTrustedAppUrl(): Promise<string> {
+  const configured = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (configured) return configured.replace(/\/$/, "");
+
+  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN?.trim().replace(/^https?:\/\//, "").replace(/\/$/, "");
+  if (root) return `${process.env.NODE_ENV === "production" ? "https" : "http"}://${root}`;
+
+  return getDynamicServerAppUrl();
+}
+
+/**
  * Origin apex platform untuk request yang masuk lewat subdomain klien
  * (`budi-sari.domain-platform.com` -> `https://domain-platform.com`): label subdomain klien dibuang dari host.
  * Host tanpa label tersebut (mis. akses via IP) dikembalikan apa adanya.

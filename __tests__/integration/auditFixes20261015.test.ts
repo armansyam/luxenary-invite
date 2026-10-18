@@ -280,8 +280,9 @@ describe.skipIf(!IS_TEST_DB)("pengeluaran dan tutup buku", () => {
 });
 
 describe.skipIf(!IS_TEST_DB)("rekap dan setoran pajak", () => {
-  // Bukan tahun kabisat: 28 Feb 18.00 UTC jatuh pada 1 Maret WIB.
-  const taxYear = 2093;
+  // Bukan tahun kabisat: 28 Feb 18.00 UTC jatuh pada 1 Maret WIB. Tahun lampau: periode yang belum berakhir tidak dapat
+  // ditutup, dan tahun ini tidak berisi data lain di DB uji.
+  const taxYear = 2001;
 
   afterAll(async () => {
     await prisma.expense.deleteMany({ where: { title: `${RUN}-pajak` } });

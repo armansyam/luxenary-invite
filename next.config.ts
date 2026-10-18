@@ -105,13 +105,13 @@ const nextConfig: NextConfig = {
       },
 
       // ── HTML portofolio terisolasi + aset ──
-      // Lebih agresif karena konten ini sangat jarang berubah
+      // Penerbitan ulang portofolio tidak membersihkan cache CDN, jadi masa cache dibatasi satu jam agar revisi terlihat.
       {
         source: "/portfolio/:path*",
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=86400, s-maxage=2592000, stale-while-revalidate=86400",
+            value: "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400",
           },
         ],
       },

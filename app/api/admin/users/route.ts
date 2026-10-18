@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
 import { removeInvitationFiles } from "@/lib/invitationFiles";
+import { deleteFile } from "@/lib/storage";
 import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
@@ -182,9 +183,22 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Tidak dapat menghapus akun Admin melalui endpoint klien." }, { status: 403 });
     }
 
+    // Order lunas adalah catatan keuangan (pendapatan, pajak, komisi mitra) dan tidak ikut terhapus bersama akun.
+    const paidOrders = await prisma.order.count({ where: { userId, status: "PAID" } });
+    if (paidOrders > 0) {
+      return NextResponse.json(
+        { error: `Klien ini punya ${paidOrders} transaksi lunas yang harus tetap tersimpan sebagai catatan keuangan, sehingga akunnya tidak dapat dihapus. Hapus undangannya lewat menu Projek Undangan bila perlu.` },
+        { status: 409 }
+      );
+    }
+
+    // Berkas bukti transfer order PENDING/EXPIRED ikut dibersihkan bersama barisnya; order tanpa status lunas tidak punya nilai keuangan.
+    const leftoverOrders = await prisma.order.findMany({ where: { userId }, select: { proofImageUrl: true } });
+
     // Baris DB dan catatan audit dihapus/ditulis lebih dulu dalam satu transaksi; berkas fisik baru dibersihkan
     // setelahnya. Urutan sebaliknya bisa meninggalkan klien yang masih ada tanpa media bila penghapusan DB gagal.
     await prisma.$transaction([
+      prisma.order.deleteMany({ where: { userId, status: { not: "PAID" } } }),
       prisma.user.delete({ where: { id: userId } }),
       prisma.adminAuditLog.create({
         data: {
@@ -199,10 +213,14 @@ export async function DELETE(req: Request) {
     for (const inv of targetUser.invitations) {
       await removeInvitationFiles(inv, "AdminDeleteClient");
     }
+    // deleteFile mencatat galatnya sendiri dan tidak melempar.
+    for (const order of leftoverOrders) {
+      if (order.proofImageUrl) await deleteFile(order.proofImageUrl);
+    }
 
     return NextResponse.json({
       success: true,
-      message: "Akun klien beserta semua data undangan, media, dan transaksinya berhasil dihapus permanen.",
+      message: "Akun klien beserta semua data undangan dan media berhasil dihapus permanen.",
     });
   } catch (err) {
     return routeError("AdminDeleteClient", err, "Gagal menghapus klien.");

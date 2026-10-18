@@ -443,6 +443,9 @@ function PaymentContent() {
     );
   }
 
+  // Jalur gateway menagih chargedAmount (harga + biaya layanan bila ditanggung pembeli); tampilkan yang sama dengan QR.
+  const payableAmount = paymentMode === "GATEWAY" && order.chargedAmount != null ? Number(order.chargedAmount) : Number(order.amount);
+
   return (
     <div className="min-h-screen bg-stone-950 text-stone-200 flex flex-col justify-between selection:bg-amber-500/30">
       {/* ── HEADER ── */}
@@ -499,7 +502,7 @@ function PaymentContent() {
                       <div className="text-right">
                         <span className="text-[11px] text-stone-400 block">Total Tagihan</span>
                         <span className="text-xl font-bold font-serif text-amber-400">
-                          Rp {Number(order.amount).toLocaleString("id-ID")}
+                          Rp {payableAmount.toLocaleString("id-ID")}
                         </span>
                       </div>
                     </div>
@@ -559,7 +562,7 @@ function PaymentContent() {
               <div className="text-right">
                 <span className="text-[11px] text-stone-400 block">Total Tagihan</span>
                 <span className="text-xl font-bold font-serif text-amber-400">
-                  Rp {Number(order.amount).toLocaleString("id-ID")}
+                  Rp {payableAmount.toLocaleString("id-ID")}
                 </span>
               </div>
             )}
@@ -636,7 +639,7 @@ function PaymentContent() {
                 <div className="space-y-1 pt-2">
                   <h3 className="text-white font-bold text-sm">Scan QRIS untuk Membayar</h3>
                   <div className="text-amber-400 font-serif font-bold text-2xl">
-                    Rp {Number(order.amount).toLocaleString("id-ID")}
+                    Rp {payableAmount.toLocaleString("id-ID")}
                   </div>
                   <p className="text-stone-400 text-xs">
                     Sisa Waktu: <span className="text-amber-400 font-mono font-bold">{countdownStr}</span>
@@ -688,7 +691,7 @@ function PaymentContent() {
                   </div>
                   <h3 className="text-white font-bold text-base sm:text-lg">Selesaikan Pembayaran</h3>
                   <div className="text-amber-400 font-serif font-bold text-2xl sm:text-3xl">
-                    Rp {Number(order.amount).toLocaleString("id-ID")}
+                    Rp {payableAmount.toLocaleString("id-ID")}
                   </div>
                   <p className="text-stone-400 text-xs max-w-sm mx-auto leading-relaxed">
                     Mendukung pembayaran aman melalui QRIS (BCA, Mandiri, GoPay, OVO, Dana) dan metode resmi lainnya.

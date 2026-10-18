@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
 import { wibParts } from "@/lib/financePeriods";
+import { optionalText, parseExpenseCategory, parseMoney, receiptUrlInput, requiredText } from "@/lib/financeInput";
 
 export const dynamic = "force-dynamic";
 
@@ -32,8 +33,23 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
       );
     }
 
-    const body = await req.json();
+    const body = (await req.json().catch(() => null)) ?? {};
     const { title, category, amount, expenseDate, paymentSource, referenceNumber, receiptUrl, notes } = body;
+
+    // Isian yang dikirim divalidasi; nilai bebas membuat Prisma gagal (kategori di luar enum, nominal NaN) dengan 500.
+    if (title !== undefined && !requiredText(title, 200)) {
+      return NextResponse.json({ error: "Nama pengeluaran wajib diisi (maksimal 200 karakter)." }, { status: 400 });
+    }
+    if (category !== undefined && category !== "" && !parseExpenseCategory(category)) {
+      return NextResponse.json({ error: "Kategori pengeluaran tidak dikenal." }, { status: 400 });
+    }
+    if (amount !== undefined && parseMoney(amount) === null) {
+      return NextResponse.json({ error: "Nominal harus lebih dari 0 dan masih dalam batas." }, { status: 400 });
+    }
+    const receipt = receiptUrl !== undefined ? receiptUrlInput(receiptUrl) : null;
+    if (receipt && !receipt.ok) {
+      return NextResponse.json({ error: "URL bukti pembayaran tidak valid." }, { status: 400 });
+    }
 
     // Memindahkan tanggal ke bulan yang sudah ditutup akan mengubah isi periode yang angkanya sudah dibekukan.
     if (expenseDate) {
@@ -54,14 +70,14 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
       prisma.expense.update({
         where: { id },
         data: {
-          ...(title && { title: title.trim() }),
-          ...(category && { category }),
-          ...(amount && { amount: Number(amount) }),
+          ...(title !== undefined && { title: requiredText(title, 200)! }),
+          ...(category && { category: parseExpenseCategory(category)! }),
+          ...(amount !== undefined && { amount: parseMoney(amount)! }),
           ...(expenseDate && { expenseDate: new Date(expenseDate) }),
-          ...(paymentSource && { paymentSource }),
-          ...(referenceNumber !== undefined && { referenceNumber: referenceNumber?.trim() || null }),
-          ...(receiptUrl !== undefined && { receiptUrl }),
-          ...(notes !== undefined && { notes: notes?.trim() || null }),
+          ...(optionalText(paymentSource, 50) && { paymentSource: optionalText(paymentSource, 50)! }),
+          ...(referenceNumber !== undefined && { referenceNumber: optionalText(referenceNumber, 100) }),
+          ...(receipt && receipt.ok && { receiptUrl: receipt.value }),
+          ...(notes !== undefined && { notes: optionalText(notes, 1000) }),
         },
       }),
       prisma.adminAuditLog.create({

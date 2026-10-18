@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { getPrimaryEventDate } from "@/lib/lifecycleDates";
+import { cleanGuestName, cleanGuestTextFields, guestQuotaFrom } from "@/lib/guestInput";
 import { routeError } from "@/lib/routeError";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
@@ -50,13 +51,22 @@ export async function POST(req: NextRequest) {
 
     // Nama dicocokkan tanpa membedakan huruf besar/kecil oleh QR, RSVP, dan resepsionis, jadi nama kembar
     // (di dalam berkas maupun yang sudah terdaftar) dilewati agar check-in tidak tertukar.
+    // Baris bukan objek, atau nama bukan teks / lebih dari batas, ditolak sebelum menyentuh DB (bukan 500 dari Prisma).
+    const invalidRow = guests.findIndex(
+      (g: any) => !g || typeof g !== "object" || (g.name !== undefined && g.name !== null && g.name !== "" && !cleanGuestName(g.name))
+    );
+    if (invalidRow !== -1) {
+      return NextResponse.json({ error: `Baris ke-${invalidRow + 1} tidak valid: nama harus teks maksimal 100 karakter.` }, { status: 400 });
+    }
+
     const existing = await prisma.guest.findMany({ where: { invitationId }, select: { name: true } });
     const takenNames = new Set(existing.map((g) => g.name.trim().toLowerCase()));
     const skippedNames: string[] = [];
     const uniqueGuests = guests.filter((g: any) => {
-      const key = (g.name?.trim() || "Tamu Undangan").toLowerCase();
+      const label = cleanGuestName(g.name) || "Tamu Undangan";
+      const key = label.toLowerCase();
       if (takenNames.has(key)) {
-        skippedNames.push(g.name?.trim() || "Tamu Undangan");
+        skippedNames.push(label);
         return false;
       }
       takenNames.add(key);
@@ -65,7 +75,7 @@ export async function POST(req: NextRequest) {
     const defaultSessionInfo = invitation.eventType === "WEDDING" ? "Akad & Resepsi" : null;
 
     const createData = uniqueGuests.map((g: any) => {
-      const cleanName = g.name?.trim() || "Tamu Undangan";
+      const cleanName = cleanGuestName(g.name) || "Tamu Undangan";
       const slug = cleanName
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
@@ -74,16 +84,17 @@ export async function POST(req: NextRequest) {
         crypto.randomBytes(3).toString("hex");
 
       const qrToken = crypto.randomBytes(8).toString("hex");
+      const fields = cleanGuestTextFields(g);
 
       return {
         invitationId,
         name: cleanName,
         slug,
-        phone: g.phone || null,
-        category: g.category || "UMUM",
-        sessionInfo: g.sessionInfo || defaultSessionInfo,
-        guestQuota: Number(g.guestQuota) || 2,
-        tableNumber: g.tableNumber ? String(g.tableNumber).trim() : null,
+        phone: fields.phone,
+        category: fields.category || "UMUM",
+        sessionInfo: fields.sessionInfo || defaultSessionInfo,
+        guestQuota: guestQuotaFrom(g.guestQuota, 2),
+        tableNumber: fields.tableNumber,
         qrToken,
       };
     });

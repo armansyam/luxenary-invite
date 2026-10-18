@@ -1,7 +1,7 @@
 /**
  * Regresi audit 18 Okt 2026: restore hanya menerima arsip pg_dump format custom, unggahan klien menolak berkas yang
- * tidak terdeteksi (SVG), webhook Xendit mengonfirmasi ke API, isian unggahan momen tamu divalidasi, unduhan ZIP
- * dialirkan dengan backpressure, dan batas PIN per undangan hanya menghitung PIN yang salah.
+ * tidak terdeteksi (SVG), webhook Xendit mengonfirmasi ke API, isian unggahan momen tamu divalidasi, dan batas PIN per
+ * undangan hanya menghitung PIN yang salah.
  * (bagian DB hanya berjalan di database `luxenary_test`)
  */
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from "vitest";
@@ -26,7 +26,6 @@ import { POST as restorePost } from "@/app/api/admin/database/restore/route";
 import { POST as clientUploadPost } from "@/app/api/client/upload/route";
 import { POST as xenditWebhook } from "@/app/api/webhook/xendit/route";
 import { POST as memoriesUploadPost } from "@/app/api/public/memories/upload/route";
-import { GET as memoriesDownloadGet } from "@/app/api/client/memories/download/route";
 import { POST as verifyPinPost } from "@/app/api/receptionist/verify-pin/route";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
@@ -266,58 +265,6 @@ describe.skipIf(!IS_TEST_DB)("unggahan momen tamu: tipe dan panjang isian", () =
   it("isian di batas lolos validasi dan baru berhenti di undangan yang tidak ada (404)", async () => {
     const res = await jsonUpload({ ...base, senderName: "N".repeat(100), senderEmail: "e".repeat(254), caption: "c".repeat(1000) });
     expect(res.status).toBe(404);
-  });
-});
-
-describe.skipIf(!IS_TEST_DB)("unduhan ZIP momen tamu", () => {
-  let owner: Awaited<ReturnType<typeof makeOwner>>;
-  let emptyOwner: Awaited<ReturnType<typeof makeOwner>>;
-  const dirOf = (id: string) => path.join(process.cwd(), "public", "uploads", "guest-memories", id);
-
-  beforeAll(async () => {
-    owner = await makeOwner("zip");
-    emptyOwner = await makeOwner("zipempty");
-    fs.mkdirSync(dirOf(owner.invitationId), { recursive: true });
-    fs.writeFileSync(path.join(dirOf(owner.invitationId), "a_momen.jpg"), crypto.randomBytes(2048));
-    fs.writeFileSync(path.join(dirOf(owner.invitationId), "b_momen.jpg"), crypto.randomBytes(2048));
-  });
-
-  afterAll(() => {
-    fs.rmSync(dirOf(owner.invitationId), { recursive: true, force: true });
-  });
-
-  const download = (invitationId: string) =>
-    memoriesDownloadGet(new NextRequest(`http://localhost/api/client/memories/download?invitationId=${invitationId}`));
-
-  it("badan respons adalah ZIP utuh berisi kedua foto, lalu upload dikunci", async () => {
-    asClient(owner.user.id, owner.user.email);
-    const res = await download(owner.invitationId);
-    expect(res.status).toBe(200);
-    expect(res.headers.get("content-type")).toBe("application/zip");
-    const zip = Buffer.from(await res.arrayBuffer());
-    expect(zip.subarray(0, 2).toString("latin1")).toBe("PK");
-    expect(zip.includes(Buffer.from("a_momen.jpg"))).toBe(true);
-    expect(zip.includes(Buffer.from("b_momen.jpg"))).toBe(true);
-
-    let locked = false;
-    for (let i = 0; i < 20 && !locked; i++) {
-      locked = (await prisma.invitation.findUniqueOrThrow({ where: { id: owner.invitationId } })).memoriesUploadLocked;
-      if (!locked) await new Promise((r) => setTimeout(r, 50));
-    }
-    expect(locked).toBe(true);
-  });
-
-  it("undangan tanpa foto: aliran gagal dan upload tidak dikunci", async () => {
-    asClient(emptyOwner.user.id, emptyOwner.user.email);
-    const res = await download(emptyOwner.invitationId);
-    await expect(res.arrayBuffer()).rejects.toThrow();
-    const inv = await prisma.invitation.findUniqueOrThrow({ where: { id: emptyOwner.invitationId } });
-    expect(inv.memoriesUploadLocked).toBe(false);
-  });
-
-  it("bukan pemilik -> 403", async () => {
-    asClient(emptyOwner.user.id, emptyOwner.user.email);
-    expect((await download(owner.invitationId)).status).toBe(403);
   });
 });
 

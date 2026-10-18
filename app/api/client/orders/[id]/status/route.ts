@@ -29,6 +29,7 @@ export async function GET(
         invoiceNumber: true,
         status: true,
         amount: true,
+        chargedAmount: true,
         planType: true,
         paymentMethod: true,
         proofImageUrl: true,
@@ -207,6 +208,8 @@ export async function GET(
       paidOrderId,
       paidPlanType,
       amount: Number(order.amount),
+      // Nominal yang ditagihkan gateway (harga + biaya layanan bila ditanggung pembeli); null sebelum sesi gateway terbit.
+      chargedAmount: order.chargedAmount !== null ? Number(order.chargedAmount) : null,
       planType: order.planType,
       orderType: order.orderType,
       paymentMethod: order.paymentMethod,

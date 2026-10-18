@@ -57,6 +57,20 @@ export function isReservedSubdomain(subdomain: string): boolean {
   return RESERVED_SUBDOMAINS.has(subdomain.toLowerCase().trim());
 }
 
+/**
+ * Segmen teratas yang sudah dipakai rute aplikasi atau folder `public/`. Slug undangan (`/{slug}`) yang sama dengan salah
+ * satunya tidak akan pernah terbuka karena rute statis menang, jadi slug seperti itu diberi akhiran.
+ */
+export const RESERVED_SLUGS = new Set([
+  "admin", "api", "archives", "assets", "checkout", "contact", "css", "dashboard", "demo", "downloads", "fonts",
+  "how-it-works", "login", "memories", "music", "onboarding", "packages", "payment", "portfolio", "privacy", "published",
+  "refund", "sharemoment", "terms", "uploads",
+]);
+
+export function isReservedSlug(slug: string): boolean {
+  return RESERVED_SLUGS.has(slug.toLowerCase().trim());
+}
+
 export function getApexRootDomain(): string {
   if (typeof window !== "undefined") {
     const hostname = window.location.hostname;

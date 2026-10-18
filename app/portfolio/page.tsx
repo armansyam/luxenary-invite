@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Metadata } from "next";
-import { listPortfolioSlugs, STORAGE_PROVIDER, getPortfolioMetadata } from "@/lib/storage";
+import { listPortfolioSlugs, STORAGE_PROVIDER, getPortfolioMetadata, storagePublicBaseUrl } from "@/lib/storage";
 import { BrandLogo } from "@/components/BrandLogo";
 import { getPublicPlatformSettings } from "@/lib/settings";
 import { PortfolioGallery, PortfolioGalleryItem } from "./PortfolioGallery";
@@ -43,17 +43,21 @@ export default async function PortfolioPage() {
   // Fetch data klien dari metadata statis (tanpa query DB agar kebal pembersihan)
   const portfolioItems: PortfolioGalleryItem[] = [];
 
-  for (const slug of clonedSlugs) {
-    const metadata = await getPortfolioMetadata(slug);
+  // Metadata tiap portofolio dibaca paralel: satu permintaan R2 berurutan per slug membuat halaman lambat seiring bertambahnya portofolio.
+  const metadataList = await Promise.all(clonedSlugs.map((slug) => getPortfolioMetadata(slug)));
+
+  for (const [index, slug] of clonedSlugs.entries()) {
+    const metadata = metadataList[index];
     if (!metadata) continue;
-    
+
     // Asumsi cover.webp selalu di-generate oleh admin portfolio POST endpoint
     let coverImage = `/portfolio/assets/${slug}/cover.webp`;
     
     // Jika R2, prefix dengan public CDN URL
     if (STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3") {
-      const publicUrl = (process.env.S3_CUSTOM_DOMAIN || process.env.S3_PUBLIC_URL)?.replace(/\/$/, "");
-      coverImage = `${publicUrl}/portfolio/assets/${slug}/cover.webp`;
+      // Tanpa basis URL publik, jalur lokal tetap dipakai alih-alih "undefined/portfolio/...".
+      const publicUrl = storagePublicBaseUrl();
+      if (publicUrl) coverImage = `${publicUrl}/portfolio/assets/${slug}/cover.webp`;
     }
 
     portfolioItems.push({

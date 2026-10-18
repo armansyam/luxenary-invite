@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { EventType } from "@prisma/client";
 
-import { getMonthYearSlug, isSubdomainExpired, isReservedSubdomain } from "@/lib/domainUtils";
+import { getMonthYearSlug, isSubdomainExpired, isReservedSubdomain, isReservedSlug } from "@/lib/domainUtils";
 import { normalizeEventDateInput } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { releaseInvitationSubdomain } from "@/lib/subdomainRelease";
@@ -163,7 +163,9 @@ export async function POST(req: Request) {
     dateSegment = getMonthYearSlug(effectiveEventDate);
   }
 
-  const baseSlug = buildBaseSlug(eventType, participants.value, dateSegment, randomId);
+  const builtSlug = buildBaseSlug(eventType, participants.value, dateSegment, randomId);
+  // Acara gathering tanpa tanggal dapat menghasilkan slug seperti "demo" yang kalah oleh rute aplikasi dan tidak terbuka.
+  const baseSlug = isReservedSlug(builtSlug) ? `${builtSlug}-${randomId}` : builtSlug;
 
   let invitationSlug = baseSlug;
   const existingBase = await prisma.invitation.findUnique({ where: { invitationSlug: baseSlug } });

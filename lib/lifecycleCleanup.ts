@@ -296,9 +296,11 @@ export interface StaleDataCleanupResult {
   deletedOrders: number;
   refulfilledOrders: number;
   purgedRateLimitRows: number;
+  purgedWebhookLogs: number;
 }
 
 const FULFILLMENT_GRACE_MS = 5 * 60 * 1000;
+const WEBHOOK_LOG_RETENTION_DAYS = 365;
 
 /** Order PAID yang pemenuhan layanannya tidak pernah selesai (kegagalan setelah webhook) dijalankan ulang. */
 async function refulfillStuckOrders(now: Date, dryRun: boolean): Promise<number> {
@@ -362,10 +364,17 @@ export async function runStaleDataCleanup(options: LifecycleCleanupOptions = {})
   const refulfilledOrders = await refulfillStuckOrders(now, dryRun);
   const purgedRateLimitRows = await purgeExpiredRateLimitRows(dryRun);
 
+  // Muatan webhook lengkap adalah bukti sengketa pembayaran, jadi disimpan jauh lebih lama daripada order usang.
+  const staleWebhookWhere = { createdAt: { lt: new Date(now.getTime() - WEBHOOK_LOG_RETENTION_DAYS * DAY_MS) } };
+
   const staleOrders = await prisma.order.findMany({ where: staleWhere, select: { proofImageUrl: true } });
-  if (dryRun) return { orphanedDrafts, deletedOrders: staleOrders.length, refulfilledOrders, purgedRateLimitRows };
+  if (dryRun) {
+    const purgedWebhookLogs = await prisma.webhookLog.count({ where: staleWebhookWhere });
+    return { orphanedDrafts, deletedOrders: staleOrders.length, refulfilledOrders, purgedRateLimitRows, purgedWebhookLogs };
+  }
 
   await Promise.all(staleOrders.map((order) => deleteFile(order.proofImageUrl)));
   const deleted = await prisma.order.deleteMany({ where: staleWhere });
-  return { orphanedDrafts, deletedOrders: deleted.count, refulfilledOrders, purgedRateLimitRows };
+  const purgedWebhookLogs = (await prisma.webhookLog.deleteMany({ where: staleWebhookWhere })).count;
+  return { orphanedDrafts, deletedOrders: deleted.count, refulfilledOrders, purgedRateLimitRows, purgedWebhookLogs };
 }

@@ -9,11 +9,12 @@ interface AuditLog {
   details: string | null;
   ipAddress: string | null;
   createdAt: string;
+  adminLabel?: string | null;
   admin?: {
     name: string;
     email: string;
     role: string;
-  };
+  } | null;
 }
 
 interface WebhookLog {
@@ -948,7 +949,7 @@ export default function AdminMonitoringTab() {
                         })}
                       </td>
                       <td className="py-3">
-                        <div className="font-semibold text-gray-900">{log.admin?.name || "Super Admin"}</div>
+                        <div className="font-semibold text-gray-900">{log.admin?.name || log.adminLabel || "Admin telah dihapus"}</div>
                         <div className="text-[11px] text-gray-400 font-mono">{log.admin?.email || "-"}</div>
                       </td>
                       <td className="py-3 whitespace-nowrap">

@@ -125,8 +125,12 @@ export async function POST(req: NextRequest) {
     const monthNum = parseInt(month, 10);
     const yearNum = parseInt(year, 10);
 
-    if (!monthNum || !yearNum || monthNum < 1 || monthNum > 12) {
+    if (!monthNum || !yearNum || monthNum < 1 || monthNum > 12 || yearNum < 2000 || yearNum > 2100) {
       return NextResponse.json({ error: "Bulan (1-12) dan tahun valid wajib disertakan." }, { status: 400 });
+    }
+    const ntpnClean = typeof ntpn === "string" ? ntpn.trim().slice(0, 50) : "";
+    if (ntpn !== undefined && ntpn !== null && typeof ntpn !== "string") {
+      return NextResponse.json({ error: "NTPN harus berupa teks." }, { status: 400 });
     }
 
     // Cek apakah closing sudah ada untuk bulan ini
@@ -141,12 +145,15 @@ export async function POST(req: NextRequest) {
 
     const isPaid = Boolean(taxPaid);
     const paymentDate = taxPaidAt ? new Date(taxPaidAt) : isPaid ? new Date() : null;
+    if (paymentDate && Number.isNaN(paymentDate.getTime())) {
+      return NextResponse.json({ error: "Tanggal setoran pajak tidak valid." }, { status: 400 });
+    }
 
     if (closing) {
-      // Update status pajak pada closing yang sudah ada
+      // Update status pajak pada closing yang sudah ada; NTPN yang sama tidak ditambahkan dua kali ke catatan.
       let updatedNotes = closing.notes || "";
-      if (ntpn) {
-        updatedNotes = updatedNotes ? `${updatedNotes} | NTPN: ${ntpn}` : `NTPN: ${ntpn}`;
+      if (ntpnClean && !updatedNotes.includes(`NTPN: ${ntpnClean}`)) {
+        updatedNotes = updatedNotes ? `${updatedNotes} | NTPN: ${ntpnClean}` : `NTPN: ${ntpnClean}`;
       }
 
       [closing] = await prisma.$transaction([
@@ -162,13 +169,21 @@ export async function POST(req: NextRequest) {
           data: {
             adminId: adminActorId(session),
             action: "UPDATE_TAX_STATUS",
-            details: `Status setoran pajak ${monthNum}/${yearNum}: ${isPaid ? "lunas" : "belum lunas"}${ntpn ? ` (NTPN ${ntpn})` : ""}`,
+            details: `Status setoran pajak ${monthNum}/${yearNum}: ${isPaid ? "lunas" : "belum lunas"}${ntpnClean ? ` (NTPN ${ntpnClean})` : ""}`,
           },
         }),
       ]);
     } else {
       // Belum pernah tutup buku: periode ditutup di sini dengan aturan yang sama dengan rute tutup buku (omzet per paidAt,
       // bulan WIB, pengeluaran dikunci, tercatat di audit), karena angka snapshot ini menjadi dasar pajak yang disimpan.
+      // Bulan yang masih berjalan tidak boleh ditutup lewat jalur ini: omzetnya masih bertambah dan pengeluarannya terkunci.
+      if (new Date() < wibMonthStart(yearNum, monthNum)) {
+        return NextResponse.json(
+          { error: `Periode ${monthNum}/${yearNum} belum berakhir sehingga setoran pajaknya belum dapat dicatat.` },
+          { status: 400 }
+        );
+      }
+
       const startOfMonth = wibMonthStart(yearNum, monthNum - 1);
       const startOfNextMonth = wibMonthStart(yearNum, monthNum);
 
@@ -206,7 +221,7 @@ export async function POST(req: NextRequest) {
             taxPaid: isPaid,
             taxPaidAt: paymentDate,
             closedById: actorId,
-            notes: ntpn ? `NTPN/BPN Setoran: ${ntpn}` : "Status pajak disetor",
+            notes: ntpnClean ? `NTPN/BPN Setoran: ${ntpnClean}` : "Status pajak disetor",
           },
         }),
         prisma.expense.updateMany({

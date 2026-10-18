@@ -28,7 +28,8 @@ export default async function ReceptionistPage({ params }: PageProps) {
     getAdminSetting("platform_name", "Platform Undangan")
   ]);
 
-  if (!invitation) notFound();
+  // Undangan yang diturunkan atau sudah diarsipkan tidak lagi punya meja resepsionis.
+  if (!invitation || invitation.status === "TAKEN_DOWN" || invitation.status === "ARCHIVED") notFound();
 
   // Fitur Meja Resepsionis dinamis sesuai kapabilitas paket di Admin Settings
   const hasQrCheckin = await hasPlanCapability(invitation.order?.planType, "qr_checkin");

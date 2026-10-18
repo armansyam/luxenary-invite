@@ -616,7 +616,7 @@ export default function AdminClientsTab({ platformName }: { platformName?: strin
             <div className="text-center space-y-1.5">
               <h3 className="text-sm font-bold text-stone-900">Hapus Akun Klien Permanen?</h3>
               <p className="text-xs text-stone-600 leading-relaxed">
-                Seluruh data undangan, pengaturan, aset media, dan histori transaksi klien ini akan dihapus secara permanen. Tindakan ini <strong className="text-rose-700">tidak dapat dibatalkan</strong>.
+                Seluruh data undangan, pengaturan, dan aset media klien ini akan dihapus secara permanen. Klien yang punya transaksi lunas tidak dapat dihapus karena catatan keuangannya harus tetap tersimpan. Tindakan ini <strong className="text-rose-700">tidak dapat dibatalkan</strong>.
               </p>
             </div>
             <div className="flex items-center gap-2 pt-1">

@@ -321,14 +321,23 @@ describe.skipIf(!IS_TEST_DB)("rantai klien dan admin: daftar paket sampai hapus 
     expect(await prisma.rsvp.count({ where: { invitationId: state.invitationId } })).toBe(0);
   });
 
-  it("hapus klien oleh admin: klien 401, admin 200, tidak ada data yatim dan jejak audit tercatat", async () => {
+  it("hapus klien oleh admin: klien 401, punya transaksi lunas 409, setelah tidak lunas admin 200 tanpa data yatim dan jejak audit tercatat", async () => {
     const del = () => deleteClient(new Request(`http://localhost/api/admin/users?id=${state.clientId}`, { method: "DELETE" }));
 
     asClient(state.strangerId, `${TAG}_stranger@t.local`);
     expect((await del()).status).toBe(401);
     expect(await prisma.user.count({ where: { id: state.clientId } })).toBe(1);
 
+    // Order lunas adalah catatan keuangan: akun tidak dapat dihapus dan tidak ada yang berubah.
     asAdmin();
+    const blocked = await del();
+    expect(blocked.status).toBe(409);
+    expect((await blocked.json()).error).toContain("transaksi lunas");
+    expect(await prisma.user.count({ where: { id: state.clientId } })).toBe(1);
+    expect(await prisma.order.count({ where: { userId: state.clientId, status: "PAID" } })).toBeGreaterThan(0);
+
+    // Setelah tidak ada lagi order lunas (mis. dikembalikan dananya), penghapusan berjalan penuh.
+    await prisma.order.updateMany({ where: { userId: state.clientId }, data: { status: "EXPIRED" } });
     expect((await del()).status).toBe(200);
     expect(await prisma.user.count({ where: { id: state.clientId } })).toBe(0);
     expect(await prisma.order.count({ where: { userId: state.clientId } })).toBe(0);

@@ -3,9 +3,10 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { logger } from "@/lib/logger";
+import { cleanGuestName, cleanGuestTextFields, guestQuotaFrom } from "@/lib/guestInput";
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
@@ -36,6 +37,16 @@ export async function GET(
 
     if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Ringkasan untuk dasbor: tiga hitungan, tanpa memuat seluruh tamu beserta RSVP-nya.
+    if (new URL(req.url).searchParams.get("summary") === "1") {
+      const [guestCount, waSentCount, checkedInCount] = await Promise.all([
+        prisma.guest.count({ where: { invitationId: id } }),
+        prisma.guest.count({ where: { invitationId: id, waStatus: "SENT" } }),
+        prisma.guest.count({ where: { invitationId: id, isTokenRedeemed: true } }),
+      ]);
+      return NextResponse.json({ guestCount, waSentCount, checkedInCount });
     }
 
     const guests = await prisma.guest.findMany({
@@ -82,8 +93,11 @@ export async function PUT(
     }
 
     const allowedData: Record<string, any> = {};
-    if (typeof body.name === "string" && body.name.trim()) {
-      const newName = body.name.trim();
+    if (body.name !== undefined && !cleanGuestName(body.name)) {
+      return NextResponse.json({ error: "Nama tamu wajib diisi (maksimal 100 karakter)." }, { status: 400 });
+    }
+    if (body.name !== undefined) {
+      const newName = cleanGuestName(body.name)!;
       const clash = await prisma.guest.findFirst({
         where: { invitationId: existingGuest.invitationId, id: { not: id }, name: { equals: newName, mode: "insensitive" } },
         select: { id: true },
@@ -96,11 +110,11 @@ export async function PUT(
       }
       allowedData.name = newName;
     }
-    if (body.phone !== undefined) allowedData.phone = body.phone || null;
-    if (body.category !== undefined) allowedData.category = body.category || null;
-    if (body.sessionInfo !== undefined) allowedData.sessionInfo = body.sessionInfo || null;
-    if (body.tableNumber !== undefined) allowedData.tableNumber = body.tableNumber || null;
-    if (body.guestQuota !== undefined) allowedData.guestQuota = Number(body.guestQuota) || 1;
+    const textFields = cleanGuestTextFields(body);
+    for (const field of ["phone", "category", "sessionInfo", "tableNumber"] as const) {
+      if (body[field] !== undefined) allowedData[field] = textFields[field];
+    }
+    if (body.guestQuota !== undefined) allowedData.guestQuota = guestQuotaFrom(body.guestQuota, 1);
     if (body.waStatus !== undefined) {
       if (body.waStatus !== "PENDING" && body.waStatus !== "SENT") {
         return NextResponse.json({ error: "Status WhatsApp tidak valid." }, { status: 400 });

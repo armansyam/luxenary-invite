@@ -5,6 +5,7 @@ import { randomUUID } from "crypto";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { getPrimaryEventDate } from "@/lib/lifecycleDates";
+import { cleanGuestName, cleanGuestTextFields, guestQuotaFrom } from "@/lib/guestInput";
 
 export async function POST(req: Request) {
   try {
@@ -16,8 +17,8 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { invitationId, name, phone, category, sessionInfo, guestLimit, tableNumber } = body;
 
-    if (typeof invitationId !== "string" || typeof name !== "string" || !invitationId || !name.trim()) {
-      return NextResponse.json({ error: "invitationId dan nama tamu wajib diisi." }, { status: 400 });
+    if (typeof invitationId !== "string" || !invitationId || !cleanGuestName(name)) {
+      return NextResponse.json({ error: "invitationId dan nama tamu wajib diisi (nama maksimal 100 karakter)." }, { status: 400 });
     }
 
     const invitation = await prisma.invitation.findUnique({
@@ -47,7 +48,7 @@ export async function POST(req: Request) {
     }
 
     // Duplicate Name Validation: QR, RSVP, dan resepsionis mencocokkan nama tanpa membedakan huruf besar/kecil.
-    const trimmedName = name.trim();
+    const trimmedName = cleanGuestName(name)!;
     const existingGuest = await prisma.guest.findFirst({
       where: {
         invitationId,
@@ -69,11 +70,8 @@ export async function POST(req: Request) {
         invitationId,
         name: trimmedName,
         slug,
-        phone: phone || null,
-        category: category || null,
-        sessionInfo: sessionInfo || null,
-        guestQuota: Number(guestLimit) || 1,
-        tableNumber: tableNumber || null,
+        ...cleanGuestTextFields({ phone, category, sessionInfo, tableNumber }),
+        guestQuota: guestQuotaFrom(guestLimit, 1),
         qrToken: randomUUID(),
       },
     });

@@ -49,6 +49,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, rsvps: sampleDemos, isDemo: true });
     }
 
+    // Undangan yang diturunkan tidak boleh lagi menampilkan nama dan ucapan tamunya; id yang tidak dikenal dijawab kosong.
+    const invitation = await prisma.invitation.findUnique({ where: { id: invitationId }, select: { status: true } });
+    if (!invitation || invitation.status === "TAKEN_DOWN") {
+      return NextResponse.json({ success: true, rsvps: [] });
+    }
+
     const rsvps = await prisma.rsvp.findMany({
       where: { invitationId },
       orderBy: { respondedAt: "desc" },

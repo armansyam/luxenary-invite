@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { logger } from "@/lib/logger";
 import { rateLimitDb } from "@/lib/rateLimit";
+import { getTrustedAppUrl } from "@/lib/serverDomainUtils";
 import { routeError } from "@/lib/routeError";
 import { NextResponse } from "next/server";
 
@@ -114,10 +115,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // Auto-detect appUrl dari request headers
-    const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
-    const proto = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
-    const appUrl = `${proto}://${host}`;
+    // Halaman balik dan alamat notifikasi dikirim ke gateway: dari konfigurasi, bukan dari header Host yang dapat dipalsukan.
+    const appUrl = await getTrustedAppUrl();
 
     // Gateway ditentukan admin lewat pengaturan, bukan oleh klien: parameter `gateway` dari klien diabaikan.
     const gw = await getActiveGateway();

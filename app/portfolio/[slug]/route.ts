@@ -38,8 +38,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
         status: 200,
         headers: {
           "Content-Type": "text/html; charset=utf-8",
-          // Set aggressive cache headers since portfolio HTML doesn't change
-          "Cache-Control": "public, max-age=31536000, immutable",
+          // Penerbitan ulang tidak membersihkan cache CDN, jadi masa cache dibatasi satu jam agar revisi terlihat.
+          "Cache-Control": "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400",
         },
       });
     } catch (error: any) {
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
         status: 200,
         headers: {
           "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "public, max-age=31536000, immutable",
+          "Cache-Control": "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400",
         },
       });
     } catch {

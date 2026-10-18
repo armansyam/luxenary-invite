@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
+import { wibMonthStart, wibParts } from "@/lib/financePeriods";
+import { optionalText, parseExpenseCategory, parseMoney, requiredText } from "@/lib/financeInput";
 
 export const dynamic = "force-dynamic";
 
@@ -11,18 +13,21 @@ export async function GET(req: NextRequest) {
     if (!guard.ok) return guard.response;
 
     const { searchParams } = new URL(req.url);
-    const now = new Date();
-    const month = parseInt(searchParams.get("month") || String(now.getMonth() + 1), 10);
-    const year = parseInt(searchParams.get("year") || String(now.getFullYear()), 10);
+    const nowParts = wibParts(new Date());
+    const month = parseInt(searchParams.get("month") || String(nowParts.monthIndex + 1), 10);
+    const year = parseInt(searchParams.get("year") || String(nowParts.year), 10);
+    if (!Number.isInteger(month) || month < 1 || month > 12 || !Number.isInteger(year) || year < 2000 || year > 2100) {
+      return NextResponse.json({ error: "Bulan (1-12) dan tahun valid diperlukan." }, { status: 400 });
+    }
 
     // Ambil semua recurring expenses
     const recurringList = await prisma.recurringExpense.findMany({
       orderBy: [{ isActive: "desc" }, { dueDayOfMonth: "asc" }],
     });
 
-    // Ambil start dan end range bulan target
-    const startOfMonth = new Date(year, month - 1, 1);
-    const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+    // Batas bulan WIB, sama dengan tutup buku dan pencatatan pengeluaran (zona waktu server bisa UTC).
+    const startOfMonth = wibMonthStart(year, month - 1);
+    const endOfMonth = new Date(wibMonthStart(year, month).getTime() - 1);
 
     // Cari expense di bulan ini yang terkait dengan recurring
     const paidExpenses = await prisma.expense.findMany({
@@ -92,26 +97,30 @@ export async function POST(req: NextRequest) {
     const guard = await requireAdminModule("finance");
     if (!guard.ok) return guard.response;
 
-    const body = await req.json();
-    const { name, category, estimatedAmount, dueDayOfMonth, vendorName, paymentSource } = body;
-
-    if (!name || !estimatedAmount || Number(estimatedAmount) <= 0) {
-      return NextResponse.json({ error: "Nama tagihan dan estimasi nominal wajib diisi." }, { status: 400 });
+    const body = (await req.json().catch(() => null)) ?? {};
+    const name = requiredText(body.name, 100);
+    const estimatedAmount = parseMoney(body.estimatedAmount);
+    if (!name || estimatedAmount === null) {
+      return NextResponse.json({ error: "Nama tagihan (maksimal 100 karakter) dan estimasi nominal valid wajib diisi." }, { status: 400 });
+    }
+    const category = body.category ? parseExpenseCategory(body.category) : "UTILITIES";
+    if (!category) {
+      return NextResponse.json({ error: "Kategori tagihan tidak dikenal." }, { status: 400 });
     }
 
-    const day = parseInt(dueDayOfMonth || "1", 10);
-    if (day < 1 || day > 31) {
+    const day = Number(body.dueDayOfMonth ?? 1);
+    if (!Number.isInteger(day) || day < 1 || day > 31) {
       return NextResponse.json({ error: "Tanggal jatuh tempo harus antara 1 sampai 31." }, { status: 400 });
     }
 
     const created = await prisma.recurringExpense.create({
       data: {
         name,
-        category: category || "UTILITIES",
-        estimatedAmount: Number(estimatedAmount),
+        category,
+        estimatedAmount,
         dueDayOfMonth: day,
-        vendorName: vendorName || null,
-        paymentSource: paymentSource || "TRANSFER_BANK",
+        vendorName: optionalText(body.vendorName, 100),
+        paymentSource: optionalText(body.paymentSource, 50) || "TRANSFER_BANK",
         isActive: true,
       },
     });
@@ -133,20 +142,38 @@ export async function PUT(req: NextRequest) {
     const guard = await requireAdminModule("finance");
     if (!guard.ok) return guard.response;
 
-    const body = await req.json();
+    const body = (await req.json().catch(() => null)) ?? {};
     const { id, name, category, estimatedAmount, dueDayOfMonth, vendorName, paymentSource, isActive } = body;
 
-    if (!id) {
+    if (!id || typeof id !== "string") {
       return NextResponse.json({ error: "ID tagihan rutin wajib disertakan." }, { status: 400 });
     }
 
     const updateData: any = {};
-    if (name !== undefined) updateData.name = name;
-    if (category !== undefined) updateData.category = category;
-    if (estimatedAmount !== undefined) updateData.estimatedAmount = Number(estimatedAmount);
-    if (dueDayOfMonth !== undefined) updateData.dueDayOfMonth = Number(dueDayOfMonth);
-    if (vendorName !== undefined) updateData.vendorName = vendorName;
-    if (paymentSource !== undefined) updateData.paymentSource = paymentSource;
+    if (name !== undefined) {
+      const cleanName = requiredText(name, 100);
+      if (!cleanName) return NextResponse.json({ error: "Nama tagihan wajib diisi (maksimal 100 karakter)." }, { status: 400 });
+      updateData.name = cleanName;
+    }
+    if (category !== undefined) {
+      const cleanCategory = parseExpenseCategory(category);
+      if (!cleanCategory) return NextResponse.json({ error: "Kategori tagihan tidak dikenal." }, { status: 400 });
+      updateData.category = cleanCategory;
+    }
+    if (estimatedAmount !== undefined) {
+      const amount = parseMoney(estimatedAmount);
+      if (amount === null) return NextResponse.json({ error: "Estimasi nominal harus lebih dari 0 dan masih dalam batas." }, { status: 400 });
+      updateData.estimatedAmount = amount;
+    }
+    if (dueDayOfMonth !== undefined) {
+      const day = Number(dueDayOfMonth);
+      if (!Number.isInteger(day) || day < 1 || day > 31) {
+        return NextResponse.json({ error: "Tanggal jatuh tempo harus antara 1 sampai 31." }, { status: 400 });
+      }
+      updateData.dueDayOfMonth = day;
+    }
+    if (vendorName !== undefined) updateData.vendorName = optionalText(vendorName, 100);
+    if (paymentSource !== undefined) updateData.paymentSource = optionalText(paymentSource, 50) || "TRANSFER_BANK";
     if (isActive !== undefined) updateData.isActive = Boolean(isActive);
 
     const updated = await prisma.recurringExpense.update({

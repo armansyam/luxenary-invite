@@ -4,6 +4,8 @@ import { Prisma } from "@prisma/client";
 import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
 import { wibParts } from "@/lib/financePeriods";
+import { csvCell } from "@/lib/csv";
+import { optionalText, parseExpenseCategory, parseMoney, receiptUrlInput, requiredText } from "@/lib/financeInput";
 
 export const dynamic = "force-dynamic";
 
@@ -53,17 +55,18 @@ export async function GET(req: NextRequest) {
         orderBy: { expenseDate: "desc" },
       });
 
+      // csvCell menetralkan awalan = + - @ agar judul atau catatan tidak dieksekusi sebagai formula saat dibuka di Excel.
       const csvRows = [
         ["ID", "Tanggal", "Nama Pengeluaran", "Kategori", "Nominal (IDR)", "Saluran Bayar", "No Referensi", "Catatan"].join(","),
         ...allExpenses.map((exp) => [
           exp.id,
           exp.expenseDate.toISOString().split("T")[0],
-          `"${(exp.title || "").replace(/"/g, '""')}"`,
+          csvCell(exp.title),
           exp.category,
           Number(exp.amount),
-          `"${(exp.paymentSource || "").replace(/"/g, '""')}"`,
-          `"${(exp.referenceNumber || "").replace(/"/g, '""')}"`,
-          `"${(exp.notes || "").replace(/"/g, '""')}"`,
+          csvCell(exp.paymentSource),
+          csvCell(exp.referenceNumber),
+          csvCell(exp.notes),
         ].join(",")),
       ];
 
@@ -114,12 +117,25 @@ export async function POST(req: NextRequest) {
     if (!guard.ok) return guard.response;
     const { session } = guard;
 
-    const body = await req.json();
-    const { title, category, amount, expenseDate, paymentSource, referenceNumber, receiptUrl, notes } = body;
+    const body = await req.json().catch(() => null);
+    const { expenseDate } = body ?? {};
 
-    if (!title || !amount || Number(amount) <= 0) {
-      return NextResponse.json({ error: "Nama pengeluaran dan nominal valid wajib diisi." }, { status: 400 });
+    const title = requiredText(body?.title, 200);
+    const amount = parseMoney(body?.amount);
+    if (!title || amount === null) {
+      return NextResponse.json({ error: "Nama pengeluaran (maksimal 200 karakter) dan nominal valid wajib diisi." }, { status: 400 });
     }
+    const category = body?.category ? parseExpenseCategory(body.category) : "OTHER";
+    if (!category) {
+      return NextResponse.json({ error: "Kategori pengeluaran tidak dikenal." }, { status: 400 });
+    }
+    const receipt = receiptUrlInput(body?.receiptUrl);
+    if (!receipt.ok) {
+      return NextResponse.json({ error: "URL bukti pembayaran tidak valid." }, { status: 400 });
+    }
+    const paymentSource = optionalText(body?.paymentSource, 50);
+    const referenceNumber = optionalText(body?.referenceNumber, 100);
+    const notes = optionalText(body?.notes, 1000);
 
     const dateVal = expenseDate ? new Date(expenseDate) : new Date();
     if (Number.isNaN(dateVal.getTime())) {
@@ -151,14 +167,14 @@ export async function POST(req: NextRequest) {
     const [newExpense] = await prisma.$transaction([
       prisma.expense.create({
         data: {
-          title: title.trim(),
-          category: category || "OTHER",
-          amount: Number(amount),
+          title,
+          category,
+          amount,
           expenseDate: dateVal,
           paymentSource: paymentSource || "TRANSFER_BANK",
-          referenceNumber: referenceNumber?.trim() || null,
-          receiptUrl: receiptUrl || null,
-          notes: notes?.trim() || null,
+          referenceNumber,
+          receiptUrl: receipt.value,
+          notes,
           createdById: actorId,
         },
       }),
@@ -166,7 +182,7 @@ export async function POST(req: NextRequest) {
         data: {
           adminId: actorId,
           action: "CREATE_EXPENSE",
-          details: `Menambahkan beban pengeluaran: ${title} sebesar Rp ${Number(amount).toLocaleString("id-ID")}`,
+          details: `Menambahkan beban pengeluaran: ${title} sebesar Rp ${amount.toLocaleString("id-ID")}`,
           ipAddress: req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || null,
         },
       }),

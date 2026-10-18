@@ -54,6 +54,13 @@ export async function POST(req: NextRequest) {
     if (!monthNum || !yearNum || monthNum < 1 || monthNum > 12) {
       return NextResponse.json({ error: "Bulan (1-12) dan tahun valid wajib ditentukan." }, { status: 400 });
     }
+    if (yearNum < 2000 || yearNum > 2100) {
+      return NextResponse.json({ error: "Tahun tidak valid." }, { status: 400 });
+    }
+    // Bulan yang masih berjalan tidak boleh ditutup: omzet dibekukan di angka sementara dan pengeluaran bulan itu terkunci.
+    if (new Date() < wibMonthStart(yearNum, monthNum)) {
+      return NextResponse.json({ error: `Periode ${monthNum}/${yearNum} belum berakhir sehingga belum dapat ditutup buku.` }, { status: 400 });
+    }
 
     // Cek apakah periode sudah pernah ditutup buku
     const existing = await prisma.financialClosing.findUnique({

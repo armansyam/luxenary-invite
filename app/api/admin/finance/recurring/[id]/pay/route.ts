@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
-import { routeError } from "@/lib/routeError";
+import { HttpError, routeError } from "@/lib/routeError";
 import { wibParts } from "@/lib/financePeriods";
+import { optionalText, parseMoney, receiptUrlInput } from "@/lib/financeInput";
 
 export const dynamic = "force-dynamic";
 
@@ -61,43 +62,57 @@ export async function POST(
     }
 
     const referenceNumber =
-      body.referenceNumber?.trim() ||
+      optionalText(body.referenceNumber, 100) ||
       `REC-${recurring.id.slice(0, 8)}-${expYear}-${String(expMonth).padStart(2, "0")}`;
 
-    // Cek duplikasi pembayaran di bulan yang sama jika menggunakan referenceNumber bawaan
-    const existingExpense = await prisma.expense.findFirst({
-      where: {
-        referenceNumber,
-      },
-    });
-
-    if (existingExpense) {
-      return NextResponse.json(
-        {
-          error: `Tagihan ini telah dibayar dan tercatat di buku kas untuk periode ${expMonth}/${expYear} (Ref: ${referenceNumber}).`,
-          existingExpenseId: existingExpense.id,
-        },
-        { status: 400 }
-      );
+    const finalAmount = body.amount !== undefined && body.amount !== null && body.amount !== "" ? parseMoney(body.amount) : Number(recurring.estimatedAmount);
+    if (finalAmount === null) {
+      return NextResponse.json({ error: "Nominal harus lebih dari 0 dan masih dalam batas." }, { status: 400 });
     }
+    const receipt = receiptUrlInput(body.receiptUrl);
+    if (!receipt.ok) {
+      return NextResponse.json({ error: "URL bukti pembayaran tidak valid." }, { status: 400 });
+    }
+    const finalTitle = optionalText(body.title, 200) || `${recurring.name} (Bulan ${expMonth}/${expYear})`;
+    const finalSource = optionalText(body.paymentSource, 50) || recurring.paymentSource || "TRANSFER_BANK";
+    const actorId = adminActorId(session);
 
-    const finalAmount = body.amount ? Number(body.amount) : Number(recurring.estimatedAmount);
-    const finalTitle = body.title?.trim() || `${recurring.name} (Bulan ${expMonth}/${expYear})`;
-    const finalSource = body.paymentSource || recurring.paymentSource || "TRANSFER_BANK";
+    // Pemeriksaan duplikat dan pencatatan dalam satu transaksi dengan kunci per referensi: klik ganda tidak membukukan
+    // tagihan yang sama dua kali (pemeriksaan di luar transaksi lolos untuk dua permintaan yang tiba bersamaan).
+    const createdExpense = await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`recurring_pay:${referenceNumber}`}))`;
 
-    const createdExpense = await prisma.expense.create({
-      data: {
-        title: finalTitle,
-        category: recurring.category,
-        amount: finalAmount,
-        expenseDate: dateVal,
-        paymentSource: finalSource,
-        referenceNumber,
-        receiptUrl: body.receiptUrl || null,
-        notes: body.notes || `Pembayaran otomatis 1-klik untuk tagihan rutin: ${recurring.name}`,
-        createdById: adminActorId(session),
-        isLocked: false,
-      },
+      const existingExpense = await tx.expense.findFirst({ where: { referenceNumber } });
+      if (existingExpense) {
+        throw new HttpError(
+          400,
+          `Tagihan ini telah dibayar dan tercatat di buku kas untuk periode ${expMonth}/${expYear} (Ref: ${referenceNumber}).`
+        );
+      }
+
+      const expense = await tx.expense.create({
+        data: {
+          title: finalTitle,
+          category: recurring.category,
+          amount: finalAmount,
+          expenseDate: dateVal,
+          paymentSource: finalSource,
+          referenceNumber,
+          receiptUrl: receipt.value,
+          notes: optionalText(body.notes, 1000) || `Pembayaran otomatis 1-klik untuk tagihan rutin: ${recurring.name}`,
+          createdById: actorId,
+          isLocked: false,
+        },
+      });
+      await tx.adminAuditLog.create({
+        data: {
+          adminId: actorId,
+          action: "CREATE_EXPENSE",
+          details: `Membukukan tagihan rutin ${recurring.name}: Rp ${finalAmount.toLocaleString("id-ID")} (Ref ${referenceNumber})`,
+          ipAddress: req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || null,
+        },
+      });
+      return expense;
     });
 
     return NextResponse.json({

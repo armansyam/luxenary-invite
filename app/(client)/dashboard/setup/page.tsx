@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { DEFAULT_PLAN_NAMES } from "@/lib/planUtils";
 import { isThemeCompatible } from "@/lib/invitationUtils";
@@ -63,7 +64,7 @@ const INDONESIAN_CITIES: { name: string; tz: "WIB" | "WITA" | "WIT" }[] = [
 ];
 
 function SetupWizardContent() {
-
+  const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -118,9 +119,17 @@ function SetupWizardContent() {
 
   const [isDraftLoaded, setIsDraftLoaded] = useState(false);
 
+  // Draf disimpan per akun: peramban bersama (warnet, perangkat keluarga) tidak boleh menampilkan draf akun lain.
+  const draftKey = `app_setup_draft:${session?.user?.id ?? ""}`;
+
   // Load Draft from localStorage on mount
   useEffect(() => {
+    if (sessionStatus === "loading") return;
     try {
+      // Kunci lama tanpa akun dibuang: isinya bisa milik pengguna sebelumnya.
+      localStorage.removeItem("app_setup_draft");
+      localStorage.removeItem("luxenary_setup_draft");
+
       // Auto detect user browser timezone
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
       if (tz.includes("Makassar") || tz.includes("Bali") || tz.includes("Pontianak") || tz.includes("Manado") || tz.includes("Ujung_Pandang")) {
@@ -131,7 +140,7 @@ function SetupWizardContent() {
         setTimeZone("WIB");
       }
 
-      const saved = localStorage.getItem("app_setup_draft") || localStorage.getItem("luxenary_setup_draft");
+      const saved = session?.user?.id ? localStorage.getItem(draftKey) : null;
       if (saved) {
         const draft = JSON.parse(saved);
         if (draft.eventType) setEventType(draft.eventType);
@@ -162,11 +171,12 @@ function SetupWizardContent() {
       }
     } catch {}
     setIsDraftLoaded(true);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionStatus, session?.user?.id]);
 
   // Save Draft to localStorage on change
   useEffect(() => {
-    if (!isDraftLoaded) return;
+    if (!isDraftLoaded || !session?.user?.id) return;
     const draft = {
       eventType,
       groomNickname, brideNickname, groomName, brideName,
@@ -175,8 +185,10 @@ function SetupWizardContent() {
       weddingDate, city, timeZone,
       akadStart, akadEnd, resepsiStart, resepsiEnd, themeId, step,
     };
-    localStorage.setItem("app_setup_draft", JSON.stringify(draft));
+    localStorage.setItem(draftKey, JSON.stringify(draft));
   }, [
+    draftKey,
+    session?.user?.id,
     eventType,
     groomNickname, brideNickname, groomName, brideName,
     personName, personNickname, personAge, fatherName, motherName,
@@ -352,8 +364,7 @@ function SetupWizardContent() {
       }
 
       // Success Redirect directly to the invitation editor
-      localStorage.removeItem("app_setup_draft");
-      localStorage.removeItem("luxenary_setup_draft");
+      localStorage.removeItem(draftKey);
       router.push(`/dashboard/invitation/${data.invitationId}`);
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan. Silakan coba lagi.");

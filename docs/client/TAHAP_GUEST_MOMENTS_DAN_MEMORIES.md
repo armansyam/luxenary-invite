@@ -23,7 +23,7 @@ flowchart TD
 
     subgraph BackendGateway [API Server]
         C & D & E --> I[PATCH /api/client/invitations/:id/memories]
-        G --> J[GET /api/client/memories/download]
+        G --> J[GET /api/client/memories/download-urls + ZIP di peramban]
         H --> K[POST /api/client/orders/checkout-bundle]
     end
 
@@ -115,7 +115,7 @@ Komponen `PrintableQRCardModal.tsx` menyediakan generator materi fisik cetak sia
 ## 7. Pusat Pengunduhan Master ZIP Foto Tamu
 
 - **Pengunduhan 1-Klik:**
-  Seluruh foto asli yang diunggah tamu dapat diunduh dalam 1 arsip `.zip` melalui endpoint `/api/client/memories/download`.
+  Seluruh foto asli yang diunggah tamu dapat diunduh dalam 1 arsip `.zip`: dasbor mengambil daftar foto dari `/api/client/memories/download-urls`, mengunduh tiap foto langsung dari storage, dan menyusun ZIP di peramban (JSZip), sehingga data foto tidak melewati VPS. Bila ada foto yang gagal diambil, unduhan dibatalkan dan unggahan tamu tidak dikunci.
 - **Indikator Progres Bertahap:**
   Proses pengunduhan menampilkan persentase progres nyata (*fetching*, *downloading*, *zipping*, *done*) untuk kenyamanan pengantin.
 - **Proteksi Data Berjalan (Early Lock Modal):**

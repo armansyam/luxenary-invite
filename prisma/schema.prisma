@@ -26,12 +26,14 @@ model Admin {
 
 model AdminAuditLog {
   id        String   @id @default(uuid())
-  adminId   String
+  /// Null setelah admin pelaku dihapus; nama pelaku saat itu disimpan di adminLabel agar jejak audit tetap terbaca.
+  adminId   String?
+  adminLabel String?
   action    String
   details   String?
   ipAddress String?
   createdAt DateTime @default(now())
-  admin     Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  admin     Admin?   @relation(fields: [adminId], references: [id], onDelete: SetNull)
 
   @@index([adminId])
   @@map("admin_audit_logs")
@@ -91,7 +93,9 @@ model Order {
   itemsJson           Json?
   invitation          Invitation?          @relation("InvitationOrder")
   linkedInvitation    Invitation?          @relation("OrderLinkedInvitation", fields: [linkedInvitationId], references: [id], onDelete: SetNull)
-  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Restrict: order lunas adalah catatan keuangan dan tidak ikut hilang saat akun klien dihapus (rute admin menolak
+  /// menghapus klien yang punya order lunas dan hanya membersihkan order PENDING/EXPIRED).
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
   promoCoupon         PromoCoupon?         @relation(fields: [promoCouponId], references: [id], onDelete: SetNull)
   promoHold           PromoHold?
   affiliateCommission AffiliateCommission?

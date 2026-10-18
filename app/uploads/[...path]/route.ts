@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { logger } from "@/lib/logger";
+import { parseByteRange } from "@/lib/httpRange";
 
 export const dynamic = "force-dynamic";
 
@@ -61,13 +62,9 @@ export async function GET(
     const fileSize = stat.size;
 
     // Handle HTTP Range Requests (Essential for Video & Audio Streaming)
-    const range = req.headers.get("range");
+    const range = parseByteRange(req.headers.get("range"), fileSize);
     if (range && (contentType.startsWith("video/") || contentType.startsWith("audio/"))) {
-      const parts = range.replace(/bytes=/, "").split("-");
-      const start = parseInt(parts[0], 10);
-      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-
-      if (start >= fileSize || end >= fileSize) {
+      if (range === "unsatisfiable") {
         return new NextResponse(null, {
           status: 416,
           headers: {
@@ -76,6 +73,7 @@ export async function GET(
         });
       }
 
+      const { start, end } = range;
       const chunksize = end - start + 1;
       const fileStream = fs.createReadStream(fullPath, { start, end });
 

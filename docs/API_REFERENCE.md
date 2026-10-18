@@ -90,8 +90,7 @@ Memerlukan sesi aktif klien (`role: CLIENT` atau Admin Remote Session):
 | **Moments** | `GET` | `/api/client/invitations/{id}/memories` | Mengambil feed kenangan tamu, status order perpanjangan pending, dan kalkulasi kuota foto (`baseTotalPhotos`, `extraMemoriesQuota`, `usedPhotos`, `remainingPhotos`). |
 | | `PATCH` | `/api/client/invitations/{id}/memories` | Mengonfigurasi kamera tamu (`memoriesOpeningLayout`, `memoriesCardInstruction`, `memoriesFilter`, `memoriesDateStamp`, jatah roll, dan jadwal `memoriesSessions` dengan pembatas kuota server-side). Filter tak dikenal atau jatah roll di luar 1-30 ditolak 400. |
 | | `DELETE` | `/api/client/invitations/{id}/memories` | Menghapus satu foto kenangan; `memoryId` dari query string atau body JSON. |
-| | `GET` | `/api/client/memories/download` | Mengunduh seluruh foto kenangan tamu dalam satu berkas `.zip`. |
-| | `GET` | `/api/client/memories/download-urls` | Mengambil daftar URL unduh langsung untuk batch downloader resolusi tinggi. |
+| | `GET` | `/api/client/memories/download-urls` | Daftar URL foto kenangan tamu; dasbor Momen mengunduh tiap foto dari storage dan menyusun satu berkas `.zip` di peramban (JSZip), lalu memanggil `lock`. |
 | | `POST` | `/api/client/memories/lock` | Mengunci unggahan momen tamu setelah acara selesai. |
 | **Pesanan** | `GET` | `/api/client/orders` | Mengambil riwayat transaksi pesanan paket atau add-on. |
 | | `GET` | `/api/client/orders/{id}/status` | Mengecek status pelunasan transaksi pesanan secara spesifik. |

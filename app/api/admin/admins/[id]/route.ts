@@ -104,7 +104,9 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
       return NextResponse.json({ error: "Admin tidak ditemukan." }, { status: 404 });
     }
 
+    // Catatan audit milik admin ini bertahan (adminId menjadi null); nama pelaku disimpan agar jejaknya tetap terbaca.
     await prisma.$transaction([
+      prisma.adminAuditLog.updateMany({ where: { adminId: id }, data: { adminLabel: `${admin.name} (${admin.username})` } }),
       prisma.admin.delete({ where: { id } }),
       prisma.adminAuditLog.create({
         data: {

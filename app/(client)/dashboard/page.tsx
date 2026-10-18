@@ -65,16 +65,16 @@ function DashboardHomeContent() {
           // Fetch guests & rsvp stats
           try {
             const [guestRes, rsvpRes] = await Promise.all([
-              fetch(`/api/client/guests/${inv.id}`).catch(() => null),
+              fetch(`/api/client/guests/${inv.id}?summary=1`).catch(() => null),
               fetch(`/api/client/rsvps?invitationId=${inv.id}`).catch(() => null),
             ]);
 
-            const guestData = guestRes?.ok ? await guestRes.json().catch(() => []) : [];
+            const guestSummary = guestRes?.ok ? await guestRes.json().catch(() => null) : null;
             const rsvpData = rsvpRes?.ok ? await rsvpRes.json().catch(() => null) : null;
 
-            const guestCount = Array.isArray(guestData) ? guestData.length : 0;
-            const waSent = Array.isArray(guestData) ? guestData.filter((g) => g.waStatus === "SENT").length : 0;
-            const checkedIn = Array.isArray(guestData) ? guestData.filter((g) => g.isTokenRedeemed).length : 0;
+            const guestCount = guestSummary?.guestCount ?? 0;
+            const waSent = guestSummary?.waSentCount ?? 0;
+            const checkedIn = guestSummary?.checkedInCount ?? 0;
             const attending = rsvpData?.stats?.attending || 0;
             const wishes = rsvpData?.stats?.totalWishes || 0;
 
