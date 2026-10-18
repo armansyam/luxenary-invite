@@ -79,33 +79,36 @@ export async function POST(req: NextRequest) {
     // Mencegah file berbahaya (HTML, SVG, executable) yang berpura-pura sebagai media.
     const detectedType = await fileTypeFromBuffer(buffer);
     // Audio/video diteruskan ke ffmpeg, yang menebak format dari isi berkas: playlist teks (HLS/concat) yang tidak
-    // dikenali file-type dapat membuat ffmpeg membuka berkas lokal atau URL lain, jadi jenisnya wajib terdeteksi.
-    if (!detectedType && (isAudio || isVideo)) {
+    // dikenali file-type dapat membuat ffmpeg membuka berkas lokal atau URL lain. Gambar teks (SVG) juga tidak
+    // terdeteksi file-type tetapi dirender sharp lewat librsvg, jadi jenis semua berkas wajib terdeteksi.
+    if (!detectedType) {
       return NextResponse.json(
-        { error: "Format file audio/video tidak dikenali. Unggah MP3, WAV, M4A, MP4, WebM, atau MOV." },
+        {
+          error: isAudio || isVideo
+            ? "Format file audio/video tidak dikenali. Unggah MP3, WAV, M4A, MP4, WebM, atau MOV."
+            : "Format file gambar tidak dikenali. Unggah JPEG, PNG, WebP, atau HEIC.",
+        },
         { status: 415 }
       );
     }
-    if (detectedType) {
-      const mime = detectedType.mime;
-      if (isAudio && !mime.startsWith("audio/") && !mime.startsWith("video/")) {
-        return NextResponse.json(
-          { error: "Format file audio tidak valid. Hanya MP3, WAV, M4A yang diizinkan." },
-          { status: 415 }
-        );
-      }
-      if (isVideo && !mime.startsWith("video/")) {
-        return NextResponse.json(
-          { error: "Format file video tidak valid. Hanya MP4, WebM, MOV yang diizinkan." },
-          { status: 415 }
-        );
-      }
-      if (!isAudio && !isVideo && !mime.startsWith("image/")) {
-        return NextResponse.json(
-          { error: "Format file gambar tidak valid. Hanya JPEG, PNG, WebP, HEIC yang diizinkan." },
-          { status: 415 }
-        );
-      }
+    const mime = detectedType.mime;
+    if (isAudio && !mime.startsWith("audio/") && !mime.startsWith("video/")) {
+      return NextResponse.json(
+        { error: "Format file audio tidak valid. Hanya MP3, WAV, M4A yang diizinkan." },
+        { status: 415 }
+      );
+    }
+    if (isVideo && !mime.startsWith("video/")) {
+      return NextResponse.json(
+        { error: "Format file video tidak valid. Hanya MP4, WebM, MOV yang diizinkan." },
+        { status: 415 }
+      );
+    }
+    if (!isAudio && !isVideo && !mime.startsWith("image/")) {
+      return NextResponse.json(
+        { error: "Format file gambar tidak valid. Hanya JPEG, PNG, WebP, HEIC yang diizinkan." },
+        { status: 415 }
+      );
     }
 
     // File size safety guards — baca batas upload dinamis dari AdminSetting

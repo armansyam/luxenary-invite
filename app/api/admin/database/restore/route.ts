@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import fs from "fs";
-import { getBackupDirectory, readBackupPathSetting, restoreDatabaseSnapshot, isSnapshotFile } from "@/lib/databaseBackup";
+import { getBackupDirectory, readBackupPathSetting, restoreDatabaseSnapshot, isSnapshotFile, isCustomFormatDump, NOT_CUSTOM_DUMP_MESSAGE } from "@/lib/databaseBackup";
 
 import { requireAdminModule } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
@@ -33,11 +33,15 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Format file harus .dump, .sql, atau .backup" }, { status: 400 });
       }
 
+      const buffer = Buffer.from(await file.arrayBuffer());
+      if (!isCustomFormatDump(buffer)) {
+        return NextResponse.json({ error: NOT_CUSTOM_DUMP_MESSAGE }, { status: 400 });
+      }
+
       const backupDir = await getBackupDirectory(await readBackupPathSetting());
       const uploadedFilename = `uploaded_${Date.now()}_${path.basename(file.name)}`;
       const uploadedPath = path.join(backupDir, uploadedFilename);
 
-      const buffer = Buffer.from(await file.arrayBuffer());
       await fs.promises.writeFile(uploadedPath, buffer);
 
       // Jalankan restore dari file yang diupload (sudah termasuk automatic safety backup)

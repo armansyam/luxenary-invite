@@ -304,6 +304,7 @@ export class XenditGateway implements PaymentGateway {
 
     const response = await fetch(`${baseUrl}/v2/invoices/${reference}`, {
       headers: { Authorization: `Basic ${basicAuth}` },
+      signal: AbortSignal.timeout(8000),
     });
 
     const data = await response.json();

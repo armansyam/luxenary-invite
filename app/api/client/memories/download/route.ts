@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Readable } from "stream";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { prisma } from "@/lib/prisma";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const archiver = require("archiver");
+const { ZipArchive } = require("archiver");
 import { streamMemoriesToZip } from "@/lib/storage";
 import { buildZipFileName } from "@/lib/invitationUtils";
 import { logger } from "@/lib/logger";
@@ -43,7 +44,7 @@ export async function GET(req: NextRequest) {
 
     // level: 1 — foto WebP/JPEG sudah terkompresi, level tinggi hanya buang CPU
     // tanpa mengecilkan file secara signifikan
-    const archive = archiver("zip", {
+    const archive = new ZipArchive({
       zlib: { level: 1 }
     });
 
@@ -51,39 +52,31 @@ export async function GET(req: NextRequest) {
     headers.set("Content-Type", "application/zip");
     headers.set("Content-Disposition", `attachment; filename="${buildZipFileName(invitation)}"`);
 
-    const stream = new ReadableStream({
-      async start(controller) {
-        archive.on("data", (chunk: any) => controller.enqueue(chunk));
-        archive.on("end", async () => {
-          controller.close();
-          // Kunci upload momen setelah ZIP selesai dihasilkan
-          // Ini memastikan tidak ada file baru masuk setelah client download
-          try {
-            await prisma.invitation.update({
-              where: { id: invitationId },
-              data: { memoriesUploadLocked: true },
-            });
-          } catch (lockErr) {
-            // Log saja, jangan gagalkan response (ZIP sudah terkirim)
-            logger.error("MemoriesDownload", "ZIP terkirim tetapi upload momen gagal dikunci", lockErr);
-          }
+    archive.on("end", async () => {
+      // Kunci upload momen setelah ZIP selesai dihasilkan
+      // Ini memastikan tidak ada file baru masuk setelah client download
+      try {
+        await prisma.invitation.update({
+          where: { id: invitationId },
+          data: { memoriesUploadLocked: true },
         });
-        archive.on("error", (err: any) => controller.error(err));
-
-        try {
-          await streamMemoriesToZip(archive, invitationId);
-          archive.finalize();
-        } catch (error: any) {
-          if (error.message === "EMPTY") {
-            controller.error(new Error("Tidak ada foto kenangan yang ditemukan untuk undangan ini."));
-          } else {
-            controller.error(error);
-          }
-        }
+      } catch (lockErr) {
+        // Log saja, jangan gagalkan response (ZIP sudah terkirim)
+        logger.error("MemoriesDownload", "ZIP terkirim tetapi upload momen gagal dikunci", lockErr);
       }
     });
 
-    return new NextResponse(stream, { headers });
+    // Readable.toWeb meneruskan backpressure: archiver berhenti membaca berkas selama klien belum menarik data,
+    // sehingga ZIP besar tidak menumpuk di memori proses.
+    streamMemoriesToZip(archive, invitationId)
+      .then(() => archive.finalize())
+      .catch((error: Error) => {
+        archive.destroy(
+          error.message === "EMPTY" ? new Error("Tidak ada foto kenangan yang ditemukan untuk undangan ini.") : error
+        );
+      });
+
+    return new NextResponse(Readable.toWeb(archive) as ReadableStream, { headers });
 
   } catch (error) {
     return routeError("MemoriesDownload", error, "Gagal memproses file ZIP");

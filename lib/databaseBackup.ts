@@ -225,6 +225,16 @@ function backupBucketName(): string | null {
 // .sql dan .backup tetap dikenali karena snapshot lama memakai ekstensi tersebut.
 export const isSnapshotFile = (name: string) => [".dump", ".sql", ".backup"].some((ext) => name.endsWith(ext));
 
+const CUSTOM_DUMP_MAGIC = "PGDMP";
+
+/** pg_restore hanya membaca arsip format custom (pg_dump -F c) yang diawali "PGDMP"; dump teks .sql ditolaknya. */
+export function isCustomFormatDump(head: Buffer): boolean {
+  return head.subarray(0, CUSTOM_DUMP_MAGIC.length).toString("latin1") === CUSTOM_DUMP_MAGIC;
+}
+
+export const NOT_CUSTOM_DUMP_MESSAGE =
+  "File bukan arsip PostgreSQL format custom (pg_dump -F c). Dump teks .sql tidak dapat dipulihkan dari menu ini.";
+
 /**
  * Lokasi backup yang diatur admin (undefined bila belum diatur). Galat database dilempar: backup tidak boleh
  * diam-diam pindah ke lokasi bawaan hanya karena pengaturannya gagal dibaca.
@@ -349,6 +359,15 @@ export async function restoreDatabaseSnapshot(filename: string): Promise<{ succe
     await fs.promises.access(snapshotPath);
   } catch {
     throw new HttpError(404, `File snapshot "${safeName}" tidak ditemukan di direktori backup.`);
+  }
+
+  const handle = await fs.promises.open(snapshotPath, "r");
+  try {
+    const head = Buffer.alloc(CUSTOM_DUMP_MAGIC.length);
+    await handle.read(head, 0, head.length, 0);
+    if (!isCustomFormatDump(head)) throw new HttpError(400, NOT_CUSTOM_DUMP_MESSAGE);
+  } finally {
+    await handle.close();
   }
 
   // 1. Buat safety backup dari database aktif saat ini sebelum ditimpa
