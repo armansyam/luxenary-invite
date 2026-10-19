@@ -390,6 +390,8 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
       {/* ── Live Toast Notification ── */}
       <div
         id="liveToastIndicator"
+        role="button"
+        aria-hidden="true"
         className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold px-5 py-3 rounded-full shadow-[0_10px_40px_rgba(245,158,11,0.4)] flex items-center gap-2 cursor-pointer transition-all duration-500 opacity-0 pointer-events-none translate-y-[150%]"
       >
         <div className="relative flex h-3 w-3">
@@ -476,6 +478,7 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
                   toast.style.transform = 'translateY(0)';
                   toast.style.opacity = '1';
                   toast.style.pointerEvents = 'auto';
+                  toast.removeAttribute('aria-hidden');
                 }
               }
             } catch (e) {}

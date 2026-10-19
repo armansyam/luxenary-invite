@@ -50,11 +50,11 @@ export async function generateMetadata(): Promise<Metadata> {
       description: desc,
       images: [
         {
-          url: "/assets/brand/og-banner.png",
+          url: "/assets/brand/og-banner.jpg",
           width: 1200,
           height: 630,
           alt: `${brandName} Preview`,
-          type: "image/png",
+          type: "image/jpeg",
         },
       ],
     },
@@ -62,7 +62,7 @@ export async function generateMetadata(): Promise<Metadata> {
       card: "summary_large_image",
       title: `${brandName} — ${tagline}`,
       description: desc,
-      images: ["/assets/brand/og-banner.png"],
+      images: ["/assets/brand/og-banner.jpg"],
     },
     keywords: [
       brandName,
