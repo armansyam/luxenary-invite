@@ -44,12 +44,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!emailOrUser || !password) return null;
 
-        // Resolve admin strictly by email or username
+        // Tidak peka huruf besar: akun yang dibuat sebelum rute admin menyimpan username/email dalam huruf kecil
+        // (19 Okt 2026) masih memakai huruf besar dan tidak pernah cocok dengan isian yang sudah di-lowercase.
         const admin = await prisma.admin.findFirst({
           where: {
             OR: [
-              { email: emailOrUser },
-              { username: emailOrUser },
+              { email: { equals: emailOrUser, mode: "insensitive" } },
+              { username: { equals: emailOrUser, mode: "insensitive" } },
             ],
           },
         });

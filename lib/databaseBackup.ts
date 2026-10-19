@@ -244,7 +244,10 @@ export async function readBackupPathSetting(): Promise<string | undefined> {
   return setting?.value || undefined;
 }
 
-export async function createDatabaseSnapshot(customLabel?: string): Promise<{ filename: string; sizeBytes: number; sizeFormatted: string; path: string; offsiteSynced?: boolean }> {
+export async function createDatabaseSnapshot(
+  customLabel?: string,
+  options: { protectFilenames?: string[] } = {}
+): Promise<{ filename: string; sizeBytes: number; sizeFormatted: string; path: string; offsiteSynced?: boolean }> {
   const backupDir = await getBackupDirectory(await readBackupPathSetting());
   const db = libpqConnection(await getActiveDbUrl());
 
@@ -273,7 +276,7 @@ export async function createDatabaseSnapshot(customLabel?: string): Promise<{ fi
     const rSetting = await prisma.adminSetting.findUnique({ where: { key: "backup_retention_count" } });
     if (rSetting?.value) retentionLimit = parseInt(rSetting.value, 10) || 10;
 
-    await pruneOldSnapshots(retentionLimit, backupDir);
+    await pruneOldSnapshots(retentionLimit, backupDir, options.protectFilenames);
   } catch (err) {
     // Retensi adalah pekerjaan sampingan: backup yang baru dibuat tidak boleh gagal karenanya.
     logger.warn("BackupEngine", "Retensi snapshot gagal; snapshot lama tidak dihapus", { error: err instanceof Error ? err.message : String(err) });
@@ -370,8 +373,9 @@ export async function restoreDatabaseSnapshot(filename: string): Promise<{ succe
     await handle.close();
   }
 
-  // 1. Buat safety backup dari database aktif saat ini sebelum ditimpa
-  const safety = await createDatabaseSnapshot("pre_restore");
+  // 1. Buat safety backup dari database aktif saat ini sebelum ditimpa. Retensi di dalamnya tidak boleh menghapus snapshot
+  // yang akan dipulihkan: bila jumlah snapshot sudah di batas, snapshot tertua itu terhapus dan pg_restore gagal.
+  const safety = await createDatabaseSnapshot("pre_restore", { protectFilenames: [safeName] });
 
   // 2. Timpa database aktif dengan file snapshot menggunakan pg_restore
   const db = libpqConnection(await getActiveDbUrl());
@@ -417,7 +421,7 @@ export async function deleteDatabaseSnapshot(filename: string): Promise<{ succes
 }
 
 // Rotasi snapshot lama
-export async function pruneOldSnapshots(keepCount: number, backupDir: string) {
+export async function pruneOldSnapshots(keepCount: number, backupDir: string, protectFilenames: string[] = []) {
   try {
     await fs.promises.access(backupDir);
   } catch {
@@ -428,7 +432,7 @@ export async function pruneOldSnapshots(keepCount: number, backupDir: string) {
   const snapshots: Array<{ name: string; time: number; path: string }> = [];
 
   for (const f of files) {
-    if (!isSnapshotFile(f)) continue;
+    if (!isSnapshotFile(f) || protectFilenames.includes(f)) continue;
     const p = path.join(backupDir, f);
     try {
       const stat = await fs.promises.stat(p);

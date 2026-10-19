@@ -20,8 +20,9 @@ export async function PUT(req: Request) {
 
     const updateData: any = {};
     if (name) updateData.name = name;
-    if (email) updateData.email = email;
-    if (username) updateData.username = username;
+    // Login admin memangkas dan me-lowercase isian sebelum mencocokkan (auth.ts), jadi disimpan dalam bentuk yang sama.
+    if (email && String(email).trim()) updateData.email = String(email).trim().toLowerCase();
+    if (username && String(username).trim()) updateData.username = String(username).trim().toLowerCase();
 
     // Jika ingin mengganti password, butuh validasi password lama
     if (newPassword) {

@@ -62,6 +62,14 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
+    // Order berbukti transfer menunggu verifikasi admin: tidak dibuatkan QRIS dan tidak boleh dikedaluwarsakan di bawah.
+    if (order.proofImageUrl) {
+      return NextResponse.json(
+        { error: "Order ini memakai transfer manual. Unggah bukti transfer, bukan pembayaran gateway." },
+        { status: 409 }
+      );
+    }
+
     const serverNow = Date.now();
 
     // ──────────────────────────────────────────────────────────────────────

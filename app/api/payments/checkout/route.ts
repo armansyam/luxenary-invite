@@ -95,8 +95,9 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-    if (order.expiredAt && order.expiredAt.getTime() <= Date.now()) {
-      const expired = await prisma.order.updateMany({ where: { id: order.id, status: "PENDING" }, data: { status: "EXPIRED" } });
+    // Order berbukti transfer tidak kedaluwarsa di sini; ditolak oleh pemeriksaan transfer manual di bawah.
+    if (order.expiredAt && order.expiredAt.getTime() <= Date.now() && !order.proofImageUrl) {
+      const expired = await prisma.order.updateMany({ where: { id: order.id, status: "PENDING", proofImageUrl: null }, data: { status: "EXPIRED" } });
       if (expired.count > 0) {
         const { releaseOrderPromoHold } = await import("@/lib/marketing");
         await releaseOrderPromoHold(order.id);

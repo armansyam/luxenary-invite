@@ -46,6 +46,9 @@ export async function POST(
     // Order tetap PENDING agar klien bisa unggah ulang; bukti dilepas. Update bersyarat: order yang baru saja lunas
     // (webhook atau admin lain) tidak boleh dikembalikan ke PENDING. Perubahan dan auditnya satu transaksi, atas nama
     // admin yang bertindak (bukan email session, yang milik klien saat sesi remote).
+    // Tanpa bukti, order kembali tunduk pada batas hidup 24 jam; batas yang sudah lewat membuat klien tidak sempat
+    // mengunggah ulang, jadi diberi paling sedikit 24 jam sejak penolakan.
+    const reuploadDeadline = new Date(Math.max(order.expiredAt?.getTime() ?? 0, Date.now() + 24 * 60 * 60 * 1000));
     const rejected = await prisma.$transaction(async (tx) => {
       const updated = await tx.order.updateMany({
         where: { id: orderId, status: "PENDING" },
@@ -53,6 +56,7 @@ export async function POST(
           proofImageUrl: null,
           proofUploadedAt: null,
           rejectReason: reason,
+          expiredAt: reuploadDeadline,
         },
       });
       if (updated.count === 0) return false;

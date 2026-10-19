@@ -102,10 +102,11 @@ export async function GET(
         isQrisSessionExpired = true;
       }
 
-      // 2. Cek batas hidup keseluruhan order (24 jam)
-      if (order.expiredAt && nowMs > order.expiredAt.getTime()) {
+      // 2. Cek batas hidup keseluruhan order (24 jam). Order berbukti transfer menunggu verifikasi admin dan tidak
+      // kedaluwarsa (sama dengan sapuan di admin/overview).
+      if (order.expiredAt && nowMs > order.expiredAt.getTime() && !order.proofImageUrl) {
         const expired = await prisma.order.updateMany({
-          where: { id: order.id, status: "PENDING" },
+          where: { id: order.id, status: "PENDING", proofImageUrl: null },
           data: { status: "EXPIRED" },
         });
 

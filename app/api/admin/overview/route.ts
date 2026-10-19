@@ -24,8 +24,10 @@ export async function GET() {
     if (now - lastExpireSweepAt > EXPIRE_SWEEP_INTERVAL_MS) {
       lastExpireSweepAt = now; // Update timestamp SEBELUM await agar tidak ada double-sweep concurrent
       try {
+        // Order yang sudah berbukti transfer menunggu verifikasi admin dan tidak kedaluwarsa: batas 24 jam dihitung sejak
+        // order dibuat, sehingga bukti yang diunggah mendekati batas itu akan mati sebelum sempat diperiksa.
         const pendingOrders = await prisma.order.findMany({
-          where: { status: "PENDING" },
+          where: { status: "PENDING", proofImageUrl: null },
           select: { id: true, expiredAt: true }
         });
 
@@ -33,9 +35,10 @@ export async function GET() {
         const expiredIds = pendingOrders.filter((ord) => ord.expiredAt && ord.expiredAt.getTime() < now).map((ord) => ord.id);
 
         if (expiredIds.length > 0) {
-          // Bersyarat PENDING: order yang lunas di antara pembacaan dan penulisan ini tidak boleh ditimpa menjadi EXPIRED.
+          // Bersyarat PENDING tanpa bukti: order yang lunas atau baru menerima bukti di antara pembacaan dan penulisan ini
+          // tidak boleh ditimpa menjadi EXPIRED.
           await prisma.order.updateMany({
-            where: { id: { in: expiredIds }, status: "PENDING" },
+            where: { id: { in: expiredIds }, status: "PENDING", proofImageUrl: null },
             data: { status: "EXPIRED" }
           });
           console.info(`[Expire Sweep] ${expiredIds.length} order ditandai EXPIRED.`);

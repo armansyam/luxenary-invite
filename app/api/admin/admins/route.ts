@@ -36,7 +36,11 @@ export async function POST(req: Request) {
     if (!guard.ok) return guard.response;
     const { session } = guard;
 
-    const { username, email, name, role: newRole, password, permissions } = await req.json();
+    const body = await req.json();
+    const { name, role: newRole, password, permissions } = body;
+    // Login admin memangkas dan me-lowercase isian sebelum mencocokkan (auth.ts), jadi disimpan dalam bentuk yang sama.
+    const username = String(body.username ?? "").trim().toLowerCase();
+    const email = String(body.email ?? "").trim().toLowerCase();
 
     if (!username || !email || !name || !newRole || !password || !String(password).trim()) {
       return NextResponse.json({ error: "Semua kolom wajib diisi." }, { status: 400 });
