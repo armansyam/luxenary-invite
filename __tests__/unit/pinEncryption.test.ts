@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { encryptPin, decryptPin, verifyPin, isPinEncrypted } from "@/lib/pinEncryption";
+import { encryptPin, decryptPin, verifyPin } from "@/lib/pinEncryption";
 
 describe("pinEncryption — AES-256-GCM", () => {
   const rawPin = "749201";
@@ -50,10 +50,9 @@ describe("pinEncryption — AES-256-GCM", () => {
     expect(enc1).not.toBe(enc2);
   });
 
-  it("isPinEncrypted mendeteksi format terenkripsi dengan benar", () => {
-    const encrypted = encryptPin(rawPin);
-    expect(isPinEncrypted(encrypted)).toBe(true);
-    expect(isPinEncrypted(rawPin)).toBe(false); // plaintext 6-digit
-    expect(isPinEncrypted("")).toBe(false);
+  it("PIN tersimpan tanpa enkripsi tidak pernah diterima dan tidak didekripsi menjadi dirinya sendiri", () => {
+    expect(verifyPin(rawPin, rawPin)).toBe(false);
+    expect(decryptPin(rawPin)).toBeNull();
+    expect(decryptPin("")).toBeNull();
   });
 });

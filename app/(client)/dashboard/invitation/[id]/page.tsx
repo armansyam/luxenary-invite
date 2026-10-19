@@ -7,6 +7,7 @@ import { compressImageToWebP } from "@/lib/clientImageCompressor";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { getPlanDisplayName } from "@/lib/planUtils";
 import { isWeddingField, participantNames, safeParseParticipants, weddingFieldValue, withWeddingField } from "@/lib/participantUtils";
+import { FEATURE_SETTING_LIVE_FIELDS, isLiveEditField } from "@/lib/liveEditFields";
 import { resolveInvitationDisplayName, getMediaSlotLabel, eventNoun, isThemeCompatible } from "@/lib/invitationUtils";
 import { useFeedback } from "@/components/ui/Feedback";
 import { getApexRootDomain } from "@/lib/domainUtils";
@@ -609,9 +610,10 @@ export default function EditInvitation() {
   }, [invitationId]);
 
   // Unified Save Handler (Saves to DB and broadcasts sync to Live Preview)
-  const saveSection = async (secKey?: string, overrideInvitation?: any) => {
+  const saveSection = async (secKey?: string, overrideInvitation?: any): Promise<{ ok: boolean; error?: string }> => {
     const invToSave = overrideInvitation || invitation;
-    if (!invToSave || saving) return;
+    if (!invToSave) return { ok: false, error: "Data undangan belum termuat." };
+    if (saving) return { ok: false, error: "Penyimpanan lain sedang berjalan." };
     setSaving(true);
     setSavingSec(secKey || null);
     try {
@@ -661,12 +663,12 @@ export default function EditInvitation() {
 
       // Trigger hot reload preview di Live Editor
       setLiveIframeKey((k) => k + 1);
+      return { ok: true };
     } catch (err: any) {
       console.error("Save failed:", err);
-      setStudioNotification({
-        type: "error",
-        message: err?.message || "Terjadi kendala saat menyimpan data ke server. Silakan coba lagi.",
-      });
+      const message = err?.message || "Terjadi kendala saat menyimpan data ke server. Silakan coba lagi.";
+      setStudioNotification({ type: "error", message });
+      return { ok: false, error: message };
     } finally {
       setSaving(false);
       setSavingSec(null);
@@ -776,7 +778,7 @@ export default function EditInvitation() {
       if (!e.data || typeof e.data !== "object") return;
       if (e.data.type === "LUX_INLINE_EDIT_CHANGE") {
         const { field, value, senderRole } = e.data;
-        if (!field) return;
+        if (!field || !isLiveEditField(field)) return;
 
         if (field.startsWith("customLabels.")) {
           const labelKey = field.replace("customLabels.", "");
@@ -833,7 +835,10 @@ export default function EditInvitation() {
               ? prev
               : { ...prev, participantsJson: withWeddingField(prev?.participantsJson, field, value) }
           );
+        } else if (FEATURE_SETTING_LIVE_FIELDS.has(field)) {
+          setInvitation((prev: any) => ({ ...prev, featureSettings: { ...(prev.featureSettings ?? {}), [field]: value } }));
         } else {
+          // Sisa kunci yang diizinkan isLiveEditField adalah kolom undangan (openingQuote, openingQuoteRef).
           setInvitation((prev: any) => ({ ...prev, [field]: value }));
         }
 
@@ -846,7 +851,10 @@ export default function EditInvitation() {
         // Two-Way Dual-View Sync: Relay scroll position ratio to sibling iframes
         relayToSiblingLiveIframes(e.source, e.data.senderRole, { type: "LUX_SCROLL_SYNC", ratio: e.data.ratio });
       } else if (e.data.type === "LUX_INLINE_SAVE_REQUEST") {
-        saveSection();
+        const source = e.source as Window;
+        void saveSection().then((result) => {
+          source.postMessage({ type: "LUX_INLINE_SAVE_RESULT", ...result }, window.location.origin);
+        });
       }
     };
 

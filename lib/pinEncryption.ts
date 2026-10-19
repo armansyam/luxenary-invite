@@ -51,11 +51,8 @@ export function encryptPin(pin: string): string {
 export function decryptPin(encryptedPin: string): string | null {
   try {
     const parts = encryptedPin.split(":");
-    if (parts.length !== 3) {
-      // Format lama (plain-text) — return as-is agar backward compatible
-      return encryptedPin;
-    }
-    
+    if (parts.length !== 3 || !parts.every((p) => /^[0-9a-f]+$/i.test(p))) return null;
+
     const [ivHex, authTagHex, ciphertextHex] = parts;
     const key = getEncryptionKey();
     const iv = Buffer.from(ivHex, "hex");
@@ -66,45 +63,15 @@ export function decryptPin(encryptedPin: string): string | null {
     decipher.setAuthTag(authTag);
     
     const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
-    const result = decrypted.toString("utf8");
-
-    // Self-healing: jika sebelumnya terkena double-encryption, dekripsi layer berikutnya
-    if (isPinEncrypted(result)) {
-      return decryptPin(result);
-    }
-
-    return result;
+    return decrypted.toString("utf8");
   } catch {
     return null;
   }
 }
 
-/**
- * Cek apakah PIN sudah dalam format terenkripsi (bukan plain-text lama)
- */
-export function isPinEncrypted(pin: string): boolean {
-  if (!pin || typeof pin !== "string") return false;
-  const parts = pin.split(":");
-  return (
-    parts.length === 3 &&
-    parts[0].length === 32 &&
-    parts[1].length === 32 &&
-    parts.every((p) => /^[0-9a-f]+$/i.test(p))
-  );
-}
-
-/**
- * Verifikasi PIN yang diinput user terhadap PIN terenkripsi di database
- * Mendukung PIN lama (plain-text) dan PIN baru (terenkripsi) secara backward compatible
- */
+/** PIN yang diketik petugas dibandingkan dengan PIN terenkripsi di database; nilai tersimpan yang tidak terenkripsi ditolak. */
 export function verifyPin(inputPin: string, storedPin: string): boolean {
   if (!inputPin || !storedPin) return false;
-  
-  if (isPinEncrypted(storedPin)) {
-    const decrypted = decryptPin(storedPin);
-    return decrypted !== null && decrypted === inputPin;
-  }
-  
-  // Backward compatible: PIN lama masih plain-text
-  return storedPin === inputPin;
+  const decrypted = decryptPin(storedPin);
+  return decrypted !== null && decrypted === inputPin;
 }

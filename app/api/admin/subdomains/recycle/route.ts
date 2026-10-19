@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { InvitationStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { routeError } from "@/lib/routeError";
 import { requireAdminModule } from "@/lib/adminAuth";
@@ -8,6 +9,10 @@ import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 
 export const dynamic = "force-dynamic";
+
+// Sama dengan sapuan cron (lifecycleCleanup): undangan PUBLISHED yang tanggalnya diundur klien atau DRAFT tidak boleh
+// kehilangan subdomainnya hanya karena tanggal lamanya sudah lewat.
+const RECYCLABLE_STATUSES: InvitationStatus[] = ["EVENT_FINISHED", "ARCHIVED", "TAKEN_DOWN"];
 
 async function denyUnlessAdmin() {
   const guard = await requireAdminModule("invitations");
@@ -44,7 +49,7 @@ export async function GET() {
       const eventDate = getPrimaryEventDateString(inv.eventData);
 
       const hasSubdomain = Boolean(inv.subdomain);
-      const isExpired = dates ? Date.now() > dates.subdomainReleaseAt.getTime() : false;
+      const isExpired = RECYCLABLE_STATUSES.includes(inv.status) && dates ? Date.now() > dates.subdomainReleaseAt.getTime() : false;
       const remainingDays = dates ? Math.ceil((dates.subdomainReleaseAt.getTime() - Date.now()) / DAY_MS) : null;
 
       return {
@@ -81,7 +86,7 @@ export async function POST() {
     const graceDays = settings.subdomainGraceDays;
 
     const invitations = await prisma.invitation.findMany({
-      where: { subdomain: { not: null } },
+      where: { subdomain: { not: null }, status: { in: RECYCLABLE_STATUSES } },
       select: {
         id: true,
         status: true,

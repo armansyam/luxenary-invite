@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
+import { MIN_ADMIN_PASSWORD_LENGTH } from "@/lib/adminCredentials";
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> | { id: string } }) {
   try {
@@ -45,6 +46,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     // Dipangkas seperti di halaman login admin; spasi di ujung membuat password tidak pernah cocok.
     if (password && String(password).trim()) {
+      if (String(password).trim().length < MIN_ADMIN_PASSWORD_LENGTH) {
+        return NextResponse.json({ error: `Password minimal ${MIN_ADMIN_PASSWORD_LENGTH} karakter.` }, { status: 400 });
+      }
       updateData.passwordHash = await bcrypt.hash(String(password).trim(), 10);
     }
 

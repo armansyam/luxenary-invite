@@ -35,7 +35,11 @@ export async function GET(req: NextRequest) {
     }
 
     if (category !== "ALL") {
-      whereClause.category = category as any;
+      const parsedCategory = parseExpenseCategory(category);
+      if (!parsedCategory) {
+        return NextResponse.json({ error: "Kategori pengeluaran tidak dikenal." }, { status: 400 });
+      }
+      whereClause.category = parsedCategory;
     }
 
     if (paymentSource !== "ALL") {
@@ -131,7 +135,7 @@ export async function POST(req: NextRequest) {
     }
     const receipt = receiptUrlInput(body?.receiptUrl);
     if (!receipt.ok) {
-      return NextResponse.json({ error: "URL bukti pembayaran tidak valid." }, { status: 400 });
+      return NextResponse.json({ error: "Struk tidak valid. Unggah ulang berkas struknya." }, { status: 400 });
     }
     const paymentSource = optionalText(body?.paymentSource, 50);
     const referenceNumber = optionalText(body?.referenceNumber, 100);

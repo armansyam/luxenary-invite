@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
+import { deleteFile } from "@/lib/storage";
 import { wibParts } from "@/lib/financePeriods";
 import { optionalText, parseExpenseCategory, parseMoney, receiptUrlInput, requiredText } from "@/lib/financeInput";
 
@@ -13,6 +14,12 @@ function findClosingFor(date: Date) {
   return prisma.financialClosing.findUnique({
     where: { periodMonth_periodYear: { periodMonth: monthIndex + 1, periodYear: year } },
   });
+}
+
+// Satu struk dapat dilampirkan ke lebih dari satu pengeluaran lewat API; berkas dihapus hanya bila tidak dirujuk lagi.
+async function deleteUnusedReceipt(ref: string) {
+  if (await prisma.expense.count({ where: { receiptUrl: ref } })) return;
+  await deleteFile(ref);
 }
 
 export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -48,7 +55,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
     }
     const receipt = receiptUrl !== undefined ? receiptUrlInput(receiptUrl) : null;
     if (receipt && !receipt.ok) {
-      return NextResponse.json({ error: "URL bukti pembayaran tidak valid." }, { status: 400 });
+      return NextResponse.json({ error: "Struk tidak valid. Unggah ulang berkas struknya." }, { status: 400 });
     }
 
     // Memindahkan tanggal ke bulan yang sudah ditutup akan mengubah isi periode yang angkanya sudah dibekukan.
@@ -88,6 +95,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
         },
       }),
     ]);
+    if (existing.receiptUrl && updated.receiptUrl !== existing.receiptUrl) await deleteUnusedReceipt(existing.receiptUrl);
 
     return NextResponse.json({
       success: true,
@@ -129,6 +137,7 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
         },
       }),
     ]);
+    if (existing.receiptUrl) await deleteUnusedReceipt(existing.receiptUrl);
 
     return NextResponse.json({ success: true, message: "Pengeluaran berhasil dihapus." });
   } catch (err) {

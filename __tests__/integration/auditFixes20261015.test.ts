@@ -25,7 +25,7 @@ import { POST as purgeInvitation } from "@/app/api/admin/invitations/[id]/purge/
 import { POST as marketingAction } from "@/app/api/admin/marketing/route";
 import { POST as uploadMusic } from "@/app/api/admin/music/route";
 import { GET as serveUpload } from "@/app/uploads/[...path]/route";
-import { readPortfolioMediaSource } from "@/lib/storage";
+import { deleteFile, readPortfolioMediaSource } from "@/lib/storage";
 import { POST as createTheme } from "@/app/api/admin/themes/route";
 import memoriesPage from "@/app/(public)/[slug]/memories/page";
 import shareMomentPage from "@/app/(public)/[slug]/sharemoment/page";
@@ -223,8 +223,8 @@ describe.skipIf(!IS_TEST_DB)("unggah struk keuangan admin", () => {
     const res = await upload(new File([new Uint8Array(png)], "struk.svg", { type: "image/svg+xml" }));
     const json = await res.json();
     expect(res.status).toBe(200);
-    expect(json.url).toMatch(/\.png$/);
-    fs.rmSync(path.join(process.cwd(), "public", json.url), { force: true });
+    expect(json.ref).toMatch(/^private-disk:receipts\/receipt-\d+-[a-z0-9]+\.png$/);
+    expect(await deleteFile(json.ref)).toBe(true);
   });
 });
 

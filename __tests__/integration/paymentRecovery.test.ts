@@ -86,9 +86,9 @@ describe.skipIf(!IS_TEST_DB)("pemulihan pembayaran", () => {
   beforeAll(async () => {
     vi.spyOn(MidtransGateway.prototype, "verify").mockResolvedValue({ status: "PAID" });
     await prisma.adminSetting.upsert({
-      where: { key: "midtrans_server_key" },
+      where: { key: "midtrans_sandbox_server_key" },
       update: { value: SERVER_KEY },
-      create: { key: "midtrans_server_key", value: SERVER_KEY, group: "payment" },
+      create: { key: "midtrans_sandbox_server_key", value: SERVER_KEY, group: "payment" },
     });
   });
 
@@ -97,7 +97,7 @@ describe.skipIf(!IS_TEST_DB)("pemulihan pembayaran", () => {
     await prisma.invitation.deleteMany({ where: { id: { in: ids.invitations } } });
     await prisma.order.deleteMany({ where: { id: { in: ids.orders } } });
     await prisma.user.deleteMany({ where: { id: { in: ids.users } } });
-    await prisma.adminSetting.deleteMany({ where: { key: "midtrans_server_key" } });
+    await prisma.adminSetting.deleteMany({ where: { key: "midtrans_sandbox_server_key" } });
     await prisma.webhookLog.deleteMany({ where: { source: "midtrans", createdAt: { gte: RUN_STARTED_AT } } });
     await prisma.$disconnect();
     await pool.end();

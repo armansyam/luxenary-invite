@@ -44,15 +44,6 @@ export interface LifecycleCleanupResult {
   retentionWarningsSent: number;
 }
 
-async function pathExists(target: string): Promise<boolean> {
-  try {
-    await fs.promises.access(target);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 /** PUBLISHED -> EVENT_FINISHED saat hari acara utama (zona waktu acara) telah berlalu. */
 async function transitionFinishedInvitations(now: Date, settings: LifecycleSettings, dryRun: boolean, scope: InvitationScope): Promise<number> {
   const published = await prisma.invitation.findMany({
@@ -188,7 +179,6 @@ async function archiveExpiredInvitation(inv: ExpiredInvitation, nasEnabled: bool
   }
 
   await deletePublishedHtml(inv.id);
-  await fs.promises.rm(path.join(process.cwd(), "data", "drafts", `${inv.id}.html`), { force: true });
 
   if (nasEnabled) {
     const media = await prisma.invitationMedia.findMany({ where: { invitationId: inv.id }, select: { localPath: true } });
@@ -292,7 +282,6 @@ export async function runLifecycleCleanup(options: LifecycleCleanupOptions = {})
 }
 
 export interface StaleDataCleanupResult {
-  orphanedDrafts: number;
   deletedOrders: number;
   refulfilledOrders: number;
   purgedRateLimitRows: number;
@@ -337,22 +326,10 @@ async function purgeExpiredRateLimitRows(dryRun: boolean): Promise<number> {
   return deleted.rowCount ?? 0;
 }
 
-/** Draft HTML tanpa undangan dan order EXPIRED/PENDING yang melewati `retention_order_days`. */
+/** Order EXPIRED/PENDING yang melewati `retention_order_days`. */
 export async function runStaleDataCleanup(options: LifecycleCleanupOptions = {}): Promise<StaleDataCleanupResult> {
   const now = options.now ?? new Date();
   const dryRun = options.dryRun ?? false;
-
-  let orphanedDrafts = 0;
-  const draftsDir = path.join(process.cwd(), "data", "drafts");
-  if (await pathExists(draftsDir)) {
-    for (const file of await fs.promises.readdir(draftsDir)) {
-      if (!file.endsWith(".html")) continue;
-      const owner = await prisma.invitation.findUnique({ where: { id: file.replace(".html", "") }, select: { id: true } });
-      if (owner) continue;
-      if (!dryRun) await fs.promises.rm(path.join(draftsDir, file), { force: true });
-      orphanedDrafts++;
-    }
-  }
 
   const parsedDays = Number.parseInt(await getAdminSetting("retention_order_days", ""), 10);
   const retentionOrderDays = Number.isFinite(parsedDays) && parsedDays >= 1 ? parsedDays : 90;
@@ -370,11 +347,11 @@ export async function runStaleDataCleanup(options: LifecycleCleanupOptions = {})
   const staleOrders = await prisma.order.findMany({ where: staleWhere, select: { proofImageUrl: true } });
   if (dryRun) {
     const purgedWebhookLogs = await prisma.webhookLog.count({ where: staleWebhookWhere });
-    return { orphanedDrafts, deletedOrders: staleOrders.length, refulfilledOrders, purgedRateLimitRows, purgedWebhookLogs };
+    return { deletedOrders: staleOrders.length, refulfilledOrders, purgedRateLimitRows, purgedWebhookLogs };
   }
 
   await Promise.all(staleOrders.map((order) => deleteFile(order.proofImageUrl)));
   const deleted = await prisma.order.deleteMany({ where: staleWhere });
   const purgedWebhookLogs = (await prisma.webhookLog.deleteMany({ where: staleWebhookWhere })).count;
-  return { orphanedDrafts, deletedOrders: deleted.count, refulfilledOrders, purgedRateLimitRows, purgedWebhookLogs };
+  return { deletedOrders: deleted.count, refulfilledOrders, purgedRateLimitRows, purgedWebhookLogs };
 }

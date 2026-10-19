@@ -118,13 +118,13 @@ export async function GET(
           finalStatus = (await prisma.order.findUniqueOrThrow({ where: { id: order.id }, select: { status: true } })).status;
         }
       } else if (order.paymentMethod === "GATEWAY" && !isQrisSessionExpired) {
-        // Realtime Reconciliation via Gateway (Midtrans / Xendit)
+        // Rekonsiliasi langsung ke Midtrans
         try {
           const { getActiveGatewayId, getGatewayById } = await import("@/lib/gatewayRegistry");
           const activeGwId = order.gatewayId || (await getActiveGatewayId());
           const gw = await getGatewayById(activeGwId);
           if (gw && typeof gw.verify === "function") {
-            // Referensi sisi gateway (ID invoice Xendit / transaction_id Midtrans), bukan ID order kita.
+            // Referensi sisi gateway (transaction_id Midtrans), bukan ID order kita.
             const checkRes = await gw.verify(order.gatewayTxId || order.id);
             if (checkRes.status === "PAID") {
               // Transisi atomik PENDING -> PAID + marketing; false jika webhook sudah lebih dulu memprosesnya

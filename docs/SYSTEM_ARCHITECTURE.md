@@ -91,7 +91,7 @@
 │   │   ├── public/           # settings, themes, rsvp, memories, resolve-custom-domain, version
 │   │   ├── payments/         # checkout, status-stream
 │   │   ├── orders/           # create invoice
-│   │   ├── webhook/          # midtrans, xendit (gateway 2-arah)
+│   │   ├── webhook/          # midtrans
 │   │   ├── cron/             # cleanup (memanggil lib/lifecycleCleanup.ts; jam retensi dari Admin Setting)
 │   │   └── sse/              # Server-Sent Events (memories real-time)
 │   │
@@ -146,8 +146,8 @@
 │   ├── escapeHtml.ts         # HTML escape utility
 │   ├── rateLimit.ts          # Rate limiter untuk API publik
 │   ├── sseEmitter.ts         # Server-Sent Events emitter (momen real-time)
-│   ├── gatewayRegistry.ts    # Registry payment gateway 2-arah (Midtrans & Xendit)
-│   ├── gateways/             # Implementasi gateway 2-arah: Midtrans, Xendit
+│   ├── gatewayRegistry.ts    # Registry payment gateway (hanya Midtrans)
+│   ├── gateways/             # Antarmuka PaymentGateway + implementasi Midtrans
 │   ├── paymentEvents.ts      # Event bus pembayaran
 │   ├── upgradeHelper.ts      # Eksekutor upgrade paket & perpanjangan galeri (+30 hari)
 │   ├── demoPublisher.ts      # Publish demo tema ke /public/demo/
@@ -188,7 +188,7 @@
 │   ├── uploads/              # Media upload lokal (R2 switch)
 │   │   ├── invitations/      # Media undangan per invitationId
 │   │   ├── guest-memories/   # Foto tamu hari H
-│   │   ├── proofs/           # Hanya bukti transfer lama; dipindah ke data/private/proofs oleh migrate-private-proofs.ts
+│   │   ├── proofs/           # Tidak dipakai lagi; bukti transfer di data/private/proofs atau bucket privat
 │   │   └── themes-builder/   # Aset demo tema
 │   ├── assets/               # Aset statis sistem (brand, homepage)
 │   ├── demo/                 # Preview tema HTML (auto-generated)
@@ -621,7 +621,7 @@ Sistem menerapkan prinsip *Tiered Storage* untuk memisahkan beban operasional li
 3. **Keamanan Enkripsi Dua Arah & Dekripsi Otomatis `staffPin`:**
    - PIN panitia dienkripsi dengan AES-256-GCM (`lib/pinEncryption.ts`).
    - Endpoint backend (`GET/PUT /api/client/invitations/{id}` dan `GET /api/client/invitations`) secara konsisten mendekripsi `staffPin` sebelum dikirimkan ke frontend klien, sehingga browser selalu menerima teks PIN asli yang bersih.
-   - Proteksi *Anti Double-Encryption* (`isPinEncrypted`) dan mekanisme *Self-Healing* pada `decryptPin` mencegah PIN terenkripsi berulang kali saat form disimpan secara terpisah.
+   - `decryptPin` hanya menerima format terenkripsi `iv:tag:data`; PIN polos di database tidak lagi diterima `verifyPin` (kompatibilitas data lama dihapus 20 Okt 2026).
 4. **Pembersihan Total Media & Memori Tamu Saat Hapus Klien (`DELETE /api/admin/users`):**
    - Mengeliminasi berkas yatim piatu (*orphaned files*) di Cloudflare R2: Sistem secara otomatis mengiterasi dan menghapus seluruh media (`localPath`) dan memori tamu (`mediaUrl`) dari storage R2/lokal via `deleteFile()`, serta membersihkan folder direktori lokal `guest-memories/{id}/` dan `invitations/{id}/`.
 5. **Virtual Disposable Camera & Dynamic Roll Stack Architecture (Opsi B):**
@@ -1141,7 +1141,7 @@ Persistensi Navigasi Admin (Tab Memory Persistence):
 Sub-Tab Pengaturan Admin (5 Grup, v6.1.0):
   Sebelumnya 6 tab terpisah (pembayaran, gateway, setup, platform, dll) — kini dikonsolidasikan menjadi 5 tab domain-grouped yang lebih intuitif:
   - akun       → Akun & Keamanan (profil & password admin)
-  - keuangan   → Keuangan & Gateway (mode pembayaran, bank manual, QRIS, Midtrans/Xendit)
+  - keuangan   → Keuangan & Gateway (mode pembayaran, bank manual, QRIS Midtrans)
   - paket      → Paket & Harga (tier pricing & capabilities)
   - integrasi  → Integrasi & API (OAuth, SMTP, DNS, custom domain)
   - operasional → Operasional (status layanan, WhatsApp, landing page)
@@ -1257,7 +1257,6 @@ PAYMENT & WEBHOOKS (Gateway 2-Arah Terintegrasi):
   POST /api/payments/checkout         → Proses pembayaran
   GET  /api/payments/status-stream/{id} → SSE status pembayaran
   POST /api/webhook/midtrans          → Webhook Midtrans (2-arah)
-  POST /api/webhook/xendit            → Webhook Xendit (2-arah)
 
 STATUS WARISAN / DEPRECATED:
   - /api/webhook/ipaymu            → 🗑️ Dihapus (Gateway 1-arah tidak didukung)
@@ -1287,7 +1286,7 @@ Model Utama:
   GuestMemory    → Foto candid tamu (hari H & pasca-acara)
   InvitationMedia → File media undangan (9 slot media: LANDING_COVER, LANDING_COVER_DESKTOP, HOME_PHOTO, DESKTOP_SIDEBAR, GLOBAL_FIXED_BG, GROOM_PHOTO, BRIDE_PHOTO, GALLERY, CLOSING_COVER)
   AdminSetting   → Konfigurasi platform global (key-value dinamis)
-  WebhookLog     → Log audit webhook payment (Midtrans, Xendit)
+  WebhookLog     → Log audit webhook payment (Midtrans)
   AdminAuditLog  → Log audit aktivitas admin
   MusicPreset    → Pustaka musik sistem dinamis (id, title, composer, genre, url, durationSec, isActive, sortOrder)
   Expense        → Buku kas mutasi pengeluaran operasional (title, category, amount, expenseDate, paymentSource, referenceNumber, receiptUrl, isLocked)
@@ -1317,7 +1316,7 @@ Indeks Produksi & Hardening (Migration: 20260922010000_production_db_hardening):
 
 Field Kritis di Order:
   orderType       NEW | UPGRADE | GALLERY_EXTENSION | MEMORIES_TOPUP
-  gatewayId       String?   ← "midtrans" | "xendit" (Gateway 2-Arah)
+  gatewayId       String?   ← "midtrans" (null untuk transfer manual)
   gatewayTxId     String?   ← ID transaksi di sisi gateway (untuk cancel API saat switch gateway)
   linkedInvitationId String? ← FK ke invitations (SET NULL): undangan sasaran order UPGRADE / GALLERY_EXTENSION / MEMORIES_TOPUP (menggantikan linkedOrderId yang berisi ID Order atau ID Invitation)
   requestedDomain String?   ← Nama domain yang direquest oleh klien saat memesan add-on Custom Domain
@@ -1615,8 +1614,6 @@ Platform menggunakan `app/manifest.ts` dinamis secara server-side yang mengambil
 
 Permintaan (POST/GET) yang dilakukan melalui domain kustom yang terhubung via CNAME dijamin keamanannya dan **tidak terkena pemblokiran CORS**. Hal ini karena fitur **Next.js Middleware Rewrite** meneruskan _request_ secara transparan dalam server, sehingga bagi _browser_, _client_, dan _API endpoint_, transaksi tersebut tetap berada pada **Same-Origin**.
 
-Seluruh modul pembayaran (_Payment Gateways_ 2-arah: Midtrans dan Xendit) secara otomatis membaca _prefix_ tagihan dari _dashboard_ Admin (`payment_invoice_prefix`). Jika kosong, sistem otomatis mundur (*fallback*) menjadi teks generik "Tagihan Pembayaran". Ini menjamin tidak adanya jejak _brand_ awal pada tagihan QRIS / _Virtual Account_ pelanggan.
-
 ## 11.4 - Arsitektur Pemrosesan Video Loop & Media Engine
 
 Sistem mendukung video loop bergerak (*ambient video*) pada 3 slot visual utama: **`LANDING_COVER`** (Opening Pop-up), **`DESKTOP_SIDEBAR`** (Hero Desktop 70% kiri), dan **`GLOBAL_FIXED_BG`** (Latar Belakang Kartu Undangan).
@@ -1746,19 +1743,16 @@ Seluruh sakelar seksi dikelola dalam JSON field `featureSettings` pada model `In
 
 **Files:** `lib/gateways/`, `lib/gatewayRegistry.ts`, `app/api/payments/checkout/route.ts`, `app/checkout/page.tsx`
 
-Sistem pembayaran platform mendukung multi-gateway terintegrasi dengan pergantian instan 1-klik dari dashboard Admin tanpa memerlukan restart aplikasi atau edit kode.
+Gateway pembayaran satu-satunya adalah Midtrans (Core API QRIS); Xendit dan setelan `active_payment_gateway` dihapus 20 Okt 2026.
 
-### 15.1 — Arsitektur Registry Gateway 2-Arah (Two-Way Handshake)
+### 15.1 — Registry Gateway
 ```
-Admin Setting: active_payment_gateway
-           │
-           ├── "midtrans" → lib/gateways/midtrans.ts (Core API QRIS / Snap UI)
-           └── "xendit"   → lib/gateways/xendit.ts (Invoice API)
+lib/gatewayRegistry.ts → lib/gateways/midtrans.ts (Core API QRIS / Snap UI)
 ```
-*Catatan Arsitektur:* Seluruh gateway 1-arah (iPaymu, Duitku, Tripay) telah dihapus dari sistem karena ketiadaan API pembatalan (`cancel/expire`) publik pada jaringan perbankan. Pada gateway 1-arah, pembatalan lokal di aplikasi meninggalkan QRIS/VA tetap aktif di switch switching, memicu risiko fatal *ghost payment* (klien membayar ke tagihan usang). Sistem Luxenary mewajibkan komunikasi 2-arah penuh: Midtrans (`/v2/{orderId}/cancel`) dan Xendit (`/v2/invoices/{invoiceId}/expire`).
+Antarmuka `PaymentGateway` (`lib/gateways/types.ts`) dan kolom `orders.gatewayId` dipertahankan agar sesi gateway tetap tercatat per order. Gateway 1-arah (iPaymu, Duitku, Tripay) sudah lama dihapus karena tidak punya API pembatalan publik; pembatalan lokal meninggalkan QRIS tetap aktif dan memicu *ghost payment*. Midtrans dibatalkan lewat `/v2/{orderId}/cancel`.
 
-### 15.2 — Kondisi Pembayaran & Sinkronisasi Gateway 2-Arah (*Two-Way Payment Handshake*)
-Sistem mendukung alur pembayaran terintegrasi dengan gateway 2-arah eksklusif (**Midtrans Core API QRIS** dan **Xendit Invoices**), didukung transfer bank manual:
+### 15.2 — Kondisi Pembayaran & Sinkronisasi Gateway
+Alur pembayaran memakai Midtrans Core API QRIS, didukung transfer bank manual:
 1. **Registrasi Paket Awal (`orderType: NEW`) & Upgrade Tier (`orderType: UPGRADE`):**
    - Pembayaran aktivasi lisensi paket undangan (`TIER_1` / Serenade, `TIER_2` / Symphony, `TIER_3` / Eternity) atau kenaikan tier dengan nominal selisih harga dinamis dari `AdminSetting`.
    - Pada tier `TIER_3` (Eternity), fitur Custom Domain sudah **termasuk bebas biaya (gratis)** tanpa biaya integrasi tambahan.
@@ -1772,14 +1766,12 @@ Sistem mendukung alur pembayaran terintegrasi dengan gateway 2-arah eksklusif (*
    - Custom domain bukan merupakan add-on berbayar, melainkan fitur inklusif bawaan untuk paket yang memenuhi syarat (TIER_3). Klien dapat langsung mendaftarkan atau memutuskan domain mandiri melalui `/dashboard/settings` (`POST /api/client/custom-domain`) tanpa melalui kasir/order. Saklar master platform dikontrol admin via `custom_domain_enabled`.
 
 ### 15.2.1 — Transmisi Data Lengkap ke Payment Gateway (Rich Payload Delivery)
-Setiap inisialisasi tagihan ke payment gateway (Midtrans & Xendit) mengirimkan informasi komprehensif untuk pelacakan keuangan, notifikasi multi-kanal, dan audit perbankan:
+Setiap inisialisasi tagihan ke Midtrans mengirimkan informasi komprehensif untuk pelacakan keuangan, notifikasi multi-kanal, dan audit perbankan:
 - **Profil Pembeli Lengkap (`customer_details` / `customer`):**
   - Nama depan (`first_name` / `given_names`) dan nama belakang (`last_name` / `surname`) yang diekstrak dari profil akun Google atau konfirmasi klien di `/checkout`.
   - Alamat email terverifikasi (`email`).
   - Nomor telepon seluler aktif klien (`phone` / `mobile_number` dari `user.phoneNumber`, diformat standar E.164/lokal).
   - Alamat penagihan & pengiriman digital (`billing_address`, `shipping_address`, dan `addresses` array): mencakup alamat surat-menyurat fisik jika tercantum pada undangan atau alamat layanan default berstandar ISO `IDN`.
-- **Preferensi Notifikasi Multi-Kanal (`customer_notification_preference`):**
-  - Xendit: Jika nomor WhatsApp/ponsel tersedia, invoice mengirimkan notifikasi otomatis via `["whatsapp", "sms", "email"]` saat invoice diterbitkan, diingatkan, dibayar, atau kedaluwarsa.
 - **Rincian Item Kontekstual & Branding (`item_details` / `items`):**
   - Mengirimkan deskripsi item yang presisi sesuai kondisi transaksi dengan atribut `brand`, `category`, dan `merchant_name` dinamis dari konfigurasi `AdminSetting`:
     - *Paket Undangan Digital - [Tier]* (Kategori: *Paket Undangan*)
@@ -1787,23 +1779,18 @@ Setiap inisialisasi tagihan ke payment gateway (Midtrans & Xendit) mengirimkan i
     - *Perpanjangan Masa Aktif (+30 Hari)* (Kategori: *Add-on Masa Aktif*)
     - *Jasa Integrasi Domain: [Domain Kustom]* (Kategori: *Add-on Domain*)
   - Rincian biaya layanan gateway (`ADMIN_FEE`) terpisah dan transparan dengan jumlah matematis presisi (`gross_amount === sum(item.price * item.quantity)`).
-- **Metadata Pelacakan Dua Arah:**
-  - **Midtrans:**
-    - `custom_field1` = Nomor Invoice resmi (`INV-LUX-...`).
-    - `custom_field2` = Tipe Pesanan & Nama Lengkap (`orderType | customerFullName`).
-    - `custom_field3` = Detail kontekstual transaksi (`Domain: ...`, `Upgrade: ...`, atau `Paket: ...`).
-  - **Xendit:**
-    - `metadata` objek kaya berisi `orderId`, `invoiceNumber`, `orderType`, `planType`, `targetPlanType`, `upgradedFromPlan`, `requestedDomain`, `customerFullName`, `customerEmail`, `customerPhone`, `invitationSlug`, `coupleName`, dan `platformName`.
+- **Metadata Pelacakan Midtrans:**
+  - `custom_field1` = Nomor Invoice resmi (`INV-LUX-...`).
+  - `custom_field2` = Tipe Pesanan & Nama Lengkap (`orderType | customerFullName`).
+  - `custom_field3` = Detail kontekstual transaksi (`Domain: ...`, `Upgrade: ...`, atau `Paket: ...`).
 
 ### 15.2.2 — Pembatalan Resmi Dua Arah (*Two-Way Cancellation Handshake*)
 - Saat order dibuat, sistem menyimpan `gatewayId` dan `gatewayTxId` pada record `Order`.
-- Jika klien membatalkan tagihan (`handleCancelOrder`), mengganti paket, atau waktu pembayaran kedaluwarsa, API secara otomatis memanggil handler `cancel()` ke gateway aktif:
-  - **Midtrans:** Memanggil `POST /v2/{orderId}/cancel` langsung ke Core API Midtrans sehingga transaksi di switch perbankan langsung void/hangus.
-  - **Xendit:** Memanggil `POST /v2/invoices/{invoiceId}/expire` sehingga invoice Xendit langsung ditutup permanen.
+- Jika klien membatalkan tagihan (`handleCancelOrder`), mengganti paket, atau waktu pembayaran kedaluwarsa, API memanggil `cancel()` Midtrans (`POST /v2/{orderId}/cancel`) sehingga transaksi di switch perbankan langsung void/hangus.
 - **Proteksi Pembatalan Transaksi Terbayar:** Jika gateway melaporkan bahwa transaksi telah lunas (*settlement/paid*), API pembatalan menolak pembatalan untuk mencegah penimpaan status lunas.
 
 ### 15.3 — Perhitungan Biaya Layanan Dinamis (Zero Hardcode)
-- **Penanggung Biaya (`payment_fee_payer` / `payment_gateway_fee_payer`):**
+- **Penanggung Biaya (`payment_fee_payer`):**
   - `"BUYER"`: Biaya layanan ditambahkan ke total yang harus dibayar klien.
   - `"MERCHANT"`: Biaya layanan ditanggung oleh platform (klien hanya membayar harga paket).
 - **Tarif Persentase (`payment_gateway_fee_percent`):**
@@ -1817,11 +1804,11 @@ Setiap inisialisasi tagihan ke payment gateway (Midtrans & Xendit) mengirimkan i
 - **Midtrans Native In-App QRIS & Smart Fallback:**
   - Integrasi Midtrans mengutamakan Core API (`POST /v2/charge` dengan `payment_type: "qris"` dan `item_details` lengkap) untuk menghasilkan string QRIS EMVCo langsung di antarmuka checkout tanpa membuang pembeli ke halaman eksternal Snap.
   - Jika akun Live merchant belum mengaktifkan channel Core API QRIS, sistem secara mulus (*graceful fallback*) beralih ke URL Snap hosted invoice.
-  - Memiliki *auto-swap guard* pada `midtrans_server_key` dan `midtrans_client_key` (mendukung prefix `Mid-` maupun `SB-Mid-`) untuk mencegah kesalahan input kredensial pada Admin Setting.
+  - Kredensial dibaca dari `midtrans_<mode>_server_key` / `midtrans_<mode>_client_key` (mode `sandbox`/`production`); kunci tunggal lama `midtrans_server_key`/`midtrans_client_key` dihapus 20 Okt 2026. Webhook tetap mengenali server key yang tertukar ke kolom client key (prefix `Mid-server-`/`SB-Mid-server-`).
 - **Idempotency & Session Reuse Guard (`/api/payments/checkout`):**
   - Jika sebuah order berstatus `PENDING` telah memiliki sesi QRIS aktif yang belum kedaluwarsa pada gateway yang sama, API langsung mengembalikan sesi yang ada tanpa melakukan re-init atau memanggil API gateway berulang kali. Hal ini mencegah error duplikasi `order_id has already been taken`.
 - **Zero External Redirection (In-App Payment Modal):**
-  - Jika gateway mengembalikan `checkoutUrl` (seperti Snap fallback atau Xendit), sistem tidak lagi melakukan navigasi jendela browser keluar (`window.location.href`).
+  - Jika gateway mengembalikan `checkoutUrl` (Snap fallback), sistem tidak lagi melakukan navigasi jendela browser keluar (`window.location.href`).
   - Halaman kasir merender **In-App Modal Iframe** berbalut backdrop *dark luxury* dengan tombol penutup aman. Pengguna tetap berada di domain platform, sementara listener SSE di background terus memantau webhook transaksi hingga status berubah menjadi `PAID`.
 
 ### 15.5 — Kebijakan Tagihan Tunggal & Proteksi Tagihan Usang (Single State Architecture)

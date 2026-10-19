@@ -303,7 +303,6 @@ export default function AdminPage() {
 
   const [savingActiveGateway, setSavingActiveGateway] = useState(false);
   const [savingMidtrans, setSavingMidtrans] = useState(false);
-  const [savingXendit, setSavingXendit] = useState(false);
   const [savingSmtp, setSavingSmtp] = useState(false);
   const [savingDomainDns, setSavingDomainDns] = useState(false);
   const [savingMemoriesMilestones, setSavingMemoriesMilestones] = useState(false);
@@ -375,7 +374,6 @@ export default function AdminPage() {
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
-  const [selectedGatewayVendor, setSelectedGatewayVendor] = useState<"midtrans" | "xendit">("midtrans");
   const [testingSmtp, setTestingSmtp] = useState(false);
   const [testSmtpEmail, setTestSmtpEmail] = useState("");
   const [testSmtpResult, setTestSmtpResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -3150,8 +3148,6 @@ export default function AdminPage() {
                   setSavingActiveGateway={setSavingActiveGateway}
                   savingMidtrans={savingMidtrans}
                   setSavingMidtrans={setSavingMidtrans}
-                  savingXendit={savingXendit}
-                  setSavingXendit={setSavingXendit}
                   savingSmtp={savingSmtp}
                   setSavingSmtp={setSavingSmtp}
                   savingDomainDns={savingDomainDns}
@@ -3169,8 +3165,6 @@ export default function AdminPage() {
                   detectIpResult={detectIpResult}
                   recyclingSubdomains={recyclingSubdomains}
                   recycleResult={recycleResult}
-                  selectedGatewayVendor={selectedGatewayVendor}
-                  setSelectedGatewayVendor={setSelectedGatewayVendor}
                   logoUrl={logoUrl}
                   faviconUrl={faviconUrl}
                   pendingLogo={pendingLogo}

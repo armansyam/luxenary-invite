@@ -324,7 +324,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "DELETE_PARTNER") {
-      const { id, forceConfirm } = body;
+      const { id } = body;
       if (!id) return NextResponse.json({ error: "ID mitra diperlukan" }, { status: 400 });
 
       const partner = await prisma.partnerAffiliate.findUnique({
@@ -336,18 +336,12 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Mitra tidak ditemukan" }, { status: 404 });
       }
 
-      // Proteksi saldo pending belum dicairkan
-      if (Number(partner.pendingBalance) > 0 && !forceConfirm) {
+      // Komisi adalah catatan keuangan (dibayar lewat pengeluaran MARKETING) dan relasinya Restrict: mitra yang
+      // pernah mendapat komisi hanya dapat dinonaktifkan.
+      if (partner._count.commissions > 0) {
         return NextResponse.json({
-          error: `Mitra ini masih memiliki saldo komisi belum dibayar sebesar Rp ${Number(partner.pendingBalance).toLocaleString("id-ID")}. Silakan proses Payout terlebih dahulu atau konfirmasi penghapusan sadar.`,
-          requiresForceConfirm: true,
-          pendingBalance: Number(partner.pendingBalance),
-        }, { status: 400 });
-      }
-
-      // Hapus komisi terkait jika forceConfirm aktif
-      if (forceConfirm) {
-        await prisma.affiliateCommission.deleteMany({ where: { partnerId: id } });
+          error: `Mitra ini punya ${partner._count.commissions} catatan komisi yang harus tetap tersimpan, sehingga tidak dapat dihapus. Nonaktifkan mitra agar kodenya tidak dapat dipakai lagi.`,
+        }, { status: 409 });
       }
 
       await prisma.partnerAffiliate.delete({ where: { id } });

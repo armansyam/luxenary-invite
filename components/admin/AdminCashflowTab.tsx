@@ -200,14 +200,14 @@ export function AdminCashflowTab() {
     setUploadingReceipt(true);
     try {
       const formData = new FormData();
-      formData.append("receipt", file);
+      formData.append("file", file);
       const res = await fetch("/api/admin/finance/upload-receipt", {
         method: "POST",
         body: formData,
       });
       const data = await res.json();
-      if (res.ok && data.url) {
-        setFormReceiptUrl(data.url);
+      if (res.ok && data.ref) {
+        setFormReceiptUrl(data.ref);
         showAlert("success", "Bukti struk berhasil diunggah");
       } else {
         showAlert("error", data.error || "Gagal mengunggah struk");
@@ -725,7 +725,7 @@ export function AdminCashflowTab() {
                       <td className="py-3 px-4 text-center whitespace-nowrap">
                         {exp.receiptUrl ? (
                           <a
-                            href={exp.receiptUrl}
+                            href={`/api/admin/finance/expenses/${exp.id}/receipt`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-[11px] font-medium text-sky-700 hover:text-sky-900 hover:underline"
@@ -946,7 +946,17 @@ export function AdminCashflowTab() {
                 </div>
                 {formReceiptUrl && (
                   <p className="text-[11px] text-emerald-700 mt-1 font-medium truncate">
-                    Struk terlampir: {formReceiptUrl}
+                    Struk terlampir
+                    {editingExpense?.receiptUrl === formReceiptUrl && (
+                      <a
+                        href={`/api/admin/finance/expenses/${editingExpense.id}/receipt`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-1.5 text-sky-700 hover:underline"
+                      >
+                        Lihat
+                      </a>
+                    )}
                   </p>
                 )}
               </div>

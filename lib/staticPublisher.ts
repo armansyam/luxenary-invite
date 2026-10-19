@@ -46,14 +46,15 @@ export async function getPublishedHtml(invitationId: string): Promise<string | n
   }
 }
 
-export async function buildAndSavePublishedHtml(invitationId: string): Promise<string | null> {
+/** HTML terbit tanpa menyimpannya; `includeRsvps: false` untuk salinan portofolio. */
+export async function renderPublishedHtml(invitationId: string, { includeRsvps = true }: { includeRsvps?: boolean } = {}): Promise<string | null> {
   const invitation = await prisma.invitation.findUnique({
     where: { id: invitationId },
   });
 
   if (!invitation) return null;
 
-  const data = await composeTemplateData(invitation.id);
+  const data = await composeTemplateData(invitation.id, { includeRsvps });
   if (!data) return null;
 
 
@@ -110,16 +111,21 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
   }
 
   // Render standalone HTML without edit controls (menggunakan Piring draft jika ada)
-  const standaloneHtml = await renderTemplateFile(invitation.themeId, data, { editMode: false, invitationId: invitation.id });
+  return renderTemplateFile(invitation.themeId, data, { editMode: false, invitationId: invitation.id });
+}
+
+export async function buildAndSavePublishedHtml(invitationId: string): Promise<string | null> {
+  const standaloneHtml = await renderPublishedHtml(invitationId);
+  if (standaloneHtml === null) return null;
 
   await ensurePublishedDir();
 
   // Hanya simpan 1 file sumber kebenaran (Single Source of Truth) berdasarkan ID
-  const masterPath = path.join(PUBLISHED_DIR, "ids", `${invitation.id}.html`);
+  const masterPath = path.join(PUBLISHED_DIR, "ids", `${invitationId}.html`);
   await fs.promises.writeFile(masterPath, standaloneHtml, "utf-8");
 
   // Sinkronkan ke L1 Memory Cache secara instan
-  publishedHtmlCache.set(invitation.id, standaloneHtml);
+  publishedHtmlCache.set(invitationId, standaloneHtml);
 
   logger.info("StaticPublisher", "HTML undangan dibangun", { path: masterPath, sizeKB: Number((standaloneHtml.length / 1024).toFixed(1)) });
 

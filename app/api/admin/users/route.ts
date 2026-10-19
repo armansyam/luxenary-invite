@@ -179,10 +179,6 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Klien tidak ditemukan." }, { status: 404 });
     }
 
-    if (targetUser.role === "ADMIN") {
-      return NextResponse.json({ error: "Tidak dapat menghapus akun Admin melalui endpoint klien." }, { status: 403 });
-    }
-
     // Order lunas adalah catatan keuangan (pendapatan, pajak, komisi mitra) dan tidak ikut terhapus bersama akun.
     const paidOrders = await prisma.order.count({ where: { userId, status: "PAID" } });
     if (paidOrders > 0) {

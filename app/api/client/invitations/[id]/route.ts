@@ -7,7 +7,6 @@ import { normalizeJsonInput } from "@/lib/jsonText";
 import { participantNames } from "@/lib/participantUtils";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
-import { removeIfExists } from "@/lib/fsSafe";
 import { encryptPin, decryptPin } from "@/lib/pinEncryption";
 import { STAFF_PIN_PATTERN, isThemeCompatible } from "@/lib/invitationUtils";
 import { isReservedSubdomain, isSubdomainExpired } from "@/lib/domainUtils";
@@ -235,6 +234,10 @@ export async function PUT(
     let newSubdomain = body.subdomain !== undefined
       ? String(body.subdomain ?? "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/^-+|-+$/g, "").slice(0, 63) || null
       : undefined;
+    // Batas yang sama dengan /api/client/subdomain/check.
+    if (newSubdomain && newSubdomain.length < 3) {
+      return NextResponse.json({ error: "Subdomain minimal terdiri dari 3 karakter." }, { status: 400 });
+    }
 
     // Undangan pernikahan tanpa subdomain mendapat subdomain dari nama panggilan mempelai saat studio menyimpan peserta.
     // Subdomain turunan ini tidak diminta klien, jadi bentrok atau nama sistem tidak boleh menggagalkan penyimpanan nama:
@@ -494,12 +497,6 @@ export async function PUT(
 
       },
     });
-
-    // --- ARSITEKTUR PIRING: Hapus piring draft lama jika tema berubah ---
-    if (body.themeId !== undefined && body.themeId !== currentInv.themeId) {
-      const path = await import("path");
-      await removeIfExists(path.join(process.cwd(), "data", "drafts", `${id}.html`));
-    }
 
     // Save media updates
     if (body.media && typeof body.media === "object" && !Array.isArray(body.media)) {

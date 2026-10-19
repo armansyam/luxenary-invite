@@ -7,7 +7,7 @@ import { prisma, pool } from "@/lib/prisma";
 import { computeGatewayCharge } from "@/lib/paymentFees";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
-const KEYS = ["payment_fee_payer", "payment_gateway_fee_payer", "payment_gateway_fee_percent", "payment_fee_rate", "payment_expiry_minutes"];
+const KEYS = ["payment_fee_payer", "payment_gateway_fee_percent", "payment_expiry_minutes"];
 const previous = new Map<string, string | null>();
 
 async function setSettings(values: Record<string, string | null>) {

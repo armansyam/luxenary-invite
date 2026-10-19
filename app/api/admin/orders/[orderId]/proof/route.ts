@@ -18,14 +18,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ord
 
     const { orderId } = await params;
     const order = await prisma.order.findUnique({ where: { id: orderId }, select: { proofImageUrl: true } });
-    if (!order?.proofImageUrl) {
+    if (!isPrivateFileRef(order?.proofImageUrl)) {
       return NextResponse.json({ error: "Order ini tidak memiliki bukti transfer." }, { status: 404 });
-    }
-    if (!isPrivateFileRef(order.proofImageUrl)) {
-      return NextResponse.json(
-        { error: "Bukti transfer lama belum dipindah ke penyimpanan privat. Jalankan scripts/migrate-private-proofs.ts --apply." },
-        { status: 409 }
-      );
     }
 
     return new Response(null, {

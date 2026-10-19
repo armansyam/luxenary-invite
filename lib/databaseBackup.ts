@@ -67,15 +67,6 @@ export async function inspectBackupPath(configuredPath?: string): Promise<Backup
   if (effectiveConfigured === "./data/backups" || effectiveConfigured === "data/backups") {
     targetPath = fallbackPath;
     isRelative = true;
-  } else if (effectiveConfigured === "/data/backups") {
-    // Penanganan backward compatibility untuk nilai default lama /data/backups
-    if (fs.existsSync("/data/backups")) {
-      targetPath = "/data/backups";
-      isRelative = false;
-    } else {
-      targetPath = fallbackPath;
-      isRelative = true;
-    }
   } else if (effectiveConfigured.startsWith("./") || !path.isAbsolute(effectiveConfigured)) {
     targetPath = path.resolve(/*turbopackIgnore: true*/ process.cwd(), effectiveConfigured);
     isRelative = true;

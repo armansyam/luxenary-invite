@@ -128,7 +128,6 @@ describe("pemindai statis — rute tidak boleh terlupa guard", () => {
       "security/csp-report",
       "sse/memories",
       "webhook/midtrans",
-      "webhook/xendit",
       "cron/backup",
       "cron/cleanup",
     ]);

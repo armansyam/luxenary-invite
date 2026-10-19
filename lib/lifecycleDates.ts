@@ -43,8 +43,7 @@ type EventLike = { date?: unknown; timezone?: unknown; time?: unknown; isPrimary
 function parseEventList(eventData: unknown): EventLike[] {
   try {
     const parsed = typeof eventData === "string" ? JSON.parse(eventData) : eventData ?? [];
-    const list = Array.isArray(parsed) ? parsed : (parsed as { events?: unknown } | null)?.events;
-    return Array.isArray(list) ? list : [];
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }

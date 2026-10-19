@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { adminActorId, requireAnyAdmin } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
 import bcrypt from "bcryptjs";
+import { MIN_ADMIN_PASSWORD_LENGTH } from "@/lib/adminCredentials";
 
 export async function PUT(req: Request) {
   try {
@@ -26,6 +27,9 @@ export async function PUT(req: Request) {
 
     // Jika ingin mengganti password, butuh validasi password lama
     if (newPassword) {
+      if (String(newPassword).trim().length < MIN_ADMIN_PASSWORD_LENGTH) {
+        return NextResponse.json({ error: `Password minimal ${MIN_ADMIN_PASSWORD_LENGTH} karakter.` }, { status: 400 });
+      }
       if (!currentPassword) {
         return NextResponse.json({ error: "Password saat ini wajib diisi untuk mengganti password." }, { status: 400 });
       }

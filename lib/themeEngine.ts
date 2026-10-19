@@ -116,14 +116,15 @@ function generateInitialAvatarSvg(nameOrInitial: string, roleName: string): stri
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
-export async function composeTemplateData(invitationId: string) {
+/** `includeRsvps: false` dipakai salinan portofolio: nama dan ucapan tamu asli tidak ikut terbit di halaman publik lain. */
+export async function composeTemplateData(invitationId: string, { includeRsvps = true }: { includeRsvps?: boolean } = {}) {
   const inv = await prisma.invitation.findUnique({
     where: { id: invitationId },
     include: {
       media: true,
       rsvps: {
         orderBy: { respondedAt: "desc" },
-        take: 30,
+        take: includeRsvps ? 30 : 0,
       },
       order: { select: { planType: true } },
     },
@@ -1923,6 +1924,10 @@ export async function composeWeddingData(inv: any) {
 
     // Custom Section Titles & Labels
     openBtn: customLabels.openBtn || blueprint.openBtn || "Buka Undangan",
+    // 12 master tradisional memakai token ini di dalam tombol buka.
+    openBtnText: customLabels.openBtn || blueprint.openBtn || "Buka Undangan",
+    dressCodeTitle,
+    dressCodeEyebrow,
     coverSubtitle: customLabels.coverSubtitle || blueprint.coverSubtitle || "",
     coverGuestLabel: (customLabels as any).coverGuestLabel || "Kepada Yth. Bapak/Ibu/Saudara/i",
     openingGreeting,
@@ -2299,8 +2304,8 @@ function buildUniversalGallerySection(
 
   return `
     <section class="sec-block" id="gallery">
-      <span class="sec-lbl">Galeri</span>
-      <h2 class="sec-h2 serif">${escapeHtml(galleryTitle)}</h2>
+      <span class="sec-lbl" data-lux-field="customLabels.galleryEyebrow">Galeri</span>
+      <h2 class="sec-h2 serif" data-lux-field="customLabels.galleryTitle">${escapeHtml(galleryTitle)}</h2>
       <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 16px;">
         ${galleryItemsHtml}
       </div>
@@ -2326,8 +2331,8 @@ function buildUniversalGiftSection(
 
   return `
     <section class="sec-block" id="gift">
-      <span class="sec-lbl">Tanda Kasih</span>
-      <h2 class="sec-h2 serif">${escapeHtml(giftTitle)}</h2>
+      <span class="sec-lbl" data-lux-field="customLabels.giftEyebrow">Tanda Kasih</span>
+      <h2 class="sec-h2 serif" data-lux-field="customLabels.giftTitle">${escapeHtml(giftTitle)}</h2>
       <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Doa restu Anda merupakan karunia terindah bagi kami. Namun apabila bermaksud memberikan tanda kasih, Anda dapat melalui:</p>
       <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
         ${bankCardsHtml}
@@ -2341,28 +2346,28 @@ function buildUniversalRsvpSection(invitationId: string): string {
   return `
     <div class="rsvp-card-box" style="text-align: left; margin-bottom: 24px;">
       <span class="sec-lbl" style="display: block; text-align: center; margin-bottom: 4px;">Konfirmasi</span>
-      <h2 class="sec-h2 serif" style="text-align: center; font-size: 22px; margin-bottom: 16px;">RSVP &amp; Kehadiran</h2>
+      <h2 class="sec-h2 serif" style="text-align: center; font-size: 22px; margin-bottom: 16px;" data-lux-field="customLabels.rsvpTitle">RSVP &amp; Kehadiran</h2>
       <form onsubmit="handleUniversalRsvpSubmit(event, '${escapeHtml(invitationId || "")}')" style="display: flex; flex-direction: column; gap: 12px; background: var(--card-bg); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); padding: 20px; border-radius: var(--radius-md, 14px);">
         <div>
-          <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Nama Lengkap</label>
+          <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;" data-lux-field="customLabels.rsvpNameLabel">Nama Lengkap</label>
           <input type="text" id="universalRsvpName" required placeholder="Nama Anda" style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: var(--radius-sm, 8px); background: color-mix(in srgb, var(--bg-canvas, var(--card-bg)) 80%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); color: var(--text-main); font-size: 13px;" />
         </div>
         <div>
-          <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Konfirmasi Kehadiran</label>
+          <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;" data-lux-field="customLabels.rsvpStatusLabel">Konfirmasi Kehadiran</label>
           <select id="universalRsvpStatus" style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: var(--radius-sm, 8px); background: color-mix(in srgb, var(--bg-canvas, var(--card-bg)) 80%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); color: var(--text-main); font-size: 13px;">
             <option value="hadir">Hadir</option>
             <option value="tidak_hadir">Berhalangan Hadir</option>
           </select>
         </div>
         <div>
-          <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Jumlah Tamu</label>
+          <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;" data-lux-field="customLabels.rsvpCountLabel">Jumlah Tamu</label>
           <input type="number" id="universalRsvpCount" min="1" max="10" value="1" style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: var(--radius-sm, 8px); background: color-mix(in srgb, var(--bg-canvas, var(--card-bg)) 80%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); color: var(--text-main); font-size: 13px;" />
         </div>
         <div>
-          <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Ucapan &amp; Doa</label>
+          <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;" data-lux-field="customLabels.rsvpMessageLabel">Ucapan &amp; Doa</label>
           <textarea id="universalRsvpMessage" rows="3" placeholder="Tuliskan ucapan dan doa terbaik Anda..." style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: var(--radius-sm, 8px); background: color-mix(in srgb, var(--bg-canvas, var(--card-bg)) 80%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); color: var(--text-main); font-size: 13px; resize: vertical;"></textarea>
         </div>
-        <button type="submit" id="universalRsvpBtn" style="padding: 12px; border-radius: var(--radius-full, 9999px); background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #ffffff; font-size: 13px; font-weight: 700; border: none; cursor: pointer; margin-top: 4px;">Kirim Konfirmasi</button>
+        <button type="submit" id="universalRsvpBtn" style="padding: 12px; border-radius: var(--radius-full, 9999px); background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #ffffff; font-size: 13px; font-weight: 700; border: none; cursor: pointer; margin-top: 4px;" data-lux-field="customLabels.rsvpBtnText">Kirim Konfirmasi</button>
         <div id="universalRsvpAlert" style="display: none; text-align: center; font-size: 12px; font-weight: 600; color: var(--primary); margin-top: 6px;"></div>
       </form>
     </div>
@@ -2376,6 +2381,8 @@ function buildUniversalRsvpSection(invitationId: string): string {
         var count = (document.getElementById("universalRsvpCount") || {}).value || "1";
         var msg = (document.getElementById("universalRsvpMessage") || {}).value || "";
         if (!name.trim()) return;
+        // Teks tombol bisa label kustom klien; dikembalikan apa adanya setelah kirim.
+        var btnLabel = btn ? btn.textContent : "";
         if (btn) { btn.disabled = true; btn.textContent = "Mengirim..."; }
         try {
           var res = await fetch("/api/public/rsvp", {
@@ -2402,7 +2409,7 @@ function buildUniversalRsvpSection(invitationId: string): string {
         } catch(err) {
           if (alertBox) { alertBox.style.display = "block"; alertBox.textContent = "Koneksi terganggu. Silakan coba lagi."; }
         } finally {
-          if (btn) { btn.disabled = false; btn.textContent = "Kirim Konfirmasi"; }
+          if (btn) { btn.disabled = false; btn.textContent = btnLabel; }
         }
       }
     </script>
@@ -2422,7 +2429,7 @@ function buildUniversalWishesSection(rsvps: any[] = []): string {
 
   return `
     <div class="wishes-stream-box" style="text-align: left;">
-      <h3 class="serif" style="font-size: 18px; color: var(--text-main); margin-bottom: 12px; text-align: center;">Ucapan &amp; Doa Restu</h3>
+      <h3 class="serif" style="font-size: 18px; color: var(--text-main); margin-bottom: 12px; text-align: center;" data-lux-field="customLabels.wishesTitle">Ucapan &amp; Doa Restu</h3>
       <div id="universalWishesList" style="display: flex; flex-direction: column; gap: 10px; max-height: 380px; overflow-y: auto;">
         ${wishesList || `<p style="text-align: center; font-size: 12px; color: var(--text-muted); padding: 16px 0;">Belum ada ucapan. Jadilah yang pertama memberikan doa restu!</p>`}
       </div>

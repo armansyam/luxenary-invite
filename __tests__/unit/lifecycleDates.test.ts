@@ -73,8 +73,8 @@ describe("getPrimaryEventDate", () => {
     expect(getPrimaryEventDate(primaryUndated)).toBeNull();
   });
 
-  it("mendukung bentuk objek { events: [...] } dan menolak data rusak", () => {
-    expect(getPrimaryEventDate({ events })?.toISOString()).toBe("2026-12-13T17:00:00.000Z");
+  it("hanya menerima daftar sesi dan menolak data rusak", () => {
+    expect(getPrimaryEventDate({ events })).toBeNull();
     expect(getPrimaryEventDate("bukan json")).toBeNull();
     expect(getPrimaryEventDate([])).toBeNull();
     expect(getPrimaryEventDate(null)).toBeNull();

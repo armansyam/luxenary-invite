@@ -306,8 +306,9 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
       .map((s) => parseInt(s.trim(), 10))
       .filter((n) => !isNaN(n) && n > 0 && n <= 100)
       .sort((a, b) => a - b),
-    paymentGatewayFeePercent: Number(map["payment_gateway_fee_percent"] || (map["payment_fee_rate"] ? Number(map["payment_fee_rate"]) * 100 : 0.7)),
-    paymentGatewayFeePayer: ((map["payment_fee_payer"] || map["payment_gateway_fee_payer"] || "MERCHANT") === "BUYER" ? "BUYER" : "MERCHANT"),
+    // Sama dengan computeGatewayCharge (lib/paymentFees.ts): nilai yang ditampilkan harus nilai yang ditagihkan.
+    paymentGatewayFeePercent: map["payment_gateway_fee_percent"] && !isNaN(Number(map["payment_gateway_fee_percent"])) ? Number(map["payment_gateway_fee_percent"]) : 0.7,
+    paymentGatewayFeePayer: map["payment_fee_payer"] === "BUYER" ? "BUYER" : "MERCHANT",
     // Kosong = admin belum menetapkan template; Buku Tamu klien lalu memakai preset sesuai jenis acara (lib/waPresets.ts).
     waTemplateMessage: map["wa_template_message"]?.trim() || "",
     maxUploadMb: Number(map["max_upload_mb"] || 5),

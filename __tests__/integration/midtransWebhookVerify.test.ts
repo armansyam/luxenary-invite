@@ -55,9 +55,9 @@ describe.skipIf(!IS_TEST_DB)("webhook Midtrans: konfirmasi status ke API sebelum
 
   beforeAll(async () => {
     await prisma.adminSetting.upsert({
-      where: { key: "midtrans_server_key" },
+      where: { key: "midtrans_sandbox_server_key" },
       update: { value: SERVER_KEY },
-      create: { key: "midtrans_server_key", value: SERVER_KEY, group: "payment" },
+      create: { key: "midtrans_sandbox_server_key", value: SERVER_KEY, group: "payment" },
     });
   });
 
@@ -69,7 +69,7 @@ describe.skipIf(!IS_TEST_DB)("webhook Midtrans: konfirmasi status ke API sebelum
     verify.mockRestore();
     await prisma.order.deleteMany({ where: { id: { in: ids.orders } } });
     await prisma.user.deleteMany({ where: { id: { in: ids.users } } });
-    await prisma.adminSetting.deleteMany({ where: { key: "midtrans_server_key" } });
+    await prisma.adminSetting.deleteMany({ where: { key: "midtrans_sandbox_server_key" } });
     await prisma.webhookLog.deleteMany({ where: { source: "midtrans", createdAt: { gte: RUN_STARTED_AT } } });
     await prisma.$disconnect();
     await pool.end();

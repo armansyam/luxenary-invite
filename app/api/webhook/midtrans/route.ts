@@ -42,38 +42,19 @@ export async function POST(req: NextRequest) {
       const settings = await prisma.adminSetting.findMany({
         where: {
           key: {
-            in: [
-              "midtrans_server_key",
-              "midtrans_client_key",
-              "midtrans_sandbox_server_key",
-              "midtrans_sandbox_client_key",
-              "midtrans_production_server_key",
-              "midtrans_production_client_key",
-            ],
+            in: ["midtrans_sandbox_server_key", "midtrans_sandbox_client_key", "midtrans_production_server_key", "midtrans_production_client_key"],
           },
         },
       });
       const map: Record<string, string> = {};
       settings.forEach((s) => (map[s.key] = s.value?.trim() || ""));
 
-      let dbServerKey = map["midtrans_server_key"] || "";
-      let dbClientKey = map["midtrans_client_key"] || "";
-
-      // Auto-swap guard jika user menukar Server Key & Client Key di Admin Settings
-      if (
-        (dbServerKey.startsWith("Mid-client-") || dbServerKey.startsWith("SB-Mid-client-")) &&
-        (dbClientKey.startsWith("Mid-server-") || dbClientKey.startsWith("SB-Mid-server-"))
-      ) {
-        const temp = dbServerKey;
-        dbServerKey = dbClientKey;
-        dbClientKey = temp;
-      }
-
-      if (dbServerKey) serverKeys.push(dbServerKey);
-      if (map["midtrans_sandbox_server_key"]) serverKeys.push(map["midtrans_sandbox_server_key"]);
-      if (map["midtrans_production_server_key"]) serverKeys.push(map["midtrans_production_server_key"]);
-      if (dbClientKey && (dbClientKey.startsWith("Mid-server-") || dbClientKey.startsWith("SB-Mid-server-"))) {
-        serverKeys.push(dbClientKey);
+      // Server key dari kedua lingkungan; kolom client key ikut dicoba bila admin menukar isian keduanya.
+      for (const mode of ["sandbox", "production"]) {
+        for (const field of ["server", "client"]) {
+          const value = map[`midtrans_${mode}_${field}_key`] || "";
+          if (value.startsWith("Mid-server-") || value.startsWith("SB-Mid-server-") || (field === "server" && value)) serverKeys.push(value);
+        }
       }
     } catch (err) {
       logger.error("MidtransWebhook", "Server key dari pengaturan admin gagal dibaca; hanya kunci env yang dipakai", err);
@@ -136,14 +117,6 @@ export async function POST(req: NextRequest) {
     const order = await prisma.order.findUnique({ where: { id: orderId } });
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    }
-
-    // Validasi Gateway Ownership — tolak jika order sudah dipindah ke gateway lain
-    // Contoh: admin switch dari Midtrans ke Xendit, lalu Midtrans kirim webhook telat
-    const orderGatewayId = order.gatewayId;
-    if (orderGatewayId && orderGatewayId !== "midtrans") {
-      logger.warn("MidtransWebhook", "Order milik gateway lain; webhook diabaikan", { orderId, gatewayId: orderGatewayId });
-      return NextResponse.json({ status: "ignored", reason: "gateway_mismatch" }, { status: 200 });
     }
 
     // Cek Idempotency: Jika sudah PAID, return ok

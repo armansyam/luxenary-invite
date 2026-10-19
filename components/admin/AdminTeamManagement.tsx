@@ -438,11 +438,12 @@ export function AdminTeamManagement() {
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Password Awal</label>
                   <input
                     required
+                    minLength={12}
                     type="text"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:border-amber-500 outline-none text-xs bg-white text-gray-900 font-mono"
-                    placeholder="P@ssw0rd123"
+                    placeholder="Minimal 12 karakter"
                   />
                 </div>
               </div>
@@ -617,10 +618,11 @@ export function AdminTeamManagement() {
                   </label>
                   <input
                     type="text"
+                    minLength={12}
                     value={editFormData.password}
                     onChange={(e) => setEditFormData({ ...editFormData, password: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:border-amber-500 outline-none text-xs bg-white text-gray-900 font-mono"
-                    placeholder="Biarkan kosong"
+                    placeholder="Kosong, atau minimal 12 karakter"
                   />
                 </div>
               </div>

@@ -1,12 +1,10 @@
 /**
  * Bukti transfer tidak boleh punya URL publik: unggahan masuk penyimpanan privat, admin membukanya lewat tautan
- * bertanda tangan yang kedaluwarsa, dan skrip migrasi memindahkan berkas lama (hanya di database `luxenary_test`).
+ * bertanda tangan yang kedaluwarsa (hanya di database `luxenary_test`).
  */
 import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
 import { NextRequest } from "next/server";
-import { spawnSync } from "child_process";
 import fs from "fs";
-import os from "os";
 import path from "path";
 import sharp from "sharp";
 
@@ -26,7 +24,6 @@ const privatePath = (ref: string) => path.join(process.cwd(), "data", "private",
 
 let userId = "";
 let orderSeq = 0;
-const createdFiles: string[] = [];
 
 const makeOrder = (data: { proofImageUrl?: string } = {}) =>
   prisma.order.create({
@@ -69,7 +66,6 @@ describe.skipIf(!IS_TEST_DB)("bukti transfer privat", () => {
     }
     await prisma.order.deleteMany({ where: { userId } });
     await prisma.user.deleteMany({ where: { id: userId } });
-    for (const file of createdFiles) fs.rmSync(file, { recursive: true, force: true });
   });
 
   it("unggahan disimpan di data/private, bukan public/uploads", async () => {
@@ -140,56 +136,11 @@ describe.skipIf(!IS_TEST_DB)("bukti transfer privat", () => {
     expect((await getFile(createProofLink(order.id, newRef))).status).toBe(200);
   });
 
-  it("bukti lama berupa URL publik dijawab 409 oleh rute admin sampai dimigrasikan", async () => {
-    const order = await makeOrder({ proofImageUrl: `/uploads/proofs/${TAG}-lama.webp` });
+  it("nilai bukti yang bukan referensi privat tidak dapat dibuka: rute admin 404, rute berkas 403", async () => {
+    const order = await makeOrder({ proofImageUrl: `/uploads/proofs/${TAG}-publik.webp` });
     asAdmin();
-    expect((await getAdminProof(order.id)).status).toBe(409);
+    expect((await getAdminProof(order.id)).status).toBe(404);
     expect((await getFile(createProofLink(order.id, order.proofImageUrl!))).status).toBe(403);
   });
 
-  it("skrip migrasi: dry run tidak mengubah apa pun, --apply memindahkan bukti dan menghapus salinan publik serta berkas yatim", async () => {
-    // Skrip dijalankan dengan cwd sementara agar berkas di public/uploads/proofs milik checkout ini tidak tersentuh.
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "vitest_proofmig_"));
-    createdFiles.push(root);
-    const publicDir = path.join(root, "public", "uploads", "proofs");
-    fs.mkdirSync(publicDir, { recursive: true });
-    const legacyName = `${TAG}-legacy.webp`;
-    const legacyBytes = await sharp({ create: { width: 8, height: 8, channels: 3, background: "#0a0" } }).webp().toBuffer();
-    fs.writeFileSync(path.join(publicDir, legacyName), legacyBytes);
-    fs.writeFileSync(path.join(publicDir, `${TAG}-orphan.webp`), legacyBytes);
-    fs.writeFileSync(path.join(publicDir, ".gitkeep"), "");
-    const order = await makeOrder({ proofImageUrl: `/uploads/proofs/${legacyName}` });
-
-    const run = (...args: string[]) =>
-      spawnSync(path.join(process.cwd(), "node_modules", ".bin", "tsx"), [
-        "--tsconfig", path.join(process.cwd(), "tsconfig.json"),
-        path.join(process.cwd(), "scripts", "migrate-private-proofs.ts"),
-        ...args,
-      ], {
-        cwd: root,
-        env: { ...process.env, STORAGE_PROVIDER: "local", S3_BACKUP_BUCKET_NAME: "" },
-        encoding: "utf8",
-        timeout: 60000,
-      });
-
-    const dry = run();
-    expect(dry.status, dry.stderr).toBe(0);
-    expect(dry.stdout).toContain(`PINDAH  ${order.invoiceNumber}`);
-    expect(dry.stdout).toContain(`HAPUS   berkas yatim /uploads/proofs/${TAG}-orphan.webp`);
-    expect(dry.stdout).not.toContain(".gitkeep");
-    expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).proofImageUrl).toBe(`/uploads/proofs/${legacyName}`);
-    expect(fs.readdirSync(publicDir).sort()).toEqual([".gitkeep", `${TAG}-legacy.webp`, `${TAG}-orphan.webp`].sort());
-
-    const applied = run("--apply");
-    expect(applied.status, applied.stderr).toBe(0);
-    const ref = (await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).proofImageUrl!;
-    expect(ref).toBe(`private-disk:proofs/${legacyName}`);
-    expect(fs.readFileSync(path.join(root, "data", "private", "proofs", legacyName)).equals(legacyBytes)).toBe(true);
-    expect(fs.readdirSync(publicDir)).toEqual([".gitkeep"]);
-
-    const again = run("--apply");
-    expect(again.status, again.stderr).toBe(0);
-    expect(again.stdout).toContain("0 dipindah");
-    await prisma.order.update({ where: { id: order.id }, data: { proofImageUrl: null } });
-  });
 });

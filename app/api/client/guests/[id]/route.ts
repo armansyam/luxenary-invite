@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { logger } from "@/lib/logger";
 import { cleanGuestName, cleanGuestTextFields, guestQuotaFrom } from "@/lib/guestInput";
+import { getPrimaryEventDate } from "@/lib/lifecycleDates";
 
 export async function GET(
   req: Request,
@@ -78,7 +79,7 @@ export async function PUT(
 
     const existingGuest = await prisma.guest.findUnique({
       where: { id },
-      include: { invitation: { select: { userId: true } } },
+      include: { invitation: { select: { userId: true, eventData: true } } },
     });
 
     if (!existingGuest) {
@@ -90,6 +91,15 @@ export async function PUT(
 
     if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Sama dengan tambah tamu: mulai hari terima tamu, nama dan kuota yang tercetak di QR tidak boleh berubah dari dasbor.
+    const guestDay = getPrimaryEventDate(existingGuest.invitation.eventData);
+    if (!isAdmin && guestDay && Date.now() >= guestDay.getTime()) {
+      return NextResponse.json(
+        { error: "Daftar tamu sudah dikunci karena acara sedang/telah berlangsung. Perubahan data tamu hanya dapat dilakukan Resepsionis di lokasi." },
+        { status: 403 }
+      );
     }
 
     const allowedData: Record<string, any> = {};

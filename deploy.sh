@@ -249,9 +249,6 @@ if command -v pm2 &> /dev/null; then
   export PATH="${NODE_BIN_DIR:+$NODE_BIN_DIR:}$SYSTEM_PATH"
   echo "🧱 Purge ulang cache undangan terbit setelah server baru aktif..."
   refresh_published_html
-  # Dijalankan setelah server baru aktif: server lama masih menulis bukti transfer ke penyimpanan publik. Idempoten.
-  echo "🔐 Memindahkan bukti transfer lama ke penyimpanan privat..."
-  npx tsx scripts/migrate-private-proofs.ts --apply || echo "⚠️ Migrasi bukti transfer gagal sebagian — periksa baris GAGAL di atas lalu jalankan ulang."
   export PATH="$SYSTEM_PATH"
   # Direktori build lama sebelum skema .next-a/.next-b tidak dipakai lagi; direktori aktif sebelumnya dibiarkan untuk rollback cepat.
   if [ "$ACTIVE_DIST" = ".next" ]; then rm -rf .next; fi

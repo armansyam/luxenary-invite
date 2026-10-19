@@ -398,12 +398,8 @@ export function AdminMarketingTab() {
     }
   };
 
-  // Delete Partner with Balance Check
   const handleDeletePartner = (partner: PartnerAffiliate) => {
-    const pending = Number(partner.pendingBalance);
-    const msg = pending > 0
-      ? `Perhatian: Mitra "${partner.name}" masih memiliki saldo komisi belum dibayar sebesar Rp ${pending.toLocaleString("id-ID")}.\n\nApakah Anda yakin ingin tetap menghapusnya beserta riwayat komisi tertunggak?`
-      : `Apakah Anda yakin ingin menghapus mitra "${partner.name}"?`;
+    const msg = `Hapus mitra "${partner.name}"? Mitra yang sudah punya catatan komisi tidak dapat dihapus, hanya dinonaktifkan.`;
 
     setDeleteConfirm({
       title: "Hapus Mitra Afiliasi",
@@ -417,7 +413,6 @@ export function AdminMarketingTab() {
             body: JSON.stringify({
               action: "DELETE_PARTNER",
               id: partner.id,
-              forceConfirm: pending > 0,
             }),
           });
           const data = await res.json();

@@ -27,8 +27,6 @@ export class MidtransGateway implements PaymentGateway {
               "midtrans_sandbox_server_key",
               "midtrans_production_client_key",
               "midtrans_production_server_key",
-              "midtrans_server_key",
-              "midtrans_client_key",
             ],
           },
         },
@@ -45,13 +43,9 @@ export class MidtransGateway implements PaymentGateway {
           ? false
           : environment.toLowerCase() === "production";
 
-      if (isProd) {
-        serverKey = map["midtrans_production_server_key"] || (environment === "production" ? map["midtrans_server_key"] : "") || process.env.MIDTRANS_SERVER_KEY || "";
-        clientKey = map["midtrans_production_client_key"] || (environment === "production" ? map["midtrans_client_key"] : "") || process.env.MIDTRANS_CLIENT_KEY || "";
-      } else {
-        serverKey = map["midtrans_sandbox_server_key"] || (environment !== "production" ? map["midtrans_server_key"] : "") || process.env.MIDTRANS_SERVER_KEY || "";
-        clientKey = map["midtrans_sandbox_client_key"] || (environment !== "production" ? map["midtrans_client_key"] : "") || process.env.MIDTRANS_CLIENT_KEY || "";
-      }
+      const mode = isProd ? "production" : "sandbox";
+      serverKey = map[`midtrans_${mode}_server_key`] || process.env.MIDTRANS_SERVER_KEY || "";
+      clientKey = map[`midtrans_${mode}_client_key`] || process.env.MIDTRANS_CLIENT_KEY || "";
     } catch {
       serverKey = process.env.MIDTRANS_SERVER_KEY || "";
       clientKey = process.env.MIDTRANS_CLIENT_KEY || "";

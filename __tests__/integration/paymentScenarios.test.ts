@@ -60,7 +60,7 @@ const ids = { users: [] as string[] };
 const savedSettings = new Map<string, string | null>();
 const SETTINGS: Record<string, { value: string; group: string }> = {
   price_tier2: { value: "100000", group: "pricing" },
-  midtrans_server_key: { value: SERVER_KEY, group: "payment" },
+  midtrans_sandbox_server_key: { value: SERVER_KEY, group: "payment" },
   payment_mode: { value: "GATEWAY", group: "payment" },
 };
 

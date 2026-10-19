@@ -65,13 +65,21 @@ export async function DELETE(
       return NextResponse.json({ error: "Lagu tidak ditemukan" }, { status: 404 });
     }
 
-    // Delete record from database
+    // Undangan menyimpan salinan URL lagu, bukan relasi: menghapus lagu yang dipakai membuat musik undangan itu hilang.
+    const inUse = await prisma.invitation.count({ where: { musicUrl: existing.url } });
+    if (inUse > 0) {
+      return NextResponse.json(
+        { error: `Lagu ini dipakai ${inUse} undangan dan tidak dapat dihapus. Nonaktifkan agar tidak muncul di pilihan klien baru.` },
+        { status: 409 }
+      );
+    }
+
     await prisma.musicPreset.delete({
       where: { id },
     });
 
-    // Berkas lokal: preset bawaan di /public/music/, unggahan admin di /public/uploads/music/
-    if (existing.url.startsWith("/music/") || existing.url.startsWith("/uploads/music/")) {
+    // Hanya unggahan admin yang dihapus dari disk; preset bawaan di /public/music/ adalah berkas repo yang dibuat ulang oleh seed.
+    if (existing.url.startsWith("/uploads/music/")) {
       const filePath = path.join(process.cwd(), "public", existing.url);
       if (fs.existsSync(filePath)) {
         try {

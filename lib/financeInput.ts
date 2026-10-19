@@ -1,5 +1,4 @@
 import { ExpenseCategory } from "@prisma/client";
-import { safeExternalUrl } from "@/lib/safeUrl";
 
 /** Batas kolom Decimal(12,2): nominal di atasnya membuat Prisma gagal dengan 500. */
 export const MAX_FINANCE_AMOUNT = 9_999_999_999;
@@ -30,9 +29,13 @@ export function optionalText(value: unknown, max: number): string | null {
   return trimmed ? trimmed.slice(0, max) : null;
 }
 
-/** URL bukti pembayaran yang akan menjadi tautan di panel admin: kosong diterima, skema selain http/https/path lokal ditolak. */
+const RECEIPT_REF_PATTERN = /^private-(bucket|disk):receipts\/receipt-\d+-[a-z0-9]+\.(jpg|png|webp|pdf)$/;
+
+/**
+ * Struk pengeluaran: kosong, atau referensi privat hasil `/api/admin/finance/upload-receipt`. URL bebas dan referensi
+ * berkas privat lain (mis. bukti transfer klien) ditolak agar rute struk tidak dapat dipakai membuka berkas lain.
+ */
 export function receiptUrlInput(value: unknown): { ok: true; value: string | null } | { ok: false } {
   if (value === undefined || value === null || value === "") return { ok: true, value: null };
-  const safe = safeExternalUrl(value);
-  return safe ? { ok: true, value: safe } : { ok: false };
+  return typeof value === "string" && RECEIPT_REF_PATTERN.test(value) ? { ok: true, value } : { ok: false };
 }

@@ -108,11 +108,8 @@ describe.skipIf(!IS_TEST_DB)("reset jenis acara oleh admin", () => {
     const { user, order, inv } = await makeDraft();
     await prisma.guest.create({ data: { invitationId: inv.id, name: "Tamu Satu", slug: `${TAG}-tamu` } });
     const uploadDir = path.join(process.cwd(), "public", "uploads", "invitations", inv.id);
-    const draftFile = path.join(process.cwd(), "data", "drafts", `${inv.id}.html`);
     fs.mkdirSync(uploadDir, { recursive: true });
     fs.writeFileSync(path.join(uploadDir, "landing-cover.webp"), "x");
-    fs.mkdirSync(path.dirname(draftFile), { recursive: true });
-    fs.writeFileSync(draftFile, "<html></html>");
     await prisma.invitationMedia.create({ data: { invitationId: inv.id, mediaSlot: "LANDING_COVER", localPath: `/uploads/invitations/${inv.id}/landing-cover.webp` } });
 
     const res = await reset(inv.id, { reason: "klien salah memilih Pernikahan, seharusnya Aqiqah" });
@@ -120,7 +117,6 @@ describe.skipIf(!IS_TEST_DB)("reset jenis acara oleh admin", () => {
     expect(await prisma.invitation.count({ where: { id: inv.id } })).toBe(0);
     expect(await prisma.guest.count({ where: { invitationId: inv.id } })).toBe(0);
     expect(fs.existsSync(uploadDir)).toBe(false);
-    expect(fs.existsSync(draftFile)).toBe(false);
     expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).status).toBe("PAID");
     const audit = await prisma.adminAuditLog.findFirst({ where: { adminId, action: "RESET_EVENT_TYPE" }, orderBy: { createdAt: "desc" } });
     expect(audit?.details).toContain("seharusnya Aqiqah");

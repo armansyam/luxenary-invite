@@ -274,6 +274,7 @@ export async function DELETE(req: NextRequest) {
         promoCodeApplied: true,
         gatewayId: true,
         gatewayTxId: true,
+        proofImageUrl: true,
       },
     });
     if (!order) {
@@ -281,6 +282,11 @@ export async function DELETE(req: NextRequest) {
     }
     if (order.userId !== session.user.id && !hasAdminPermission(session.user, "orders")) {
       return NextResponse.json({ error: "Akses ditolak. Bukan order Anda." }, { status: 403 });
+    }
+    // Bukti transfer sudah dikirim untuk nominal berdiskon; mengembalikan harga normal membuat nominal order tidak cocok
+    // dengan transfer yang sedang diverifikasi admin.
+    if (order.status === "PENDING" && order.proofImageUrl) {
+      return NextResponse.json({ error: "Bukti transfer untuk nominal ini sudah dikirim, sehingga promo tidak dapat dilepas." }, { status: 409 });
     }
 
     // Diskon yang sudah dikunci saat konfirmasi sudah tertanam di nominal order dan sesi gateway. Melepas hold saja

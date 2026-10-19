@@ -1,10 +1,10 @@
 /**
  * Regresi audit 18 Okt 2026: restore hanya menerima arsip pg_dump format custom, unggahan klien menolak berkas yang
- * tidak terdeteksi (SVG), webhook Xendit mengonfirmasi ke API, isian unggahan momen tamu divalidasi, dan batas PIN per
+ * tidak terdeteksi (SVG), isian unggahan momen tamu divalidasi, dan batas PIN per
  * undangan hanya menghitung PIN yang salah.
  * (bagian DB hanya berjalan di database `luxenary_test`)
  */
-import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
 import { NextRequest } from "next/server";
 import { spawnSync } from "child_process";
 import crypto from "crypto";
@@ -21,16 +21,13 @@ import { prisma, pool } from "@/lib/prisma";
 import { isCustomFormatDump, restoreDatabaseSnapshot, getBackupDirectory, readBackupPathSetting } from "@/lib/databaseBackup";
 import { HttpError } from "@/lib/routeError";
 import { encryptPin } from "@/lib/pinEncryption";
-import { XenditGateway } from "@/lib/gateways/xendit";
 import { POST as restorePost } from "@/app/api/admin/database/restore/route";
 import { POST as clientUploadPost } from "@/app/api/client/upload/route";
-import { POST as xenditWebhook } from "@/app/api/webhook/xendit/route";
 import { POST as memoriesUploadPost } from "@/app/api/public/memories/upload/route";
 import { POST as verifyPinPost } from "@/app/api/receptionist/verify-pin/route";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
 const TAG = `vitest_a1018_${Date.now()}`;
-const RUN_STARTED_AT = new Date();
 const ids = { users: [] as string[], orders: [] as string[], invitations: [] as string[] };
 
 let ipSeq = 0;
@@ -161,81 +158,6 @@ describe.skipIf(!IS_TEST_DB)("unggahan klien: berkas yang tidak terdeteksi ditol
     expect(res.status, JSON.stringify(body)).toBe(200);
     expect(body.mediaType).toBe("image");
     expect(body.fileName).toBe("photo.webp");
-  });
-});
-
-describe.skipIf(!IS_TEST_DB)("webhook Xendit: konfirmasi status ke API sebelum pelunasan", () => {
-  const TOKEN = "vitest-xendit-callback-token";
-  const verify = vi.spyOn(XenditGateway.prototype, "verify");
-
-  async function makePendingXenditOrder(tag: string) {
-    const user = await prisma.user.create({ data: { email: `${TAG}_x_${tag}@t.local`, name: tag } });
-    ids.users.push(user.id);
-    const invoiceId = `inv_${crypto.randomUUID()}`;
-    const order = await prisma.order.create({
-      data: {
-        userId: user.id, invoiceNumber: `${TAG}-x-${tag}`, planType: "TIER_2", amount: 100000, chargedAmount: 100000,
-        status: "PENDING", gatewayId: "xendit", gatewayTxId: invoiceId,
-      },
-    });
-    ids.orders.push(order.id);
-    return { order, invoiceId };
-  }
-
-  const callback = (orderId: string, invoiceId: string) =>
-    xenditWebhook(
-      new NextRequest("http://localhost/api/webhook/xendit", {
-        method: "POST",
-        headers: { "content-type": "application/json", "x-callback-token": TOKEN },
-        body: JSON.stringify({ external_id: orderId, id: "payload-id-tidak-dipercaya", status: "PAID", paid_amount: 100000 }),
-      })
-    );
-  const statusOf = async (id: string) => (await prisma.order.findUniqueOrThrow({ where: { id } })).status;
-
-  beforeAll(async () => {
-    await prisma.adminSetting.upsert({
-      where: { key: "xendit_webhook_token" },
-      update: { value: TOKEN },
-      create: { key: "xendit_webhook_token", value: TOKEN, group: "payment" },
-    });
-  });
-
-  afterEach(() => verify.mockReset());
-
-  afterAll(async () => {
-    verify.mockRestore();
-    await prisma.adminSetting.deleteMany({ where: { key: "xendit_webhook_token" } });
-    await prisma.webhookLog.deleteMany({ where: { source: "xendit", createdAt: { gte: RUN_STARTED_AT } } });
-  });
-
-  it("API mengonfirmasi PAID memakai ID invoice dari DB: order dilunasi", async () => {
-    verify.mockResolvedValue({ status: "PAID" });
-    const { order, invoiceId } = await makePendingXenditOrder("paid");
-    expect((await callback(order.id, invoiceId)).status).toBe(200);
-    expect(verify).toHaveBeenCalledWith(invoiceId);
-    expect(await statusOf(order.id)).toBe("PAID");
-  });
-
-  it("token benar tetapi API menjawab PENDING: tidak dilunasi dan dijawab 503", async () => {
-    verify.mockResolvedValue({ status: "PENDING" });
-    const { order, invoiceId } = await makePendingXenditOrder("pending");
-    const res = await callback(order.id, invoiceId);
-    expect(res.status).toBe(503);
-    expect((await res.json()).reason).toBe("status_unconfirmed");
-    expect(await statusOf(order.id)).toBe("PENDING");
-  });
-
-  it("API tidak terjangkau: tidak dilunasi, 503, lalu berhasil saat API pulih", async () => {
-    verify.mockRejectedValueOnce(new Error("network down"));
-    const { order, invoiceId } = await makePendingXenditOrder("down");
-    const res = await callback(order.id, invoiceId);
-    expect(res.status).toBe(503);
-    expect((await res.json()).reason).toBe("gateway_status_unavailable");
-    expect(await statusOf(order.id)).toBe("PENDING");
-
-    verify.mockResolvedValue({ status: "PAID" });
-    expect((await callback(order.id, invoiceId)).status).toBe(200);
-    expect(await statusOf(order.id)).toBe("PAID");
   });
 });
 

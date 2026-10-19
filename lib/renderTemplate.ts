@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { masterTemplateCache } from "@/lib/cache";
 import { SANITIZE_GUEST_LABEL_JS } from "@/lib/checkinQr";
+import { LIVE_EDIT_FIELD_PATTERN } from "@/lib/liveEditFields";
 
 /** Helper pembacaan master template dengan memory cache untuk meminimalkan I/O disk */
 async function readMasterTemplate(filePath: string): Promise<string> {
@@ -441,6 +442,7 @@ const INLINE_LIVE_EDITOR_SCRIPT = `
 
   const pendingChanges = {};
   const viewRole = new URLSearchParams(window.location.search).get('view') || (window.innerWidth < 600 ? 'mobile' : 'desktop');
+  const LIVE_EDIT_FIELD_RE = new RegExp(${JSON.stringify(LIVE_EDIT_FIELD_PATTERN)});
 
   // Universal open invitation with cross-iframe synchronization
   function executeUniversalOpenInvitation(isRemote) {
@@ -674,6 +676,10 @@ const INLINE_LIVE_EDITOR_SCRIPT = `
       if (isOpenBtn) {
         return;
       }
+      // Nilai turunan tanpa tempat simpan (tanggal terformat, nama orang tua gabungan) tidak dibuat dapat disunting.
+      if (!LIVE_EDIT_FIELD_RE.test(el.getAttribute('data-lux-field') || '')) {
+        return;
+      }
 
       el.setAttribute('contenteditable', 'true');
       el.setAttribute('spellcheck', 'false');
@@ -748,23 +754,31 @@ const INLINE_LIVE_EDITOR_SCRIPT = `
     }
 
     try {
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({
-          type: 'LUX_INLINE_SAVE_REQUEST',
-          changes: pendingChanges
-        }, '*');
-      }
+      if (!window.parent || window.parent === window) throw new Error('Simpan hanya tersedia dari Studio.');
+      // Hasil simpan dikirim balik oleh Studio setelah PUT selesai; tanpa jawaban dalam 20 detik dianggap gagal.
+      const result = await new Promise(function(resolve) {
+        const timer = setTimeout(function() { window.removeEventListener('message', onResult); resolve({ ok: false, error: 'Tidak ada jawaban dari Studio.' }); }, 20000);
+        function onResult(e) {
+          if (e.origin !== window.location.origin || !e.data || e.data.type !== 'LUX_INLINE_SAVE_RESULT') return;
+          clearTimeout(timer);
+          window.removeEventListener('message', onResult);
+          resolve(e.data);
+        }
+        window.addEventListener('message', onResult);
+        window.parent.postMessage({ type: 'LUX_INLINE_SAVE_REQUEST', changes: pendingChanges }, window.location.origin);
+      });
+      if (!result.ok) throw new Error(result.error || 'Gagal menyimpan.');
 
       try {
         const bc = new BroadcastChannel('lux_preview_sync');
         bc.postMessage({ type: 'LUX_INLINE_SAVED', changes: pendingChanges });
       } catch(e){}
 
-      if (counter) counter.innerText = '✓ Semua perubahan tersimpan';
+      if (counter) counter.innerText = 'Semua perubahan tersimpan';
       if (saveBtn) saveBtn.style.display = 'none';
       Object.keys(pendingChanges).forEach(k => delete pendingChanges[k]);
     } catch(err) {
-      if (counter) counter.innerText = 'Gagal menyimpan. Coba lagi.';
+      if (counter) counter.innerText = (err && err.message ? err.message + ' ' : '') + 'Coba lagi.';
     } finally {
       if (saveBtn) {
         saveBtn.disabled = false;
@@ -1345,93 +1359,35 @@ export async function renderTemplateFile(
     }
   }
 
-  // --- 1. CEK ARSITEKTUR PIRING (DRAFTS) LEBIH DULU ---
-  let draftFound = false;
-  if (options?.invitationId) {
-    const draftsDir = path.join(process.cwd(), "data", "drafts");
-    const draftPath = path.join(draftsDir, `${options.invitationId}.html`);
+  // Selalu dari master: kustomisasi klien ada di DB, jadi perbaikan master oleh admin langsung berlaku di setiap
+  // render berikutnya. (Sebelumnya master disalin sekali ke data/drafts/<id>.html dan salinan itu dibaca seterusnya.)
+  if (!(await fileExists(tplPath))) {
+    const minimalistCheck = path.join(process.cwd(), "themes", "minimalist", `${templateName}.html`);
+    const traditionalCheck = path.join(process.cwd(), "themes", "traditional", `${templateName}.html`);
+    const modernLegacyCheck = path.join(process.cwd(), "themes", "modern", `${templateName}.html`);
+    const rootThemesCheck = path.join(process.cwd(), "themes", `${templateName}.html`);
 
-    if (!(await fileExists(draftsDir))) {
-      await fs.promises.mkdir(draftsDir, { recursive: true });
-    }
-
-    if (await fileExists(draftPath)) {
-      // Periksa apakah piring draft cocok dengan templateName & eventType yang diminta
-      try {
-        const draftContentHead = await fs.promises.readFile(draftPath, "utf-8");
-        const themeMatch = draftContentHead.slice(0, 300).match(/<!--\s*lux-theme:\s*([a-zA-Z0-9_-]+)\s*-->/);
-        const eventMatch = draftContentHead.slice(0, 300).match(/<!--\s*lux-event:\s*([a-zA-Z0-9_-]+)\s*-->/);
-        const currentEvent = (options?.eventType || data?.eventType || info.eventType || "WEDDING").toUpperCase();
-
-        const isThemeMismatched = themeMatch && themeMatch[1].toLowerCase() !== templateName.toLowerCase();
-        const isEventMismatched = eventMatch && eventMatch[1].toUpperCase() !== currentEvent;
-
-        if (isThemeMismatched || isEventMismatched) {
-          // Tema atau eventType telah berganti! Hapus draft usang agar draft baru disalin dari master tema baru
-          await fs.promises.unlink(draftPath).catch(() => {});
-          draftFound = false;
-        } else {
-          // Piring cocok atau legacy draft, gunakan piring draft
-          tplPath = draftPath;
-          draftFound = true;
-        }
-      } catch {
-        draftFound = false;
-      }
+    if (await fileExists(minimalistCheck)) {
+      tplPath = minimalistCheck;
+    } else if (await fileExists(traditionalCheck)) {
+      tplPath = traditionalCheck;
+    } else if (await fileExists(modernLegacyCheck)) {
+      tplPath = modernLegacyCheck;
+    } else if (await fileExists(rootThemesCheck)) {
+      tplPath = rootThemesCheck;
+    } else {
+      // Tidak menggunakan fallback (Sesuai instruksi: Wajib memilih tema)
+      return `
+        <div style="padding:40px; text-align:center; font-family:sans-serif; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #fff;">
+          <h2 style="color:#d32f2f;">Tema Tidak Tersedia</h2>
+          <p>Tema yang Anda pilih tidak tersedia atau telah dihapus oleh sistem.</p>
+          <p><b>Silakan kembali ke Dashboard Anda dan pilih tema lain yang aktif untuk melanjutkan pengeditan.</b></p>
+        </div>
+      `;
     }
   }
 
-  // --- 2. JIKA TIDAK ADA DRAFT, CEK MASTER FILE ---
-  if (!draftFound) {
-    if (!(await fileExists(tplPath))) {
-      const minimalistCheck = path.join(process.cwd(), "themes", "minimalist", `${templateName}.html`);
-      const traditionalCheck = path.join(process.cwd(), "themes", "traditional", `${templateName}.html`);
-      const modernLegacyCheck = path.join(process.cwd(), "themes", "modern", `${templateName}.html`);
-      const rootThemesCheck = path.join(process.cwd(), "themes", `${templateName}.html`);
-      
-      if (await fileExists(minimalistCheck)) {
-        tplPath = minimalistCheck;
-      } else if (await fileExists(traditionalCheck)) {
-        tplPath = traditionalCheck;
-      } else if (await fileExists(modernLegacyCheck)) {
-        tplPath = modernLegacyCheck;
-      } else if (await fileExists(rootThemesCheck)) {
-        tplPath = rootThemesCheck;
-      } else {
-        // Tidak menggunakan fallback (Sesuai instruksi: Wajib memilih tema)
-        return `
-          <div style="padding:40px; text-align:center; font-family:sans-serif; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #fff;">
-            <h2 style="color:#d32f2f;">Tema Tidak Tersedia</h2>
-            <p>Tema yang Anda pilih tidak tersedia atau telah dihapus oleh sistem.</p>
-            <p><b>Silakan kembali ke Dashboard Anda dan pilih tema lain yang aktif untuk melanjutkan pengeditan.</b></p>
-          </div>
-        `;
-      }
-    }
-
-    // Karena draft belum ada dan master file tersedia, beri tag tema dan eventType lalu simpan ke draft
-    if (options?.invitationId) {
-      const draftPath = path.join(process.cwd(), "data", "drafts", `${options.invitationId}.html`);
-      try {
-        const masterContent = await readMasterTemplate(tplPath);
-        const currentEvent = (options?.eventType || data?.eventType || info.eventType || "WEDDING").toUpperCase();
-        const headerTags = `<!-- lux-theme:${templateName} -->\n<!-- lux-event:${currentEvent} -->\n`;
-        const cleanedMaster = masterContent
-          .replace(/<!--\s*lux-theme:[^>]*-->\n?/g, "")
-          .replace(/<!--\s*lux-event:[^>]*-->\n?/g, "");
-        const taggedContent = `${headerTags}${cleanedMaster}`;
-        await fs.promises.writeFile(draftPath, taggedContent, "utf-8");
-        tplPath = draftPath;
-      } catch (err) {
-        console.error("Failed to copy master theme to draft:", err);
-      }
-    }
-  }
-
-  // Jika berupa berkas master tema, gunakan cache in-memory. Jika piring draft klien, baca langsung.
-  let tpl = tplPath.includes("/data/drafts/")
-    ? await fs.promises.readFile(tplPath, "utf-8")
-    : await readMasterTemplate(tplPath);
+  let tpl = await readMasterTemplate(tplPath);
 
   // Standarisasi banner kepemilikan dan proteksi Luxenary (Zero Hardcode & Identitas Publik Resmi)
   if (tpl.startsWith("<!--")) {
@@ -2041,25 +1997,6 @@ export async function renderTemplateFile(
     }
   }
 
-
-  // Server-Side Injection for Custom Labels (Zero-Hardcode Master Themes)
-  const customLabels = data.featureSettings?.customLabels || data.customLabels || {};
-  tpl = tpl.replace(
-    /<([a-zA-Z0-9]+)\b([^>]*data-lux-field="customLabels\.([^"]+)"[^>]*)>([\s\S]*?)<\/\1>/gi,
-    (match, tagName, attrs, labelKey, innerContent) => {
-      const val = customLabels[labelKey];
-      if (val !== undefined && val !== null) {
-        if (val === "") {
-          return `<${tagName}${attrs}></${tagName}>`;
-        }
-        const svgMatch = innerContent.match(/<svg[\s\S]*?<\/svg>/i);
-        const svgPrefix = svgMatch ? `${svgMatch[0]} ` : "";
-        return `<${tagName}${attrs}>${svgPrefix}${escapeHtmlAttr(String(val))}</${tagName}>`;
-      }
-      return match;
-    }
-  );
-
   // Conditional Template Blocks: recursively process innermost {{#if ...}} ... {{/if}} first
   const ifRegex = /\{[\s\n]*\{[\s\n]*#if\s+([\w.]+)[\s\n]*\}[\s\n]*\}((?:(?!\{[\s\n]*\{[\s\n]*#if\b)[\s\S])*?)\{[\s\n]*\{[\s\n]*\/if[\s\n]*\}[\s\n]*\}/i;
   let ifMatch;
@@ -2116,7 +2053,7 @@ export async function renderTemplateFile(
   // polos; dulu composer mengirim hasil nl2br yang lalu di-escape ulang, sehingga "<br />" tercetak sebagai teks.
   const MULTILINE_TEXT_KEYS = new Set(["openingQuote", "closingQuote"]);
 
-  return tpl.replace(/\{[\s\n]*\{[\s\n]*([\w.]+)[\s\n]*\}[\s\n]*\}/g, (_, key: string) => {
+  tpl = tpl.replace(/\{[\s\n]*\{[\s\n]*([\w.]+)[\s\n]*\}[\s\n]*\}/g, (_, key: string) => {
     let val = data[key];
     if (val === undefined && key.includes(".")) {
       const parts = key.split(".");
@@ -2156,5 +2093,24 @@ export async function renderTemplateFile(
     // Seluruh field teks pengguna di-escape untuk proteksi mutlak dari Stored XSS
     return escapeHtmlSafe(String(val));
   });
+
+  // Label kustom disisipkan setelah placeholder diganti, agar seksi buatan engine ({{rsvpSectionHtml}}, galeri, kado,
+  // dan seluruh seksi tema satu nama) ikut memakai label klien, bukan hanya elemen yang tertulis di master.
+  const customLabels = data.featureSettings?.customLabels || data.customLabels || {};
+  return tpl.replace(
+    /<([a-zA-Z0-9]+)\b([^>]*data-lux-field="customLabels\.([^"]+)"[^>]*)>([\s\S]*?)<\/\1>/gi,
+    (match, tagName, attrs, labelKey, innerContent) => {
+      const val = customLabels[labelKey];
+      if (val !== undefined && val !== null) {
+        if (val === "") {
+          return `<${tagName}${attrs}></${tagName}>`;
+        }
+        const svgMatch = innerContent.match(/<svg[\s\S]*?<\/svg>/i);
+        const svgPrefix = svgMatch ? `${svgMatch[0]} ` : "";
+        return `<${tagName}${attrs}>${svgPrefix}${escapeHtmlAttr(String(val))}</${tagName}>`;
+      }
+      return match;
+    }
+  );
 }
 

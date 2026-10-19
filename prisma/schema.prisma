@@ -298,7 +298,6 @@ enum AdminRole {
 
 enum UserRole {
   CLIENT
-  ADMIN
 }
 
 enum PlanType {

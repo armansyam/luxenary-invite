@@ -334,8 +334,7 @@ export function getMemoriesActiveSchedule(featureSettingsInput: any, eventDataIn
   } else {
     // 2. Auto-sintesis sesi dari susunan acara undangan (eventData)
     try {
-      const events = typeof eventDataInput === "string" ? JSON.parse(eventDataInput) : eventDataInput || [];
-      const list = Array.isArray(events) ? events : events?.events;
+      const list = typeof eventDataInput === "string" ? JSON.parse(eventDataInput) : eventDataInput || [];
       if (Array.isArray(list) && list.length > 0) {
         list.forEach((ev: any, idx: number) => {
           if (ev?.date) {

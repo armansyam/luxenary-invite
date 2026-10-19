@@ -6,7 +6,6 @@ import { NextRequest } from "next/server";
 import { prisma, pool } from "@/lib/prisma";
 import { POST as rsvpPost } from "@/app/api/public/rsvp/route";
 import { POST as midtransPost } from "@/app/api/webhook/midtrans/route";
-import { POST as xenditPost } from "@/app/api/webhook/xendit/route";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
 
@@ -30,11 +29,6 @@ describe.skipIf(!IS_TEST_DB)("JSON rusak menghasilkan 400", () => {
 
   it("POST /api/webhook/midtrans", async () => {
     const res = await midtransPost(bad("http://localhost/api/webhook/midtrans"));
-    expect(res.status).toBe(400);
-  });
-
-  it("POST /api/webhook/xendit", async () => {
-    const res = await xenditPost(bad("http://localhost/api/webhook/xendit"));
     expect(res.status).toBe(400);
   });
 });

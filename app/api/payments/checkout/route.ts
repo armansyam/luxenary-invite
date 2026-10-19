@@ -16,11 +16,9 @@ export const dynamic = "force-dynamic";
  * POST /api/payments/checkout
  * Trigger pembayaran QRIS/Gateway untuk order PENDING.
  *
- * Dynamic Gateway Switching — Arsitektur 2-Arah (Two-Way Handshake):
- * - Gateway yang didukung secara eksklusif: Midtrans dan Xendit.
+ * Gateway: Midtrans (Core API QRIS).
  * - Setiap order menyimpan `gatewayId` dan `gatewayTxId` (ID transaksi di sisi gateway).
- * - Saat pembatalan, penggantian paket, atau timeout expired, sistem memanggil cancel() ke gateway aktif.
- * - Midtrans memanggil /v2/{orderId}/cancel dan Xendit memanggil /v2/invoices/{invoiceId}/expire.
+ * - Saat pembatalan, penggantian paket, atau timeout expired, sistem memanggil cancel() (/v2/{orderId}/cancel).
  */
 export async function POST(req: Request) {
   try {
@@ -153,7 +151,7 @@ export async function POST(req: Request) {
     // Jika order sudah punya gatewayTxId (transaksi sebelumnya sudah pernah di-init),
     // kita WAJIB membatalkan transaksi lama di gateway tersebut sebelum membuat yang baru.
     //
-    // Kenapa: Midtrans dan Xendit memerlukan pembatalan resmi via API agar status
+    // Kenapa: Midtrans memerlukan pembatalan resmi via API agar status
     //         di jaringan perbankan (ASPI / BI) langsung hangus dan tidak terjadi pembayaran ganda.
     // ──────────────────────────────────────────────────────────────────────
     const prevGatewayTxId = order.gatewayTxId;

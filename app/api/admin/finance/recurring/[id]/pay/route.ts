@@ -71,7 +71,7 @@ export async function POST(
     }
     const receipt = receiptUrlInput(body.receiptUrl);
     if (!receipt.ok) {
-      return NextResponse.json({ error: "URL bukti pembayaran tidak valid." }, { status: 400 });
+      return NextResponse.json({ error: "Struk tidak valid. Unggah ulang berkas struknya." }, { status: 400 });
     }
     const finalTitle = optionalText(body.title, 200) || `${recurring.name} (Bulan ${expMonth}/${expYear})`;
     const finalSource = optionalText(body.paymentSource, 50) || recurring.paymentSource || "TRANSFER_BANK";

@@ -25,10 +25,7 @@ async function isAuthorized(req: NextRequest): Promise<boolean> {
   return hasAdminPermission(session?.user, "database");
 }
 
-export async function GET(req: NextRequest) {
-  return handleBackupRequest(req);
-}
-
+// Hanya POST: GET dengan sesi admin dapat dipicu dari halaman lain lewat <img src> atau tautan (CSRF).
 export async function POST(req: NextRequest) {
   return handleBackupRequest(req);
 }

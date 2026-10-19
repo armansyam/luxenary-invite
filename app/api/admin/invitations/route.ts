@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
-import { Prisma } from "@prisma/client";
+import { EventType, Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +21,10 @@ export async function GET(req: NextRequest) {
     const whereClause: Prisma.InvitationWhereInput = {};
 
     if (eventType !== "ALL") {
-      whereClause.eventType = eventType as any;
+      if (!(Object.values(EventType) as string[]).includes(eventType)) {
+        return NextResponse.json({ error: "Jenis acara tidak dikenal." }, { status: 400 });
+      }
+      whereClause.eventType = eventType as EventType;
     }
 
     // 1. Status Filter

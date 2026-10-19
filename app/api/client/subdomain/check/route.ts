@@ -13,7 +13,8 @@ export async function GET(req: Request) {
     const cleanSubdomain = rawSubdomain
       .toLowerCase()
       .trim()
-      .replace(/[^a-z0-9-]/g, "");
+      .replace(/[^a-z0-9-]/g, "")
+      .replace(/^-+|-+$/g, "");
 
     if (!cleanSubdomain) {
       return NextResponse.json({
@@ -29,10 +30,11 @@ export async function GET(req: Request) {
       });
     }
 
-    if (cleanSubdomain.length > 35) {
+    // Batas label DNS, sama dengan rute simpan undangan.
+    if (cleanSubdomain.length > 63) {
       return NextResponse.json({
         available: false,
-        message: "Subdomain maksimal terdiri dari 35 karakter.",
+        message: "Subdomain maksimal terdiri dari 63 karakter.",
       });
     }
 

@@ -96,15 +96,11 @@ export async function GET(req: NextRequest) {
 
     // 3. Local Folders Size
     const uploadsDir = path.join(process.cwd(), "public", "uploads");
-    const draftsDir = path.join(process.cwd(), "data", "drafts");
-
     const uploadsSizeBytes = getDirectorySize(uploadsDir);
-    const draftsSizeBytes = getDirectorySize(draftsDir);
 
     const localFolders = {
       uploadsMb: parseFloat((uploadsSizeBytes / 1024 / 1024).toFixed(1)),
-      draftsMb: parseFloat((draftsSizeBytes / 1024 / 1024).toFixed(1)),
-      totalLocalMediaMb: parseFloat(((uploadsSizeBytes + draftsSizeBytes) / 1024 / 1024).toFixed(1)),
+      totalLocalMediaMb: parseFloat((uploadsSizeBytes / 1024 / 1024).toFixed(1)),
     };
 
     // 4. PostgreSQL Health & Query Latency

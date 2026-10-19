@@ -320,7 +320,7 @@ export class IndustrialQASuite {
         this.trackedOrderIds.push(order.id);
 
         // 8 pelunasan paralel lewat settleOrderAsPaid — inti transisi PENDING -> PAID yang dipakai
-        // webhook Midtrans, webhook Xendit, approve admin, dan rekonsiliasi status klien.
+        // webhook Midtrans, approve admin, dan rekonsiliasi status klien.
         const webhookHits = Array.from({ length: 8 }, () =>
           settleOrderAsPaid(order.id, { paymentMethod: "GATEWAY" })
         );

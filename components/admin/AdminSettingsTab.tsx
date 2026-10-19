@@ -42,8 +42,6 @@ interface Props {
   setSavingActiveGateway: (v: boolean) => void;
   savingMidtrans: boolean;
   setSavingMidtrans: (v: boolean) => void;
-  savingXendit: boolean;
-  setSavingXendit: (v: boolean) => void;
   savingSmtp: boolean;
   setSavingSmtp: (v: boolean) => void;
   savingDomainDns: boolean;
@@ -64,9 +62,6 @@ interface Props {
   // Subdomain recycle
   recyclingSubdomains: boolean;
   recycleResult: { success: boolean; message: string } | null;
-  // Gateway
-  selectedGatewayVendor: "midtrans" | "xendit";
-  setSelectedGatewayVendor: (v: "midtrans" | "xendit") => void;
   // Branding
   logoUrl: string | null;
   faviconUrl: string | null;
@@ -110,7 +105,6 @@ export default function AdminSettingsTab(props: Props) {
     savingSubdomainSettings, setSavingSubdomainSettings,
     savingActiveGateway, setSavingActiveGateway,
     savingMidtrans, setSavingMidtrans,
-    savingXendit, setSavingXendit,
     savingSmtp, setSavingSmtp,
     savingDomainDns, setSavingDomainDns,
     savingMemoriesMilestones, setSavingMemoriesMilestones,
@@ -118,7 +112,6 @@ export default function AdminSettingsTab(props: Props) {
     testingSmtp, testSmtpEmail, setTestSmtpEmail, testSmtpResult, setTestSmtpResult,
     detectingServerIp, detectIpResult,
     recyclingSubdomains, recycleResult,
-    selectedGatewayVendor, setSelectedGatewayVendor,
     logoUrl, faviconUrl,
     pendingLogo, setPendingLogo, pendingFavicon, setPendingFavicon,
     previewLogo, setPreviewLogo, previewFavicon, setPreviewFavicon,
@@ -342,38 +335,24 @@ export default function AdminSettingsTab(props: Props) {
   <>
   {/* ═══ PUSAT KONTROL & BASE SETTING GATEWAY GLOBAL ═══ */}
   <SettingsCard
-    title="Pusat Kontrol & Pengaturan Global Gateway"
-    description="Konfigurasi terpusat untuk semua payment gateway: pilih gateway aktif, mode lingkungan, masa berlaku QRIS, penanggung biaya admin, dan format nama invoice."
+    title="Pengaturan Tagihan QRIS"
+    description="Masa berlaku QRIS Midtrans dan penanggung biaya layanan gateway."
     isEditing={Boolean(editSection["active_gateway"])}
     onEdit={() => toggleEditSection("active_gateway")}
-    onCancel={() => cancelEdit("active_gateway", ["active_payment_gateway", "payment_gateway_mode", "payment_expiry_minutes", "payment_fee_payer", "payment_gateway_fee_percent", "payment_fee_rate", "payment_invoice_prefix"])}
-    onSave={() => saveSettings(["active_payment_gateway", "payment_gateway_mode", "payment_expiry_minutes", "payment_fee_payer", "payment_gateway_fee_percent", "payment_fee_rate", "payment_invoice_prefix"], setSavingActiveGateway, "active_gateway")}
+    onCancel={() => cancelEdit("active_gateway", ["payment_gateway_mode", "payment_expiry_minutes", "payment_fee_payer", "payment_gateway_fee_percent"])}
+    onSave={() => saveSettings(["payment_gateway_mode", "payment_expiry_minutes", "payment_fee_payer", "payment_gateway_fee_percent"], setSavingActiveGateway, "active_gateway")}
     saving={savingActiveGateway}
-    isDirty={isSectionDirty(["active_payment_gateway", "payment_gateway_mode", "payment_expiry_minutes", "payment_fee_payer", "payment_gateway_fee_percent", "payment_fee_rate", "payment_invoice_prefix"])}
+    isDirty={isSectionDirty(["payment_gateway_mode", "payment_expiry_minutes", "payment_fee_payer", "payment_gateway_fee_percent"])}
     saveSuccess={settingsSaved["active_gateway"]}
     saveSuccessMessage="Pengaturan global payment gateway berhasil disimpan"
     viewContent={
       <div className="space-y-3.5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200">
-            <span className="text-xs text-gray-500 block font-medium">Gateway Aktif</span>
-            <div className="mt-1.5 flex items-center gap-1.5">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-300">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                {(settingsMap["active_payment_gateway"] || "midtrans").toUpperCase()}
-              </span>
-            </div>
-          </div>
-
-          <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200">
-            <span className="text-xs text-gray-500 block font-medium">Status Sistem</span>
+            <span className="text-xs text-gray-500 block font-medium">Status Midtrans</span>
             <div className="mt-1.5">
               {(() => {
-                const gw = settingsMap["active_payment_gateway"] || "midtrans";
-                const isSandbox =
-                  gw === "midtrans"
-                    ? (settingsMap["midtrans_environment"] || "sandbox") === "sandbox"
-                    : (settingsMap["xendit_api_key"] || "").startsWith("xnd_development");
+                const isSandbox = (settingsMap["midtrans_environment"] || "sandbox") === "sandbox";
                 return isSandbox ? (
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 border border-slate-300">
                     <span className="w-1.5 h-1.5 rounded-full bg-slate-500 animate-pulse"></span>
@@ -410,65 +389,20 @@ export default function AdminSettingsTab(props: Props) {
             </div>
           </div>
         </div>
-
-        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 text-xs flex items-center justify-between gap-2 flex-wrap">
-          <span className="text-gray-600 font-medium">
-            Format Judul Invoice: <code className="font-mono text-gray-900 font-bold bg-white px-2 py-0.5 rounded border border-gray-200">{settingsMap["payment_invoice_prefix"] || "Sistem Undangan"} — Order #XXXXXX</code>
-          </span>
-          <span className="text-[11px] text-gray-400">Berlaku otomatis untuk semua vendor gateway</span>
-        </div>
       </div>
     }
   >
     <div className="space-y-4">
-      <FieldRow label="Pilih Gateway Aktif" description="Gateway utama 2-arah yang memproses pembayaran saat klien klik bayar via QRIS / Online">
-        <div className="flex flex-wrap gap-2">
-          {[
-            { id: "midtrans", label: "Midtrans", desc: "Core API QRIS (In-App), Snap UI, GoPay, VA" },
-            { id: "xendit", label: "Xendit", desc: "Invoice UI, Multi-Bank VA, OVO, DANA, QRIS" },
-          ].map((gw) => (
-            <button
-              key={gw.id}
-              type="button"
-              onClick={() => setSetting("active_payment_gateway", gw.id)}
-              className={`px-4 py-2.5 rounded-xl text-xs font-semibold border transition cursor-pointer text-left ${
-                (settingsMap["active_payment_gateway"] || "midtrans") === gw.id
-                  ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                  : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
-              }`}
-            >
-              <div className="font-bold">{gw.label}</div>
-              <div className={`text-[10px] mt-0.5 ${
-                (settingsMap["active_payment_gateway"] || "midtrans") === gw.id ? "text-emerald-100" : "text-gray-400"
-              }`}>{gw.desc}</div>
-            </button>
-          ))}
-        </div>
+      <FieldRow label="Masa Berlaku Tagihan (Menit)" description="Durasi QRIS sebelum kedaluwarsa otomatis (contoh: 15, 30, 60, atau 1440 untuk 24 jam).">
+        <input
+          type="number"
+          min="5"
+          max="1440"
+          value={settingsMap["payment_expiry_minutes"] || "60"}
+          onChange={(e) => setSetting("payment_expiry_minutes", e.target.value)}
+          className="w-full sm:max-w-xs px-3.5 py-2.5 border border-sky-300 rounded-xl text-sm bg-sky-50 text-sky-900 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition shadow-2xs font-mono font-bold"
+        />
       </FieldRow>
-
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-        <FieldRow label="Masa Berlaku Tagihan (Menit)" description="Durasi QRIS/Invoice sebelum kedaluwarsa otomatis (contoh: 15, 30, 60, atau 1440 untuk 24 jam).">
-          <input
-            type="number"
-            min="5"
-            max="1440"
-            value={settingsMap["payment_expiry_minutes"] || "60"}
-            onChange={(e) => setSetting("payment_expiry_minutes", e.target.value)}
-            className="w-full px-3.5 py-2.5 border border-sky-300 rounded-xl text-sm bg-sky-50 text-sky-900 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition shadow-2xs font-mono font-bold"
-          />
-        </FieldRow>
-
-        <FieldRow label="Awalan Judul Invoice (Prefix)" description="Digunakan pada judul invoice Xendit. (e.g. Nama Platform Anda).">
-          <input
-            type="text"
-            value={settingsMap["payment_invoice_prefix"] || "Sistem Undangan"}
-            onChange={(e) => setSetting("payment_invoice_prefix", e.target.value)}
-            placeholder="Contoh: Sistem Undangan"
-            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs font-medium"
-          />
-        </FieldRow>
-      </div>
 
       <FieldRow label="Skema Biaya Admin Gateway" description="Tentukan apakah potongan fee gateway (misal QRIS 0.7%) ditanggung oleh platform atau dibebankan ke pembeli">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -503,10 +437,7 @@ export default function AdminSettingsTab(props: Props) {
               min="0"
               max="10"
               value={settingsMap["payment_gateway_fee_percent"] || "0.7"}
-              onChange={(e) => {
-                setSetting("payment_gateway_fee_percent", e.target.value);
-                setSetting("payment_fee_rate", (Number(e.target.value) / 100).toString());
-              }}
+              onChange={(e) => setSetting("payment_gateway_fee_percent", e.target.value)}
               className="w-28 px-3 py-2 border border-gray-300 rounded-xl text-sm font-mono font-bold bg-white text-gray-900 focus:outline-none focus:border-amber-500"
             />
             <span className="text-xs text-gray-600 font-medium">% (Standar QRIS BI: 0.7%)</span>
@@ -516,57 +447,7 @@ export default function AdminSettingsTab(props: Props) {
     </div>
   </SettingsCard>
 
-  {/* ── Sub-Tab Selector Vendor Gateway ── */}
-  <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-xs space-y-3">
-    <div className="flex items-center justify-between gap-3 flex-wrap">
-      <div>
-        <h3 className="text-sm font-bold text-gray-900">Vendor Payment Gateway Setup</h3>
-        <p className="text-xs text-gray-500">Pilih vendor gateway untuk konfigurasi kredensial API resmi</p>
-      </div>
-      <div className="flex items-center gap-1.5 text-xs text-gray-500">
-        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-        <span>Gateway utama aktif: <strong className="text-gray-900 font-bold uppercase">{settingsMap["active_payment_gateway"] || "midtrans"}</strong></span>
-      </div>
-    </div>
-
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
-      {[
-        { id: "midtrans", name: "Midtrans", desc: "Core API QRIS (In-App), Snap UI, GoPay, VA" },
-        { id: "xendit", name: "Xendit", desc: "Invoice UI, Multi-Bank VA, OVO, DANA, QRIS" },
-      ].map((v) => {
-        const isSelected = selectedGatewayVendor === v.id;
-        const isCurrentlyActive = (settingsMap["active_payment_gateway"] || "midtrans") === v.id;
-        return (
-          <button
-            key={v.id}
-            type="button"
-            onClick={() => setSelectedGatewayVendor(v.id as any)}
-            className={`p-3 rounded-xl border text-left transition cursor-pointer relative ${
-              isSelected
-                ? "bg-amber-50/70 border-amber-500 ring-1 ring-amber-500 shadow-xs"
-                : "bg-gray-50/80 border-gray-200 hover:bg-gray-100/80 hover:border-gray-300"
-            }`}
-          >
-            {isCurrentlyActive && (
-              <span className="absolute top-2 right-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                <span className="w-1 h-1 rounded-full bg-emerald-600"></span>
-                Aktif
-              </span>
-            )}
-            <span className={`text-xs font-bold block ${isSelected ? "text-amber-950" : "text-gray-900"}`}>
-              {v.name}
-            </span>
-            <span className="text-[10px] text-gray-400 block mt-0.5 truncate">
-              {v.desc}
-            </span>
-          </button>
-        );
-      })}
-    </div>
-  </div>
-
   {/* ═══ MIDTRANS SETTINGS ═══ */}
-  {selectedGatewayVendor === "midtrans" && (
   <SettingsCard
     title="Midtrans Payment Gateway"
     description="Konfigurasi Midtrans Snap — payment gateway resmi berlisensi Bank Indonesia (GoTo Group)."
@@ -584,7 +465,7 @@ export default function AdminSettingsTab(props: Props) {
         {(() => {
           const isSandbox = (settingsMap["midtrans_environment"] || "sandbox") === "sandbox";
           const activeSk = isSandbox
-            ? (settingsMap["midtrans_sandbox_server_key"] || settingsMap["midtrans_server_key"] || "").trim()
+            ? (settingsMap["midtrans_sandbox_server_key"] || "").trim()
             : (settingsMap["midtrans_production_server_key"] || "").trim();
 
           if (!activeSk) return (
@@ -625,8 +506,8 @@ export default function AdminSettingsTab(props: Props) {
           {/* Slot Sandbox */}
           {(() => {
             const isCurrentActive = (settingsMap["midtrans_environment"] || "sandbox") === "sandbox";
-            const sbCk = settingsMap["midtrans_sandbox_client_key"] || settingsMap["midtrans_client_key"] || "";
-            const sbSk = settingsMap["midtrans_sandbox_server_key"] || settingsMap["midtrans_server_key"] || "";
+            const sbCk = settingsMap["midtrans_sandbox_client_key"] || "";
+            const sbSk = settingsMap["midtrans_sandbox_server_key"] || "";
             return (
               <div className={`p-3.5 rounded-xl border transition ${
                 isCurrentActive
@@ -755,7 +636,7 @@ export default function AdminSettingsTab(props: Props) {
         <FieldRow label="Client Key (Sandbox)" description="Midtrans Sandbox Dashboard → Settings → Access Keys">
           <input
             type="text"
-            value={settingsMap["midtrans_sandbox_client_key"] ?? settingsMap["midtrans_client_key"] ?? ""}
+            value={settingsMap["midtrans_sandbox_client_key"] ?? ""}
             onChange={(e) => setSetting("midtrans_sandbox_client_key", e.target.value.trim())}
             placeholder="Mid-client-xxxxxxxxxxxx"
             className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
@@ -765,7 +646,7 @@ export default function AdminSettingsTab(props: Props) {
         <FieldRow label="Server Key (Sandbox)" description="Midtrans Sandbox Dashboard → Settings → Access Keys">
           <input
             type="password"
-            value={settingsMap["midtrans_sandbox_server_key"] ?? settingsMap["midtrans_server_key"] ?? ""}
+            value={settingsMap["midtrans_sandbox_server_key"] ?? ""}
             onChange={(e) => setSetting("midtrans_sandbox_server_key", e.target.value.trim())}
             placeholder="Mid-server-xxxxxxxxxxxx"
             className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
@@ -816,109 +697,6 @@ export default function AdminSettingsTab(props: Props) {
       </div>
     </FieldRow>
   </SettingsCard>
-  )}
-
-  {/* ═══ XENDIT SETTINGS ═══ */}
-  {selectedGatewayVendor === "xendit" && (
-  <SettingsCard
-    title="Xendit Payment Gateway"
-    description="Konfigurasi Xendit Invoice — payment gateway modern untuk startup Indonesia."
-    isEditing={Boolean(editSection["xendit"])}
-    onEdit={() => toggleEditSection("xendit")}
-    onCancel={() => cancelEdit("xendit", ["xendit_api_key", "xendit_webhook_token"])}
-    onSave={() => saveSettings(["xendit_api_key", "xendit_webhook_token"], setSavingXendit, "xendit")}
-    saving={savingXendit}
-    isDirty={isSectionDirty(["xendit_api_key", "xendit_webhook_token"])}
-    saveSuccess={settingsSaved["xendit"]}
-    saveSuccessMessage="Pengaturan Xendit berhasil disimpan"
-    viewContent={
-      <div className="space-y-3">
-        {/* ── Badge Mode Gateway Xendit ── */}
-        {(() => {
-          const ak = settingsMap["xendit_api_key"] || "";
-          if (!ak) return (
-            <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-rose-50 border border-rose-200">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0"></span>
-              <div>
-                <span className="text-xs font-bold text-rose-700 uppercase tracking-wider">Belum Dikonfigurasi</span>
-                <span className="text-[10px] text-rose-500 block mt-0.5">Klik Edit lalu isi Secret API Key dan Webhook Token dari dashboard Xendit.</span>
-              </div>
-            </div>
-          );
-          if (ak.startsWith("xnd_development")) return (
-            <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-300">
-              <span className="w-2.5 h-2.5 rounded-full bg-slate-500 animate-pulse shrink-0"></span>
-              <div>
-                <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Test Mode — Sandbox Aktif</span>
-                <span className="text-[10px] text-slate-500 block mt-0.5">Transaksi fiktif — tidak ada uang asli terpotong. Gunakan metode uji coba Xendit.</span>
-              </div>
-            </div>
-          );
-          return (
-            <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-amber-50 border border-amber-300">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span>
-              <div>
-                <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">Production — Live Gateway</span>
-                <span className="text-[10px] text-amber-700 block mt-0.5">Transaksi nyata aktif — setiap pembayaran memotong saldo rekening bank klien secara langsung.</span>
-              </div>
-            </div>
-          );
-        })()}
-
-        <div className="p-3 bg-white rounded-xl border border-gray-200 space-y-2">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
-            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span>Kredensial API Xendit</span>
-          </div>
-          <div className="text-xs">
-            <span className="text-gray-500 block">Secret API Key:</span>
-            <span className="font-mono font-medium text-gray-900">{settingsMap["xendit_api_key"] ? "••••••••••••" : <em className="text-gray-400 font-sans font-normal">Belum diatur</em>}</span>
-          </div>
-          <div className="text-xs">
-            <span className="text-gray-500 block">Webhook Token:</span>
-            <span className="font-mono font-medium text-gray-900">{settingsMap["xendit_webhook_token"] ? "••••••••••••" : <em className="text-gray-400 font-sans font-normal">Belum diatur</em>}</span>
-          </div>
-        </div>
-
-        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between gap-2 text-xs flex-wrap">
-          <span className="text-gray-600 font-medium">
-            URL Webhook: <code className="font-mono text-gray-900 font-semibold">{`${settingsMap["platform_url"] || currentOrigin}/api/webhook/xendit`}</code>
-          </span>
-          <button type="button" onClick={() => navigator.clipboard.writeText(`${settingsMap["platform_url"] || currentOrigin}/api/webhook/xendit`)}
-            className="px-3 py-1 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 rounded-lg font-semibold transition cursor-pointer">
-            Salin Webhook
-          </button>
-        </div>
-      </div>
-    }
-  >
-    <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-200 space-y-4">
-      <div className="flex items-center gap-2">
-        <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
-        <h4 className="text-xs font-bold text-emerald-900 uppercase tracking-wider">Kredensial Xendit</h4>
-      </div>
-      <FieldRow label="Secret API Key" description="Xendit Dashboard → Settings → API Keys. Sandbox: xnd_development_xxx | Production: xnd_production_xxx">
-        <input type="password" value={settingsMap["xendit_api_key"] || ""} onChange={(e) => setSetting("xendit_api_key", e.target.value)}
-          placeholder="xnd_development_xxx (sandbox) atau xnd_production_xxx (production)"
-          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs" />
-      </FieldRow>
-      <FieldRow label="Webhook Verification Token" description="Dari Xendit Dashboard → Settings → Webhooks">
-        <input type="password" value={settingsMap["xendit_webhook_token"] || ""} onChange={(e) => setSetting("xendit_webhook_token", e.target.value)}
-          placeholder="Token verifikasi webhook"
-          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs" />
-      </FieldRow>
-    </div>
-
-    <FieldRow label="URL Webhook (Otomatis)" description="Daftarkan di Xendit Dashboard → Settings → Webhooks → Invoice Paid">
-      <div className="flex items-center gap-2">
-        <input type="text" readOnly value={`${settingsMap["platform_url"] || currentOrigin}/api/webhook/xendit`}
-          className="flex-1 px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-gray-100 text-gray-900 font-semibold shadow-2xs" />
-        <button type="button" onClick={() => navigator.clipboard.writeText(`${settingsMap["platform_url"] || currentOrigin}/api/webhook/xendit`)}
-          className="px-3.5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 rounded-xl text-xs font-semibold transition cursor-pointer">Salin</button>
-      </div>
-    </FieldRow>
-  </SettingsCard>
-  )}
   </>
   )}
 

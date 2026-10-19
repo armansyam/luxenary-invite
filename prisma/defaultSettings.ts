@@ -15,14 +15,6 @@ export interface DefaultSettingItem {
 
 export const defaultSettings: DefaultSettingItem[] = [
   {
-    "id": "517942ee-99d6-4fd9-a0a1-bc3161234a20",
-    "key": "active_payment_gateway",
-    "value": "midtrans",
-    "label": "Gateway Pembayaran Aktif (midtrans/xendit)",
-    "group": "payment",
-    "updatedAt": "2026-09-16T06:28:33.010Z"
-  },
-  {
     "id": "357a5478-6597-49f7-a84a-1b75aefe3f6b",
     "key": "custom_domain_enabled",
     "value": "false",
@@ -327,22 +319,6 @@ export const defaultSettings: DefaultSettingItem[] = [
     "updatedAt": "2026-09-21T15:00:00.000Z"
   },
   {
-    "id": "c052bc1f-f7c0-4084-9440-da66efff8cd2",
-    "key": "midtrans_client_key",
-    "value": "",
-    "label": "Client Key Midtrans",
-    "group": "midtrans",
-    "updatedAt": "2026-09-16T06:28:32.995Z"
-  },
-  {
-    "id": "8e07ef72-7a65-4703-ba4a-63468c687d67",
-    "key": "midtrans_server_key",
-    "value": "",
-    "label": "Server Key Midtrans",
-    "group": "midtrans",
-    "updatedAt": "2026-09-16T06:28:32.994Z"
-  },
-  {
     "id": "e0241d83-8407-4c62-91ca-e0e952838405",
     "key": "midtrans_environment",
     "value": "sandbox",
@@ -431,14 +407,6 @@ export const defaultSettings: DefaultSettingItem[] = [
     "updatedAt": "2026-09-16T06:28:33.014Z"
   },
   {
-    "id": "113eb885-7753-42f7-b77e-4c74158a2769",
-    "key": "payment_fee_rate",
-    "value": "0.007",
-    "label": "Tarif Fee Gateway (desimal, contoh: 0.007 = 0.7%)",
-    "group": "payment",
-    "updatedAt": "2026-09-16T06:28:33.015Z"
-  },
-  {
     "id": "b00bcaef-55aa-4be5-befe-9602f87a0deb",
     "key": "payment_gateway_fee_percent",
     "value": "0.7",
@@ -453,14 +421,6 @@ export const defaultSettings: DefaultSettingItem[] = [
     "label": null,
     "group": "active_gateway",
     "updatedAt": "2026-09-16T06:28:33.012Z"
-  },
-  {
-    "id": "15a2cab4-e11c-4625-9ba4-e38e99967060",
-    "key": "payment_invoice_prefix",
-    "value": "Tagihan Pembayaran",
-    "label": "Prefix Invoice Gateway",
-    "group": "payment",
-    "updatedAt": "2026-09-16T06:28:33.016Z"
   },
   {
     "id": "cccc3334-df2d-4660-9a76-5ef1a0530ca5",
@@ -981,22 +941,6 @@ export const defaultSettings: DefaultSettingItem[] = [
     "label": "Demo Data Konfigurasi - VINTAGE FOREST",
     "group": "themes",
     "updatedAt": "2026-09-25T12:00:00.000Z"
-  },
-  {
-    "id": "fdc8d080-6821-4b74-91fe-9e1d8805746d",
-    "key": "xendit_api_key",
-    "value": "",
-    "label": "Secret API Key Xendit",
-    "group": "xendit",
-    "updatedAt": "2026-09-16T06:28:32.996Z"
-  },
-  {
-    "id": "344ab6a6-a38d-4a54-b245-9ba719368d7e",
-    "key": "xendit_webhook_token",
-    "value": "",
-    "label": "Webhook Token Xendit",
-    "group": "xendit",
-    "updatedAt": "2026-09-16T06:28:32.996Z"
   }
 ];
 

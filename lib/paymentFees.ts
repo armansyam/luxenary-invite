@@ -13,21 +13,14 @@ export interface GatewayCharge {
  * Kegagalan membaca pengaturan dilempar ke pemanggil: menagih tanpa biaya layanan secara diam-diam merugikan merchant.
  */
 export async function computeGatewayCharge(baseAmount: number): Promise<GatewayCharge> {
-  const [feePayerPrimary, feePayerLegacy, feePercentSetting, feeRateLegacy, expirySetting] = await Promise.all([
+  const [feePayerSetting, feePercentSetting, expirySetting] = await Promise.all([
     prisma.adminSetting.findUnique({ where: { key: "payment_fee_payer" } }),
-    prisma.adminSetting.findUnique({ where: { key: "payment_gateway_fee_payer" } }),
     prisma.adminSetting.findUnique({ where: { key: "payment_gateway_fee_percent" } }),
-    prisma.adminSetting.findUnique({ where: { key: "payment_fee_rate" } }),
     prisma.adminSetting.findUnique({ where: { key: "payment_expiry_minutes" } }),
   ]);
 
-  const feePayer = (feePayerPrimary?.value || feePayerLegacy?.value || "MERCHANT") === "BUYER" ? "BUYER" : "MERCHANT";
-  const feePercent =
-    feePercentSetting && !isNaN(Number(feePercentSetting.value))
-      ? Number(feePercentSetting.value)
-      : feeRateLegacy && !isNaN(Number(feeRateLegacy.value))
-      ? Number(feeRateLegacy.value) * 100
-      : 0.7;
+  const feePayer = feePayerSetting?.value === "BUYER" ? "BUYER" : "MERCHANT";
+  const feePercent = feePercentSetting && !isNaN(Number(feePercentSetting.value)) ? Number(feePercentSetting.value) : 0.7;
 
   const finalAmount = feePayer === "BUYER" ? baseAmount + Math.round(baseAmount * (feePercent / 100)) : baseAmount;
 

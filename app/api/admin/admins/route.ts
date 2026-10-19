@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
+import { MIN_ADMIN_PASSWORD_LENGTH } from "@/lib/adminCredentials";
 
 export async function GET() {
   try {
@@ -44,6 +45,9 @@ export async function POST(req: Request) {
 
     if (!username || !email || !name || !newRole || !password || !String(password).trim()) {
       return NextResponse.json({ error: "Semua kolom wajib diisi." }, { status: 400 });
+    }
+    if (String(password).trim().length < MIN_ADMIN_PASSWORD_LENGTH) {
+      return NextResponse.json({ error: `Password minimal ${MIN_ADMIN_PASSWORD_LENGTH} karakter.` }, { status: 400 });
     }
 
     // Check if username or email already exists

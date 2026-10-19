@@ -20,7 +20,7 @@ export interface PaymentGateway {
   /**
    * Batalkan transaksi aktif di sisi gateway secara seketika (two-way cancellation).
    * Wajib dipanggil sebelum re-init atau saat pembatalan tagihan / timeout kedaluwarsa.
-   * Midtrans memanggil /v2/{orderId}/cancel, Xendit memanggil /v2/invoices/{invoiceId}/expire.
+   * Midtrans memanggil /v2/{orderId}/cancel.
    *
    * @param gatewayTxId - ID transaksi di sisi gateway (dari Order.gatewayTxId)
    */

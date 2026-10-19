@@ -1,62 +1,20 @@
 /**
- * Gateway Registry — Dynamic Two-Way Multi-Gateway Payment Factory
- *
- * Cara kerja:
- * 1. Admin memilih gateway aktif di Admin Portal → Pengaturan (Midtrans atau Xendit)
- * 2. Pilihan disimpan ke AdminSetting dengan key "active_payment_gateway"
- * 3. Setiap request checkout membaca setting ini dan menginisialisasi gateway yang sesuai
- * 4. Kedua gateway mendukung Two-Way Handshake (Cancel / Expire seketika pada switch pembayaran)
- *
- * Gateway 2-arah yang didukung:
- * - midtrans → Midtrans (Core API QRIS / Snap UI)
- * - xendit   → Xendit (Invoice API)
+ * Gateway Registry. Satu-satunya gateway yang didukung adalah Midtrans (Core API QRIS); antarmuka PaymentGateway dan
+ * `orders.gatewayId` dipertahankan agar sesi gateway tetap tercatat per order.
  */
 
 import { PaymentGateway } from "@/lib/gateways/types";
-import { prisma } from "@/lib/prisma";
-import { logger } from "@/lib/logger";
 
-/** Lazy import masing-masing gateway untuk menghindari bundle bloat */
 async function loadGateway(gatewayId: string): Promise<PaymentGateway> {
-  const normalized = (gatewayId || "midtrans").toLowerCase();
-
-  switch (normalized) {
-    case "midtrans": {
-      const { MidtransGateway } = await import("@/lib/gateways/midtrans");
-      return new MidtransGateway();
-    }
-    case "xendit": {
-      const { XenditGateway } = await import("@/lib/gateways/xendit");
-      return new XenditGateway();
-    }
-    default:
-      throw new Error(
-        `Gateway "${gatewayId}" tidak dikenali. Sistem hanya mendukung gateway 2-arah: midtrans, xendit`
-      );
+  if ((gatewayId || "midtrans").toLowerCase() !== "midtrans") {
+    throw new Error(`Gateway "${gatewayId}" tidak dikenali. Sistem hanya mendukung midtrans.`);
   }
+  const { MidtransGateway } = await import("@/lib/gateways/midtrans");
+  return new MidtransGateway();
 }
 
-/**
- * Baca gateway aktif dari AdminSetting.
- * Fallback ke "midtrans" jika belum diset atau jika diset ke vendor nonaktif.
- */
 export async function getActiveGatewayId(): Promise<string> {
-  try {
-    const setting = await prisma.adminSetting.findUnique({
-      where: { key: "active_payment_gateway" },
-    });
-    if (setting?.value) {
-      const val = setting.value.toLowerCase();
-      if (val === "midtrans" || val === "xendit") return val;
-      // Jika diset ke vendor legacy 1-arah, otomatis gunakan midtrans
-      return "midtrans";
-    }
-  } catch (err) {
-    // Pembayaran tetap berjalan lewat gateway bawaan, tetapi bila admin memilih Xendit, ini berarti pembayaran
-    // diarahkan ke gateway yang salah: wajib terlihat di log.
-    logger.error("GatewayRegistry", "Gagal membaca active_payment_gateway; memakai midtrans", err);
-  }
-  return "midtrans"; // Default gateway 2-arah
+  return "midtrans";
 }
 
 /**

@@ -38,7 +38,6 @@ vi.mock("@/lib/settings", () => ({
 vi.mock("@/lib/pinEncryption", () => ({
   decryptPin: vi.fn().mockReturnValue("123456"),
   encryptPin: vi.fn().mockReturnValue("iv:tag:cipher"),
-  isPinEncrypted: vi.fn().mockReturnValue(true),
 }));
 
 vi.mock("@/lib/domainUtils", () => ({

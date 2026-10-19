@@ -229,7 +229,7 @@ export async function POST(req: NextRequest) {
           quotaExceeded: true,
           totalQuota: totalEventQuota,
           currentTotalPhotos,
-          message: "Terima kasih banyak atas momen indahnya! Roll kamera kenangan untuk acara ini telah terisi penuh dengan cinta. Semua foto sedang kami proses dan simpan dengan aman ke dalam album kenangan pengantin ✨",
+          message: "Terima kasih atas momennya! Roll kamera kenangan untuk acara ini sudah penuh. Semua foto yang terkirim tersimpan di album kenangan penyelenggara.",
         },
         { status: 403 }
       );
@@ -286,7 +286,7 @@ export async function POST(req: NextRequest) {
             quotaExceeded: true,
             shotsQuota,
             guestUploadedCount,
-            message: "Seluruh jepretan roll kamera Anda telah terpakai. Terima kasih telah mengabadikan momen berharga ini bersama kedua mempelai!",
+            message: "Seluruh jepretan roll kamera Anda telah terpakai. Terima kasih telah ikut mengabadikan acara ini!",
           },
           { status: 403 }
         );
@@ -372,7 +372,7 @@ export async function POST(req: NextRequest) {
           {
             quotaExceeded: true,
             totalQuota: totalEventQuota,
-            message: "Terima kasih banyak atas momen indahnya! Roll kamera kenangan untuk acara ini telah terisi penuh dengan cinta. Semua foto sedang kami proses dan simpan dengan aman ke dalam album kenangan pengantin ✨",
+            message: "Terima kasih atas momennya! Roll kamera kenangan untuk acara ini sudah penuh. Semua foto yang terkirim tersimpan di album kenangan penyelenggara.",
           },
           { status: 403 }
         );
@@ -383,7 +383,7 @@ export async function POST(req: NextRequest) {
           {
             quotaExceeded: true,
             shotsQuota,
-            message: "Seluruh jepretan roll kamera Anda telah terpakai. Terima kasih telah mengabadikan momen berharga ini bersama kedua mempelai!",
+            message: "Seluruh jepretan roll kamera Anda telah terpakai. Terima kasih telah ikut mengabadikan acara ini!",
           },
           { status: 403 }
         );

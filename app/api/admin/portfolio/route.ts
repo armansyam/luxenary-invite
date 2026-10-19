@@ -8,6 +8,8 @@ import { requireAdminModule } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
 import { HttpError, routeError } from "@/lib/routeError";
 import { participantNames } from "@/lib/participantUtils";
+import { renderPublishedHtml } from "@/lib/staticPublisher";
+import { anonymizePortfolioHtml } from "@/lib/portfolioHtml";
 
 const errorMessage = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
@@ -66,12 +68,13 @@ export async function POST(req: NextRequest) {
       throw new HttpError(400, "Slug undangan tidak dapat dipakai sebagai nama portofolio.");
     }
 
-    // 1. Baca HTML Canonical yang sudah di-bake dari folder ids (Single Source of Truth)
+    // 1. Dirender ulang dari data terbit tanpa RSVP: HTML terbit memuat nama dan ucapan tamu asli.
     const canonicalHtmlPath = path.join(process.cwd(), "public", "published", "ids", `${invitationId}.html`);
     if (!(await fileExists(canonicalHtmlPath))) {
       throw new HttpError(409, "Undangan belum memiliki HTML terbit. Terbitkan undangan sebelum menyalinnya ke portofolio.");
     }
-    let htmlContent = await fs.promises.readFile(canonicalHtmlPath, "utf-8");
+    let htmlContent = await renderPublishedHtml(invitationId, { includeRsvps: false });
+    if (htmlContent === null) throw new HttpError(404, "Invitation not found");
 
     // 2. Helper: download/salin media utama dan upload via Hybrid Storage
     const processMedia = async (url: string | null | undefined): Promise<string | null> => {
@@ -202,6 +205,8 @@ export async function POST(req: NextRequest) {
     } catch (sharpErr) {
       logger.warn("AdminPortfolio", "Pemrosesan foto Google Drive dilewati", { slug: clientName, error: errorMessage(sharpErr) });
     }
+
+    htmlContent = anonymizePortfolioHtml(htmlContent, { invitationId, slug: inv.invitationSlug, subdomain: inv.subdomain });
 
     // 6. Simpan HTML yang sudah diisolasi penuh via Hybrid Storage
     const htmlBuffer = Buffer.from(htmlContent, "utf-8");

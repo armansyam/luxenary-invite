@@ -142,12 +142,18 @@ export async function purgeObsoleteUserOrders(userId: string, currentOrderId: st
     const deleted = await prisma.order.deleteMany({
       where: { ...others, status: "PENDING", gatewayTxId: null, proofImageUrl: null },
     });
+    // Order yang dibayar bisa paket atau add-on; yang pasti, akun ini sudah punya paket lunas sehingga order paket lain
+    // tidak dapat dilunasi (settleOrderAsPaid). Order berbukti mungkin sudah ditransfer dan perlu dicek untuk refund.
+    const expiredWithProof = await prisma.order.updateMany({
+      where: { ...others, status: "PENDING", proofImageUrl: { not: null } },
+      data: { status: "EXPIRED", rejectReason: "Akun ini sudah punya paket lunas. Bukti transfer order ini perlu dicek untuk pengembalian dana." },
+    });
     const expired = await prisma.order.updateMany({
       where: { ...others, status: "PENDING" },
-      data: { status: "EXPIRED", rejectReason: "Digantikan pesanan lain yang sudah lunas" },
+      data: { status: "EXPIRED", rejectReason: "Ditutup karena akun ini sudah punya paket lunas." },
     });
-    if (deleted.count + expired.count > 0) {
-      logger.info("PurgeObsoleteOrders", "Order paket usang dibereskan", { userId, deleted: deleted.count, expired: expired.count });
+    if (deleted.count + expired.count + expiredWithProof.count > 0) {
+      logger.info("PurgeObsoleteOrders", "Order paket usang dibereskan", { userId, deleted: deleted.count, expired: expired.count, expiredWithProof: expiredWithProof.count });
     }
   } catch (err) {
     logger.error("PurgeObsoleteOrders", "Pembersihan order usang pengguna gagal", err);

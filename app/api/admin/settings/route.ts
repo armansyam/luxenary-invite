@@ -103,48 +103,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Sinkronisasi otomatis ke key legacy midtrans_client_key & midtrans_server_key sesuai mode aktif
-    const hasMidtransUpdates = updates.some((u: any) => u.key && String(u.key).startsWith("midtrans_"));
-    if (hasMidtransUpdates) {
-      try {
-        const mtSettings = await prisma.adminSetting.findMany({
-          where: {
-            key: {
-              in: [
-                "midtrans_environment",
-                "midtrans_sandbox_client_key",
-                "midtrans_sandbox_server_key",
-                "midtrans_production_client_key",
-                "midtrans_production_server_key",
-              ],
-            },
-          },
-        });
-        const mtMap: Record<string, string> = {};
-        mtSettings.forEach((s) => (mtMap[s.key] = s.value?.trim() || ""));
-        const isProd = mtMap["midtrans_environment"] === "production";
-        const activeClient = isProd ? (mtMap["midtrans_production_client_key"] || "") : (mtMap["midtrans_sandbox_client_key"] || "");
-        const activeServer = isProd ? (mtMap["midtrans_production_server_key"] || "") : (mtMap["midtrans_sandbox_server_key"] || "");
-
-        if (activeClient) {
-          await prisma.adminSetting.upsert({
-            where: { key: "midtrans_client_key" },
-            create: { key: "midtrans_client_key", value: activeClient, group: "midtrans" },
-            update: { value: activeClient },
-          });
-        }
-        if (activeServer) {
-          await prisma.adminSetting.upsert({
-            where: { key: "midtrans_server_key" },
-            create: { key: "midtrans_server_key", value: activeServer, group: "midtrans" },
-            update: { value: activeServer },
-          });
-        }
-      } catch (syncErr) {
-        logger.warn("AdminSettings", "Sinkronisasi kunci Midtrans lama gagal", { error: syncErr instanceof Error ? syncErr.message : String(syncErr) });
-      }
-    }
-
     // On-demand revalidation: perbarui cache landing page jika setting harga/platform berubah
     try {
       const { revalidatePath } = await import("next/cache");
