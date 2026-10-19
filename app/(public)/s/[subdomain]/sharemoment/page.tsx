@@ -123,6 +123,7 @@ export default async function GuestMemoriesStandalonePage({ params, searchParams
       nextSessionStartTime={nextSessionIso}
       isSessionActive={schedule.isSessionActive}
       isAllFinished={isAllFinished}
+      canSaveToDevice={!fs.memoriesDelayedReveal}
     />
   );
 }

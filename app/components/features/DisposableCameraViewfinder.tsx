@@ -27,6 +27,8 @@ export interface DisposableCameraViewfinderProps {
   nextSessionStartTime?: string | null;
   isSessionActive?: boolean;
   isAllFinished?: boolean;
+  // false saat Delayed Reveal aktif: foto tidak boleh keluar dari "kamar gelap" sebelum dirilis serentak.
+  canSaveToDevice?: boolean;
 }
 
 // ── DEFINISI PRESET FILTER ANALOG ──
@@ -165,6 +167,7 @@ export default function DisposableCameraViewfinder({
   nextSessionStartTime = null,
   isSessionActive = true,
   isAllFinished = false,
+  canSaveToDevice = false,
 }: DisposableCameraViewfinderProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -193,6 +196,7 @@ export default function DisposableCameraViewfinder({
   const [screenFlash, setScreenFlash] = useState(false);
   const [pendingUploads, setPendingUploads] = useState<number>(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [lastShot, setLastShot] = useState<{ dataUrl: string; fileName: string } | null>(null);
 
   // Selected Filter
   const activePreset = FILTER_PRESETS[filterId] || FILTER_PRESETS.aura_90s;
@@ -573,6 +577,7 @@ export default function DisposableCameraViewfinder({
       setTimeout(() => {
         setPendingUploads((p) => Math.max(0, p - 1));
         setToastMessage("Foto tersimpan ke galeri roll!");
+        setLastShot({ dataUrl: base64File, fileName: `momen_${Date.now()}.jpg` });
         if (onPhotoUploaded) {
           onPhotoUploaded({
             id: `demo-${Date.now()}`,
@@ -611,6 +616,7 @@ export default function DisposableCameraViewfinder({
 
       if (res.ok) {
         setToastMessage("Foto tersimpan ke galeri roll!");
+        setLastShot({ dataUrl: base64File, fileName: payload.fileName });
         if (onPhotoUploaded) onPhotoUploaded(data.memory);
       } else if (res.status === 403 && data.quotaExceeded) {
         setToastMessage(data.message || `Roll film Anda telah penuh (${shotsQuota} foto).`);
@@ -628,6 +634,32 @@ export default function DisposableCameraViewfinder({
     } finally {
       setTimeout(() => setToastMessage(null), 3500);
     }
+  };
+
+  // Web Share membuka lembar bagikan HP (iOS: "Simpan Gambar"); peramban tanpa share file memakai unduhan biasa.
+  const saveLastShotToDevice = async () => {
+    if (!lastShot) return;
+    const blob = await (await fetch(lastShot.dataUrl)).blob();
+    const file = new File([blob], lastShot.fileName, { type: "image/jpeg" });
+
+    if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: coupleName });
+        return;
+      } catch (err) {
+        // Tamu menutup lembar bagikan: bukan galat, tidak perlu unduhan cadangan.
+        if (err instanceof DOMException && err.name === "AbortError") return;
+      }
+    }
+
+    const objectUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = objectUrl;
+    anchor.download = lastShot.fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000);
   };
 
   // ── 6. FALLBACK FILE INPUT (NATIVE CAMERA HP) ──
@@ -1054,13 +1086,29 @@ export default function DisposableCameraViewfinder({
 
         {/* Shutter Bar */}
         <div className="grid grid-cols-3 items-center max-w-sm mx-auto w-full">
-          {/* Sisa Foto Badge */}
-          <div className={`flex flex-col items-center justify-center justify-self-start w-14 h-12 rounded-2xl ${themeStyles.sideBtn}`}>
-            <span className="font-mono text-lg font-bold leading-none">
-              {isUnlimited ? "∞" : remainingShots}
-            </span>
-            <span className="text-[8px] font-mono uppercase opacity-50 mt-0.5">Sisa</span>
-          </div>
+          {/* Foto terakhir (Simpan ke HP) atau badge sisa foto; sisa tetap terbaca di baris atas */}
+          {canSaveToDevice && lastShot ? (
+            <button
+              type="button"
+              onClick={saveLastShotToDevice}
+              className={`relative justify-self-start w-14 h-12 rounded-2xl overflow-hidden border cursor-pointer active:scale-95 transition ${themeStyles.sideBtn}`}
+              aria-label="Simpan foto terakhir ke HP"
+              title="Simpan foto terakhir ke HP"
+            >
+              <img src={lastShot.dataUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+              <span className="absolute inset-x-0 bottom-0 bg-stone-950/65 text-white text-[8px] font-mono uppercase tracking-wider py-0.5 flex items-center justify-center gap-0.5">
+                <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                Simpan
+              </span>
+            </button>
+          ) : (
+            <div className={`flex flex-col items-center justify-center justify-self-start w-14 h-12 rounded-2xl ${themeStyles.sideBtn}`}>
+              <span className="font-mono text-lg font-bold leading-none">
+                {isUnlimited ? "∞" : remainingShots}
+              </span>
+              <span className="text-[8px] font-mono uppercase opacity-50 mt-0.5">Sisa</span>
+            </div>
+          )}
 
           {/* Tombol Shutter Bulat Besar */}
           <div className="justify-self-center">

@@ -49,6 +49,7 @@ export default async function DemoGuestMemoriesStandalonePage({ params }: PagePr
       galleryUrl={galleryUrl}
       backUrl={backUrl}
       isTestMode={true}
+      canSaveToDevice={true}
     />
   );
 }

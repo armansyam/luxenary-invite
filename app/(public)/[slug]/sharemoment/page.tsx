@@ -124,6 +124,7 @@ export default async function FreeGuestMemoriesStandalonePage({ params, searchPa
       nextSessionStartTime={nextSessionIso}
       isSessionActive={schedule.isSessionActive}
       isAllFinished={isAllFinished}
+      canSaveToDevice={!fs.memoriesDelayedReveal}
     />
   );
 }

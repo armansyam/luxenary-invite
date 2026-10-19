@@ -94,6 +94,7 @@ Pengantin dapat membuat sesi tanpa batas (misal: Sesi Akad Nikah, Sesi Resepsi S
 Melalui modal **Atur Jatah Roll**, pengantin dapat menentukan berapa banyak foto yang dapat diambil oleh satu perangkat tamu (1–30 jepretan per tamu).
 - **Prinsip Anti-Hangus (Non-Pre-Reservation):** Kuota foto dihitung berdasarkan foto riil yang diunggah. Jika seorang tamu hanya menggunakan 3 dari 10 jatah roll-nya, 7 sisa kuota tersebut tetap berada di pool acara untuk tamu lainnya.
 - **Boundary Clamping Tamu Terakhir:** Saat sisa kuota pool acara tinggal sedikit (misal tersisa 4 foto sementara jatah roll disetel 10), sistem secara cerdas menyesuaikan `effectiveShots = Math.min(10, 4)` sehingga kuota dapat habis secara tepat tanpa error.
+- **Simpan ke HP Tamu:** Setelah foto berhasil terkirim, thumbnail foto terakhir berlabel "Simpan" menggantikan badge sisa di kiri tombol rana. Ketukan membuka lembar bagikan HP (Web Share, "Simpan Gambar") atau unduhan biasa bila peramban tidak mendukung. Bila **Delayed Reveal** aktif, tombol ini tidak tampil (`canSaveToDevice = false`) agar foto tetap rahasia sampai dirilis serentak.
 
 ---
 

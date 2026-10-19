@@ -24,6 +24,7 @@ export default function DemoShareMomentPage() {
       dateFormat="DD MM 'YY"
       currentSessionName="Resepsi Malam"
       isSessionActive={true}
+      canSaveToDevice={true}
       onPhotoUploaded={(newMemory: any) => {
         try {
           const saved = JSON.parse(sessionStorage.getItem("demo_guest_moments") || "[]");
