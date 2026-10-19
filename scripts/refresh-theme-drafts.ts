@@ -15,7 +15,7 @@ import "dotenv/config";
 import fs from "fs";
 import path from "path";
 import { prisma, pool } from "../lib/prisma";
-import { buildAndSavePublishedHtml } from "../lib/staticPublisher";
+import { buildAndSavePublishedHtml, waitForPendingArchiveSyncs } from "../lib/staticPublisher";
 import { purgeCloudflareCache } from "../lib/cloudflare";
 
 const apply = process.argv.includes("--apply");
@@ -75,6 +75,7 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
+    await waitForPendingArchiveSyncs();
     await prisma.$disconnect();
     await pool.end();
   });

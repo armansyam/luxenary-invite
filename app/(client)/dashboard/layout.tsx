@@ -202,15 +202,15 @@ export default function ClientDashboardLayout({
   // Khusus rute /dashboard/setup (wizard inisiasi): render anak tanpa menimpa header dasbor klien
   if (pathname === "/dashboard/setup") {
     return (
-      <div className="min-h-screen bg-[#faf8f5] text-stone-900 font-sans flex flex-col selection:bg-amber-100 selection:text-amber-900">
+      <div className="dash-shell min-h-screen bg-[#faf8f5] text-stone-900 font-sans flex flex-col selection:bg-amber-100 selection:text-amber-900">
         {children}
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#faf8f5] text-stone-900 font-sans flex flex-col selection:bg-amber-100 selection:text-amber-900">
-      
+    <div className="dash-shell min-h-screen bg-[#faf8f5] text-stone-900 font-sans flex flex-col selection:bg-amber-100 selection:text-amber-900">
+
       {/* Top Header (Desktop & Mobile) */}
       <header className="bg-white border-b border-stone-200/80 sticky top-0 z-40 backdrop-blur-md bg-white/95">
         <div className="w-full px-4 sm:px-6 py-2.5 flex items-center justify-between relative">

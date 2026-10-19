@@ -123,13 +123,22 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
   logger.info("StaticPublisher", "HTML undangan dibangun", { path: masterPath, sizeKB: Number((standaloneHtml.length / 1024).toFixed(1)) });
 
   // Sinkronisasi non-blocking ke arsip NAS jika fitur diaktifkan
-  import("./nasArchive").then(({ syncInvitationToNasArchive }) => {
+  const archiveSync = import("./nasArchive").then(({ syncInvitationToNasArchive }) =>
     syncInvitationToNasArchive(invitationId).catch((err) => {
       logger.warn("StaticPublisher", "Sinkronisasi arsip NAS gagal", { invitationId, error: err instanceof Error ? err.message : String(err) });
-    });
-  }).catch((err) => logger.error("StaticPublisher", "Modul arsip NAS gagal dimuat", err));
+    })
+  ).catch((err) => logger.error("StaticPublisher", "Modul arsip NAS gagal dimuat", err));
+  pendingArchiveSyncs.add(archiveSync);
+  void archiveSync.finally(() => pendingArchiveSyncs.delete(archiveSync));
 
   return standaloneHtml;
+}
+
+const pendingArchiveSyncs = new Set<Promise<unknown>>();
+
+/** Skrip CLI wajib menunggu ini sebelum menutup pool DB; tanpa itu sinkron arsip terakhir gagal "Cannot use a pool after calling end". */
+export async function waitForPendingArchiveSyncs(): Promise<void> {
+  await Promise.allSettled([...pendingArchiveSyncs]);
 }
 
 /**

@@ -22,6 +22,15 @@ body {
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
+/* iOS Safari memperbesar layar saat isian ber-font < 16px difokus. Di HP, isian dasbor klien dan admin (.dash-shell di
+   layout masing-masing) minimal 16px; di sm: ke atas kelas Tailwind kembali berlaku. Halaman tamu dan undangan tidak
+   memakai .dash-shell. Sengaja di luar @layer agar menang atas utilitas text-xs. */
+@media (max-width: 639.98px) {
+  .dash-shell :is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="color"]), select, textarea) {
+    font-size: 16px;
+  }
+}
+
 /* =============================================
    STUDIO THEME PICKER — Device Mockup Scene
    Scoped: .stp-scene

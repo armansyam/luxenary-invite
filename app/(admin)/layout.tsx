@@ -30,5 +30,5 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return <div className="dash-shell contents">{children}</div>;
 }

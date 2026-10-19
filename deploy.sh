@@ -182,6 +182,16 @@ npm run themes:sync || echo "⚠️ Themes sync gagal — lanjut deployment."
 echo "🎨 Memastikan cache demo tema statis terkompilasi segar..."
 npx -y tsx -r dotenv/config -e "import('./lib/demoPublisher.ts').then(m => (m.compileAllStaticDemos || m.default.compileAllStaticDemos)()).then(n => console.log('✅ ' + n + ' demo tema berhasil dikompilasi.')).catch(e => console.warn('⚠️ Gagal pra-kompilasi demo (akan dikompilasi on-demand saat diakses):', e.message));" || true
 
+# 7c. Undangan terbit disajikan dari snapshot public/published/ids/<id>.html, jadi perbaikan mesin tema (lib/themeEngine.ts)
+# tidak sampai ke undangan lama tanpa dibangun ulang. --keep-drafts: piring template klien tetap beku, hanya mesin tema baru.
+# Dijalankan sebelum reload (server baru membaca berkas yang sudah baru) dan sekali lagi setelah health check (purge ulang
+# Cloudflare atas salinan lama yang sempat dicache tepi dari server lama dalam jeda reload).
+refresh_published_html() {
+  npx tsx scripts/refresh-theme-drafts.ts --apply --keep-drafts || echo "⚠️ Bangun ulang HTML terbit gagal sebagian — periksa baris GAGAL di atas."
+}
+echo "🧱 Membangun ulang HTML undangan terbit dengan mesin tema rilis ini..."
+refresh_published_html
+
 # 8. Restart Server & Persist PM2
 # Migrasi sudah berhasil: dari sini aplikasi dijalankan dari direktori build baru (dibaca ecosystem.config.js, dan
 # diteruskan ke 'pm2 reload --update-env' lewat NEXT_DIST_DIR yang sudah di-export).
@@ -236,6 +246,10 @@ if command -v pm2 &> /dev/null; then
     exit 1
   fi
   echo "✅ Health check berhasil! Aplikasi merespons HTTP 200 di port 3001."
+  export PATH="${NODE_BIN_DIR:+$NODE_BIN_DIR:}$SYSTEM_PATH"
+  echo "🧱 Purge ulang cache undangan terbit setelah server baru aktif..."
+  refresh_published_html
+  export PATH="$SYSTEM_PATH"
   # Direktori build lama sebelum skema .next-a/.next-b tidak dipakai lagi; direktori aktif sebelumnya dibiarkan untuk rollback cepat.
   if [ "$ACTIVE_DIST" = ".next" ]; then rm -rf .next; fi
   # Smoke test tidak membatalkan deploy (aplikasi sudah berjalan); kegagalannya wajib diperiksa pemilik.
