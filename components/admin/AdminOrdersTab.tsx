@@ -694,17 +694,24 @@ export default function AdminOrdersTab() {
             {inspectOrder.proofImageUrl && (
               <div className="space-y-2">
                 <span className="text-xs font-semibold text-gray-700 block">Foto Bukti Transfer:</span>
-                <div className="rounded-2xl border border-gray-200 overflow-hidden bg-stone-900/5 max-h-72 flex items-center justify-center">
-                  <img
-                    src={inspectOrder.proofImageUrl}
-                    alt="Bukti Transfer"
-                    className="max-h-72 w-auto object-contain cursor-pointer"
-                    onClick={() => window.open(inspectOrder.proofImageUrl || "", "_blank")}
-                  />
-                </div>
+                {/* Rute admin mengalihkan ke tautan bertanda tangan 5 menit; berkasnya sendiri tidak punya URL publik. */}
+                {inspectOrder.proofImageUrl.toLowerCase().endsWith(".pdf") ? (
+                  <div className="rounded-2xl border border-gray-200 bg-stone-900/5 px-4 py-6 text-center text-xs text-gray-600">
+                    Bukti transfer berupa PDF. Buka di tab baru untuk memeriksanya.
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-gray-200 overflow-hidden bg-stone-900/5 max-h-72 flex items-center justify-center">
+                    <img
+                      src={`/api/admin/orders/${inspectOrder.id}/proof`}
+                      alt="Bukti Transfer"
+                      className="max-h-72 w-auto object-contain cursor-pointer"
+                      onClick={() => window.open(`/api/admin/orders/${inspectOrder.id}/proof`, "_blank")}
+                    />
+                  </div>
+                )}
                 <div className="text-right">
                   <a
-                    href={inspectOrder.proofImageUrl}
+                    href={`/api/admin/orders/${inspectOrder.id}/proof`}
                     target="_blank"
                     rel="noreferrer"
                     className="text-[11px] font-semibold text-amber-800 hover:underline"

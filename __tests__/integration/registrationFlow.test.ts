@@ -236,7 +236,8 @@ describe.skipIf(!IS_TEST_DB)("alur registrasi", () => {
       const first = await uploadProof(form(new File([new Uint8Array(png)], "bukti.png", { type: "image/png" })), params(order.id));
       expect(first.status).toBe(200);
       const stored = (await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).proofImageUrl!;
-      const storedPath = path.join(process.cwd(), "public", stored);
+      expect(stored).toMatch(/^private-disk:proofs\//);
+      const storedPath = path.join(process.cwd(), "data", "private", stored.slice("private-disk:".length));
       filesToRemove.push(storedPath);
       expect(fs.existsSync(storedPath)).toBe(true);
 

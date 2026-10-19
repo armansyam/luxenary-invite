@@ -4,7 +4,7 @@ import { hasAdminPermission } from "@/lib/adminPermissions";
 import { prisma } from "@/lib/prisma";
 import { randomBytes } from "crypto";
 import sharp from "sharp";
-import { uploadFile, deleteFile } from "@/lib/storage";
+import { uploadPrivateFile, deleteFile } from "@/lib/storage";
 import { purgeObsoleteUserOrders } from "@/lib/upgradeHelper";
 import { routeError } from "@/lib/routeError";
 
@@ -118,12 +118,12 @@ export async function POST(
       await purgeObsoleteUserOrders(order.userId, order.id);
     };
 
-    let publicUrl: string;
+    let proofRef: string;
     if (mime.includes("pdf")) {
       if (buffer.subarray(0, 4).toString("latin1") !== "%PDF") {
         return NextResponse.json({ error: "File PDF tidak valid." }, { status: 400 });
       }
-      publicUrl = await uploadFile(buffer, `proofs/${proofBaseName}.pdf`, mime);
+      proofRef = await uploadPrivateFile(buffer, `proofs/${proofBaseName}.pdf`, "application/pdf");
     } else {
       // High-Resolution Sharp Compression for Images:
       // Max width 1400px (crystal sharp text legibility for receipts, file size ~100KB-200KB)
@@ -148,7 +148,7 @@ export async function POST(
           { status: 400 }
         );
       }
-      publicUrl = await uploadFile(compressedWebp, `proofs/${fileName}`, "image/webp");
+      proofRef = await uploadPrivateFile(compressedWebp, `proofs/${fileName}`, "image/webp");
     }
 
     // Update bersyarat: order yang baru saja lunas (webhook / persetujuan admin) tidak boleh dikembalikan ke PENDING
@@ -156,7 +156,7 @@ export async function POST(
       where: { id: order.id, status: "PENDING" },
       data: {
         paymentMethod: "MANUAL_TRANSFER",
-        proofImageUrl: publicUrl,
+        proofImageUrl: proofRef,
         proofUploadedAt: new Date(),
         status: "PENDING",
         paidAt: null,
@@ -164,18 +164,18 @@ export async function POST(
       },
     });
     if (saved.count === 0) {
-      await deleteFile(publicUrl);
+      await deleteFile(proofRef);
       return NextResponse.json({ error: "Pesanan sudah diproses dan tidak dapat menerima bukti baru. Muat ulang halaman." }, { status: 409 });
     }
 
-    await cleanupSuperseded(publicUrl);
+    await cleanupSuperseded(proofRef);
 
     const updatedOrder = await prisma.order.findUniqueOrThrow({ where: { id: order.id } });
 
     return NextResponse.json({
       success: true,
       message: "Bukti transfer berhasil dikirim. Tim admin akan segera memverifikasi pembayaran Anda.",
-      proofImageUrl: publicUrl,
+      proofImageUrl: proofRef,
       order: {
         id: updatedOrder.id,
         status: updatedOrder.status,

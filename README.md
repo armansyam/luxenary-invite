@@ -460,6 +460,8 @@ S3_ACCESS_KEY="..."
 S3_SECRET_KEY="..."
 S3_PUBLIC_URL="https://..."
 S3_CUSTOM_DOMAIN="cdn.domainanda.com"
+# Bucket PRIVAT terpisah (tanpa akses publik): salinan backup DB dan bukti transfer (prefix private/proofs/)
+S3_BACKUP_BUCKET_NAME="..."
 
 # Keamanan Cron Cleanup
 CRON_SECRET="your-secure-cron-token-here"
@@ -593,6 +595,7 @@ npx vitest run
 - **Data keuangan & audit**: klien yang punya order lunas tidak dapat dihapus (FK `orders.userId` RESTRICT), jejak audit admin yang dihapus tetap ada (`adminLabel`), tutup buku/pajak hanya untuk bulan yang sudah berakhir. **Deploy wajib**: `npx prisma migrate deploy` (migrasi `20261019100000_keep_finance_and_audit_history`) dan `NEXT_PUBLIC_APP_URL` terisi, karena URL balik/notifikasi gateway kini diambil dari sana, bukan dari header Host.
 - **Snapshot undangan terbit**: undangan terbit disajikan dari `public/published/ids/<id>.html`. Perbaikan di `lib/themeEngine.ts` (mis. skrip hitung mundur aman sejak 18 Okt, isian form momen 16 px sejak 19 Okt) hanya masuk ke snapshot yang dibangun ulang, jadi `deploy.sh` kini menjalankan `scripts/refresh-theme-drafts.ts --apply --keep-drafts` sebelum reload PM2 dan sekali lagi setelah health check (purge ulang Cloudflare). Piring template klien tetap beku; tidak perlu langkah manual.
 - **Uji E2E build produksi lokal (19 Okt)**: daftar → bayar manual → verifikasi admin → wizard → Studio → terbit → resepsionis QR lolos di `next start` dengan DB uji; smoke test 12/12. Perbaikan yang menyertainya (banner remote di wizard, prioritas `og:image` sampul, CSP `frame-src 'self'`, isian checkout/resepsionis 16 px) dirinci di `docs/SYSTEM_ARCHITECTURE.md` bagian 25.11 butir 37.
+- **Bukti transfer privat (19 Okt)**: bukti disimpan di bucket privat `S3_BACKUP_BUCKET_NAME` (prefix `private/proofs/`) atau `data/private/proofs/` di disk, tidak lagi di bucket media publik; admin membukanya lewat tautan bertanda tangan 5 menit (`/api/admin/orders/[orderId]/proof`). `deploy.sh` memindahkan bukti lama setelah health check (`npx tsx scripts/migrate-private-proofs.ts --apply`; tanpa `--apply` = dry run). Token R2 wajib berhak tulis ke bucket privat. Rincian di `docs/SYSTEM_ARCHITECTURE.md` bagian 25.11 butir 38.
 - **Isian dasbor di HP**: di bawah 640 px semua isian di dalam `.dash-shell` (layout dasbor klien dan admin) minimal 16 px lewat satu aturan di `app/globals.css`, agar iPhone tidak memperbesar layar; desktop tetap memakai ukuran kelas Tailwind.
 - **Tampilan HP**: dasbor klien dan admin diringkas di bawah `sm`/`md` (rincian di `docs/SYSTEM_ARCHITECTURE.md` bagian 25.11 butir 33); desktop tidak berubah.
 - **Simpan foto kamera tamu ke HP**: thumbnail "Simpan" setelah foto terkirim (Web Share, cadangan unduhan biasa); disembunyikan saat Delayed Reveal aktif (bagian 25.11 butir 34).

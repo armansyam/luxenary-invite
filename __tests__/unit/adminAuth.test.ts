@@ -136,7 +136,8 @@ describe("pemindai statis — rute tidak boleh terlupa guard", () => {
     const unauthenticated = collectRoutes(apiRoot)
       .filter((f) => {
         const src = fs.readFileSync(f, "utf8");
-        return !/\bauth\(\)|requireAdminModule|requireAnyAdmin|requireSuperAdmin|isReceptionistAuthorized|CRON_SECRET|verifyWebhookSignature|x-callback-token/.test(src);
+        // verifyProofLink: tautan bertanda tangan (HMAC AUTH_SECRET) yang hanya diterbitkan rute admin.
+        return !/\bauth\(\)|requireAdminModule|requireAnyAdmin|requireSuperAdmin|isReceptionistAuthorized|CRON_SECRET|verifyWebhookSignature|verifyProofLink|x-callback-token/.test(src);
       })
       .map((f) => path.relative(apiRoot, path.dirname(f)));
     const unexpected = unauthenticated.filter((r) => !PUBLIC_ALLOWLIST.has(r));

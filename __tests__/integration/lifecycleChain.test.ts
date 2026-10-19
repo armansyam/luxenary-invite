@@ -166,8 +166,8 @@ describe.skipIf(!IS_TEST_DB)("rantai klien dan admin: daftar paket sampai hapus 
     const up = await uploadProof(new Request("http://localhost/upload", { method: "POST", body: fd }), idParams(state.orderId));
     expect(up.status).toBe(200);
     const withProof = await prisma.order.findUniqueOrThrow({ where: { id: state.orderId } });
-    expect(withProof.proofImageUrl).toBeTruthy();
-    state.proofPath = path.join(process.cwd(), "public", withProof.proofImageUrl!);
+    expect(withProof.proofImageUrl).toMatch(/^private-disk:proofs\//);
+    state.proofPath = path.join(process.cwd(), "data", "private", withProof.proofImageUrl!.slice("private-disk:".length));
   });
 
   it("persetujuan admin: klien 401, admin melunasi, klik ganda tidak mengubah apa pun", async () => {

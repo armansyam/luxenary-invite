@@ -126,6 +126,103 @@ export async function uploadFile(buffer: Buffer, relativePath: string, mimeType:
   }
 }
 
+// Akses publik R2 (custom domain / r2.dev) berlaku untuk seluruh isi bucket, jadi prefix apa pun di bucket media tetap
+// terbuka bagi siapa saja yang memegang URL-nya. Berkas privat (bukti transfer: rekening dan nominal) disimpan di bucket
+// privat S3_BACKUP_BUCKET_NAME di bawah prefix private/, atau di data/private/ pada disk server bila bucket itu tidak
+// tersedia. DB menyimpan referensi berskema, bukan URL; isinya hanya dibuka lewat tautan bertanda tangan.
+const PRIVATE_BUCKET_SCHEME = "private-bucket:";
+const PRIVATE_DISK_SCHEME = "private-disk:";
+
+function privateBucketName(): string | null {
+  if (STORAGE_PROVIDER !== "r2" && STORAGE_PROVIDER !== "s3") return null;
+  const bucket = process.env.S3_BACKUP_BUCKET_NAME?.trim();
+  if (!bucket || bucket === process.env.S3_BUCKET_NAME?.trim()) return null;
+  return bucket;
+}
+
+export type PrivateFileRef = `${typeof PRIVATE_BUCKET_SCHEME}${string}` | `${typeof PRIVATE_DISK_SCHEME}${string}`;
+
+export function isPrivateFileRef(ref: string | null | undefined): ref is PrivateFileRef {
+  return Boolean(ref && (ref.startsWith(PRIVATE_BUCKET_SCHEME) || ref.startsWith(PRIVATE_DISK_SCHEME)));
+}
+
+function parsePrivateFileRef(ref: string): { location: "bucket" | "disk"; key: string } | null {
+  const location = ref.startsWith(PRIVATE_BUCKET_SCHEME) ? "bucket" : ref.startsWith(PRIVATE_DISK_SCHEME) ? "disk" : null;
+  if (!location) return null;
+  const key = ref.slice((location === "bucket" ? PRIVATE_BUCKET_SCHEME : PRIVATE_DISK_SCHEME).length);
+  if (!key || key.includes("\\") || key.split("/").some((seg) => !seg || seg === "." || seg === "..")) return null;
+  return { location, key };
+}
+
+function privateDiskPath(key: string): string {
+  return path.join(process.cwd(), "data", "private", key);
+}
+
+function requirePrivateBucket(): string {
+  const bucket = privateBucketName();
+  if (!bucket || !s3Client) throw new Error("Bucket privat (S3_BACKUP_BUCKET_NAME) tidak dikonfigurasi; berkas privat di bucket tidak dapat diakses.");
+  return bucket;
+}
+
+/** Simpan berkas yang tidak boleh dapat dibuka publik. Mengembalikan referensi untuk DB, bukan URL. */
+export async function uploadPrivateFile(buffer: Buffer, key: string, mimeType: string): Promise<string> {
+  const bucket = privateBucketName();
+  const ref = (bucket && s3Client ? PRIVATE_BUCKET_SCHEME : PRIVATE_DISK_SCHEME) + key;
+  if (!parsePrivateFileRef(ref)) throw new Error(`Kunci berkas privat tidak valid: ${JSON.stringify(key)}`);
+
+  if (bucket && s3Client) {
+    await s3Client.send(new PutObjectCommand({
+      Bucket: bucket,
+      Key: `private/${key}`,
+      Body: buffer,
+      ContentType: mimeType,
+      CacheControl: "private, no-store",
+    }));
+    return ref;
+  }
+
+  const absolutePath = privateDiskPath(key);
+  await fs.promises.mkdir(path.dirname(absolutePath), { recursive: true });
+  await fs.promises.writeFile(absolutePath, buffer);
+  return ref;
+}
+
+/** Isi berkas privat, atau null bila referensinya tidak valid atau berkasnya tidak ada. */
+export async function readPrivateFile(ref: string): Promise<Buffer | null> {
+  const parsed = parsePrivateFileRef(ref);
+  if (!parsed) return null;
+
+  if (parsed.location === "bucket") {
+    try {
+      const data = await s3Client!.send(new GetObjectCommand({ Bucket: requirePrivateBucket(), Key: `private/${parsed.key}` }));
+      return data.Body ? Buffer.from(await data.Body.transformToByteArray()) : null;
+    } catch (err) {
+      if ((err as { name?: string }).name === "NoSuchKey") return null;
+      throw err;
+    }
+  }
+
+  try {
+    return await fs.promises.readFile(privateDiskPath(parsed.key));
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw err;
+  }
+}
+
+async function deletePrivateFile(ref: string): Promise<boolean> {
+  const parsed = parsePrivateFileRef(ref);
+  if (!parsed) return false;
+  if (parsed.location === "bucket") {
+    await s3Client!.send(new DeleteObjectCommand({ Bucket: requirePrivateBucket(), Key: `private/${parsed.key}` }));
+    return true;
+  }
+  const absolutePath = privateDiskPath(parsed.key);
+  if (!fs.existsSync(absolutePath)) return false;
+  await fs.promises.unlink(absolutePath);
+  return true;
+}
+
 /**
  * Unified Delete Handler (VPS vs R2)
  * @param publicUrl - The full public URL stored in DB (e.g. https://pub-xxx.r2.dev/folder/file.png)
@@ -135,6 +232,8 @@ export async function deleteFile(publicUrl: string | null): Promise<boolean> {
   if (!publicUrl) return false;
 
   try {
+    if (isPrivateFileRef(publicUrl)) return await deletePrivateFile(publicUrl);
+
     if (publicUrl.startsWith("http") && (STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3")) {
       const bucketName = process.env.S3_BUCKET_NAME;
       if (!bucketName || !s3Client) return false;
