@@ -1016,7 +1016,7 @@ function PaymentContent() {
 
       {/* ── FLOATING TOAST NOTIFICATION ── */}
       {paymentNotice && (
-        <div className="fixed bottom-6 right-6 z-50 max-w-sm w-full animate-in fade-in slide-in-from-bottom-3 duration-200">
+        <div className="fixed bottom-6 inset-x-4 sm:inset-x-auto sm:right-6 z-50 sm:max-w-sm sm:w-full animate-in fade-in slide-in-from-bottom-3 duration-200">
           <div className={`p-4 rounded-2xl border shadow-xl flex items-start justify-between gap-3 text-xs ${
             paymentNotice.type === "error" 
               ? "bg-rose-950/95 border-rose-800/80 text-rose-200"

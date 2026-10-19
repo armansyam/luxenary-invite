@@ -12,7 +12,8 @@ const cspReportOnly = [
   "media-src 'self' blob: https:",
   "font-src 'self' data: https://fonts.gstatic.com",
   "connect-src 'self' https:",
-  "frame-src https://app.midtrans.com https://app.sandbox.midtrans.com https://www.youtube.com https://player.vimeo.com https://www.google.com",
+  // 'self': Studio Editor membingkai pratinjau undangan dari origin sendiri (/api/client/invitations/[id]/preview).
+  "frame-src 'self' https://app.midtrans.com https://app.sandbox.midtrans.com https://www.youtube.com https://player.vimeo.com https://www.google.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

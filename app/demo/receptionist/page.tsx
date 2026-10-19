@@ -957,7 +957,7 @@ export default function DemoReceptionistPage() {
                         <select
                           value={selectedCameraIndex}
                           onChange={(e) => setSelectedCameraIndex(Number(e.target.value))}
-                          className="px-2.5 py-1 text-xs font-medium text-stone-700 bg-stone-100 border border-stone-300 rounded-lg focus:outline-none focus:border-amber-500"
+                          className="px-2.5 py-1 text-base sm:text-xs font-medium text-stone-700 bg-stone-100 border border-stone-300 rounded-lg focus:outline-none focus:border-amber-500"
                         >
                           {cameraList.map((cam, idx) => (
                             <option key={cam.id} value={idx}>
@@ -1143,7 +1143,7 @@ export default function DemoReceptionistPage() {
                     value={genName}
                     onChange={(e) => setGenName(e.target.value)}
                     placeholder="Contoh: Bpk. Dr. H. Hendra Gunawan"
-                    className="w-full text-xs px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl focus:border-amber-600 focus:bg-white focus:outline-none text-stone-900 font-semibold transition"
+                    className="w-full text-base sm:text-xs px-3.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl focus:border-amber-600 focus:bg-white focus:outline-none text-stone-900 font-semibold transition"
                     required
                     autoFocus
                   />
@@ -1155,7 +1155,7 @@ export default function DemoReceptionistPage() {
                     <select
                       value={genCategory}
                       onChange={(e) => setGenCategory(e.target.value as "VIP" | "KELUARGA" | "REGULER")}
-                      className="w-full text-xs px-2.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl focus:border-amber-600 focus:bg-white focus:outline-none text-stone-900 font-medium"
+                      className="w-full text-base sm:text-xs px-2.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl focus:border-amber-600 focus:bg-white focus:outline-none text-stone-900 font-medium"
                     >
                       <option value="VIP">VIP</option>
                       <option value="KELUARGA">Keluarga</option>
@@ -1170,7 +1170,7 @@ export default function DemoReceptionistPage() {
                       max={10}
                       value={genQuota}
                       onChange={(e) => setGenQuota(Number(e.target.value))}
-                      className="w-full text-xs px-2.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl focus:border-amber-600 focus:bg-white focus:outline-none text-stone-900 text-center font-bold"
+                      className="w-full text-base sm:text-xs px-2.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl focus:border-amber-600 focus:bg-white focus:outline-none text-stone-900 text-center font-bold"
                     />
                   </div>
                   <div>
@@ -1180,7 +1180,7 @@ export default function DemoReceptionistPage() {
                       value={genTable}
                       onChange={(e) => setGenTable(e.target.value)}
                       placeholder="VIP 01 / 05"
-                      className="w-full text-xs px-2.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl focus:border-amber-600 focus:bg-white focus:outline-none text-stone-900 text-center font-bold"
+                      className="w-full text-base sm:text-xs px-2.5 py-2.5 bg-stone-50 border border-stone-300 rounded-xl focus:border-amber-600 focus:bg-white focus:outline-none text-stone-900 text-center font-bold"
                     />
                   </div>
                 </div>

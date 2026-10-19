@@ -211,7 +211,7 @@ function DialogView({
             onKeyDown={(e) => {
               if (e.key === "Enter") submit();
             }}
-            className="mt-3 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm text-stone-900 outline-none focus:border-amber-700 focus:ring-2 focus:ring-amber-700/20"
+            className="mt-3 w-full rounded-xl border border-stone-300 px-3 py-2 text-base sm:text-sm text-stone-900 outline-none focus:border-amber-700 focus:ring-2 focus:ring-amber-700/20"
           />
         )}
 

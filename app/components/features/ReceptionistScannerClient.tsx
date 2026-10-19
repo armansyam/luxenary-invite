@@ -1066,7 +1066,7 @@ export default function ReceptionistScannerClient({
                           <select
                             value={selectedCameraIndex}
                             onChange={(e) => setSelectedCameraIndex(Number(e.target.value))}
-                            className="px-2.5 py-1 text-xs font-medium text-stone-700 bg-stone-100 border border-stone-300 rounded-lg focus:outline-none focus:border-amber-500"
+                            className="px-2.5 py-1 text-base sm:text-xs font-medium text-stone-700 bg-stone-100 border border-stone-300 rounded-lg focus:outline-none focus:border-amber-500"
                           >
                             {cameraList.map((cam, idx) => (
                               <option key={cam.id} value={idx}>

@@ -701,7 +701,7 @@ function CheckoutContent() {
                     onChange={(e) => setBuyerPhone(formatWhatsAppNumber(e.target.value))}
                     placeholder="Contoh: 0812-3456-7890"
                     maxLength={19}
-                    className="w-full px-3.5 py-3 rounded-xl bg-stone-900/60 border border-white/10 text-white placeholder-stone-500 text-xs sm:text-sm focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 transition font-mono min-h-[44px]"
+                    className="w-full px-3.5 py-3 rounded-xl bg-stone-900/60 border border-white/10 text-white placeholder-stone-500 text-base sm:text-sm focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 transition font-mono min-h-[44px]"
                   />
                 </div>
               </div>
@@ -784,7 +784,7 @@ function CheckoutContent() {
                               value={promoCodeInput}
                               onChange={(e) => setPromoCodeInput(e.target.value.toUpperCase())}
                               placeholder="Ketik kode kupon..."
-                              className="flex-1 px-3 py-2 bg-stone-950/80 border border-white/10 rounded-xl text-xs font-mono uppercase text-white placeholder-stone-600 focus:outline-none focus:border-amber-500/50"
+                              className="flex-1 px-3 py-2 bg-stone-950/80 border border-white/10 rounded-xl text-base sm:text-xs font-mono uppercase text-white placeholder-stone-600 focus:outline-none focus:border-amber-500/50"
                               onKeyDown={(e) => {
                                 if (e.key === "Enter") {
                                   e.preventDefault();

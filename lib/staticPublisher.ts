@@ -65,13 +65,14 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
     ? `Kami mengundang Anda untuk hadir di hari bahagia pernikahan kami.`
     : `Kami mengundang Anda untuk hadir di acara ${displayName}.`;
   
-  const coverMedia = await prisma.invitationMedia.findFirst({
-    where: { 
-      invitationId: invitation.id, 
-      mediaSlot: { in: ["LANDING_COVER", "LANDING_COVER_DESKTOP", "HOME_PHOTO", "DESKTOP_SIDEBAR", "GROOM_PHOTO", "BRIDE_PHOTO"] as any } 
-    },
+  const ogSlotPriority = ["LANDING_COVER", "LANDING_COVER_DESKTOP", "HOME_PHOTO", "DESKTOP_SIDEBAR", "GROOM_PHOTO", "BRIDE_PHOTO"];
+  const ogCandidates = await prisma.invitationMedia.findMany({
+    where: { invitationId: invitation.id, mediaSlot: { in: ogSlotPriority as any } },
     orderBy: { createdAt: "desc" },
   });
+  // Urutan daftar adalah prioritas pratinjau tautan: sampul lebih dulu, foto mempelai hanya bila sampul tidak ada.
+  // Sebelumnya unggahan terbaru yang menang, sehingga pratinjau WhatsApp bergantung pada urutan unggah klien.
+  const coverMedia = ogSlotPriority.map((slot) => ogCandidates.find((m) => m.mediaSlot === slot)).find(Boolean);
   
   const siteOrigin = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
   const platformName = await getAdminSetting("platform_name", "Platform Undangan");
