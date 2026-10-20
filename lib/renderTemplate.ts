@@ -1191,6 +1191,90 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
     }
   }
 
+  // 9b. Dock bawah yang meluber: tombol Ticket disisipkan engine ke semua tema, sehingga dock yang pas di master bisa
+  // melewati tepi layar 320-375px (dan panel desktop 460px pada aeterna/verona). Kelas dipasang bertahap hanya bila
+  // memang meluber; dock yang muat tidak berubah.
+  function fitBottomDock() {
+    var docks = document.querySelectorAll('.bottom-dock');
+    Array.prototype.forEach.call(docks, function(dock) {
+      // Dock tersembunyi (lebar 0) tidak dapat diukur: kelas tahap sebelumnya dibiarkan, diukur ulang saat tampil.
+      if (!dock.getBoundingClientRect().width) return;
+      dock.classList.remove('lux-dock-compact', 'lux-dock-tight', 'lux-dock-icons');
+      var dr = dock.getBoundingClientRect();
+      // Dock diletakkan di tengah area tampilnya (layar penuh di HP, panel kanan 460px di desktop): ruang yang tersedia
+      // dua kali jarak titik tengah dock ke tepi layar terdekat.
+      var cx = (dr.left + dr.right) / 2;
+      var avail = Math.floor(Math.min(window.innerWidth, 2 * Math.min(cx, window.innerWidth - cx)));
+      var items = Array.prototype.filter.call(dock.children, function(c) { return c.getBoundingClientRect().width > 0; });
+      function overflows() {
+        var r = dock.getBoundingClientRect();
+        if (dock.scrollWidth > dock.clientWidth + 1 || r.width > avail - 15 || r.left < 0 || r.right > window.innerWidth) return true;
+        return items.some(function(c) { var cr = c.getBoundingClientRect(); return cr.right > r.right + 1 || cr.left < r.left - 1; });
+      }
+      function labelsClipped() {
+        return items.some(function(c) { return c.scrollWidth > c.clientWidth + 1; });
+      }
+      if (!overflows()) return;
+      dock.style.setProperty('--lux-dock-avail', avail + 'px');
+      dock.classList.add('lux-dock-compact');
+      if (!labelsClipped()) return;
+      dock.classList.add('lux-dock-tight');
+      if (!labelsClipped()) return;
+      dock.classList.add('lux-dock-icons');
+    });
+  }
+  window.addEventListener('resize', fitBottomDock, { passive: true });
+  // Lebar label berubah setelah web font tema selesai dimuat.
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitBottomDock);
+
+  // 9c. Video slot media hanya berputar saat terlihat: tanpa ini video sampul terus berputar di balik undangan yang
+  // sudah dibuka, dan latar Home/penutup ikut didekode sejak awal (4 video sekaligus di HP).
+  function initSlotVideoVisibility() {
+    var vids = document.querySelectorAll('video.lux-cover-video, video.lux-cover-desktop-video, video.lux-sidebar-video, video.lux-fixed-bg-video, video.lux-home-video, video.lux-closing-video');
+    if (!vids.length || !window.IntersectionObserver) return;
+    // Sampul yang dibuka digeser tepat ke atas layar (bottom = 0) dan visibility: hidden; keduanya tidak terlihat oleh
+    // IntersectionObserver, jadi posisi dan visibility diperiksa langsung, juga setiap kali transisi selesai.
+    function shouldPlay(v) {
+      var r = v.getBoundingClientRect();
+      if (!r.width || !r.height) return false;
+      if (r.bottom <= 0 || r.top >= window.innerHeight || r.right <= 0 || r.left >= window.innerWidth) return false;
+      return window.getComputedStyle(v).visibility !== 'hidden';
+    }
+    function syncVideo(v) {
+      if (shouldPlay(v)) {
+        var p = v.play();
+        if (p && p.catch) p.catch(function() {});
+      } else if (!v.paused) {
+        v.pause();
+      }
+    }
+    var io = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) { syncVideo(entry.target); });
+    });
+    Array.prototype.forEach.call(vids, function(v) {
+      if (v.__luxVisObserved) return;
+      v.__luxVisObserved = true;
+      io.observe(v);
+    });
+    document.addEventListener('transitionend', function() {
+      Array.prototype.forEach.call(vids, syncVideo);
+    }, true);
+  }
+  // Sebagian tema mengubah ukuran dock sendiri setelah dimuat (label muncul belakangan, dock tampil setelah sampul
+  // dibuka), tanpa resize jendela: dock dan tombolnya diamati, pengukuran ulang dijadwalkan sekali per frame.
+  if (window.ResizeObserver) {
+    var dockFitScheduled = false;
+    var dockResizeObserver = new ResizeObserver(function() {
+      if (dockFitScheduled) return;
+      dockFitScheduled = true;
+      window.requestAnimationFrame(function() { dockFitScheduled = false; fitBottomDock(); });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.bottom-dock'), function(dock) {
+      dockResizeObserver.observe(dock);
+      Array.prototype.forEach.call(dock.children, function(c) { dockResizeObserver.observe(c); });
+    });
+  }
+
   // 10. Universal Theme Preloader Dismissal Driver (Graceful Minimum Time & Zero Visual Leak)
   function initPreloaderGuard() {
     var preloader = document.getElementById('themePreloader');
@@ -1322,6 +1406,8 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
       resolveGuestName();
       initAudioInteractionFallback();
       syncActiveTogglesUI();
+      fitBottomDock();
+      initSlotVideoVisibility();
       initHomeDockGuard();
     });
   } else {
@@ -1329,11 +1415,14 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
     resolveGuestName();
     initAudioInteractionFallback();
     syncActiveTogglesUI();
+    fitBottomDock();
+    initSlotVideoVisibility();
     initHomeDockGuard();
   }
   window.addEventListener('load', function() {
     initPreloaderGuard();
     syncActiveTogglesUI();
+    fitBottomDock();
     initHomeDockGuard();
   });
 
@@ -1510,6 +1599,35 @@ export async function renderTemplateFile(
       pointer-events: none !important;
       transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease !important;
     }
+    /* Tahap fitBottomDock(): compact = tombol navigasi berbagi lebar layar; tight = label dirapatkan; icons = label disembunyikan.
+       Tombol audio (lingkaran berukuran tetap) tidak ikut direntangkan. */
+    .bottom-dock.lux-dock-compact {
+      width: calc(var(--lux-dock-avail, 100vw) - 16px) !important;
+      max-width: calc(var(--lux-dock-avail, 100vw) - 16px) !important;
+      box-sizing: border-box !important;
+      padding-left: 6px !important;
+      padding-right: 6px !important;
+      gap: 2px !important;
+      justify-content: space-between !important;
+    }
+    .bottom-dock.lux-dock-compact > a,
+    .bottom-dock.lux-dock-compact > button.dock-a,
+    .bottom-dock.lux-dock-compact > button.dock-btn {
+      flex: 1 1 0 !important;
+      min-width: 0 !important;
+      padding-left: 1px !important;
+      padding-right: 1px !important;
+    }
+    .bottom-dock.lux-dock-tight > a,
+    .bottom-dock.lux-dock-tight > button.dock-a,
+    .bottom-dock.lux-dock-tight > button.dock-btn {
+      letter-spacing: 0 !important;
+      font-size: 0.5rem !important;
+    }
+    .bottom-dock.lux-dock-icons > a > span,
+    .bottom-dock.lux-dock-icons > button > span {
+      display: none !important;
+    }
   </style>`;
   const metaTags = data.metaTagsHtml ? `${data.metaTagsHtml}\n` : '';
   let closingStyle = '';
@@ -1517,7 +1635,7 @@ export async function renderTemplateFile(
   if (data.closingPhotoUrl) {
     if (isVideoMedia(data.closingPhotoUrl)) {
       const safeClosingVideo = escapeHtmlAttr(String(data.closingPhotoUrl));
-      closingVideoHtml = `<video class="lux-closing-video" autoplay loop muted playsinline webkit-playsinline preload="auto"><source src="${safeClosingVideo}" type="video/mp4"></video>`;
+      closingVideoHtml = `<video class="lux-closing-video" loop muted playsinline webkit-playsinline preload="metadata"><source src="${safeClosingVideo}" type="video/mp4"></video>`;
       closingStyle = `\n<style>
       .lux-closing-video {
         position: absolute;
@@ -1708,6 +1826,10 @@ export async function renderTemplateFile(
       background-position: center center !important;
       background-repeat: no-repeat !important;
     }
+    /* Video sampul HP (absolute, inset 0) menutupi foto latar ini di desktop bila tidak disembunyikan. */
+    .lux-cover-video {
+      display: none !important;
+    }
     .cover-names, .cover-title {
       text-shadow: 0 4px 20px rgba(0,0,0,0.85) !important;
     }
@@ -1797,7 +1919,7 @@ export async function renderTemplateFile(
   if (data.hasCustomHomePhoto && data.homePhotoUrl) {
     if (isVideoMedia(data.homePhotoUrl)) {
       const safeHomeVideo = escapeHtmlAttr(String(data.homePhotoUrl));
-      homeVideoHtml = `<video class="lux-home-video" autoplay loop muted playsinline webkit-playsinline preload="auto"><source src="${safeHomeVideo}" type="video/mp4"></video>`;
+      homeVideoHtml = `<video class="lux-home-video" loop muted playsinline webkit-playsinline preload="auto"><source src="${safeHomeVideo}" type="video/mp4"></video>`;
       videoStyles += `
       .lux-home-video {
         position: absolute;
@@ -2082,6 +2204,15 @@ export async function renderTemplateFile(
     }
   }
 
+  // Master pernikahan menulis "&amp;" literal di antara {{firstFather}} dan {{firstMother}}; bila salah satu kosong,
+  // tamu melihat "&" yatim. Pemisah diganti token yang hanya terisi bila kedua nama ada (berlaku juga untuk piring lama).
+  if ("firstParentsJoinHtml" in data) {
+    tpl = tpl.replace(
+      /(\{\{\s*(first|second)Father\s*\}\}(?:\s*<\/strong>)?)\s*&amp;\s*((?:<strong\b[^>]*>\s*)?\{\{\s*\2Mother\s*\}\})/g,
+      "$1{{$2ParentsJoinHtml}}$3"
+    );
+  }
+
   // Conditional Template Blocks: recursively process innermost {{#if ...}} ... {{/if}} first
   const ifRegex = /\{[\s\n]*\{[\s\n]*#if\s+([\w.]+)[\s\n]*\}[\s\n]*\}((?:(?!\{[\s\n]*\{[\s\n]*#if\b)[\s\S])*?)\{[\s\n]*\{[\s\n]*\/if[\s\n]*\}[\s\n]*\}/i;
   let ifMatch;
@@ -2178,6 +2309,10 @@ export async function renderTemplateFile(
     // Seluruh field teks pengguna di-escape untuk proteksi mutlak dari Stored XSS
     return escapeHtmlSafe(String(val));
   });
+
+  // Tombol Instagram tanpa handle (sebagian master tidak membungkusnya dengan {{#if}}) tampil sebagai "@" menuju
+  // instagram.com; tombol dengan href kosong itu dibuang.
+  tpl = tpl.replace(/<a\b[^>]*\bhref="https?:\/\/(?:www\.)?instagram\.com\/?"[^>]*>[\s\S]*?<\/a>/gi, "");
 
   // Label kustom disisipkan setelah placeholder diganti, agar seksi buatan engine ({{rsvpSectionHtml}}, galeri, kado,
   // dan seluruh seksi tema satu nama) ikut memakai label klien, bukan hanya elemen yang tertulis di master.

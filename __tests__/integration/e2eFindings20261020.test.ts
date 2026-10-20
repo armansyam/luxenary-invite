@@ -19,15 +19,16 @@ const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
 const TAG = `vitest_find1020_${Date.now()}`;
 const ids = { users: [] as string[], invitations: [] as string[] };
 
-async function makeInvitation(eventType: string, themeId: string, status: "PUBLISHED" | "EVENT_FINISHED", participants: object) {
-  const user = await prisma.user.create({ data: { email: `${TAG}_${eventType}@example.test`, name: "Uji" } });
+async function makeInvitation(eventType: string, themeId: string, status: "PUBLISHED" | "EVENT_FINISHED", participants: object, featureSettings: object = {}) {
+  const key = `${eventType.toLowerCase()}${ids.users.length}`;
+  const user = await prisma.user.create({ data: { email: `${TAG}_${key}@example.test`, name: "Uji" } });
   ids.users.push(user.id);
-  const order = await prisma.order.create({ data: { userId: user.id, invoiceNumber: `${TAG}-${eventType}`, planType: "TIER_3", amount: 1, status: "PAID", paidAt: new Date() } as never });
-  const sub = `${TAG.replace(/_/g, "-")}-${eventType.toLowerCase()}`.slice(0, 60);
+  const order = await prisma.order.create({ data: { userId: user.id, invoiceNumber: `${TAG}-${key}`, planType: "TIER_3", amount: 1, status: "PAID", paidAt: new Date() } as never });
+  const sub = `${TAG.replace(/_/g, "-")}-${key}`.slice(0, 60);
   const inv = await prisma.invitation.create({
     data: {
       userId: user.id, orderId: order.id, themeId, eventType: eventType as never, status, subdomain: sub, invitationSlug: sub, publishedAt: new Date(),
-      participantsJson: participants, eventData: [{ title: "Acara", date: "2099-12-05", time: "10:00 – 14:00 WITA", location: "Gedung", isPrimary: true }],
+      participantsJson: participants, featureSettings, eventData: [{ title: "Acara", date: "2099-12-05", time: "10:00 – 14:00 WITA", location: "Gedung", isPrimary: true }],
     },
   });
   ids.invitations.push(inv.id);
@@ -85,5 +86,67 @@ describe.skipIf(!IS_TEST_DB)("ucapan terbaru pada tema satu nama", () => {
     expect(list.innerHTML).toContain("&lt;script&gt;alert(1)&lt;/script&gt; Selamat!");
     expect(list.innerHTML).not.toContain("<img");
     expect(list.innerHTML).toContain("Hadir (2)");
+  });
+});
+
+describe.skipIf(!IS_TEST_DB)("orang tua dan Instagram kosong di semua master pernikahan", () => {
+  const parentsText = (html: string) =>
+    [...html.matchAll(/<(p|div|strong)\b[^>]*class="[^"]*parents[^"]*"[^>]*>([\s\S]*?)<\/\1>/g)].map((m) => m[2].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
+
+  it.each([true, false])("tanpa '&' atau '@' yatim dan tanpa label 'Putra/Putri Dari' kosong (mempelai pria duluan: %s)", async (groomFirst) => {
+    const inv = await makeInvitation("WEDDING", "kalandra", "PUBLISHED", { groom: { name: "Arya", nickname: "Arya" }, bride: { name: "Nadia", nickname: "Nadia" } }, groomFirst ? {} : { displayOrder: "BRIDE_FIRST" });
+    const data = (await composeTemplateData(inv.id)) as any;
+    const themes = await prisma.theme.findMany({ where: { eventType: "WEDDING" as never, isActive: true }, select: { id: true } });
+    expect(themes.length).toBeGreaterThan(20);
+    for (const { id } of themes) {
+      const html = await renderTemplateFile(id, data, { editMode: false });
+      expect(html, `${id}: tombol Instagram kosong`).not.toMatch(/href="https?:\/\/(www\.)?instagram\.com\/?"/);
+      for (const t of parentsText(html)) expect(t, `${id}: teks orang tua "${t}"`).not.toMatch(/^&|&$|^(Putra|Putri) dari\s*$/i);
+      expect(html, `${id}: label orang tua tanpa nama`).not.toMatch(/>\s*(Putra|Putri) Dari\s*</);
+    }
+  });
+
+  it("satu orang tua saja: label tampil, tanpa '&'; switch nama pertama dipatuhi", async () => {
+    const inv = await makeInvitation("WEDDING", "kalandra", "PUBLISHED", {
+      groom: { name: "Arya", nickname: "Arya", mother: "Ibu Siti" }, bride: { name: "Nadia", nickname: "Nadia", father: "Bapak Hendra", mother: "Ibu Ratna", instagram: "nadia.kirana" },
+    }, { displayOrder: "BRIDE_FIRST" });
+    const html = await renderTemplateFile("kalandra", (await composeTemplateData(inv.id)) as any, { editMode: false });
+    const texts = parentsText(html);
+    expect(texts[0]).toBe("Bapak Hendra &amp; Ibu Ratna");
+    expect(texts[1]).toBe("Ibu Siti");
+    expect(html).toMatch(/>\s*Putri Dari\s*</);
+    expect(html).toContain('href="https://instagram.com/nadia.kirana"');
+    expect(html).not.toMatch(/href="https?:\/\/(www\.)?instagram\.com\/?"/);
+  });
+});
+
+describe.skipIf(!IS_TEST_DB)("runtime dock sempit dan video slot", () => {
+  it("menyertakan penyesuai dock dan pengatur video; video Home/penutup tidak autoplay sendiri", async () => {
+    const inv = await makeInvitation("WEDDING", "kalandra", "PUBLISHED", { groom: { name: "Arya", nickname: "Arya" }, bride: { name: "Nadia", nickname: "Nadia" } });
+    await prisma.invitationMedia.createMany({ data: [
+      { invitationId: inv.id, mediaSlot: "HOME_PHOTO" as never, localPath: `/uploads/invitations/${inv.id}/home-photo.mp4`, mimeType: "video/mp4" },
+      { invitationId: inv.id, mediaSlot: "CLOSING_COVER" as never, localPath: `/uploads/invitations/${inv.id}/closing-cover.mp4`, mimeType: "video/mp4" },
+    ] });
+    const html = await renderTemplateFile("kalandra", (await composeTemplateData(inv.id)) as any, { editMode: false, invitationId: inv.id });
+    expect(html).toContain("function fitBottomDock()");
+    expect(html).toContain(".bottom-dock.lux-dock-compact");
+    expect(html).toContain("function initSlotVideoVisibility()");
+    expect(html).toMatch(/<video class="lux-home-video" loop muted/);
+    expect(html).toMatch(/<video class="lux-closing-video" loop muted playsinline webkit-playsinline preload="metadata"/);
+  });
+});
+
+describe.skipIf(!IS_TEST_DB)("sampul HP video + sampul desktop foto", () => {
+  it("di ≥900px video sampul HP disembunyikan agar foto sampul desktop terlihat", async () => {
+    const inv = await makeInvitation("WEDDING", "kalandra", "PUBLISHED", { groom: { name: "Arya", nickname: "Arya" }, bride: { name: "Nadia", nickname: "Nadia" } });
+    await prisma.invitationMedia.createMany({ data: [
+      { invitationId: inv.id, mediaSlot: "LANDING_COVER" as never, localPath: `/uploads/invitations/${inv.id}/landing-cover.mp4`, mimeType: "video/mp4" },
+      { invitationId: inv.id, mediaSlot: "LANDING_COVER_DESKTOP" as never, localPath: `/uploads/invitations/${inv.id}/landing-cover-desktop.webp`, mimeType: "image/webp" },
+    ] });
+    const html = await renderTemplateFile("kalandra", (await composeTemplateData(inv.id)) as any, { editMode: false, invitationId: inv.id });
+    expect(html).toContain('<video class="lux-cover-video"');
+    const desktopStyle = [...html.matchAll(/<style>([\s\S]*?)<\/style>/g)].map((m) => m[1]).find((s) => s.includes("landing-cover-desktop.webp"));
+    expect(desktopStyle, "blok gaya sampul desktop").toBeTruthy();
+    expect(desktopStyle!).toMatch(/@media \(min-width: 900px\)[\s\S]*\.lux-cover-video\s*\{\s*display:\s*none !important;/);
   });
 });

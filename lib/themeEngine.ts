@@ -267,14 +267,20 @@ export async function composeWeddingData(inv: any) {
   const secondRole = isGroomFirst ? "The Bride" : "The Groom";
   const firstRoleLabel = isGroomFirst ? "Mempelai Pria" : "Mempelai Wanita";
   const secondRoleLabel = isGroomFirst ? "Mempelai Wanita" : "Mempelai Pria";
-  const firstParentLabel = isGroomFirst ? "Putra Dari" : "Putri Dari";
-  const secondParentLabel = isGroomFirst ? "Putri Dari" : "Putra Dari";
-  const firstParentPrefix = isGroomFirst ? "Putra dari" : "Putri dari";
-  const secondParentPrefix = isGroomFirst ? "Putri dari" : "Putra dari";
   const firstFather = isGroomFirst ? groomFather : brideFather;
   const firstMother = isGroomFirst ? groomMother : brideMother;
   const secondFather = isGroomFirst ? brideFather : groomFather;
   const secondMother = isGroomFirst ? brideMother : groomMother;
+  // Nama orang tua boleh kosong (hanya jenis acara yang wajib di wizard): label "Putra Dari" tanpa nama tidak ditampilkan.
+  const firstHasParents = Boolean(firstFather || firstMother);
+  const secondHasParents = Boolean(secondFather || secondMother);
+  const firstParentLabel = firstHasParents ? (isGroomFirst ? "Putra Dari" : "Putri Dari") : "";
+  const secondParentLabel = secondHasParents ? (isGroomFirst ? "Putri Dari" : "Putra Dari") : "";
+  const firstParentPrefix = firstHasParents ? (isGroomFirst ? "Putra dari" : "Putri dari") : "";
+  const secondParentPrefix = secondHasParents ? (isGroomFirst ? "Putri dari" : "Putra dari") : "";
+  // Pengganti "&amp;" literal di master antara {{xFather}} dan {{xMother}} (lihat renderTemplateFile).
+  const firstParentsJoinHtml = firstFather && firstMother ? " &amp; " : "";
+  const secondParentsJoinHtml = secondFather && secondMother ? " &amp; " : "";
   const firstParents = isGroomFirst ? groomParents : brideParents;
   const secondParents = isGroomFirst ? brideParents : groomParents;
   const firstInstagram = isGroomFirst ? groomInstagram : brideInstagram;
@@ -1819,6 +1825,8 @@ export async function composeWeddingData(inv: any) {
     firstMother,
     secondFather,
     secondMother,
+    firstParentsJoinHtml,
+    secondParentsJoinHtml,
     firstParents,
     secondParents,
     firstInstagram,
