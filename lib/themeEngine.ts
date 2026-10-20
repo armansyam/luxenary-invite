@@ -2105,7 +2105,7 @@ export async function composeBirthdayData(inv: any) {
   const galleryPhotos = await collectGalleryPhotos(inv, featureSettings);
   const gallerySectionHtml = buildUniversalGallerySection(galleryPhotos, customLabels.galleryTitle || "Galeri Foto", showGallery);
   const rsvpSectionHtml = buildUniversalRsvpSection(inv.id);
-  const wishesSectionHtml = buildUniversalWishesSection(inv.rsvps || []);
+  const wishesSectionHtml = buildUniversalWishesSection(inv.rsvps || [], inv.id);
   const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital", personName, showGift);
 
   // Musik: lagu klien → musik bawaan tema; sakelar Musik di studio mematikannya. Pemutar dibangun applySingleNameContract.
@@ -2422,7 +2422,7 @@ function buildUniversalRsvpSection(invitationId: string): string {
   `;
 }
 
-function buildUniversalWishesSection(rsvps: any[] = []): string {
+function buildUniversalWishesSection(rsvps: any[] = [], invitationId = ""): string {
   const wishesList = (rsvps || []).map((r: any) => `
     <div style="background: color-mix(in srgb, var(--card-bg) 70%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent); border-radius: var(--radius-md, 14px); padding: 14px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
@@ -2440,6 +2440,29 @@ function buildUniversalWishesSection(rsvps: any[] = []): string {
         ${wishesList || `<p style="text-align: center; font-size: 12px; color: var(--text-muted); padding: 16px 0;">Belum ada ucapan. Jadilah yang pertama memberikan doa restu!</p>`}
       </div>
     </div>
+    <script>
+      // HTML terbit adalah snapshot saat publikasi; ucapan tamu yang masuk sesudahnya dimuat dari API agar ikut tampil.
+      (function () {
+        var invId = ${jsonForInlineScript(String(invitationId))};
+        var list = document.getElementById("universalWishesList");
+        if (!invId || !list) return;
+        fetch("/api/public/rsvp?invitationId=" + encodeURIComponent(invId))
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            if (!data || !data.success || !Array.isArray(data.rsvps) || data.rsvps.length === 0) return;
+            var esc = function (s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); };
+            list.innerHTML = data.rsvps.map(function (r) {
+              var hadir = String(r.status).toLowerCase() === "hadir";
+              return '<div style="background: color-mix(in srgb, var(--card-bg) 70%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent); border-radius: var(--radius-md, 14px); padding: 14px;">' +
+                '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;"><strong style="font-size: 13px; color: var(--text-main);">' + esc(r.guestName || "Tamu") + '</strong>' +
+                '<span style="font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-full, 9999px); background: ' + (hadir ? 'color-mix(in srgb, var(--primary) 25%, transparent)' : 'color-mix(in srgb, var(--text-muted) 20%, transparent)') + '; color: ' + (hadir ? 'var(--primary)' : 'var(--text-muted)') + ';">' + (hadir ? 'Hadir (' + esc(r.guestCount || 1) + ')' : 'Berhalangan') + '</span></div>' +
+                (r.message ? '<p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 0;">“' + esc(r.message) + '”</p>' : '') +
+                '</div>';
+            }).join("");
+          })
+          .catch(function (err) { console.warn("Ucapan terbaru tidak termuat", err); });
+      })();
+    </script>
   `;
 }
 
@@ -2778,7 +2801,7 @@ export async function composeKhitanData(inv: any) {
   const gallerySectionHtml = buildUniversalGallerySection(await collectGalleryPhotos(inv, featureSettings), customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false);
   const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital", childName, featureSettings.showGift !== false);
   const rsvpSectionHtml = buildUniversalRsvpSection(invitationId);
-  const wishesSectionHtml = buildUniversalWishesSection(inv.rsvps || []);
+  const wishesSectionHtml = buildUniversalWishesSection(inv.rsvps || [], inv.id);
 
   return {
     ...inv,
@@ -2867,7 +2890,7 @@ export async function composeAqiqahData(inv: any) {
   const gallerySectionHtml = buildUniversalGallerySection(await collectGalleryPhotos(inv, featureSettings), customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false);
   const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital", fatherName || babyName, featureSettings.showGift !== false);
   const rsvpSectionHtml = buildUniversalRsvpSection(invitationId);
-  const wishesSectionHtml = buildUniversalWishesSection(inv.rsvps || []);
+  const wishesSectionHtml = buildUniversalWishesSection(inv.rsvps || [], inv.id);
 
   return {
     ...inv,
@@ -2960,7 +2983,7 @@ export async function composeWisudaData(inv: any) {
   const gallerySectionHtml = buildUniversalGallerySection(await collectGalleryPhotos(inv, featureSettings), customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false);
   const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital", graduateName, featureSettings.showGift !== false);
   const rsvpSectionHtml = buildUniversalRsvpSection(invitationId);
-  const wishesSectionHtml = buildUniversalWishesSection(inv.rsvps || []);
+  const wishesSectionHtml = buildUniversalWishesSection(inv.rsvps || [], inv.id);
 
   return {
     ...inv,
@@ -3049,7 +3072,7 @@ export async function composeGatheringData(inv: any) {
   const gallerySectionHtml = buildUniversalGallerySection(await collectGalleryPhotos(inv, featureSettings), customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false);
   const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital / Donasi", organizerName || eventTitle, featureSettings.showGift !== false);
   const rsvpSectionHtml = buildUniversalRsvpSection(invitationId);
-  const wishesSectionHtml = buildUniversalWishesSection(inv.rsvps || []);
+  const wishesSectionHtml = buildUniversalWishesSection(inv.rsvps || [], inv.id);
 
   return {
     ...inv,

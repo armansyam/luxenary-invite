@@ -122,9 +122,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
     if (!viewInvitation) {
       const canAccessMemories = await hasPlanCapability(invitation.order?.planType, "guest_memories");
       if (canAccessMemories) {
-        const search = req.nextUrl.search;
-        const redirectUrl = new URL(`/memories${search}`, req.url);
-        return NextResponse.redirect(redirectUrl, 307);
+        // Location relatif: origin req.url adalah apex (Auth.js menggantinya dengan NEXTAUTH_URL), sehingga URL absolut
+        // dari req.url membawa tamu di sub.domain ke /memories milik apex (halaman demo platform). Browser menyelesaikan
+        // path relatif terhadap alamat yang sedang dibuka: host subdomain -> /memories, bentuk apex /s/<sub> -> /s/<sub>/memories.
+        const host = (req.headers.get("host") || "").split(":")[0].toLowerCase();
+        const onInvitationHost = host.startsWith(`${subdomain.toLowerCase()}.`);
+        const target = `${onInvitationHost ? "" : `/s/${subdomain}`}/memories${req.nextUrl.search}`;
+        return new NextResponse(null, { status: 307, headers: { Location: target } });
       }
     }
   }
