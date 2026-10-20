@@ -11,12 +11,13 @@ export interface InvitationFileOwner {
 }
 
 /**
- * Berkas fisik milik satu undangan: HTML terbit, media (R2/lokal), foto tamu, dan folder unggahan lokal.
+ * Berkas fisik milik satu undangan: HTML terbit, piring draft, media (R2/lokal), foto tamu, dan folder unggahan lokal.
  * Dipanggil setelah baris DB terhapus; kegagalan hapus berkas tidak membatalkan penghapusan data, hanya dicatat.
  * Portofolio memakai salinan aset sendiri, jadi tidak ikut terhapus.
  */
 export async function removeInvitationFiles(inv: InvitationFileOwner, context: string): Promise<void> {
   await deletePublishedHtml(inv.id);
+  await removeIfExists(path.join(process.cwd(), "data", "drafts", `${inv.id}.html`));
 
   if (inv.media.length > 0) {
     await Promise.all(inv.media.map((m) => (isInvitationOwnedUpload(m.localPath, inv.id) ? deleteFile(m.localPath) : Promise.resolve())))

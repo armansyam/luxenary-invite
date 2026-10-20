@@ -7,6 +7,7 @@ import { normalizeJsonInput } from "@/lib/jsonText";
 import { participantNames } from "@/lib/participantUtils";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
+import { removeIfExists } from "@/lib/fsSafe";
 import { encryptPin, decryptPin } from "@/lib/pinEncryption";
 import { STAFF_PIN_PATTERN, isThemeCompatible } from "@/lib/invitationUtils";
 import { isReservedSubdomain, isSubdomainExpired } from "@/lib/domainUtils";
@@ -497,6 +498,12 @@ export async function PUT(
 
       },
     });
+
+    // --- ARSITEKTUR PIRING: Hapus piring draft lama jika tema berubah ---
+    if (body.themeId !== undefined && body.themeId !== currentInv.themeId) {
+      const path = await import("path");
+      await removeIfExists(path.join(process.cwd(), "data", "drafts", `${id}.html`));
+    }
 
     // Save media updates
     if (body.media && typeof body.media === "object" && !Array.isArray(body.media)) {

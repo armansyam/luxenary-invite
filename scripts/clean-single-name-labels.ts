@@ -1,13 +1,17 @@
 /**
- * Membersihkan label bawaan blueprint yang tersalin ke undangan non-pernikahan dan ke data Studio Demo tema satu nama.
+ * Mengganti label blueprint yang tersalin ke undangan non-pernikahan dengan label bawaan yang benar, dan membersihkan
+ * data Studio Demo tema satu nama.
  *
  * Sampai 20 Okt 2026 rute pembuatan undangan menyalin ±45 label blueprint ke `featureSettings.customLabels`, dan
  * Studio Demo menyimpan cadangan blueprint ke `theme_demo_<id>`. Blueprint tema satu nama berisi cadangan pernikahan
- * ("THE COUPLE", "WISHES & RSVP"), sedangkan label tersimpan menimpa token jenis acara di master. Skrip ini hanya
- * menghapus label yang nilainya persis sama dengan nilai yang dihasilkan salinan itu; suntingan klien dipertahankan.
+ * ("THE COUPLE", "WISHES & RSVP"), sedangkan label tersimpan menimpa token jenis acara di master. Skrip ini menghapus
+ * label yang nilainya persis sama dengan nilai salinan itu (suntingan klien dipertahankan), lalu mengisi ulang label
+ * bawaan dari master undangan yang dirender untuk jenis acaranya (`seedRenderedLabels`). Undangan non-pernikahan yang
+ * labelnya kosong (dibuat saat 624d17f) ikut diisi. Data demo tema satu nama hanya dibersihkan, karena label demo
+ * berlaku sebagai lapisan di atas teks master.
  *
  *   npx tsx scripts/clean-single-name-labels.ts           # dry run
- *   npx tsx scripts/clean-single-name-labels.ts --apply   # simpan, bangun ulang HTML undangan terbit
+ *   npx tsx scripts/clean-single-name-labels.ts --apply   # simpan, isi ulang label, bangun ulang HTML undangan terbit
  */
 import "dotenv/config";
 import { prisma, pool } from "../lib/prisma";
@@ -21,6 +25,7 @@ import {
 } from "../lib/themeDefaults";
 import { buildAndSavePublishedHtml, waitForPendingArchiveSyncs } from "../lib/staticPublisher";
 import { parseFeatureSettings } from "../lib/featureSettings";
+import { seedRenderedLabels } from "../lib/renderedLabels";
 
 const apply = process.argv.includes("--apply");
 
@@ -118,12 +123,17 @@ async function main() {
   for (const inv of invitations) {
     const fs = parseFeatureSettings(inv.featureSettings);
     const labels = (fs.customLabels || {}) as Record<string, unknown>;
+    // Salinan lama selalu menulis cadangan pernikahan untuk eyebrow profil dan ucapan; label hasil render master tidak
+    // pernah berisi nilai itu, sehingga undangan yang sudah diisi ulang tidak diproses lagi.
+    const isOldBulkCopy = ["THE COUPLE", "EVENT PROFILE"].includes(String(labels.coupleEyebrow)) || ["WISHES & RSVP", "GUEST WISHES"].includes(String(labels.wishesEyebrow));
+    if (!isOldBulkCopy && Object.keys(labels).length > 0) continue;
     const { kept, removed } = strip(labels, copied);
-    if (removed.length === 0) continue;
     changedInv++;
-    console.log(`undangan ${inv.id} (${inv.eventType}/${inv.themeId}, ${inv.status}): hapus ${removed.length}, sisa ${Object.keys(kept).length} [${Object.keys(kept).join(", ")}]`);
+    console.log(`undangan ${inv.id} (${inv.eventType}/${inv.themeId}, ${inv.status}): hapus ${removed.length}, suntingan klien ${Object.keys(kept).length} [${Object.keys(kept).join(", ")}]`);
     if (!apply) continue;
     await prisma.invitation.update({ where: { id: inv.id }, data: { featureSettings: { ...fs, customLabels: kept } as never } });
+    const seeded = await seedRenderedLabels(inv.id);
+    console.log(`  label bawaan terisi: ${Object.keys(seeded).length}`);
     if (inv.status === "PUBLISHED") await buildAndSavePublishedHtml(inv.id);
   }
 

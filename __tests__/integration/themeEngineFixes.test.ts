@@ -49,13 +49,31 @@ afterAll(async () => {
   await pool.end();
 });
 
-describe.skipIf(!IS_TEST_DB)("render dari master", () => {
-  it("render dengan invitationId tidak menulis salinan ke data/drafts", async () => {
-    const theme = await prisma.theme.findFirstOrThrow({ where: { eventType: "WEDDING" }, select: { id: true } });
-    const inv = await makeInvitation(theme.id, "WEDDING");
-    const data = await composeTemplateData(inv.id);
-    await renderTemplateFile(theme.id, data!, { editMode: false, invitationId: inv.id });
-    expect(fs.existsSync(path.join(process.cwd(), "data", "drafts", `${inv.id}.html`))).toBe(false);
+describe.skipIf(!IS_TEST_DB)("piring draft per undangan", () => {
+  it("render pertama menyalin master; render berikutnya memakai salinan itu; demo tidak menulis salinan", async () => {
+    const inv = await makeInvitation("kalandra", "WEDDING");
+    const draft = path.join(process.cwd(), "data", "drafts", `${inv.id}.html`);
+    try {
+      const data = await composeTemplateData(inv.id);
+      await renderTemplateFile("kalandra", data!, { editMode: false, invitationId: inv.id });
+      const copy = fs.readFileSync(draft, "utf-8");
+      expect(copy.startsWith("<!-- lux-theme:kalandra -->\n<!-- lux-event:WEDDING -->")).toBe(true);
+
+      // Perubahan master sesudah salinan dibuat tidak sampai ke undangan ini.
+      fs.writeFileSync(draft, copy.replace("</body>", "<p>PENANDA_PIRING_UJI</p></body>"));
+      const html = await renderTemplateFile("kalandra", data!, { editMode: false, invitationId: inv.id });
+      expect(html).toContain("PENANDA_PIRING_UJI");
+      expect(html).not.toContain("lux-theme:");
+
+      // Ganti tema: salinan lama dibuang dan master tema baru disalin.
+      await renderTemplateFile("valente", data!, { editMode: false, invitationId: inv.id });
+      expect(fs.readFileSync(draft, "utf-8").startsWith("<!-- lux-theme:valente -->")).toBe(true);
+
+      await renderTemplateFile("kalandra", data!, { editMode: false, invitationId: `demo-${inv.id}` });
+      expect(fs.existsSync(path.join(process.cwd(), "data", "drafts", `demo-${inv.id}.html`))).toBe(false);
+    } finally {
+      fs.rmSync(draft, { force: true });
+    }
   });
 });
 

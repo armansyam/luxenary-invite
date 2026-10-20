@@ -3,6 +3,8 @@ import path from "path";
 import { masterTemplateCache } from "@/lib/cache";
 import { SANITIZE_GUEST_LABEL_JS } from "@/lib/checkinQr";
 import { LIVE_EDIT_FIELD_PATTERN } from "@/lib/liveEditFields";
+import { isSafePathSegment } from "@/lib/fsSafe";
+import { logger } from "@/lib/logger";
 
 /** Helper pembacaan master template dengan memory cache untuk meminimalkan I/O disk */
 async function readMasterTemplate(filePath: string): Promise<string> {
@@ -46,6 +48,48 @@ function escapeHtmlSafe(str: string): string {
 
 function escapeHtmlAttr(str: string): string {
   return escapeHtmlSafe(str);
+}
+
+const HTML_ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
+
+/**
+ * Teks setiap elemen `data-lux-field="customLabels.<kunci>"` pada HTML hasil render, dalam bentuk teks polos.
+ * Dipakai untuk label bawaan undangan: teks yang benar-benar tampil di tema terpilih untuk jenis acara undangan itu.
+ */
+// Token teks jenis acara (SINGLE_NAME_LABELS di lib/themeEngine.ts): tetap selama jenis acara sama, aman dibekukan
+// menjadi label. Token lain di dalam elemen label adalah data klien (tanggal, nama) yang harus tetap mengikuti isian.
+const EVENT_TEXT_TOKENS = new Set(["eventLabel", "eventIntro", "profileEyebrow", "profileTitle", "profileSub", "agendaTitle", "closingText"]);
+
+/** Kunci label yang teks masternya memuat data klien (mis. `{{eventDateFormatted}}`), sehingga tidak boleh dibekukan. */
+export function labelKeysWithClientData(rawTemplate: string): Set<string> {
+  const keys = new Set<string>();
+  const re = /<([a-zA-Z0-9]+)\b[^>]*data-lux-field="customLabels\.([^"]+)"[^>]*>([\s\S]*?)<\/\1>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(rawTemplate))) {
+    for (const t of m[3].matchAll(/\{\{\s*([\w.]+)\s*\}\}/g)) {
+      if (!EVENT_TEXT_TOKENS.has(t[1])) keys.add(m[2]);
+    }
+  }
+  return keys;
+}
+
+export function extractRenderedLabels(html: string): Record<string, string> {
+  const labels: Record<string, string> = {};
+  const re = /<([a-zA-Z0-9]+)\b[^>]*data-lux-field="customLabels\.([^"]+)"[^>]*>([\s\S]*?)<\/\1>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html))) {
+    if (labels[m[2]] !== undefined) continue;
+    labels[m[2]] = m[3]
+      .replace(/<svg[\s\S]*?<\/svg>/gi, "")
+      .replace(/<[^>]+>/g, "")
+      .replace(/&(#x[0-9a-f]+|#[0-9]+|[a-z]+);/gi, (ent, code: string) => {
+        if (code[0] === "#") return String.fromCodePoint(code[1].toLowerCase() === "x" ? parseInt(code.slice(2), 16) : parseInt(code.slice(1), 10));
+        return HTML_ENTITIES[code.toLowerCase()] ?? ent;
+      })
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+  return labels;
 }
 
 export interface ThemeEntry {
@@ -1364,9 +1408,30 @@ export async function renderTemplateFile(
     }
   }
 
-  // Selalu dari master: kustomisasi klien ada di DB, jadi perbaikan master oleh admin langsung berlaku di setiap
-  // render berikutnya. (Sebelumnya master disalin sekali ke data/drafts/<id>.html dan salinan itu dibaca seterusnya.)
-  if (!(await fileExists(tplPath))) {
+  // --- ARSITEKTUR PIRING: undangan klien memakai salinan master miliknya sendiri (data/drafts/<id>.html) ---
+  // Salinan dibuat saat undangan pertama kali dirender dengan tema itu dan dipakai seterusnya, sehingga desain undangan
+  // klien tidak berubah ketika admin mendesain ulang atau mengganti master. Ganti tema atau jenis acara menyalin ulang.
+  // Demo dan portofolio (ID "demo-...") selalu dari master. Perbaikan mesin tema masuk lewat scripts/refresh-theme-drafts.ts.
+  const draftId = options?.invitationId && !options.invitationId.startsWith("demo-") && isSafePathSegment(options.invitationId) ? options.invitationId : null;
+  const draftsDir = path.join(process.cwd(), "data", "drafts");
+  const draftPath = draftId ? path.join(draftsDir, `${draftId}.html`) : null;
+  const currentEvent = (options?.eventType || data?.eventType || info.eventType || "WEDDING").toUpperCase();
+  let draftFound = false;
+  if (draftPath && (await fileExists(draftPath))) {
+    const head = (await fs.promises.readFile(draftPath, "utf-8")).slice(0, 300);
+    const themeMatch = head.match(/<!--\s*lux-theme:\s*([a-zA-Z0-9_-]+)\s*-->/);
+    const eventMatch = head.match(/<!--\s*lux-event:\s*([a-zA-Z0-9_-]+)\s*-->/);
+    const isThemeMismatched = themeMatch && themeMatch[1].toLowerCase() !== templateName.toLowerCase();
+    const isEventMismatched = eventMatch && eventMatch[1].toUpperCase() !== currentEvent;
+    if (isThemeMismatched || isEventMismatched) {
+      await fs.promises.unlink(draftPath).catch(() => {});
+    } else {
+      tplPath = draftPath;
+      draftFound = true;
+    }
+  }
+
+  if (!draftFound && !(await fileExists(tplPath))) {
     const minimalistCheck = path.join(process.cwd(), "themes", "minimalist", `${templateName}.html`);
     const traditionalCheck = path.join(process.cwd(), "themes", "traditional", `${templateName}.html`);
     const modernLegacyCheck = path.join(process.cwd(), "themes", "modern", `${templateName}.html`);
@@ -1392,7 +1457,22 @@ export async function renderTemplateFile(
     }
   }
 
-  let tpl = await readMasterTemplate(tplPath);
+  let tpl: string;
+  if (draftFound) {
+    tpl = (await fs.promises.readFile(tplPath, "utf-8")).replace(/^<!--\s*lux-theme:[^>]*-->\n?<!--\s*lux-event:[^>]*-->\n?/, "");
+  } else {
+    tpl = await readMasterTemplate(tplPath);
+    if (draftPath) {
+      const cleaned = tpl.replace(/<!--\s*lux-theme:[^>]*-->\n?/g, "").replace(/<!--\s*lux-event:[^>]*-->\n?/g, "");
+      try {
+        await fs.promises.mkdir(draftsDir, { recursive: true });
+        await fs.promises.writeFile(draftPath, `<!-- lux-theme:${templateName} -->\n<!-- lux-event:${currentEvent} -->\n${cleaned}`, "utf-8");
+      } catch (err) {
+        // Render tetap memakai master; salinan dicoba lagi pada render berikutnya.
+        logger.warn("RenderTemplate", "Gagal menyalin master ke piring undangan", { invitationId: draftId, theme: templateName, error: err instanceof Error ? err.message : String(err) });
+      }
+    }
+  }
 
   // Standarisasi banner kepemilikan dan proteksi Luxenary (Zero Hardcode & Identitas Publik Resmi)
   if (tpl.startsWith("<!--")) {

@@ -6,6 +6,8 @@
  * sehingga fungsi global seperti luxOpenMemoryPreview atau luxSubmitRsvp tidak pernah terdefinisi.
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import fs from "fs";
+import path from "path";
 import { prisma, pool } from "@/lib/prisma";
 import { buildAndSavePublishedHtml, deletePublishedHtml } from "@/lib/staticPublisher";
 import { composeTemplateData } from "@/lib/themeEngine";
@@ -40,6 +42,8 @@ describe.skipIf(!IS_TEST_DB)("Sintaks JavaScript inline pada seluruh tema", () =
   afterAll(async () => {
     for (const id of ids.invitations) {
       await deletePublishedHtml(id);
+      // renderTemplateFile dengan invitationId menulis data/drafts/<id>.html; hapus agar tidak menjadi berkas yatim.
+      await fs.promises.rm(path.join(process.cwd(), "data", "drafts", `${id}.html`), { force: true });
     }
     await prisma.guestMemory.deleteMany({ where: { invitationId: { in: ids.invitations } } });
     await prisma.invitation.deleteMany({ where: { id: { in: ids.invitations } } });

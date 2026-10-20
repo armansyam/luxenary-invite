@@ -1,4 +1,12 @@
+import fs from "fs";
+import path from "path";
 import { prisma, pool } from "../lib/prisma";
+
+// Rute pembuatan undangan dan render dengan invitationId menyalin master ke data/drafts/<id>.html. Folder itu dipakai
+// bersama DB dev, jadi teardown hanya menghapus piring yang muncul selama tes dan tidak punya undangan di DB uji.
+const DRAFTS_DIR = path.join(process.cwd(), "data", "drafts");
+const listDrafts = () => (fs.existsSync(DRAFTS_DIR) ? fs.readdirSync(DRAFTS_DIR).filter((f) => f.endsWith(".html")) : []);
+let draftsBefore = new Set<string>();
 
 /**
  * Global setup: dijalankan SEKALI sebelum seluruh test suite oleh Vitest.
@@ -6,6 +14,7 @@ import { prisma, pool } from "../lib/prisma";
  * Hanya membersihkan entitas test jika DB tersedia.
  */
 export async function setup() {
+  draftsBefore = new Set(listDrafts());
   try {
     await prisma.$queryRaw`SELECT 1`;
     console.log("\n[TEST SETUP] DB connection OK. Cleaning stale vitest_ entities...");
@@ -33,6 +42,19 @@ export async function setup() {
 }
 
 export async function teardown() {
+  try {
+    const created = listDrafts().filter((f) => !draftsBefore.has(f));
+    let removed = 0;
+    for (const file of created) {
+      const owner = await prisma.invitation.findUnique({ where: { id: file.replace(/\.html$/, "") }, select: { id: true } });
+      if (owner) continue;
+      fs.rmSync(path.join(DRAFTS_DIR, file), { force: true });
+      removed++;
+    }
+    if (removed) console.log(`\n[TEST TEARDOWN] Removed ${removed} draft copies created by tests.`);
+  } catch (err) {
+    console.warn("\n[TEST TEARDOWN] Draft cleanup skipped:", err instanceof Error ? err.message : err);
+  }
   try {
     await prisma.$disconnect();
     await pool.end();

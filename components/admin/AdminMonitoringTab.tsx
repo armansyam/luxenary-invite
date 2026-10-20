@@ -65,6 +65,7 @@ interface SystemHealthData {
   };
   localFolders: {
     uploadsMb: number;
+    draftsMb: number;
     totalLocalMediaMb: number;
   };
   database: {
@@ -752,10 +753,14 @@ export default function AdminMonitoringTab() {
                 )}
               </div>
 
-              <div className="pt-3 border-t border-gray-100 text-xs">
+              <div className="pt-3 border-t border-gray-100 grid grid-cols-2 gap-2 text-xs">
                 <div className="p-2.5 bg-gray-50 rounded-lg">
                   <span className="text-[10px] text-gray-400 block font-medium">Folder /public/uploads:</span>
                   <span className="font-mono font-semibold text-gray-800">{healthData?.localFolders?.uploadsMb || 0} MB</span>
+                </div>
+                <div className="p-2.5 bg-gray-50 rounded-lg">
+                  <span className="text-[10px] text-gray-400 block font-medium">Piring Draft /data/drafts:</span>
+                  <span className="font-mono font-semibold text-gray-800">{healthData?.localFolders?.draftsMb || 0} MB</span>
                 </div>
               </div>
             </div>

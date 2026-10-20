@@ -14,6 +14,7 @@ import { normalizeJsonInput } from "@/lib/jsonText";
 import { parseFeatureSettings } from "@/lib/featureSettings";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
+import { copyMasterToDraft, seedRenderedLabels } from "@/lib/renderedLabels";
 
 function slugify(text: string): string {
   return text
@@ -375,9 +376,9 @@ export async function POST(req: Request) {
       vendorSubtitle: blueprint.vendorSubtitle || (isWeddingEvent ? "Rasa terima kasih dan penghargaan setulusnya kepada seluruh vendor yang telah membantu menyempurnakan hari bahagia kami." : "Rasa terima kasih dan penghargaan setulusnya kepada seluruh pihak dan mitra yang telah membantu menyempurnakan acara kami."),
     };
 
-    // Tema satu nama mengisi judul seksinya dari token jenis acara ({{profileEyebrow}}, {{eventDateFormatted}}, ...).
-    // Label tersimpan menimpa token itu, dan blueprint satu nama berisi cadangan pernikahan ("THE COUPLE"), jadi
-    // undangan non-pernikahan hanya menyimpan label yang memang diubah klien.
+    // Blueprint tema satu nama berisi cadangan pernikahan ("THE COUPLE"), jadi label bawaan undangan non-pernikahan
+    // tidak disalin dari blueprint melainkan dari teks master terpilih yang dirender untuk jenis acara ini, setelah
+    // undangan tersimpan (seedRenderedLabels, lib/renderedLabels.ts).
     const initialCustomLabels = isWeddingEvent ? defaultCustomLabels : {};
 
     const initialMusicUrl = customDemoData?.audioUrl || customDemoData?.defaultMusicUrl || themeMeta?.defaultMusicUrl || blueprint.defaultMusicUrl || "";
@@ -451,6 +452,9 @@ export async function POST(req: Request) {
         });
       }
     });
+
+    if (isWeddingEvent) await copyMasterToDraft(invitation.id);
+    else await seedRenderedLabels(invitation.id);
 
     return NextResponse.json({
       success: true,
