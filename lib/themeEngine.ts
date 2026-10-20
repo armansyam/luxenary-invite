@@ -131,7 +131,14 @@ export async function composeTemplateData(invitationId: string, { includeRsvps =
   });
 
   if (!inv) return null;
+  return composeInvitationData(inv);
+}
 
+/**
+ * Data template dari objek undangan berbentuk hasil query di atas (media, rsvps, order). Demo tema memakai fungsi ini
+ * dengan undangan virtual (`lib/demoInvitation.ts`), sehingga demo dirender oleh engine yang sama dengan undangan klien.
+ */
+export async function composeInvitationData(inv: any) {
   switch (inv.eventType || "WEDDING") {
     case "BIRTHDAY":
       return applySingleNameContract("BIRTHDAY", await composeBirthdayData(inv), inv);
@@ -1284,11 +1291,10 @@ export async function composeWeddingData(inv: any) {
   const memoriesSectionTitle = customLabels.memoriesTitle || "Abadikan Momen Indah";
   const memoriesSectionSubtitle = customLabels.memoriesSubtitle || "Buka kamera dan jepret momen candid seru Anda selama menghadiri pernikahan kami langsung ke album kenangan bersama:";
 
-  const guestMemories = await prisma.guestMemory.findMany({
-    where: { invitationId },
-    orderBy: { createdAt: "desc" },
-    take: 40,
-  });
+  // Undangan virtual demo membawa momen contoh sendiri; undangan nyata membacanya dari DB.
+  const guestMemories = Array.isArray(inv.guestMemories)
+    ? inv.guestMemories
+    : await prisma.guestMemory.findMany({ where: { invitationId }, orderBy: { createdAt: "desc" }, take: 40 });
 
   let memoriesSectionHtml = "";
   if (showGuestMemories) {

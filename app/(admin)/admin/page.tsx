@@ -192,6 +192,27 @@ const VALID_SETTINGS_SUBS = [
   "platform",
 ];
 
+// Label yang dapat diubah klien di Studio undangan tetapi belum punya isian di sub-panel Narasi Studio Demo.
+const DEMO_EXTRA_LABEL_FIELDS: Array<{ key: string; label: string }> = [
+  { key: "openingGreeting", label: "Salam Pembuka" },
+  { key: "quoteEyebrow", label: "Eyebrow Kutipan" },
+  { key: "quoteTitle", label: "Judul Kutipan" },
+  { key: "coupleEyebrow", label: "Eyebrow Profil" },
+  { key: "eventsEyebrow", label: "Eyebrow Acara" },
+  { key: "cdDays", label: "Hitung Mundur: Hari" },
+  { key: "cdHours", label: "Hitung Mundur: Jam" },
+  { key: "cdMins", label: "Hitung Mundur: Menit" },
+  { key: "cdSecs", label: "Hitung Mundur: Detik" },
+  { key: "rsvpNameLabel", label: "RSVP: Label Nama" },
+  { key: "rsvpStatusLabel", label: "RSVP: Label Kehadiran" },
+  { key: "rsvpCountLabel", label: "RSVP: Label Jumlah Tamu" },
+  { key: "rsvpMessageLabel", label: "RSVP: Label Ucapan" },
+  { key: "wishesEyebrow", label: "Eyebrow Ucapan" },
+  { key: "memoriesEyebrow", label: "Eyebrow Kamera Momen" },
+  { key: "memoriesTitle", label: "Judul Kamera Momen" },
+  { key: "memoriesSubtitle", label: "Subjudul Kamera Momen" },
+];
+
 export default function AdminPage() {
   const feedback = useFeedback();
   const { data: session, status } = useSession();
@@ -5406,6 +5427,33 @@ export default function AdminPage() {
                               className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
                             />
                           </div>
+                        </div>
+                      </div>
+
+                      {/* Sub-Panel: label yang juga dapat diubah klien di Studio undangan */}
+                      <div className="p-4 bg-gray-50 border border-gray-200 rounded-2xl space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider">Label Lainnya</h4>
+                          <span className="text-[10px] font-mono text-gray-400">customLabels</span>
+                        </div>
+                        <p className="text-[11px] text-gray-500">Kosongkan untuk memakai teks bawaan tema. Label yang tidak dipakai master tema ini tidak berpengaruh.</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {DEMO_EXTRA_LABEL_FIELDS.map(({ key, label }) => (
+                            <div key={key}>
+                              <label className="block text-[11px] font-bold text-gray-700 mb-1">{label}</label>
+                              <input
+                                type="text"
+                                value={demoStudioData.customLabels?.[key] ?? ""}
+                                onChange={(e) => {
+                                  const customLabels = { ...(demoStudioData.customLabels || {}) };
+                                  if (e.target.value) customLabels[key] = e.target.value;
+                                  else delete customLabels[key];
+                                  setDemoStudioData({ ...demoStudioData, customLabels });
+                                }}
+                                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                              />
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>

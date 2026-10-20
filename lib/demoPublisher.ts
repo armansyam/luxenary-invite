@@ -1,7 +1,8 @@
 import fs from "fs";
 import path from "path";
 import { renderTemplateFile } from "./renderTemplate";
-import { composeDemoTemplateData } from "./demoRegistry";
+import { composeInvitationData } from "./themeEngine";
+import { buildDemoInvitation } from "./demoInvitation";
 import { prisma } from "./prisma";
 import { getAdminSetting } from "./settings";
 import { masterTemplateCache } from "./cache";
@@ -12,45 +13,32 @@ import { isSafePathSegment } from "./fsSafe";
 /**
  * Compiles a single theme demo into a standalone static HTML file in public/demo/[themeId]/index.html
  */
-export async function compileAndSaveStaticDemo(
-  themeId: string,
-  customDemoData?: any,
-  forcedVersion?: number | string
-): Promise<string> {
+export async function compileAndSaveStaticDemo(themeId: string, customDemoData?: any): Promise<string> {
   masterTemplateCache.clear();
   const cleanId = themeId.toLowerCase().trim();
   if (!isSafePathSegment(cleanId)) {
     throw new Error(`ID tema tidak valid untuk demo statis: ${JSON.stringify(themeId)}`);
   }
   let resolvedData = customDemoData;
-  let settingUpdatedAt: number = Date.now();
 
   try {
-    const setting = await prisma.adminSetting.findUnique({
-      where: { key: `theme_demo_${cleanId}` },
-      select: { value: true, updatedAt: true },
-    });
-    if (setting) {
-      if (resolvedData === undefined && setting.value) {
-        resolvedData = JSON.parse(setting.value);
-      }
-      if (setting.updatedAt) {
-        settingUpdatedAt = new Date(setting.updatedAt).getTime();
-      }
+    if (resolvedData === undefined) {
+      const setting = await prisma.adminSetting.findUnique({ where: { key: `theme_demo_${cleanId}` }, select: { value: true } });
+      if (setting?.value) resolvedData = JSON.parse(setting.value);
     }
   } catch (err) {
     logger.warn("DemoPublisher", "Data demo kustom tidak terbaca; demo dikompilasi dengan bawaan tema", { theme: cleanId, error: err instanceof Error ? err.message : String(err) });
   }
 
-  const version = forcedVersion || settingUpdatedAt || Date.now();
-  const data = composeDemoTemplateData(cleanId, resolvedData, version);
+  // Demo dirender oleh engine undangan klien dari undangan virtual, sehingga hasilnya sama dengan undangan nyata.
+  const data = (await composeInvitationData(buildDemoInvitation(cleanId, resolvedData))) as Record<string, any>;
 
   // Construct absolute OpenGraph meta tags for rich WhatsApp & social share previews
   const demoHost = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
   const rawCover = (data as any).landingCoverUrl || (data as any).sidebarPhotoUrl || `/demo/${cleanId}/cover.webp`;
   const absoluteCover = rawCover.startsWith("http") ? rawCover : `${demoHost}${rawCover.startsWith("/") ? "" : "/"}${rawCover}`;
   const evType = ((data as any).eventType || "WEDDING").toUpperCase();
-  let demoTitle = `The Wedding of ${(data as any).groomName || "Groom"} & ${(data as any).brideName || "Bride"}`;
+  let demoTitle = `The Wedding of ${(data as any).groomNickname || "Groom"} & ${(data as any).brideNickname || "Bride"}`;
   let demoDesc = `Undangan pernikahan digital eksklusif. Desain elegan, split desktop view, RSVP real-time & galeri momen.`;
 
   if (evType === "BIRTHDAY") {
@@ -94,7 +82,7 @@ export async function compileAndSaveStaticDemo(
     <meta name="twitter:image" content="${safeCover}">
   `;
 
-  let html = await renderTemplateFile(cleanId, data);
+  let html = await renderTemplateFile(cleanId, data, { editMode: false, invitationId: `demo-${cleanId}` });
 
   // Inject cover-mode script & styles for lightweight catalog preview
   const coverModeInjection = `

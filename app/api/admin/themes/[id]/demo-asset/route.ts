@@ -127,7 +127,7 @@ export async function POST(
         }
       }
 
-      const upserted = await prisma.adminSetting.upsert({
+      await prisma.adminSetting.upsert({
         where: { key: settingKey },
         create: {
           key: settingKey,
@@ -140,9 +140,8 @@ export async function POST(
         },
       });
 
-      const version = upserted.updatedAt ? new Date(upserted.updatedAt).getTime() : Date.now();
       const { compileAndSaveStaticDemo } = await import("@/lib/demoPublisher");
-      await compileAndSaveStaticDemo(themeId, customData, version);
+      await compileAndSaveStaticDemo(themeId, customData);
 
       try {
         revalidatePath("/");
@@ -245,7 +244,7 @@ export async function DELETE(
         }
       }
 
-      const upserted = await prisma.adminSetting.upsert({
+      await prisma.adminSetting.upsert({
         where: { key: settingKey },
         create: {
           key: settingKey,
@@ -258,9 +257,8 @@ export async function DELETE(
         },
       });
 
-      const version = upserted.updatedAt ? new Date(upserted.updatedAt).getTime() : Date.now();
       const { compileAndSaveStaticDemo } = await import("@/lib/demoPublisher");
-      await compileAndSaveStaticDemo(themeId, customData, version);
+      await compileAndSaveStaticDemo(themeId, customData);
 
       try {
         revalidatePath("/");
