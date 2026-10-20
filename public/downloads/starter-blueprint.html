@@ -1251,9 +1251,11 @@
       <!-- =================================================================== -->
       <!-- SEKSI 5: KISAH CINTA (LOVE STORY)                                    -->
       <!-- Theme Builder memiliki 2 opsi:                                      -->
-      <!-- Opsi A (Bawaan Engine): Gunakan {{storySectionHtml}}                 -->
-      <!-- Opsi B (Native Master Theme): Gunakan {{#if showStory}} ... {{/if}} -->
-      <!--   dengan tata letak bebas khas tema Anda + {{storyItemsHtml}}        -->
+      <!-- Opsi A (Bawaan Engine): Gunakan token storySectionHtml               -->
+      <!-- Opsi B (Native Master Theme): blok #if showStory ... /if            -->
+      <!--   dengan tata letak bebas khas tema Anda + token storyItemsHtml     -->
+      <!-- Jangan menulis token berkurung kurawal ganda di dalam komentar: token ikut diganti HTML seksi -->
+      <!-- yang punya komentar sendiri, sehingga komentar ini tertutup lebih awal dan struktur seksi rusak. -->
       <!-- =================================================================== -->
       {{#if showStory}}
       <section class="sec-flow" id="story">

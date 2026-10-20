@@ -144,7 +144,9 @@
 .bank-owner { opacity: 0.7; font-size: 0.75rem; display: block; margin-bottom: 0.6rem; }
 .bank-row { display: flex; align-items: center; justify-content: space-between; background: rgba(128,128,128,0.1); padding: 0.55rem 0.8rem; border-radius: 6px; border: 1px solid currentColor; opacity: 0.8; }
 .bank-number { font-family: monospace; font-size: 0.95rem; }
-.btn-copy { background: currentColor; color: var(--bg-dark, #fff); border: none; padding: 0.35rem 0.8rem; border-radius: 4px; font-size: 0.65rem; font-weight: 700; cursor: pointer; letter-spacing: 0.05em; }
+/* currentColor pada background ikut warna teks tombol itu sendiri (latar = teks, tidak terbaca); tombol garis mengikuti
+   warna teks sekitarnya sehingga terbaca di tema terang maupun gelap. */
+.btn-copy { background: transparent; color: inherit; border: 1px solid currentColor; padding: 0.35rem 0.8rem; border-radius: 4px; font-size: 0.65rem; font-weight: 700; cursor: pointer; letter-spacing: 0.05em; }
 
 /* 6. QR ACCESS PASS CARD */
 .access-pass-card {

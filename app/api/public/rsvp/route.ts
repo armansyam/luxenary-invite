@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { routeError } from "@/lib/routeError";
-import { rateLimitDb, getClientIp } from "@/lib/rateLimit";
+import { rateLimitDb } from "@/lib/rateLimit";
+import { BoundedMemoryCache } from "@/lib/cache";
 import { normalizeRsvpStatus, RSVP_NAME_MAX, RSVP_MESSAGE_MAX } from "@/lib/rsvpStatus";
 import { exceedsDeclaredBodySize } from "@/lib/requestLimits";
 import {
@@ -12,14 +13,14 @@ import {
   rsvpEditTokenMatches,
 } from "@/lib/rsvpOwnership";
 
+// Batas RSVP tidak memakai IP: tamu yang memakai operator seluler yang sama berbagi IP publik (CGNAT), sehingga batas per IP
+// menolak tamu sah saat link disebar ke ratusan tamu sekaligus. Daftar ucapan dibaca setiap kali undangan dibuka, jadi
+// tidak dibatasi sama sekali; database dilindungi cache singkat per undangan yang dihapus begitu ada RSVP baru.
+const RSVP_LIST_TTL_MS = 15_000;
+const rsvpListCache = new BoundedMemoryCache<{ success: true; rsvps: unknown[] }>(2000, RSVP_LIST_TTL_MS);
+
 export async function GET(req: NextRequest) {
   try {
-    const ip = getClientIp(req);
-    // Rate limit: 30 req/menit untuk mencegah scraping massal data tamu (cross-process PM2 safe)
-    if (!(await rateLimitDb(`rsvp_get:${ip}`, 30, 60000))) {
-      return NextResponse.json({ error: "Terlalu banyak permintaan. Silakan coba lagi sebentar." }, { status: 429 });
-    }
-
     const { searchParams } = new URL(req.url);
     const invitationId = searchParams.get("invitationId");
 
@@ -49,10 +50,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, rsvps: sampleDemos, isDemo: true });
     }
 
+    const cached = rsvpListCache.get(invitationId);
+    if (cached) return NextResponse.json(cached);
+
     // Undangan yang diturunkan tidak boleh lagi menampilkan nama dan ucapan tamunya; id yang tidak dikenal dijawab kosong.
     const invitation = await prisma.invitation.findUnique({ where: { id: invitationId }, select: { status: true } });
     if (!invitation || invitation.status === "TAKEN_DOWN") {
-      return NextResponse.json({ success: true, rsvps: [] });
+      const empty = { success: true as const, rsvps: [] };
+      rsvpListCache.set(invitationId, empty);
+      return NextResponse.json(empty);
     }
 
     const rsvps = await prisma.rsvp.findMany({
@@ -69,7 +75,9 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true, rsvps });
+    const payload = { success: true as const, rsvps };
+    rsvpListCache.set(invitationId, payload);
+    return NextResponse.json(payload);
   } catch (error) {
     return routeError("PublicRsvp", error, "Gagal memuat ucapan tamu");
   }
@@ -97,12 +105,6 @@ async function withRsvpLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
 
 export async function POST(req: NextRequest) {
   try {
-    const ip = getClientIp(req);
-    // Limit: 10 request RSVP per menit (60000ms) untuk mencegah spam buku tamu (cross-process PM2 safe)
-    if (!(await rateLimitDb(`rsvp_post:${ip}`, 10, 60000))) {
-      return NextResponse.json({ error: "Terlalu banyak pengiriman RSVP. Silakan coba lagi sebentar." }, { status: 429 });
-    }
-
     if (exceedsDeclaredBodySize(req, 64 * 1024)) {
       return NextResponse.json({ error: "Ukuran permintaan terlalu besar." }, { status: 413 });
     }
@@ -139,9 +141,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Pesan maksimal ${RSVP_MESSAGE_MAX} karakter` }, { status: 400 });
     }
 
-    // Batas per undangan (tidak bergantung pada IP): tetap menahan banjir RSVP palsu bila IP klien tidak dapat dipercaya
-    if (typeof invitationId === "string" && !(await rateLimitDb(`rsvp_post:inv:${invitationId}`, 200, 60000))) {
+    // Batas per undangan (300/menit menampung ±1.500 tamu yang mengisi dalam 5 menit pertama; 3.000/jam menahan banjir bot)
+    // dan per nama tamu (menahan klik ganda dan kiriman berulang atas nama yang sama).
+    if (
+      !(await rateLimitDb(`rsvp_post:inv:${invitationId}`, 300, 60_000)) ||
+      !(await rateLimitDb(`rsvp_post:invh:${invitationId}`, 3000, 3_600_000))
+    ) {
       return NextResponse.json({ error: "Terlalu banyak pengiriman RSVP untuk undangan ini. Silakan coba lagi sebentar." }, { status: 429 });
+    }
+    if (!(await rateLimitDb(`rsvp_post:name:${invitationId}:${guestName.trim().toLowerCase()}`, 3, 60_000))) {
+      return NextResponse.json({ error: "Konfirmasi atas nama ini baru saja dikirim. Silakan tunggu sebentar sebelum mengirim lagi." }, { status: 429 });
     }
 
     // Demo mode: Return instant simulated success for showroom/sandbox invitations without DB entry
@@ -248,6 +257,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    rsvpListCache.delete(invitationId);
     const response = NextResponse.json({
       success: true,
       message: "RSVP berhasil dikirim. Terima kasih atas konfirmasinya!",

@@ -120,6 +120,27 @@ describe.skipIf(!IS_TEST_DB)("orang tua dan Instagram kosong di semua master per
   });
 });
 
+describe.skipIf(!IS_TEST_DB)("daftar ucapan tanpa batas IP", () => {
+  it("1.500 pembukaan undangan dari satu IP semuanya mendapat daftar ucapan; ucapan baru langsung terlihat", async () => {
+    const { GET, POST } = await import("@/app/api/public/rsvp/route");
+    const inv = await makeInvitation("WEDDING", "kalandra", "PUBLISHED", { groom: { name: "Arya", nickname: "Arya" }, bride: { name: "Nadia", nickname: "Nadia" } });
+    const listReq = () => new NextRequest(`http://localhost/api/public/rsvp?invitationId=${inv.id}`, { headers: { "cf-connecting-ip": "203.0.113.50" } });
+
+    const statuses = new Set<number>();
+    for (let i = 0; i < 1500; i++) statuses.add((await GET(listReq())).status);
+    expect([...statuses]).toEqual([200]);
+
+    const sent = await POST(new NextRequest("http://localhost/api/public/rsvp", {
+      method: "POST",
+      headers: { "content-type": "application/json", "cf-connecting-ip": "203.0.113.50" },
+      body: JSON.stringify({ invitationId: inv.id, guestName: "Tamu Lonjakan", status: "hadir", guestCount: 1, message: "Selamat!" }),
+    }));
+    expect(sent.status).toBe(200);
+    const after = await (await GET(listReq())).json();
+    expect(after.rsvps.map((r: { guestName: string }) => r.guestName)).toContain("Tamu Lonjakan");
+  });
+});
+
 describe("master tema: RSVP terkirim dan token tidak di dalam komentar", () => {
   const masters = fs.readdirSync(path.join(process.cwd(), "themes"), { recursive: true, withFileTypes: true })
     .filter((d) => d.isFile() && d.name.endsWith(".html") && !d.parentPath.includes("_blueprints"))
@@ -154,6 +175,10 @@ describe.skipIf(!IS_TEST_DB)("runtime dock sempit dan video slot", () => {
       { invitationId: inv.id, mediaSlot: "CLOSING_COVER" as never, localPath: `/uploads/invitations/${inv.id}/closing-cover.mp4`, mimeType: "video/mp4" },
     ] });
     const html = await renderTemplateFile("kalandra", (await composeTemplateData(inv.id)) as any, { editMode: false, invitationId: inv.id });
+    expect(html).toMatch(/href="\/css\/modules\.css\?v=[0-9a-f]{10}"/);
+    expect(html).not.toContain('href="/css/modules.css"');
+    const bone = await renderTemplateFile("bone", (await composeTemplateData(inv.id)) as any, { editMode: false });
+    expect(bone, "master yang menautkan modules.css sendiri").not.toContain('href="/css/modules.css"');
     expect(html).toContain("function fitBottomDock()");
     expect(html).toContain(".bottom-dock.lux-dock-compact");
     expect(html).toContain("function initSlotVideoVisibility()");

@@ -1,10 +1,26 @@
 import fs from "fs";
 import path from "path";
+import { createHash } from "crypto";
 import { masterTemplateCache } from "@/lib/cache";
 import { SANITIZE_GUEST_LABEL_JS } from "@/lib/checkinQr";
 import { LIVE_EDIT_FIELD_PATTERN } from "@/lib/liveEditFields";
 import { isSafePathSegment } from "@/lib/fsSafe";
 import { logger } from "@/lib/logger";
+
+// /css/* disajikan dengan Cache-Control 7 hari (next.config.ts): tanpa versi di URL, perbaikan modules.css tidak sampai ke
+// tamu dan Cloudflare sampai cache-nya kedaluwarsa. Versi = hash isi berkas, dihitung sekali per proses.
+let modulesCssHref: string | null = null;
+function getModulesCssHref(): string {
+  if (modulesCssHref) return modulesCssHref;
+  try {
+    const css = fs.readFileSync(path.join(process.cwd(), "public", "css", "modules.css"));
+    modulesCssHref = `/css/modules.css?v=${createHash("sha1").update(css).digest("hex").slice(0, 10)}`;
+  } catch (err) {
+    logger.warn("RenderTemplate", "modules.css tidak terbaca; tautan dipasang tanpa versi", { error: err instanceof Error ? err.message : String(err) });
+    modulesCssHref = "/css/modules.css";
+  }
+  return modulesCssHref;
+}
 
 /** Helper pembacaan master template dengan memory cache untuk meminimalkan I/O disk */
 async function readMasterTemplate(filePath: string): Promise<string> {
@@ -1589,7 +1605,10 @@ export async function renderTemplateFile(
   }
 
   // Injections: Meta Tags, Head Audio Blocker, Global Modules CSS, Unified Runtime, Autoplay Script & Inline Live Editor Script
-  const GLOBAL_MODULES_CSS = `<link rel="stylesheet" href="/css/modules.css">
+  // Master yang menautkan modules.css sendiri ikut memakai URL berversi, agar salinan lama dari cache tidak menimpa yang baru.
+  const modulesHref = getModulesCssHref();
+  tpl = tpl.replace(/href="\/css\/modules\.css"/g, `href="${modulesHref}"`);
+  const GLOBAL_MODULES_CSS = `<link rel="stylesheet" href="${modulesHref}">
   <style id="luxSmartDockStyles">
     /* Luxenary Engine Smart Dock Home Zone State Guard */
     body.lux-at-home-zone .bottom-dock,
