@@ -120,6 +120,32 @@ describe.skipIf(!IS_TEST_DB)("orang tua dan Instagram kosong di semua master per
   });
 });
 
+describe("master tema: RSVP terkirim dan token tidak di dalam komentar", () => {
+  const masters = fs.readdirSync(path.join(process.cwd(), "themes"), { recursive: true, withFileTypes: true })
+    .filter((d) => d.isFile() && d.name.endsWith(".html") && !d.parentPath.includes("_blueprints"))
+    .map((d) => path.join(d.parentPath, d.name));
+
+  it("setiap master dengan form RSVP mengirim guestName ke /api/public/rsvp atau memakai handler mesin", () => {
+    expect(masters.length).toBeGreaterThan(30);
+    const broken: string[] = [];
+    for (const file of masters) {
+      const src = fs.readFileSync(file, "utf8");
+      if (!/id="rsvpForm"|luxSubmitRsvp/.test(src)) continue;
+      const usesEngineHandler = src.includes("{{musicPlayerHtml}}");
+      const ownHandlerOk = /fetch\(\s*['"]\/api\/public\/rsvp['"]/.test(src) && /guestName\s*:/.test(src);
+      if (!usesEngineHandler && !ownHandlerOk) broken.push(path.basename(file));
+      if (src.includes("Ucapan tersimpan di perangkat")) broken.push(`${path.basename(file)} (pesan sukses palsu)`);
+      if (/\bname:\s*name,\s*\n\s*status/.test(src) || /\bpax:\s*parseInt/.test(src)) broken.push(`${path.basename(file)} (payload name/pax)`);
+    }
+    expect(broken).toEqual([]);
+  });
+
+  it("tidak ada {{token}} di dalam komentar HTML (token diganti HTML ber-komentar sehingga struktur seksi rusak)", () => {
+    const offenders = masters.filter((file) => /<!--[^>]*\{\{\s*[\w.]+\s*\}\}[^>]*-->/.test(fs.readFileSync(file, "utf8"))).map((f) => path.basename(f));
+    expect(offenders).toEqual([]);
+  });
+});
+
 describe.skipIf(!IS_TEST_DB)("runtime dock sempit dan video slot", () => {
   it("menyertakan penyesuai dock dan pengatur video; video Home/penutup tidak autoplay sendiri", async () => {
     const inv = await makeInvitation("WEDDING", "kalandra", "PUBLISHED", { groom: { name: "Arya", nickname: "Arya" }, bride: { name: "Nadia", nickname: "Nadia" } });

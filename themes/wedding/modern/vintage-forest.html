@@ -2218,7 +2218,7 @@
     }
 
     /* 8. Submit RSVP */
-    function luxSubmitRsvp(e) {
+    async function luxSubmitRsvp(e) {
       e.preventDefault();
       const name = document.getElementById("rsvpName").value.trim();
       const presence = document.getElementById("rsvpPresence").value;
@@ -2226,6 +2226,30 @@
       const message = document.getElementById("rsvpMessage").value.trim();
 
       if (!name) return;
+
+      // Master ini tidak memuat token pemutar musik mesin (tempat handler RSVP universal): kirim ke API dulu, ucapan baru
+      // tampil hanya bila server menerimanya.
+      const btn = document.getElementById("btnSubmitRsvp");
+      btn.disabled = true;
+      let res = null;
+      try {
+        res = await fetch("/api/public/rsvp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ invitationId: "{{invitationId}}", guestName: name, status: presence, guestCount: parseInt(count, 10) || 1, message: message }),
+        });
+      } catch (err) {
+        res = null;
+      }
+      const data = res ? await res.json().catch(() => ({})) : {};
+      btn.disabled = false;
+      if (!res || !res.ok) {
+        btn.innerText = data.error || "Gagal terkirim, coba lagi";
+        setTimeout(() => {
+          btn.innerText = "Kirim Ucapan & Konfirmasi";
+        }, 3000);
+        return;
+      }
 
       const stream = document.getElementById("wishesStream");
       const card = document.createElement("div");
@@ -2243,7 +2267,6 @@
 
       stream.prepend(card);
 
-      const btn = document.getElementById("btnSubmitRsvp");
       btn.innerText = "Terkirim! Terima Kasih";
       btn.style.background = "var(--secondary)";
       setTimeout(() => {

@@ -1927,7 +1927,7 @@
     }
 
     // 4. RSVP Submission Handler (Inline & Realtime Prepend)
-    function luxSubmitRsvp(e) {
+    async function luxSubmitRsvp(e) {
       if (e) e.preventDefault();
       const form = document.getElementById("rsvpForm");
       if (!form) return;
@@ -1948,7 +1948,28 @@
         btn.textContent = "MENGIRIMKAN...";
       }
 
-      // Prepend to UI immediately
+      // Master ini tidak memuat token pemutar musik mesin (tempat handler RSVP universal): kirim ke API dulu, ucapan baru
+      // tampil hanya bila server menerimanya.
+      let res = null;
+      try {
+        res = await fetch("/api/public/rsvp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ invitationId: "{{invitationId}}", guestName: name, status: attendance, guestCount: parseInt(pax, 10) || 1, message: message }),
+        });
+      } catch (err) {
+        res = null;
+      }
+      const data = res ? await res.json().catch(() => ({})) : {};
+      if (!res || !res.ok) {
+        showToast(data.error || "Konfirmasi gagal dikirim. Silakan coba lagi.");
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "KIRIM KONFIRMASI";
+        }
+        return;
+      }
+
       const feed = document.getElementById("wishesFeed");
       if (feed) {
         const item = document.createElement("div");

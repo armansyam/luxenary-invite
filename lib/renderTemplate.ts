@@ -1916,7 +1916,25 @@ export async function renderTemplateFile(
   }
 
   let homeVideoHtml = "";
-  if (data.hasCustomHomePhoto && data.homePhotoUrl) {
+  // Master yang menempatkan foto Home sendiri (bingkai, lengkungan, potret) tidak boleh mendapat salinan kedua sebagai
+  // latar penuh section#home. Bila slotnya video, <img src="{{homePhotoUrl}}"> diganti video di tempat yang sama.
+  const homePhotoPlacedByTemplate = /\{\{\s*homePhotoUrl\s*\}\}/.test(tpl);
+  if (homePhotoPlacedByTemplate && data.hasCustomHomePhoto && isVideoMedia(data.homePhotoUrl)) {
+    const safeInlineHomeVideo = escapeHtmlAttr(String(data.homePhotoUrl));
+    tpl = tpl.replace(
+      /<img\b[^>]*\bsrc="\{\{\s*homePhotoUrl\s*\}\}"[^>]*>/gi,
+      `<video class="lux-home-video lux-home-video-inline" loop muted playsinline webkit-playsinline preload="auto" src="${safeInlineHomeVideo}"></video>`
+    );
+    videoStyles += `
+      .lux-home-video-inline {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    `;
+  }
+  if (data.hasCustomHomePhoto && data.homePhotoUrl && !homePhotoPlacedByTemplate) {
     if (isVideoMedia(data.homePhotoUrl)) {
       const safeHomeVideo = escapeHtmlAttr(String(data.homePhotoUrl));
       homeVideoHtml = `<video class="lux-home-video" loop muted playsinline webkit-playsinline preload="auto"><source src="${safeHomeVideo}" type="video/mp4"></video>`;

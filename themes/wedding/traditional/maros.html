@@ -1618,12 +1618,17 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             invitationId: '{{invitationId}}',
-            name: name,
+            guestName: name,
             status: status,
-            pax: parseInt(pax) || 1,
+            guestCount: parseInt(pax) || 1,
             message: msg
           })
         });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || 'Gagal mengirim RSVP');
+        }
 
         // Prepend wish to stream
         const stream = document.getElementById('wishesStream');
@@ -1644,8 +1649,11 @@
         }, 2500);
       } catch (err) {
         if (btn) {
-          btn.disabled = false;
-          btn.textContent = oldBtnText;
+          btn.textContent = 'GAGAL MENGIRIM';
+          setTimeout(function() {
+            btn.disabled = false;
+            btn.textContent = oldBtnText;
+          }, 2500);
         }
       }
     }

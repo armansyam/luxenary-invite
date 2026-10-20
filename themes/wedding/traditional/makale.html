@@ -1946,12 +1946,17 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             invitationId: '{{invitationId}}',
-            name,
+            guestName: name,
             status,
-            pax: parseInt(pax) || 1,
+            guestCount: parseInt(pax) || 1,
             message
           })
         });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || 'Gagal mengirim RSVP');
+        }
 
         const wishesStream = document.getElementById('wishesStream');
         if (wishesStream) {
@@ -1965,7 +1970,7 @@
         const msgEl = document.getElementById('rsvpMessage');
         if (msgEl) msgEl.value = '';
       } catch (err) {
-        showToast('Ucapan tersimpan di perangkat.');
+        showToast(err && err.message ? err.message : 'Gagal mengirim RSVP. Silakan coba lagi.');
       } finally {
         if (btn) {
           btn.disabled = false;
