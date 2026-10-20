@@ -8,7 +8,7 @@ import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { getPlanDisplayName } from "@/lib/planUtils";
 import { isWeddingField, participantNames, safeParseParticipants, weddingFieldValue, withWeddingField } from "@/lib/participantUtils";
 import { FEATURE_SETTING_LIVE_FIELDS, isLiveEditField } from "@/lib/liveEditFields";
-import { resolveInvitationDisplayName, getMediaSlotLabel, eventNoun, isThemeCompatible } from "@/lib/invitationUtils";
+import { resolveInvitationDisplayName, getMediaSlotLabel, eventNoun, isThemeCompatible, sortThemesForEvent } from "@/lib/invitationUtils";
 import { useFeedback } from "@/components/ui/Feedback";
 import { getApexRootDomain } from "@/lib/domainUtils";
 
@@ -2164,7 +2164,7 @@ export default function EditInvitation() {
             {/* Theme Mockups for this Category / Store */}
             {(() => {
               // Seluruh tema bebas dipilih di semua paket; pernikahan memakai tema pernikahan, acara lain tema satu nama mana pun.
-              const availableThemes = themesList.filter((t) => isThemeCompatible(t.eventType, invitation?.eventType));
+              const availableThemes = sortThemesForEvent(themesList.filter((t) => isThemeCompatible(t.eventType, invitation?.eventType)), invitation?.eventType);
 
               // Dapatkan daftar kategori unik sesuai paket klien
               const CATEGORY_ORDER = ["MINIMALIST", "MODERN", "TRADITIONAL"];

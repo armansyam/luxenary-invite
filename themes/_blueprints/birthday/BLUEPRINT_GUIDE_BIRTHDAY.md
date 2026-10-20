@@ -36,6 +36,10 @@ sesuai `isThemeCompatible` di `lib/invitationUtils.ts`. Karena itu template **ha
 - `{{mainDetailLine}}` : Baris rincian (contoh: jurusan dan kampus, penyelenggara acara). Bisa kosong.
 - `{{parentsHtml}}` : Nama orang tua dalam HTML siap pakai. Kosong bila orang tua tidak diisi dan selalu kosong untuk acara umum.
 - `{{openingQuote}}` / `{{openingQuoteRef}}` : Kutipan pembuka dan sumbernya. Baris baru dari klien dirender sebagai `<br />`.
+- `{{profileEyebrow}}`, `{{profileTitle}}`, `{{profileSub}}` : Judul seksi tokoh utama sesuai jenis acara (mis. *Putra Kami* / *Walimatul Khitan*, *Wisudawan* / *Dengan Bangga*).
+- `{{agendaTitle}}` : Judul seksi acara (mis. *Agenda Syukuran*, *Susunan Acara*).
+- `{{closingText}}` : Kalimat penutup sesuai jenis acara.
+- Jangan menulis nama jenis acara secara mati ("Walimatul Khitan", "Wisudawan"): pakai token di atas, karena tema satu nama dapat dipilih jenis acara lain. Bungkus judul dengan `data-lux-field="customLabels.<kunci>"` agar klien dapat mengubahnya.
 
 ### Waktu & Lokasi Acara (jadwal utama / hari tamu datang)
 - `{{eventDateFormatted}}`, `{{eventTime}}`, `{{venueName}}`, `{{venueAddress}}`, `{{mapsUrl}}`.

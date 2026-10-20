@@ -20,6 +20,13 @@ export function isThemeCompatible(themeEventType?: string | null, invitationEven
   return themeIsWedding === invitationIsWedding;
 }
 
+/** Tema yang dibuat untuk jenis acara undangan tampil lebih dulu; urutan katalog lainnya tetap (sort stabil). */
+export function sortThemesForEvent<T extends { eventType?: string | null }>(themes: T[], invitationEventType?: string | null): T[] {
+  const ev = (invitationEventType || "WEDDING").toUpperCase();
+  const own = (t: T) => ((t.eventType || "WEDDING").toUpperCase() === ev ? 1 : 0);
+  return [...themes].sort((a, b) => own(b) - own(a));
+}
+
 const EVENT_NOUN: Record<string, string> = {
   WEDDING: "pernikahan",
   BIRTHDAY: "ulang tahun",

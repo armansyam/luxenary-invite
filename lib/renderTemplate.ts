@@ -94,21 +94,26 @@ export const THEME_MAP: Record<string, ThemeEntry> = {
   "starlit-dreams": { file: "starlit-dreams.html", eventType: "wedding", style: "modern" },
   "vintage-forest": { file: "vintage-forest.html", eventType: "wedding", style: "modern" },
 
-  // Birthday Series (2 themes)
+  // Birthday Series
   "festivo": { file: "festivo.html", eventType: "birthday", style: "modern" },
   "kalandra-birthday": { file: "kalandra-birthday.html", eventType: "birthday", style: "minimalist" },
+  "riang": { file: "riang.html", eventType: "birthday", style: "modern" },
 
-  // Khitan Series (1 theme)
+  // Khitan Series
   "al-fariz": { file: "al-fariz.html", eventType: "khitan", style: "traditional" },
+  "fajar": { file: "fajar.html", eventType: "khitan", style: "traditional" },
 
-  // Aqiqah Series (1 theme)
+  // Aqiqah Series
   "al-khalid": { file: "al-khalid.html", eventType: "aqiqah", style: "minimalist" },
+  "buaian": { file: "buaian.html", eventType: "aqiqah", style: "minimalist" },
 
-  // Wisuda Series (1 theme)
+  // Wisuda Series
   "cendekia": { file: "cendekia.html", eventType: "wisuda", style: "modern" },
+  "toga": { file: "toga.html", eventType: "wisuda", style: "modern" },
 
-  // General / Gathering Series (1 theme)
+  // General / Gathering Series
   "sinergi": { file: "sinergi.html", eventType: "gathering", style: "modern" },
+  "prakarsa": { file: "prakarsa.html", eventType: "gathering", style: "modern" },
 };
 
 export const LUXENARY_BANNER = `<!--

@@ -29,7 +29,7 @@ export async function GET(
 
     const dbTheme = await prisma.theme.findUnique({
       where: { id: themeId },
-      select: { name: true, category: true, series: true, defaultMusicUrl: true },
+      select: { name: true, category: true, series: true, defaultMusicUrl: true, eventType: true },
     });
 
     const { getThemeBlueprint } = await import("@/lib/themeDefaults");
@@ -57,8 +57,12 @@ export async function GET(
       resolvedData.themeId = themeId;
     }
 
-    // Ensure customLabels has theme-specific blueprint fallbacks
-    resolvedData.customLabels = {
+    // Cadangan blueprint hanya untuk tema pernikahan. Label demo tema satu nama ikut berlaku untuk undangan klien
+    // sejenis (applySingleNameContract); bila cadangan pernikahan ("THE COUPLE") tersimpan, label itu menimpa token
+    // jenis acara di master. Kolom kosong di Studio Demo berarti teks bawaan master.
+    if (dbTheme && dbTheme.eventType !== "WEDDING") {
+      resolvedData.customLabels = resolvedData.customLabels || {};
+    } else resolvedData.customLabels = {
       openBtn: blueprint.openBtn,
       coverSubtitle: blueprint.coverSubtitle,
       rsvpTitle: blueprint.rsvpTitle,

@@ -58,4 +58,21 @@ describe.skipIf(!IS_TEST_DB)("demo memakai engine klien", () => {
     expect(inv.id.startsWith("demo-")).toBe(true);
     expect(html).toContain(inv.id);
   });
+
+  it("master satu nama: setiap slot media menerima video dan foto beranda/penutup", async () => {
+    const slots = ["LANDING_COVER", "DESKTOP_SIDEBAR", "GLOBAL_FIXED_BG", "HOME_PHOTO", "CLOSING_COVER"];
+    const videoClasses = ["lux-cover-video", "lux-sidebar-video", "lux-fixed-bg-video", "lux-home-video", "lux-closing-video"];
+    for (const themeId of ["toga", "buaian", "fajar", "riang", "prakarsa"]) {
+      const inv = buildDemoInvitation(themeId);
+      inv.media = slots.map((mediaSlot) => ({ mediaSlot, localPath: `/uploads/uji/${mediaSlot.toLowerCase()}.mp4` }));
+      const html = await renderTemplateFile(themeId, (await composeInvitationData(inv)) as any, { editMode: false, invitationId: inv.id });
+      for (const cls of videoClasses) expect(html, `${themeId} ${cls}`).toContain(`<video class="${cls}"`);
+
+      const photoInv = buildDemoInvitation(themeId);
+      photoInv.media = [{ mediaSlot: "HOME_PHOTO", localPath: "/uploads/uji/home.webp" }, { mediaSlot: "CLOSING_COVER", localPath: "/uploads/uji/closing.webp" }];
+      const photoHtml = await renderTemplateFile(themeId, (await composeInvitationData(photoInv)) as any, { editMode: false, invitationId: photoInv.id });
+      expect(photoHtml, `${themeId} home`).toContain("/uploads/uji/home.webp");
+      expect(photoHtml, `${themeId} closing`).toContain('class="site-footer has-closing-photo"');
+    }
+  }, 60000);
 });

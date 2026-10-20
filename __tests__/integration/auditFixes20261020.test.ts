@@ -137,7 +137,8 @@ describe.skipIf(!IS_TEST_DB)("struk keuangan privat", () => {
 
 describe.skipIf(!IS_TEST_DB)("salinan portofolio tanpa data tamu asli", () => {
   it("nama dan ucapan RSVP tidak ikut, ID undangan diganti ID demo, tautan kamera dan galeri ke halaman demo", async () => {
-    const themeId = (await prisma.theme.findFirstOrThrow({ where: { eventType: "WEDDING" }, select: { id: true } })).id;
+    // Kalandra merender ucapan ke HTML ({{wishesHtml}}); sebagian master memuatnya lewat JavaScript sehingga nama tamu tidak ada di HTML.
+    const themeId = (await prisma.theme.findUniqueOrThrow({ where: { id: "kalandra" }, select: { id: true } })).id;
     const user = await prisma.user.create({ data: { email: `${RUN}_porto@t.local`, name: "Pemilik" } });
     ids.users.push(user.id);
     const slug = `${RUN.replace(/_/g, "-")}-porto`;

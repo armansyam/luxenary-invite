@@ -2589,12 +2589,36 @@ function buildUniversalExtraSections(inv: any, featureSettings: Record<string, a
   return sections.join("");
 }
 
-const SINGLE_NAME_LABELS: Record<string, { eventLabel: string; eventIntro: string }> = {
-  BIRTHDAY: { eventLabel: "Perayaan Ulang Tahun", eventIntro: "Syukur & Kebahagiaan" },
-  KHITAN: { eventLabel: "Walimatul Khitan", eventIntro: "Tasyakuran & Doa Bersama" },
-  AQIQAH: { eventLabel: "Tasyakuran Aqiqah", eventIntro: "Tasyakuran & Doa Bersama" },
-  WISUDA: { eventLabel: "Syukuran Kelulusan", eventIntro: "Syukur & Kebanggaan" },
-  GATHERING: { eventLabel: "Undangan Resmi", eventIntro: "Undangan & Sambutan" },
+// Teks judul per jenis acara. Tema satu nama dapat dipilih jenis acara non-pernikahan mana pun (isThemeCompatible),
+// jadi master memakai token ini alih-alih menulis "Walimatul Khitan" dan sejenisnya secara mati.
+type SingleNameLabels = { eventLabel: string; eventIntro: string; profileEyebrow: string; profileTitle: string; profileSub: string; agendaTitle: string; closingText: string };
+const RESPECTFUL_CLOSING = "Merupakan kehormatan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.";
+const SINGLE_NAME_LABELS: Record<string, SingleNameLabels> = {
+  BIRTHDAY: {
+    eventLabel: "Perayaan Ulang Tahun", eventIntro: "Syukur & Kebahagiaan", profileEyebrow: "Yang Berulang Tahun", profileTitle: "Selamat Ulang Tahun",
+    profileSub: "Mari merayakan hari istimewa ini bersama keluarga dan sahabat terdekat.", agendaTitle: "Pesta Ulang Tahun",
+    closingText: "Kehadiran dan doa Anda membuat perayaan ini semakin berarti.",
+  },
+  KHITAN: {
+    eventLabel: "Walimatul Khitan", eventIntro: "Tasyakuran & Doa Bersama", profileEyebrow: "Putra Kami", profileTitle: "Walimatul Khitan",
+    profileSub: "Dengan memohon rahmat Allah SWT, kami menyelenggarakan syukuran khitan putra kami.", agendaTitle: "Rangkaian Acara",
+    closingText: RESPECTFUL_CLOSING,
+  },
+  AQIQAH: {
+    eventLabel: "Tasyakuran Aqiqah", eventIntro: "Tasyakuran & Doa Bersama", profileEyebrow: "Buah Hati Kami", profileTitle: "Alhamdulillah",
+    profileSub: "Dengan penuh rasa syukur kami mengabarkan kelahiran buah hati kami tercinta.", agendaTitle: "Tasyakuran",
+    closingText: RESPECTFUL_CLOSING,
+  },
+  WISUDA: {
+    eventLabel: "Syukuran Kelulusan", eventIntro: "Syukur & Kebanggaan", profileEyebrow: "Wisudawan", profileTitle: "Dengan Bangga",
+    profileSub: "Mempersembahkan kelulusan sebagai wujud syukur dan bakti kepada keluarga.", agendaTitle: "Agenda Syukuran",
+    closingText: "Kehadiran dan doa restu Anda adalah kebahagiaan bagi kami sekeluarga.",
+  },
+  GATHERING: {
+    eventLabel: "Undangan Resmi", eventIntro: "Undangan & Sambutan", profileEyebrow: "Penyelenggara", profileTitle: "Tentang Acara",
+    profileSub: "Kami mengundang Bapak/Ibu/Rekan untuk hadir dan menjadi bagian dari acara ini.", agendaTitle: "Susunan Acara",
+    closingText: "Atas perhatian dan kehadiran Bapak/Ibu/Rekan, kami ucapkan terima kasih.",
+  },
 };
 
 /**
@@ -2626,9 +2650,25 @@ async function applySingleNameContract(eventType: string, data: Record<string, a
     ? data.parentsHtml
     : parentNames ? `<p>Putra/Putri tercinta dari:</p><h4 class="serif" style="color: var(--text-main); font-size: 16px; margin: 4px 0;">${parentNames}</h4>` : "";
 
-  const defaultBlueprint = getThemeBlueprint(DEFAULT_THEME_BY_EVENT[eventType] || "kalandra");
-  const quote = inv.openingQuote || defaultBlueprint.openingQuote || "";
-  const quoteRef = inv.openingQuote ? (inv.openingQuoteRef || "") : (defaultBlueprint.openingQuoteRef || "");
+  // Teks bawaan tema yang dipilih (blueprint + isian Studio Demo admin) menjadi bawaan undangan; isian klien tetap menang.
+  // Teks itu khas jenis acara temanya, jadi hanya dipakai bila jenis acaranya sama (tema satu nama dapat dipakai lintas
+  // jenis acara); selain itu dipakai teks bawaan tema default jenis acara undangan.
+  const defaultThemeId = DEFAULT_THEME_BY_EVENT[eventType] || "kalandra";
+  const chosenThemeId = String(inv.themeId || defaultThemeId).toLowerCase();
+  let themeId = defaultThemeId;
+  let themeDemo: Record<string, any> | undefined;
+  try {
+    const themeRow = await prisma.theme.findUnique({ where: { id: chosenThemeId }, select: { eventType: true } });
+    if (themeRow?.eventType === eventType) themeId = chosenThemeId;
+    const setting = await prisma.adminSetting.findUnique({ where: { key: `theme_demo_${themeId}` }, select: { value: true } });
+    themeDemo = setting?.value ? JSON.parse(setting.value) : undefined;
+  } catch (err) {
+    logger.warn("ThemeEngine", "Data Studio Demo tema tidak terbaca; teks bawaan blueprint dipakai", { themeId, error: err instanceof Error ? err.message : String(err) });
+  }
+  const themeBlueprint = getThemeBlueprint(themeId, themeDemo);
+  const quote = inv.openingQuote || themeBlueprint.openingQuote || "";
+  const quoteRef = inv.openingQuote ? (inv.openingQuoteRef || "") : (themeBlueprint.openingQuoteRef || "");
+  const mergedLabels = { ...(themeDemo?.customLabels || {}), ...customLabels };
 
   const planType = inv.order?.planType;
   const showQr = featureSettings.showQrCheckin !== false && await hasPlanCapability(planType, "qr_checkin");
@@ -2636,8 +2676,25 @@ async function applySingleNameContract(eventType: string, data: Record<string, a
   const dateLabel = primary.date ? formatDateId(primary.date) : "";
   const platformName = await getAdminSetting("platform_name", "Platform Undangan");
 
+  // Penyisipan video dan foto per slot di renderTemplate membaca kunci yang sama dengan pernikahan
+  // (sidebarPhotoUrl, hasCustomHomePhoto, closingPhotoUrl); composer per jenis acara tidak mengisinya seragam.
+  const mediaMap = new Map<string, string>();
+  for (const item of inv.media || []) {
+    if (item.localPath) mediaMap.set(String(item.mediaSlot), item.localPath);
+  }
+  const customHomePhoto = mediaMap.get("HOME_PHOTO") || "";
+  const closingPhotoUrl = mediaMap.get("CLOSING_COVER") || "";
+
   return {
     ...data,
+    sidebarPhotoUrl: mediaMap.get("DESKTOP_SIDEBAR") || data.sidebarPhotoUrl || data.landingCoverUrl || m.photo || "",
+    hasCustomCoverDesktop: Boolean(mediaMap.get("LANDING_COVER_DESKTOP")),
+    homePhotoUrl: customHomePhoto,
+    hasCustomHomePhoto: Boolean(customHomePhoto),
+    closingPhotoUrl,
+    hasClosingPhoto: Boolean(closingPhotoUrl),
+    closingPhotoClass: closingPhotoUrl ? "has-closing-photo" : "no-closing-photo",
+    closingBgStyle: closingPhotoUrl ? `background-image: url('${escapeHtml(closingPhotoUrl)}');` : "",
     mainName: m.name || "",
     mainNickname: m.nickname || m.name || "",
     mainPhotoUrl: m.photo || "",
@@ -2645,6 +2702,11 @@ async function applySingleNameContract(eventType: string, data: Record<string, a
     mainDetailLine: m.detail || "",
     eventLabel: labels.eventLabel,
     eventIntro: labels.eventIntro,
+    profileEyebrow: labels.profileEyebrow,
+    profileTitle: labels.profileTitle,
+    profileSub: labels.profileSub,
+    agendaTitle: labels.agendaTitle,
+    closingText: labels.closingText,
     openingQuote: quote,
     openingQuoteRef: quoteRef,
     parentsHtml,
@@ -2660,6 +2722,8 @@ async function applySingleNameContract(eventType: string, data: Record<string, a
     qrPassHtml: showQr ? buildUniversalQrPass(inv, labels.eventLabel, m.name || "", dateLabel) : "",
     memoriesSectionHtml: showMemories ? buildUniversalMemoriesCta(inv, customLabels) : "",
     extraSectionsHtml: buildUniversalExtraSections(inv, featureSettings),
+    // Dibaca penyisipan label di renderTemplate.
+    featureSettings: { ...featureSettings, customLabels: mergedLabels },
   };
 }
 
@@ -2743,7 +2807,7 @@ export async function composeKhitanData(inv: any) {
     metaTagsHtml: `
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <title>Walimatul Khitan ${escapeHtml(childName)} — Undangan Digital</title>
-    <meta name="description" content="Tasyakuran Walimatul Khitan ${escapeHtml(childName)}.">
+    <meta name="description" content="Tasyakuran Walimatul Khitan ${escapeHtml(childName.replace(/\.+$/, ""))}.">
     <meta property="og:title" content="Walimatul Khitan ${escapeHtml(childName)} — Undangan Digital">
     <meta property="og:image" content="${escapeHtml(absoluteCover)}">
     `,
@@ -2831,7 +2895,7 @@ export async function composeAqiqahData(inv: any) {
     metaTagsHtml: `
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <title>Tasyakuran Aqiqah ${escapeHtml(babyName)} — Undangan Digital</title>
-    <meta name="description" content="Tasyakuran Aqiqah ${escapeHtml(babyName)}.">
+    <meta name="description" content="Tasyakuran Aqiqah ${escapeHtml(babyName.replace(/\.+$/, ""))}.">
     <meta property="og:title" content="Tasyakuran Aqiqah ${escapeHtml(babyName)} — Undangan Digital">
     <meta property="og:image" content="${escapeHtml(absoluteCover)}">
     `,
@@ -2929,7 +2993,7 @@ export async function composeWisudaData(inv: any) {
     metaTagsHtml: `
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <title>Wisuda ${escapeHtml(graduateName)} — Undangan Digital</title>
-    <meta name="description" content="Syukuran kelulusan ${escapeHtml(graduateName)}.">
+    <meta name="description" content="Syukuran kelulusan ${escapeHtml(graduateName.replace(/\.+$/, ""))}.">
     <meta property="og:title" content="Wisuda ${escapeHtml(graduateName)} — Undangan Digital">
     <meta property="og:image" content="${escapeHtml(absoluteCover)}">
     `,

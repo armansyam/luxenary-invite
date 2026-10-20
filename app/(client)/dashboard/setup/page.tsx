@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { DEFAULT_PLAN_NAMES } from "@/lib/planUtils";
-import { isThemeCompatible } from "@/lib/invitationUtils";
+import { isThemeCompatible, sortThemesForEvent } from "@/lib/invitationUtils";
 import { getApexRootDomain } from "@/lib/domainUtils";
 
 // Di HP baris tombol menempel di bawah layar: langkah tema bisa setinggi belasan layar, dan tombol selesai
@@ -1282,7 +1282,7 @@ function SetupWizardContent() {
         {/* STEP 3: Pilihan Tema dengan Kategori & Thumbnail Preview */}
         {step === 3 && (() => {
           // Pernikahan memakai tema pernikahan; acara lain boleh memilih tema satu nama mana pun.
-          const themesForDisplay = availableThemes.filter((t: any) => isThemeCompatible(t.eventType, eventType));
+          const themesForDisplay = sortThemesForEvent(availableThemes.filter((t: any) => isThemeCompatible(t.eventType, eventType)), eventType);
 
           // Dapatkan daftar kategori yang benar-benar ada pada tema yang ditampilkan
           const availableCats = new Set<string>(themesForDisplay.map((t: any) => t.category?.toLowerCase() || ""));

@@ -375,6 +375,11 @@ export async function POST(req: Request) {
       vendorSubtitle: blueprint.vendorSubtitle || (isWeddingEvent ? "Rasa terima kasih dan penghargaan setulusnya kepada seluruh vendor yang telah membantu menyempurnakan hari bahagia kami." : "Rasa terima kasih dan penghargaan setulusnya kepada seluruh pihak dan mitra yang telah membantu menyempurnakan acara kami."),
     };
 
+    // Tema satu nama mengisi judul seksinya dari token jenis acara ({{profileEyebrow}}, {{eventDateFormatted}}, ...).
+    // Label tersimpan menimpa token itu, dan blueprint satu nama berisi cadangan pernikahan ("THE COUPLE"), jadi
+    // undangan non-pernikahan hanya menyimpan label yang memang diubah klien.
+    const initialCustomLabels = isWeddingEvent ? defaultCustomLabels : {};
+
     const initialMusicUrl = customDemoData?.audioUrl || customDemoData?.defaultMusicUrl || themeMeta?.defaultMusicUrl || blueprint.defaultMusicUrl || "";
 
     invitation = await prisma.$transaction(async (tx) => {
@@ -395,7 +400,7 @@ export async function POST(req: Request) {
           showDresscode: existingFs.showDresscode !== undefined ? existingFs.showDresscode : true,
           showMusic: existingFs.showMusic !== undefined ? existingFs.showMusic : true,
           customLabels: {
-            ...defaultCustomLabels,
+            ...initialCustomLabels,
             ...(existingFs.customLabels || {}),
           },
         };
@@ -439,7 +444,7 @@ export async function POST(req: Request) {
               showGift: true,
               showDresscode: true,
               showMusic: true,
-              customLabels: defaultCustomLabels,
+              customLabels: initialCustomLabels,
             },
             status: invitationStatus,
           },

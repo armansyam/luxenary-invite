@@ -85,38 +85,9 @@ async function main() {
       const demo = DEMO_REGISTRY[d.id];
       if (demo) {
         const blueprint = getThemeBlueprint(d.id, demo);
-        const customLabels = {
-          openBtn: blueprint.openBtn,
-          coverSubtitle: blueprint.coverSubtitle,
-          rsvpTitle: blueprint.rsvpTitle,
-          rsvpBtnText: blueprint.rsvpBtnText || "Kirim Konfirmasi & Doa",
-          quoteTitle: blueprint.quoteSectionTitle,
-          quoteEyebrow: blueprint.quoteSectionEyebrow,
-          coupleTitle: blueprint.coupleSectionTitle,
-          coupleEyebrow: blueprint.coupleSectionEyebrow || "THE COUPLE",
-          coupleSub: blueprint.coupleSectionSub,
-          eventsTitle: blueprint.eventsSectionTitle,
-          eventsSub: blueprint.eventsSectionSub,
-          storyTitle: blueprint.storySectionTitle,
-          storyEyebrow: blueprint.storySectionEyebrow || "OUR JOURNEY",
-          galleryTitle: blueprint.gallerySectionTitle,
-          galleryEyebrow: blueprint.gallerySectionEyebrow,
-          galleryQuote: blueprint.galleryQuote,
-          dressCodeTitle: blueprint.dressCodeTitle || "Dress Code",
-          dressCodeEyebrow: blueprint.dressCodeEyebrow || "A Guide To",
-          dressCodeSubtitle: blueprint.dressCodeSubtitle || "Kami mengundang tamu undangan untuk mengenakan palet warna berikut:",
-          streamingTitle: blueprint.streamingTitle || "Live Streaming",
-          streamingEyebrow: blueprint.streamingEyebrow || "Virtual Ceremony",
-          streamingSubtitle: blueprint.streamingSubtitle || "Bagi keluarga & sahabat yang menyaksikan dari jauh, bergabunglah melalui siaran daring:",
-          giftTitle: blueprint.giftSectionTitle,
-          giftEyebrow: blueprint.giftSectionEyebrow,
-          giftDesc: blueprint.giftSectionDesc,
-          turutMengundangTitle: blueprint.turutMengundangTitle || "Turut Mengundang",
-          turutMengundangEyebrow: blueprint.turutMengundangEyebrow || "Keluarga Besar",
-          turutMengundangSubtitle: blueprint.turutMengundangSubtitle || "Keluarga Besar & Kerabat yang turut berbahagia:",
-          wishesTitle: blueprint.wishesSectionTitle,
-          wishesSub: blueprint.wishesSectionSub,
-        };
+        // Hanya label yang memang didefinisikan data demo. Menyalin seluruh blueprint (beserta cadangan pernikahan seperti
+        // "THE COUPLE") membuat nilai itu menimpa teks master; Studio Demo sudah menampilkan blueprint sebagai cadangan.
+        const customLabels = (demo as { customLabels?: Record<string, string> }).customLabels || {};
         const val = JSON.stringify({
           ...demo,
           openingQuote: demo.openingQuote || blueprint.openingQuote,
