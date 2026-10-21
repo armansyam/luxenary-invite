@@ -341,6 +341,7 @@ export async function DELETE(req: NextRequest) {
 
     // 4. Also remove the compiled static demo directory so it no longer appears in catalog
     await removeIfExists(path.join(process.cwd(), "public", "demo", id.toLowerCase()), { recursive: true });
+    await removeIfExists(path.join(process.cwd(), "public", "uploads", "demo", id.toLowerCase()), { recursive: true });
 
     const { revalidatePath } = await import("next/cache");
     revalidatePath("/demo");

@@ -8,7 +8,10 @@ import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
-const BRAND_DIR = path.join(process.cwd(), "public", "assets", "brand");
+// Bawaan git ada di `public/assets/brand/`; unggahan ditulis di luar git dan disajikan rute `/brand/<berkas>`.
+const BRAND_DIR = path.join(process.cwd(), "public", "uploads", "brand");
+const BUNDLED_BRAND_DIR = path.join(process.cwd(), "public", "assets", "brand");
+const brandFileExists = (file: string) => fs.existsSync(path.join(BRAND_DIR, file)) || fs.existsSync(path.join(BUNDLED_BRAND_DIR, file));
 
 // Pastikan folder brand selalu ada
 async function ensureBrandDir() {
@@ -27,12 +30,12 @@ export async function GET(req: NextRequest) {
     let logo = null;
     let favicon = null;
 
-    if (fs.existsSync(path.join(BRAND_DIR, "logo.webp"))) {
-      logo = "/assets/brand/logo.webp";
+    if (brandFileExists("logo.webp")) {
+      logo = "/brand/logo.webp";
     }
 
-    if (fs.existsSync(path.join(process.cwd(), "public", "favicon.ico"))) {
-      favicon = "/favicon.ico";
+    if (brandFileExists("favicon.png")) {
+      favicon = "/brand/favicon.png";
     }
 
     return NextResponse.json({ success: true, logo, favicon });
@@ -83,7 +86,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         type: "logo",
-        url: `/assets/brand/logo.webp?t=${Date.now()}`,
+        url: `/brand/logo.webp?t=${Date.now()}`,
         message: "Logo berhasil diupload dan dikompresi ke WebP",
       });
     }
@@ -91,16 +94,12 @@ export async function POST(req: NextRequest) {
     if (type === "favicon") {
       // Favicon Multi-Resolution: Otomatis generate seluruh paket resolusi Google Search Central (kelipatan 48px), Apple Touch, dan PWA
       const targets = [
-        { dest: path.join(process.cwd(), "public", "favicon.ico"), size: 48 },
         { dest: path.join(BRAND_DIR, "favicon.png"), size: 96 },
         { dest: path.join(BRAND_DIR, "favicon-48x48.png"), size: 48 },
         { dest: path.join(BRAND_DIR, "favicon-96x96.png"), size: 96 },
         { dest: path.join(BRAND_DIR, "favicon-192x192.png"), size: 192 },
         { dest: path.join(BRAND_DIR, "favicon-512x512.png"), size: 512 },
         { dest: path.join(BRAND_DIR, "apple-touch-icon.png"), size: 180 },
-        { dest: path.join(process.cwd(), "public", "assets", "brand", "apple-touch-icon.png"), size: 180 },
-        { dest: path.join(process.cwd(), "app", "icon.png"), size: 96 },
-        { dest: path.join(process.cwd(), "app", "apple-icon.png"), size: 180 },
       ];
 
       for (const t of targets) {
@@ -117,7 +116,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         type: "favicon",
-        url: "/favicon.ico",
+        url: `/brand/favicon.png?t=${Date.now()}`,
         message: "Favicon berhasil diupload dan otomatis di-generate ke seluruh ukuran standar Google Search (48px, 96px, 192px, 512px)",
       });
     }

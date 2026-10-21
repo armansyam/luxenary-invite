@@ -11,6 +11,13 @@ echo "📦 Menarik pembaruan terbaru dari Git (origin main)..."
 export PREVIOUS_COMMIT=${PREVIOUS_COMMIT:-$(git rev-parse HEAD)}
 if ! git pull --ff-only origin main; then
   echo "❌ Error: Gagal menarik perubahan terbaru dari Git origin main! Deployment dihentikan untuk mencegah corrupt build."
+  # Sebelum 21 Okt 2026 unggahan admin (aset demo, logo, favicon, master tema) menimpa berkas yang dilacak git.
+  LOCAL_UPLOADS=$(git status --porcelain -- public/demo public/assets/brand public/favicon.ico app/icon.png app/apple-icon.png themes)
+  if [ -n "$LOCAL_UPLOADS" ]; then
+    echo "   Berkas berikut diubah di server (unggahan admin lama) dan menghalangi pull:"
+    echo "$LOCAL_UPLOADS" | sed 's/^/     /'
+    echo "   Salin berkas itu ke tempat aman, kembalikan ke versi git, lalu deploy ulang dan unggah ulang lewat panel admin."
+  fi
   exit 1
 fi
 

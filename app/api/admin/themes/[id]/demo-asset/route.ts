@@ -9,6 +9,12 @@ import path from "path";
 
 export const dynamic = "force-dynamic";
 
+// Foto bawaan demo di `public/demo/<tema>/` dilacak git; unggahan admin produksi ditulis di luar git agar
+// `git pull --ff-only` saat deploy tidak berhenti karena berkas yang sama berubah di server.
+function demoUploadDir(themeId: string): string {
+  return path.join(process.cwd(), "public", "uploads", "demo", themeId);
+}
+
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -27,12 +33,12 @@ export async function POST(
     if (!slot || !file) {
       return NextResponse.json({ error: "Slot dan file harus disertakan" }, { status: 400 });
     }
-    // ID tema dan slot menjadi path tujuan tulis dan hapus di `public/demo/`.
+    // ID tema dan slot menjadi path tujuan tulis dan hapus di `public/uploads/demo/`.
     if (!isSafePathSegment(themeId) || !isSafePathSegment(slot)) {
       return NextResponse.json({ error: "ID tema atau slot tidak valid" }, { status: 400 });
     }
 
-    const targetDir = path.join(process.cwd(), "public", "demo", themeId);
+    const targetDir = demoUploadDir(themeId);
     if (!fs.existsSync(targetDir)) {
       fs.mkdirSync(targetDir, { recursive: true });
     }
@@ -74,7 +80,7 @@ export async function POST(
 
     fs.writeFileSync(targetFilePath, buffer);
 
-    const rawUrl = `/demo/${themeId}/${fileName}`;
+    const rawUrl = `/uploads/demo/${themeId}/${fileName}`;
     const publicUrl = `${rawUrl}?t=${Date.now()}`;
 
     // Update database adminSetting theme_demo_${themeId} and recompile static demo
@@ -193,7 +199,7 @@ export async function DELETE(
       return NextResponse.json({ error: "ID tema atau slot tidak valid" }, { status: 400 });
     }
 
-    const targetDir = path.join(process.cwd(), "public", "demo", themeId);
+    const targetDir = demoUploadDir(themeId);
 
     // Delete any existing files for this slot regardless of extension
     const extensions = ["webp", "png", "jpg", "jpeg", "mp4", "webm", "mp3", "ogg"];

@@ -1,6 +1,6 @@
 /**
  * BrandLogo — Komponen logo terpusat.
- * Membaca dari /assets/brand/logo.webp jika ada,
+ * Membaca dari /brand/logo.webp (unggahan admin, atau bawaan public/assets/brand) jika ada,
  * fallback ke monogram huruf "L" jika belum diupload.
  *
  * Penggunaan:
@@ -32,7 +32,7 @@ const sizeMap: Record<BrandLogoSize, { container: string; img: string; monogram:
   lg: { container: "w-14 h-14 rounded-2xl",img: "w-14 h-14", monogram: "text-3xl" },
 };
 
-const BASE_LOGO_URL = "/assets/brand/logo.webp";
+const BASE_LOGO_URL = "/brand/logo.webp";
 
 export function BrandLogo({ size = "md", lightBg = false, showName = false, brandName, className = "" }: BrandLogoProps) {
   const [imgError, setImgError] = useState(false);

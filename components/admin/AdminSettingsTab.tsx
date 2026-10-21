@@ -2581,7 +2581,7 @@ export default function AdminSettingsTab(props: Props) {
               <p className="text-xs text-gray-500 truncate">
                 {pendingLogo
                   ? <span className="text-amber-800 font-bold">Terpilih: {pendingLogo.name}</span>
-                  : logoUrl ? "/assets/brand/logo.webp" : "Belum ada logo"
+                  : logoUrl ? "/brand/logo.webp" : "Belum ada logo"
                 }
               </p>
               <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition bg-gray-100 hover:bg-gray-200 text-gray-700">
@@ -2646,7 +2646,7 @@ export default function AdminSettingsTab(props: Props) {
               <p className="text-xs text-gray-500 truncate">
                 {pendingFavicon
                   ? <span className="text-amber-800 font-bold">Terpilih: {pendingFavicon.name}</span>
-                  : faviconUrl ? "/assets/brand/favicon.png" : "Belum ada favicon"
+                  : faviconUrl ? "/brand/favicon.png" : "Belum ada favicon"
                 }
               </p>
               <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition bg-gray-100 hover:bg-gray-200 text-gray-700">

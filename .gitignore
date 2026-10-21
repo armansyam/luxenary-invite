@@ -77,6 +77,9 @@ logs/
 !/public/uploads/proofs/.gitkeep
 /public/uploads/music/
 /public/uploads/finance/
+# unggahan admin produksi (aset demo tema, logo/favicon); bawaan git tetap di public/demo dan public/assets/brand
+/public/uploads/demo/
+/public/uploads/brand/
 
 # published baked invitation HTML (konten klien — jangan commit ke repo)
 /public/published/

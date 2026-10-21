@@ -3760,7 +3760,7 @@ export default function AdminPage() {
                         <div>
                           <strong>Panduan Aset:</strong> Foto atau Video MP4 yang diunggah akan otomatis disimpan ke folder{" "}
                           <code className="font-mono bg-amber-100 px-1 py-0.5 rounded text-amber-950 font-bold">
-                            public/demo/{demoStudioTheme.id}/
+                            public/uploads/demo/{demoStudioTheme.id}/
                           </code>{" "}
                           dan langsung tampil di halaman showroom demo publik tema bersangkutan.
                         </div>

@@ -16,11 +16,11 @@ export async function generateMetadata(): Promise<Metadata> {
     description: `Control panel administrator platform ${brand}`,
     icons: {
       icon: [
-        { url: `/assets/brand/favicon.png?t=${Date.now()}`, type: "image/png" },
+        { url: `/brand/favicon.png?t=${Date.now()}`, type: "image/png" },
         { url: `/favicon.ico?t=${Date.now()}` },
       ],
-      shortcut: `/assets/brand/favicon.png?t=${Date.now()}`,
-      apple: `/assets/brand/favicon.png?t=${Date.now()}`,
+      shortcut: `/brand/favicon.png?t=${Date.now()}`,
+      apple: `/brand/favicon.png?t=${Date.now()}`,
     },
   };
 }

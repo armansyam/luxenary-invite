@@ -9,9 +9,9 @@ export async function GET() {
   try {
     const settings = await getPublicPlatformSettings();
 
-    const brandDir = path.join(process.cwd(), "public", "assets", "brand");
-    const logoExists = fs.existsSync(path.join(brandDir, "logo.webp"));
-    const faviconExists = fs.existsSync(path.join(brandDir, "favicon.png"));
+    const brandDirs = [path.join(process.cwd(), "public", "uploads", "brand"), path.join(process.cwd(), "public", "assets", "brand")];
+    const logoExists = brandDirs.some((dir) => fs.existsSync(path.join(dir, "logo.webp")));
+    const faviconExists = brandDirs.some((dir) => fs.existsSync(path.join(dir, "favicon.png")));
 
     return NextResponse.json({
       success: true,
@@ -28,8 +28,8 @@ export async function GET() {
       max_video_upload_mb: settings.maxVideoUploadMb,
       max_photo_upload_mb: settings.maxPhotoUploadMb,
       max_upload_mb: settings.maxUploadMb,
-      logo: logoExists ? "/assets/brand/logo.webp" : null,
-      favicon: faviconExists ? "/assets/brand/favicon.png" : null,
+      logo: logoExists ? "/brand/logo.webp" : null,
+      favicon: faviconExists ? "/brand/favicon.png" : null,
     });
   } catch (error) {
     return routeError("PublicSettings", error, "Gagal memuat pengaturan platform");
