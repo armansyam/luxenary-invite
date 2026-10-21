@@ -5,6 +5,7 @@ import sharp from "sharp";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
+import { readFormBody } from "@/lib/requestBody";
 
 export const dynamic = "force-dynamic";
 
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     await ensureBrandDir();
 
-    const formData = await req.formData();
+    const formData = await readFormBody(req);
     const type = formData.get("type") as string; // "logo" | "favicon"
     const file = formData.get("file") as File | null;
 

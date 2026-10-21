@@ -8,6 +8,7 @@ import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
+import { readFormBody } from "@/lib/requestBody";
 import { removeIfExists } from "@/lib/fsSafe";
 import { prisma } from "@/lib/prisma";
 import { getClientIp, rateLimitDb } from "@/lib/rateLimit";
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const formData = await req.formData();
+    const formData = await readFormBody(req);
     const file = formData.get("file") as File | null;
     const rawInvitationId = (formData.get("invitationId") as string) || "";
     const rawSlot = (formData.get("slot") as string) || "photo";

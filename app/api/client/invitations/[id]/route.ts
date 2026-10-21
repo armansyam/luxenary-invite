@@ -7,6 +7,7 @@ import { normalizeJsonInput } from "@/lib/jsonText";
 import { participantNames } from "@/lib/participantUtils";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
+import { readJsonBody } from "@/lib/requestBody";
 import { removeIfExists } from "@/lib/fsSafe";
 import { encryptPin, decryptPin } from "@/lib/pinEncryption";
 import { STAFF_PIN_PATTERN, isThemeCompatible } from "@/lib/invitationUtils";
@@ -158,7 +159,7 @@ export async function PUT(
 
     const resolvedParams = await Promise.resolve(params);
     const id = resolvedParams?.id;
-    const body = await req.json();
+    const body = (await readJsonBody(req)) ?? {};
 
     const currentInv = await prisma.invitation.findUnique({ where: { id }, include: { order: { select: { planType: true } } } });
     if (!currentInv) {
@@ -592,7 +593,7 @@ export async function PATCH(
       return NextResponse.json({ error: "ID Undangan wajib disertakan." }, { status: 400 });
     }
 
-    const body = await req.json();
+    const body = (await readJsonBody(req)) ?? {};
     const currentInv = await prisma.invitation.findUnique({ where: { id }, include: { order: { select: { planType: true } } } });
     if (!currentInv) {
       return NextResponse.json({ error: "Undangan tidak ditemukan" }, { status: 404 });

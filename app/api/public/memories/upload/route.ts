@@ -11,6 +11,7 @@ import { getMemoriesActiveSchedule, calculateSessionCumulativeQuota } from "@/li
 import { getEventTimezoneOffset, resolveEventTimezone } from "@/lib/lifecycleDates";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
+import { readFormBody, readJsonBody } from "@/lib/requestBody";
 import { participantNames } from "@/lib/participantUtils";
 import { RSVP_NAME_MAX, RSVP_MESSAGE_MAX } from "@/lib/rsvpStatus";
 
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
     const contentType = req.headers.get("content-type") || "";
 
     if (contentType.includes("multipart/form-data")) {
-      const formData = await req.formData();
+      const formData = await readFormBody(req);
       invitationId = (formData.get("invitationId") as string) || "";
       senderName = (formData.get("senderName") as string) || "Guest";
       senderEmail = (formData.get("senderEmail") as string) || "guest@system";
@@ -74,7 +75,7 @@ export async function POST(req: NextRequest) {
         buffer = Buffer.from(arrayBuffer);
       }
     } else {
-      const data = await req.json();
+      const data = (await readJsonBody(req)) ?? {};
       invitationId = data.invitationId || "";
       senderName = data.senderName || "Guest";
       senderEmail = data.senderEmail || "guest@system";

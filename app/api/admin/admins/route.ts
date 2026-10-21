@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
+import { readJsonBody } from "@/lib/requestBody";
 import { MIN_ADMIN_PASSWORD_LENGTH } from "@/lib/adminCredentials";
 
 export async function GET() {
@@ -37,7 +38,7 @@ export async function POST(req: Request) {
     if (!guard.ok) return guard.response;
     const { session } = guard;
 
-    const body = await req.json();
+    const body = (await readJsonBody(req)) ?? {};
     const { name, role: newRole, password, permissions } = body;
     // Login admin memangkas dan me-lowercase isian sebelum mencocokkan (auth.ts), jadi disimpan dalam bentuk yang sama.
     const username = String(body.username ?? "").trim().toLowerCase();

@@ -7,6 +7,7 @@ import { purgeCloudflareCache } from "@/lib/cloudflare";
 import { logger } from "@/lib/logger";
 import { isSafePathSegment } from "@/lib/fsSafe";
 import { routeError } from "@/lib/routeError";
+import { readJsonBody } from "@/lib/requestBody";
 
 export const dynamic = "force-dynamic";
 
@@ -129,7 +130,7 @@ export async function POST(
     if (!isSafePathSegment(themeId)) {
       return NextResponse.json({ error: "ID tema tidak valid" }, { status: 400 });
     }
-    const body = await req.json();
+    const body = (await readJsonBody(req)) ?? {};
 
     const settingKey = `theme_demo_${themeId}`;
     await prisma.adminSetting.upsert({

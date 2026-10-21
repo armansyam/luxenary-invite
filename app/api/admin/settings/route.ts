@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { routeError } from "@/lib/routeError";
+import { readJsonBody } from "@/lib/requestBody";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
 import { invalidateSettingsCache } from "@/lib/settings";
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
     const denied = await denyUnlessSettingsAdmin();
     if (denied) return denied;
 
-    const body = await req.json();
+    const body = await readJsonBody(req);
     const updates = Array.isArray(body) ? body : [body];
     const results = [];
     

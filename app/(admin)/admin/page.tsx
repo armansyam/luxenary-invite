@@ -5655,7 +5655,7 @@ export default function AdminPage() {
                                     >
                                       <input
                                         type="file"
-                                        accept="image/png,image/svg+xml,image/webp,image/jpeg"
+                                        accept="image/png,image/webp,image/jpeg"
                                         className="hidden"
                                         onChange={async (e) => {
                                           const file = e.target.files?.[0];

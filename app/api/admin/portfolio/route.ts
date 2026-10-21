@@ -7,6 +7,7 @@ import { isSafePathSegment } from "@/lib/fsSafe";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
 import { HttpError, routeError } from "@/lib/routeError";
+import { readJsonBody } from "@/lib/requestBody";
 import { participantNames } from "@/lib/participantUtils";
 import { renderPublishedHtml } from "@/lib/staticPublisher";
 import { anonymizePortfolioHtml } from "@/lib/portfolioHtml";
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
     const guard = await requireAdminModule("portfolio");
     if (!guard.ok) return guard.response;
 
-    const { invitationId } = await req.json();
+    const { invitationId } = (await readJsonBody(req)) ?? {};
     if (!invitationId) {
       return NextResponse.json({ error: "invitationId required" }, { status: 400 });
     }

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
+import { readFormBody } from "@/lib/requestBody";
+import { fileTypeFromBuffer } from "file-type";
 import { prisma } from "@/lib/prisma";
 import fs from "fs";
 import path from "path";
@@ -35,7 +37,7 @@ export async function POST(req: NextRequest) {
     const guard = await requireAdminModule("themes");
     if (!guard.ok) return guard.response;
 
-    const formData = await req.formData();
+    const formData = await readFormBody(req);
     const file = formData.get("file") as File | null;
     const title = (formData.get("title") as string)?.trim();
     const composer = (formData.get("composer") as string)?.trim() || null;
@@ -47,17 +49,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "File audio dan judul lagu wajib diisi." }, { status: 400 });
     }
 
-    // File validation
-    const validExts = [".mp3", ".ogg", ".wav", ".m4a", ".flac", ".aac"];
-    const fileExt = path.extname(file.name).toLowerCase();
-    const isAudio = file.type.startsWith("audio/") || validExts.includes(fileExt);
-
-    if (!isAudio) {
-      return NextResponse.json({ error: "Format file tidak valid. Harap unggah file audio (MP3, WAV, M4A, OGG)." }, { status: 400 });
-    }
-
     if (file.size > 25 * 1024 * 1024) {
       return NextResponse.json({ error: "Ukuran audio melebihi batas maksimal 25 MB." }, { status: 400 });
+    }
+
+    // Jenis ditentukan dari isi berkas, bukan nama atau tipe kiriman browser: berkas teks yang diteruskan ke ffmpeg
+    // (playlist HLS/concat) dapat membuat ffmpeg membuka berkas lokal atau URL lain.
+    const rawBuffer = Buffer.from(await file.arrayBuffer());
+    const detected = await fileTypeFromBuffer(rawBuffer);
+    // M4A dengan brand isom terdeteksi video/mp4; ffmpeg tetap mengambil trek audionya.
+    if (!detected || !(detected.mime.startsWith("audio/") || detected.mime === "video/mp4")) {
+      return NextResponse.json({ error: "Format file tidak valid. Harap unggah file audio (MP3, WAV, M4A, OGG)." }, { status: 400 });
     }
 
     const slug = title
@@ -78,9 +80,6 @@ export async function POST(req: NextRequest) {
       finalFileName = `${slug}-${Date.now().toString(36).slice(-4)}.mp3`;
       targetFilePath = path.join(musicDir, finalFileName);
     }
-
-    const bytes = await file.arrayBuffer();
-    const rawBuffer = Buffer.from(bytes);
 
     // Auto-compress to web-optimized 128kbps stereo MP3
     const optimizedBuffer = await optimizeWebAudio(rawBuffer, slug);

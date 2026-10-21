@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { adminActorId, requireAnyAdmin } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
+import { readJsonBody } from "@/lib/requestBody";
 import bcrypt from "bcryptjs";
 import { MIN_ADMIN_PASSWORD_LENGTH } from "@/lib/adminCredentials";
 
@@ -12,7 +13,7 @@ export async function PUT(req: Request) {
     if (!guard.ok) return guard.response;
 
     const adminId = adminActorId(guard.session);
-    const { name, email, username, currentPassword, newPassword } = await req.json();
+    const { name, email, username, currentPassword, newPassword } = (await readJsonBody(req)) ?? {};
 
     const admin = await prisma.admin.findUnique({ where: { id: adminId } });
     if (!admin) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
+import { readJsonBody } from "@/lib/requestBody";
 import { wibMonthStart, wibParts } from "@/lib/financePeriods";
 
 export const dynamic = "force-dynamic";
@@ -119,7 +120,7 @@ export async function POST(req: NextRequest) {
     if (!guard.ok) return guard.response;
     const session = guard.session;
 
-    const body = await req.json();
+    const body = (await readJsonBody(req)) ?? {};
     const { month, year, taxPaid, ntpn, taxPaidAt } = body;
 
     const monthNum = parseInt(month, 10);

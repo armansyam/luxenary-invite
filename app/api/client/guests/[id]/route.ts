@@ -5,6 +5,9 @@ import { hasAdminPermission } from "@/lib/adminPermissions";
 import { logger } from "@/lib/logger";
 import { cleanGuestName, cleanGuestTextFields, guestQuotaFrom } from "@/lib/guestInput";
 import { getPrimaryEventDate } from "@/lib/lifecycleDates";
+import { HttpError, routeError } from "@/lib/routeError";
+import { readJsonBody } from "@/lib/requestBody";
+import { withGuestNameLock } from "@/lib/guestNameLock";
 
 export async function GET(
   req: Request,
@@ -75,7 +78,7 @@ export async function PUT(
 
     const resolvedParams = await Promise.resolve(params);
     const id = resolvedParams?.id;
-    const body = await req.json();
+    const body = (await readJsonBody(req)) ?? {};
 
     const existingGuest = await prisma.guest.findUnique({
       where: { id },
@@ -107,18 +110,7 @@ export async function PUT(
       return NextResponse.json({ error: "Nama tamu wajib diisi (maksimal 100 karakter)." }, { status: 400 });
     }
     if (body.name !== undefined) {
-      const newName = cleanGuestName(body.name)!;
-      const clash = await prisma.guest.findFirst({
-        where: { invitationId: existingGuest.invitationId, id: { not: id }, name: { equals: newName, mode: "insensitive" } },
-        select: { id: true },
-      });
-      if (clash) {
-        return NextResponse.json(
-          { error: `Nama "${newName}" sudah dipakai tamu lain. Tambahkan penanda agar tidak tertukar saat check-in.` },
-          { status: 400 }
-        );
-      }
-      allowedData.name = newName;
+      allowedData.name = cleanGuestName(body.name)!;
     }
     const textFields = cleanGuestTextFields(body);
     for (const field of ["phone", "category", "sessionInfo", "tableNumber"] as const) {
@@ -132,15 +124,22 @@ export async function PUT(
       allowedData.waStatus = body.waStatus;
     }
 
-    const guest = await prisma.guest.update({
-      where: { id },
-      data: allowedData,
+    const guest = await withGuestNameLock(existingGuest.invitationId, async (tx) => {
+      if (allowedData.name !== undefined) {
+        const clash = await tx.guest.findFirst({
+          where: { invitationId: existingGuest.invitationId, id: { not: id }, name: { equals: allowedData.name, mode: "insensitive" } },
+          select: { id: true },
+        });
+        if (clash) {
+          throw new HttpError(400, `Nama "${allowedData.name}" sudah dipakai tamu lain. Tambahkan penanda agar tidak tertukar saat check-in.`);
+        }
+      }
+      return tx.guest.update({ where: { id }, data: allowedData });
     });
 
     return NextResponse.json(guest);
   } catch (err) {
-    logger.error("ClientGuest", "Gagal memperbarui tamu", err);
-    return NextResponse.json({ error: "Gagal memperbarui data tamu." }, { status: 500 });
+    return routeError("ClientGuest", err, "Gagal memperbarui data tamu.");
   }
 }
 

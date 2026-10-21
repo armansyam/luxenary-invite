@@ -375,7 +375,9 @@ describe.skipIf(!IS_TEST_DB)("unggah musik oleh admin", () => {
   it("lagu baru disimpan di bawah /uploads (rute dinamis), bukan public/music yang hanya dipindai saat server start", async () => {
     sessionUser = { id: "admin-vitest", email: "admin@test.local", role: "SUPER_ADMIN", isAdmin: true, permissions: [] };
     const form = new FormData();
-    form.append("file", new File([new Uint8Array(Buffer.from("ID3 uji"))], "uji.mp3", { type: "audio/mpeg" }));
+    // Rute menilai isi berkas (sejak 21 Okt 2026), jadi dipakai potongan MP3 asli, bukan teks berawalan "ID3".
+    const mp3 = fs.readFileSync(path.join(process.cwd(), "public", "music", "bermuara.mp3")).subarray(0, 64 * 1024);
+    form.append("file", new File([new Uint8Array(mp3)], "uji.mp3", { type: "audio/mpeg" }));
     form.append("title", `${RUN} Lagu Uji`);
     const res = await uploadMusic(new NextRequest("http://localhost/api/admin/music", { method: "POST", body: form }));
     const json = await res.json();

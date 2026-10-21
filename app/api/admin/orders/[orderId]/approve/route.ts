@@ -39,10 +39,13 @@ export async function POST(
       }, { status: 400 });
     }
 
-    // FIX #2: Untuk order Transfer Manual, wajib ada bukti transfer sebelum dikonfirmasi
-    if (order.paymentMethod === "MANUAL_TRANSFER" && !order.proofImageUrl) {
+    // Konfirmasi admin hanya untuk order berbukti transfer (unggah bukti menjadikan order MANUAL_TRANSFER). Order
+    // gateway tanpa bukti dilunasi oleh konfirmasi gateway; menyetujuinya di sini mengaktifkan paket yang belum dibayar.
+    if (!order.proofImageUrl) {
       return NextResponse.json({
-        error: "Bukti transfer belum diunggah oleh klien. Konfirmasi hanya bisa dilakukan setelah bukti struk diterima.",
+        error: order.paymentMethod === "MANUAL_TRANSFER"
+          ? "Bukti transfer belum diunggah oleh klien. Konfirmasi hanya bisa dilakukan setelah bukti struk diterima."
+          : "Order ini dibayar lewat payment gateway dan belum ada bukti transfer. Status lunas mengikuti konfirmasi gateway.",
       }, { status: 400 });
     }
 

@@ -4,6 +4,8 @@ import { hasAdminPermission } from "@/lib/adminPermissions";
 import { getPrimaryEventDate } from "@/lib/lifecycleDates";
 import { cleanGuestName, cleanGuestTextFields, guestQuotaFrom } from "@/lib/guestInput";
 import { routeError } from "@/lib/routeError";
+import { readJsonBody } from "@/lib/requestBody";
+import { withGuestNameLock } from "@/lib/guestNameLock";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 
@@ -14,8 +16,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
-    const { invitationId, guests } = body;
+    const body = await readJsonBody(req);
+    const { invitationId, guests } = body ?? {};
 
     if (!invitationId || !Array.isArray(guests) || guests.length === 0) {
       return NextResponse.json({ error: "Data tamu tidak valid atau kosong" }, { status: 400 });
@@ -59,22 +61,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Baris ke-${invalidRow + 1} tidak valid: nama harus teks maksimal 100 karakter.` }, { status: 400 });
     }
 
-    const existing = await prisma.guest.findMany({ where: { invitationId }, select: { name: true } });
-    const takenNames = new Set(existing.map((g) => g.name.trim().toLowerCase()));
-    const skippedNames: string[] = [];
-    const uniqueGuests = guests.filter((g: any) => {
-      const label = cleanGuestName(g.name) || "Tamu Undangan";
-      const key = label.toLowerCase();
-      if (takenNames.has(key)) {
-        skippedNames.push(label);
-        return false;
-      }
-      takenNames.add(key);
-      return true;
-    });
     const defaultSessionInfo = invitation.eventType === "WEDDING" ? "Akad & Resepsi" : null;
 
-    const createData = uniqueGuests.map((g: any) => {
+    const rows = guests.map((g: any) => {
       const cleanName = cleanGuestName(g.name) || "Tamu Undangan";
       const slug = cleanName
         .toLowerCase()
@@ -99,9 +88,20 @@ export async function POST(req: NextRequest) {
       };
     });
 
-    // Execute bulk insert
-    const result = await prisma.guest.createMany({
-      data: createData,
+    const skippedNames: string[] = [];
+    const result = await withGuestNameLock(invitationId, async (tx) => {
+      const existing = await tx.guest.findMany({ where: { invitationId }, select: { name: true } });
+      const takenNames = new Set(existing.map((g) => g.name.trim().toLowerCase()));
+      const uniqueRows = rows.filter((row) => {
+        const key = row.name.toLowerCase();
+        if (takenNames.has(key)) {
+          skippedNames.push(row.name);
+          return false;
+        }
+        takenNames.add(key);
+        return true;
+      });
+      return tx.guest.createMany({ data: uniqueRows });
     });
 
     return NextResponse.json({

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { CommissionType, DiscountType } from "@prisma/client";
 import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
 import { HttpError, routeError } from "@/lib/routeError";
+import { readJsonBody } from "@/lib/requestBody";
 
 export const dynamic = "force-dynamic";
 
@@ -100,7 +101,7 @@ export async function POST(req: NextRequest) {
   const { session } = guard;
 
   try {
-    const body = await req.json();
+    const body = (await readJsonBody(req)) ?? {};
     const { action } = body;
 
     if (!action) {

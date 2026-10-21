@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { adminActorId, requireAdminModule, requireSuperAdmin } from "@/lib/adminAuth";
 import { wibMonthStart } from "@/lib/financePeriods";
 import { routeError } from "@/lib/routeError";
+import { readJsonBody } from "@/lib/requestBody";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
     if (!guard.ok) return guard.response;
     const session = guard.session;
 
-    const body = await req.json();
+    const body = (await readJsonBody(req)) ?? {};
     const { month, year, notes } = body;
 
     const monthNum = parseInt(month, 10);

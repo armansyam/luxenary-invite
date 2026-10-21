@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { routeError } from "@/lib/routeError";
+import { readJsonBody } from "@/lib/requestBody";
 import { rateLimitDb, getClientIp } from "@/lib/rateLimit";
 import { isReceptionistAuthorized } from "@/lib/receptionistGuard";
 import { parseCheckinPayload } from "@/lib/checkinQr";
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Terlalu banyak permintaan. Silakan tunggu sebentar." }, { status: 429 });
     }
 
-    const { qrToken, invitationId, isCheckIn, token } = await req.json();
+    const { qrToken, invitationId, isCheckIn, token } = (await readJsonBody(req)) ?? {};
 
     if (!qrToken || !invitationId || !token) {
       return NextResponse.json({ error: "Data tidak lengkap" }, { status: 400 });

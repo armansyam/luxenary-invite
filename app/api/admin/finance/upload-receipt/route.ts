@@ -3,6 +3,7 @@ import { fileTypeFromBuffer } from "file-type";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { uploadPrivateFile } from "@/lib/storage";
 import { routeError } from "@/lib/routeError";
+import { readFormBody } from "@/lib/requestBody";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ export async function POST(req: NextRequest) {
     const guard = await requireAdminModule("finance");
     if (!guard.ok) return guard.response;
 
-    const formData = await req.formData();
+    const formData = await readFormBody(req);
     const file = formData.get("file") as File | null;
 
     if (!file) {

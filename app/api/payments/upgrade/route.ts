@@ -5,6 +5,7 @@ import { normalizePlanType } from "@/lib/planUtils";
 import { normalizeCustomDomain } from "@/lib/domainUtils";
 import { expireSupersededOrders } from "@/lib/paymentSession";
 import { routeError } from "@/lib/routeError";
+import { readJsonBody } from "@/lib/requestBody";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
     }
 
     const userId = session.user.id;
-    const { invitationId, targetPlan, requestedDomain } = await req.json();
+    const { invitationId, targetPlan, requestedDomain } = (await readJsonBody(req)) ?? {};
 
     if (!invitationId || !targetPlan) {
       return NextResponse.json({ error: "invitationId dan targetPlan wajib diisi." }, { status: 400 });

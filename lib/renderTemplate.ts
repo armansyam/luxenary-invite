@@ -176,6 +176,29 @@ export const THEME_MAP: Record<string, ThemeEntry> = {
   "prakarsa": { file: "prakarsa.html", eventType: "gathering", style: "modern" },
 };
 
+const THEME_EVENT_FOLDERS: Array<[string, ThemeEntry["eventType"]]> = [
+  ["wedding", "wedding"], ["birthday", "birthday"], ["khitan", "khitan"], ["aqiqah", "aqiqah"],
+  ["wisuda", "wisuda"], ["general", "gathering"], ["gathering", "gathering"],
+];
+const THEME_STYLES: ThemeEntry["style"][] = ["minimalist", "modern", "traditional"];
+
+/**
+ * Tema bawaan terdaftar di THEME_MAP. Tema yang diunggah admin (POST /api/admin/themes) hanya memiliki berkas master
+ * di themes/<acara>/<gaya>/<id>.html, jadi entrinya dibaca dari letak berkas itu.
+ */
+export function resolveThemeEntry(templateName: string): ThemeEntry | undefined {
+  if (Object.prototype.hasOwnProperty.call(THEME_MAP, templateName)) return THEME_MAP[templateName];
+  if (!isSafePathSegment(templateName)) return undefined;
+  for (const [folder, eventType] of THEME_EVENT_FOLDERS) {
+    for (const style of THEME_STYLES) {
+      if (fs.existsSync(path.join(process.cwd(), "themes", folder, style, `${templateName}.html`))) {
+        return { file: `${templateName}.html`, eventType, style };
+      }
+    }
+  }
+  return undefined;
+}
+
 export const LUXENARY_BANNER = `<!--
  _      _   _  __  __  _____   _   _      _     ____   __   __
 | |    | | | | \ \/ / | ____| | \ | |    / \   |  _ \  \ \ / /
@@ -1486,9 +1509,9 @@ export async function renderTemplateFile(
   options?: { editMode?: boolean; invitationId?: string; eventType?: string }
 ): Promise<string> {
 
-  const info = THEME_MAP[templateName];
+  const info = resolveThemeEntry(templateName);
   if (!info) {
-    throw new Error(`[renderTemplate] Tema "${templateName}" tidak terdaftar di THEME_MAP.`);
+    throw new Error(`[renderTemplate] Tema "${templateName}" tidak terdaftar di THEME_MAP dan berkas masternya tidak ditemukan.`);
   }
 
   const eventFolder = info.eventType === "gathering" ? "general" : info.eventType;

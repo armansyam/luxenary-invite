@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
+import { readJsonBody } from "@/lib/requestBody";
 import { prisma } from "@/lib/prisma";
 import fs from "fs";
 import path from "path";
@@ -17,7 +18,7 @@ export async function PATCH(
     if (!guard.ok) return guard.response;
 
     const { id } = await params;
-    const body = await req.json();
+    const body = (await readJsonBody(req)) ?? {};
 
     const existing = await prisma.musicPreset.findUnique({
       where: { id },

@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { routeError } from "@/lib/routeError";
+import { HttpError, routeError } from "@/lib/routeError";
+import { readJsonBody } from "@/lib/requestBody";
+import { withGuestNameLock } from "@/lib/guestNameLock";
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { auth } from "@/auth";
@@ -14,8 +16,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized. Silakan login terlebih dahulu." }, { status: 401 });
     }
 
-    const body = await req.json();
-    const { invitationId, name, phone, category, sessionInfo, guestLimit, tableNumber } = body;
+    const body = await readJsonBody(req);
+    const { invitationId, name, phone, category, sessionInfo, guestLimit, tableNumber } = body ?? {};
 
     if (typeof invitationId !== "string" || !invitationId || !cleanGuestName(name)) {
       return NextResponse.json({ error: "invitationId dan nama tamu wajib diisi (nama maksimal 100 karakter)." }, { status: 400 });
@@ -49,31 +51,29 @@ export async function POST(req: Request) {
 
     // Duplicate Name Validation: QR, RSVP, dan resepsionis mencocokkan nama tanpa membedakan huruf besar/kecil.
     const trimmedName = cleanGuestName(name)!;
-    const existingGuest = await prisma.guest.findFirst({
-      where: {
-        invitationId,
-        name: { equals: trimmedName, mode: "insensitive" },
-      },
-    });
+    const guest = await withGuestNameLock(invitationId, async (tx) => {
+      const existingGuest = await tx.guest.findFirst({
+        where: {
+          invitationId,
+          name: { equals: trimmedName, mode: "insensitive" },
+        },
+        select: { id: true },
+      });
+      if (existingGuest) {
+        throw new HttpError(400, `Nama "${trimmedName}" sudah ada di daftar. Harap tambahkan penanda khusus (misal: "${trimmedName} VIP" atau "${trimmedName} Keluarga") agar tidak tertukar.`);
+      }
 
-    if (existingGuest) {
-      return NextResponse.json(
-        { error: `Nama "${trimmedName}" sudah ada di daftar. Harap tambahkan penanda khusus (misal: "${trimmedName} VIP" atau "${trimmedName} Keluarga") agar tidak tertukar.` },
-        { status: 400 }
-      );
-    }
-
-    const slug = trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + Date.now().toString(36);
-
-    const guest = await prisma.guest.create({
-      data: {
-        invitationId,
-        name: trimmedName,
-        slug,
-        ...cleanGuestTextFields({ phone, category, sessionInfo, tableNumber }),
-        guestQuota: guestQuotaFrom(guestLimit, 1),
-        qrToken: randomUUID(),
-      },
+      const slug = trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + randomUUID().slice(0, 8);
+      return tx.guest.create({
+        data: {
+          invitationId,
+          name: trimmedName,
+          slug,
+          ...cleanGuestTextFields({ phone, category, sessionInfo, tableNumber }),
+          guestQuota: guestQuotaFrom(guestLimit, 1),
+          qrToken: randomUUID(),
+        },
+      });
     });
 
     return NextResponse.json(guest);

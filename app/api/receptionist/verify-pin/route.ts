@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { routeError } from "@/lib/routeError";
+import { readJsonBody } from "@/lib/requestBody";
 import { verifyPin } from "@/lib/pinEncryption";
 import { getClientIp, isRateLimitExhausted, rateLimitDb } from "@/lib/rateLimit";
 import { generateReceptionistToken } from "@/lib/receptionistAuth";
@@ -12,7 +13,7 @@ const PIN_FAILURES_PER_INVITATION = 30;
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req);
-    const { invitationId, pin } = await req.json();
+    const { invitationId, pin } = (await readJsonBody(req)) ?? {};
 
     if (typeof invitationId !== "string" || typeof pin !== "string" || !invitationId || !pin) {
       return NextResponse.json({ error: "Data tidak lengkap" }, { status: 400 });

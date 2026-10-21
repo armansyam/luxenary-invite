@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
+import { readJsonBody } from "@/lib/requestBody";
 import { MIN_ADMIN_PASSWORD_LENGTH } from "@/lib/adminCredentials";
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> | { id: string } }) {
@@ -16,7 +17,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const id = resolvedParams?.id;
     if (!id) return NextResponse.json({ error: "ID wajib disertakan." }, { status: 400 });
 
-    const { name, email, username, role: newRole, password, permissions } = await req.json();
+    const { name, email, username, role: newRole, password, permissions } = (await readJsonBody(req)) ?? {};
 
     const existing = await prisma.admin.findUnique({ where: { id } });
     if (!existing) {

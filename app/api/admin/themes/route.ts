@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
+import { readFormBody, readJsonBody } from "@/lib/requestBody";
 import { removeIfExists } from "@/lib/fsSafe";
 import { EventType } from "@prisma/client";
 
@@ -73,7 +74,7 @@ export async function POST(req: NextRequest) {
 
     const contentType = req.headers.get("content-type") || "";
     if (contentType.includes("multipart/form-data")) {
-      const formData = await req.formData();
+      const formData = await readFormBody(req);
       id = (formData.get("id") as string) || "";
       name = (formData.get("name") as string) || "";
       category = (formData.get("category") as string) || "modern";
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest) {
         file = rawFile as File;
       }
     } else {
-      const body = await req.json();
+      const body = (await readJsonBody(req)) ?? {};
       id = body.id || "";
       name = body.name || "";
       category = body.category || "modern";
@@ -201,7 +202,7 @@ export async function PUT(req: NextRequest) {
 
     const contentType = req.headers.get("content-type") || "";
     if (contentType.includes("multipart/form-data")) {
-      const formData = await req.formData();
+      const formData = await readFormBody(req);
       id = (formData.get("id") as string) || "";
       if (formData.has("name")) name = (formData.get("name") as string) || "";
       if (formData.has("category")) category = (formData.get("category") as string) || "";
@@ -215,7 +216,7 @@ export async function PUT(req: NextRequest) {
         file = rawFile as File;
       }
     } else {
-      const body = await req.json();
+      const body = (await readJsonBody(req)) ?? {};
       id = body.id || "";
       name = body.name;
       category = body.category;
