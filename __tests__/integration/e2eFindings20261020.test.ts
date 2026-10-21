@@ -141,6 +141,34 @@ describe.skipIf(!IS_TEST_DB)("daftar ucapan tanpa batas IP", () => {
   });
 });
 
+describe.skipIf(!IS_TEST_DB)("Kamera Momen tanpa batas IP", () => {
+  const PNG_1PX = Buffer.from("89504E470D0A1A0A0000000D49484452000000010000000108060000001F15C4890000000D4944415478DA63F8FFFF3F0005FE02FEA7D605A40000000049454E44AE426082", "hex");
+  const upload = (invitationId: string, sender: string) => {
+    const form = new FormData();
+    form.append("invitationId", invitationId);
+    form.append("senderName", "Tamu");
+    form.append("senderEmail", sender);
+    form.append("file", new Blob([PNG_1PX], { type: "image/png" }), "a.png");
+    return new NextRequest("http://localhost/api/public/memories/upload", { method: "POST", body: form, headers: { "cf-connecting-ip": "203.0.113.90" } });
+  };
+
+  it("30 tamu berbeda dari satu Wi-Fi tidak ditolak 429; perangkat yang sama dibatasi 10 per menit", async () => {
+    const { POST } = await import("@/app/api/public/memories/upload/route");
+    await pool.query("DELETE FROM rate_limit_counters WHERE key LIKE 'memories_upload:%'");
+    const inv = await makeInvitation("WEDDING", "kalandra", "PUBLISHED", { groom: { name: "Arya", nickname: "Arya" }, bride: { name: "Nadia", nickname: "Nadia" } });
+
+    const many: number[] = [];
+    for (let i = 0; i < 30; i++) many.push((await POST(upload(inv.id, `gst_wifi_${i}`))).status);
+    expect(many.filter((s) => s === 429)).toEqual([]);
+
+    const same: number[] = [];
+    for (let i = 0; i < 12; i++) same.push((await POST(upload(inv.id, "gst_satu_perangkat"))).status);
+    expect(same.slice(0, 10).every((s) => s !== 429)).toBe(true);
+    expect(same.slice(10)).toEqual([429, 429]);
+    await pool.query("DELETE FROM rate_limit_counters WHERE key LIKE 'memories_upload:%'");
+  });
+});
+
 describe("master tema: RSVP terkirim dan token tidak di dalam komentar", () => {
   const masters = fs.readdirSync(path.join(process.cwd(), "themes"), { recursive: true, withFileTypes: true })
     .filter((d) => d.isFile() && d.name.endsWith(".html") && !d.parentPath.includes("_blueprints"))
@@ -164,6 +192,15 @@ describe("master tema: RSVP terkirim dan token tidak di dalam komentar", () => {
   it("tidak ada {{token}} di dalam komentar HTML (token diganti HTML ber-komentar sehingga struktur seksi rusak)", () => {
     const offenders = masters.filter((file) => /<!--[^>]*\{\{\s*[\w.]+\s*\}\}[^>]*-->/.test(fs.readFileSync(file, "utf8"))).map((f) => path.basename(f));
     expect(offenders).toEqual([]);
+  });
+
+  it("kartu Kado Digital universal: nama bank dan tombol Salin tidak memakai var(--primary) murni (kontras 1,9:1 di sinergi)", () => {
+    const src = fs.readFileSync(path.join(process.cwd(), "lib/themeEngine.ts"), "utf8");
+    const start = src.indexOf("function buildUniversalGiftSection(");
+    const block = src.slice(start, src.indexOf("\n}\n", start));
+    expect(start).toBeGreaterThan(-1);
+    expect(block).not.toMatch(/[;"]\s*color:\s*var\(--primary\)/);
+    expect(block.match(/color: color-mix\(in srgb, var\(--primary\) 30%, var\(--text-main\)\)/g)).toHaveLength(2);
   });
 });
 

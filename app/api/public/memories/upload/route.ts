@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getPublicPlatformSettings, hasPlanCapability, getPlanMemoriesQuota } from "@/lib/settings";
 import crypto from "crypto";
 import { uploadFile, deleteFile } from "@/lib/storage";
-import { rateLimitDb, getClientIp } from "@/lib/rateLimit";
+import { rateLimitDb } from "@/lib/rateLimit";
 import { exceedsDeclaredBodySize } from "@/lib/requestLimits";
 import { parseFeatureSettings } from "@/lib/featureSettings";
 import { publishNewMemory } from "@/lib/sseEmitter";
@@ -48,12 +48,6 @@ function detectMimeFromMagicBytes(buffer: Buffer): { mimeType: string; ext: stri
 
 export async function POST(req: NextRequest) {
   try {
-    const ip = getClientIp(req);
-    // Limit: 15 request per menit (60000ms) untuk mengakomodasi jaringan WiFi yang sama (cross-process PM2 safe)
-    if (!(await rateLimitDb(`memories_upload:${ip}`, 15, 60000))) {
-      return NextResponse.json({ error: "Terlalu banyak permintaan unggahan. Silakan coba lagi sebentar." }, { status: 429 });
-    }
-
     // Foto dibatasi 5 MB; ruang tambahan untuk overhead multipart/base64 sebelum body dibaca ke memori.
     if (exceedsDeclaredBodySize(req, 8 * 1024 * 1024)) {
       return NextResponse.json({ error: "Ukuran unggahan terlalu besar." }, { status: 413 });
@@ -106,6 +100,15 @@ export async function POST(req: NextRequest) {
 
     if (!invitationId || !buffer || buffer.length === 0) {
       return NextResponse.json({ error: "Data tidak lengkap atau foto belum dipilih." }, { status: 400 });
+    }
+
+    // Kamera Momen dipakai di lokasi acara, tempat tamu berbagi Wi-Fi atau IP operator seluler: batas per IP menolak tamu
+    // sah. Batasnya per undangan dan per tamu (token kamera / email); jatah roll per tamu dan kuota acara tetap berlaku.
+    if (!(await rateLimitDb(`memories_upload:inv:${invitationId}`, 180, 60_000))) {
+      return NextResponse.json({ error: "Banyak tamu sedang mengunggah. Silakan coba lagi sebentar." }, { status: 429 });
+    }
+    if (!(await rateLimitDb(`memories_upload:sender:${invitationId}:${senderEmail.toLowerCase()}`, 10, 60_000))) {
+      return NextResponse.json({ error: "Terlalu banyak unggahan dari perangkat ini. Silakan coba lagi sebentar." }, { status: 429 });
     }
 
     const invitation = await prisma.invitation.findUnique({

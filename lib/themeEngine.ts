@@ -2336,10 +2336,10 @@ function buildUniversalGiftSection(
   if (!showGift || !bankAccounts || bankAccounts.length === 0) return "";
   const bankCardsHtml = bankAccounts.map((b: any) => `
     <div style="background: var(--card-bg); border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent); border-radius: var(--radius-md, 14px); padding: 18px; text-align: center;">
-      <span style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--primary); letter-spacing: 1px;">${escapeHtml(b.bank || "Bank")}</span>
+      <span style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary) 30%, var(--text-main)); letter-spacing: 1px;">${escapeHtml(b.bank || "Bank")}</span>
       <div style="font-family: monospace; font-size: 18px; font-weight: 700; color: var(--text-main); margin: 8px 0; letter-spacing: 1px;">${escapeHtml(b.number || b.accountNumber || "")}</div>
       <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">a.n ${escapeHtml(b.name || b.accountName || fallbackOwnerName)}</p>
-      <button type="button" data-copy="${escapeHtml(b.number || b.accountNumber || "")}" onclick="navigator.clipboard.writeText(this.dataset.copy).then(function(){alert('Nomor rekening berhasil disalin!');})" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 20px; border-radius: var(--radius-full, 9999px); background: color-mix(in srgb, var(--primary) 15%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent); color: var(--primary); font-size: 12px; font-weight: 700; cursor: pointer;">Salin No. Rekening</button>
+      <button type="button" data-copy="${escapeHtml(b.number || b.accountNumber || "")}" onclick="navigator.clipboard.writeText(this.dataset.copy).then(function(){alert('Nomor rekening berhasil disalin!');})" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 20px; border-radius: var(--radius-full, 9999px); background: color-mix(in srgb, var(--primary) 15%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent); color: color-mix(in srgb, var(--primary) 30%, var(--text-main)); font-size: 12px; font-weight: 700; cursor: pointer;">Salin No. Rekening</button>
     </div>
   `).join("");
 
