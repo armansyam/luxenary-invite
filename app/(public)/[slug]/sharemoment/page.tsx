@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import GuestMomentClient from "@/app/components/features/GuestMomentClient";
 import { hasPlanCapability, getPlanMemoriesQuota } from "@/lib/settings";
+import { invitationHomePath } from "@/lib/serverDomainUtils";
 import { getMemoriesActiveSchedule } from "@/lib/domainUtils";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 import { parseFeatureSettings } from "@/lib/featureSettings";
@@ -55,7 +56,7 @@ export default async function FreeGuestMemoriesStandalonePage({ params, searchPa
   // Cek kapabilitas guest_memories secara dinamis berdasarkan konfigurasi admin
   const canAccessMemories = await hasPlanCapability(invitation.order?.planType, "guest_memories");
   if (!canAccessMemories) {
-    redirect(`/${slug}`);
+    redirect(await invitationHomePath(invitation));
   }
 
   const coupleName = resolveInvitationDisplayName(invitation);

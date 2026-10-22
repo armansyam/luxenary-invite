@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { hasPlanCapability } from "@/lib/settings";
+import { invitationHomePath } from "@/lib/serverDomainUtils";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 import { jsonForInlineScript } from "@/lib/safeJson";
 import { parseFeatureSettings } from "@/lib/featureSettings";
@@ -52,15 +53,16 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
   }
 
   // Cek kapabilitas guest_memories secara dinamis berdasarkan konfigurasi admin
+  const homePath = await invitationHomePath(invitation);
   const canAccessMemories = await hasPlanCapability(invitation.order?.planType, "guest_memories");
   if (!canAccessMemories) {
-    redirect(`/${slug}`);
+    redirect(homePath);
   }
 
   const memories: any[] = invitation.guestMemories || [];
   const coupleName = resolveInvitationDisplayName(invitation);
-  const invitationUrl = `/${slug}?view=invitation`;
-  const shareMomentUrl = `/${slug}/sharemoment`;
+  const invitationUrl = `${homePath}?view=invitation`;
+  const shareMomentUrl = homePath === "/" ? "/sharemoment" : `/${slug}/sharemoment`;
 
   // ── 1. PARSE FEATURE SETTINGS & DELAYED REVEAL STATUS ──
   const fs = parseFeatureSettings(invitation.featureSettings);

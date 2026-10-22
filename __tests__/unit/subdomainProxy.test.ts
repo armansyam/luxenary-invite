@@ -64,3 +64,23 @@ describe("proxy: batas pengalihan tetap", () => {
     expect(res.headers.get("x-middleware-next")).toBe("1");
   });
 });
+
+describe("proxy: tautan tamu bentuk /Nama di host subdomain", () => {
+  // Skrip undangan membaca nama tamu dari location.search; rewrite internal membuat sampul tampil tanpa nama.
+  it("/Nama dialihkan ke /?to=Nama di host yang sama (spasi ter-decode, query lain ikut)", async () => {
+    const res = await run("bagas-laras.localhost:3000", "/Budi%20Santoso?autoplay=1");
+    expect(res.status).toBe(307);
+    const loc = new URL(res.headers.get("location")!);
+    expect(loc.host).toBe("bagas-laras.localhost:3000");
+    expect(loc.pathname).toBe("/");
+    expect(loc.searchParams.get("to")).toBe("Budi Santoso");
+    expect(loc.searchParams.get("autoplay")).toBe("1");
+  });
+
+  it("/v=Nama dialihkan ke /?v=Nama; persen-encoding rusak dipakai apa adanya", async () => {
+    const v = new URL((await run("bagas-laras.localhost:3000", "/v=Rina")).headers.get("location")!);
+    expect(v.searchParams.get("v")).toBe("Rina");
+    const broken = new URL((await run("bagas-laras.localhost:3000", "/Diskon%50%")).headers.get("location")!);
+    expect(broken.searchParams.get("to")).toBe("Diskon%50%");
+  });
+});

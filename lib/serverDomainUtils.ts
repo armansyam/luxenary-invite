@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { getApexRootDomain, isCustomDomainHost } from "@/lib/domainUtils";
 
 /**
  * Mendeteksi URL origin aplikasi secara dinamis dari incoming request headers.
@@ -81,4 +82,19 @@ export async function getDynamicServerRootDomain(defaultFallback = "localhost:30
 
   const envRoot = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "";
   return envRoot.replace(/^https?:\/\//, "").replace(/\/$/, "") || defaultFallback;
+}
+
+/**
+ * Alamat beranda undangan untuk redirect dari halaman turunannya (/memories, /sharemoment). Di host subdomain atau
+ * custom domain undangan itu sendiri berandanya "/": "/<slug>" di host tersebut dibaca proxy sebagai tautan tamu
+ * bernama <slug>.
+ */
+export async function invitationHomePath(invitation: { invitationSlug: string; subdomain: string | null; customDomain: string | null }): Promise<string> {
+  const hostHeader = (await headers()).get("host");
+  const host = (hostHeader || "").split(":")[0].toLowerCase();
+  // Dicocokkan persis dengan <subdomain>.<apex>: awalan saja juga cocok dengan apex itu sendiri bila subdomain klien
+  // sama dengan label pertama domain utama (mis. subdomain "luxenary" di luxenary.id).
+  const apex = getApexRootDomain().split(":")[0].toLowerCase();
+  const onSubdomain = !!invitation.subdomain && host === `${invitation.subdomain.toLowerCase()}.${apex}`;
+  return onSubdomain || isCustomDomainHost(hostHeader, invitation.customDomain) ? "/" : `/${invitation.invitationSlug}`;
 }

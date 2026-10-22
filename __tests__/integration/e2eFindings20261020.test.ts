@@ -58,6 +58,16 @@ describe.skipIf(!IS_TEST_DB)("mode galeri dialihkan di host yang sama", () => {
     const onApex = await subdomainRoute(new NextRequest(`http://localhost:3200/s/${sub}`, { headers: { host: "localhost:3200" } }), params);
     expect(onApex.status).toBe(307);
     expect(onApex.headers.get("location")).toBe(`/s/${sub}/memories`);
+
+    // Subdomain klien sama dengan label pertama domain utama (mis. "luxenary" di luxenary.id): apex bukan host undangan.
+    const prevRoot = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
+    process.env.NEXT_PUBLIC_ROOT_DOMAIN = `${sub}.test`;
+    try {
+      const sameLabel = await subdomainRoute(new NextRequest(`http://${sub}.test/s/${sub}`, { headers: { host: `${sub}.test` } }), params);
+      expect(sameLabel.headers.get("location")).toBe(`/s/${sub}/memories`);
+    } finally {
+      process.env.NEXT_PUBLIC_ROOT_DOMAIN = prevRoot;
+    }
   });
 });
 

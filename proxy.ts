@@ -22,6 +22,25 @@ const CACHE_TTL_MS = 5 * 60 * 1000; // 5 menit
 const INTERNAL_BASE_URL = `http://127.0.0.1:${process.env.PORT || "3000"}`;
 const CACHE_MAX_ENTRIES = 2000;
 
+/**
+ * Tautan tamu bentuk /Nama atau /v=Nama di subdomain atau custom domain: nama dipindah ke ?to= / ?v= di URL peramban.
+ * Skrip runtime dan master tema membaca nama tamu dari location.search, jadi rewrite internal (URL peramban tetap
+ * /Nama) membuat undangan tampil tanpa nama tamu.
+ */
+function guestPathRedirect(req: { nextUrl: URL }, host: string, segment: string) {
+  let name = segment;
+  try {
+    name = decodeURIComponent(segment);
+  } catch {
+    // Persen-encoding rusak (mis. "50%"): segmen dipakai apa adanya sebagai nama.
+  }
+  const target = new URL("/", `${req.nextUrl.protocol}//${host}`);
+  target.search = req.nextUrl.search;
+  if (name.startsWith("v=")) target.searchParams.set("v", name.slice(2));
+  else target.searchParams.set("to", name);
+  return NextResponse.redirect(target, 307);
+}
+
 async function resolveCustomDomain(host: string): Promise<CustomDomainResolution | null> {
   const now = Date.now();
 
@@ -219,15 +238,7 @@ export const proxy = auth(async (req) => {
       // Dynamic Path Routing for Guest Invitation (e.g. /v=Budi or /Sutejo)
       const segments = pathname.split('/').filter(Boolean);
       if (segments.length === 1) {
-        const guestParam = segments[0];
-        const rewriteUrl = new URL(`/s/${subdomain}`, req.url);
-        rewriteUrl.search = req.nextUrl.search;
-        if (guestParam.startsWith('v=')) {
-          rewriteUrl.searchParams.set('v', guestParam.slice(2));
-        } else {
-          rewriteUrl.searchParams.set('to', guestParam);
-        }
-        return NextResponse.rewrite(rewriteUrl);
+        return guestPathRedirect(req, host, segments[0]);
       }
 
       // HTML terbit dan halaman /s/<sub> menautkan ke /s/<sub>/..., bentuk yang sah di apex. Di host subdomain undangan
@@ -291,9 +302,7 @@ export const proxy = auth(async (req) => {
           if (isFinished && !viewInvitation) {
             return NextResponse.rewrite(new URL(`/${slug}/memories${req.nextUrl.search}`, req.url));
           }
-          const rewriteUrl = new URL(`/${slug}`, req.url);
-          rewriteUrl.searchParams.set('to', segments[0]);
-          return NextResponse.rewrite(rewriteUrl);
+          return guestPathRedirect(req, host, segments[0]);
         }
       }
     } catch {

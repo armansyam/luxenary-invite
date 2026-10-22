@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { isSubdomainExpired } from "@/lib/domainUtils";
+import { getApexRootDomain, isSubdomainExpired } from "@/lib/domainUtils";
 import { getPublishedHtml, buildAndSavePublishedHtml } from "@/lib/staticPublisher";
 import { composeTemplateData } from "@/lib/themeEngine";
 import { renderTemplateFile } from "@/lib/renderTemplate";
@@ -126,7 +126,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
         // dari req.url membawa tamu di sub.domain ke /memories milik apex (halaman demo platform). Browser menyelesaikan
         // path relatif terhadap alamat yang sedang dibuka: host subdomain -> /memories, bentuk apex /s/<sub> -> /s/<sub>/memories.
         const host = (req.headers.get("host") || "").split(":")[0].toLowerCase();
-        const onInvitationHost = host.startsWith(`${subdomain.toLowerCase()}.`);
+        const onInvitationHost = host === `${subdomain.toLowerCase()}.${getApexRootDomain().split(":")[0].toLowerCase()}`;
         const target = `${onInvitationHost ? "" : `/s/${subdomain}`}/memories${req.nextUrl.search}`;
         return new NextResponse(null, { status: 307, headers: { Location: target } });
       }
@@ -170,7 +170,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
   };
 
   if (invitation.status === "PUBLISHED" && !isPreview) {
-    // Edge cache 1 jam: tautan tamu (/Nama, ?to=Nama) adalah kunci cache terpisah yang tidak ikut terhapus purge URL
+    // Edge cache 1 jam: tautan tamu (?to=Nama; bentuk /Nama dialihkan proxy ke sana) adalah kunci cache terpisah yang tidak ikut terhapus purge URL
     // dasar, jadi masa cache ini sekaligus batas lama undangan yang diturunkan/diubah masih tampil di tautan tamu.
     responseHeaders["Cache-Control"] = "public, max-age=60, s-maxage=3600, stale-while-revalidate=300";
   } else {
