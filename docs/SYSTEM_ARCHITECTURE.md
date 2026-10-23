@@ -2921,7 +2921,7 @@ Untuk menjamin kesiapan industri (*enterprise-grade / production-ready*), sistem
 4. **Testing Infrastructure Vitest (56 Tests):**
    - Setup: `vitest.config.ts`, `__tests__/setup.ts`, Prisma mock global.
    - Unit tests: `pinEncryption`, `receptionistAuth`, `renderTemplate`, `settings` (termasuk `hasPlanCapability` null guard).
-   - API integration tests: `invitations`, `orders`, `rsvp` menggunakan `supertest` + `next-test-api-route-handler`.
+   - API integration tests: handler rute (`invitations`, `orders`, `rsvp`, dst.) dipanggil langsung dari vitest dengan `NextRequest` terhadap DB `luxenary_test`.
    - CI workflow: `.github/workflows/ci.yml` dengan PostgreSQL service container.
    - Hasil: **56/56 PASS**, TypeScript gate Exit Code 0.
 
