@@ -158,6 +158,7 @@ model Invitation {
 
   @@index([userId])
   @@index([status])
+  @@index([themeId])
   @@map("invitations")
 }
 
