@@ -10,7 +10,7 @@ interface Props {
   onClose: () => void;
 }
 
-function Slider({ label, value, min, max, step = 0.5, suffix = "", onChange }: { label: string; value: number; min: number; max: number; step?: number; suffix?: string; onChange: (v: number, final: boolean) => void }) {
+export function Slider({ label, value, min, max, step = 0.5, suffix = "", onChange }: { label: string; value: number; min: number; max: number; step?: number; suffix?: string; onChange: (v: number, final: boolean) => void }) {
   return (
     <label className="block">
       <span className="flex items-center justify-between text-[11.5px] font-semibold text-stone-600">

@@ -1,7 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
-import { ornamentStyle, type BuilderOrnament, type OrnamentSection, ORNAMENT_SECTIONS } from "@/lib/themeBuilder/spec";
+import {
+  BLOCK_LIMITS,
+  BUILDER_BLOCKS,
+  DEFAULT_BLOCK_PROPS,
+  ORNAMENT_SECTIONS,
+  ornamentStyle,
+  type BlockProps,
+  type BuilderBlockId,
+  type BuilderBlocks,
+  type BuilderOrnament,
+  type OrnamentSection,
+} from "@/lib/themeBuilder/spec";
 
 export type PreviewDevice = "mobile" | "small" | "desktop";
 
@@ -30,6 +41,10 @@ interface Props {
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   onOrnamentChange: (id: string, patch: Partial<BuilderOrnament>, final: boolean) => void;
+  blocks: BuilderBlocks;
+  selectedBlock: BuilderBlockId | null;
+  onSelectBlock: (id: BuilderBlockId | null) => void;
+  onBlockChange: (id: BuilderBlockId, patch: Partial<BlockProps>, final: boolean) => void;
   onViewSection: (section: OrnamentSection) => void;
   onKey: (e: KeyboardEvent) => boolean;
 }
@@ -42,6 +57,9 @@ const BUILDER_CHROME_CSS = `
   html.lux-b-edit .lux-orn { pointer-events: auto !important; cursor: grab; z-index: 60 !important; }
   html.lux-b-edit .lux-orn:hover { outline: 1px dashed #d97706; outline-offset: 2px; }
   html.lux-b-edit .lux-orn.lux-b-sel { outline: 2px solid #d97706; outline-offset: 2px; }
+  html.lux-b-edit [data-lux-block] { cursor: grab; }
+  html.lux-b-edit [data-lux-block]:hover { outline: 1px dashed #2563eb; outline-offset: 3px; }
+  html.lux-b-edit [data-lux-block].lux-b-bsel { outline: 2px solid #2563eb; outline-offset: 3px; }
   html.lux-b-dragging, html.lux-b-dragging * { cursor: grabbing !important; user-select: none !important; }
   .lux-b-handle, .lux-b-rot { position: absolute; z-index: 2; pointer-events: auto; box-sizing: border-box; }
   .lux-b-handle { right: -8px; bottom: -8px; width: 16px; height: 16px; border-radius: 50%; background: #ffffff; border: 2px solid #d97706; cursor: nwse-resize; }
@@ -53,6 +71,7 @@ const BUILDER_CHROME_CSS = `
 const SNAP_THRESHOLD = 1.2;
 
 type DragState =
+  | { kind: "block"; id: BuilderBlockId; startX: number; startY: number; baseX: number; baseY: number; w: number; h: number }
   | { kind: "move"; id: string; section: HTMLElement; offsetX: number; offsetY: number; moved: boolean }
   | { kind: "resize"; id: string; section: HTMLElement }
   | { kind: "rotate"; id: string; el: HTMLElement; startAngle: number; startRotate: number };
@@ -63,7 +82,7 @@ const pointerAngle = (el: HTMLElement, clientX: number, clientY: number) => {
 };
 
 export default function BuilderPreview(props: Props) {
-  const { html, loading, device, editOrnaments, playAnimations, replayNonce, jump, ornaments, selectedId } = props;
+  const { html, loading, device, editOrnaments, playAnimations, replayNonce, jump, ornaments, selectedId, blocks, selectedBlock } = props;
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -178,7 +197,19 @@ export default function BuilderPreview(props: Props) {
       const target = e.target as HTMLElement;
       const orn = target.closest(".lux-orn") as HTMLElement | null;
       if (!orn) {
+        const blockEl = target.closest("[data-lux-block]") as HTMLElement | null;
+        if (blockEl) {
+          // Klik pada blok memilihnya; seret menggeser dalam persen ukuran blok itu sendiri.
+          e.preventDefault();
+          const id = blockEl.dataset.luxBlock as BuilderBlockId;
+          const current = latest.current.props.blocks[id] ?? DEFAULT_BLOCK_PROPS;
+          latest.current.props.onSelectBlock(id);
+          doc.documentElement.classList.add("lux-b-dragging");
+          drag.current = { kind: "block", id, startX: e.clientX, startY: e.clientY, baseX: current.x, baseY: current.y, w: blockEl.offsetWidth || 1, h: blockEl.offsetHeight || 1 };
+          return;
+        }
         latest.current.props.onSelect(null);
+        latest.current.props.onSelectBlock(null);
         return;
       }
       e.preventDefault();
@@ -202,6 +233,15 @@ export default function BuilderPreview(props: Props) {
     doc.addEventListener("pointermove", (e) => {
       const d = drag.current;
       if (!d) return;
+      if (d.kind === "block") {
+        const clampTo = (v: number, [min, max]: readonly [number, number]) => Math.max(min, Math.min(max, v));
+        // Menempel ke posisi bawaan (0) saat dekat, supaya blok mudah dikembalikan ke tengah alurnya.
+        const snap = (v: number) => (Math.abs(v) < 1 ? 0 : v);
+        const x = snap(clampTo(Math.round((d.baseX + ((e.clientX - d.startX) / d.w) * 100) * 10) / 10, BLOCK_LIMITS.x));
+        const y = snap(clampTo(Math.round((d.baseY + ((e.clientY - d.startY) / d.h) * 100) * 10) / 10, BLOCK_LIMITS.y));
+        latest.current.props.onBlockChange(d.id, { x, y }, false);
+        return;
+      }
       const o = latest.current.ornaments.find((item) => item.id === d.id);
       if (!o) return;
       if (d.kind === "move") {
@@ -229,6 +269,10 @@ export default function BuilderPreview(props: Props) {
       if (!d) return;
       drag.current = null;
       doc.documentElement.classList.remove("lux-b-dragging");
+      if (d.kind === "block") {
+        latest.current.props.onBlockChange(d.id, {}, true);
+        return;
+      }
       if (d.kind !== "rotate") showGuide(d.section, false);
       latest.current.props.onOrnamentChange(d.id, {}, true);
     };
@@ -305,6 +349,28 @@ export default function BuilderPreview(props: Props) {
       el.classList.toggle("is-front", o.layer === "front");
     }
   }, [ornaments, docVersion]);
+
+  useEffect(() => {
+    const doc = getDoc();
+    if (!doc) return;
+    // Selalu menulis nilai eksplisit (termasuk bawaan) agar blok yang dikembalikan ke bawaan tidak tertinggal pada
+    // aturan CSS dari muat terakhir.
+    for (const { id } of BUILDER_BLOCKS) {
+      const el = doc.querySelector(`[data-lux-block="${id}"]`) as HTMLElement | null;
+      if (!el) continue;
+      const p = blocks[id] ?? DEFAULT_BLOCK_PROPS;
+      el.style.setProperty("translate", `${p.x}% ${p.y}%`);
+      el.style.setProperty("rotate", `${p.rotate}deg`);
+      el.style.setProperty("scale", String(p.scale));
+    }
+  }, [blocks, docVersion]);
+
+  useEffect(() => {
+    const doc = getDoc();
+    if (!doc) return;
+    doc.querySelectorAll("[data-lux-block].lux-b-bsel").forEach((n) => n.classList.remove("lux-b-bsel"));
+    if (selectedBlock) doc.querySelector(`[data-lux-block="${selectedBlock}"]`)?.classList.add("lux-b-bsel");
+  }, [selectedBlock, docVersion]);
 
   useEffect(() => {
     getDoc()?.documentElement.classList.toggle("lux-b-edit", editOrnaments);

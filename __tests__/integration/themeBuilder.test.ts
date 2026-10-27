@@ -19,8 +19,9 @@ import { buildDemoInvitation } from "@/lib/demoInvitation";
 import { renderTemplateFile } from "@/lib/renderTemplate";
 import { auditBuilderMaster } from "@/lib/themeBuilder/audit";
 import { builderDefaultMedia, renderBuilderPreview } from "@/lib/themeBuilder/server";
+import { seedSpecFromMaster } from "@/lib/themeBuilder/legacySeed";
 import { compileBuilderMaster, readBuilderBlueprint } from "@/lib/themeBuilder/compile";
-import { VARIANT_GROUPS, defaultBuilderSpec, parseBuilderSpec, paletteChecks, PALETTE_PRESETS, type BuilderSpec } from "@/lib/themeBuilder/spec";
+import { BUILDER_BLOCKS, VARIANT_GROUPS, blockStyle, defaultBuilderSpec, parseBuilderSpec, paletteChecks, PALETTE_PRESETS, type BuilderSpec } from "@/lib/themeBuilder/spec";
 import { GET, POST, PUT, PATCH } from "@/app/api/admin/theme-builder/route";
 import { POST as previewPost } from "@/app/api/admin/theme-builder/preview/route";
 import { POST as assetPost, DELETE as assetDelete } from "@/app/api/admin/theme-builder/assets/route";
@@ -348,5 +349,92 @@ describe("media bawaan di builder", () => {
 
     const demo = await renderBuilderPreview(spec, "kalandra", "demo");
     expect(demo.html).toContain("/demo/kalandra/");
+  });
+});
+
+describe("blok konten dengan properti relatif", () => {
+  const blueprintHtml = fs.readFileSync(BLUEPRINT_FILE, "utf8");
+
+  it("setiap blok terdaftar muncul tepat satu kali di blueprint, dan tidak ada penanda yang tidak terdaftar", () => {
+    const ids = [...blueprintHtml.matchAll(/data-lux-block="([a-z0-9-]+)"/g)].map((m) => m[1]);
+    expect(ids.sort()).toEqual(BUILDER_BLOCKS.map((b) => b.id).sort());
+  });
+
+  it("spesifikasi lama tanpa blocks tetap sah; nilai dijepit; blok tak dikenal dan nilai bawaan dibuang", () => {
+    const { blocks: _omit, ...legacy } = defaultBuilderSpec();
+    const old = parseBuilderSpec(legacy);
+    expect(old.ok && old.spec.blocks).toEqual({});
+
+    const parsed = parseBuilderSpec({
+      ...defaultBuilderSpec(),
+      blocks: {
+        "cover-names": { x: 999, y: -999, scale: 9, rotate: 400 },
+        "opening-photo": { x: 0, y: 0, scale: 1, rotate: 0 },
+        "tidak-ada": { x: 5, y: 5, scale: 1, rotate: 0 },
+        countdown: { x: 10.5, y: 0, scale: 1.2, rotate: -10 },
+      },
+    });
+    expect(parsed.ok && parsed.spec.blocks).toEqual({
+      "cover-names": { x: 60, y: -60, scale: 2, rotate: 180 },
+      countdown: { x: 10.5, y: 0, scale: 1.2, rotate: -10 },
+    });
+    expect(parseBuilderSpec({ ...defaultBuilderSpec(), blocks: { countdown: "x" } }).ok).toBe(false);
+  });
+
+  it("kompilasi menulis translate, rotate, dan scale individual (tidak menimpa transform) dan master tetap lolos audit", () => {
+    const spec = { ...defaultBuilderSpec(), blocks: { "cover-names": { x: 12, y: -4, scale: 1.1, rotate: 3 } } };
+    const html = compileBuilderMaster(spec, blueprintHtml);
+    expect(blockStyle({ x: 12, y: -4, scale: 1.1, rotate: 3 })).toBe("translate:12% -4%;rotate:3deg;scale:1.1;");
+    expect(html).toContain('[data-lux-block="cover-names"]{translate:12% -4%;rotate:3deg;scale:1.1;}');
+    expect(html).not.toMatch(/\[data-lux-block="cover-names"\]\{[^}]*\btransform\s*:/);
+    expect(auditBuilderMaster(html, blueprintHtml)).toEqual([]);
+    expect(compileBuilderMaster(defaultBuilderSpec(), blueprintHtml)).not.toContain("lux-builder-blocks");
+  });
+
+  it("audit menandai master yang kehilangan penanda blok", () => {
+    const html = compileBuilderMaster(defaultBuilderSpec(), blueprintHtml).replace(' data-lux-block="countdown"', "");
+    expect(auditBuilderMaster(html, blueprintHtml).map((i) => i.code)).toEqual(["block"]);
+  });
+});
+
+describe("titik awal dari tema pernikahan lama", () => {
+  const legacyFiles = ["minimalist", "modern", "traditional"].flatMap((style) =>
+    fs.readdirSync(path.join(ROOT, "themes", "wedding", style)).filter((f) => f.endsWith(".html")).map((f) => ({ style, id: f.replace(".html", ""), file: path.join(ROOT, "themes", "wedding", style, f) })),
+  );
+
+  it("setiap master lama menghasilkan spesifikasi yang lolos validasi, dengan warna hanya dari :root", () => {
+    expect(legacyFiles.length).toBeGreaterThan(30);
+    for (const m of legacyFiles) {
+      const html = fs.readFileSync(m.file, "utf8");
+      const seed = seedSpecFromMaster(html);
+      expect(parseBuilderSpec(seed.spec).ok, m.id).toBe(true);
+      const root = html.match(/:root\s*\{([^}]*)\}/)?.[1] ?? "";
+      const primary = root.match(/--primary\s*:\s*(#[0-9a-fA-F]{6})\s*;/)?.[1]?.toLowerCase();
+      if (primary) expect(seed.spec.palette.primary, m.id).toBe(primary);
+      expect(seed.found.length + seed.missing.length).toBe(8);
+    }
+  });
+
+  it("memberi tahu berapa warna tertulis mati di luar :root yang tidak ikut terbawa", () => {
+    const candani = legacyFiles.find((m) => m.id === "candani")!;
+    expect(seedSpecFromMaster(fs.readFileSync(candani.file, "utf8")).hexOutsideRoot).toBeGreaterThan(0);
+  });
+
+  it.skipIf(!IS_TEST_DB)("API: daftar tema lama, titik awal, dan penolakan tema yang bukan tulisan tangan atau tidak ada", async () => {
+    const get = (qs: string) => GET(new Request(`http://localhost/api/admin/theme-builder?${qs}`) as never);
+
+    const list = await (await get("legacy=1")).json();
+    expect(list.themes.map((t: { id: string }) => t.id)).toContain("candani");
+    const rows = await prisma.theme.findMany({ where: { id: { in: list.themes.map((t: { id: string }) => t.id) } }, select: { builderSpec: true, eventType: true } });
+    expect(rows.every((r) => r.builderSpec === null && r.eventType === "WEDDING")).toBe(true);
+
+    const res = await get("from=candani");
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(parseBuilderSpec(body.spec).ok).toBe(true);
+    expect(body.theme).toMatchObject({ id: "", name: "Candani Builder", category: "modern" });
+    expect(body.report.source).toBe("Candani");
+
+    expect((await get("from=tidak-ada-ini")).status).toBe(404);
   });
 });

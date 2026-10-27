@@ -2,8 +2,11 @@ import fs from "fs";
 import path from "path";
 import {
   RADIUS_OPTIONS,
+  blockStyle,
   fontFamily,
   ornamentStyle,
+  type BlockProps,
+  type BuilderBlockId,
   type BuilderEventType,
   type BuilderOrnament,
   type BuilderSpec,
@@ -163,6 +166,14 @@ export function compileBuilderMaster(spec: BuilderSpec, blueprint = readBuilderB
     .join("\n");
   if (variantCss) {
     html = html.replace("</head>", `  <style id="lux-builder-variants">${variantCss}\n  </style>\n</head>`);
+  }
+
+  // Id blok berasal dari daftar tetap dan nilainya angka terjepit, jadi aman disisipkan tanpa escape.
+  const blockRules = (Object.entries(spec.blocks) as Array<[BuilderBlockId, BlockProps]>)
+    .map(([id, props]) => `[data-lux-block="${id}"]{${blockStyle(props)}}`)
+    .join("\n    ");
+  if (blockRules) {
+    html = html.replace("</head>", `  <style id="lux-builder-blocks">\n    ${blockRules}\n  </style>\n</head>`);
   }
 
   html = html.replace(/<!-- lux-ornaments:([a-z]+) -->/g, (marker, section: string) => {

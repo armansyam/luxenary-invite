@@ -1381,7 +1381,7 @@
     </div>
 
     <div class="cover-center">
-      <h1 class="cover-names serif">{{firstName}} &amp; {{secondName}}</h1>
+      <h1 class="cover-names serif" data-lux-block="cover-names">{{firstName}} &amp; {{secondName}}</h1>
       <p class="cover-date">{{weddingDate}}</p>
       <p class="cover-subtitle" data-lux-field="customLabels.coverSubtitle">{{coverSubtitle}}</p>
     </div>
@@ -1444,12 +1444,12 @@
 
         <div class="opening-center" data-lux-anim="2">
           {{#if hasCustomHomePhoto}}
-          <div class="opening-photo">
+          <div class="opening-photo" data-lux-block="opening-photo">
             <img src="{{homePhotoUrl}}" alt="{{firstName}} &amp; {{secondName}}" loading="lazy" />
           </div>
           {{/if}}
           <span class="opening-sub-title" data-lux-field="customLabels.quoteEyebrow">{{quoteSectionEyebrow}}</span>
-          <h1 class="opening-names serif">{{firstName}} <em>&amp;</em> {{secondName}}</h1>
+          <h1 class="opening-names serif" data-lux-block="opening-names">{{firstName}} <em>&amp;</em> {{secondName}}</h1>
           <div class="sec-divider" style="margin: 12px auto 0;"></div>
         </div>
 
@@ -1481,7 +1481,7 @@
         <div class="couple-grid" data-lux-anim="3">
           <!-- Persona Pertama (Gender Adaptif) -->
           <div class="couple-card couple-{{firstGender}}">
-            <div class="couple-photo-wrap">
+            <div class="couple-photo-wrap" data-lux-block="couple-photo-1">
               <img src="{{firstPhotoUrl}}" alt="{{firstFullName}}" loading="lazy" />
             </div>
             <span class="couple-role" data-lux-field="customLabels.groomRole">{{firstRoleLabel}}</span>
@@ -1503,7 +1503,7 @@
 
           <!-- Persona Kedua (Gender Adaptif) -->
           <div class="couple-card couple-{{secondGender}}">
-            <div class="couple-photo-wrap">
+            <div class="couple-photo-wrap" data-lux-block="couple-photo-2">
               <img src="{{secondPhotoUrl}}" alt="{{secondFullName}}" loading="lazy" />
             </div>
             <span class="couple-role" data-lux-field="customLabels.brideRole">{{secondRoleLabel}}</span>
@@ -1531,7 +1531,7 @@
         <p class="sec-sub" data-lux-field="customLabels.countdownSub" data-lux-anim="2">Kami sangat menantikan kehadiran Bapak/Ibu/Sahabat sekalian untuk merayakan momen sakral ini
           bersama kami.</p>
 
-        <div class="countdown-grid" id="countdownTimer" data-lux-anim="3">
+        <div class="countdown-grid" id="countdownTimer" data-lux-block="countdown" data-lux-anim="3">
           <div class="countdown-box"><span class="countdown-num" id="cdDays">00</span><span class="countdown-lbl"
               data-lux-field="customLabels.cdDays">Hari</span></div>
           <div class="countdown-box"><span class="countdown-num" id="cdHours">00</span><span class="countdown-lbl"
@@ -1660,7 +1660,7 @@
       <!-- SEKSI 16: SALAM PENUTUP (Adaptive Full-Height 100vh) -->
       <footer class="closing-sec {{closingPhotoClass}}" style="{{closingBgStyle}}" data-lux-section="closing">
         <!-- lux-ornaments:closing -->
-        <div class="closing-content" data-lux-anim="1">
+        <div class="closing-content" data-lux-block="closing-content" data-lux-anim="1">
           <p class="closing-quote" data-lux-field="customLabels.closingQuote">
             {{closingQuote}}
           </p>

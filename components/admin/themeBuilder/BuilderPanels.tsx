@@ -8,10 +8,12 @@ import {
   RADIUS_OPTIONS,
   SECTION_LABELS,
   TEXTURE_OPTIONS,
+  BUILDER_BLOCKS,
   BUILDER_DEFAULT_SLOTS,
   VARIANT_GROUPS,
   fontFamily,
   paletteChecks,
+  type BuilderBlockId,
   type BuilderPalette,
   type BuilderSpec,
   type BuilderVariants,
@@ -368,9 +370,44 @@ function VariantThumb({ group, id, palette, dark }: { group: keyof BuilderVarian
   );
 }
 
-export function LayoutPanel({ spec, onChange, onFocusSection }: { spec: BuilderSpec; onChange: (patch: Partial<BuilderSpec>) => void; onFocusSection: (s: OrnamentSection) => void }) {
+export function LayoutPanel({
+  spec,
+  onChange,
+  onFocusSection,
+  selectedBlock,
+  onSelectBlock,
+}: {
+  spec: BuilderSpec;
+  onChange: (patch: Partial<BuilderSpec>) => void;
+  onFocusSection: (s: OrnamentSection) => void;
+  selectedBlock: BuilderBlockId | null;
+  onSelectBlock: (id: BuilderBlockId) => void;
+}) {
   return (
     <>
+      <Section title="Posisi elemen" hint="Klik elemen di pratinjau atau pilih di sini, lalu seret atau atur geser, ukuran, dan putar. Posisi relatif terhadap elemen itu sendiri, jadi tetap mengalir bersama isi klien dan mengikuti lebar layar.">
+        <div className="grid grid-cols-1 gap-1.5">
+          {BUILDER_BLOCKS.map((block) => {
+            const custom = Boolean(spec.blocks[block.id]);
+            return (
+              <button
+                key={block.id}
+                type="button"
+                aria-pressed={selectedBlock === block.id}
+                onClick={() => {
+                  onSelectBlock(block.id);
+                  onFocusSection(block.section);
+                }}
+                className={`flex items-center justify-between rounded-xl border px-3 py-2 text-left text-[12px] font-semibold transition cursor-pointer ${selectedBlock === block.id ? "border-blue-500 bg-blue-50 text-stone-900" : "border-stone-200 text-stone-700 hover:border-stone-300"}`}
+              >
+                <span>{block.label}</span>
+                <span className="text-[10.5px] font-medium text-stone-500">{custom ? "Diatur" : SECTION_LABELS[block.section]}</span>
+              </button>
+            );
+          })}
+        </div>
+      </Section>
+
       {VARIANT_GROUPS.map((group) => (
         <Section key={group.key} title={group.label} hint={group.key === "sidebar" ? "Hanya tampil di layar desktop, di sebelah kiri kolom undangan." : group.key === "headings" ? "Berlaku untuk semua judul seksi." : undefined}>
           <div className="grid grid-cols-2 gap-2">

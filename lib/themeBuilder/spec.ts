@@ -86,6 +86,45 @@ export const BUILDER_DEFAULT_SLOTS = [
 export type BuilderDefaultSlot = (typeof BUILDER_DEFAULT_SLOTS)[number]["slot"];
 export type BuilderDefaultMedia = Partial<Record<BuilderDefaultSlot, string>>;
 
+/**
+ * Blok konten yang dapat dipilih dan diatur di builder. Posisi bukan koordinat absolut: geser memakai persen ukuran
+ * elemen itu sendiri (CSS `translate`), sehingga blok tetap mengalir bersama isi klien dan mengikuti lebar kolom
+ * 320-460 px. Penanda `data-lux-block` ada di blueprint pernikahan.
+ */
+export const BUILDER_BLOCKS = [
+  { id: "cover-names", label: "Nama di cover", section: "cover" },
+  { id: "opening-photo", label: "Foto pembuka", section: "opening" },
+  { id: "opening-names", label: "Nama di pembuka", section: "opening" },
+  { id: "couple-photo-1", label: "Foto mempelai pertama", section: "couple" },
+  { id: "couple-photo-2", label: "Foto mempelai kedua", section: "couple" },
+  { id: "countdown", label: "Hitung mundur", section: "countdown" },
+  { id: "closing-content", label: "Isi penutup", section: "closing" },
+] as const;
+export type BuilderBlockId = (typeof BUILDER_BLOCKS)[number]["id"];
+
+export interface BlockProps {
+  /** Geser mendatar dan tegak, dalam persen lebar dan tinggi elemen itu sendiri. */
+  x: number;
+  y: number;
+  scale: number;
+  /** Derajat. */
+  rotate: number;
+}
+export type BuilderBlocks = Partial<Record<BuilderBlockId, BlockProps>>;
+
+export const DEFAULT_BLOCK_PROPS: BlockProps = { x: 0, y: 0, scale: 1, rotate: 0 };
+export const BLOCK_LIMITS = { x: [-60, 60], y: [-60, 60], scale: [0.5, 2], rotate: [-180, 180] } as const;
+
+export const isDefaultBlock = (p: BlockProps) => p.x === 0 && p.y === 0 && p.scale === 1 && p.rotate === 0;
+
+/**
+ * Deklarasi CSS satu blok. Memakai properti transform individual (translate, rotate, scale) agar tidak menimpa
+ * `transform` milik varian (mis. polaroid) maupun animasi masuk.
+ */
+export function blockStyle(p: BlockProps): string {
+  return `translate:${p.x}% ${p.y}%;rotate:${p.rotate}deg;scale:${p.scale};`;
+}
+
 export interface BuilderSpec {
   version: number;
   eventType: BuilderEventType;
@@ -96,6 +135,8 @@ export interface BuilderSpec {
   texture: string;
   /** Gambar bawaan per slot (dari pustaka latar); dipakai sampai klien mengunggah foto sendiri. */
   defaultMedia: BuilderDefaultMedia;
+  /** Properti relatif blok konten; hanya blok yang diubah dari bawaan yang tersimpan. */
+  blocks: BuilderBlocks;
   radius: RadiusStyle;
   variants: BuilderVariants;
   animation: AnimationPreset;
@@ -245,6 +286,7 @@ export function defaultBuilderSpec(): BuilderSpec {
     fonts: { heading: "cinzel", body: "jakarta", script: "great-vibes" },
     texture: "/assets/ornaments/background/background-cream.webp",
     defaultMedia: {},
+    blocks: {},
     radius: "soft",
     variants: { cover: "classic", opening: "classic", couple: "stacked", countdown: "boxes", closing: "classic", headings: "classic", sidebar: "bottom-left" },
     animation: "rise",
@@ -318,6 +360,24 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
     else defaultMedia[slot] = value;
   }
 
+  // Spesifikasi lama tanpa blocks tetap sah; blok yang tidak dikenal diabaikan, nilai di luar batas dijepit.
+  const blocks: BuilderBlocks = {};
+  for (const { id, label } of BUILDER_BLOCKS) {
+    const raw = input.blocks?.[id];
+    if (raw === undefined || raw === null) continue;
+    if (typeof raw !== "object") {
+      errors.push(`Blok ${label} tidak terbaca.`);
+      continue;
+    }
+    const props: BlockProps = {
+      x: clamp(raw.x, BLOCK_LIMITS.x[0], BLOCK_LIMITS.x[1], 0),
+      y: clamp(raw.y, BLOCK_LIMITS.y[0], BLOCK_LIMITS.y[1], 0),
+      scale: clamp(raw.scale, BLOCK_LIMITS.scale[0], BLOCK_LIMITS.scale[1], 1),
+      rotate: clamp(raw.rotate, BLOCK_LIMITS.rotate[0], BLOCK_LIMITS.rotate[1], 0),
+    };
+    if (!isDefaultBlock(props)) blocks[id] = props;
+  }
+
   const variants = {} as BuilderVariants;
   for (const group of VARIANT_GROUPS) {
     variants[group.key] = pickEnum(input.variants?.[group.key], group.options.map((o) => o.id), `Varian ${group.label}`, errors) ?? base.variants[group.key];
@@ -357,7 +417,7 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
   if (errors.length || !eventType || !canvasMode || !radius || !animation) return { ok: false, errors };
   return {
     ok: true,
-    spec: { version: BUILDER_SPEC_VERSION, eventType, canvasMode, palette, fonts, texture, defaultMedia, radius, variants, animation, ornaments },
+    spec: { version: BUILDER_SPEC_VERSION, eventType, canvasMode, palette, fonts, texture, defaultMedia, blocks, radius, variants, animation, ornaments },
   };
 }
 

@@ -10,6 +10,8 @@ import { logger } from "@/lib/logger";
 import { masterTemplateCache } from "@/lib/cache";
 import { removeIfExists } from "@/lib/fsSafe";
 import { parseBuilderSpec } from "@/lib/themeBuilder/spec";
+import { seedSpecFromMaster } from "@/lib/themeBuilder/legacySeed";
+import { masterPathOf } from "@/lib/themePaths";
 import {
   BUILDER_CATEGORIES,
   builderDefaultMedia,
@@ -54,7 +56,36 @@ export async function GET(req: NextRequest) {
     const guard = await requireAdminModule("themes");
     if (!guard.ok) return guard.response;
 
-    const id = new URL(req.url).searchParams.get("id");
+    const params = new URL(req.url).searchParams;
+
+    // Tema pernikahan tulisan tangan yang dapat dijadikan titik awal rancangan baru.
+    if (params.get("legacy")) {
+      const themes = await prisma.theme.findMany({
+        where: { builderSpec: { equals: Prisma.DbNull }, eventType: "WEDDING" },
+        select: { id: true, name: true, category: true },
+        orderBy: { name: "asc" },
+      });
+      return NextResponse.json({ success: true, themes });
+    }
+
+    const from = params.get("from");
+    if (from) {
+      const legacy = await prisma.theme.findUnique({ where: { id: from }, select: { id: true, name: true, category: true, description: true, eventType: true, builderSpec: true } });
+      if (!legacy || legacy.eventType !== "WEDDING" || legacy.builderSpec) {
+        return NextResponse.json({ error: "Hanya tema pernikahan tulisan tangan yang dapat dijadikan titik awal." }, { status: 404 });
+      }
+      const file = masterPathOf("WEDDING", legacy.category, legacy.id);
+      if (!fs.existsSync(file)) return NextResponse.json({ error: "Berkas master tema tidak ditemukan." }, { status: 404 });
+      const seed = seedSpecFromMaster(fs.readFileSync(file, "utf-8"));
+      return NextResponse.json({
+        success: true,
+        theme: { id: "", name: `${legacy.name} Builder`, category: legacy.category, description: `Titik awal dari tema ${legacy.name}.` },
+        spec: seed.spec,
+        report: { source: legacy.name, found: seed.found, missing: seed.missing, textureFound: seed.textureFound, hexOutsideRoot: seed.hexOutsideRoot },
+      });
+    }
+
+    const id = params.get("id");
     if (!id) {
       const themes = await prisma.theme.findMany({
         where: { builderSpec: { not: Prisma.DbNull } },

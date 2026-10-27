@@ -10,13 +10,19 @@ import {
   ORNAMENT_SECTIONS,
   SECTION_LABELS,
   VARIANT_GROUPS,
+  BLOCK_LIMITS,
+  DEFAULT_BLOCK_PROPS,
   defaultBuilderSpec,
+  isDefaultBlock,
+  type BlockProps,
+  type BuilderBlockId,
   type BuilderOrnament,
   type BuilderSpec,
   type OrnamentSection,
 } from "@/lib/themeBuilder/spec";
 import BuilderPreview, { DEVICE_SIZES, type PreviewDevice, type PreviewDropTarget } from "@/components/admin/themeBuilder/BuilderPreview";
 import OrnamentInspector from "@/components/admin/themeBuilder/OrnamentInspector";
+import BlockInspector from "@/components/admin/themeBuilder/BlockInspector";
 import {
   ColorsPanel,
   LayoutPanel,
@@ -39,7 +45,8 @@ const newOrnamentId = () => Array.from(crypto.getRandomValues(new Uint8Array(10)
 
 /** Bagian spesifikasi yang mengubah HTML master; geser/ukur ornamen cukup diterapkan langsung ke pratinjau. */
 function structuralKey(spec: BuilderSpec): string {
-  return JSON.stringify({ ...spec, ornaments: spec.ornaments.map((o) => [o.id, o.src, o.section]) });
+  // Posisi ornamen dan properti blok diterapkan langsung ke pratinjau saat menyeret, jadi tidak memicu muat ulang.
+  return JSON.stringify({ ...spec, blocks: {}, ornaments: spec.ornaments.map((o) => [o.id, o.src, o.section]) });
 }
 
 const Icon = ({ d, className = "h-4 w-4" }: { d: string; className?: string }) => (
@@ -76,6 +83,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
   const [viewSection, setViewSection] = useState<OrnamentSection>("cover");
   const [jump, setJump] = useState<{ section: OrnamentSection; nonce: number }>({ section: "cover", nonce: 0 });
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedBlock, setSelectedBlock] = useState<BuilderBlockId | null>(null);
   const [replayNonce, setReplayNonce] = useState(0);
 
   const [html, setHtml] = useState<string | null>(null);
@@ -222,6 +230,58 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
     const next = { ...specRef.current, ornaments: specRef.current.ornaments.map((o) => (o.id === id ? { ...o, ...patch } : o)) };
     apply(next, final ? "commit" : "live");
   }, [apply]);
+
+  const [legacyThemes, setLegacyThemes] = useState<Array<{ id: string; name: string }> | null>(null);
+
+  const loadLegacyThemes = useCallback(async () => {
+    if (legacyThemes) return;
+    const res = await fetch("/api/admin/theme-builder?legacy=1", { cache: "no-store" });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) setLegacyThemes(data.themes);
+    else notify(data.error || "Daftar tema lama gagal dimuat.", "error");
+  }, [legacyThemes, notify]);
+
+  useEffect(() => {
+    if (isNew && loaded) void loadLegacyThemes();
+  }, [isNew, loaded, loadLegacyThemes]);
+
+  /** Isi rancangan baru dari palet dan latar tema tulisan tangan; master lama tidak disentuh. */
+  const startFromLegacy = useCallback(async (id: string) => {
+    if (!id) return;
+    const res = await fetch(`/api/admin/theme-builder?from=${encodeURIComponent(id)}`, { cache: "no-store" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return notify(data.error || "Tema lama gagal dibaca.", "error");
+    history.current = { past: [], future: [] };
+    syncHistory();
+    specRef.current = data.spec;
+    setSpec(data.spec);
+    setMeta((m) => ({ ...m, name: data.theme.name, category: data.theme.category, description: data.theme.description }));
+    const r = data.report as { source: string; found: string[]; missing: string[]; hexOutsideRoot: number };
+    notify(`Titik awal dari ${r.source}: ${r.found.length} dari ${r.found.length + r.missing.length} warna palet terbaca${r.hexOutsideRoot ? `; ${r.hexOutsideRoot} warna lain di tema lama ditulis mati dan tidak ikut` : ""}. Tata letak mengikuti blueprint.`, "info");
+  }, [notify, syncHistory]);
+
+  const updateBlock = useCallback((id: BuilderBlockId, patch: Partial<BlockProps>, final: boolean) => {
+    const current = specRef.current;
+    const merged = { ...(current.blocks[id] ?? DEFAULT_BLOCK_PROPS), ...patch };
+    const blocks = { ...current.blocks };
+    if (isDefaultBlock(merged)) delete blocks[id];
+    else blocks[id] = merged;
+    apply({ ...current, blocks }, final ? "commit" : "live");
+  }, [apply]);
+
+  const resetBlock = useCallback((id: BuilderBlockId) => {
+    const blocks = { ...specRef.current.blocks };
+    delete blocks[id];
+    apply({ ...specRef.current, blocks }, "commit");
+  }, [apply]);
+
+  const selectBlock = useCallback((id: BuilderBlockId | null) => {
+    setSelectedBlock(id);
+    if (id) {
+      setSelectedId(null);
+      setPanel("layout");
+    }
+  }, []);
 
   const focusSection = useCallback((section: OrnamentSection) => {
     if (section === "sidebar") setDevice("desktop");
@@ -389,6 +449,21 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
     if (typing) return false;
     if (mod && e.key.toLowerCase() === "z") { if (e.shiftKey) redo(); else undo(); return true; }
     if (mod && e.key.toLowerCase() === "y") { redo(); return true; }
+    if (selectedBlock && !selectedId) {
+      if (e.key === "Escape") { setSelectedBlock(null); return true; }
+      if (e.key === "Delete" || e.key === "Backspace") { resetBlock(selectedBlock); return true; }
+      const cur = specRef.current.blocks[selectedBlock] ?? DEFAULT_BLOCK_PROPS;
+      const nudge = e.shiftKey ? 2 : 0.5;
+      const clampTo = (v: number, [min, max]: readonly [number, number]) => Math.round(Math.max(min, Math.min(max, v)) * 10) / 10;
+      const blockMoves: Record<string, Partial<BlockProps>> = {
+        ArrowLeft: { x: clampTo(cur.x - nudge, BLOCK_LIMITS.x) },
+        ArrowRight: { x: clampTo(cur.x + nudge, BLOCK_LIMITS.x) },
+        ArrowUp: { y: clampTo(cur.y - nudge, BLOCK_LIMITS.y) },
+        ArrowDown: { y: clampTo(cur.y + nudge, BLOCK_LIMITS.y) },
+      };
+      if (blockMoves[e.key]) { updateBlock(selectedBlock, blockMoves[e.key], true); return true; }
+      return false;
+    }
     const sel = specRef.current.ornaments.find((o) => o.id === selectedId);
     if (!sel) return false;
     if (e.key === "Escape") { setSelectedId(null); return true; }
@@ -403,7 +478,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
     };
     if (moves[e.key]) { updateOrnament(sel.id, moves[e.key], true); return true; }
     return false;
-  }, [duplicateOrnament, redo, removeOrnament, save, selectedId, undo, updateOrnament]);
+  }, [duplicateOrnament, redo, removeOrnament, resetBlock, save, selectedBlock, selectedId, undo, updateBlock, updateOrnament]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (handleKey(e)) e.preventDefault(); };
@@ -491,6 +566,17 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
             <span className={`h-1.5 w-1.5 rounded-full ${isNew ? "bg-stone-400" : isActive ? "bg-emerald-500" : "bg-amber-500"}`} />
             {isNew ? "Belum disimpan" : isActive ? "Tayang di katalog" : "Draf"}
           </span>
+          {isNew && (
+            <select
+              aria-label="Mulai dari tema lama"
+              defaultValue=""
+              onChange={(e) => { startFromLegacy(e.target.value); e.target.value = ""; }}
+              className="rounded-lg border border-stone-200 bg-white px-2 py-1 text-[11.5px] font-semibold text-stone-600 outline-none hover:border-stone-300 cursor-pointer"
+            >
+              <option value="">Mulai dari tema lama…</option>
+              {(legacyThemes ?? []).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          )}
           {dirty && !isNew && <span className="text-[11px] text-stone-400">Ada perubahan</span>}
         </div>
 
@@ -567,7 +653,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
           ) : panel === "type" ? (
             <TypePanel spec={spec} onChange={patchSpec} />
           ) : panel === "layout" ? (
-            <LayoutPanel spec={spec} onChange={patchSpec} onFocusSection={focusSection} />
+            <LayoutPanel spec={spec} onChange={patchSpec} onFocusSection={focusSection} selectedBlock={selectedBlock} onSelectBlock={selectBlock} />
           ) : panel === "ornaments" ? (
             <OrnamentsPanel
               spec={spec}
@@ -614,14 +700,18 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
             html={html}
             loading={previewLoading}
             device={device}
-            editOrnaments={panel === "ornaments" || Boolean(selectedId)}
+            editOrnaments={panel === "ornaments" || panel === "layout" || Boolean(selectedId) || Boolean(selectedBlock)}
             playAnimations={panel === "motion"}
             replayNonce={replayNonce}
             jump={jump}
             ornaments={spec.ornaments}
             selectedId={selectedId}
-            onSelect={(id) => { setSelectedId(id); if (id) setPanel("ornaments"); }}
+            onSelect={(id) => { setSelectedId(id); if (id) { setSelectedBlock(null); setPanel("ornaments"); } }}
             onOrnamentChange={updateOrnament}
+            blocks={spec.blocks}
+            selectedBlock={selectedBlock}
+            onSelectBlock={selectBlock}
+            onBlockChange={updateBlock}
             onViewSection={setViewSection}
             onKey={handleKey}
           />
@@ -635,6 +725,14 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
               onDuplicate={() => duplicateOrnament(selected.id)}
               onRemove={() => removeOrnament(selected.id)}
               onClose={() => setSelectedId(null)}
+            />
+          ) : selectedBlock ? (
+            <BlockInspector
+              blockId={selectedBlock}
+              props={spec.blocks[selectedBlock] ?? DEFAULT_BLOCK_PROPS}
+              onChange={(patch, final) => updateBlock(selectedBlock, patch, final)}
+              onReset={() => resetBlock(selectedBlock)}
+              onClose={() => setSelectedBlock(null)}
             />
           ) : (
             <div className="h-full overflow-y-auto px-4 py-4">
