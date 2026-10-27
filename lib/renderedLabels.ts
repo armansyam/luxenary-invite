@@ -31,7 +31,10 @@ export async function seedRenderedLabels(invitationId: string): Promise<Record<s
 
   const current = await prisma.invitation.findUniqueOrThrow({ where: { id: invitationId }, select: { featureSettings: true } });
   const fs = parseFeatureSettings(current.featureSettings);
-  const customLabels = { ...rendered, ...((fs.customLabels as Record<string, string>) || {}) };
-  await prisma.invitation.update({ where: { id: invitationId }, data: { featureSettings: { ...fs, customLabels } as never } });
+  const clientLabels = (fs.customLabels as Record<string, string>) || {};
+  const customLabels = { ...rendered, ...clientLabels };
+  // Snapshot label awal (tanpa hasil edit klien) dipakai untuk membedakan label yang belum diubah saat tema diganti.
+  const labelDefaults = Object.fromEntries(Object.entries(rendered).filter(([key]) => !(key in clientLabels)));
+  await prisma.invitation.update({ where: { id: invitationId }, data: { featureSettings: { ...fs, customLabels, labelDefaults: { ...((fs.labelDefaults as Record<string, string>) || {}), ...labelDefaults } } as never } });
   return customLabels;
 }

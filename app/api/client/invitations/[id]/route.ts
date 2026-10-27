@@ -22,7 +22,9 @@ import { deleteFile, isInvitationOwnedUpload } from "@/lib/storage";
 import { purgeInvitationEdgeCache } from "@/lib/cloudflare";
 import { releaseInvitationSubdomain } from "@/lib/subdomainRelease";
 import { createPreviewToken } from "@/lib/previewAccess";
-import { mergeFeatureSettingsInput } from "@/lib/featureSettings";
+import { mergeFeatureSettingsInput, parseFeatureSettings } from "@/lib/featureSettings";
+import { featureSettingsForThemeChange } from "@/lib/themeLabels";
+import { seedRenderedLabels } from "@/lib/renderedLabels";
 import { loadThemeDefaultMedia } from "@/lib/themeDefaultMedia";
 import { themeMainColor } from "@/lib/themePalette";
 
@@ -478,6 +480,13 @@ export async function PUT(
       return NextResponse.json({ error: "PIN harus 4–10 karakter berupa huruf atau angka." }, { status: 400 });
     }
 
+    // Ganti tema: label yang belum pernah diubah klien mengikuti tema baru (hasil edit klien dipertahankan).
+    const themeChanged = body.themeId !== undefined && body.themeId !== currentInv.themeId;
+    if (themeChanged) {
+      const base = mergedFeatureSettings === undefined || mergedFeatureSettings === Prisma.DbNull ? currentInv.featureSettings : mergedFeatureSettings;
+      mergedFeatureSettings = (await featureSettingsForThemeChange(parseFeatureSettings(base), currentInv.themeId, String(body.themeId), currentInv.eventType)) as Prisma.InputJsonValue;
+    }
+
     const updated = await prisma.invitation.update({
       where: { id },
       data: {
@@ -508,6 +517,8 @@ export async function PUT(
     if (body.themeId !== undefined && body.themeId !== currentInv.themeId) {
       const path = await import("path");
       await removeIfExists(path.join(process.cwd(), "data", "drafts", `${id}.html`));
+      // Undangan non-pernikahan membekukan label dari master yang dirender; tema baru membekukan ulang label yang tidak diedit klien.
+      if (updated.eventType !== "WEDDING") await seedRenderedLabels(id);
     }
 
     // Save media updates

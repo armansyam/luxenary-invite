@@ -675,6 +675,7 @@ Sistem pengiriman email otomatis menggunakan **Nodemailer** yang membaca kredens
    - Panel Teks mengatur teks bawaan label (tombol buka undangan, judul seksi, sapaan, label RSVP, menu bawah, dll.). Isinya menjadi nilai awal label undangan klien, yang tetap bisa diubah klien di Studio. Tekstur latar dan gambar bawaan cover, hero kiri desktop, dan penutup dapat dipilih dari bawaan atau gambar yang diunggah (PNG, WebP, JPEG tanpa transparansi).
    - Pratinjau memakai engine klien dengan data demo pada HP 375, HP 320, dan Desktop 1440; urungkan/ulangi, pintasan keyboard, dan peringatan sebelum meninggalkan perubahan.
    - Simpan menghasilkan draf (`isActive=false`); terbit hanya bila audit master lolos (token, label, seksi blueprint utuh; tanpa warna mati; skrip valid). Mengubah tema yang sudah dipakai klien tidak mengubah undangan mereka (piring tetap).
+   - Saat klien mengganti tema, label yang belum pernah diubah klien (judul, tombol, sapaan) ikut tema baru, sedangkan label hasil edit klien dan tagline yang diubah tetap. Dua admin yang membuka tema yang sama tidak saling menimpa (simpan dari salinan basi ditolak dengan pesan), dan simpan, terbit, tarik, serta unggah atau hapus gambar tercatat di audit log.
    - Tema hasil builder bertanda tombol "Builder" di katalog admin. Mengunggah master manual atas tema builder melepas status builder-nya.
 
 ## 11. Filosofi Integritas UI Admin & Perlindungan Hak Klien

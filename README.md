@@ -518,6 +518,8 @@ Admin Portal → Tab Tema → "Buat dengan Builder" (layar ≥ 1100 px) → /adm
   → Terbit: Simpan draf → cek HP 320/375 dan Desktop → Terbitkan ke katalog
   → Lengkapi foto demo & thumbnail lewat Demo Studio
 ```
+Master builder hanya ada di disk server (`themes/`) dan gambar unggahan di `public/uploads/theme-assets/`; backup harian hanya memuat database. Setelah memulihkan DB ke server baru jalankan `npx tsx scripts/rebuild-builder-masters.ts` (rencana) lalu `--apply`, dan pulihkan folder uploads dari cadangannya. Dua admin yang membuka tema yang sama tidak saling menimpa: simpan dari salinan basi ditolak dan aksi builder tercatat di audit log.
+
 Builder hanya untuk tema pernikahan dan selalu berangkat dari `themes/_blueprints/wedding/starter-blueprint.html`, sehingga label klien, 9 slot media, RSVP, dan musik tetap utuh. Draf tidak tampil di katalog; terbit ditolak bila master gagal audit. Deploy pertama setelah fitur ini menjalankan migrasi `20261023120000_theme_builder_spec` (kolom `themes.builder_spec`). Ornamen unggahan tersimpan di `public/uploads/theme-assets/` (di luar git) dan perlu dicadangkan bersama folder unggahan lain.
 
 ---

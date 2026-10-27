@@ -7,8 +7,7 @@ import { getMonthYearSlug, isSubdomainExpired, isReservedSubdomain, isReservedSl
 import { normalizeEventDateInput } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { releaseInvitationSubdomain } from "@/lib/subdomainRelease";
-import { getThemeBlueprint } from "@/lib/themeDefaults";
-import { applyBuilderTexts, builderTextsOf } from "@/lib/themeBuilder/texts";
+import { featureSettingsForThemeChange, loadThemeLabelContext } from "@/lib/themeLabels";
 import { DEFAULT_THEME_BY_EVENT, isThemeCompatible } from "@/lib/invitationUtils";
 import { participantNames } from "@/lib/participantUtils";
 import { normalizeJsonInput } from "@/lib/jsonText";
@@ -284,111 +283,13 @@ export async function POST(req: Request) {
   const invitationStatus = "DRAFT";
 
   const chosenTheme = themeId?.trim() || DEFAULT_THEME_BY_EVENT[eventType] || "kalandra";
-  let customDemoData: any = null;
-  try {
-    const customSetting = await prisma.adminSetting.findUnique({
-      where: { key: `theme_demo_${chosenTheme.toLowerCase()}` },
-      select: { value: true },
-    });
-    if (customSetting?.value) {
-      customDemoData = JSON.parse(customSetting.value);
-    }
-  } catch (err) {
-    logger.warn("InvitationCreate", "Data demo kustom tema tidak terbaca; undangan memakai bawaan tema", { theme: chosenTheme, error: err instanceof Error ? err.message : String(err) });
-  }
-
-  let themeMeta: { name: string; category: string; series: string | null; defaultMusicUrl?: string | null; defaultMedia?: unknown; builderSpec?: unknown } | null = null;
-  try {
-    themeMeta = await prisma.theme.findUnique({
-      where: { id: chosenTheme.toLowerCase() },
-      select: { name: true, category: true, series: true, defaultMusicUrl: true, defaultMedia: true, builderSpec: true },
-    });
-  } catch (err) {
-    logger.warn("InvitationCreate", "Metadata tema tidak terbaca; undangan memakai bawaan", { theme: chosenTheme, error: err instanceof Error ? err.message : String(err) });
-  }
-
-  // Teks bawaan yang diatur admin di Theme Builder menggantikan bawaan blueprint sebelum disalin ke label undangan.
-  const builderTexts = builderTextsOf(themeMeta?.builderSpec);
-  const { blueprint } = applyBuilderTexts(
-    getThemeBlueprint(chosenTheme, {
-      ...(customDemoData || {}),
-      themeName: themeMeta?.name,
-      series: themeMeta?.series || themeMeta?.category,
-    }),
-    builderTexts,
-  );
+  const { customDemoData, themeMeta, blueprint, defaultCoverBadge, initialCustomLabels } = await loadThemeLabelContext(chosenTheme, eventType);
 
   try {
     let invitation: { id: string; subdomain: string | null; status: string };
 
     const isWeddingEvent = eventType === "WEDDING";
-    const defaultCoverBadge = blueprint.coverBadge || (
-      eventType === "BIRTHDAY"
-        ? "BIRTHDAY CELEBRATION"
-        : eventType === "KHITAN"
-        ? "WALIMATUL KHITAN"
-        : eventType === "AQIQAH"
-        ? "WALIMATUL AQIQAH"
-        : eventType === "WISUDA"
-        ? "GRADUATION CELEBRATION"
-        : eventType === "GATHERING"
-        ? "SPECIAL GATHERING"
-        : "THE WEDDING OF"
-    );
-
-    const defaultCustomLabels = {
-      coverSubtitle: blueprint.coverSubtitle,
-      coverBadge: defaultCoverBadge,
-      coverGuestLabel: "Kepada Yth. Bapak/Ibu/Saudara/i",
-      openingGreeting: blueprint.openingGreeting || "",
-      openBtn: blueprint.openBtn,
-      rsvpTitle: blueprint.rsvpTitle,
-      rsvpBtnText: blueprint.rsvpBtnText || "Kirim Konfirmasi & Doa",
-      quoteTitle: blueprint.quoteSectionTitle,
-      quoteEyebrow: blueprint.quoteSectionEyebrow,
-      coupleTitle: blueprint.coupleSectionTitle,
-      coupleEyebrow: blueprint.coupleSectionEyebrow || (isWeddingEvent ? "THE COUPLE" : "EVENT PROFILE"),
-      coupleSub: blueprint.coupleSectionSub,
-      eventsTitle: blueprint.eventsSectionTitle,
-      eventsEyebrow: blueprint.eventsSectionEyebrow || "AGENDA ACARA",
-      eventsSub: blueprint.eventsSectionSub,
-      storyTitle: blueprint.storySectionTitle,
-      storyEyebrow: blueprint.storySectionEyebrow || (isWeddingEvent ? "OUR JOURNEY" : "HIGHLIGHTS"),
-      galleryTitle: blueprint.gallerySectionTitle,
-      galleryEyebrow: blueprint.gallerySectionEyebrow,
-      galleryQuote: blueprint.galleryQuote,
-      dressCodeTitle: blueprint.dressCodeTitle || "Dress Code",
-      dressCodeEyebrow: blueprint.dressCodeEyebrow || "A Guide To",
-      dressCodeSubtitle: blueprint.dressCodeSubtitle || "Kami mengundang tamu undangan untuk mengenakan palet warna berikut:",
-      streamingTitle: blueprint.streamingTitle || "Live Streaming",
-      streamingEyebrow: blueprint.streamingEyebrow || "Virtual Ceremony",
-      streamingSubtitle: blueprint.streamingSubtitle || "Bagi keluarga & sahabat yang menyaksikan dari jauh, bergabunglah melalui siaran daring:",
-      giftTitle: blueprint.giftSectionTitle,
-      giftEyebrow: blueprint.giftSectionEyebrow || (isWeddingEvent ? "WEDDING GIFT" : "TANDA KASIH"),
-      giftDesc: blueprint.giftSectionDesc,
-      turutMengundangTitle: blueprint.turutMengundangTitle || "Turut Mengundang",
-      turutMengundangEyebrow: blueprint.turutMengundangEyebrow || "Keluarga Besar",
-      turutMengundangSubtitle: blueprint.turutMengundangSubtitle || "Keluarga Besar & Kerabat yang turut berbahagia:",
-      wishesTitle: blueprint.wishesSectionTitle,
-      wishesEyebrow: blueprint.wishesSectionEyebrow || (isWeddingEvent ? "WISHES & RSVP" : "GUEST WISHES"),
-      wishesSub: blueprint.wishesSectionSub,
-      closingQuote: blueprint.closingQuote,
-      closingSub: blueprint.closingSub,
-      rsvpNameLabel: "Nama Lengkap",
-      rsvpStatusLabel: "Konfirmasi Kehadiran",
-      rsvpCountLabel: "Jumlah Tamu",
-      rsvpMessageLabel: "Ucapan & Doa Restu",
-      vendorTitle: blueprint.vendorTitle || (isWeddingEvent ? "Mitra Vendor" : "Mitra Acara"),
-      vendorEyebrow: blueprint.vendorEyebrow || (isWeddingEvent ? "WEDDING CREDITS" : "EVENT CREDITS"),
-      vendorSubtitle: blueprint.vendorSubtitle || (isWeddingEvent ? "Rasa terima kasih dan penghargaan setulusnya kepada seluruh vendor yang telah membantu menyempurnakan hari bahagia kami." : "Rasa terima kasih dan penghargaan setulusnya kepada seluruh pihak dan mitra yang telah membantu menyempurnakan acara kami."),
-    };
-
-    // Blueprint tema satu nama berisi cadangan pernikahan ("THE COUPLE"), jadi label bawaan undangan non-pernikahan
-    // tidak disalin dari blueprint melainkan dari teks master terpilih yang dirender untuk jenis acara ini, setelah
-    // undangan tersimpan (seedRenderedLabels, lib/renderedLabels.ts).
-    // Teks bawaan admin (kunci label yang sama) ditumpuk di atas label awal, termasuk label yang tidak punya kolom blueprint.
-    const initialCustomLabels = isWeddingEvent ? { ...defaultCustomLabels, ...builderTexts } : {};
-
+    // Label awal wedding dan blueprint dihitung di lib/themeLabels.ts (dipakai juga saat klien mengganti tema).
     const initialMusicUrl = customDemoData?.audioUrl || customDemoData?.defaultMusicUrl || themeMeta?.defaultMusicUrl || blueprint.defaultMusicUrl || "";
     // Media bawaan tema disalin ke undangan saat tema dipilih, sehingga perubahan tema oleh admin tidak menyentuh undangan ini.
     const themeDefaultMedia = parseThemeDefaultMedia(themeMeta?.defaultMedia);
@@ -402,18 +303,21 @@ export async function POST(req: Request) {
           ? (initialMusicUrl || existingDraft.musicUrl || undefined)
           : (existingDraft.musicUrl || initialMusicUrl || undefined);
 
+        // Ganti tema: label yang belum pernah diubah klien mengikuti tema baru; masuk ulang di tema sama tidak menyentuh label.
+        const themed = isThemeChanged ? await featureSettingsForThemeChange(existingFs, existingDraft.themeId, chosenTheme, eventType) : null;
         const mergedFs = {
-          weddingTagline: existingFs.weddingTagline || defaultCoverBadge,
+          weddingTagline: themed ? themed.weddingTagline : (existingFs.weddingTagline || defaultCoverBadge),
           musicUrl: isThemeChanged ? (initialMusicUrl || existingFs.musicUrl || undefined) : (existingFs.musicUrl || existingDraft.musicUrl || initialMusicUrl || undefined),
           showStory: existingFs.showStory !== undefined ? existingFs.showStory : (eventType === "WEDDING"),
           showGallery: existingFs.showGallery !== undefined ? existingFs.showGallery : true,
           showGift: existingFs.showGift !== undefined ? existingFs.showGift : true,
           showDresscode: existingFs.showDresscode !== undefined ? existingFs.showDresscode : true,
           showMusic: existingFs.showMusic !== undefined ? existingFs.showMusic : true,
-          customLabels: {
+          customLabels: themed ? themed.customLabels : {
             ...initialCustomLabels,
             ...(existingFs.customLabels || {}),
           },
+          ...(themed ? { labelDefaults: themed.labelDefaults } : existingFs.labelDefaults ? { labelDefaults: existingFs.labelDefaults } : {}),
         };
 
         return tx.invitation.update({
@@ -457,6 +361,7 @@ export async function POST(req: Request) {
               showDresscode: true,
               showMusic: true,
               customLabels: initialCustomLabels,
+              labelDefaults: initialCustomLabels,
             },
             themeDefaultMedia,
             status: invitationStatus,

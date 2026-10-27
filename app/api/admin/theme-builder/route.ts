@@ -1,6 +1,8 @@
 import fs from "fs";
 import path from "path";
+import { createHash } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { purgeCloudflareCache } from "@/lib/cloudflare";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdminModule } from "@/lib/adminAuth";
@@ -21,6 +23,7 @@ import {
   builderPublishIssues,
   compileAndAudit,
   isSafeThemeId,
+  recordBuilderAudit,
   slugifyThemeId,
   storedBuilderSpec,
   themeIdTaken,
@@ -52,6 +55,14 @@ async function refreshPublicTheme(themeId: string, isActive: boolean) {
   revalidatePath("/");
   revalidatePath("/demo");
   revalidatePath("/api/public/themes");
+  // Katalog publik berumur s-maxage 24 jam di edge; tanpa purge tema yang baru terbit/ditarik baru terlihat keesokan harinya.
+  const purge = await purgeCloudflareCache({ purgeEverything: true });
+  if (!purge.success && !purge.skipped) logger.error("ThemeBuilder", "Purge cache Cloudflare gagal setelah perubahan tema", purge.error ?? purge.errors, { themeId });
+}
+
+/** Penanda versi spesifikasi tersimpan; admin kedua yang menyimpan dari salinan basi ditolak, bukan menimpa diam-diam. */
+function specEtag(value: unknown): string {
+  return createHash("sha1").update(JSON.stringify(value ?? null)).digest("hex").slice(0, 16);
 }
 
 export async function GET(req: NextRequest) {
@@ -107,8 +118,8 @@ export async function GET(req: NextRequest) {
     if (!spec) {
       return NextResponse.json({ error: "Tema ini ditulis tangan sehingga tidak bisa dibuka di builder." }, { status: 409 });
     }
-    const { builderSpec: _stored, ...meta } = theme;
-    return NextResponse.json({ success: true, theme: meta, spec });
+    const { builderSpec: stored, ...meta } = theme;
+    return NextResponse.json({ success: true, theme: meta, spec, etag: specEtag(stored) });
   } catch (error) {
     return routeError("ThemeBuilder", error);
   }
@@ -160,9 +171,11 @@ export async function POST(req: NextRequest) {
           builderSpec: spec as unknown as Prisma.InputJsonObject,
           defaultMedia: builderDefaultMedia(spec),
         },
-        select: { id: true, name: true, category: true, description: true, isActive: true },
+        select: { id: true, name: true, category: true, description: true, isActive: true, builderSpec: true },
       });
-      return NextResponse.json({ success: true, theme });
+      const { builderSpec: stored, ...meta } = theme;
+      await recordBuilderAudit(req, guard.session, "THEME_BUILDER_CREATE", `Membuat draf tema builder ${meta.id} (${meta.name})`);
+      return NextResponse.json({ success: true, theme: meta, etag: specEtag(stored) });
     } catch (err) {
       // Baris DB gagal dibuat (mis. ID direbut permintaan lain): berkas master yang baru ditulis tidak boleh tertinggal.
       await removeIfExists(file);
@@ -190,6 +203,11 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Tema ini ditulis tangan sehingga tidak bisa disimpan dari builder." }, { status: 409 });
     }
 
+    // Admin lain menyimpan sesudah rancangan ini dibuka: tolak agar perubahannya tidak tertimpa tanpa sepengetahuan.
+    if (typeof body.baseEtag === "string" && body.baseEtag !== specEtag(existing.builderSpec)) {
+      return NextResponse.json({ error: "Tema ini sudah diubah admin lain sejak Anda membukanya. Muat ulang halaman agar perubahannya tidak tertimpa.", code: "STALE" }, { status: 409 });
+    }
+
     const { name, description, category } = readMeta(body);
     if (name.length < 2 || name.length > 60) return NextResponse.json({ error: "Nama tema wajib 2–60 karakter." }, { status: 400 });
     if (!category) return NextResponse.json({ error: "Gaya tema tidak dikenali." }, { status: 400 });
@@ -210,10 +228,12 @@ export async function PUT(req: NextRequest) {
     const theme = await prisma.theme.update({
       where: { id: themeId },
       data: { name, description, category, series: SERIES[category], builderSpec: spec as unknown as Prisma.InputJsonObject, defaultMedia: builderDefaultMedia(spec) },
-      select: { id: true, name: true, category: true, description: true, isActive: true },
+      select: { id: true, name: true, category: true, description: true, isActive: true, builderSpec: true },
     });
     await refreshPublicTheme(themeId, theme.isActive);
-    return NextResponse.json({ success: true, theme });
+    const { builderSpec: stored, ...meta } = theme;
+    await recordBuilderAudit(req, guard.session, "THEME_BUILDER_SAVE", `Menyimpan tema builder ${meta.id}${meta.isActive ? " (aktif di katalog)" : ""}`);
+    return NextResponse.json({ success: true, theme: meta, etag: specEtag(stored) });
   } catch (error) {
     return routeError("ThemeBuilder", error);
   }
@@ -239,6 +259,7 @@ export async function PATCH(req: NextRequest) {
       select: { id: true, name: true, category: true, description: true, isActive: true },
     });
     await refreshPublicTheme(themeId, theme.isActive);
+    await recordBuilderAudit(req, guard.session, theme.isActive ? "THEME_BUILDER_PUBLISH" : "THEME_BUILDER_UNPUBLISH", `${theme.isActive ? "Menerbitkan" : "Menarik"} tema builder ${theme.id} ${theme.isActive ? "ke" : "dari"} katalog`);
     return NextResponse.json({ success: true, theme });
   } catch (error) {
     return routeError("ThemeBuilder", error);

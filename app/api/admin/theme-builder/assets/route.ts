@@ -12,6 +12,7 @@ import {
   THEME_ASSET_URL_PREFIX,
   assetUsage,
   builtinOrnamentGroups,
+  recordBuilderAudit,
   uploadedAssets,
 } from "@/lib/themeBuilder/server";
 
@@ -19,6 +20,7 @@ export const dynamic = "force-dynamic";
 
 const MAX_UPLOAD_BYTES = 6 * 1024 * 1024;
 const MAX_EDGE = 1800;
+const MAX_INPUT_PIXELS = 50_000_000;
 
 export async function GET() {
   try {
@@ -51,11 +53,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Gambar harus PNG, WebP, atau JPEG." }, { status: 415 });
     }
 
-    const output = await sharp(input)
-      .rotate()
-      .resize({ width: MAX_EDGE, height: MAX_EDGE, fit: "inside", withoutEnlargement: true })
-      .webp({ quality: 90, alphaQuality: 100 })
-      .toBuffer();
+    // PNG kecil bisa mengembang menjadi ratusan megapiksel saat didekode; di server 2 GB itu cukup untuk mematikan proses.
+    let output: Buffer;
+    try {
+      output = await sharp(input, { limitInputPixels: MAX_INPUT_PIXELS })
+        .rotate()
+        .resize({ width: MAX_EDGE, height: MAX_EDGE, fit: "inside", withoutEnlargement: true })
+        .webp({ quality: 90, alphaQuality: 100 })
+        .toBuffer();
+    } catch (err) {
+      if (err instanceof Error && /pixel limit/i.test(err.message)) {
+        return NextResponse.json({ error: "Resolusi gambar terlalu besar (maksimal 50 megapiksel, mis. 7000 x 7000)." }, { status: 413 });
+      }
+      throw err;
+    }
     const name = `${crypto.createHash("sha256").update(output).digest("hex").slice(0, 24)}.webp`;
 
     await fs.promises.mkdir(THEME_ASSET_DIR, { recursive: true });
@@ -63,6 +74,7 @@ export async function POST(req: NextRequest) {
     if (!fs.existsSync(target)) await fs.promises.writeFile(target, output);
 
     const opaque = !(await sharp(output).metadata()).hasAlpha;
+    await recordBuilderAudit(req, guard.session, "THEME_ASSET_UPLOAD", `Mengunggah gambar pustaka builder ${name} (${output.length} byte)`);
     return NextResponse.json({ success: true, url: `${THEME_ASSET_URL_PREFIX}${name}`, size: output.length, opaque });
   } catch (error) {
     return routeError("ThemeBuilderAssets", error);
@@ -84,6 +96,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Ornamen masih dipakai dan tidak dapat dihapus.", usage }, { status: 409 });
     }
     await fs.promises.rm(path.join(/*turbopackIgnore: true*/ THEME_ASSET_DIR, match[1]), { force: true });
+    await recordBuilderAudit(req, guard.session, "THEME_ASSET_DELETE", `Menghapus gambar pustaka builder ${match[1]}`);
     return NextResponse.json({ success: true });
   } catch (error) {
     return routeError("ThemeBuilderAssets", error);

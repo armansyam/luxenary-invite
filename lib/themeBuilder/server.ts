@@ -10,6 +10,9 @@ import { auditBuilderMaster, type MasterIssue } from "@/lib/themeBuilder/audit";
 import { compileBuilderMaster, readBuilderBlueprint } from "@/lib/themeBuilder/compile";
 import { parseBuilderSpec, type BuilderSpec } from "@/lib/themeBuilder/spec";
 import { isSafePathSegment } from "@/lib/fsSafe";
+import { adminActorId } from "@/lib/adminAuth";
+import { logger } from "@/lib/logger";
+import type { Session } from "next-auth";
 import type { ThemeDefaultMedia } from "@/lib/themeDefaultMedia";
 import { masterPathOf } from "@/lib/themePaths";
 
@@ -45,6 +48,20 @@ export async function themeIdTaken(themeId: string): Promise<boolean> {
 
 export function isSafeThemeId(themeId: string): boolean {
   return isSafePathSegment(themeId) && /^[a-z0-9][a-z0-9-]{1,39}$/.test(themeId);
+}
+
+/**
+ * Jejak audit aksi builder yang mengubah katalog atau pustaka bersama. Kegagalan menulis jejak dicatat sebagai galat
+ * tetapi tidak membatalkan aksi yang sudah berhasil (master sudah ditulis ke disk).
+ */
+export async function recordBuilderAudit(req: Request, session: Session, action: string, details: string): Promise<void> {
+  try {
+    await prisma.adminAuditLog.create({
+      data: { adminId: adminActorId(session), action, details, ipAddress: req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || null },
+    });
+  } catch (err) {
+    logger.error("ThemeBuilderAudit", "Jejak audit builder gagal ditulis", err, { action });
+  }
 }
 
 export interface CompiledBuilderTheme {

@@ -90,6 +90,8 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
   const [historySize, setHistorySize] = useState({ past: 0, future: 0 });
   const syncHistory = useCallback(() => setHistorySize({ past: history.current.past.length, future: history.current.future.length }), []);
   const liveBase = useRef<BuilderSpec | null>(null);
+  /** Penanda versi tema saat dibuka atau terakhir disimpan; server menolak simpan bila admin lain sudah mengubahnya. */
+  const etag = useRef("");
   const allowLeave = useRef(false);
 
   const [panel, setPanel] = useState<PanelId>("colors");
@@ -156,6 +158,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
       specRef.current = data.spec;
       setSpec(data.spec);
       setMeta(m);
+      etag.current = typeof data.etag === "string" ? data.etag : "";
       setIsActive(Boolean(data.theme.isActive));
       setIsNew(false);
       setSaved(snapshot(data.spec, m));
@@ -400,7 +403,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
       const res = await fetch("/api/admin/theme-builder", {
         method: isNew ? "POST" : "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: meta.id || undefined, name: meta.name.trim(), category: meta.category, description: meta.description.trim(), spec }),
+        body: JSON.stringify({ id: meta.id || undefined, name: meta.name.trim(), category: meta.category, description: meta.description.trim(), spec, baseEtag: etag.current || undefined }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -408,6 +411,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
         notify(data.details?.[0] || data.error || "Tema gagal disimpan.", "error");
         return;
       }
+      etag.current = typeof data.etag === "string" ? data.etag : "";
       const m: ThemeMeta = { id: data.theme.id, name: data.theme.name, category: data.theme.category, description: data.theme.description || "" };
       setMeta(m);
       setIsActive(Boolean(data.theme.isActive));
