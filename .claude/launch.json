@@ -15,7 +15,7 @@
       "runtimeExecutable": "bash",
       "runtimeArgs": [
         "-c",
-        "DATABASE_URL='postgresql://armansyam@localhost:5432/luxenary_test?schema=public' NEXT_DIST_DIR=.next-a STORAGE_PROVIDER=local S3_ENDPOINT= S3_BUCKET_NAME= S3_ACCESS_KEY= S3_SECRET_KEY= S3_CUSTOM_DOMAIN= CF_ZONE_ID= CF_API_TOKEN= NEXTAUTH_URL=http://app.localhost:3100 AUTH_URL=http://app.localhost:3100 NEXT_PUBLIC_APP_URL=http://app.localhost:3100 NEXT_PUBLIC_ROOT_DOMAIN=localhost:3100 NODE_OPTIONS='--dns-result-order=ipv4first' exec npx next dev -p 3100"
+        "DATABASE_URL='postgresql://armansyam@localhost:5432/luxenary_test?schema=public' NEXT_DIST_DIR=.next-a STORAGE_PROVIDER=local S3_ENDPOINT= S3_BUCKET_NAME= S3_ACCESS_KEY= S3_SECRET_KEY= S3_CUSTOM_DOMAIN= CF_ZONE_ID= CF_API_TOKEN= NEXTAUTH_URL=http://localhost:3100 AUTH_URL=http://localhost:3100 NEXT_PUBLIC_APP_URL=http://localhost:3100 NEXT_PUBLIC_ROOT_DOMAIN=localhost:3100 NODE_OPTIONS='--dns-result-order=ipv4first' exec npx next dev -p 3100"
       ],
       "port": 3100
     },

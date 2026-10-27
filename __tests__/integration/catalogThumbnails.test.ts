@@ -34,6 +34,7 @@ describe("firstExistingPublicAsset", () => {
 describe.skipIf(!IS_TEST_DB)("GET /api/public/themes", () => {
   afterAll(async () => {
     await prisma.theme.deleteMany({ where: { id: { startsWith: TAG } } });
+    fs.rmSync(path.join(process.cwd(), "public", "demo", `${TAG}-foto`), { recursive: true, force: true });
     await pool.end();
   });
 
@@ -51,18 +52,14 @@ describe.skipIf(!IS_TEST_DB)("GET /api/public/themes", () => {
     expect(list.some((t) => t.id === `${TAG}-mati`)).toBe(false);
   });
 
-  it("tema yang berkas thumbnail demonya ada tetap mengembalikan URL-nya", async () => {
-    const withThumb = fs.readdirSync(path.join(process.cwd(), "public", "demo")).find((id) =>
-      fs.existsSync(path.join(process.cwd(), "public", "demo", id, "thumbnail_mobile.webp")),
-    );
-    if (!withThumb) return;
-    await prisma.theme.upsert({
-      where: { id: withThumb },
-      create: { id: withThumb, name: withThumb, category: "modern", eventType: "WEDDING", isActive: true },
-      update: {},
-    });
+  it("thumbnail yang berkasnya ada dikembalikan per sisi; sisi yang tidak ada null", async () => {
+    const id = `${TAG}-foto`;
+    const dir = path.join(process.cwd(), "public", "demo", id);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, "thumbnail_mobile.webp"), "x");
+    await prisma.theme.create({ data: { id, name: "Tema Dengan Thumbnail Ponsel", category: "modern", eventType: "WEDDING", isActive: true } });
     const res = await publicThemes(new Request("http://localhost/api/public/themes?eventType=WEDDING"));
-    const list = (await res.json()) as Array<{ id: string; thumbnailMobile: string | null }>;
-    expect(list.find((t) => t.id === withThumb)?.thumbnailMobile).toBe(`/demo/${withThumb}/thumbnail_mobile.webp`);
+    const list = (await res.json()) as Array<{ id: string; thumbnailMobile: string | null; thumbnailDesktop: string | null }>;
+    expect(list.find((t) => t.id === id)).toMatchObject({ thumbnailMobile: `/demo/${id}/thumbnail_mobile.webp`, thumbnailDesktop: null });
   });
 });

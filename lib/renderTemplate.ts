@@ -7,6 +7,7 @@ import { LIVE_EDIT_FIELD_PATTERN } from "@/lib/liveEditFields";
 import { isSafePathSegment } from "@/lib/fsSafe";
 import { masterFilePath } from "@/lib/themePaths";
 import { logger } from "@/lib/logger";
+import { stripEmptyMediaRefs } from "@/lib/emptyMediaRefs";
 
 // /css/* disajikan dengan Cache-Control 7 hari (next.config.ts): tanpa versi di URL, perbaikan modules.css tidak sampai ke
 // tamu dan Cloudflare sampai cache-nya kedaluwarsa. Versi = hash isi berkas, dihitung sekali per proses.
@@ -2374,6 +2375,7 @@ export async function renderTemplateFile(
   // Label kustom disisipkan setelah placeholder diganti, agar seksi buatan engine ({{rsvpSectionHtml}}, galeri, kado,
   // dan seluruh seksi tema satu nama) ikut memakai label klien, bukan hanya elemen yang tertulis di master.
   const customLabels = data.featureSettings?.customLabels || data.customLabels || {};
+  tpl = stripEmptyMediaRefs(tpl);
   return tpl.replace(
     /<([a-zA-Z0-9]+)\b([^>]*data-lux-field="customLabels\.([^"]+)"[^>]*)>([\s\S]*?)<\/\1>/gi,
     (match, tagName, attrs, labelKey, innerContent) => {

@@ -3,6 +3,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { getPublicPlatformSettings } from "@/lib/settings";
 import { getDynamicServerRootDomain } from "@/lib/serverDomainUtils";
 import { LandingInteractive } from "@/components/landing/LandingInteractive";
+import { getShowcaseThemes } from "@/lib/landingShowcase";
 import "./landing.css";
 
 export const revalidate = 86400; // Full cache 24 jam (ISR)
@@ -17,10 +18,11 @@ export default async function Home() {
 
   const activeDomain = await getDynamicServerRootDomain();
   const brand = platformName || "Platform Undangan";
+  const showcaseThemes = await getShowcaseThemes();
 
   return (
     <div className="lux-landing-root min-h-screen selection:bg-[#C9A227]/30 selection:text-[#FBF8F2]">
-      <LandingInteractive />
+      <LandingInteractive collections={showcaseThemes} />
 
       {/* ===========================
            SERVICE STATUS NOTICE
@@ -189,6 +191,7 @@ export default async function Home() {
     </Link>
   </div>
 
+  {showcaseThemes.length > 0 && (
   <div className="koleksi-stage-wrap reveal reveal-delay-2">
     {/* Device Pair Showcase: Tablet di belakang + Phone di depan */}
     <div className="device-pair-showcase" id="koleksi-showcase">
@@ -207,7 +210,7 @@ export default async function Home() {
           <div style={{ width: "28px" }}></div>
         </div>
         <div className="tablet-screen">
-          <img id="tablet-img" src="/demo/aurelia/thumbnail_desktop.webp" alt="Koleksi Desktop" />
+          <img id="tablet-img" src={showcaseThemes[0]?.desktop} alt="Koleksi Desktop" />
           <div className="screen-glare"></div>
         </div>
       </div>
@@ -216,7 +219,7 @@ export default async function Home() {
       <div className="device-mockup-phone">
         <div className="phone-notch-bar"></div>
         <div className="phone-screen">
-          <img id="phone-img" src="/demo/aurelia/thumbnail_mobile.webp" alt="Koleksi Mobile" />
+          <img id="phone-img" src={showcaseThemes[0]?.thumbnail} alt="Koleksi Mobile" />
           <div className="screen-glare"></div>
         </div>
       </div>
@@ -225,8 +228,8 @@ export default async function Home() {
     {/* Koleksi Controls & Theme Meta */}
     <div className="koleksi-controls">
       <div className="koleksi-meta">
-        <div className="koleksi-theme-name" id="carousel-name">AURELIA</div>
-        <div className="koleksi-theme-cat" id="carousel-category">MODERN · ROMANTIS</div>
+        <div className="koleksi-theme-name" id="carousel-name">{showcaseThemes[0]?.name}</div>
+        <div className="koleksi-theme-cat" id="carousel-category">{showcaseThemes[0]?.category}</div>
       </div>
       <div className="koleksi-nav-row">
         <button className="koleksi-btn" id="carousel-prev" aria-label="Koleksi sebelumnya">
@@ -243,6 +246,7 @@ export default async function Home() {
       </div>
     </div>
   </div>
+  )}
 </section>
 
 {/* ===========================

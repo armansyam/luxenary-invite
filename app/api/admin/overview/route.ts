@@ -3,6 +3,7 @@ import { requireAdminModule } from "@/lib/adminAuth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
+import { themeThumbnails } from "@/lib/publicAsset";
 
 export const dynamic = "force-dynamic";
 
@@ -80,13 +81,12 @@ export async function GET() {
       const customEntry = themeCustomDataMap[themeKey];
       const customData = customEntry?.data;
 
-      const rawThumbMobile = customData?.thumbnailMobileUrl || `/demo/${themeKey}/thumbnail_mobile.webp`;
-      const rawThumbDesktop = customData?.thumbnailDesktopUrl || `/demo/${themeKey}/thumbnail_desktop.webp`;
+      const { mobile, desktop } = themeThumbnails(themeKey, customData);
 
       return {
         ...t,
-        thumbnailMobile: rawThumbMobile,
-        thumbnailDesktop: rawThumbDesktop,
+        thumbnailMobile: mobile,
+        thumbnailDesktop: desktop,
       };
     });
 

@@ -48,6 +48,7 @@ async function refreshPublicTheme(themeId: string, isActive: boolean) {
     }
   }
   const { revalidatePath } = await import("next/cache");
+  revalidatePath("/");
   revalidatePath("/demo");
   revalidatePath("/api/public/themes");
 }

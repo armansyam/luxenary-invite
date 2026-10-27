@@ -81,7 +81,9 @@ logs/
 !/public/uploads/proofs/.gitkeep
 /public/uploads/music/
 /public/uploads/finance/
-# unggahan admin produksi (aset demo tema, logo/favicon); bawaan git tetap di public/demo dan public/assets/brand
+# media demo tema (foto, thumbnail, cache index.html): hasil turunan yang dibuat admin lewat Demo Studio, bukan isi repo
+/public/demo/
+# unggahan admin produksi (aset demo tema, logo/favicon); bawaan git tetap di public/assets/brand
 /public/uploads/demo/
 /public/uploads/brand/
 # ornamen unggahan Theme Builder (nama hash isi; ditaut oleh master dan undangan terbit)

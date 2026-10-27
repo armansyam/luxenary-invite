@@ -2,67 +2,16 @@
 
 import { useEffect } from "react";
 
-export function LandingInteractive() {
+export interface ShowcaseTheme {
+  name: string;
+  category: string;
+  /** Thumbnail ponsel dan tablet; hanya tema yang keduanya ada yang ikut ditampilkan. */
+  thumbnail: string;
+  desktop: string;
+}
+
+export function LandingInteractive({ collections }: { collections: ShowcaseTheme[] }) {
   useEffect(() => {
-    // ----------------------------
-    // DATA KOLEKSI
-    // ----------------------------
-    const collections = [
-      {
-        name: "AURELIA",
-        category: "Modern · Romantis",
-        thumbnail: "/demo/aurelia/thumbnail_mobile.webp",
-        desktop: "/demo/aurelia/thumbnail_desktop.webp",
-        iframe: "/demo/aurelia/index.html",
-        fallback: "/demo/aurelia/home.webp",
-        fallbackD: "/demo/aurelia/home.webp",
-      },
-      {
-        name: "KALANDRA",
-        category: "Editorial · Kontemporer",
-        thumbnail: "/demo/kalandra/thumbnail_mobile.webp",
-        desktop: "/demo/kalandra/thumbnail_desktop.webp",
-        iframe: "/demo/kalandra/index.html",
-        fallback: "/demo/kalandra/cover.webp",
-        fallbackD: "/demo/kalandra/cover.webp",
-      },
-      {
-        name: "PRAMESWARI",
-        category: "Timeless · Budaya",
-        thumbnail: "/demo/prameswari/thumbnail_mobile.webp",
-        desktop: "/demo/prameswari/thumbnail_desktop.webp",
-        iframe: "/demo/prameswari/index.html",
-        fallback: "/demo/prameswari/cover.webp",
-        fallbackD: "/demo/prameswari/cover.webp",
-      },
-      {
-        name: "BADRIKA",
-        category: "Dark · Elegan",
-        thumbnail: "/demo/badrika/thumbnail_mobile.webp",
-        desktop: "/demo/badrika/thumbnail_desktop.webp",
-        iframe: "/demo/badrika/index.html",
-        fallback: "/demo/badrika/cover.webp",
-        fallbackD: "/demo/badrika/cover.webp",
-      },
-      {
-        name: "ARTISAN",
-        category: "Klasik · Hangat",
-        thumbnail: "/demo/artisan/thumbnail_mobile.webp",
-        desktop: "/demo/artisan/thumbnail_desktop.webp",
-        iframe: "/demo/artisan/index.html",
-        fallback: "/demo/artisan/thumbnail_mobile.webp",
-        fallbackD: "/demo/artisan/home.webp",
-      },
-      {
-        name: "CANDANI",
-        category: "Lembut · Floral",
-        thumbnail: "/demo/candani/thumbnail_mobile.webp",
-        desktop: "/demo/candani/thumbnail_desktop.webp",
-        iframe: "/demo/candani/index.html",
-        fallback: "/demo/candani/cover.webp",
-        fallbackD: "/demo/candani/cover.webp",
-      },
-    ];
 
     // ----------------------------
     // 1. NAVBAR SCROLL
@@ -171,17 +120,11 @@ export function LandingInteractive() {
       setTimeout(() => {
         if (tabletImg) {
           tabletImg.src = c.desktop;
-          tabletImg.onerror = function () {
-            tabletImg.src = c.fallbackD || c.fallback;
-          };
           tabletImg.style.opacity = "1";
           tabletImg.style.transform = "scale(1)";
         }
         if (phoneImg) {
           phoneImg.src = c.thumbnail;
-          phoneImg.onerror = function () {
-            phoneImg.src = c.fallback;
-          };
           phoneImg.style.opacity = "1";
           phoneImg.style.transform = "scale(1)";
         }
@@ -197,6 +140,7 @@ export function LandingInteractive() {
     };
 
     const goTo = (idx: number) => {
+      if (!total) return;
       current = ((idx % total) + total) % total;
       renderShowcase();
     };
@@ -232,11 +176,11 @@ export function LandingInteractive() {
     showcase?.addEventListener("touchend", onTouchEnd, { passive: true });
 
     // Autoplay carousel
-    let autoplay = setInterval(() => goTo(current + 1), 5000);
+    let autoplay = total > 1 ? setInterval(() => goTo(current + 1), 5000) : undefined;
     const pauseAutoplay = () => clearInterval(autoplay);
     const resumeAutoplay = () => {
       clearInterval(autoplay);
-      autoplay = setInterval(() => goTo(current + 1), 5000);
+      autoplay = total > 1 ? setInterval(() => goTo(current + 1), 5000) : undefined;
     };
 
     showcase?.addEventListener("mouseenter", pauseAutoplay);
@@ -586,7 +530,7 @@ export function LandingInteractive() {
       observer.disconnect();
       counterObserver.disconnect();
     };
-  }, []);
+  }, [collections]);
 
   return null;
 }

@@ -4,7 +4,7 @@ import { routeError } from "@/lib/routeError";
 import { DEMO_REGISTRY } from "@/lib/demoRegistry";
 import { EventType, type ThemeCategory } from "@prisma/client";
 import { logger } from "@/lib/logger";
-import { firstExistingPublicAsset } from "@/lib/publicAsset";
+import { themeThumbnails } from "@/lib/publicAsset";
 
 export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
@@ -94,11 +94,7 @@ export async function GET(req: Request) {
           ? "Traditional"
           : "Modern");
 
-      const defaultCoverFallback = source?.landingCoverUrl || `/demo/${themeKey}/cover.webp`;
-      const thumbMobile = firstExistingPublicAsset([customData?.thumbnailMobileUrl, `/demo/${themeKey}/thumbnail_mobile.webp`]);
-      const thumbDesktop = firstExistingPublicAsset([customData?.thumbnailDesktopUrl, `/demo/${themeKey}/thumbnail_desktop.webp`]);
-      const rawCoverUrl = defaultCoverFallback;
-      const coverUrl = rawCoverUrl;
+      const { mobile: thumbMobile, desktop: thumbDesktop } = themeThumbnails(themeKey, customData);
 
       const eventType = t.eventType || (source as any)?.eventType || "WEDDING";
       const evTypeUpper = eventType.toUpperCase();
@@ -153,7 +149,6 @@ export async function GET(req: Request) {
         graduateName: (source as any)?.graduateName || "",
         eventTitle: (source as any)?.eventTitle || "",
         eyebrow,
-        coverUrl,
         weddingDay: source?.weddingDateDay || "--",
         weddingMonth: source?.weddingDateMonth || "--",
         weddingYear: source?.weddingDateYear || "----",

@@ -1,7 +1,8 @@
 /**
  * audit-asset-refs.ts
  * Gerbang rujukan aset (hanya membaca): setiap path aset lokal yang tertulis di kode, seed, master tema, dan DB
- * harus ada di public/. Master tema dan media bawaan tema tidak boleh menaut /demo/ (foto model etalase).
+ * harus ada di public/, kecuali /demo/ (media demo, bukan isi repo). Master tema dan media bawaan tema tidak boleh
+ * menaut /demo/ (foto model etalase).
  * Keluar dengan kode 1 bila ada rujukan putus atau pelanggaran.
  */
 import "dotenv/config";
@@ -41,7 +42,8 @@ async function main() {
     scanned += 1;
     for (const ref of refsOf(text)) {
       if (forbidDemo && ref.startsWith("/demo/")) demoInMaster.push({ source, ref });
-      if (!fs.existsSync(path.join(PUBLIC_DIR, ref))) missing.push({ source, ref });
+      // Media demo dibuat admin lewat Demo Studio dan tidak ada di repo; render demo dan katalog melewati yang tidak ada.
+      if (!ref.startsWith("/demo/") && !fs.existsSync(path.join(PUBLIC_DIR, ref))) missing.push({ source, ref });
     }
   };
 

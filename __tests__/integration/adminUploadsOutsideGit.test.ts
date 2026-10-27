@@ -43,6 +43,8 @@ const upload = (url: string, fields: Record<string, string>, file: Buffer, name:
 let originalSetting: { value: string; label: string | null; group: string | null } | null = null;
 let statusBefore = "";
 let brandBackup: string | null = null;
+// Media demo tidak lagi dilacak git; tes membuat berkas contoh sendiri bila belum ada dan menghapusnya sesudahnya.
+let fixtureCreated = false;
 
 beforeAll(async () => {
   if (!IS_TEST_DB) return;
@@ -57,6 +59,7 @@ beforeAll(async () => {
 afterAll(async () => {
   if (IS_TEST_DB) {
     fs.rmSync(uploadsDemo, { recursive: true, force: true });
+    if (fixtureCreated) fs.rmSync(path.join(ROOT, "public", "demo", THEME, "gallery_01.webp"), { force: true });
     fs.rmSync(uploadsBrand, { recursive: true, force: true });
     if (brandBackup) {
       fs.cpSync(brandBackup, uploadsBrand, { recursive: true });
@@ -77,6 +80,11 @@ afterAll(async () => {
 describe.skipIf(!IS_TEST_DB)("unggahan admin tidak menyentuh berkas yang dilacak git", () => {
   it("aset demo ditulis ke public/uploads/demo, dipakai demo statis, dan hapus slot tidak menghapus bawaan git", async () => {
     const tracked = path.join(ROOT, "public", "demo", THEME, "gallery_01.webp");
+    if (!fs.existsSync(tracked)) {
+      fs.mkdirSync(path.dirname(tracked), { recursive: true });
+      fs.writeFileSync(tracked, await png(90));
+      fixtureCreated = true;
+    }
     const trackedHash = sha(tracked);
 
     const res = await demoAssetPost(upload(`http://localhost/api/admin/themes/${THEME}/demo-asset`, { slot: "gallery_01" }, await png(200), "foto.png"), { params: Promise.resolve({ id: THEME }) });

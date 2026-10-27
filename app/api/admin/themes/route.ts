@@ -5,6 +5,7 @@ import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
 import { readFormBody, readJsonBody } from "@/lib/requestBody";
 import { removeIfExists } from "@/lib/fsSafe";
+import { themeThumbnails } from "@/lib/publicAsset";
 import { EventType, Prisma } from "@prisma/client";
 import { validateThemeDefaultMedia, type ThemeDefaultMedia } from "@/lib/themeDefaultMedia";
 import { masterDir, masterPathOf } from "@/lib/themePaths";
@@ -42,13 +43,12 @@ export async function GET() {
       const customEntry = themeCustomDataMap[themeKey];
       const customData = customEntry?.data;
 
-      const rawThumbMobile = customData?.thumbnailMobileUrl || `/demo/${themeKey}/thumbnail_mobile.webp`;
-      const rawThumbDesktop = customData?.thumbnailDesktopUrl || `/demo/${themeKey}/thumbnail_desktop.webp`;
+      const { mobile, desktop } = themeThumbnails(themeKey, customData);
 
       return {
         ...t,
-        thumbnailMobile: rawThumbMobile,
-        thumbnailDesktop: rawThumbDesktop,
+        thumbnailMobile: mobile,
+        thumbnailDesktop: desktop,
       };
     });
 

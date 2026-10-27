@@ -60,6 +60,11 @@ export async function GET(
     }
 
     const ext = path.extname(fullPath).toLowerCase();
+    // CSS dan font hanya berasal dari folder fonts/ (diunduh server dari Google Fonts); berkas ber-ekstensi itu di folder
+    // unggahan lain tidak boleh tampil sebagai stylesheet di origin ini.
+    if ((ext === ".css" || ext === ".woff2") && safeSegments[0] !== "fonts") {
+      return new NextResponse("Not Found", { status: 404 });
+    }
     const contentType = MIME_TYPES[ext] || "application/octet-stream";
     const fileSize = stat.size;
 

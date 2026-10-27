@@ -2251,8 +2251,14 @@ export default function EditInvitation() {
                     {displayedThemes.map((th) => {
                       const isSelected = Boolean(invitation.themeId) && invitation.themeId === th.id;
                       const isThemeLocked = invitation?.status === "PUBLISHED" || invitation?.status === "EVENT_FINISHED";
-                      const thumbMobile = th.thumbnailMobile || `/demo/${th.id}/thumbnail_mobile.webp`;
-                      const thumbDesktop = th.thumbnailDesktop || `/demo/${th.id}/thumbnail_desktop.webp`;
+                      const thumbMobile: string | null = th.thumbnailMobile || null;
+                      const thumbDesktop: string | null = th.thumbnailDesktop || null;
+                      const hasThumb = Boolean(thumbMobile || thumbDesktop);
+                      const selectedTick = isSelected && (
+                        <span className="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-amber-800 text-white flex items-center justify-center text-xs font-bold shadow-md">
+                          ✓
+                        </span>
+                      );
                       return (
                         <div
                           key={th.id}
@@ -2273,9 +2279,15 @@ export default function EditInvitation() {
                               : "border-stone-200 hover:border-stone-300 bg-white"
                           }`}
                         >
-                          {/* ── Device Pair Mockup ── */}
+                          {/* Tema tanpa thumbnail tampil sebagai kartu nama */}
+                          {!hasThumb ? (
+                            <div className="relative flex min-h-[8rem] items-center justify-center rounded-xl bg-stone-100 px-4 text-center">
+                              <span className="font-serif text-lg font-bold leading-tight text-stone-700">{th.name}</span>
+                              {selectedTick}
+                            </div>
+                          ) : (
                           <div className="stp-scene">
-                            {/* Tablet frame */}
+                            {thumbDesktop && (
                             <div className="stp-tablet">
                               <div className="stp-tablet-bar">
                                 <div className="stp-tablet-dots">
@@ -2295,8 +2307,9 @@ export default function EditInvitation() {
                                 <div className="stp-glare"/>
                               </div>
                             </div>
+                            )}
 
-                            {/* Phone frame — overlapping bottom-left */}
+                            {thumbMobile && (
                             <div className="stp-phone">
                               <div className="stp-phone-notch"/>
                               <div className="stp-phone-screen">
@@ -2308,14 +2321,11 @@ export default function EditInvitation() {
                                 <div className="stp-glare"/>
                               </div>
                             </div>
-
-                            {/* Selected tick */}
-                            {isSelected && (
-                              <span className="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-amber-800 text-white flex items-center justify-center text-xs font-bold shadow-md">
-                                ✓
-                              </span>
                             )}
+
+                            {selectedTick}
                           </div>
+                          )}
 
                           {/* ── Theme Info ── */}
                           <div className="space-y-1 mt-0.5">
@@ -2327,15 +2337,17 @@ export default function EditInvitation() {
                             </div>
                             <h3 className="font-bold text-stone-900 text-xs leading-tight">{th.name}</h3>
                             <p className="text-[10px] text-stone-500 line-clamp-2 leading-relaxed">{th.desc}</p>
-                            <a
-                              href={`/demo/${th.id}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="inline-block text-[10px] font-bold text-amber-800 hover:underline pt-0.5"
-                            >
-                              Lihat Demo
-                            </a>
+                            {hasThumb && (
+                              <a
+                                href={`/demo/${th.id}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-block text-[10px] font-bold text-amber-800 hover:underline pt-0.5"
+                              >
+                                Lihat Demo
+                              </a>
+                            )}
                           </div>
                         </div>
                       );

@@ -3,6 +3,19 @@ import path from "path";
 
 const PUBLIC_DIR = path.join(/*turbopackIgnore: true*/ process.cwd(), "public");
 
+interface ThemeThumbnailOverrides {
+  thumbnailMobileUrl?: string | null;
+  thumbnailDesktopUrl?: string | null;
+}
+
+/** Thumbnail mobile/desktop tema: isian Demo Studio dulu, lalu berkas demo bawaan; null bila keduanya tidak ada. */
+export function themeThumbnails(themeKey: string, custom?: ThemeThumbnailOverrides | null): { mobile: string | null; desktop: string | null } {
+  return {
+    mobile: firstExistingPublicAsset([custom?.thumbnailMobileUrl, `/demo/${themeKey}/thumbnail_mobile.webp`]),
+    desktop: firstExistingPublicAsset([custom?.thumbnailDesktopUrl, `/demo/${themeKey}/thumbnail_desktop.webp`]),
+  };
+}
+
 /**
  * Kandidat URL pertama yang benar-benar tersedia, atau null. URL lokal ("/demo/...", "/uploads/...") diperiksa ke folder
  * public; URL http(s) tidak bisa diperiksa dari server dan dianggap tersedia. Dipakai katalog agar tema tanpa thumbnail

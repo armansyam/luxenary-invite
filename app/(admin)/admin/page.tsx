@@ -2777,13 +2777,17 @@ export default function AdminPage() {
                                           <div style={{ width: "18px" }}/>
                                         </div>
                                         <div className="stp-tablet-screen">
-                                          <img
-                                            src={theme.thumbnailDesktop || `/demo/${theme.id}/thumbnail_desktop.webp`}
-                                            alt={`${theme.name} Desktop`}
-                                            loading="lazy"
-                                            decoding="async"
-                                            className="w-full h-full object-cover object-top"
-                                          />
+                                          {theme.thumbnailDesktop ? (
+                                            <img
+                                              src={theme.thumbnailDesktop}
+                                              alt={`${theme.name} Desktop`}
+                                              loading="lazy"
+                                              decoding="async"
+                                              className="w-full h-full object-cover object-top"
+                                            />
+                                          ) : (
+                                            <span className="flex h-full w-full items-center justify-center bg-stone-100 px-2 text-center font-serif text-xs font-bold text-stone-600">{theme.name}</span>
+                                          )}
                                           <div className="stp-glare"/>
                                         </div>
 
@@ -2809,12 +2813,16 @@ export default function AdminPage() {
                                     <div className="stp-phone">
                                       <div className="stp-phone-notch"/>
                                       <div className="stp-phone-screen">
-                                        <img
-                                          src={theme.thumbnailMobile || `/demo/${theme.id}/thumbnail_mobile.webp`}
-                                          alt={`${theme.name} Mobile`}
-                                          loading="lazy"
-                                          decoding="async"
-                                        />
+                                        {theme.thumbnailMobile ? (
+                                          <img
+                                            src={theme.thumbnailMobile}
+                                            alt={`${theme.name} Mobile`}
+                                            loading="lazy"
+                                            decoding="async"
+                                          />
+                                        ) : (
+                                          <span className="flex h-full w-full items-center justify-center bg-stone-100" />
+                                        )}
                                         <div className="stp-glare"/>
                                       </div>
                                     </div>
