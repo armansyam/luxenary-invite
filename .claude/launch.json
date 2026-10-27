@@ -1,0 +1,37 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "luxenary-test",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "DATABASE_URL='postgresql://armansyam@localhost:5432/luxenary_test?schema=public' NEXT_DIST_DIR=.next-a STORAGE_PROVIDER=local S3_ENDPOINT= S3_BUCKET_NAME= S3_ACCESS_KEY= S3_SECRET_KEY= S3_CUSTOM_DOMAIN= CF_ZONE_ID= CF_API_TOKEN= NEXTAUTH_URL=http://app.localhost:3100 AUTH_URL=http://app.localhost:3100 NEXT_PUBLIC_APP_URL=http://app.localhost:3100 NEXT_PUBLIC_ROOT_DOMAIN=localhost:3100 NODE_OPTIONS='--dns-result-order=ipv4first' exec npx next dev -p 3100"
+      ],
+      "port": 3100
+    },
+    {
+      "name": "luxenary-prod-local",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "DATABASE_URL='postgresql://armansyam@localhost:5432/luxenary_test?schema=public' NEXT_DIST_DIR=.next-b STORAGE_PROVIDER=local S3_ENDPOINT= S3_BUCKET_NAME= S3_ACCESS_KEY= S3_SECRET_KEY= S3_CUSTOM_DOMAIN= CF_ZONE_ID= CF_API_TOKEN= NEXTAUTH_URL=http://localhost:3200 AUTH_URL=http://localhost:3200 NEXT_PUBLIC_APP_URL=http://localhost:3200 NEXT_PUBLIC_ROOT_DOMAIN=localhost:3200 NODE_ENV=production exec npx next start -p 3200"
+      ],
+      "port": 3200
+    },
+    {
+      "name": "dev-running",
+      "url": "http://localhost:3000",
+      "port": 3000
+    }
+  ]
+}

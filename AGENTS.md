@@ -67,15 +67,17 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   4. Sinkronisasi 4 layer arsitektur (Database riil, Prisma Seeder, Backend API, Frontend UI).
   5. Gerbang bukti empiris (Output `Grep` 0 match, output `psql` bersih, output `tsc --noEmit` Exit 0).
 
-## 7. LARANGAN PENGGUNAAN BROWSER TOOLS UNTUK KONFIRMASI (CODE-FIRST VERIFICATION ONLY)
-- **DILARANG MENGGUNAKAN BROWSER TOOLS / SUBAGENT UNTUK KONFIRMASI RUTIN:**
-  - Menjalankan tool browser (`mcp__Claude_Browser__*`, `mcp__claude-in-chrome__*`) atau subagent `Agent`, merekam video WebP, atau mengambil screenshot browser untuk sekadar "konfirmasi" memakan waktu sangat lama (2-5 menit), berbobot berat, rentan timeout, dan membuang-buang waktu kerja pengguna.
-  - Pengecekan visual browser BUKAN alat verifikasi integritas kode dan tidak boleh dipakai untuk pembuktian rutin.
+## 7. PENGGUNAAN BROWSER TOOLS (CODE-FIRST, BROWSER UNTUK PERUBAHAN TAMPILAN)
+- **BROWSER DIIZINKAN UNTUK PERUBAHAN YANG HANYA TERBUKTI LEWAT RENDER:**
+  - Tool browser (`mcp__Claude_Browser__*`) BOLEH dan WAJIB dipakai untuk memverifikasi perubahan tata letak, CSS, z-index/klip/overflow, responsivitas (320, 375, 1440 px), dan tampilan komponen UI. Kode dan tes tidak bisa membuktikan hal-hal itu; jangan menyatakan perubahan visual selesai tanpa melihatnya di browser.
+  - Pakai server uji (`luxenary-test`, database `luxenary_test`, `CF_ZONE_ID=` dan `CF_API_TOKEN=` dikosongkan). Jangan menjalankan server lokal yang membawa kredensial Cloudflare/S3 produksi.
+- **TETAP DILARANG UNTUK KONFIRMASI RUTIN:**
+  - Browser, subagent `Agent`, rekaman video WebP, atau screenshot untuk sekadar "konfirmasi" logika non-visual memakan waktu (2-5 menit) dan rentan timeout; pengecekan visual bukan alat verifikasi integritas kode. Selesaikan sesi dan reset ukuran viewport (`resize_window` preset desktop) setelah uji.
 - **WAJIB CODE-FIRST & TERMINAL-FIRST VERIFICATION (FAKTUAL, AMAN & CEPAT):**
   - Seluruh verifikasi fungsional dan integritas sistem WAJIB diperiksa langsung melalui kode sumber (`Read`, `Grep`), eksekusi skrip runtime/unit test (`npx tsx`, `curl`, API handler tests), inspeksi data database langsung (`psql`), dan typecheck statis (`npx tsc --noEmit`).
   - Cara ini 10x lebih cepat, 100% deterministik, tidak membuang waktu, dan langsung menyasar akar logika kode secara faktual.
-- **HANYA BISA DIAKTIFKAN ATAS PERMINTAAN EKSPLISIT PENGGUNA:**
-  - Tool browser HANYA BOLEH dipanggil apabila pengguna secara eksplisit dan tertulis memberikan perintah: *"buka browser"*, *"uji di browser"*, atau *"rekam layar browser"*. Tanpa instruksi eksplisit tersebut, browser tool TERLARANG digunakan.
+- **IZIN (DIUBAH ATAS PERINTAH PENGGUNA, 27 Okt 2026):**
+  - Izin pemakaian browser untuk perubahan tampilan berlaku tetap; tidak perlu perintah "buka browser" setiap kali. Untuk perubahan non-visual, aturan code-first di atas tetap berlaku.
 
 # 🎯 Expert Critic & Anti-Yes-Man Protocol (Kritikus Ahli Objektif & Ilmiah)
 - **Bertindak sebagai Kritikus Ahli yang Objektif dan Jujur:**

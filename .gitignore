@@ -55,6 +55,10 @@ data/
 # scratch pad files (personal notes, temp scripts)
 /scratch/
 scratch/
+
+# foto mentah di luar kode (123 MB) dan izin lokal agen; .claude/launch.json tetap dilacak
+/wisuda foto/
+/.claude/settings.local.json
 ChatGPT Image*.png
 
 # compiled static theme demos (generated runtime cache)
@@ -80,6 +84,8 @@ logs/
 # unggahan admin produksi (aset demo tema, logo/favicon); bawaan git tetap di public/demo dan public/assets/brand
 /public/uploads/demo/
 /public/uploads/brand/
+# ornamen unggahan Theme Builder (nama hash isi; ditaut oleh master dan undangan terbit)
+/public/uploads/theme-assets/
 
 # published baked invitation HTML (konten klien — jangan commit ke repo)
 /public/published/
