@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     const parsed = parseBuilderSpec(body.spec);
     if (!parsed.ok) return NextResponse.json({ error: "Rancangan tema tidak valid.", details: parsed.errors }, { status: 400 });
 
-    const { html, issues } = await renderBuilderPreview(parsed.spec);
+    const { html, issues } = await renderBuilderPreview(parsed.spec, "kalandra", body.mode === "client" ? "client" : "demo");
     return NextResponse.json({ success: true, html, issues });
   } catch (error) {
     return routeError("ThemeBuilderPreview", error);

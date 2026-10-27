@@ -72,6 +72,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
 
   const [panel, setPanel] = useState<PanelId>("colors");
   const [device, setDevice] = useState<PreviewDevice>("mobile");
+  const [previewMode, setPreviewMode] = useState<"demo" | "client">("demo");
   const [viewSection, setViewSection] = useState<OrnamentSection>("cover");
   const [jump, setJump] = useState<{ section: OrnamentSection; nonce: number }>({ section: "cover", nonce: 0 });
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -158,7 +159,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
         const res = await fetch("/api/admin/theme-builder/preview", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ spec: specRef.current }),
+          body: JSON.stringify({ spec: specRef.current, mode: previewMode }),
           signal: controller.signal,
         });
         const data = await res.json().catch(() => ({}));
@@ -175,7 +176,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
       }
     }, PREVIEW_DEBOUNCE_MS);
     return () => { controller.abort(); window.clearTimeout(timer); };
-  }, [structure, loaded, notify]);
+  }, [structure, loaded, notify, previewMode]);
 
   /** "live" mengubah tampilan tanpa riwayat (saat menyeret); "commit" mencatat satu langkah undo. */
   const apply = useCallback((next: BuilderSpec, mode: "live" | "commit") => {
@@ -503,6 +504,20 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
             >
               <Icon d={d === "desktop" ? "M3 5h18v11H3zM8 20h8M12 16v4" : "M8 3h8a1 1 0 011 1v16a1 1 0 01-1 1H8a1 1 0 01-1-1V4a1 1 0 011-1zM11 18h2"} className="h-3.5 w-3.5" />
               {DEVICE_SIZES[d].label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center rounded-xl bg-stone-100 p-1" title="Contoh demo memakai foto dan data contoh; Klien baru meniru undangan yang belum diunggah apa pun">
+          {([["demo", "Contoh demo"], ["client", "Klien baru"]] as const).map(([mode, label]) => (
+            <button
+              key={mode}
+              type="button"
+              aria-pressed={previewMode === mode}
+              onClick={() => setPreviewMode(mode)}
+              className={`rounded-lg px-3 py-1.5 text-[11.5px] font-semibold transition cursor-pointer ${previewMode === mode ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"}`}
+            >
+              {label}
             </button>
           ))}
         </div>

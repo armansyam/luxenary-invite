@@ -77,6 +77,15 @@ export interface BuilderOrnament {
   layer: OrnamentLayer;
 }
 
+/** Slot yang boleh punya gambar bawaan dari builder; latar (GLOBAL_FIXED_BG) diturunkan dari `texture`. */
+export const BUILDER_DEFAULT_SLOTS = [
+  { slot: "LANDING_COVER", label: "Cover pembuka" },
+  { slot: "DESKTOP_SIDEBAR", label: "Hero kiri desktop" },
+  { slot: "CLOSING_COVER", label: "Penutup" },
+] as const;
+export type BuilderDefaultSlot = (typeof BUILDER_DEFAULT_SLOTS)[number]["slot"];
+export type BuilderDefaultMedia = Partial<Record<BuilderDefaultSlot, string>>;
+
 export interface BuilderSpec {
   version: number;
   eventType: BuilderEventType;
@@ -85,6 +94,8 @@ export interface BuilderSpec {
   fonts: BuilderFonts;
   /** URL tekstur latar kanvas, atau "" tanpa tekstur. */
   texture: string;
+  /** Gambar bawaan per slot (dari pustaka latar); dipakai sampai klien mengunggah foto sendiri. */
+  defaultMedia: BuilderDefaultMedia;
   radius: RadiusStyle;
   variants: BuilderVariants;
   animation: AnimationPreset;
@@ -233,6 +244,7 @@ export function defaultBuilderSpec(): BuilderSpec {
     palette: { ...PALETTE_PRESETS[0].palette },
     fonts: { heading: "cinzel", body: "jakarta", script: "great-vibes" },
     texture: "/assets/ornaments/background/background-cream.webp",
+    defaultMedia: {},
     radius: "soft",
     variants: { cover: "classic", opening: "classic", couple: "stacked", countdown: "boxes", closing: "classic", headings: "classic", sidebar: "bottom-left" },
     animation: "rise",
@@ -297,6 +309,15 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
   const texture = typeof input.texture === "string" ? input.texture : "";
   if (!TEXTURE_OPTIONS.some((t) => t.id === texture)) errors.push("Tekstur latar tidak dikenali.");
 
+  // Spesifikasi lama tanpa defaultMedia tetap sah; gambar bawaan hanya dari pustaka latar.
+  const defaultMedia: BuilderDefaultMedia = {};
+  for (const { slot, label } of BUILDER_DEFAULT_SLOTS) {
+    const value = input.defaultMedia?.[slot];
+    if (value === undefined || value === null || value === "") continue;
+    if (typeof value !== "string" || !TEXTURE_OPTIONS.some((t) => t.id === value)) errors.push(`Media bawaan ${label} tidak dikenali.`);
+    else defaultMedia[slot] = value;
+  }
+
   const variants = {} as BuilderVariants;
   for (const group of VARIANT_GROUPS) {
     variants[group.key] = pickEnum(input.variants?.[group.key], group.options.map((o) => o.id), `Varian ${group.label}`, errors) ?? base.variants[group.key];
@@ -336,7 +357,7 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
   if (errors.length || !eventType || !canvasMode || !radius || !animation) return { ok: false, errors };
   return {
     ok: true,
-    spec: { version: BUILDER_SPEC_VERSION, eventType, canvasMode, palette, fonts, texture, radius, variants, animation, ornaments },
+    spec: { version: BUILDER_SPEC_VERSION, eventType, canvasMode, palette, fonts, texture, defaultMedia, radius, variants, animation, ornaments },
   };
 }
 

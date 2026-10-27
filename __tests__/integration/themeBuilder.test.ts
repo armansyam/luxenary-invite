@@ -18,6 +18,7 @@ import { composeInvitationData } from "@/lib/themeEngine";
 import { buildDemoInvitation } from "@/lib/demoInvitation";
 import { renderTemplateFile } from "@/lib/renderTemplate";
 import { auditBuilderMaster } from "@/lib/themeBuilder/audit";
+import { builderDefaultMedia, renderBuilderPreview } from "@/lib/themeBuilder/server";
 import { compileBuilderMaster, readBuilderBlueprint } from "@/lib/themeBuilder/compile";
 import { VARIANT_GROUPS, defaultBuilderSpec, parseBuilderSpec, paletteChecks, PALETTE_PRESETS, type BuilderSpec } from "@/lib/themeBuilder/spec";
 import { GET, POST, PUT, PATCH } from "@/app/api/admin/theme-builder/route";
@@ -313,5 +314,39 @@ describe.skipIf(!IS_TEST_DB)("rute admin Theme Builder", () => {
     const res = await themesPut(new Request("http://x/api/admin/themes", { method: "PUT", body: fd }) as never);
     expect(res.status).toBe(200);
     expect((await prisma.theme.findUniqueOrThrow({ where: { id: themeId } })).builderSpec).toBeNull();
+  });
+});
+
+describe("media bawaan di builder", () => {
+  const COVER_A = "/assets/ornaments/background/background-red.webp";
+
+  it("spesifikasi lama tanpa defaultMedia tetap sah; pilihan di luar pustaka latar ditolak", () => {
+    const { defaultMedia: _omit, ...legacy } = defaultBuilderSpec();
+    const legacyParsed = parseBuilderSpec(legacy);
+    expect(legacyParsed.ok && legacyParsed.spec.defaultMedia).toEqual({});
+
+    const ok = parseBuilderSpec({ ...defaultBuilderSpec(), defaultMedia: { LANDING_COVER: COVER_A, CLOSING_COVER: "" } });
+    expect(ok.ok && ok.spec.defaultMedia).toEqual({ LANDING_COVER: COVER_A });
+
+    for (const bad of ["/demo/kalandra/cover.webp", "https://example.com/a.webp", "/uploads/invitations/x/c.webp"]) {
+      expect(parseBuilderSpec({ ...defaultBuilderSpec(), defaultMedia: { LANDING_COVER: bad } }).ok).toBe(false);
+    }
+  });
+
+  it("media bawaan tema builder = latar dari tekstur ditambah pilihan admin; Polos tanpa latar", () => {
+    const base = { ...defaultBuilderSpec(), defaultMedia: { DESKTOP_SIDEBAR: COVER_A } };
+    expect(builderDefaultMedia(base)).toEqual({ GLOBAL_FIXED_BG: base.texture, DESKTOP_SIDEBAR: COVER_A });
+    expect(builderDefaultMedia({ ...base, texture: "" })).toEqual({ DESKTOP_SIDEBAR: COVER_A });
+  });
+
+  it.skipIf(!IS_TEST_DB)("pratinjau 'Klien baru' memakai bawaan tema, bukan foto demo; 'Contoh demo' memakai foto demo", async () => {
+    const spec = { ...defaultBuilderSpec(), defaultMedia: { LANDING_COVER: COVER_A } };
+    const client = await renderBuilderPreview(spec, "kalandra", "client");
+    expect(client.html).toContain(COVER_A);
+    expect(client.html).not.toContain("/demo/kalandra/cover.webp");
+    expect(client.html).not.toContain("/demo/kalandra/gallery_01.webp");
+
+    const demo = await renderBuilderPreview(spec, "kalandra", "demo");
+    expect(demo.html).toContain("/demo/kalandra/");
   });
 });

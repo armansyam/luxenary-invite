@@ -8,6 +8,7 @@ import {
   RADIUS_OPTIONS,
   SECTION_LABELS,
   TEXTURE_OPTIONS,
+  BUILDER_DEFAULT_SLOTS,
   VARIANT_GROUPS,
   fontFamily,
   paletteChecks,
@@ -194,6 +195,39 @@ export function ColorsPanel({ spec, onChange }: { spec: BuilderSpec; onChange: (
             >
               {!t.id && <span className="text-[10px] font-semibold text-stone-500">Polos</span>}
             </button>
+          ))}
+        </div>
+      </Section>
+
+      <Section title="Media bawaan" hint="Dipakai sampai klien mengunggah foto sendiri. Slot yang tidak dipilih memakai warna palet. Foto orang tidak pernah punya bawaan.">
+        <div className="space-y-3">
+          {BUILDER_DEFAULT_SLOTS.map(({ slot, label }) => (
+            <div key={slot}>
+              <p className="mb-1.5 text-[11.5px] font-semibold text-stone-700">{label}</p>
+              <div className="grid grid-cols-7 gap-1.5">
+                {TEXTURE_OPTIONS.map((t) => {
+                  const selected = (spec.defaultMedia[slot] ?? "") === t.id;
+                  return (
+                    <button
+                      key={t.id || "none"}
+                      type="button"
+                      title={t.id ? t.label : "Tanpa gambar (warna palet)"}
+                      aria-pressed={selected}
+                      onClick={() => {
+                        const next = { ...spec.defaultMedia };
+                        if (t.id) next[slot] = t.id;
+                        else delete next[slot];
+                        onChange({ defaultMedia: next });
+                      }}
+                      className={`flex aspect-[3/4] items-center justify-center overflow-hidden rounded-md border bg-cover bg-center transition cursor-pointer ${selected ? "border-amber-500 ring-2 ring-amber-300" : "border-stone-200 hover:border-stone-400"}`}
+                      style={{ backgroundColor: t.id ? undefined : spec.palette.primary, backgroundImage: t.id ? `url('${t.id}')` : undefined }}
+                    >
+                      {!t.id && <span className="text-[9px] font-semibold" style={{ color: spec.palette.onPrimary }}>Palet</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           ))}
         </div>
       </Section>

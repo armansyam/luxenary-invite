@@ -51,9 +51,12 @@ export interface CompiledBuilderTheme {
   issues: MasterIssue[];
 }
 
-/** Latar bawaan tema builder adalah tekstur kanvasnya; "Polos" tidak punya gambar bawaan (kanvas berwarna palet). */
+/**
+ * Media bawaan tema builder: latar adalah tekstur kanvasnya ("Polos" tidak punya gambar bawaan, kanvas berwarna palet),
+ * ditambah gambar bawaan cover, hero kiri, dan penutup yang dipilih admin.
+ */
 export function builderDefaultMedia(spec: BuilderSpec): ThemeDefaultMedia {
-  return spec.texture ? { GLOBAL_FIXED_BG: spec.texture } : {};
+  return { ...(spec.texture ? { GLOBAL_FIXED_BG: spec.texture } : {}), ...spec.defaultMedia };
 }
 
 export function compileAndAudit(spec: BuilderSpec): CompiledBuilderTheme {
@@ -62,10 +65,15 @@ export function compileAndAudit(spec: BuilderSpec): CompiledBuilderTheme {
   return { html, issues: auditBuilderMaster(html, blueprint) };
 }
 
-/** Pratinjau dirender oleh engine undangan klien dengan data demo, persis seperti yang akan dilihat calon klien. */
-export async function renderBuilderPreview(spec: BuilderSpec, demoThemeId = "kalandra"): Promise<CompiledBuilderTheme> {
+/**
+ * Pratinjau dirender oleh engine undangan klien. Mode "demo" memakai foto dan data contoh; mode "client" meniru klien
+ * baru yang belum mengunggah apa pun, sehingga yang tampil hanyalah bawaan tema, monogram, dan palet.
+ */
+export async function renderBuilderPreview(spec: BuilderSpec, demoThemeId = "kalandra", mode: "demo" | "client" = "demo"): Promise<CompiledBuilderTheme> {
   const compiled = compileAndAudit(spec);
-  const data = (await composeInvitationData(buildDemoInvitation(demoThemeId))) as Record<string, any>;
+  const demo = buildDemoInvitation(demoThemeId, mode === "client" ? { galleryPhotos: [] } : undefined);
+  const invitation = mode === "client" ? { ...demo, media: [], themeDefaultMedia: builderDefaultMedia(spec) } : demo;
+  const data = (await composeInvitationData(invitation)) as Record<string, any>;
   const html = await renderTemplateFile("builder-preview", data, { eventType: spec.eventType, templateSource: compiled.html });
   return { html, issues: compiled.issues };
 }

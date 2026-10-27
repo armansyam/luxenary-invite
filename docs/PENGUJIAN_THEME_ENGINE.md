@@ -42,3 +42,39 @@ Wizard → katalog → Studio (6 slot media + foto profil, label langsung, ganti
 ## Uji alur menyeluruh (20 Okt 2026, build produksi lokal port 3200)
 
 6 jenis acara (pernikahan TIER_3, ulang tahun TIER_1 lalu upgrade TIER_2, khitan TIER_2, aqiqah TIER_3 dengan sesi hari ini, wisuda TIER_2, acara umum TIER_1) lewat rute HTTP asli: ±560 pemeriksaan untuk pembayaran transfer, Studio, tamu, halaman tamu, resepsionis, Kamera Momen, upgrade, custom domain, dan admin; peramban: 6 halaman dasbor klien, 13 tab admin, sesi remote, XSS ucapan di 6 halaman terbit. Bug yang ditemukan: redirect mode galeri di subdomain ke apex dan ucapan baru yang tidak tampil di tema satu nama; keduanya diperbaiki dan dijaga `e2eFindings20261020.test.ts`, diuji ulang 20/20 di build produksi. Tidak diuji: gateway Midtrans (butuh kunci), pengiriman email sungguhan, Cloudflare/R2 produksi, restore database, purge undangan, endpoint cron (butuh secret), pemutaran video di peramban.
+
+## Uji layout desktop split di browser (27 Okt 2026)
+
+Kode dan tes tidak bisa membuktikan urutan tumpukan atau pemotongan; ukur di browser. Jalankan server uji (`luxenary-test`, database `luxenary_test`, Cloudflare dikosongkan), buka `/demo/<id>`, dan tempel skrip berikut di konsol. Skrip memuat setiap demo di iframe 1440×900 yang terlihat (iframe `pointer-events:none` membuat `elementFromPoint` selalu salah), menyembunyikan sampul dan preloader (sampul layar penuh menutupi hero), lalu menaruh probe `fixed` di dalam kolom yang menjulur 300 px ke area hero.
+
+```js
+(async () => {
+  const ids = (await (await fetch('/api/public/themes')).json()).map(t => t.id);
+  const rows = [];
+  for (const id of ids) {
+    const f = document.createElement('iframe');
+    f.style.cssText = 'position:fixed;left:0;top:0;width:1440px;height:900px;border:0;z-index:2147483000;background:#fff';
+    document.body.appendChild(f);
+    await new Promise(res => { f.onload = res; f.src = '/demo/' + id; setTimeout(res, 8000); });
+    await new Promise(r => setTimeout(r, 500));
+    const d = f.contentDocument, w = f.contentWindow;
+    d.querySelectorAll('.cover-screen,.cover-overlay,.lux-universal-preloader,#themePreloader').forEach(e => e.style.display = 'none');
+    const hero = d.querySelector('.sidebar-desktop,.left-hero'), panel = d.querySelector('.main-scroll-panel,.right-panel,.page-wrap');
+    const row = { id, split: !!(hero && panel) };
+    if (hero && panel) {
+      const pb = panel.getBoundingClientRect(), probe = d.createElement('div');
+      probe.style.cssText = 'position:fixed;left:' + (pb.x - 300) + 'px;top:100px;width:600px;height:200px;background:red;z-index:5';
+      panel.appendChild(probe);
+      const el = d.elementFromPoint(pb.x - 150, 200);
+      row.heroOnTop = !!el && hero.contains(el);
+      row.clip = ['clip', 'hidden'].includes(w.getComputedStyle(panel).overflowX);
+      probe.remove();
+    }
+    rows.push(row); f.remove();
+  }
+  const split = rows.filter(r => r.split), bad = split.filter(r => !r.heroOnTop || !r.clip);
+  return { demo: rows.length, split: split.length, lulus: split.length - bad.length, gagal: bad, tanpaSplit: rows.filter(r => !r.split).map(r => r.id) };
+})()
+```
+
+Hasil 27 Okt 2026: 38 dari 38 demo ber-layout split lulus; 6 tema (`kalandra-birthday`, `festivo`, `al-fariz`, `al-khalid`, `cendekia`, `sinergi`) memakai latar layar penuh tanpa hero kiri. Demo harus dibangun ulang lebih dulu (`npx tsx scripts/rebuild-static-demos.ts`), karena yang disajikan adalah cache `public/demo/<id>/index.html`.
