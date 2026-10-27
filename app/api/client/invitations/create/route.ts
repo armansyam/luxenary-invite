@@ -15,6 +15,7 @@ import { parseFeatureSettings } from "@/lib/featureSettings";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
 import { copyMasterToDraft, seedRenderedLabels } from "@/lib/renderedLabels";
+import { parseThemeDefaultMedia } from "@/lib/themeDefaultMedia";
 
 function slugify(text: string): string {
   return text
@@ -295,11 +296,11 @@ export async function POST(req: Request) {
     logger.warn("InvitationCreate", "Data demo kustom tema tidak terbaca; undangan memakai bawaan tema", { theme: chosenTheme, error: err instanceof Error ? err.message : String(err) });
   }
 
-  let themeMeta: { name: string; category: string; series: string | null; defaultMusicUrl?: string | null } | null = null;
+  let themeMeta: { name: string; category: string; series: string | null; defaultMusicUrl?: string | null; defaultMedia?: unknown } | null = null;
   try {
     themeMeta = await prisma.theme.findUnique({
       where: { id: chosenTheme.toLowerCase() },
-      select: { name: true, category: true, series: true, defaultMusicUrl: true },
+      select: { name: true, category: true, series: true, defaultMusicUrl: true, defaultMedia: true },
     });
   } catch (err) {
     logger.warn("InvitationCreate", "Metadata tema tidak terbaca; undangan memakai bawaan", { theme: chosenTheme, error: err instanceof Error ? err.message : String(err) });
@@ -382,6 +383,8 @@ export async function POST(req: Request) {
     const initialCustomLabels = isWeddingEvent ? defaultCustomLabels : {};
 
     const initialMusicUrl = customDemoData?.audioUrl || customDemoData?.defaultMusicUrl || themeMeta?.defaultMusicUrl || blueprint.defaultMusicUrl || "";
+    // Media bawaan tema disalin ke undangan saat tema dipilih, sehingga perubahan tema oleh admin tidak menyentuh undangan ini.
+    const themeDefaultMedia = parseThemeDefaultMedia(themeMeta?.defaultMedia);
 
     invitation = await prisma.$transaction(async (tx) => {
       if (existingDraft) {
@@ -420,6 +423,7 @@ export async function POST(req: Request) {
             openingQuoteRef: blueprint.openingQuoteRef || existingDraft.openingQuoteRef,
             eventData: initialEvents.length > 0 ? initialEvents : undefined,
             featureSettings: mergedFs,
+            ...(isThemeChanged ? { themeDefaultMedia } : {}),
             status: "DRAFT",
           },
         });
@@ -447,6 +451,7 @@ export async function POST(req: Request) {
               showMusic: true,
               customLabels: initialCustomLabels,
             },
+            themeDefaultMedia,
             status: invitationStatus,
           },
         });

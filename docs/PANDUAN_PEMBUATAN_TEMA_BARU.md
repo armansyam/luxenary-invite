@@ -127,10 +127,9 @@ function openInvitation() {
    - `themes/aqiqah/minimalist/<nama-tema>.html`
    - `themes/wisuda/modern/<nama-tema>.html`
    - `themes/general/modern/<nama-tema>.html`
-2. Daftarkan mapping tema di [lib/renderTemplate.ts](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/lib/renderTemplate.ts) pada objek `THEME_MAP`:
-   ```typescript
-   "nama-tema": { file: "nama-tema.html", eventType: "wedding", style: "minimalist" },
-   ```
+2. Tidak perlu mendaftarkan tema ke `THEME_MAP`: `resolveThemeEntry` di `lib/renderTemplate.ts` menemukan master dari letak berkasnya (`themes/<acara>/<gaya>/<id>.html`). `THEME_MAP` hanya berisi tema bawaan repositori.
+
+> Untuk tema pernikahan, cara tercepat tanpa menulis HTML adalah **Theme Builder** (`/admin/theme-builder`, tombol "Buat dengan Builder" di tab Tema). Builder merakit master dari blueprint pernikahan dan menolak terbit bila kontrak engine rusak. Lihat `docs/SYSTEM_ARCHITECTURE.md` bagian 8.1.
 3. Buka browser dan login ke **Admin Dashboard** (`/admin`) -> **Themes**, lalu klik tombol **"Sinkronisasi Tema (Scan Disk)"** (atau jalankan `npm run themes:sync` dari terminal).
 4. Tema baru Anda akan langsung terdaftar di PostgreSQL tabel `themes`, terkompilasi ke demo statis (`/demo/nama-tema`), dan siap digunakan oleh klien sesuai jenis acara mereka.
 

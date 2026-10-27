@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
 import { purgeCloudflareCache } from "@/lib/cloudflare";
+import { THEME_EVENT_FOLDERS } from "@/lib/themePaths";
 
 export const dynamic = "force-dynamic";
 
@@ -31,14 +32,7 @@ export async function POST() {
     const themesDir = path.join(process.cwd(), "themes");
     const discovered: DiscoveredTheme[] = [];
 
-    const EVENT_FOLDERS = [
-      { eventFolder: "wedding",  eventType: "WEDDING" as const },
-      { eventFolder: "birthday", eventType: "BIRTHDAY" as const },
-      { eventFolder: "khitan",   eventType: "KHITAN" as const },
-      { eventFolder: "aqiqah",   eventType: "AQIQAH" as const },
-      { eventFolder: "wisuda",   eventType: "WISUDA" as const },
-      { eventFolder: "general",  eventType: "GATHERING" as const },
-    ];
+    const EVENT_FOLDERS = THEME_EVENT_FOLDERS;
 
     const STYLE_FOLDERS = [
       { styleFolder: "minimalist", category: "minimalist" as const, series: "Minimalist" },

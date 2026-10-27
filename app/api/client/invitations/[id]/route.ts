@@ -23,6 +23,8 @@ import { purgeInvitationEdgeCache } from "@/lib/cloudflare";
 import { releaseInvitationSubdomain } from "@/lib/subdomainRelease";
 import { createPreviewToken } from "@/lib/previewAccess";
 import { mergeFeatureSettingsInput } from "@/lib/featureSettings";
+import { loadThemeDefaultMedia } from "@/lib/themeDefaultMedia";
+import { themeMainColor } from "@/lib/themePalette";
 
 
 export function getInvitationLockStatus(inv: any) {
@@ -137,6 +139,7 @@ export async function GET(
       ...invitation,
       staffPin: displayPin, // Tampilkan PIN plain-text (sudah di-decrypt) ke owner yang login
       previewToken: createPreviewToken(invitation.id),
+      themeMainColor: themeMainColor(invitation.id),
       mediaMap,
       ...lockStatus,
       planMemoriesQuota: await getPlanMemoriesQuota(invitation.order?.planType),
@@ -481,6 +484,7 @@ export async function PUT(
         openingQuote: body.openingQuote !== undefined ? body.openingQuote : undefined,
         openingQuoteRef: body.openingQuoteRef !== undefined ? body.openingQuoteRef : undefined,
         themeId: body.themeId !== undefined ? body.themeId : undefined,
+        ...(body.themeId !== undefined && body.themeId !== currentInv.themeId ? { themeDefaultMedia: await loadThemeDefaultMedia(String(body.themeId)) } : {}),
         subdomain: newSubdomain,
         musicUrl: body.musicUrl !== undefined ? safeExternalUrl(body.musicUrl) : undefined,
         status: body.status !== undefined ? body.status : undefined,

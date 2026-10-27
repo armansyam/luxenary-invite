@@ -12,6 +12,7 @@ import { buildCalendarTitle, DEFAULT_THEME_BY_EVENT } from "@/lib/invitationUtil
 import { buildCheckinQrBaseUrl, buildCheckinQrUrl, qrInitials } from "@/lib/checkinQr";
 import { getEventTimezoneOffset, getPrimaryEvent, resolveEventTimezone } from "@/lib/lifecycleDates";
 import { logger } from "@/lib/logger";
+import { applyThemeDefaultMedia, parseThemeDefaultMedia } from "@/lib/themeDefaultMedia";
 
 /** Sesi jadwal terima tamu (patokan yang sama dengan masa aktif), atau objek kosong bila belum bertanggal. */
 function primaryEventOf(events: unknown): any {
@@ -139,6 +140,8 @@ export async function composeTemplateData(invitationId: string, { includeRsvps =
  * dengan undangan virtual (`lib/demoInvitation.ts`), sehingga demo dirender oleh engine yang sama dengan undangan klien.
  */
 export async function composeInvitationData(inv: any) {
+  // Media bawaan tema (salinan di undangan) mengisi slot yang belum diisi klien; foto klien selalu menang.
+  inv = { ...inv, media: applyThemeDefaultMedia(inv.media || [], parseThemeDefaultMedia(inv.themeDefaultMedia)) };
   switch (inv.eventType || "WEDDING") {
     case "BIRTHDAY":
       return applySingleNameContract("BIRTHDAY", await composeBirthdayData(inv), inv);
@@ -1789,7 +1792,7 @@ export async function composeWeddingData(inv: any) {
   }
 
   const appOrigin = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
-  const fallbackOgImage = `/demo/${inv.themeId || "kalandra"}/cover.webp`;
+  const fallbackOgImage = "/assets/brand/og-banner.jpg";
   const resolvedCover = coverUrl || fallbackOgImage;
   const absoluteCover = resolvedCover.startsWith("http") ? resolvedCover : `${appOrigin}${resolvedCover.startsWith("/") ? "" : "/"}${resolvedCover}`;
   const platformName = await getAdminSetting("platform_name", "Platform Undangan");
@@ -2069,6 +2072,9 @@ export async function composeBirthdayData(inv: any) {
   const coverHeroUrl = customCover || customFixedBg || "";
   const landingCoverUrl = coverHeroUrl;
   const landingCoverDesktopUrl = customCoverDesktop || coverHeroUrl;
+  // Galeri kosong tidak diisi gambar bawaan tema berulang; hanya cover milik klien yang boleh jadi cadangan galeri.
+  const clientOwnsCover = (inv.media || []).some((m: any) => !m.isThemeDefault && m.localPath && (m.mediaSlot === "LANDING_COVER" || m.mediaSlot === "GLOBAL_FIXED_BG"));
+  const galleryFallbackUrl = clientOwnsCover ? landingCoverUrl : "";
   const homePhotoUrl = customHome || "";
   const personPhotoUrl = customPersonPhoto || generateInitialAvatarSvg(personNickname, "Yang Berulang Tahun");
   const sidebarPhotoUrl = personPhotoUrl;
@@ -2185,12 +2191,12 @@ export async function composeBirthdayData(inv: any) {
     bridePhotoUrl: "",
     firstPhotoUrl: personPhotoUrl,
     secondPhotoUrl: "",
-    galleryPhoto1: galleryPhotos[0] || landingCoverUrl,
-    galleryPhoto2: galleryPhotos[1] || landingCoverUrl,
-    galleryPhoto3: galleryPhotos[2] || landingCoverUrl,
-    galleryPhoto4: galleryPhotos[3] || landingCoverUrl,
-    galleryPhoto5: galleryPhotos[4] || landingCoverUrl,
-    galleryPhoto6: galleryPhotos[5] || landingCoverUrl,
+    galleryPhoto1: galleryPhotos[0] || galleryFallbackUrl,
+    galleryPhoto2: galleryPhotos[1] || galleryFallbackUrl,
+    galleryPhoto3: galleryPhotos[2] || galleryFallbackUrl,
+    galleryPhoto4: galleryPhotos[3] || galleryFallbackUrl,
+    galleryPhoto5: galleryPhotos[4] || galleryFallbackUrl,
+    galleryPhoto6: galleryPhotos[5] || galleryFallbackUrl,
     
     // Event Details
     targetDate,

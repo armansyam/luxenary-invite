@@ -16,7 +16,7 @@
   ==============================================================
 -->
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-lux-anim-preset="rise">
 
 <head>
   <meta charset="UTF-8" />
@@ -30,24 +30,37 @@
 
   <style>
     /* =================================================================== */
-    /* 2. DESIGN SYSTEM — TEMA WAJIB HARDCODE WARNA SENDIRI                 */
-    /* GANTI nilai hex di bawah ini dengan identitas warna tema kamu.       */
-    /* Engine TIDAK LAGI menyuntikkan warna — semua dikontrol di sini.      */
+    /* 2. DESIGN SYSTEM — SATU-SATUNYA TEMPAT NILAI WARNA, HURUF, DAN LATAR  */
+    /* Engine tidak menyuntikkan warna; potongan HTML engine (ucapan, RSVP, */
+    /* amplop, galeri) membaca token di blok ini. Theme Builder admin       */
+    /* menulis ulang blok ini. Di luar :root tidak boleh ada hex/rgb mati.  */
     /* =================================================================== */
     :root {
-      --primary: #000000;       /* Warna utama (dominant brand) */
-      --secondary: #333333;     /* Warna sekunder (subtle dark) */
-      --accent: #888888;        /* Warna aksen (highlight, gold, jewel) */
-      --bg-light: #ffffff;      /* Background terang (mobile open view) */
-      --bg-dark: #111111;       /* Background gelap (cover, desktop) */
-      --text-main: #1a1a1a;     /* Teks utama di bg-light */
-      --text-muted: color-mix(in srgb, #1a1a1a 70%, transparent);
+      --primary: #9a7b4f;       /* Warna utama: tombol, judul kecil, garis */
+      --secondary: #5e4b33;     /* Warna sekunder */
+      --accent: #c9a978;        /* Aksen: ornamen dan sorotan */
+      --bg-light: #faf6f0;      /* Latar terang */
+      --bg-dark: #1f1b16;       /* Latar gelap: overlay foto, modal, toast */
+      --text-main: #2b2620;     /* Teks di atas kanvas */
+      --text-muted: color-mix(in srgb, var(--text-main) 68%, transparent);
+      --on-dark: #fbf8f3;       /* Teks di atas foto atau latar gelap */
+      --on-primary: #ffffff;    /* Teks di atas tombol warna primary */
+      --success: #2f855a;       /* Lencana "Hadir" */
+      --danger: #c53030;        /* Lencana "Berhalangan" */
+      --bg-canvas: var(--bg-light);
+      --card-bg: color-mix(in srgb, var(--bg-canvas) 78%, var(--on-dark));
+      --overlay: var(--bg-dark);
+      --shadow-color: color-mix(in srgb, var(--bg-dark) 16%, transparent);
+      --canvas-texture: url('/assets/ornaments/background/background-cream.webp');
+      --font-heading: 'Cinzel', Georgia, serif;
+      --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-script: 'Great Vibes', cursive;
       --radius-sm: 8px;
       --radius-md: 16px;
       --radius-lg: 24px;
       --radius-full: 9999px;
-      --shadow-subtle: 0 4px 20px rgba(0, 0, 0, 0.06);
-      --shadow-elevated: 0 12px 36px rgba(0, 0, 0, 0.12);
+      --shadow-subtle: 0 4px 20px var(--shadow-color);
+      --shadow-elevated: 0 12px 36px color-mix(in srgb, var(--bg-dark) 24%, transparent);
     }
 
     * {
@@ -59,12 +72,12 @@
 
     ::selection {
       background: color-mix(in srgb, var(--primary) 30%, transparent);
-      color: #ffffff;
+      color: inherit;
     }
 
     ::-moz-selection {
       background: color-mix(in srgb, var(--primary) 30%, transparent);
-      color: #ffffff;
+      color: inherit;
     }
 
     html {
@@ -74,8 +87,8 @@
     }
 
     body {
-      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-      background: var(--bg-dark);
+      font-family: var(--font-body);
+      background: var(--bg-canvas);
       color: var(--text-main);
       line-height: 1.6;
       overflow-x: hidden;
@@ -98,8 +111,13 @@
     h3,
     h4,
     .font-serif {
-      font-family: 'Cinzel', 'Marcellus', Georgia, serif;
+      font-family: var(--font-heading);
       letter-spacing: 0.02em;
+    }
+
+    .font-script {
+      font-family: var(--font-script);
+      letter-spacing: 0;
     }
 
     /* =================================================================== */
@@ -130,7 +148,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.3) 50%, transparent 100%);
+      background: linear-gradient(to top, color-mix(in srgb, var(--overlay) 85%, transparent) 0%, color-mix(in srgb, var(--overlay) 30%, transparent) 50%, transparent 100%);
     }
 
     .sidebar-desktop-content {
@@ -139,32 +157,32 @@
       left: 3.5rem;
       right: 3.5rem;
       z-index: 20;
-      color: #fff;
+      color: var(--on-dark);
     }
     .sidebar-desktop-tagline {
       font-size: 0.8rem;
       letter-spacing: 0.3em;
       text-transform: uppercase;
-      color: var(--text-muted);
+      color: color-mix(in srgb, var(--on-dark) 75%, transparent);
       margin-bottom: 0.8rem;
     }
     .sidebar-desktop-names {
       font-size: 3.2rem;
       line-height: 1.15;
-      color: #ffffff;
+      color: var(--on-dark);
       margin-bottom: 1rem;
-      text-shadow: 0 4px 20px rgba(0,0,0,0.8);
+      text-shadow: 0 4px 20px color-mix(in srgb, var(--overlay) 80%, transparent);
     }
     .sidebar-desktop-names span {
-      font-family: 'Great Vibes', cursive, serif;
-      color: var(--primary);
+      font-family: var(--font-script);
+      color: var(--accent);
       font-size: 2.4rem;
       margin: 0 0.35rem;
     }
     .sidebar-desktop-date {
       font-size: 0.95rem;
       letter-spacing: 0.16em;
-      color: var(--primary);
+      color: var(--accent);
       text-transform: uppercase;
       margin-bottom: 1.25rem;
       font-weight: 500;
@@ -172,9 +190,9 @@
     .sidebar-desktop-quote {
       font-size: 1.05rem;
       line-height: 1.65;
-      color: color-mix(in srgb, #ffffff 82%, var(--text-muted));
+      color: color-mix(in srgb, var(--on-dark) 82%, transparent);
       max-width: 520px;
-      text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+      text-shadow: 0 2px 10px color-mix(in srgb, var(--overlay) 80%, transparent);
     }
 
     /* Main Scroll Panel (Konten Undangan Utama - Full Responsif Mobile & Tablet) */
@@ -212,7 +230,8 @@
       height: 100vh;
       height: 100dvh;
       z-index: 0;
-      background-image: url('/assets/ornaments/background/background-monocrhome1.webp');
+      background-color: var(--bg-canvas);
+      background-image: var(--canvas-texture);
       background-position: center;
       background-size: cover;
       background-repeat: no-repeat;
@@ -224,6 +243,8 @@
 
     /* ==========================================================================
        LAPISAN 3: KANVAS SCRIM OVERLAY (MANDIRI MENGATUR TONE & KONTRAS)
+       Scrim condong ke warna kanvas sehingga teks --text-main tetap terbaca di atas
+       foto latar apa pun yang diunggah klien ke slot GLOBAL_FIXED_BG.
        ========================================================================== */
     .scrim-canvas {
       position: fixed;
@@ -235,10 +256,9 @@
       pointer-events: none;
       background: linear-gradient(
         180deg,
-        rgba(0, 0, 0, 0.15) 0%,
-        color-mix(in srgb, var(--primary) 15%, transparent) 35%,
-        color-mix(in srgb, var(--bg-dark) 40%, transparent) 70%,
-        color-mix(in srgb, var(--bg-dark) 60%, transparent) 100%
+        color-mix(in srgb, var(--bg-canvas) 55%, transparent) 0%,
+        color-mix(in srgb, var(--bg-canvas) 72%, color-mix(in srgb, var(--primary) 8%, transparent)) 45%,
+        color-mix(in srgb, var(--bg-canvas) 82%, transparent) 100%
       );
     }
 
@@ -252,7 +272,10 @@
         width: calc(100% - 460px);
         height: 100vh;
         background: url('{{sidebarPhotoUrl}}') center/cover no-repeat, url('{{landingCoverUrl}}') center/cover no-repeat;
-        z-index: 10;
+        /* Hero di atas kolom undangan (z-index 10): apa pun yang meluap dari kolom kanan tertutup rapi di bawah hero,
+           dan ornamen milik hero sendiri dipotong di tepinya agar tidak masuk ke kolom undangan. */
+        z-index: 12;
+        overflow: hidden;
       }
 
       .app-container,
@@ -262,11 +285,15 @@
         margin-left: calc(100% - 460px) !important;
         margin-right: 0 !important;
         min-width: 0 !important;
-        box-shadow: -15px 0 45px rgba(0, 0, 0, 0.5);
+        box-shadow: -15px 0 45px color-mix(in srgb, var(--overlay) 50%, transparent);
         position: relative;
         z-index: 10;
         background: transparent !important;
         border-left: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
+        /* Ornamen dan bayangan seksi tidak boleh melewati tepi kiri kolom ke area hero. `clip` tidak membuat kontainer
+           gulir dan tidak memotong elemen fixed (dock, sampul); `hidden` hanya cadangan peramban lama. */
+        overflow-x: hidden;
+        overflow-x: clip;
       }
 
       .fixed-bg-layer,
@@ -276,10 +303,13 @@
         right: 0 !important;
       }
 
+      /* Slot LANDING_COVER_DESKTOP; engine mengisinya dengan LANDING_COVER bila klien tidak mengunggah versi desktop. */
       .cover-overlay {
         width: 460px !important;
         left: calc(100% - 460px) !important;
         right: 0 !important;
+        background-image: linear-gradient(180deg, color-mix(in srgb, var(--overlay) 35%, transparent) 0%, color-mix(in srgb, var(--overlay) 75%, transparent) 100%),
+          url('{{landingCoverDesktopUrl}}');
       }
 
       .bottom-dock {
@@ -294,6 +324,16 @@
       }
       .bottom-dock.dock-hidden {
         transform: translate3d(-50%, calc(100% + 48px), 0) !important;
+      }
+
+      /* Modal dan toast milik undangan tetap di dalam kolom kanan; hero kiri tidak pernah tertutup lapisan apa pun. */
+      .modal-bg {
+        left: calc(100% - 460px);
+        right: 0;
+        width: 460px;
+      }
+      #luxCopyToast {
+        left: calc(100% - 230px) !important;
       }
       .bottom-dock .dock-btn,
       .bottom-dock .nav-item {
@@ -384,8 +424,8 @@
       gap: 6px;
       padding: 4px 14px;
       border-radius: var(--radius-full);
-      background: rgba(255, 255, 255, 0.85);
-      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: color-mix(in srgb, var(--card-bg) 85%, transparent);
+      border: 1px solid color-mix(in srgb, var(--text-main) 8%, transparent);
       color: var(--text-main);
       font-size: 11px;
       letter-spacing: 0.15em;
@@ -395,6 +435,24 @@
     .opening-center {
       margin: auto 0;
       padding: 1.5rem 0;
+    }
+
+    /* Slot HOME_PHOTO: foto pembuka setelah sampul dibuka; tidak dirender bila klien belum mengunggah. */
+    .opening-photo {
+      width: min(62%, 240px);
+      aspect-ratio: 3 / 4;
+      margin: 0 auto 1.25rem;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+      box-shadow: var(--shadow-elevated);
+    }
+
+    .opening-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
     }
 
     .opening-sub-title {
@@ -429,10 +487,17 @@
 
     .opening-quote-card {
       padding: 16px 20px;
-      background: rgba(255, 255, 255, 0.90);
+      background: color-mix(in srgb, var(--card-bg) 90%, transparent);
       border-radius: var(--radius-md);
       box-shadow: var(--shadow-subtle);
-      border: 1px solid rgba(0, 0, 0, 0.08);
+      border: 1px solid color-mix(in srgb, var(--text-main) 8%, transparent);
+    }
+
+    .opening-quote-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: 8px;
     }
 
     .opening-quote-text {
@@ -516,13 +581,14 @@
       height: 100vh;
       height: 100dvh;
       max-height: 100dvh;
-      background: linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.75) 100%),
+      background: linear-gradient(180deg, color-mix(in srgb, var(--overlay) 35%, transparent) 0%, color-mix(in srgb, var(--overlay) 75%, transparent) 100%),
       url('{{landingCoverUrl}}') center/cover no-repeat;
+      background-color: var(--bg-dark);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: space-between;
-      color: #ffffff;
+      color: var(--on-dark);
       text-align: center;
       padding: calc(2.5rem + env(safe-area-inset-top, 0px)) 24px calc(2rem + env(safe-area-inset-bottom, 0px));
       overflow-y: auto;
@@ -544,7 +610,7 @@
     .cover-monogram {
       width: 56px;
       height: 56px;
-      border: 1px solid rgba(255, 255, 255, 0.4);
+      border: 1px solid color-mix(in srgb, var(--on-dark) 40%, transparent);
       border-radius: var(--radius-full);
       display: flex;
       align-items: center;
@@ -553,7 +619,7 @@
       letter-spacing: 0.1em;
       margin-bottom: 12px;
       backdrop-filter: blur(8px);
-      background: rgba(255, 255, 255, 0.08);
+      background: color-mix(in srgb, var(--on-dark) 8%, transparent);
     }
 
     .cover-names {
@@ -561,7 +627,8 @@
       font-weight: 500;
       line-height: 1.2;
       margin: 12px 0 8px;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+      overflow-wrap: break-word;
+      text-shadow: 0 2px 10px color-mix(in srgb, var(--overlay) 40%, transparent);
     }
 
     .cover-tagline {
@@ -571,10 +638,28 @@
       opacity: 0.85;
     }
 
+    .cover-date {
+      font-size: 13px;
+      opacity: 0.9;
+      margin-top: 8px;
+    }
+
+    .cover-subtitle {
+      font-size: 12px;
+      line-height: 1.6;
+      max-width: 300px;
+      margin: 10px auto 0;
+      color: color-mix(in srgb, var(--on-dark) 80%, transparent);
+    }
+
+    .cover-subtitle:empty {
+      display: none;
+    }
+
     .cover-guest-card {
-      background: rgba(255, 255, 255, 0.12);
+      background: color-mix(in srgb, var(--on-dark) 12%, transparent);
       backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.25);
+      border: 1px solid color-mix(in srgb, var(--on-dark) 25%, transparent);
       border-radius: var(--radius-md);
       padding: 16px 24px;
       width: 100%;
@@ -589,20 +674,39 @@
       padding: 14px 32px;
       border-radius: var(--radius-full);
       background: var(--primary);
-      color: #ffffff;
+      color: var(--on-primary);
       font-size: 13px;
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       border: none;
       cursor: pointer;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 8px 24px color-mix(in srgb, var(--overlay) 30%, transparent);
       transition: transform 0.2s, box-shadow 0.2s;
     }
 
     .cover-btn-open:hover {
       transform: scale(1.03);
-      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 12px 28px color-mix(in srgb, var(--overlay) 40%, transparent);
+    }
+
+    /* Tombol QR dari engine (qrCoverButtonHtml), tampil bila paket memuat QR check-in. */
+    .btn-qr-ghost {
+      margin-top: 14px;
+      padding: 6px 10px;
+      background: transparent;
+      border: none;
+      color: color-mix(in srgb, var(--on-dark) 70%, transparent);
+      font-family: var(--font-body);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .btn-qr-ghost:hover {
+      color: var(--on-dark);
     }
 
     /* =================================================================== */
@@ -616,9 +720,10 @@
       width: 46px;
       height: 46px;
       border-radius: var(--radius-full);
-      background: rgba(255, 255, 255, 0.92);
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      background: color-mix(in srgb, var(--card-bg) 92%, transparent);
+      border: 1px solid color-mix(in srgb, var(--text-main) 8%, transparent);
+      box-shadow: 0 6px 20px var(--shadow-color);
+      color: var(--primary);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -641,8 +746,8 @@
       left: 50%;
       transform: translate3d(-50%, 0, 0);
       z-index: 900;
-      background: rgba(255, 255, 255, 0.92);
-      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: color-mix(in srgb, var(--card-bg) 92%, transparent);
+      border: 1px solid color-mix(in srgb, var(--text-main) 8%, transparent);
       border-radius: var(--radius-full);
       padding: 0.5rem 1rem;
       display: flex;
@@ -665,7 +770,7 @@
 
     .dock-btn {
       color: var(--text-muted);
-      font-family: sans-serif;
+      font-family: var(--font-body);
       font-size: 0.65rem;
       text-decoration: none;
       display: flex;
@@ -716,12 +821,13 @@
       }
     }
 
-    /* MODAL QR CHECK-IN & SOUVENIR */
+    /* MODAL QR CHECK-IN & SOUVENIR
+       Kartu QR dari engine (qrAccessCardHtml) berteks terang, jadi kartu modal berlatar gelap. */
     .modal-bg {
       position: fixed;
       inset: 0;
       z-index: 99999;
-      background: rgba(0, 0, 0, 0.85);
+      background: color-mix(in srgb, var(--overlay) 85%, transparent);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       display: flex;
@@ -737,9 +843,9 @@
       visibility: visible;
     }
     .modal-card {
-      background: var(--bg-light);
-      color: var(--text-main);
-      border: 1px solid color-mix(in srgb, var(--primary) 15%, transparent);
+      background: var(--bg-dark);
+      color: var(--on-dark);
+      border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent);
       border-radius: var(--radius-md);
       padding: 2.2rem 1.8rem;
       width: 100%;
@@ -752,9 +858,9 @@
       position: absolute;
       top: 14px;
       right: 14px;
-      background: rgba(0, 0, 0, 0.06);
-      border: 1px solid rgba(0, 0, 0, 0.1);
-      color: var(--text-main);
+      background: color-mix(in srgb, var(--on-dark) 8%, transparent);
+      border: 1px solid color-mix(in srgb, var(--on-dark) 15%, transparent);
+      color: var(--on-dark);
       width: 30px;
       height: 30px;
       border-radius: 50%;
@@ -767,7 +873,38 @@
     }
     .modal-close:hover {
       background: var(--primary);
-      color: #ffffff;
+      color: var(--on-primary);
+    }
+
+    .modal-souvenir {
+      margin-top: 1.2rem;
+      padding: 0.9rem;
+      background: color-mix(in srgb, var(--primary) 10%, transparent);
+      border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
+      text-align: center;
+      border-radius: var(--radius-sm);
+    }
+
+    .modal-souvenir-lbl {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      color: color-mix(in srgb, var(--on-dark) 65%, transparent);
+      text-transform: uppercase;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.4rem;
+    }
+
+    .modal-souvenir-code {
+      font-family: monospace;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--accent);
+      letter-spacing: 0.12em;
+      padding: 0.45rem;
+      background: color-mix(in srgb, var(--primary) 12%, transparent);
+      border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
+      border-radius: 6px;
     }
 
     /* =================================================================== */
@@ -828,6 +965,12 @@
       line-height: 1.6;
     }
 
+    .couple-amp {
+      font-size: 34px;
+      line-height: 1;
+      color: var(--primary);
+    }
+
     .couple-ig {
       display: inline-flex;
       align-items: center;
@@ -851,7 +994,7 @@
     }
 
     .countdown-box {
-      background: var(--bg-light);
+      background: var(--card-bg);
       border: 1px solid color-mix(in srgb, var(--primary) 15%, transparent);
       border-radius: var(--radius-md);
       padding: 16px 8px;
@@ -886,13 +1029,13 @@
       padding: 12px 24px;
       border-radius: var(--radius-full);
       background: var(--primary);
-      color: #ffffff;
+      color: var(--on-primary);
       font-size: 12px;
       font-weight: 700;
       letter-spacing: 0.05em;
       text-decoration: none;
       margin-top: 20px;
-      box-shadow: 0 4px 14px rgba(181, 131, 60, 0.3);
+      box-shadow: 0 4px 14px color-mix(in srgb, var(--primary) 30%, transparent);
       transition: opacity 0.2s;
     }
 
@@ -904,12 +1047,19 @@
     /* 8. RSVP & WISHES (BUKU TAMU)                                        */
     /* =================================================================== */
     .rsvp-form-box {
-      background: var(--bg-light);
+      background: var(--card-bg);
       border: 1px solid color-mix(in srgb, var(--primary) 15%, transparent);
       border-radius: var(--radius-lg);
       padding: 24px;
       text-align: left;
       margin-top: 20px;
+    }
+
+    .rsvp-form-title {
+      font-size: 18px;
+      color: var(--text-main);
+      text-align: center;
+      margin-bottom: 18px;
     }
 
     .form-group {
@@ -933,7 +1083,7 @@
       border-radius: var(--radius-sm);
       font-size: 13px;
       font-family: inherit;
-      background: var(--bg-light);
+      background: var(--bg-canvas);
       color: var(--text-main);
       outline: none;
       transition: border-color 0.2s;
@@ -950,7 +1100,7 @@
       padding: 14px;
       border-radius: var(--radius-sm);
       background: var(--primary);
-      color: #ffffff;
+      color: var(--on-primary);
       font-size: 13px;
       font-weight: 700;
       letter-spacing: 0.05em;
@@ -972,11 +1122,19 @@
     }
 
     .wish-item {
-      background: var(--bg-light);
+      background: var(--card-bg);
       border: 1px solid color-mix(in srgb, var(--primary) 15%, transparent);
       border-radius: var(--radius-md);
       padding: 16px;
       box-shadow: var(--shadow-subtle);
+    }
+
+    .wish-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 0.35rem;
     }
 
     .wish-name {
@@ -990,6 +1148,29 @@
       color: var(--text-muted);
       margin-top: 6px;
       line-height: 1.5;
+    }
+
+    .wish-badge {
+      font-size: 0.68rem;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .wish-badge.is-hadir {
+      background: color-mix(in srgb, var(--success) 15%, transparent);
+      color: var(--success);
+    }
+
+    .wish-badge.is-absent {
+      background: color-mix(in srgb, var(--danger) 15%, transparent);
+      color: var(--danger);
+    }
+
+    /* Teks "belum ada ucapan" dari engine berwarna terang bawaan; diselaraskan dengan kanvas tema. */
+    .wishes-feed-list > p {
+      color: var(--text-muted) !important;
     }
 
     /* =================================================================== */
@@ -1029,9 +1210,9 @@
       inset: 0;
       background: linear-gradient(
         to bottom,
-        rgba(0, 0, 0, 0.15) 0%,
-        color-mix(in srgb, var(--bg-dark) 45%, transparent) 45%,
-        color-mix(in srgb, var(--bg-dark) 92%, transparent) 100%
+        color-mix(in srgb, var(--overlay) 15%, transparent) 0%,
+        color-mix(in srgb, var(--overlay) 45%, transparent) 45%,
+        color-mix(in srgb, var(--overlay) 92%, transparent) 100%
       );
       pointer-events: none;
       z-index: 1;
@@ -1057,17 +1238,134 @@
 
     .closing-sec.has-closing-photo .closing-content {
       margin-top: auto;
-      color: #ffffff;
+      color: var(--on-dark);
     }
 
     .closing-sec.has-closing-photo .closing-content p {
-      color: rgba(255, 255, 255, 0.85) !important;
+      color: color-mix(in srgb, var(--on-dark) 85%, transparent) !important;
     }
 
     .closing-sec.has-closing-photo .closing-content h3 {
-      color: #ffffff !important;
+      color: var(--on-dark) !important;
+    }
+
+    .closing-quote {
+      font-size: 13px;
+      color: var(--text-muted);
+      max-width: 480px;
+      margin: 0 auto 16px;
+      line-height: 1.7;
+    }
+
+    .closing-sub {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--primary);
+    }
+
+    .closing-names {
+      font-size: 24px;
+      margin-top: 8px;
+      color: var(--text-main);
+    }
+
+    .closing-family {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* =================================================================== */
+    /* 10. LAPISAN ORNAMEN                                                 */
+    /* Ornamen ditaruh Theme Builder di penanda lux-ornaments tiap seksi.   */
+    /* Lapisan belakang di bawah isi seksi, lapisan depan di atasnya; klik  */
+    /* tetap tembus ke isi undangan.                                       */
+    /* =================================================================== */
+    /* Setiap seksi sudah menjadi acuan posisi: .sec-flow, .slide-opening, dan .closing-sec relative; sampul dan panel
+       kiri desktop fixed. Jangan menambah position pada [data-lux-section] karena menimpa fixed milik sampul. */
+    [data-lux-section] > :not(.lux-orn) {
+      position: relative;
+      z-index: 2;
+    }
+
+    .sidebar-desktop[data-lux-section] > .sidebar-desktop-content {
+      position: absolute;
+    }
+
+    .lux-orn {
+      position: absolute;
+      pointer-events: none;
+      user-select: none;
+      z-index: 1;
+      line-height: 0;
+    }
+
+    .lux-orn.is-front {
+      z-index: 3;
+    }
+
+    .lux-orn img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* =================================================================== */
+    /* 11. ANIMASI MASUK (SCROLL REVEAL)                                   */
+    /* Elemen hanya disembunyikan setelah skrip di kepala dokumen menandai  */
+    /* elemen html, sehingga tanpa JavaScript seluruh isi tetap tampil.     */
+    /* =================================================================== */
+    html.lux-anim-ready [data-lux-anim]:not(.lux-in) {
+      opacity: 0;
+    }
+
+    html.lux-anim-ready[data-lux-anim-preset="rise"] [data-lux-anim]:not(.lux-in) {
+      transform: translateY(28px);
+    }
+
+    html.lux-anim-ready[data-lux-anim-preset="zoom"] [data-lux-anim]:not(.lux-in) {
+      transform: scale(0.94);
+    }
+
+    html.lux-anim-ready[data-lux-anim-preset="slide"] [data-lux-anim]:not(.lux-in) {
+      transform: translateX(-24px);
+    }
+
+    html.lux-anim-ready[data-lux-anim-preset="blur"] [data-lux-anim]:not(.lux-in) {
+      filter: blur(8px);
+    }
+
+    html.lux-anim-ready [data-lux-anim] {
+      transition: opacity 0.9s ease, transform 0.9s cubic-bezier(0.16, 1, 0.3, 1), filter 0.9s ease;
+    }
+
+    html.lux-anim-ready [data-lux-anim="2"] {
+      transition-delay: 0.12s;
+    }
+
+    html.lux-anim-ready [data-lux-anim="3"] {
+      transition-delay: 0.24s;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html.lux-anim-ready [data-lux-anim] {
+        opacity: 1 !important;
+        transform: none !important;
+        filter: none !important;
+        transition: none !important;
+      }
     }
   </style>
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var preset = root.getAttribute('data-lux-anim-preset') || 'none';
+      var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (preset !== 'none' && !reduced && 'IntersectionObserver' in window) root.classList.add('lux-anim-ready');
+    })();
+  </script>
 </head>
 
 <body>
@@ -1075,7 +1373,8 @@
   <!-- =================================================================== -->
   <!-- 1. COVER PEMBUKA (PINTU GERBANG UTAMA)                              -->
   <!-- =================================================================== -->
-  <div id="coverScreen" class="cover-screen cover-overlay">
+  <div id="coverScreen" class="cover-screen cover-overlay" data-lux-section="cover">
+    <!-- lux-ornaments:cover -->
     <div class="cover-top">
       <div class="cover-monogram serif">{{coupleMonogram}}</div>
       <p class="cover-tagline" data-lux-field="customLabels.coverBadge">{{coverBadge}}</p>
@@ -1083,7 +1382,8 @@
 
     <div class="cover-center">
       <h1 class="cover-names serif">{{firstName}} &amp; {{secondName}}</h1>
-      <p style="font-size:13px; opacity:0.9; margin-top:8px;">{{weddingDate}}</p>
+      <p class="cover-date">{{weddingDate}}</p>
+      <p class="cover-subtitle" data-lux-field="customLabels.coverSubtitle">{{coverSubtitle}}</p>
     </div>
 
     <div class="cover-bottom" style="width:100%; display:flex; flex-direction:column; align-items:center;">
@@ -1118,7 +1418,8 @@
     <div class="scrim-canvas" aria-hidden="true"></div>
 
     <!-- DESKTOP FIXED SIDEBAR (Hanya tampil di layar desktop >= 900px - FULL HERO CANVAS) -->
-    <aside class="sidebar-desktop" aria-label="Desktop Hero">
+    <aside class="sidebar-desktop" aria-label="Desktop Hero" data-lux-section="sidebar">
+      <!-- lux-ornaments:sidebar -->
       <div class="sidebar-desktop-content">
         <p class="sidebar-desktop-tagline" data-lux-field="weddingTagline">{{weddingTagline}}</p>
         <h1 class="sidebar-desktop-names serif">{{firstName}} <span>&amp;</span> {{secondName}}</h1>
@@ -1131,8 +1432,9 @@
     <main class="main-scroll-panel app-container">
 
       <!-- SEKSI 1: OPENING HERO (100VH STANDALONE - KANVAS BERSIH / TRANSPARAN) -->
-      <section class="slide-opening" id="home" style="background: transparent;">
-        <div class="opening-top reveal-on-scroll">
+      <section class="slide-opening" id="home" style="background: transparent;" data-lux-section="opening">
+        <!-- lux-ornaments:opening -->
+        <div class="opening-top" data-lux-anim="1">
           <span class="opening-bismillah serif" data-lux-field="customLabels.openingGreeting">{{openingGreeting}}</span>
           <span class="sec-eyebrow" data-lux-field="weddingTagline" style="letter-spacing:0.32em; margin-top:6px;">{{weddingTagline}}</span>
           <div class="opening-date-pill">
@@ -1140,14 +1442,20 @@
           </div>
         </div>
 
-        <div class="opening-center reveal-on-scroll">
+        <div class="opening-center" data-lux-anim="2">
+          {{#if hasCustomHomePhoto}}
+          <div class="opening-photo">
+            <img src="{{homePhotoUrl}}" alt="{{firstName}} &amp; {{secondName}}" loading="lazy" />
+          </div>
+          {{/if}}
           <span class="opening-sub-title" data-lux-field="customLabels.quoteEyebrow">{{quoteSectionEyebrow}}</span>
           <h1 class="opening-names serif">{{firstName}} <em>&amp;</em> {{secondName}}</h1>
           <div class="sec-divider" style="margin: 12px auto 0;"></div>
         </div>
 
-        <div class="opening-bottom reveal-on-scroll">
+        <div class="opening-bottom" data-lux-anim="3">
           <div class="opening-quote-card">
+            <h3 class="opening-quote-title serif" data-lux-field="customLabels.quoteTitle">{{quoteSectionTitle}}</h3>
             <p class="opening-quote-text" data-lux-field="openingQuote">
               "{{openingQuote}}"
             </p>
@@ -1164,12 +1472,13 @@
       </section>
 
       <!-- SEKSI 2: PROFIL KEDUA MEMPELAI -->
-      <section class="sec-flow" id="couple">
-        <span class="sec-eyebrow" data-lux-field="customLabels.coupleEyebrow">{{coupleSectionEyebrow}}</span>
-        <h2 class="sec-main-title serif" data-lux-field="customLabels.coupleTitle">{{coupleSectionTitle}}</h2>
-        <p class="sec-sub" data-lux-field="customLabels.coupleSub">{{coupleSectionSub}}</p>
+      <section class="sec-flow" id="couple" data-lux-section="couple">
+        <!-- lux-ornaments:couple -->
+        <span class="sec-eyebrow" data-lux-field="customLabels.coupleEyebrow" data-lux-anim="1">{{coupleSectionEyebrow}}</span>
+        <h2 class="sec-main-title serif" data-lux-field="customLabels.coupleTitle" data-lux-anim="1">{{coupleSectionTitle}}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.coupleSub" data-lux-anim="2">{{coupleSectionSub}}</p>
 
-        <div class="couple-grid">
+        <div class="couple-grid" data-lux-anim="3">
           <!-- Persona Pertama (Gender Adaptif) -->
           <div class="couple-card couple-{{firstGender}}">
             <div class="couple-photo-wrap">
@@ -1190,7 +1499,7 @@
             </a>
           </div>
 
-          <div style="font-size:28px; color:var(--primary); font-family:serif;">&amp;</div>
+          <div class="couple-amp font-script">&amp;</div>
 
           <!-- Persona Kedua (Gender Adaptif) -->
           <div class="couple-card couple-{{secondGender}}">
@@ -1215,13 +1524,14 @@
       </section>
 
       <!-- SEKSI 3: HITUNG MUNDUR (COUNTDOWN TIMER) -->
-      <section class="sec-flow" id="countdown">
-        <span class="sec-eyebrow" data-lux-field="customLabels.countdownEyebrow">SAVE THE DATE</span>
-        <h2 class="sec-main-title serif" data-lux-field="customLabels.countdownTitle">Menghitung Hari Bahagia</h2>
-        <p class="sec-sub" data-lux-field="customLabels.countdownSub">Kami sangat menantikan kehadiran Bapak/Ibu/Sahabat sekalian untuk merayakan momen sakral ini
+      <section class="sec-flow" id="countdown" data-lux-section="countdown">
+        <!-- lux-ornaments:countdown -->
+        <span class="sec-eyebrow" data-lux-field="customLabels.countdownEyebrow" data-lux-anim="1">SAVE THE DATE</span>
+        <h2 class="sec-main-title serif" data-lux-field="customLabels.countdownTitle" data-lux-anim="1">Menghitung Hari Bahagia</h2>
+        <p class="sec-sub" data-lux-field="customLabels.countdownSub" data-lux-anim="2">Kami sangat menantikan kehadiran Bapak/Ibu/Sahabat sekalian untuk merayakan momen sakral ini
           bersama kami.</p>
 
-        <div class="countdown-grid" id="countdownTimer">
+        <div class="countdown-grid" id="countdownTimer" data-lux-anim="3">
           <div class="countdown-box"><span class="countdown-num" id="cdDays">00</span><span class="countdown-lbl"
               data-lux-field="customLabels.cdDays">Hari</span></div>
           <div class="countdown-box"><span class="countdown-num" id="cdHours">00</span><span class="countdown-lbl"
@@ -1242,10 +1552,13 @@
       </section>
 
       <!-- SEKSI 4: SUSUNAN ACARA & LOKASI -->
-      <section class="sec-flow" id="events">
-        <span class="sec-eyebrow" data-lux-field="customLabels.eventsEyebrow">SCHEDULE &amp; VENUE</span>
-        <h2 class="sec-main-title serif" data-lux-field="customLabels.eventsTitle">{{eventsSectionTitle}}</h2>
-        {{eventDataHtml}}
+      <section class="sec-flow" id="events" data-lux-section="events">
+        <!-- lux-ornaments:events -->
+        <span class="sec-eyebrow" data-lux-field="customLabels.eventsEyebrow" data-lux-anim="1">SCHEDULE &amp; VENUE</span>
+        <h2 class="sec-main-title serif" data-lux-field="customLabels.eventsTitle" data-lux-anim="1">{{eventsSectionTitle}}</h2>
+        <div data-lux-anim="2">
+          {{eventDataHtml}}
+        </div>
       </section>
 
       <!-- =================================================================== -->
@@ -1258,10 +1571,11 @@
       <!-- yang punya komentar sendiri, sehingga komentar ini tertutup lebih awal dan struktur seksi rusak. -->
       <!-- =================================================================== -->
       {{#if showStory}}
-      <section class="sec-flow" id="story">
-        <span class="sec-eyebrow reveal" data-lux-field="customLabels.storyEyebrow">{{storySectionEyebrow}}</span>
-        <h2 class="sec-main-title serif reveal delay-1" data-lux-field="customLabels.storyTitle">{{storySectionTitle}}</h2>
-        <div class="journey-timeline reveal-up delay-2">
+      <section class="sec-flow" id="story" data-lux-section="story">
+        <!-- lux-ornaments:story -->
+        <span class="sec-eyebrow" data-lux-field="customLabels.storyEyebrow" data-lux-anim="1">{{storySectionEyebrow}}</span>
+        <h2 class="sec-main-title serif" data-lux-field="customLabels.storyTitle" data-lux-anim="1">{{storySectionTitle}}</h2>
+        <div class="journey-timeline" data-lux-anim="2">
           {{storyItemsHtml}}
         </div>
       </section>
@@ -1292,12 +1606,14 @@
       {{qrAccessSectionHtml}}
 
       <!-- SEKSI 14: FORM RSVP & BUKU TAMU UCAPAN REAL-TIME -->
-      <section class="sec-flow" id="rsvp">
-        <span class="sec-eyebrow" data-lux-field="customLabels.wishesEyebrow">WISHES &amp; RSVP</span>
-        <h2 class="sec-main-title serif" data-lux-field="customLabels.wishesTitle">{{wishesSectionTitle}}</h2>
-        <p class="sec-sub" data-lux-field="customLabels.wishesSub">{{wishesSectionSub}}</p>
+      <section class="sec-flow" id="rsvp" data-lux-section="rsvp">
+        <!-- lux-ornaments:rsvp -->
+        <span class="sec-eyebrow" data-lux-field="customLabels.wishesEyebrow" data-lux-anim="1">WISHES &amp; RSVP</span>
+        <h2 class="sec-main-title serif" data-lux-field="customLabels.wishesTitle" data-lux-anim="1">{{wishesSectionTitle}}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.wishesSub" data-lux-anim="2">{{wishesSectionSub}}</p>
 
-        <div class="rsvp-form-box">
+        <div class="rsvp-form-box" data-lux-anim="3">
+          <h3 class="rsvp-form-title serif" data-lux-field="customLabels.rsvpTitle">{{rsvpTitle}}</h3>
           <form onsubmit="luxSubmitRsvp(event)">
             <div class="form-group">
               <label class="form-label" data-lux-field="customLabels.rsvpNameLabel">Nama Lengkap</label>
@@ -1342,22 +1658,19 @@
       {{vendorsSectionHtml}}
 
       <!-- SEKSI 16: SALAM PENUTUP (Adaptive Full-Height 100vh) -->
-      <footer class="closing-sec {{closingPhotoClass}}" style="{{closingBgStyle}}">
-        <div class="closing-content">
-          <p
-            style="font-size:13px; color:var(--text-muted); max-width:480px; margin:0 auto 16px; line-height:1.7;"
-            data-lux-field="customLabels.closingQuote">
+      <footer class="closing-sec {{closingPhotoClass}}" style="{{closingBgStyle}}" data-lux-section="closing">
+        <!-- lux-ornaments:closing -->
+        <div class="closing-content" data-lux-anim="1">
+          <p class="closing-quote" data-lux-field="customLabels.closingQuote">
             {{closingQuote}}
           </p>
-          <p
-            style="font-size:11px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:var(--primary);"
-            data-lux-field="customLabels.closingSub">
+          <p class="closing-sub" data-lux-field="customLabels.closingSub">
             {{closingSub}}
           </p>
-          <h3 class="serif" style="font-size:24px; margin-top:8px; color:var(--text-main);">
+          <h3 class="closing-names serif">
             {{firstName}} &amp; {{secondName}}
           </h3>
-          <p style="font-size:12px; color:var(--text-muted); margin-top:4px;" data-lux-field="customLabels.closingFamily">Beserta Keluarga Besar Kedua
+          <p class="closing-family" data-lux-field="customLabels.closingFamily">Beserta Keluarga Besar Kedua
             Mempelai</p>
         </div>
       </footer>
@@ -1397,9 +1710,9 @@
     <div class="modal-card" onclick="event.stopPropagation()">
       <button class="modal-close" onclick="closeModal()" aria-label="Tutup Modal">✕</button>
       {{qrAccessCardHtml}}
-      <div style="margin-top: 1.2rem; padding: 0.9rem; background: color-mix(in srgb, var(--primary) 5%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 15%, transparent); text-align: center; border-radius: 10px;">
-        <span style="font-size: 0.65rem; letter-spacing: 0.2em; color: var(--text-muted); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 0.4rem;" data-lux-field="customLabels.souvenirTitle">Voucher Souvenir</span>
-        <div style="font-family: monospace; font-weight: 700; font-size: 0.85rem; color: var(--primary); letter-spacing: 0.12em; padding: 0.45rem; background: color-mix(in srgb, var(--primary) 8%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent); border-radius: 6px;">SOUVENIR-{{invitationId}}</div>
+      <div class="modal-souvenir">
+        <span class="modal-souvenir-lbl" data-lux-field="customLabels.souvenirTitle">Voucher Souvenir</span>
+        <div class="modal-souvenir-code">SOUVENIR-{{invitationId}}</div>
       </div>
     </div>
   </div>
@@ -1511,7 +1824,7 @@
       if (!toast) {
         toast = document.createElement('div');
         toast.id = 'luxCopyToast';
-        toast.style.cssText = 'position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#1c1917; color:#f5f5f4; padding:10px 20px; border-radius:999px; font-size:13px; font-weight:600; box-shadow:0 10px 30px rgba(0,0,0,0.4); z-index:99999; border:1px solid rgba(255,255,255,0.15); transition:all 0.3s ease; opacity:0; pointer-events:none;';
+        toast.style.cssText = 'position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--bg-dark); color:var(--on-dark); padding:10px 20px; border-radius:999px; font-size:13px; font-weight:600; box-shadow:0 10px 30px var(--shadow-color); z-index:99999; border:1px solid color-mix(in srgb, var(--on-dark) 15%, transparent); transition:all 0.3s ease; opacity:0; pointer-events:none;';
         document.body.appendChild(toast);
       }
       toast.textContent = msg;
@@ -1589,10 +1902,11 @@
         // Prepend ke feed komentar secara reaktif
         const stream = document.getElementById('wishesFeed') || document.getElementById('wishesList') || document.getElementById('wishesStream');
         if (stream && msg) {
+          const emptyNote = stream.querySelector(':scope > p');
+          if (emptyNote) emptyNote.remove();
           const item = document.createElement('div');
-          item.className = 'wish-item-card';
-          item.style.cssText = 'background: rgba(0, 0, 0, 0.03); border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 12px; padding: 1rem 1.2rem; margin-bottom: 0.75rem; text-align: left;';
-          item.innerHTML = '<div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.35rem;"><strong style="color: var(--primary); font-size: 0.92rem;">' + escapeHtml(name) + '</strong><span style="font-size: 0.72rem; color: var(--text-muted);">Baru saja</span></div><p style="margin: 0; font-size: 0.85rem; line-height: 1.5; color: var(--text-main);">' + escapeHtml(msg) + '</p>';
+          item.className = 'wish-item';
+          item.innerHTML = '<div class="wish-head"><span class="wish-name">' + escapeHtml(name) + '</span><span class="wish-badge">Baru saja</span></div><p class="wish-msg">' + escapeHtml(msg) + '</p>';
           stream.prepend(item);
         }
 
@@ -1631,14 +1945,12 @@
             stream.innerHTML = data.rsvps.map(function(r) {
               const isHadir = String(r.status).toLowerCase() === 'hadir';
               const badgeText = isHadir ? 'Hadir (' + (r.guestCount || 1) + ' Orang)' : 'Berhalangan';
-              const badgeBg = isHadir ? 'rgba(74, 222, 128, 0.15)' : 'rgba(248, 113, 113, 0.15)';
-              const badgeColor = isHadir ? '#16a34a' : '#dc2626';
-              return '<div class="wish-item-card" style="background: rgba(0, 0, 0, 0.03); border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 12px; padding: 1rem 1.2rem; margin-bottom: 0.75rem; text-align: left;">' +
-                '<div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.35rem;">' +
-                  '<strong style="color: var(--primary); font-size: 0.92rem;">' + escapeHtml(r.guestName) + '</strong>' +
-                  '<span style="font-size: 0.68rem; padding: 2px 8px; border-radius: 50px; background:' + badgeBg + '; color:' + badgeColor + '; font-weight:600;">' + badgeText + '</span>' +
+              return '<div class="wish-item">' +
+                '<div class="wish-head">' +
+                  '<span class="wish-name">' + escapeHtml(r.guestName) + '</span>' +
+                  '<span class="wish-badge ' + (isHadir ? 'is-hadir' : 'is-absent') + '">' + escapeHtml(badgeText) + '</span>' +
                 '</div>' +
-                (r.message ? '<p style="margin: 0; font-size: 0.85rem; line-height: 1.5; color: var(--text-main);">“' + escapeHtml(r.message) + '”</p>' : '') +
+                (r.message ? '<p class="wish-msg">“' + escapeHtml(r.message) + '”</p>' : '') +
               '</div>';
             }).join('');
           }
@@ -1646,11 +1958,11 @@
         .catch(function() {});
     })();
 
-    // H. Hitung Mundur Otomatis
+    // H. Hitung Mundur Otomatis. Draf tanpa tanggal jadwal terima tamu tetap menampilkan 00, bukan tanggal contoh.
     (function initCountdown() {
       const rawTarget = "{{targetDate}}" || "";
-      const parsed = rawTarget ? new Date(rawTarget).getTime() : NaN;
-      const targetTime = !isNaN(parsed) && parsed > 0 ? parsed : (Date.now() + 30 * 24 * 60 * 60 * 1000);
+      const targetTime = rawTarget ? new Date(rawTarget).getTime() : NaN;
+      if (isNaN(targetTime)) return;
 
       function updateTicker() {
         const now = Date.now();
@@ -1839,16 +2151,20 @@
     document.addEventListener('DOMContentLoaded', initDockScrollSpy);
   </script>
 
-  <!-- LUXENARY PROTECTION SCRIPT -->
+  <!-- Animasi masuk: menandai elemen [data-lux-anim] saat terlihat; kelas lux-anim-ready dipasang skrip di kepala dokumen. -->
   <script>
-    (function () {
-      try {
-        if (window.console && console.log) {
-          console.log("%cSTOP!", "color: #ef4444; font-size: 50px; font-weight: 900; text-shadow: 2px 2px 0 #000; font-family: sans-serif;");
-          console.log("%cIni adalah properti eksklusif Luxenary.", "color: #b5833c; font-size: 20px; font-weight: bold;");
-          console.log("%cSegala bentuk pencurian kode, scraping, atau modifikasi ilegal akan direkam. Domain saat ini: " + window.location.hostname, "font-size: 14px; color: #a8a29e;");
-        }
-      } catch (e) { }
+    (function initRevealAnimations() {
+      const root = document.documentElement;
+      if (!root.classList.contains('lux-anim-ready')) return;
+      const targets = document.querySelectorAll('[data-lux-anim]');
+      const observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('lux-in');
+          observer.unobserve(entry.target);
+        });
+      }, { rootMargin: '0px 0px -8% 0px', threshold: 0.05 });
+      targets.forEach(function (el) { observer.observe(el); });
     })();
   </script>
   {{musicPlayerHtml}}

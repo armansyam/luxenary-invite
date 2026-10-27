@@ -2555,6 +2555,16 @@ export default function AdminPage() {
                         </svg>
                         <span>Download Blueprint</span>
                       </a>
+                      <a
+                        href="/admin/theme-builder"
+                        className="hidden lg:flex px-3.5 py-2 bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold rounded-xl transition items-center gap-1.5 shadow-xs"
+                        title="Rancang tema pernikahan baru tanpa menulis kode: warna, huruf, tata letak, ornamen, animasi"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5h16v5H4zM4 14h7v5H4zM15 14h5v5h-5z" />
+                        </svg>
+                        <span>Buat dengan Builder</span>
+                      </a>
                       <button
                         onClick={handleOpenNewTheme}
                         className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -2892,6 +2902,15 @@ export default function AdminPage() {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                       </svg>
                                     </a>
+                                    {theme.builderSpec && (
+                                      <a
+                                        href={`/admin/theme-builder?id=${encodeURIComponent(theme.id)}`}
+                                        className="px-3 py-1.5 bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 rounded-xl text-xs font-semibold transition inline-flex items-center gap-1"
+                                        title="Ubah tampilan tema ini di Theme Builder"
+                                      >
+                                        Builder
+                                      </a>
+                                    )}
                                     <button
                                       type="button"
                                       onClick={() => handleOpenDemoStudio(theme)}

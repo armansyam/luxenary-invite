@@ -3,17 +3,11 @@ import { prisma, pool } from "../lib/prisma";
 import type { ThemeCategory } from "@prisma/client";
 import fs from "fs";
 import path from "path";
+import { THEME_EVENT_FOLDERS } from "../lib/themePaths";
 
 async function main() {
   const themesDir = path.join(process.cwd(), "themes");
-  const EVENT_FOLDERS = [
-    { eventFolder: "wedding",  eventType: "WEDDING" as const },
-    { eventFolder: "birthday", eventType: "BIRTHDAY" as const },
-    { eventFolder: "khitan",   eventType: "KHITAN" as const },
-    { eventFolder: "aqiqah",   eventType: "AQIQAH" as const },
-    { eventFolder: "wisuda",   eventType: "WISUDA" as const },
-    { eventFolder: "general",  eventType: "GATHERING" as const },
-  ];
+  const EVENT_FOLDERS = THEME_EVENT_FOLDERS;
   const STYLE_FOLDERS: Array<{ name: string; category: ThemeCategory; series: string }> = [
     { name: "minimalist", category: "minimalist", series: "Minimalist" },
     { name: "modern", category: "modern", series: "Modern" },

@@ -1,0 +1,90 @@
+import crypto from "crypto";
+import fs from "fs";
+import path from "path";
+import sharp from "sharp";
+import { fileTypeFromBuffer } from "file-type";
+import { NextRequest, NextResponse } from "next/server";
+import { requireAdminModule } from "@/lib/adminAuth";
+import { routeError } from "@/lib/routeError";
+import { readFormBody } from "@/lib/requestBody";
+import {
+  THEME_ASSET_DIR,
+  THEME_ASSET_URL_PREFIX,
+  assetUsage,
+  builtinOrnamentGroups,
+  uploadedOrnaments,
+} from "@/lib/themeBuilder/server";
+
+export const dynamic = "force-dynamic";
+
+const MAX_UPLOAD_BYTES = 6 * 1024 * 1024;
+const MAX_EDGE = 1800;
+
+export async function GET() {
+  try {
+    const guard = await requireAdminModule("themes");
+    if (!guard.ok) return guard.response;
+    return NextResponse.json({ success: true, uploads: uploadedOrnaments(), builtin: builtinOrnamentGroups() });
+  } catch (error) {
+    return routeError("ThemeBuilderAssets", error);
+  }
+}
+
+/**
+ * Unggah ornamen ke pustaka bersama. Jenis berkas ditentukan dari isinya (PNG atau WebP, tanpa SVG yang dapat membawa
+ * skrip), diperkecil, dan disimpan sebagai WebP bernama hash isi di public/uploads/theme-assets/ (di luar git). Nama
+ * hash membuat berkas tidak pernah ditimpa, karena undangan klien yang sudah terbit menautkan URL ini.
+ */
+export async function POST(req: NextRequest) {
+  try {
+    const guard = await requireAdminModule("themes");
+    if (!guard.ok) return guard.response;
+
+    const form = await readFormBody(req);
+    const file = form.get("file");
+    if (!file || typeof file === "string") return NextResponse.json({ error: "Pilih berkas gambar ornamen." }, { status: 400 });
+    if (file.size > MAX_UPLOAD_BYTES) return NextResponse.json({ error: "Ukuran ornamen maksimal 6 MB." }, { status: 413 });
+
+    const input = Buffer.from(await file.arrayBuffer());
+    const detected = await fileTypeFromBuffer(input);
+    if (!detected || !["image/png", "image/webp"].includes(detected.mime)) {
+      return NextResponse.json({ error: "Ornamen harus PNG atau WebP (mendukung latar transparan)." }, { status: 415 });
+    }
+
+    const output = await sharp(input)
+      .rotate()
+      .resize({ width: MAX_EDGE, height: MAX_EDGE, fit: "inside", withoutEnlargement: true })
+      .webp({ quality: 90, alphaQuality: 100 })
+      .toBuffer();
+    const name = `${crypto.createHash("sha256").update(output).digest("hex").slice(0, 24)}.webp`;
+
+    await fs.promises.mkdir(THEME_ASSET_DIR, { recursive: true });
+    const target = path.join(/*turbopackIgnore: true*/ THEME_ASSET_DIR, name);
+    if (!fs.existsSync(target)) await fs.promises.writeFile(target, output);
+
+    return NextResponse.json({ success: true, url: `${THEME_ASSET_URL_PREFIX}${name}`, size: output.length });
+  } catch (error) {
+    return routeError("ThemeBuilderAssets", error);
+  }
+}
+
+/** Hapus ornamen unggahan hanya bila tidak ada tema, salinan undangan, HTML terbit, atau demo yang masih menautnya. */
+export async function DELETE(req: NextRequest) {
+  try {
+    const guard = await requireAdminModule("themes");
+    if (!guard.ok) return guard.response;
+
+    const url = new URL(req.url).searchParams.get("url") || "";
+    const match = url.match(/^\/uploads\/theme-assets\/([a-f0-9]{24}\.(?:webp|png))$/);
+    if (!match) return NextResponse.json({ error: "Hanya ornamen unggahan yang dapat dihapus." }, { status: 400 });
+
+    const usage = await assetUsage(url);
+    if (usage.length) {
+      return NextResponse.json({ error: "Ornamen masih dipakai dan tidak dapat dihapus.", usage }, { status: 409 });
+    }
+    await fs.promises.rm(path.join(/*turbopackIgnore: true*/ THEME_ASSET_DIR, match[1]), { force: true });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return routeError("ThemeBuilderAssets", error);
+  }
+}

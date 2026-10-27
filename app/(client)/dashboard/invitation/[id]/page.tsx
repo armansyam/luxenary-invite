@@ -2470,6 +2470,8 @@ export default function EditInvitation() {
                 allowVideo={true}
                 invitationId={invitationId}
                 slot="LANDING_COVER"
+                defaultUrl={themeDefaultOf(invitation, "LANDING_COVER")}
+                fallbackColor={invitation?.themeMainColor || ""}
                 onUploadStart={handleUploadStart}
                 onUploadEnd={handleUploadEnd}
               />
@@ -2499,37 +2501,43 @@ export default function EditInvitation() {
               />
               <PhotoInput
                 label="Hero Kiri Desktop — Bebas"
-                desc="Foto/Video BEBAS (square, landscape, portrait) — Panel kiri layar lebar. Ukuran panel = sisa layar setelah 460px kartu undangan di kanan. Semua rasio foto otomatis menyesuaikan tanpa distorsi. Wajib diisi sebelum terbit."
+                desc="Foto/Video BEBAS (square, landscape, portrait) — Panel kiri layar lebar. Ukuran panel = sisa layar setelah 460px kartu undangan di kanan. Semua rasio foto otomatis menyesuaikan tanpa distorsi. Bila dikosongkan, tampilan memakai bawaan tema."
                 value={media["DESKTOP_SIDEBAR"] || ""}
                 onChange={(url) => updateMedia("DESKTOP_SIDEBAR", url)}
                 placeholder="https://.../sidebar-hero.jpg atau .mp4"
                 allowVideo={true}
                 invitationId={invitationId}
                 slot="DESKTOP_SIDEBAR"
+                defaultUrl={themeDefaultOf(invitation, "DESKTOP_SIDEBAR")}
+                fallbackColor={invitation?.themeMainColor || ""}
                 onUploadStart={handleUploadStart}
                 onUploadEnd={handleUploadEnd}
               />
               <PhotoInput
                 label="Penutup / Footer — Portrait/Square"
-                desc="Foto/Video PORTRAIT atau SQUARE — Background seksi penutup undangan. Wajib diisi sebelum terbit."
+                desc="Foto/Video PORTRAIT atau SQUARE — Background seksi penutup undangan. Bila dikosongkan, tampilan memakai bawaan tema."
                 value={media["CLOSING_COVER"] || ""}
                 onChange={(url) => updateMedia("CLOSING_COVER", url)}
                 placeholder="https://.../closing.jpg atau .mp4"
                 allowVideo={true}
                 invitationId={invitationId}
                 slot="CLOSING_COVER"
+                defaultUrl={themeDefaultOf(invitation, "CLOSING_COVER")}
+                fallbackColor={invitation?.themeMainColor || ""}
                 onUploadStart={handleUploadStart}
                 onUploadEnd={handleUploadEnd}
               />
               <PhotoInput
                 label="Latar Belakang Global — Portrait/Bebas"
-                desc="Foto/Video PORTRAIT atau bebas — Fixed canvas di balik seluruh kartu undangan. Wajib diisi sebelum terbit."
+                desc="Foto/Video PORTRAIT atau bebas — Fixed canvas di balik seluruh kartu undangan. Bila dikosongkan, tampilan memakai bawaan tema."
                 value={media["GLOBAL_FIXED_BG"] || ""}
                 onChange={(url) => updateMedia("GLOBAL_FIXED_BG", url)}
                 placeholder="https://.../fixed-bg.jpg atau .mp4"
                 allowVideo={true}
                 invitationId={invitationId}
                 slot="GLOBAL_FIXED_BG"
+                defaultUrl={themeDefaultOf(invitation, "GLOBAL_FIXED_BG")}
+                fallbackColor={invitation?.themeMainColor || ""}
                 onUploadStart={handleUploadStart}
                 onUploadEnd={handleUploadEnd}
               />
@@ -5638,6 +5646,13 @@ function Input({
   );
 }
 
+/** Media bawaan tema untuk satu slot (salinan di undangan); kosong bila tema tidak menyediakannya. */
+function themeDefaultOf(invitation: any, slot: string): string {
+  const defaults = invitation?.themeDefaultMedia;
+  const url = defaults && typeof defaults === "object" ? defaults[slot] : "";
+  return typeof url === "string" ? url : "";
+}
+
 function PhotoInput({
   label,
   desc,
@@ -5647,6 +5662,8 @@ function PhotoInput({
   allowVideo = false,
   invitationId = "",
   slot = "photo",
+  defaultUrl = "",
+  fallbackColor = "",
   onUploadStart,
   onUploadEnd,
   maxVideoMb,
@@ -5658,6 +5675,8 @@ function PhotoInput({
   onChange: (v: string) => void;
   placeholder: string;
   allowVideo?: boolean;
+  defaultUrl?: string;
+  fallbackColor?: string;
   invitationId?: string;
   slot?: string;
   onUploadStart?: () => void;
@@ -5828,122 +5847,85 @@ function PhotoInput({
         </div>
       )}
 
-      {value ? (
-        <div className="space-y-2">
-          {/* Clean Proportional Preview Card */}
-          <div className="p-2.5 sm:p-3 bg-white border border-stone-200 rounded-xl flex items-center gap-3 sm:gap-3.5 shadow-2xs">
-            {/* Media Thumbnail Container (Compact 16x22 on mobile, 28x36 on desktop) */}
-            <div className="relative w-16 h-22 sm:w-28 sm:h-36 rounded-lg overflow-hidden border border-stone-200 bg-stone-100 shrink-0 group">
-              {isVideo ? (
-                <video
-                  src={value}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <img
-                  src={value}
-                  alt={label}
-                  className="w-full h-full object-cover"
-                />
-              )}
-
-              {/* Uploading Spinner */}
-              {uploading && (
-                <div className="absolute inset-0 bg-black/75 flex flex-col items-center justify-center gap-1.5 text-white text-[10px] font-semibold">
-                  <div className="w-5 h-5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-                  <span>Proses...</span>
-                </div>
-              )}
-            </div>
-
-            {/* Media Info & Controls */}
-            <div className="flex-1 min-w-0 space-y-1.5 sm:space-y-2">
-              <div className="space-y-0.5">
-                <span className="text-xs font-bold text-stone-900 block">{isVideo ? "Video Terpasang" : "Foto Terpasang"}</span>
-                <p className="text-[11px] text-stone-500 line-clamp-1">{label}</p>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2 pt-0.5 sm:pt-1">
-                <label className="px-3 sm:px-3.5 py-1.5 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-lg text-xs cursor-pointer shadow-xs transition flex items-center gap-1.5">
-                  <svg className="w-3.5 h-3.5 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <span>Ganti</span>
-                  <input
-                    type="file"
-                    accept={allowVideo ? "image/*,video/mp4,video/webm,video/quicktime,.mov" : "image/*"}
-                    className="sr-only"
-                    onChange={handleFileUpload}
-                    disabled={uploading}
-                  />
-                </label>
-                <button
-                  type="button"
-                  onClick={() => onChange("")}
-                  className="px-2.5 sm:px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 font-bold rounded-lg text-xs transition cursor-pointer"
-                >
-                  Hapus
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end text-[11px]">
-            <button
-              type="button"
-              onClick={() => setShowUrlInput(!showUrlInput)}
-              className="text-stone-500 hover:text-stone-800 underline cursor-pointer text-[10px]"
-            >
-              {showUrlInput ? "Tutup URL" : "Edit URL"}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          <label className="w-full py-4 px-4 bg-white hover:bg-stone-100 border border-dashed border-stone-300 hover:border-amber-700 rounded-xl flex flex-col items-center justify-center gap-1.5 cursor-pointer transition text-center shadow-xs">
-            {uploading ? (
-              <div className="flex flex-col items-center gap-2 py-1">
-                <div className="w-6 h-6 border-2 border-amber-800 border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-xs font-bold text-amber-900">Mengunggah file...</span>
-              </div>
+      {/* Satu baris ringkas: thumbnail, status, dan aksi. Thumbnail selalu ada (unggahan, bawaan tema, warna tema, atau
+          bingkai kosong), sehingga tidak ada kotak unggah terpisah. */}
+      <div className="flex items-center gap-3 p-2 bg-white border border-stone-200 rounded-xl">
+        <div className="relative w-12 h-16 sm:w-14 sm:h-[4.5rem] rounded-lg overflow-hidden border border-stone-200 bg-stone-100 shrink-0 flex items-center justify-center">
+          {value ? (
+            isVideo ? (
+              <video src={value} autoPlay loop muted playsInline className="w-full h-full object-cover" />
             ) : (
-              <>
-                <svg className="w-6 h-6 text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <span className="text-xs font-bold text-stone-800">
-                  Pilih File dari Galeri HP / Komputer
-                </span>
-                <span className="text-[10px] text-stone-500 font-medium">
-                  {allowVideo ? `Video MP4/MOV/WebM (Maks ${dynamicLimits.video} MB) • Foto JPG/PNG/WebP (Maks ${dynamicLimits.photo} MB)` : `Format Foto JPG, PNG, WebP (Maks ${dynamicLimits.photo} MB)`}
-                </span>
-              </>
-            )}
-            <input
-              type="file"
-              accept={allowVideo ? "image/*,video/mp4,video/webm,video/quicktime,.mov" : "image/*"}
-              className="sr-only"
-              onChange={handleFileUpload}
-              disabled={uploading}
-            />
-          </label>
+              <img src={value} alt={label} className="w-full h-full object-cover" />
+            )
+          ) : defaultUrl ? (
+            <img src={defaultUrl} alt={`${label} bawaan tema`} className="w-full h-full object-cover" />
+          ) : fallbackColor ? (
+            <div className="w-full h-full" style={{ backgroundColor: fallbackColor }} aria-label={`${label}: warna utama tema`} />
+          ) : (
+            <svg className="w-5 h-5 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-label={`${label}: belum ada gambar`}>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          )}
+          {uploading && (
+            <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
+              <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          )}
+        </div>
 
-          <div className="text-center">
+        <div className="flex-1 min-w-0">
+          <span className="text-xs font-bold text-stone-900 block leading-tight">
+            {uploading
+              ? "Mengunggah..."
+              : value
+                ? isVideo ? "Video terpasang" : "Foto terpasang"
+                : defaultUrl
+                  ? "Bawaan tema"
+                  : fallbackColor
+                    ? "Warna utama tema"
+                    : "Belum ada gambar"}
+          </span>
+          <p className="text-[11px] text-stone-500 leading-snug mt-0.5">
+            {value
+              ? defaultUrl || fallbackColor ? "Hapus untuk kembali ke bawaan tema." : "Ganti atau hapus kapan saja."
+              : defaultUrl || fallbackColor
+                ? "Dipakai sampai Anda mengunggah."
+                : allowVideo
+                  ? `Foto maks ${dynamicLimits.photo} MB, video maks ${dynamicLimits.video} MB.`
+                  : `Foto maks ${dynamicLimits.photo} MB.`}
+          </p>
+          <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+            <label className={`px-2.5 py-1 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-lg text-[11px] transition ${uploading ? "opacity-60 pointer-events-none" : "cursor-pointer"}`}>
+              {value || defaultUrl || fallbackColor ? "Ganti gambar" : "Unggah gambar"}
+              <input
+                type="file"
+                accept={allowVideo ? "image/*,video/mp4,video/webm,video/quicktime,.mov" : "image/*"}
+                className="sr-only"
+                onChange={handleFileUpload}
+                disabled={uploading}
+              />
+            </label>
+            {value && (
+              <button
+                type="button"
+                onClick={() => onChange("")}
+                disabled={uploading}
+                title={defaultUrl || fallbackColor ? "Hapus gambar unggahan dan kembali ke bawaan tema" : "Hapus gambar unggahan"}
+                className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 font-bold rounded-lg text-[11px] transition cursor-pointer disabled:opacity-60"
+              >
+                Hapus gambar
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setShowUrlInput(!showUrlInput)}
-              className="text-[10px] text-stone-500 hover:text-amber-800 underline cursor-pointer"
+              className="text-[10px] text-stone-500 hover:text-stone-800 underline cursor-pointer ml-auto"
             >
-              {showUrlInput ? "Gunakan Upload File Saja" : "Atau tempel link URL online"}
+              {showUrlInput ? "Tutup URL" : "Tempel URL"}
             </button>
           </div>
         </div>
-      )}
+      </div>
 
       {showUrlInput && (
         <div className="pt-1.5">

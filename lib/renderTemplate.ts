@@ -5,6 +5,7 @@ import { masterTemplateCache } from "@/lib/cache";
 import { SANITIZE_GUEST_LABEL_JS } from "@/lib/checkinQr";
 import { LIVE_EDIT_FIELD_PATTERN } from "@/lib/liveEditFields";
 import { isSafePathSegment } from "@/lib/fsSafe";
+import { masterFilePath } from "@/lib/themePaths";
 import { logger } from "@/lib/logger";
 
 // /css/* disajikan dengan Cache-Control 7 hari (next.config.ts): tanpa versi di URL, perbaikan modules.css tidak sampai ke
@@ -178,7 +179,7 @@ export const THEME_MAP: Record<string, ThemeEntry> = {
 
 const THEME_EVENT_FOLDERS: Array<[string, ThemeEntry["eventType"]]> = [
   ["wedding", "wedding"], ["birthday", "birthday"], ["khitan", "khitan"], ["aqiqah", "aqiqah"],
-  ["wisuda", "wisuda"], ["general", "gathering"], ["gathering", "gathering"],
+  ["wisuda", "wisuda"], ["general", "gathering"],
 ];
 const THEME_STYLES: ThemeEntry["style"][] = ["minimalist", "modern", "traditional"];
 
@@ -198,6 +199,21 @@ export function resolveThemeEntry(templateName: string): ThemeEntry | undefined 
   }
   return undefined;
 }
+
+/**
+ * Tata letak desktop split (>= 900px): hero kiri tidak boleh tertimpa apa pun dari kolom undangan kanan. Hero dinaikkan di
+ * atas kolom dan memotong isinya sendiri, kolom memotong luapan horizontal (ornamen, bayangan seksi), serta modal dan
+ * toast dipatok ke kolom 460px. `clip` tidak membuat kontainer gulir dan tidak memotong elemen fixed; `hidden` hanya
+ * cadangan peramban lama. Dua keluarga master memakai nama kelas berbeda, jadi kedua daftar selektor dimuat di sini.
+ */
+const DESKTOP_CONTAINMENT_STYLE = `<style id="luxDesktopContainment">
+@media (min-width: 900px) {
+  .sidebar-desktop, .left-hero { z-index: 50 !important; overflow: hidden !important; }
+  .main-scroll-panel, .right-panel, .page-wrap { overflow-x: hidden; overflow-x: clip; }
+  .modal-bg { left: calc(100% - 460px) !important; right: 0 !important; width: 460px !important; }
+  #luxCopyToast { left: calc(100% - 230px) !important; }
+}
+</style>`;
 
 export const LUXENARY_BANNER = `<!--
  _      _   _  __  __  _____   _   _      _     ____   __   __
@@ -1506,26 +1522,19 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
 export async function renderTemplateFile(
   templateName: string,
   data: Record<string, any>,
-  options?: { editMode?: boolean; invitationId?: string; eventType?: string }
+  options?: { editMode?: boolean; invitationId?: string; eventType?: string; templateSource?: string }
 ): Promise<string> {
 
-  const info = resolveThemeEntry(templateName);
+  // Pratinjau Theme Builder mengirim master hasil kompilasi yang belum ditulis ke disk: tanpa berkas master maupun piring.
+  const templateSource = options?.templateSource;
+  const info: ThemeEntry | undefined = templateSource === undefined
+    ? resolveThemeEntry(templateName)
+    : { file: `${templateName}.html`, eventType: "wedding", style: "modern" };
   if (!info) {
     throw new Error(`[renderTemplate] Tema "${templateName}" tidak terdaftar di THEME_MAP dan berkas masternya tidak ditemukan.`);
   }
 
-  const eventFolder = info.eventType === "gathering" ? "general" : info.eventType;
-  let tplPath = path.join(process.cwd(), "themes", eventFolder, info.style, info.file);
-  if (!fs.existsSync(tplPath) && info.eventType === "gathering") {
-    tplPath = path.join(process.cwd(), "themes", "gathering", info.style, info.file);
-  }
-  // Fallback ke legacy path bila direktori bertingkat baru belum dipindahkan
-  if (!fs.existsSync(tplPath)) {
-    const legacyPath = path.join(process.cwd(), "themes", info.style, info.file);
-    if (fs.existsSync(legacyPath)) {
-      tplPath = legacyPath;
-    }
-  }
+  let tplPath = masterFilePath(info.eventType, info.style, info.file);
 
   async function fileExists(p: string): Promise<boolean> {
     try {
@@ -1540,7 +1549,7 @@ export async function renderTemplateFile(
   // Salinan dibuat saat undangan pertama kali dirender dengan tema itu dan dipakai seterusnya, sehingga desain undangan
   // klien tidak berubah ketika admin mendesain ulang atau mengganti master. Ganti tema atau jenis acara menyalin ulang.
   // Demo dan portofolio (ID "demo-...") selalu dari master. Perbaikan mesin tema masuk lewat scripts/refresh-theme-drafts.ts.
-  const draftId = options?.invitationId && !options.invitationId.startsWith("demo-") && isSafePathSegment(options.invitationId) ? options.invitationId : null;
+  const draftId = templateSource === undefined && options?.invitationId && !options.invitationId.startsWith("demo-") && isSafePathSegment(options.invitationId) ? options.invitationId : null;
   const draftsDir = path.join(process.cwd(), "data", "drafts");
   const draftPath = draftId ? path.join(draftsDir, `${draftId}.html`) : null;
   const currentEvent = (options?.eventType || data?.eventType || info.eventType || "WEDDING").toUpperCase();
@@ -1559,35 +1568,22 @@ export async function renderTemplateFile(
     }
   }
 
-  if (!draftFound && !(await fileExists(tplPath))) {
-    const minimalistCheck = path.join(process.cwd(), "themes", "minimalist", `${templateName}.html`);
-    const traditionalCheck = path.join(process.cwd(), "themes", "traditional", `${templateName}.html`);
-    const modernLegacyCheck = path.join(process.cwd(), "themes", "modern", `${templateName}.html`);
-    const rootThemesCheck = path.join(process.cwd(), "themes", `${templateName}.html`);
-
-    if (await fileExists(minimalistCheck)) {
-      tplPath = minimalistCheck;
-    } else if (await fileExists(traditionalCheck)) {
-      tplPath = traditionalCheck;
-    } else if (await fileExists(modernLegacyCheck)) {
-      tplPath = modernLegacyCheck;
-    } else if (await fileExists(rootThemesCheck)) {
-      tplPath = rootThemesCheck;
-    } else {
-      // Tidak menggunakan fallback (Sesuai instruksi: Wajib memilih tema)
-      return `
+  if (templateSource === undefined && !draftFound && !(await fileExists(tplPath))) {
+    // Tidak menggunakan fallback (Sesuai instruksi: Wajib memilih tema)
+    return `
         <div style="padding:40px; text-align:center; font-family:sans-serif; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #fff;">
           <h2 style="color:#d32f2f;">Tema Tidak Tersedia</h2>
           <p>Tema yang Anda pilih tidak tersedia atau telah dihapus oleh sistem.</p>
           <p><b>Silakan kembali ke Dashboard Anda dan pilih tema lain yang aktif untuk melanjutkan pengeditan.</b></p>
         </div>
       `;
-    }
   }
 
   let tpl: string;
   if (draftFound) {
     tpl = (await fs.promises.readFile(tplPath, "utf-8")).replace(/^<!--\s*lux-theme:[^>]*-->\n?<!--\s*lux-event:[^>]*-->\n?/, "");
+  } else if (templateSource !== undefined) {
+    tpl = templateSource;
   } else {
     tpl = await readMasterTemplate(tplPath);
     if (draftPath) {
@@ -2037,6 +2033,7 @@ export async function renderTemplateFile(
   if (coverDesktopCssStyle) {
     tpl = tpl.replace(/(<\/head>)/i, `${coverDesktopCssStyle}\n$1`);
   }
+  tpl = tpl.replace(/(<\/head>)/i, `${DESKTOP_CONTAINMENT_STYLE}\n$1`);
   if (sidebarVideoHtml) {
     tpl = tpl.replace(/(<div[^>]*class="[^"]*\bleft-hero\b[^"]*"[^>]*>)/i, `$1\n    ${sidebarVideoHtml}`);
   }

@@ -5,7 +5,9 @@ import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
 import { readFormBody, readJsonBody } from "@/lib/requestBody";
 import { removeIfExists } from "@/lib/fsSafe";
-import { EventType } from "@prisma/client";
+import { EventType, Prisma } from "@prisma/client";
+import { validateThemeDefaultMedia, type ThemeDefaultMedia } from "@/lib/themeDefaultMedia";
+import { masterDir, masterPathOf } from "@/lib/themePaths";
 
 export const dynamic = "force-dynamic";
 
@@ -136,8 +138,7 @@ export async function POST(req: NextRequest) {
     const path = await import("path");
 
     // 1. Simpan fisik master file ke folder themes/[eventType]/[kategori]/[id].html
-    const eventFolder = eventType === "GATHERING" ? "general" : eventType.toLowerCase();
-    const targetDir = path.join(process.cwd(), "themes", eventFolder, cat);
+    const targetDir = masterDir(eventType, cat);
     await fs.mkdir(targetDir, { recursive: true });
     const targetFilePath = path.join(targetDir, `${cleanId}.html`);
 
@@ -198,6 +199,7 @@ export async function PUT(req: NextRequest) {
     let isActive: boolean | undefined;
     let sortOrder: number | undefined;
     let defaultMusicUrl: string | undefined;
+    let defaultMedia: ThemeDefaultMedia | undefined;
     let file: File | null = null;
 
     const contentType = req.headers.get("content-type") || "";
@@ -225,6 +227,11 @@ export async function PUT(req: NextRequest) {
       if (body.isActive !== undefined) isActive = Boolean(body.isActive);
       if (body.sortOrder !== undefined) sortOrder = Number(body.sortOrder);
       if (body.defaultMusicUrl !== undefined) defaultMusicUrl = body.defaultMusicUrl || "";
+      if (body.defaultMedia !== undefined) {
+        const checked = validateThemeDefaultMedia(body.defaultMedia);
+        if (!checked.ok) return NextResponse.json({ error: checked.error }, { status: 400 });
+        defaultMedia = checked.value;
+      }
     }
 
     if (!id) {
@@ -235,6 +242,14 @@ export async function PUT(req: NextRequest) {
     const existing = await prisma.theme.findUnique({ where: { id: cleanId } });
     if (!existing) {
       return NextResponse.json({ error: "Tema tidak ditemukan" }, { status: 404 });
+    }
+
+    if (isActive === true && !existing.isActive) {
+      const { builderPublishIssues } = await import("@/lib/themeBuilder/server");
+      const issues = await builderPublishIssues(cleanId);
+      if (issues?.length) {
+        return NextResponse.json({ error: "Tema builder belum lolos pemeriksaan. Buka di Theme Builder untuk memperbaikinya.", issues }, { status: 422 });
+      }
     }
 
     const fs = await import("fs/promises");
@@ -248,9 +263,7 @@ export async function PUT(req: NextRequest) {
         return NextResponse.json({ error: "Format file tidak valid. Wajib berekstensi .html." }, { status: 400 });
       }
 
-      // Folder sama dengan POST, DELETE, dan scripts/sync-themes.ts: GATHERING disimpan di themes/general/.
-      const eventFolder = existing.eventType === "GATHERING" ? "general" : existing.eventType.toLowerCase();
-      const targetDir = path.join(process.cwd(), "themes", eventFolder, targetCat);
+      const targetDir = masterDir(existing.eventType, targetCat);
       await fs.mkdir(targetDir, { recursive: true });
       const targetFilePath = path.join(targetDir, `${cleanId}.html`);
 
@@ -277,6 +290,9 @@ export async function PUT(req: NextRequest) {
         ...(isActive !== undefined && { isActive: Boolean(isActive) }),
         ...(sortOrder !== undefined && { sortOrder: Number(sortOrder) }),
         ...(defaultMusicUrl !== undefined && { defaultMusicUrl: defaultMusicUrl || null }),
+        ...(defaultMedia !== undefined && { defaultMedia }),
+        // Master yang diganti unggahan manual bukan lagi hasil builder; spesifikasi lama akan menimpanya bila dibuka di builder.
+        ...(file && { builderSpec: Prisma.DbNull }),
       },
     });
 
@@ -330,13 +346,10 @@ export async function DELETE(req: NextRequest) {
 
     // 3. Remove the master HTML file physically from the themes/ folder
     const categoryDir = existingTheme.category.toLowerCase();
-    const evType = (existingTheme.eventType || "WEDDING").toUpperCase();
-    const evFolder = evType === "GATHERING" ? "general" : evType.toLowerCase();
-    // Lokasi master bergantung pada jenis acara dan riwayat folder tema, jadi ketiga kemungkinan dibersihkan.
+    // Master ada di folder jenis acaranya; tema lama ada yang tersimpan di folder pernikahan, jadi keduanya dibersihkan.
     const possiblePaths = [
-      path.join(process.cwd(), "themes", evFolder, categoryDir, `${id.toLowerCase()}.html`),
-      path.join(process.cwd(), "themes", "wedding", categoryDir, `${id.toLowerCase()}.html`),
-      path.join(process.cwd(), "themes", categoryDir, `${id.toLowerCase()}.html`),
+      masterPathOf(existingTheme.eventType || "WEDDING", categoryDir, id),
+      masterPathOf("WEDDING", categoryDir, id),
     ];
     for (const p of possiblePaths) await removeIfExists(p);
 

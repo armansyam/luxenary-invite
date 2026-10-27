@@ -128,6 +128,8 @@ model Invitation {
   bankAccounts         Json?
   shippingAddress      String?
   featureSettings      Json?
+  /// Salinan Theme.defaultMedia saat tema dipilih; media bawaan tema tidak berubah walau admin mengubah tema.
+  themeDefaultMedia    Json?             @map("theme_default_media")
   staffPin             String?
   openingQuote         String?
   openingQuoteRef      String?
@@ -269,6 +271,10 @@ model Theme {
   isActive        Boolean       @default(true)
   sortOrder       Int           @default(0)
   defaultMusicUrl String?       @map("default_music_url")
+  /// Spesifikasi Theme Builder (lib/themeBuilder/spec.ts); null untuk master yang ditulis tangan.
+  builderSpec     Json?         @map("builder_spec")
+  /// Media bawaan tema per slot ({ SLOT: "/path" }); lib/themeDefaultMedia.ts. Disalin ke undangan saat tema dipilih.
+  defaultMedia    Json?         @map("default_media")
   createdAt       DateTime      @default(now())
   invitations     Invitation[]
 
