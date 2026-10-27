@@ -277,8 +277,27 @@ model Theme {
   defaultMedia    Json?         @map("default_media")
   createdAt       DateTime      @default(now())
   invitations     Invitation[]
+  builderRevisions ThemeBuilderRevision[]
 
   @@map("themes")
+}
+
+/// Riwayat versi rancangan Theme Builder: satu baris per penyimpanan yang mengubah spesifikasi (maks. 30 terbaru per tema).
+model ThemeBuilderRevision {
+  id          String        @id @default(uuid())
+  themeId     String        @map("theme_id")
+  spec        Json
+  name        String
+  category    ThemeCategory
+  description String?
+  /// CREATE untuk draf pertama (termasuk duplikat dan impor), SAVE untuk simpan berikutnya.
+  action      String
+  adminName   String?       @map("admin_name")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  theme       Theme         @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@index([themeId, createdAt])
+  @@map("theme_builder_revisions")
 }
 
 model MusicPreset {

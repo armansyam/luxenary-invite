@@ -520,6 +520,8 @@ Admin Portal → Tab Tema → "Buat dengan Builder" (layar ≥ 1100 px) → /adm
 ```
 Master builder hanya ada di disk server (`themes/`) dan gambar unggahan di `public/uploads/theme-assets/`; backup harian hanya memuat database. Setelah memulihkan DB ke server baru jalankan `npx tsx scripts/rebuild-builder-masters.ts` (rencana) lalu `--apply`, dan pulihkan folder uploads dari cadangannya. Dua admin yang membuka tema yang sama tidak saling menimpa: simpan dari salinan basi ditolak dan aksi builder tercatat di audit log.
 
+Panel Terbit di builder juga memuat musik bawaan tema (dipilih dari pustaka musik sistem), Duplikat tema, Ekspor berkas, dan Riwayat versi (30 penyimpanan terakhir; "Muat ke editor" mengembalikan rancangan lama sebagai perubahan yang bisa diurungkan). Tombol Impor berkas di bagian atas tema baru memuat berkas `.luxtheme.json` hasil ekspor beserta gambar unggahannya, dipakai untuk memindahkan tema dari lokal ke server. Cadangan lengkap di luar database: `npx tsx scripts/export-builder-themes.ts` (folder `backups/builder-themes`, tidak masuk git); pulihkan gambar yang hilang dengan `npx tsx scripts/rebuild-builder-masters.ts --assets-from backups/builder-themes --apply`.
+
 Builder hanya untuk tema pernikahan dan selalu berangkat dari `themes/_blueprints/wedding/starter-blueprint.html`, sehingga label klien, 9 slot media, RSVP, dan musik tetap utuh. Draf tidak tampil di katalog; terbit ditolak bila master gagal audit. Deploy pertama setelah fitur ini menjalankan migrasi `20261023120000_theme_builder_spec` (kolom `themes.builder_spec`). Ornamen unggahan tersimpan di `public/uploads/theme-assets/` (di luar git) dan perlu dicadangkan bersama folder unggahan lain.
 
 ---

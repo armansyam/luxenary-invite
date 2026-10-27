@@ -15,6 +15,7 @@ import { parseBuilderSpec } from "@/lib/themeBuilder/spec";
 import { ensureSpecFonts } from "@/lib/themeBuilder/fonts";
 import { fitSpecFrames } from "@/lib/themeBuilder/frameWindow";
 import { seedSpecFromMaster } from "@/lib/themeBuilder/legacySeed";
+import { exportBundle } from "@/lib/themeBuilder/bundle";
 import { masterPathOf } from "@/lib/themePaths";
 import {
   BUILDER_CATEGORIES,
@@ -24,6 +25,8 @@ import {
   compileAndAudit,
   isSafeThemeId,
   recordBuilderAudit,
+  recordBuilderRevision,
+  resolveThemeMusic,
   slugifyThemeId,
   storedBuilderSpec,
   themeIdTaken,
@@ -82,6 +85,39 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, themes });
     }
 
+    const exportId = params.get("export");
+    if (exportId) {
+      const theme = await prisma.theme.findUnique({ where: { id: exportId }, select: { id: true, name: true, category: true, description: true, defaultMusicUrl: true, builderSpec: true } });
+      const spec = theme ? storedBuilderSpec(theme.builderSpec) : null;
+      if (!theme || !spec) return NextResponse.json({ error: "Hanya tema builder yang dapat diekspor." }, { status: 404 });
+      const { bundle } = exportBundle(
+        { name: theme.name, category: theme.category as BuilderCategory, description: theme.description ?? "", defaultMusicUrl: theme.defaultMusicUrl ?? "" },
+        spec,
+      );
+      await recordBuilderAudit(req, guard.session, "THEME_BUILDER_EXPORT", `Mengekspor tema builder ${theme.id}`);
+      return new NextResponse(JSON.stringify(bundle), {
+        headers: { "Content-Type": "application/json; charset=utf-8", "Content-Disposition": `attachment; filename="${theme.id}.luxtheme.json"`, "Cache-Control": "no-store" },
+      });
+    }
+
+    const revisionsOf = params.get("revisions");
+    if (revisionsOf) {
+      const revisions = await prisma.themeBuilderRevision.findMany({
+        where: { themeId: revisionsOf },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, action: true, adminName: true, createdAt: true, name: true },
+      });
+      return NextResponse.json({ success: true, revisions });
+    }
+
+    const revisionId = params.get("revision");
+    if (revisionId) {
+      const revision = await prisma.themeBuilderRevision.findUnique({ where: { id: revisionId }, select: { themeId: true, spec: true, createdAt: true } });
+      const spec = revision ? storedBuilderSpec(revision.spec) : null;
+      if (!revision || !spec) return NextResponse.json({ error: "Versi rancangan tidak ditemukan atau tidak lagi valid." }, { status: 404 });
+      return NextResponse.json({ success: true, themeId: revision.themeId, spec, createdAt: revision.createdAt });
+    }
+
     const from = params.get("from");
     if (from) {
       const legacy = await prisma.theme.findUnique({ where: { id: from }, select: { id: true, name: true, category: true, description: true, eventType: true, builderSpec: true } });
@@ -111,7 +147,7 @@ export async function GET(req: NextRequest) {
 
     const theme = await prisma.theme.findUnique({
       where: { id },
-      select: { id: true, name: true, category: true, description: true, isActive: true, builderSpec: true },
+      select: { id: true, name: true, category: true, description: true, isActive: true, defaultMusicUrl: true, builderSpec: true },
     });
     if (!theme) return NextResponse.json({ error: "Tema tidak ditemukan." }, { status: 404 });
     const spec = storedBuilderSpec(theme.builderSpec);
@@ -132,11 +168,25 @@ export async function POST(req: NextRequest) {
     if (!guard.ok) return guard.response;
 
     const body = (await readJsonBody<Record<string, unknown>>(req)) ?? {};
-    const { name, description, category } = readMeta(body);
+
+    // Duplikat memakai spesifikasi yang tersimpan di server (bukan yang sedang terbuka di editor) dan menyalin musik bawaannya.
+    const duplicateFrom = typeof body.duplicateFrom === "string" ? body.duplicateFrom : "";
+    const source = duplicateFrom
+      ? await prisma.theme.findUnique({ where: { id: duplicateFrom }, select: { name: true, category: true, description: true, defaultMusicUrl: true, builderSpec: true } })
+      : null;
+    const sourceSpec = source ? storedBuilderSpec(source.builderSpec) : null;
+    if (duplicateFrom && (!source || !sourceSpec)) return NextResponse.json({ error: "Hanya tema builder yang dapat diduplikat." }, { status: 404 });
+
+    const meta = readMeta(source ? { name: `${source.name} Salinan`.slice(0, 60), category: source.category, description: source.description ?? "", ...body } : body);
+    const { name, description, category } = meta;
     if (name.length < 2 || name.length > 60) return NextResponse.json({ error: "Nama tema wajib 2–60 karakter." }, { status: 400 });
     if (!category) return NextResponse.json({ error: "Gaya tema tidak dikenali." }, { status: 400 });
 
-    const themeId = typeof body.id === "string" && body.id.trim() ? body.id.trim().toLowerCase() : slugifyThemeId(name);
+    let themeId = typeof body.id === "string" && body.id.trim() ? body.id.trim().toLowerCase() : slugifyThemeId(name);
+    if (source && !(typeof body.id === "string" && body.id.trim())) {
+      const base = themeId.slice(0, 36);
+      for (let n = 2; n < 50 && (await themeIdTaken(themeId)); n++) themeId = `${base}-${n}`;
+    }
     if (!isSafeThemeId(themeId)) {
       return NextResponse.json({ error: "ID tema hanya boleh huruf kecil, angka, dan tanda hubung (2–40 karakter)." }, { status: 400 });
     }
@@ -144,7 +194,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `ID tema "${themeId}" sudah dipakai. Ganti nama atau ID tema.` }, { status: 409 });
     }
 
-    const parsed = parseBuilderSpec(body.spec);
+    const music = await resolveThemeMusic(body.defaultMusicUrl !== undefined ? body.defaultMusicUrl : source?.defaultMusicUrl);
+    if (!music.ok) return NextResponse.json({ error: music.error }, { status: 400 });
+
+    const parsed = parseBuilderSpec(sourceSpec ?? body.spec);
     if (!parsed.ok) return NextResponse.json({ error: "Rancangan tema tidak valid.", details: parsed.errors }, { status: 400 });
 
     await ensureSpecFonts(parsed.spec);
@@ -170,12 +223,14 @@ export async function POST(req: NextRequest) {
           sortOrder: (maxOrder._max.sortOrder ?? 0) + 1,
           builderSpec: spec as unknown as Prisma.InputJsonObject,
           defaultMedia: builderDefaultMedia(spec),
+          defaultMusicUrl: music.url,
         },
-        select: { id: true, name: true, category: true, description: true, isActive: true, builderSpec: true },
+        select: { id: true, name: true, category: true, description: true, isActive: true, defaultMusicUrl: true, builderSpec: true },
       });
-      const { builderSpec: stored, ...meta } = theme;
-      await recordBuilderAudit(req, guard.session, "THEME_BUILDER_CREATE", `Membuat draf tema builder ${meta.id} (${meta.name})`);
-      return NextResponse.json({ success: true, theme: meta, etag: specEtag(stored) });
+      const { builderSpec: stored, ...themeMeta } = theme;
+      await recordBuilderRevision(guard.session, { ...themeMeta, category }, spec, "CREATE");
+      await recordBuilderAudit(req, guard.session, "THEME_BUILDER_CREATE", source ? `Menduplikat tema builder ${duplicateFrom} menjadi ${themeMeta.id}` : `Membuat draf tema builder ${themeMeta.id} (${themeMeta.name})`);
+      return NextResponse.json({ success: true, theme: themeMeta, etag: specEtag(stored) });
     } catch (err) {
       // Baris DB gagal dibuat (mis. ID direbut permintaan lain): berkas master yang baru ditulis tidak boleh tertinggal.
       await removeIfExists(file);
@@ -199,7 +254,8 @@ export async function PUT(req: NextRequest) {
     const themeId = typeof body.id === "string" ? body.id : "";
     const existing = themeId ? await prisma.theme.findUnique({ where: { id: themeId } }) : null;
     if (!existing) return NextResponse.json({ error: "Tema tidak ditemukan." }, { status: 404 });
-    if (!storedBuilderSpec(existing.builderSpec)) {
+    const existingSpec = storedBuilderSpec(existing.builderSpec);
+    if (!existingSpec) {
       return NextResponse.json({ error: "Tema ini ditulis tangan sehingga tidak bisa disimpan dari builder." }, { status: 409 });
     }
 
@@ -215,6 +271,9 @@ export async function PUT(req: NextRequest) {
     const parsed = parseBuilderSpec(body.spec);
     if (!parsed.ok) return NextResponse.json({ error: "Rancangan tema tidak valid.", details: parsed.errors }, { status: 400 });
 
+    const music = body.defaultMusicUrl === undefined ? null : await resolveThemeMusic(body.defaultMusicUrl);
+    if (music && !music.ok) return NextResponse.json({ error: music.error }, { status: 400 });
+
     await ensureSpecFonts(parsed.spec);
     const spec = await fitSpecFrames(parsed.spec);
     const { html, issues } = compileAndAudit(spec);
@@ -225,13 +284,27 @@ export async function PUT(req: NextRequest) {
     await fs.promises.writeFile(file, html, "utf-8");
     if (existing.category !== category) await removeIfExists(builderMasterPath(existing.category as BuilderCategory, themeId));
 
+    // Tema yang dibuat sebelum ada riwayat: simpan keadaan sebelum penyimpanan ini agar masih bisa dikembalikan.
+    if (!(await prisma.themeBuilderRevision.count({ where: { themeId } }))) {
+      await recordBuilderRevision(null, { id: themeId, name: existing.name, category: existing.category as BuilderCategory, description: existing.description }, existingSpec, "CREATE");
+    }
+
     const theme = await prisma.theme.update({
       where: { id: themeId },
-      data: { name, description, category, series: SERIES[category], builderSpec: spec as unknown as Prisma.InputJsonObject, defaultMedia: builderDefaultMedia(spec) },
-      select: { id: true, name: true, category: true, description: true, isActive: true, builderSpec: true },
+      data: {
+        name,
+        description,
+        category,
+        series: SERIES[category],
+        builderSpec: spec as unknown as Prisma.InputJsonObject,
+        defaultMedia: builderDefaultMedia(spec),
+        ...(music && music.ok && { defaultMusicUrl: music.url }),
+      },
+      select: { id: true, name: true, category: true, description: true, isActive: true, defaultMusicUrl: true, builderSpec: true },
     });
     await refreshPublicTheme(themeId, theme.isActive);
     const { builderSpec: stored, ...meta } = theme;
+    await recordBuilderRevision(guard.session, { ...meta, category }, spec, "SAVE");
     await recordBuilderAudit(req, guard.session, "THEME_BUILDER_SAVE", `Menyimpan tema builder ${meta.id}${meta.isActive ? " (aktif di katalog)" : ""}`);
     return NextResponse.json({ success: true, theme: meta, etag: specEtag(stored) });
   } catch (error) {

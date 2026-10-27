@@ -40,7 +40,9 @@ import {
   TextsPanel,
   TypePanel,
   type AssetLibrary,
+  type MusicOption,
   type PanelId,
+  type RevisionRow,
   type ThemeMeta,
 } from "@/components/admin/themeBuilder/BuilderPanels";
 
@@ -79,7 +81,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
   const [spec, setSpec] = useState<BuilderSpec>(defaultBuilderSpec);
   // Salinan terbaru untuk pengendali seret dan pintasan keyboard; setiap setSpec di komponen ini memperbaruinya juga.
   const specRef = useRef<BuilderSpec>(spec);
-  const [meta, setMeta] = useState<ThemeMeta>({ id: "", name: "", category: "modern", description: "" });
+  const [meta, setMeta] = useState<ThemeMeta>({ id: "", name: "", category: "modern", description: "", defaultMusicUrl: "" });
   const [isNew, setIsNew] = useState(!themeId);
   const [isActive, setIsActive] = useState(false);
   const [saved, setSaved] = useState("");
@@ -142,7 +144,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
     (async () => {
       if (!themeId) {
         const initial = defaultBuilderSpec();
-        const initialMeta: ThemeMeta = { id: "", name: "", category: "modern", description: "" };
+        const initialMeta: ThemeMeta = { id: "", name: "", category: "modern", description: "", defaultMusicUrl: "" };
         setSaved(snapshot(initial, initialMeta));
         setLoaded(true);
         return;
@@ -154,7 +156,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
         setLoadError(data.error || "Tema gagal dimuat.");
         return;
       }
-      const m: ThemeMeta = { id: data.theme.id, name: data.theme.name, category: data.theme.category, description: data.theme.description || "" };
+      const m: ThemeMeta = { id: data.theme.id, name: data.theme.name, category: data.theme.category, description: data.theme.description || "", defaultMusicUrl: data.theme.defaultMusicUrl || "" };
       specRef.current = data.spec;
       setSpec(data.spec);
       setMeta(m);
@@ -176,6 +178,81 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
   }, [notify]);
 
   useEffect(() => { loadLibrary(); }, [loadLibrary]);
+
+  const [music, setMusic] = useState<MusicOption[] | null>(null);
+  useEffect(() => {
+    fetch("/api/public/music", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => setMusic(Array.isArray(data.music) ? data.music : []))
+      .catch(() => notify("Daftar musik gagal dimuat.", "error"));
+  }, [notify]);
+
+  const [revisions, setRevisions] = useState<RevisionRow[] | null>(null);
+  const loadRevisions = useCallback(async (id: string) => {
+    const res = await fetch(`/api/admin/theme-builder?revisions=${encodeURIComponent(id)}`, { cache: "no-store" });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) setRevisions(data.revisions);
+    else notify(data.error || "Riwayat versi gagal dimuat.", "error");
+  }, [notify]);
+
+  useEffect(() => {
+    if (loaded && !isNew && meta.id) void loadRevisions(meta.id);
+  }, [loaded, isNew, meta.id, loadRevisions]);
+
+  const duplicateTheme = useCallback(async () => {
+    if (!meta.id) return;
+    const ok = await confirm({ title: "Duplikat tema ini?", message: `Salinan dibuat dari versi ${meta.name} yang sudah tersimpan sebagai draf baru. Perubahan yang belum disimpan tidak ikut.`, confirmLabel: "Duplikat" });
+    if (!ok) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/theme-builder", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ duplicateFrom: meta.id }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return notify(data.error || "Tema gagal diduplikat.", "error");
+      allowLeave.current = true;
+      notify(`Salinan "${data.theme.name}" dibuat sebagai draf.`, "success");
+      router.push(`/admin/theme-builder?id=${encodeURIComponent(data.theme.id)}`);
+    } catch {
+      notify("Tema gagal diduplikat. Periksa koneksi.", "error");
+    } finally {
+      setSaving(false);
+    }
+  }, [confirm, meta.id, meta.name, notify, router]);
+
+  const exportTheme = useCallback(() => {
+    if (!meta.id) return;
+    const link = document.createElement("a");
+    link.href = `/api/admin/theme-builder?export=${encodeURIComponent(meta.id)}`;
+    link.download = `${meta.id}.luxtheme.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }, [meta.id]);
+
+  const importInput = useRef<HTMLInputElement | null>(null);
+  /** Mengisi rancangan baru dari berkas ekspor; gambar dipulihkan server lebih dulu agar URL di spesifikasi tidak patah. */
+  const importTheme = useCallback(async (file: File) => {
+    let raw: unknown;
+    try {
+      raw = JSON.parse(await file.text());
+    } catch {
+      return notify("Berkas bukan JSON yang valid.", "error");
+    }
+    const res = await fetch("/api/admin/theme-builder/import", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(raw) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return notify(data.details?.[0] || data.error || "Berkas gagal diimpor.", "error");
+    history.current = { past: [], future: [] };
+    syncHistory();
+    specRef.current = data.spec;
+    setSpec(data.spec);
+    setMeta((m) => ({ ...m, name: data.theme.name, category: data.theme.category, description: data.theme.description, defaultMusicUrl: data.theme.defaultMusicUrl }));
+    void loadLibrary();
+    const notes = [
+      `${data.assets.written + data.assets.existing} gambar dipulihkan`,
+      data.missingAssets.length ? `${data.missingAssets.length} gambar tidak ada di berkas dan tampil kosong` : "",
+      data.musicDropped ? "musik bawaan tidak ada di pustaka server ini dan dilepas" : "",
+    ].filter(Boolean);
+    notify(`Rancangan diimpor: ${notes.join("; ")}. Isi nama lalu simpan sebagai draf.`, data.missingAssets.length ? "error" : "success");
+  }, [loadLibrary, notify, syncHistory]);
 
   const structure = useMemo(() => structuralKey(spec), [spec]);
   useEffect(() => {
@@ -226,6 +303,17 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
   }, [syncHistory]);
 
   const patchSpec = useCallback((patch: Partial<BuilderSpec>) => apply({ ...specRef.current, ...patch }, "commit"), [apply]);
+
+  /** Memuat versi lama ke editor sebagai perubahan biasa (bisa diurungkan); baru berlaku setelah disimpan. */
+  const restoreRevision = useCallback(async (revisionId: string) => {
+    const ok = await confirm({ title: "Muat versi ini ke editor?", message: "Rancangan di editor diganti dengan versi tersebut. Nama dan musik tidak berubah. Perubahan baru berlaku setelah Anda menyimpan, dan bisa diurungkan dengan Ctrl+Z.", confirmLabel: "Muat" });
+    if (!ok) return;
+    const res = await fetch(`/api/admin/theme-builder?revision=${encodeURIComponent(revisionId)}`, { cache: "no-store" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return notify(data.error || "Versi gagal dimuat.", "error");
+    apply(data.spec, "commit");
+    notify("Versi lama dimuat ke editor. Simpan untuk memakainya.", "info");
+  }, [apply, confirm, notify]);
 
   const undo = useCallback(() => {
     const { past, future } = history.current;
@@ -403,7 +491,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
       const res = await fetch("/api/admin/theme-builder", {
         method: isNew ? "POST" : "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: meta.id || undefined, name: meta.name.trim(), category: meta.category, description: meta.description.trim(), spec, baseEtag: etag.current || undefined }),
+        body: JSON.stringify({ id: meta.id || undefined, name: meta.name.trim(), category: meta.category, description: meta.description.trim(), defaultMusicUrl: meta.defaultMusicUrl, spec, baseEtag: etag.current || undefined }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -412,10 +500,11 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
         return;
       }
       etag.current = typeof data.etag === "string" ? data.etag : "";
-      const m: ThemeMeta = { id: data.theme.id, name: data.theme.name, category: data.theme.category, description: data.theme.description || "" };
+      const m: ThemeMeta = { id: data.theme.id, name: data.theme.name, category: data.theme.category, description: data.theme.description || "", defaultMusicUrl: data.theme.defaultMusicUrl || "" };
       setMeta(m);
       setIsActive(Boolean(data.theme.isActive));
       setSaved(snapshot(spec, m));
+      if (!isNew) void loadRevisions(m.id);
       if (isNew) {
         setIsNew(false);
         loadedFor.current = m.id;
@@ -429,7 +518,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
     } finally {
       setSaving(false);
     }
-  }, [isActive, isNew, meta, notify, router, snapshot, spec]);
+  }, [isActive, isNew, loadRevisions, meta, notify, router, snapshot, spec]);
 
   const publish = useCallback(async (active: boolean) => {
     if (!active) {
@@ -632,6 +721,24 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
               {(legacyThemes ?? []).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
           )}
+          {isNew && (
+            <>
+              <input
+                ref={importInput}
+                type="file"
+                accept=".json,application/json"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (file) void importTheme(file);
+                }}
+              />
+              <button type="button" onClick={() => importInput.current?.click()} className="rounded-lg border border-stone-200 bg-white px-2 py-1 text-[11.5px] font-semibold text-stone-600 hover:border-stone-300 cursor-pointer">
+                Impor berkas
+              </button>
+            </>
+          )}
           {dirty && !isNew && <span className="text-[11px] text-stone-400">Ada perubahan</span>}
         </div>
 
@@ -734,6 +841,11 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
               onMeta={(patch) => setMeta((m) => ({ ...m, ...patch }))}
               onSave={save}
               onPublish={publish}
+              music={music}
+              revisions={revisions}
+              onDuplicate={duplicateTheme}
+              onExport={exportTheme}
+              onRestoreRevision={restoreRevision}
             />
           )}
         </aside>

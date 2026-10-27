@@ -8,17 +8,45 @@
  *
  *   npx tsx scripts/rebuild-builder-masters.ts            # rencana saja
  *   npx tsx scripts/rebuild-builder-masters.ts --apply    # tulis master yang hilang atau berbeda
+ *   npx tsx scripts/rebuild-builder-masters.ts --assets-from backups/builder-themes --apply
+ *       # sebelum memeriksa, pulihkan gambar unggahan yang hilang dari berkas ekspor (export-builder-themes.ts)
  */
 import "dotenv/config";
 import fs from "fs";
 import path from "path";
 import { prisma, pool } from "../lib/prisma";
-import { builderMasterPath, compileAndAudit, storedBuilderSpec, type BuilderCategory } from "../lib/themeBuilder/server";
+import { builderMasterPath, compileAndAudit, storedBuilderSpec, THEME_ASSET_DIR, type BuilderCategory } from "../lib/themeBuilder/server";
+import { readBundle, writeBundleAssets } from "../lib/themeBuilder/bundle";
 import { ensureSpecFonts } from "../lib/themeBuilder/fonts";
 
 const APPLY = process.argv.includes("--apply");
+const assetsFromIdx = process.argv.indexOf("--assets-from");
+const ASSETS_FROM = assetsFromIdx >= 0 ? process.argv[assetsFromIdx + 1] : null;
+
+/** Gambar unggahan yang hilang dipulihkan dari berkas ekspor; tiap gambar diverifikasi hash namanya oleh readBundle. */
+async function restoreAssets(dir: string) {
+  let restored = 0;
+  for (const file of fs.readdirSync(dir).filter((f) => f.endsWith(".luxtheme.json"))) {
+    const result = await readBundle(JSON.parse(fs.readFileSync(path.join(dir, file), "utf-8")));
+    if (!result.ok) {
+      console.error(`LEWAT   ${file}: ${result.errors[0]}`);
+      continue;
+    }
+    for (const [name, bytes] of result.assets) {
+      if (fs.existsSync(path.join(THEME_ASSET_DIR, name))) continue;
+      console.log(`PULIH   ${name} (dari ${file})`);
+      if (APPLY) await writeBundleAssets(new Map([[name, bytes]]));
+      restored++;
+    }
+  }
+  console.log(`Gambar dipulihkan dari berkas ekspor: ${restored}${APPLY ? "" : " (rencana saja)"}\n`);
+}
 
 async function main() {
+  if (assetsFromIdx >= 0) {
+    if (!ASSETS_FROM || !fs.existsSync(ASSETS_FROM)) throw new Error("--assets-from membutuhkan folder berkas ekspor yang ada.");
+    await restoreAssets(ASSETS_FROM);
+  }
   const themes = await prisma.theme.findMany({ where: { builderSpec: { not: null as never } }, select: { id: true, category: true, builderSpec: true } });
   let missing = 0;
   let differs = 0;

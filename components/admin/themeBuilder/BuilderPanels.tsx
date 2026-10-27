@@ -41,6 +41,8 @@ export interface ThemeMeta {
   name: string;
   category: "minimalist" | "modern" | "traditional";
   description: string;
+  /** URL lagu dari pustaka musik sistem; kosong memakai musik bawaan seri. */
+  defaultMusicUrl: string;
 }
 
 export interface PublishState {
@@ -50,6 +52,25 @@ export interface PublishState {
   saving: boolean;
   issues: Array<{ code: string; message: string }>;
 }
+
+export interface MusicOption {
+  id: string;
+  title: string;
+  composer: string | null;
+  url: string;
+}
+
+export interface RevisionRow {
+  id: string;
+  action: string;
+  adminName: string | null;
+  createdAt: string;
+  name: string;
+}
+
+const REVISION_ACTION_LABEL: Record<string, string> = { CREATE: "Versi awal", SAVE: "Disimpan" };
+
+const revisionTime = (iso: string) => new Date(iso).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
 const Icon = ({ d, className = "h-4 w-4" }: { d: string; className?: string }) => (
   <svg className={className} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" aria-hidden="true">
@@ -755,6 +776,11 @@ export function PublishPanel({
   onMeta,
   onSave,
   onPublish,
+  music,
+  revisions,
+  onDuplicate,
+  onExport,
+  onRestoreRevision,
 }: {
   spec: BuilderSpec;
   meta: ThemeMeta;
@@ -762,6 +788,11 @@ export function PublishPanel({
   onMeta: (patch: Partial<ThemeMeta>) => void;
   onSave: () => void;
   onPublish: (active: boolean) => void;
+  music: MusicOption[] | null;
+  revisions: RevisionRow[] | null;
+  onDuplicate: () => void;
+  onExport: () => void;
+  onRestoreRevision: (id: string) => void;
 }) {
   const contrastOk = paletteChecks(spec).every((c) => c.ok);
   const checklist: Array<{ label: string; ok: boolean; note?: string }> = [
@@ -800,6 +831,20 @@ export function PublishPanel({
           <label className="block">
             <span className="text-[12px] font-semibold text-stone-700">Deskripsi singkat</span>
             <textarea value={meta.description} onChange={(e) => onMeta({ description: e.target.value })} maxLength={300} rows={3} placeholder="Ditampilkan di katalog tema klien" className="mt-1 w-full resize-none rounded-xl border border-stone-200 px-3 py-2 text-sm outline-none focus:border-amber-500" />
+          </label>
+          <label className="block">
+            <span className="text-[12px] font-semibold text-stone-700">Musik bawaan</span>
+            <select
+              value={meta.defaultMusicUrl}
+              onChange={(e) => onMeta({ defaultMusicUrl: e.target.value })}
+              disabled={!music}
+              className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm outline-none focus:border-amber-500 disabled:bg-stone-50 cursor-pointer"
+            >
+              <option value="">Ikuti musik bawaan seri</option>
+              {meta.defaultMusicUrl && !(music ?? []).some((m) => m.url === meta.defaultMusicUrl) && <option value={meta.defaultMusicUrl}>{meta.defaultMusicUrl}</option>}
+              {(music ?? []).map((m) => <option key={m.id} value={m.url}>{m.composer ? `${m.title} – ${m.composer}` : m.title}</option>)}
+            </select>
+            <span className="mt-1 block text-[11px] text-stone-500">Dimainkan di undangan klien sampai klien memilih lagu sendiri.</span>
           </label>
         </div>
       </Section>
@@ -840,6 +885,46 @@ export function PublishPanel({
           Setelah terbit, unggah foto demo dan thumbnail katalog lewat <a href="/admin?tab=themes" className="font-semibold text-amber-700 hover:underline">Katalog Tema → Demo Studio</a>. Mengubah tema yang sudah dipakai klien tidak mengubah undangan mereka.
         </p>
       </Section>
+
+      {!state.isNew && (
+        <>
+          <Section title="Salin dan pindahkan" hint="Duplikat dan ekspor memakai versi yang sudah tersimpan, bukan perubahan yang belum disimpan.">
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" onClick={onDuplicate} disabled={state.saving} className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50 disabled:opacity-40 cursor-pointer">
+                Duplikat tema
+              </button>
+              <button type="button" onClick={onExport} className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50 cursor-pointer">
+                Ekspor berkas
+              </button>
+            </div>
+            <p className="mt-2 text-[11px] leading-relaxed text-stone-500">Berkas ekspor memuat rancangan beserta gambar unggahannya. Impor di tema baru pada server lain lewat tombol Impor di bagian atas.</p>
+          </Section>
+
+          <Section title="Riwayat versi" hint="Setiap penyimpanan yang mengubah rancangan dicatat; 30 terakhir disimpan.">
+            {revisions === null ? (
+              <p className="text-[12px] text-stone-500">Memuat riwayat…</p>
+            ) : revisions.length === 0 ? (
+              <p className="text-[12px] text-stone-500">Belum ada versi tercatat. Versi pertama muncul setelah Anda menyimpan.</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {revisions.map((r, i) => (
+                  <li key={r.id} className="flex items-center justify-between gap-2 rounded-lg bg-stone-50 px-3 py-2">
+                    <span className="min-w-0 text-[11.5px] text-stone-700">
+                      <span className="block font-semibold">{revisionTime(r.createdAt)}{i === 0 ? " (terbaru)" : ""}</span>
+                      <span className="block truncate text-stone-500">{REVISION_ACTION_LABEL[r.action] ?? r.action}{r.adminName ? ` oleh ${r.adminName}` : ""}</span>
+                    </span>
+                    {i > 0 && (
+                      <button type="button" onClick={() => onRestoreRevision(r.id)} className="shrink-0 rounded-lg border border-stone-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-stone-700 hover:bg-stone-100 cursor-pointer">
+                        Muat ke editor
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Section>
+        </>
+      )}
     </>
   );
 }

@@ -64,6 +64,46 @@ export async function recordBuilderAudit(req: Request, session: Session, action:
   }
 }
 
+export const MAX_BUILDER_REVISIONS = 30;
+
+/** JSONB di PostgreSQL tidak menjaga urutan kunci, jadi dua spesifikasi sama harus dibandingkan dengan kunci terurut. */
+function canonicalJson(value: unknown): string {
+  return JSON.stringify(value, (_key, v) =>
+    v && typeof v === "object" && !Array.isArray(v) ? Object.fromEntries(Object.entries(v as Record<string, unknown>).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) : v,
+  );
+}
+
+/**
+ * Mencatat spesifikasi yang baru disimpan sebagai satu versi. Penyimpanan tanpa perubahan spesifikasi (hanya nama atau
+ * deskripsi) tidak menambah versi, dan versi di atas MAX_BUILDER_REVISIONS yang tertua dibuang.
+ */
+export async function recordBuilderRevision(
+  session: Session | null,
+  theme: { id: string; name: string; category: BuilderCategory; description: string | null },
+  spec: BuilderSpec,
+  action: "CREATE" | "SAVE",
+): Promise<void> {
+  try {
+    const latest = await prisma.themeBuilderRevision.findFirst({ where: { themeId: theme.id }, orderBy: { createdAt: "desc" }, select: { spec: true } });
+    if (latest && canonicalJson(latest.spec) === canonicalJson(spec)) return;
+    await prisma.themeBuilderRevision.create({
+      data: { themeId: theme.id, spec: spec as unknown as Prisma.InputJsonObject, name: theme.name, category: theme.category, description: theme.description, action, adminName: session?.user.name ?? null },
+    });
+    const stale = await prisma.themeBuilderRevision.findMany({ where: { themeId: theme.id }, orderBy: { createdAt: "desc" }, skip: MAX_BUILDER_REVISIONS, select: { id: true } });
+    if (stale.length) await prisma.themeBuilderRevision.deleteMany({ where: { id: { in: stale.map((r) => r.id) } } });
+  } catch (err) {
+    logger.error("ThemeBuilderRevision", "Versi rancangan gagal dicatat", err, { themeId: theme.id });
+  }
+}
+
+/** Lagu bawaan tema harus salah satu lagu aktif di pustaka musik sistem; kosong berarti memakai musik bawaan seri. */
+export async function resolveThemeMusic(value: unknown): Promise<{ ok: true; url: string | null } | { ok: false; error: string }> {
+  if (value === undefined || value === null || value === "") return { ok: true, url: null };
+  if (typeof value !== "string") return { ok: false, error: "Musik bawaan tidak valid." };
+  const preset = await prisma.musicPreset.findFirst({ where: { url: value, isActive: true }, select: { url: true } });
+  return preset ? { ok: true, url: preset.url } : { ok: false, error: "Musik bawaan harus dipilih dari pustaka musik sistem." };
+}
+
 export interface CompiledBuilderTheme {
   html: string;
   issues: MasterIssue[];
