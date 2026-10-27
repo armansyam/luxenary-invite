@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as
 import { useRouter } from "next/navigation";
 import { useFeedback } from "@/components/ui/Feedback";
 import {
-  FONT_OPTIONS,
   MAX_ORNAMENTS,
   MAX_ORNAMENTS_PER_SECTION,
   ORNAMENT_SECTIONS,
@@ -13,6 +12,7 @@ import {
   BLOCK_LIMITS,
   DEFAULT_BLOCK_PROPS,
   defaultBuilderSpec,
+  fontLabel,
   isDefaultBlock,
   type BlockProps,
   type BuilderBlockId,
@@ -742,7 +742,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
               </div>
               <dl className="mt-4 space-y-2 text-[12px]">
                 <div className="flex justify-between gap-2"><dt className="text-stone-500">Kanvas</dt><dd className="font-semibold text-stone-800">{spec.canvasMode === "dark" ? "Gelap" : "Terang"}</dd></div>
-                <div className="flex justify-between gap-2"><dt className="text-stone-500">Judul</dt><dd className="font-semibold text-stone-800">{FONT_OPTIONS.find((f) => f.id === spec.fonts.heading)?.label}</dd></div>
+                <div className="flex justify-between gap-2"><dt className="text-stone-500">Judul</dt><dd className="font-semibold text-stone-800">{fontLabel(spec.fonts.heading)}</dd></div>
                 {VARIANT_GROUPS.map((g) => (
                   <div key={g.key} className="flex justify-between gap-2"><dt className="text-stone-500">{g.label}</dt><dd className="font-semibold text-stone-800">{g.options.find((o) => o.id === spec.variants[g.key])?.label}</dd></div>
                 ))}

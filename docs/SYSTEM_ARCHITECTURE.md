@@ -766,7 +766,7 @@ Admin membuat master tema pernikahan tanpa menulis kode. Builder **merakit di at
 
 ```
 Spesifikasi (Theme.builderSpec, lib/themeBuilder/spec.ts)
-  palet 8 warna + mode kanvas terang/gelap, 3 font lokal, tekstur, sudut,
+  palet 8 warna + mode kanvas terang/gelap, 3 huruf (9 font lokal atau id "g:<Nama>" dari Google Fonts), tekstur, sudut,
   varian seksi (sampul, pembuka, mempelai, hitung mundur, penutup, judul, panel kiri desktop),
   animasi masuk, ornamen (seksi, x/y %, jangkar atas/bawah, lebar %, putar, kepekatan, cermin, lapisan)
         ↓ parseBuilderSpec: hex #rrggbb, pilihan katalog, angka dibatasi, src hanya pustaka ornamen
@@ -785,6 +785,8 @@ PATCH → terbit hanya bila audit lolos → compileAndSaveStaticDemo
 - **Pratinjau:** `renderTemplateFile(..., { templateSource })` merender master hasil kompilasi tanpa berkas dan tanpa piring, dengan data demo `buildDemoInvitation("kalandra")`. Ornamen digeser, diubah ukuran, dan diputar langsung di iframe; geometri diterapkan ke DOM tanpa render ulang, perubahan struktur memicu render ulang (debounce 400 ms).
 - **Responsif:** kolom undangan (≤460 px) dirancang sekali untuk HP dan desktop; posisi/lebar ornamen dalam persen seksi sehingga menyesuaikan lebar 320–460 px; jangkar bawah menjaga ornamen dasar sampul/penutup pada tinggi layar berbeda. Panel kiri desktop memakai varian posisi teks.
 - **Aset ornamen:** unggahan dikonversi ke WebP bernama hash isi (tidak pernah ditimpa) karena piring dan HTML terbit menautkan URL-nya. SVG ditolak.
+- **Font Google (27 Okt 2026):** `lib/themeBuilder/fonts.ts` memuat katalog `fonts.google.com/metadata/fonts` (cache 12 jam, endpoint tidak resmi sehingga galatnya dilaporkan apa adanya) dan `ensureGoogleFont`: nama dicocokkan ke katalog, CSS diminta dari `fonts.googleapis.com/css2` dengan User-Agent peramban modern (agar woff2), hanya blok subset `latin` disimpan, berkas harus dari `fonts.gstatic.com`, berawalan `wOF2`, maksimal 600 KB, ditulis ke folder sementara lalu di-rename atomik ke `public/uploads/fonts/<slug>/` (`font.css` + `<n>.woff2`; permintaan serentak digabung). `compileBuilderMaster` menyisipkan `<link>` ke `/uploads/fonts/<slug>/font.css` dan `--font-*` dengan cadangan generik per peran. Rute `GET/POST /api/admin/theme-builder/fonts` (modul themes); simpan dan pratinjau memanggil `ensureSpecFonts`. `app/uploads/[...path]/route.ts` menyajikan `.woff2` dan `.css`. Folder diabaikan git dan diunduh ulang otomatis saat tema disimpan di lingkungan baru; undangan terbit tidak menghubungi Google.
+- **Katalog klien (27 Okt 2026):** `GET /api/public/themes` memuat tema `isActive`; `thumbnailMobile/thumbnailDesktop` hanya berisi URL yang berkasnya ada (`lib/publicAsset.ts`, URL http(s) kustom dianggap ada), selain itu `null`, dan wizard serta `/demo` menampilkan kartu nama. Tautan "Lihat Demo" tetap memakai `/demo/<id>`.
 - **Belum dicakup:** jenis acara satu nama (builder hanya WEDDING), thumbnail katalog otomatis (unggah lewat Demo Studio), kolom form Studio untuk label baru.
 - **Uji:** `__tests__/integration/themeBuilder.test.ts` (19 tes: kontrak blueprint, injeksi spesifikasi, setiap varian, rute end-to-end).
 
@@ -1226,7 +1228,7 @@ Fitur *Remote* memungkinkan Admin untuk masuk ke dasbor Klien dan mengendalikann
 ```
 PUBLIC (tanpa auth):
   GET  /api/public/settings           → Platform settings global
-  GET  /api/public/themes             → List tema aktif (cached via Cloudflare s-maxage=86400, max-age=60, auto-purged on admin sync)
+  GET  /api/public/themes             → List tema aktif; thumbnail null bila berkas demo tidak ada (cached via Cloudflare s-maxage=86400, max-age=60, auto-purged on admin sync)
   POST /api/public/rsvp               → Submit RSVP tamu (in-memory key-lock withRsvpLock & atomic transaction prisma.$transaction, proteksi double-tap & kalkulasi pax katering cerdas; pembaruan RSVP yang sudah ada hanya dari peramban pembuatnya lewat cookie token `lux_rsvp_*`, selain itu HTTP 409)
   GET  /api/public/memories/{id}      → List foto momen
   POST /api/public/memories/upload    → Upload foto tamu (rate-limited, kalkulasi kuota total acara totalEventQuota + extraMemoriesQuota top-up & batas per-sesi)

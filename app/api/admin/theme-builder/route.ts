@@ -10,6 +10,7 @@ import { logger } from "@/lib/logger";
 import { masterTemplateCache } from "@/lib/cache";
 import { removeIfExists } from "@/lib/fsSafe";
 import { parseBuilderSpec } from "@/lib/themeBuilder/spec";
+import { ensureSpecFonts } from "@/lib/themeBuilder/fonts";
 import { seedSpecFromMaster } from "@/lib/themeBuilder/legacySeed";
 import { masterPathOf } from "@/lib/themePaths";
 import {
@@ -133,6 +134,7 @@ export async function POST(req: NextRequest) {
     const parsed = parseBuilderSpec(body.spec);
     if (!parsed.ok) return NextResponse.json({ error: "Rancangan tema tidak valid.", details: parsed.errors }, { status: 400 });
 
+    await ensureSpecFonts(parsed.spec);
     const { html, issues } = compileAndAudit(parsed.spec);
     if (issues.length) return NextResponse.json({ error: "Master hasil rancangan gagal diperiksa.", issues }, { status: 422 });
 
@@ -192,6 +194,7 @@ export async function PUT(req: NextRequest) {
     const parsed = parseBuilderSpec(body.spec);
     if (!parsed.ok) return NextResponse.json({ error: "Rancangan tema tidak valid.", details: parsed.errors }, { status: 400 });
 
+    await ensureSpecFonts(parsed.spec);
     const { html, issues } = compileAndAudit(parsed.spec);
     if (issues.length) return NextResponse.json({ error: "Master hasil rancangan gagal diperiksa.", issues }, { status: 422 });
 

@@ -3,6 +3,7 @@ import { requireAdminModule } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
 import { readJsonBody } from "@/lib/requestBody";
 import { parseBuilderSpec } from "@/lib/themeBuilder/spec";
+import { ensureSpecFonts } from "@/lib/themeBuilder/fonts";
 import { renderBuilderPreview } from "@/lib/themeBuilder/server";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +18,7 @@ export async function POST(req: NextRequest) {
     const parsed = parseBuilderSpec(body.spec);
     if (!parsed.ok) return NextResponse.json({ error: "Rancangan tema tidak valid.", details: parsed.errors }, { status: 400 });
 
+    await ensureSpecFonts(parsed.spec);
     const { html, issues } = await renderBuilderPreview(parsed.spec, "kalandra", body.mode === "client" ? "client" : "demo");
     return NextResponse.json({ success: true, html, issues });
   } catch (error) {

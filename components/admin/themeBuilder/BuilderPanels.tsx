@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import {
   ANIMATION_OPTIONS,
   FONT_OPTIONS,
@@ -12,6 +12,10 @@ import {
   BUILDER_DEFAULT_SLOTS,
   VARIANT_GROUPS,
   fontFamily,
+  fontLabel,
+  googleFontCssUrl,
+  googleFontIds,
+  isGoogleFontId,
   paletteChecks,
   type BuilderBlockId,
   type BuilderPalette,
@@ -19,6 +23,7 @@ import {
   type BuilderVariants,
   type OrnamentSection,
 } from "@/lib/themeBuilder/spec";
+import { GoogleFontPicker } from "@/components/admin/themeBuilder/GoogleFontPicker";
 
 export type PanelId = "colors" | "type" | "layout" | "ornaments" | "motion" | "publish";
 
@@ -247,14 +252,33 @@ export function TypePanel({ spec, onChange }: { spec: BuilderSpec; onChange: (pa
     { key: "body", label: "Isi", sample: "Dengan memohon rahmat Allah SWT, kami mengundang Bapak/Ibu/Saudara/i.", size: "text-[13px]" },
     { key: "script", label: "Tulisan tangan", sample: "Save the Date", size: "text-[26px]" },
   ];
+  // Halaman admin perlu memuat CSS font Google yang terpasang di tema agar contoh teks memakai huruf aslinya.
+  const googleIds = googleFontIds(spec.fonts).join("|");
+  useEffect(() => {
+    const links = googleIds ? googleIds.split("|").map((id) => {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = googleFontCssUrl(id);
+      document.head.appendChild(link);
+      return link;
+    }) : [];
+    return () => links.forEach((link) => link.remove());
+  }, [googleIds]);
+
   return (
     <>
       {roles.map((role) => (
         <Section key={role.key} title={role.label}>
-          <p className={`mb-3 rounded-xl bg-stone-50 px-3 py-3 leading-snug text-stone-800 ${role.size}`} style={{ fontFamily: fontFamily(spec.fonts[role.key]) }}>
+          <p className={`mb-3 rounded-xl bg-stone-50 px-3 py-3 leading-snug text-stone-800 ${role.size}`} style={{ fontFamily: fontFamily(spec.fonts[role.key], role.key) }}>
             {role.sample}
           </p>
           <div className="grid grid-cols-1 gap-1">
+            {isGoogleFontId(spec.fonts[role.key]) && (
+              <div className="flex items-center justify-between rounded-lg bg-amber-50 px-3 py-2 ring-1 ring-amber-500">
+                <span className="text-[15px] text-stone-800" style={{ fontFamily: fontFamily(spec.fonts[role.key], role.key) }}>{fontLabel(spec.fonts[role.key])}</span>
+                <span className="text-[10.5px] text-stone-500">Font Google</span>
+              </div>
+            )}
             {FONT_OPTIONS.map((f) => (
               <button
                 key={f.id}
@@ -267,6 +291,7 @@ export function TypePanel({ spec, onChange }: { spec: BuilderSpec; onChange: (pa
               </button>
             ))}
           </div>
+          <GoogleFontPicker onPick={(id) => onChange({ fonts: { ...spec.fonts, [role.key]: id } })} />
         </Section>
       ))}
     </>

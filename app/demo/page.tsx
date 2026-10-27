@@ -13,8 +13,8 @@ interface ThemeItem {
   eventType: string;
   parentTheme?: string | null;
   desc: string;
-  thumbnailMobile?: string;
-  thumbnailDesktop?: string;
+  thumbnailMobile: string | null;
+  thumbnailDesktop: string | null;
 }
 
 export default function CatalogGridShowcase() {
@@ -66,8 +66,8 @@ export default function CatalogGridShowcase() {
               eventType: t.eventType || "WEDDING",
               parentTheme: t.parentTheme || null,
               desc: t.tagline || t.desc || `Desain eksklusif ${platformName}`,
-              thumbnailMobile: t.thumbnailMobile || `/demo/${t.id}/thumbnail_mobile.webp`,
-              thumbnailDesktop: t.thumbnailDesktop || `/demo/${t.id}/thumbnail_desktop.webp`,
+              thumbnailMobile: t.thumbnailMobile || null,
+              thumbnailDesktop: t.thumbnailDesktop || null,
             }))
           );
         }
@@ -250,7 +250,12 @@ export default function CatalogGridShowcase() {
                     className="device-pair-scene"
                     aria-label={`Lihat Demo ${theme.name}`}
                   >
-                    {/* Tablet frame */}
+                    {!theme.thumbnailDesktop && !theme.thumbnailMobile && (
+                      <div className="flex min-h-[10rem] w-full items-center justify-center rounded-xl bg-stone-100 px-4 text-center">
+                        <span className="font-serif text-xl font-bold leading-tight text-stone-700">{theme.name}</span>
+                      </div>
+                    )}
+                    {theme.thumbnailDesktop && (
                     <div className="dm-tablet">
                       <div className="dm-tablet-topbar">
                         <div className="dm-tablet-traffic">
@@ -265,24 +270,26 @@ export default function CatalogGridShowcase() {
                       </div>
                       <div className="dm-tablet-screen">
                         <img
-                          src={theme.thumbnailDesktop || `/demo/${theme.id}/thumbnail_desktop.webp`}
+                          src={theme.thumbnailDesktop}
                           alt={`${theme.name} Desktop`}
                         />
                         <div className="dm-glare"></div>
                       </div>
                     </div>
+                    )}
 
-                    {/* Phone frame — overlap bottom-left */}
+                    {theme.thumbnailMobile && (
                     <div className="dm-phone">
                       <div className="dm-phone-notch"></div>
                       <div className="dm-phone-screen">
                         <img
-                          src={theme.thumbnailMobile || `/demo/${theme.id}/thumbnail_mobile.webp`}
+                          src={theme.thumbnailMobile}
                           alt={`${theme.name} Mobile`}
                         />
                         <div className="dm-glare"></div>
                       </div>
                     </div>
+                    )}
                   </Link>
 
                   {/* ── Theme Info ── */}

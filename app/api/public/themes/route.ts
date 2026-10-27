@@ -4,6 +4,7 @@ import { routeError } from "@/lib/routeError";
 import { DEMO_REGISTRY } from "@/lib/demoRegistry";
 import { EventType, type ThemeCategory } from "@prisma/client";
 import { logger } from "@/lib/logger";
+import { firstExistingPublicAsset } from "@/lib/publicAsset";
 
 export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
@@ -94,11 +95,8 @@ export async function GET(req: Request) {
           : "Modern");
 
       const defaultCoverFallback = source?.landingCoverUrl || `/demo/${themeKey}/cover.webp`;
-      const rawThumbMobile = customData?.thumbnailMobileUrl || `/demo/${themeKey}/thumbnail_mobile.webp`;
-      const rawThumbDesktop = customData?.thumbnailDesktopUrl || `/demo/${themeKey}/thumbnail_desktop.webp`;
-
-      const thumbMobile = rawThumbMobile;
-      const thumbDesktop = rawThumbDesktop;
+      const thumbMobile = firstExistingPublicAsset([customData?.thumbnailMobileUrl, `/demo/${themeKey}/thumbnail_mobile.webp`]);
+      const thumbDesktop = firstExistingPublicAsset([customData?.thumbnailDesktopUrl, `/demo/${themeKey}/thumbnail_desktop.webp`]);
       const rawCoverUrl = defaultCoverFallback;
       const coverUrl = rawCoverUrl;
 

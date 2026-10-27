@@ -1355,8 +1355,13 @@ function SetupWizardContent() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {filteredThemes.map((theme: any) => {
                   const isSelected = themeId === theme.id;
-                  const thumbMobile = theme.thumbnailMobile || `/demo/${theme.id}/thumbnail_mobile.webp`;
-                  const thumbDesktop = theme.thumbnailDesktop || `/demo/${theme.id}/thumbnail_desktop.webp`;
+                  const thumbMobile: string | null = theme.thumbnailMobile || null;
+                  const thumbDesktop: string | null = theme.thumbnailDesktop || null;
+                  const selectedBadge = isSelected && (
+                    <span className="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-amber-800 text-white flex items-center justify-center text-xs font-bold shadow-md">
+                      ✓
+                    </span>
+                  );
                   return (
                     <div
                       key={theme.id}
@@ -1367,9 +1372,15 @@ function SetupWizardContent() {
                           : "border-stone-200 bg-white hover:border-stone-400 hover:shadow-sm"
                       }`}
                     >
-                      {/* Device Pair Scene */}
+                      {/* Tema tanpa thumbnail tampil sebagai kartu nama */}
+                      {!thumbDesktop && !thumbMobile ? (
+                        <div className="relative flex min-h-[8rem] items-center justify-center rounded-xl bg-stone-100 px-4 text-center">
+                          <span className="font-serif text-lg font-bold leading-tight text-stone-700">{theme.name}</span>
+                          {selectedBadge}
+                        </div>
+                      ) : (
                       <div className="stp-scene">
-                        {/* Tablet frame */}
+                        {thumbDesktop && (
                         <div className="stp-tablet">
                           <div className="stp-tablet-bar">
                             <div className="stp-tablet-dots"><span/><span/><span/></div>
@@ -1385,8 +1396,9 @@ function SetupWizardContent() {
                             <div className="stp-glare"/>
                           </div>
                         </div>
+                        )}
 
-                        {/* Phone frame — overlapping bottom-left */}
+                        {thumbMobile && (
                         <div className="stp-phone">
                           <div className="stp-phone-notch"/>
                           <div className="stp-phone-screen">
@@ -1398,29 +1410,28 @@ function SetupWizardContent() {
                             <div className="stp-glare"/>
                           </div>
                         </div>
-
-                        {/* Selected badge */}
-                        {isSelected && (
-                          <span className="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-amber-800 text-white flex items-center justify-center text-xs font-bold shadow-md">
-                            ✓
-                          </span>
                         )}
+
+                        {selectedBadge}
                       </div>
+                      )}
 
                       {/* Info + Preview link */}
                       <div className="space-y-0.5 mt-0.5">
                         <p className="text-[9px] font-bold uppercase tracking-wider text-stone-400">{theme.series}</p>
                         <h3 className="text-sm font-serif font-bold text-stone-900 leading-tight">{theme.name}</h3>
                         <p className="text-[10px] text-stone-400 line-clamp-2 leading-snug">{theme.desc}</p>
-                        <a
-                          href={`/demo/${theme.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-block text-[10px] font-bold text-amber-800 hover:underline pt-0.5"
-                        >
-                          Lihat Demo
-                        </a>
+                        {(thumbDesktop || thumbMobile) && (
+                          <a
+                            href={`/demo/${theme.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-block text-[10px] font-bold text-amber-800 hover:underline pt-0.5"
+                          >
+                            Lihat Demo
+                          </a>
+                        )}
                       </div>
                     </div>
                   );

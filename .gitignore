@@ -86,6 +86,8 @@ logs/
 /public/uploads/brand/
 # ornamen unggahan Theme Builder (nama hash isi; ditaut oleh master dan undangan terbit)
 /public/uploads/theme-assets/
+# font Google yang diunduh server saat admin memilihnya di Theme Builder (diunduh ulang otomatis bila hilang)
+/public/uploads/fonts/
 
 # published baked invitation HTML (konten klien — jangan commit ke repo)
 /public/published/

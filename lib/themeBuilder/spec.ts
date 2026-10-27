@@ -156,6 +156,34 @@ export const FONT_OPTIONS = [
   { id: "great-vibes", label: "Great Vibes", family: "'Great Vibes', cursive", kind: "Tulisan tangan" },
 ] as const;
 
+/**
+ * Font Google dipilih admin dari katalog Google Fonts. Id-nya "g:<Nama Keluarga>"; berkas woff2 diunduh sekali oleh server
+ * ke public/uploads/fonts/<slug>/ sehingga undangan tidak menghubungi Google saat dibuka tamu.
+ */
+export const GOOGLE_FONT_PREFIX = "g:";
+const GOOGLE_FONT_ID_RE = /^g:[A-Za-z0-9][A-Za-z0-9 ]{0,38}[A-Za-z0-9]$/;
+
+export function isGoogleFontId(id: string): boolean {
+  return GOOGLE_FONT_ID_RE.test(id);
+}
+
+export function googleFontFamilyName(id: string): string {
+  return id.slice(GOOGLE_FONT_PREFIX.length);
+}
+
+export function googleFontSlug(family: string): string {
+  return family.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+export function googleFontCssUrl(id: string): string {
+  return `/uploads/fonts/${googleFontSlug(googleFontFamilyName(id))}/font.css`;
+}
+
+export function fontLabel(id: string): string {
+  if (isGoogleFontId(id)) return googleFontFamilyName(id);
+  return (FONT_OPTIONS.find((f) => f.id === id) ?? FONT_OPTIONS[0]).label;
+}
+
 export const TEXTURE_OPTIONS = [
   { id: "", label: "Polos" },
   { id: "/assets/ornaments/background/background-cream.webp", label: "Krem halus" },
@@ -345,9 +373,9 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
   const fontIds = FONT_OPTIONS.map((f) => f.id) as readonly string[];
   const fonts = {} as BuilderFonts;
   for (const key of ["heading", "body", "script"] as const) {
-    fonts[key] = pickEnum(input.fonts?.[key], fontIds, `Huruf ${key}`, errors) ?? base.fonts[key];
+    const value = input.fonts?.[key];
+    fonts[key] = typeof value === "string" && isGoogleFontId(value) ? value : pickEnum(value, fontIds, `Huruf ${key}`, errors) ?? base.fonts[key];
   }
-
   const texture = typeof input.texture === "string" ? input.texture : "";
   if (!TEXTURE_OPTIONS.some((t) => t.id === texture)) errors.push("Tekstur latar tidak dikenali.");
 
@@ -421,8 +449,20 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
   };
 }
 
-export function fontFamily(id: string): string {
+const GENERIC_FALLBACK: Record<keyof BuilderFonts, string> = {
+  heading: "Georgia, serif",
+  body: "system-ui, sans-serif",
+  script: "cursive",
+};
+
+export function fontFamily(id: string, role: keyof BuilderFonts = "heading"): string {
+  if (isGoogleFontId(id)) return `'${googleFontFamilyName(id)}', ${GENERIC_FALLBACK[role]}`;
   return (FONT_OPTIONS.find((f) => f.id === id) ?? FONT_OPTIONS[0]).family;
+}
+
+/** Keluarga Google berbeda yang dipakai spesifikasi, urut kemunculan. */
+export function googleFontIds(fonts: BuilderFonts): string[] {
+  return [...new Set([fonts.heading, fonts.body, fonts.script].filter(isGoogleFontId))];
 }
 
 /** Gaya posisi satu ornamen; dipakai kompilator master dan pratinjau builder saat ornamen digeser. */

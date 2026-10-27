@@ -22,6 +22,8 @@ const MIME_TYPES: Record<string, string> = {
   ".wav": "audio/wav",
   ".ogg": "audio/ogg",
   ".pdf": "application/pdf",
+  ".woff2": "font/woff2",
+  ".css": "text/css; charset=utf-8",
 };
 
 export async function GET(

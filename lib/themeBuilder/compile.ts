@@ -4,6 +4,8 @@ import {
   RADIUS_OPTIONS,
   blockStyle,
   fontFamily,
+  googleFontCssUrl,
+  googleFontIds,
   ornamentStyle,
   type BlockProps,
   type BuilderBlockId,
@@ -43,9 +45,9 @@ function rootBlock(spec: BuilderSpec): string {
       --overlay: var(--bg-dark);
       --shadow-color: color-mix(in srgb, var(--bg-dark) ${dark ? 40 : 16}%, transparent);
       --canvas-texture: ${texture};
-      --font-heading: ${fontFamily(spec.fonts.heading)};
-      --font-body: ${fontFamily(spec.fonts.body)};
-      --font-script: ${fontFamily(spec.fonts.script)};
+      --font-heading: ${fontFamily(spec.fonts.heading, "heading")};
+      --font-body: ${fontFamily(spec.fonts.body, "body")};
+      --font-script: ${fontFamily(spec.fonts.script, "script")};
       --radius-sm: ${sm}px;
       --radius-md: ${md}px;
       --radius-lg: ${lg}px;
@@ -159,6 +161,12 @@ export function compileBuilderMaster(spec: BuilderSpec, blueprint = readBuilderB
   let html = blueprint.replace(/:root\s*\{[^}]*\}/, rootBlock(spec));
 
   html = html.replace(/<html lang="id"[^>]*>/, `<html lang="id" data-lux-anim-preset="${spec.animation}">`);
+
+  // Id font Google sudah dibatasi pola "g:<huruf, angka, spasi>" oleh parseBuilderSpec, jadi URL berkasnya aman disisipkan.
+  const googleLinks = googleFontIds(spec.fonts)
+    .map((id) => `  <link rel="stylesheet" href="${googleFontCssUrl(id)}" />`)
+    .join("\n");
+  if (googleLinks) html = html.replace(/(<link rel="stylesheet" href="\/fonts\/fonts\.css" \/>)/, `$1\n${googleLinks}`);
 
   const variantCss = (Object.keys(VARIANT_CSS) as Array<keyof BuilderVariants>)
     .map((key) => VARIANT_CSS[key][spec.variants[key]])
