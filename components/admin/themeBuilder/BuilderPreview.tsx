@@ -6,10 +6,13 @@ import {
   BUILDER_BLOCKS,
   DEFAULT_BLOCK_PROPS,
   ORNAMENT_SECTIONS,
+  blockZIndex,
   ornamentStyle,
+  frameCss,
   type BlockProps,
   type BuilderBlockId,
   type BuilderBlocks,
+  type BuilderFrames,
   type BuilderOrnament,
   type OrnamentSection,
 } from "@/lib/themeBuilder/spec";
@@ -28,8 +31,16 @@ export interface PreviewDropTarget {
   setHover: (on: boolean) => void;
 }
 
+/** Pengukuran di dalam iframe yang dibutuhkan inspektor; hanya bisa dihitung dari tata letak yang sedang tampil. */
+export interface PreviewActions {
+  /** Nilai geser mendatar (persen lebar blok) yang menaruh tengah blok tepat di tengah seksinya. */
+  centerBlockX: (id: BuilderBlockId) => number | null;
+}
+
 interface Props {
   dropTargetRef: RefObject<PreviewDropTarget | null>;
+  actionsRef: RefObject<PreviewActions | null>;
+  frames: BuilderFrames;
   html: string | null;
   loading: boolean;
   device: PreviewDevice;
@@ -54,24 +65,24 @@ const BUILDER_CHROME_CSS = `
   #themePreloader, .lux-universal-preloader { display: none !important; }
   html { scroll-behavior: auto !important; }
   html.lux-b-edit, html.lux-b-edit * { user-select: none !important; -webkit-user-select: none !important; }
-  html.lux-b-edit .lux-orn { pointer-events: auto !important; cursor: grab; z-index: 60 !important; }
+  html.lux-b-edit .lux-orn { pointer-events: auto !important; cursor: grab; }
   html.lux-b-edit .lux-orn:hover { outline: 1px dashed #d97706; outline-offset: 2px; }
   html.lux-b-edit .lux-orn.lux-b-sel { outline: 2px solid #d97706; outline-offset: 2px; }
-  html.lux-b-edit [data-lux-block] { cursor: grab; }
-  html.lux-b-edit [data-lux-block]:hover { outline: 1px dashed #2563eb; outline-offset: 3px; }
+  html.lux-b-edit [data-lux-block] { cursor: grab; outline: 1px dashed rgba(37, 99, 235, 0.35); outline-offset: 3px; }
+  html.lux-b-edit [data-lux-block]:hover { outline: 1px dashed #2563eb; }
   html.lux-b-edit [data-lux-block].lux-b-bsel { outline: 2px solid #2563eb; outline-offset: 3px; }
   html.lux-b-dragging, html.lux-b-dragging * { cursor: grabbing !important; user-select: none !important; }
   .lux-b-handle, .lux-b-rot { position: absolute; z-index: 2; pointer-events: auto; box-sizing: border-box; }
   .lux-b-handle { right: -8px; bottom: -8px; width: 16px; height: 16px; border-radius: 50%; background: #ffffff; border: 2px solid #d97706; cursor: nwse-resize; }
   .lux-b-rot { left: -8px; top: -8px; width: 16px; height: 16px; border-radius: 50%; background: #d97706; border: 2px solid #ffffff; cursor: alias; }
-  .lux-b-guide { position: absolute; top: 0; bottom: 0; left: 50%; border-left: 1px dashed #d97706; z-index: 70; pointer-events: none; }
+  [data-lux-section] > .lux-b-guide { position: absolute !important; top: 0; bottom: 0; left: 50%; width: 0; border-left: 1px dashed #d97706; z-index: 70 !important; pointer-events: none; }
   html.lux-b-dropping [data-lux-section] { outline: 2px dashed #f59e0b; outline-offset: -6px; }
 `;
 
 const SNAP_THRESHOLD = 1.2;
 
 type DragState =
-  | { kind: "block"; id: BuilderBlockId; startX: number; startY: number; baseX: number; baseY: number; w: number; h: number }
+  | { kind: "block"; id: BuilderBlockId; startX: number; startY: number; baseX: number; baseY: number; w: number; h: number; section: HTMLElement | null; naturalCenter: number }
   | { kind: "move"; id: string; section: HTMLElement; offsetX: number; offsetY: number; moved: boolean }
   | { kind: "resize"; id: string; section: HTMLElement }
   | { kind: "rotate"; id: string; el: HTMLElement; startAngle: number; startRotate: number };
@@ -192,12 +203,36 @@ export default function BuilderPreview(props: Props) {
       section.appendChild(g);
     };
 
+    // Tengah tampilan blok tanpa pergeseran miliknya sendiri: rect sekarang dikurangi translate yang sedang berlaku.
+    const naturalCenterOf = (blockEl: HTMLElement, x: number) => {
+      const r = blockEl.getBoundingClientRect();
+      return r.left + r.width / 2 - (x / 100) * (blockEl.offsetWidth || 1);
+    };
+    const sectionCenter = (section: HTMLElement) => {
+      const r = section.getBoundingClientRect();
+      return r.left + r.width / 2;
+    };
+
+    // Semua elemen yang bisa diedit di titik itu, dari yang paling atas. Ornamen lapisan belakang yang tertutup teks
+    // tetap terjangkau: Alt+klik memilih yang berikutnya di bawahnya.
+    const editableAt = (clientX: number, clientY: number): HTMLElement[] => {
+      const found: HTMLElement[] = [];
+      for (const el of doc.elementsFromPoint(clientX, clientY) as HTMLElement[]) {
+        const hit = (el.closest(".lux-orn") ?? el.closest("[data-lux-block]")) as HTMLElement | null;
+        if (hit && !found.includes(hit)) found.push(hit);
+      }
+      return found;
+    };
+
     doc.addEventListener("pointerdown", (e) => {
       if (!latest.current.props.editOrnaments) return;
       const target = e.target as HTMLElement;
-      const orn = target.closest(".lux-orn") as HTMLElement | null;
+      const onHandle = target.classList.contains("lux-b-handle") || target.classList.contains("lux-b-rot");
+      const stack = onHandle ? [] : editableAt(e.clientX, e.clientY);
+      const picked = onHandle ? (target.closest(".lux-orn") as HTMLElement | null) : (e.altKey && stack.length > 1 ? stack[1] : stack[0]) ?? null;
+      const orn = picked?.classList.contains("lux-orn") ? picked : null;
       if (!orn) {
-        const blockEl = target.closest("[data-lux-block]") as HTMLElement | null;
+        const blockEl = picked;
         if (blockEl) {
           // Klik pada blok memilihnya; seret menggeser dalam persen ukuran blok itu sendiri.
           e.preventDefault();
@@ -205,7 +240,10 @@ export default function BuilderPreview(props: Props) {
           const current = latest.current.props.blocks[id] ?? DEFAULT_BLOCK_PROPS;
           latest.current.props.onSelectBlock(id);
           doc.documentElement.classList.add("lux-b-dragging");
-          drag.current = { kind: "block", id, startX: e.clientX, startY: e.clientY, baseX: current.x, baseY: current.y, w: blockEl.offsetWidth || 1, h: blockEl.offsetHeight || 1 };
+          drag.current = {
+            kind: "block", id, startX: e.clientX, startY: e.clientY, baseX: current.x, baseY: current.y,
+            w: blockEl.offsetWidth || 1, h: blockEl.offsetHeight || 1, section: sectionOf(blockEl), naturalCenter: naturalCenterOf(blockEl, current.x),
+          };
           return;
         }
         latest.current.props.onSelect(null);
@@ -237,8 +275,16 @@ export default function BuilderPreview(props: Props) {
         const clampTo = (v: number, [min, max]: readonly [number, number]) => Math.max(min, Math.min(max, v));
         // Menempel ke posisi bawaan (0) saat dekat, supaya blok mudah dikembalikan ke tengah alurnya.
         const snap = (v: number) => (Math.abs(v) < 1 ? 0 : v);
-        const x = snap(clampTo(Math.round((d.baseX + ((e.clientX - d.startX) / d.w) * 100) * 10) / 10, BLOCK_LIMITS.x));
+        let x = snap(clampTo(Math.round((d.baseX + ((e.clientX - d.startX) / d.w) * 100) * 10) / 10, BLOCK_LIMITS.x));
         const y = snap(clampTo(Math.round((d.baseY + ((e.clientY - d.startY) / d.h) * 100) * 10) / 10, BLOCK_LIMITS.y));
+        // Menempel ke tengah seksi bila tengah blok berjarak kurang dari 6 px; garis pemandu menandainya.
+        let centered = false;
+        if (d.section) {
+          const centerX = clampTo(Math.round((((sectionCenter(d.section) - d.naturalCenter) / d.w) * 100) * 10) / 10, BLOCK_LIMITS.x);
+          centered = (Math.abs(x - centerX) / 100) * d.w < 6;
+          if (centered) x = centerX;
+          showGuide(d.section, centered);
+        }
         latest.current.props.onBlockChange(d.id, { x, y }, false);
         return;
       }
@@ -270,6 +316,7 @@ export default function BuilderPreview(props: Props) {
       drag.current = null;
       doc.documentElement.classList.remove("lux-b-dragging");
       if (d.kind === "block") {
+        if (d.section) showGuide(d.section, false);
         latest.current.props.onBlockChange(d.id, {}, true);
         return;
       }
@@ -282,6 +329,13 @@ export default function BuilderPreview(props: Props) {
     doc.addEventListener("keydown", (e) => {
       if (latest.current.props.onKey(e)) e.preventDefault();
     });
+
+    // Pratinjau tidak boleh berpindah halaman: tautan luar (Maps, Instagram) membawa tab keluar dari builder dan
+    // menghilangkan rancangan yang belum disimpan. Tautan "#bagian" tetap berjalan agar navigasi dock bisa dicoba.
+    doc.addEventListener("click", (e) => {
+      const link = (e.target as Element | null)?.closest?.("a[href]");
+      if (link && !(link.getAttribute("href") ?? "").startsWith("#")) e.preventDefault();
+    }, true);
 
     const scroller = doc.scrollingElement || doc.documentElement;
     // Pengamat dibuat dari jendela iframe agar area pandangnya adalah layar pratinjau, bukan layar admin.
@@ -333,6 +387,41 @@ export default function BuilderPreview(props: Props) {
     };
   }, [dropTargetRef]);
 
+  const { actionsRef, frames } = props;
+  useEffect(() => {
+    actionsRef.current = {
+      centerBlockX: (id) => {
+        const doc = getDoc();
+        const el = doc?.querySelector(`[data-lux-block="${id}"]`) as HTMLElement | null;
+        const section = el?.closest("[data-lux-section]") as HTMLElement | null;
+        if (!el || !section) return null;
+        const current = latest.current.props.blocks[id] ?? DEFAULT_BLOCK_PROPS;
+        const w = el.offsetWidth || 1;
+        const r = el.getBoundingClientRect();
+        const s = section.getBoundingClientRect();
+        const natural = r.left + r.width / 2 - (current.x / 100) * w;
+        const x = ((s.left + s.width / 2 - natural) / w) * 100;
+        return Math.max(BLOCK_LIMITS.x[0], Math.min(BLOCK_LIMITS.x[1], Math.round(x * 10) / 10));
+      },
+    };
+    return () => {
+      actionsRef.current = null;
+    };
+  }, [actionsRef]);
+
+  // Bingkai foto ditulis ulang langsung ke dokumen pratinjau agar perubahan bentuk dan bingkai terlihat saat itu juga.
+  useEffect(() => {
+    const doc = getDoc();
+    if (!doc) return;
+    let style = doc.getElementById("lux-b-frames-live") as HTMLStyleElement | null;
+    if (!style) {
+      style = doc.createElement("style");
+      style.id = "lux-b-frames-live";
+      doc.head.appendChild(style);
+    }
+    style.textContent = frameCss(frames);
+  }, [frames, docVersion]);
+
   useEffect(() => {
     if (docVersion) navigate(jump.section);
     // Lompat hanya saat admin memilih seksi; muat ulang pratinjau memulihkan posisi gulir sendiri.
@@ -348,6 +437,16 @@ export default function BuilderPreview(props: Props) {
       el.setAttribute("style", ornamentStyle(o));
       el.classList.toggle("is-front", o.layer === "front");
     }
+    // Urutan tumpukan antar ornamen mengikuti urutan DOM, jadi simpul seksi disusun ulang sesuai urutan spesifikasi.
+    doc.querySelectorAll("[data-lux-section]").forEach((section) => {
+      const nodes = [...section.children].filter((n) => n.classList.contains("lux-orn")) as HTMLElement[];
+      const wanted = [...nodes].sort((a, b) => ornaments.findIndex((o) => o.id === a.dataset.ornId) - ornaments.findIndex((o) => o.id === b.dataset.ornId));
+      if (nodes.every((n, i) => n === wanted[i])) return;
+      const marker = doc.createComment("");
+      section.insertBefore(marker, nodes[0]);
+      wanted.forEach((n) => section.insertBefore(n, marker));
+      marker.remove();
+    });
   }, [ornaments, docVersion]);
 
   useEffect(() => {
@@ -362,6 +461,10 @@ export default function BuilderPreview(props: Props) {
       el.style.setProperty("translate", `${p.x}% ${p.y}%`);
       el.style.setProperty("rotate", `${p.rotate}deg`);
       el.style.setProperty("scale", String(p.scale));
+      el.style.display = p.hidden ? "none" : "";
+      const z = blockZIndex(p);
+      el.style.position = z === null ? "" : "relative";
+      el.style.zIndex = z === null ? "" : String(z);
     }
   }, [blocks, docVersion]);
 
@@ -431,8 +534,15 @@ export default function BuilderPreview(props: Props) {
           Memperbarui pratinjau
         </div>
       )}
-      <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-stone-900/80 px-3 py-1 text-[10px] font-medium text-white">
-        {size.label} · {Math.round(scale * 100)}%
+      <div className="pointer-events-none absolute bottom-3 left-1/2 flex -translate-x-1/2 flex-col items-center gap-1 whitespace-nowrap">
+        {editOrnaments && (
+          <span className="rounded-full bg-white/90 px-3 py-1 text-[10px] font-medium text-stone-700 shadow-sm ring-1 ring-stone-200">
+            Seret elemen bertepi putus-putus · Alt+klik: pilih yang di bawahnya
+          </span>
+        )}
+        <span className="rounded-full bg-stone-900/80 px-3 py-1 text-[10px] font-medium text-white">
+          {size.label} · {Math.round(scale * 100)}%
+        </span>
       </div>
     </div>
   );

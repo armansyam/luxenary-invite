@@ -4,6 +4,7 @@ import { routeError } from "@/lib/routeError";
 import { readJsonBody } from "@/lib/requestBody";
 import { parseBuilderSpec } from "@/lib/themeBuilder/spec";
 import { ensureSpecFonts } from "@/lib/themeBuilder/fonts";
+import { fitSpecFrames } from "@/lib/themeBuilder/frameWindow";
 import { renderBuilderPreview } from "@/lib/themeBuilder/server";
 
 export const dynamic = "force-dynamic";
@@ -19,8 +20,9 @@ export async function POST(req: NextRequest) {
     if (!parsed.ok) return NextResponse.json({ error: "Rancangan tema tidak valid.", details: parsed.errors }, { status: 400 });
 
     await ensureSpecFonts(parsed.spec);
-    const { html, issues } = await renderBuilderPreview(parsed.spec, "kalandra", body.mode === "client" ? "client" : "demo");
-    return NextResponse.json({ success: true, html, issues });
+    const spec = await fitSpecFrames(parsed.spec);
+    const { html, issues, labels } = await renderBuilderPreview(spec, "kalandra", body.mode === "client" ? "client" : "demo");
+    return NextResponse.json({ success: true, html, issues, labels });
   } catch (error) {
     return routeError("ThemeBuilderPreview", error);
   }

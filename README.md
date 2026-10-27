@@ -512,7 +512,8 @@ Admin Portal → Tab Tema → Klik "Sinkronisasi Tema & Cache"
 ### 6. Membuat Tema Baru dengan Theme Builder (tanpa kode)
 ```
 Admin Portal → Tab Tema → "Buat dengan Builder" (layar ≥ 1100 px) → /admin/theme-builder
-  Warna (palet siap pakai + cek kontras) → Huruf (9 font lokal atau cari font Google; font diunduh ke server saat dipilih) → Tata letak (varian per seksi)
+  Warna (palet siap pakai + cek kontras; tekstur latar dan media bawaan dari pilihan bawaan atau gambar unggahan) → Huruf (9 font lokal atau cari font Google; font diunduh ke server saat dipilih)
+  → Teks (teks bawaan label: tombol, judul, sapaan; klien tetap bisa mengubahnya di Studio) → Tata letak (varian per seksi; geser, lapisan maju/mundur, sembunyikan, bingkai foto berjendela, jadwal di Home)
   → Ornamen (seret dari pustaka ke pratinjau; unggah PNG/WebP) → Animasi
   → Terbit: Simpan draf → cek HP 320/375 dan Desktop → Terbitkan ke katalog
   → Lengkapi foto demo & thumbnail lewat Demo Studio

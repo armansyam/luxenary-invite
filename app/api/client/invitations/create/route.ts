@@ -8,6 +8,7 @@ import { normalizeEventDateInput } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { releaseInvitationSubdomain } from "@/lib/subdomainRelease";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
+import { applyBuilderTexts, builderTextsOf } from "@/lib/themeBuilder/texts";
 import { DEFAULT_THEME_BY_EVENT, isThemeCompatible } from "@/lib/invitationUtils";
 import { participantNames } from "@/lib/participantUtils";
 import { normalizeJsonInput } from "@/lib/jsonText";
@@ -296,21 +297,26 @@ export async function POST(req: Request) {
     logger.warn("InvitationCreate", "Data demo kustom tema tidak terbaca; undangan memakai bawaan tema", { theme: chosenTheme, error: err instanceof Error ? err.message : String(err) });
   }
 
-  let themeMeta: { name: string; category: string; series: string | null; defaultMusicUrl?: string | null; defaultMedia?: unknown } | null = null;
+  let themeMeta: { name: string; category: string; series: string | null; defaultMusicUrl?: string | null; defaultMedia?: unknown; builderSpec?: unknown } | null = null;
   try {
     themeMeta = await prisma.theme.findUnique({
       where: { id: chosenTheme.toLowerCase() },
-      select: { name: true, category: true, series: true, defaultMusicUrl: true, defaultMedia: true },
+      select: { name: true, category: true, series: true, defaultMusicUrl: true, defaultMedia: true, builderSpec: true },
     });
   } catch (err) {
     logger.warn("InvitationCreate", "Metadata tema tidak terbaca; undangan memakai bawaan", { theme: chosenTheme, error: err instanceof Error ? err.message : String(err) });
   }
 
-  const blueprint = getThemeBlueprint(chosenTheme, {
-    ...(customDemoData || {}),
-    themeName: themeMeta?.name,
-    series: themeMeta?.series || themeMeta?.category,
-  });
+  // Teks bawaan yang diatur admin di Theme Builder menggantikan bawaan blueprint sebelum disalin ke label undangan.
+  const builderTexts = builderTextsOf(themeMeta?.builderSpec);
+  const { blueprint } = applyBuilderTexts(
+    getThemeBlueprint(chosenTheme, {
+      ...(customDemoData || {}),
+      themeName: themeMeta?.name,
+      series: themeMeta?.series || themeMeta?.category,
+    }),
+    builderTexts,
+  );
 
   try {
     let invitation: { id: string; subdomain: string | null; status: string };
@@ -380,7 +386,8 @@ export async function POST(req: Request) {
     // Blueprint tema satu nama berisi cadangan pernikahan ("THE COUPLE"), jadi label bawaan undangan non-pernikahan
     // tidak disalin dari blueprint melainkan dari teks master terpilih yang dirender untuk jenis acara ini, setelah
     // undangan tersimpan (seedRenderedLabels, lib/renderedLabels.ts).
-    const initialCustomLabels = isWeddingEvent ? defaultCustomLabels : {};
+    // Teks bawaan admin (kunci label yang sama) ditumpuk di atas label awal, termasuk label yang tidak punya kolom blueprint.
+    const initialCustomLabels = isWeddingEvent ? { ...defaultCustomLabels, ...builderTexts } : {};
 
     const initialMusicUrl = customDemoData?.audioUrl || customDemoData?.defaultMusicUrl || themeMeta?.defaultMusicUrl || blueprint.defaultMusicUrl || "";
     // Media bawaan tema disalin ke undangan saat tema dipilih, sehingga perubahan tema oleh admin tidak menyentuh undangan ini.

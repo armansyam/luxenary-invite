@@ -11,6 +11,7 @@ import { masterTemplateCache } from "@/lib/cache";
 import { removeIfExists } from "@/lib/fsSafe";
 import { parseBuilderSpec } from "@/lib/themeBuilder/spec";
 import { ensureSpecFonts } from "@/lib/themeBuilder/fonts";
+import { fitSpecFrames } from "@/lib/themeBuilder/frameWindow";
 import { seedSpecFromMaster } from "@/lib/themeBuilder/legacySeed";
 import { masterPathOf } from "@/lib/themePaths";
 import {
@@ -136,7 +137,8 @@ export async function POST(req: NextRequest) {
     if (!parsed.ok) return NextResponse.json({ error: "Rancangan tema tidak valid.", details: parsed.errors }, { status: 400 });
 
     await ensureSpecFonts(parsed.spec);
-    const { html, issues } = compileAndAudit(parsed.spec);
+    const spec = await fitSpecFrames(parsed.spec);
+    const { html, issues } = compileAndAudit(spec);
     if (issues.length) return NextResponse.json({ error: "Master hasil rancangan gagal diperiksa.", issues }, { status: 422 });
 
     const file = builderMasterPath(category, themeId);
@@ -155,8 +157,8 @@ export async function POST(req: NextRequest) {
           series: SERIES[category],
           isActive: false,
           sortOrder: (maxOrder._max.sortOrder ?? 0) + 1,
-          builderSpec: parsed.spec as unknown as Prisma.InputJsonObject,
-          defaultMedia: builderDefaultMedia(parsed.spec),
+          builderSpec: spec as unknown as Prisma.InputJsonObject,
+          defaultMedia: builderDefaultMedia(spec),
         },
         select: { id: true, name: true, category: true, description: true, isActive: true },
       });
@@ -196,7 +198,8 @@ export async function PUT(req: NextRequest) {
     if (!parsed.ok) return NextResponse.json({ error: "Rancangan tema tidak valid.", details: parsed.errors }, { status: 400 });
 
     await ensureSpecFonts(parsed.spec);
-    const { html, issues } = compileAndAudit(parsed.spec);
+    const spec = await fitSpecFrames(parsed.spec);
+    const { html, issues } = compileAndAudit(spec);
     if (issues.length) return NextResponse.json({ error: "Master hasil rancangan gagal diperiksa.", issues }, { status: 422 });
 
     const file = builderMasterPath(category, themeId);
@@ -206,7 +209,7 @@ export async function PUT(req: NextRequest) {
 
     const theme = await prisma.theme.update({
       where: { id: themeId },
-      data: { name, description, category, series: SERIES[category], builderSpec: parsed.spec as unknown as Prisma.InputJsonObject, defaultMedia: builderDefaultMedia(parsed.spec) },
+      data: { name, description, category, series: SERIES[category], builderSpec: spec as unknown as Prisma.InputJsonObject, defaultMedia: builderDefaultMedia(spec) },
       select: { id: true, name: true, category: true, description: true, isActive: true },
     });
     await refreshPublicTheme(themeId, theme.isActive);

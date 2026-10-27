@@ -368,23 +368,23 @@ describe("blok konten dengan properti relatif", () => {
     const parsed = parseBuilderSpec({
       ...defaultBuilderSpec(),
       blocks: {
-        "cover-names": { x: 999, y: -999, scale: 9, rotate: 400 },
+        "cover-names": { x: 99999, y: -99999, scale: 9, rotate: 400 },
         "opening-photo": { x: 0, y: 0, scale: 1, rotate: 0 },
         "tidak-ada": { x: 5, y: 5, scale: 1, rotate: 0 },
         countdown: { x: 10.5, y: 0, scale: 1.2, rotate: -10 },
       },
     });
     expect(parsed.ok && parsed.spec.blocks).toEqual({
-      "cover-names": { x: 60, y: -60, scale: 2, rotate: 180 },
-      countdown: { x: 10.5, y: 0, scale: 1.2, rotate: -10 },
+      "cover-names": { x: 1500, y: -1500, scale: 2, rotate: 180, hidden: false },
+      countdown: { x: 10.5, y: 0, scale: 1.2, rotate: -10, hidden: false },
     });
     expect(parseBuilderSpec({ ...defaultBuilderSpec(), blocks: { countdown: "x" } }).ok).toBe(false);
   });
 
   it("kompilasi menulis translate, rotate, dan scale individual (tidak menimpa transform) dan master tetap lolos audit", () => {
-    const spec = { ...defaultBuilderSpec(), blocks: { "cover-names": { x: 12, y: -4, scale: 1.1, rotate: 3 } } };
+    const spec = { ...defaultBuilderSpec(), blocks: { "cover-names": { x: 12, y: -4, scale: 1.1, rotate: 3, hidden: false } } };
     const html = compileBuilderMaster(spec, blueprintHtml);
-    expect(blockStyle({ x: 12, y: -4, scale: 1.1, rotate: 3 })).toBe("translate:12% -4%;rotate:3deg;scale:1.1;");
+    expect(blockStyle({ x: 12, y: -4, scale: 1.1, rotate: 3, hidden: false })).toBe("translate:12% -4%;rotate:3deg;scale:1.1;");
     expect(html).toContain('[data-lux-block="cover-names"]{translate:12% -4%;rotate:3deg;scale:1.1;}');
     expect(html).not.toMatch(/\[data-lux-block="cover-names"\]\{[^}]*\btransform\s*:/);
     expect(auditBuilderMaster(html, blueprintHtml)).toEqual([]);

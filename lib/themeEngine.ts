@@ -13,6 +13,7 @@ import { buildCheckinQrBaseUrl, buildCheckinQrUrl, qrInitials } from "@/lib/chec
 import { getEventTimezoneOffset, getPrimaryEvent, resolveEventTimezone } from "@/lib/lifecycleDates";
 import { logger } from "@/lib/logger";
 import { applyThemeDefaultMedia, parseThemeDefaultMedia } from "@/lib/themeDefaultMedia";
+import { applyBuilderTexts, builderTextsOf } from "@/lib/themeBuilder/texts";
 
 /** Sesi jadwal terima tamu (patokan yang sama dengan masa aktif), atau objek kosong bila belum bertanggal. */
 function primaryEventOf(events: unknown): any {
@@ -182,17 +183,23 @@ export async function composeWeddingData(inv: any) {
     }
   } catch {}
 
-  const blueprint = getThemeBlueprint(inv.themeId || "kalandra", customDemoData || undefined);
-
-  // Baca defaultMusicUrl dari DB Theme record (prioritas tertinggi setelah client upload)
+  // Baca defaultMusicUrl dan teks bawaan builder dari DB Theme record (musik: prioritas tertinggi setelah client upload)
   let dbThemeDefaultMusic = "";
+  let dbTheme: { defaultMusicUrl: string | null; builderSpec: unknown } | null = null;
   try {
-    const dbTheme = await prisma.theme.findUnique({
+    dbTheme = await prisma.theme.findUnique({
       where: { id: (inv.themeId || "kalandra").toLowerCase() },
-      select: { defaultMusicUrl: true },
+      select: { defaultMusicUrl: true, builderSpec: true },
     });
-    if (dbTheme?.defaultMusicUrl) dbThemeDefaultMusic = dbTheme.defaultMusicUrl;
   } catch {}
+  if (dbTheme?.defaultMusicUrl) dbThemeDefaultMusic = dbTheme.defaultMusicUrl;
+
+  // Teks bawaan tema builder (inv.builderTexts dipakai pratinjau builder untuk rancangan yang belum tersimpan).
+  const builderApplied = applyBuilderTexts(
+    getThemeBlueprint(inv.themeId || "kalandra", customDemoData || undefined),
+    inv.builderTexts ?? builderTextsOf(dbTheme?.builderSpec),
+  );
+  const blueprint = builderApplied.blueprint;
 
 
   const showStory = featureSettings.showStory !== undefined ? Boolean(featureSettings.showStory) : true;
@@ -447,6 +454,7 @@ export async function composeWeddingData(inv: any) {
     vendorTitle: blueprint.vendorTitle || "Vendor",
     vendorEyebrow: blueprint.vendorEyebrow || "SPECIAL THANKS",
     vendorSubtitle: blueprint.vendorSubtitle || "",
+    ...builderApplied.labels,
     ...(featureSettings.customLabels || {}),
   };
   const quoteSectionTitle = customLabels.quoteTitle || featureSettings.quoteTitle || blueprint.quoteSectionTitle;

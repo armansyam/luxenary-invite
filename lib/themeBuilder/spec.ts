@@ -92,12 +92,33 @@ export type BuilderDefaultMedia = Partial<Record<BuilderDefaultSlot, string>>;
  * 320-460 px. Penanda `data-lux-block` ada di blueprint pernikahan.
  */
 export const BUILDER_BLOCKS = [
+  { id: "cover-monogram", label: "Monogram di cover", section: "cover" },
   { id: "cover-names", label: "Nama di cover", section: "cover" },
+  { id: "cover-date", label: "Tanggal di cover", section: "cover" },
+  { id: "cover-guest", label: "Kartu nama tamu", section: "cover" },
+  { id: "opening-top", label: "Salam dan tanggal pembuka", section: "opening" },
   { id: "opening-photo", label: "Foto pembuka", section: "opening" },
   { id: "opening-names", label: "Nama di pembuka", section: "opening" },
+  { id: "home-schedule", label: "Jadwal acara di Home", section: "opening" },
+  { id: "opening-quote", label: "Kutipan pembuka", section: "opening" },
+  { id: "couple-title", label: "Judul mempelai", section: "couple" },
   { id: "couple-photo-1", label: "Foto mempelai pertama", section: "couple" },
+  { id: "couple-role-1", label: "Label mempelai pertama", section: "couple" },
+  { id: "couple-name-1", label: "Nama mempelai pertama", section: "couple" },
+  { id: "couple-parents-1", label: "Orang tua mempelai pertama", section: "couple" },
+  { id: "couple-ig-1", label: "Instagram mempelai pertama", section: "couple" },
+  { id: "couple-amp", label: "Tanda & antar mempelai", section: "couple" },
   { id: "couple-photo-2", label: "Foto mempelai kedua", section: "couple" },
+  { id: "couple-role-2", label: "Label mempelai kedua", section: "couple" },
+  { id: "couple-name-2", label: "Nama mempelai kedua", section: "couple" },
+  { id: "couple-parents-2", label: "Orang tua mempelai kedua", section: "couple" },
+  { id: "couple-ig-2", label: "Instagram mempelai kedua", section: "couple" },
+  { id: "countdown-title", label: "Judul hitung mundur", section: "countdown" },
   { id: "countdown", label: "Hitung mundur", section: "countdown" },
+  { id: "events-title", label: "Judul acara", section: "events" },
+  { id: "story-title", label: "Judul kisah", section: "story" },
+  { id: "rsvp-title", label: "Judul ucapan dan RSVP", section: "rsvp" },
+  { id: "rsvp-form", label: "Formulir RSVP", section: "rsvp" },
   { id: "closing-content", label: "Isi penutup", section: "closing" },
 ] as const;
 export type BuilderBlockId = (typeof BUILDER_BLOCKS)[number]["id"];
@@ -109,20 +130,242 @@ export interface BlockProps {
   scale: number;
   /** Derajat. */
   rotate: number;
+  /** Sembunyikan elemen; hanya berlaku untuk blok di OPTIONAL_BLOCKS. */
+  hidden: boolean;
+  /** Lapisan di antara elemen seksi yang sama: 0 = urutan bawaan, positif ke depan, negatif ke belakang. */
+  z?: number;
 }
 export type BuilderBlocks = Partial<Record<BuilderBlockId, BlockProps>>;
 
-export const DEFAULT_BLOCK_PROPS: BlockProps = { x: 0, y: 0, scale: 1, rotate: 0 };
-export const BLOCK_LIMITS = { x: [-60, 60], y: [-60, 60], scale: [0.5, 2], rotate: [-180, 180] } as const;
+/**
+ * Blok yang wajib tampil: nama di cover dan kartu nama tamu (identitas dan personalisasi undangan), formulir RSVP
+ * (fungsi inti), dan jadwal di Home (menyembunyikannya membuat jadwal tidak tampil di mana pun saat dipindah ke Home).
+ * Semua blok lain boleh disembunyikan, karena tidak semua tema memakai tiap elemen.
+ */
+export const PROTECTED_BLOCKS: readonly BuilderBlockId[] = ["cover-names", "cover-guest", "rsvp-form", "home-schedule"];
+export const OPTIONAL_BLOCKS: readonly BuilderBlockId[] = BUILDER_BLOCKS.map((b) => b.id).filter((id) => !PROTECTED_BLOCKS.includes(id));
 
-export const isDefaultBlock = (p: BlockProps) => p.x === 0 && p.y === 0 && p.scale === 1 && p.rotate === 0;
+export const DEFAULT_BLOCK_PROPS: BlockProps = { x: 0, y: 0, scale: 1, rotate: 0, hidden: false };
+// Persen ukuran elemen itu sendiri: elemen pendek (judul sekitar 40 px) butuh jangkauan besar untuk pindah sejauh
+// ratusan piksel, dan elemen sempit (monogram, tanggal) untuk mencapai tengah layar.
+export const BLOCK_LIMITS = { x: [-1500, 1500], y: [-1500, 1500], scale: [0.5, 2], rotate: [-180, 180], z: [-9, 9] } as const;
+
+export const isDefaultBlock = (p: BlockProps) => p.x === 0 && p.y === 0 && p.scale === 1 && p.rotate === 0 && !p.hidden && !p.z;
+
+/**
+ * Isi seksi bertumpuk pada z-index 2 (ornamen belakang 1, ornamen depan 3), jadi lapisan blok dihitung dari 2. Blok
+ * bersarang saling bertumpuk di dalam wadahnya; blok yang langsung berada di seksi juga bersaing dengan ornamen.
+ */
+export const BLOCK_BASE_Z = 2;
+
+/** Nilai `z-index` blok, atau null bila memakai urutan bawaan. */
+export const blockZIndex = (p: BlockProps): number | null => (p.z ? BLOCK_BASE_Z + p.z : null);
 
 /**
  * Deklarasi CSS satu blok. Memakai properti transform individual (translate, rotate, scale) agar tidak menimpa
- * `transform` milik varian (mis. polaroid) maupun animasi masuk.
+ * `transform` milik varian (mis. polaroid) maupun animasi masuk. `z-index` butuh `position`, dan semua blok di
+ * blueprint berposisi static atau relative sehingga `relative` tidak mengubah alirannya.
  */
 export function blockStyle(p: BlockProps): string {
-  return `translate:${p.x}% ${p.y}%;rotate:${p.rotate}deg;scale:${p.scale};`;
+  const z = blockZIndex(p);
+  return `translate:${p.x}% ${p.y}%;rotate:${p.rotate}deg;scale:${p.scale};${z === null ? "" : `position:relative;z-index:${z};`}${p.hidden ? "display:none;" : ""}`;
+}
+
+/**
+ * Tempat jadwal acara. HTML jadwal membawa target sunting langsung di Studio (`data-lux-field="events.N.*"`), jadi ia
+ * dipindahkan, bukan digandakan: di "home" jadwal tampil di seksi Home dan seksi Acara disembunyikan.
+ */
+export const EVENTS_PLACEMENTS = [
+  { id: "section", label: "Seksi sendiri", hint: "Jadwal di seksi Acara, setelah hitung mundur." },
+  { id: "home", label: "Di halaman Home", hint: "Jadwal tampil di Home; seksi Acara disembunyikan." },
+] as const;
+export type EventsPlacement = (typeof EVENTS_PLACEMENTS)[number]["id"];
+
+export type StackMove = "front" | "forward" | "backward" | "back";
+
+/**
+ * Urutan larik adalah urutan tumpukan di DOM (ornamen setelahnya menimpa yang sebelumnya) di antara ornamen sejenis,
+ * yaitu seksi dan lapisan yang sama. Mengembalikan larik baru; larik asli dikembalikan bila tidak ada yang berubah.
+ */
+export function moveOrnament(list: BuilderOrnament[], id: string, move: StackMove): BuilderOrnament[] {
+  const me = list.find((o) => o.id === id);
+  if (!me) return list;
+  const peers = list.filter((o) => o.section === me.section && o.layer === me.layer);
+  const pos = peers.findIndex((o) => o.id === id);
+  const target = move === "front" ? peers.length - 1 : move === "back" ? 0 : move === "forward" ? Math.min(pos + 1, peers.length - 1) : Math.max(pos - 1, 0);
+  if (target === pos) return list;
+  const without = list.filter((o) => o.id !== id);
+  const refIndex = without.findIndex((o) => o.id === peers[target].id);
+  const insertAt = target > pos ? refIndex + 1 : refIndex;
+  return [...without.slice(0, insertAt), me, ...without.slice(insertAt)];
+}
+
+/** Foto yang boleh diberi bingkai: slot foto pembuka dan foto kedua mempelai. */
+export const FRAMED_PHOTOS = ["opening-photo", "couple-photo-1", "couple-photo-2"] as const;
+export type FramedPhotoId = (typeof FRAMED_PHOTOS)[number];
+
+export const FRAME_SHAPES = [
+  { id: "default", label: "Bawaan" },
+  { id: "rect", label: "Persegi" },
+  { id: "rounded", label: "Lembut" },
+  { id: "arch", label: "Lengkung" },
+  { id: "oval", label: "Oval" },
+  { id: "circle", label: "Bulat" },
+] as const;
+export type FrameShape = (typeof FRAME_SHAPES)[number]["id"];
+
+/**
+ * Jendela transparan sebuah bingkai, hasil pengukuran alpha di server (lib/themeBuilder/frameWindow.ts): kotak
+ * pembatas sebagai pecahan 0..1 dari lebar dan tinggi gambar, plus perbandingan lebar:tinggi jendela dalam piksel asli.
+ */
+export interface FrameFit {
+  l: number;
+  t: number;
+  r: number;
+  b: number;
+  aspect: number;
+}
+
+export interface PhotoFrame {
+  shape: FrameShape;
+  /** Gambar bingkai dari pustaka ornamen; kosong berarti tanpa bingkai ornamen. */
+  ornament: string;
+  /** Seberapa jauh bingkai ornamen keluar dari tepi foto, persen ukuran foto. */
+  spread: number;
+  /** Buang cincin, padding, dan bayangan bawaan tema agar tidak bertumpuk dengan bingkai ornamen. */
+  hideRing: boolean;
+  /** Jendela bingkai; bila ada, foto dipasang tepat di jendela dan bentuknya mengikuti bingkai. */
+  fit: FrameFit | null;
+}
+export type BuilderFrames = Partial<Record<FramedPhotoId, PhotoFrame>>;
+
+export const DEFAULT_PHOTO_FRAME: PhotoFrame = { shape: "default", ornament: "", spread: 14, hideRing: false, fit: null };
+export const FRAME_SPREAD_LIMITS = [0, 60] as const;
+
+export const isDefaultFrame = (f: PhotoFrame) => f.shape === "default" && f.ornament === "" && !f.hideRing;
+
+/** Lebar dan jarak bawah bawaan tiap slot foto di blueprint (`.opening-photo`, `.couple-photo-wrap`). */
+const FRAME_BASE: Record<FramedPhotoId, { width: string; gap: string }> = {
+  "opening-photo": { width: "min(62%,240px)", gap: "1.25rem" },
+  "couple-photo-1": { width: "min(140px,100%)", gap: "16px" },
+  "couple-photo-2": { width: "min(140px,100%)", gap: "16px" },
+};
+
+const FRAME_RADIUS: Record<Exclude<FrameShape, "default">, { radius: string; square: boolean }> = {
+  rect: { radius: "0", square: false },
+  rounded: { radius: "var(--radius-lg)", square: false },
+  arch: { radius: "999px 999px var(--radius-md) var(--radius-md)", square: false },
+  oval: { radius: "50%", square: false },
+  circle: { radius: "50%", square: true },
+};
+
+/**
+ * CSS bingkai foto. Pembungkus foto tidak lagi memotong isinya (agar bingkai ornamen boleh keluar dari tepi), jadi
+ * gambar dipotong sendiri mengikuti bentuk, dan bingkai ornamen digambar di `::after` yang ikut bergerak, berukuran,
+ * dan berputar bersama foto. Nilai berasal dari daftar bentuk dan path ornamen yang sudah divalidasi.
+ */
+export function frameCss(frames: BuilderFrames): string {
+  const rules: string[] = [];
+  for (const id of FRAMED_PHOTOS) {
+    const f = frames[id];
+    if (!f || isDefaultFrame(f)) continue;
+    const sel = `[data-lux-block="${id}"]`;
+    if (f.ornament && f.fit) {
+      // Bingkai berjendela: pembungkus foto = jendela (perbandingan dan ukuran), bingkai digambar di atasnya dengan
+      // jendelanya tepat menimpa pembungkus. Bentuk datang dari alpha bingkai, jadi foto dibiarkan persegi di bawahnya.
+      const { l, t, r, b, aspect } = f.fit;
+      const ww = r - l;
+      const wh = b - t;
+      const pct = (v: number) => Math.round(v * 1000) / 1000;
+      // Bingkai lebih besar daripada foto dan keluar dari kotaknya; margin atas dan bawah sebesar luapan itu menjaga
+      // teks di sekitarnya tidak tertimpa. Persen margin dan lebar sama-sama relatif ke lebar induk, jadi lebar dasar
+      // foto ditulis eksplisit (sama dengan blueprint) agar luapan dapat dihitung darinya.
+      const base = FRAME_BASE[id];
+      const over = (v: number) => pct((v / wh) / aspect);
+      rules.push(`${sel}{position:relative;overflow:visible;width:${base.width};height:auto;aspect-ratio:${aspect};margin-top:calc(${base.width} * ${over(t)});margin-bottom:calc(${base.width} * ${over(1 - b)} + ${base.gap});border:0;padding:0;border-radius:0;box-shadow:none;}`);
+      rules.push(`${sel} img{width:100%;height:100%;object-fit:cover;border-radius:0;display:block;}`);
+      rules.push(`${sel}::after{content:"";position:absolute;left:${pct((-l / ww) * 100)}%;top:${pct((-t / wh) * 100)}%;width:${pct(100 / ww)}%;height:${pct(100 / wh)}%;background:url('${f.ornament}') 0 0/100% 100% no-repeat;pointer-events:none;z-index:2;}`);
+      continue;
+    }
+    const shape = f.shape === "default" ? null : FRAME_RADIUS[f.shape];
+    rules.push(`${sel}{position:relative;overflow:visible;${shape ? `border-radius:${shape.radius};${shape.square ? "aspect-ratio:1/1;" : ""}` : ""}${f.hideRing ? "border:0;padding:0;box-shadow:none;" : ""}}`);
+    rules.push(`${sel} img{width:100%;height:100%;object-fit:cover;${shape ? `border-radius:${shape.radius};` : "border-radius:inherit;"}}`);
+    if (f.ornament) {
+      rules.push(`${sel}::after{content:"";position:absolute;inset:-${f.spread}%;background:url('${f.ornament}') center/contain no-repeat;pointer-events:none;z-index:2;}`);
+    }
+  }
+  return rules.join("\n    ");
+}
+
+/**
+ * Label yang bisa diberi teks bawaan oleh admin. "engine" = teks berasal dari token mesin (blueprint tema, dipasang
+ * lewat bawaan blueprint saat undangan dirender); "static" = teks tertulis di master dan diganti saat kompilasi.
+ * Kunci sama dengan `data-lux-field="customLabels.<kunci>"` di blueprint, sehingga klien tetap dapat mengubahnya
+ * di Studio dan hasil render membekukan teks ini sebagai nilai awal label klien.
+ */
+export const BUILDER_TEXTS = [
+  { key: "coverBadge", label: "Teks kecil di atas cover", group: "Cover", kind: "engine" },
+  { key: "coverSubtitle", label: "Kalimat sapaan cover", group: "Cover", kind: "engine" },
+  { key: "coverGuestLabel", label: "Label kartu nama tamu", group: "Cover", kind: "engine" },
+  { key: "openBtn", label: "Tombol buka undangan", group: "Cover", kind: "engine" },
+  { key: "openingGreeting", label: "Salam pembuka", group: "Pembuka", kind: "engine" },
+  { key: "quoteEyebrow", label: "Teks kecil kutipan", group: "Pembuka", kind: "engine" },
+  { key: "quoteTitle", label: "Judul kutipan", group: "Pembuka", kind: "engine" },
+  { key: "coupleEyebrow", label: "Teks kecil mempelai", group: "Mempelai", kind: "engine" },
+  { key: "coupleTitle", label: "Judul mempelai", group: "Mempelai", kind: "engine" },
+  { key: "coupleSub", label: "Kalimat di bawah judul", group: "Mempelai", kind: "engine" },
+  { key: "countdownEyebrow", label: "Teks kecil hitung mundur", group: "Hitung mundur", kind: "static" },
+  { key: "countdownTitle", label: "Judul hitung mundur", group: "Hitung mundur", kind: "static" },
+  { key: "countdownSub", label: "Kalimat hitung mundur", group: "Hitung mundur", kind: "static" },
+  { key: "cdDays", label: "Satuan hari", group: "Hitung mundur", kind: "static" },
+  { key: "cdHours", label: "Satuan jam", group: "Hitung mundur", kind: "static" },
+  { key: "cdMins", label: "Satuan menit", group: "Hitung mundur", kind: "static" },
+  { key: "cdSecs", label: "Satuan detik", group: "Hitung mundur", kind: "static" },
+  { key: "saveDateBtn", label: "Tombol simpan ke kalender", group: "Hitung mundur", kind: "static" },
+  { key: "eventsEyebrow", label: "Teks kecil acara", group: "Acara", kind: "static" },
+  { key: "eventsTitle", label: "Judul acara", group: "Acara", kind: "engine" },
+  { key: "storyEyebrow", label: "Teks kecil kisah", group: "Kisah", kind: "engine" },
+  { key: "storyTitle", label: "Judul kisah", group: "Kisah", kind: "engine" },
+  { key: "wishesEyebrow", label: "Teks kecil ucapan", group: "RSVP dan ucapan", kind: "static" },
+  { key: "wishesTitle", label: "Judul ucapan", group: "RSVP dan ucapan", kind: "engine" },
+  { key: "wishesSub", label: "Kalimat di bawah judul", group: "RSVP dan ucapan", kind: "engine" },
+  { key: "rsvpTitle", label: "Judul formulir RSVP", group: "RSVP dan ucapan", kind: "engine" },
+  { key: "rsvpNameLabel", label: "Label nama", group: "RSVP dan ucapan", kind: "static" },
+  { key: "rsvpStatusLabel", label: "Label kehadiran", group: "RSVP dan ucapan", kind: "static" },
+  { key: "rsvpCountLabel", label: "Label jumlah tamu", group: "RSVP dan ucapan", kind: "static" },
+  { key: "rsvpMessageLabel", label: "Label ucapan", group: "RSVP dan ucapan", kind: "static" },
+  { key: "rsvpBtnText", label: "Tombol kirim", group: "RSVP dan ucapan", kind: "engine" },
+  { key: "closingQuote", label: "Kalimat penutup", group: "Penutup", kind: "engine" },
+  { key: "closingSub", label: "Kalimat salam penutup", group: "Penutup", kind: "engine" },
+  { key: "closingFamily", label: "Keterangan keluarga", group: "Penutup", kind: "static" },
+  { key: "navHome", label: "Menu Home", group: "Menu bawah", kind: "static" },
+  { key: "navCouple", label: "Menu mempelai", group: "Menu bawah", kind: "static" },
+  { key: "navEvents", label: "Menu acara", group: "Menu bawah", kind: "static" },
+  { key: "navStory", label: "Menu kisah", group: "Menu bawah", kind: "static" },
+  { key: "navWishes", label: "Menu ucapan", group: "Menu bawah", kind: "static" },
+  { key: "souvenirTitle", label: "Judul voucher souvenir", group: "Lainnya", kind: "static" },
+] as const;
+export type BuilderTextKey = (typeof BUILDER_TEXTS)[number]["key"];
+export type BuilderTexts = Partial<Record<BuilderTextKey, string>>;
+export const MAX_BUILDER_TEXT_LENGTH = 300;
+
+/** Teks label dari masukan tak tepercaya: satu baris, tanpa tanda kurung sudut atau token {{ }}, kunci tak dikenal dibuang. */
+export function parseBuilderTexts(input: unknown, errors: string[] = []): BuilderTexts {
+  const texts: BuilderTexts = {};
+  if (!input || typeof input !== "object") return texts;
+  for (const { key, label } of BUILDER_TEXTS) {
+    const raw = (input as Record<string, unknown>)[key];
+    if (raw === undefined || raw === null) continue;
+    if (typeof raw !== "string") {
+      errors.push(`Teks ${label} tidak terbaca.`);
+      continue;
+    }
+    const value = raw.replace(/\s+/g, " ").trim();
+    if (value.length > MAX_BUILDER_TEXT_LENGTH) errors.push(`Teks ${label} maksimal ${MAX_BUILDER_TEXT_LENGTH} karakter.`);
+    else if (/[<>]|\{\{|\}\}/.test(value)) errors.push(`Teks ${label} tidak boleh memuat < > atau {{ }}.`);
+    else texts[key] = value;
+  }
+  return texts;
 }
 
 export interface BuilderSpec {
@@ -137,6 +380,10 @@ export interface BuilderSpec {
   defaultMedia: BuilderDefaultMedia;
   /** Properti relatif blok konten; hanya blok yang diubah dari bawaan yang tersimpan. */
   blocks: BuilderBlocks;
+  frames: BuilderFrames;
+  /** Teks bawaan label (judul, tombol, sapaan) yang menggantikan bawaan blueprint; klien tetap bisa mengubahnya di Studio. */
+  texts: BuilderTexts;
+  eventsPlacement: EventsPlacement;
   radius: RadiusStyle;
   variants: BuilderVariants;
   animation: AnimationPreset;
@@ -193,6 +440,13 @@ export const TEXTURE_OPTIONS = [
   { id: "/assets/ornaments/background/background-monocrhome1.webp", label: "Monokrom cahaya" },
   { id: "/assets/ornaments/background/background-red.webp", label: "Merah tua" },
 ] as const;
+
+const UPLOADED_ASSET_RE = /^\/uploads\/theme-assets\/[a-f0-9]{24}\.(?:webp|png)$/;
+
+/** Tekstur latar dan media bawaan: gambar bawaan pustaka latar, atau gambar yang diunggah admin ("" = polos). */
+export function isAllowedBackdropSrc(src: unknown): src is string {
+  return typeof src === "string" && (TEXTURE_OPTIONS.some((t) => t.id === src) || UPLOADED_ASSET_RE.test(src));
+}
 
 export interface VariantOption {
   id: string;
@@ -315,6 +569,9 @@ export function defaultBuilderSpec(): BuilderSpec {
     texture: "/assets/ornaments/background/background-cream.webp",
     defaultMedia: {},
     blocks: {},
+    frames: {},
+    texts: {},
+    eventsPlacement: "section",
     radius: "soft",
     variants: { cover: "classic", opening: "classic", couple: "stacked", countdown: "boxes", closing: "classic", headings: "classic", sidebar: "bottom-left" },
     animation: "rise",
@@ -332,6 +589,17 @@ const ORNAMENT_SRC_RE = /^\/(?:assets\/ornaments\/(?!background\/)[A-Za-z0-9_-]+
 
 export function isAllowedOrnamentSrc(src: unknown): src is string {
   return typeof src === "string" && ORNAMENT_SRC_RE.test(src) && /\.(webp|png)$/i.test(src) && !src.includes("..");
+}
+
+function parseFrameFit(raw: unknown): FrameFit | null {
+  if (!raw || typeof raw !== "object") return null;
+  const { l, t, r, b, aspect } = raw as Record<string, unknown>;
+  const nums = [l, t, r, b, aspect];
+  if (!nums.every((n) => typeof n === "number" && Number.isFinite(n))) return null;
+  const [L, T, R, B, A] = nums as number[];
+  const inside = [L, T, R, B].every((n) => n >= 0 && n <= 1);
+  if (!inside || R - L < 0.05 || B - T < 0.05 || A < 0.2 || A > 5) return null;
+  return { l: L, t: T, r: R, b: B, aspect: A };
 }
 
 const clamp = (value: unknown, min: number, max: number, fallback: number) => {
@@ -377,14 +645,14 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
     fonts[key] = typeof value === "string" && isGoogleFontId(value) ? value : pickEnum(value, fontIds, `Huruf ${key}`, errors) ?? base.fonts[key];
   }
   const texture = typeof input.texture === "string" ? input.texture : "";
-  if (!TEXTURE_OPTIONS.some((t) => t.id === texture)) errors.push("Tekstur latar tidak dikenali.");
+  if (!isAllowedBackdropSrc(texture)) errors.push("Tekstur latar tidak dikenali.");
 
-  // Spesifikasi lama tanpa defaultMedia tetap sah; gambar bawaan hanya dari pustaka latar.
+  // Spesifikasi lama tanpa defaultMedia tetap sah; gambar bawaan dari pustaka latar atau unggahan admin.
   const defaultMedia: BuilderDefaultMedia = {};
   for (const { slot, label } of BUILDER_DEFAULT_SLOTS) {
     const value = input.defaultMedia?.[slot];
     if (value === undefined || value === null || value === "") continue;
-    if (typeof value !== "string" || !TEXTURE_OPTIONS.some((t) => t.id === value)) errors.push(`Media bawaan ${label} tidak dikenali.`);
+    if (typeof value !== "string" || !isAllowedBackdropSrc(value)) errors.push(`Media bawaan ${label} tidak dikenali.`);
     else defaultMedia[slot] = value;
   }
 
@@ -402,8 +670,42 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
       y: clamp(raw.y, BLOCK_LIMITS.y[0], BLOCK_LIMITS.y[1], 0),
       scale: clamp(raw.scale, BLOCK_LIMITS.scale[0], BLOCK_LIMITS.scale[1], 1),
       rotate: clamp(raw.rotate, BLOCK_LIMITS.rotate[0], BLOCK_LIMITS.rotate[1], 0),
+      hidden: raw.hidden === true && OPTIONAL_BLOCKS.includes(id),
     };
+    const z = Math.round(clamp(raw.z, BLOCK_LIMITS.z[0], BLOCK_LIMITS.z[1], 0));
+    if (z) props.z = z;
     if (!isDefaultBlock(props)) blocks[id] = props;
+  }
+
+  // Spesifikasi lama tanpa texts tetap sah dan berarti semua label memakai bawaan blueprint.
+  const texts = parseBuilderTexts(input.texts, errors);
+
+  // Spesifikasi lama tanpa eventsPlacement tetap sah dan berarti jadwal di seksi Acara.
+  const eventsPlacement = pickEnum<EventsPlacement>(input.eventsPlacement ?? "section", EVENTS_PLACEMENTS.map((p) => p.id), "Tempat jadwal acara", errors);
+
+  // Spesifikasi lama tanpa frames tetap sah; bingkai bawaan dibuang, ornamen bingkai hanya dari pustaka ornamen.
+  const frames: BuilderFrames = {};
+  for (const id of FRAMED_PHOTOS) {
+    const raw = input.frames?.[id];
+    if (raw === undefined || raw === null) continue;
+    if (typeof raw !== "object") {
+      errors.push(`Bingkai ${id} tidak terbaca.`);
+      continue;
+    }
+    const shape = pickEnum<FrameShape>(raw.shape ?? "default", FRAME_SHAPES.map((s) => s.id), `Bentuk bingkai ${id}`, errors);
+    const ornament = raw.ornament === undefined || raw.ornament === null || raw.ornament === "" ? "" : raw.ornament;
+    if (ornament !== "" && !isAllowedOrnamentSrc(ornament)) errors.push(`Bingkai ${id}: gambar harus dari pustaka ornamen.`);
+    if (!shape) continue;
+    const fit = parseFrameFit(raw.fit);
+    if (raw.fit !== undefined && raw.fit !== null && !fit) errors.push(`Bingkai ${id}: jendela bingkai tidak valid.`);
+    const frame: PhotoFrame = {
+      shape,
+      ornament: typeof ornament === "string" ? ornament : "",
+      spread: clamp(raw.spread, FRAME_SPREAD_LIMITS[0], FRAME_SPREAD_LIMITS[1], DEFAULT_PHOTO_FRAME.spread),
+      hideRing: raw.hideRing === true,
+      fit: typeof ornament === "string" && ornament !== "" ? fit : null,
+    };
+    if (!isDefaultFrame(frame)) frames[id] = frame;
   }
 
   const variants = {} as BuilderVariants;
@@ -442,10 +744,10 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
     });
   }
 
-  if (errors.length || !eventType || !canvasMode || !radius || !animation) return { ok: false, errors };
+  if (errors.length || !eventType || !canvasMode || !radius || !animation || !eventsPlacement) return { ok: false, errors };
   return {
     ok: true,
-    spec: { version: BUILDER_SPEC_VERSION, eventType, canvasMode, palette, fonts, texture, defaultMedia, blocks, radius, variants, animation, ornaments },
+    spec: { version: BUILDER_SPEC_VERSION, eventType, canvasMode, palette, fonts, texture, defaultMedia, blocks, frames, texts, eventsPlacement, radius, variants, animation, ornaments },
   };
 }
 

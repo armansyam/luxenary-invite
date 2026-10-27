@@ -11,16 +11,23 @@ import {
   VARIANT_GROUPS,
   BLOCK_LIMITS,
   DEFAULT_BLOCK_PROPS,
+  DEFAULT_PHOTO_FRAME,
+  FRAMED_PHOTOS,
   defaultBuilderSpec,
   fontLabel,
   isDefaultBlock,
+  isDefaultFrame,
+  moveOrnament,
+  type StackMove,
   type BlockProps,
   type BuilderBlockId,
+  type FramedPhotoId,
+  type PhotoFrame,
   type BuilderOrnament,
   type BuilderSpec,
   type OrnamentSection,
 } from "@/lib/themeBuilder/spec";
-import BuilderPreview, { DEVICE_SIZES, type PreviewDevice, type PreviewDropTarget } from "@/components/admin/themeBuilder/BuilderPreview";
+import BuilderPreview, { DEVICE_SIZES, type PreviewActions, type PreviewDevice, type PreviewDropTarget } from "@/components/admin/themeBuilder/BuilderPreview";
 import OrnamentInspector from "@/components/admin/themeBuilder/OrnamentInspector";
 import BlockInspector from "@/components/admin/themeBuilder/BlockInspector";
 import {
@@ -30,6 +37,7 @@ import {
   OrnamentsPanel,
   PANEL_TABS,
   PublishPanel,
+  TextsPanel,
   TypePanel,
   type AssetLibrary,
   type PanelId,
@@ -46,7 +54,14 @@ const newOrnamentId = () => Array.from(crypto.getRandomValues(new Uint8Array(10)
 /** Bagian spesifikasi yang mengubah HTML master; geser/ukur ornamen cukup diterapkan langsung ke pratinjau. */
 function structuralKey(spec: BuilderSpec): string {
   // Posisi ornamen dan properti blok diterapkan langsung ke pratinjau saat menyeret, jadi tidak memicu muat ulang.
-  return JSON.stringify({ ...spec, blocks: {}, ornaments: spec.ornaments.map((o) => [o.id, o.src, o.section]) });
+  // Bingkai foto juga diterapkan langsung lewat gaya di dokumen pratinjau.
+  return JSON.stringify({ ...spec, blocks: {}, frames: {}, ornaments: spec.ornaments.map((o) => [o.id, o.src, o.section, o.layer]) });
+}
+
+/** Posisi ornamen di antara ornamen sejenis (seksi dan lapisan sama); 0 adalah paling belakang. */
+function stackOf(ornaments: BuilderOrnament[], o: BuilderOrnament): { index: number; count: number } {
+  const peers = ornaments.filter((p) => p.section === o.section && p.layer === o.layer);
+  return { index: peers.findIndex((p) => p.id === o.id), count: peers.length };
 }
 
 const Icon = ({ d, className = "h-4 w-4" }: { d: string; className?: string }) => (
@@ -87,12 +102,14 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
   const [replayNonce, setReplayNonce] = useState(0);
 
   const [html, setHtml] = useState<string | null>(null);
+  const [labels, setLabels] = useState<Record<string, string>>({});
   const [previewLoading, setPreviewLoading] = useState(false);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [library, setLibrary] = useState<AssetLibrary | null>(null);
   const [uploading, setUploading] = useState(false);
   const [wideEnough, setWideEnough] = useState(true);
   const dropTarget = useRef<PreviewDropTarget | null>(null);
+  const actionsRef = useRef<PreviewActions | null>(null);
   const [ghost, setGhost] = useState<{ src: string; x: number; y: number } | null>(null);
 
   const snapshot = useCallback((s: BuilderSpec, m: ThemeMeta) => JSON.stringify({ s, m: { ...m, name: m.name.trim(), description: m.description.trim() } }), []);
@@ -176,6 +193,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
           return;
         }
         setHtml(data.html);
+        setLabels(data.labels || {});
         setIssues(data.issues || []);
       } catch (err) {
         if ((err as Error).name !== "AbortError") notify("Pratinjau gagal dimuat. Periksa koneksi.", "error");
@@ -275,13 +293,35 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
     apply({ ...specRef.current, blocks }, "commit");
   }, [apply]);
 
+  const updateFrame = useCallback((id: FramedPhotoId, patch: Partial<PhotoFrame>, final: boolean) => {
+    const current = specRef.current;
+    const merged = { ...(current.frames[id] ?? DEFAULT_PHOTO_FRAME), ...patch };
+    const frames = { ...current.frames };
+    if (isDefaultFrame(merged)) delete frames[id];
+    else frames[id] = merged;
+    apply({ ...current, frames }, final ? "commit" : "live");
+  }, [apply]);
+
+  const centerBlock = useCallback((id: BuilderBlockId) => {
+    const x = actionsRef.current?.centerBlockX(id);
+    if (x === null || x === undefined) return notify("Blok belum tampil di pratinjau. Pilih seksinya dulu.", "info");
+    updateBlock(id, { x }, true);
+  }, [notify, updateBlock]);
+
+  /** Memindah ornamen di antara ornamen sejenis (seksi dan lapisan sama); urutan larik adalah urutan tumpukan DOM. */
+  const reorderOrnament = useCallback((id: string, move: StackMove) => {
+    const moved = moveOrnament(specRef.current.ornaments, id, move);
+    if (moved !== specRef.current.ornaments) apply({ ...specRef.current, ornaments: moved }, "commit");
+  }, [apply]);
+
   const selectBlock = useCallback((id: BuilderBlockId | null) => {
     setSelectedBlock(id);
     if (id) {
       setSelectedId(null);
       setPanel("layout");
+      if ((FRAMED_PHOTOS as readonly string[]).includes(id) && !library) void loadLibrary();
     }
-  }, []);
+  }, [library, loadLibrary]);
 
   const focusSection = useCallback((section: OrnamentSection) => {
     if (section === "sidebar") setDevice("desktop");
@@ -413,6 +453,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
   const uploadAssets = useCallback(async (files: FileList) => {
     setUploading(true);
     let lastUrl = "";
+    let lastOpaque = false;
     try {
       for (const file of Array.from(files)) {
         const form = new FormData();
@@ -420,10 +461,17 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
         const res = await fetch("/api/admin/theme-builder/assets", { method: "POST", body: form });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) notify(`${file.name}: ${data.error || "gagal diunggah."}`, "error");
-        else lastUrl = data.url;
+        else { lastUrl = data.url; lastOpaque = Boolean(data.opaque); }
       }
       await loadLibrary();
-      if (lastUrl) notify("Ornamen masuk ke pustaka. Seret ke pratinjau untuk memakainya.", "success");
+      if (lastUrl) {
+        notify(
+          lastOpaque
+            ? "Gambar tanpa transparansi masuk ke pilihan Tekstur latar dan Media bawaan di tab Warna."
+            : "Gambar bertransparansi masuk ke pustaka ornamen dan bingkai. Seret ke pratinjau untuk memakainya.",
+          "success",
+        );
+      }
     } finally {
       setUploading(false);
     }
@@ -469,6 +517,9 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
     if (e.key === "Escape") { setSelectedId(null); return true; }
     if (e.key === "Delete" || e.key === "Backspace") { removeOrnament(sel.id); return true; }
     if (mod && e.key.toLowerCase() === "d") { duplicateOrnament(sel.id); return true; }
+    // Shift+] menghasilkan "}" dan Shift+[ menghasilkan "{" di papan ketik US.
+    if (e.key === "]" || e.key === "}") { reorderOrnament(sel.id, e.shiftKey ? "front" : "forward"); return true; }
+    if (e.key === "[" || e.key === "{") { reorderOrnament(sel.id, e.shiftKey ? "back" : "backward"); return true; }
     const step = e.shiftKey ? 2 : 0.5;
     const moves: Record<string, Partial<BuilderOrnament>> = {
       ArrowLeft: { x: sel.x - step },
@@ -478,7 +529,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
     };
     if (moves[e.key]) { updateOrnament(sel.id, moves[e.key], true); return true; }
     return false;
-  }, [duplicateOrnament, redo, removeOrnament, resetBlock, save, selectedBlock, selectedId, undo, updateBlock, updateOrnament]);
+  }, [duplicateOrnament, redo, removeOrnament, reorderOrnament, resetBlock, save, selectedBlock, selectedId, undo, updateBlock, updateOrnament]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (handleKey(e)) e.preventDefault(); };
@@ -649,9 +700,11 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
           {!loaded ? (
             <p className="px-5 py-6 text-sm text-stone-500">Memuat rancangan…</p>
           ) : panel === "colors" ? (
-            <ColorsPanel spec={spec} onChange={patchSpec} />
+            <ColorsPanel spec={spec} library={library} uploading={uploading} onChange={patchSpec} onUpload={uploadAssets} onDeleteAsset={deleteAsset} />
           ) : panel === "type" ? (
             <TypePanel spec={spec} onChange={patchSpec} />
+          ) : panel === "texts" ? (
+            <TextsPanel spec={spec} labels={labels} onChange={patchSpec} />
           ) : panel === "layout" ? (
             <LayoutPanel spec={spec} onChange={patchSpec} onFocusSection={focusSection} selectedBlock={selectedBlock} onSelectBlock={selectBlock} />
           ) : panel === "ornaments" ? (
@@ -697,6 +750,8 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
           </div>
           <BuilderPreview
             dropTargetRef={dropTarget}
+            actionsRef={actionsRef}
+            frames={spec.frames}
             html={html}
             loading={previewLoading}
             device={device}
@@ -721,6 +776,8 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
           {selected ? (
             <OrnamentInspector
               ornament={selected}
+              stack={stackOf(spec.ornaments, selected)}
+              onReorder={(move) => reorderOrnament(selected.id, move)}
               onChange={(patch, final) => updateOrnament(selected.id, patch, final)}
               onDuplicate={() => duplicateOrnament(selected.id)}
               onRemove={() => removeOrnament(selected.id)}
@@ -733,6 +790,11 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
               onChange={(patch, final) => updateBlock(selectedBlock, patch, final)}
               onReset={() => resetBlock(selectedBlock)}
               onClose={() => setSelectedBlock(null)}
+              onCenter={() => centerBlock(selectedBlock)}
+              frame={(FRAMED_PHOTOS as readonly string[]).includes(selectedBlock) ? spec.frames[selectedBlock as FramedPhotoId] ?? DEFAULT_PHOTO_FRAME : null}
+              onFrameChange={(patch, final) => updateFrame(selectedBlock as FramedPhotoId, patch, final)}
+              library={library}
+              onUpload={uploadAssets}
             />
           ) : (
             <div className="h-full overflow-y-auto px-4 py-4">

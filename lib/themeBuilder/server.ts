@@ -1,10 +1,11 @@
 import fs from "fs";
 import path from "path";
+import sharp from "sharp";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { composeInvitationData } from "@/lib/themeEngine";
 import { buildDemoInvitation } from "@/lib/demoInvitation";
-import { renderTemplateFile, resolveThemeEntry, THEME_MAP } from "@/lib/renderTemplate";
+import { extractRenderedLabels, renderTemplateFile, resolveThemeEntry, THEME_MAP } from "@/lib/renderTemplate";
 import { auditBuilderMaster, type MasterIssue } from "@/lib/themeBuilder/audit";
 import { compileBuilderMaster, readBuilderBlueprint } from "@/lib/themeBuilder/compile";
 import { parseBuilderSpec, type BuilderSpec } from "@/lib/themeBuilder/spec";
@@ -69,13 +70,14 @@ export function compileAndAudit(spec: BuilderSpec): CompiledBuilderTheme {
  * Pratinjau dirender oleh engine undangan klien. Mode "demo" memakai foto dan data contoh; mode "client" meniru klien
  * baru yang belum mengunggah apa pun, sehingga yang tampil hanyalah bawaan tema, monogram, dan palet.
  */
-export async function renderBuilderPreview(spec: BuilderSpec, demoThemeId = "kalandra", mode: "demo" | "client" = "demo"): Promise<CompiledBuilderTheme> {
+export async function renderBuilderPreview(spec: BuilderSpec, demoThemeId = "kalandra", mode: "demo" | "client" = "demo"): Promise<CompiledBuilderTheme & { labels: Record<string, string> }> {
   const compiled = compileAndAudit(spec);
   const demo = buildDemoInvitation(demoThemeId, mode === "client" ? { galleryPhotos: [] } : undefined);
-  const invitation = mode === "client" ? { ...demo, media: [], themeDefaultMedia: builderDefaultMedia(spec) } : demo;
-  const data = (await composeInvitationData(invitation)) as Record<string, any>;
+  const base = mode === "client" ? { ...demo, media: [], themeDefaultMedia: builderDefaultMedia(spec) } : demo;
+  // Rancangan belum tersimpan, jadi teks bawaannya dibawa langsung (undangan nyata membacanya dari Theme.builderSpec).
+  const data = (await composeInvitationData({ ...base, builderTexts: spec.texts })) as Record<string, any>;
   const html = await renderTemplateFile("builder-preview", data, { eventType: spec.eventType, templateSource: compiled.html });
-  return { html, issues: compiled.issues };
+  return { html, issues: compiled.issues, labels: extractRenderedLabels(html) };
 }
 
 /** Spesifikasi builder yang tersimpan di DB; null bila tema ditulis tangan atau spesifikasinya tidak lagi valid. */
@@ -162,6 +164,27 @@ export function builtinOrnamentGroups(): OrnamentLibraryGroup[] {
       const order = all.slice(0, i + 1).filter((other) => other.label === g.label).length;
       return order > 1 ? { ...g, label: `${g.label} ${order}` } : g;
     });
+}
+
+const opaqueByFile = new Map<string, boolean>();
+
+/**
+ * Unggahan admin beserta penanda `opaque`. Berkas diberi nama hash isi, jadi hasilnya tidak pernah berubah dan cukup
+ * dihitung sekali. Gambar tanpa transparansi masuk daftar tekstur latar dan media bawaan; yang bertransparansi masuk
+ * daftar ornamen dan bingkai.
+ */
+export async function uploadedAssets(): Promise<Array<{ url: string; size: number; uploadedAt: number; opaque: boolean }>> {
+  return Promise.all(
+    uploadedOrnaments().map(async (u) => {
+      const file = u.url.slice(THEME_ASSET_URL_PREFIX.length);
+      let opaque = opaqueByFile.get(file);
+      if (opaque === undefined) {
+        opaque = !(await sharp(path.join(/*turbopackIgnore: true*/ THEME_ASSET_DIR, file)).metadata()).hasAlpha;
+        opaqueByFile.set(file, opaque);
+      }
+      return { ...u, opaque };
+    }),
+  );
 }
 
 export function uploadedOrnaments(): Array<{ url: string; size: number; uploadedAt: number }> {

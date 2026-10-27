@@ -12,7 +12,7 @@ import {
   THEME_ASSET_URL_PREFIX,
   assetUsage,
   builtinOrnamentGroups,
-  uploadedOrnaments,
+  uploadedAssets,
 } from "@/lib/themeBuilder/server";
 
 export const dynamic = "force-dynamic";
@@ -24,14 +24,14 @@ export async function GET() {
   try {
     const guard = await requireAdminModule("themes");
     if (!guard.ok) return guard.response;
-    return NextResponse.json({ success: true, uploads: uploadedOrnaments(), builtin: builtinOrnamentGroups() });
+    return NextResponse.json({ success: true, uploads: await uploadedAssets(), builtin: builtinOrnamentGroups() });
   } catch (error) {
     return routeError("ThemeBuilderAssets", error);
   }
 }
 
 /**
- * Unggah ornamen ke pustaka bersama. Jenis berkas ditentukan dari isinya (PNG atau WebP, tanpa SVG yang dapat membawa
+ * Unggah gambar ke pustaka bersama (ornamen, bingkai, tekstur latar, media bawaan). Jenis berkas ditentukan dari isinya (PNG atau WebP, tanpa SVG yang dapat membawa
  * skrip), diperkecil, dan disimpan sebagai WebP bernama hash isi di public/uploads/theme-assets/ (di luar git). Nama
  * hash membuat berkas tidak pernah ditimpa, karena undangan klien yang sudah terbit menautkan URL ini.
  */
@@ -47,8 +47,8 @@ export async function POST(req: NextRequest) {
 
     const input = Buffer.from(await file.arrayBuffer());
     const detected = await fileTypeFromBuffer(input);
-    if (!detected || !["image/png", "image/webp"].includes(detected.mime)) {
-      return NextResponse.json({ error: "Ornamen harus PNG atau WebP (mendukung latar transparan)." }, { status: 415 });
+    if (!detected || !["image/png", "image/webp", "image/jpeg"].includes(detected.mime)) {
+      return NextResponse.json({ error: "Gambar harus PNG, WebP, atau JPEG." }, { status: 415 });
     }
 
     const output = await sharp(input)
@@ -62,7 +62,8 @@ export async function POST(req: NextRequest) {
     const target = path.join(/*turbopackIgnore: true*/ THEME_ASSET_DIR, name);
     if (!fs.existsSync(target)) await fs.promises.writeFile(target, output);
 
-    return NextResponse.json({ success: true, url: `${THEME_ASSET_URL_PREFIX}${name}`, size: output.length });
+    const opaque = !(await sharp(output).metadata()).hasAlpha;
+    return NextResponse.json({ success: true, url: `${THEME_ASSET_URL_PREFIX}${name}`, size: output.length, opaque });
   } catch (error) {
     return routeError("ThemeBuilderAssets", error);
   }

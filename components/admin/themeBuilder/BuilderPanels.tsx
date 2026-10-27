@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import {
   ANIMATION_OPTIONS,
+  EVENTS_PLACEMENTS,
   FONT_OPTIONS,
   PALETTE_PRESETS,
   RADIUS_OPTIONS,
@@ -10,6 +11,8 @@ import {
   TEXTURE_OPTIONS,
   BUILDER_BLOCKS,
   BUILDER_DEFAULT_SLOTS,
+  BUILDER_TEXTS,
+  MAX_BUILDER_TEXT_LENGTH,
   VARIANT_GROUPS,
   fontFamily,
   fontLabel,
@@ -20,15 +23,16 @@ import {
   type BuilderBlockId,
   type BuilderPalette,
   type BuilderSpec,
+  type BuilderTextKey,
   type BuilderVariants,
   type OrnamentSection,
 } from "@/lib/themeBuilder/spec";
 import { GoogleFontPicker } from "@/components/admin/themeBuilder/GoogleFontPicker";
 
-export type PanelId = "colors" | "type" | "layout" | "ornaments" | "motion" | "publish";
+export type PanelId = "colors" | "type" | "texts" | "layout" | "ornaments" | "motion" | "publish";
 
 export interface AssetLibrary {
-  uploads: Array<{ url: string; size: number; uploadedAt: number }>;
+  uploads: Array<{ url: string; size: number; uploadedAt: number; opaque: boolean }>;
   builtin: Array<{ id: string; label: string; items: string[] }>;
 }
 
@@ -56,6 +60,7 @@ const Icon = ({ d, className = "h-4 w-4" }: { d: string; className?: string }) =
 export const PANEL_TABS: Array<{ id: PanelId; label: string; icon: string }> = [
   { id: "colors", label: "Warna", icon: "M12 3a9 9 0 100 18c1.1 0 1.5-.9 1.5-1.6 0-.9-.8-1.3-.8-2.2 0-1 .8-1.7 1.8-1.7H17a4 4 0 004-4c0-4.7-4-8.5-9-8.5zM7.5 12.5h.01M9.5 8h.01M14.5 8h.01" },
   { id: "type", label: "Huruf", icon: "M4 7V5h16v2M9 19h6M12 5v14" },
+  { id: "texts", label: "Teks", icon: "M4 6h16M4 12h10M4 18h14" },
   { id: "layout", label: "Tata letak", icon: "M4 5h16v5H4zM4 14h7v5H4zM15 14h5v5h-5z" },
   { id: "ornaments", label: "Ornamen", icon: "M12 3c1.5 3 4 4.5 7 5-3 1-5.5 3-7 7-1.5-4-4-6-7-7 3-.5 5.5-2 7-5zM5 18l1.5 3M19 18l-1.5 3" },
   { id: "motion", label: "Animasi", icon: "M4 12h4l3-7 4 14 3-7h2" },
@@ -129,8 +134,41 @@ function ColorField({ label, hint, value, onChange }: { label: string; hint: str
   );
 }
 
-export function ColorsPanel({ spec, onChange }: { spec: BuilderSpec; onChange: (patch: Partial<BuilderSpec>) => void }) {
+function BackdropUpload({ uploading, onUpload }: { uploading: boolean; onUpload: (files: FileList) => void }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => fileRef.current?.click()}
+        className="mb-2 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-stone-300 px-3 py-2 text-[12px] font-semibold text-stone-700 transition hover:border-stone-400 hover:bg-stone-50 cursor-pointer"
+      >
+        <Icon d="M12 16V4m0 0l-4 4m4-4l4 4M5 20h14" className="h-4 w-4 text-stone-500" />
+        {uploading ? "Mengunggah…" : "Unggah gambar latar (PNG, WebP, JPEG)"}
+      </button>
+      <input ref={fileRef} type="file" accept="image/png,image/webp,image/jpeg" multiple hidden onChange={(e) => { if (e.target.files?.length) onUpload(e.target.files); e.target.value = ""; }} />
+    </>
+  );
+}
+
+export function ColorsPanel({
+  spec,
+  library,
+  uploading,
+  onChange,
+  onUpload,
+  onDeleteAsset,
+}: {
+  spec: BuilderSpec;
+  library: AssetLibrary | null;
+  uploading: boolean;
+  onChange: (patch: Partial<BuilderSpec>) => void;
+  onUpload: (files: FileList) => void;
+  onDeleteAsset: (url: string) => void;
+}) {
   const checks = paletteChecks(spec);
+  const uploadedBackdrops = (library?.uploads ?? []).filter((u) => u.opaque).map((u) => ({ id: u.url, label: "Gambar unggahan" }));
+  const backdrops: ReadonlyArray<{ id: string; label: string }> = [...TEXTURE_OPTIONS, ...uploadedBackdrops];
   return (
     <>
       <Section title="Palet siap pakai" hint="Pilih titik awal, lalu sesuaikan warnanya di bawah.">
@@ -190,29 +228,43 @@ export function ColorsPanel({ spec, onChange }: { spec: BuilderSpec; onChange: (
       </Section>
 
       <Section title="Tekstur latar" hint="Klien tetap bisa mengganti latar lewat slot foto latar di Studio.">
+        <BackdropUpload uploading={uploading} onUpload={onUpload} />
         <div className="grid grid-cols-4 gap-2">
-          {TEXTURE_OPTIONS.map((t) => (
-            <button
-              key={t.id || "none"}
-              type="button"
-              title={t.label}
-              onClick={() => onChange({ texture: t.id })}
-              className={`aspect-[3/4] overflow-hidden rounded-lg border bg-cover bg-center transition cursor-pointer ${spec.texture === t.id ? "border-amber-500 ring-2 ring-amber-500/25" : "border-stone-200 hover:border-stone-300"}`}
-              style={{ backgroundColor: spec.canvasMode === "dark" ? spec.palette.bgDark : spec.palette.bgLight, backgroundImage: t.id ? `url('${t.id}')` : undefined }}
-            >
-              {!t.id && <span className="text-[10px] font-semibold text-stone-500">Polos</span>}
-            </button>
+          {backdrops.map((t) => (
+            <div key={t.id || "none"} className="group relative">
+              <button
+                type="button"
+                title={t.label}
+                aria-pressed={spec.texture === t.id}
+                onClick={() => onChange({ texture: t.id })}
+                className={`block aspect-[3/4] w-full overflow-hidden rounded-lg border bg-cover bg-center transition cursor-pointer ${spec.texture === t.id ? "border-amber-500 ring-2 ring-amber-500/25" : "border-stone-200 hover:border-stone-300"}`}
+                style={{ backgroundColor: spec.canvasMode === "dark" ? spec.palette.bgDark : spec.palette.bgLight, backgroundImage: t.id ? `url('${t.id}')` : undefined }}
+              >
+                {!t.id && <span className="text-[10px] font-semibold text-stone-500">Polos</span>}
+              </button>
+              {t.id.startsWith("/uploads/") && (
+                <button
+                  type="button"
+                  onClick={() => onDeleteAsset(t.id)}
+                  className="absolute -right-1.5 -top-1.5 hidden h-5 w-5 items-center justify-center rounded-full bg-stone-900 text-white shadow group-hover:flex cursor-pointer"
+                  aria-label="Hapus gambar dari pustaka"
+                >
+                  <Icon d="M6 6l12 12M18 6L6 18" className="h-3 w-3" />
+                </button>
+              )}
+            </div>
           ))}
         </div>
       </Section>
 
       <Section title="Media bawaan" hint="Dipakai sampai klien mengunggah foto sendiri. Slot yang tidak dipilih memakai warna palet. Foto orang tidak pernah punya bawaan.">
+        <BackdropUpload uploading={uploading} onUpload={onUpload} />
         <div className="space-y-3">
           {BUILDER_DEFAULT_SLOTS.map(({ slot, label }) => (
             <div key={slot}>
               <p className="mb-1.5 text-[11.5px] font-semibold text-stone-700">{label}</p>
               <div className="grid grid-cols-7 gap-1.5">
-                {TEXTURE_OPTIONS.map((t) => {
+                {backdrops.map((t) => {
                   const selected = (spec.defaultMedia[slot] ?? "") === t.id;
                   return (
                     <button
@@ -242,6 +294,71 @@ export function ColorsPanel({ spec, onChange }: { spec: BuilderSpec; onChange: (
       <Section title="Sudut kartu & tombol">
         <Segmented value={spec.radius} options={RADIUS_OPTIONS.map((r) => ({ id: r.id, label: r.label }))} onChange={(radius) => onChange({ radius })} />
       </Section>
+    </>
+  );
+}
+
+const LONG_TEXT_KEYS: readonly BuilderTextKey[] = ["coverSubtitle", "coupleSub", "countdownSub", "wishesSub", "closingQuote", "closingSub", "closingFamily"];
+
+/**
+ * Teks bawaan label. Kolom menampilkan teks yang sedang tampil di pratinjau (bawaan blueprint sampai diubah); yang
+ * sudah diubah ditandai dan bisa dikembalikan. Klien tetap dapat mengubah tiap teks di Studio; ini hanya nilai awalnya.
+ */
+export function TextsPanel({ spec, labels, onChange }: { spec: BuilderSpec; labels: Record<string, string>; onChange: (patch: Partial<BuilderSpec>) => void }) {
+  const groups = [...new Set(BUILDER_TEXTS.map((t) => t.group))];
+  const overridden = Object.keys(spec.texts).length;
+  const setText = (key: BuilderTextKey, value: string | null) => {
+    const texts = { ...spec.texts };
+    if (value === null) delete texts[key];
+    else texts[key] = value;
+    onChange({ texts });
+  };
+  return (
+    <>
+      <Section title="Teks bawaan" hint="Teks yang tampil di undangan sebelum klien mengubahnya. Klien tetap bisa mengganti tiap teks di Studio. Nama, tanggal, dan jadwal tidak diatur di sini karena berasal dari isian klien.">
+        <button
+          type="button"
+          disabled={!overridden}
+          onClick={() => onChange({ texts: {} })}
+          className="w-full rounded-xl border border-stone-200 py-2 text-[12px] font-semibold text-stone-700 transition hover:bg-stone-50 disabled:opacity-40 cursor-pointer"
+        >
+          Kembalikan semua ke bawaan{overridden ? ` (${overridden} diubah)` : ""}
+        </button>
+      </Section>
+      {groups.map((group) => (
+        <Section key={group} title={group}>
+          <div className="space-y-3">
+            {BUILDER_TEXTS.filter((t) => t.group === group).map((t) => {
+              const changed = spec.texts[t.key] !== undefined;
+              const value = spec.texts[t.key] ?? labels[t.key] ?? "";
+              const common = {
+                id: `builder-text-${t.key}`,
+                value,
+                maxLength: MAX_BUILDER_TEXT_LENGTH,
+                spellCheck: false,
+                onChange: (e: { target: { value: string } }) => setText(t.key, e.target.value),
+                className: "mt-1 w-full rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-[12.5px] text-stone-800 outline-none focus:border-amber-500",
+              };
+              return (
+                <div key={t.key}>
+                  <div className="flex items-center justify-between gap-2">
+                    <label htmlFor={common.id} className="flex items-center gap-1.5 text-[11.5px] font-semibold text-stone-600">
+                      {t.label}
+                      {changed && <span className="h-1.5 w-1.5 rounded-full bg-amber-500" aria-label="Sudah diubah" />}
+                    </label>
+                    {changed && (
+                      <button type="button" onClick={() => setText(t.key, null)} className="text-[11px] font-semibold text-stone-500 hover:text-stone-800 hover:underline cursor-pointer">
+                        Kembalikan
+                      </button>
+                    )}
+                  </div>
+                  {LONG_TEXT_KEYS.includes(t.key) ? <textarea rows={3} {...common} /> : <input type="text" {...common} />}
+                </div>
+              );
+            })}
+          </div>
+        </Section>
+      ))}
     </>
   );
 }
@@ -426,7 +543,30 @@ export function LayoutPanel({
                 className={`flex items-center justify-between rounded-xl border px-3 py-2 text-left text-[12px] font-semibold transition cursor-pointer ${selectedBlock === block.id ? "border-blue-500 bg-blue-50 text-stone-900" : "border-stone-200 text-stone-700 hover:border-stone-300"}`}
               >
                 <span>{block.label}</span>
-                <span className="text-[10.5px] font-medium text-stone-500">{custom ? "Diatur" : SECTION_LABELS[block.section]}</span>
+                <span className="text-[10.5px] font-medium text-stone-500">{spec.blocks[block.id]?.hidden ? "Disembunyikan" : custom ? "Diatur" : SECTION_LABELS[block.section]}</span>
+              </button>
+            );
+          })}
+        </div>
+      </Section>
+
+      <Section title="Jadwal acara" hint="Jadwal tidak digandakan: ia pindah dari seksi Acara ke Home, dan tautan Acara di navigasi ikut disembunyikan.">
+        <div className="grid grid-cols-2 gap-2">
+          {EVENTS_PLACEMENTS.map((p) => {
+            const active = spec.eventsPlacement === p.id;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => {
+                  onChange({ eventsPlacement: p.id });
+                  onFocusSection(p.id === "home" ? "opening" : "events");
+                }}
+                className={`rounded-xl border p-2.5 text-left transition cursor-pointer ${active ? "border-amber-500 ring-2 ring-amber-500/20" : "border-stone-200 hover:border-stone-300"}`}
+              >
+                <span className="block text-[12px] font-semibold text-stone-800">{p.label}</span>
+                <span className="mt-0.5 block text-[10.5px] leading-snug text-stone-500">{p.hint}</span>
               </button>
             );
           })}
@@ -560,7 +700,7 @@ export function OrnamentsPanel({
           <p className="text-[11.5px] text-stone-500">Memuat pustaka…</p>
         ) : (
           <div className="space-y-2">
-            {[{ id: "uploads", label: `Unggahan admin (${library.uploads.length})`, items: library.uploads.map((u) => u.url) }, ...library.builtin.map((g) => ({ ...g, label: `${g.label} (${g.items.length})` }))].map((group) => (
+            {[{ id: "uploads", label: `Unggahan admin (${library.uploads.filter((u) => !u.opaque).length})`, items: library.uploads.filter((u) => !u.opaque).map((u) => u.url) },...library.builtin.map((g) => ({ ...g, label: `${g.label} (${g.items.length})` }))].map((group) => (
               <div key={group.id} className="rounded-xl border border-stone-200">
                 <button
                   type="button"

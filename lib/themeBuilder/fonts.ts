@@ -194,7 +194,7 @@ export async function ensureGoogleFont(
   if (!entry) throw new FontError(`"${family}" tidak ada di katalog Google Fonts.`);
   if (isGoogleFontInstalled(entry.family, dir)) return entry;
 
-  const key = path.join(dir, googleFontSlug(entry.family));
+  const key = path.join(/*turbopackIgnore: true*/ dir, googleFontSlug(entry.family));
   let pending = inflight.get(key);
   if (!pending) {
     fs.mkdirSync(dir, { recursive: true });

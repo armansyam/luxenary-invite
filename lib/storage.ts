@@ -53,7 +53,7 @@ const GOOGLE_DRIVE_CDN_HOST = "lh3.googleusercontent.com";
  */
 export async function readPortfolioMediaSource(url: string): Promise<Buffer | null> {
   const localPath = resolveLocalUploadPath(url);
-  if (localPath) return fs.existsSync(localPath) ? fs.promises.readFile(localPath) : null;
+  if (localPath) return fs.existsSync(/*turbopackIgnore: true*/ localPath) ? fs.promises.readFile(/*turbopackIgnore: true*/ localPath) : null;
 
   let parsed: URL;
   let storageHost = "";
@@ -257,7 +257,7 @@ export async function deleteFile(publicUrl: string | null): Promise<boolean> {
     // Local File Deletion
     const absolutePath = resolveLocalUploadPath(publicUrl);
     if (absolutePath) {
-      if (fs.existsSync(absolutePath)) {
+      if (fs.existsSync(/*turbopackIgnore: true*/ absolutePath)) {
         await fs.promises.unlink(absolutePath);
         return true;
       }
@@ -310,7 +310,7 @@ export async function syncDraftToR2(invitationId: string): Promise<void> {
 
       const cleanUrl = url.split("?")[0];
       try {
-        const buffer = await fs.promises.readFile(localFilePath);
+        const buffer = await fs.promises.readFile(/*turbopackIgnore: true*/ localFilePath);
         const ext = path.extname(cleanUrl).toLowerCase();
         const mime = mimeTypes[ext] || "application/octet-stream";
         // Remove leading "/uploads/" to get relative path for R2

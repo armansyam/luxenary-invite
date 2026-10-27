@@ -438,6 +438,15 @@
     }
 
     /* Slot HOME_PHOTO: foto pembuka setelah sampul dibuka; tidak dirender bila klien belum mengunggah. */
+    /* Jadwal acara di Home: kosong dan tersembunyi kecuali Theme Builder memindahkan jadwal ke sini. */
+    .home-schedule {
+      display: none;
+      width: 100%;
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 0 20px 12px;
+    }
+
     .opening-photo {
       width: min(62%, 240px);
       aspect-ratio: 3 / 4;
@@ -617,7 +626,7 @@
       justify-content: center;
       font-size: 16px;
       letter-spacing: 0.1em;
-      margin-bottom: 12px;
+      margin: 0 auto 12px;
       backdrop-filter: blur(8px);
       background: color-mix(in srgb, var(--on-dark) 8%, transparent);
     }
@@ -1376,18 +1385,18 @@
   <div id="coverScreen" class="cover-screen cover-overlay" data-lux-section="cover">
     <!-- lux-ornaments:cover -->
     <div class="cover-top">
-      <div class="cover-monogram serif">{{coupleMonogram}}</div>
+      <div class="cover-monogram serif" data-lux-block="cover-monogram">{{coupleMonogram}}</div>
       <p class="cover-tagline" data-lux-field="customLabels.coverBadge">{{coverBadge}}</p>
     </div>
 
     <div class="cover-center">
       <h1 class="cover-names serif" data-lux-block="cover-names">{{firstName}} &amp; {{secondName}}</h1>
-      <p class="cover-date">{{weddingDate}}</p>
+      <p class="cover-date" data-lux-block="cover-date">{{weddingDate}}</p>
       <p class="cover-subtitle" data-lux-field="customLabels.coverSubtitle">{{coverSubtitle}}</p>
     </div>
 
     <div class="cover-bottom" style="width:100%; display:flex; flex-direction:column; align-items:center;">
-      <div class="cover-guest-card cover-guest-box">
+      <div class="cover-guest-card cover-guest-box" data-lux-block="cover-guest">
         <p class="cover-guest-lbl" style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; opacity:0.8; margin-bottom:4px;" data-lux-field="customLabels.coverGuestLabel">
           {{coverGuestLabel}}</p>
         <p class="cover-guest-val" id="coverGuestName" data-lux-field="guestName" style="font-size:16px; font-weight:700;">Tamu Undangan</p>
@@ -1434,7 +1443,7 @@
       <!-- SEKSI 1: OPENING HERO (100VH STANDALONE - KANVAS BERSIH / TRANSPARAN) -->
       <section class="slide-opening" id="home" style="background: transparent;" data-lux-section="opening">
         <!-- lux-ornaments:opening -->
-        <div class="opening-top" data-lux-anim="1">
+        <div class="opening-top" data-lux-block="opening-top" data-lux-anim="1">
           <span class="opening-bismillah serif" data-lux-field="customLabels.openingGreeting">{{openingGreeting}}</span>
           <span class="sec-eyebrow" data-lux-field="weddingTagline" style="letter-spacing:0.32em; margin-top:6px;">{{weddingTagline}}</span>
           <div class="opening-date-pill">
@@ -1453,8 +1462,12 @@
           <div class="sec-divider" style="margin: 12px auto 0;"></div>
         </div>
 
+        <div class="home-schedule" data-lux-block="home-schedule">
+          <!-- lux-home-schedule -->
+        </div>
+
         <div class="opening-bottom" data-lux-anim="3">
-          <div class="opening-quote-card">
+          <div class="opening-quote-card" data-lux-block="opening-quote">
             <h3 class="opening-quote-title serif" data-lux-field="customLabels.quoteTitle">{{quoteSectionTitle}}</h3>
             <p class="opening-quote-text" data-lux-field="openingQuote">
               "{{openingQuote}}"
@@ -1475,7 +1488,7 @@
       <section class="sec-flow" id="couple" data-lux-section="couple">
         <!-- lux-ornaments:couple -->
         <span class="sec-eyebrow" data-lux-field="customLabels.coupleEyebrow" data-lux-anim="1">{{coupleSectionEyebrow}}</span>
-        <h2 class="sec-main-title serif" data-lux-field="customLabels.coupleTitle" data-lux-anim="1">{{coupleSectionTitle}}</h2>
+        <h2 class="sec-main-title serif" data-lux-field="customLabels.coupleTitle" data-lux-block="couple-title" data-lux-anim="1">{{coupleSectionTitle}}</h2>
         <p class="sec-sub" data-lux-field="customLabels.coupleSub" data-lux-anim="2">{{coupleSectionSub}}</p>
 
         <div class="couple-grid" data-lux-anim="3">
@@ -1484,13 +1497,13 @@
             <div class="couple-photo-wrap" data-lux-block="couple-photo-1">
               <img src="{{firstPhotoUrl}}" alt="{{firstFullName}}" loading="lazy" />
             </div>
-            <span class="couple-role" data-lux-field="customLabels.groomRole">{{firstRoleLabel}}</span>
-            <h3 class="couple-name serif" data-lux-field="groomName">{{firstDisplayName}}</h3>
-            <p class="couple-parents" data-lux-field="groomParents">
+            <span class="couple-role" data-lux-field="customLabels.groomRole" data-lux-block="couple-role-1">{{firstRoleLabel}}</span>
+            <h3 class="couple-name serif" data-lux-field="groomName" data-lux-block="couple-name-1">{{firstDisplayName}}</h3>
+            <p class="couple-parents" data-lux-field="groomParents" data-lux-block="couple-parents-1">
               {{firstParentPrefix}}<br>
               <strong>{{firstFather}}</strong> &amp; <strong>{{firstMother}}</strong>
             </p>
-            <a href="https://instagram.com/{{firstInstagram}}" target="_blank" class="couple-ig">
+            <a href="https://instagram.com/{{firstInstagram}}" target="_blank" class="couple-ig" data-lux-block="couple-ig-1">
               <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
                 <path
                   d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
@@ -1499,20 +1512,20 @@
             </a>
           </div>
 
-          <div class="couple-amp font-script">&amp;</div>
+          <div class="couple-amp font-script" data-lux-block="couple-amp">&amp;</div>
 
           <!-- Persona Kedua (Gender Adaptif) -->
           <div class="couple-card couple-{{secondGender}}">
             <div class="couple-photo-wrap" data-lux-block="couple-photo-2">
               <img src="{{secondPhotoUrl}}" alt="{{secondFullName}}" loading="lazy" />
             </div>
-            <span class="couple-role" data-lux-field="customLabels.brideRole">{{secondRoleLabel}}</span>
-            <h3 class="couple-name serif" data-lux-field="brideName">{{secondDisplayName}}</h3>
-            <p class="couple-parents" data-lux-field="brideParents">
+            <span class="couple-role" data-lux-field="customLabels.brideRole" data-lux-block="couple-role-2">{{secondRoleLabel}}</span>
+            <h3 class="couple-name serif" data-lux-field="brideName" data-lux-block="couple-name-2">{{secondDisplayName}}</h3>
+            <p class="couple-parents" data-lux-field="brideParents" data-lux-block="couple-parents-2">
               {{secondParentPrefix}}<br>
               <strong>{{secondFather}}</strong> &amp; <strong>{{secondMother}}</strong>
             </p>
-            <a href="https://instagram.com/{{secondInstagram}}" target="_blank" class="couple-ig">
+            <a href="https://instagram.com/{{secondInstagram}}" target="_blank" class="couple-ig" data-lux-block="couple-ig-2">
               <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
                 <path
                   d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
@@ -1527,7 +1540,7 @@
       <section class="sec-flow" id="countdown" data-lux-section="countdown">
         <!-- lux-ornaments:countdown -->
         <span class="sec-eyebrow" data-lux-field="customLabels.countdownEyebrow" data-lux-anim="1">SAVE THE DATE</span>
-        <h2 class="sec-main-title serif" data-lux-field="customLabels.countdownTitle" data-lux-anim="1">Menghitung Hari Bahagia</h2>
+        <h2 class="sec-main-title serif" data-lux-field="customLabels.countdownTitle" data-lux-block="countdown-title" data-lux-anim="1">Menghitung Hari Bahagia</h2>
         <p class="sec-sub" data-lux-field="customLabels.countdownSub" data-lux-anim="2">Kami sangat menantikan kehadiran Bapak/Ibu/Sahabat sekalian untuk merayakan momen sakral ini
           bersama kami.</p>
 
@@ -1555,7 +1568,7 @@
       <section class="sec-flow" id="events" data-lux-section="events">
         <!-- lux-ornaments:events -->
         <span class="sec-eyebrow" data-lux-field="customLabels.eventsEyebrow" data-lux-anim="1">SCHEDULE &amp; VENUE</span>
-        <h2 class="sec-main-title serif" data-lux-field="customLabels.eventsTitle" data-lux-anim="1">{{eventsSectionTitle}}</h2>
+        <h2 class="sec-main-title serif" data-lux-field="customLabels.eventsTitle" data-lux-block="events-title" data-lux-anim="1">{{eventsSectionTitle}}</h2>
         <div data-lux-anim="2">
           {{eventDataHtml}}
         </div>
@@ -1574,7 +1587,7 @@
       <section class="sec-flow" id="story" data-lux-section="story">
         <!-- lux-ornaments:story -->
         <span class="sec-eyebrow" data-lux-field="customLabels.storyEyebrow" data-lux-anim="1">{{storySectionEyebrow}}</span>
-        <h2 class="sec-main-title serif" data-lux-field="customLabels.storyTitle" data-lux-anim="1">{{storySectionTitle}}</h2>
+        <h2 class="sec-main-title serif" data-lux-field="customLabels.storyTitle" data-lux-block="story-title" data-lux-anim="1">{{storySectionTitle}}</h2>
         <div class="journey-timeline" data-lux-anim="2">
           {{storyItemsHtml}}
         </div>
@@ -1609,10 +1622,10 @@
       <section class="sec-flow" id="rsvp" data-lux-section="rsvp">
         <!-- lux-ornaments:rsvp -->
         <span class="sec-eyebrow" data-lux-field="customLabels.wishesEyebrow" data-lux-anim="1">WISHES &amp; RSVP</span>
-        <h2 class="sec-main-title serif" data-lux-field="customLabels.wishesTitle" data-lux-anim="1">{{wishesSectionTitle}}</h2>
+        <h2 class="sec-main-title serif" data-lux-field="customLabels.wishesTitle" data-lux-block="rsvp-title" data-lux-anim="1">{{wishesSectionTitle}}</h2>
         <p class="sec-sub" data-lux-field="customLabels.wishesSub" data-lux-anim="2">{{wishesSectionSub}}</p>
 
-        <div class="rsvp-form-box" data-lux-anim="3">
+        <div class="rsvp-form-box" data-lux-block="rsvp-form" data-lux-anim="3">
           <h3 class="rsvp-form-title serif" data-lux-field="customLabels.rsvpTitle">{{rsvpTitle}}</h3>
           <form onsubmit="luxSubmitRsvp(event)">
             <div class="form-group">

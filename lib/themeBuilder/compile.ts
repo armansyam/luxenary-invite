@@ -1,9 +1,11 @@
 import fs from "fs";
 import path from "path";
 import {
+  BUILDER_TEXTS,
   RADIUS_OPTIONS,
   blockStyle,
   fontFamily,
+  frameCss,
   googleFontCssUrl,
   googleFontIds,
   ornamentStyle,
@@ -12,6 +14,7 @@ import {
   type BuilderEventType,
   type BuilderOrnament,
   type BuilderSpec,
+  type BuilderTexts,
   type BuilderVariants,
 } from "@/lib/themeBuilder/spec";
 
@@ -70,6 +73,7 @@ const VARIANT_CSS: Record<keyof BuilderVariants, Record<string, string>> = {
     .cover-overlay { align-items: flex-start; text-align: left; }
     .cover-top, .cover-center, .cover-bottom { align-self: stretch; }
     .cover-bottom { align-items: flex-start !important; }
+    .cover-monogram { margin-left: 0; }
     .cover-names { font-size: 44px; line-height: 1.05; }
     .cover-subtitle { margin-left: 0; }`,
   },
@@ -184,10 +188,45 @@ export function compileBuilderMaster(spec: BuilderSpec, blueprint = readBuilderB
     html = html.replace("</head>", `  <style id="lux-builder-blocks">\n    ${blockRules}\n  </style>\n</head>`);
   }
 
+  // Jadwal acara dipindahkan (bukan digandakan) ke Home: token hanya boleh muncul sekali karena HTML-nya membawa
+  // target sunting Studio. Seksi Acara tetap ada di DOM (penanda seksi dan ornamennya) tetapi disembunyikan.
+  if (spec.eventsPlacement === "home") {
+    html = html.replace("{{eventDataHtml}}", "").replace("<!-- lux-home-schedule -->", "{{eventDataHtml}}");
+    html = html.replace("</head>", `  <style id="lux-builder-events">\n    .home-schedule { display: block; }\n    #events { display: none; }\n    a[href="#events"] { display: none !important; }\n  </style>\n</head>`);
+  }
+
+  // Bentuk dan nilai bingkai sudah dijepit ke daftar tetap oleh parseBuilderSpec.
+  const frameRules = frameCss(spec.frames);
+  if (frameRules) {
+    html = html.replace("</head>", `  <style id="lux-builder-frames">\n    ${frameRules}\n  </style>\n</head>`);
+  }
+
   html = html.replace(/<!-- lux-ornaments:([a-z]+) -->/g, (marker, section: string) => {
     const items = spec.ornaments.filter((o) => o.section === section);
     return items.length ? items.map(ornamentHtml).join("\n    ") : marker;
   });
 
-  return html;
+  return applyStaticTexts(html, spec.texts);
+}
+
+const escapeText = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+/**
+ * Mengganti teks label yang tertulis langsung di master (bukan token mesin). Teks yang lebih dulu diawali ikon SVG
+ * (tombol dengan ikon) hanya diganti bagian setelah ikonnya. Label bertoken ("engine") tidak disentuh di sini; nilainya
+ * dipasang lewat bawaan blueprint saat undangan dirender, sehingga token mesin tetap utuh dan lolos audit.
+ */
+function applyStaticTexts(html: string, texts: BuilderTexts): string {
+  let out = html;
+  for (const { key, kind } of BUILDER_TEXTS) {
+    const value = texts[key];
+    if (value === undefined || kind !== "static") continue;
+    const element = new RegExp(`(<([a-zA-Z0-9]+)\\b[^>]*data-lux-field="customLabels\\.${key}"[^>]*>)([\\s\\S]*?)(</\\2>)`);
+    out = out.replace(element, (_m, open: string, _tag: string, inner: string, close: string) => {
+      const svgEnd = inner.search(/<\/svg>/i);
+      const keep = svgEnd === -1 ? "" : `${inner.slice(0, svgEnd + 6)}\n        `;
+      return `${open}${keep}${escapeText(value)}${close}`;
+    });
+  }
+  return out;
 }
