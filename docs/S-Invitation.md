@@ -728,7 +728,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Manajemen tema fisik & auto-compile demo (`MANAJEMEN_TEMA_ADMIN.md`)
    - Branding platform, Cloudflare R2 CORS & disaster recovery snapshot PostgreSQL (`PENGATURAN_SISTEM_BRANDING_DAN_DATABASE.md`)
    - Pemeliharaan berkala cron job, retensi & auto-backup (`CRON_DAN_MAINTENANCE_OTOMATIS.md`)
-   - Deployment VPS Ubuntu 22.04/24.04, reverse proxy Caddy & blueprint skalabilitas multi-server shared storage (`DEPLOYMENT_VPS_CADDY.md`)
+   - Deployment VPS Ubuntu 22.04/24.04, reverse proxy Caddy & blueprint skalabilitas multi-server shared storage (`DEPLOYMENT_VPS_CADDY.md`); alur server baru (migrasi, seed, sinkron tema, build, smoke test) diuji dari clone bersih ke database kosong, termasuk langkah salin thumbnail katalog dan crontab otomatis dari `deploy.sh`
 3. **Sisi Publik & Resepsionis (`docs/public/`):**
    - Resolusi multi-domain & compiler token tema (`01_ARSITEKTUR_RENDERING_TEMA_DAN_ROUTING.md`)
    - Pengalaman tamu, cover gate & audio autoplay policy (`02_PENGALAMAN_TAMU_UNDANGAN.md`)

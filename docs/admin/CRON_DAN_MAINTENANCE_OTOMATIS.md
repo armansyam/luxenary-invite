@@ -89,22 +89,15 @@ Endpoint ini menjamin keselamatan data pengguna (*Disaster Recovery*) dengan mem
 
 ## 4. Konfigurasi Crontab Server Produksi
 
-Pada server VPS Ubuntu, pasang penjadwalan crontab berikut melalui perintah `crontab -e`:
+`deploy.sh` memasang dan menyelaraskan crontab ini otomatis pada setiap deploy; tidak perlu `crontab -e`. Bentuk yang dipasang (aplikasi di port 3001, secret dibaca dari `data/.cron-auth` ber-izin 600):
 
 ```cron
-# ==============================================================================
-# LUXENARY INVITE - AUTOMATED SYSTEM MAINTENANCE CRONTAB
-# ==============================================================================
-
-# 1. Pembersihan data kadaluarsa & siklus hidup undangan (Setiap hari pukul 02:00 Pagi)
-0 2 * * * curl -s -X POST -H "Authorization: Bearer CRON_SECRET_ANDA" http://localhost:3000/api/cron/cleanup > /dev/null 2>&1
-
-# 2. Snapshot database otomatis (Setiap hari pukul 03:00 Pagi)
-0 3 * * * curl -s -X GET -H "Authorization: Bearer CRON_SECRET_ANDA" http://localhost:3000/api/cron/backup > /dev/null 2>&1
+0 2 * * * curl -s -X POST -H @/home/USER/luxenary-invite/data/.cron-auth http://localhost:3001/api/cron/cleanup > /dev/null 2>&1
+0 3 * * * PATH=/usr/local/bin:/usr/bin:/bin bash /home/USER/luxenary-invite/scripts/cron-backup.sh > /dev/null 2>&1
+* * * * * PATH=/usr/local/bin:/usr/bin:/bin bash /home/USER/luxenary-invite/scripts/health-watch.sh
 ```
 
-> **Catatan Pengaturan:**
-> Ganti `CRON_SECRET_ANDA` dengan nilai string rahasia yang tertera pada baris `CRON_SECRET` di dalam file `~/luxenary-invite/.env`.
+> **Catatan:** `/api/cron/backup` hanya menerima `POST`. Versi lama dokumen ini memakai `GET` dan port 3000, yang di produksi gagal diam-diam (keluaran curl dibuang), sehingga backup harian tidak pernah berjalan. Periksa dengan `crontab -l` dan `bash scripts/cron-backup.sh`.
 
 ---
 

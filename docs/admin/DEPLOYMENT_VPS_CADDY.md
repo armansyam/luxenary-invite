@@ -266,16 +266,22 @@ Simpan file (`CTRL + O`, `Enter`, `CTRL + X`).
 
 Jalankan sinkronisasi skema database dan pengisian katalog tema & akun admin:
 ```bash
-# 1. Install dependensi awal
-npm install
+# 1. Install dependensi persis sesuai package-lock.json
+npm ci
 
-# 2. Sinkronkan skema database
+# 2. Buat seluruh tabel (29+ migrasi) di database kosong
 npx prisma generate
 npx prisma migrate deploy
 
-# 3. Jalankan seed awal (Membuat akun Super Admin & 15 Katalog Tema Resmi)
+# 3. Seed: pengaturan platform bawaan, preset musik, dan akun Super Admin dari SEED_ADMIN_* (tidak menyentuh tema)
 npx prisma db seed
+
+# 4. Daftarkan katalog tema dari folder themes/ ke database
+npm run themes:sync
 ```
+Langkah ini opsional bila Anda langsung menjalankan `./deploy.sh` di Tahap 7, karena skrip itu menjalankan keempatnya. Diuji 29 Okt 2026 dari clone bersih `main` ke database kosong: migrasi tanpa selisih skema, seed membuat 116 pengaturan dan admin, sinkron tema mendaftarkan 44 tema.
+
+> **Pindah dari server lama (opsional).** Bila ada data produksi lama: pulihkan dump PostgreSQL sebelum `migrate deploy`, salin `public/uploads/` (atau tetap pakai bucket R2 yang sama), lalu setelah deploy jalankan `npx tsx scripts/rebuild-builder-masters.ts --apply` (master tema builder hanya ada di disk, bukan di git) dan `npx tsx scripts/republish-published.ts --apply` (HTML undangan terbit dibangun ulang dengan mesin terbaru). Tanpa data lama, lewati langkah ini.
 > **Akun Super Admin Awal (tanpa kredensial bawaan):**  
 > Seed hanya membuat akun jika `SEED_ADMIN_EMAIL` diset di `.env` (opsional: `SEED_ADMIN_PASSWORD` minimal 12 karakter, `SEED_ADMIN_USERNAME`, `SEED_ADMIN_NAME`).  
 > Jika `SEED_ADMIN_PASSWORD` kosong, seed membuat password acak dan **menampilkannya sekali** di output terminal; simpan segera.  
@@ -300,9 +306,21 @@ chmod +x deploy.sh
 
 Skrip ini akan otomatis:
 1. Memeriksa & membuat kunci rahasia acak (`AUTH_SECRET`, `CRON_SECRET`, dll) jika masih kosong.
-2. Menjalankan `npm install`.
-3. Membangun Next.js produksi dengan proteksi memori aman: `NODE_OPTIONS="--max-old-space-size=1536" npm run build`.
-4. Menyalakan aplikasi via PM2 (`ecosystem.config.js`).
+2. Menjalankan `npm ci` dan `npx prisma generate`.
+3. Membangun Next.js produksi ke direktori build baru dengan proteksi memori: `NODE_OPTIONS="--max-old-space-size=1536" npm run build` (build gagal = database tidak disentuh, rilis lama tetap jalan).
+4. `npx prisma migrate deploy`, seed, `npm run themes:sync`, dan pra-kompilasi demo tema.
+5. Membangun ulang HTML undangan terbit (`refresh-theme-drafts.ts --apply --keep-drafts`).
+6. Menyalakan atau me-reload aplikasi via PM2 (`ecosystem.config.js`, port 3001 hanya di 127.0.0.1).
+7. Memasang crontab pemeliharaan (Tahap 8) dan menjalankan `scripts/smoke-test.sh`.
+
+> **Deploy pertama di database kosong:** log build memuat `The table public.admin_settings does not exist` dari halaman statis. Itu wajar: `deploy.sh` sengaja membangun sebelum migrasi (build gagal tidak boleh menyentuh database), sehingga halaman itu memakai nilai bawaan yang sama dengan seed. Tidak muncul lagi pada deploy berikutnya.
+
+### Thumbnail Katalog Tema (Deploy Pertama)
+`public/demo/` tidak ada di git (keputusan 27 Okt 2026), jadi server baru menampilkan katalog tema sebagai kartu nama tanpa gambar sampai thumbnail tersedia. Salin dari komputer yang memilikinya (sekitar 6 MB), dijalankan dari folder proyek di komputer lokal:
+```bash
+rsync -av --include='*/' --include='thumbnail_*.webp' --exclude='*' public/demo/ USER@HOST:~/luxenary-invite/public/demo/
+```
+Atau buat di server bila Chrome terpasang: `npx tsx scripts/generate-all-thumbnails.ts`. Landing page hanya menampilkan tema pernikahan yang thumbnail-nya lengkap.
 
 ### Setup PM2 Auto-Start Saat VPS Reboot:
 Agar aplikasi otomatis menyala kembali jika server VPS mengalami restart/reboot:
@@ -316,19 +334,17 @@ pm2 save
 
 ## Tahap 8: Setup Cron Job Pemeliharaan Otomatis
 
-Buka crontab server:
+**Tidak perlu diisi manual.** `deploy.sh` memasang (dan pada tiap deploy menyelaraskan ulang) jadwal berikut, dengan secret disimpan di `data/.cron-auth` (izin 600) agar tidak tampil di `crontab -l`:
+- 02.00: `POST /api/cron/cleanup` (data kedaluwarsa, arsip, pembersihan media)
+- 03.00: `scripts/cron-backup.sh` (snapshot database, unggah off-site ke `S3_BACKUP_BUCKET_NAME`, lapor ke `HEALTHCHECK_BACKUP_PING_URL`)
+- tiap menit: `scripts/health-watch.sh` (restart bila `/api/health` tidak merespons 3 kali)
+
+Verifikasi setelah deploy pertama:
 ```bash
-crontab -e
+crontab -l
+bash scripts/cron-backup.sh && echo "backup OK"
 ```
-Tambahkan baris berikut di bagian paling bawah *(ganti `CRON_SECRET_ANDA` sesuai yang ada di `.env`)*:
-
-```cron
-# 1. Pembersihan harian data kadaluarsa & cache usang (Pukul 02.00 pagi)
-0 2 * * * curl -X POST -H "Authorization: Bearer CRON_SECRET_ANDA" http://localhost:3001/api/cron/cleanup > /dev/null 2>&1
-
-# 2. Pencadangan database otomatis harian (Pukul 03.00 pagi)
-0 3 * * * curl -X POST -H "Authorization: Bearer CRON_SECRET_ANDA" http://localhost:3001/api/cron/backup > /dev/null 2>&1
-```
+Jangan menambah baris `curl ... Bearer <secret>` sendiri: secret menjadi terbaca di daftar proses, dan endpoint backup hanya menerima `POST` di port 3001.
 
 ---
 

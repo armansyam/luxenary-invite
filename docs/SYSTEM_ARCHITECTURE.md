@@ -223,7 +223,7 @@
 │   │   ├── MANAJEMEN_TEMA_ADMIN.md            # Upload master HTML fisik & auto-compile demo
 │   │   ├── PENGATURAN_SISTEM_BRANDING_DAN_DATABASE.md # White-label, Cloudflare R2 CORS & maintenance DB
 │   │   ├── CRON_DAN_MAINTENANCE_OTOMATIS.md   # Tugas terjadwal cleanup, retensi & backup DB
-│   │   └── DEPLOYMENT_VPS_CADDY.md            # Panduan deployment VPS Ubuntu & Caddy TLS
+│   │   └── DEPLOYMENT_VPS_CADDY.md            # Panduan deployment VPS Ubuntu & Caddy TLS (instalasi server baru diuji dari clone bersih `main` ke DB kosong 29 Okt 2026: npm ci, build, 29 migrasi tanpa selisih skema, seed, 44 tema, 44 demo, next start, smoke-test 12/12, login admin hasil seed; crontab dipasang deploy.sh, bukan manual; thumbnail katalog disalin terpisah karena public/demo di luar git)
 │   └── public/
 │       ├── 01_ARSITEKTUR_RENDERING_TEMA_DAN_ROUTING.md # Multi-domain resolution, compiler & dynamic CSS
 │       ├── 02_PENGALAMAN_TAMU_UNDANGAN.md     # Cover gate, audio autoplay policy, kalender & maps
