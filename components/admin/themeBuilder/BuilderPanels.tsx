@@ -630,6 +630,7 @@ export function OrnamentsPanel({
   selectedId,
   onUpload,
   onAdd,
+  onAddText,
   onStartDrag,
   onSelect,
   onDeleteAsset,
@@ -641,6 +642,7 @@ export function OrnamentsPanel({
   selectedId: string | null;
   onUpload: (files: FileList) => void;
   onAdd: (src: string) => void;
+  onAddText: () => void;
   onStartDrag: (src: string, e: ReactPointerEvent<HTMLElement>) => void;
   onSelect: (id: string) => void;
   onDeleteAsset: (url: string) => void;
@@ -696,6 +698,13 @@ export function OrnamentsPanel({
         </div>
       </Section>
 
+      <Section title="Teks hias" hint="Tulisan bebas seperti &quot;Save the Date&quot; atau nama panggilan. Tetap tertulis di tema; klien tidak mengubahnya di Studio.">
+        <button type="button" onClick={onAddText} className="flex w-full items-center justify-center gap-2 rounded-xl border border-stone-200 px-3 py-2 text-[12.5px] font-semibold text-stone-800 hover:bg-stone-50 cursor-pointer">
+          <Icon d="M5 6V4h14v2M12 4v16M9 20h6" className="h-4 w-4 text-stone-500" />
+          Tambah teks di seksi {SECTION_LABELS[viewSection]}
+        </button>
+      </Section>
+
       <Section title={`Di seksi ${SECTION_LABELS[viewSection]} (${inSection.length})`}>
         {inSection.length === 0 ? (
           <p className="text-[11.5px] text-stone-500">Belum ada ornamen di seksi ini.</p>
@@ -706,14 +715,17 @@ export function OrnamentsPanel({
                 key={o.id}
                 type="button"
                 onClick={() => onSelect(o.id)}
-                aria-label={`Pilih ornamen ${i + 1} di seksi ${SECTION_LABELS[viewSection]}`}
-                className={`flex aspect-square items-center justify-center rounded-lg border bg-stone-50 p-1 cursor-pointer ${selectedId === o.id ? "border-amber-500 ring-2 ring-amber-500/25" : "border-stone-200"}`}
+                aria-label={`Pilih ${o.text ? "teks hias" : "ornamen"} ${i + 1} di seksi ${SECTION_LABELS[viewSection]}${o.attach ? `, menempel ke ${BUILDER_BLOCKS.find((b) => b.id === o.attach)?.label}` : ""}`}
+                title={o.attach ? `Menempel ke ${BUILDER_BLOCKS.find((b) => b.id === o.attach)?.label}` : undefined}
+                className={`relative flex aspect-square items-center justify-center rounded-lg border bg-stone-50 p-1 cursor-pointer ${selectedId === o.id ? "border-amber-500 ring-2 ring-amber-500/25" : "border-stone-200"}`}
               >
-                        <img src={o.src} alt="" className="max-h-full max-w-full object-contain" />
+                {o.text ? <span className="line-clamp-2 break-all text-center text-[10px] font-semibold leading-tight text-stone-600">{o.text.value}</span> : <img src={o.src} alt="" className="max-h-full max-w-full object-contain" />}
+                {o.attach && <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-blue-600" />}
               </button>
             ))}
           </div>
         )}
+        {inSection.some((o) => o.attach) && <p className="mt-2 text-[10.5px] text-stone-500">Titik biru: menempel ke blok dan ikut bergeser bersamanya.</p>}
       </Section>
 
       <Section title="Pustaka">

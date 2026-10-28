@@ -124,7 +124,7 @@ describe("bingkai foto", () => {
     const css = frameCss({ "opening-photo": { shape: "circle", ornament: ORN, spread: 20, hideRing: false, fit: null } });
     expect(css).toContain('[data-lux-block="opening-photo"]{position:relative;overflow:visible;border-radius:50%;aspect-ratio:1/1;}');
     expect(frameCss({ "opening-photo": { shape: "circle", ornament: ORN, spread: 20, hideRing: true, fit: null } })).toContain("aspect-ratio:1/1;border:0;padding:0;box-shadow:none;}");
-    expect(css).toContain('[data-lux-block="opening-photo"] img{width:100%;height:100%;object-fit:cover;border-radius:50%;}');
+    expect(css).toContain('[data-lux-block="opening-photo"] > img{width:100%;height:100%;object-fit:cover;border-radius:50%;}');
     expect(css).toContain(`[data-lux-block="opening-photo"]::after{content:"";position:absolute;inset:-20%;background:url('${ORN}') center/contain no-repeat;`);
     expect(frameCss({})).toBe("");
     expect(frameCss({ "opening-photo": { shape: "arch", ornament: "", spread: 14, hideRing: false, fit: null } })).not.toContain("::after");

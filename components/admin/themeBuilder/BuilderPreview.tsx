@@ -7,6 +7,7 @@ import {
   DEFAULT_BLOCK_PROPS,
   ORNAMENT_SECTIONS,
   blockZIndex,
+  ornamentLimits,
   ornamentStyle,
   frameCss,
   type BlockProps,
@@ -83,9 +84,51 @@ const SNAP_THRESHOLD = 1.2;
 
 type DragState =
   | { kind: "block"; id: BuilderBlockId; startX: number; startY: number; baseX: number; baseY: number; w: number; h: number; section: HTMLElement | null; naturalCenter: number }
-  | { kind: "move"; id: string; section: HTMLElement; offsetX: number; offsetY: number; moved: boolean }
-  | { kind: "resize"; id: string; section: HTMLElement }
+  | { kind: "move"; id: string; section: HTMLElement; frame: BlockFrame | null; offsetX: number; offsetY: number; moved: boolean }
+  | { kind: "resize"; id: string; section: HTMLElement; frame: BlockFrame | null; el: HTMLElement }
   | { kind: "rotate"; id: string; el: HTMLElement; startAngle: number; startRotate: number };
+
+interface Point {
+  x: number;
+  y: number;
+}
+
+/**
+ * Kotak sebuah blok sebagaimana tampil di layar: titik pojok kiri-atas, ujung sumbu mendatar (kanan-atas), dan ujung
+ * sumbu tegak (kiri-bawah), sudah termasuk geser, putar, dan skala blok serta leluhurnya. Ornamen yang menempel ke blok
+ * diukur di kerangka ini, bukan di kotak pembatas yang melebar saat blok diputar.
+ */
+interface BlockFrame {
+  origin: Point;
+  ux: Point;
+  uy: Point;
+}
+
+/** Mengukur kerangka blok dengan tiga penanda tanpa ukuran di pojoknya; browser sendiri yang menerapkan semua transform. */
+function measureBlockFrame(doc: Document, block: HTMLElement): BlockFrame {
+  const probe = (left: string, top: string): Point => {
+    const p = doc.createElement("span");
+    p.style.cssText = `position:absolute;left:${left};top:${top};width:0;height:0;visibility:hidden;pointer-events:none;`;
+    block.appendChild(p);
+    const r = p.getBoundingClientRect();
+    p.remove();
+    return { x: r.left, y: r.top };
+  };
+  const origin = probe("0", "0");
+  const right = probe("100%", "0");
+  const down = probe("0", "100%");
+  return { origin, ux: { x: right.x - origin.x, y: right.y - origin.y }, uy: { x: down.x - origin.x, y: down.y - origin.y } };
+}
+
+/** Titik layar menjadi persen kotak blok (kiri-atas 0,0). Null bila blok tidak punya luas terukur. */
+function pointInBlock(frame: BlockFrame, clientX: number, clientY: number): { x: number; y: number } | null {
+  const { origin, ux, uy } = frame;
+  const det = ux.x * uy.y - ux.y * uy.x;
+  if (Math.abs(det) < 1e-6) return null;
+  const dx = clientX - origin.x;
+  const dy = clientY - origin.y;
+  return { x: ((dx * uy.y - dy * uy.x) / det) * 100, y: ((ux.x * dy - ux.y * dx) / det) * 100 };
+}
 
 const pointerAngle = (el: HTMLElement, clientX: number, clientY: number) => {
   const r = el.getBoundingClientRect();
@@ -257,14 +300,17 @@ export default function BuilderPreview(props: Props) {
       if (!o || !section) return;
       latest.current.props.onSelect(id);
       doc.documentElement.classList.add("lux-b-dragging");
+      // Ornamen yang menempel diukur terhadap kotak blok; kerangkanya diukur sekali karena blok tidak berubah saat ornamen diseret.
+      const host = o.attach ? (orn.closest("[data-lux-block]") as HTMLElement | null) : null;
+      const frame = host ? measureBlockFrame(doc, host) : null;
       if (target.classList.contains("lux-b-handle")) {
-        drag.current = { kind: "resize", id, section };
+        drag.current = { kind: "resize", id, section, frame, el: orn };
       } else if (target.classList.contains("lux-b-rot")) {
         // Putaran relatif terhadap titik awal seret, sehingga ornamen tidak melompat ke arah kursor.
         drag.current = { kind: "rotate", id, el: orn, startAngle: pointerAngle(orn, e.clientX, e.clientY), startRotate: o.rotate };
       } else {
         const r = orn.getBoundingClientRect();
-        drag.current = { kind: "move", id, section, offsetX: e.clientX - (r.left + r.width / 2), offsetY: e.clientY - (r.top + r.height / 2), moved: false };
+        drag.current = { kind: "move", id, section, frame, offsetX: e.clientX - (r.left + r.width / 2), offsetY: e.clientY - (r.top + r.height / 2), moved: false };
       }
     }, true);
 
@@ -291,17 +337,33 @@ export default function BuilderPreview(props: Props) {
       const o = latest.current.ornaments.find((item) => item.id === d.id);
       if (!o) return;
       if (d.kind === "move") {
-        let { x, y } = percent(d.section, e.clientX - d.offsetX, e.clientY - d.offsetY, o.anchor);
+        const inBlock = d.frame ? pointInBlock(d.frame, e.clientX - d.offsetX, e.clientY - d.offsetY) : null;
+        if (d.frame && !inBlock) return;
+        let { x, y } = inBlock ? { x: inBlock.x, y: o.anchor === "bottom" ? 100 - inBlock.y : inBlock.y } : percent(d.section, e.clientX - d.offsetX, e.clientY - d.offsetY, o.anchor);
+        const limits = ornamentLimits(o);
+        x = Math.round(Math.max(limits.x[0], Math.min(limits.x[1], x)) * 10) / 10;
+        y = Math.round(Math.max(limits.y[0], Math.min(limits.y[1], y)) * 10) / 10;
         const snapped = Math.abs(x - 50) < SNAP_THRESHOLD;
         if (snapped) x = 50;
-        showGuide(d.section, snapped);
+        // Garis pemandu tengah seksi tidak berlaku untuk ornamen yang diukur terhadap blok.
+        if (!d.frame) showGuide(d.section, snapped);
         d.moved = true;
         latest.current.props.onOrnamentChange(d.id, { x, y }, false);
       } else if (d.kind === "resize") {
-        const r = d.section.getBoundingClientRect();
-        const centerX = r.left + (o.x / 100) * r.width;
-        const width = Math.max(3, Math.min(140, (Math.abs(e.clientX - centerX) * 2 * 100) / r.width));
-        latest.current.props.onOrnamentChange(d.id, { width: Math.round(width * 10) / 10 }, false);
+        let width: number;
+        if (d.frame) {
+          // Jarak mendatar (sepanjang sumbu blok) dari tengah ornamen ke kursor, dibandingkan lebar blok di layar.
+          const blockWidth = Math.hypot(d.frame.ux.x, d.frame.ux.y);
+          if (blockWidth < 1e-6) return;
+          const r = d.el.getBoundingClientRect();
+          const along = ((e.clientX - (r.left + r.width / 2)) * d.frame.ux.x + (e.clientY - (r.top + r.height / 2)) * d.frame.ux.y) / blockWidth;
+          width = (Math.abs(along) * 2 * 100) / blockWidth;
+        } else {
+          const r = d.section.getBoundingClientRect();
+          const centerX = r.left + (o.x / 100) * r.width;
+          width = (Math.abs(e.clientX - centerX) * 2 * 100) / r.width;
+        }
+        latest.current.props.onOrnamentChange(d.id, { width: Math.round(Math.max(3, Math.min(140, width)) * 10) / 10 }, false);
       } else {
         const angle = d.startRotate + pointerAngle(d.el, e.clientX, e.clientY) - d.startAngle;
         let rotate = Math.round((((angle % 360) + 540) % 360) - 180);
@@ -436,9 +498,18 @@ export default function BuilderPreview(props: Props) {
       if (!el) continue;
       el.setAttribute("style", ornamentStyle(o));
       el.classList.toggle("is-front", o.layer === "front");
+      if (o.text) {
+        // Hanya simpul teksnya yang diganti: pegangan ukuran dan putar anak elemen yang sama harus tetap ada saat mengetik.
+        const first = el.firstChild;
+        if (first && first.nodeType === 3) {
+          if (first.nodeValue !== o.text.value) first.nodeValue = o.text.value;
+        } else {
+          el.insertBefore(doc.createTextNode(o.text.value), first);
+        }
+      }
     }
-    // Urutan tumpukan antar ornamen mengikuti urutan DOM, jadi simpul seksi disusun ulang sesuai urutan spesifikasi.
-    doc.querySelectorAll("[data-lux-section]").forEach((section) => {
+    // Urutan tumpukan antar ornamen mengikuti urutan DOM, jadi simpul wadah (seksi, atau blok bagi ornamen menempel) disusun ulang sesuai urutan spesifikasi.
+    doc.querySelectorAll("[data-lux-section], [data-lux-block]").forEach((section) => {
       const nodes = [...section.children].filter((n) => n.classList.contains("lux-orn")) as HTMLElement[];
       const wanted = [...nodes].sort((a, b) => ornaments.findIndex((o) => o.id === a.dataset.ornId) - ornaments.findIndex((o) => o.id === b.dataset.ornId));
       if (nodes.every((n, i) => n === wanted[i])) return;

@@ -41,7 +41,13 @@ function designedSpec(): BuilderSpec {
     frames: { "couple-photo-1": { shape: "default", ornament: FRAME, spread: 18, hideRing: false, fit: null } },
     blocks: { "cover-monogram": { x: 12, y: 4, scale: 1.1, rotate: 0, hidden: false }, "opening-quote": { x: 0, y: 0, scale: 1, rotate: 0, hidden: true } },
     // "ujibbb02" dinaikkan ke paling depan: urutan akhir di DOM harus ujiaaa01, ujiccc03, ujibbb02.
-    ornaments: moveOrnament([orn("ujibbb02", ORN_A), orn("ujiaaa01", FRAME), orn("ujiccc03", ORN_A)], "ujibbb02", "front"),
+    ornaments: [
+      ...moveOrnament([orn("ujibbb02", ORN_A), orn("ujiaaa01", FRAME), orn("ujiccc03", ORN_A)], "ujibbb02", "front"),
+      // Teks hias bebas di sampul, gambar yang menempel ke formulir RSVP, dan teks yang menempel ke isi penutup.
+      { ...orn("ujitxt006", ""), section: "cover", layer: "front", text: { value: "Save the Date", font: "script", size: 28, color: "on-dark", spacing: 0.05 } },
+      { ...orn("ujiatt004", ORN_A), section: "rsvp", attach: "rsvp-form", x: 90, y: 4, width: 40 },
+      { ...orn("ujitxt005", ""), section: "closing", attach: "closing-content", layer: "front", text: { value: 'Kami & "Kita"', font: "heading", size: 20, color: "accent", spacing: 0 } },
+    ],
   };
 }
 
@@ -110,7 +116,17 @@ describe.skipIf(!IS_TEST_DB)("tema builder sampai klien", () => {
     // Bingkai foto, blok yang digeser, dan urutan ornamen terbawa.
     expect(html).toContain('[data-lux-block="couple-photo-1"]::after');
     expect(html).toContain('[data-lux-block="cover-monogram"]{translate:12% 4%;rotate:0deg;scale:1.1;}');
-    expect([...html.matchAll(/data-orn-id="([^"]+)"/g)].map((m) => m[1])).toEqual(["ujiaaa01", "ujiccc03", "ujibbb02"]);
+    // Urutan dokumen: ornamen seksi menurut penanda seksinya, lalu yang menempel di dalam bloknya.
+    expect([...html.matchAll(/data-orn-id="([^"]+)"/g)].map((m) => m[1])).toEqual(["ujitxt006", "ujiaaa01", "ujiccc03", "ujibbb02", "ujiatt004", "ujitxt005"]);
+    // Ornamen menempel: anak blok berupa span, teks di-escape, gaya acuan blok terpasang.
+    expect(html).toMatch(/data-lux-block="rsvp-form"[^>]*><span class="lux-orn is-attached" data-orn-id="ujiatt004"/);
+    expect(html).toContain('<span class="lux-orn is-front is-attached lux-orn-text" data-orn-id="ujitxt005"');
+    expect(html).toContain("Kami &amp; &quot;Kita&quot;");
+    expect(html).toContain('[data-lux-block="rsvp-form"],[data-lux-block="closing-content"]{position:relative;isolation:isolate;}');
+    // Teks label yang dibaca Studio dan sunting langsung tidak boleh memuat ornamen.
+    const labelHosts = [...html.matchAll(/<([a-zA-Z0-9]+)\b[^>]*data-lux-field="[^"]+"[^>]*>([\s\S]*?)<\/\1>/g)];
+    expect(labelHosts.length).toBeGreaterThan(0);
+    expect(labelHosts.filter((m) => m[2].includes("lux-orn"))).toEqual([]);
     // Elemen opsional yang disembunyikan admin tidak tampil, tetapi yang digeser tetap.
     expect(html).toContain('[data-lux-block="opening-quote"]{translate:0% 0%;rotate:0deg;scale:1;display:none;}');
     // Tidak ada token mentah dan tidak ada rujukan media kosong.

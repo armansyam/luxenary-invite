@@ -1,9 +1,30 @@
 "use client";
 
-import { ORNAMENT_SECTIONS, SECTION_LABELS, type BuilderOrnament, type OrnamentSection, type StackMove } from "@/lib/themeBuilder/spec";
+import {
+  ATTACHABLE_BLOCKS,
+  BUILDER_BLOCKS,
+  DEFAULT_ORNAMENT_TEXT,
+  ORNAMENT_SECTIONS,
+  ORNAMENT_TEXT_COLORS,
+  ORNAMENT_TEXT_FONTS,
+  ORNAMENT_TEXT_LIMITS,
+  SECTION_LABELS,
+  ornamentLimits,
+  type AttachableBlockId,
+  type BuilderOrnament,
+  type BuilderPalette,
+  type CanvasMode,
+  type OrnamentSection,
+  type OrnamentText,
+  type StackMove,
+} from "@/lib/themeBuilder/spec";
 
 interface Props {
   ornament: BuilderOrnament;
+  palette: BuilderPalette;
+  canvasMode: CanvasMode;
+  /** Menempelkan ke blok, atau melepas (null). */
+  onAttach: (block: AttachableBlockId | null) => void;
   /** Urutan tumpukan di antara ornamen sejenis (seksi dan lapisan sama); 0 adalah paling belakang. */
   stack: { index: number; count: number };
   onReorder: (move: StackMove) => void;
@@ -88,17 +109,30 @@ function Toggle<T extends string>({ label, hint, value, options, onChange }: { l
   );
 }
 
-export default function OrnamentInspector({ ornament: o, stack, onReorder, onChange, onDuplicate, onRemove, onClose }: Props) {
+const DEFAULT_TEXT_SIZE = DEFAULT_ORNAMENT_TEXT.size;
+
+export default function OrnamentInspector({ ornament: o, palette, canvasMode, onAttach, stack, onReorder, onChange, onDuplicate, onRemove, onClose }: Props) {
   const set = (patch: Partial<BuilderOrnament>) => onChange(patch, true);
+  const setText = (patch: Partial<OrnamentText>, final: boolean) => o.text && onChange({ text: { ...o.text, ...patch } }, final);
+  const container = o.attach ? "blok" : "seksi";
+  const limits = ornamentLimits(o);
+  const attachOptions = ATTACHABLE_BLOCKS.filter((id) => BUILDER_BLOCKS.find((b) => b.id === id)?.section === o.section);
+  const swatch: Record<(typeof ORNAMENT_TEXT_COLORS)[number]["id"], string> = {
+    primary: palette.primary,
+    secondary: palette.secondary,
+    accent: palette.accent,
+    text: canvasMode === "dark" ? palette.textLight : palette.textDark,
+    "on-dark": palette.textLight,
+  };
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3">
         <div className="flex items-center gap-2.5">
           <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-stone-100 p-1">
-            <img src={o.src} alt="" className="max-h-full max-w-full object-contain" />
+            {o.text ? <span className="text-[15px] font-bold text-stone-500">Aa</span> : <img src={o.src} alt="" className="max-h-full max-w-full object-contain" />}
           </span>
           <div>
-            <p className="text-[12.5px] font-bold text-stone-800">Ornamen</p>
+            <p className="text-[12.5px] font-bold text-stone-800">{o.text ? "Teks hias" : "Ornamen"}</p>
             <p className="text-[11px] text-stone-500">{SECTION_LABELS[o.section]}</p>
           </div>
         </div>
@@ -108,12 +142,82 @@ export default function OrnamentInspector({ ornament: o, stack, onReorder, onCha
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+        {o.text && (
+          <div className="space-y-3 rounded-xl border border-stone-200 bg-stone-50/60 p-3">
+            <label className="block">
+              <span className="text-[11.5px] font-semibold text-stone-600">Tulisan</span>
+              <input
+                type="text"
+                value={o.text.value}
+                maxLength={ORNAMENT_TEXT_LIMITS.length}
+                onChange={(e) => setText({ value: e.target.value }, false)}
+                onBlur={(e) => { if (!e.target.value.trim()) setText({ value: "Teks" }, true); else setText({ value: e.target.value }, true); }}
+                className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-[12.5px] outline-none focus:border-amber-500"
+              />
+            </label>
+            <div>
+              <span className="text-[11.5px] font-semibold text-stone-600">Huruf</span>
+              <div className="mt-1 grid grid-cols-3 rounded-xl bg-stone-100 p-1">
+                {ORNAMENT_TEXT_FONTS.map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setText({ font: f.id }, true)}
+                    className={`rounded-lg px-1.5 py-1.5 text-[11px] font-semibold transition cursor-pointer ${o.text!.font === f.id ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"}`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <Slider label="Ukuran huruf" value={o.text.size} min={ORNAMENT_TEXT_LIMITS.size[0]} max={ORNAMENT_TEXT_LIMITS.size[1]} step={1} suffix=" px" resetTo={DEFAULT_TEXT_SIZE} onChange={(size, f) => setText({ size }, f)} />
+            <Slider label="Jarak antarhuruf" value={o.text.spacing} min={ORNAMENT_TEXT_LIMITS.spacing[0]} max={ORNAMENT_TEXT_LIMITS.spacing[1]} step={0.01} suffix=" em" resetTo={0} onChange={(spacing, f) => setText({ spacing }, f)} />
+            <div>
+              <span className="text-[11.5px] font-semibold text-stone-600">Warna</span>
+              <div className="mt-1 grid grid-cols-5 gap-1.5">
+                {ORNAMENT_TEXT_COLORS.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    title={c.label}
+                    aria-label={`Warna ${c.label}`}
+                    aria-pressed={o.text!.color === c.id}
+                    onClick={() => setText({ color: c.id }, true)}
+                    className={`flex aspect-square items-center justify-center rounded-lg border bg-white transition cursor-pointer ${o.text!.color === c.id ? "border-amber-500 ring-2 ring-amber-500/25" : "border-stone-200 hover:border-stone-300"}`}
+                  >
+                    <span className="h-5 w-5 rounded-full ring-1 ring-stone-300" style={{ background: swatch[c.id] }} />
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1 text-[10.5px] leading-snug text-stone-500">Warna mengikuti palet tema. &quot;Teks di atas foto&quot; dipakai di sampul dan penutup berlatar foto.</p>
+            </div>
+          </div>
+        )}
+
+        <label className="block">
+          <span className="text-[11.5px] font-semibold text-stone-600">Menempel ke blok</span>
+          <select
+            value={o.attach ?? ""}
+            onChange={(e) => onAttach(e.target.value ? (e.target.value as AttachableBlockId) : null)}
+            className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-[12.5px] outline-none focus:border-amber-500 cursor-pointer"
+          >
+            <option value="">Tidak, bebas di seksi</option>
+            {attachOptions.map((id) => <option key={id} value={id}>{BUILDER_BLOCKS.find((b) => b.id === id)!.label}</option>)}
+          </select>
+          <p className="mt-1 text-[10.5px] leading-snug text-stone-500">
+            {o.attach
+              ? "Posisi dan lebar dihitung dari kotak blok, jadi ornamen ikut bergeser bersama blok dan mengikuti panjang isi klien."
+              : attachOptions.length ? "Pilih blok agar ornamen ikut bergeser bersama blok itu. Judul dan nama berlabel tidak bisa ditempeli: teksnya akan terbaca sebagai label klien." : "Seksi ini tidak punya blok yang bisa ditempeli."}
+          </p>
+        </label>
+
         <label className="block">
           <span className="text-[11.5px] font-semibold text-stone-600">Seksi</span>
           <select
             value={o.section}
+            disabled={Boolean(o.attach)}
             onChange={(e) => set({ section: e.target.value as OrnamentSection })}
-            className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-[12.5px] outline-none focus:border-amber-500 cursor-pointer"
+            className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-[12.5px] outline-none focus:border-amber-500 cursor-pointer disabled:cursor-not-allowed disabled:bg-stone-50 disabled:text-stone-400"
           >
             {ORNAMENT_SECTIONS.map((s) => <option key={s} value={s}>{SECTION_LABELS[s]}</option>)}
           </select>
@@ -123,17 +227,17 @@ export default function OrnamentInspector({ ornament: o, stack, onReorder, onCha
           <button type="button" onClick={() => set({ x: 50 })} className="rounded-xl border border-stone-200 px-2 py-2 text-[11.5px] font-semibold text-stone-700 hover:bg-stone-50 cursor-pointer">Tengahkan mendatar</button>
           <button type="button" onClick={() => set({ y: 50 })} className="rounded-xl border border-stone-200 px-2 py-2 text-[11.5px] font-semibold text-stone-700 hover:bg-stone-50 cursor-pointer">Tengahkan tegak</button>
         </div>
-        <Slider label="Posisi mendatar" value={o.x} min={-20} max={120} suffix="%" onChange={(x, f) => onChange({ x }, f)} />
-        <Slider label={o.anchor === "bottom" ? "Jarak dari bawah" : "Jarak dari atas"} value={o.y} min={-20} max={120} suffix="%" onChange={(y, f) => onChange({ y }, f)} />
-        <Slider label="Lebar" value={o.width} min={3} max={140} suffix="% seksi" onChange={(width, f) => onChange({ width }, f)} />
+        <Slider label="Posisi mendatar" value={o.x} min={limits.x[0]} max={limits.x[1]} suffix="%" onChange={(x, f) => onChange({ x }, f)} />
+        <Slider label={o.anchor === "bottom" ? "Jarak dari bawah" : "Jarak dari atas"} value={o.y} min={limits.y[0]} max={limits.y[1]} suffix="%" onChange={(y, f) => onChange({ y }, f)} />
+        <Slider label={o.text ? "Lebar kotak teks" : "Lebar"} value={o.width} min={3} max={140} suffix={`% ${container}`} onChange={(width, f) => onChange({ width }, f)} />
         <Slider label="Putaran" value={o.rotate} min={-180} max={180} step={1} suffix="°" resetTo={0} onChange={(rotate, f) => onChange({ rotate }, f)} />
         <Slider label="Kepekatan" value={Math.round(o.opacity * 100)} min={5} max={100} step={1} suffix="%" resetTo={100} onChange={(v, f) => onChange({ opacity: v / 100 }, f)} />
 
         <Toggle
-          label="Menempel ke"
+          label="Jarak diukur dari"
           value={o.anchor}
-          options={[{ id: "top", label: "Atas seksi" }, { id: "bottom", label: "Bawah seksi" }]}
-          hint="Pilih 'Bawah seksi' untuk ornamen di dasar sampul atau penutup agar tetap menempel di bawah pada HP yang lebih tinggi atau pendek."
+          options={[{ id: "top", label: `Atas ${container}` }, { id: "bottom", label: `Bawah ${container}` }]}
+          hint={o.attach ? undefined : "Pilih 'Bawah seksi' untuk ornamen di dasar sampul atau penutup agar tetap menempel di bawah pada HP yang lebih tinggi atau pendek."}
           onChange={(anchor) => {
             if (anchor === o.anchor) return;
             set({ anchor, y: Math.round((100 - o.y) * 10) / 10 });
@@ -169,13 +273,15 @@ export default function OrnamentInspector({ ornament: o, stack, onReorder, onCha
               </button>
             ))}
           </div>
-          <p className="mt-1 text-[10.5px] leading-snug text-stone-500">Berlaku di antara ornamen pada seksi dan lapisan yang sama. Pintasan: ] naik, [ turun, Shift+] atau Shift+[ ke ujung.</p>
+          <p className="mt-1 text-[10.5px] leading-snug text-stone-500">Berlaku di antara ornamen pada {container} dan lapisan yang sama. Pintasan: ] naik, [ turun, Shift+] atau Shift+[ ke ujung.</p>
         </div>
 
-        <button type="button" onClick={() => set({ flipX: !o.flipX })} className="flex w-full items-center justify-between rounded-xl border border-stone-200 px-3 py-2 text-[12px] font-semibold text-stone-700 hover:bg-stone-50 cursor-pointer">
-          Cerminkan kiri-kanan
-          <span className={`h-1.5 w-1.5 rounded-full ${o.flipX ? "bg-amber-500" : "bg-stone-300"}`} />
-        </button>
+        {!o.text && (
+          <button type="button" onClick={() => set({ flipX: !o.flipX })} className="flex w-full items-center justify-between rounded-xl border border-stone-200 px-3 py-2 text-[12px] font-semibold text-stone-700 hover:bg-stone-50 cursor-pointer">
+            Cerminkan kiri-kanan
+            <span className={`h-1.5 w-1.5 rounded-full ${o.flipX ? "bg-amber-500" : "bg-stone-300"}`} />
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-2 border-t border-stone-200 p-4">

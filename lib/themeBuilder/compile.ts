@@ -151,9 +151,52 @@ const VARIANT_CSS: Record<keyof BuilderVariants, Record<string, string>> = {
 
 const EAGER_SECTIONS = new Set(["cover", "sidebar", "opening"]);
 
+/**
+ * Ornamen yang menempel ke blok berupa `span` (bukan `div`): `<p>` menutup dirinya sendiri begitu bertemu `div`, sedangkan
+ * `span` absolut tetap sah di dalam `p`, judul, dan tautan. Teks hias di-escape di sini; `{{ }}` dan kurung sudut sudah
+ * ditolak oleh `parseBuilderSpec`.
+ */
 function ornamentHtml(o: BuilderOrnament): string {
+  const tag = o.attach ? "span" : "div";
+  const classes = ["lux-orn", o.layer === "front" && "is-front", o.attach && "is-attached", o.text && "lux-orn-text"].filter(Boolean).join(" ");
   const loading = EAGER_SECTIONS.has(o.section) ? "eager" : "lazy";
-  return `<div class="lux-orn${o.layer === "front" ? " is-front" : ""}" data-orn-id="${o.id}" style="${ornamentStyle(o)}" aria-hidden="true"><img src="${o.src}" alt="" loading="${loading}" decoding="async" draggable="false" /></div>`;
+  const inner = o.text ? escapeText(o.text.value) : `<img src="${o.src}" alt="" loading="${loading}" decoding="async" draggable="false" />`;
+  return `<${tag} class="${classes}" data-orn-id="${o.id}" style="${ornamentStyle(o)}" aria-hidden="true">${inner}</${tag}>`;
+}
+
+const ATTACH_OVERFLOW_BLOCKS: readonly BuilderBlockId[] = ["opening-photo", "couple-photo-1", "couple-photo-2"];
+
+/**
+ * Blok yang punya ornamen menempel menjadi acuan posisi (`relative`) dan lapisan sendiri (`isolation`), sehingga ornamen
+ * belakang (z-index -1) berada di bawah isi blok tetapi di atas latarnya, dan ornamen depan di atas isi. Foto memotong
+ * isinya lewat `overflow:hidden` di pembungkus; ornamen yang keluar dari tepi foto butuh pembungkus terbuka, jadi
+ * pemotongan sudut dipindah ke gambar.
+ */
+function attachCss(ornaments: BuilderOrnament[]): string {
+  const blocks = [...new Set(ornaments.flatMap((o) => (o.attach ? [o.attach] : [])))];
+  if (!blocks.length) return "";
+  const sel = (ids: readonly string[], suffix = "") => ids.map((id) => `[data-lux-block="${id}"]${suffix}`).join(",");
+  const photos = blocks.filter((id) => ATTACH_OVERFLOW_BLOCKS.includes(id));
+  return [
+    ".lux-orn.is-attached{z-index:-1;}",
+    ".lux-orn.is-attached.is-front{z-index:3;}",
+    `${sel(blocks)}{position:relative;isolation:isolate;}`,
+    photos.length ? `${sel(photos)}{overflow:visible;}\n    ${sel(photos, " > img")}{border-radius:inherit;}` : "",
+  ].filter(Boolean).join("\n    ");
+}
+
+/** Memasang ornamen sebagai anak pertama elemen blok. Blok yang hilang dari blueprint adalah galat, bukan ornamen yang diam-diam hilang. */
+function attachToBlocks(html: string, ornaments: BuilderOrnament[]): string {
+  const byBlock = new Map<string, BuilderOrnament[]>();
+  for (const o of ornaments) if (o.attach) byBlock.set(o.attach, [...(byBlock.get(o.attach) ?? []), o]);
+  let out = html;
+  for (const [block, items] of byBlock) {
+    const opening = new RegExp(`<[a-zA-Z0-9]+\\b[^>]*\\bdata-lux-block="${block}"[^>]*>`);
+    if (!opening.test(out)) throw new Error(`Penanda blok ${block} tidak ada di blueprint.`);
+    const markup = items.map(ornamentHtml).join("");
+    out = out.replace(opening, (tag) => `${tag}${markup}`);
+  }
+  return out;
 }
 
 /**
@@ -195,6 +238,11 @@ export function compileBuilderMaster(spec: BuilderSpec, blueprint = readBuilderB
     html = html.replace("</head>", `  <style id="lux-builder-events">\n    .home-schedule { display: block; }\n    #events { display: none; }\n    a[href="#events"] { display: none !important; }\n  </style>\n</head>`);
   }
 
+  const attachRules = attachCss(spec.ornaments);
+  if (attachRules) {
+    html = html.replace("</head>", `  <style id="lux-builder-attach">\n    ${attachRules}\n  </style>\n</head>`);
+  }
+
   // Bentuk dan nilai bingkai sudah dijepit ke daftar tetap oleh parseBuilderSpec.
   const frameRules = frameCss(spec.frames);
   if (frameRules) {
@@ -202,11 +250,11 @@ export function compileBuilderMaster(spec: BuilderSpec, blueprint = readBuilderB
   }
 
   html = html.replace(/<!-- lux-ornaments:([a-z]+) -->/g, (marker, section: string) => {
-    const items = spec.ornaments.filter((o) => o.section === section);
+    const items = spec.ornaments.filter((o) => o.section === section && !o.attach);
     return items.length ? items.map(ornamentHtml).join("\n    ") : marker;
   });
 
-  return applyStaticTexts(html, spec.texts);
+  return applyStaticTexts(attachToBlocks(html, spec.ornaments), spec.texts);
 }
 
 const escapeText = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");

@@ -10,14 +10,18 @@ import {
   SECTION_LABELS,
   VARIANT_GROUPS,
   BLOCK_LIMITS,
+  BUILDER_BLOCKS,
   DEFAULT_BLOCK_PROPS,
+  DEFAULT_ORNAMENT_TEXT,
   DEFAULT_PHOTO_FRAME,
   FRAMED_PHOTOS,
   defaultBuilderSpec,
   fontLabel,
   isDefaultBlock,
   isDefaultFrame,
+  isStackPeer,
   moveOrnament,
+  type AttachableBlockId,
   type StackMove,
   type BlockProps,
   type BuilderBlockId,
@@ -57,12 +61,13 @@ const newOrnamentId = () => Array.from(crypto.getRandomValues(new Uint8Array(10)
 function structuralKey(spec: BuilderSpec): string {
   // Posisi ornamen dan properti blok diterapkan langsung ke pratinjau saat menyeret, jadi tidak memicu muat ulang.
   // Bingkai foto juga diterapkan langsung lewat gaya di dokumen pratinjau.
-  return JSON.stringify({ ...spec, blocks: {}, frames: {}, ornaments: spec.ornaments.map((o) => [o.id, o.src, o.section, o.layer]) });
+  // Isi, huruf, ukuran, dan warna teks hias juga diterapkan langsung; hanya jenis (teks atau gambar) dan tempat menempel yang mengubah HTML.
+  return JSON.stringify({ ...spec, blocks: {}, frames: {}, ornaments: spec.ornaments.map((o) => [o.id, o.src, o.section, o.layer, o.attach ?? "", o.text ? 1 : 0]) });
 }
 
-/** Posisi ornamen di antara ornamen sejenis (seksi dan lapisan sama); 0 adalah paling belakang. */
+/** Posisi ornamen di antara ornamen sejenis (wadah dan lapisan sama); 0 adalah paling belakang. */
 function stackOf(ornaments: BuilderOrnament[], o: BuilderOrnament): { index: number; count: number } {
-  const peers = ornaments.filter((p) => p.section === o.section && p.layer === o.layer);
+  const peers = ornaments.filter((p) => isStackPeer(p, o));
   return { index: peers.findIndex((p) => p.id === o.id), count: peers.length };
 }
 
@@ -432,6 +437,39 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
     setPanel("ornaments");
     if (section === "sidebar" && device !== "desktop") setDevice("desktop");
   }, [apply, device, notify]);
+
+  const addTextOrnament = useCallback((section: OrnamentSection) => {
+    const current = specRef.current;
+    if (current.ornaments.length >= MAX_ORNAMENTS) return notify(`Paling banyak ${MAX_ORNAMENTS} ornamen per tema.`, "error");
+    if (current.ornaments.filter((o) => o.section === section).length >= MAX_ORNAMENTS_PER_SECTION) {
+      return notify(`Seksi ${SECTION_LABELS[section]} sudah berisi ${MAX_ORNAMENTS_PER_SECTION} ornamen.`, "error");
+    }
+    // Sampul, panel kiri, dan penutup berlatar foto gelap; di sana teks primary hampir tak terbaca.
+    const onPhoto = section === "cover" || section === "sidebar" || section === "closing";
+    const ornament: BuilderOrnament = { id: newOrnamentId(), section, src: "", x: 50, y: 50, anchor: "top", width: 60, rotate: 0, opacity: 1, flipX: false, layer: "front", text: { ...DEFAULT_ORNAMENT_TEXT, color: onPhoto ? "on-dark" : DEFAULT_ORNAMENT_TEXT.color } };
+    apply({ ...current, ornaments: [...current.ornaments, ornament] }, "commit");
+    setSelectedId(ornament.id);
+    setPanel("ornaments");
+    if (section === "sidebar" && device !== "desktop") setDevice("desktop");
+  }, [apply, device, notify]);
+
+  /**
+   * Menempel ke blok atau melepas. Ukuran dan posisi berganti acuan (seksi atau blok), jadi ornamen dikembalikan ke tengah
+   * dengan lebar sedang daripada terlempar ke luar kotak blok.
+   */
+  const attachOrnament = useCallback((id: string, block: AttachableBlockId | null) => {
+    const current = specRef.current;
+    const source = current.ornaments.find((o) => o.id === id);
+    if (!source || source.attach === (block ?? undefined)) return;
+    const section = block ? BUILDER_BLOCKS.find((b) => b.id === block)!.section : source.section;
+    if (section !== source.section && current.ornaments.filter((o) => o.section === section).length >= MAX_ORNAMENTS_PER_SECTION) {
+      return notify(`Seksi ${SECTION_LABELS[section]} sudah berisi ${MAX_ORNAMENTS_PER_SECTION} ornamen.`, "error");
+    }
+    const moved: BuilderOrnament = { ...source, section, x: 50, y: 50, anchor: "top", width: block ? 50 : 32 };
+    if (block) moved.attach = block;
+    else delete moved.attach;
+    apply({ ...current, ornaments: current.ornaments.map((o) => (o.id === id ? moved : o)) }, "commit");
+  }, [apply, notify]);
 
   /**
    * Seret ornamen dari pustaka ke pratinjau. Pointer ditangkap tombol pustaka sehingga gerakan di atas iframe tetap
@@ -827,6 +865,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
               selectedId={selectedId}
               onUpload={uploadAssets}
               onAdd={(src) => addOrnament(src, viewSection)}
+              onAddText={() => addTextOrnament(viewSection)}
               onStartDrag={startLibraryDrag}
               onSelect={setSelectedId}
               onDeleteAsset={deleteAsset}
@@ -892,6 +931,9 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
           {selected ? (
             <OrnamentInspector
               ornament={selected}
+              palette={spec.palette}
+              canvasMode={spec.canvasMode}
+              onAttach={(block) => attachOrnament(selected.id, block)}
               stack={stackOf(spec.ornaments, selected)}
               onReorder={(move) => reorderOrnament(selected.id, move)}
               onChange={(patch, final) => updateOrnament(selected.id, patch, final)}

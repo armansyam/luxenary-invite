@@ -1,7 +1,7 @@
 import vm from "vm";
 
 export interface MasterIssue {
-  code: "color" | "token" | "label" | "section" | "block" | "script";
+  code: "color" | "token" | "label" | "section" | "block" | "script" | "ornament";
   message: string;
 }
 
@@ -37,6 +37,11 @@ export function auditBuilderMaster(html: string, blueprint: string): MasterIssue
   const fields = fieldsOf(html);
   const missingFields = [...fieldsOf(blueprint)].filter((f) => !fields.has(f));
   if (missingFields.length) issues.push({ code: "label", message: `Label yang bisa diedit klien hilang: ${missingFields.join(", ")}.` });
+
+  // Pembaca label dan sunting langsung Studio mengambil seluruh isi elemen berlabel; ornamen di dalamnya menjadi teks label klien.
+  const labelHosts = html.matchAll(/<([a-zA-Z0-9]+)\b[^>]*data-lux-field="([^"]+)"[^>]*>([\s\S]*?)<\/\1>/g);
+  const polluted = [...labelHosts].filter((m) => m[3].includes("lux-orn")).map((m) => m[2]);
+  if (polluted.length) issues.push({ code: "ornament", message: `Ornamen berada di dalam elemen berlabel: ${[...new Set(polluted)].join(", ")}.` });
 
   const sections = sectionsOf(html);
   const missingSections = [...sectionsOf(blueprint)].filter((s) => !sections.has(s));
