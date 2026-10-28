@@ -25,6 +25,8 @@ function DashboardHomeContent() {
     attendingCount: 0,
     checkedInCount: 0,
     wishesCount: 0,
+    openCount: 0,
+    openedGuestCount: 0,
   });
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -84,6 +86,8 @@ function DashboardHomeContent() {
               attendingCount: attending,
               checkedInCount: checkedIn,
               wishesCount: wishes,
+              openCount: guestSummary?.openCount ?? 0,
+              openedGuestCount: guestSummary?.openedGuestCount ?? 0,
             });
           } catch (e) {
             console.error("Stats fetch error:", e);
@@ -299,6 +303,7 @@ function DashboardHomeContent() {
               </div>
               <p className="text-2xl sm:text-3xl font-bold text-stone-900">{stats.guestCount}</p>
               <span className="text-[10px] text-stone-400 block">Total tamu terdata</span>
+              <span className="text-[10px] text-stone-500 block">Undangan dibuka {stats.openCount} kali</span>
             </div>
 
             {/* Event Date */}
@@ -743,6 +748,8 @@ function DashboardHomeContent() {
           </div>
           <p className="text-xl sm:text-2xl font-bold text-emerald-700">{stats.waSentCount}</p>
           <span className="text-[10px] text-stone-400 hidden sm:block">Pesan terkirim</span>
+          <span className="text-[10px] text-stone-500 block">{stats.openedGuestCount} tamu sudah membuka</span>
+          <span className="text-[10px] text-stone-400 block">Dibuka {stats.openCount} kali</span>
         </div>
 
         <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-stone-200/80 shadow-xs space-y-1">

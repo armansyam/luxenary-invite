@@ -21,6 +21,8 @@ interface Guest {
   guestLimit?: number | null;
   tableNumber?: string | null;
   isTokenRedeemed?: boolean;
+  /** Pertama kali link personal tamu (?to=nama) dibuka; null bila belum pernah. */
+  openedAt?: string | null;
   rsvps?: {
     status: string | null;
     guestCount: number;
@@ -58,7 +60,7 @@ export default function GuestsPage() {
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
-  const [filterStatus, setFilterStatus] = useState<"all" | "SENT" | "PENDING">("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "SENT" | "PENDING" | "UNOPENED">("all");
   const [copiedGuestId, setCopiedGuestId] = useState<string | null>(null);
 
   // Bulk Import CSV States
@@ -602,7 +604,8 @@ export default function GuestsPage() {
     const matchesStatus =
       filterStatus === "all" ||
       (filterStatus === "SENT" && g.waStatus === "SENT") ||
-      (filterStatus === "PENDING" && g.waStatus !== "SENT");
+      (filterStatus === "PENDING" && g.waStatus !== "SENT") ||
+      (filterStatus === "UNOPENED" && g.waStatus === "SENT" && !g.openedAt);
 
     const matchesCategory =
       filterCategory === "all" ||
@@ -619,12 +622,15 @@ export default function GuestsPage() {
   const totalGuests = guests.length;
   const sentCount = guests.filter((g) => g.waStatus === "SENT").length;
   const pendingCount = totalGuests - sentCount;
+  // WA sudah dikirim tetapi link belum dibuka: daftar yang perlu diingatkan ulang.
+  const unopenedCount = guests.filter((g) => g.waStatus === "SENT" && !g.openedAt).length;
 
   const GUEST_STATUS_TABS = useMemo(() => [
     { id: "all", label: "Semua Tamu", count: totalGuests },
     { id: "SENT", label: "Sudah Terkirim", count: sentCount },
     { id: "PENDING", label: "Belum Dikirim", count: pendingCount },
-  ], [totalGuests, sentCount, pendingCount]);
+    { id: "UNOPENED", label: "Belum Dibuka", count: unopenedCount },
+  ], [totalGuests, sentCount, pendingCount, unopenedCount]);
 
   useEffect(() => {
     const idx = GUEST_STATUS_TABS.findIndex((t) => t.id === filterStatus);
@@ -1044,6 +1050,12 @@ export default function GuestsPage() {
                       <span className="inline-flex items-center gap-1">
                         <span className={`w-1.5 h-1.5 rounded-full ${guest.isTokenRedeemed ? "bg-emerald-600" : "bg-stone-300"}`} />
                         {guest.isTokenRedeemed ? "Sudah check-in" : "Belum check-in"}
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <span className={`w-1.5 h-1.5 rounded-full ${guest.openedAt ? "bg-sky-600" : "bg-stone-300"}`} />
+                        {guest.openedAt
+                          ? `Dibuka ${new Date(guest.openedAt).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}`
+                          : "Belum membuka"}
                       </span>
                     </div>
                   </div>

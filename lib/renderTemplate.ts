@@ -1456,10 +1456,37 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
     }, { passive: true });
   }
 
+  // Statistik kunjungan: sekali per sesi peramban. Pratinjau Studio/builder/showcase (iframe), mode edit, dan demo
+  // tidak dihitung; server juga menolak pemilik undangan dan admin. Penyimpanan peramban bisa ditolak (mode privat):
+  // kunjungan itu dilewati saja, undangan tetap tampil normal.
+  function recordVisit() {
+    try {
+      var invId = '{{invitationId}}';
+      var p = new URLSearchParams(window.location.search);
+      if (!invId || invId.indexOf('{{') === 0 || invId.indexOf('demo') === 0) return;
+      if (window !== window.top || p.get('mode') === 'edit' || p.get('autoplay') === '1' || window.__LUX_EDIT_MODE__ === true) return;
+      var sessionKey = 'luxVisit:' + invId;
+      if (sessionStorage.getItem(sessionKey)) return;
+      var vid = localStorage.getItem('luxVisitorId');
+      if (!vid || !/^[A-Za-z0-9_-]{16,64}$/.test(vid)) {
+        vid = window.crypto && crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2));
+        localStorage.setItem('luxVisitorId', vid);
+      }
+      sessionStorage.setItem(sessionKey, '1');
+      fetch('/api/public/visit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invitationId: invId, visitorId: vid, guestName: p.get('to') || p.get('v') || p.get('u') || null }),
+        keepalive: true
+      }).catch(function() {});
+    } catch (e) {}
+  }
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
       initPreloaderGuard();
       resolveGuestName();
+      recordVisit();
       initAudioInteractionFallback();
       syncActiveTogglesUI();
       fitBottomDock();
@@ -1469,6 +1496,7 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
   } else {
     initPreloaderGuard();
     resolveGuestName();
+    recordVisit();
     initAudioInteractionFallback();
     syncActiveTogglesUI();
     fitBottomDock();

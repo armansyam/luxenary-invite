@@ -1272,6 +1272,7 @@ PUBLIC (tanpa auth):
   GET  /api/public/settings           → Platform settings global
   GET  /api/public/themes             → List tema aktif; thumbnail null bila berkas demo tidak ada (cached via Cloudflare s-maxage=86400, max-age=60, auto-purged on admin sync)
   POST /api/public/rsvp               → Submit RSVP tamu (in-memory key-lock withRsvpLock & atomic transaction prisma.$transaction, proteksi double-tap & kalkulasi pax katering cerdas; pembaruan RSVP yang sudah ada hanya dari peramban pembuatnya lewat cookie token `lux_rsvp_*`, selain itu HTTP 409)
+  POST /api/public/visit              → Catat kunjungan undangan (runtime `recordVisit` di lib/renderTemplate.ts, sekali per sesi peramban; dilewati di iframe pratinjau, ?mode=edit, ?autoplay=1, dan id demo). Hanya PUBLISHED/EVENT_FINISHED; pemilik dan admin (termasuk remote) tidak dihitung; batas 600/menit per undangan (tidak per IP). Upsert atomik ON CONFLICT (invitation_id, visitor_id). Ringkasan di `GET /api/client/guests/{id}?summary=1` (openCount, visitorCount, openedGuestCount) dan `openedAt` per tamu di daftar tamu (dicocokkan lewat nama ?to=, tidak peka huruf besar). HTML yang terbit sebelum fitur ini perlu dibangun ulang (`scripts/republish-published.ts --apply`).
   GET  /api/public/memories/{id}      → List foto momen
   POST /api/public/memories/upload    → Upload foto tamu (rate-limited, kalkulasi kuota total acara totalEventQuota + extraMemoriesQuota top-up & batas per-sesi)
   GET  /api/public/resolve-custom-domain → Resolve custom domain ke subdomain
@@ -1387,6 +1388,7 @@ Model Utama:
   Theme          → Katalog tema fisik (id, name, eventType: EventType, category, series, parentTheme, isActive, defaultMusicUrl, builderSpec: Json? — spesifikasi Theme Builder, null untuk master tulisan tangan; tanpa harga atau label premium, kolom `isPremium` dan `price` dihapus)
   Guest          → Daftar tamu per undangan (phone, waStatus: PENDING | SENT, qrToken)
   Rsvp           → Konfirmasi kehadiran & untaian doa ucapan tamu (Single Source of Truth di kolom message)
+  InvitationVisit → Statistik kunjungan (`invitation_visits`): satu baris per peramban per undangan (visitorId acak dari localStorage, tanpa IP), guestName dari ?to=, visitCount per sesi, firstSeenAt/lastSeenAt; cascade ke invitations
   GuestMemory    → Foto candid tamu (hari H & pasca-acara)
   InvitationMedia → File media undangan (9 slot media: LANDING_COVER, LANDING_COVER_DESKTOP, HOME_PHOTO, DESKTOP_SIDEBAR, GLOBAL_FIXED_BG, GROOM_PHOTO, BRIDE_PHOTO, GALLERY, CLOSING_COVER)
   AdminSetting   → Konfigurasi platform global (key-value dinamis)

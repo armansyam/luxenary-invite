@@ -184,7 +184,7 @@ describe.skipIf(!IS_TEST_DB)("audit 19 Okt (DB)", () => {
         ],
       });
       const res = await guestsGet(json(`/api/client/guests/${invitationId}?summary=1`, "GET"), { params: Promise.resolve({ id: invitationId }) });
-      expect(await res.json()).toEqual({ guestCount: 3, waSentCount: 2, checkedInCount: 1 });
+      expect(await res.json()).toEqual({ guestCount: 3, waSentCount: 2, checkedInCount: 1, openCount: 0, visitorCount: 0, openedGuestCount: 0 });
     });
   });
 

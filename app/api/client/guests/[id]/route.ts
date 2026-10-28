@@ -43,23 +43,43 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Ringkasan untuk dasbor: tiga hitungan, tanpa memuat seluruh tamu beserta RSVP-nya.
+    // Ringkasan untuk dasbor: hitungan saja, tanpa memuat seluruh tamu beserta RSVP-nya.
     if (new URL(req.url).searchParams.get("summary") === "1") {
-      const [guestCount, waSentCount, checkedInCount] = await Promise.all([
+      const [guestCount, waSentCount, checkedInCount, visits, opened] = await Promise.all([
         prisma.guest.count({ where: { invitationId: id } }),
         prisma.guest.count({ where: { invitationId: id, waStatus: "SENT" } }),
         prisma.guest.count({ where: { invitationId: id, isTokenRedeemed: true } }),
+        prisma.invitationVisit.aggregate({ where: { invitationId: id }, _sum: { visitCount: true }, _count: true }),
+        prisma.$queryRaw<{ total: bigint }[]>`
+          SELECT COUNT(*) AS total FROM guests g
+          WHERE g."invitationId" = ${id} AND EXISTS (
+            SELECT 1 FROM invitation_visits v
+            WHERE v.invitation_id = g."invitationId" AND lower(trim(v.guest_name)) = lower(trim(g.name)))`,
       ]);
-      return NextResponse.json({ guestCount, waSentCount, checkedInCount });
+      return NextResponse.json({
+        guestCount,
+        waSentCount,
+        checkedInCount,
+        openCount: visits._sum.visitCount ?? 0,
+        visitorCount: visits._count,
+        openedGuestCount: Number(opened[0].total),
+      });
     }
 
-    const guests = await prisma.guest.findMany({
-      where: { invitationId: id },
-      include: { rsvps: true },
-      orderBy: { createdAt: "desc" },
-    });
+    const [guests, openedRows] = await Promise.all([
+      prisma.guest.findMany({
+        where: { invitationId: id },
+        include: { rsvps: true },
+        orderBy: { createdAt: "desc" },
+      }),
+      // Link personal membawa ?to=<nama tamu> (resolveEffectiveInvitationUrl), jadi kunjungan dicocokkan lewat nama.
+      prisma.$queryRaw<{ name: string; opened_at: Date }[]>`
+        SELECT lower(trim(guest_name)) AS name, MIN(first_seen_at) AS opened_at FROM invitation_visits
+        WHERE invitation_id = ${id} AND guest_name IS NOT NULL GROUP BY 1`,
+    ]);
+    const openedAt = new Map(openedRows.map((r) => [r.name, r.opened_at]));
 
-    return NextResponse.json(guests);
+    return NextResponse.json(guests.map((g) => ({ ...g, openedAt: openedAt.get(g.name.trim().toLowerCase()) ?? null })));
   } catch (err) {
     logger.error("ClientGuest", "Gagal memuat daftar tamu", err);
     return NextResponse.json({ error: "Gagal memuat daftar tamu." }, { status: 500 });

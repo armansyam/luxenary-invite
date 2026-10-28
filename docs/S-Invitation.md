@@ -1011,6 +1011,9 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 
 ## 19. Penguatan Hari-H: Proteksi Konkurensi RSVP, Resepsionis Offline-First Idempoten, & Pencegahan Kebocoran Disk VPS
 
+0. **Statistik Kunjungan Undangan (`POST /api/public/visit`, tabel `invitation_visits`):**
+   - Runtime undangan terbit mencatat sekali per sesi peramban (token acak di localStorage, tanpa IP); pratinjau iframe, mode edit, showcase, dan demo dilewati; server menolak draf, pemilik undangan, dan admin.
+   - Dasbor: kartu WA Terkirim menampilkan "N tamu sudah membuka" dan total kali dibuka; tab Tamu menampilkan tanggal pertama dibuka per tamu (dicocokkan lewat nama di link `?to=`) dan filter "Belum Dibuka" untuk mengingatkan ulang.
 1. **Proteksi Konkurensi & Double-Tap RSVP (`/api/public/rsvp`):**
    - **In-Memory Mutex Key-Lock (`withRsvpLock`):** Mengunci antrean secara deterministik per `invitationId:namaTamu` untuk mencegah eksekusi ganda saat tombol submit ditekan berulang kali di koneksi lambat.
    - **Transaksi Atomik Database (`prisma.$transaction`):** Menjamin pencarian dan pembuatan data RSVP berlangsung dalam 1 siklus atomik terisolasi, mengeliminasi duplikasi data dan race condition.

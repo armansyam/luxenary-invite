@@ -157,6 +157,7 @@ model Invitation {
   theme                Theme             @relation(fields: [themeId], references: [id], onDelete: Restrict)
   media                InvitationMedia[]
   rsvps                Rsvp[]
+  visits               InvitationVisit[]
 
   @@index([userId])
   @@index([status])
@@ -217,6 +218,23 @@ model Rsvp {
   @@index([invitationId])
   @@index([guestId])
   @@map("rsvps")
+}
+
+/// Satu baris per peramban per undangan. visitorId adalah token acak dari localStorage tamu (tanpa IP atau data perangkat);
+/// guestName diisi dari ?to= link personal agar klien tahu tamu mana yang sudah membuka undangan.
+model InvitationVisit {
+  id           String     @id @default(uuid())
+  invitationId String     @map("invitation_id")
+  visitorId    String     @map("visitor_id")
+  guestName    String?    @map("guest_name")
+  visitCount   Int        @default(1) @map("visit_count")
+  firstSeenAt  DateTime   @default(now()) @map("first_seen_at")
+  lastSeenAt   DateTime   @default(now()) @map("last_seen_at")
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  @@unique([invitationId, visitorId])
+  @@index([invitationId, lastSeenAt])
+  @@map("invitation_visits")
 }
 
 model GuestMemory {
