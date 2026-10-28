@@ -1833,14 +1833,14 @@ export default function EditInvitation() {
                 : "rounded-none sm:rounded-3xl p-2 sm:p-8 min-h-[calc(100vh-140px)] sm:min-h-[850px]"
             }`}
           >
-            <div className="w-full flex items-center justify-between pb-4 border-b border-stone-800 mb-6 text-xs text-stone-400">
+            <div className="w-full flex flex-wrap items-center justify-between gap-x-3 gap-y-3 pb-4 border-b border-stone-800 mb-6 text-xs text-stone-400">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
                 <span className="text-white font-medium">Mode Visual Click-to-Edit</span>
                 <span className="text-stone-600">•</span>
                 <span className="hidden sm:inline">Klik langsung teks judul, kutipan doa, atau nama untuk mengedit</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 max-w-full">
                 <button
                   type="button"
                   onClick={() => setLiveIframeKey((k) => k + 1)}
