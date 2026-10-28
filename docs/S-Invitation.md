@@ -1108,6 +1108,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 1. **Sinkronisasi Kalender Google & Countdown Timer ke Sesi Utama (`isPrimary: true`):**
    - Seluruh 39 tema master (`aurelia`, `artisan`, `kalandra`, `valente`, `wave`, `papercut`, `ameera`, `chronicle`, `lumina`, `solaria`, `prameswari`, `dillalucky`, `badrika`, `mayang`, `candani`, `lagaligo`, `toraja`, `rantepao`, `makale`, `bugis`, `bone`, `wajo`, `soppeng`, `makassar`, `gowa`, `maros`, `takalar`, `bulukumba`, `verona`, `aeterna`, `burgundy-royale`, `vintage-forest`, `starlit-dreams`, serta varian non-wedding) kini mengonsumsi `{{googleCalendarUrl}}` dan `{{targetDate}}` yang terpusat ke Sesi Acara Utama.
    - Memastikan agenda tamu di Google Calendar dan waktu hitung mundur hari H selalu selaras dengan tanggal acara puncak.
+   - Jam agenda kalender mengikuti jam mulai/selesai dan zona WIB/WITA/WIT sesi utama (`buildGoogleCalendarUrl`, `lib/invitationUtils.ts`); sesi tanpa jam menjadi agenda sehari penuh.
 
 2. **Deduplikasi Cerdas Multi-Sesi Acara (`lib/themeEngine.ts`):**
    - Jika semua sesi berada di venue dan tanggal yang sama, kartu lokasi disatukan (`.event-unified-venue-card`).

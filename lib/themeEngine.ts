@@ -8,7 +8,7 @@ import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { getAdminSetting, hasPlanCapability } from "@/lib/settings";
 import { safeParseParticipants, type WeddingParticipants, type WeddingPerson } from "@/lib/participantUtils";
 import { parseFeatureSettings } from "@/lib/featureSettings";
-import { buildCalendarTitle, DEFAULT_THEME_BY_EVENT } from "@/lib/invitationUtils";
+import { buildCalendarTitle, buildGoogleCalendarUrl, DEFAULT_THEME_BY_EVENT } from "@/lib/invitationUtils";
 import { buildCheckinQrBaseUrl, buildCheckinQrUrl, qrInitials } from "@/lib/checkinQr";
 import { getEventTimezoneOffset, getPrimaryEvent, resolveEventTimezone } from "@/lib/lifecycleDates";
 import { logger } from "@/lib/logger";
@@ -1298,9 +1298,7 @@ export async function composeWeddingData(inv: any) {
   // Google Calendar URL (Prioritaskan lokasi dari Acara Utama)
   const calendarLocation = primaryEvent?.location || primaryEvent?.address || events[0]?.location || events[0]?.address || "";
   const calTitle = buildCalendarTitle("WEDDING", { groomName: firstName, brideName: secondName });
-  const googleCalendarUrl = weddingDateYear
-    ? `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calTitle)}&dates=${weddingDateYear}${weddingDateMonth}${weddingDateDay}T010000Z/${weddingDateYear}${weddingDateMonth}${weddingDateDay}T140000Z&location=${encodeURIComponent(calendarLocation)}`
-    : "";
+  const googleCalendarUrl = buildGoogleCalendarUrl(primaryEvent ?? {}, calTitle, calendarLocation);
 
   // ─── Guest Memories (After-Event Moments Drop & Stream) ───
   const showGuestMemories = featureSettings.showGuestMemories !== false && await hasPlanCapability(inv.order?.planType, "guest_memories");
@@ -2117,9 +2115,7 @@ export async function composeBirthdayData(inv: any) {
   // Calendar
   const calendarLocation = venueName || venueAddress;
   const calTitle = buildCalendarTitle("BIRTHDAY", { personName, personAge });
-  const googleCalendarUrl = isValidDate
-    ? `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calTitle)}&dates=${weddingDateYear}${weddingDateMonth}${weddingDateDay}T010000Z/${weddingDateYear}${weddingDateMonth}${weddingDateDay}T140000Z&location=${encodeURIComponent(calendarLocation)}`
-    : "";
+  const googleCalendarUrl = buildGoogleCalendarUrl(primaryEvent, calTitle, calendarLocation);
 
   // Seksi galeri, amplop, RSVP, dan ucapan memakai builder universal yang sama dengan jenis acara satu nama lain,
   // sehingga tema satu nama mana pun dapat menampilkan data ulang tahun. Hitung mundur, musik, Momen, QR, dan seksi

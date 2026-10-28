@@ -69,6 +69,49 @@ export function buildCalendarTitle(eventType: string, participants: any): string
   }
 }
 
+const TIMEZONE_OFFSET_HOURS: Record<string, number> = { WIB: 7, WITA: 8, WIT: 9 };
+const CALENDAR_DEFAULT_HOURS = 3;
+
+/**
+ * Tautan "Simpan ke Google Calendar" untuk satu sesi acara. Jam lokal sesi (WIB/WITA/WIT, dari `timezone` atau teks
+ * `time`) diubah ke UTC; tanpa jam selesai acara dianggap berlangsung 3 jam, tanpa jam mulai menjadi acara sehari
+ * penuh. Dulu jam ditulis mati 08.00-21.00 WIB, sehingga resepsi 19.00 WITA tercatat 09.00 di kalender tamu.
+ * Kosong bila tanggal tidak sah.
+ */
+export function buildGoogleCalendarUrl(
+  event: { date?: string; startTime?: string; endTime?: string; time?: string; timezone?: string },
+  title: string,
+  location: string
+): string {
+  const date = String(event.date || "").split("T")[0];
+  const dateMatch = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!dateMatch) return "";
+  const [year, month, day] = [Number(dateMatch[1]), Number(dateMatch[2]), Number(dateMatch[3])];
+
+  const hhmm = (value?: string): [number, number] | null => {
+    const m = String(value || "").match(/(\d{1,2})[.:](\d{2})/);
+    return m && Number(m[1]) < 24 && Number(m[2]) < 60 ? [Number(m[1]), Number(m[2])] : null;
+  };
+  const [timeFrom, timeTo] = String(event.time || "").split(/\s*[-–]\s*/);
+  const start = hhmm(event.startTime) ?? hhmm(timeFrom);
+  const end = hhmm(event.endTime) ?? hhmm(timeTo);
+  const zone = (`${event.timezone || ""} ${event.time || ""}`.toUpperCase().match(/\b(WITA|WIT|WIB)\b/) || [, "WIB"])[1] as string;
+  const offset = TIMEZONE_OFFSET_HOURS[zone];
+
+  let dates: string;
+  if (start) {
+    const stamp = (ms: number) => new Date(ms).toISOString().replace(/[-:]/g, "").slice(0, 15) + "Z";
+    const startMs = Date.UTC(year, month - 1, day, start[0] - offset, start[1]);
+    let endMs = end ? Date.UTC(year, month - 1, day, end[0] - offset, end[1]) : startMs + CALENDAR_DEFAULT_HOURS * 3_600_000;
+    if (endMs <= startMs) endMs += 24 * 3_600_000;
+    dates = `${stamp(startMs)}/${stamp(endMs)}`;
+  } else {
+    const ymd = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, "");
+    dates = `${ymd(new Date(Date.UTC(year, month - 1, day)))}/${ymd(new Date(Date.UTC(year, month - 1, day + 1)))}`;
+  }
+  return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${dates}&location=${encodeURIComponent(location)}`;
+}
+
 export function getMediaSlotLabel(slot: string, eventType?: string | null): string {
   if (!eventType || eventType === "WEDDING") {
     return slot === "GROOM_PHOTO" ? "Foto Mempelai Pria"
