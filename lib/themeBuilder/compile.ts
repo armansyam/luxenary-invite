@@ -265,7 +265,7 @@ export function compileBuilderMaster(spec: BuilderSpec, blueprint = readBuilderB
   // Mode sunting Studio memberi semua `[data-lux-field]` `position: relative`, yang menimpa `.lux-orn` (absolut) dan
   // menggeser teks hias hanya di Studio. Selektor ini lebih spesifik, dan teks hias hanya menerima klik saat disunting.
   if (spec.ornaments.some((o) => o.text?.labelKey)) {
-    html = html.replace("</head>", `  <style id="lux-builder-editable">\n    .lux-orn.lux-orn-text[data-lux-field] { position: absolute; }\n    .lux-orn.lux-orn-text[data-lux-field][contenteditable="true"] { pointer-events: auto; }\n  </style>\n</head>`);
+    html = html.replace("</head>", `  <style id="lux-builder-editable">\n    .lux-orn.lux-orn-text[data-lux-field] { position: absolute; }\n    .lux-orn.lux-orn-text[data-lux-field][contenteditable="true"] { pointer-events: auto; min-height: 1.25em; }\n  </style>\n</head>`);
   }
 
   const attachRules = attachCss(spec.ornaments);
