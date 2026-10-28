@@ -16,7 +16,7 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 import { prisma, pool } from "@/lib/prisma";
 import { POST as builderPost, PUT as builderPut, PATCH as builderPatch } from "@/app/api/admin/theme-builder/route";
 import { POST as createInvitation } from "@/app/api/client/invitations/create/route";
-import { GET as studioGet } from "@/app/api/client/invitations/[id]/route";
+import { GET as studioGet, PUT as invitationPut } from "@/app/api/client/invitations/[id]/route";
 import { GET as previewGet } from "@/app/api/client/invitations/[id]/preview/route";
 import { GET as publicThemes } from "@/app/api/public/themes/route";
 import { builderMasterPath } from "@/lib/themeBuilder/server";
@@ -44,7 +44,7 @@ function designedSpec(): BuilderSpec {
     ornaments: [
       ...moveOrnament([orn("ujibbb02", ORN_A), orn("ujiaaa01", FRAME), orn("ujiccc03", ORN_A)], "ujibbb02", "front"),
       // Teks hias bebas di sampul, gambar yang menempel ke formulir RSVP, dan teks yang menempel ke isi penutup.
-      { ...orn("ujitxt006", ""), section: "cover", layer: "front", text: { value: "Save the Date", font: "script", size: 28, color: "on-dark", spacing: 0.05 } },
+      { ...orn("ujitxt006", ""), section: "cover", layer: "front", text: { value: "Save the Date", font: "script", size: 28, color: "on-dark", spacing: 0.05, labelKey: "hias1" } },
       { ...orn("ujiatt004", ORN_A), section: "rsvp", attach: "rsvp-form", x: 90, y: 4, width: 40 },
       { ...orn("ujitxt005", ""), section: "closing", attach: "closing-content", layer: "front", text: { value: 'Kami & "Kita"', font: "heading", size: 20, color: "accent", spacing: 0 } },
     ],
@@ -133,6 +133,27 @@ describe.skipIf(!IS_TEST_DB)("tema builder sampai klien", () => {
     expect(html).not.toMatch(/\{\{[#/]?[A-Za-z]/);
     expect(html).not.toMatch(/url\(\s*(?:''|""|)\s*\)/);
     expect(html).not.toMatch(/<img\b(?![^>]*\sid\s*=)[^>]*\ssrc=(?:""|'')/);
+  });
+
+  it("klien mengubah teks hias yang ditandai editable lewat simpan Studio, dan pratinjau menampilkannya", async () => {
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: created.users[0] } });
+    const inv = await prisma.invitation.findFirstOrThrow({ where: { userId: user.id } });
+    sessionUser = { id: user.id, email: user.email, name: user.name, role: "CLIENT", isAdmin: false };
+
+    // Teks awal terbawa ke label bawaan undangan saat dibuat, sehingga Studio menampilkan teks admin.
+    const before = await (await previewGet(request(`/api/client/invitations/${inv.id}/preview`, "GET"), { params: Promise.resolve({ id: inv.id }) })).text();
+    expect(before).toMatch(/data-orn-id="ujitxt006"[^>]*data-lux-field="customLabels\.hias1"[^>]*>Save the Date</);
+
+    // Studio mengirim seluruh objek customLabels; penggabungan featureSettings dangkal.
+    const currentFs = (inv.featureSettings ?? {}) as { customLabels?: Record<string, string> };
+    const saved = await invitationPut(request(`/api/client/invitations/${inv.id}`, "PUT", { featureSettings: { customLabels: { ...(currentFs.customLabels ?? {}), hias1: 'Syukuran "Keluarga" & Sahabat' } } }), { params: Promise.resolve({ id: inv.id }) });
+    expect(saved.status).toBe(200);
+
+    const after = await (await previewGet(request(`/api/client/invitations/${inv.id}/preview`, "GET"), { params: Promise.resolve({ id: inv.id }) })).text();
+    expect(after).toMatch(/data-orn-id="ujitxt006"[^>]*data-lux-field="customLabels\.hias1"[^>]*>Syukuran &quot;Keluarga&quot; &amp; Sahabat</);
+    expect(after).not.toMatch(/data-orn-id="ujitxt006"[^>]*>Save the Date</);
+    // Teks hias statis lain di tema itu tidak berubah dan tetap tanpa penanda sunting.
+    expect(after).toMatch(/data-orn-id="ujitxt005"(?![^>]*data-lux-field)/);
   });
 
   it("admin mengubah tema sesudahnya: undangan klien (piring draf) tidak ikut berubah", async () => {

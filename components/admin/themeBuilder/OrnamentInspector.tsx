@@ -5,6 +5,7 @@ import {
   BUILDER_BLOCKS,
   DEFAULT_ORNAMENT_GAP,
   DEFAULT_ORNAMENT_TEXT,
+  EDITABLE_TEXT_KEYS,
   FLOW_EXCLUDED_BLOCKS,
   ORNAMENT_GAP_LIMITS,
   ORNAMENT_SECTIONS,
@@ -31,6 +32,8 @@ interface Props {
   palette: BuilderPalette;
   canvasMode: CanvasMode;
   onPlace: (placement: OrnamentPlacement) => void;
+  /** Kunci label teks hias yang sudah dipakai di tema ini (termasuk milik ornamen terpilih). */
+  usedLabelKeys: string[];
   /** Urutan tumpukan di antara ornamen sejenis (seksi dan lapisan sama); 0 adalah paling belakang. */
   stack: { index: number; count: number };
   onReorder: (move: StackMove) => void;
@@ -117,9 +120,10 @@ function Toggle<T extends string>({ label, hint, value, options, onChange }: { l
 
 const DEFAULT_TEXT_SIZE = DEFAULT_ORNAMENT_TEXT.size;
 
-export default function OrnamentInspector({ ornament: o, palette, canvasMode, onPlace, stack, onReorder, onChange, onDuplicate, onRemove, onClose }: Props) {
+export default function OrnamentInspector({ ornament: o, palette, canvasMode, usedLabelKeys, onPlace, stack, onReorder, onChange, onDuplicate, onRemove, onClose }: Props) {
   const set = (patch: Partial<BuilderOrnament>) => onChange(patch, true);
   const setText = (patch: Partial<OrnamentText>, final: boolean) => o.text && onChange({ text: { ...o.text, ...patch } }, final);
+  const freeKey = EDITABLE_TEXT_KEYS.find((k) => !usedLabelKeys.includes(k));
   const mode: OrnamentPlacement["mode"] = o.before ? "flow" : o.attach ? "attach" : "free";
   const container = o.attach ? "blok" : "seksi";
   const limits = ornamentLimits(o);
@@ -163,6 +167,24 @@ export default function OrnamentInspector({ ornament: o, palette, canvasMode, on
                 className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-[12.5px] outline-none focus:border-amber-500"
               />
             </label>
+            <div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={Boolean(o.text.labelKey)}
+                disabled={!o.text.labelKey && !freeKey}
+                onClick={() => setText({ labelKey: o.text!.labelKey ? undefined : freeKey }, true)}
+                className="flex w-full items-center justify-between rounded-xl border border-stone-200 bg-white px-3 py-2 text-[12px] font-semibold text-stone-700 hover:bg-stone-50 disabled:opacity-45 disabled:cursor-not-allowed cursor-pointer"
+              >
+                Bisa diedit klien
+                <span className={`h-1.5 w-1.5 rounded-full ${o.text.labelKey ? "bg-amber-500" : "bg-stone-300"}`} />
+              </button>
+              <p className="mt-1 text-[10.5px] leading-snug text-stone-500">
+                {o.text.labelKey
+                  ? "Klien dapat mengubah teks ini di Studio; isi di atas menjadi teks awalnya. Perubahan klien hanya berlaku di undangannya."
+                  : freeKey ? "Dimatikan: teks sama untuk semua klien dan hanya admin yang mengubahnya." : `Batas ${EDITABLE_TEXT_KEYS.length} teks yang bisa diedit klien per tema sudah terpakai.`}
+              </p>
+            </div>
             <div>
               <span className="text-[11.5px] font-semibold text-stone-600">Huruf</span>
               <div className="mt-1 grid grid-cols-3 rounded-xl bg-stone-100 p-1">

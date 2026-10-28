@@ -163,7 +163,10 @@ function ornamentHtml(o: BuilderOrnament): string {
   const loading = EAGER_SECTIONS.has(o.section) ? "eager" : "lazy";
   const imgStyle = o.before ? ` style="display:block;width:100%;height:auto;"` : "";
   const inner = o.text ? escapeText(o.text.value) : `<img src="${o.src}" alt="" loading="${loading}" decoding="async" draggable="false"${imgStyle} />`;
-  return `<${tag} class="${classes}" data-orn-id="${o.id}" style="${ornamentStyle(o)}" aria-hidden="true">${inner}</${tag}>`;
+  // Teks hias yang boleh diubah klien menjadi label biasa: kunci sudah dibatasi ke EDITABLE_TEXT_KEYS oleh parseBuilderSpec.
+  // `aria-hidden` dibuang karena label klien adalah isi undangan yang harus terbaca pembaca layar.
+  const editable = o.text?.labelKey ? ` data-lux-field="customLabels.${o.text.labelKey}"` : "";
+  return `<${tag} class="${classes}" data-orn-id="${o.id}"${editable} style="${ornamentStyle(o)}"${editable ? "" : ' aria-hidden="true"'}>${inner}</${tag}>`;
 }
 
 const ATTACH_OVERFLOW_BLOCKS: readonly BuilderBlockId[] = ["opening-photo", "couple-photo-1", "couple-photo-2"];
@@ -254,6 +257,12 @@ export function compileBuilderMaster(spec: BuilderSpec, blueprint = readBuilderB
   if (spec.eventsPlacement === "home") {
     html = html.replace("{{eventDataHtml}}", "").replace("<!-- lux-home-schedule -->", "{{eventDataHtml}}");
     html = html.replace("</head>", `  <style id="lux-builder-events">\n    .home-schedule { display: block; }\n    #events { display: none; }\n    a[href="#events"] { display: none !important; }\n  </style>\n</head>`);
+  }
+
+  // Mode sunting Studio memberi semua `[data-lux-field]` `position: relative`, yang menimpa `.lux-orn` (absolut) dan
+  // menggeser teks hias hanya di Studio. Selektor ini lebih spesifik, dan teks hias hanya menerima klik saat disunting.
+  if (spec.ornaments.some((o) => o.text?.labelKey)) {
+    html = html.replace("</head>", `  <style id="lux-builder-editable">\n    .lux-orn.lux-orn-text[data-lux-field] { position: absolute; }\n    .lux-orn.lux-orn-text[data-lux-field][contenteditable="true"] { pointer-events: auto; }\n  </style>\n</head>`);
   }
 
   const attachRules = attachCss(spec.ornaments);

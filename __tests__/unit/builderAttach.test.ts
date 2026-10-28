@@ -263,3 +263,40 @@ describe("roundtrip spesifikasi dengan ornamen baru", () => {
     expect((html.match(/data-orn-id="rt00000\d"/g) ?? []).length).toBe(6);
   });
 });
+
+describe("teks hias yang bisa diedit klien", () => {
+  const editable = (id: string, labelKey: string, value = "Save the Date", patch: Partial<BuilderOrnament> = {}) =>
+    orn({ id, src: "", section: "cover", layer: "front", text: { ...DEFAULT_ORNAMENT_TEXT, value, labelKey } as never, ...patch });
+
+  it("validasi: kunci hanya hias1 sampai hias3 dan tiap kunci dipakai satu teks", () => {
+    expect(parse([editable("edt00001", "hias1")]).ok).toBe(true);
+    for (const bad of ["hias0", "hias4", "coverBadge", "customLabels.hias1", "<x>"]) expect(parse([editable("edt00002", bad)]).ok, bad).toBe(false);
+    expect(parse([editable("edt00003", "hias1"), editable("edt00004", "hias1")]).ok).toBe(false);
+    expect(parse([editable("edt00005", "hias1"), editable("edt00006", "hias2"), editable("edt00007", "hias3")]).ok).toBe(true);
+  });
+
+  it("kompilasi: teks hias menjadi label customLabels dengan teks awal dari admin", () => {
+    const html = compileBuilderMaster(specWith([editable("edt00008", "hias2", 'Kami & "Kita"', { attach: "cover-names" })]), blueprint);
+    expect(html).toMatch(/<span class="lux-orn is-front is-attached lux-orn-text" data-orn-id="edt00008" data-lux-field="customLabels\.hias2" style=/);
+    expect(html).not.toMatch(/data-orn-id="edt00008"[^>]*aria-hidden/);
+    expect(extractRenderedLabels(html).hias2).toBe('Kami & "Kita"');
+    expect(html).toContain('<style id="lux-builder-editable">');
+    expect(html).toContain('.lux-orn.lux-orn-text[data-lux-field] { position: absolute; }');
+    expect(auditBuilderMaster(html, blueprint)).toEqual([]);
+  });
+
+  it("tanpa teks editable tidak ada gaya sunting dan teks tetap aria-hidden", () => {
+    const html = compileBuilderMaster(specWith([orn({ id: "edt00009", src: "", text: { ...DEFAULT_ORNAMENT_TEXT } })]), blueprint);
+    expect(html).not.toContain("lux-builder-editable");
+    expect(html).toMatch(/data-orn-id="edt00009" style="[^"]*" aria-hidden="true"/);
+    expect(extractRenderedLabels(html).hias1).toBeUndefined();
+  });
+
+  it("label tidak mengubah teks label lain yang dibaca dari master", () => {
+    const withEditable = extractRenderedLabels(compileBuilderMaster(specWith([editable("edt00010", "hias1")]), blueprint));
+    const without = extractRenderedLabels(compileBuilderMaster(specWith([]), blueprint));
+    const { hias1, ...rest } = withEditable;
+    expect(hias1).toBe("Save the Date");
+    expect(rest).toEqual(without);
+  });
+});

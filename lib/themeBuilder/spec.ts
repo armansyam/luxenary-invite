@@ -79,8 +79,18 @@ export type OrnamentTextColor = (typeof ORNAMENT_TEXT_COLORS)[number]["id"];
 
 export const ORNAMENT_TEXT_LIMITS = { size: [10, 96], spacing: [0, 0.5], length: 80 } as const;
 
-/** Teks hias bebas (mis. "Save the Date"): tetap tertulis di master, klien tidak mengubahnya di Studio. */
+/**
+ * Kunci label untuk teks hias yang boleh diubah klien di Studio. Teks itu menjadi label `customLabels.<kunci>` seperti
+ * judul dan tombol: `value` menjadi teks awal, dan perubahan klien tersimpan di undangannya, bukan di tema. Dibatasi
+ * tiga supaya jumlah label yang ikut terbawa saat klien mengganti tema tetap kecil.
+ */
+export const EDITABLE_TEXT_KEYS = ["hias1", "hias2", "hias3"] as const;
+export type EditableTextKey = (typeof EDITABLE_TEXT_KEYS)[number];
+
+/** Teks hias bebas (mis. "Save the Date"): tertulis di master; klien hanya dapat mengubahnya bila `labelKey` ada. */
 export interface OrnamentText {
+  /** Isi teks; bila `labelKey` ada, ini teks awal sebelum klien mengubahnya. */
+  labelKey?: EditableTextKey;
   value: string;
   font: OrnamentTextFont;
   /** Piksel; kolom undangan hanya 320-460 px sehingga tidak perlu satuan relatif. */
@@ -700,7 +710,10 @@ function parseOrnamentText(raw: unknown, label: string, errors: string[]): Ornam
   const color = ORNAMENT_TEXT_COLORS.find((c) => c.id === input.color)?.id;
   if (!font) { errors.push(`${label}: huruf teks tidak dikenali.`); return null; }
   if (!color) { errors.push(`${label}: warna teks tidak dikenali.`); return null; }
+  const labelKey = EDITABLE_TEXT_KEYS.find((k) => k === input.labelKey);
+  if (input.labelKey !== undefined && input.labelKey !== null && !labelKey) { errors.push(`${label}: kunci label teks tidak dikenali.`); return null; }
   return {
+    ...(labelKey ? { labelKey } : {}),
     value,
     font,
     color,
@@ -835,6 +848,7 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
   const rawOrnaments = Array.isArray(input.ornaments) ? input.ornaments : [];
   if (rawOrnaments.length > MAX_ORNAMENTS) errors.push(`Ornamen paling banyak ${MAX_ORNAMENTS} buah.`);
   const seen = new Set<string>();
+  const usedLabelKeys = new Set<string>();
   const perSection: Record<string, number> = {};
   for (const [i, o] of rawOrnaments.slice(0, MAX_ORNAMENTS).entries()) {
     const label = `Ornamen #${i + 1}`;
@@ -857,6 +871,10 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
     if (o.text !== undefined && o.text !== null) {
       const parsedText = parseOrnamentText(o.text, label, errors);
       if (!parsedText) continue;
+      if (parsedText.labelKey) {
+        if (usedLabelKeys.has(parsedText.labelKey)) { errors.push(`${label}: kunci label ${parsedText.labelKey} sudah dipakai teks hias lain.`); continue; }
+        usedLabelKeys.add(parsedText.labelKey);
+      }
       text = parsedText;
     } else if (!isAllowedOrnamentSrc(o.src)) { errors.push(`${label}: gambar harus dari pustaka ornamen.`); continue; }
     // Ornamen yang menempel atau sebaris dengan blok selalu berada di seksi blok itu, apa pun isian `section`.

@@ -51,6 +51,34 @@ export function keepValidMemoriesSettings(merged: FeatureSettings, existing: Fea
   return result;
 }
 
+/** Kunci label yang dapat disunting Studio (`customLabels.<kunci>`, sama dengan pola di lib/liveEditFields.ts). */
+export const CUSTOM_LABEL_KEY_RE = /^[A-Za-z0-9_]{1,60}$/;
+export const MAX_CUSTOM_LABEL_LENGTH = 1000;
+export const MAX_CUSTOM_LABELS = 100;
+
+/**
+ * Label khusus dari klien dibatasi: kunci sesuai pola Studio, nilai berupa string maksimal 1000 karakter, dan paling
+ * banyak 100 kunci. Entri yang tidak sah diganti nilai tersimpan sebelumnya atau dibuang (cara yang sama dengan
+ * pengaturan kamera di atas), sehingga PUT dari API tidak dapat menyimpan label tanpa batas. Nilai yang sama dengan
+ * yang sudah tersimpan selalu lolos supaya undangan lama dengan label panjang tetap dapat disimpan.
+ */
+export function keepValidCustomLabels(merged: FeatureSettings, existing: FeatureSettings): FeatureSettings {
+  if (merged.customLabels === undefined) return merged;
+  const stored = isPlainObject(existing.customLabels) ? existing.customLabels : {};
+  if (!isPlainObject(merged.customLabels)) {
+    const { customLabels: _dropped, ...rest } = merged;
+    return isPlainObject(existing.customLabels) ? { ...rest, customLabels: existing.customLabels } : rest;
+  }
+  const clean: Record<string, string> = {};
+  for (const [key, value] of Object.entries(merged.customLabels)) {
+    if (Object.keys(clean).length >= MAX_CUSTOM_LABELS) break;
+    if (!CUSTOM_LABEL_KEY_RE.test(key)) continue;
+    if (typeof value === "string" && (value.length <= MAX_CUSTOM_LABEL_LENGTH || value === stored[key])) clean[key] = value;
+    else if (typeof stored[key] === "string") clean[key] = stored[key];
+  }
+  return { ...merged, customLabels: clean };
+}
+
 /**
  * Menggabungkan featureSettings dari body PUT/PATCH (objek atau string JSON) ke yang tersimpan: URL disanitasi, fitur
  * berbayar di luar paket dimatikan untuk non-admin, dan pengaturan kamera yang tidak sah diganti nilai tersimpan.
@@ -78,7 +106,7 @@ export async function mergeFeatureSettingsInput(
     if (typeof merged[key] === "string") merged[key] = safeMediaUrl(merged[key]);
   }
   if (!isAdmin) merged = await gateFeaturesByPlan(merged, planType);
-  return { ok: true, value: keepValidMemoriesSettings(merged, existing) };
+  return { ok: true, value: keepValidMemoriesSettings(keepValidCustomLabels(merged, existing), existing) };
 }
 
 /** Mematikan fitur berbayar yang tidak termasuk kapabilitas paket (tidak bisa dibuka lewat bypass API). */

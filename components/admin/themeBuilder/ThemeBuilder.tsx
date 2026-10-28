@@ -62,7 +62,7 @@ function structuralKey(spec: BuilderSpec): string {
   // Posisi ornamen dan properti blok diterapkan langsung ke pratinjau saat menyeret, jadi tidak memicu muat ulang.
   // Bingkai foto juga diterapkan langsung lewat gaya di dokumen pratinjau.
   // Isi, huruf, ukuran, dan warna teks hias juga diterapkan langsung; hanya jenis (teks atau gambar) dan tempat menempel yang mengubah HTML.
-  return JSON.stringify({ ...spec, blocks: {}, frames: {}, ornaments: spec.ornaments.map((o) => [o.id, o.src, o.section, o.layer, o.attach ?? "", o.before ?? "", o.text ? 1 : 0]) });
+  return JSON.stringify({ ...spec, blocks: {}, frames: {}, ornaments: spec.ornaments.map((o) => [o.id, o.src, o.section, o.layer, o.attach ?? "", o.before ?? "", o.text ? 1 : 0, o.text?.labelKey ?? ""]) });
 }
 
 /** Posisi ornamen di antara ornamen sejenis (wadah dan lapisan sama); 0 adalah paling belakang. */
@@ -527,6 +527,8 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
     if (specRef.current.ornaments.length >= MAX_ORNAMENTS) return notify(`Paling banyak ${MAX_ORNAMENTS} ornamen per tema.`, "error");
     // Salinan dicerminkan ke sisi seberang: pola paling umum untuk ornamen sudut dan bunga.
     const copy: BuilderOrnament = { ...source, id: newOrnamentId(), x: Math.round((100 - source.x) * 10) / 10, flipX: !source.flipX, rotate: -source.rotate };
+    // Kunci label hanya boleh dipakai satu teks hias; salinan menjadi teks statis sampai admin menandainya.
+    if (copy.text?.labelKey) copy.text = { ...copy.text, labelKey: undefined };
     apply({ ...specRef.current, ornaments: [...specRef.current.ornaments, copy] }, "commit");
     setSelectedId(copy.id);
   }, [apply, notify]);
@@ -946,6 +948,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
               palette={spec.palette}
               canvasMode={spec.canvasMode}
               onPlace={(placement) => placeOrnament(selected.id, placement)}
+              usedLabelKeys={spec.ornaments.flatMap((o) => (o.text?.labelKey ? [o.text.labelKey] : []))}
               stack={stackOf(spec.ornaments, selected)}
               onReorder={(move) => reorderOrnament(selected.id, move)}
               onChange={(patch, final) => updateOrnament(selected.id, patch, final)}
