@@ -45,6 +45,18 @@ describe("reconcileLabelsOnThemeChange", () => {
     expect(out.customLabels).toEqual({ openBtn: "Buka A", coupleTitle: "Judul B" });
   });
 
+  it("teks hias klien (hias1-hias3) tidak dibawa ke tema baru, label lain yang diedit tetap", () => {
+    const out = reconcileLabelsOnThemeChange(
+      { hias1: "Syukuran Keluarga", hias2: "Teks 2", coupleTitle: "Judul Klien" },
+      { coupleTitle: "Judul A" },
+      { coupleTitle: "Judul B" },
+    );
+    expect(out.customLabels).toEqual({ coupleTitle: "Judul Klien" });
+    expect(out.customLabels.hias1).toBeUndefined();
+    // Juga tanpa snapshot (undangan lama): kunci hias tetap tidak dibawa.
+    expect(reconcileLabelsOnThemeChange({ hias3: "x", openBtn: "Buka A" }, undefined, { openBtn: "Buka B" }).customLabels).toEqual({ openBtn: "Buka A" });
+  });
+
   it("label kosong yang disengaja klien tidak ditimpa", () => {
     const out = reconcileLabelsOnThemeChange({ openingGreeting: "" }, { openingGreeting: "Salam" }, { openingGreeting: "Halo" });
     expect(out.customLabels.openingGreeting).toBe("");
