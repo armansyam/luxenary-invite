@@ -19,6 +19,7 @@ import { POST as createInvitation } from "@/app/api/client/invitations/create/ro
 import { GET as studioGet, PUT as invitationPut } from "@/app/api/client/invitations/[id]/route";
 import { GET as previewGet } from "@/app/api/client/invitations/[id]/preview/route";
 import { GET as publicThemes } from "@/app/api/public/themes/route";
+import { renderPublishedHtml } from "@/lib/staticPublisher";
 import { builderMasterPath } from "@/lib/themeBuilder/server";
 import { defaultBuilderSpec, moveOrnament, type BuilderOrnament, type BuilderSpec } from "@/lib/themeBuilder/spec";
 
@@ -154,6 +155,15 @@ describe.skipIf(!IS_TEST_DB)("tema builder sampai klien", () => {
     expect(after).not.toMatch(/data-orn-id="ujitxt006"[^>]*>Save the Date</);
     // Teks hias statis lain di tema itu tidak berubah dan tetap tanpa penanda sunting.
     expect(after).toMatch(/data-orn-id="ujitxt005"(?![^>]*data-lux-field)/);
+
+    // HTML terbit yang disajikan ke tamu: teks klien tampil, tanpa mode sunting, dan teks statis tetap disembunyikan dari pembaca layar.
+    const published = (await renderPublishedHtml(inv.id)) as string;
+    expect(published).toMatch(/data-orn-id="ujitxt006"[^>]*data-lux-field="customLabels\.hias1"(?![^>]*aria-hidden)[^>]*>Syukuran &quot;Keluarga&quot; &amp; Sahabat</);
+    expect(published).not.toContain("luxInlineEditorStyles");
+    expect(published).not.toMatch(/data-orn-id="ujitxt006"[^>]*contenteditable/);
+    expect(published).not.toContain("Save the Date");
+    expect(published).toMatch(/data-orn-id="ujitxt005"[^>]*aria-hidden="true"/);
+    expect(published).not.toMatch(/\{\{[#/]?[A-Za-z]/);
   });
 
   it("admin mengubah tema sesudahnya: undangan klien (piring draf) tidak ikut berubah", async () => {
