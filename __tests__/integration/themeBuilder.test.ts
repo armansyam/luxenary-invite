@@ -19,7 +19,7 @@ import { buildDemoInvitation } from "@/lib/demoInvitation";
 import { renderTemplateFile } from "@/lib/renderTemplate";
 import { auditBuilderMaster } from "@/lib/themeBuilder/audit";
 import { builderDefaultMedia, renderBuilderPreview } from "@/lib/themeBuilder/server";
-import { seedSpecFromMaster } from "@/lib/themeBuilder/legacySeed";
+import { legacyDefaultMedia, legacyFonts, seedSpecFromMaster } from "@/lib/themeBuilder/legacySeed";
 import { compileBuilderMaster, readBuilderBlueprint } from "@/lib/themeBuilder/compile";
 import { BUILDER_BLOCKS, VARIANT_GROUPS, blockStyle, defaultBuilderSpec, parseBuilderSpec, paletteChecks, PALETTE_PRESETS, type BuilderSpec } from "@/lib/themeBuilder/spec";
 import { GET, POST, PUT, PATCH } from "@/app/api/admin/theme-builder/route";
@@ -413,6 +413,26 @@ describe("titik awal dari tema pernikahan lama", () => {
       if (primary) expect(seed.spec.palette.primary, m.id).toBe(primary);
       expect(seed.found.length + seed.missing.length).toBe(8);
     }
+  });
+
+  it("huruf master lama dibaca per peran dan hanya keluarga dikenali yang dibawa", () => {
+    const html = `<style>.a{font-family:'Cinzel',serif}.b{font-family:'Cinzel',serif}.c{font-family:"Great Vibes",cursive}.d{font-family:'Yaqoote Script',cursive}.e{font-family:'Italiana',serif}.f{font-family:'Jost',sans-serif}.g{font-family:monospace}</style>`;
+    expect(legacyFonts(html)).toEqual({ heading: "cinzel", script: "great-vibes", body: "jost" });
+    expect(legacyFonts(`<style>.a{font-family:'Pinyon Script',cursive}.b{font-family:'Bellefair',serif}</style>`)).toEqual({ script: "g:Pinyon Script", heading: "g:Bellefair" });
+    expect(legacyFonts("<style>.a{font-family:'Lontara'}</style>")).toEqual({});
+    let withFonts = 0;
+    for (const m of legacyFiles) {
+      const seed = seedSpecFromMaster(fs.readFileSync(m.file, "utf8"));
+      if (seed.fontsFound.length) withFonts++;
+      expect(parseBuilderSpec(seed.spec).ok, m.id).toBe(true);
+    }
+    expect(withFonts).toBeGreaterThan(25);
+  });
+
+  it("media bawaan tema lama hanya yang sah untuk slot builder", () => {
+    expect(legacyDefaultMedia({ LANDING_COVER: "/assets/ornaments/background/background-red.webp", DESKTOP_SIDEBAR: "/demo/x/hero.webp", CLOSING_COVER: "https://evil.example/a.png", LAINNYA: "/x" }))
+      .toEqual({ LANDING_COVER: "/assets/ornaments/background/background-red.webp" });
+    expect(legacyDefaultMedia(null)).toEqual({});
   });
 
   it("memberi tahu berapa warna tertulis mati di luar :root yang tidak ikut terbawa", () => {

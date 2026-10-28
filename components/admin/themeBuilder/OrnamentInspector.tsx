@@ -3,7 +3,9 @@
 import {
   ATTACHABLE_BLOCKS,
   BUILDER_BLOCKS,
+  DEFAULT_ORNAMENT_GAP,
   DEFAULT_ORNAMENT_TEXT,
+  ORNAMENT_GAP_LIMITS,
   ORNAMENT_SECTIONS,
   ORNAMENT_TEXT_COLORS,
   ORNAMENT_TEXT_FONTS,
@@ -11,6 +13,7 @@ import {
   SECTION_LABELS,
   ornamentLimits,
   type AttachableBlockId,
+  type BuilderBlockId,
   type BuilderOrnament,
   type BuilderPalette,
   type CanvasMode,
@@ -19,12 +22,14 @@ import {
   type StackMove,
 } from "@/lib/themeBuilder/spec";
 
+/** Cara ornamen ditempatkan: bebas di seksi, menempel ke blok (anak blok), atau sebaris sebelum blok. */
+export type OrnamentPlacement = { mode: "free" } | { mode: "attach"; block: AttachableBlockId } | { mode: "flow"; block: BuilderBlockId };
+
 interface Props {
   ornament: BuilderOrnament;
   palette: BuilderPalette;
   canvasMode: CanvasMode;
-  /** Menempelkan ke blok, atau melepas (null). */
-  onAttach: (block: AttachableBlockId | null) => void;
+  onPlace: (placement: OrnamentPlacement) => void;
   /** Urutan tumpukan di antara ornamen sejenis (seksi dan lapisan sama); 0 adalah paling belakang. */
   stack: { index: number; count: number };
   onReorder: (move: StackMove) => void;
@@ -111,12 +116,14 @@ function Toggle<T extends string>({ label, hint, value, options, onChange }: { l
 
 const DEFAULT_TEXT_SIZE = DEFAULT_ORNAMENT_TEXT.size;
 
-export default function OrnamentInspector({ ornament: o, palette, canvasMode, onAttach, stack, onReorder, onChange, onDuplicate, onRemove, onClose }: Props) {
+export default function OrnamentInspector({ ornament: o, palette, canvasMode, onPlace, stack, onReorder, onChange, onDuplicate, onRemove, onClose }: Props) {
   const set = (patch: Partial<BuilderOrnament>) => onChange(patch, true);
   const setText = (patch: Partial<OrnamentText>, final: boolean) => o.text && onChange({ text: { ...o.text, ...patch } }, final);
+  const mode: OrnamentPlacement["mode"] = o.before ? "flow" : o.attach ? "attach" : "free";
   const container = o.attach ? "blok" : "seksi";
   const limits = ornamentLimits(o);
   const attachOptions = ATTACHABLE_BLOCKS.filter((id) => BUILDER_BLOCKS.find((b) => b.id === id)?.section === o.section);
+  const flowOptions = BUILDER_BLOCKS.filter((b) => b.section === o.section).map((b) => b.id);
   const swatch: Record<(typeof ORNAMENT_TEXT_COLORS)[number]["id"], string> = {
     primary: palette.primary,
     secondary: palette.secondary,
@@ -194,28 +201,55 @@ export default function OrnamentInspector({ ornament: o, palette, canvasMode, on
           </div>
         )}
 
-        <label className="block">
-          <span className="text-[11.5px] font-semibold text-stone-600">Menempel ke blok</span>
-          <select
-            value={o.attach ?? ""}
-            onChange={(e) => onAttach(e.target.value ? (e.target.value as AttachableBlockId) : null)}
-            className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-[12.5px] outline-none focus:border-amber-500 cursor-pointer"
-          >
-            <option value="">Tidak, bebas di seksi</option>
-            {attachOptions.map((id) => <option key={id} value={id}>{BUILDER_BLOCKS.find((b) => b.id === id)!.label}</option>)}
-          </select>
+        <div>
+          <span className="text-[11.5px] font-semibold text-stone-600">Penempatan</span>
+          <div className="mt-1 grid grid-cols-3 rounded-xl bg-stone-100 p-1">
+            {([
+              { mode: "free", label: "Bebas" },
+              { mode: "attach", label: "Menempel" },
+              { mode: "flow", label: "Sebaris" },
+            ] as const).map((m) => (
+              <button
+                key={m.mode}
+                type="button"
+                aria-pressed={mode === m.mode}
+                onClick={() => {
+                  if (m.mode === mode) return;
+                  if (m.mode === "free") onPlace({ mode: "free" });
+                  else if (m.mode === "attach") onPlace({ mode: "attach", block: attachOptions[0] });
+                  else onPlace({ mode: "flow", block: flowOptions[0] });
+                }}
+                disabled={(m.mode === "attach" && !attachOptions.length) || (m.mode === "flow" && !flowOptions.length)}
+                className={`rounded-lg px-1.5 py-1.5 text-[11px] font-semibold transition cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed ${mode === m.mode ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"}`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+          {mode !== "free" && (
+            <select
+              value={o.attach ?? o.before ?? ""}
+              onChange={(e) => onPlace(mode === "attach" ? { mode: "attach", block: e.target.value as AttachableBlockId } : { mode: "flow", block: e.target.value as BuilderBlockId })}
+              aria-label={mode === "attach" ? "Blok tempat menempel" : "Blok yang didahului ornamen"}
+              className="mt-1.5 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-[12.5px] outline-none focus:border-amber-500 cursor-pointer"
+            >
+              {(mode === "attach" ? attachOptions : flowOptions).map((id) => <option key={id} value={id}>{BUILDER_BLOCKS.find((b) => b.id === id)!.label}</option>)}
+            </select>
+          )}
           <p className="mt-1 text-[10.5px] leading-snug text-stone-500">
-            {o.attach
-              ? "Posisi dan lebar dihitung dari kotak blok, jadi ornamen ikut bergeser bersama blok dan mengikuti panjang isi klien."
-              : attachOptions.length ? "Pilih blok agar ornamen ikut bergeser bersama blok itu. Judul dan nama berlabel tidak bisa ditempeli: teksnya akan terbaca sebagai label klien." : "Seksi ini tidak punya blok yang bisa ditempeli."}
+            {mode === "attach"
+              ? "Posisi dan lebar dihitung dari kotak blok, jadi ornamen ikut bergeser bersama blok dan mengikuti panjang isi klien. Judul dan nama berlabel tidak bisa ditempeli: teksnya akan terbaca sebagai label klien."
+              : mode === "flow"
+                ? "Ornamen menjadi bagian alur halaman tepat di atas blok yang dipilih (pemisah, hiasan antar judul) dan menambah tinggi halaman. Berlaku juga untuk judul dan nama. Tidak ikut tersembunyi bila blok disembunyikan."
+                : "Bebas di seksi: posisi dalam persen seksi. Pilih Menempel agar ikut bergeser bersama blok, atau Sebaris agar menjadi bagian alur halaman."}
           </p>
-        </label>
+        </div>
 
         <label className="block">
           <span className="text-[11.5px] font-semibold text-stone-600">Seksi</span>
           <select
             value={o.section}
-            disabled={Boolean(o.attach)}
+            disabled={mode !== "free"}
             onChange={(e) => set({ section: e.target.value as OrnamentSection })}
             className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-[12.5px] outline-none focus:border-amber-500 cursor-pointer disabled:cursor-not-allowed disabled:bg-stone-50 disabled:text-stone-400"
           >
@@ -223,32 +257,41 @@ export default function OrnamentInspector({ ornament: o, palette, canvasMode, on
           </select>
         </label>
 
-        <div className="grid grid-cols-2 gap-2">
-          <button type="button" onClick={() => set({ x: 50 })} className="rounded-xl border border-stone-200 px-2 py-2 text-[11.5px] font-semibold text-stone-700 hover:bg-stone-50 cursor-pointer">Tengahkan mendatar</button>
-          <button type="button" onClick={() => set({ y: 50 })} className="rounded-xl border border-stone-200 px-2 py-2 text-[11.5px] font-semibold text-stone-700 hover:bg-stone-50 cursor-pointer">Tengahkan tegak</button>
-        </div>
-        <Slider label="Posisi mendatar" value={o.x} min={limits.x[0]} max={limits.x[1]} suffix="%" onChange={(x, f) => onChange({ x }, f)} />
-        <Slider label={o.anchor === "bottom" ? "Jarak dari bawah" : "Jarak dari atas"} value={o.y} min={limits.y[0]} max={limits.y[1]} suffix="%" onChange={(y, f) => onChange({ y }, f)} />
-        <Slider label={o.text ? "Lebar kotak teks" : "Lebar"} value={o.width} min={3} max={140} suffix={`% ${container}`} onChange={(width, f) => onChange({ width }, f)} />
+        {mode !== "flow" && (
+          <>
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" onClick={() => set({ x: 50 })} className="rounded-xl border border-stone-200 px-2 py-2 text-[11.5px] font-semibold text-stone-700 hover:bg-stone-50 cursor-pointer">Tengahkan mendatar</button>
+              <button type="button" onClick={() => set({ y: 50 })} className="rounded-xl border border-stone-200 px-2 py-2 text-[11.5px] font-semibold text-stone-700 hover:bg-stone-50 cursor-pointer">Tengahkan tegak</button>
+            </div>
+            <Slider label="Posisi mendatar" value={o.x} min={limits.x[0]} max={limits.x[1]} suffix="%" onChange={(x, f) => onChange({ x }, f)} />
+            <Slider label={o.anchor === "bottom" ? "Jarak dari bawah" : "Jarak dari atas"} value={o.y} min={limits.y[0]} max={limits.y[1]} suffix="%" onChange={(y, f) => onChange({ y }, f)} />
+          </>
+        )}
+        <Slider label={o.text ? "Lebar kotak teks" : "Lebar"} value={o.width} min={3} max={mode === "flow" ? 100 : 140} suffix={mode === "flow" ? "% kolom" : `% ${container}`} onChange={(width, f) => onChange({ width }, f)} />
+        {mode === "flow" && <Slider label="Jarak atas dan bawah" value={o.gap ?? DEFAULT_ORNAMENT_GAP} min={ORNAMENT_GAP_LIMITS[0]} max={ORNAMENT_GAP_LIMITS[1]} step={1} suffix=" px" resetTo={DEFAULT_ORNAMENT_GAP} onChange={(gap, f) => onChange({ gap }, f)} />}
         <Slider label="Putaran" value={o.rotate} min={-180} max={180} step={1} suffix="°" resetTo={0} onChange={(rotate, f) => onChange({ rotate }, f)} />
         <Slider label="Kepekatan" value={Math.round(o.opacity * 100)} min={5} max={100} step={1} suffix="%" resetTo={100} onChange={(v, f) => onChange({ opacity: v / 100 }, f)} />
 
-        <Toggle
-          label="Jarak diukur dari"
-          value={o.anchor}
-          options={[{ id: "top", label: `Atas ${container}` }, { id: "bottom", label: `Bawah ${container}` }]}
-          hint={o.attach ? undefined : "Pilih 'Bawah seksi' untuk ornamen di dasar sampul atau penutup agar tetap menempel di bawah pada HP yang lebih tinggi atau pendek."}
-          onChange={(anchor) => {
-            if (anchor === o.anchor) return;
-            set({ anchor, y: Math.round((100 - o.y) * 10) / 10 });
-          }}
-        />
-        <Toggle
-          label="Lapisan"
-          value={o.layer}
-          options={[{ id: "back", label: "Di belakang teks" }, { id: "front", label: "Di depan teks" }]}
-          onChange={(layer) => set({ layer })}
-        />
+        {mode !== "flow" && (
+          <>
+            <Toggle
+              label="Jarak diukur dari"
+              value={o.anchor}
+              options={[{ id: "top", label: `Atas ${container}` }, { id: "bottom", label: `Bawah ${container}` }]}
+              hint={o.attach ? undefined : "Pilih 'Bawah seksi' untuk ornamen di dasar sampul atau penutup agar tetap menempel di bawah pada HP yang lebih tinggi atau pendek."}
+              onChange={(anchor) => {
+                if (anchor === o.anchor) return;
+                set({ anchor, y: Math.round((100 - o.y) * 10) / 10 });
+              }}
+            />
+            <Toggle
+              label="Lapisan"
+              value={o.layer}
+              options={[{ id: "back", label: "Di belakang teks" }, { id: "front", label: "Di depan teks" }]}
+              onChange={(layer) => set({ layer })}
+            />
+          </>
+        )}
         <div>
           <span className="flex items-center justify-between text-[11.5px] font-semibold text-stone-600">
             Urutan tumpukan

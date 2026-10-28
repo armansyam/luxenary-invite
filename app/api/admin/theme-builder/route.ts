@@ -14,7 +14,7 @@ import { removeIfExists } from "@/lib/fsSafe";
 import { parseBuilderSpec } from "@/lib/themeBuilder/spec";
 import { ensureSpecFonts } from "@/lib/themeBuilder/fonts";
 import { fitSpecFrames } from "@/lib/themeBuilder/frameWindow";
-import { seedSpecFromMaster } from "@/lib/themeBuilder/legacySeed";
+import { legacyDefaultMedia, seedSpecFromMaster } from "@/lib/themeBuilder/legacySeed";
 import { exportBundle } from "@/lib/themeBuilder/bundle";
 import { masterPathOf } from "@/lib/themePaths";
 import {
@@ -120,7 +120,7 @@ export async function GET(req: NextRequest) {
 
     const from = params.get("from");
     if (from) {
-      const legacy = await prisma.theme.findUnique({ where: { id: from }, select: { id: true, name: true, category: true, description: true, eventType: true, builderSpec: true } });
+      const legacy = await prisma.theme.findUnique({ where: { id: from }, select: { id: true, name: true, category: true, description: true, eventType: true, builderSpec: true, defaultMedia: true, defaultMusicUrl: true } });
       if (!legacy || legacy.eventType !== "WEDDING" || legacy.builderSpec) {
         return NextResponse.json({ error: "Hanya tema pernikahan tulisan tangan yang dapat dijadikan titik awal." }, { status: 404 });
       }
@@ -129,9 +129,9 @@ export async function GET(req: NextRequest) {
       const seed = seedSpecFromMaster(fs.readFileSync(file, "utf-8"));
       return NextResponse.json({
         success: true,
-        theme: { id: "", name: `${legacy.name} Builder`, category: legacy.category, description: `Titik awal dari tema ${legacy.name}.` },
-        spec: seed.spec,
-        report: { source: legacy.name, found: seed.found, missing: seed.missing, textureFound: seed.textureFound, hexOutsideRoot: seed.hexOutsideRoot },
+        theme: { id: "", name: `${legacy.name} Builder`, category: legacy.category, description: `Titik awal dari tema ${legacy.name}.`, defaultMusicUrl: legacy.defaultMusicUrl ?? "" },
+        spec: { ...seed.spec, defaultMedia: legacyDefaultMedia(legacy.defaultMedia) },
+        report: { source: legacy.name, found: seed.found, missing: seed.missing, textureFound: seed.textureFound, fontsFound: seed.fontsFound, mediaFound: Object.keys(legacyDefaultMedia(legacy.defaultMedia)).length, hexOutsideRoot: seed.hexOutsideRoot },
       });
     }
 

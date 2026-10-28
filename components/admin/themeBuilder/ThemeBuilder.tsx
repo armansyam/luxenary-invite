@@ -12,6 +12,7 @@ import {
   BLOCK_LIMITS,
   BUILDER_BLOCKS,
   DEFAULT_BLOCK_PROPS,
+  DEFAULT_ORNAMENT_GAP,
   DEFAULT_ORNAMENT_TEXT,
   DEFAULT_PHOTO_FRAME,
   FRAMED_PHOTOS,
@@ -21,7 +22,6 @@ import {
   isDefaultFrame,
   isStackPeer,
   moveOrnament,
-  type AttachableBlockId,
   type StackMove,
   type BlockProps,
   type BuilderBlockId,
@@ -32,7 +32,7 @@ import {
   type OrnamentSection,
 } from "@/lib/themeBuilder/spec";
 import BuilderPreview, { DEVICE_SIZES, type PreviewActions, type PreviewDevice, type PreviewDropTarget } from "@/components/admin/themeBuilder/BuilderPreview";
-import OrnamentInspector from "@/components/admin/themeBuilder/OrnamentInspector";
+import OrnamentInspector, { type OrnamentPlacement } from "@/components/admin/themeBuilder/OrnamentInspector";
 import BlockInspector from "@/components/admin/themeBuilder/BlockInspector";
 import {
   ColorsPanel,
@@ -62,7 +62,7 @@ function structuralKey(spec: BuilderSpec): string {
   // Posisi ornamen dan properti blok diterapkan langsung ke pratinjau saat menyeret, jadi tidak memicu muat ulang.
   // Bingkai foto juga diterapkan langsung lewat gaya di dokumen pratinjau.
   // Isi, huruf, ukuran, dan warna teks hias juga diterapkan langsung; hanya jenis (teks atau gambar) dan tempat menempel yang mengubah HTML.
-  return JSON.stringify({ ...spec, blocks: {}, frames: {}, ornaments: spec.ornaments.map((o) => [o.id, o.src, o.section, o.layer, o.attach ?? "", o.text ? 1 : 0]) });
+  return JSON.stringify({ ...spec, blocks: {}, frames: {}, ornaments: spec.ornaments.map((o) => [o.id, o.src, o.section, o.layer, o.attach ?? "", o.before ?? "", o.text ? 1 : 0]) });
 }
 
 /** Posisi ornamen di antara ornamen sejenis (wadah dan lapisan sama); 0 adalah paling belakang. */
@@ -369,9 +369,9 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
     syncHistory();
     specRef.current = data.spec;
     setSpec(data.spec);
-    setMeta((m) => ({ ...m, name: data.theme.name, category: data.theme.category, description: data.theme.description }));
-    const r = data.report as { source: string; found: string[]; missing: string[]; hexOutsideRoot: number };
-    notify(`Titik awal dari ${r.source}: ${r.found.length} dari ${r.found.length + r.missing.length} warna palet terbaca${r.hexOutsideRoot ? `; ${r.hexOutsideRoot} warna lain di tema lama ditulis mati dan tidak ikut` : ""}. Tata letak mengikuti blueprint.`, "info");
+    setMeta((m) => ({ ...m, name: data.theme.name, category: data.theme.category, description: data.theme.description, defaultMusicUrl: data.theme.defaultMusicUrl || "" }));
+    const r = data.report as { source: string; found: string[]; missing: string[]; fontsFound: string[]; mediaFound: number; hexOutsideRoot: number };
+    notify(`Titik awal dari ${r.source}: ${r.found.length} dari ${r.found.length + r.missing.length} warna palet, ${r.fontsFound.length} dari 3 huruf, dan ${r.mediaFound} media bawaan terbaca${r.hexOutsideRoot ? `; ${r.hexOutsideRoot} warna lain di tema lama ditulis mati dan tidak ikut` : ""}. Tata letak mengikuti blueprint.`, "info");
   }, [notify, syncHistory]);
 
   const updateBlock = useCallback((id: BuilderBlockId, patch: Partial<BlockProps>, final: boolean) => {
@@ -454,20 +454,32 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
   }, [apply, device, notify]);
 
   /**
-   * Menempel ke blok atau melepas. Ukuran dan posisi berganti acuan (seksi atau blok), jadi ornamen dikembalikan ke tengah
-   * dengan lebar sedang daripada terlempar ke luar kotak blok.
+   * Mengubah cara ornamen ditempatkan: bebas di seksi, menempel ke blok, atau sebaris sebelum blok. Acuan posisi dan
+   * ukuran berganti (seksi, kotak blok, atau kolom), jadi ornamen dikembalikan ke tengah dengan lebar sedang daripada
+   * terlempar ke luar acuannya.
    */
-  const attachOrnament = useCallback((id: string, block: AttachableBlockId | null) => {
+  const placeOrnament = useCallback((id: string, placement: OrnamentPlacement) => {
     const current = specRef.current;
     const source = current.ornaments.find((o) => o.id === id);
-    if (!source || source.attach === (block ?? undefined)) return;
+    if (!source) return;
+    const block = placement.mode === "free" ? null : placement.block;
+    if (placement.mode === "attach" && source.attach === block) return;
+    if (placement.mode === "flow" && source.before === block) return;
+    if (placement.mode === "free" && !source.attach && !source.before) return;
     const section = block ? BUILDER_BLOCKS.find((b) => b.id === block)!.section : source.section;
     if (section !== source.section && current.ornaments.filter((o) => o.section === section).length >= MAX_ORNAMENTS_PER_SECTION) {
       return notify(`Seksi ${SECTION_LABELS[section]} sudah berisi ${MAX_ORNAMENTS_PER_SECTION} ornamen.`, "error");
     }
-    const moved: BuilderOrnament = { ...source, section, x: 50, y: 50, anchor: "top", width: block ? 50 : 32 };
-    if (block) moved.attach = block;
-    else delete moved.attach;
+    const moved: BuilderOrnament = { ...source, section, x: 50, y: 50, anchor: "top", width: placement.mode === "free" ? 32 : placement.mode === "attach" ? 50 : 40 };
+    delete moved.attach;
+    delete moved.before;
+    delete moved.gap;
+    if (placement.mode === "attach") moved.attach = placement.block;
+    if (placement.mode === "flow") {
+      moved.before = placement.block;
+      moved.gap = DEFAULT_ORNAMENT_GAP;
+      moved.layer = "back";
+    }
     apply({ ...current, ornaments: current.ornaments.map((o) => (o.id === id ? moved : o)) }, "commit");
   }, [apply, notify]);
 
@@ -933,7 +945,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
               ornament={selected}
               palette={spec.palette}
               canvasMode={spec.canvasMode}
-              onAttach={(block) => attachOrnament(selected.id, block)}
+              onPlace={(placement) => placeOrnament(selected.id, placement)}
               stack={stackOf(spec.ornaments, selected)}
               onReorder={(move) => reorderOrnament(selected.id, move)}
               onChange={(patch, final) => updateOrnament(selected.id, patch, final)}

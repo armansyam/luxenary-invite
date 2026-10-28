@@ -137,8 +137,20 @@ export interface BuilderOrnament {
   layer: OrnamentLayer;
   /** Menempel ke blok: posisi dan lebar relatif ke kotak blok, sehingga ikut bergeser bersama blok dan isi klien. `section` mengikuti seksi blok itu. */
   attach?: AttachableBlockId;
+  /**
+   * Sebaris sebelum blok: ornamen menjadi elemen alur (pemisah, hiasan antar judul) yang dipasang sebagai saudara tepat
+   * sebelum elemen blok, di tengah kolom dengan lebar `width` persen kolom dan jarak `gap` di atas dan bawahnya. Berlaku
+   * untuk semua blok, termasuk yang berlabel, karena tidak berada di dalam elemennya. Tidak bersama `attach`; `x`, `y`,
+   * `anchor`, dan `layer` tidak dipakai.
+   */
+  before?: BuilderBlockId;
+  /** Jarak di atas dan bawah ornamen sebaris, piksel. */
+  gap?: number;
   text?: OrnamentText;
 }
+
+export const ORNAMENT_GAP_LIMITS = [0, 96] as const;
+export const DEFAULT_ORNAMENT_GAP = 16;
 
 /** Slot yang boleh punya gambar bawaan dari builder; latar (GLOBAL_FIXED_BG) diturunkan dari `texture`. */
 export const BUILDER_DEFAULT_SLOTS = [
@@ -258,7 +270,7 @@ export const ORNAMENT_POSITION_LIMITS = {
 export const ornamentLimits = (o: Pick<BuilderOrnament, "attach">) => (o.attach ? ORNAMENT_POSITION_LIMITS.block : ORNAMENT_POSITION_LIMITS.section);
 
 /** Ornamen saling bertumpuk bila berada di wadah (seksi atau blok tempat menempel) dan lapisan yang sama. */
-export const isStackPeer = (a: BuilderOrnament, b: BuilderOrnament) => a.section === b.section && a.layer === b.layer && a.attach === b.attach;
+export const isStackPeer = (a: BuilderOrnament, b: BuilderOrnament) => a.section === b.section && a.layer === b.layer && a.attach === b.attach && a.before === b.before;
 
 /**
  * Urutan larik adalah urutan tumpukan di DOM (ornamen setelahnya menimpa yang sebelumnya) di antara ornamen sejenis,
@@ -828,14 +840,21 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
       if (!(ATTACHABLE_BLOCKS as readonly string[]).includes(o.attach)) { errors.push(`${label}: blok tempat menempel tidak dikenali.`); continue; }
       attach = o.attach;
     }
+    let before: BuilderBlockId | undefined;
+    if (o.before !== undefined && o.before !== null) {
+      if (!BUILDER_BLOCKS.some((b) => b.id === o.before)) { errors.push(`${label}: blok untuk ornamen sebaris tidak dikenali.`); continue; }
+      if (attach) { errors.push(`${label}: tidak bisa menempel ke blok sekaligus sebaris.`); continue; }
+      before = o.before;
+    }
     let text: OrnamentText | undefined;
     if (o.text !== undefined && o.text !== null) {
       const parsedText = parseOrnamentText(o.text, label, errors);
       if (!parsedText) continue;
       text = parsedText;
     } else if (!isAllowedOrnamentSrc(o.src)) { errors.push(`${label}: gambar harus dari pustaka ornamen.`); continue; }
-    // Ornamen yang menempel ke blok selalu berada di seksi blok itu, apa pun isian `section`.
-    const section = attach ? BUILDER_BLOCKS.find((b) => b.id === attach)!.section : pickEnum(o.section, ORNAMENT_SECTIONS, `${label}: seksi`, errors);
+    // Ornamen yang menempel atau sebaris dengan blok selalu berada di seksi blok itu, apa pun isian `section`.
+    const host = attach ?? before;
+    const section = host ? BUILDER_BLOCKS.find((b) => b.id === host)!.section : pickEnum(o.section, ORNAMENT_SECTIONS, `${label}: seksi`, errors);
     if (!section) continue;
     perSection[section] = (perSection[section] ?? 0) + 1;
     if (perSection[section] > MAX_ORNAMENTS_PER_SECTION) { errors.push(`Seksi ${SECTION_LABELS[section]} paling banyak ${MAX_ORNAMENTS_PER_SECTION} ornamen.`); continue; }
@@ -843,15 +862,17 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
       id,
       section,
       src: text ? "" : o.src,
-      x: clamp(o.x, ornamentLimits({ attach }).x[0], ornamentLimits({ attach }).x[1], 50),
-      y: clamp(o.y, ornamentLimits({ attach }).y[0], ornamentLimits({ attach }).y[1], 50),
-      anchor: o.anchor === "bottom" ? "bottom" : "top",
-      width: clamp(o.width, 3, 140, 30),
+      // Ornamen sebaris ada di alur: posisi, acuan, dan lapisan tidak berlaku sehingga disimpan sebagai nilai tetap.
+      x: before ? 50 : clamp(o.x, ornamentLimits({ attach }).x[0], ornamentLimits({ attach }).x[1], 50),
+      y: before ? 50 : clamp(o.y, ornamentLimits({ attach }).y[0], ornamentLimits({ attach }).y[1], 50),
+      anchor: before || o.anchor !== "bottom" ? "top" : "bottom",
+      width: clamp(o.width, 3, before ? 100 : 140, 30),
       rotate: clamp(o.rotate, -180, 180, 0),
       opacity: clamp(o.opacity, 0.05, 1, 1),
       flipX: o.flipX === true,
-      layer: o.layer === "front" ? "front" : "back",
+      layer: !before && o.layer === "front" ? "front" : "back",
       ...(attach ? { attach } : {}),
+      ...(before ? { before, gap: clamp(o.gap, ORNAMENT_GAP_LIMITS[0], ORNAMENT_GAP_LIMITS[1], DEFAULT_ORNAMENT_GAP) } : {}),
       ...(text ? { text } : {}),
     });
   }
@@ -884,11 +905,17 @@ export function googleFontIds(fonts: BuilderFonts): string[] {
  * huruf, ukuran, dan warna; `line-height` ditulis di sini karena kelas `.lux-orn` di blueprint memakai 0 untuk gambar.
  * `scaleX(-1)` pada teks membalik tulisan, jadi cermin hanya berlaku untuk gambar.
  */
-export function ornamentStyle(o: Pick<BuilderOrnament, "x" | "y" | "anchor" | "width" | "rotate" | "opacity" | "flipX" | "text">): string {
-  const vertical = o.anchor === "bottom" ? `bottom:${o.y}%` : `top:${o.y}%`;
-  const shiftY = o.anchor === "bottom" ? "50%" : "-50%";
+export function ornamentStyle(o: Pick<BuilderOrnament, "x" | "y" | "anchor" | "width" | "rotate" | "opacity" | "flipX" | "text" | "before" | "gap">): string {
   const flip = o.text ? 1 : o.flipX ? -1 : 1;
-  const base = `left:${o.x}%;${vertical};width:${o.width}%;opacity:${o.opacity};transform:translate(-50%,${shiftY}) rotate(${o.rotate}deg) scaleX(${flip});`;
+  let base: string;
+  if (o.before) {
+    // Elemen alur: di tengah kolom, ikut menambah tinggi halaman, tanpa posisi absolut.
+    base = `display:block;width:${o.width}%;margin:${o.gap ?? DEFAULT_ORNAMENT_GAP}px auto;opacity:${o.opacity};transform:rotate(${o.rotate}deg) scaleX(${flip});`;
+  } else {
+    const vertical = o.anchor === "bottom" ? `bottom:${o.y}%` : `top:${o.y}%`;
+    const shiftY = o.anchor === "bottom" ? "50%" : "-50%";
+    base = `left:${o.x}%;${vertical};width:${o.width}%;opacity:${o.opacity};transform:translate(-50%,${shiftY}) rotate(${o.rotate}deg) scaleX(${flip});`;
+  }
   if (!o.text) return base;
   const color = ORNAMENT_TEXT_COLORS.find((c) => c.id === o.text!.color)!.css;
   return `${base}font-family:var(--font-${o.text.font});font-size:${o.text.size}px;letter-spacing:${o.text.spacing}em;color:${color};line-height:1.25;text-align:center;overflow-wrap:anywhere;`;

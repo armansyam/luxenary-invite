@@ -158,9 +158,11 @@ const EAGER_SECTIONS = new Set(["cover", "sidebar", "opening"]);
  */
 function ornamentHtml(o: BuilderOrnament): string {
   const tag = o.attach ? "span" : "div";
-  const classes = ["lux-orn", o.layer === "front" && "is-front", o.attach && "is-attached", o.text && "lux-orn-text"].filter(Boolean).join(" ");
+  // Ornamen sebaris adalah elemen alur: kelas `lux-orn` (absolut, tembus klik) tidak dipakai, dan gambarnya diberi gaya sendiri.
+  const classes = (o.before ? ["lux-flow"] : ["lux-orn", o.layer === "front" && "is-front", o.attach && "is-attached"]).concat(o.text ? ["lux-orn-text"] : []).filter(Boolean).join(" ");
   const loading = EAGER_SECTIONS.has(o.section) ? "eager" : "lazy";
-  const inner = o.text ? escapeText(o.text.value) : `<img src="${o.src}" alt="" loading="${loading}" decoding="async" draggable="false" />`;
+  const imgStyle = o.before ? ` style="display:block;width:100%;height:auto;"` : "";
+  const inner = o.text ? escapeText(o.text.value) : `<img src="${o.src}" alt="" loading="${loading}" decoding="async" draggable="false"${imgStyle} />`;
   return `<${tag} class="${classes}" data-orn-id="${o.id}" style="${ornamentStyle(o)}" aria-hidden="true">${inner}</${tag}>`;
 }
 
@@ -185,13 +187,29 @@ function attachCss(ornaments: BuilderOrnament[]): string {
   ].filter(Boolean).join("\n    ");
 }
 
+const openingTagOf = (block: string) => new RegExp(`<[a-zA-Z0-9]+\\b[^>]*\\bdata-lux-block="${block}"[^>]*>`);
+
+/** Memasang ornamen sebaris sebagai saudara tepat sebelum elemen blok, sehingga berlaku juga untuk blok berlabel. */
+function insertBeforeBlocks(html: string, ornaments: BuilderOrnament[]): string {
+  const byBlock = new Map<string, BuilderOrnament[]>();
+  for (const o of ornaments) if (o.before) byBlock.set(o.before, [...(byBlock.get(o.before) ?? []), o]);
+  let out = html;
+  for (const [block, items] of byBlock) {
+    const opening = openingTagOf(block);
+    if (!opening.test(out)) throw new Error(`Penanda blok ${block} tidak ada di blueprint.`);
+    const markup = items.map(ornamentHtml).join("");
+    out = out.replace(opening, (tag) => `${markup}${tag}`);
+  }
+  return out;
+}
+
 /** Memasang ornamen sebagai anak pertama elemen blok. Blok yang hilang dari blueprint adalah galat, bukan ornamen yang diam-diam hilang. */
 function attachToBlocks(html: string, ornaments: BuilderOrnament[]): string {
   const byBlock = new Map<string, BuilderOrnament[]>();
   for (const o of ornaments) if (o.attach) byBlock.set(o.attach, [...(byBlock.get(o.attach) ?? []), o]);
   let out = html;
   for (const [block, items] of byBlock) {
-    const opening = new RegExp(`<[a-zA-Z0-9]+\\b[^>]*\\bdata-lux-block="${block}"[^>]*>`);
+    const opening = openingTagOf(block);
     if (!opening.test(out)) throw new Error(`Penanda blok ${block} tidak ada di blueprint.`);
     const markup = items.map(ornamentHtml).join("");
     out = out.replace(opening, (tag) => `${tag}${markup}`);
@@ -250,11 +268,11 @@ export function compileBuilderMaster(spec: BuilderSpec, blueprint = readBuilderB
   }
 
   html = html.replace(/<!-- lux-ornaments:([a-z]+) -->/g, (marker, section: string) => {
-    const items = spec.ornaments.filter((o) => o.section === section && !o.attach);
+    const items = spec.ornaments.filter((o) => o.section === section && !o.attach && !o.before);
     return items.length ? items.map(ornamentHtml).join("\n    ") : marker;
   });
 
-  return applyStaticTexts(attachToBlocks(html, spec.ornaments), spec.texts);
+  return applyStaticTexts(insertBeforeBlocks(attachToBlocks(html, spec.ornaments), spec.ornaments), spec.texts);
 }
 
 const escapeText = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");

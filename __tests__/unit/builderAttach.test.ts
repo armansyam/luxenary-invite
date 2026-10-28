@@ -180,3 +180,44 @@ describe("tumpukan ornamen menempel", () => {
     expect(moveOrnament(list, "d", "back")).toBe(list);
   });
 });
+
+describe("ornamen sebaris sebelum blok", () => {
+  const compile = (ornaments: BuilderOrnament[]) => compileBuilderMaster(specWith(ornaments), blueprint);
+
+  it("validasi: seksi mengikuti blok, posisi tetap, lebar dijepit 100, tidak bersama attach", () => {
+    const r = parse([orn({ id: "flw00001", before: "couple-title", section: "cover", x: 3, y: 77, width: 130, layer: "front", anchor: "bottom", gap: 500 } as never)]);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.spec.ornaments[0]).toMatchObject({ section: "couple", before: "couple-title", x: 50, y: 50, anchor: "top", layer: "back", width: 100, gap: 96 });
+    expect(parse([orn({ id: "flw00002", before: "tidak-ada" } as never)]).ok).toBe(false);
+    expect(parse([orn({ id: "flw00003", before: "couple-title", attach: "rsvp-form" } as never)]).ok).toBe(false);
+  });
+
+  it("dipasang sebagai saudara tepat sebelum blok, juga untuk blok berlabel, dan tidak mengubah label", () => {
+    const html = compile([orn({ id: "flw00004", before: "couple-title", section: "couple", width: 40 })]);
+    const tag = openingTag("couple-title");
+    const at = html.indexOf(tag);
+    expect(at).toBeGreaterThan(0);
+    const before = html.slice(Math.max(0, at - 400), at);
+    expect(before).toMatch(/<div class="lux-flow" data-orn-id="flw00004" style="display:block;width:40%;margin:16px auto;/);
+    expect(before.trimEnd().endsWith("</div>")).toBe(true);
+    expect(html).toContain('style="display:block;width:100%;height:auto;"');
+    expect(auditBuilderMaster(html, blueprint)).toEqual([]);
+    expect(extractRenderedLabels(html)).toEqual(extractRenderedLabels(compile([])));
+    expect(html.match(/data-orn-id="flw00004"/g)).toHaveLength(1);
+  });
+
+  it("teks sebaris di-escape dan memakai token palet", () => {
+    const html = compile([orn({ id: "flw00005", src: "", before: "countdown-title", section: "countdown", text: { ...DEFAULT_ORNAMENT_TEXT, value: "A & B" } })]);
+    expect(html).toContain('<div class="lux-flow lux-orn-text" data-orn-id="flw00005"');
+    expect(html).toContain("A &amp; B");
+    expect(html).toContain("font-family:var(--font-script)");
+  });
+
+  it("blok yang hilang dari blueprint adalah galat dan tumpukan dipisah per blok", () => {
+    const stripped = blueprint.replace(/data-lux-block="couple-title"/, 'data-x="y"');
+    expect(() => compileBuilderMaster(specWith([orn({ id: "flw00006", before: "couple-title", section: "couple" })]), stripped)).toThrow(/couple-title/);
+    const list = [orn({ id: "a", before: "couple-title", section: "couple" }), orn({ id: "b", before: "events-title", section: "events" }), orn({ id: "c", before: "couple-title", section: "couple" })];
+    expect(moveOrnament(list, "a", "front").map((o) => o.id)).toEqual(["b", "c", "a"]);
+    expect(moveOrnament(list, "b", "front")).toBe(list);
+  });
+});

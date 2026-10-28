@@ -69,6 +69,8 @@ const BUILDER_CHROME_CSS = `
   html.lux-b-edit .lux-orn { pointer-events: auto !important; cursor: grab; }
   html.lux-b-edit .lux-orn:hover { outline: 1px dashed #d97706; outline-offset: 2px; }
   html.lux-b-edit .lux-orn.lux-b-sel { outline: 2px solid #d97706; outline-offset: 2px; }
+  html.lux-b-edit .lux-flow { cursor: pointer; outline: 1px dashed #d97706; outline-offset: 2px; }
+  html.lux-b-edit .lux-flow.lux-b-sel { outline: 2px solid #d97706; }
   html.lux-b-edit [data-lux-block] { cursor: grab; outline: 1px dashed rgba(37, 99, 235, 0.35); outline-offset: 3px; }
   html.lux-b-edit [data-lux-block]:hover { outline: 1px dashed #2563eb; }
   html.lux-b-edit [data-lux-block].lux-b-bsel { outline: 2px solid #2563eb; outline-offset: 3px; }
@@ -197,12 +199,14 @@ export default function BuilderPreview(props: Props) {
     const doc = getDoc();
     if (!doc) return;
     doc.querySelectorAll(".lux-b-handle, .lux-b-rot").forEach((n) => n.remove());
-    doc.querySelectorAll(".lux-orn.lux-b-sel").forEach((n) => n.classList.remove("lux-b-sel"));
+    doc.querySelectorAll(".lux-b-sel").forEach((n) => n.classList.remove("lux-b-sel"));
     const { selectedId: sel, editOrnaments: editing } = latest.current.props;
     if (!sel || !editing) return;
-    const el = doc.querySelector(`.lux-orn[data-orn-id="${sel}"]`);
+    const el = doc.querySelector(`[data-orn-id="${sel}"]`);
     if (!el) return;
     el.classList.add("lux-b-sel");
+    // Ornamen sebaris berada di alur: hanya disorot, tanpa pegangan ukuran dan putar.
+    if (el.classList.contains("lux-flow")) return;
     const handle = doc.createElement("div");
     handle.className = "lux-b-handle";
     handle.title = "Seret untuk mengubah ukuran";
@@ -261,7 +265,7 @@ export default function BuilderPreview(props: Props) {
     const editableAt = (clientX: number, clientY: number): HTMLElement[] => {
       const found: HTMLElement[] = [];
       for (const el of doc.elementsFromPoint(clientX, clientY) as HTMLElement[]) {
-        const hit = (el.closest(".lux-orn") ?? el.closest("[data-lux-block]")) as HTMLElement | null;
+        const hit = (el.closest(".lux-orn, .lux-flow") ?? el.closest("[data-lux-block]")) as HTMLElement | null;
         if (hit && !found.includes(hit)) found.push(hit);
       }
       return found;
@@ -273,6 +277,11 @@ export default function BuilderPreview(props: Props) {
       const onHandle = target.classList.contains("lux-b-handle") || target.classList.contains("lux-b-rot");
       const stack = onHandle ? [] : editableAt(e.clientX, e.clientY);
       const picked = onHandle ? (target.closest(".lux-orn") as HTMLElement | null) : (e.altKey && stack.length > 1 ? stack[1] : stack[0]) ?? null;
+      if (picked?.classList.contains("lux-flow")) {
+        e.preventDefault();
+        latest.current.props.onSelect(picked.dataset.ornId ?? null);
+        return;
+      }
       const orn = picked?.classList.contains("lux-orn") ? picked : null;
       if (!orn) {
         const blockEl = picked;
@@ -494,7 +503,7 @@ export default function BuilderPreview(props: Props) {
     const doc = getDoc();
     if (!doc) return;
     for (const o of ornaments) {
-      const el = doc.querySelector(`.lux-orn[data-orn-id="${o.id}"]`) as HTMLElement | null;
+      const el = doc.querySelector(`[data-orn-id="${o.id}"]`) as HTMLElement | null;
       if (!el) continue;
       el.setAttribute("style", ornamentStyle(o));
       el.classList.toggle("is-front", o.layer === "front");
