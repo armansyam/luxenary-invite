@@ -264,7 +264,12 @@ export default function BuilderPreview(props: Props) {
     // tetap terjangkau: Alt+klik memilih yang berikutnya di bawahnya.
     const editableAt = (clientX: number, clientY: number): HTMLElement[] => {
       const found: HTMLElement[] = [];
+      // Sampul menutup layar; elemen seksi di baliknya ikut dilaporkan elementsFromPoint tetapi tidak terlihat, jadi
+      // selama sampul tampil hanya isi sampul yang bisa dipilih.
+      const cover = doc.getElementById("coverScreen");
+      const coverShown = Boolean(cover && cover.style.display !== "none" && !cover.classList.contains("opened"));
       for (const el of doc.elementsFromPoint(clientX, clientY) as HTMLElement[]) {
+        if (coverShown && !cover!.contains(el)) continue;
         const hit = (el.closest(".lux-orn, .lux-flow") ?? el.closest("[data-lux-block]")) as HTMLElement | null;
         if (hit && !found.includes(hit)) found.push(hit);
       }

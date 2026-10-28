@@ -149,6 +149,13 @@ export interface BuilderOrnament {
   text?: OrnamentText;
 }
 
+/**
+ * Blok yang tidak boleh didahului ornamen sebaris. Tanda & antar mempelai adalah anak langsung `.couple-grid`, yang
+ * berbaris menyamping pada varian "Berdampingan": ornamen sebaris menjadi kolom ketiga dan mendorong foto keluar layar
+ * (luapan 12 px di 320 px, ditemukan lewat sapuan varian). Menempel ke blok itu tetap boleh.
+ */
+export const FLOW_EXCLUDED_BLOCKS: readonly BuilderBlockId[] = ["couple-amp"];
+
 export const ORNAMENT_GAP_LIMITS = [0, 96] as const;
 export const DEFAULT_ORNAMENT_GAP = 16;
 
@@ -842,7 +849,7 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
     }
     let before: BuilderBlockId | undefined;
     if (o.before !== undefined && o.before !== null) {
-      if (!BUILDER_BLOCKS.some((b) => b.id === o.before)) { errors.push(`${label}: blok untuk ornamen sebaris tidak dikenali.`); continue; }
+      if (!BUILDER_BLOCKS.some((b) => b.id === o.before) || FLOW_EXCLUDED_BLOCKS.includes(o.before)) { errors.push(`${label}: blok untuk ornamen sebaris tidak dikenali atau tidak mendukungnya.`); continue; }
       if (attach) { errors.push(`${label}: tidak bisa menempel ke blok sekaligus sebaris.`); continue; }
       before = o.before;
     }

@@ -18,9 +18,8 @@ import { prisma, pool } from "../lib/prisma";
 import { masterPathOf } from "../lib/themePaths";
 import { ensureSpecFonts } from "../lib/themeBuilder/fonts";
 import { fitSpecFrames } from "../lib/themeBuilder/frameWindow";
-import { legacyDefaultMedia, seedSpecFromMaster } from "../lib/themeBuilder/legacySeed";
+import { legacyDraftSpec } from "../lib/themeBuilder/legacyMigration";
 import { BUILDER_CATEGORIES, builderDefaultMedia, builderMasterPath, compileAndAudit, isSafeThemeId, recordBuilderRevision, resolveThemeMusic, themeIdTaken, type BuilderCategory } from "../lib/themeBuilder/server";
-import { parseBuilderSpec } from "../lib/themeBuilder/spec";
 
 const SERIES: Record<BuilderCategory, string> = { minimalist: "Minimalist", modern: "Modern", traditional: "Traditional" };
 
@@ -48,17 +47,17 @@ async function main() {
     if (await themeIdTaken(targetId)) { skipped++; console.log(`LEWAT   ${theme.id}: ${targetId} sudah ada`); continue; }
     if (!fs.existsSync(file)) { failed.push(`${theme.id}: master tidak ada di disk`); continue; }
 
-    const seed = seedSpecFromMaster(fs.readFileSync(file, "utf-8"));
-    const parsed = parseBuilderSpec({ ...seed.spec, defaultMedia: legacyDefaultMedia(theme.defaultMedia) });
-    if (!parsed.ok) { failed.push(`${theme.id}: spesifikasi tidak valid (${parsed.errors.join("; ")})`); continue; }
+    const draft = legacyDraftSpec(fs.readFileSync(file, "utf-8"), theme.defaultMedia);
+    if (!draft.ok) { failed.push(`${theme.id}: spesifikasi tidak valid (${draft.errors.join("; ")})`); continue; }
+    const { seed } = draft;
     const music = await resolveThemeMusic(theme.defaultMusicUrl ?? "");
     const musicUrl = music.ok ? music.url : null;
 
-    console.log(`${apply ? "BUAT   " : "RENCANA"} ${targetId}: palet ${seed.found.length}/8, huruf ${seed.fontsFound.length}/3, tekstur ${seed.textureFound ? "ya" : "tidak"}, media ${Object.keys(parsed.spec.defaultMedia).length}, musik ${musicUrl ? "ya" : "tidak"}`);
+    console.log(`${apply ? "BUAT   " : "RENCANA"} ${targetId}: palet ${seed.found.length}/8, huruf ${seed.fontsFound.length}/3, tekstur ${seed.textureFound ? "ya" : "tidak"}, media ${Object.keys(draft.spec.defaultMedia).length}, musik ${musicUrl ? "ya" : "tidak"}`);
     if (!apply) continue;
 
-    await ensureSpecFonts(parsed.spec);
-    const spec = await fitSpecFrames(parsed.spec);
+    await ensureSpecFonts(draft.spec);
+    const spec = await fitSpecFrames(draft.spec);
     const { html, issues } = compileAndAudit(spec);
     if (issues.length) { failed.push(`${theme.id}: gagal audit (${issues.map((i) => i.code).join(", ")})`); continue; }
 

@@ -698,7 +698,7 @@ export function OrnamentsPanel({
         </div>
       </Section>
 
-      <Section title="Teks hias" hint="Tulisan bebas seperti &quot;Save the Date&quot; atau nama panggilan. Tetap tertulis di tema; klien tidak mengubahnya di Studio.">
+      <Section title="Teks hias" hint="Tulisan bebas seperti &quot;Save the Date&quot; atau &quot;Bersama keluarga&quot;. Teksnya sama untuk semua klien yang memakai tema ini dan tidak bisa diubah di Studio, jadi jangan menulis nama atau tanggal klien di sini.">
         <button type="button" onClick={onAddText} className="flex w-full items-center justify-center gap-2 rounded-xl border border-stone-200 px-3 py-2 text-[12.5px] font-semibold text-stone-800 hover:bg-stone-50 cursor-pointer">
           <Icon d="M5 6V4h14v2M12 4v16M9 20h6" className="h-4 w-4 text-stone-500" />
           Tambah teks di seksi {SECTION_LABELS[viewSection]}

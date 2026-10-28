@@ -6,6 +6,7 @@ import { describe, it, expect } from "vitest";
 import { auditBuilderMaster } from "@/lib/themeBuilder/audit";
 import { compileBuilderMaster, readBuilderBlueprint } from "@/lib/themeBuilder/compile";
 import { extractRenderedLabels } from "@/lib/renderTemplate";
+import { exportBundle, readBundle } from "@/lib/themeBuilder/bundle";
 import {
   ATTACHABLE_BLOCKS,
   BUILDER_BLOCKS,
@@ -190,6 +191,9 @@ describe("ornamen sebaris sebelum blok", () => {
     if (r.ok) expect(r.spec.ornaments[0]).toMatchObject({ section: "couple", before: "couple-title", x: 50, y: 50, anchor: "top", layer: "back", width: 100, gap: 96 });
     expect(parse([orn({ id: "flw00002", before: "tidak-ada" } as never)]).ok).toBe(false);
     expect(parse([orn({ id: "flw00003", before: "couple-title", attach: "rsvp-form" } as never)]).ok).toBe(false);
+    // Tanda & berada di baris menyamping varian Berdampingan; ornamen sebaris di sana menimbulkan luapan horizontal di HP.
+    expect(parse([orn({ id: "flw00007", before: "couple-amp", section: "couple" } as never)]).ok).toBe(false);
+    expect(parse([orn({ id: "flw00008", attach: "couple-amp", section: "couple" } as never)]).ok).toBe(true);
   });
 
   it("dipasang sebagai saudara tepat sebelum blok, juga untuk blok berlabel, dan tidak mengubah label", () => {
@@ -219,5 +223,43 @@ describe("ornamen sebaris sebelum blok", () => {
     const list = [orn({ id: "a", before: "couple-title", section: "couple" }), orn({ id: "b", before: "events-title", section: "events" }), orn({ id: "c", before: "couple-title", section: "couple" })];
     expect(moveOrnament(list, "a", "front").map((o) => o.id)).toEqual(["b", "c", "a"]);
     expect(moveOrnament(list, "b", "front")).toBe(list);
+  });
+});
+
+describe("roundtrip spesifikasi dengan ornamen baru", () => {
+  const mixed = (): BuilderOrnament[] => [
+    orn({ id: "rt000001", section: "cover" }),
+    orn({ id: "rt000002", src: "", section: "cover", layer: "front", text: { ...DEFAULT_ORNAMENT_TEXT, value: "A & B", spacing: 0.12 } }),
+    orn({ id: "rt000003", attach: "cover-names", section: "cover", x: 140, y: -300, width: 22 }),
+    orn({ id: "rt000004", attach: "rsvp-form", section: "rsvp", src: "", text: { ...DEFAULT_ORNAMENT_TEXT, color: "accent", font: "heading" } }),
+    orn({ id: "rt000005", before: "couple-title", section: "couple", gap: 30, width: 55 }),
+    orn({ id: "rt000006", before: "events-title", section: "events", src: "", text: { ...DEFAULT_ORNAMENT_TEXT, value: "Bersama", font: "body" } }),
+  ];
+
+  it("parse ulang hasil parse tidak mengubah apa pun dan lolos JSON", () => {
+    const first = parse(mixed());
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    const again = parseBuilderSpec(JSON.parse(JSON.stringify(first.spec)));
+    expect(again.ok).toBe(true);
+    if (again.ok) expect(again.spec).toEqual(first.spec);
+    expect(first.spec.ornaments).toHaveLength(6);
+  });
+
+  it("ekspor lalu impor mengembalikan spesifikasi yang sama", async () => {
+    const first = parse(mixed());
+    if (!first.ok) throw new Error("spesifikasi uji tidak valid");
+    const { bundle } = exportBundle({ name: "Uji", category: "modern", description: "", defaultMusicUrl: "" }, first.spec);
+    const read = await readBundle(JSON.parse(JSON.stringify(bundle)));
+    expect(read.ok).toBe(true);
+    if (read.ok) expect(read.spec).toEqual(first.spec);
+  });
+
+  it("kompilasi master dari spesifikasi campuran lolos audit dan menampilkan semua ornamen", () => {
+    const first = parse(mixed());
+    if (!first.ok) throw new Error("spesifikasi uji tidak valid");
+    const html = compileBuilderMaster(first.spec, blueprint);
+    expect(auditBuilderMaster(html, blueprint)).toEqual([]);
+    expect((html.match(/data-orn-id="rt00000\d"/g) ?? []).length).toBe(6);
   });
 });

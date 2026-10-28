@@ -5,6 +5,7 @@ import {
   BUILDER_BLOCKS,
   DEFAULT_ORNAMENT_GAP,
   DEFAULT_ORNAMENT_TEXT,
+  FLOW_EXCLUDED_BLOCKS,
   ORNAMENT_GAP_LIMITS,
   ORNAMENT_SECTIONS,
   ORNAMENT_TEXT_COLORS,
@@ -123,7 +124,7 @@ export default function OrnamentInspector({ ornament: o, palette, canvasMode, on
   const container = o.attach ? "blok" : "seksi";
   const limits = ornamentLimits(o);
   const attachOptions = ATTACHABLE_BLOCKS.filter((id) => BUILDER_BLOCKS.find((b) => b.id === id)?.section === o.section);
-  const flowOptions = BUILDER_BLOCKS.filter((b) => b.section === o.section).map((b) => b.id);
+  const flowOptions = BUILDER_BLOCKS.filter((b) => b.section === o.section && !FLOW_EXCLUDED_BLOCKS.includes(b.id)).map((b) => b.id);
   const swatch: Record<(typeof ORNAMENT_TEXT_COLORS)[number]["id"], string> = {
     primary: palette.primary,
     secondary: palette.secondary,
