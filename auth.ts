@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { REMOTE_COOKIE_NAME, readRemoteClientId } from "@/lib/remoteSession";
+import { LOGIN_FAILURE_LIMIT, LOGIN_FAILURE_WINDOW_MS, getClientIp, loginRateLimitKey, rateLimitDb } from "@/lib/rateLimit";
 import dns from "node:dns";
 
 // Ensure IPv4 first to prevent IPv6 route-to-host timeouts (EHOSTUNREACH) on outbound OAuth discovery
@@ -32,17 +33,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Password", type: "password" },
         portal: { label: "Portal", type: "text" }, // "ADMIN"
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         const portal = (credentials?.portal as string)?.toUpperCase() || "ADMIN";
         const emailOrUser = (credentials?.email as string)?.trim().toLowerCase() || "";
         const password = (credentials?.password as string) || "";
+        const failed = async () => {
+          await rateLimitDb(loginRateLimitKey(getClientIp(request)), LOGIN_FAILURE_LIMIT, LOGIN_FAILURE_WINDOW_MS);
+          return null;
+        };
 
         // PORTAL ADMIN (Verifikasi username/email & bcrypt hash)
         if (portal !== "ADMIN") {
-          return null;
+          return failed();
         }
 
-        if (!emailOrUser || !password) return null;
+        if (!emailOrUser || !password) return failed();
 
         // Tidak peka huruf besar: akun yang dibuat sebelum rute admin menyimpan username/email dalam huruf kecil
         // (19 Okt 2026) masih memakai huruf besar dan tidak pernah cocok dengan isian yang sudah di-lowercase.
@@ -57,13 +62,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         // Admin wajib terdaftar dan memiliki hash password yang valid
         if (!admin || !admin.passwordHash) {
-          return null;
+          return failed();
         }
 
         // Verifikasi murni dengan bcrypt — Tanpa bypass, tanpa fallback
         const isValid = await bcrypt.compare(password, admin.passwordHash);
         if (!isValid) {
-          return null;
+          return failed();
         }
 
         await prisma.admin.update({

@@ -5,7 +5,7 @@
 import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
 import bcrypt from "bcryptjs";
 
-type Authorize = (credentials: Record<string, string>) => Promise<{ id: string } | null>;
+type Authorize = (credentials: Record<string, string>, request: Request) => Promise<{ id: string } | null>;
 type CapturedConfig = { providers: Array<{ id?: string; type?: string; options?: { authorize?: Authorize }; authorize?: Authorize }> };
 
 // Impor auth.ts diangkat ke atas berkas, jadi wadah konfigurasi harus ada sebelum mock dijalankan.
@@ -19,7 +19,7 @@ vi.mock("next-auth", () => ({
 }));
 
 import "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma, pool } from "@/lib/prisma";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
 const TAG = `vitest_logincase_${Date.now()}`;
@@ -44,15 +44,25 @@ describe.skipIf(!IS_TEST_DB)("login admin tidak peka huruf besar", () => {
     ).id;
   });
 
+  // Di luar NODE_ENV=development header IP tidak dipercaya, jadi semua permintaan berbagi satu kunci; dibaca sebagai total.
+  const loginRequest = () => new Request("http://localhost/api/auth/callback/credentials", { method: "POST" });
+  const failureCount = async () =>
+    Number((await pool.query<{ total: string }>("SELECT COALESCE(SUM(count), 0) AS total FROM rate_limit_counters WHERE key LIKE 'auth_login:%' AND expires_at > NOW()")).rows[0].total);
+
   afterAll(async () => {
     await prisma.adminAuditLog.deleteMany({ where: { adminId } });
     await prisma.admin.deleteMany({ where: { id: adminId } });
+    await pool.query("DELETE FROM rate_limit_counters WHERE key LIKE 'auth_login:%'");
   });
 
   it("username dan email berhuruf besar dapat login, password salah tetap ditolak", async () => {
     const authorize = credentialsAuthorize();
-    expect((await authorize({ email: `${TAG}_Upper`, password: PASSWORD, portal: "ADMIN" }))?.id).toBe(adminId);
-    expect((await authorize({ email: `${TAG}_UPPER@t.local`, password: PASSWORD, portal: "ADMIN" }))?.id).toBe(adminId);
-    expect(await authorize({ email: `${TAG}_Upper`, password: "salah", portal: "ADMIN" })).toBeNull();
+    const before = await failureCount();
+    expect((await authorize({ email: `${TAG}_Upper`, password: PASSWORD, portal: "ADMIN" }, loginRequest()))?.id).toBe(adminId);
+    expect((await authorize({ email: `${TAG}_UPPER@t.local`, password: PASSWORD, portal: "ADMIN" }, loginRequest()))?.id).toBe(adminId);
+    // Login sukses tidak menghabiskan jatah percobaan (proxy hanya menolak setelah 5 kegagalan).
+    expect(await failureCount()).toBe(before);
+    expect(await authorize({ email: `${TAG}_Upper`, password: "salah", portal: "ADMIN" }, loginRequest())).toBeNull();
+    expect(await failureCount()).toBe(before + 1);
   });
 });

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import NextAuth from "next-auth";
 import { authConfig } from "@/auth.config";
 import { isReservedSubdomain } from "@/lib/domainUtils";
-import { getClientIp, rateLimitDb } from "@/lib/rateLimit";
+import { LOGIN_FAILURE_LIMIT, getClientIp, isRateLimitExhausted, loginRateLimitKey } from "@/lib/rateLimit";
 
 const { auth } = NextAuth(authConfig);
 
@@ -97,12 +97,11 @@ export const proxy = auth(async (req) => {
     return new NextResponse("Not Found", { status: 404 });
   }
 
-  // ── Guard Brute-Force Login: 5 percobaan per IP per 15 menit ──
-  // Hanya berlaku untuk endpoint autentikasi credentials (login admin/client)
+  // ── Guard Brute-Force Login: 5 percobaan GAGAL per IP per 15 menit ──
+  // Hitungan ditambah di authorize (auth.ts) hanya saat login gagal; dulu setiap POST dihitung, sehingga login sukses
+  // ke-6 dalam 15 menit (beberapa admin di balik satu IP kantor) ditolak. Hitungan di PostgreSQL, berlaku lintas worker.
   if (pathname === "/api/auth/callback/credentials" && req.method === "POST") {
-    const ip = getClientIp(req);
-    // 5 percobaan dalam window 15 menit (900.000ms); hitungan di PostgreSQL agar berlaku lintas worker PM2 dan reload
-    if (!(await rateLimitDb(`auth_login:${ip}`, 5, 15 * 60 * 1000))) {
+    if (await isRateLimitExhausted(loginRateLimitKey(getClientIp(req)), LOGIN_FAILURE_LIMIT)) {
       return new Response(
         JSON.stringify({ error: "Terlalu banyak percobaan login. Silakan tunggu 15 menit." }),
         { status: 429, headers: { "Content-Type": "application/json" } }

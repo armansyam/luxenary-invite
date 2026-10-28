@@ -162,6 +162,11 @@ export async function rateLimitDb(key: string, limit: number, windowMs: number):
   }
 }
 
+/** Batas percobaan login admin per IP: proxy memeriksa sisa jatah, `authorize` (auth.ts) menghitung hanya yang gagal. */
+export const LOGIN_FAILURE_LIMIT = 5;
+export const LOGIN_FAILURE_WINDOW_MS = 15 * 60 * 1000;
+export const loginRateLimitKey = (ip: string) => `auth_login:${ip}`;
+
 /**
  * Apakah `key` sudah mencapai `limit` dalam jendelanya, tanpa menambah hitungan. Pasangan rateLimitDb untuk batas yang
  * hanya boleh dihitung pada kejadian tertentu (mis. percobaan PIN yang gagal). Memakai driver yang sama dengan rateLimitDb.

@@ -1378,6 +1378,7 @@ Untuk menjamin keandalan sistem jangka panjang pada beban puncak produksi (*high
    - Sanitasi data otomatis (*PII and credential masking*) menyaring kata kunci sensitif (password, pin, server key, token) sebelum dikirimkan ke Sentry API secara non-blocking jika `SENTRY_DSN` terkonfigurasi.
 4. **Multi-Driver Distributed Rate Limiting (`lib/rateLimit.ts`):**
    - Arsitektur cascade 3-tingkat: Prioritas 1 Redis REST (Upstash pipeline `INCR` + `EXPIRE`), Prioritas 2 PostgreSQL Atomic UPSERT (`rate_limit_counters`), dan Prioritas 3 In-Memory Bounded Map.
+   - Login admin: 5 percobaan gagal per IP per 15 menit; proxy hanya memeriksa (`isRateLimitExhausted`), `authorize` menghitung kegagalan saja, jadi login sukses tidak menghabiskan jatah.
 5. **Cloudflare Cache Key Normalization Blueprint:**
    - Panduan konfigurasi Cloudflare Cache Rules pada reverse proxy publik: mengabaikan parameter query personalisasi tamu (`to` dan `v`) dari cache key untuk rute undangan publik `/*`, menjamin 100% Edge CDN Cache HIT (<20ms) bagi ribuan tamu WhatsApp sekaligus melindungi server aplikasi dari kehabisan koneksi basis data.
 
