@@ -105,6 +105,7 @@ describe.skipIf(!IS_TEST_DB)("teks bawaan lewat engine dan alur klien", () => {
       const theme = await prisma.theme.findUnique({ where: { id: created.themeId }, select: { category: true } });
       await prisma.theme.deleteMany({ where: { id: created.themeId } });
       if (theme) fs.rmSync(builderMasterPath(theme.category as "modern", created.themeId), { force: true });
+      fs.rmSync(path.join(process.cwd(), "public", "demo", created.themeId.toLowerCase()), { recursive: true, force: true });
     }
     for (const f of created.drafts) fs.rmSync(f, { force: true });
     await prisma.adminAuditLog.deleteMany({ where: { adminId: { in: created.admins } } });

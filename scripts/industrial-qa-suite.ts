@@ -1143,13 +1143,13 @@ export class IndustrialQASuite {
         where: { id: "non_existent_uuid_999999" },
       });
 
-      // 2. Uji enkripsi PIN dengan format acak / sampah
+      // 2. Ciphertext sampah ditolak (null), tidak dikembalikan apa adanya sebagai PIN (kompat teks polos dibuang di 17f9c68)
       const corruptDecryption = decryptPin("invalid_ciphertext_not_hex");
 
       // 3. Uji token resepsionis kosong atau invalid prefix
       const corruptTokenValid = verifyReceptionistToken("not_a_rcpt_token", "inv_id", "enc:pin");
 
-      passed = nonExistentInv === null && corruptDecryption === "invalid_ciphertext_not_hex" && !corruptTokenValid;
+      passed = nonExistentInv === null && corruptDecryption === null && !corruptTokenValid;
       detail = passed
         ? "Fault Tolerance Teruji: Input anomali, format korup, dan ID fiktif ditangani secara elegan tanpa crash proses."
         : "Sistem mengalami kegagalan penanganan anomali data.";

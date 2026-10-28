@@ -42,6 +42,8 @@ describe.skipIf(!IS_TEST_DB)("migrasi master lama ke draf builder", () => {
     for (const t of created.themes) {
       await prisma.theme.deleteMany({ where: { id: t.id } });
       fs.rmSync(builderMasterPath(t.category as "modern", t.id), { force: true });
+      // Menerbitkan tema membangun demo statis; route DELETE tema menghapusnya, tes yang menghapus lewat Prisma wajib juga.
+      fs.rmSync(path.join(process.cwd(), "public", "demo", t.id.toLowerCase()), { recursive: true, force: true });
     }
     for (const f of created.drafts) fs.rmSync(f, { force: true });
     await prisma.adminAuditLog.deleteMany({ where: { adminId: { in: created.admins } } });

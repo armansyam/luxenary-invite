@@ -75,6 +75,7 @@ describe.skipIf(!IS_TEST_DB)("alur admin dan ganti tema klien", () => {
       const theme = await prisma.theme.findUnique({ where: { id }, select: { category: true } });
       await prisma.theme.deleteMany({ where: { id } });
       if (theme) fs.rmSync(builderMasterPath(theme.category as "modern", id), { force: true });
+      fs.rmSync(path.join(process.cwd(), "public", "demo", id.toLowerCase()), { recursive: true, force: true });
     }
     for (const f of created.drafts) fs.rmSync(f, { force: true });
     for (const f of created.files) fs.rmSync(path.join(THEME_ASSET_DIR, f), { force: true });

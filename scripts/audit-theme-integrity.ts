@@ -50,7 +50,9 @@ async function main() {
   console.log("🔒 LUXENARY THEME INTEGRITY GATE AUDIT");
   console.log("================================================================\n");
 
+  // Hanya tema aktif yang tampil di katalog; draf builder (nonaktif) belum punya thumbnail dan demo.
   const themes = await prisma.theme.findMany({
+    where: { isActive: true },
     select: { id: true, name: true, eventType: true, isActive: true },
     orderBy: { eventType: "asc" },
   });
@@ -116,7 +118,10 @@ async function main() {
     let apiDesktopStatus = 0;
     let apiMobileStatus = 0;
     const apiData = apiThemesMap.get(t.id);
-    if (apiData) {
+    // Tema tanpa thumbnail dikirim API dengan URL null dan tampil sebagai kartu nama; dicatat sebagai temuan, bukan crash.
+    if (apiData && (!apiData.thumbnailDesktop || !apiData.thumbnailMobile)) {
+      issues.push("API tanpa URL thumbnail (katalog menampilkan kartu nama)");
+    } else if (apiData) {
       apiDesktopStatus = await checkUrl(apiData.thumbnailDesktop);
       apiMobileStatus = await checkUrl(apiData.thumbnailMobile);
 

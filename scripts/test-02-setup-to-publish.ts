@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { prisma, pool } from '../lib/prisma';
 import { encryptPin } from '../lib/pinEncryption';
-import { buildAndSavePublishedHtml } from '../lib/staticPublisher';
+import { buildAndSavePublishedHtml, waitForPendingArchiveSyncs } from '../lib/staticPublisher';
 import { randomUUID } from 'crypto';
 
 async function runTest02() {
@@ -111,6 +111,7 @@ async function runTest02() {
     console.error("❌ Terjadi kesalahan:", err);
     process.exitCode = 1;
   } finally {
+    await waitForPendingArchiveSyncs();
     await prisma.$disconnect();
     await pool.end();
   }
