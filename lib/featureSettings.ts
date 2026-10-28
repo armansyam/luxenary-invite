@@ -1,5 +1,6 @@
 import { logger } from "@/lib/logger";
 import { normalizeFeatureUrls, safeMediaUrl } from "@/lib/safeUrl";
+import { EDITABLE_TEXT_KEYS } from "@/lib/themeBuilder/spec";
 
 type FeatureSettings = Record<string, any>;
 
@@ -54,29 +55,35 @@ export function keepValidMemoriesSettings(merged: FeatureSettings, existing: Fea
 /** Kunci label yang dapat disunting Studio (`customLabels.<kunci>`, sama dengan pola di lib/liveEditFields.ts). */
 export const CUSTOM_LABEL_KEY_RE = /^[A-Za-z0-9_]{1,60}$/;
 export const MAX_CUSTOM_LABEL_LENGTH = 1000;
+/** Teks hias (hias1-hias3) berada di kotak berukuran tetap di atas desain; teks panjang menutupi isi undangan. */
+export const MAX_DECORATIVE_LABEL_LENGTH = 120;
 export const MAX_CUSTOM_LABELS = 100;
 
 /**
- * Label khusus dari klien dibatasi: kunci sesuai pola Studio, nilai berupa string maksimal 1000 karakter, dan paling
- * banyak 100 kunci. Entri yang tidak sah diganti nilai tersimpan sebelumnya atau dibuang (cara yang sama dengan
- * pengaturan kamera di atas), sehingga PUT dari API tidak dapat menyimpan label tanpa batas. Nilai yang sama dengan
- * yang sudah tersimpan selalu lolos supaya undangan lama dengan label panjang tetap dapat disimpan.
+ * Label khusus dari klien: kunci sesuai pola Studio, nilai string maksimal 1000 karakter (teks hias 120), paling banyak
+ * 100 kunci. Pelanggaran dijawab dengan galat yang ditampilkan Studio, bukan dibuang diam-diam, supaya klien tahu
+ * teksnya tidak tersimpan. Nilai yang sama dengan yang sudah tersimpan selalu lolos supaya undangan lama dengan label
+ * panjang tetap dapat disimpan.
  */
-export function keepValidCustomLabels(merged: FeatureSettings, existing: FeatureSettings): FeatureSettings {
-  if (merged.customLabels === undefined) return merged;
+export function validateCustomLabels(merged: FeatureSettings, existing: FeatureSettings): { ok: true } | { ok: false; error: string } {
+  if (merged.customLabels === undefined) return { ok: true };
+  if (!isPlainObject(merged.customLabels)) return { ok: false, error: "Label undangan harus berupa objek." };
   const stored = isPlainObject(existing.customLabels) ? existing.customLabels : {};
-  if (!isPlainObject(merged.customLabels)) {
-    const { customLabels: _dropped, ...rest } = merged;
-    return isPlainObject(existing.customLabels) ? { ...rest, customLabels: existing.customLabels } : rest;
+  const entries = Object.entries(merged.customLabels);
+  if (entries.length > MAX_CUSTOM_LABELS && entries.length > Object.keys(stored).length) {
+    return { ok: false, error: `Label undangan paling banyak ${MAX_CUSTOM_LABELS}.` };
   }
-  const clean: Record<string, string> = {};
-  for (const [key, value] of Object.entries(merged.customLabels)) {
-    if (Object.keys(clean).length >= MAX_CUSTOM_LABELS) break;
-    if (!CUSTOM_LABEL_KEY_RE.test(key)) continue;
-    if (typeof value === "string" && (value.length <= MAX_CUSTOM_LABEL_LENGTH || value === stored[key])) clean[key] = value;
-    else if (typeof stored[key] === "string") clean[key] = stored[key];
+  for (const [key, value] of entries) {
+    if (value === stored[key]) continue;
+    if (!CUSTOM_LABEL_KEY_RE.test(key)) return { ok: false, error: `Kunci label "${key.slice(0, 40)}" tidak dikenali.` };
+    if (typeof value !== "string") return { ok: false, error: `Isi label ${key} harus berupa teks.` };
+    const decorative = (EDITABLE_TEXT_KEYS as readonly string[]).includes(key);
+    const max = decorative ? MAX_DECORATIVE_LABEL_LENGTH : MAX_CUSTOM_LABEL_LENGTH;
+    if (value.length > max) {
+      return { ok: false, error: decorative ? `Teks hias maksimal ${max} karakter (sekarang ${value.length}).` : `Label ${key} maksimal ${max} karakter (sekarang ${value.length}).` };
+    }
   }
-  return { ...merged, customLabels: clean };
+  return { ok: true };
 }
 
 /**
@@ -110,8 +117,10 @@ export async function mergeFeatureSettingsInput(
   for (const key of ["memoriesCoverPhoto", "openingCoverPhoto"]) {
     if (typeof merged[key] === "string") merged[key] = safeMediaUrl(merged[key]);
   }
+  const labels = validateCustomLabels(merged, existing);
+  if (!labels.ok) return labels;
   if (!isAdmin) merged = await gateFeaturesByPlan(merged, planType);
-  return { ok: true, value: keepValidMemoriesSettings(keepValidCustomLabels(merged, existing), existing) };
+  return { ok: true, value: keepValidMemoriesSettings(merged, existing) };
 }
 
 /** Mematikan fitur berbayar yang tidak termasuk kapabilitas paket (tidak bisa dibuka lewat bypass API). */

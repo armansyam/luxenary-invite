@@ -1315,7 +1315,7 @@ export default function MomentsSetupPage() {
               value={getFeatureSetting("memoriesDateFormat", "DD MM 'YY")}
               onChange={(e) => updateSettingFast("memoriesDateFormat", e.target.value)}
               disabled={!getFeatureSetting("memoriesDateStamp", true)}
-              className="p-1.5 bg-stone-50 border border-stone-200 rounded-lg text-base sm:text-xs font-mono text-stone-800 disabled:opacity-40"
+              className="min-w-0 flex-1 sm:flex-none p-1.5 bg-stone-50 border border-stone-200 rounded-lg text-base sm:text-xs font-mono text-stone-800 disabled:opacity-40"
             >
               <option value="DD MM 'YY">Format: 15 09 &apos;26</option>
               <option value="DD · MMM · YYYY">Format: 15 · SEP · 2026</option>

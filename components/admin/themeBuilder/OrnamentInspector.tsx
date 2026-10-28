@@ -13,6 +13,7 @@ import {
   ORNAMENT_TEXT_FONTS,
   ORNAMENT_TEXT_LIMITS,
   SECTION_LABELS,
+  contrastRatio,
   ornamentLimits,
   type AttachableBlockId,
   type BuilderBlockId,
@@ -136,6 +137,14 @@ export default function OrnamentInspector({ ornament: o, palette, canvasMode, us
     text: canvasMode === "dark" ? palette.textLight : palette.textDark,
     "on-dark": palette.textLight,
   };
+  // Latar perkiraan: sampul, panel kiri, dan penutup berlatar foto dengan lapisan gelap; seksi lain memakai warna kanvas.
+  // Ambang WCAG: 3:1 untuk teks besar (24 px ke atas), 4.5:1 untuk teks lebih kecil.
+  const contrast = o.text
+    ? {
+        ratio: contrastRatio(swatch[o.text.color], ["cover", "sidebar", "closing"].includes(o.section) ? palette.bgDark : canvasMode === "dark" ? palette.bgDark : palette.bgLight),
+        min: o.text.size >= 24 ? 3 : 4.5,
+      }
+    : null;
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3">
@@ -220,6 +229,11 @@ export default function OrnamentInspector({ ornament: o, palette, canvasMode, us
                 ))}
               </div>
               <p className="mt-1 text-[10.5px] leading-snug text-stone-500">Warna mengikuti palet tema. &quot;Teks di atas foto&quot; dipakai di sampul dan penutup berlatar foto.</p>
+              {contrast && contrast.ratio < contrast.min && (
+                <p role="status" className="mt-1.5 rounded-lg bg-amber-50 px-2 py-1.5 text-[10.5px] font-medium leading-snug text-amber-800 ring-1 ring-amber-200">
+                  Kontras rendah: {contrast.ratio}:1 terhadap latar seksi ini (minimal {contrast.min}:1 untuk ukuran ini). Teks bisa sulit dibaca tamu.
+                </p>
+              )}
             </div>
           </div>
         )}
