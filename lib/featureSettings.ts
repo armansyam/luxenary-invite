@@ -101,6 +101,11 @@ export async function mergeFeatureSettingsInput(
 
   const existing = parseFeatureSettings(stored);
   let merged = normalizeFeatureUrls({ ...existing, ...incomingObj });
+  // Studio mengirim seluruh objek label tetapi hanya pernah menulis kunci (tidak pernah menghapusnya). Digabung per kunci
+  // supaya tab Studio yang basi tidak menghapus label yang baru diubah dari tab lain; kunci di input menang atas yang tersimpan.
+  if (isPlainObject(incomingObj.customLabels) && isPlainObject(existing.customLabels)) {
+    merged = { ...merged, customLabels: { ...existing.customLabels, ...incomingObj.customLabels } };
+  }
   // Aturan yang sama dengan PATCH rute Momen; modal layar pembuka menyimpan sampul lewat rute ini.
   for (const key of ["memoriesCoverPhoto", "openingCoverPhoto"]) {
     if (typeof merged[key] === "string") merged[key] = safeMediaUrl(merged[key]);

@@ -156,17 +156,19 @@ const EAGER_SECTIONS = new Set(["cover", "sidebar", "opening"]);
  * `span` absolut tetap sah di dalam `p`, judul, dan tautan. Teks hias di-escape di sini; `{{ }}` dan kurung sudut sudah
  * ditolak oleh `parseBuilderSpec`.
  */
-function ornamentHtml(o: BuilderOrnament): string {
+function ornamentHtml(o: BuilderOrnament, blockHidden = false): string {
   const tag = o.attach ? "span" : "div";
   // Ornamen sebaris adalah elemen alur: kelas `lux-orn` (absolut, tembus klik) tidak dipakai, dan gambarnya diberi gaya sendiri.
-  const classes = (o.before ? ["lux-flow"] : ["lux-orn", o.layer === "front" && "is-front", o.attach && "is-attached"]).concat(o.text ? ["lux-orn-text"] : []).filter(Boolean).join(" ");
+  // Ia disembunyikan bersama bloknya (`lux-flow-off`), karena berada di luar elemen blok dan tidak ikut `display:none` blok.
+  const classes = (o.before ? ["lux-flow", blockHidden && "lux-flow-off"] : ["lux-orn", o.layer === "front" && "is-front", o.attach && "is-attached"]).concat(o.text ? ["lux-orn-text"] : []).filter(Boolean).join(" ");
+  const beforeAttr = o.before ? ` data-orn-before="${o.before}"` : "";
   const loading = EAGER_SECTIONS.has(o.section) ? "eager" : "lazy";
   const imgStyle = o.before ? ` style="display:block;width:100%;height:auto;"` : "";
   const inner = o.text ? escapeText(o.text.value) : `<img src="${o.src}" alt="" loading="${loading}" decoding="async" draggable="false"${imgStyle} />`;
   // Teks hias yang boleh diubah klien menjadi label biasa: kunci sudah dibatasi ke EDITABLE_TEXT_KEYS oleh parseBuilderSpec.
   // `aria-hidden` dibuang karena label klien adalah isi undangan yang harus terbaca pembaca layar.
   const editable = o.text?.labelKey ? ` data-lux-field="customLabels.${o.text.labelKey}"` : "";
-  return `<${tag} class="${classes}" data-orn-id="${o.id}"${editable} style="${ornamentStyle(o)}"${editable ? "" : ' aria-hidden="true"'}>${inner}</${tag}>`;
+  return `<${tag} class="${classes}" data-orn-id="${o.id}"${beforeAttr}${editable} style="${ornamentStyle(o)}"${editable ? "" : ' aria-hidden="true"'}>${inner}</${tag}>`;
 }
 
 const ATTACH_OVERFLOW_BLOCKS: readonly BuilderBlockId[] = ["opening-photo", "couple-photo-1", "couple-photo-2"];
@@ -193,14 +195,15 @@ function attachCss(ornaments: BuilderOrnament[]): string {
 const openingTagOf = (block: string) => new RegExp(`<[a-zA-Z0-9]+\\b[^>]*\\bdata-lux-block="${block}"[^>]*>`);
 
 /** Memasang ornamen sebaris sebagai saudara tepat sebelum elemen blok, sehingga berlaku juga untuk blok berlabel. */
-function insertBeforeBlocks(html: string, ornaments: BuilderOrnament[]): string {
+function insertBeforeBlocks(html: string, ornaments: BuilderOrnament[], blocks: BuilderSpec["blocks"]): string {
   const byBlock = new Map<string, BuilderOrnament[]>();
   for (const o of ornaments) if (o.before) byBlock.set(o.before, [...(byBlock.get(o.before) ?? []), o]);
   let out = html;
   for (const [block, items] of byBlock) {
     const opening = openingTagOf(block);
     if (!opening.test(out)) throw new Error(`Penanda blok ${block} tidak ada di blueprint.`);
-    const markup = items.map(ornamentHtml).join("");
+    const hidden = Boolean(blocks[block as BuilderBlockId]?.hidden);
+    const markup = items.map((o) => ornamentHtml(o, hidden)).join("");
     out = out.replace(opening, (tag) => `${markup}${tag}`);
   }
   return out;
@@ -214,7 +217,7 @@ function attachToBlocks(html: string, ornaments: BuilderOrnament[]): string {
   for (const [block, items] of byBlock) {
     const opening = openingTagOf(block);
     if (!opening.test(out)) throw new Error(`Penanda blok ${block} tidak ada di blueprint.`);
-    const markup = items.map(ornamentHtml).join("");
+    const markup = items.map((o) => ornamentHtml(o)).join("");
     out = out.replace(opening, (tag) => `${tag}${markup}`);
   }
   return out;
@@ -278,10 +281,14 @@ export function compileBuilderMaster(spec: BuilderSpec, blueprint = readBuilderB
 
   html = html.replace(/<!-- lux-ornaments:([a-z]+) -->/g, (marker, section: string) => {
     const items = spec.ornaments.filter((o) => o.section === section && !o.attach && !o.before);
-    return items.length ? items.map(ornamentHtml).join("\n    ") : marker;
+    return items.length ? items.map((o) => ornamentHtml(o)).join("\n    ") : marker;
   });
 
-  return applyStaticTexts(insertBeforeBlocks(attachToBlocks(html, spec.ornaments), spec.ornaments), spec.texts);
+  if (spec.ornaments.some((o) => o.before)) {
+    html = html.replace("</head>", `  <style id="lux-builder-flow">\n    .lux-flow-off { display: none !important; }\n  </style>\n</head>`);
+  }
+
+  return applyStaticTexts(insertBeforeBlocks(attachToBlocks(html, spec.ornaments), spec.ornaments, spec.blocks), spec.texts);
 }
 
 const escapeText = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");

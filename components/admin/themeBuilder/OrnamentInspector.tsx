@@ -263,7 +263,7 @@ export default function OrnamentInspector({ ornament: o, palette, canvasMode, us
             {mode === "attach"
               ? "Posisi dan lebar dihitung dari kotak blok, jadi ornamen ikut bergeser bersama blok dan mengikuti panjang isi klien. Judul dan nama berlabel tidak bisa ditempeli: teksnya akan terbaca sebagai label klien."
               : mode === "flow"
-                ? "Ornamen menjadi bagian alur halaman tepat di atas blok yang dipilih (pemisah, hiasan antar judul) dan menambah tinggi halaman. Berlaku juga untuk judul dan nama. Tidak ikut tersembunyi bila blok disembunyikan."
+                ? "Ornamen menjadi bagian alur halaman tepat di atas blok yang dipilih (pemisah, hiasan antar judul) dan menambah tinggi halaman. Berlaku juga untuk judul dan nama, kecuali tanda &. Ikut tersembunyi bila bloknya disembunyikan."
                 : "Bebas di seksi: posisi dalam persen seksi. Pilih Menempel agar ikut bergeser bersama blok, atau Sebaris agar menjadi bagian alur halaman."}
           </p>
         </div>

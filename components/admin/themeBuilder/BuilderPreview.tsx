@@ -547,6 +547,8 @@ export default function BuilderPreview(props: Props) {
       el.style.setProperty("rotate", `${p.rotate}deg`);
       el.style.setProperty("scale", String(p.scale));
       el.style.display = p.hidden ? "none" : "";
+      // Ornamen sebaris berada di luar elemen blok, jadi disembunyikan lewat kelasnya bersama blok.
+      doc.querySelectorAll(`[data-orn-before="${id}"]`).forEach((n) => n.classList.toggle("lux-flow-off", p.hidden));
       const z = blockZIndex(p);
       el.style.position = z === null ? "" : "relative";
       el.style.zIndex = z === null ? "" : String(z);

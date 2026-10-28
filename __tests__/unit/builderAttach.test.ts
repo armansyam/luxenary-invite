@@ -202,7 +202,7 @@ describe("ornamen sebaris sebelum blok", () => {
     const at = html.indexOf(tag);
     expect(at).toBeGreaterThan(0);
     const before = html.slice(Math.max(0, at - 400), at);
-    expect(before).toMatch(/<div class="lux-flow" data-orn-id="flw00004" style="display:block;width:40%;margin:16px auto;/);
+    expect(before).toMatch(/<div class="lux-flow" data-orn-id="flw00004" data-orn-before="couple-title" style="display:block;width:40%;margin:16px auto;/);
     expect(before.trimEnd().endsWith("</div>")).toBe(true);
     expect(html).toContain('style="display:block;width:100%;height:auto;"');
     expect(auditBuilderMaster(html, blueprint)).toEqual([]);
@@ -212,9 +212,24 @@ describe("ornamen sebaris sebelum blok", () => {
 
   it("teks sebaris di-escape dan memakai token palet", () => {
     const html = compile([orn({ id: "flw00005", src: "", before: "countdown-title", section: "countdown", text: { ...DEFAULT_ORNAMENT_TEXT, value: "A & B" } })]);
-    expect(html).toContain('<div class="lux-flow lux-orn-text" data-orn-id="flw00005"');
+    expect(html).toContain('<div class="lux-flow lux-orn-text" data-orn-id="flw00005" data-orn-before="countdown-title"');
     expect(html).toContain("A &amp; B");
     expect(html).toContain("font-family:var(--font-script)");
+  });
+
+  it("ornamen sebaris ikut tersembunyi bila bloknya disembunyikan, dan tampil lagi bila tidak", () => {
+    const flows = [orn({ id: "flw00009", before: "couple-title", section: "couple" }), orn({ id: "flw00010", before: "couple-title", section: "couple" })];
+    const hiddenSpec = { ...specWith(flows), blocks: { "couple-title": { x: 0, y: 0, scale: 1, rotate: 0, hidden: true } } };
+    const hidden = compileBuilderMaster(hiddenSpec, blueprint);
+    expect(hidden.match(/class="lux-flow lux-flow-off"/g)).toHaveLength(2);
+    expect(hidden).toContain(".lux-flow-off { display: none !important; }");
+    expect(auditBuilderMaster(hidden, blueprint)).toEqual([]);
+    const shown = compile(flows);
+    expect(shown).not.toContain('class="lux-flow lux-flow-off"');
+    expect(shown.match(/class="lux-flow"/g)).toHaveLength(2);
+    // Ornamen sebaris di depan blok lain tidak ikut tersembunyi.
+    const other = compileBuilderMaster({ ...specWith([orn({ id: "flw00011", before: "events-title", section: "events" })]), blocks: { "couple-title": { x: 0, y: 0, scale: 1, rotate: 0, hidden: true } } }, blueprint);
+    expect(other).not.toContain("lux-flow-off\"");
   });
 
   it("blok yang hilang dari blueprint adalah galat dan tumpukan dipisah per blok", () => {

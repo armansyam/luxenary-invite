@@ -3,7 +3,7 @@
  * jumlah dibatasi tanpa mengubah nilai yang sudah tersimpan.
  */
 import { describe, it, expect } from "vitest";
-import { MAX_CUSTOM_LABELS, MAX_CUSTOM_LABEL_LENGTH, keepValidCustomLabels } from "@/lib/featureSettings";
+import { MAX_CUSTOM_LABELS, MAX_CUSTOM_LABEL_LENGTH, keepValidCustomLabels, mergeFeatureSettingsInput } from "@/lib/featureSettings";
 
 describe("keepValidCustomLabels", () => {
   it("tanpa customLabels di input tidak mengubah apa pun", () => {
@@ -41,5 +41,38 @@ describe("keepValidCustomLabels", () => {
   it("customLabels yang bukan objek dikembalikan ke nilai tersimpan atau dibuang", () => {
     expect(keepValidCustomLabels({ customLabels: "x" }, { customLabels: { a: "1" } }).customLabels).toEqual({ a: "1" });
     expect("customLabels" in keepValidCustomLabels({ customLabels: ["x"] }, {})).toBe(false);
+  });
+});
+
+describe("mergeFeatureSettingsInput: label digabung per kunci", () => {
+  const merge = async (stored: unknown, incoming: unknown) => {
+    const r = await mergeFeatureSettingsInput(stored, incoming, "TIER_2", true);
+    if (!r.ok) throw new Error(r.error);
+    return r.value;
+  };
+
+  it("tab basi tidak menghapus label yang baru diubah dari tab lain", async () => {
+    const stored = { customLabels: { openBtn: "Buka Baru", hias1: "Teks Baru" }, showMusic: true };
+    const out = await merge(stored, { customLabels: { openBtn: "Buka Lama" } });
+    expect(out.customLabels).toEqual({ openBtn: "Buka Lama", hias1: "Teks Baru" });
+    expect(out.showMusic).toBe(true);
+  });
+
+  it("kunci baru ditambahkan, string kosong tetap mengosongkan label, dan input JSON string didukung", async () => {
+    const out = await merge({ customLabels: { a: "1" } }, JSON.stringify({ customLabels: { b: "2", a: "" } }));
+    expect(out.customLabels).toEqual({ a: "", b: "2" });
+  });
+
+  it("tanpa label tersimpan, input dipakai apa adanya setelah disaring", async () => {
+    expect((await merge({}, { customLabels: { ok: "y", "bad key": "z" } })).customLabels).toEqual({ ok: "y" });
+    expect((await merge({ showMusic: false }, { showMusic: true })).customLabels).toBeUndefined();
+  });
+
+  it("label yang sudah tersimpan tidak terdorong keluar oleh batas jumlah kunci", async () => {
+    const stored = { customLabels: Object.fromEntries(Array.from({ length: MAX_CUSTOM_LABELS }, (_, i) => [`s${i}`, "v"])) };
+    const out = await merge(stored, { customLabels: { baru: "x" } });
+    expect(Object.keys(out.customLabels)).toHaveLength(MAX_CUSTOM_LABELS);
+    expect(out.customLabels.s0).toBe("v");
+    expect(out.customLabels.baru).toBeUndefined();
   });
 });
