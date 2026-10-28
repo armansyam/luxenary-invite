@@ -63,6 +63,13 @@ export function adminActorId(session: Session): string {
   return session.user.originalAdminId ?? session.user.id;
 }
 
+/** Email admin yang bertindak, dibaca dari DB; `session.user.email` di sesi remote adalah email klien. */
+export async function adminActorEmail(session: Session): Promise<string | null> {
+  const { prisma } = await import("@/lib/prisma");
+  const admin = await prisma.admin.findUnique({ where: { id: adminActorId(session) }, select: { email: true } });
+  return admin?.email ?? null;
+}
+
 export function isAdminSession(session: Session): boolean {
   const { isAdmin, role, originalRole } = session.user;
   const effective = originalRole || role;

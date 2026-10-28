@@ -165,7 +165,7 @@ export default function AdminSettingsTab(props: Props) {
 
   {/* ── Sub-Tab: Akun & Keamanan ── */}
   {activeSettingsTab === "akun" && (
-    <AdminProfileSettings sessionUser={session?.user} />
+    <AdminProfileSettings />
   )}
 
   {/* ══ TAB: KEUANGAN & GATEWAY ══ */}
@@ -1460,7 +1460,7 @@ export default function AdminSettingsTab(props: Props) {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <input
                 type="email"
-                placeholder={session?.user?.email || "email@anda.com"}
+                placeholder="Kosongkan = email akun admin Anda"
                 value={testSmtpEmail}
                 onChange={(e) => setTestSmtpEmail(e.target.value)}
                 className="px-3.5 py-2 border border-gray-200 rounded-xl text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500 w-full sm:w-80"

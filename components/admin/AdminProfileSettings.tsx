@@ -1,19 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
 
-export function AdminProfileSettings({ sessionUser }: { sessionUser: any }) {
+export function AdminProfileSettings() {
   const [formData, setFormData] = useState({
-    name: sessionUser?.name || "",
-    username: sessionUser?.username || "", // Might not be in session depending on token config, but we'll try
-    email: sessionUser?.email || "",
+    name: "",
+    email: "",
     currentPassword: "",
     newPassword: "",
   });
 
+  const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/admin/profile")
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Gagal memuat profil");
+        if (cancelled) return;
+        setFormData((prev) => ({ ...prev, name: data.admin.name, email: data.admin.email }));
+        setLoaded(true);
+      })
+      .catch((err: Error) => {
+        if (!cancelled) setMessage({ type: "error", text: err.message });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,7 +110,7 @@ export function AdminProfileSettings({ sessionUser }: { sessionUser: any }) {
       </div>
 
       <div className="flex justify-end pt-2">
-        <button type="submit" disabled={saving} className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl text-sm disabled:opacity-50">
+        <button type="submit" disabled={saving || !loaded} className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl text-sm disabled:opacity-50">
           {saving ? "Menyimpan..." : "Simpan Perubahan"}
         </button>
       </div>

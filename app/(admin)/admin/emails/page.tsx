@@ -2,11 +2,9 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
 import { EMAIL_TEMPLATE_CATALOG } from "@/lib/email-templates";
 
 export default function AdminEmailPreviewPage() {
-  const { data: session } = useSession();
   const [selectedKey, setSelectedKey] = useState<string>("PAID_INVITATION");
   const [viewport, setViewport] = useState<"desktop" | "mobile">("desktop");
   const [viewMode, setViewMode] = useState<"preview" | "code">("preview");
@@ -28,11 +26,15 @@ export default function AdminEmailPreviewPage() {
       .catch(() => {});
   }, []);
 
-  // Alamat uji coba diisi dari email admin yang sedang login.
-  const adminEmail = session?.user?.email;
+  // Alamat uji coba diisi dari profil admin di server: di mode remote session.user.email adalah email klien.
   useEffect(() => {
-    if (adminEmail) setRecipientEmail((prev) => prev || adminEmail);
-  }, [adminEmail]);
+    fetch("/api/admin/profile")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.admin?.email) setRecipientEmail((prev) => prev || data.admin.email);
+      })
+      .catch(() => {});
+  }, []);
 
   const activeTemplate = useMemo(() => {
     return EMAIL_TEMPLATE_CATALOG.find((t) => t.key === selectedKey) || EMAIL_TEMPLATE_CATALOG[0];

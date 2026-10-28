@@ -215,7 +215,7 @@ const DEMO_EXTRA_LABEL_FIELDS: Array<{ key: string; label: string }> = [
 
 export default function AdminPage() {
   const feedback = useFeedback();
-  const { data: session, status } = useSession();
+  const { data: session, status, update: updateSession } = useSession();
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState(() => {
@@ -240,11 +240,6 @@ export default function AdminPage() {
   };
 
   const handleAdminLogout = async () => {
-    try {
-      await fetch("/api/admin/remote-session", { method: "DELETE" });
-    } catch {
-      // Logout tetap dilanjutkan; cookie remote ikut kedaluwarsa bersama sesi admin.
-    }
     // Bersihkan state tab dari localStorage agar tidak "bocor" ke sesi login berikutnya
     try {
       localStorage.removeItem("lux_admin_active_tab");
@@ -400,8 +395,9 @@ export default function AdminPage() {
   const [testSmtpResult, setTestSmtpResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const handleTestSmtp = async () => {
-    const target = testSmtpEmail.trim() || session?.user?.email || "";
-    if (!target || !target.includes("@")) {
+    // Kosong = server mengirim ke email admin yang bertindak (session.user.email di mode remote milik klien).
+    const target = testSmtpEmail.trim();
+    if (target && !target.includes("@")) {
       setTestSmtpResult({ success: false, message: "Masukkan alamat email penerima yang valid." });
       return;
     }
@@ -1667,6 +1663,8 @@ export default function AdminPage() {
               } catch (err) {
                 console.warn("Gagal menghapus remote session:", err);
               }
+              // SessionProvider di root layout menyimpan sesi lama; tanpa ini banner tetap tampil sampai halaman dimuat ulang.
+              await updateSession();
               router.push("/admin");
               router.refresh();
             }}

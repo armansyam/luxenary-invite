@@ -263,4 +263,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
   },
+  // Sesi remote memakai cookie tersendiri (terikat admin, berlaku 1 jam) yang tidak ikut terhapus oleh logout NextAuth.
+  // Tanpa ini admin yang logout lalu masuk lagi dalam jam itu kembali mengemulasikan klien tanpa sengaja, dan sebagian
+  // aksi admin terblokir selama mode remote.
+  events: {
+    async signIn() {
+      await clearRemoteSessionCookie();
+    },
+    async signOut() {
+      await clearRemoteSessionCookie();
+    },
+  },
 });
+
+async function clearRemoteSessionCookie() {
+  const { cookies } = await import("next/headers");
+  (await cookies()).delete(REMOTE_COOKIE_NAME);
+}

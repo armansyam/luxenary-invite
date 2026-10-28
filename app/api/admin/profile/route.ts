@@ -6,6 +6,26 @@ import { readJsonBody } from "@/lib/requestBody";
 import bcrypt from "bcryptjs";
 import { MIN_ADMIN_PASSWORD_LENGTH } from "@/lib/adminCredentials";
 
+// Formulir profil membaca data dari sini, bukan dari session: dalam mode remote session.user adalah klien yang sedang
+// dibuka, dan menyimpan formulir yang terisi data itu menimpa nama/email admin dengan milik klien.
+export async function GET() {
+  try {
+    const guard = await requireAnyAdmin();
+    if (!guard.ok) return guard.response;
+
+    const admin = await prisma.admin.findUnique({
+      where: { id: adminActorId(guard.session) },
+      select: { name: true, email: true, username: true },
+    });
+    if (!admin) {
+      return NextResponse.json({ error: "Akun admin tidak ditemukan." }, { status: 404 });
+    }
+    return NextResponse.json({ admin });
+  } catch (error) {
+    return routeError("AdminProfile", error, "Gagal memuat profil.");
+  }
+}
+
 export async function PUT(req: Request) {
   try {
     // Setiap admin yang login boleh mengubah profil mereka sendiri

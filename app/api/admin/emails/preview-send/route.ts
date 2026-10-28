@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdminModule } from "@/lib/adminAuth";
+import { adminActorEmail, requireAdminModule } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
 import nodemailer from "nodemailer";
 import { getPublicPlatformSettings, getSmtpSettings } from "@/lib/settings";
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const { templateKey, recipientEmail: customRecipient, customOverrides } = body;
 
-    const recipientEmail = (customRecipient || session.user.email || "").trim();
+    const recipientEmail = (customRecipient || (await adminActorEmail(session)) || "").trim();
     if (!recipientEmail || !recipientEmail.includes("@")) {
       return NextResponse.json({ error: "Alamat email penerima tidak valid." }, { status: 400 });
     }

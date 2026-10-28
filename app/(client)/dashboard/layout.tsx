@@ -128,7 +128,10 @@ export default function ClientDashboardLayout({
       setIsRestoring(true);
       // Hapus cookie remote via API DELETE lalu pulangkan Admin
       await fetch("/api/admin/remote-session", { method: "DELETE" });
-      router.push("/admin");
+      // Navigasi penuh: SessionProvider (root layout) masih menyimpan identitas klien, sehingga router.push membawa banner
+      // remote ke /admin; memperbarui sesi di sini lebih dulu justru membuat proxy menendang admin dari /dashboard ke /login.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- muat ulang penuh disengaja (lihat di atas)
+      window.location.assign("/admin");
     } catch (error) {
       console.error("Gagal restore ke admin", error);
       setIsRestoring(false);
