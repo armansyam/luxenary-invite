@@ -2,7 +2,8 @@
 
 > **Platform Undangan Digital Multi-Event B2C Self-Service (Wedding, Birthday, Khitan, Aqiqah, Wisuda, Gathering)**  
 > Next.js 16.3.8 · Prisma 7.9/7.10 (PostgreSQL) · NextAuth v5 · Gateway 2-Arah (Midtrans & Xendit) · Nodemailer SMTP · Cloudflare R2  
-> **Versi Dokumen: 6.3.6 | Diperbarui: 29 September 2026**
+> **Versi Aplikasi: 1.0.0 (rilis produksi pertama, tag `v1.0.0`) | Versi Dokumen: 6.3.6 | Diperbarui: 29 Oktober 2026**  
+> Versi yang sedang berjalan di server tampil di Admin > Pengaturan > Tentang Aplikasi (dibaca dari `package.json` dan commit build).
 
 > [!IMPORTANT]
 > **PROTOKOL SINKRONISASI DOKUMENTASI OTOMATIS (MANDATORY POST-EDIT & PRE-PUSH PROTOCOL):**  
@@ -573,6 +574,7 @@ Untuk deployment kluster 2+ server VPS di balik Load Balancer (Cloudflare / Cadd
 | `npx vitest run __tests__/integration` | Alur pembayaran nyata, isolasi antar user, XSS render, sintaks JavaScript inline seluruh tema, seed tidak menimpa suntingan admin, limiter tahan pemalsuan header IP, health, JSON rusak, backup `.dump`, integritas skema (FK tema dan tautan order, enum, presisi uang, penolakan hapus tema yang dipakai), alur registrasi (order bersamaan, promo hanya untuk paket baru, dua mode pembayaran, pembatalan vs pelunasan, unggah bukti, pembuatan undangan), terhadap PostgreSQL | `DATABASE_URL` menunjuk ke `luxenary_test` yang sudah di-seed (`prisma db seed` dan `themes:sync`) dan `STORAGE_PROVIDER=local`; tanpa itu suite di-skip otomatis. File tes berjalan berurutan (`fileParallelism: false`) karena berbagi DB dan `data/drafts` |
 | `npx vitest run --coverage` | Semua tes di atas dengan ambang cakupan (lantai: lines 21, functions 43, branches 49). CI menjalankan perintah ini pada **Node 22 dan Node 24** (produksi VPS memakai Node 22 + npm 10; beda runtime/npm pernah menyembunyikan konflik peer dependency yang hanya gagal di npm 10), bersama `next build`, `npm audit --omit=dev --audit-level=critical`, rantai skrip alur E2E (`complete-system-audit`, `end-to-end-stress-audit`, `master-e2e-stress-test`, `test-security-penetration`, `test-theme-matrix`), dan menggagalkan build bila ada tes yang di-skip. Dependabot (`.github/dependabot.yml`) mengajukan pembaruan dependensi mingguan | Sama seperti baris di atas |
 | `npm run test:all`, `test:audit`, `test:stress`, `test:security`, `test:themes`, `test:nas`, `npx tsx scripts/test-0{1,2,3}-*.ts` | Skrip di `scripts/` (lihat [scripts/README.md](scripts/README.md)); menguji fungsi `lib/` dan constraint DB, bukan rute HTTP | Database uji berisi seed dan tema |
+| `E2E_ADMIN=… E2E_ADMIN_PASSWORD=… APP_URL=… npx tsx scripts/e2e-golive.ts [--payment=manual] [--allow-production]` | Uji go-live lewat HTTP terhadap server yang berjalan: pesan paket, bayar (gateway disimulasikan lewat fungsi webhook, atau bukti transfer + persetujuan admin), buat undangan, unggah media, terbit, unggahan setelah terbit ditolak, tamu, halaman subdomain, kunjungan, RSVP, check-in resepsionis, foto momen, ekspor CSV, media pindah ke R2. Data uji dihapus per id di akhir (dicek kosong di bucket). Matriks hasil di [docs/GO_LIVE_TEST_MATRIX.md](docs/GO_LIVE_TEST_MATRIX.md) | Dijalankan di mesin server (butuh `DATABASE_URL` dan `AUTH_SECRET` yang sama dengan aplikasi). Tanpa `--allow-production` hanya mau jalan pada `luxenary_test` |
 
 Menyiapkan database uji terpisah (jangan memakai database kerja):
 

@@ -414,6 +414,7 @@ Fungsi utama di lib/storage.ts:
   isInvitationOwnedUpload(url, invitationId)              → true hanya untuk berkas di folder undangan itu; syarat sebelum media slot dihapus
   streamMemoriesToZip(archive, invitationId)              → Stream ZIP foto tamu langsung dari R2 (zero disk RAM)
   syncDraftToR2(invitationId)                             → Migrasi otomatis aset lokal ke R2 saat publish: tabel media, musicUrl, dan sejak 29 Okt 2026 juga URL unggahan di featureSettings (gambar QRIS amplop, logo vendor) yang dulu tertinggal di disk VPS; hanya berkas milik undangan itu. Diuji pada bucket R2 asli (9/9 berkas, HTML tanpa rujukan /uploads); regresi __tests__/unit/syncDraftToR2.test.ts
+  deleteInvitationBucketObjects(invitationId)             → Hapus semua objek R2 berawalan invitations/<id>/ (ListObjectsV2 berhalaman, lalu DeleteObject per kunci); mengembalikan jumlah objek. Dipanggil removeInvitationFiles (hapus klien, reset jenis acara) dan archiveExpiredInvitation saat arsip NAS aktif. Sebelum 29 Okt 2026 QRIS, logo vendor, dan musik unggahan yang tidak tercatat di tabel media tertinggal di bucket selamanya. Foto tamu ada di guest-memories/<id>/ dan tidak tersentuh. Karena itu POST /api/admin/portfolio kini juga menyalin setiap URL milik undangan yang dirujuk HTML (bukan hanya tabel media dan musicUrl), agar logo vendor dan QRIS di portofolio tidak rusak setelah arsip. Regresi __tests__/unit/deleteInvitationBucketObjects.test.ts dan __tests__/integration/portfolioMetadata.test.ts
 ```
 
 ---
@@ -1236,13 +1237,14 @@ Persistensi Navigasi Admin (Tab Memory Persistence):
   Navigasi tab (/admin?tab=...&sub=...) dan sub-tab pengaturan/monitoring disimpan secara otomatis ke URL search params dan localStorage (lux_admin_active_tab & lux_admin_settings_subtab).
   Saat pengguna me-reload halaman (F5) atau kembali dari rute lain, portal admin tidak pernah terpental kembali ke tab ringkasan ("overview").
 
-Sub-Tab Pengaturan Admin (5 Grup, v6.1.0):
-  Sebelumnya 6 tab terpisah (pembayaran, gateway, setup, platform, dll) — kini dikonsolidasikan menjadi 5 tab domain-grouped yang lebih intuitif:
+Sub-Tab Pengaturan Admin (6 Grup):
+  Sebelumnya 6 tab terpisah (pembayaran, gateway, setup, platform, dll), dikonsolidasikan menjadi 5 tab domain-grouped; tab ke-6 "tentang" ditambahkan pada rilis v1.0.0 (29 Okt 2026):
   - akun       → Akun & Keamanan (profil & password admin)
   - keuangan   → Keuangan & Gateway (mode pembayaran, bank manual, QRIS Midtrans)
   - paket      → Paket & Harga (tier pricing & capabilities)
   - integrasi  → Integrasi & API (OAuth, SMTP, DNS, custom domain)
   - operasional → Operasional (status layanan, WhatsApp, landing page)
+  - tentang    → Tentang Aplikasi (`components/admin/AdminAboutSettings.tsx`: versi dari `package.json` dan commit build lewat `GET /api/public/version`, plus catatan rilis v1.0)
   URL backward-compat: ?sub=pembayaran, ?sub=gateway, ?sub=setup, ?sub=platform diredirect otomatis ke grup baru via LEGACY_SUB_MAP di useState initializer.
 ```
 
@@ -1277,7 +1279,7 @@ PUBLIC (tanpa auth):
   GET  /api/public/memories/{id}      → List foto momen
   POST /api/public/memories/upload    → Upload foto tamu (rate-limited, kalkulasi kuota total acara totalEventQuota + extraMemoriesQuota top-up & batas per-sesi)
   GET  /api/public/resolve-custom-domain → Resolve custom domain ke subdomain
-  GET  /api/public/version            → Versi sistem
+  GET  /api/public/version            → Versi sistem (`version` dari package.json, `hash` commit dari env GIT_COMMIT_SHA/COMMIT_HASH atau `git rev-parse`, dimemo per proses)
   GET  /api/sse/memories              → SSE stream momen real-time
 
 CLIENT (auth required, role=USER):
@@ -1289,7 +1291,7 @@ CLIENT (auth required, role=USER):
   GET/POST  /api/client/guests              → Manajemen tamu (kolom `phone`, tanpa `phoneNumber`)
   POST      /api/client/guests/bulk         → Import tamu massal (CSV/JSON, max 500 baris, auto slug, qrToken, tableNumber; didukung modal UI client Drag & Drop CSV + generator template + integrasi Web Contact Picker API untuk ponsel Android)
   GET       /api/client/subdomain/check     → Cek ketersediaan subdomain
-  POST      /api/client/upload             → Upload media undangan (WebP Sharp, MP4 H.264 FFmpeg Loop maks 20s & 30MB, MP3 Audio wedding-song.mp3 maks 20MB via storage.ts; penamaan slot deterministik & clean overwrite otomatis)
+  POST      /api/client/upload             → Upload media undangan (WebP Sharp, MP4 H.264 FFmpeg Loop maks 20s & 30MB, MP3 Audio wedding-song.mp3 maks 20MB via storage.ts; penamaan slot deterministik & clean overwrite otomatis). Mengikuti kunci Studio (`getInvitationLockStatus`): setelah terbit klien mendapat 403 kecuali Buka Kunci Darurat aktif; slot MEMORIES_COVER (disimpan lewat PATCH) dan admin dikecualikan. Sebelum 29 Okt 2026 unggahan setelah terbit lolos dan menimpa berkas yang sedang tampil karena nama berkas per slot tetap. Regresi `__tests__/integration/uploadStudioLock.test.ts`
   GET       /api/client/orders            → List order client
   POST      /api/client/orders/checkout-bundle → Penerbitan tagihan terpadu 1-Invoice multi-layanan (Upgrade Paket, Perpanjangan Galeri, dan Top-Up Kuota Foto Acara) dengan itemsJson terstruktur & auto-supersede order lama
   GET       /api/client/orders/{id}/status → Cek status tagihan terpadu (menyertakan itemsJson rincian layanan)
@@ -1655,6 +1657,8 @@ Jika Anda agent baru yang masuk ke proyek ini, baca file-file ini secara berurut
 ## 14. SISTEM PORTOFOLIO MANDIRI
 
 **Files:** `app/api/admin/portfolio/route.ts`, `app/portfolio/page.tsx`, `app/portfolio/PortfolioGallery.tsx`
+
+Kartu galeri `/portfolio` (v1.0.0) menampilkan `cover.webp` di dalam bingkai HP (CSS Tailwind, tanpa gambar bingkai) dengan nama di bagian bawah layar, meniru layar pembuka undangan. Bingkai tablet+HP seperti katalog `/demo` tidak dipakai karena portofolio tidak punya tangkapan layar: `cover.webp` hanyalah foto sampul yang dipotong 800×1000.
 
 Sistem portofolio memungkinkan Admin (SUPER_ADMIN) mengkurasi undangan klien pilihan menjadi **salinan HTML statis yang 100% mandiri** — semua aset media sudah disalin lokal, tidak ada URL eksternal tersisa.
 

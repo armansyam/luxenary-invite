@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { AdminProfileSettings } from "@/components/admin/AdminProfileSettings";
+import { AdminAboutSettings } from "@/components/admin/AdminAboutSettings";
 import { SettingsCard, FieldRow } from "@/components/admin/AdminSettingsUI";
 
 const AVAILABLE_CAPABILITIES = [
@@ -22,8 +23,8 @@ interface Props {
   settingsMap: Record<string, string>;
   editSection: Record<string, boolean>;
   settingsSaved: Record<string, boolean>;
-  activeSettingsTab: "akun" | "keuangan" | "paket" | "integrasi" | "operasional";
-  setActiveSettingsTab: (tab: "akun" | "keuangan" | "paket" | "integrasi" | "operasional") => void;
+  activeSettingsTab: "akun" | "keuangan" | "paket" | "integrasi" | "operasional" | "tentang";
+  setActiveSettingsTab: (tab: "akun" | "keuangan" | "paket" | "integrasi" | "operasional" | "tentang") => void;
   currentOrigin: string;
   // Saving flags
   savingPricing: boolean;
@@ -136,13 +137,14 @@ export default function AdminSettingsTab(props: Props) {
   </div>
 
   {/* ── Sub-Tab Navigation ── */}
-  <div className="w-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1.5 p-1.5 bg-gray-100 rounded-2xl border border-gray-200">
+  <div className="w-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 p-1.5 bg-gray-100 rounded-2xl border border-gray-200">
     {([
       { id: "akun",         label: "Akun & Keamanan",      hint: "Profil & password admin" },
       { id: "keuangan",     label: "Keuangan & Gateway",   hint: "Pembayaran, QRIS, bank" },
       { id: "paket",        label: "Paket & Harga",        hint: "Tier pricing & kapabilitas" },
       { id: "integrasi",    label: "Integrasi & API",      hint: "OAuth, SMTP, DNS, domain" },
       { id: "operasional",  label: "Operasional",          hint: "Status layanan, WA, landing" },
+      { id: "tentang",      label: "Tentang Aplikasi",     hint: "Versi & catatan rilis" },
     ] as const).map((t) => (
       <button
         key={t.id}
@@ -166,6 +168,10 @@ export default function AdminSettingsTab(props: Props) {
   {/* ── Sub-Tab: Akun & Keamanan ── */}
   {activeSettingsTab === "akun" && (
     <AdminProfileSettings />
+  )}
+
+  {activeSettingsTab === "tentang" && (
+    <AdminAboutSettings />
   )}
 
   {/* ══ TAB: KEUANGAN & GATEWAY ══ */}

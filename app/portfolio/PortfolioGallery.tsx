@@ -133,22 +133,26 @@ export function PortfolioGallery({ items }: PortfolioGalleryProps) {
             rel="noopener noreferrer"
             className="group flex flex-col bg-white border border-[#eadecf]/80 rounded-2xl overflow-hidden shadow-2xs hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
           >
-            {/* Visual Cover Photo */}
-            <div className="relative aspect-[3/4] bg-stone-100 overflow-hidden">
-              <img
-                src={item.coverImage}
-                alt={item.coupleName}
-                loading="lazy"
-                decoding="async"
-                className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500 ease-out"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-75 group-hover:opacity-85 transition-opacity" />
+            {/* cover.webp hanya foto sampul (bukan tangkapan layar), jadi bingkai HP meniru layar pembuka undangan: sampul penuh + nama. */}
+            <div className="flex justify-center bg-stone-100/70 px-[14%] pt-4 pb-3.5 sm:pt-5 sm:pb-4">
+              <div className="relative w-full aspect-[9/18.5] rounded-[20px] bg-stone-900 p-[4px] shadow-lg shadow-stone-900/25 ring-1 ring-stone-900/10">
+                <div className="relative h-full w-full overflow-hidden rounded-[16px] bg-stone-800">
+                  <img
+                    src={item.coverImage}
+                    alt={item.coupleName}
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-80" />
+                  <span className="absolute top-1.5 left-1/2 -translate-x-1/2 h-[6px] w-[32%] rounded-full bg-stone-900" />
 
-              {/* Couple Name Overlay */}
-              <div className="absolute bottom-2.5 left-2.5 right-2.5 text-white">
-                <h3 className="text-xs sm:text-sm font-serif font-bold text-white tracking-tight line-clamp-2 leading-snug drop-shadow-xs">
-                  {item.coupleName}
-                </h3>
+                  <div className="absolute bottom-3 left-2 right-2 text-center text-white">
+                    <h3 className="text-[11px] sm:text-xs font-serif font-bold text-white tracking-tight line-clamp-3 leading-snug drop-shadow-xs">
+                      {item.coupleName}
+                    </h3>
+                  </div>
+                </div>
               </div>
             </div>
 

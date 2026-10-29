@@ -18,23 +18,14 @@ function getCurrentCommitHash(): Promise<string> {
 }
 
 export async function GET() {
-  try {
-    const hash = await getCurrentCommitHash();
-    const releaseTag = hash ? `v${packageJson.version} (${hash})` : `v${packageJson.version}`;
+  const hash = await getCurrentCommitHash();
+  const releaseTag = hash ? `v${packageJson.version} (${hash})` : `v${packageJson.version}`;
 
-    return NextResponse.json({
-      success: true,
-      version: packageJson.version,
-      hash: hash || undefined,
-      release: releaseTag,
-      updateAvailable: false,
-    });
-  } catch (error) {
-    return NextResponse.json({
-      success: false,
-      version: "0.1.0",
-      release: "v0.1.0",
-      updateAvailable: false,
-    });
-  }
+  return NextResponse.json({
+    success: true,
+    version: packageJson.version,
+    hash: hash || undefined,
+    release: releaseTag,
+    updateAvailable: false,
+  });
 }

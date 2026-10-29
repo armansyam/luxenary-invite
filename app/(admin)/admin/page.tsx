@@ -185,6 +185,7 @@ const VALID_SETTINGS_SUBS = [
   "paket",
   "integrasi",
   "operasional",
+  "tentang",
   // Legacy aliases — redirect lama ke baru via URL restore logic
   "pembayaran",
   "gateway",
@@ -324,16 +325,16 @@ export default function AdminPage() {
   const [savingMemoriesMilestones, setSavingMemoriesMilestones] = useState(false);
   const [detectingServerIp, setDetectingServerIp] = useState(false);
   const [detectIpResult, setDetectIpResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [activeSettingsTab, setActiveSettingsTab] = useState<"akun" | "keuangan" | "paket" | "integrasi" | "operasional">(() => {
+  const [activeSettingsTab, setActiveSettingsTab] = useState<"akun" | "keuangan" | "paket" | "integrasi" | "operasional" | "tentang">(() => {
     // Pemetaan alias lama ke ID tab baru (untuk backward-compat URL/localStorage)
-    const LEGACY_SUB_MAP: Record<string, "akun" | "keuangan" | "paket" | "integrasi" | "operasional"> = {
+    const LEGACY_SUB_MAP: Record<string, "akun" | "keuangan" | "paket" | "integrasi" | "operasional" | "tentang"> = {
       pembayaran: "keuangan",
       gateway: "keuangan",
       setup: "integrasi",
       platform: "operasional",
     };
-    const normalize = (val: string): "akun" | "keuangan" | "paket" | "integrasi" | "operasional" | null => {
-      const NEW_VALID = ["akun", "keuangan", "paket", "integrasi", "operasional"] as const;
+    const normalize = (val: string): "akun" | "keuangan" | "paket" | "integrasi" | "operasional" | "tentang" | null => {
+      const NEW_VALID = ["akun", "keuangan", "paket", "integrasi", "operasional", "tentang"] as const;
       if (NEW_VALID.includes(val as any)) return val as any;
       return LEGACY_SUB_MAP[val] ?? null;
     };
