@@ -285,7 +285,8 @@ fi
 # 9. Sinkronisasi Crontab Pemeliharaan OS Linux Otomatis
 if command -v crontab &> /dev/null; then
   echo "⏰ Memverifikasi dan menyinkronkan jadwal pemeliharaan OS (crontab)..."
-  ACTUAL_CRON_SECRET=$(grep -E "^CRON_SECRET=" .env | cut -d '=' -f2 | tr -d '"' | tr -d "'")
+  # -f2- (bukan -f2): secret base64 buatan skrip ini berakhiran '=', dan -f2 memotongnya sehingga cron selalu 401.
+  ACTUAL_CRON_SECRET=$(grep -E "^CRON_SECRET=" .env | cut -d '=' -f2- | tr -d '"' | tr -d "'")
   if [ -n "$ACTUAL_CRON_SECRET" ] && [ "$ACTUAL_CRON_SECRET" != '""' ]; then
     CURRENT_CRON=$(crontab -l 2>/dev/null || true)
     FILTERED_CRON=$(echo "$CURRENT_CRON" | grep -v "api/cron/cleanup" | grep -v "api/cron/backup" | grep -v "scripts/cron-backup.sh" | grep -v "scripts/health-watch.sh" || true)
