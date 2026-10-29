@@ -13,6 +13,7 @@ import { removeIfExists } from "@/lib/fsSafe";
 import { prisma } from "@/lib/prisma";
 import { getClientIp, rateLimitDb } from "@/lib/rateLimit";
 import { MEDIA_SLOT_FILE_NAMES } from "@/lib/mediaSlots";
+import { getInvitationLockStatus } from "@/app/api/client/invitations/[id]/route";
 
 // SLOT_FILE_NAMES = 9 slot resmi DB (dari lib/mediaSlots.ts) + slot upload tambahan non-DB
 const SLOT_FILE_NAMES: Record<string, string> = {
@@ -54,17 +55,29 @@ export async function POST(req: NextRequest) {
     // Folder tujuan selalu milik undangan yang ada dan dipegang pengunggah: id kosong atau tak dikenal dulu menulis ke
     // folder bersama ("general") atau folder bernama bebas yang bisa saling timpa antar pengguna.
     const inv = safeInvitationId
-      ? await prisma.invitation.findUnique({ where: { id: safeInvitationId }, select: { userId: true, status: true } })
+      ? await prisma.invitation.findUnique({
+          where: { id: safeInvitationId },
+          select: { userId: true, status: true, adminUnlockedUntil: true, isLockedPermanently: true, eventData: true },
+        })
       : null;
     if (!inv) {
       return NextResponse.json({ error: "Undangan tujuan unggahan tidak ditemukan." }, { status: 404 });
     }
-    if (inv.userId !== session.user.id && !hasAdminPermission(session.user, "invitations")) {
+    const isAdmin = hasAdminPermission(session.user, "invitations");
+    if (inv.userId !== session.user.id && !isAdmin) {
       return NextResponse.json({ error: "Forbidden. Anda tidak memiliki akses ke undangan ini." }, { status: 403 });
     }
     const invStatus = inv.status;
 
     const slotKey = rawSlot.toUpperCase();
+    // Kunci Studio yang sama dengan PUT undangan: nama berkas per slot tetap, jadi unggahan saat terkunci menimpa media
+    // yang sedang tampil walau penyimpanannya ditolak. Sampul Momen disimpan lewat PATCH yang memang boleh setelah terbit.
+    if (slotKey !== "MEMORIES_COVER" && !isAdmin && getInvitationLockStatus(inv).isLocked) {
+      return NextResponse.json(
+        { error: "Undangan ini telah diterbitkan dan studio terkunci. Silakan ajukan Buka Kunci Darurat kepada Administrator." },
+        { status: 403 }
+      );
+    }
     const baseSlug = SLOT_FILE_NAMES[slotKey] || rawSlot.toLowerCase().replace(/[^a-z0-9_-]/g, "") || "photo";
 
     const bytes = await file.arrayBuffer();

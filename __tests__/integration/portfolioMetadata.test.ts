@@ -72,6 +72,39 @@ describe.skipIf(!IS_TEST_DB)("metadata portofolio", () => {
     }
   });
 
+  it("logo vendor dari featureSettings ikut disalin, karena arsip dan hapus klien mengosongkan invitations/<id>/", async () => {
+    expect(created.invitationId).not.toBe("");
+    const logoUrl = `/uploads/invitations/${created.invitationId}/vendor-1.webp`;
+    const logoPath = path.join(process.cwd(), "public", logoUrl);
+    const htmlPath = path.join(process.cwd(), "public", "published", "ids", `${created.invitationId}.html`);
+    await prisma.invitation.update({
+      where: { id: created.invitationId },
+      data: { featureSettings: { vendors: [{ name: "Studio Vendor Uji", category: "Fotografi", logoUrl }] } },
+    });
+    fs.mkdirSync(path.dirname(logoPath), { recursive: true });
+    fs.writeFileSync(logoPath, Buffer.from("logo-vendor"));
+    fs.writeFileSync(htmlPath, "<html><body>portofolio</body></html>");
+    uploads.clear();
+    try {
+      const res = await addPortfolio(
+        new NextRequest("http://localhost/api/admin/portfolio", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ invitationId: created.invitationId }),
+        }),
+      );
+      expect(res.status).toBe(200);
+      const html = uploads.get(`${RUN}.html`)!.toString("utf-8");
+      expect(html).toContain("Studio Vendor Uji");
+      expect(html).not.toContain(`invitations/${created.invitationId}/`);
+      expect(html).toContain(`/portfolio/assets/${RUN}/vendor-1.webp`);
+      expect(uploads.get(`assets/${RUN}/vendor-1.webp`)?.toString()).toBe("logo-vendor");
+    } finally {
+      fs.rmSync(htmlPath, { force: true });
+      fs.rmSync(path.dirname(logoPath), { recursive: true, force: true });
+    }
+  });
+
   it("kandidat portofolio berasal dari seluruh undangan terbit, bukan 50 undangan terbaru di overview", async () => {
     const published = await prisma.invitation.count({ where: { status: "PUBLISHED" } });
     const res = await listPortfolio(new NextRequest("http://localhost/api/admin/portfolio"));

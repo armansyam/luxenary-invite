@@ -4,7 +4,7 @@ import { prisma, pool } from "./prisma";
 import { logger } from "./logger";
 import { getAdminSetting } from "./settings";
 import { buildAndSavePublishedHtml, deletePublishedHtml } from "./staticPublisher";
-import { deleteFile, isInvitationOwnedUpload } from "./storage";
+import { deleteFile, deleteInvitationBucketObjects, isInvitationOwnedUpload } from "./storage";
 import { purgeInvitationEdgeCache } from "./cloudflare";
 import { isNasArchiveEnabled, purgeNasArchive, syncInvitationToNasArchive } from "./nasArchive";
 import { DAY_MS, computeLifecycleDates, formatDateInEventTimezone, getPrimaryEventTimezone, type LifecycleSettings } from "./lifecycleDates";
@@ -184,6 +184,8 @@ async function archiveExpiredInvitation(inv: ExpiredInvitation, nasEnabled: bool
   if (nasEnabled) {
     const media = await prisma.invitationMedia.findMany({ where: { invitationId: inv.id }, select: { localPath: true } });
     await Promise.all(media.map((item) => (isInvitationOwnedUpload(item.localPath, inv.id) ? deleteFile(item.localPath) : Promise.resolve(false))));
+    // QRIS, logo vendor, dan musik unggahan tidak tercatat di tabel media; arsip NAS sudah menyalinnya.
+    await deleteInvitationBucketObjects(inv.id);
   }
 
   await prisma.rsvp.deleteMany({ where: { invitationId: inv.id } });

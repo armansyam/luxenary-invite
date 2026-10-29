@@ -271,6 +271,28 @@ export async function deleteFile(publicUrl: string | null): Promise<boolean> {
 }
 
 /**
+ * Hapus semua objek bucket media di bawah `invitations/<id>/` (media, QRIS, logo vendor, musik unggahan). Dipakai saat
+ * undangan dihapus: menghapus per URL dari tabel media saja meninggalkan unggahan yang URL-nya ada di featureSettings.
+ * Mengembalikan jumlah objek yang dihapus; 0 bila penyimpanan bukan R2/S3.
+ */
+export async function deleteInvitationBucketObjects(invitationId: string): Promise<number> {
+  const bucketName = process.env.S3_BUCKET_NAME;
+  if ((STORAGE_PROVIDER !== "r2" && STORAGE_PROVIDER !== "s3") || !s3Client || !bucketName || !isSafePathSegment(invitationId)) return 0;
+  let deleted = 0;
+  let continuationToken: string | undefined;
+  do {
+    const page = await s3Client.send(new ListObjectsV2Command({ Bucket: bucketName, Prefix: `invitations/${invitationId}/`, ContinuationToken: continuationToken }));
+    for (const object of page.Contents ?? []) {
+      if (!object.Key) continue;
+      await s3Client.send(new DeleteObjectCommand({ Bucket: bucketName, Key: object.Key }));
+      deleted++;
+    }
+    continuationToken = page.IsTruncated ? page.NextContinuationToken : undefined;
+  } while (continuationToken);
+  return deleted;
+}
+
+/**
  * Background job to sync local drafts to R2 upon publishing.
  * It scans the invitation's media and music URLs. If any URL is local, it uploads to R2 and updates DB.
  */

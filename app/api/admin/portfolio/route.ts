@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import fs from "fs";
 import path from "path";
-import { uploadPortfolioFile, listPortfolioSlugs, deletePortfolio, readPortfolioMediaSource as readMediaSource } from "@/lib/storage";
+import { uploadPortfolioFile, listPortfolioSlugs, deletePortfolio, isInvitationOwnedUpload, readPortfolioMediaSource as readMediaSource } from "@/lib/storage";
 import { isSafePathSegment } from "@/lib/fsSafe";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
@@ -110,6 +110,17 @@ export async function POST(req: NextRequest) {
     ].filter(Boolean) as string[];
 
     for (const oldUrl of mediaUrlsToProcess) {
+      const newUrl = await processMedia(oldUrl);
+      if (newUrl) {
+        htmlContent = htmlContent.split(oldUrl).join(newUrl);
+      }
+    }
+
+    // Unggahan yang URL-nya di featureSettings (QRIS amplop, logo vendor) tidak tercatat di tabel media. Tanpa disalin,
+    // gambarnya hilang dari portofolio saat arsip atau hapus klien mengosongkan invitations/<id>/ di bucket.
+    const ownedUrlPattern = new RegExp(`[^"'\\s()<>\\\\]*invitations/${inv.id}/[^"'\\s()<>\\\\]+`, "g");
+    const unlistedUrls = [...new Set(htmlContent.match(ownedUrlPattern) || [])].filter((url) => isInvitationOwnedUpload(url, inv.id));
+    for (const oldUrl of unlistedUrls) {
       const newUrl = await processMedia(oldUrl);
       if (newUrl) {
         htmlContent = htmlContent.split(oldUrl).join(newUrl);
