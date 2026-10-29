@@ -57,7 +57,7 @@ export default async function PrivacyPage() {
               Data yang Anda masukkan murni digunakan untuk tujuan operasional pembuatan dan penayangan undangan digital Anda. Kami tidak akan pernah menjual, menyewakan, atau mendistribusikan data pribadi Anda maupun data tamu Anda kepada pihak ketiga untuk tujuan pemasaran.
             </p>
             <p className="mt-2">
-              Pengecualian: undangan yang telah diterbitkan dapat dipilih Administrator untuk ditampilkan di halaman portofolio publik sebagai contoh karya. Salinan tersebut memuat isi undangan sebagaimana tampil kepada tamu, termasuk ucapan dan foto tamu yang muncul di dalamnya. Klien dapat meminta penghapusan dari portofolio melalui kontak di bagian akhir kebijakan ini.
+              Pengecualian: undangan yang telah diterbitkan dapat dipilih Administrator untuk ditampilkan di halaman portofolio publik sebagai contoh karya. Salinan tersebut memuat isi undangan sebagaimana tampil kepada tamu, termasuk foto tamu yang muncul di dalamnya, tanpa ucapan tamu, nomor rekening, QRIS, dan alamat pengiriman kado. Klien dapat meminta penghapusan dari portofolio melalui kontak di bagian akhir kebijakan ini.
             </p>
           </section>
 

@@ -1660,6 +1660,8 @@ Jika Anda agent baru yang masuk ke proyek ini, baca file-file ini secara berurut
 
 Kartu galeri `/portfolio` (v1.0.0) menampilkan `cover.webp` di dalam bingkai HP (CSS Tailwind, tanpa gambar bingkai) dengan nama di bagian bawah layar, meniru layar pembuka undangan. Bingkai tablet+HP seperti katalog `/demo` tidak dipakai karena portofolio tidak punya tangkapan layar: `cover.webp` hanyalah foto sampul yang dipotong 800×1000.
 
+Salinan portofolio dirender dengan `renderPublishedHtml(id, { includeRsvps: false, includeGift: false })`. `includeGift: false` mengosongkan `bankAccounts`, `shippingAddress`, dan `featureSettings.qrisImageUrl` serta menyetel `showGift: false` di `composeTemplateData` sebelum mesin tema mana pun berjalan, karena master `aeterna`, `verona`, dan `burgundy-royale` memakai `{{giftAddress}}` langsung (bukan hanya `giftSectionHtml`). Sebelum 29 Okt 2026 portofolio publik menampilkan nomor rekening, QRIS, dan alamat kirim kado klien. Portofolio yang dibuat sebelum tanggal itu tetap memuatnya sampai dihapus lalu ditambahkan ulang dari Admin > Portofolio. Regresi `__tests__/integration/portfolioMetadata.test.ts` (master `kalandra`, `aeterna`, `fajar`).
+
 Sistem portofolio memungkinkan Admin (SUPER_ADMIN) mengkurasi undangan klien pilihan menjadi **salinan HTML statis yang 100% mandiri** — semua aset media sudah disalin lokal, tidak ada URL eksternal tersisa.
 
 ### Alur Kloning

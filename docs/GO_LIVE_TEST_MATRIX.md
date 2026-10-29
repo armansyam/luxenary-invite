@@ -1,4 +1,4 @@
-# Matriks Uji Go-Live v1.0.0
+# Matriks Uji Go-Live v1.0
 
 Diperbarui 29 Oktober 2026. Status setiap alur sebelum rilis produksi pertama, beserta buktinya. "Lulus lokal" berarti teruji di MacBook pengembang dengan build produksi (`next build` + `next start`), bukan di VPS.
 
@@ -12,14 +12,15 @@ Diperbarui 29 Oktober 2026. Status setiap alur sebelum rilis produksi pertama, b
 | Pembayaran gateway | Checkout gateway, lalu pelunasan lewat fungsi webhook | Lulus sebagai simulasi; transaksi Midtrans/Xendit sungguhan belum (lihat bagian 2) |
 | Unggahan media ditolak setelah terbit | `e2e-golive.ts` + `__tests__/integration/uploadStudioLock.test.ts` | Lulus |
 | Hapus berkas undangan di R2 (klien dihapus, reset jenis acara, arsip) | `__tests__/unit/deleteInvitationBucketObjects.test.ts`, pembersihan `e2e-golive.ts` pada bucket asli | Lulus |
-| Logo vendor dan QRIS tetap ada di portofolio setelah arsip | `__tests__/integration/portfolioMetadata.test.ts` | Lulus |
+| Logo vendor tetap ada di portofolio setelah arsip | `__tests__/integration/portfolioMetadata.test.ts` | Lulus |
+| Portofolio tanpa rekening, QRIS, dan alamat kirim kado (v1.0.1) | `portfolioMetadata.test.ts` pada master `kalandra`, `aeterna`, `fajar` | Lulus |
 | Subdomain undangan (`<nama>.<root>`) dalam mode produksi | Build produksi lokal dengan `*.localhost` | Lulus |
 | Pemasangan server baru, pembaruan, dan rollback otomatis `deploy.sh` | Sandbox dari clone bersih `main` ke database kosong | Lulus; build gagal memulihkan rilis sebelumnya |
 | Cron backup dan pembersihan siklus hidup | Pemanggilan dengan `data/.cron-auth` | Lulus setelah perbaikan secret (`de1f30b`) |
 | Email (notifikasi, uji SMTP) | SMTP sink lokal | Lulus; penyedia SMTP sungguhan belum |
 | Kompresi video dan musik | ffmpeg 9.0.2 | Lulus |
 | Tampilan klien dan admin | Peramban di 320, 375, dan 1440 px | Lulus, tanpa gulir horizontal |
-| Unit dan integrasi | `npx vitest run` pada `luxenary_test` | 123 berkas, 1284 tes lulus |
+| Unit dan integrasi | `npx vitest run` pada `luxenary_test` | 123 berkas, 1287 tes lulus |
 | Tipe dan lint | `npx tsc --noEmit`, `npx eslint` | Exit 0 |
 | Skrip audit (`hygiene`, `security`, `stress`, `themes`, `nas`, dan lainnya) | Rangkaian skrip `scripts/` | 13 dari 14 lulus. `integrity` gagal hanya karena tema uji lokal `uji-builder-lengkap` (tidak ikut git, tanpa thumbnail) |
 

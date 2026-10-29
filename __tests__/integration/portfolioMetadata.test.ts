@@ -24,10 +24,12 @@ vi.mock("@/lib/storage", async (importOriginal) => ({
 
 import { prisma, pool } from "@/lib/prisma";
 import { GET as listPortfolio, POST as addPortfolio } from "@/app/api/admin/portfolio/route";
+import { renderPublishedHtml } from "@/lib/staticPublisher";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
 const RUN = `vitest_portfolio_${Date.now()}`;
 const created = { userId: "", orderId: "", invitationId: "" };
+const giftInvitations: string[] = [];
 
 describe.skipIf(!IS_TEST_DB)("metadata portofolio", () => {
   it("menyimpan kategori tema yang dipakai tombol filter galeri", async () => {
@@ -105,6 +107,42 @@ describe.skipIf(!IS_TEST_DB)("metadata portofolio", () => {
     }
   });
 
+  it.each([
+    ["kalandra", "WEDDING"],
+    ["aeterna", "WEDDING"],
+    ["fajar", "KHITAN"],
+  ] as const)("portofolio %s tidak memuat rekening, QRIS, atau alamat kirim kado klien", async (themeId, eventType) => {
+    expect(created.userId).not.toBe("");
+    const inv = await prisma.invitation.create({
+      data: {
+        userId: created.userId,
+        themeId,
+        eventType,
+        status: "PUBLISHED",
+        invitationSlug: `${RUN}-gift-${themeId}`,
+        participantsJson: { groom: { name: "Raka", nickname: "Raka" }, bride: { name: "Sinta", nickname: "Sinta" }, child: { name: "Rafa", nickname: "Rafa" } },
+        bankAccounts: [{ bank: "Bank Uji", name: "Raka", number: "9876543210123" }],
+        shippingAddress: "Jalan Kado Rahasia No. 7",
+        featureSettings: {},
+      },
+    });
+    giftInvitations.push(inv.id);
+    await prisma.invitation.update({
+      where: { id: inv.id },
+      data: { featureSettings: { qrisImageUrl: `/uploads/invitations/${inv.id}/qris.webp` } },
+    });
+
+    const published = await renderPublishedHtml(inv.id);
+    expect(published).toContain("9876543210123");
+
+    const portfolio = await renderPublishedHtml(inv.id, { includeRsvps: false, includeGift: false });
+    expect(portfolio).not.toBeNull();
+    expect(portfolio).not.toContain("9876543210123");
+    expect(portfolio).not.toContain("Jalan Kado Rahasia");
+    expect(portfolio).not.toContain("qris.webp");
+    expect(portfolio).not.toContain('id="gift"');
+  });
+
   it("kandidat portofolio berasal dari seluruh undangan terbit, bukan 50 undangan terbaru di overview", async () => {
     const published = await prisma.invitation.count({ where: { status: "PUBLISHED" } });
     const res = await listPortfolio(new NextRequest("http://localhost/api/admin/portfolio"));
@@ -117,6 +155,7 @@ describe.skipIf(!IS_TEST_DB)("metadata portofolio", () => {
 });
 
 afterAll(async () => {
+  if (giftInvitations.length > 0) await prisma.invitation.deleteMany({ where: { id: { in: giftInvitations } } });
   if (created.invitationId) await prisma.invitation.deleteMany({ where: { id: created.invitationId } });
   if (created.orderId) await prisma.order.deleteMany({ where: { id: created.orderId } });
   if (created.userId) await prisma.user.deleteMany({ where: { id: created.userId } });

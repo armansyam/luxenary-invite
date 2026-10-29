@@ -633,6 +633,8 @@ Sistem pengiriman email otomatis menggunakan **Nodemailer** yang membaca kredens
 1. **Portofolio Kloning Mandiri (`/portfolio`)**:
    - Fitur khusus Super Admin untuk mengkloning undangan pilihan menjadi file statis 100% mandiri di `public/portfolio/[slug].html`.
    - Semua aset gambar dikompresi WebP tajam dan disimpan terisolasi di `public/portfolio/assets/[slug]/`.
+   - Salinan tidak memuat ucapan tamu, nomor rekening, QRIS, maupun alamat kirim kado (seksi amplop dibuang saat render, 29 Okt 2026). Portofolio yang dibuat sebelum tanggal itu perlu dihapus lalu ditambahkan ulang agar amplopnya hilang.
+   - Galeri `/portfolio` menampilkan foto sampul tiap undangan di dalam bingkai HP.
 2. **Custom Domain Klien (`dimas-clarissa.com`) & 2 Layanan Tambahan Resmi**:
    - **Inklusif Dalam Paket (Bebas Biaya Tambahan)**: Custom domain merupakan fitur bawaan yang sudah **termasuk bebas biaya (gratis)** pada paket yang memiliki kapabilitas `custom_domain` (seperti tier Eternity / Premium). Klien tidak perlu membayar biaya add-on tambahan.
    - **Gembok Master Saklar Admin (`custom_domain_enabled`)**:

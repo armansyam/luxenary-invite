@@ -118,8 +118,15 @@ function generateInitialAvatarSvg(nameOrInitial: string, roleName: string): stri
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
-/** `includeRsvps: false` dipakai salinan portofolio: nama dan ucapan tamu asli tidak ikut terbit di halaman publik lain. */
-export async function composeTemplateData(invitationId: string, { includeRsvps = true }: { includeRsvps?: boolean } = {}) {
+/**
+ * `includeRsvps: false` dan `includeGift: false` dipakai salinan portofolio: nama dan ucapan tamu asli, nomor rekening,
+ * QRIS, dan alamat kirim kado klien tidak ikut terbit di halaman publik lain. Data amplop dikosongkan di sumbernya
+ * (bukan hanya `showGift`) karena beberapa master memakai `{{giftAddress}}` langsung.
+ */
+export async function composeTemplateData(
+  invitationId: string,
+  { includeRsvps = true, includeGift = true }: { includeRsvps?: boolean; includeGift?: boolean } = {},
+) {
   const inv = await prisma.invitation.findUnique({
     where: { id: invitationId },
     include: {
@@ -133,6 +140,10 @@ export async function composeTemplateData(invitationId: string, { includeRsvps =
   });
 
   if (!inv) return null;
+  if (!includeGift) {
+    const featureSettings = { ...parseFeatureSettings(inv.featureSettings), showGift: false, qrisImageUrl: null };
+    return composeInvitationData({ ...inv, bankAccounts: [], shippingAddress: null, featureSettings });
+  }
   return composeInvitationData(inv);
 }
 

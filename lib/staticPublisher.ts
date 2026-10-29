@@ -46,15 +46,18 @@ export async function getPublishedHtml(invitationId: string): Promise<string | n
   }
 }
 
-/** HTML terbit tanpa menyimpannya; `includeRsvps: false` untuk salinan portofolio. */
-export async function renderPublishedHtml(invitationId: string, { includeRsvps = true }: { includeRsvps?: boolean } = {}): Promise<string | null> {
+/** HTML terbit tanpa menyimpannya; `includeRsvps: false` dan `includeGift: false` untuk salinan portofolio. */
+export async function renderPublishedHtml(
+  invitationId: string,
+  { includeRsvps = true, includeGift = true }: { includeRsvps?: boolean; includeGift?: boolean } = {},
+): Promise<string | null> {
   const invitation = await prisma.invitation.findUnique({
     where: { id: invitationId },
   });
 
   if (!invitation) return null;
 
-  const data = await composeTemplateData(invitation.id, { includeRsvps });
+  const data = await composeTemplateData(invitation.id, { includeRsvps, includeGift });
   if (!data) return null;
 
 

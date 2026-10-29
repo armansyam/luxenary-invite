@@ -141,7 +141,7 @@ export default async function TermsPage() {
           <section>
             <h2 className="text-lg font-semibold text-stone-800 mb-2">7. Portofolio</h2>
             <p>
-              {platformName} dapat menampilkan undangan Klien yang telah diterbitkan pada halaman portofolio sebagai contoh karya. Yang ditampilkan adalah salinan undangan sebagaimana tampil kepada tamu, termasuk desain, nama, foto, teks, serta ucapan dan foto tamu yang muncul di dalamnya. Pemilihan undangan untuk portofolio dilakukan oleh Administrator.
+              {platformName} dapat menampilkan undangan Klien yang telah diterbitkan pada halaman portofolio sebagai contoh karya. Yang ditampilkan adalah salinan undangan sebagaimana tampil kepada tamu, termasuk desain, nama, foto, teks, dan foto tamu yang muncul di dalamnya. Ucapan tamu, nomor rekening, QRIS, dan alamat pengiriman kado tidak ikut ditampilkan. Pemilihan undangan untuk portofolio dilakukan oleh Administrator.
             </p>
             <p className="mt-2">
               Klien dapat meminta penghapusan undangannya dari portofolio kapan saja melalui kontak dukungan di bawah. Salinan yang sudah tersimpan sementara pada peramban atau jaringan pengiriman konten dapat tetap tampil sampai masa simpannya berakhir.

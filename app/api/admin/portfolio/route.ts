@@ -69,12 +69,13 @@ export async function POST(req: NextRequest) {
       throw new HttpError(400, "Slug undangan tidak dapat dipakai sebagai nama portofolio.");
     }
 
-    // 1. Dirender ulang dari data terbit tanpa RSVP: HTML terbit memuat nama dan ucapan tamu asli.
+    // 1. Dirender ulang dari data terbit tanpa RSVP dan amplop: HTML terbit memuat nama dan ucapan tamu asli serta
+    //    rekening, QRIS, dan alamat kirim kado klien.
     const canonicalHtmlPath = path.join(process.cwd(), "public", "published", "ids", `${invitationId}.html`);
     if (!(await fileExists(canonicalHtmlPath))) {
       throw new HttpError(409, "Undangan belum memiliki HTML terbit. Terbitkan undangan sebelum menyalinnya ke portofolio.");
     }
-    let htmlContent = await renderPublishedHtml(invitationId, { includeRsvps: false });
+    let htmlContent = await renderPublishedHtml(invitationId, { includeRsvps: false, includeGift: false });
     if (htmlContent === null) throw new HttpError(404, "Invitation not found");
 
     // 2. Helper: download/salin media utama dan upload via Hybrid Storage
