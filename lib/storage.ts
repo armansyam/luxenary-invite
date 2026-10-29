@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand, DeleteObjectCommand, PutBucketLifecycleConfigurationCommand } from "@aws-sdk/client-s3";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { logger } from "./logger";
 import { isSafePathSegment, removeIfExists } from "./fsSafe";
@@ -356,6 +357,28 @@ export async function syncDraftToR2(invitationId: string): Promise<void> {
             data: { localPath: newLocalPath }
           });
         }
+      }
+    }
+
+    // Unggahan yang URL-nya disimpan di featureSettings (gambar QRIS amplop, logo vendor) ikut dipindah; tanpa ini
+    // berkas itu tinggal di disk VPS walau R2 aktif dan hilang bila server diganti. syncSingleUrl hanya memindah
+    // berkas milik undangan ini, nilai lain dikembalikan apa adanya.
+    const syncJson = async (value: unknown): Promise<unknown> => {
+      if (typeof value === "string") return value.startsWith("/uploads/") ? syncSingleUrl(value) : value;
+      if (Array.isArray(value)) return Promise.all(value.map((item) => syncJson(item)));
+      if (value && typeof value === "object") {
+        const entries = await Promise.all(Object.entries(value).map(async ([key, item]) => [key, await syncJson(item)] as const));
+        return Object.fromEntries(entries);
+      }
+      return value;
+    };
+    if (inv.featureSettings) {
+      const syncedSettings = await syncJson(inv.featureSettings);
+      if (JSON.stringify(syncedSettings) !== JSON.stringify(inv.featureSettings)) {
+        await prisma.invitation.update({
+          where: { id: inv.id },
+          data: { featureSettings: syncedSettings as Prisma.InputJsonValue },
+        });
       }
     }
 

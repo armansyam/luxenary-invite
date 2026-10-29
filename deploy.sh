@@ -118,6 +118,13 @@ if [ -n "$NODE_BIN_DIR" ]; then
 fi
 echo "🟢 Runtime Node untuk deploy: $(node -v) | npm $(npm -v) | $(command -v node)"
 
+# Video dan musik unggahan dikompresi lewat ffmpeg (lib/videoOptimizer.ts). Bila ffmpeg tidak ada atau rusak, unggahan
+# disimpan apa adanya tanpa galat: video HEVC dari iPhone tidak diubah ke H.264 dan ukurannya tidak dibatasi.
+if ! ffmpeg -hide_banner -version > /dev/null 2>&1; then
+  echo "⚠️ ffmpeg tidak terpasang atau tidak dapat dijalankan: video dan musik unggahan TIDAK akan dikompresi."
+  echo "   Pasang atau perbaiki: sudo apt install -y ffmpeg"
+fi
+
 # 4. Install Dependencies (persis sesuai package-lock.json)
 echo "📦 Menginstal dependensi (npm ci)..."
 if ! npm ci; then
