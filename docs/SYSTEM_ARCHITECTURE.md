@@ -413,7 +413,7 @@ Fungsi utama di lib/storage.ts:
   deleteFile(publicUrl)                                   → Hapus file: R2 hanya di bawah base URL publik tanpa segmen `..`; lokal hanya di dalam public/uploads (resolveLocalUploadPath)
   isInvitationOwnedUpload(url, invitationId)              → true hanya untuk berkas di folder undangan itu; syarat sebelum media slot dihapus
   streamMemoriesToZip(archive, invitationId)              → Stream ZIP foto tamu langsung dari R2 (zero disk RAM)
-  syncDraftToR2(invitationId)                             → Migrasi otomatis aset lokal ke R2 saat publish
+  syncDraftToR2(invitationId)                             → Migrasi otomatis aset lokal ke R2 saat publish: tabel media, musicUrl, dan sejak 29 Okt 2026 juga URL unggahan di featureSettings (gambar QRIS amplop, logo vendor) yang dulu tertinggal di disk VPS; hanya berkas milik undangan itu. Diuji pada bucket R2 asli (9/9 berkas, HTML tanpa rujukan /uploads); regresi __tests__/unit/syncDraftToR2.test.ts
 ```
 
 ---
@@ -3115,7 +3115,7 @@ Luxenary-Invite dielevasi dari sistem undangan pernikahan murni menjadi platform
 4. **Maintenance Automation (OS Crontab Linux):**
    - 02:00 WIB: Pembersihan file draf dan data sementara (`/api/cron/cleanup`).
    - 03:00 WIB: Pencadangan otomatis database PostgreSQL (`/api/cron/backup`).
-5. **Pemanggilan cron:** `deploy.sh` menulis `Authorization: Bearer <CRON_SECRET>` ke `data/.cron-auth` (izin 600) dan crontab memakai `curl -H @data/.cron-auth`, sehingga secret tidak tampil di `crontab -l` maupun daftar proses.
+5. **Pemanggilan cron:** `deploy.sh` menulis `Authorization: Bearer <CRON_SECRET>` ke `data/.cron-auth` (izin 600) dan crontab memakai `curl -H @data/.cron-auth`, sehingga secret tidak tampil di `crontab -l` maupun daftar proses. Nilai dibaca dengan `cut -d '=' -f2-`: sebelum 29 Okt 2026 `-f2` memotong `=` di akhir secret base64 buatan `deploy.sh`, sehingga di server baru backup dan cleanup harian selalu ditolak 401 (ditemukan saat menjalankan `deploy.sh` di sandbox). `deploy.sh` juga berhenti di awal bila `node`, `npm`, `npx`, `pg_dump`, `openssl`, atau `curl` tidak ada, dan memperingatkan bila `ffmpeg` tidak dapat dijalankan.
 6. **Pemulihan otomatis proses yang macet:** crontab juga menjalankan `scripts/health-watch.sh` tiap menit. Skrip memanggil `http://localhost:3001/api/health` (timeout 10 detik) dan menjalankan `pm2 restart luxenary-invite` hanya bila tidak ada respons HTTP sama sekali (kode 000) 3 kali berturut-turut, maksimal satu restart per 15 menit. Respons HTTP apa pun, mis. 503 saat database bermasalah, tidak memicu restart. Jejak di `logs/health-watch.log`, status di `data/.health-watch-fails` dan `data/.health-watch-restart`. Skrip tidak mengirim notifikasi; peringatan ke pemilik memerlukan pemantau luar (mis. UptimeRobot terhadap `https://<domain>/api/health`).
 
 ---

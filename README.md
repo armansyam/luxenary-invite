@@ -254,7 +254,7 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 | **Auth** | NextAuth.js v5 — Google OAuth + Credential Admin |
 | **Media Storage** | Cloudflare R2 (prod) + Local disk VPS (draft/dev) via `lib/storage.ts` (penamaan slot deterministik & clean overwrite) |
 | **Image Processing** | `sharp` — WebP, resize, compress |
-| **Video Processing** | `FFmpeg` — H.264, auto-trim 20s, no audio loop, 30fps cap, +faststart streaming |
+| **Video Processing** | `FFmpeg` — H.264, auto-trim 20s, no audio loop, 30fps cap, +faststart streaming (tanpa ffmpeg unggahan disimpan apa adanya; `deploy.sh` memperingatkan bila ffmpeg tidak ada atau rusak) |
 | **Payment** | Gateway 2-Arah (Midtrans Core API QRIS & Xendit Invoice) + Transfer Bank Manual dengan transmisi profil pembeli lengkap (Nama, Email, WhatsApp/HP, Alamat, Item Branding, & Metadata) |
 | **Mailer & Email Engine** | Nodemailer dengan kredensial SMTP dinamis via `admin_settings`, template HTML editorial Warm White Cream & Royal Amber Gold dengan RFC 2046 `multipart/alternative` teks polos (anti-spam deliverability), subjek editorial resmi tanpa kurung siku, peringatan retensi H-3 otomatis via cron, serta Galeri Pratinjau 7 Varian di `/admin/emails` |
 | **Cron** | `POST /api/cron/cleanup` — retensi & cleanup otomatis |

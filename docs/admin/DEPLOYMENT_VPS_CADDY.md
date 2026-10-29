@@ -305,6 +305,7 @@ chmod +x deploy.sh
 ```
 
 Skrip ini akan otomatis:
+0. Berhenti di awal bila `node`, `npm`, `npx`, `pg_dump`, `openssl`, atau `curl` belum terpasang, dan memperingatkan bila `ffmpeg` tidak ada atau rusak (tanpa ffmpeg video/musik unggahan tidak dikompresi dan video HEVC iPhone tidak dikonversi).
 1. Memeriksa & membuat kunci rahasia acak (`AUTH_SECRET`, `CRON_SECRET`, dll) jika masih kosong.
 2. Menjalankan `npm ci` dan `npx prisma generate`.
 3. Membangun Next.js produksi ke direktori build baru dengan proteksi memori: `NODE_OPTIONS="--max-old-space-size=1536" npm run build` (build gagal = database tidak disentuh, rilis lama tetap jalan).
@@ -345,6 +346,8 @@ crontab -l
 bash scripts/cron-backup.sh && echo "backup OK"
 ```
 Jangan menambah baris `curl ... Bearer <secret>` sendiri: secret menjadi terbaca di daftar proses, dan endpoint backup hanya menerima `POST` di port 3001.
+
+Dengan `STORAGE_PROVIDER=r2` (atau `s3`), `cron-backup.sh` menganggap backup sehat hanya bila snapshot juga terunggah off-site, jadi skrip ini keluar dengan kode 1 selama `S3_BACKUP_BUCKET_NAME` kosong walaupun snapshot lokal berhasil dibuat; buat bucket R2 privat terpisah dan isi variabel itu sebelum produksi. Dengan `STORAGE_PROVIDER=local` snapshot hanya disimpan di disk dan dilaporkan sehat. Lihat `logs/cron-backup.log` untuk alasannya. Bila log berisi `Unauthorized`, `data/.cron-auth` tidak sama dengan `CRON_SECRET` di `.env`: jalankan ulang `./deploy.sh` (sebelum 29 Okt 2026 skrip memotong `=` di akhir secret base64 buatannya sendiri sehingga setiap cron ditolak 401).
 
 ---
 
