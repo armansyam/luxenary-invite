@@ -116,6 +116,14 @@ if [ -n "$NODE_BIN_DIR" ]; then
   fi
   export PATH="$NODE_BIN_DIR:$PATH"
 fi
+# Server baru yang belum lengkap: tanpa pemeriksaan ini npm ci gagal dengan pesan menyesatkan, dan pg_dump baru
+# ketahuan hilang setelah build selesai.
+for BIN in node npm npx pg_dump openssl curl; do
+  if ! command -v "$BIN" &> /dev/null; then
+    echo "❌ '$BIN' tidak ditemukan di PATH. Pasang dulu (lihat docs/admin/DEPLOYMENT_VPS_CADDY.md Tahap 1-2). Deployment dihentikan."
+    exit 1
+  fi
+done
 echo "🟢 Runtime Node untuk deploy: $(node -v) | npm $(npm -v) | $(command -v node)"
 
 # Video dan musik unggahan dikompresi lewat ffmpeg (lib/videoOptimizer.ts). Bila ffmpeg tidak ada atau rusak, unggahan
