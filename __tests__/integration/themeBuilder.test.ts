@@ -164,6 +164,22 @@ describe("kompilator master", () => {
     }
   });
 
+  it("sampul desktop: split tetap di kolom 460 px, global melepas kunci kolom", () => {
+    const unlock = ".cover-overlay { width: 100% !important; left: 0 !important; right: 0 !important; }";
+    const split = compileBuilderMaster(defaultBuilderSpec(), blueprint);
+    expect(defaultBuilderSpec().variants.coverDesktop).toBe("split");
+    expect(split).not.toContain(unlock);
+    const global = compileBuilderMaster({ ...defaultBuilderSpec(), variants: { ...defaultBuilderSpec().variants, coverDesktop: "global" } }, blueprint);
+    expect(global).toContain(unlock);
+    // Aturan varian ditulis sesudah kunci kolom milik blueprint, sehingga !important-nya yang berlaku.
+    expect(global.indexOf(unlock)).toBeGreaterThan(global.indexOf("width: 460px !important"));
+    // Spesifikasi lama tanpa coverDesktop tetap sah dan jatuh ke split.
+    const legacy = parseBuilderSpec({ ...defaultBuilderSpec(), variants: { ...defaultBuilderSpec().variants, coverDesktop: undefined } });
+    expect(legacy.ok && legacy.spec.variants.coverDesktop).toBe("split");
+    const bogus = parseBuilderSpec({ ...defaultBuilderSpec(), variants: { ...defaultBuilderSpec().variants, coverDesktop: "miring" } });
+    expect(bogus.ok).toBe(false);
+  });
+
   it("menaruh ornamen di penanda seksi dengan posisi berbasis persen", () => {
     const html = compileBuilderMaster(withOrnaments(), blueprint);
     expect(html).not.toContain("<!-- lux-ornaments:cover -->");
