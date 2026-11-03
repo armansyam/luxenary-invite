@@ -192,7 +192,9 @@ export async function composeWeddingData(inv: any) {
     if (customSetting?.value) {
       customDemoData = JSON.parse(customSetting.value);
     }
-  } catch {}
+  } catch (err) {
+    logger.warn("ThemeEngine", "Data Studio Demo tema tidak terbaca; teks bawaan blueprint dipakai", { themeId: inv.themeId, error: err instanceof Error ? err.message : String(err) });
+  }
 
   // Baca defaultMusicUrl dan teks bawaan builder dari DB Theme record (musik: prioritas tertinggi setelah client upload)
   let dbThemeDefaultMusic = "";
@@ -202,7 +204,9 @@ export async function composeWeddingData(inv: any) {
       where: { id: (inv.themeId || "kalandra").toLowerCase() },
       select: { defaultMusicUrl: true, builderSpec: true },
     });
-  } catch {}
+  } catch (err) {
+    logger.warn("ThemeEngine", "Data tema tidak terbaca; musik dan teks bawaan builder tidak dipakai", { themeId: inv.themeId, error: err instanceof Error ? err.message : String(err) });
+  }
   if (dbTheme?.defaultMusicUrl) dbThemeDefaultMusic = dbTheme.defaultMusicUrl;
 
   // Teks bawaan tema builder (inv.builderTexts dipakai pratinjau builder untuk rancangan yang belum tersimpan).
@@ -2052,7 +2056,9 @@ export async function composeBirthdayData(inv: any) {
     if (customSetting?.value) {
       customDemoData = JSON.parse(customSetting.value);
     }
-  } catch {}
+  } catch (err) {
+    logger.warn("ThemeEngine", "Data Studio Demo tema tidak terbaca; teks bawaan blueprint dipakai", { themeId: inv.themeId, error: err instanceof Error ? err.message : String(err) });
+  }
 
   const blueprint = getThemeBlueprint(inv.themeId || "kalandra-birthday", customDemoData || undefined);
 
@@ -2063,7 +2069,9 @@ export async function composeBirthdayData(inv: any) {
       select: { defaultMusicUrl: true },
     });
     if (dbTheme?.defaultMusicUrl) dbThemeDefaultMusic = dbTheme.defaultMusicUrl;
-  } catch {}
+  } catch (err) {
+    logger.warn("ThemeEngine", "Musik bawaan tema tidak terbaca; musik cadangan dipakai", { themeId: inv.themeId, error: err instanceof Error ? err.message : String(err) });
+  }
 
   const showGallery = featureSettings.showGallery !== undefined ? Boolean(featureSettings.showGallery) : true;
   const showGift = featureSettings.showGift !== undefined ? Boolean(featureSettings.showGift) : true;
@@ -2805,7 +2813,9 @@ export async function composeKhitanData(inv: any) {
       select: { defaultMusicUrl: true },
     });
     if (dbTheme?.defaultMusicUrl) dbThemeDefaultMusic = dbTheme.defaultMusicUrl;
-  } catch {}
+  } catch (err) {
+    logger.warn("ThemeEngine", "Musik bawaan tema tidak terbaca; musik cadangan dipakai", { themeId: inv.themeId, error: err instanceof Error ? err.message : String(err) });
+  }
 
   const childName = child.name || "Ananda";
   const childNickname = child.nickname || childName;
@@ -2894,7 +2904,9 @@ export async function composeAqiqahData(inv: any) {
       select: { defaultMusicUrl: true },
     });
     if (dbTheme?.defaultMusicUrl) dbThemeDefaultMusic = dbTheme.defaultMusicUrl;
-  } catch {}
+  } catch (err) {
+    logger.warn("ThemeEngine", "Musik bawaan tema tidak terbaca; musik cadangan dipakai", { themeId: inv.themeId, error: err instanceof Error ? err.message : String(err) });
+  }
 
   const babyName = baby.name || "Buah Hati";
   const babyNickname = baby.nickname || babyName;
@@ -2982,7 +2994,9 @@ export async function composeWisudaData(inv: any) {
       select: { defaultMusicUrl: true },
     });
     if (dbTheme?.defaultMusicUrl) dbThemeDefaultMusic = dbTheme.defaultMusicUrl;
-  } catch {}
+  } catch (err) {
+    logger.warn("ThemeEngine", "Musik bawaan tema tidak terbaca; musik cadangan dipakai", { themeId: inv.themeId, error: err instanceof Error ? err.message : String(err) });
+  }
 
   const graduateName = grad.name || "Wisudawan/Wisudawati";
   const graduateNickname = grad.nickname || graduateName;
@@ -3079,7 +3093,9 @@ export async function composeGatheringData(inv: any) {
       select: { defaultMusicUrl: true },
     });
     if (dbTheme?.defaultMusicUrl) dbThemeDefaultMusic = dbTheme.defaultMusicUrl;
-  } catch {}
+  } catch (err) {
+    logger.warn("ThemeEngine", "Musik bawaan tema tidak terbaca; musik cadangan dipakai", { themeId: inv.themeId, error: err instanceof Error ? err.message : String(err) });
+  }
 
   const eventTitle = evInfo.title || "Peresmian & Syukuran";
   const eventSubtitle = evInfo.subtitle || "";
