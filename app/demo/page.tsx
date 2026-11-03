@@ -152,7 +152,7 @@ export default function CatalogGridShowcase() {
             </p>
 
             {/* Level 1: Event Type Selector */}
-            <div className="flex items-center gap-1.5 sm:gap-2 mt-6 overflow-x-auto scrollbar-none px-4 -mx-4 sm:mx-0 sm:px-0 justify-start sm:justify-center flex-nowrap py-1">
+            <div className="flex items-center gap-1.5 sm:gap-2 mt-6 overflow-x-auto scrollbar-none px-4 -mx-4 sm:mx-0 sm:px-0 justify-start sm:justify-center-safe flex-nowrap py-1">
               {[
                 { id: "all", label: "Semua Acara" },
                 { id: "wedding", label: "Pernikahan" },
@@ -185,7 +185,7 @@ export default function CatalogGridShowcase() {
             </div>
 
             {/* Level 2: Style Filter Tabs */}
-            <div className="flex items-center gap-2 mt-2.5 overflow-x-auto scrollbar-none px-4 -mx-4 sm:mx-0 sm:px-0 justify-start sm:justify-center flex-nowrap py-1">
+            <div className="flex items-center gap-2 mt-2.5 overflow-x-auto scrollbar-none px-4 -mx-4 sm:mx-0 sm:px-0 justify-start sm:justify-center-safe flex-nowrap py-1">
               {[
                 { id: "all", label: "Semua Gaya" },
                 { id: "minimalist", label: "Minimalis" },

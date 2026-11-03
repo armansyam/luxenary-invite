@@ -794,6 +794,8 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
 - **Tema lintas jenis acara**: undangan yang memakai tema milik jenis acara lain (misalnya WISUDA dengan `riang`) tidak lagi menerima label Studio Demo tema default jenis acara itu; teks master terpilih (token jenis acara dan tanggal acara) tetap tampil. Detail: `docs/SYSTEM_ARCHITECTURE.md` bagian 27 butir 19.
 - **Purge cache admin**: pesan `POST /api/admin/invitations/[id]/purge` mengikuti hasil Cloudflare (dibersihkan, dilewati karena belum dikonfigurasi, atau gagal).
 - **Password admin**: minimal 5 karakter (`MIN_ADMIN_PASSWORD_LENGTH` di `lib/adminPasswordPolicy.ts`), berlaku di rute admin, seed, dan form panel admin.
+- **Filter katalog & portofolio**: baris filter memakai `sm:justify-center-safe` agar tombol pertama tidak terpotong saat baris lebih lebar dari layar.
+- **Caddy `cname`**: target CNAME custom domain punya blok sendiri dengan `tls force_automate` (lihat `docs/admin/DEPLOYMENT_VPS_CADDY.md` Tahap 4.3).
 - **Uji lokal**: suite vitest dan `scripts/e2e-golive.ts` membutuhkan `luxenary_test` yang sudah `migrate deploy`, `db seed`, dan `themes:sync`; tes backup membutuhkan `pg_dump`/`pg_restore` 17 di PATH.
 
 

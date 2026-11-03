@@ -76,7 +76,7 @@ export function PortfolioGallery({ items }: PortfolioGalleryProps) {
   return (
     <div className="space-y-8">
       {/* Category Filter Pills — Horizontal Swipe Rail on Mobile, Centered on Desktop */}
-      <div className="flex items-center gap-2 overflow-x-auto scrollbar-none px-4 -mx-4 sm:mx-0 sm:px-0 justify-start sm:justify-center flex-nowrap py-1">
+      <div className="flex items-center gap-2 overflow-x-auto scrollbar-none px-4 -mx-4 sm:mx-0 sm:px-0 justify-start sm:justify-center-safe flex-nowrap py-1">
         <button
           type="button"
           onClick={() => handleCategoryChange("all")}

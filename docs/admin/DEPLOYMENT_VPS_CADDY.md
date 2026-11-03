@@ -167,6 +167,15 @@ Hapus seluruh isi default, lalu isi dengan konfigurasi berikut *(ganti `domainan
 }
 
 # ------------------------------------------------------------------------------
+# 1b. Target CNAME Custom Domain Klien (record DNS only, tidak lewat Cloudflare)
+# ------------------------------------------------------------------------------
+cname.domainanda.id {
+    # Caddy memakai sertifikat wildcard di bawah (CA internal) untuk subdomain yang tercakup; host ini butuh sertifikat publik sendiri.
+    tls force_automate
+    redir https://domainanda.id{uri} 301
+}
+
+# ------------------------------------------------------------------------------
 # 2. Domain Utama & Seluruh Wildcard Subdomain Platform
 # ------------------------------------------------------------------------------
 domainanda.id, *.domainanda.id {
