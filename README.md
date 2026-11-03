@@ -2,7 +2,7 @@
 
 > **Platform Undangan Digital Multi-Event B2C Self-Service (Wedding, Birthday, Khitan, Aqiqah, Wisuda, Gathering)**  
 > Next.js 16.3.8 · Prisma 7.9/7.10 (PostgreSQL) · NextAuth v5 · Gateway 2-Arah (Midtrans & Xendit) · Nodemailer SMTP · Cloudflare R2  
-> **Versi Aplikasi: 1.0.1 (lini rilis produksi pertama 1.0; tag `v1.0.0`, lalu `v1.0.1` menyembunyikan amplop di portofolio) | Versi Dokumen: 6.3.6 | Diperbarui: 29 Oktober 2026**  
+> **Versi Aplikasi: 1.0.1 (lini rilis produksi pertama 1.0; tag `v1.0.0`, lalu `v1.0.1` menyembunyikan amplop di portofolio) | Versi Dokumen: 6.3.6 | Diperbarui: 3 November 2026**  
 > Versi yang sedang berjalan di server tampil di Admin > Pengaturan > Tentang Aplikasi (dibaca dari `package.json` dan commit build).
 
 > [!IMPORTANT]
@@ -789,6 +789,11 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
   * **Penyatuan Pustaka Rumpun Sulawesi Selatan (`public/assets/ornaments/bugis/`)**: Mengintegrasikan seluruh lambang kultural Bugis & Makassar (Walasuji, Kapal Phinisi, Frame Makassar, Rumah Adat Saoraja/Balla Lompoa, Kain Tenun Sabbe, Sulapa Eppa, Balo Tettong, Cobo Rebung, Bingkai 3D) ke dalam satu pustaka bersama yang diakses bersama oleh seluruh 11 tema daerah Sulsel (`bugis`, `makassar`, `bone`, `soppeng`, `wajo`, `gowa`, `maros`, `takalar`, `bulukumba`, `lagaligo`, `dillalucky`).
   * **Eliminasi 20 Grup Kloning Duplikat Mati**: Menghapus seluruh folder duplikat kloningan per-daerah (`bone/`, `soppeng/`, `wajo/`, `bulukumba/`, `gowa/`, `maros/`, `takalar/`, `makale/`, `rantepao/`) serta mengeliminasi folder kosong bekas varian lama (`verona` & `aeterna`), menghemat ruang disk ~5,4 MB.
   * **Sinkronisasi Katalog Interaktif (`public/assets/ornaments/preview.html`)**: Memperbarui katalog preview resmi menjadi 134 aset aktif fisik 100% presisi tanpa berkas yatim.
+
+### Perbaikan Label Lintas Jenis Acara & Laporan Purge (3 November 2026)
+- **Tema lintas jenis acara**: undangan yang memakai tema milik jenis acara lain (misalnya WISUDA dengan `riang`) tidak lagi menerima label Studio Demo tema default jenis acara itu; teks master terpilih (token jenis acara dan tanggal acara) tetap tampil. Detail: `docs/SYSTEM_ARCHITECTURE.md` bagian 27 butir 19.
+- **Purge cache admin**: pesan `POST /api/admin/invitations/[id]/purge` mengikuti hasil Cloudflare (dibersihkan, dilewati karena belum dikonfigurasi, atau gagal).
+- **Uji lokal**: suite vitest dan `scripts/e2e-golive.ts` membutuhkan `luxenary_test` yang sudah `migrate deploy`, `db seed`, dan `themes:sync`; tes backup membutuhkan `pg_dump`/`pg_restore` 17 di PATH.
 
 
 

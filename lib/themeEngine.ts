@@ -2720,7 +2720,9 @@ async function applySingleNameContract(eventType: string, data: Record<string, a
   const themeBlueprint = getThemeBlueprint(themeId, themeDemo);
   const quote = inv.openingQuote || themeBlueprint.openingQuote || "";
   const quoteRef = inv.openingQuote ? (inv.openingQuoteRef || "") : (themeBlueprint.openingQuoteRef || "");
-  const mergedLabels = { ...(themeDemo?.customLabels || {}), ...customLabels };
+  // Label Studio Demo menimpa teks master di setiap slot; label tema default jenis acara tidak boleh menimpa master lain
+  // yang dipilih lintas jenis acara, karena teks master itu sendiri sudah memakai token jenis acara (dan tanggal) undangan.
+  const mergedLabels = { ...(themeId === chosenThemeId ? themeDemo?.customLabels || {} : {}), ...customLabels };
 
   const planType = inv.order?.planType;
   const showQr = featureSettings.showQrCheckin !== false && await hasPlanCapability(planType, "qr_checkin");

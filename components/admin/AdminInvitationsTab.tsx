@@ -249,9 +249,10 @@ export default function AdminInvitationsTab() {
       });
       const data = await res.json();
       if (data.success) {
+        // Purge yang dilewati (Cloudflare belum dikonfigurasi) bukan kegagalan; purge yang ditolak Cloudflare ditampilkan merah.
         setActionMsg({
-          ok: true,
-          msg: data.message || "Undangan berhasil dibakar ulang dan cache Cloudflare telah dibersihkan.",
+          ok: !(data.cloudflare?.success === false && !data.cloudflare?.skipped),
+          msg: data.message,
         });
       } else {
         throw new Error(data.error || "Gagal mem-purge cache undangan.");

@@ -77,12 +77,17 @@ export async function POST(
     }
 
     const coupleName = participantNames(invitation.eventType, invitation.participantsJson).short || invitation.invitationSlug;
+    const cfNote = cfResult.success
+      ? `cache Cloudflare untuk ${urlsToPurge.length} URL telah dibersihkan`
+      : cfResult.skipped
+        ? `cache Cloudflare tidak dibersihkan (${cfResult.reason})`
+        : `cache Cloudflare GAGAL dibersihkan (${cfResult.error || cfResult.errors?.map((e: { message?: string }) => e.message).join("; ") || "Cloudflare tidak mengonfirmasi purge"})`;
 
     return NextResponse.json({
       success: true,
       message: rebakeSuccess
-        ? `Undangan ${coupleName} berhasil dibakar ulang dan cache Cloudflare untuk ${urlsToPurge.length} URL telah dibersihkan.`
-        : `Undangan ${coupleName} berstatus ${invitation.status} sehingga tidak dibakar ulang; cache Cloudflare untuk ${urlsToPurge.length} URL telah dibersihkan.`,
+        ? `Undangan ${coupleName} berhasil dibakar ulang; ${cfNote}.`
+        : `Undangan ${coupleName} berstatus ${invitation.status} sehingga tidak dibakar ulang; ${cfNote}.`,
       rebakeSuccess,
       purgedUrls: urlsToPurge,
       cloudflare: cfResult,
