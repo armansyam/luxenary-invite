@@ -6,7 +6,7 @@ import crypto from "crypto";
 import path from "path";
 import * as dotenv from "dotenv";
 import { defaultAdminSettings, defaultMusicPresets } from "./defaultSettings";
-import { disableLegacyDefaultPasswordAdmins } from "../lib/adminCredentials";
+import { disableLegacyDefaultPasswordAdmins, MIN_ADMIN_PASSWORD_LENGTH } from "../lib/adminCredentials";
 
 dotenv.config({ path: path.join(__dirname, "../.env") });
 
@@ -65,8 +65,8 @@ async function main() {
     const existingAdmin = await prisma.admin.findUnique({ where: { email: seedAdminEmail } });
     if (!existingAdmin) {
       const providedPassword = process.env.SEED_ADMIN_PASSWORD?.trim();
-      if (providedPassword !== undefined && providedPassword.length > 0 && providedPassword.length < 12) {
-        throw new Error('SEED_ADMIN_PASSWORD minimal 12 karakter.');
+      if (providedPassword !== undefined && providedPassword.length > 0 && providedPassword.length < MIN_ADMIN_PASSWORD_LENGTH) {
+        throw new Error(`SEED_ADMIN_PASSWORD minimal ${MIN_ADMIN_PASSWORD_LENGTH} karakter.`);
       }
       const initialPassword = providedPassword || crypto.randomBytes(15).toString('base64url');
       await prisma.admin.create({

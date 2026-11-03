@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
+import { MIN_ADMIN_PASSWORD_LENGTH } from "@/lib/adminPasswordPolicy";
 
 export function AdminProfileSettings() {
   const [formData, setFormData] = useState({
@@ -103,7 +104,7 @@ export function AdminProfileSettings() {
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1">Password Baru</label>
-            <input type="password" value={formData.newPassword} onChange={e => setFormData({...formData, newPassword: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-sm" placeholder="Minimal 12 karakter" minLength={12} />
+            <input type="password" value={formData.newPassword} onChange={e => setFormData({...formData, newPassword: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none text-sm" placeholder={`Minimal ${MIN_ADMIN_PASSWORD_LENGTH} karakter`} minLength={MIN_ADMIN_PASSWORD_LENGTH} />
           </div>
         </div>
         <p className="text-[10px] text-gray-500 mt-2">Penting: Mengganti password akan mengharuskan Anda untuk login ulang.</p>

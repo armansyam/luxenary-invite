@@ -238,15 +238,18 @@ describe.skipIf(!IS_TEST_DB)("ubah tamu pada hari acara", () => {
   });
 });
 
-describe.skipIf(!IS_TEST_DB)("password admin minimal 12 karakter", () => {
-  it("tambah admin dan ganti password sendiri menolak password pendek", async () => {
+describe.skipIf(!IS_TEST_DB)("password admin minimal 5 karakter", () => {
+  it("tambah admin dan ganti password sendiri menolak 4 karakter, menerima 5 karakter", async () => {
     const bcrypt = (await import("bcryptjs")).default;
     await asAdmin("SUPER_ADMIN", [], await bcrypt.hash("password-lama-panjang", 4));
-    const short = await createAdmin(jsonRequest("http://localhost/api/admin/admins", "POST", { username: `${RUN}_pendek`, email: `${RUN}_pendek@t.local`, name: "Pendek", role: "SUPPORT", password: "pendek123" }));
+    const short = await createAdmin(jsonRequest("http://localhost/api/admin/admins", "POST", { username: `${RUN}_pendek`, email: `${RUN}_pendek@t.local`, name: "Pendek", role: "SUPPORT", password: "abcd" }));
     expect(short.status).toBe(400);
     expect(await prisma.admin.count({ where: { username: `${RUN}_pendek` } })).toBe(0);
 
-    const profile = await updateOwnProfile(jsonRequest("http://localhost/api/admin/profile", "PUT", { currentPassword: "password-lama-panjang", newPassword: "pendek123" }));
+    const profile = await updateOwnProfile(jsonRequest("http://localhost/api/admin/profile", "PUT", { currentPassword: "password-lama-panjang", newPassword: "abcd" }));
     expect(profile.status).toBe(400);
+
+    const fiveChars = await updateOwnProfile(jsonRequest("http://localhost/api/admin/profile", "PUT", { currentPassword: "password-lama-panjang", newPassword: "abcde" }));
+    expect(fiveChars.status).toBe(200);
   });
 });

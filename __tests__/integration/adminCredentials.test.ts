@@ -111,7 +111,7 @@ describe.skipIf(!IS_TEST_DB)("kredensial admin", () => {
 
     it("menolak password pendek dan email yang tidak ada tanpa mengubah apa pun", async () => {
       const before = await versionOf(ids.kuat);
-      await expect(setAdminPassword(prisma, `${TAG}_kuat@t.local`, "pendek")).rejects.toThrow(/minimal/);
+      await expect(setAdminPassword(prisma, `${TAG}_kuat@t.local`, "abcd")).rejects.toThrow(/minimal/);
       await expect(setAdminPassword(prisma, `${TAG}_tidak-ada@t.local`, generateAdminPassword())).rejects.toThrow(/tidak ditemukan/);
       expect(await versionOf(ids.kuat)).toBe(before);
     });

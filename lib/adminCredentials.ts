@@ -2,13 +2,15 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import fs from "fs";
 import type { PrismaClient } from "@prisma/client";
+import { MIN_ADMIN_PASSWORD_LENGTH } from "./adminPasswordPolicy";
+
+export { MIN_ADMIN_PASSWORD_LENGTH };
 
 /**
  * Password bawaan versi lama. String ini sudah tercantum di dokumen dan riwayat git, jadi yang berbahaya adalah akun
  * yang masih memakainya, bukan keberadaan string di kode; seed mendeteksi dan menonaktifkan akun semacam itu.
  */
 export const LEGACY_DEFAULT_PASSWORD = "admin123";
-export const MIN_ADMIN_PASSWORD_LENGTH = 12;
 
 type Db = Pick<PrismaClient, "admin" | "adminAuditLog">;
 

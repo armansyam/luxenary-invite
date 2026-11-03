@@ -287,7 +287,7 @@ Langkah ini opsional bila Anda langsung menjalankan `./deploy.sh` di Tahap 7, ka
 
 > **Pindah dari server lama (opsional).** Bila ada data produksi lama: pulihkan dump PostgreSQL sebelum `migrate deploy`, salin `public/uploads/` (atau tetap pakai bucket R2 yang sama), lalu setelah deploy jalankan `npx tsx scripts/rebuild-builder-masters.ts --apply` (master tema builder hanya ada di disk, bukan di git) dan `npx tsx scripts/republish-published.ts --apply` (HTML undangan terbit dibangun ulang dengan mesin terbaru). Tanpa data lama, lewati langkah ini.
 > **Akun Super Admin Awal (tanpa kredensial bawaan):**  
-> Seed hanya membuat akun jika `SEED_ADMIN_EMAIL` diset di `.env` (opsional: `SEED_ADMIN_PASSWORD` minimal 12 karakter, `SEED_ADMIN_USERNAME`, `SEED_ADMIN_NAME`).  
+> Seed hanya membuat akun jika `SEED_ADMIN_EMAIL` diset di `.env` (opsional: `SEED_ADMIN_PASSWORD` minimal 5 karakter, `SEED_ADMIN_USERNAME`, `SEED_ADMIN_NAME`).  
 > Jika `SEED_ADMIN_PASSWORD` kosong, seed membuat password acak dan **menampilkannya sekali** di output terminal; simpan segera.  
 > - **URL Admin:** `https://domainanda.id/admin/login`  
 > Setiap kali seed berjalan, akun admin yang masih memakai password lama `admin123` dinonaktifkan (hash dikosongkan, sesi dicabut) dan dilaporkan dengan `🚨` di output. Atur ulang dengan `npx tsx scripts/set-admin-password.ts <email>`; kredensial baru ditulis ke berkas ber-izin 600 di home pengguna dan tidak dicetak.
