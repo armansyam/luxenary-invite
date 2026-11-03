@@ -5,6 +5,12 @@ import path from "path";
  * nama jenis acara huruf kecil; satu-satunya pengecualian GATHERING yang disimpan di `general` (nama sejak awal, dan
  * blueprint unduhannya `starter-blueprint-general.html`). Blueprint ada di `themes/_blueprints/<folder-acara>/`.
  */
+/**
+ * Folder blueprint yang bukan folder acara: `single-name/` adalah kerangka Theme Builder bersama untuk kelima jenis
+ * acara satu nama (BIRTHDAY, KHITAN, AQIQAH, WISUDA, GATHERING).
+ */
+export const SHARED_BLUEPRINT_FOLDERS = ["single-name"] as const;
+
 export const THEME_STYLES = ["minimalist", "modern", "traditional"] as const;
 export type ThemeStyle = (typeof THEME_STYLES)[number];
 

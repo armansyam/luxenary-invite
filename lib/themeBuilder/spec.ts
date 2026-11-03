@@ -6,8 +6,23 @@
 
 export const BUILDER_SPEC_VERSION = 1;
 
-export type BuilderEventType = "WEDDING";
-export const BUILDER_EVENT_TYPES: BuilderEventType[] = ["WEDDING"];
+export type BuilderEventType = "WEDDING" | "BIRTHDAY" | "KHITAN" | "AQIQAH" | "WISUDA" | "GATHERING";
+export const BUILDER_EVENT_TYPES: BuilderEventType[] = ["WEDDING", "BIRTHDAY", "KHITAN", "AQIQAH", "WISUDA", "GATHERING"];
+export const BUILDER_EVENT_LABELS: Record<BuilderEventType, string> = {
+  WEDDING: "Pernikahan",
+  BIRTHDAY: "Ulang tahun",
+  KHITAN: "Khitanan",
+  AQIQAH: "Aqiqah",
+  WISUDA: "Wisuda",
+  GATHERING: "Gathering / acara umum",
+};
+
+/**
+ * Keluarga blueprint: "wedding" (dua mempelai) atau "single" (satu tokoh; kelima jenis acara lain berbagi kontrak data
+ * applySingleNameContract di lib/themeEngine.ts dan satu blueprint).
+ */
+export type BuilderFamily = "wedding" | "single";
+export const builderFamilyOf = (eventType: BuilderEventType): BuilderFamily => (eventType === "WEDDING" ? "wedding" : "single");
 
 export type CanvasMode = "light" | "dark";
 export type RadiusStyle = "sharp" | "soft" | "round";
@@ -239,6 +254,37 @@ export type BuilderBlocks = Partial<Record<BuilderBlockId, BlockProps>>;
 export const PROTECTED_BLOCKS: readonly BuilderBlockId[] = ["cover-names", "cover-guest", "rsvp-form", "home-schedule"];
 export const OPTIONAL_BLOCKS: readonly BuilderBlockId[] = BUILDER_BLOCKS.map((b) => b.id).filter((id) => !PROTECTED_BLOCKS.includes(id));
 
+/**
+ * Blueprint satu nama tidak punya mempelai kedua, Instagram, monogram, seksi kisah, dan judul RSVP (judul formulir ada
+ * di dalam kartu RSVP buatan mesin). Seksi profilnya memakai kelas dan blok kartu mempelai pertama, jadi hanya label
+ * yang berbeda.
+ */
+const SINGLE_ABSENT_BLOCKS: readonly BuilderBlockId[] = ["cover-monogram", "couple-ig-1", "couple-amp", "couple-photo-2", "couple-role-2", "couple-name-2", "couple-parents-2", "couple-ig-2", "story-title", "rsvp-title"];
+const SINGLE_ABSENT_SECTIONS: readonly OrnamentSection[] = ["story"];
+const SINGLE_BLOCK_LABELS: Partial<Record<BuilderBlockId, string>> = {
+  "couple-title": "Judul profil",
+  "couple-photo-1": "Foto profil",
+  "couple-role-1": "Keterangan (usia, gelar, tanggal lahir)",
+  "couple-name-1": "Nama lengkap",
+  "couple-parents-1": "Orang tua",
+};
+
+export function familySections(eventType: BuilderEventType): readonly OrnamentSection[] {
+  return builderFamilyOf(eventType) === "single" ? ORNAMENT_SECTIONS.filter((s) => !SINGLE_ABSENT_SECTIONS.includes(s)) : ORNAMENT_SECTIONS;
+}
+
+export function sectionLabelFor(section: OrnamentSection, eventType: BuilderEventType): string {
+  return section === "couple" && builderFamilyOf(eventType) === "single" ? "Profil" : SECTION_LABELS[section];
+}
+
+export function familyBlocks(eventType: BuilderEventType): Array<{ id: BuilderBlockId; label: string; section: OrnamentSection }> {
+  if (builderFamilyOf(eventType) === "wedding") return BUILDER_BLOCKS.map((b) => ({ ...b }));
+  return BUILDER_BLOCKS.filter((b) => !SINGLE_ABSENT_BLOCKS.includes(b.id)).map((b) => ({ ...b, label: SINGLE_BLOCK_LABELS[b.id] ?? b.label }));
+}
+
+export const blockLabelFor = (id: BuilderBlockId, eventType: BuilderEventType): string =>
+  (builderFamilyOf(eventType) === "single" && SINGLE_BLOCK_LABELS[id]) || BUILDER_BLOCKS.find((b) => b.id === id)?.label || id;
+
 export const DEFAULT_BLOCK_PROPS: BlockProps = { x: 0, y: 0, scale: 1, rotate: 0, hidden: false };
 // Persen ukuran elemen itu sendiri: elemen pendek (judul sekitar 40 px) butuh jangkauan besar untuk pindah sejauh
 // ratusan piksel, dan elemen sempit (monogram, tanggal) untuk mencapai tengah layar.
@@ -456,6 +502,28 @@ export const BUILDER_TEXTS = [
 ] as const;
 export type BuilderTextKey = (typeof BUILDER_TEXTS)[number]["key"];
 export type BuilderTexts = Partial<Record<BuilderTextKey, string>>;
+
+/** Label yang ada di blueprint satu nama (rsvpTitle ada di kartu RSVP buatan mesin); dijaga builderSingleName.test.ts. */
+export const SINGLE_TEXT_KEYS: readonly BuilderTextKey[] = [
+  "coverBadge", "coverSubtitle", "coverGuestLabel", "openBtn", "openingGreeting", "quoteEyebrow", "quoteTitle",
+  "coupleEyebrow", "coupleTitle", "coupleSub", "countdownEyebrow", "countdownTitle", "countdownSub",
+  "cdDays", "cdHours", "cdMins", "cdSecs", "eventsEyebrow", "eventsTitle", "wishesEyebrow", "wishesSub", "rsvpTitle",
+  "closingFamily", "navHome", "navCouple", "navEvents", "navWishes",
+];
+const SINGLE_TEXT_LABELS: Partial<Record<BuilderTextKey, string>> = {
+  coupleEyebrow: "Teks kecil profil",
+  coupleTitle: "Judul profil",
+  navCouple: "Menu profil",
+};
+
+export function familyTexts(eventType: BuilderEventType): Array<{ key: BuilderTextKey; label: string; group: string; kind: "engine" | "static" }> {
+  if (builderFamilyOf(eventType) === "wedding") return BUILDER_TEXTS.map((t) => ({ ...t }));
+  return BUILDER_TEXTS.filter((t) => SINGLE_TEXT_KEYS.includes(t.key)).map((t) => ({
+    ...t,
+    label: SINGLE_TEXT_LABELS[t.key] ?? t.label,
+    group: t.group === "Mempelai" ? "Profil" : t.group,
+  }));
+}
 export const MAX_BUILDER_TEXT_LENGTH = 300;
 
 /** Teks label dari masukan tak tepercaya: satu baris, tanpa tanda kurung sudut atau token {{ }}, kunci tak dikenal dibuang. */
@@ -651,6 +719,12 @@ export const VARIANT_GROUPS: Array<{ key: keyof BuilderVariants; label: string; 
   },
 ];
 
+/** Satu nama: grup mempelai menata seksi profil; tata letak dua kolom tidak berarti untuk satu kartu. */
+export function familyVariantGroups(eventType: BuilderEventType): typeof VARIANT_GROUPS {
+  if (builderFamilyOf(eventType) === "wedding") return VARIANT_GROUPS;
+  return VARIANT_GROUPS.map((g) => (g.key === "couple" ? { ...g, label: "Profil", options: g.options.filter((o) => o.id !== "side") } : g));
+}
+
 export const ANIMATION_OPTIONS: Array<{ id: AnimationPreset; label: string; hint: string }> = [
   { id: "none", label: "Tanpa animasi", hint: "Semua isi langsung tampil" },
   { id: "fade", label: "Memudar", hint: "Muncul perlahan" },
@@ -677,10 +751,10 @@ export const PALETTE_PRESETS: Array<{ id: string; label: string; mode: CanvasMod
   { id: "hitam-emas", label: "Hitam Emas", mode: "dark", palette: { primary: "#d4af6a", secondary: "#a68443", accent: "#f0d9a8", bgLight: "#f4efe6", bgDark: "#121110", textDark: "#1a1917", textLight: "#f4ede0", onPrimary: "#121110" } },
 ];
 
-export function defaultBuilderSpec(): BuilderSpec {
+export function defaultBuilderSpec(eventType: BuilderEventType = "WEDDING"): BuilderSpec {
   return {
     version: BUILDER_SPEC_VERSION,
-    eventType: "WEDDING",
+    eventType,
     canvasMode: "light",
     palette: { ...PALETTE_PRESETS[0].palette },
     fonts: { heading: "cinzel", body: "jakarta", script: "great-vibes" },
@@ -897,6 +971,12 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
     const host = attach ?? before;
     const section = host ? BUILDER_BLOCKS.find((b) => b.id === host)!.section : pickEnum(o.section, ORNAMENT_SECTIONS, `${label}: seksi`, errors);
     if (!section) continue;
+    // Seksi dan blok yang tidak ada di blueprint keluarga jenis acara ini (mis. kisah pada satu nama) tidak punya penanda.
+    const family = eventType ?? "WEDDING";
+    if (!familySections(family).includes(section) || (host && !familyBlocks(family).some((b) => b.id === host))) {
+      errors.push(`${label}: seksi atau blok tidak ada di tema ${BUILDER_EVENT_LABELS[family].toLowerCase()}.`);
+      continue;
+    }
     perSection[section] = (perSection[section] ?? 0) + 1;
     if (perSection[section] > MAX_ORNAMENTS_PER_SECTION) { errors.push(`Seksi ${SECTION_LABELS[section]} paling banyak ${MAX_ORNAMENTS_PER_SECTION} ornamen.`); continue; }
     ornaments.push({

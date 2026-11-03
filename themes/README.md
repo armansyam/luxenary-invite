@@ -6,6 +6,7 @@ Master tema undangan. Aturan letak satu-satunya, dijaga `__tests__/unit/themeFol
 themes/
 ├── <folder-acara>/<gaya>/<id-tema>.html    master yang dirender mesin
 └── _blueprints/<folder-acara>/             kerangka dan panduan untuk menulis atau merakit master baru
+    _blueprints/single-name/                 kerangka Theme Builder bersama lima jenis acara satu nama
 ```
 
 | Jenis acara (`EventType`) | `<folder-acara>` | Blueprint unduhan |
@@ -25,5 +26,7 @@ themes/
   dihapus dari renderer.
 - Undangan klien tidak membaca master langsung: master disalin ke `data/drafts/<id-undangan>.html` saat tema dipilih
   (lihat `docs/SYSTEM_ARCHITECTURE.md`). Mengubah master tidak mengubah undangan yang sudah ada.
-- Tema hasil Theme Builder (`/admin/theme-builder`) selalu `wedding/<gaya>/<id>.html` dan dikompilasi dari
-  `_blueprints/wedding/starter-blueprint.html`.
+- Tema hasil Theme Builder (`/admin/theme-builder`) ditulis ke `<folder-acara>/<gaya>/<id>.html` sesuai jenis acaranya.
+  Pernikahan dikompilasi dari `_blueprints/wedding/starter-blueprint.html`; BIRTHDAY, KHITAN, AQIQAH, WISUDA, dan
+  GATHERING dari `_blueprints/single-name/starter-blueprint-single.html` (satu-satunya folder blueprint yang bukan folder
+  acara, tercatat di `SHARED_BLUEPRINT_FOLDERS` di `lib/themePaths.ts`).

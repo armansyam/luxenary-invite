@@ -8,7 +8,8 @@ import { buildDemoInvitation } from "@/lib/demoInvitation";
 import { extractRenderedLabels, renderTemplateFile, resolveThemeEntry, THEME_MAP } from "@/lib/renderTemplate";
 import { auditBuilderMaster, type MasterIssue } from "@/lib/themeBuilder/audit";
 import { compileBuilderMaster, readBuilderBlueprint } from "@/lib/themeBuilder/compile";
-import { parseBuilderSpec, type BuilderSpec } from "@/lib/themeBuilder/spec";
+import { parseBuilderSpec, type BuilderEventType, type BuilderSpec } from "@/lib/themeBuilder/spec";
+import { DEFAULT_THEME_BY_EVENT } from "@/lib/invitationUtils";
 import { isSafePathSegment } from "@/lib/fsSafe";
 import { adminActorId } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
@@ -23,8 +24,8 @@ export const BUILTIN_ORNAMENT_DIR = path.join(/*turbopackIgnore: true*/ process.
 export type BuilderCategory = "minimalist" | "modern" | "traditional";
 export const BUILDER_CATEGORIES: BuilderCategory[] = ["minimalist", "modern", "traditional"];
 
-export function builderMasterPath(category: BuilderCategory, themeId: string): string {
-  return masterPathOf("WEDDING", category, themeId);
+export function builderMasterPath(category: BuilderCategory, themeId: string, eventType: BuilderEventType = "WEDDING"): string {
+  return masterPathOf(eventType, category, themeId);
 }
 
 /** ID dari nama tema: huruf kecil, angka, dan tanda hubung; sama dengan pola ID tema yang sudah ada. */
@@ -127,7 +128,7 @@ export function compileAndAudit(spec: BuilderSpec): CompiledBuilderTheme {
  * Pratinjau dirender oleh engine undangan klien. Mode "demo" memakai foto dan data contoh; mode "client" meniru klien
  * baru yang belum mengunggah apa pun, sehingga yang tampil hanyalah bawaan tema, monogram, dan palet.
  */
-export async function renderBuilderPreview(spec: BuilderSpec, demoThemeId = "kalandra", mode: "demo" | "client" = "demo"): Promise<CompiledBuilderTheme & { labels: Record<string, string> }> {
+export async function renderBuilderPreview(spec: BuilderSpec, demoThemeId = DEFAULT_THEME_BY_EVENT[spec.eventType] || "kalandra", mode: "demo" | "client" = "demo"): Promise<CompiledBuilderTheme & { labels: Record<string, string> }> {
   const compiled = compileAndAudit(spec);
   const demo = buildDemoInvitation(demoThemeId, mode === "client" ? { galleryPhotos: [] } : undefined);
   const base = mode === "client" ? { ...demo, media: [], themeDefaultMedia: builderDefaultMedia(spec) } : demo;
@@ -152,7 +153,7 @@ export async function builderPublishIssues(themeId: string): Promise<MasterIssue
   const theme = await prisma.theme.findUnique({ where: { id: themeId }, select: { builderSpec: true, category: true } });
   const spec = storedBuilderSpec(theme?.builderSpec);
   if (!theme || !spec) return null;
-  const file = builderMasterPath(theme.category as BuilderCategory, themeId);
+  const file = builderMasterPath(theme.category as BuilderCategory, themeId, spec.eventType);
   if (!fs.existsSync(file)) return [{ code: "section", message: "Berkas master tema tidak ditemukan. Simpan ulang dari builder." }];
   return auditBuilderMaster(fs.readFileSync(file, "utf-8"), readBuilderBlueprint(spec.eventType));
 }

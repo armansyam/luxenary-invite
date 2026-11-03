@@ -5,7 +5,7 @@
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
-import { THEME_EVENT_FOLDERS, THEME_STYLES, eventFolderOf, masterDir, masterFilePath, masterPathOf } from "@/lib/themePaths";
+import { SHARED_BLUEPRINT_FOLDERS, THEME_EVENT_FOLDERS, THEME_STYLES, eventFolderOf, masterDir, masterFilePath, masterPathOf } from "@/lib/themePaths";
 import { resolveThemeEntry } from "@/lib/renderTemplate";
 
 const ROOT = path.join(process.cwd(), "themes");
@@ -46,7 +46,8 @@ describe("isi themes/", () => {
       if (!fs.existsSync(path.join(ROOT, folder))) continue;
       expect(dirs(path.join(ROOT, folder)).filter((s) => !(THEME_STYLES as readonly string[]).includes(s))).toEqual([]);
     }
-    expect(dirs(path.join(ROOT, "_blueprints")).filter((d) => !eventFolders.includes(d))).toEqual([]);
+    const blueprintFolders = [...eventFolders, ...SHARED_BLUEPRINT_FOLDERS];
+    expect(dirs(path.join(ROOT, "_blueprints")).filter((d) => !blueprintFolders.includes(d))).toEqual([]);
   });
 
   it("tidak ada master di luar themes/<folder-acara>/<gaya>/ (jalur lama sudah tidak ada)", () => {

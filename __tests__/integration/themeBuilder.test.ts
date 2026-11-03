@@ -116,7 +116,7 @@ describe("validasi spesifikasi builder", () => {
       { texture: "javascript:alert(1)" },
       { variants: { ...base.variants, cover: "<script>" } },
       { animation: "spin" },
-      { eventType: "BIRTHDAY" },
+      { eventType: "PESTA_RAHASIA" },
     ];
     for (const patch of bad) expect(parseBuilderSpec({ ...base, ...patch }).ok).toBe(false);
 

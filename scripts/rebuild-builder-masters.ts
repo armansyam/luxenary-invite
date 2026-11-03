@@ -74,7 +74,7 @@ async function main() {
       }
     }
 
-    const file = builderMasterPath(theme.category as BuilderCategory, theme.id);
+    const file = builderMasterPath(theme.category as BuilderCategory, theme.id, spec.eventType);
     const current = fs.existsSync(file) ? fs.readFileSync(file, "utf-8") : null;
     if (current === compiled.html) continue;
     const state = current === null ? "HILANG" : "BEDA";

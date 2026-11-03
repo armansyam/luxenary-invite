@@ -6,11 +6,15 @@ import { useFeedback } from "@/components/ui/Feedback";
 import {
   MAX_ORNAMENTS,
   MAX_ORNAMENTS_PER_SECTION,
-  ORNAMENT_SECTIONS,
-  SECTION_LABELS,
-  VARIANT_GROUPS,
+  BUILDER_EVENT_LABELS,
+  BUILDER_EVENT_TYPES,
   BLOCK_LIMITS,
   BUILDER_BLOCKS,
+  familyBlocks,
+  familySections,
+  familyVariantGroups,
+  sectionLabelFor,
+  type BuilderEventType,
   DEFAULT_BLOCK_PROPS,
   DEFAULT_ORNAMENT_GAP,
   DEFAULT_ORNAMENT_TEXT,
@@ -309,6 +313,23 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
 
   const patchSpec = useCallback((patch: Partial<BuilderSpec>) => apply({ ...specRef.current, ...patch }, "commit"), [apply]);
 
+  /**
+   * Hanya untuk tema yang belum disimpan: jenis acara menentukan blueprint. Ornamen di seksi atau blok yang tidak ada di
+   * keluarga tujuan (mis. kisah dan mempelai kedua pada satu nama) dibuang, dan varian profil yang tidak berlaku kembali ke bawaan.
+   */
+  const changeEventType = useCallback((eventType: BuilderEventType) => {
+    const current = specRef.current;
+    const sections = familySections(eventType);
+    const blocks = new Set(familyBlocks(eventType).map((b) => b.id));
+    const ornaments = current.ornaments.filter((o) => sections.includes(o.section) && (!o.attach || blocks.has(o.attach)) && (!o.before || blocks.has(o.before)));
+    const coupleOptions = familyVariantGroups(eventType).find((g) => g.key === "couple")?.options ?? [];
+    const couple = coupleOptions.some((o) => o.id === current.variants.couple) ? current.variants.couple : defaultBuilderSpec(eventType).variants.couple;
+    patchSpec({ eventType, ornaments, variants: { ...current.variants, couple } });
+    if (!sections.includes(viewSection)) setViewSection("cover");
+    const dropped = current.ornaments.length - ornaments.length;
+    if (dropped) notify(`${dropped} ornamen dilepas karena seksinya tidak ada di tema ${BUILDER_EVENT_LABELS[eventType].toLowerCase()}.`, "info");
+  }, [patchSpec, viewSection, notify]);
+
   /** Memuat versi lama ke editor sebagai perubahan biasa (bisa diurungkan); baru berlaku setelah disimpan. */
   const restoreRevision = useCallback(async (revisionId: string) => {
     const ok = await confirm({ title: "Muat versi ini ke editor?", message: "Rancangan di editor diganti dengan versi tersebut. Nama dan musik tidak berubah. Perubahan baru berlaku setelah Anda menyimpan, dan bisa diurungkan dengan Ctrl+Z.", confirmLabel: "Muat" });
@@ -429,7 +450,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
     const current = specRef.current;
     if (current.ornaments.length >= MAX_ORNAMENTS) return notify(`Paling banyak ${MAX_ORNAMENTS} ornamen per tema.`, "error");
     if (current.ornaments.filter((o) => o.section === section).length >= MAX_ORNAMENTS_PER_SECTION) {
-      return notify(`Seksi ${SECTION_LABELS[section]} sudah berisi ${MAX_ORNAMENTS_PER_SECTION} ornamen.`, "error");
+      return notify(`Seksi ${sectionLabelFor(section, specRef.current.eventType)} sudah berisi ${MAX_ORNAMENTS_PER_SECTION} ornamen.`, "error");
     }
     const ornament: BuilderOrnament = { id: newOrnamentId(), section, src, x, y, anchor: "top", width: 32, rotate: 0, opacity: 1, flipX: false, layer: "back" };
     apply({ ...current, ornaments: [...current.ornaments, ornament] }, "commit");
@@ -442,7 +463,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
     const current = specRef.current;
     if (current.ornaments.length >= MAX_ORNAMENTS) return notify(`Paling banyak ${MAX_ORNAMENTS} ornamen per tema.`, "error");
     if (current.ornaments.filter((o) => o.section === section).length >= MAX_ORNAMENTS_PER_SECTION) {
-      return notify(`Seksi ${SECTION_LABELS[section]} sudah berisi ${MAX_ORNAMENTS_PER_SECTION} ornamen.`, "error");
+      return notify(`Seksi ${sectionLabelFor(section, specRef.current.eventType)} sudah berisi ${MAX_ORNAMENTS_PER_SECTION} ornamen.`, "error");
     }
     // Sampul, panel kiri, dan penutup berlatar foto gelap; di sana teks primary hampir tak terbaca.
     const onPhoto = section === "cover" || section === "sidebar" || section === "closing";
@@ -468,7 +489,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
     if (placement.mode === "free" && !source.attach && !source.before) return;
     const section = block ? BUILDER_BLOCKS.find((b) => b.id === block)!.section : source.section;
     if (section !== source.section && current.ornaments.filter((o) => o.section === section).length >= MAX_ORNAMENTS_PER_SECTION) {
-      return notify(`Seksi ${SECTION_LABELS[section]} sudah berisi ${MAX_ORNAMENTS_PER_SECTION} ornamen.`, "error");
+      return notify(`Seksi ${sectionLabelFor(section, specRef.current.eventType)} sudah berisi ${MAX_ORNAMENTS_PER_SECTION} ornamen.`, "error");
     }
     const moved: BuilderOrnament = { ...source, section, x: 50, y: 50, anchor: "top", width: placement.mode === "free" ? 32 : placement.mode === "attach" ? 50 : 40 };
     delete moved.attach;
@@ -732,7 +753,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
     );
   }
 
-  const chips = ORNAMENT_SECTIONS.filter((s) => s !== "sidebar" || device === "desktop");
+  const chips = familySections(spec.eventType).filter((s) => s !== "sidebar" || device === "desktop");
 
   return (
     <div className="fixed inset-0 flex flex-col bg-stone-100 text-stone-900">
@@ -762,7 +783,22 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
             <span className={`h-1.5 w-1.5 rounded-full ${isNew ? "bg-stone-400" : isActive ? "bg-emerald-500" : "bg-amber-500"}`} />
             {isNew ? "Belum disimpan" : isActive ? "Tayang di katalog" : "Draf"}
           </span>
-          {isNew && (
+          {isNew ? (
+            <select
+              aria-label="Jenis acara"
+              title="Jenis acara tidak bisa diubah setelah tema disimpan"
+              value={spec.eventType}
+              onChange={(e) => changeEventType(e.target.value as BuilderEventType)}
+              className="rounded-lg border border-stone-200 bg-white px-2 py-1 text-[11.5px] font-semibold text-stone-700 outline-none hover:border-stone-300 cursor-pointer"
+            >
+              {BUILDER_EVENT_TYPES.map((t) => <option key={t} value={t}>{BUILDER_EVENT_LABELS[t]}</option>)}
+            </select>
+          ) : (
+            <span className="rounded-full bg-stone-100 px-2.5 py-1 text-[10.5px] font-semibold text-stone-600" title="Jenis acara tidak bisa diubah setelah tema disimpan">
+              {BUILDER_EVENT_LABELS[spec.eventType]}
+            </span>
+          )}
+          {isNew && spec.eventType === "WEDDING" && (
             <select
               aria-label="Mulai dari tema lama"
               defaultValue=""
@@ -913,7 +949,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
                 onClick={() => focusSection(s)}
                 className={`shrink-0 rounded-full px-3 py-1 text-[11.5px] font-semibold transition cursor-pointer ${viewSection === s ? "bg-stone-900 text-white" : "bg-stone-100 text-stone-600 hover:bg-stone-200"}`}
               >
-                {SECTION_LABELS[s]}
+                {sectionLabelFor(s, spec.eventType)}
               </button>
             ))}
           </div>
@@ -945,6 +981,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
           {selected ? (
             <OrnamentInspector
               ornament={selected}
+              eventType={spec.eventType}
               palette={spec.palette}
               canvasMode={spec.canvasMode}
               onPlace={(placement) => placeOrnament(selected.id, placement)}
@@ -959,6 +996,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
           ) : selectedBlock ? (
             <BlockInspector
               blockId={selectedBlock}
+              eventType={spec.eventType}
               props={spec.blocks[selectedBlock] ?? DEFAULT_BLOCK_PROPS}
               onChange={(patch, final) => updateBlock(selectedBlock, patch, final)}
               onReset={() => resetBlock(selectedBlock)}
@@ -978,7 +1016,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
               <dl className="mt-4 space-y-2 text-[12px]">
                 <div className="flex justify-between gap-2"><dt className="text-stone-500">Kanvas</dt><dd className="font-semibold text-stone-800">{spec.canvasMode === "dark" ? "Gelap" : "Terang"}</dd></div>
                 <div className="flex justify-between gap-2"><dt className="text-stone-500">Judul</dt><dd className="font-semibold text-stone-800">{fontLabel(spec.fonts.heading)}</dd></div>
-                {VARIANT_GROUPS.map((g) => (
+                {familyVariantGroups(spec.eventType).map((g) => (
                   <div key={g.key} className="flex justify-between gap-2"><dt className="text-stone-500">{g.label}</dt><dd className="font-semibold text-stone-800">{g.options.find((o) => o.id === spec.variants[g.key])?.label}</dd></div>
                 ))}
                 <div className="flex justify-between gap-2"><dt className="text-stone-500">Ornamen</dt><dd className="font-semibold text-stone-800">{spec.ornaments.length} / {MAX_ORNAMENTS}</dd></div>

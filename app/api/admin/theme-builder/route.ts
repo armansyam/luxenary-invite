@@ -205,7 +205,7 @@ export async function POST(req: NextRequest) {
     const { html, issues } = compileAndAudit(spec);
     if (issues.length) return NextResponse.json({ error: "Master hasil rancangan gagal diperiksa.", issues }, { status: 422 });
 
-    const file = builderMasterPath(category, themeId);
+    const file = builderMasterPath(category, themeId, spec.eventType);
     await fs.promises.mkdir(path.dirname(file), { recursive: true });
     await fs.promises.writeFile(file, html, "utf-8");
 
@@ -270,6 +270,10 @@ export async function PUT(req: NextRequest) {
 
     const parsed = parseBuilderSpec(body.spec);
     if (!parsed.ok) return NextResponse.json({ error: "Rancangan tema tidak valid.", details: parsed.errors }, { status: 400 });
+    // Jenis acara menentukan blueprint, folder master, dan katalog klien; undangan yang sudah memakai tema ini bergantung padanya.
+    if (parsed.spec.eventType !== existingSpec.eventType) {
+      return NextResponse.json({ error: "Jenis acara tema tidak bisa diubah setelah dibuat. Buat tema baru untuk jenis acara lain." }, { status: 409 });
+    }
 
     const music = body.defaultMusicUrl === undefined ? null : await resolveThemeMusic(body.defaultMusicUrl);
     if (music && !music.ok) return NextResponse.json({ error: music.error }, { status: 400 });
@@ -279,10 +283,10 @@ export async function PUT(req: NextRequest) {
     const { html, issues } = compileAndAudit(spec);
     if (issues.length) return NextResponse.json({ error: "Master hasil rancangan gagal diperiksa.", issues }, { status: 422 });
 
-    const file = builderMasterPath(category, themeId);
+    const file = builderMasterPath(category, themeId, spec.eventType);
     await fs.promises.mkdir(path.dirname(file), { recursive: true });
     await fs.promises.writeFile(file, html, "utf-8");
-    if (existing.category !== category) await removeIfExists(builderMasterPath(existing.category as BuilderCategory, themeId));
+    if (existing.category !== category) await removeIfExists(builderMasterPath(existing.category as BuilderCategory, themeId, spec.eventType));
 
     // Tema yang dibuat sebelum ada riwayat: simpan keadaan sebelum penyimpanan ini agar masih bisa dikembalikan.
     if (!(await prisma.themeBuilderRevision.count({ where: { themeId } }))) {

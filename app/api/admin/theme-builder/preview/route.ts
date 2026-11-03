@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
 
     await ensureSpecFonts(parsed.spec);
     const spec = await fitSpecFrames(parsed.spec);
-    const { html, issues, labels } = await renderBuilderPreview(spec, "kalandra", body.mode === "client" ? "client" : "demo");
+    const { html, issues, labels } = await renderBuilderPreview(spec, undefined, body.mode === "client" ? "client" : "demo");
     return NextResponse.json({ success: true, html, issues, labels });
   } catch (error) {
     return routeError("ThemeBuilderPreview", error);

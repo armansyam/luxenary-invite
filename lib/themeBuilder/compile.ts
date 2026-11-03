@@ -4,6 +4,8 @@ import {
   BUILDER_TEXTS,
   RADIUS_OPTIONS,
   blockStyle,
+  builderFamilyOf,
+  type BuilderFamily,
   fontFamily,
   frameCss,
   googleFontCssUrl,
@@ -18,12 +20,19 @@ import {
   type BuilderVariants,
 } from "@/lib/themeBuilder/spec";
 
-const BLUEPRINT_FILES: Record<BuilderEventType, string> = {
-  WEDDING: path.join("themes", "_blueprints", "wedding", "starter-blueprint.html"),
+const BLUEPRINT_FILES: Record<BuilderFamily, string> = {
+  wedding: path.join("themes", "_blueprints", "wedding", "starter-blueprint.html"),
+  single: path.join("themes", "_blueprints", "single-name", "starter-blueprint-single.html"),
+};
+
+/** Token jadwal acara di blueprint: kartu sesi pernikahan vs kartu sesi buatan mesin untuk satu nama. */
+const EVENTS_TOKEN: Record<BuilderFamily, string> = {
+  wedding: "{{eventDataHtml}}",
+  single: "{{eventSectionHtml}}",
 };
 
 export function readBuilderBlueprint(eventType: BuilderEventType): string {
-  return fs.readFileSync(path.join(/*turbopackIgnore: true*/ process.cwd(), BLUEPRINT_FILES[eventType]), "utf-8");
+  return fs.readFileSync(path.join(/*turbopackIgnore: true*/ process.cwd(), BLUEPRINT_FILES[builderFamilyOf(eventType)]), "utf-8");
 }
 
 function rootBlock(spec: BuilderSpec): string {
@@ -265,7 +274,8 @@ export function compileBuilderMaster(spec: BuilderSpec, blueprint = readBuilderB
   // Jadwal acara dipindahkan (bukan digandakan) ke Home: token hanya boleh muncul sekali karena HTML-nya membawa
   // target sunting Studio. Seksi Acara tetap ada di DOM (penanda seksi dan ornamennya) tetapi disembunyikan.
   if (spec.eventsPlacement === "home") {
-    html = html.replace("{{eventDataHtml}}", "").replace("<!-- lux-home-schedule -->", "{{eventDataHtml}}");
+    const eventsToken = EVENTS_TOKEN[builderFamilyOf(spec.eventType)];
+    html = html.replace(eventsToken, "").replace("<!-- lux-home-schedule -->", eventsToken);
     html = html.replace("</head>", `  <style id="lux-builder-events">\n    .home-schedule { display: block; }\n    #events { display: none; }\n    a[href="#events"] { display: none !important; }\n  </style>\n</head>`);
   }
 

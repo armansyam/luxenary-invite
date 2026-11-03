@@ -40,6 +40,19 @@ export function applyBuilderTexts(blueprint: ThemeBlueprint, texts: BuilderTexts
   return { blueprint: patched as unknown as ThemeBlueprint, labels };
 }
 
+/**
+ * Tema satu nama: blueprint satu nama tidak membaca ThemeBlueprint (labelnya dari kontrak applySingleNameContract), jadi
+ * teks "engine" builder dipasang sebagai label bawaan. Teks "static" sudah tertulis di master saat kompilasi.
+ */
+export function builderTextLabels(texts: BuilderTexts): Record<string, string> {
+  const labels: Record<string, string> = {};
+  for (const { key, kind } of BUILDER_TEXTS) {
+    const value = texts[key];
+    if (value !== undefined && kind === "engine") labels[key] = value;
+  }
+  return labels;
+}
+
 /** Teks bawaan dari kolom `Theme.builderSpec`; kosong untuk tema tulisan tangan atau spesifikasi tanpa teks. */
 export function builderTextsOf(spec: unknown): BuilderTexts {
   if (!spec || typeof spec !== "object") return {};

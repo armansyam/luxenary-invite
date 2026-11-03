@@ -10,16 +10,19 @@ import {
   FRAME_SHAPES,
   FRAME_SPREAD_LIMITS,
   OPTIONAL_BLOCKS,
-  SECTION_LABELS,
+  blockLabelFor,
   isDefaultBlock,
+  sectionLabelFor,
   type BlockProps,
   type BuilderBlockId,
+  type BuilderEventType,
   type FrameFit,
   type PhotoFrame,
 } from "@/lib/themeBuilder/spec";
 
 interface Props {
   blockId: BuilderBlockId;
+  eventType: BuilderEventType;
   props: BlockProps;
   onChange: (patch: Partial<BlockProps>, final: boolean) => void;
   onReset: () => void;
@@ -92,7 +95,7 @@ function FramePicker({ value, library, onPick }: { value: string; library: Asset
   );
 }
 
-export default function BlockInspector({ blockId, props, onChange, onReset, onClose, onCenter, frame, onFrameChange, library, onUpload }: Props) {
+export default function BlockInspector({ blockId, eventType, props, onChange, onReset, onClose, onCenter, frame, onFrameChange, library, onUpload }: Props) {
   const block = BUILDER_BLOCKS.find((b) => b.id === blockId)!;
   const uploadRef = useRef<HTMLInputElement>(null);
   const z = props.z ?? 0;
@@ -101,8 +104,8 @@ export default function BlockInspector({ blockId, props, onChange, onReset, onCl
       <div className="flex items-start justify-between gap-2 border-b border-stone-200 px-4 py-3">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-stone-500">Elemen terpilih</p>
-          <p className="mt-0.5 text-[13px] font-semibold text-stone-900">{block.label}</p>
-          <p className="text-[11px] text-stone-500">Seksi {SECTION_LABELS[block.section]}</p>
+          <p className="mt-0.5 text-[13px] font-semibold text-stone-900">{blockLabelFor(blockId, eventType)}</p>
+          <p className="text-[11px] text-stone-500">Seksi {sectionLabelFor(block.section, eventType)}</p>
         </div>
         <button type="button" onClick={onClose} title="Batal pilih (Esc)" className="rounded-lg p-1.5 text-stone-500 hover:bg-stone-100 cursor-pointer">
           <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>

@@ -13,7 +13,7 @@ import { buildCheckinQrBaseUrl, buildCheckinQrUrl, qrInitials } from "@/lib/chec
 import { getEventTimezoneOffset, getPrimaryEvent, resolveEventTimezone } from "@/lib/lifecycleDates";
 import { logger } from "@/lib/logger";
 import { applyThemeDefaultMedia, parseThemeDefaultMedia } from "@/lib/themeDefaultMedia";
-import { applyBuilderTexts, builderTextsOf } from "@/lib/themeBuilder/texts";
+import { applyBuilderTexts, builderTextLabels, builderTextsOf } from "@/lib/themeBuilder/texts";
 
 /** Sesi jadwal terima tamu (patokan yang sama dengan masa aktif), atau objek kosong bila belum bertanggal. */
 function primaryEventOf(events: unknown): any {
@@ -2508,12 +2508,18 @@ function buildUniversalWishesSection(rsvps: any[] = [], invitationId = ""): stri
 // ==========================================
 
 /** Hitung mundur ke jadwal terima tamu menurut zona waktu acara; tidak dirender bila tanggal belum diisi. */
-function buildUniversalCountdown(primary: any): string {
+/** Waktu mulai acara utama berzona waktu (ISO 8601) untuk hitung mundur; kosong bila tanggalnya belum diisi. */
+function countdownTargetOf(primary: any): string {
   const day = typeof primary?.date === "string" ? primary.date.split("T")[0] : "";
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return "";
   const rawTime = String(primary.startTime || primary.time || "").match(/\d{1,2}[:.]\d{2}/)?.[0]?.replace(".", ":") || "00:00";
   const time = rawTime.length === 4 ? `0${rawTime}` : rawTime;
-  const target = `${day}T${time}:00${getEventTimezoneOffset(resolveEventTimezone(primary))}`;
+  return `${day}T${time}:00${getEventTimezoneOffset(resolveEventTimezone(primary))}`;
+}
+
+function buildUniversalCountdown(primary: any): string {
+  const target = countdownTargetOf(primary);
+  if (!target) return "";
   const cell = (id: string, label: string) => `
       <div style="min-width: 64px; padding: 12px 8px; border-radius: var(--radius-md, 14px); background: color-mix(in srgb, var(--card-bg) 70%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);">
         <span id="${id}" style="display: block; font-size: 22px; font-weight: 800; color: var(--text-main);">00</span>
@@ -2717,9 +2723,13 @@ async function applySingleNameContract(eventType: string, data: Record<string, a
   const chosenThemeId = String(inv.themeId || defaultThemeId).toLowerCase();
   let themeId = defaultThemeId;
   let themeDemo: Record<string, any> | undefined;
+  let chosenBuilderSpec: unknown = null;
   try {
-    const themeRow = await prisma.theme.findUnique({ where: { id: chosenThemeId }, select: { eventType: true } });
-    if (themeRow?.eventType === eventType) themeId = chosenThemeId;
+    const themeRow = await prisma.theme.findUnique({ where: { id: chosenThemeId }, select: { eventType: true, builderSpec: true } });
+    if (themeRow?.eventType === eventType) {
+      themeId = chosenThemeId;
+      chosenBuilderSpec = themeRow.builderSpec;
+    }
     const setting = await prisma.adminSetting.findUnique({ where: { key: `theme_demo_${themeId}` }, select: { value: true } });
     themeDemo = setting?.value ? JSON.parse(setting.value) : undefined;
   } catch (err) {
@@ -2730,7 +2740,10 @@ async function applySingleNameContract(eventType: string, data: Record<string, a
   const quoteRef = inv.openingQuote ? (inv.openingQuoteRef || "") : (themeBlueprint.openingQuoteRef || "");
   // Label Studio Demo menimpa teks master di setiap slot; label tema default jenis acara tidak boleh menimpa master lain
   // yang dipilih lintas jenis acara, karena teks master itu sendiri sudah memakai token jenis acara (dan tanggal) undangan.
-  const mergedLabels = { ...(themeId === chosenThemeId ? themeDemo?.customLabels || {} : {}), ...customLabels };
+  // Teks bawaan tema builder satu nama menjadi label di atas Studio Demo dan di bawah isian klien, sama dengan urutan
+  // pernikahan (applyBuilderTexts menimpa bawaan blueprint). Pratinjau builder membawa rancangan yang belum tersimpan.
+  const builderLabels = builderTextLabels(inv.builderTexts ?? builderTextsOf(chosenBuilderSpec));
+  const mergedLabels = { ...(themeId === chosenThemeId ? themeDemo?.customLabels || {} : {}), ...builderLabels, ...customLabels };
 
   const planType = inv.order?.planType;
   const showQr = featureSettings.showQrCheckin !== false && await hasPlanCapability(planType, "qr_checkin");
@@ -2750,6 +2763,9 @@ async function applySingleNameContract(eventType: string, data: Record<string, a
   return {
     ...data,
     sidebarPhotoUrl: mediaMap.get("DESKTOP_SIDEBAR") || data.sidebarPhotoUrl || data.landingCoverUrl || m.photo || "",
+    // Composer khitan, aqiqah, wisuda, dan gathering tidak mengisinya; tanpa ini cover desktop klien maupun bawaan
+    // tema tidak pernah membuat sampul layar penuh (renderTemplate membaca landingCoverDesktopUrl).
+    landingCoverDesktopUrl: mediaMap.get("LANDING_COVER_DESKTOP") || data.landingCoverDesktopUrl || data.landingCoverUrl || "",
     hasCustomCoverDesktop: Boolean(mediaMap.get("LANDING_COVER_DESKTOP")),
     homePhotoUrl: customHomePhoto,
     hasCustomHomePhoto: Boolean(customHomePhoto),
@@ -2780,6 +2796,8 @@ async function applySingleNameContract(eventType: string, data: Record<string, a
     eventSectionHtml: data.eventSectionHtml || buildUniversalEventCards(events, labels.eventLabel),
     brandWatermarkHtml: data.brandWatermarkHtml || `<span style="font-size: 10px; color: var(--primary);">Powered by ${escapeHtml(platformName)}</span>`,
     countdownHtml: buildUniversalCountdown(primary),
+    // Master dengan hitung mundur sendiri (blueprint satu nama Theme Builder) membaca target yang sama dengan countdownHtml.
+    countdownTarget: countdownTargetOf(primary),
     musicPlayerHtml: buildUniversalMusicPlayer(data.audioUrl || ""),
     qrPassHtml: showQr ? buildUniversalQrPass(inv, labels.eventLabel, m.name || "", dateLabel) : "",
     memoriesSectionHtml: showMemories ? buildUniversalMemoriesCta(inv, customLabels) : "",

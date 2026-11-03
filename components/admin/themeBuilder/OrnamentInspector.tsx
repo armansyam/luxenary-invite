@@ -2,21 +2,22 @@
 
 import {
   ATTACHABLE_BLOCKS,
-  BUILDER_BLOCKS,
   DEFAULT_ORNAMENT_GAP,
   DEFAULT_ORNAMENT_TEXT,
   EDITABLE_TEXT_KEYS,
   FLOW_EXCLUDED_BLOCKS,
   ORNAMENT_GAP_LIMITS,
-  ORNAMENT_SECTIONS,
   ORNAMENT_TEXT_COLORS,
   ORNAMENT_TEXT_FONTS,
   ORNAMENT_TEXT_LIMITS,
-  SECTION_LABELS,
   contrastRatio,
+  familyBlocks,
+  familySections,
   ornamentLimits,
+  sectionLabelFor,
   type AttachableBlockId,
   type BuilderBlockId,
+  type BuilderEventType,
   type BuilderOrnament,
   type BuilderPalette,
   type CanvasMode,
@@ -30,6 +31,7 @@ export type OrnamentPlacement = { mode: "free" } | { mode: "attach"; block: Atta
 
 interface Props {
   ornament: BuilderOrnament;
+  eventType: BuilderEventType;
   palette: BuilderPalette;
   canvasMode: CanvasMode;
   onPlace: (placement: OrnamentPlacement) => void;
@@ -121,15 +123,16 @@ function Toggle<T extends string>({ label, hint, value, options, onChange }: { l
 
 const DEFAULT_TEXT_SIZE = DEFAULT_ORNAMENT_TEXT.size;
 
-export default function OrnamentInspector({ ornament: o, palette, canvasMode, usedLabelKeys, onPlace, stack, onReorder, onChange, onDuplicate, onRemove, onClose }: Props) {
+export default function OrnamentInspector({ ornament: o, eventType, palette, canvasMode, usedLabelKeys, onPlace, stack, onReorder, onChange, onDuplicate, onRemove, onClose }: Props) {
   const set = (patch: Partial<BuilderOrnament>) => onChange(patch, true);
   const setText = (patch: Partial<OrnamentText>, final: boolean) => o.text && onChange({ text: { ...o.text, ...patch } }, final);
   const freeKey = EDITABLE_TEXT_KEYS.find((k) => !usedLabelKeys.includes(k));
   const mode: OrnamentPlacement["mode"] = o.before ? "flow" : o.attach ? "attach" : "free";
   const container = o.attach ? "blok" : "seksi";
   const limits = ornamentLimits(o);
-  const attachOptions = ATTACHABLE_BLOCKS.filter((id) => BUILDER_BLOCKS.find((b) => b.id === id)?.section === o.section);
-  const flowOptions = BUILDER_BLOCKS.filter((b) => b.section === o.section && !FLOW_EXCLUDED_BLOCKS.includes(b.id)).map((b) => b.id);
+  const blocks = familyBlocks(eventType);
+  const attachOptions = ATTACHABLE_BLOCKS.filter((id) => blocks.find((b) => b.id === id)?.section === o.section);
+  const flowOptions = blocks.filter((b) => b.section === o.section && !FLOW_EXCLUDED_BLOCKS.includes(b.id)).map((b) => b.id);
   const swatch: Record<(typeof ORNAMENT_TEXT_COLORS)[number]["id"], string> = {
     primary: palette.primary,
     secondary: palette.secondary,
@@ -154,7 +157,7 @@ export default function OrnamentInspector({ ornament: o, palette, canvasMode, us
           </span>
           <div>
             <p className="text-[12.5px] font-bold text-stone-800">{o.text ? "Teks hias" : "Ornamen"}</p>
-            <p className="text-[11px] text-stone-500">{SECTION_LABELS[o.section]}</p>
+            <p className="text-[11px] text-stone-500">{sectionLabelFor(o.section, eventType)}</p>
           </div>
         </div>
         <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-700 cursor-pointer" aria-label="Tutup inspektor">
@@ -270,7 +273,7 @@ export default function OrnamentInspector({ ornament: o, palette, canvasMode, us
               aria-label={mode === "attach" ? "Blok tempat menempel" : "Blok yang didahului ornamen"}
               className="mt-1.5 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-[12.5px] outline-none focus:border-amber-500 cursor-pointer"
             >
-              {(mode === "attach" ? attachOptions : flowOptions).map((id) => <option key={id} value={id}>{BUILDER_BLOCKS.find((b) => b.id === id)!.label}</option>)}
+              {(mode === "attach" ? attachOptions : flowOptions).map((id) => <option key={id} value={id}>{blocks.find((b) => b.id === id)!.label}</option>)}
             </select>
           )}
           <p className="mt-1 text-[10.5px] leading-snug text-stone-500">
@@ -290,7 +293,7 @@ export default function OrnamentInspector({ ornament: o, palette, canvasMode, us
             onChange={(e) => set({ section: e.target.value as OrnamentSection })}
             className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-[12.5px] outline-none focus:border-amber-500 cursor-pointer disabled:cursor-not-allowed disabled:bg-stone-50 disabled:text-stone-400"
           >
-            {ORNAMENT_SECTIONS.map((s) => <option key={s} value={s}>{SECTION_LABELS[s]}</option>)}
+            {familySections(eventType).map((s) => <option key={s} value={s}>{sectionLabelFor(s, eventType)}</option>)}
           </select>
         </label>
 

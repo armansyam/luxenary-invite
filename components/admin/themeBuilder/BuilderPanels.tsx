@@ -7,13 +7,14 @@ import {
   FONT_OPTIONS,
   PALETTE_PRESETS,
   RADIUS_OPTIONS,
-  SECTION_LABELS,
   TEXTURE_OPTIONS,
-  BUILDER_BLOCKS,
   BUILDER_DEFAULT_SLOTS,
-  BUILDER_TEXTS,
   MAX_BUILDER_TEXT_LENGTH,
-  VARIANT_GROUPS,
+  blockLabelFor,
+  familyBlocks,
+  familyTexts,
+  familyVariantGroups,
+  sectionLabelFor,
   fontFamily,
   fontLabel,
   googleFontCssUrl,
@@ -331,7 +332,8 @@ const LONG_TEXT_KEYS: readonly BuilderTextKey[] = ["coverSubtitle", "coupleSub",
  * sudah diubah ditandai dan bisa dikembalikan. Klien tetap dapat mengubah tiap teks di Studio; ini hanya nilai awalnya.
  */
 export function TextsPanel({ spec, labels, onChange }: { spec: BuilderSpec; labels: Record<string, string>; onChange: (patch: Partial<BuilderSpec>) => void }) {
-  const groups = [...new Set(BUILDER_TEXTS.map((t) => t.group))];
+  const texts = familyTexts(spec.eventType);
+  const groups = [...new Set(texts.map((t) => t.group))];
   const overridden = Object.keys(spec.texts).length;
   const setText = (key: BuilderTextKey, value: string | null) => {
     const texts = { ...spec.texts };
@@ -354,7 +356,7 @@ export function TextsPanel({ spec, labels, onChange }: { spec: BuilderSpec; labe
       {groups.map((group) => (
         <Section key={group} title={group}>
           <div className="space-y-3">
-            {BUILDER_TEXTS.filter((t) => t.group === group).map((t) => {
+            {texts.filter((t) => t.group === group).map((t) => {
               const changed = spec.texts[t.key] !== undefined;
               const value = spec.texts[t.key] ?? labels[t.key] ?? "";
               const common = {
@@ -555,7 +557,7 @@ export function LayoutPanel({
     <>
       <Section title="Posisi elemen" hint="Klik elemen di pratinjau atau pilih di sini, lalu seret atau atur geser, ukuran, dan putar. Posisi relatif terhadap elemen itu sendiri, jadi tetap mengalir bersama isi klien dan mengikuti lebar layar.">
         <div className="grid grid-cols-1 gap-1.5">
-          {BUILDER_BLOCKS.map((block) => {
+          {familyBlocks(spec.eventType).map((block) => {
             const custom = Boolean(spec.blocks[block.id]);
             return (
               <button
@@ -569,7 +571,7 @@ export function LayoutPanel({
                 className={`flex items-center justify-between rounded-xl border px-3 py-2 text-left text-[12px] font-semibold transition cursor-pointer ${selectedBlock === block.id ? "border-blue-500 bg-blue-50 text-stone-900" : "border-stone-200 text-stone-700 hover:border-stone-300"}`}
               >
                 <span>{block.label}</span>
-                <span className="text-[10.5px] font-medium text-stone-500">{spec.blocks[block.id]?.hidden ? "Disembunyikan" : custom ? "Diatur" : SECTION_LABELS[block.section]}</span>
+                <span className="text-[10.5px] font-medium text-stone-500">{spec.blocks[block.id]?.hidden ? "Disembunyikan" : custom ? "Diatur" : sectionLabelFor(block.section, spec.eventType)}</span>
               </button>
             );
           })}
@@ -599,7 +601,7 @@ export function LayoutPanel({
         </div>
       </Section>
 
-      {VARIANT_GROUPS.map((group) => (
+      {familyVariantGroups(spec.eventType).map((group) => (
         <Section key={group.key} title={group.label} hint={group.key === "sidebar" ? "Hanya tampil di layar desktop, di sebelah kiri kolom undangan." : group.key === "headings" ? "Berlaku untuk semua judul seksi." : undefined}>
           <div className="grid grid-cols-2 gap-2">
             {group.options.map((option) => {
@@ -688,7 +690,7 @@ export function OrnamentsPanel({
 
   return (
     <>
-      <Section title="Cara pakai" hint={`Seret gambar ke pratinjau, atau klik untuk menaruhnya di seksi "${SECTION_LABELS[viewSection]}" yang sedang tampil. Di pratinjau: geser untuk memindah, bulatan pojok untuk mengubah ukuran, bulatan atas untuk memutar.`}>
+      <Section title="Cara pakai" hint={`Seret gambar ke pratinjau, atau klik untuk menaruhnya di seksi "${sectionLabelFor(viewSection, spec.eventType)}" yang sedang tampil. Di pratinjau: geser untuk memindah, bulatan pojok untuk mengubah ukuran, bulatan atas untuk memutar.`}>
         <div
           onDragOver={(e) => { if (e.dataTransfer.types.includes("Files")) { e.preventDefault(); setOver(true); } }}
           onDragLeave={() => setOver(false)}
@@ -706,11 +708,11 @@ export function OrnamentsPanel({
       <Section title="Teks hias" hint="Tulisan bebas seperti &quot;Save the Date&quot; atau &quot;Bersama keluarga&quot;. Bawaannya sama untuk semua klien dan hanya admin yang mengubah. Aktifkan &quot;Bisa diedit klien&quot; di inspektor (maks. 3 per tema) agar klien dapat mengganti isinya di Studio; isi yang Anda tulis menjadi teks awalnya.">
         <button type="button" onClick={onAddText} className="flex w-full items-center justify-center gap-2 rounded-xl border border-stone-200 px-3 py-2 text-[12.5px] font-semibold text-stone-800 hover:bg-stone-50 cursor-pointer">
           <Icon d="M5 6V4h14v2M12 4v16M9 20h6" className="h-4 w-4 text-stone-500" />
-          Tambah teks di seksi {SECTION_LABELS[viewSection]}
+          Tambah teks di seksi {sectionLabelFor(viewSection, spec.eventType)}
         </button>
       </Section>
 
-      <Section title={`Di seksi ${SECTION_LABELS[viewSection]} (${inSection.length})`}>
+      <Section title={`Di seksi ${sectionLabelFor(viewSection, spec.eventType)} (${inSection.length})`}>
         {inSection.length === 0 ? (
           <p className="text-[11.5px] text-stone-500">Belum ada ornamen di seksi ini.</p>
         ) : (
@@ -720,8 +722,8 @@ export function OrnamentsPanel({
                 key={o.id}
                 type="button"
                 onClick={() => onSelect(o.id)}
-                aria-label={`Pilih ${o.text ? "teks hias" : "ornamen"} ${i + 1} di seksi ${SECTION_LABELS[viewSection]}${o.attach ? `, menempel ke ${BUILDER_BLOCKS.find((b) => b.id === o.attach)?.label}` : ""}`}
-                title={o.attach ? `Menempel ke ${BUILDER_BLOCKS.find((b) => b.id === o.attach)?.label}` : undefined}
+                aria-label={`Pilih ${o.text ? "teks hias" : "ornamen"} ${i + 1} di seksi ${sectionLabelFor(viewSection, spec.eventType)}${o.attach ? `, menempel ke ${blockLabelFor(o.attach, spec.eventType)}` : ""}`}
+                title={o.attach ? `Menempel ke ${blockLabelFor(o.attach, spec.eventType)}` : undefined}
                 className={`relative flex aspect-square items-center justify-center rounded-lg border bg-stone-50 p-1 cursor-pointer ${selectedId === o.id ? "border-amber-500 ring-2 ring-amber-500/25" : "border-stone-200"}`}
               >
                 {o.text ? <span className="line-clamp-2 break-all text-center text-[10px] font-semibold leading-tight text-stone-600">{o.text.value}</span> : <img src={o.src} alt="" className="max-h-full max-w-full object-contain" />}
