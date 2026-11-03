@@ -11,6 +11,8 @@ import { FEATURE_SETTING_LIVE_FIELDS, isLiveEditField } from "@/lib/liveEditFiel
 import { resolveInvitationDisplayName, getMediaSlotLabel, eventNoun, isThemeCompatible, sortThemesForEvent } from "@/lib/invitationUtils";
 import { useFeedback } from "@/components/ui/Feedback";
 import { getApexRootDomain } from "@/lib/domainUtils";
+import { EDITABLE_TEXT_KEYS, MAX_DECORATIVE_LABEL_LENGTH, sectionLabelFor, type BuilderEventType } from "@/lib/themeBuilder/spec";
+import type { EditableText } from "@/lib/themeBuilder/texts";
 
 // Pilihan tema dimuat secara dinamis dari API /api/public/themes untuk menjamin sinkronisasi status aktif
 
@@ -877,7 +879,8 @@ export default function EditInvitation() {
     // Sec 1: Tema & Tagline
     const dirty1 = (
       invitation.themeId !== savedSnapshot.invitation?.themeId ||
-      getFeatureSetting("weddingTagline", "THE WEDDING OF") !== getSavedFeatureSetting("weddingTagline", "THE WEDDING OF")
+      getFeatureSetting("weddingTagline", "THE WEDDING OF") !== getSavedFeatureSetting("weddingTagline", "THE WEDDING OF") ||
+      EDITABLE_TEXT_KEYS.some((key) => getCustomLabel(key, "") !== getSavedCustomLabel(key, ""))
     );
 
     // Sec 2: Sampul & Visual
@@ -2405,6 +2408,42 @@ export default function EditInvitation() {
                       </button>
                     ))}
                   </div>
+                </div>
+              );
+            })()}
+
+            {(() => {
+              const decorativeTexts: EditableText[] = selectedThemeObj?.decorativeTexts ?? [];
+              if (decorativeTexts.length === 0) return null;
+              // Server membuang teks hias saat tema berganti (lib/themeLabels.ts), jadi isian baru untuk tema yang belum
+              // disimpan akan hilang bersama penyimpanan pergantian tema.
+              const themeSaved = invitation.themeId === savedSnapshot?.invitation?.themeId;
+              return (
+                <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-2.5">
+                  <div>
+                    <label className="block text-xs font-bold text-stone-900">Teks Hias Tema</label>
+                    <p className="text-[10px] text-stone-500">Tulisan dekoratif di atas desain tema, maksimal {MAX_DECORATIVE_LABEL_LENGTH} karakter. Teks yang panjang dapat menutupi isi undangan; kosongkan untuk menyembunyikannya.</p>
+                  </div>
+                  {!themeSaved ? (
+                    <p className="text-[11px] text-stone-600">Simpan pilihan tema terlebih dahulu untuk mengubah teks hias tema ini.</p>
+                  ) : (
+                    decorativeTexts.map((text, i) => (
+                      <div key={text.key}>
+                        <label htmlFor={`decorative-${text.key}`} className="block text-[11px] font-bold text-stone-700 mb-1">
+                          Teks hias {i + 1} · seksi {sectionLabelFor(text.section, invitation.eventType as BuilderEventType)}
+                        </label>
+                        <input
+                          id={`decorative-${text.key}`}
+                          type="text"
+                          maxLength={MAX_DECORATIVE_LABEL_LENGTH}
+                          value={getCustomLabel(text.key, text.value)}
+                          onChange={(e) => updateCustomLabel(text.key, e.target.value)}
+                          placeholder={text.value}
+                          className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-base sm:text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                        />
+                      </div>
+                    ))
+                  )}
                 </div>
               );
             })()}

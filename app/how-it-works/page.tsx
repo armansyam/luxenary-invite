@@ -6,8 +6,6 @@ import { getDynamicServerRootDomain } from "@/lib/serverDomainUtils";
 import { HowItWorksInteractive } from "./HowItWorksInteractive";
 import "../landing.css";
 
-export const revalidate = 86400; // Cache 24 jam (ISR)
-
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getPublicPlatformSettings();
   const brandName = settings.platformName || "Sistem Undangan";

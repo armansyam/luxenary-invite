@@ -87,6 +87,9 @@ describe.skipIf(!IS_TEST_DB)("tema builder sampai klien", () => {
 
     const list = (await (await publicThemes(new Request("http://localhost/api/public/themes?eventType=WEDDING"))).json()) as Array<{ id: string; thumbnailMobile: unknown; thumbnailDesktop: unknown }>;
     expect(list.find((t) => t.id === created.themeId)).toMatchObject({ thumbnailMobile: null, thumbnailDesktop: null });
+    // Isian Studio "Teks Hias Tema" dibangun dari daftar ini: hanya teks hias yang ditandai editable.
+    expect(list.find((t) => t.id === created.themeId)).toMatchObject({ decorativeTexts: [{ key: "hias1", value: "Save the Date", section: "cover" }] });
+    expect(list.find((t) => t.id === "kalandra")).toMatchObject({ decorativeTexts: [] });
   });
 
   it("klien membuat undangan dengan tema itu dan pratinjau Studio memuat seluruh rancangan admin", async () => {

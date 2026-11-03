@@ -101,6 +101,8 @@ export const ORNAMENT_TEXT_LIMITS = { size: [10, 96], spacing: [0, 0.5], length:
  * tiga supaya jumlah label yang ikut terbawa saat klien mengganti tema tetap kecil.
  */
 export const EDITABLE_TEXT_KEYS = ["hias1", "hias2", "hias3"] as const;
+/** Batas isian klien untuk teks hias: kotaknya berukuran tetap di atas desain, teks panjang menutupi isi undangan. */
+export const MAX_DECORATIVE_LABEL_LENGTH = 120;
 export type EditableTextKey = (typeof EDITABLE_TEXT_KEYS)[number];
 
 /** Teks hias bebas (mis. "Save the Date"): tertulis di master; klien hanya dapat mengubahnya bila `labelKey` ada. */

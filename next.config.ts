@@ -94,17 +94,6 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // ── Halaman Utama (Landing Page): cache 1 hari browser, 7 hari CDN ──
-      {
-        source: "/",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400",
-          },
-        ],
-      },
-
       // ── HTML portofolio terisolasi + aset ──
       // Penerbitan ulang portofolio tidak membersihkan cache CDN, jadi masa cache dibatasi satu jam agar revisi terlihat.
       {

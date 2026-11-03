@@ -473,4 +473,41 @@ describe("titik awal dari tema pernikahan lama", () => {
 
     expect((await get("from=tidak-ada-ini")).status).toBe(404);
   });
+
+  it("master satu nama (ulang tahun, khitan, aqiqah, wisuda, gathering) menjadi spesifikasi valid berjenis acara sama", () => {
+    const folders = { BIRTHDAY: "birthday", KHITAN: "khitan", AQIQAH: "aqiqah", WISUDA: "wisuda", GATHERING: "general" } as const;
+    let count = 0;
+    for (const [eventType, folder] of Object.entries(folders) as Array<[keyof typeof folders, string]>) {
+      for (const style of fs.readdirSync(path.join(ROOT, "themes", folder))) {
+        const dir = path.join(ROOT, "themes", folder, style);
+        if (!fs.statSync(dir).isDirectory()) continue;
+        for (const file of fs.readdirSync(dir).filter((f) => f.endsWith(".html"))) {
+          const seed = seedSpecFromMaster(fs.readFileSync(path.join(dir, file), "utf8"), eventType);
+          const parsed = parseBuilderSpec(seed.spec);
+          expect(parsed.ok, file).toBe(true);
+          if (parsed.ok) expect(parsed.spec.eventType, file).toBe(eventType);
+          expect(seed.found.length, file).toBeGreaterThan(0);
+          count++;
+        }
+      }
+    }
+    expect(count).toBeGreaterThan(4);
+  });
+
+  it.skipIf(!IS_TEST_DB)("API: daftar dan titik awal tema lama mengikuti jenis acara", async () => {
+    const get = (qs: string) => GET(new Request(`http://localhost/api/admin/theme-builder?${qs}`) as never);
+    const list = await (await get("legacy=1&eventType=KHITAN")).json();
+    const ids = list.themes.map((t: { id: string }) => t.id);
+    expect(ids).toContain("al-fariz");
+    expect(ids).not.toContain("candani");
+    const rows = await prisma.theme.findMany({ where: { id: { in: ids } }, select: { builderSpec: true, eventType: true } });
+    expect(rows.every((r) => r.builderSpec === null && r.eventType === "KHITAN")).toBe(true);
+
+    const res = await get("from=al-fariz");
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    const parsed = parseBuilderSpec(body.spec);
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) expect(parsed.spec.eventType).toBe("KHITAN");
+  });
 });

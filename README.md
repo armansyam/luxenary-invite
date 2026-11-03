@@ -799,6 +799,10 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
 - **Sampul di desktop (Builder)**: varian `coverDesktop` memilih split (kolom undangan, bawaan) atau global (layar penuh).
 - **Theme Builder keenam jenis acara**: pernikahan dari blueprint pernikahan; ulang tahun, khitan, aqiqah, wisuda, gathering dari `themes/_blueprints/single-name/` (kontrak `applySingleNameContract`). Jenis acara terkunci setelah tema disimpan. Rincian: `docs/SYSTEM_ARCHITECTURE.md` bagian 27 butir 24.
 - **Cover desktop**: tema dan Theme Builder dapat menyediakan cover desktop landscape bawaan (`LANDING_COVER_DESKTOP`), dipakai hanya selama klien belum punya cover sendiri; Studio memperingatkan cover dengan orientasi terbalik.
+- **Teks hias di Studio**: tab "1. Tema & Tagline" menampilkan isian "Teks Hias Tema" untuk teks hias builder yang ditandai editable (`hias1`-`hias3`, maks. 120 karakter, kosong = disembunyikan); daftarnya dari `decorativeTexts` di `GET /api/public/themes` (`editableTextsOf` di `lib/themeBuilder/texts.ts`). Isian muncul setelah pilihan tema disimpan, karena teks hias tema lama dibuang saat tema berganti.
+- **Mulai dari tema lama (Builder)**: tersedia untuk keenam jenis acara; daftar tema lama mengikuti jenis acara tema baru (`?legacy=1&eventType=`).
+- **Cache beranda**: header `Cache-Control` `/` di `next.config.ts` dan `revalidate = 86400` di `app/page.tsx`/`app/how-it-works/page.tsx` dihapus; layout root `force-dynamic` sejak `70d4af3` membuat halaman itu dirender per permintaan, sehingga header lama hanya membuat browser menyimpan harga paket 1 hari.
+- **Midtrans**: kegagalan membaca pengaturan Midtrans dari DB dicatat (`MidtransConfig`) sebelum memakai `MIDTRANS_*` dari `.env`.
 - **Uji lokal**: suite vitest dan `scripts/e2e-golive.ts` membutuhkan `luxenary_test` yang sudah `migrate deploy`, `db seed`, dan `themes:sync`; tes backup membutuhkan `pg_dump`/`pg_restore` 17 di PATH.
 
 

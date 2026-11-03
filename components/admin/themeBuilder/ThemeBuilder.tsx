@@ -366,19 +366,19 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
     apply(next, final ? "commit" : "live");
   }, [apply]);
 
-  const [legacyThemes, setLegacyThemes] = useState<Array<{ id: string; name: string }> | null>(null);
+  const [legacyThemes, setLegacyThemes] = useState<{ eventType: BuilderEventType; themes: Array<{ id: string; name: string }> } | null>(null);
 
-  const loadLegacyThemes = useCallback(async () => {
-    if (legacyThemes) return;
-    const res = await fetch("/api/admin/theme-builder?legacy=1", { cache: "no-store" });
+  const loadLegacyThemes = useCallback(async (eventType: BuilderEventType) => {
+    if (legacyThemes?.eventType === eventType) return;
+    const res = await fetch(`/api/admin/theme-builder?legacy=1&eventType=${eventType}`, { cache: "no-store" });
     const data = await res.json().catch(() => ({}));
-    if (res.ok) setLegacyThemes(data.themes);
+    if (res.ok) setLegacyThemes({ eventType, themes: data.themes });
     else notify(data.error || "Daftar tema lama gagal dimuat.", "error");
   }, [legacyThemes, notify]);
 
   useEffect(() => {
-    if (isNew && loaded) void loadLegacyThemes();
-  }, [isNew, loaded, loadLegacyThemes]);
+    if (isNew && loaded) void loadLegacyThemes(spec.eventType);
+  }, [isNew, loaded, loadLegacyThemes, spec.eventType]);
 
   /** Isi rancangan baru dari palet dan latar tema tulisan tangan; master lama tidak disentuh. */
   const startFromLegacy = useCallback(async (id: string) => {
@@ -798,7 +798,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
               {BUILDER_EVENT_LABELS[spec.eventType]}
             </span>
           )}
-          {isNew && spec.eventType === "WEDDING" && (
+          {isNew && (
             <select
               aria-label="Mulai dari tema lama"
               defaultValue=""
@@ -806,7 +806,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
               className="rounded-lg border border-stone-200 bg-white px-2 py-1 text-[11.5px] font-semibold text-stone-600 outline-none hover:border-stone-300 cursor-pointer"
             >
               <option value="">Mulai dari tema lama…</option>
-              {(legacyThemes ?? []).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              {(legacyThemes?.eventType === spec.eventType ? legacyThemes.themes : []).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
           )}
           {isNew && (

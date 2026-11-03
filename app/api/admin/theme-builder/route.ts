@@ -11,7 +11,7 @@ import { readJsonBody } from "@/lib/requestBody";
 import { logger } from "@/lib/logger";
 import { masterTemplateCache } from "@/lib/cache";
 import { removeIfExists } from "@/lib/fsSafe";
-import { parseBuilderSpec } from "@/lib/themeBuilder/spec";
+import { BUILDER_EVENT_TYPES, parseBuilderSpec } from "@/lib/themeBuilder/spec";
 import { ensureSpecFonts } from "@/lib/themeBuilder/fonts";
 import { fitSpecFrames } from "@/lib/themeBuilder/frameWindow";
 import { legacyDefaultMedia, seedSpecFromMaster } from "@/lib/themeBuilder/legacySeed";
@@ -75,10 +75,11 @@ export async function GET(req: NextRequest) {
 
     const params = new URL(req.url).searchParams;
 
-    // Tema pernikahan tulisan tangan yang dapat dijadikan titik awal rancangan baru.
+    // Tema tulisan tangan sejenis acara yang dapat dijadikan titik awal rancangan baru.
     if (params.get("legacy")) {
+      const eventType = BUILDER_EVENT_TYPES.find((t) => t === params.get("eventType")) ?? "WEDDING";
       const themes = await prisma.theme.findMany({
-        where: { builderSpec: { equals: Prisma.DbNull }, eventType: "WEDDING" },
+        where: { builderSpec: { equals: Prisma.DbNull }, eventType },
         select: { id: true, name: true, category: true },
         orderBy: { name: "asc" },
       });
@@ -121,12 +122,13 @@ export async function GET(req: NextRequest) {
     const from = params.get("from");
     if (from) {
       const legacy = await prisma.theme.findUnique({ where: { id: from }, select: { id: true, name: true, category: true, description: true, eventType: true, builderSpec: true, defaultMedia: true, defaultMusicUrl: true } });
-      if (!legacy || legacy.eventType !== "WEDDING" || legacy.builderSpec) {
-        return NextResponse.json({ error: "Hanya tema pernikahan tulisan tangan yang dapat dijadikan titik awal." }, { status: 404 });
+      const legacyEventType = BUILDER_EVENT_TYPES.find((t) => t === legacy?.eventType);
+      if (!legacy || !legacyEventType || legacy.builderSpec) {
+        return NextResponse.json({ error: "Hanya tema tulisan tangan yang dapat dijadikan titik awal." }, { status: 404 });
       }
-      const file = masterPathOf("WEDDING", legacy.category, legacy.id);
+      const file = masterPathOf(legacyEventType, legacy.category, legacy.id);
       if (!fs.existsSync(file)) return NextResponse.json({ error: "Berkas master tema tidak ditemukan." }, { status: 404 });
-      const seed = seedSpecFromMaster(fs.readFileSync(file, "utf-8"));
+      const seed = seedSpecFromMaster(fs.readFileSync(file, "utf-8"), legacyEventType);
       return NextResponse.json({
         success: true,
         theme: { id: "", name: `${legacy.name} Builder`, category: legacy.category, description: `Titik awal dari tema ${legacy.name}.`, defaultMusicUrl: legacy.defaultMusicUrl ?? "" },

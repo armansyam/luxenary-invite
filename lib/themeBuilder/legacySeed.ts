@@ -1,4 +1,4 @@
-import { FONT_OPTIONS, TEXTURE_OPTIONS, defaultBuilderSpec, isAllowedBackdropSrc, type BuilderDefaultMedia, type BuilderFonts, type BuilderPalette, type BuilderSpec } from "@/lib/themeBuilder/spec";
+import { FONT_OPTIONS, TEXTURE_OPTIONS, defaultBuilderSpec, isAllowedBackdropSrc, type BuilderDefaultMedia, type BuilderEventType, type BuilderFonts, type BuilderPalette, type BuilderSpec } from "@/lib/themeBuilder/spec";
 
 /**
  * Keluarga huruf yang dikenali dari `font-family` master lama dan perannya. Keluarga di luar daftar ini (mis. huruf
@@ -73,7 +73,7 @@ function rootVars(html: string): Map<string, string> {
   return new Map([...root.matchAll(/(--[a-z0-9-]+)\s*:\s*([^;]+);/gi)].map((m) => [m[1], m[2].trim()] as const));
 }
 
-export function seedSpecFromMaster(html: string): LegacySeed {
+export function seedSpecFromMaster(html: string, eventType: BuilderEventType = "WEDDING"): LegacySeed {
   const vars = rootVars(html);
   const pick = (...names: string[]) => names.map((n) => normalizeHex(vars.get(n))).find((v): v is string => v !== null) ?? null;
 
@@ -82,7 +82,7 @@ export function seedSpecFromMaster(html: string): LegacySeed {
   const bodyBg = html.match(/\bbody\s*\{[^}]*?background(?:-color)?\s*:\s*var\((--[a-z-]+)/i)?.[1];
   const canvasMode: BuilderSpec["canvasMode"] = bodyBg === "--bg-dark" || (hasDark && !hasLight) ? "dark" : "light";
 
-  const base = defaultBuilderSpec();
+  const base = defaultBuilderSpec(eventType);
   const text = pick("--text-main", "--text-dark");
   const found: Array<keyof BuilderPalette> = [];
   const palette: BuilderPalette = { ...base.palette };

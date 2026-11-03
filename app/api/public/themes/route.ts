@@ -5,6 +5,7 @@ import { DEMO_REGISTRY } from "@/lib/demoRegistry";
 import { EventType, type ThemeCategory } from "@prisma/client";
 import { logger } from "@/lib/logger";
 import { themeThumbnails } from "@/lib/publicAsset";
+import { editableTextsOf } from "@/lib/themeBuilder/texts";
 
 export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
@@ -152,6 +153,7 @@ export async function GET(req: Request) {
         weddingDay: source?.weddingDateDay || "--",
         weddingMonth: source?.weddingDateMonth || "--",
         weddingYear: source?.weddingDateYear || "----",
+        decorativeTexts: editableTextsOf(t.builderSpec),
       };
     });
 

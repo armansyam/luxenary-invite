@@ -46,7 +46,8 @@ export class MidtransGateway implements PaymentGateway {
       const mode = isProd ? "production" : "sandbox";
       serverKey = map[`midtrans_${mode}_server_key`] || process.env.MIDTRANS_SERVER_KEY || "";
       clientKey = map[`midtrans_${mode}_client_key`] || process.env.MIDTRANS_CLIENT_KEY || "";
-    } catch {
+    } catch (error) {
+      logger.error("MidtransConfig", "Gagal membaca pengaturan Midtrans dari database; memakai MIDTRANS_* dari .env", error);
       serverKey = process.env.MIDTRANS_SERVER_KEY || "";
       clientKey = process.env.MIDTRANS_CLIENT_KEY || "";
       environment = process.env.MIDTRANS_IS_PRODUCTION === "true" ? "production" : "sandbox";

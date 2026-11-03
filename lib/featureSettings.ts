@@ -1,6 +1,6 @@
 import { logger } from "@/lib/logger";
 import { normalizeFeatureUrls, safeMediaUrl } from "@/lib/safeUrl";
-import { EDITABLE_TEXT_KEYS } from "@/lib/themeBuilder/spec";
+import { EDITABLE_TEXT_KEYS, MAX_DECORATIVE_LABEL_LENGTH } from "@/lib/themeBuilder/spec";
 
 type FeatureSettings = Record<string, any>;
 
@@ -55,8 +55,6 @@ export function keepValidMemoriesSettings(merged: FeatureSettings, existing: Fea
 /** Kunci label yang dapat disunting Studio (`customLabels.<kunci>`, sama dengan pola di lib/liveEditFields.ts). */
 export const CUSTOM_LABEL_KEY_RE = /^[A-Za-z0-9_]{1,60}$/;
 export const MAX_CUSTOM_LABEL_LENGTH = 1000;
-/** Teks hias (hias1-hias3) berada di kotak berukuran tetap di atas desain; teks panjang menutupi isi undangan. */
-export const MAX_DECORATIVE_LABEL_LENGTH = 120;
 export const MAX_CUSTOM_LABELS = 100;
 
 /**

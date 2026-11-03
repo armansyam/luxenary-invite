@@ -6,8 +6,6 @@ import { LandingInteractive } from "@/components/landing/LandingInteractive";
 import { getShowcaseThemes } from "@/lib/landingShowcase";
 import "./landing.css";
 
-export const revalidate = 86400; // Full cache 24 jam (ISR)
-
 export default async function Home() {
   const {
     platformName,

@@ -3,7 +3,8 @@
  * jumlah dibatasi dengan galat yang ditampilkan Studio; nilai yang sudah tersimpan selalu lolos.
  */
 import { describe, it, expect } from "vitest";
-import { MAX_CUSTOM_LABELS, MAX_CUSTOM_LABEL_LENGTH, MAX_DECORATIVE_LABEL_LENGTH, mergeFeatureSettingsInput, validateCustomLabels } from "@/lib/featureSettings";
+import { MAX_CUSTOM_LABELS, MAX_CUSTOM_LABEL_LENGTH, mergeFeatureSettingsInput, validateCustomLabels } from "@/lib/featureSettings";
+import { MAX_DECORATIVE_LABEL_LENGTH } from "@/lib/themeBuilder/spec";
 
 const errorOf = (r: { ok: true } | { ok: false; error: string }) => (r.ok ? null : r.error);
 
