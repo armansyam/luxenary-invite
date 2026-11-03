@@ -3,10 +3,10 @@ import { safeMediaUrl } from "@/lib/safeUrl";
 
 /**
  * Slot milik tema yang boleh punya media bawaan. Foto personal (HOME_PHOTO, GROOM_PHOTO, BRIDE_PHOTO, GALLERY) tidak
- * pernah punya foto bawaan: foto model orang lain tidak boleh sampai ke undangan klien. Cover desktop jatuh ke cover
- * mobile, jadi tidak punya bawaan sendiri.
+ * pernah punya foto bawaan: foto model orang lain tidak boleh sampai ke undangan klien. Cover desktop bawaan (gambar
+ * landscape yang membuat sampul tampil layar penuh di PC) hanya berlaku selama klien belum punya cover sendiri.
  */
-export const DEFAULT_MEDIA_SLOTS = ["LANDING_COVER", "DESKTOP_SIDEBAR", "GLOBAL_FIXED_BG", "CLOSING_COVER"] as const;
+export const DEFAULT_MEDIA_SLOTS = ["LANDING_COVER", "LANDING_COVER_DESKTOP", "DESKTOP_SIDEBAR", "GLOBAL_FIXED_BG", "CLOSING_COVER"] as const;
 export type DefaultMediaSlot = (typeof DEFAULT_MEDIA_SLOTS)[number];
 export type ThemeDefaultMedia = Partial<Record<DefaultMediaSlot, string>>;
 
@@ -59,7 +59,8 @@ interface MediaRow {
 
 /**
  * Menambahkan media bawaan tema untuk slot yang belum diisi klien. Cover bawaan hanya dipakai bila klien tidak punya
- * cover maupun latar sendiri, supaya foto klien selalu menang atas bawaan tema. GLOBAL_FIXED_BG tidak disuntikkan:
+ * cover maupun latar sendiri, supaya foto klien selalu menang atas bawaan tema. Cover desktop bawaan juga mengalah pada
+ * cover mobile klien: tanpanya PC menampilkan gambar stok tema layar penuh, bukan foto klien. GLOBAL_FIXED_BG tidak disuntikkan:
  * latar bawaan sudah dirender oleh CSS master (.fixed-bg-layer / --canvas-texture), jadi nilainya hanya menjadi
  * thumbnail "Bawaan tema" di Studio; menyuntikkannya lagi akan menumpuk dua lapisan latar.
  */
@@ -70,6 +71,7 @@ export function applyThemeDefaultMedia<T extends MediaRow>(media: T[], defaults:
     const url = defaults[slot];
     if (!url || filled.has(slot) || slot === "GLOBAL_FIXED_BG") continue;
     if (slot === "LANDING_COVER" && filled.has("GLOBAL_FIXED_BG")) continue;
+    if (slot === "LANDING_COVER_DESKTOP" && (filled.has("LANDING_COVER") || filled.has("GLOBAL_FIXED_BG"))) continue;
     extra.push({ mediaSlot: slot, localPath: url, isThemeDefault: true });
   }
   return extra.length ? [...media, ...extra] : media;

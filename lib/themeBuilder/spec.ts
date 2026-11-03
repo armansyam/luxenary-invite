@@ -172,6 +172,7 @@ export const DEFAULT_ORNAMENT_GAP = 16;
 /** Slot yang boleh punya gambar bawaan dari builder; latar (GLOBAL_FIXED_BG) diturunkan dari `texture`. */
 export const BUILDER_DEFAULT_SLOTS = [
   { slot: "LANDING_COVER", label: "Cover pembuka" },
+  { slot: "LANDING_COVER_DESKTOP", label: "Cover desktop (landscape)" },
   { slot: "DESKTOP_SIDEBAR", label: "Hero kiri desktop" },
   { slot: "CLOSING_COVER", label: "Penutup" },
 ] as const;

@@ -2486,18 +2486,21 @@ export default function EditInvitation() {
                 fallbackColor={invitation?.themeMainColor || ""}
                 onUploadStart={handleUploadStart}
                 onUploadEnd={handleUploadEnd}
+                expectOrientation="portrait"
               />
               <PhotoInput
                 label="Cover Pembuka Desktop — Landscape 16:9 (Opsional)"
-                desc="Foto/Video LANDSCAPE (16:9) — Cover pop-up khusus layar PC/Laptop fullscreen. Jika kosong, otomatis pakai Cover Mobile."
+                desc="Foto/Video LANDSCAPE (16:9) — tampil layar penuh di PC/laptop. Jika kosong, Cover Mobile tampil utuh di kolom undangan (tidak layar penuh)."
                 value={media["LANDING_COVER_DESKTOP"] || ""}
                 onChange={(url) => updateMedia("LANDING_COVER_DESKTOP", url)}
                 placeholder="https://.../cover-desktop.jpg atau .mp4"
                 allowVideo={true}
                 invitationId={invitationId}
                 slot="LANDING_COVER_DESKTOP"
+                defaultUrl={media["LANDING_COVER"] ? "" : themeDefaultOf(invitation, "LANDING_COVER_DESKTOP")}
                 onUploadStart={handleUploadStart}
                 onUploadEnd={handleUploadEnd}
+                expectOrientation="landscape"
               />
               <PhotoInput
                 label="Latar Home — Portrait/Square (Opsional)"
@@ -2569,7 +2572,7 @@ export default function EditInvitation() {
                   </div>
                   <div className="p-2.5 bg-white rounded-lg border border-stone-200/70">
                     <span className="font-bold text-stone-800 block mb-1">Cover Desktop — Landscape 16:9</span>
-                    <span className="font-semibold text-amber-700">Cover Pembuka Desktop</span> — foto/video horizontal fullscreen monitor. Idealnya foto {isWeddingEvent ? "prewedding" : "utama"} outdoor sinematik. Jika kosong, pakai Cover Mobile.
+                    <span className="font-semibold text-amber-700">Cover Pembuka Desktop</span> — foto/video horizontal yang tampil layar penuh di monitor. Idealnya foto {isWeddingEvent ? "prewedding" : "utama"} outdoor sinematik. Jika kosong, Cover Mobile tampil utuh di kolom undangan, tidak layar penuh, sehingga foto vertikal tidak terpotong.
                   </div>
                   <div className="p-2.5 bg-white rounded-lg border border-stone-200/70">
                     <span className="font-bold text-stone-800 block mb-1">Hero Kiri Desktop — Bebas (Otomatis)</span>
@@ -5665,6 +5668,31 @@ function themeDefaultOf(invitation: any, slot: string): string {
   return typeof url === "string" ? url : "";
 }
 
+/** Ukuran asli foto/video di peramban; null bila format tidak bisa dibaca peramban (peringatan orientasi dilewati). */
+async function readMediaSize(file: File, isVideo: boolean): Promise<{ width: number; height: number } | null> {
+  const url = URL.createObjectURL(file);
+  try {
+    if (isVideo) {
+      const video = document.createElement("video");
+      video.preload = "metadata";
+      video.src = url;
+      await new Promise<void>((resolve, reject) => {
+        video.onloadedmetadata = () => resolve();
+        video.onerror = () => reject(new Error("metadata video tidak terbaca"));
+      });
+      return video.videoWidth && video.videoHeight ? { width: video.videoWidth, height: video.videoHeight } : null;
+    }
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    return { width: img.naturalWidth, height: img.naturalHeight };
+  } catch {
+    return null;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 function PhotoInput({
   label,
   desc,
@@ -5680,6 +5708,7 @@ function PhotoInput({
   onUploadEnd,
   maxVideoMb,
   maxPhotoMb,
+  expectOrientation,
 }: {
   label: string;
   desc: string;
@@ -5695,8 +5724,11 @@ function PhotoInput({
   onUploadEnd?: () => void;
   maxVideoMb?: number;
   maxPhotoMb?: number;
+  /** Orientasi yang dibutuhkan slot ini; unggahan yang berlawanan tetap disimpan tetapi diberi peringatan terpotong. */
+  expectOrientation?: "portrait" | "landscape";
 }) {
   const [uploading, setUploading] = useState(false);
+  const [orientationNote, setOrientationNote] = useState<string | null>(null);
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [uploadError, setUploadError] = useState<{
     title: string;
@@ -5769,8 +5801,10 @@ function PhotoInput({
     }
 
     setUploading(true);
+    setOrientationNote(null);
     onUploadStart?.();
     try {
+      const size = expectOrientation ? await readMediaSize(file, isVideoFile) : null;
       let fileToUpload = file;
       if (!isVideoFile) {
         fileToUpload = await compressImageToWebP(file, {
@@ -5794,6 +5828,15 @@ function PhotoInput({
       if (data.success && data.url) {
         setUploadError(null);
         onChange(data.url);
+        if (size) {
+          const kind = isVideoFile ? "Video" : "Foto";
+          const dims = `${size.width}×${size.height}`;
+          if (expectOrientation === "landscape" && size.height > size.width) {
+            setOrientationNote(`${kind} ini vertikal (${dims}). Di PC/laptop cover desktop tampil layar penuh, jadi bagian atas dan bawah akan terpotong. Gunakan ${kind.toLowerCase()} landscape 16:9, atau hapus agar Cover Mobile tampil utuh di kolom undangan.`);
+          } else if (expectOrientation === "portrait" && size.width > size.height) {
+            setOrientationNote(`${kind} ini horizontal (${dims}). Di HP cover tampil layar penuh, jadi sisi kiri dan kanan akan terpotong. Gunakan ${kind.toLowerCase()} portrait 9:16 atau 4:5.`);
+          }
+        }
       } else {
         setUploadError({
           title: "Gagal Mengunggah Media",
@@ -5856,6 +5899,15 @@ function PhotoInput({
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {value && orientationNote && (
+        <div className="flex items-start gap-1.5 p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px] leading-relaxed text-amber-900" role="status">
+          <svg className="w-4 h-4 text-amber-600 shrink-0 mt-px" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <span>{orientationNote}</span>
         </div>
       )}
 

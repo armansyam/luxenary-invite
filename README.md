@@ -796,6 +796,7 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
 - **Password admin**: minimal 5 karakter (`MIN_ADMIN_PASSWORD_LENGTH` di `lib/adminPasswordPolicy.ts`), berlaku di rute admin, seed, dan form panel admin.
 - **Filter katalog & portofolio**: baris filter memakai `sm:justify-center-safe` agar tombol pertama tidak terpotong saat baris lebih lebar dari layar.
 - **Caddy `cname`**: target CNAME custom domain punya blok sendiri dengan `tls force_automate` (lihat `docs/admin/DEPLOYMENT_VPS_CADDY.md` Tahap 4.3).
+- **Cover desktop**: tema dan Theme Builder dapat menyediakan cover desktop landscape bawaan (`LANDING_COVER_DESKTOP`), dipakai hanya selama klien belum punya cover sendiri; Studio memperingatkan cover dengan orientasi terbalik.
 - **Uji lokal**: suite vitest dan `scripts/e2e-golive.ts` membutuhkan `luxenary_test` yang sudah `migrate deploy`, `db seed`, dan `themes:sync`; tes backup membutuhkan `pg_dump`/`pg_restore` 17 di PATH.
 
 
