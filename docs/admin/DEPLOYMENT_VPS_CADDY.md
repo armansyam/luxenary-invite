@@ -111,7 +111,7 @@ Masuk ke menu **DNS** > **Records**, tambahkan:
 
 ### 3.2 Setup Enkripsi SSL Cloudflare
 Masuk ke menu **SSL/TLS** > **Overview**:
-- Pilih mode enkripsi: **Full** (atau **Full (Strict)**).
+- Pilih mode enkripsi: **Full**. Caddyfile di Tahap 4.3 memakai `tls internal` untuk domain platform (sertifikat wildcard tidak bisa diterbitkan ACME tanpa tantangan DNS), dan Cloudflare mode **Full** menerima sertifikat itu. **Full (Strict)** menolaknya kecuali Anda memasang Cloudflare Origin Certificate di Caddy. Jangan pakai **Flexible**: Cloudflare menghubungi origin lewat HTTP, Caddy mengalihkan ke HTTPS, dan pengunjung terjebak redirect loop.
 
 ### 3.3 Konfigurasi Cloudflare Cache Rules (100% Edge Hit untuk Link Undangan WhatsApp)
 Tamu undangan membuka tautan personal dengan parameter query (misal `https://luxvite.id/romeo-juliet?to=Bapak+Budi`). Agar Cloudflare Edge menyajikan HTML terpublikasi dari cache tanpa membebani server VPS:
@@ -162,7 +162,7 @@ Hapus seluruh isi default, lalu isi dengan konfigurasi berikut *(ganti `domainan
 # ------------------------------------------------------------------------------
 {
     on_demand_tls {
-        ask http://localhost:3001/api/public/resolve-custom-domain
+        ask http://127.0.0.1:3001/api/public/resolve-custom-domain
     }
 }
 
@@ -170,8 +170,10 @@ Hapus seluruh isi default, lalu isi dengan konfigurasi berikut *(ganti `domainan
 # 2. Domain Utama & Seluruh Wildcard Subdomain Platform
 # ------------------------------------------------------------------------------
 domainanda.id, *.domainanda.id {
+    # Di belakang proxy Cloudflare (mode SSL "Full"): sertifikat wildcard butuh tantangan DNS, jadi origin memakai CA internal Caddy.
+    tls internal
     encode zstd gzip
-    reverse_proxy localhost:3001 {
+    reverse_proxy 127.0.0.1:3001 {
         # Domain utama di belakang Cloudflare: IP klien dari header Cloudflare, menimpa X-Real-IP kiriman klien.
         header_up X-Real-IP {http.request.header.CF-Connecting-IP}
     }
@@ -185,13 +187,15 @@ https:// {
         on_demand
     }
     encode zstd gzip
-    reverse_proxy localhost:3001 {
+    reverse_proxy 127.0.0.1:3001 {
         # Domain kustom klien tidak lewat Cloudflare kita: IP klien adalah alamat koneksi, header Cloudflare palsu dibuang.
         header_up X-Real-IP {remote_host}
         header_up -CF-Connecting-IP
     }
 }
 ```
+
+Tulis `127.0.0.1:3001`, bukan `localhost:3001`. Aplikasi hanya mendengarkan di IPv4 loopback (`--hostname 127.0.0.1`), sedangkan di Ubuntu `localhost` juga mengarah ke `::1`; Caddy yang mengetuk `[::1]:3001` mendapat `connection refused` dan pengunjung melihat 502 Bad Gateway (ditemukan saat instalasi server `luxvite.id`, 3 Nov 2026).
 
 Dengan dua blok di atas, setel `TRUSTED_PROXY="nginx"` di `.env` aplikasi (aplikasi hanya mempercayai `X-Real-IP`, yang selalu ditimpa Caddy). Urutan yang aman: ubah Caddy lebih dulu (`caddy validate`, lalu `systemctl reload caddy`), baru ubah `.env` dan restart aplikasi. Uji dengan 12 POST ke `/api/public/rsvp` memakai `X-Real-IP` palsu yang berbeda-beda: permintaan ke-11 harus 429 (header palsu diabaikan). Bila `TRUSTED_PROXY=nginx` dipasang tanpa blok Caddy di atas, semua permintaan berbagi satu kunci pembatas laju.
 

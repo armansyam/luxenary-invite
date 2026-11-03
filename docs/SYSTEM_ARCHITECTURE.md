@@ -2119,7 +2119,7 @@ Untuk menangani arsitektur Multi-Tenant Custom Domain, sistem NGINX tradisional 
   # 2. Otomatisasi SSL untuk Ribuan Custom Domain
   {
       on_demand_tls {
-          ask http://localhost:3001/api/public/resolve-custom-domain
+          ask http://127.0.0.1:3001/api/public/resolve-custom-domain
       }
   }
   
@@ -2127,7 +2127,7 @@ Untuk menangani arsitektur Multi-Tenant Custom Domain, sistem NGINX tradisional 
       tls {
           on_demand
       }
-      reverse_proxy localhost:3001
+      reverse_proxy 127.0.0.1:3001
   }
   ```
 - **Kelebihan Caddy vs NGINX dalam SaaS:** Meringankan beban operasional Admin (Zero-Touch Provisioning), kode *proxy* jauh lebih pendek (5 baris vs 100 baris NGINX), serta menghapuskan risiko sertifikat SSL kadaluarsa.
