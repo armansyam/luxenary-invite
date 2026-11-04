@@ -1822,7 +1822,27 @@ export async function renderTemplateFile(
     ? Boolean(data.landingCoverDesktopUrl)
     : Boolean(data.landingCoverDesktopUrl && data.landingCoverDesktopUrl !== data.landingCoverUrl);
 
-  if (hasDesktopCover) {
+  // Tata letak split (hero kiri + kolom isi 460 px di kanan) ditandai lebar kolom itu di CSS master. Tema satu kolom di
+  // tengah (al-fariz, al-khalid, cendekia, festivo, kalandra-birthday, sinergi) tidak punya hero kiri: sampul yang
+  // dipersempit membuka isi undangan di belakangnya, jadi sampulnya tetap selebar layar.
+  const hasSplitLayout = tpl.includes("calc(100% - 460px)");
+
+  if (!hasDesktopCover && hasSplitLayout) {
+    // Tanpa cover landscape, sampul HP (umumnya portrait 9:16) tampil utuh di kolom undangan 460 px, sesuai janji
+    // Studio; tema tulisan tangan yang melebarkan sampul ke seluruh layar memotong foto itu. Tanpa !important dan
+    // dengan spesifisitas :root body, sehingga varian builder "global" (yang memakai !important) tetap menang.
+    // left: auto + right: 0 benar untuk sampul fixed seluas layar maupun sampul absolute di dalam kolom kanan.
+    coverDesktopCssStyle = `
+<style id="lux-cover-desktop-split">
+  @media (min-width: 900px) {
+    :root body .cover-screen, :root body #coverScreen, :root body .cover-overlay, :root body #coverOverlay {
+      left: auto;
+      right: 0;
+      width: 460px;
+    }
+  }
+</style>`;
+  } else if (hasDesktopCover) {
     if (isVideoMedia(data.landingCoverDesktopUrl)) {
       const safeDesktopVideo = escapeHtmlAttr(String(data.landingCoverDesktopUrl));
       coverDesktopVideoHtml = `<video class="lux-cover-desktop-video" autoplay loop muted playsinline webkit-playsinline preload="auto"><source src="${safeDesktopVideo}" type="video/mp4"></video>`;

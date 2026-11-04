@@ -274,6 +274,7 @@ Sistem Studio Editor Klien (`/dashboard/invitation/[id]`) menyediakan kendali kr
    - Mendukung tautan YouTube (Unlisted/Public), Vimeo, atau direct MP4 yang otomatis dirender sebagai pemutar video responsif 16:9 di bagian atas galeri.
 7. **Smart Audit Protocol (Zero Data Bolong)**:
    - Audit 12 komponen sekuensial di `/dashboard/settings` (mencakup data teks inti, seluruh slot upload visual sampul & profil mempelai, serta modul opsional).
+   - Sampul desktop: tanpa cover landscape klien, tema split menampilkan sampul HP di kolom 460 px (foto portrait utuh, panel kiri memakai Hero/sampul); dengan cover landscape, sampul layar penuh. Tema satu kolom tanpa hero kiri (al-fariz, al-khalid, cendekia, festivo, kalandra-birthday, sinergi) tetap layar penuh.
    - Sampul Pop-Up dan Foto Kedua Mempelai wajib terisi unggahan klien. Sidebar Desktop, Fixed Background, dan Foto Penutup opsional: bila kosong engine memakai sampul klien atau bawaan tema (`themeDefaultMedia`), tidak pernah foto `/demo/`.
    - Seksi dengan sakelar aktif wajib memiliki data lengkap (tidak boleh ada galeri/cerita/rekening kosong jika tombol toggle ON).
    - Seksi dengan sakelar mati secara transparan berstatus `Nonaktif (Dilewati)` dan otomatis lolos audit tanpa menghalangi peluncuran.

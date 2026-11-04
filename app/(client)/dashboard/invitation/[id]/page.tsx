@@ -1932,7 +1932,7 @@ export default function EditInvitation() {
                       <iframe
                         key={`m-${liveIframeKey}`}
                         ref={liveMobileIframeRef}
-                        src={`/api/client/invitations/${invitationId}/preview?mode=edit&audio=0&view=mobile&v=${liveIframeKey}`}
+                        src={`/api/client/invitations/${invitationId}/preview?mode=edit&audio=0&view=mobile&rev=${liveIframeKey}`}
                         className="w-full h-full border-0 bg-stone-900"
                         title="Live Visual Editor Mobile"
                       />
@@ -1956,7 +1956,7 @@ export default function EditInvitation() {
                       <iframe
                         key={`d-${liveIframeKey}`}
                         ref={liveDesktopIframeRef}
-                        src={`/api/client/invitations/${invitationId}/preview?mode=edit&view=desktop&v=${liveIframeKey}`}
+                        src={`/api/client/invitations/${invitationId}/preview?mode=edit&view=desktop&rev=${liveIframeKey}`}
                         className="w-full h-full border-0 bg-stone-900"
                         title="Live Visual Editor Desktop"
                       />
@@ -1972,7 +1972,7 @@ export default function EditInvitation() {
                     <iframe
                       key={`fallback-${liveIframeKey}`}
                       ref={liveFallbackIframeRef}
-                      src={`/api/client/invitations/${invitationId}/preview?mode=edit&view=mobile&v=${liveIframeKey}`}
+                      src={`/api/client/invitations/${invitationId}/preview?mode=edit&view=mobile&rev=${liveIframeKey}`}
                       className="w-full h-full border-0 bg-stone-900"
                       title="Live Visual Editor Fallback"
                     />
@@ -1995,7 +1995,7 @@ export default function EditInvitation() {
                 <iframe
                   key={`single-${liveIframeKey}`}
                   ref={liveSingleIframeRef}
-                  src={`/api/client/invitations/${invitationId}/preview?mode=edit&view=${previewDevice}&v=${liveIframeKey}`}
+                  src={`/api/client/invitations/${invitationId}/preview?mode=edit&view=${previewDevice}&rev=${liveIframeKey}`}
                   className="w-full h-full border-0 bg-stone-900"
                   title="Live Visual Editor"
                 />

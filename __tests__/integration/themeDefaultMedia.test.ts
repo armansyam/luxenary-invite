@@ -118,6 +118,25 @@ describe("engine: bawaan tema di data undangan", () => {
     expect(without.html).not.toContain("FULLSCREEN OVERRIDE");
   });
 
+  it("tanpa cover landscape sampul masuk kolom 460 px (split) hanya pada tema bertata letak split", async () => {
+    const own = "/uploads/invitations/klien/cover.webp";
+    const split = (await composeInvitationData(virtual({ themeDefaultMedia: null, media: [{ mediaSlot: "LANDING_COVER", localPath: own }] }))) as Record<string, any>;
+    const splitHtml = await renderTemplateFile("kalandra", split, { eventType: "WEDDING" });
+    expect(splitHtml).toContain('id="lux-cover-desktop-split"');
+    expect(splitHtml).not.toContain("FULLSCREEN OVERRIDE");
+
+    const landscape = "/uploads/invitations/klien/cover-desktop.webp";
+    const wide = (await composeInvitationData(virtual({ themeDefaultMedia: null, media: [{ mediaSlot: "LANDING_COVER", localPath: own }, { mediaSlot: "LANDING_COVER_DESKTOP", localPath: landscape }] }))) as Record<string, any>;
+    const wideHtml = await renderTemplateFile("kalandra", wide, { eventType: "WEDDING" });
+    expect(wideHtml).toContain("FULLSCREEN OVERRIDE");
+    expect(wideHtml).not.toContain('id="lux-cover-desktop-split"');
+
+    // Tema satu kolom di tengah (tanpa hero kiri): sampul yang dipersempit akan membuka isi undangan di belakangnya.
+    const column = (await composeInvitationData({ ...buildDemoInvitation("al-fariz"), media: [{ mediaSlot: "LANDING_COVER", localPath: own }], themeDefaultMedia: null })) as Record<string, any>;
+    const columnHtml = await renderTemplateFile("al-fariz", column, { eventType: "KHITAN" });
+    expect(columnHtml).not.toContain('id="lux-cover-desktop-split"');
+  });
+
   it("tanpa bawaan dan tanpa foto klien: cover kosong, bukan foto demo", async () => {
     const data = (await composeInvitationData(virtual({ themeDefaultMedia: null }))) as Record<string, unknown>;
     expect(data.landingCoverUrl).toBe("");
