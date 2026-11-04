@@ -130,7 +130,7 @@
       overflow-y: auto; overscroll-behavior: contain;
       -ms-overflow-style: none; scrollbar-width: none;
       background: radial-gradient(circle at center, color-mix(in srgb, var(--primary, #ab5e44) 28%, var(--bg-dark, #140c08) 90%) 0%, color-mix(in srgb, var(--bg-dark, #140c08) 98%, transparent) 100%), url('{{landingCoverUrl}}') center/cover no-repeat;
-      transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s ease;
+      transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s ease, visibility 0s linear 0.85s;
     }
     .cover-screen::-webkit-scrollbar, .cover-overlay::-webkit-scrollbar { display: none; }
     .cover-screen.opened, .cover-screen.slide-up-hidden, .cover-overlay.opened {
