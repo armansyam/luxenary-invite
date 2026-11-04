@@ -518,7 +518,7 @@ Admin Portal → Tab Tema → "Buat dengan Builder" (layar ≥ 1100 px) → /adm
   → Teks (teks bawaan label: tombol, judul, sapaan; klien tetap bisa mengubahnya di Studio) → Tata letak (varian per seksi; geser, lapisan maju/mundur, sembunyikan, bingkai foto berjendela, jadwal di Home)
   → Ornamen (seret dari pustaka ke pratinjau; unggah PNG/WebP) → Animasi
   → Terbit: Simpan draf → cek HP 320/375 dan Desktop → Terbitkan ke katalog
-  → Lengkapi foto demo & thumbnail lewat Demo Studio
+  → Thumbnail katalog dipotret otomatis; lengkapi foto demo lewat Demo Studio
 ```
 Master builder hanya ada di disk server (`themes/`) dan gambar unggahan di `public/uploads/theme-assets/`; backup harian hanya memuat database. Setelah memulihkan DB ke server baru jalankan `npx tsx scripts/rebuild-builder-masters.ts` (rencana) lalu `--apply`, dan pulihkan folder uploads dari cadangannya. Dua admin yang membuka tema yang sama tidak saling menimpa: simpan dari salinan basi ditolak dan aksi builder tercatat di audit log.
 
@@ -528,7 +528,7 @@ Tema tulisan tangan tidak dapat diedit langsung di builder, tetapi padanan build
 
 Uji peramban otomatis (lokal, DB `luxenary_test`, server menyala): `APP_URL=http://localhost:3100 npx tsx scripts/e2e-browser-smoke.ts` memeriksa halaman klien di 320 dan 375 px, sunting teks hias di Studio, dan builder admin; keluar dengan kode 1 bila ada yang gagal.
 
-Thumbnail katalog tema builder dibuat dengan `npx tsx scripts/generate-builder-thumbnails.ts <id-tema>` (atau `--all`) sementara server menyala di `APP_URL`; skrip mengompilasi demo statis lalu memotretnya lewat Chrome lokal. Jalankan di mesin yang menyajikan `public/demo/` (folder itu tidak ikut git).
+Thumbnail katalog (mobile 400×800, desktop 1280×800) dipotret otomatis di server oleh Chrome headless setiap tema builder disimpan saat aktif atau diterbitkan, dan dari tombol "Buat Thumbnail Otomatis" di Demo Studio (semua tema aktif). Server butuh Google Chrome (`google-chrome-stable`, atau `CHROME_PATH`); `deploy.sh` memperingatkan bila tidak ada. Memotret banyak tema sekaligus: `npx tsx scripts/generate-builder-thumbnails.ts <id-tema>|--all` sementara server menyala di `APP_URL`.
 
 Panel Terbit di builder juga memuat musik bawaan tema (dipilih dari pustaka musik sistem), Duplikat tema, Ekspor berkas, dan Riwayat versi (30 penyimpanan terakhir; "Muat ke editor" mengembalikan rancangan lama sebagai perubahan yang bisa diurungkan). Tombol Impor berkas di bagian atas tema baru memuat berkas `.luxtheme.json` hasil ekspor beserta gambar unggahannya, dipakai untuk memindahkan tema dari lokal ke server. Cadangan lengkap di luar database: `npx tsx scripts/export-builder-themes.ts` (folder `backups/builder-themes`, tidak masuk git); pulihkan gambar yang hilang dengan `npx tsx scripts/rebuild-builder-masters.ts --assets-from backups/builder-themes --apply`.
 
@@ -804,6 +804,7 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
 - **Cache beranda**: header `Cache-Control` `/` di `next.config.ts` dan `revalidate = 86400` di `app/page.tsx`/`app/how-it-works/page.tsx` dihapus; layout root `force-dynamic` sejak `70d4af3` membuat halaman itu dirender per permintaan, sehingga header lama hanya membuat browser menyimpan harga paket 1 hari.
 - **Midtrans**: kegagalan membaca pengaturan Midtrans dari DB dicatat (`MidtransConfig`) sebelum memakai `MIDTRANS_*` dari `.env`.
 - **Email bukti transfer ke admin (4 Nov)**: unggah atau unggah ulang bukti transfer oleh klien mengirim email ke semua admin yang punya akses modul Order (`sendProofUploadedAdminAlertEmail`, template `PROOF_UPLOADED_ADMIN` di `/admin/emails`), berisi invoice, klien, pesanan, nominal, waktu WIB, dan tautan `/admin?tab=orders`; foto bukti tidak dilampirkan. Dikirim di latar setelah bukti tersimpan; tanpa SMTP atau tanpa penerima hanya dicatat di log. Unggahan oleh admin tidak memicu email.
+- **Thumbnail katalog otomatis (4 Nov)**: antrean `lib/themeThumbnailJob.ts` + worker `scripts/theme-thumbnail-worker.ts` (Chrome headless, satu pemotretan sekaligus lewat advisory lock PostgreSQL) memotret `/demo/<id>` saat tema builder disimpan aktif atau diterbitkan, dan dari tombol "Buat Thumbnail Otomatis" di Demo Studio (`POST/GET /api/admin/themes/[id]/thumbnails`, tema aktif saja). Status dan log di `data/theme-thumbnails/`; cache Cloudflare kedua thumbnail dibersihkan. Server wajib punya Google Chrome (`google-chrome-stable` atau `CHROME_PATH`).
 - **Uji lokal**: suite vitest dan `scripts/e2e-golive.ts` membutuhkan `luxenary_test` yang sudah `migrate deploy`, `db seed`, dan `themes:sync`; tes backup membutuhkan `pg_dump`/`pg_restore` 17 di PATH.
 
 

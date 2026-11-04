@@ -11,6 +11,7 @@ import { readJsonBody } from "@/lib/requestBody";
 import { logger } from "@/lib/logger";
 import { masterTemplateCache } from "@/lib/cache";
 import { removeIfExists } from "@/lib/fsSafe";
+import { requestThemeThumbnails } from "@/lib/themeThumbnailJob";
 import { BUILDER_EVENT_TYPES, parseBuilderSpec } from "@/lib/themeBuilder/spec";
 import { ensureSpecFonts } from "@/lib/themeBuilder/fonts";
 import { fitSpecFrames } from "@/lib/themeBuilder/frameWindow";
@@ -52,6 +53,12 @@ async function refreshPublicTheme(themeId: string, isActive: boolean) {
       await compileAndSaveStaticDemo(themeId);
     } catch (err) {
       logger.error("ThemeBuilder", "Master tersimpan tetapi demo statis gagal dibuat", err, { themeId });
+    }
+    // Simpan beruntun hanya menimpa penanda antrean yang sama, sehingga Chrome memotret sekali per antrean.
+    try {
+      requestThemeThumbnails(themeId);
+    } catch (err) {
+      logger.error("ThemeBuilder", "Thumbnail katalog gagal diantrekan", err, { themeId });
     }
   }
   const { revalidatePath } = await import("next/cache");

@@ -8,8 +8,8 @@
  *   npx tsx scripts/generate-builder-thumbnails.ts <id-tema>     satu tema
  *   npx tsx scripts/generate-builder-thumbnails.ts --all         semua tema builder
  *
- * Sengaja skrip lokal, bukan tombol di admin: memotret butuh Chrome dan ratusan MB memori, terlalu berat untuk VPS 2 GB.
- * Keluar dengan kode 1 bila ada thumbnail yang tidak terbentuk.
+ * Di server, thumbnail dibuat otomatis lewat antrean `lib/themeThumbnailJob.ts` saat tema disimpan/diterbitkan atau dari
+ * tombol Demo Studio; skrip ini untuk memotret banyak tema sekaligus. Keluar dengan kode 1 bila ada thumbnail yang tidak terbentuk.
  */
 import "dotenv/config";
 import { execFileSync } from "child_process";

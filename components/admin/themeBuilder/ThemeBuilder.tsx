@@ -608,7 +608,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
         return;
       }
       setIsActive(Boolean(data.theme.isActive));
-      notify(active ? "Tema tayang di katalog. Lengkapi foto demo dan thumbnail di Demo Studio." : "Tema ditarik dari katalog.", "success");
+      notify(active ? "Tema tayang di katalog. Thumbnail sedang dipotret otomatis; lengkapi foto demo di Demo Studio." : "Tema ditarik dari katalog.", "success");
     } catch {
       notify("Status terbit gagal diubah. Periksa koneksi.", "error");
     } finally {

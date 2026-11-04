@@ -23,6 +23,9 @@ export default defineConfig({
     // Setup file: dijalankan sekali sebelum seluruh test suite
     globalSetup: "./__tests__/setup.ts",
 
+    // Per file tes: menahan efek samping proses luar (worker Chrome thumbnail) yang dipicu rute admin.
+    setupFiles: ["./__tests__/setupMocks.ts"],
+
     // Timeout per test 30 detik (DB calls bisa lambat)
     testTimeout: 30000,
     hookTimeout: 30000,

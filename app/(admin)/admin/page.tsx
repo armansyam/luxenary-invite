@@ -16,6 +16,7 @@ import AdminInvitationsTab from "@/components/admin/AdminInvitationsTab";
 import AdminCustomDomainsTab from "@/components/admin/AdminCustomDomainsTab";
 import AdminMonitoringTab from "@/components/admin/AdminMonitoringTab";
 import AdminSettingsTab from "@/components/admin/AdminSettingsTab";
+import ThemeThumbnailAutoCard from "@/components/admin/ThemeThumbnailAutoCard";
 import AdminDatabaseTab from "@/components/admin/AdminDatabaseTab";
 import { compressImageToWebP } from "@/lib/clientImageCompressor";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
@@ -3791,6 +3792,14 @@ export default function AdminPage() {
                           dan langsung tampil di halaman showroom demo publik tema bersangkutan.
                         </div>
                       </div>
+
+                      <ThemeThumbnailAutoCard
+                        themeId={demoStudioTheme.id}
+                        onFinished={() => {
+                          const now = Date.now();
+                          setUpdatedDemoSlots((prev) => ({ ...prev, thumbnail_mobile: now, thumbnail_desktop: now }));
+                        }}
+                      />
 
 
                       {/* Main Cover & Hero Slots Grid */}

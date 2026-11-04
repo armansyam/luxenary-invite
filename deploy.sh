@@ -133,6 +133,13 @@ if ! ffmpeg -hide_banner -version > /dev/null 2>&1; then
   echo "   Pasang atau perbaiki: sudo apt install -y ffmpeg"
 fi
 
+# Thumbnail katalog otomatis (scripts/theme-thumbnail-worker.ts) dipotret dengan Chrome headless. Tanpa Chrome, status
+# thumbnail di Demo Studio menjadi "Gagal" dan thumbnail hanya dapat diunggah manual.
+if ! { [ -n "${CHROME_PATH:-}" ] && [ -x "$CHROME_PATH" ]; } && ! command -v google-chrome-stable > /dev/null 2>&1; then
+  echo "⚠️ Chrome tidak terpasang: thumbnail katalog otomatis tidak dapat dibuat."
+  echo "   Pasang: wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && sudo apt install -y ./google-chrome-stable_current_amd64.deb"
+fi
+
 # 4. Install Dependencies (persis sesuai package-lock.json)
 echo "📦 Menginstal dependensi (npm ci)..."
 if ! npm ci; then

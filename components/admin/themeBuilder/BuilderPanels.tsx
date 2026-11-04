@@ -901,7 +901,7 @@ export function PublishPanel({
           )}
         </div>
         <p className="mt-3 text-[11px] leading-relaxed text-stone-500">
-          Setelah terbit, unggah foto demo dan thumbnail katalog lewat <a href="/admin?tab=themes" className="font-semibold text-amber-700 hover:underline">Katalog Tema → Demo Studio</a>. Mengubah tema yang sudah dipakai klien tidak mengubah undangan mereka.
+          Setelah terbit, thumbnail katalog dipotret otomatis dari halaman demo. Unggah foto demo lewat <a href="/admin?tab=themes" className="font-semibold text-amber-700 hover:underline">Katalog Tema → Demo Studio</a>, lalu buat ulang thumbnail di sana. Mengubah tema yang sudah dipakai klien tidak mengubah undangan mereka.
         </p>
       </Section>
 

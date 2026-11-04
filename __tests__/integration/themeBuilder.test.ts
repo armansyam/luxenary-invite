@@ -26,6 +26,7 @@ import { GET, POST, PUT, PATCH } from "@/app/api/admin/theme-builder/route";
 import { POST as previewPost } from "@/app/api/admin/theme-builder/preview/route";
 import { POST as assetPost, DELETE as assetDelete } from "@/app/api/admin/theme-builder/assets/route";
 import { PUT as themesPut } from "@/app/api/admin/themes/route";
+import { requestThemeThumbnails } from "@/lib/themeThumbnailJob";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
 const ROOT = process.cwd();
@@ -272,6 +273,7 @@ describe.skipIf(!IS_TEST_DB)("rute admin Theme Builder", () => {
   it("terbit hanya bila master lolos audit, lewat rute builder maupun daftar tema", async () => {
     const file = path.join(ROOT, "themes", "wedding", "traditional", `${themeId}.html`);
     const good = fs.readFileSync(file, "utf8");
+    vi.mocked(requestThemeThumbnails).mockClear();
     fs.writeFileSync(file, good.replace("data-lux-field=\"customLabels.openBtn\"", "").replace("</style>", ".x{color:#ff0000}</style>"));
     try {
       const viaBuilder = await PATCH(json("http://x", "PATCH", { id: themeId, isActive: true }));
@@ -282,10 +284,12 @@ describe.skipIf(!IS_TEST_DB)("rute admin Theme Builder", () => {
     } finally {
       fs.writeFileSync(file, good);
     }
+    expect(vi.mocked(requestThemeThumbnails)).not.toHaveBeenCalledWith(themeId);
     const ok = await PATCH(json("http://x", "PATCH", { id: themeId, isActive: true }));
     expect(ok.status).toBe(200);
     expect((await prisma.theme.findUniqueOrThrow({ where: { id: themeId } })).isActive).toBe(true);
     expect(fs.existsSync(path.join(ROOT, "public", "demo", themeId, "index.html"))).toBe(true);
+    expect(vi.mocked(requestThemeThumbnails)).toHaveBeenLastCalledWith(themeId);
   });
 
   it("unggah ornamen: PNG jadi WebP bernama hash, SVG ditolak, hapus ditolak selama dipakai", async () => {
