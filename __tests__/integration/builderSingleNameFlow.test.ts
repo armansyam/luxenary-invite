@@ -22,6 +22,7 @@ import { GET as publicThemes } from "@/app/api/public/themes/route";
 import { builderMasterPath, renderBuilderPreview } from "@/lib/themeBuilder/server";
 import { composeInvitationData } from "@/lib/themeEngine";
 import { buildDemoInvitation } from "@/lib/demoInvitation";
+import { compileAndSaveStaticDemo } from "@/lib/demoPublisher";
 import { defaultBuilderSpec, type BuilderOrnament, type BuilderSpec } from "@/lib/themeBuilder/spec";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
@@ -81,6 +82,8 @@ describe.skipIf(!IS_TEST_DB)("Theme Builder satu nama sampai klien", () => {
 
     expect(fs.existsSync(builderMasterPath("modern", created.themeId, "KHITAN"))).toBe(true);
     expect(fs.existsSync(builderMasterPath("modern", created.themeId, "WEDDING"))).toBe(false);
+    // Aturan master yang sama dengan e2eFindings20261020 (yang melewati _blueprints): token di komentar ikut terganti.
+    expect(fs.readFileSync(builderMasterPath("modern", created.themeId, "KHITAN"), "utf8")).not.toMatch(/<!--[^>]*\{\{\s*[\w.]+\s*\}\}[^>]*-->/);
     expect((await prisma.theme.findUniqueOrThrow({ where: { id: created.themeId } })).eventType).toBe("KHITAN");
 
     const switched = await builderPut(request("/api/admin/theme-builder", "PUT", { id: created.themeId, name: `Uji Khitan ${TAG}`, category: "modern", spec: { ...khitanSpec(), eventType: "BIRTHDAY" } }));
@@ -91,6 +94,15 @@ describe.skipIf(!IS_TEST_DB)("Theme Builder satu nama sampai klien", () => {
 
     const list = (await (await publicThemes(new Request("http://localhost/api/public/themes?eventType=KHITAN"))).json()) as Array<{ id: string }>;
     expect(list.some((t) => t.id === created.themeId)).toBe(true);
+  });
+
+  it("demo statis tema khitan (sumber thumbnail katalog) memakai persona khitan, bukan pernikahan kalandra", async () => {
+    await compileAndSaveStaticDemo(created.themeId);
+    const html = fs.readFileSync(path.join(process.cwd(), "public", "demo", created.themeId.toLowerCase(), "index.html"), "utf-8");
+    const persona = (await composeInvitationData(buildDemoInvitation("al-fariz"))) as Record<string, unknown>;
+    expect(html).toMatch(/<title>Walimatul Khitan /);
+    expect(html).not.toContain("The Wedding of");
+    expect(html).toContain(String(persona.mainName).replace(/&/g, "&amp;"));
   });
 
   it("klien khitan memakai tema itu: pratinjau Studio memuat profil, jadwal di Home, bingkai, ornamen, dan teks builder", async () => {

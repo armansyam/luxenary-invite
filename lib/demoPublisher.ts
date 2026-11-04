@@ -31,7 +31,8 @@ export async function compileAndSaveStaticDemo(themeId: string, customDemoData?:
   }
 
   // Demo dirender oleh engine undangan klien dari undangan virtual, sehingga hasilnya sama dengan undangan nyata.
-  const data = (await composeInvitationData(buildDemoInvitation(cleanId, resolvedData))) as Record<string, any>;
+  const theme = await prisma.theme.findUnique({ where: { id: cleanId }, select: { eventType: true } });
+  const data = (await composeInvitationData(buildDemoInvitation(cleanId, resolvedData, theme?.eventType))) as Record<string, any>;
 
   // Construct absolute OpenGraph meta tags for rich WhatsApp & social share previews
   const demoHost = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");

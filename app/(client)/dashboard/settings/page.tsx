@@ -194,27 +194,13 @@ export default function SettingsPage() {
     },
     {
       id: "coverVisuals",
-      title: "Visual Sampul & Latar Belakang",
-      desc: "Sampul pop-up, sidebar desktop, fixed background, dan foto penutup (Seksi 2)",
+      title: "Visual Sampul",
+      // Sidebar desktop, latar global, dan foto penutup memakai bawaan tema bila kosong (Studio Seksi 2), jadi tidak wajib.
+      desc: "Sampul pop-up undangan (Seksi 2)",
       hasToggle: false,
       isToggledOn: () => true,
-      hasData: (inv: any) => {
-        return (
-          checkMediaSlot(inv, "LANDING_COVER") &&
-          checkMediaSlot(inv, "DESKTOP_SIDEBAR") &&
-          checkMediaSlot(inv, "GLOBAL_FIXED_BG") &&
-          checkMediaSlot(inv, "CLOSING_COVER")
-        );
-      },
-      getMissingMessage: (inv: any) => {
-        const missing: string[] = [];
-        if (!checkMediaSlot(inv, "LANDING_COVER")) missing.push("Sampul Pop-Up / Cover");
-        if (!checkMediaSlot(inv, "DESKTOP_SIDEBAR")) missing.push("Sidebar Desktop");
-        if (!checkMediaSlot(inv, "GLOBAL_FIXED_BG")) missing.push("Fixed Background");
-        if (!checkMediaSlot(inv, "CLOSING_COVER")) missing.push("Foto Penutup");
-        return `Slot visual berikut belum diunggah: ${missing.join(", ")}. Harap lengkapi di Edit Undangan (Seksi 2).`;
-      },
-      missingMessage: "Kelengkapan visual belum terpenuhi. Harap unggah Foto Sampul Pop-Up, Sidebar Desktop, Fixed Background, dan Foto Penutup di Edit Undangan (Seksi 2).",
+      hasData: (inv: any) => checkMediaSlot(inv, "LANDING_COVER"),
+      missingMessage: "Sampul pop-up / cover belum diunggah. Harap unggah di Edit Undangan (Seksi 2).",
     },
     {
       id: "couples",

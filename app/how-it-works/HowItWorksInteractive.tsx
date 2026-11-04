@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 const FACTUAL_AUDIT_RULES = [
   { id: "subdomain", title: "Alamat Tautan Subdomain", desc: "Tautan website unik untuk akses publik" },
   { id: "theme", title: "Desain Tema Undangan", desc: "Template visual & tata letak presentasi" },
-  { id: "coverVisuals", title: "Visual Sampul & Latar Belakang", desc: "Sampul pop-up, sidebar desktop, fixed background, dan foto penutup (Seksi 2)" },
+  { id: "coverVisuals", title: "Visual Sampul", desc: "Sampul pop-up undangan (Seksi 2)" },
   { id: "couples", title: "Profil Lengkap Kedua Mempelai", desc: "Nama mempelai pria & wanita" },
   { id: "couplePhotos", title: "Foto Profil Kedua Mempelai", desc: "Foto portrait mempelai pria & wanita (Seksi 3)" },
   { id: "eventDate", title: "Tanggal Acara Utama", desc: "Referensi masa berlaku website & hitung mundur" },

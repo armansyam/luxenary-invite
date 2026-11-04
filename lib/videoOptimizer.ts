@@ -5,6 +5,7 @@ import os from "os";
 import { promisify } from "util";
 import { removeIfExists } from "@/lib/fsSafe";
 import { logger } from "@/lib/logger";
+import { HttpError } from "@/lib/routeError";
 
 const execFileAsync = promisify(execFile);
 
@@ -136,16 +137,12 @@ export async function optimizeWebVideo(inputBuffer: Buffer, baseName: string): P
     }
 
     await execFileAsync(ffmpegPath, args, { timeout: 45000 });
-
-    if (await fileExists(outputTempPath)) {
-      const optimizedBuffer = await fs.promises.readFile(outputTempPath);
-      return optimizedBuffer;
-    }
-
-    return inputBuffer;
+    return await fs.promises.readFile(outputTempPath);
   } catch (err) {
-    logger.warn("VideoOptimizer", "Optimasi FFmpeg gagal; video asli dipakai", { error: err instanceof Error ? err.message : String(err) });
-    return inputBuffer;
+    // Berkas mentah tidak disimpan: pemanggil menamainya .mp4/video/mp4, jadi MOV/WebM atau video rusak akan tampil
+    // sebagai sampul yang tidak bisa diputar sementara unggahan dilaporkan berhasil.
+    logger.warn("VideoOptimizer", "Optimasi FFmpeg gagal; unggahan ditolak", { error: err instanceof Error ? err.message : String(err) });
+    throw new HttpError(422, "Video tidak dapat diproses. Pastikan berkas MP4, MOV, atau WebM tidak rusak, lalu unggah ulang.");
   } finally {
     // Cleanup temporary scratch files
     await removeIfExists(inputTempPath);
@@ -206,24 +203,20 @@ export async function optimizeWebAudio(inputBuffer: Buffer, baseName: string): P
         if (await fileExists(outputTempPath)) {
           compressionSuccess = true;
         }
-      } catch {
-        // Tanpa FFmpeg maupun LAME audio dipakai apa adanya (fallback di bawah).
+      } catch (err) {
+        logger.warn("AudioOptimizer", "FFmpeg dan LAME gagal mengonversi audio", { error: err instanceof Error ? err.message : String(err) });
       }
     }
 
-    if (compressionSuccess && (await fileExists(outputTempPath))) {
-      const compressedBuffer = await fs.promises.readFile(outputTempPath);
-      const originalMB = (inputBuffer.length / 1024 / 1024).toFixed(1);
-      const compressedMB = (compressedBuffer.length / 1024 / 1024).toFixed(1);
-      logger.info("AudioOptimizer", "Audio dikompresi ke MP3 96kbps", { file: baseName, originalMB, compressedMB });
-      return compressedBuffer;
+    // Pemanggil menamai hasilnya .mp3/audio/mpeg; WAV atau M4A mentah dengan nama itu tidak diputar di sebagian peramban.
+    if (!compressionSuccess || !(await fileExists(outputTempPath))) {
+      throw new HttpError(422, "Audio tidak dapat diproses. Pastikan berkas MP3, WAV, atau M4A tidak rusak, lalu unggah ulang.");
     }
-
-    // Fallback jika kedua encoder tidak tersedia
-    return inputBuffer;
-  } catch (err) {
-    logger.warn("AudioOptimizer", "Kompresi audio gagal; audio asli dipakai", { error: err instanceof Error ? err.message : String(err) });
-    return inputBuffer;
+    const compressedBuffer = await fs.promises.readFile(outputTempPath);
+    const originalMB = (inputBuffer.length / 1024 / 1024).toFixed(1);
+    const compressedMB = (compressedBuffer.length / 1024 / 1024).toFixed(1);
+    logger.info("AudioOptimizer", "Audio dikompresi ke MP3 96kbps", { file: baseName, originalMB, compressedMB });
+    return compressedBuffer;
   } finally {
     await removeIfExists(inputTempPath);
     await removeIfExists(outputTempPath);

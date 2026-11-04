@@ -164,6 +164,13 @@ Hapus seluruh isi default, lalu isi dengan konfigurasi berikut *(ganti `domainan
     on_demand_tls {
         ask http://127.0.0.1:3001/api/public/resolve-custom-domain
     }
+    # CF-Connecting-IP hanya dipercaya bila koneksi datang dari Cloudflare (https://www.cloudflare.com/ips-v4 dan
+    # ips-v6). Port 443 terbuka untuk domain kustom, jadi tanpa ini siapa pun bisa menembak IP origin langsung dengan
+    # header palsu dan mendapat kunci pembatas laju baru di setiap permintaan.
+    servers {
+        trusted_proxies static 173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32
+        client_ip_headers CF-Connecting-IP
+    }
 }
 
 # ------------------------------------------------------------------------------
@@ -183,8 +190,8 @@ domainanda.id, *.domainanda.id {
     tls internal
     encode zstd gzip
     reverse_proxy 127.0.0.1:3001 {
-        # Domain utama di belakang Cloudflare: IP klien dari header Cloudflare, menimpa X-Real-IP kiriman klien.
-        header_up X-Real-IP {http.request.header.CF-Connecting-IP}
+        # {client_ip} = CF-Connecting-IP bila koneksi dari Cloudflare (trusted_proxies), selain itu alamat koneksi.
+        header_up X-Real-IP {client_ip}
     }
 }
 
@@ -206,7 +213,7 @@ https:// {
 
 Tulis `127.0.0.1:3001`, bukan `localhost:3001`. Aplikasi hanya mendengarkan di IPv4 loopback (`--hostname 127.0.0.1`), sedangkan di Ubuntu `localhost` juga mengarah ke `::1`; Caddy yang mengetuk `[::1]:3001` mendapat `connection refused` dan pengunjung melihat 502 Bad Gateway (ditemukan saat instalasi server `luxvite.id`, 3 Nov 2026).
 
-Dengan dua blok di atas, setel `TRUSTED_PROXY="nginx"` di `.env` aplikasi (aplikasi hanya mempercayai `X-Real-IP`, yang selalu ditimpa Caddy). Urutan yang aman: ubah Caddy lebih dulu (`caddy validate`, lalu `systemctl reload caddy`), baru ubah `.env` dan restart aplikasi. Uji dengan 12 POST ke `/api/public/rsvp` memakai `X-Real-IP` palsu yang berbeda-beda: permintaan ke-11 harus 429 (header palsu diabaikan). Bila `TRUSTED_PROXY=nginx` dipasang tanpa blok Caddy di atas, semua permintaan berbagi satu kunci pembatas laju.
+Dengan dua blok di atas, setel `TRUSTED_PROXY="nginx"` di `.env` aplikasi (aplikasi hanya mempercayai `X-Real-IP`, yang selalu ditimpa Caddy). Urutan yang aman: ubah Caddy lebih dulu (`caddy validate`, lalu `systemctl reload caddy`), baru ubah `.env` dan restart aplikasi. Uji dengan 12 POST ke `/api/public/rsvp` memakai `X-Real-IP` palsu yang berbeda-beda: permintaan ke-11 harus 429 (header palsu diabaikan). Uji juga jalur langsung ke origin yang melewati Cloudflare: 32 POST ke `/api/security/csp-report` (batas 30/menit per IP) dengan `curl --resolve DOMAIN:443:IP_VPS -H "CF-Connecting-IP: <berganti tiap permintaan>"` harus berakhir 429; sebelum `trusted_proxies` dipasang (sampai 4 Nov 2026) ke-32 permintaan itu lolos. Bila `TRUSTED_PROXY=nginx` dipasang tanpa blok Caddy di atas, semua permintaan berbagi satu kunci pembatas laju. Daftar IP Cloudflare berubah sesekali; bandingkan dengan https://www.cloudflare.com/ips-v4 dan ips-v6 saat memeriksa server.
 
 Simpan file (`CTRL + O`, lalu `Enter`, lalu `CTRL + X`), kemudian jalankan ulang Caddy:
 ```bash

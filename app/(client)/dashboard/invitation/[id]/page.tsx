@@ -353,6 +353,15 @@ export default function EditInvitation() {
 
   // Master-Detail Two-Column Studio State
   const [activeSectionTab, setActiveSectionTab] = useState<string>("sec1");
+  const sectionPillStripRef = useRef<HTMLDivElement>(null);
+
+  // Seksi bisa berganti lewat tombol "Lanjut ke Seksi" atau sidebar, bukan hanya pill; di HP pill aktif lalu berada di
+  // luar strip yang bergulir horizontal. Hanya strip yang digulir, bukan halaman.
+  useEffect(() => {
+    const strip = sectionPillStripRef.current;
+    const pill = strip?.querySelector<HTMLElement>('[data-active="true"]');
+    if (strip && pill) strip.scrollTo({ left: pill.offsetLeft - (strip.clientWidth - pill.offsetWidth) / 2, behavior: "smooth" });
+  }, [activeSectionTab]);
 
   const handleSelectSection = (secId: string) => {
     setActiveSectionTab(secId);
@@ -2015,7 +2024,7 @@ export default function EditInvitation() {
                 </span>
               </div>
               <div className="relative">
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar pr-6">
+                <div ref={sectionPillStripRef} className="relative flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar pr-6">
                   {visibleSections.map((sec) => {
                     const isActive = activeSectionTab === sec.id;
                     const isSecDirty = Boolean((isDirty as Record<string, boolean>)[sec.id]);
@@ -2023,6 +2032,7 @@ export default function EditInvitation() {
                       <button
                         key={sec.id}
                         type="button"
+                        data-active={isActive}
                         onClick={() => handleSelectSection(sec.id)}
                         className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
                           isActive
@@ -5357,20 +5367,18 @@ export default function EditInvitation() {
                                 >
                                   <input
                                     type="file"
-                                    accept="image/png,image/svg+xml,image/webp,image/jpeg"
+                                    accept="image/png,image/webp,image/jpeg"
                                     className="hidden"
                                     onChange={async (e) => {
                                       const file = e.target.files?.[0];
                                       if (!file) return;
                                       try {
-                                        let fileToUpload = file;
-                                        if (!file.name.toLowerCase().endsWith(".svg")) {
-                                          fileToUpload = await compressImageToWebP(file, {
-                                            maxWidth: 600,
-                                            maxHeight: 300,
-                                            quality: 0.88,
-                                          });
-                                        }
+                                        // SVG ditolak /api/client/upload (bisa memuat skrip dan dirender sharp lewat librsvg).
+                                        const fileToUpload = await compressImageToWebP(file, {
+                                          maxWidth: 600,
+                                          maxHeight: 300,
+                                          quality: 0.88,
+                                        });
                                         const fd = new FormData();
                                         fd.append("file", fileToUpload);
                                         if (invitationId) fd.append("invitationId", invitationId);

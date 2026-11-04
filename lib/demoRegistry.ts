@@ -9,6 +9,7 @@
 
 import fs from "fs";
 import path from "path";
+import { DEFAULT_THEME_BY_EVENT } from "./invitationUtils";
 
 export interface BaseDemoData {
   themeId: string;
@@ -3613,9 +3614,13 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
   },
 };
 
-export function getDemoThemeData(themeId: string): DemoThemeData {
+/**
+ * Tema tanpa persona di registry (tema hasil Theme Builder) memakai persona tema bawaan jenis acaranya, sama dengan
+ * pratinjau builder; tanpa `eventType` persona pernikahan kalandra membuat demo tema satu nama kosong.
+ */
+export function getDemoThemeData(themeId: string, eventType?: string | null): DemoThemeData {
   const normalized = (themeId || "kalandra").toLowerCase().trim();
-  const base = DEMO_REGISTRY[normalized] || DEMO_REGISTRY.kalandra;
+  const base = DEMO_REGISTRY[normalized] || DEMO_REGISTRY[DEFAULT_THEME_BY_EVENT[eventType || ""]] || DEMO_REGISTRY.kalandra;
   const demo: DemoThemeData = { ...base };
   if (!DEMO_REGISTRY[normalized]) {
     demo.themeId = normalized;

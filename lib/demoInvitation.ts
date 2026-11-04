@@ -91,8 +91,8 @@ function participantsFor(demo: DemoThemeData) {
   }
 }
 
-export function buildDemoInvitation(themeId: string, customData?: Record<string, any>) {
-  const base = getDemoThemeData(themeId);
+export function buildDemoInvitation(themeId: string, customData?: Record<string, any>, themeEventType?: string | null) {
+  const base = getDemoThemeData(themeId, themeEventType);
   const custom = customData || {};
   const demo = { ...base, ...custom } as DemoThemeData & Record<string, any>;
   const eventType = demo.eventType || "WEDDING";
