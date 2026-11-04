@@ -1822,9 +1822,8 @@ export async function renderTemplateFile(
     ? Boolean(data.landingCoverDesktopUrl)
     : Boolean(data.landingCoverDesktopUrl && data.landingCoverDesktopUrl !== data.landingCoverUrl);
 
-  // Tata letak split (hero kiri + kolom isi 460 px di kanan) ditandai lebar kolom itu di CSS master. Tema satu kolom di
-  // tengah (al-fariz, al-khalid, cendekia, festivo, kalandra-birthday, sinergi) tidak punya hero kiri: sampul yang
-  // dipersempit membuka isi undangan di belakangnya, jadi sampulnya tetap selebar layar.
+  // Tata letak split (hero kiri + kolom isi 460 px di kanan) ditandai lebar kolom itu di CSS master. Master tanpa hero
+  // kiri (satu kolom di tengah) tidak memuatnya: sampul yang dipersempit akan membuka isi undangan di belakangnya.
   const hasSplitLayout = tpl.includes("calc(100% - 460px)");
 
   if (!hasDesktopCover && hasSplitLayout) {

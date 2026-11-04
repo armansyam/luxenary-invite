@@ -4,6 +4,8 @@
  * undangan saat dibuat dan saat tema diganti. Bagian DB hanya berjalan di database `luxenary_test`.
  */
 import { describe, it, expect, vi, afterAll } from "vitest";
+import fs from "fs";
+import path from "path";
 import { NextRequest } from "next/server";
 
 let sessionUser: Record<string, unknown> | null = null;
@@ -15,7 +17,7 @@ import { prisma, pool } from "@/lib/prisma";
 import { composeInvitationData } from "@/lib/themeEngine";
 import { buildDemoInvitation } from "@/lib/demoInvitation";
 import { applyThemeDefaultMedia, parseThemeDefaultMedia, validateThemeDefaultMedia } from "@/lib/themeDefaultMedia";
-import { renderTemplateFile } from "@/lib/renderTemplate";
+import { renderTemplateFile, THEME_MAP } from "@/lib/renderTemplate";
 import { renderBuilderPreview } from "@/lib/themeBuilder/server";
 import { defaultBuilderSpec } from "@/lib/themeBuilder/spec";
 import { POST as createInvitation } from "@/app/api/client/invitations/create/route";
@@ -131,10 +133,25 @@ describe("engine: bawaan tema di data undangan", () => {
     expect(wideHtml).toContain("FULLSCREEN OVERRIDE");
     expect(wideHtml).not.toContain('id="lux-cover-desktop-split"');
 
-    // Tema satu kolom di tengah (tanpa hero kiri): sampul yang dipersempit akan membuka isi undangan di belakangnya.
-    const column = (await composeInvitationData({ ...buildDemoInvitation("al-fariz"), media: [{ mediaSlot: "LANDING_COVER", localPath: own }], themeDefaultMedia: null })) as Record<string, any>;
-    const columnHtml = await renderTemplateFile("al-fariz", column, { eventType: "KHITAN" });
+    // Tema satu nama yang dulu satu kolom di tengah kini juga split: tanpa cover landscape sampul masuk kolom.
+    const single = (await composeInvitationData({ ...buildDemoInvitation("al-fariz"), media: [{ mediaSlot: "LANDING_COVER", localPath: own }], themeDefaultMedia: null })) as Record<string, any>;
+    const singleHtml = await renderTemplateFile("al-fariz", single, { eventType: "KHITAN" });
+    expect(singleHtml).toContain('id="lux-cover-desktop-split"');
+
+    // Master tanpa hero kiri tidak memuat calc(100% - 460px); sampulnya tidak dipersempit.
+    const columnHtml = await renderTemplateFile("vitest-column", split, { eventType: "WEDDING", templateSource: "<!DOCTYPE html><html><head><title>x</title></head><body><div class=\"cover-screen\"></div></body></html>" });
     expect(columnHtml).not.toContain('id="lux-cover-desktop-split"');
+  });
+
+  it("semua master tema aktif bertata letak split (hero kiri + kolom 460 px)", () => {
+    const missing = Object.entries(THEME_MAP)
+      .map(([id, info]) => {
+        const folder = info.eventType === "gathering" ? "general" : info.eventType;
+        const file = path.join(process.cwd(), "themes", folder, info.style, info.file);
+        return fs.existsSync(file) && !fs.readFileSync(file, "utf8").includes("calc(100% - 460px)") ? id : null;
+      })
+      .filter(Boolean);
+    expect(missing).toEqual([]);
   });
 
   it("tanpa bawaan dan tanpa foto klien: cover kosong, bukan foto demo", async () => {
