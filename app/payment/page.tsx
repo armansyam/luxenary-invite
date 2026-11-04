@@ -29,6 +29,11 @@ function PaymentContent() {
   const [regeneratingQris, setRegeneratingQris] = useState(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const [sseError, setSseError] = useState(false);
+  // Gambar QR yang sudah tampil (dicatat per isi QR, sehingga QR baru setelah regenerasi kembali menampilkan pemuat).
+  const [loadedQrData, setLoadedQrData] = useState<string | null>(null);
+  const [savingQr, setSavingQr] = useState(false);
+  const [paidRedirecting, setPaidRedirecting] = useState(false);
+  const paidRedirectRef = useRef(false);
 
   // Manual Transfer State
   const [paymentMode, setPaymentMode] = useState<"GATEWAY" | "MANUAL">("GATEWAY");
@@ -65,6 +70,16 @@ function PaymentContent() {
     if (type === "UPGRADE") return "/dashboard?msg=plan_upgraded";
     return `/dashboard/setup?order=${id}&plan=${plan}`;
   }, []);
+
+  // Pembayaran yang terdeteksi saat klien menunggu di halaman ini ditandai dulu sebelum pindah, agar klien tahu
+  // pembayarannya diterima; SSE dan cek manual dapat datang bersamaan, jadi pengalihan hanya dijadwalkan sekali.
+  const PAID_NOTICE_MS = 1800;
+  const finishPaid = useCallback((dest: string) => {
+    if (paidRedirectRef.current) return;
+    paidRedirectRef.current = true;
+    setPaidRedirecting(true);
+    setTimeout(() => router.replace(dest), PAID_NOTICE_MS);
+  }, [router]);
 
   // Auto-dismiss payment notice
   useEffect(() => {
@@ -209,21 +224,26 @@ function PaymentContent() {
   useEffect(() => {
     if (!qrisExpiry) return;
 
-    const interval = setInterval(() => {
+    let interval: ReturnType<typeof setInterval> | undefined;
+    const tick = () => {
       const now = Date.now() + serverTimeOffset;
       const diff = qrisExpiry - now;
 
       if (diff <= 0) {
-        clearInterval(interval);
+        if (interval) clearInterval(interval);
         setCountdownStr("00:00");
         setIsGatewayExpired(true);
         loadOrder();
-      } else {
-        const m = Math.floor(diff / 60000);
-        const s = Math.floor((diff % 60000) / 1000);
-        setCountdownStr(`${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`);
+        return false;
       }
-    }, 1000);
+      const m = Math.floor(diff / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setCountdownStr(`${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`);
+      return true;
+    };
+
+    // Sisa waktu langsung terisi saat QR tampil, bukan satu detik kemudian.
+    if (tick()) interval = setInterval(tick, 1000);
 
     return () => clearInterval(interval);
   }, [qrisExpiry, serverTimeOffset, loadOrder]);
@@ -240,8 +260,7 @@ function PaymentContent() {
         try {
           const payload = JSON.parse(e.data);
           if (payload.status === "PAID") {
-            const dest = getPostPaymentRedirect(payload.orderType || order?.orderType || "NEW", orderId, payload.planType || order?.planType);
-            router.replace(dest);
+            finishPaid(getPostPaymentRedirect(payload.orderType || order?.orderType || "NEW", orderId, payload.planType || order?.planType));
           } else if (payload.status === "REJECTED") {
             setUploadedProofUrl(null);
             setUploadSuccessMsg(null);
@@ -265,7 +284,7 @@ function PaymentContent() {
     return () => {
       es?.close();
     };
-  }, [orderId, router, getPostPaymentRedirect, order, loadOrder]);
+  }, [orderId, finishPaid, getPostPaymentRedirect, order, loadOrder]);
 
   // Regenerasi QRIS jika sesi kedaluwarsa (tanpa membuat order baru)
   const handleRegenerateQris = async () => {
@@ -314,14 +333,62 @@ function PaymentContent() {
       setIsCheckingStatus(false);
 
       if (data.status === "PAID") {
-        const dest = getPostPaymentRedirect(data.orderType || "NEW", orderId, data.planType);
-        router.replace(dest);
+        finishPaid(getPostPaymentRedirect(data.orderType || "NEW", orderId, data.planType));
       } else {
         setPaymentNotice({ type: "info", message: "Status pembayaran masih PENDING. Jika sudah transfer, silakan tunggu beberapa saat." });
       }
     } catch {
       setIsCheckingStatus(false);
       setPaymentNotice({ type: "error", message: "Gagal memeriksa status pembayaran." });
+    }
+  };
+
+  // Klien yang membayar dari HP yang sama tidak bisa memindai layarnya sendiri: QR disimpan sebagai PNG (SVG tidak masuk
+  // galeri dan tidak terbaca fitur "unggah QR" e-wallet), dengan tepi putih agar tetap terbaca setelah dipotong aplikasi.
+  const handleSaveQr = async () => {
+    if (!qrData) return;
+    setSavingQr(true);
+    try {
+      const svg = await fetch(`/api/public/qr?size=400&data=${encodeURIComponent(qrData)}`).then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.blob();
+      });
+      const svgUrl = URL.createObjectURL(svg);
+      const img = new Image();
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error("QR gagal dimuat"));
+        img.src = svgUrl;
+      });
+      const margin = 48;
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 400 + margin * 2;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas tidak tersedia");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, margin, margin, 400, 400);
+      URL.revokeObjectURL(svgUrl);
+      const png = await new Promise<Blob>((resolve, reject) =>
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("PNG gagal dibuat"))), "image/png")
+      );
+      const fileName = `QRIS-${order?.invoiceNumber || orderId}.png`;
+      const file = new File([png], fileName, { type: "image/png" });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: "QRIS Pembayaran" });
+      } else {
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(png);
+        link.download = fileName;
+        link.click();
+        URL.revokeObjectURL(link.href);
+      }
+    } catch (err: any) {
+      if (err?.name !== "AbortError") {
+        setPaymentNotice({ type: "error", message: "QR gagal disimpan. Coba lagi atau ambil tangkapan layar." });
+      }
+    } finally {
+      setSavingQr(false);
     }
   };
 
@@ -448,6 +515,24 @@ function PaymentContent() {
 
   return (
     <div className="min-h-screen bg-stone-950 text-stone-200 flex flex-col justify-between selection:bg-amber-500/30">
+      {paidRedirecting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/90 backdrop-blur-sm px-4" role="status" aria-live="assertive">
+          <div className="w-full max-w-xs bg-stone-900 border border-emerald-500/30 rounded-3xl p-6 text-center space-y-3 shadow-2xl">
+            <div className="w-14 h-14 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center mx-auto">
+              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-white font-bold text-base">Pembayaran Diterima</h2>
+            <p className="text-xs text-stone-400 leading-relaxed">
+              {order?.orderType === "NEW" || !order?.orderType
+                ? "Paket Anda sudah aktif. Mengalihkan ke Studio untuk membuat undangan..."
+                : "Pesanan Anda sudah aktif. Mengalihkan ke Dasbor..."}
+            </p>
+            <span className="inline-block w-5 h-5 rounded-full border-2 border-stone-700 border-t-emerald-400 animate-spin" aria-hidden="true" />
+          </div>
+        </div>
+      )}
       {/* ── HEADER ── */}
       <header className="border-b border-white/5 bg-stone-950/80 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -647,11 +732,38 @@ function PaymentContent() {
                 </div>
 
                 <div className="p-2.5 sm:p-3 bg-white inline-block rounded-2xl mx-auto shadow-xl border-4 border-amber-500/20">
-                  <img
-                    src={`/api/public/qr?size=300&data=${encodeURIComponent(qrData)}`}
-                    alt="Kode QRIS"
-                    className="w-44 h-44 sm:w-56 sm:h-56 object-contain"
-                  />
+                  <div className="relative w-44 h-44 sm:w-56 sm:h-56">
+                    {loadedQrData !== qrData && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-stone-500" aria-live="polite">
+                        <span className="w-7 h-7 rounded-full border-2 border-stone-300 border-t-amber-500 animate-spin" />
+                        <span className="text-[11px] font-medium">Menyiapkan kode QR...</span>
+                      </div>
+                    )}
+                    <img
+                      key={qrData}
+                      src={`/api/public/qr?size=300&data=${encodeURIComponent(qrData)}`}
+                      alt="Kode QRIS"
+                      onLoad={() => setLoadedQrData(qrData)}
+                      className={`w-full h-full object-contain transition-opacity duration-200 ${loadedQrData === qrData ? "opacity-100" : "opacity-0"}`}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <button
+                    type="button"
+                    onClick={handleSaveQr}
+                    disabled={savingQr || loadedQrData !== qrData}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-amber-500/40 text-amber-400 hover:bg-amber-500/10 text-[11px] font-bold transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
+                    </svg>
+                    {savingQr ? "Menyimpan..." : "Simpan QR"}
+                  </button>
+                  <p className="text-[10px] text-stone-500 max-w-xs mx-auto leading-relaxed">
+                    Membayar dari HP ini? Simpan QR, lalu pilih unggah QR dari galeri di aplikasi e-wallet atau m-Banking.
+                  </p>
                 </div>
 
                 <div className="space-y-2">
