@@ -46,6 +46,17 @@ export interface RetentionExpiryAlertOptions {
   appUrl?: string;
 }
 
+export interface ProofUploadedAdminAlertOptions {
+  invoiceNumber: string;
+  itemLabel: string;
+  amount: number;
+  clientName?: string;
+  clientEmail: string;
+  uploadedAtFormatted: string;
+  isReupload?: boolean;
+  appUrl?: string;
+}
+
 export interface TestSmtpOptions {
   fromName: string;
   smtpHost: string;
@@ -528,9 +539,114 @@ export function buildRetentionExpiryHtml(
 }
 
 /**
+ * 5. Notifikasi Admin: Bukti Transfer Manual Menunggu Verifikasi
+ */
+export function buildProofUploadedAdminHtml(
+  opts: ProofUploadedAdminAlertOptions,
+  settings?: {
+    platformName?: string;
+    appUrl?: string;
+  }
+): { subject: string; html: string; text: string } {
+  const platformName = settings?.platformName || "LUXVITE";
+  const baseUrl = opts.appUrl || (typeof window !== "undefined" ? window.location.origin : process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL) || "http://localhost:3000";
+  const ordersUrl = `${baseUrl}/admin?tab=orders`;
+  const client = opts.clientName ? `${opts.clientName} (${opts.clientEmail})` : opts.clientEmail;
+  const amount = `Rp ${opts.amount.toLocaleString("id-ID")}`;
+  const action = opts.isReupload ? "diunggah ulang" : "baru masuk";
+
+  const subject = `Bukti transfer ${action}: ${opts.invoiceNumber} (${amount})`;
+
+  const text = `${platformName} - BUKTI TRANSFER MENUNGGU VERIFIKASI\n\n` +
+    `Klien mengunggah bukti transfer manual. Cocokkan nominal dengan mutasi rekening, lalu setujui atau tolak pesanan.\n\n` +
+    `Invoice: ${opts.invoiceNumber}\n` +
+    `Klien: ${client}\n` +
+    `Pesanan: ${opts.itemLabel}\n` +
+    `Nominal tagihan: ${amount}\n` +
+    `Diunggah: ${opts.uploadedAtFormatted}\n\n` +
+    `Buka tab Order: ${ordersUrl}`;
+
+  const html = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(subject)}</title>
+  <style>
+    body { margin: 0; padding: 0; background-color: #F7F5F0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #1C1917; -webkit-font-smoothing: antialiased; }
+    .container { max-width: 580px; margin: 0 auto; padding: 36px 16px; }
+    .card { background-color: #FFFFFF; border: 1px solid #EAE4D9; border-radius: 20px; padding: 34px 30px; box-shadow: 0 10px 30px rgba(44, 34, 20, 0.05); }
+    .header { text-align: center; border-bottom: 1px solid #EAE4D9; padding-bottom: 22px; margin-bottom: 24px; }
+    .brand { font-family: 'Cinzel', Georgia, serif; font-size: 16px; font-weight: 800; letter-spacing: 2.5px; text-transform: uppercase; color: #B45309; margin-bottom: 8px; }
+    .title { font-size: 18px; font-weight: 700; color: #1C1917; margin: 0 0 10px 0; letter-spacing: -0.2px; }
+    .badge { display: inline-block; padding: 5px 14px; border-radius: 9999px; font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; background-color: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+    .message-box { background-color: #FAF7F0; border-left: 4px solid #B45309; border-radius: 8px; padding: 18px; margin: 22px 0; font-size: 13px; line-height: 1.6; color: #44403C; }
+    .table-box { width: 100%; border-collapse: collapse; background-color: #FAF7F0; border: 1px solid #EAE4D9; border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
+    .table-box td { padding: 14px 16px; font-size: 12px; border-bottom: 1px solid #F0ECE4; }
+    .cta-container { text-align: center; margin: 28px 0 20px 0; }
+    .btn-primary { display: inline-block; background: linear-gradient(135deg, #C9A227 0%, #A88218 100%); color: #FFFFFF !important; text-decoration: none; padding: 14px 28px; border-radius: 12px; font-weight: 700; font-size: 13px; letter-spacing: 0.3px; box-shadow: 0 8px 20px rgba(180, 83, 9, 0.22); }
+    .footer { text-align: center; font-size: 11px; color: #8C827A; line-height: 1.6; border-top: 1px solid #EAE4D9; padding-top: 20px; margin-top: 24px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <div class="brand">${escapeHtml(platformName)}</div>
+        <h1 class="title">BUKTI TRANSFER MENUNGGU VERIFIKASI</h1>
+        <span class="badge">${opts.isReupload ? "DIUNGGAH ULANG" : "BUKTI BARU"}</span>
+      </div>
+
+      <div class="message-box">
+        <p style="margin: 0; line-height: 1.6;">
+          Klien mengunggah bukti transfer manual. Cocokkan nominal dengan mutasi rekening, lalu setujui atau tolak pesanan di tab Order.
+        </p>
+      </div>
+
+      <table class="table-box">
+        <tr>
+          <td style="color: #78716C;">Invoice</td>
+          <td style="font-weight: 700; color: #1C1917; text-align: right; font-family: monospace;">${escapeHtml(opts.invoiceNumber)}</td>
+        </tr>
+        <tr>
+          <td style="color: #78716C;">Klien</td>
+          <td style="font-weight: 700; color: #1C1917; text-align: right;">${escapeHtml(client)}</td>
+        </tr>
+        <tr>
+          <td style="color: #78716C;">Pesanan</td>
+          <td style="font-weight: 700; color: #1C1917; text-align: right;">${escapeHtml(opts.itemLabel)}</td>
+        </tr>
+        <tr>
+          <td style="color: #78716C;">Nominal tagihan</td>
+          <td style="font-weight: 700; color: #B45309; text-align: right;">${amount}</td>
+        </tr>
+        <tr>
+          <td style="color: #78716C; border-bottom: none;">Diunggah</td>
+          <td style="font-weight: 700; color: #1C1917; text-align: right; border-bottom: none;">${escapeHtml(opts.uploadedAtFormatted)}</td>
+        </tr>
+      </table>
+
+      <div class="cta-container">
+        <a href="${escapeHtml(ordersUrl)}" class="btn-primary" target="_blank">
+          Buka Tab Order &rarr;
+        </a>
+      </div>
+
+      <div class="footer">
+        <p>Foto bukti tidak dilampirkan karena memuat data rekening; buka dari panel admin setelah login.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  return { subject, html, text };
+}
+
+/**
  * ─────────────────────────────────────────────────────────────────────────────
  * EMAIL TEMPLATES CATALOGUE
- * Definisi 7 varian lengkap untuk pratinjau dan pengujian di /admin/emails
+ * Definisi seluruh varian untuk pratinjau dan pengujian di /admin/emails
  * ─────────────────────────────────────────────────────────────────────────────
  */
 export const EMAIL_TEMPLATE_CATALOG: EmailTemplateMeta[] = [
@@ -757,6 +873,37 @@ export const EMAIL_TEMPLATE_CATALOG: EmailTemplateMeta[] = [
         ...overrides,
       };
       return buildRetentionExpiryHtml(merged, settings);
+    },
+  },
+  {
+    key: "PROOF_UPLOADED_ADMIN",
+    name: "Notifikasi Admin: Bukti Transfer Masuk",
+    category: "TRANSAKSI",
+    badgeText: "Menunggu Verifikasi",
+    description: "Pemberitahuan ke admin bahwa klien mengunggah bukti transfer manual yang perlu dicocokkan dengan mutasi rekening.",
+    triggerEvent: "Klien mengunggah atau mengunggah ulang bukti transfer di halaman pembayaran",
+    recipientTarget: "Semua admin dengan akses Order",
+    samplePayload: {
+      invoiceNumber: "INV-20261104-0007",
+      itemLabel: "Paket Symphony",
+      amount: 249000,
+      clientName: "Amanda Putri",
+      clientEmail: "amanda.putri@gmail.com",
+      uploadedAtFormatted: "4 November 2026 pukul 14.20 WIB",
+      isReupload: false,
+    },
+    render: (overrides = {}, settings = {}) => {
+      const merged = {
+        invoiceNumber: "INV-20261104-0007",
+        itemLabel: "Paket Symphony",
+        amount: 249000,
+        clientName: "Amanda Putri",
+        clientEmail: "amanda.putri@gmail.com",
+        uploadedAtFormatted: "4 November 2026 pukul 14.20 WIB",
+        isReupload: false,
+        ...overrides,
+      };
+      return buildProofUploadedAdminHtml(merged, settings);
     },
   },
 ];

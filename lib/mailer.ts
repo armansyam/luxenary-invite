@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import { getPublicPlatformSettings, getSmtpSettings } from "./settings";
 import { logger } from "./logger";
+import { getPlanDisplayName } from "./planUtils";
 import {
   InvoiceEmailOptions,
   MemoriesQuotaAlertOptions,
@@ -8,12 +9,98 @@ import {
   TestSmtpOptions,
   buildInvoiceEmailHtml,
   buildMemoriesQuotaHtml,
+  buildProofUploadedAdminHtml,
   buildRetentionExpiryHtml,
   buildTestSmtpHtml,
 } from "./email-templates";
 
 export type { InvoiceEmailOptions, MemoriesQuotaAlertOptions, RetentionExpiryAlertOptions, TestSmtpOptions };
 export { buildInvoiceEmailHtml, buildMemoriesQuotaHtml, buildRetentionExpiryHtml, buildTestSmtpHtml };
+
+export interface ProofUploadedAdminAlertInput {
+  invoiceNumber: string;
+  orderType: string;
+  planType: string;
+  targetPlanType?: string | null;
+  amount: number;
+  clientName?: string | null;
+  clientEmail: string;
+  uploadedAt: Date;
+  isReupload: boolean;
+  recipientEmails: string[];
+  appUrl: string;
+}
+
+/** Label pesanan sama dengan kolom Pesanan di tab Order admin. */
+export function proofOrderLabel(
+  input: Pick<ProofUploadedAdminAlertInput, "orderType" | "planType" | "targetPlanType">,
+  packages?: Array<{ id: string; name: string }>
+): string {
+  if (input.orderType === "MEMORIES_TOPUP") return "Top-Up Kuota Momen Foto";
+  if (input.orderType === "GALLERY_EXTENSION") return "Perpanjang Masa Aktif (+30 Hari)";
+  if (input.orderType === "UPGRADE") return `Upgrade ke ${getPlanDisplayName(input.targetPlanType || input.planType, packages)}`;
+  return `Paket ${getPlanDisplayName(input.planType, packages)}`;
+}
+
+export async function sendProofUploadedAdminAlertEmail(input: ProofUploadedAdminAlertInput): Promise<{ success: boolean; error?: string }> {
+  try {
+    if (input.recipientEmails.length === 0) {
+      logger.warn("Mailer", "Tidak ada admin dengan akses Order; email bukti transfer dilewati", { invoice: input.invoiceNumber });
+      return { success: false, error: "NO_RECIPIENTS" };
+    }
+
+    const settings = { ...(await getPublicPlatformSettings()), ...(await getSmtpSettings()) };
+
+    if (!settings.smtpHost || !settings.smtpUser) {
+      logger.warn("Mailer", "SMTP belum dikonfigurasi; email bukti transfer ke admin dilewati", { invoice: input.invoiceNumber });
+      return { success: false, error: "SMTP_NOT_CONFIGURED" };
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: settings.smtpHost,
+      port: settings.smtpPort || 587,
+      secure: settings.smtpPort === 465,
+      auth: {
+        user: settings.smtpUser,
+        pass: settings.smtpPassword || "",
+      },
+      tls: {
+        rejectUnauthorized: process.env.NODE_ENV === "production",
+      },
+    });
+
+    const { subject, html: htmlContent, text: textContent } = buildProofUploadedAdminHtml(
+      {
+        invoiceNumber: input.invoiceNumber,
+        itemLabel: proofOrderLabel(input, settings.packages),
+        amount: input.amount,
+        clientName: input.clientName || undefined,
+        clientEmail: input.clientEmail,
+        uploadedAtFormatted: `${input.uploadedAt.toLocaleString("id-ID", { timeZone: "Asia/Jakarta", dateStyle: "long", timeStyle: "short" })} WIB`,
+        isReupload: input.isReupload,
+        appUrl: input.appUrl,
+      },
+      { platformName: settings.platformName, appUrl: input.appUrl }
+    );
+
+    const fromAddress = settings.smtpFromEmail || settings.smtpUser;
+    const fromName = settings.smtpFromName || settings.platformName || "Platform Undangan";
+
+    await transporter.sendMail({
+      from: `"${fromName}" <${fromAddress}>`,
+      to: input.recipientEmails,
+      subject,
+      text: textContent,
+      html: htmlContent,
+    });
+
+    logger.info("Mailer", "Email bukti transfer terkirim ke admin", { invoice: input.invoiceNumber, recipients: input.recipientEmails.length });
+    return { success: true };
+  } catch (error: any) {
+    logger.error("Mailer", "Gagal mengirim email bukti transfer ke admin", error, { invoice: input.invoiceNumber });
+    return { success: false, error: error.message };
+  }
+}
 
 export async function sendInvoiceEmail(opts: InvoiceEmailOptions): Promise<{ success: boolean; error?: string }> {
   try {

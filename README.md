@@ -803,6 +803,7 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
 - **Mulai dari tema lama (Builder)**: tersedia untuk keenam jenis acara; daftar tema lama mengikuti jenis acara tema baru (`?legacy=1&eventType=`).
 - **Cache beranda**: header `Cache-Control` `/` di `next.config.ts` dan `revalidate = 86400` di `app/page.tsx`/`app/how-it-works/page.tsx` dihapus; layout root `force-dynamic` sejak `70d4af3` membuat halaman itu dirender per permintaan, sehingga header lama hanya membuat browser menyimpan harga paket 1 hari.
 - **Midtrans**: kegagalan membaca pengaturan Midtrans dari DB dicatat (`MidtransConfig`) sebelum memakai `MIDTRANS_*` dari `.env`.
+- **Email bukti transfer ke admin (4 Nov)**: unggah atau unggah ulang bukti transfer oleh klien mengirim email ke semua admin yang punya akses modul Order (`sendProofUploadedAdminAlertEmail`, template `PROOF_UPLOADED_ADMIN` di `/admin/emails`), berisi invoice, klien, pesanan, nominal, waktu WIB, dan tautan `/admin?tab=orders`; foto bukti tidak dilampirkan. Dikirim di latar setelah bukti tersimpan; tanpa SMTP atau tanpa penerima hanya dicatat di log. Unggahan oleh admin tidak memicu email.
 - **Uji lokal**: suite vitest dan `scripts/e2e-golive.ts` membutuhkan `luxenary_test` yang sudah `migrate deploy`, `db seed`, dan `themes:sync`; tes backup membutuhkan `pg_dump`/`pg_restore` 17 di PATH.
 
 

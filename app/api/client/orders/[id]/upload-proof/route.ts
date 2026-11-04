@@ -7,6 +7,8 @@ import sharp from "sharp";
 import { uploadPrivateFile, deleteFile } from "@/lib/storage";
 import { purgeObsoleteUserOrders } from "@/lib/upgradeHelper";
 import { routeError } from "@/lib/routeError";
+import { logger } from "@/lib/logger";
+import { getTrustedAppUrl } from "@/lib/serverDomainUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -171,6 +173,29 @@ export async function POST(
     await cleanupSuperseded(proofRef);
 
     const updatedOrder = await prisma.order.findUniqueOrThrow({ where: { id: order.id } });
+
+    // Tanpa email ini admin baru tahu ada bukti saat membuka panel. Dikirim di latar agar klien tidak menunggu SMTP;
+    // unggahan oleh admin sendiri tidak memicu email.
+    if (isOwner) {
+      const isReupload = Boolean(order.proofImageUrl);
+      (async () => {
+        const admins = await prisma.admin.findMany({ select: { email: true, role: true, permissions: true } });
+        const { sendProofUploadedAdminAlertEmail } = await import("@/lib/mailer");
+        await sendProofUploadedAdminAlertEmail({
+          invoiceNumber: updatedOrder.invoiceNumber,
+          orderType: updatedOrder.orderType,
+          planType: updatedOrder.planType,
+          targetPlanType: updatedOrder.targetPlanType,
+          amount: Number(updatedOrder.amount),
+          clientName: order.user?.name,
+          clientEmail: order.user?.email || sessionEmail,
+          uploadedAt: updatedOrder.proofUploadedAt ?? new Date(),
+          isReupload,
+          recipientEmails: admins.filter((a) => hasAdminPermission(a, "orders")).map((a) => a.email),
+          appUrl: await getTrustedAppUrl(),
+        });
+      })().catch((err) => logger.error("UploadProof", "Notifikasi email bukti transfer ke admin gagal", err, { orderId: order.id }));
+    }
 
     return NextResponse.json({
       success: true,
