@@ -192,6 +192,23 @@ async function main() {
 
         await sendSession("Page.enable");
 
+        // Preloader engine (#themePreloader, lib/renderTemplate.ts) bertahan 1,2-2,5 detik setelah halaman dimuat lalu
+        // memudar 0,65 detik; jeda tetap memotret preloader di server yang memuat foto dari CDN. Tunggu sampai elemen itu
+        // dihapus dan font siap, lalu beri waktu animasi masuk sampul.
+        const waitUntilSettled = async () => {
+          const deadline = Date.now() + 15000;
+          for (;;) {
+            const { result } = await sendSession("Runtime.evaluate", {
+              expression: "document.readyState === 'complete' && !document.getElementById('themePreloader') && document.fonts.status === 'loaded'",
+              returnByValue: true,
+            });
+            if (result?.value === true) break;
+            if (Date.now() > deadline) throw new Error("Halaman demo belum selesai dimuat setelah 15 detik (preloader masih tampil).");
+            await new Promise((r) => setTimeout(r, 250));
+          }
+          await new Promise((r) => setTimeout(r, 1200));
+        };
+
         // 1. MOBILE DEVTOOLS CAPTURE (400 × 800, Mobile Emulation)
         if (!isDesktopOnly) {
           try {
@@ -204,7 +221,7 @@ async function main() {
             await sendSession("Emulation.setTouchEmulationEnabled", { enabled: true });
 
             await sendSession("Page.navigate", { url: themeDemoUrl });
-            await new Promise((r) => setTimeout(r, 2000));
+            await waitUntilSettled();
 
             const mobileShot = await sendSession("Page.captureScreenshot", {
               format: "png",
@@ -238,7 +255,7 @@ async function main() {
             await sendSession("Emulation.setTouchEmulationEnabled", { enabled: false });
 
             await sendSession("Page.navigate", { url: themeDemoUrl });
-            await new Promise((r) => setTimeout(r, 2000));
+            await waitUntilSettled();
 
             const desktopShot = await sendSession("Page.captureScreenshot", {
               format: "png",

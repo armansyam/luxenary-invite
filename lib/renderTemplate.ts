@@ -1255,6 +1255,16 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
     Array.prototype.forEach.call(docks, function(dock) {
       // Dock tersembunyi (lebar 0) tidak dapat diukur: kelas tahap sebelumnya dibiarkan, diukur ulang saat tampil.
       if (!dock.getBoundingClientRect().width) return;
+      // Transisi tema (mis. transition: all pada tombol dock) dimatikan selama pengukuran. Tanpa ini melepas dan memasang
+      // kelas tahap memulai animasi ukuran tombol, ResizeObserver memanggil fungsi ini lagi tiap frame, dan dock berkedip
+      // tanpa henti sambil terukur di tengah animasi. Layout dipaksa sebelum kelas dilepas agar tidak ada animasi yang mulai.
+      dock.classList.add('lux-dock-measuring');
+      fitDockStage(dock);
+      void dock.offsetWidth;
+      dock.classList.remove('lux-dock-measuring');
+    });
+  }
+  function fitDockStage(dock) {
       dock.classList.remove('lux-dock-compact', 'lux-dock-tight', 'lux-dock-icons');
       var dr = dock.getBoundingClientRect();
       // Dock diletakkan di tengah area tampilnya (layar penuh di HP, panel kanan 460px di desktop): ruang yang tersedia
@@ -1277,7 +1287,6 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
       dock.classList.add('lux-dock-tight');
       if (!labelsClipped()) return;
       dock.classList.add('lux-dock-icons');
-    });
   }
   window.addEventListener('resize', fitBottomDock, { passive: true });
   // Lebar label berubah setelah web font tema selesai dimuat.
@@ -1667,7 +1676,11 @@ export async function renderTemplateFile(
       transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease !important;
     }
     /* Tahap fitBottomDock(): compact = tombol navigasi berbagi lebar layar; tight = label dirapatkan; icons = label disembunyikan.
-       Tombol audio (lingkaran berukuran tetap) tidak ikut direntangkan. */
+       Tombol audio (lingkaran berukuran tetap) tidak ikut direntangkan. measuring hanya ada selama pengukuran. */
+    .bottom-dock.lux-dock-measuring,
+    .bottom-dock.lux-dock-measuring > * {
+      transition: none !important;
+    }
     .bottom-dock.lux-dock-compact {
       width: calc(var(--lux-dock-avail, 100vw) - 16px) !important;
       max-width: calc(var(--lux-dock-avail, 100vw) - 16px) !important;
