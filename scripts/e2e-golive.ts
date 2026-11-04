@@ -245,9 +245,24 @@ async function main() {
         coverPage = (await getOnSubdomain(subdomain, `/?to=${encodeURIComponent(GUEST)}`)).text;
       }
       record("Media draf dipindah ke R2 saat terbit", coverPage.includes(cdnCover), cdnCover);
-      const synced = await prisma.invitation.findUnique({ where: { id: created.invitationId }, select: { featureSettings: true } });
-      const qrisUrl = String((synced?.featureSettings as Record<string, unknown> | null)?.qrisImageUrl ?? "");
-      record("QRIS di featureSettings ikut dipindah ke R2", qrisUrl.startsWith(`${process.env.S3_CUSTOM_DOMAIN?.replace(/\/$/, "")}/invitations/`), qrisUrl);
+      // Baris media diperbarui lebih dulu daripada featureSettings, jadi sampul CDN di halaman belum berarti QRIS selesai.
+      const cdnBase = `${process.env.S3_CUSTOM_DOMAIN?.replace(/\/$/, "")}/invitations/`;
+      let qrisUrl = "";
+      for (let i = 0; i < 15 && !qrisUrl.startsWith(cdnBase); i++) {
+        if (i) await new Promise((r) => setTimeout(r, 1000));
+        const synced = await prisma.invitation.findUnique({ where: { id: created.invitationId }, select: { featureSettings: true } });
+        qrisUrl = String((synced?.featureSettings as Record<string, unknown> | null)?.qrisImageUrl ?? "");
+      }
+      record("QRIS di featureSettings ikut dipindah ke R2", qrisUrl.startsWith(cdnBase), qrisUrl);
+      // HTML dibangun ulang sesudah featureSettings; beberapa permintaan sekaligus agar setiap worker PM2 ikut teruji
+      // (cache HTML terbit per proses). Tanpa perbaikan cache, worker lain bertahan sampai 5 menit.
+      let staleQris = 6;
+      for (let i = 0; i < 15 && staleQris > 0; i++) {
+        if (i) await new Promise((r) => setTimeout(r, 1000));
+        const pages = await Promise.all(Array.from({ length: 6 }, () => getOnSubdomain(subdomain, "/")));
+        staleQris = pages.filter((p) => p.text.includes(`/uploads/invitations/${created.invitationId}/qris`)).length;
+      }
+      record("Halaman subdomain merujuk QRIS di CDN (semua worker)", staleQris === 0, `${staleQris}/6 respons masih memuat URL lokal`);
     }
     const coverUrl = (coverPage.match(new RegExp(`(https?://[^"'()\\s]+)?/(uploads/)?${coverRel.replace(/[.]/g, "\\.")}`)) || [""])[0];
     record("Foto sampul dirujuk halaman", Boolean(coverUrl), coverUrl);

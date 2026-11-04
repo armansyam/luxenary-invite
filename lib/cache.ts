@@ -70,15 +70,18 @@ export class BoundedMemoryCache<T> {
 // Global Singletons menjaga cache tetap persisten antar request di runtime Node.js
 declare global {
   var masterTemplateCache: BoundedMemoryCache<string> | undefined;
-  var publishedHtmlCache: BoundedMemoryCache<string> | undefined;
+  var publishedHtmlCache: BoundedMemoryCache<PublishedHtmlEntry> | undefined;
   var invitationLookupCache: BoundedMemoryCache<any> | undefined;
 }
 
 export const masterTemplateCache =
   global.masterTemplateCache ?? new BoundedMemoryCache<string>(100, 3600_000); // 1 jam TTL untuk master template
 
+/** `mtimeMs` berkas saat dibaca: PM2 menjalankan beberapa worker, dan worker lain dapat membangun ulang berkasnya. */
+export type PublishedHtmlEntry = { html: string; mtimeMs: number };
+
 export const publishedHtmlCache =
-  global.publishedHtmlCache ?? new BoundedMemoryCache<string>(500, 300_000); // 5 menit TTL untuk published HTML
+  global.publishedHtmlCache ?? new BoundedMemoryCache<PublishedHtmlEntry>(500, 300_000); // 5 menit TTL untuk published HTML
 
 export const invitationLookupCache =
   global.invitationLookupCache ?? new BoundedMemoryCache<any>(1000, 60_000); // 60 detik TTL untuk resolusi slug/subdomain

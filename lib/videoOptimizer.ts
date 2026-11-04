@@ -6,6 +6,7 @@ import { promisify } from "util";
 import { removeIfExists } from "@/lib/fsSafe";
 import { logger } from "@/lib/logger";
 import { HttpError } from "@/lib/routeError";
+import { fileTypeFromBuffer } from "file-type";
 
 const execFileAsync = promisify(execFile);
 
@@ -209,7 +210,12 @@ export async function optimizeWebAudio(inputBuffer: Buffer, baseName: string): P
     }
 
     // Pemanggil menamai hasilnya .mp3/audio/mpeg; WAV atau M4A mentah dengan nama itu tidak diputar di sebagian peramban.
+    // MP3 asli tetap benar dengan nama itu, jadi hanya kompresinya yang terlewat.
     if (!compressionSuccess || !(await fileExists(outputTempPath))) {
+      if ((await fileTypeFromBuffer(inputBuffer))?.mime === "audio/mpeg") {
+        logger.warn("AudioOptimizer", "Kompresi gagal; MP3 asli disimpan tanpa kompresi", { file: baseName });
+        return inputBuffer;
+      }
       throw new HttpError(422, "Audio tidak dapat diproses. Pastikan berkas MP3, WAV, atau M4A tidak rusak, lalu unggah ulang.");
     }
     const compressedBuffer = await fs.promises.readFile(outputTempPath);

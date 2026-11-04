@@ -3,6 +3,9 @@
  * Berlaku baik ffmpeg tersedia (berkas rusak) maupun tidak (ENOENT).
  */
 import { describe, it, expect } from "vitest";
+import fs from "fs";
+import path from "path";
+import { fileTypeFromBuffer } from "file-type";
 import { optimizeWebAudio, optimizeWebVideo } from "@/lib/videoOptimizer";
 import { HttpError } from "@/lib/routeError";
 
@@ -16,5 +19,11 @@ describe("videoOptimizer menolak berkas yang tidak bisa dikonversi", () => {
 
   it("audio rusak menghasilkan HttpError 422", async () => {
     await expect(optimizeWebAudio(garbage, "vitest-audio")).rejects.toMatchObject({ status: 422 });
+  }, 60_000);
+
+  it("MP3 asli tetap diterima (dikompresi bila ffmpeg ada, apa adanya bila tidak)", async () => {
+    const mp3 = fs.readFileSync(path.join(process.cwd(), "public", "music", "bermuara.mp3")).subarray(0, 64 * 1024);
+    const out = await optimizeWebAudio(mp3, "vitest-mp3");
+    expect((await fileTypeFromBuffer(out))?.mime).toBe("audio/mpeg");
   }, 60_000);
 });

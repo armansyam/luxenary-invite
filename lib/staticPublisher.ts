@@ -31,16 +31,24 @@ async function ensurePublishedDir() {
  * Reads the standalone published HTML file content.
  */
 export async function getPublishedHtml(invitationId: string): Promise<string | null> {
-  // L1 Memory Cache: respons instan <0.05ms tanpa I/O disk saat lonjakan tamu
-  const cached = publishedHtmlCache.get(invitationId);
-  if (cached) return cached;
-
   const p = path.join(PUBLISHED_DIR, "ids", `${invitationId}.html`);
+  // Cache memori hanya menghemat pembacaan berkas. Berkas di disk adalah sumber kebenaran: worker PM2 lain yang
+  // membangun ulang (mis. sesudah sinkronisasi R2) hanya memperbarui cache-nya sendiri, sehingga tanpa cek mtime
+  // worker ini menyajikan HTML lama berisi URL /uploads/ yang berkasnya sudah dihapus, sampai TTL habis.
+  let mtimeMs: number;
   try {
-    await fs.promises.access(p);
-    const content = await fs.promises.readFile(p, "utf-8");
-    publishedHtmlCache.set(invitationId, content);
-    return content;
+    mtimeMs = (await fs.promises.stat(p)).mtimeMs;
+  } catch {
+    publishedHtmlCache.delete(invitationId);
+    return null;
+  }
+  const cached = publishedHtmlCache.get(invitationId);
+  if (cached && cached.mtimeMs === mtimeMs) return cached.html;
+
+  try {
+    const html = await fs.promises.readFile(p, "utf-8");
+    publishedHtmlCache.set(invitationId, { html, mtimeMs });
+    return html;
   } catch {
     return null;
   }
@@ -126,9 +134,7 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
   // Hanya simpan 1 file sumber kebenaran (Single Source of Truth) berdasarkan ID
   const masterPath = path.join(PUBLISHED_DIR, "ids", `${invitationId}.html`);
   await fs.promises.writeFile(masterPath, standaloneHtml, "utf-8");
-
-  // Sinkronkan ke L1 Memory Cache secara instan
-  publishedHtmlCache.set(invitationId, standaloneHtml);
+  publishedHtmlCache.set(invitationId, { html: standaloneHtml, mtimeMs: (await fs.promises.stat(masterPath)).mtimeMs });
 
   logger.info("StaticPublisher", "HTML undangan dibangun", { path: masterPath, sizeKB: Number((standaloneHtml.length / 1024).toFixed(1)) });
 
