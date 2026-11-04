@@ -28,6 +28,7 @@ const SENSITIVE_KEYS = new Set([
   "secret",
   "apikey",
   "serverkey",
+  "signaturesecretkey",
   "clientkey",
   "token",
   "authorization",

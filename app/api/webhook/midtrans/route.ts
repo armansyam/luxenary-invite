@@ -35,59 +35,71 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: "ignored", reason: "invalid_order_id_format" }, { status: 200 });
     }
 
-    // Ambil server key dari AdminSetting atau env dengan pembersihan whitespace & auto-swap guard
-    const serverKeys: string[] = [];
-    if (process.env.MIDTRANS_SERVER_KEY) serverKeys.push(process.env.MIDTRANS_SERVER_KEY.trim());
+    // Kunci penanda tangan notifikasi per lingkungan. Midtrans memisahkan Signature Secret Key dari Server Key (fitur
+    // multi Server Key): notifikasi ditandatangani Signature Secret Key, Server Key hanya untuk panggilan API. Bila
+    // Signature Secret Key belum diisi, Server Key lingkungan itu dipakai karena nilai keduanya sama sampai merchant
+    // membuat Server Key baru.
+    const signingKeys: string[] = [];
+    const envSigningKey = (process.env.MIDTRANS_SIGNATURE_KEY || process.env.MIDTRANS_SERVER_KEY || "").trim();
+    if (envSigningKey) signingKeys.push(envSigningKey);
     try {
       const settings = await prisma.adminSetting.findMany({
         where: {
           key: {
-            in: ["midtrans_sandbox_server_key", "midtrans_sandbox_client_key", "midtrans_production_server_key", "midtrans_production_client_key"],
+            in: [
+              "midtrans_sandbox_signature_key", "midtrans_sandbox_server_key", "midtrans_sandbox_client_key",
+              "midtrans_production_signature_key", "midtrans_production_server_key", "midtrans_production_client_key",
+            ],
           },
         },
       });
       const map: Record<string, string> = {};
       settings.forEach((s) => (map[s.key] = s.value?.trim() || ""));
 
-      // Server key dari kedua lingkungan; kolom client key ikut dicoba bila admin menukar isian keduanya.
       for (const mode of ["sandbox", "production"]) {
+        const signatureSecretKey = map[`midtrans_${mode}_signature_key`] || "";
+        if (signatureSecretKey) {
+          signingKeys.push(signatureSecretKey);
+          continue;
+        }
+        // Tanpa Signature Secret Key: Server Key, dengan kolom client key ikut dicoba bila admin menukar isian keduanya.
         for (const field of ["server", "client"]) {
           const value = map[`midtrans_${mode}_${field}_key`] || "";
-          if (value.startsWith("Mid-server-") || value.startsWith("SB-Mid-server-") || (field === "server" && value)) serverKeys.push(value);
+          if (value.startsWith("Mid-server-") || value.startsWith("SB-Mid-server-") || (field === "server" && value)) signingKeys.push(value);
         }
       }
     } catch (err) {
-      logger.error("MidtransWebhook", "Server key dari pengaturan admin gagal dibaca; hanya kunci env yang dipakai", err);
+      logger.error("MidtransWebhook", "Kunci Midtrans dari pengaturan admin gagal dibaca; hanya kunci env yang dipakai", err);
     }
 
-    const validServerKeys = Array.from(new Set(serverKeys.filter((k) => k && !k.includes("your_"))));
+    const validSigningKeys = Array.from(new Set(signingKeys.filter((k) => k && !k.includes("your_"))));
 
     // Hard-block di production DAN staging jika tidak ada key terkonfigurasi.
     // Bypass hanya diizinkan di mesin lokal (NODE_ENV=development) untuk sandbox testing.
-    if (validServerKeys.length === 0) {
+    if (validSigningKeys.length === 0) {
       const isLocalDev = process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_APP_ENV !== "staging";
       if (!isLocalDev) {
-        logger.error("MidtransWebhook", "Server key Midtrans tidak terkonfigurasi; webhook ditolak");
+        logger.error("MidtransWebhook", "Signature Secret Key / Server Key Midtrans tidak terkonfigurasi; webhook ditolak");
         return NextResponse.json({ error: "Gateway not configured" }, { status: 503 });
       }
-      logger.warn("MidtransWebhook", "Server key tidak terkonfigurasi; verifikasi signature dilewati (hanya pengembangan lokal)");
+      logger.warn("MidtransWebhook", "Kunci Midtrans tidak terkonfigurasi; verifikasi signature dilewati (hanya pengembangan lokal)");
     }
 
-    // Verifikasi Signature — WAJIB jika server key terkonfigurasi
-    if (validServerKeys.length > 0) {
-      // Jika server key ada tapi signatureKey tidak dikirim — tolak (kemungkinan payload palsu)
+    // Verifikasi Signature — WAJIB jika kunci terkonfigurasi
+    if (validSigningKeys.length > 0) {
+      // Jika kunci ada tapi signatureKey tidak dikirim — tolak (kemungkinan payload palsu)
       if (!signatureKey) {
         logger.warn("MidtransWebhook", "Payload tanpa signature_key ditolak", { orderId });
         return NextResponse.json({ status: "rejected", reason: "missing_signature" }, { status: 400 });
       }
 
-      const isValid = validServerKeys.some((serverKey) =>
+      const isValid = validSigningKeys.some((signatureSecretKey) =>
         MidtransGateway.verifyWebhookSignature({
           order_id: orderId,
           status_code: statusCode,
           gross_amount: grossAmount,
           signature_key: signatureKey,
-          serverKey,
+          signatureSecretKey,
         })
       );
 

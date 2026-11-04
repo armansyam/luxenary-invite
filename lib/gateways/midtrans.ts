@@ -4,7 +4,7 @@
  *
  * Flow: Snap UI (hosted payment page)
  * Webhook: POST /api/webhook/midtrans
- * Signature: SHA512(orderId + statusCode + grossAmount + serverKey)
+ * Signature: SHA512(orderId + statusCode + grossAmount + Signature Secret Key); Server Key hanya untuk panggilan API
  */
 import crypto from "crypto";
 import { PaymentGateway } from "@/lib/gateways/types";
@@ -457,12 +457,12 @@ export class MidtransGateway implements PaymentGateway {
     status_code: string;
     gross_amount: string;
     signature_key: string;
-    serverKey: string;
+    signatureSecretKey: string;
   }): boolean {
-    const { order_id, status_code, gross_amount, signature_key, serverKey } = payload;
-    const cleanServerKey = (serverKey || "").trim();
+    const { order_id, status_code, gross_amount, signature_key, signatureSecretKey } = payload;
+    const cleanSecretKey = (signatureSecretKey || "").trim();
     const cleanSignatureKey = (signature_key || "").trim().toLowerCase();
-    if (!cleanServerKey || !cleanSignatureKey) return false;
+    if (!cleanSecretKey || !cleanSignatureKey) return false;
 
     // Coba variasi format gross_amount (dengan desimal .00 atau integer polos)
     const amountCandidates = [gross_amount];
@@ -473,7 +473,7 @@ export class MidtransGateway implements PaymentGateway {
     }
 
     for (const amt of amountCandidates) {
-      const raw = `${order_id}${status_code}${amt}${cleanServerKey}`;
+      const raw = `${order_id}${status_code}${amt}${cleanSecretKey}`;
       const expected = crypto.createHash("sha512").update(raw).digest("hex").toLowerCase();
       if (expected.length === cleanSignatureKey.length && crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(cleanSignatureKey))) return true;
     }

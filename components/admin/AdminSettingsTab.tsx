@@ -459,10 +459,10 @@ export default function AdminSettingsTab(props: Props) {
     description="Konfigurasi Midtrans Snap — payment gateway resmi berlisensi Bank Indonesia (GoTo Group)."
     isEditing={Boolean(editSection["midtrans"])}
     onEdit={() => toggleEditSection("midtrans")}
-    onCancel={() => cancelEdit("midtrans", ["midtrans_environment", "midtrans_sandbox_client_key", "midtrans_sandbox_server_key", "midtrans_production_client_key", "midtrans_production_server_key"])}
-    onSave={() => saveSettings(["midtrans_environment", "midtrans_sandbox_client_key", "midtrans_sandbox_server_key", "midtrans_production_client_key", "midtrans_production_server_key"], setSavingMidtrans, "midtrans")}
+    onCancel={() => cancelEdit("midtrans", ["midtrans_environment", "midtrans_sandbox_client_key", "midtrans_sandbox_server_key", "midtrans_sandbox_signature_key", "midtrans_production_client_key", "midtrans_production_server_key", "midtrans_production_signature_key"])}
+    onSave={() => saveSettings(["midtrans_environment", "midtrans_sandbox_client_key", "midtrans_sandbox_server_key", "midtrans_sandbox_signature_key", "midtrans_production_client_key", "midtrans_production_server_key", "midtrans_production_signature_key"], setSavingMidtrans, "midtrans")}
     saving={savingMidtrans}
-    isDirty={isSectionDirty(["midtrans_environment", "midtrans_sandbox_client_key", "midtrans_sandbox_server_key", "midtrans_production_client_key", "midtrans_production_server_key"])}
+    isDirty={isSectionDirty(["midtrans_environment", "midtrans_sandbox_client_key", "midtrans_sandbox_server_key", "midtrans_sandbox_signature_key", "midtrans_production_client_key", "midtrans_production_server_key", "midtrans_production_signature_key"])}
     saveSuccess={settingsSaved["midtrans"]}
     saveSuccessMessage="Pengaturan Midtrans berhasil disimpan"
     viewContent={
@@ -482,7 +482,7 @@ export default function AdminSettingsTab(props: Props) {
                   {isSandbox ? "Sandbox Belum Dikonfigurasi" : "Produksi Belum Dikonfigurasi"}
                 </span>
                 <span className="text-[10px] text-rose-500 block mt-0.5">
-                  Klik Ubah lalu isi Client Key dan Server Key pada slot {isSandbox ? "Sandbox" : "Produksi"}.
+                  Klik Ubah lalu isi Client Key, Server Key, dan Signature Secret Key pada slot {isSandbox ? "Sandbox" : "Produksi"}.
                 </span>
               </div>
             </div>
@@ -514,6 +514,7 @@ export default function AdminSettingsTab(props: Props) {
             const isCurrentActive = (settingsMap["midtrans_environment"] || "sandbox") === "sandbox";
             const sbCk = settingsMap["midtrans_sandbox_client_key"] || "";
             const sbSk = settingsMap["midtrans_sandbox_server_key"] || "";
+            const sbSig = settingsMap["midtrans_sandbox_signature_key"] || "";
             return (
               <div className={`p-3.5 rounded-xl border transition ${
                 isCurrentActive
@@ -540,6 +541,10 @@ export default function AdminSettingsTab(props: Props) {
                     <span className="text-gray-500 block text-[11px]">Server Key:</span>
                     <span className="font-mono font-medium text-gray-900">{sbSk ? "••••••••••••" : <em className="text-gray-400 font-sans font-normal">Belum diatur</em>}</span>
                   </div>
+                  <div>
+                    <span className="text-gray-500 block text-[11px]">Signature Secret Key:</span>
+                    <span className="font-mono font-medium text-gray-900">{sbSig ? "••••••••••••" : <em className="text-gray-400 font-sans font-normal">{sbSk ? "Memakai Server Key" : "Belum diatur"}</em>}</span>
+                  </div>
                 </div>
               </div>
             );
@@ -550,6 +555,7 @@ export default function AdminSettingsTab(props: Props) {
             const isCurrentActive = (settingsMap["midtrans_environment"] || "sandbox") === "production";
             const prodCk = settingsMap["midtrans_production_client_key"] || "";
             const prodSk = settingsMap["midtrans_production_server_key"] || "";
+            const prodSig = settingsMap["midtrans_production_signature_key"] || "";
             return (
               <div className={`p-3.5 rounded-xl border transition ${
                 isCurrentActive
@@ -575,6 +581,10 @@ export default function AdminSettingsTab(props: Props) {
                   <div>
                     <span className="text-gray-500 block text-[11px]">Server Key:</span>
                     <span className="font-mono font-medium text-gray-900">{prodSk ? "••••••••••••" : <em className="text-gray-400 font-sans font-normal">Belum diatur</em>}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 block text-[11px]">Signature Secret Key:</span>
+                    <span className="font-mono font-medium text-gray-900">{prodSig ? "••••••••••••" : <em className="text-gray-400 font-sans font-normal">{prodSk ? "Memakai Server Key" : "Belum diatur"}</em>}</span>
                   </div>
                 </div>
               </div>
@@ -639,7 +649,7 @@ export default function AdminSettingsTab(props: Props) {
           </span>
         </div>
 
-        <FieldRow label="Client Key (Sandbox)" description="Midtrans Sandbox Dashboard → Settings → Access Keys">
+        <FieldRow label="Client Key (Sandbox)" description="Dashboard Sandbox → Settings → Access Keys → kartu Client Key">
           <input
             type="text"
             value={settingsMap["midtrans_sandbox_client_key"] ?? ""}
@@ -649,12 +659,22 @@ export default function AdminSettingsTab(props: Props) {
           />
         </FieldRow>
 
-        <FieldRow label="Server Key (Sandbox)" description="Midtrans Sandbox Dashboard → Settings → Access Keys">
+        <FieldRow label="Server Key (Sandbox) — untuk API" description="Sejak 29 Okt 2026 nilai Server Key hanya tampil saat dibuat: Access Keys → Server Keys → Generate server key (izin Snap Checkout, Core API, Cancel transaction), salin saat itu juga. Akun yang belum pernah membuat Server Key baru: nilainya sama dengan Signature Secret Key.">
           <input
             type="password"
             value={settingsMap["midtrans_sandbox_server_key"] ?? ""}
             onChange={(e) => setSetting("midtrans_sandbox_server_key", e.target.value.trim())}
             placeholder="Mid-server-xxxxxxxxxxxx"
+            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
+          />
+        </FieldRow>
+
+        <FieldRow label="Signature Secret Key (Sandbox) — verifikasi notifikasi" description="Dashboard Sandbox → Settings → Access Keys → kartu Signature Secret Key. Kosong = memakai Server Key (hanya benar selama belum pernah membuat Server Key baru).">
+          <input
+            type="password"
+            value={settingsMap["midtrans_sandbox_signature_key"] ?? ""}
+            onChange={(e) => setSetting("midtrans_sandbox_signature_key", e.target.value.trim())}
+            placeholder="Signature Secret Key"
             className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
           />
         </FieldRow>
@@ -672,7 +692,7 @@ export default function AdminSettingsTab(props: Props) {
           </span>
         </div>
 
-        <FieldRow label="Client Key (Produksi)" description="Midtrans Production Dashboard → Settings → Access Keys">
+        <FieldRow label="Client Key (Produksi)" description="Dashboard Production → Settings → Access Keys → kartu Client Key">
           <input
             type="text"
             value={settingsMap["midtrans_production_client_key"] || ""}
@@ -682,12 +702,22 @@ export default function AdminSettingsTab(props: Props) {
           />
         </FieldRow>
 
-        <FieldRow label="Server Key (Produksi)" description="Midtrans Production Dashboard → Settings → Access Keys">
+        <FieldRow label="Server Key (Produksi) — untuk API" description="Sejak 29 Okt 2026 nilai Server Key hanya tampil saat dibuat: Access Keys → Server Keys → Generate server key (izin Snap Checkout, Core API, Cancel transaction), salin saat itu juga. Akun yang belum pernah membuat Server Key baru: nilainya sama dengan Signature Secret Key.">
           <input
             type="password"
             value={settingsMap["midtrans_production_server_key"] || ""}
             onChange={(e) => setSetting("midtrans_production_server_key", e.target.value.trim())}
             placeholder="Mid-server-xxxxxxxxxxxx"
+            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
+          />
+        </FieldRow>
+
+        <FieldRow label="Signature Secret Key (Produksi) — verifikasi notifikasi" description="Dashboard Production → Settings → Access Keys → kartu Signature Secret Key. Kosong = memakai Server Key (hanya benar selama belum pernah membuat Server Key baru).">
+          <input
+            type="password"
+            value={settingsMap["midtrans_production_signature_key"] || ""}
+            onChange={(e) => setSetting("midtrans_production_signature_key", e.target.value.trim())}
+            placeholder="Signature Secret Key"
             className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
           />
         </FieldRow>

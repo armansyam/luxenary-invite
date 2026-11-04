@@ -359,6 +359,22 @@ export const defaultSettings: DefaultSettingItem[] = [
     "updatedAt": "2026-09-22T12:00:00.000Z"
   },
   {
+    "id": "e0241d83-8407-4c62-91ca-e0e95283840a",
+    "key": "midtrans_sandbox_signature_key",
+    "value": "",
+    "label": "Signature Secret Key Midtrans (Sandbox)",
+    "group": "midtrans",
+    "updatedAt": "2026-11-04T12:00:00.000Z"
+  },
+  {
+    "id": "e0241d83-8407-4c62-91ca-e0e95283840b",
+    "key": "midtrans_production_signature_key",
+    "value": "",
+    "label": "Signature Secret Key Midtrans (Produksi)",
+    "group": "midtrans",
+    "updatedAt": "2026-11-04T12:00:00.000Z"
+  },
+  {
     "id": "pricing_subtitle_luxenary_default",
     "key": "pricing_subtitle",
     "value": "Biaya satu kali bayar dengan masa aktif undangan {{archiveRetention}} (archive) dan penyimpanan galeri foto tamu {{galleryRetention}}.",
