@@ -187,10 +187,12 @@ export const FLOW_EXCLUDED_BLOCKS: readonly BuilderBlockId[] = ["couple-amp"];
 export const ORNAMENT_GAP_LIMITS = [0, 96] as const;
 export const DEFAULT_ORNAMENT_GAP = 16;
 
-/** Slot yang boleh punya gambar bawaan dari builder; latar (GLOBAL_FIXED_BG) diturunkan dari `texture`. */
+/**
+ * Slot yang boleh punya gambar bawaan dari builder; latar (GLOBAL_FIXED_BG) diturunkan dari `texture`. Cover desktop
+ * landscape sengaja tidak ada (lib/themeDefaultMedia.ts); nilai lama di spesifikasi tersimpan diabaikan parseBuilderSpec.
+ */
 export const BUILDER_DEFAULT_SLOTS = [
   { slot: "LANDING_COVER", label: "Cover pembuka" },
-  { slot: "LANDING_COVER_DESKTOP", label: "Cover desktop (landscape)" },
   { slot: "DESKTOP_SIDEBAR", label: "Hero kiri desktop" },
   { slot: "CLOSING_COVER", label: "Penutup" },
 ] as const;

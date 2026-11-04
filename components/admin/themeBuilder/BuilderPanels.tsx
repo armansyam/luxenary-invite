@@ -285,11 +285,6 @@ export function ColorsPanel({
           {BUILDER_DEFAULT_SLOTS.map(({ slot, label }) => (
             <div key={slot}>
               <p className="mb-1.5 text-[11.5px] font-semibold text-stone-700">{label}</p>
-              {slot === "LANDING_COVER_DESKTOP" && (
-                <p className="-mt-1 mb-1.5 text-[10.5px] leading-snug text-stone-500">
-                  Sampul tampil layar penuh di PC selama klien belum mengunggah cover sendiri. Lihat di pratinjau Desktop mode Klien baru.
-                </p>
-              )}
               <div className="grid grid-cols-7 gap-1.5">
                 {backdrops.map((t) => {
                   const selected = (spec.defaultMedia[slot] ?? "") === t.id;
@@ -305,7 +300,7 @@ export function ColorsPanel({
                         else delete next[slot];
                         onChange({ defaultMedia: next });
                       }}
-                      className={`flex ${slot === "LANDING_COVER_DESKTOP" ? "aspect-video" : "aspect-[3/4]"} items-center justify-center overflow-hidden rounded-md border bg-cover bg-center transition cursor-pointer ${selected ? "border-amber-500 ring-2 ring-amber-300" : "border-stone-200 hover:border-stone-400"}`}
+                      className={`flex aspect-[3/4] items-center justify-center overflow-hidden rounded-md border bg-cover bg-center transition cursor-pointer ${selected ? "border-amber-500 ring-2 ring-amber-300" : "border-stone-200 hover:border-stone-400"}`}
                       style={{ backgroundColor: t.id ? undefined : spec.palette.primary, backgroundImage: t.id ? `url('${t.id}')` : undefined }}
                     >
                       {!t.id && <span className="text-[9px] font-semibold" style={{ color: spec.palette.onPrimary }}>Palet</span>}

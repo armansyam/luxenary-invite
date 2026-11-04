@@ -2546,7 +2546,6 @@ export default function EditInvitation() {
                 allowVideo={true}
                 invitationId={invitationId}
                 slot="LANDING_COVER_DESKTOP"
-                defaultUrl={media["LANDING_COVER"] ? "" : themeDefaultOf(invitation, "LANDING_COVER_DESKTOP")}
                 onUploadStart={handleUploadStart}
                 onUploadEnd={handleUploadEnd}
                 expectOrientation="landscape"
