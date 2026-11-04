@@ -134,7 +134,8 @@ describe("bingkai foto", () => {
     // Jendela 25%-75% lebar dan 20%-80% tinggi, rasio 0.556: bingkai = 2x lebar dan 1.667x tinggi pembungkus.
     const css = frameCss({ "couple-photo-1": { shape: "arch", ornament: ORN, spread: 14, hideRing: false, fit: { l: 0.25, t: 0.2, r: 0.75, b: 0.8, aspect: 0.556 } } });
     // Luapan atas = 0.2/0.6/0.556 = 0.6 lebar; luapan bawah = 0.2/0.6/0.556 = 0.6 lebar (ditambah jarak bawah bawaan).
-    expect(css).toContain('[data-lux-block="couple-photo-1"]{position:relative;overflow:visible;width:min(140px,100%);height:auto;aspect-ratio:0.556;margin-top:calc(min(140px,100%) * 0.6);margin-bottom:calc(min(140px,100%) * 0.6 + 16px);border:0;padding:0;border-radius:0;box-shadow:none;}');
+    // min-height:0: foto klien yang lebih ramping dari jendela tidak boleh memanjangkan pembungkus (dan bingkainya).
+    expect(css).toContain('[data-lux-block="couple-photo-1"]{position:relative;overflow:visible;min-height:0;width:min(140px,100%);height:auto;aspect-ratio:0.556;margin-top:calc(min(140px,100%) * 0.6);margin-bottom:calc(min(140px,100%) * 0.6 + 16px);border:0;padding:0;border-radius:0;box-shadow:none;}');
     expect(css).toContain('[data-lux-block="couple-photo-1"]::after{content:"";position:absolute;left:-50%;top:-33.333%;width:200%;height:166.667%;');
     expect(css).toContain(`background:url('${ORN}') 0 0/100% 100% no-repeat;`);
     // Bentuk pilihan diabaikan: bentuk datang dari alpha bingkai.

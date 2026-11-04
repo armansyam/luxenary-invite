@@ -438,9 +438,12 @@ export function frameCss(frames: BuilderFrames): string {
       // Bingkai lebih besar daripada foto dan keluar dari kotaknya; margin atas dan bawah sebesar luapan itu menjaga
       // teks di sekitarnya tidak tertimpa. Persen margin dan lebar sama-sama relatif ke lebar induk, jadi lebar dasar
       // foto ditulis eksplisit (sama dengan blueprint) agar luapan dapat dihitung darinya.
+      // overflow:visible membuat tinggi minimum pembungkus ber-aspect-ratio mengikuti isinya: foto klien yang lebih
+      // ramping dari jendela memanjangkan pembungkus, dan bingkai yang ukurannya persen dari pembungkus ikut tertarik.
+      // min-height:0 mengunci tinggi ke perbandingan jendela.
       const base = FRAME_BASE[id];
       const over = (v: number) => pct((v / wh) / aspect);
-      rules.push(`${sel}{position:relative;overflow:visible;width:${base.width};height:auto;aspect-ratio:${aspect};margin-top:calc(${base.width} * ${over(t)});margin-bottom:calc(${base.width} * ${over(1 - b)} + ${base.gap});border:0;padding:0;border-radius:0;box-shadow:none;}`);
+      rules.push(`${sel}{position:relative;overflow:visible;min-height:0;width:${base.width};height:auto;aspect-ratio:${aspect};margin-top:calc(${base.width} * ${over(t)});margin-bottom:calc(${base.width} * ${over(1 - b)} + ${base.gap});border:0;padding:0;border-radius:0;box-shadow:none;}`);
       // `> img`: hanya foto klien; gambar ornamen yang menempel ke blok ini juga berupa img dan tidak boleh ikut dipotong.
       rules.push(`${sel} > img{width:100%;height:100%;object-fit:cover;border-radius:0;display:block;}`);
       rules.push(`${sel}::after{content:"";position:absolute;left:${pct((-l / ww) * 100)}%;top:${pct((-t / wh) * 100)}%;width:${pct(100 / ww)}%;height:${pct(100 / wh)}%;background:url('${f.ornament}') 0 0/100% 100% no-repeat;pointer-events:none;z-index:2;}`);
