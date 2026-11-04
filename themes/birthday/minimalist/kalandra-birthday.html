@@ -2,6 +2,7 @@
   ==============================================================
   TEMA KALANDRA BIRTHDAY — Minimalist Editorial Birthday Celebration
   Kategori: Minimalist | EventType: BIRTHDAY
+  Desktop >= 900px: .left-hero (DESKTOP_SIDEBAR) di kiri, kolom .lux-wrapper.right-panel 460px di kanan.
   Hak cipta dilindungi undang-undang Luxenary.
   ==============================================================
 -->
@@ -316,12 +317,81 @@
       width: 18px;
       height: 18px;
     }
+
+    /* HERO KIRI DESKTOP (slot DESKTOP_SIDEBAR); kolom undangan 460 px di kanan */
+    .left-hero {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: calc(100% - 460px);
+      height: 100vh;
+      z-index: 10;
+      overflow: hidden;
+      background: var(--bg-dark) center / cover no-repeat;
+    }
+
+    .left-hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, color-mix(in srgb, var(--bg-dark) 92%, transparent) 0%, color-mix(in srgb, var(--bg-dark) 25%, transparent) 50%, transparent 100%);
+    }
+
+    .left-hero-content {
+      position: absolute;
+      left: 4rem;
+      right: 4rem;
+      bottom: 4rem;
+      z-index: 1;
+      color: var(--bg-light);
+    }
+
+    .left-hero-name {
+      font-size: clamp(2.8rem, 4.6vw, 4.5rem);
+      font-weight: 400;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+      overflow-wrap: break-word;
+    }
+
+    .left-hero-info {
+      font-size: 0.85rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: color-mix(in srgb, var(--bg-light) 70%, transparent);
+      margin-top: 0.8rem;
+    }
+
+    .left-hero-date {
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-top: 1rem;
+    }
+
+    @media (min-width: 900px) {
+      .left-hero { display: block; }
+      .fixed-bg-layer { left: calc(100% - 460px); width: 460px; }
+      .lux-wrapper { margin: 0 0 0 calc(100% - 460px); width: 460px; max-width: none; }
+      .bottom-dock { left: calc(100% - 230px); }
+    }
   </style>
 </head>
 
 <body>
   <!-- FIXED BACKGROUND LAYER -->
   <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
+  <div class="left-hero" style="background-image: url('{{sidebarPhotoUrl}}');">
+    <div class="left-hero-content">
+      <div class="cover-tagline">{{eventLabel}}</div>
+      <h1 class="left-hero-name serif">{{mainName}}</h1>
+      {{#if mainInfoLine}}<p class="left-hero-info">{{mainInfoLine}}</p>{{/if}}
+      {{#if eventDateFormatted}}<p class="left-hero-date">{{eventDateFormatted}}</p>{{/if}}
+    </div>
+  </div>
   <!-- COVER SCREEN -->
   <div id="coverScreen" class="cover-screen" style="background-image: url('{{mainPhotoUrl}}');">
     <div class="cover-overlay"></div>
@@ -341,7 +411,7 @@
     </div>
   </div>
 
-  <div class="lux-wrapper">
+  <div class="lux-wrapper right-panel" id="rightPanel">
     <!-- HOME / PROFILE -->
     <section id="home">
       <div class="editorial-card">
