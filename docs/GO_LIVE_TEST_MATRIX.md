@@ -30,7 +30,7 @@ Diperbarui 29 Oktober 2026. Status setiap alur sebelum rilis produksi pertama, b
 |---|---|---|
 | TLS wildcard Caddy dan DNS subdomain asli | Butuh domain dan server | Buka `https://<subdomain>.<domain>` dari ponsel di jaringan seluler |
 | Purge cache Cloudflare | Uji lokal wajib mengosongkan `CF_ZONE_ID`/`CF_API_TOKEN` (pernah memurge zona produksi) | Terbitkan ulang undangan, lalu cek header `cf-cache-status` |
-| Transaksi Midtrans sungguhan | Kunci produksi sudah diisi (5 Nov 2026), tetapi Core API produksi belum diaktifkan Midtrans (charge 402), jadi checkout memakai Snap; belum ada pembayaran asli | Bayar satu order lewat halaman Snap, pastikan webhook mengubah status menjadi PAID; ulangi setelah Core API aktif untuk QR di `/payment` |
+| Transaksi Midtrans sungguhan | Kunci produksi sudah diisi (5 Nov 2026), tetapi Core API produksi belum diaktifkan Midtrans (charge 402), jadi checkout memakai Snap (GoPay QRIS dan QRIS). Notifikasi produksi `pending`/`cancel` terbukti lolos verifikasi pada 5 Nov lewat transaksi uji yang dibatalkan; pembayaran asli sampai `settlement` belum | Bayar satu order lewat halaman Snap, pastikan webhook mengubah status menjadi PAID; ulangi setelah Core API aktif untuk QR di `/payment` |
 | Penyedia SMTP sungguhan | Hanya diuji ke SMTP sink | Tombol uji SMTP di Admin > Pengaturan > Integrasi |
 | Login Google di domain produksi | Redirect URI OAuth terikat domain | Login klien baru dari domain produksi |
 | Backup ke bucket privat | `S3_BACKUP_BUCKET_NAME` masih kosong | Isi env, jalankan cron backup, cek objek di bucket |
