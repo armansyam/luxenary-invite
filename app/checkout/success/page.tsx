@@ -8,7 +8,8 @@ type OrderStatus = "PENDING" | "PAID" | "EXPIRED" | null;
 function SuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const orderId = searchParams.get("order");
+  // `order` dari callbacks.finish per transaksi; `order_id` ditambahkan Midtrans saat memakai Redirection URL dashboard.
+  const orderId = searchParams.get("order") || searchParams.get("order_id");
 
   const [orderStatus, setOrderStatus] = useState<OrderStatus>(null);
   const [retryHref, setRetryHref] = useState("/dashboard");
