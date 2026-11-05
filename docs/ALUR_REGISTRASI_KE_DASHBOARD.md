@@ -206,7 +206,7 @@ flowchart TD
 *   **File:** [`app/checkout/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/checkout/page.tsx) & [`app/payment/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/payment/page.tsx)
 *   **Aturan Saluran Pembayaran (*Zero Client Decision*):**
     Klien **tidak memiliki pilihan** untuk memilih metode pembayaran sendiri. Saluran ditentukan 100% oleh Admin melalui `AdminSetting` key `payment_mode`:
-    - **Mode `GATEWAY`:** Kasir hanya memunculkan saluran QRIS otomatis (Midtrans/Xendit). Form transfer manual disembunyikan secara total.
+    - **Mode `GATEWAY`:** Kasir hanya memunculkan saluran QRIS otomatis (Midtrans). Form transfer manual disembunyikan secara total.
     - **Mode `MANUAL`:** Kasir hanya menampilkan nomor rekening bank admin dan form unggah foto bukti transfer. Gateway dinonaktifkan.
 *   **Alur Tagihan Terbit:**
     1. Klien memilih paket $\rightarrow$ API `POST /api/orders/create` menerbitkan order `PENDING` dengan format invoice `INV-YYMMDD-XXXX`.
@@ -217,7 +217,7 @@ flowchart TD
 *   **Alur:**
     1. Klien membuka koneksi Server-Sent Events (SSE) saat kode QRIS ditampilkan di layar.
     2. Saat pembeli memindai QRIS dan membayar via m-Banking/e-Wallet, gateway mengirim Webhook HTTP POST ke:
-       `app/api/webhook/midtrans/route.ts` atau `app/api/webhook/xendit/route.ts`, sesuai gateway yang dipakai order.
+       `app/api/webhook/midtrans/route.ts`.
     3. Handler webhook memvalidasi checksum/signature, lalu mengupdate database:
        ```typescript
        await prisma.order.update({
@@ -312,7 +312,7 @@ Klien kini memiliki akses ke 4 modul utama:
 | **Checkout** | UI | `app/checkout/page.tsx` | Kasir pembayaran, countdown QRIS, & upload bukti transfer |
 | **Order** | API | `app/api/orders/create/route.ts` | Penerbitan nomor invoice unik transaksi |
 | **Payment** | API SSE | `app/api/payments/status-stream/[orderId]/route.ts` | Realtime listener status pembayaran lunas |
-| **Webhook** | API | `app/api/webhook/midtrans/route.ts`, `app/api/webhook/xendit/route.ts` | Penerima notifikasi pembayaran dari payment gateway |
+| **Webhook** | API | `app/api/webhook/midtrans/route.ts` | Penerima notifikasi pembayaran dari payment gateway |
 | **Setup** | UI | `app/(client)/dashboard/setup/page.tsx` | Wizard 3 langkah profil pasangan & pilihan tema |
 | **Setup** | API | `app/api/client/invitations/create/route.ts` | Inisialisasi record invitation, slug, dan default events |
 | **Dashboard** | UI | `app/(client)/dashboard/page.tsx` | Dashboard utama ringkasan performa undangan |

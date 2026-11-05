@@ -30,7 +30,7 @@ Modul **Finance & Keuangan Terpusat** dirancang khusus untuk administrator eksek
 ┌─────────────────────────────────────────────────────────────┐
 │  ARUS KAS MASUK (GROSS REVENUE)                             │
 │  - Otomatis 100% dari tabel `orders`                        │
-│  - Midtrans Snap, Xendit Invoice, & Transfer Bank Disetujui │
+│  - Midtrans (QRIS / Snap) & Transfer Bank Disetujui         │
 │  - Dilarang input manual omzet order untuk cegah selisih    │
 └─────────────────────────────────────────────────────────────┘
                                │
@@ -53,7 +53,7 @@ Modul **Finance & Keuangan Terpusat** dirancang khusus untuk administrator eksek
 ```
 
 ### Mengapa Pemasukan Tidak Boleh Diinput Manual?
-Dalam arsitektur SaaS *white-label*, data pendapatan penjualan terverifikasi secara absolut dari tabel `Order` yang telah berstatus `PAID` (baik terkonfirmasi otomatis via webhook Midtrans/Xendit maupun melalui persetujuan mutasi transfer bank manual oleh admin). Mencatat ulang pemasukan order secara terpisah di tab finance akan menciptakan redundansi data, rawan *human-error*, dan berpotensi menimbulkan *ghost revenue*.
+Dalam arsitektur SaaS *white-label*, data pendapatan penjualan terverifikasi secara absolut dari tabel `Order` yang telah berstatus `PAID` (baik terkonfirmasi otomatis via webhook Midtrans maupun melalui persetujuan mutasi transfer bank manual oleh admin). Mencatat ulang pemasukan order secara terpisah di tab finance akan menciptakan redundansi data, rawan *human-error*, dan berpotensi menimbulkan *ghost revenue*.
 
 ---
 

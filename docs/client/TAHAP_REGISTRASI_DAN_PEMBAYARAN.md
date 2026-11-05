@@ -150,8 +150,8 @@ flowchart TD
 * **API Checkout:** `POST /api/payments/checkout` ([`app/api/payments/checkout/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/payments/checkout/route.ts))
 * **Alur Eksekusi:**
   1. Klien menekan tombol *"Bayar via QRIS"*.
-  2. Server memanggil driver gateway aktif (`midtrans` atau `xendit`).
-  3. Gateway menghasilkan **String Data QRIS Dinamis**.
+  2. Server memanggil driver gateway `midtrans`.
+  3. Gateway menghasilkan **String Data QRIS Dinamis** (Core API); bila charge ditolak, server mengembalikan URL Snap dan kasir menampilkan tombol ke halaman pembayaran Midtrans.
   4. Layar kasir langsung menampilkan **Output Kotak QRIS**:
      - Gambar QR Code (300x300 px).
      - Nominal persis yang harus dibayar.
@@ -162,7 +162,7 @@ flowchart TD
      - Browser klien mendengarkan streaming event dari:  
        [`app/api/payments/status-stream/[orderId]/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/payments/status-stream/%5BorderId%5D/route.ts).
   7. **Konfirmasi Masuk (Webhook Gateway):**
-     - Server gateway mengirim sinyal Webhook ke endpoint sistem (`/api/webhook/midtrans` atau `/api/webhook/xendit`).
+     - Server gateway mengirim sinyal Webhook ke endpoint sistem (`/api/webhook/midtrans`).
      - Sistem memvalidasi signature hash resmi dari gateway.
      - Status transaksi di database diubah menjadi **`status: "PAID"`, `paidAt: new Date()`**.
   8. **Otomatis Masuk ke Setup Wizard:**
@@ -186,7 +186,7 @@ flowchart TD
   - Kasir memunculkan pesan peringatan: *"QRIS sebelumnya sudah kedaluwarsa. Silakan bayar tagihan baru."*
   - Tombol bayar kembali aktif untuk meminta kode QRIS baru yang segar.
 * **Jika Pengguna Membayar QRIS Expired di HP:**
-  - Gateway (Midtrans/Xendit) menolak transaksi di aplikasi m-Banking (*"Kode QRIS tidak berlaku"*). Saldo pengguna tidak akan terpotong.
+  - Gateway (Midtrans) menolak transaksi di aplikasi m-Banking (*"Kode QRIS tidak berlaku"*). Saldo pengguna tidak akan terpotong.
 * **Pencegahan Data Sampah di Database:**
   - Sistem **tidak membuat invoice baru** saat user mencoba bayar ulang paket yang sama.
   - Sistem mendaur ulang (*re-use*) record order yang expired tersebut dan mereset statusnya kembali ke `PENDING`.
@@ -195,7 +195,7 @@ flowchart TD
 * **Sebelum Klik Bayar:** Pengguna bebas berpindah paket (`Ubah`), tidak ada order yang terkirim ke payment gateway.
 * **Saat QRIS Tampil:** Tombol *"Ubah"* otomatis disembunyikan untuk mencegah transaksi ganda.
 * **Sinkronisasi Batal ke Gateway:**
-  - Pada gateway stateful (Midtrans & Xendit), sistem menembak API cancel resmi (`POST /v2/{orderId}/cancel`) saat order dibatalkan atau di-generate ulang.
+  - Pada gateway stateful (Midtrans), sistem menembak API cancel resmi (`POST /v2/{orderId}/cancel`) saat order dibatalkan atau di-generate ulang.
   - Gateway mematikan transaksi lama secara permanen sehingga tidak bisa dibayar ganda.
 * **Verifikasi Webhook Ketat:**
   - Webhook mencocokkan `gatewayTxId` aktif di database. Transaksi lama yang sudah dibatalkan tidak akan pernah mengaktifkan paket.
@@ -268,7 +268,7 @@ Setiap kali transaksi disetujui lunas (baik otomatis via Webhook QRIS maupun man
 | **4. Buat / Reuse Order** | `app/checkout/page.tsx` | `POST /api/orders/create` | `Order` (`status: PENDING` / Single Order Reuse) |
 | **5. Bayar QRIS** | `app/checkout/page.tsx` | `POST /api/payments/checkout` | `Order` (`gatewayId`, `snapToken`) |
 | **6. Listener Realtime** | Browser Client | `GET /api/payments/status-stream/[orderId]` | SSE Stream |
-| **7. Webhook Lunas** | Payment Gateway Server | `POST /api/webhook/midtrans` atau `/api/webhook/xendit` | `Order` (`status: PAID`) |
+| **7. Webhook Lunas** | Payment Gateway Server | `POST /api/webhook/midtrans` | `Order` (`status: PAID`) |
 | **8. Upload Bukti Transfer** | `app/checkout/page.tsx` | `POST /api/client/orders/[id]/upload-proof` | `Order` (`proofImageUrl`, `status: PENDING`) |
 | **9. Cek Status & Superseded** | `app/checkout/page.tsx` | `GET /api/client/orders/[id]/status` | `Order` (`status`, `isSuperseded`, `rejectReason`) |
 | **10. Admin Tolak Bukti** | `app/(admin)/admin/page.tsx` | `POST /api/admin/orders/[orderId]/reject` | `Order` (`status: FAILED`, `rejectReason`) |

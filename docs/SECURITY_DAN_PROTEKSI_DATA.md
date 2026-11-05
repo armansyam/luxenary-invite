@@ -70,7 +70,7 @@ Server tidak pernah mempercayai ekstensi file (`.jpg`, `.png`) maupun header `Co
 ## 6. Lapisan 6: Integritas Transaksi & Validasi Webhook
 
 1. **Verifikasi Tanda Tangan Kriptografi (Signature Validation):**
-   Setiap notifikasi webhook pembayaran dari Midtrans dan Xendit divalidasi menggunakan hash kriptografi (HMAC-SHA256 atau SHA512) dengan secret key masing-masing gateway.
+   Setiap notifikasi webhook pembayaran dari Midtrans divalidasi menggunakan hash SHA512 dengan Signature Secret Key (atau Server Key bila Signature Secret Key belum diisi).
 2. **Idempotency Protection:**
    Setiap webhook yang masuk dicatat di tabel `webhook_logs`. Jika notifikasi yang sama dikirim berulang kali oleh gateway (*retry mechanism*), sistem menjamin status transaksi tidak diproses dobel (*idempotent execution*).
 3. **Pemberian Hak Akses (Role-Based Access Control):**

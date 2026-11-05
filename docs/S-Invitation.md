@@ -518,17 +518,17 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
 
 ## 7. Orkestrasi Multi-Payment Gateway 2-Arah & Dynamic Fee
 
-Platform mendukung arsitektur payment gateway 2-arah (*two-way handshake*) terintegrasi dengan pergantian instan 1-klik dari dashboard Admin (`active_payment_gateway`):
+Platform memakai satu payment gateway 2-arah (*two-way handshake*), Midtrans; Xendit dan setelan `active_payment_gateway` dihapus 20 Okt 2026:
 
 1. **Gateway 2-Arah Terintegrasi**:
-   - **Midtrans** (Core API In-App QRIS, GoPay, VA Multi-Bank, Snap Fallback, pembatalan instan via `/v2/{orderId}/cancel`)
-   - **Xendit** (Invoice QRIS, VA Multi-Bank, E-Wallet, pembatalan instan via `/v2/invoices/{invoiceId}/expire`)
+   - **Midtrans**: Core API QRIS in-app (`/v2/charge`, acquirer GoPay); bila charge ditolak, fallback ke Snap yang menampilkan semua metode aktif di akun (QRIS, GoPay, VA). Pembatalan instan via `/v2/{orderId}/cancel`.
+   - *Status produksi (5 Nov 2026):* akun produksi menolak semua charge Core API dengan 402 "Payment channel is not activated" walau metode di dashboard aktif; Snap berhasil, jadi pembayaran produksi berjalan lewat halaman Snap. Support Midtrans mengonfirmasi layanan Core API belum diaktifkan; aktivasi diajukan Direktur/Owner lewat formulir Midtrans.
    - **Transfer Bank Manual** (Verifikasi struk transfer manual oleh Admin)
    - *Penghapusan Gateway 1-Arah:* Seluruh gateway 1-arah (iPaymu, Duitku, Tripay) telah dieliminasi dari arsitektur sistem karena ketiadaan API pembatalan publik. Ketiadaan fungsi pembatalan 2-arah memicu celah fatal *ghost payment* di mana QRIS/VA tetap aktif di bank setelah order dibatalkan di aplikasi.
    - *Validasi Nominal & Pelunasan Atomik:* Webhook hanya melunasi order jika nominal yang dibayar sama dengan `Order.chargedAmount` (nominal yang dikirim ke gateway, termasuk biaya layanan mode `BUYER`); nominal tidak cocok dicatat sebagai `WebhookLog.status = amount_mismatch` dan order tetap `PENDING`. Transisi `PENDING` -> `PAID` beserta konsumsi hold promo dan komisi mitra berjalan dalam satu transaksi (`settleOrderAsPaid`): kegagalan di tengah jalan membatalkan seluruh perubahan dan gateway mengirim ulang webhook.
 2. **Two-Way Cancellation Handshake**:
    - Order melacak `gatewayId` dan `gatewayTxId`.
-   - Saat klien membatalkan tagihan, mengubah paket sebelum bayar, atau waktu kedaluwarsa habis, sistem secara proaktif memanggil API pembatalan resmi ke gateway aktif (Midtrans `/v2/cancel` atau Xendit `/v2/invoices/.../expire`) agar QRIS di jaringan perbankan (ASPI / BI) langsung hangus seketika.
+   - Saat klien membatalkan tagihan, mengubah paket sebelum bayar, atau waktu kedaluwarsa habis, sistem secara proaktif memanggil API pembatalan resmi Midtrans (`/v2/{orderId}/cancel`) agar QRIS di jaringan perbankan (ASPI / BI) langsung hangus seketika.
 3. **Perhitungan Fee Dinamis (Zero Hardcode)**:
    - Parameter `payment_fee_payer` (`BUYER` vs `MERCHANT`).
    - Parameter `payment_gateway_fee_percent` (misal `0.7%`).
@@ -558,9 +558,8 @@ Platform mendukung arsitektur payment gateway 2-arah (*two-way handshake*) terin
     - Midtrans Gateway menerapkan penyimpanan kredensial terpisah antara Sandbox (`midtrans_sandbox_client_key`, `midtrans_sandbox_server_key`) dan Produksi (`midtrans_production_client_key`, `midtrans_production_server_key`) dengan sinkronisasi otomatis ke key warisan (`midtrans_client_key`, `midtrans_server_key`).
     - Mode lingkungan dikontrol secara deterministik melalui parameter `midtrans_environment` (`sandbox` atau `production`) tanpa ketergantungan rapuh pada prefix string `SB-`.
     - Form antarmuka menyajikan Client Key di atas Server Key (1:1 dengan dashboard resmi Midtrans) dan verifikasi webhook mencakup kunci penanda tangan dari kedua slot: Signature Secret Key, atau Server Key bila belum diisi (butir 49 di bagian perubahan).
-11. **Sub-Tabs Vendor Payment Gateway di Admin Settings**:
-    - Penyusunan form pengaturan 2 vendor gateway 2-arah ke dalam kontrol sub-tab segmented control horizontal (`Midtrans` dan `Xendit`).
-    - Kartu global pusat kontrol tetap berada di posisi atas, sementara vendor cards diisolasi per tab sehingga antarmuka ringkas dan tidak memerlukan vertical scrolling panjang.
+11. **Kartu Gateway di Admin Settings**:
+    - Tab Keuangan & Gateway memuat kartu mode pembayaran di atas, lalu satu kartu Midtrans (slot sandbox dan produksi); sub-tab vendor Midtrans/Xendit hilang bersama Xendit (20 Okt 2026).
     - Indikator badge visual "Aktif" otomatis menandai vendor yang sedang dijadikan gateway default pembayaran klien.
 12. **Rekonsiliasi Real-Time & Deteksi Host Dinamis**:
     - Sistem mendeteksi `appUrl` dan `rootDomain` secara dinamis dari request headers (`x-forwarded-host`, `host`, `x-forwarded-proto`) via `lib/serverDomainUtils.ts`, kompatibel secara native di lingkungan pengembangan `localhost:3000`, IP lokal, reverse proxy VPS, custom domain, maupun tunnel dev tanpa hardcode URL.
@@ -578,8 +577,7 @@ Platform mendukung arsitektur payment gateway 2-arah (*two-way handshake*) terin
       - *Profil Pembeli*: Nama depan & nama belakang (`first_name`, `last_name` / `given_names`, `surname`), alamat email resmi akun, dan nomor kontak WhatsApp aktif klien (`phoneNumber` terformat E.164).
       - *Alamat*: Alamat penagihan & pengiriman digital terstandarisasi ISO `IDN`, terhubung ke alamat pengiriman fisik jika tersedia di data undangan.
       - *Item Details & Branding*: Identitas item spesifik per kondisi transaksi, brand platform dinamis dari `AdminSetting`, kategori layanan, dan pemisahan biaya layanan admin (`ADMIN_FEE`) dengan presisi matematika penuh (`gross_amount === sum(item.price * item.quantity)`).
-      - *Notifikasi Multi-Kanal*: Xendit otomatis mengirim invoice dan status pembayaran via WhatsApp, SMS, dan Email jika nomor ponsel disediakan.
-      - *Metadata Komprehensif Dua Arah*: Midtrans `custom_field1` (Invoice), `custom_field2` (Order Type & Full Name), `custom_field3` (Context detail); Xendit `metadata` objek berisi `orderId`, `invoiceNumber`, `orderType`, `planType`, `targetPlanType`, `upgradedFromPlan`, `requestedDomain`, `customerFullName`, `customerEmail`, `customerPhone`, `invitationSlug`, `coupleName`, dan `platformName`.
+      - *Metadata Midtrans*: `custom_field1` (Invoice), `custom_field2` (Order Type & Full Name), `custom_field3` (Context detail).
 
 ---
 
@@ -729,7 +727,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Analitik metrik bisnis, distribusi tier paket & popularitas tema (`DASHBOARD_OVERVIEW_DAN_STATISTIK.md`)
    - Remote session impersonasi & user lifecycle (`REMOTE_DAN_MANAJEMEN_KLIEN.md`)
    - Tata kelola projek undangan terfilter & custom domain Caddy (`MANAJEMEN_UNDANGAN_DAN_DOMAIN.md`)
-   - Transaksi invoice, inspeksi struk manual & gateway 2-arah Midtrans/Xendit (`MANAJEMEN_TRANSAKSI_DAN_GATEWAY.md`)
+   - Transaksi invoice, inspeksi struk manual & gateway 2-arah Midtrans (`MANAJEMEN_TRANSAKSI_DAN_GATEWAY.md`)
    - Manajemen tema fisik & auto-compile demo (`MANAJEMEN_TEMA_ADMIN.md`)
    - Branding platform, Cloudflare R2 CORS & disaster recovery snapshot PostgreSQL (`PENGATURAN_SISTEM_BRANDING_DAN_DATABASE.md`)
    - Pemeliharaan berkala cron job, retensi & auto-backup (`CRON_DAN_MAINTENANCE_OTOMATIS.md`)

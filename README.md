@@ -1,7 +1,7 @@
 # Luxenary Invite — S-Invite Platform
 
 > **Platform Undangan Digital Multi-Event B2C Self-Service (Wedding, Birthday, Khitan, Aqiqah, Wisuda, Gathering)**  
-> Next.js 16.3.8 · Prisma 7.9/7.10 (PostgreSQL) · NextAuth v5 · Gateway 2-Arah (Midtrans & Xendit) · Nodemailer SMTP · Cloudflare R2  
+> Next.js 16.3.8 · Prisma 7.9/7.10 (PostgreSQL) · NextAuth v5 · Gateway 2-Arah (Midtrans) · Nodemailer SMTP · Cloudflare R2  
 > **Versi Aplikasi: 1.0.1 (lini rilis produksi pertama 1.0; tag `v1.0.0`, lalu `v1.0.1` menyembunyikan amplop di portofolio) | Versi Dokumen: 6.3.6 | Diperbarui: 3 November 2026**  
 > Versi yang sedang berjalan di server tampil di Admin > Pengaturan > Tentang Aplikasi (dibaca dari `package.json` dan commit build).
 
@@ -67,8 +67,8 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
    - *Realtime SSE Stream & Zero Polling:* Menggunakan Server-Sent Events murni (`/api/payments/status-stream/[orderId]`) dengan jembatan cross-process PostgreSQL `LISTEN/NOTIFY` untuk PM2 Cluster Mode. Event pembayaran instan (<5ms) tersiar ke seluruh instance PM2 tanpa polling browser.
    - *Graceful QRIS Session Renewal:* Regenerasi QRIS baru jika 15 menit kedaluwarsa tanpa mereset pesanan, nomor invoice, atau diskon promo yang terkunci pada masa aktif pesanan 24 jam.
    ┌─────────────────────────────────────┬──────────────────────────┐
-   │  Gateway 2-Arah (Midtrans & Xendit) │  Transfer Bank Manual    │
-   │  Core API QRIS / Snap / Invoice     │  (Bebas Hardcode)        │
+   │  Gateway 2-Arah (Midtrans)          │  Transfer Bank Manual    │
+   │  Core API QRIS / Snap               │  (Bebas Hardcode)        │
    │  Two-Way Cancel & Zero Ghost Payment│  Upload WebP ke R2 via   │
    │  → Webhook Auto-PAID + Invoice Email│  Custom Domain Edge CDN  │
    │  → Realtime SSE Push to Client      │  → Admin Approve/Reject  │
@@ -139,7 +139,7 @@ ADMIN PORTAL (/admin)
      - **Tab Setup & Integrasi:** Konfigurasi DNS & IP Server (auto-detect IP publik VPS, CNAME target dinamis), SMTP Email Server, Batas Upload Media & Galeri (Video Studio hingga 100 MB, Foto Studio, dan Foto Galeri Tamu Memories), dan Siklus Hidup & Retensi Sistem (empat jam terpisah: subdomain, galeri foto tamu, custom domain; masa arsip di tab Database).
      - **Tab Platform:** Branding & Identitas Platform, CS Support, Hero Tagline, Fitur Landing Page, Template WhatsApp.
      - **Tab Paket & Harga:** Konfigurasi harga paket undangan (TIER_1 Serenade, TIER_2 Symphony, TIER_3 Eternity) serta Layanan Tambahan (Add-Ons) resmi: Perpanjang Masa Aktif Bulanan (30 Hari - Rp50.000) dan Tahunan (1 Tahun - Rp150.000). Fitur custom domain sudah melekat gratis dan opsional pada Paket TIER_3 Eternity.
-     - **Tab Gateway QRIS:** Pusat kontrol global dan sub-tabs terisolasi per vendor gateway 2-arah (Midtrans dan Xendit) dengan kredensial terpadu dan resolusi endpoint otomatis.
+     - **Tab Keuangan & Gateway:** Mode pembayaran (manual/gateway), rekening transfer manual, dan kartu Midtrans dengan slot kredensial sandbox dan produksi terpisah.
    - Database (Database): Snapshot backup & restore PostgreSQL
    - Monitoring (Monitoring & Status Server): Pemantauan kestabilan sistem 60-hari interaktif (Interactive Uptime Status Bar), pemantauan memori fisik Host RAM VPS (`os.totalmem()`), Host OS Uptime, beban partisi root Linux (/), latensi & metrik ukuran terpakai Cloudflare R2 Media Storage (kapasitas terpakai, sisa kuota bebas biaya 10 GB), serta audit aktivitas staf & webhook gateway.
    - Tim & Akses (Team): Manajemen akun staf admin dengan sistem Dynamic Granular Permissions (Checklist Interaktif per Modul dengan Preset Template `SUPER_ADMIN`, `ADMIN`, `FINANCE`, `SUPPORT`), kemampuan edit hak akses real-time, serta proteksi keamanan mutlak untuk modul sensitif.
@@ -257,7 +257,7 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 | **Media Storage** | Cloudflare R2 (prod) + Local disk VPS (draft/dev) via `lib/storage.ts` (penamaan slot deterministik & clean overwrite) |
 | **Image Processing** | `sharp` — WebP, resize, compress |
 | **Video Processing** | `FFmpeg` — H.264, auto-trim 20s, no audio loop, 30fps cap, +faststart streaming (bila ffmpeg gagal atau tidak ada, unggahan video dan audio non-MP3 ditolak dengan HTTP 422 dan tidak disimpan mentah; MP3 asli disimpan tanpa kompresi; `deploy.sh` memperingatkan bila ffmpeg tidak ada atau rusak) |
-| **Payment** | Gateway 2-Arah (Midtrans Core API QRIS & Xendit Invoice) + Transfer Bank Manual dengan transmisi profil pembeli lengkap (Nama, Email, WhatsApp/HP, Alamat, Item Branding, & Metadata) |
+| **Payment** | Gateway 2-Arah (Midtrans Core API QRIS, fallback Snap) + Transfer Bank Manual dengan transmisi profil pembeli lengkap (Nama, Email, WhatsApp/HP, Alamat, Item Branding, & Metadata) |
 | **Mailer & Email Engine** | Nodemailer dengan kredensial SMTP dinamis via `admin_settings`, template HTML editorial Warm White Cream & Royal Amber Gold dengan RFC 2046 `multipart/alternative` teks polos (anti-spam deliverability), subjek editorial resmi tanpa kurung siku, peringatan retensi H-3 otomatis via cron, serta Galeri Pratinjau 7 Varian di `/admin/emails` |
 | **Cron** | `POST /api/cron/cleanup` — retensi & cleanup otomatis |
 | **Manajemen Proses** | PM2 (VPS) |
@@ -266,7 +266,7 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 
 ## 4 Kondisi Pembayaran & Transmisi Data Lengkap Gateway (Rich Payload)
 
-Sistem mendukung 4 kondisi transaksi dengan integrasi 2-arah eksklusif (Midtrans & Xendit) yang dilengkapi pembatalan seketika (*two-way cancel/expire*) dan payload lengkap:
+Sistem mendukung 4 kondisi transaksi dengan integrasi 2-arah Midtrans yang dilengkapi pembatalan seketika (*two-way cancel*) dan payload lengkap:
 1. **Registrasi Paket Awal (`NEW`):** Aktivasi paket baru (`TIER_1` / `TIER_2` / `TIER_3`). Setelah lunas, klien langsung diarahkan ke `/dashboard/setup`.
 2. **Upgrade Layanan (`UPGRADE`):** Klien menaikkan tier paket (misal `TIER_1` ke `TIER_2` / `TIER_3`) dengan selisih harga dinamis yang bersumber dari konfigurasi database (`AdminSetting`), disajikan via modal Obsidian Gold Luxury. Tier induk diperbarui seketika.
 3. **2 Add-On Layanan Tambahan Murni:**
@@ -278,7 +278,6 @@ Sistem mendukung 4 kondisi transaksi dengan integrasi 2-arah eksklusif (Midtrans
 **Data Lengkap yang Ditransmisikan ke Payment Gateway:**
 - **Profil Klien:** Nama depan & belakang (`first_name`, `last_name` / `given_names`, `surname`), email resmi, dan nomor kontak WhatsApp aktif (`phoneNumber` E.164).
 - **Alamat:** Alamat penagihan & pengiriman digital terstandarisasi ISO `IDN`.
-- **Notifikasi Multi-Kanal:** Xendit otomatis mengirim kuitansi dan status tagihan via WhatsApp, SMS, dan Email jika nomor ponsel disediakan.
 - **Rincian Item & Branding:** Nama item spesifik, brand platform (`AdminSetting`), kategori layanan, dan biaya layanan admin (`ADMIN_FEE`) terpisah transparan.
 - **Metadata Dua Arah:** Nomor invoice, UUID order, tipe pesanan, nama domain kustom, nama kedua mempelai, slug undangan, dan rincian transaksi platform.
 
@@ -299,7 +298,7 @@ Sistem mendukung 4 kondisi transaksi dengan integrasi 2-arah eksklusif (Midtrans
 | `GuestMemory` | Foto candid kenangan tamu pasca-acara |
 | `Theme` | Katalog tema undangan |
 | `AdminSetting` | Konfigurasi platform dinamis (key-value) |
-| `WebhookLog` | Log audit webhook payment (Midtrans & Xendit) |
+| `WebhookLog` | Log audit webhook payment Midtrans |
 | `AdminAuditLog` | Log aktivitas staf admin |
 | `MusicPreset` | Pustaka musik sistem dinamis untuk latar undangan |
 
@@ -321,7 +320,7 @@ Luxenary-Invite/
 │   │   ├── public/            # settings, themes, rsvp, memories, resolve-custom-domain, version
 │   │   ├── payments/          # checkout, status-stream
 │   │   ├── orders/            # create invoice
-│   │   ├── webhook/           # midtrans, xendit (gateway 2-arah)
+│   │   ├── webhook/           # midtrans (gateway 2-arah)
 │   │   ├── cron/              # cleanup (memanggil lib/lifecycleCleanup.ts; jam retensi dari Admin Setting)
 │   │   └── sse/               # Server-Sent Events (memories real-time)
 │   ├── checkout/              # Flow pembayaran (multi-gateway 2-arah + manual transfer)
@@ -347,8 +346,8 @@ Luxenary-Invite/
 │   ├── planUtils.ts           # ⭐ Single source of truth nama komersial paket (Serenade, Symphony, Eternity)
 │   ├── domainUtils.ts         # URL builder (subdomain, canonical di browser & client)
 │   ├── serverDomainUtils.ts   # ⭐ Deteksi otomatis host dinamis & appUrl via request headers (Zero Hardcode)
-│   ├── gatewayRegistry.ts     # Registry payment gateway 2-arah (Midtrans & Xendit)
-│   ├── gateways/              # Implementasi gateway 2-arah: Midtrans, Xendit
+│   ├── gatewayRegistry.ts     # Registry payment gateway 2-arah (Midtrans)
+│   ├── gateways/              # Implementasi gateway 2-arah: Midtrans
 │   ├── upgradeHelper.ts       # Upgrade paket & perpanjangan galeri (+30 hari)
 │   ├── rateLimit.ts           # Rate limiter API publik
 │   ├── sseEmitter.ts          # SSE emitter (momen real-time)
@@ -483,7 +482,7 @@ NEXT_PUBLIC_ROOT_DOMAIN="localhost:3000"
 ```
 
 > **Catatan Pengaturan Dinamis & Integrasi Gateway Terpadu:**  
-> Kredensial Payment Gateway 2-Arah (Midtrans & Xendit) dikelola langsung melalui tab Gateway QRIS di Portal Admin. Midtrans menerapkan sistem **Dual Slot (Kredensial Sandbox & Produksi Disimpan Terpisah)** dengan kontrol switch mode instan tanpa copy-paste ulang; tiap slot berisi Client Key, Server Key (panggilan API), dan Signature Secret Key (verifikasi notifikasi, terpisah sejak pembaruan Access Keys Midtrans). Konfigurasi SMTP Email, tarif fee, durasi QRIS, dan harga paket dikelola **secara langsung dari Admin Portal (Tab Pengaturan)** tanpa perlu restart server atau edit `.env`.
+> Kredensial Midtrans dikelola langsung melalui tab Keuangan & Gateway di Portal Admin. Midtrans menerapkan sistem **Dual Slot (Kredensial Sandbox & Produksi Disimpan Terpisah)** dengan kontrol switch mode instan tanpa copy-paste ulang; tiap slot berisi Client Key, Server Key (panggilan API), dan Signature Secret Key (verifikasi notifikasi, terpisah sejak pembaruan Access Keys Midtrans). Konfigurasi SMTP Email, tarif fee, durasi QRIS, dan harga paket dikelola **secara langsung dari Admin Portal (Tab Pengaturan)** tanpa perlu restart server atau edit `.env`.
 
 ### 3. Setup Database
 ```bash
@@ -590,7 +589,7 @@ npx vitest run
 
 ## Keamanan
 
-- **Webhook Payment 2-Arah (Midtrans & Xendit)**: Diverifikasi signature SHA512 (Midtrans) & x-callback-token timing-safe (Xendit) dengan garansi pembatalan instan untuk mencegah ghost payment
+- **Webhook Payment 2-Arah (Midtrans)**: Diverifikasi signature SHA512 dengan garansi pembatalan instan untuk mencegah ghost payment
 - **Auth Guard**: Middleware memisahkan Admin, Client, dan Publik
 - **Routing Loop Protection**: Middleware mengisolasi seluruh rute statis sistem (`PLATFORM_EXCLUSIONS` seperti `/contact`, `/privacy`, `/terms`, `/refund`, dll.) dari Flat Slug interceptor untuk mencegah *infinite rewrite loop*.
 - **Reserved Subdomains Protection**: Subdomain `cdn` (Cloudflare R2), `admin`, `api`, `auth`, `static`, `assets`, dll. diproteksi terpusat via `lib/domainUtils.ts` dan dilarang diklaim oleh klien baik saat pemeriksaan ketersediaan maupun saat pembuatan/pembaruan undangan.
@@ -617,7 +616,6 @@ npx vitest run
 - **Catatan audit dan galat yang terlihat**: audit buka/kunci darurat dan pengeluaran ditulis atas nama admin yang bertindak dan satu transaksi dengan perubahannya; galat pembacaan pengaturan penting, penghapusan salinan backup R2, dan pembangunan ulang HTML terbit dicatat di log, bukan ditelan (`lib/fsSafe.ts`, `readBackupPathSetting()`).
 - **Health Check Minimal Publik**: `GET /api/health` publik hanya mengembalikan `status` dan `timestamp`; detail (lingkungan, memori, cache, latensi DB) hanya untuk pemegang `CRON_SECRET` lewat `Authorization: Bearer`.
 - **Konfirmasi Pelunasan ke Midtrans**: webhook `settlement`/`capture` dikonfirmasi ke API status Midtrans pada lingkungan aktif sebelum order dilunasi; bila API belum menjawab PAID atau tidak terjangkau, order tetap `PENDING` dan webhook dijawab 503 agar dikirim ulang.
-- **Konfirmasi Pelunasan ke Xendit**: callback `PAID`/`SETTLED` dikonfirmasi ke API invoice Xendit (ID invoice dari DB) sebelum order dilunasi, dengan perilaku 503 yang sama.
 - **Restore Database**: hanya arsip `pg_dump -F c` (`.dump`/`.backup`, berkepala `PGDMP`); dump teks `.sql` ditolak 400 sebelum snapshot pengaman dibuat.
 - **Tanggal & jam acara**: tanggal harus tanggal kalender nyata (`TTTT-BB-HH`, buntut setelah `T` dibuang) dan jam `JJ:MM`; isian lain ditolak 400 saat simpan atau buat undangan. Pembayaran upgrade tidak pernah menurunkan paket. Studio editor hanya menerima `postMessage` dari iframe pratinjau miliknya.
 - **Promo & tagihan**: paket gratis tidak didukung (diskon persen kupon maksimal 99, kode yang membuat tagihan Rp 0 ditolak), percobaan kode dibatasi 10/menit per akun, order lama yang pernah punya sesi gateway tidak dihapus permanen, dan sesi gateway order yang digantikan dibatalkan.
@@ -641,7 +639,7 @@ npx vitest run
 - **Simpan foto kamera tamu ke HP**: thumbnail "Simpan" setelah foto terkirim (Web Share, cadangan unduhan biasa); disembunyikan saat Delayed Reveal aktif (bagian 25.11 butir 34).
 - **Aset**: foto demo `memory_0X.webp` kini WebP ≤ 270 KB (sebelumnya JPEG 7–10 MB); gambar OG `og-banner.jpg` 1200×630 (60 KB) menggantikan PNG 2 MB di metadata dan cadangan `og:image` undangan (bagian 25.11 butir 35).
 - **Unggahan**: jenis berkas klien wajib terdeteksi `file-type` (SVG ditolak 415); isian unggahan momen tamu divalidasi tipe dan panjangnya; batas PIN resepsionis per undangan hanya menghitung PIN yang salah.
-- **Parsing Aman**: Body JSON rusak pada RSVP dan webhook Midtrans/Xendit dijawab 400; `featureSettings` NULL diproses lewat `lib/featureSettings.ts` (`parseFeatureSettings`) sehingga tidak lagi membuat halaman momen tamu dan unggahan tamu 500.
+- **Parsing Aman**: Body JSON rusak pada RSVP dan webhook Midtrans dijawab 400; `featureSettings` NULL diproses lewat `lib/featureSettings.ts` (`parseFeatureSettings`) sehingga tidak lagi membuat halaman momen tamu dan unggahan tamu 500.
 - **Service Availability (Tutup Order / Maintenance / Coming Soon)**: Kontrol ketersediaan sistem terpusat dari Admin Portal (Tab Platform & Tampilan). Mendukung 4 status (`OPEN`, `CLOSED_ORDER`, `MAINTENANCE`, `COMING_SOON`) dengan notifikasi dinamis di Landing Page, Login, Paket, dan Checkout. Registrasi akun baru diblokir di NextAuth `signIn` callback dan endpoint `/api/orders/create` (HTTP 403), sementara klien lama yang telah terdaftar tetap bebas login & mengelola undangannya. Tamu undangan publik (`/[slug]`), RSVP, dan resepsionis 100% tetap aktif tanpa gangguan.
 - **Receptionist**: Scanner QR dilindungi PIN panitia (AES-256-GCM), token sesi HMAC di localStorage, header profesional dengan BrandLogo dan judul terpusat, aksi navbar minimalis icon-only dengan indikator hijau online, arsitektur *Single-Screen Zero-Scroll Kiosk* (`h-screen overflow-hidden`) bebas scroll vertikal di seluruh jenis monitor/tablet, kolom kiri-kanan simetris dinamis (`h-full min-h-0`), tombol manual *"Kembali ke Siaga Scan"*, tombol Standby Screensaver di navbar, *Ambient Standby Screensaver* otomatis saat idle (Watermark inisial monogram mempelai di live dan Watermark BrandLogo platform di demo) dengan mode *True Standby* (hardware kamera mati total demi hemat daya, anti-overheating, dan perlindungan privasi; langsung aktif kembali saat layar disentuh atau barcode ditembak), auto-dismiss kartu check-in 15 detik, jeda kamera otomatis saat notifikasi aktif (anti-loop scan), judul pemindai "SCAN" & "KAMERA LIVE", daftar tamu ringkas tanpa badge count, mode Layar Penuh (Fullscreen Kiosk), isolasi warna tema (anti distorsi Dark/Light OS), serta dukungan kamera multi-device (Laptop webcam & Tablet dual-camera) dengan audio beep dan visual laser.
 - **Portfolio**: Hanya SUPER_ADMIN yang bisa kloning undangan
@@ -812,6 +810,7 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
 - **Dock berkedip (4 Nov)**: `fitBottomDock()` di `lib/renderTemplate.ts` mengukur dock dengan transisi dimatikan (`lux-dock-measuring`), sehingga tema yang tombol dock-nya memakai `transition: all` (aeterna, verona, burgundy-royale, starlit-dreams) tidak lagi berputar dalam loop ResizeObserver dan label dock tetap tampil.
 - **Signature Secret Key Midtrans (4 Nov)**: notifikasi Midtrans diverifikasi dengan `midtrans_<mode>_signature_key` (isian baru di kartu Midtrans; env `MIDTRANS_SIGNATURE_KEY`), Server Key hanya untuk panggilan API. Kosong = Server Key dipakai, karena nilainya sama sampai Server Key baru dibuat di dashboard. Server Key lama tidak dapat dilihat lagi di dashboard sejak 29 Okt 2026: buat Server Key baru (izin Snap Checkout, Core API, Cancel transaction) dan salin saat dibuat.
 - **Halaman pembayaran QRIS (4 Nov)**: sisa waktu langsung tampil, pemuat di kotak QR, tombol "Simpan QR" (PNG berlatar putih, Web Share di HP) untuk pembayaran dari HP yang sama, dan kartu "Pembayaran Diterima" 1,8 detik sebelum dialihkan ke Studio/Dasbor (`app/payment/page.tsx`).
+- **Midtrans produksi (5 Nov)**: akun produksi menolak semua charge Core API `/v2/charge` dengan 402 "Payment channel is not activated" (QRIS GoPay/ShopeePay, GoPay, VA BNI, Mandiri), padahal dashboard menandai metode itu aktif; token Snap berhasil (201). Checkout otomatis beralih ke Snap: `/payment` menampilkan tombol "Buka Halaman Pembayaran" ke halaman Midtrans, lalu kembali ke `/checkout/success?order=`. Support Midtrans mengonfirmasi penyebabnya: layanan Core API belum diaktifkan. Aktivasi diajukan pemilik lewat formulir Midtrans dengan email pribadi Direktur/Owner (rincian di `docs/admin/MANAJEMEN_TRANSAKSI_DAN_GATEWAY.md` bagian 3). Setelah aktif, QR tampil di `/payment` tanpa perubahan kode.
 - **Uji lokal**: suite vitest dan `scripts/e2e-golive.ts` membutuhkan `luxenary_test` yang sudah `migrate deploy`, `db seed`, dan `themes:sync`; tes backup membutuhkan `pg_dump`/`pg_restore` 17 di PATH.
 
 

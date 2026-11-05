@@ -13,13 +13,13 @@ Platform mendukung dua jalur transaksi terintegrasi: pembayaran otomatis (melalu
 flowchart TD
     subgraph KasirCheckout [Kasir: /checkout]
         A[Klien Memilih Metode Pembayaran] --> B{Jalur Pembayaran}
-        B -->|Gateway Otomatis: Midtrans / Xendit| C[Generate SnapToken / Invoice QRIS]
+        B -->|Gateway Otomatis: Midtrans| C[Charge QRIS Core API / fallback Snap]
         B -->|Transfer Bank Manual| D[Tampilkan Rekening Bank Admin & Upload Bukti Struk]
     end
     
     subgraph GatewayOtomatis [Payment Gateway Server]
         C --> E[Klien Menyelesaikan Pembayaran QRIS / VA]
-        E --> F[Webhook Callback: POST /api/webhook/midtrans atau /api/webhook/xendit]
+        E --> F[Webhook Callback: POST /api/webhook/midtrans]
         F --> G[Verifikasi Signature Kriptografi]
         G -->|Signature Valid & Status Settlement| H[Auto Update Order: PAID, undangan tetap DRAFT sampai klien merilis]
     end
@@ -53,7 +53,7 @@ Menampilkan catatan seluruh lembar penagihan (*invoice*) yang tercipta di sistem
 - **Paket:** Tier paket yang dibeli (`TIER_1`, `TIER_2`, `TIER_3`) atau add-on.
 - **Metode:** Indikator badge metode pembayaran:
   - `Transfer Bank` (Manual Transfer)
-  - `QRIS / Otomatis` (Midtrans / Xendit)
+  - `QRIS / Otomatis` (Midtrans)
   - `Belum Dipilih` (Checkout belum memilih metode)
 - **Jumlah:** Total tagihan nominal rupiah resmi.
 - **Bukti Transfer:** Tombol interaktif **"Lihat Struk"** untuk memeriksa foto slip transfer yang diunggah klien.
@@ -74,32 +74,26 @@ Menampilkan catatan seluruh lembar penagihan (*invoice*) yang tercipta di sistem
 
 ---
 
-## 3. Konfigurasi Payment Gateway (`Tab: settings` -> Subtab `Gateway QRIS` & `Pembayaran`)
+## 3. Konfigurasi Payment Gateway (`Tab: settings` -> `Keuangan & Gateway`)
 
-Sistem mengadopsi pergantian gateway instan 1-klik (*Hot-Switching*) langsung dari database `AdminSetting`:
+Gateway satu-satunya adalah Midtrans (`lib/gatewayRegistry.ts`); Xendit dan `active_payment_gateway` dihapus 20 Okt 2026.
 
-### Provider Gateway yang Didukung:
+### Jalur Pembayaran:
 1. **Midtrans:**
-   - Mendukung integrasi Midtrans Snap API (QRIS GoPay, ShopeePay, Virtual Account Bank).
-   - Parameter: `midtrans_server_key` dan `midtrans_client_key`.
-2. **Xendit:**
-   - Mendukung integrasi Xendit Invoice & QRIS.
-   - Parameter: `xendit_api_key` dan `xendit_webhook_token`.
-3. **Transfer Bank Manual:**
+   - Charge Core API QRIS (`/v2/charge`, acquirer GoPay) menampilkan QR langsung di `/payment`. Bila charge ditolak, aplikasi membuat token Snap dan `/payment` menampilkan tombol "Buka Halaman Pembayaran" ke halaman Midtrans (semua metode yang aktif di akun: QRIS, GoPay, VA).
+   - Parameter: `midtrans_environment` (`sandbox`/`production`), lalu per slot `midtrans_<mode>_client_key`, `midtrans_<mode>_server_key`, dan `midtrans_<mode>_signature_key`.
+   - **Aktivasi Core API produksi:** akun produksi menolak charge Core API dengan 402 "Payment channel is not activated" sampai layanan Core API diaktifkan (dikonfirmasi support Midtrans, 5 Nov 2026). Aktivasi diajukan pemilik lewat formulir Midtrans "Bagaimana cara mengaktifkan layanan Core API" dengan email pribadi Direktur/Owner, dan hanya bisa setelah review akun selesai. Selama belum aktif, pembayaran berjalan lewat Snap.
+2. **Transfer Bank Manual:**
    - Pengaturan rekening penerima: Nama Bank, Nomor Rekening, Nama Pemilik Rekening, dan Catatan Instruksi Pembayaran.
 
 ### Pengaturan Mode Pembayaran Global (`payment_mode`):
-- `GATEWAY` (nilai bawaan seed): Pembayaran otomatis via gateway (Midtrans / Xendit). Konfirmasi lunas masuk lewat webhook dua arah, dan route status order juga merekonsiliasi lewat `verify` gateway.
+- `GATEWAY` (nilai bawaan seed): Pembayaran otomatis via Midtrans. Konfirmasi lunas masuk lewat webhook dua arah, dan route status order juga merekonsiliasi lewat `verify` gateway.
 - `MANUAL`: Pembayaran transfer bank manual ke rekening admin. Klien mengunggah bukti, lalu admin menyetujui atau menolak lewat `/api/admin/orders/{orderId}/approve` atau `reject`; tidak ada konfirmasi otomatis.
 - **Durasi tagihan gateway:** `payment_expiry_minutes` (5 sampai 1440 menit) dikirim ke gateway sebagai masa berlaku QR dan menjadi umur order. Saat habis, webhook `expire` dari gateway menjadikan order `EXPIRED` dan klien membuat order baru dari halaman paket. Webhook `cancel`/`expire`/`deny` dari transaksi yang bukan sesi aktif (misalnya transaksi lama yang dibatalkan aplikasi saat klien mengubah kupon) diabaikan dan dicatat `stale_session` di `webhook_logs`.
-- **Alamat notifikasi:** isi di dashboard Midtrans (sandbox dan produksi terpisah) dengan `https://<domain>/api/webhook/midtrans`; Xendit memakai `/api/webhook/xendit` dengan `x-callback-token`. Webhook tidak bisa menjangkau `localhost`; di dev, pelunasan tetap terdeteksi saat halaman memuat ulang status order (rekonsiliasi `verify`).
+- **Alamat notifikasi:** isi di dashboard Midtrans (sandbox dan produksi terpisah) dengan `https://<domain>/api/webhook/midtrans`. Aplikasi juga mengirim alamat ini per transaksi (`override_notification_urls`) kecuali `APP_URL` localhost. Webhook tidak bisa menjangkau `localhost`; di dev, pelunasan tetap terdeteksi saat halaman memuat ulang status order (rekonsiliasi `verify`).
 - Hanya dua mode ini yang berlaku (nilai lama `BOTH` sudah dihapus; kode selalu memperlakukannya sebagai `GATEWAY`). Penegakan di server: `POST /api/payments/checkout` menolak (409) bila mode `MANUAL` atau order sudah memakai transfer manual, dan `POST /api/client/orders/{id}/upload-proof` menolak (409) bila mode `GATEWAY` dan order bukan transfer manual.
-- Nilai ditulis huruf besar. Pengaturan `payment_gateway_mode` ikut ditanam oleh seed tetapi tidak dibaca kode mana pun; yang berlaku adalah `payment_mode` dan `active_payment_gateway`.
+- Nilai ditulis huruf besar. Pengaturan `payment_gateway_mode` ikut ditanam oleh seed tetapi tidak dibaca kode mana pun; yang berlaku adalah `payment_mode`.
 - **Status Gateway Dinamis:** Indikator status gateway pada dashboard dan kartu pengaturan bersifat 100% dinamis mengikuti nilai `payment_mode` dan kredensial aktif dari basis data, tanpa hardcode statis label status.
-
-### Gateway Aktif (`active_payment_gateway`):
-- Pilihan: `midtrans` atau `xendit`.
-- Pergantian vendor berlangsung instan pada sesi checkout klien tanpa perlu restart server.
 
 ---
 

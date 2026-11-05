@@ -104,13 +104,12 @@ Memerlukan sesi aktif klien (`role: CLIENT` atau Admin Remote Session):
 
 | Metode | Endpoint | Deskripsi |
 |:---:|---|---|
-| `POST` | `/api/payments/checkout` | Membuat tagihan baru (Snap Token Midtrans QRIS/VA, Xendit Invoice, atau transfer manual). |
+| `POST` | `/api/payments/checkout` | Membuat tagihan baru (charge QRIS Core API Midtrans, fallback URL Snap, atau transfer manual). |
 | `POST` | `/api/payments/checkout/confirm` | Mengonfirmasi pesanan dan mengunci diskon kupon promo (reservasi PromoHold 15 menit). |
 | `POST` | `/api/payments/qris/regenerate` | Me-regenerasi sesi invoice QRIS baru jika 15 menit kedaluwarsa tanpa mereset pesanan atau diskon. |
 | `POST` | `/api/payments/upgrade` | Menghitung selisih harga dan membuat invoice kenaikan paket langganan. |
 | `GET` | `/api/payments/status-stream/{orderId}` | Long-polling / SSE stream status lunas invoice di kasir ditenagai PostgreSQL LISTEN/NOTIFY. |
 | `POST` | `/api/webhook/midtrans` | Webhook HTTP callback notifikasi pembayaran resmi Midtrans. |
-| `POST` | `/api/webhook/xendit` | Webhook callback IPN resmi Xendit. |
 
 ---
 

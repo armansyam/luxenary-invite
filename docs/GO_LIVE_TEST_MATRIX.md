@@ -9,7 +9,7 @@ Diperbarui 29 Oktober 2026. Status setiap alur sebelum rilis produksi pertama, b
 | Pesan paket sampai undangan terbit, tamu, RSVP, check-in, momen, ekspor | `scripts/e2e-golive.ts` terhadap build produksi lokal, bucket Cloudflare R2 asli | 33/33 lulus; data uji dan objek R2 terhapus bersih |
 | Alur yang sama dengan penyimpanan lokal | `scripts/e2e-golive.ts`, `STORAGE_PROVIDER=local` | 27/27 lulus (6 pemeriksaan khusus R2 tidak berlaku) |
 | Pembayaran transfer manual + persetujuan admin | `e2e-golive.ts --payment=manual` | Lulus |
-| Pembayaran gateway | Checkout gateway, lalu pelunasan lewat fungsi webhook | Lulus sebagai simulasi; transaksi Midtrans/Xendit sungguhan belum (lihat bagian 2) |
+| Pembayaran gateway | Checkout gateway, lalu pelunasan lewat fungsi webhook | Lulus sebagai simulasi; transaksi Midtrans sungguhan belum (lihat bagian 2) |
 | Unggahan media ditolak setelah terbit | `e2e-golive.ts` + `__tests__/integration/uploadStudioLock.test.ts` | Lulus |
 | Hapus berkas undangan di R2 (klien dihapus, reset jenis acara, arsip) | `__tests__/unit/deleteInvitationBucketObjects.test.ts`, pembersihan `e2e-golive.ts` pada bucket asli | Lulus |
 | Logo vendor tetap ada di portofolio setelah arsip | `__tests__/integration/portfolioMetadata.test.ts` | Lulus |
@@ -30,7 +30,7 @@ Diperbarui 29 Oktober 2026. Status setiap alur sebelum rilis produksi pertama, b
 |---|---|---|
 | TLS wildcard Caddy dan DNS subdomain asli | Butuh domain dan server | Buka `https://<subdomain>.<domain>` dari ponsel di jaringan seluler |
 | Purge cache Cloudflare | Uji lokal wajib mengosongkan `CF_ZONE_ID`/`CF_API_TOKEN` (pernah memurge zona produksi) | Terbitkan ulang undangan, lalu cek header `cf-cache-status` |
-| Transaksi Midtrans/Xendit sungguhan | Kunci gateway belum diisi; checkout tanpa kunci menghasilkan 500 dengan pesan umum untuk klien | Mode sandbox gateway, bayar satu order, pastikan webhook mengubah status menjadi PAID |
+| Transaksi Midtrans sungguhan | Kunci produksi sudah diisi (5 Nov 2026), tetapi Core API produksi belum diaktifkan Midtrans (charge 402), jadi checkout memakai Snap; belum ada pembayaran asli | Bayar satu order lewat halaman Snap, pastikan webhook mengubah status menjadi PAID; ulangi setelah Core API aktif untuk QR di `/payment` |
 | Penyedia SMTP sungguhan | Hanya diuji ke SMTP sink | Tombol uji SMTP di Admin > Pengaturan > Integrasi |
 | Login Google di domain produksi | Redirect URI OAuth terikat domain | Login klien baru dari domain produksi |
 | Backup ke bucket privat | `S3_BACKUP_BUCKET_NAME` masih kosong | Isi env, jalankan cron backup, cek objek di bucket |

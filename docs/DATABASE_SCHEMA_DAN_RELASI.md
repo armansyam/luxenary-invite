@@ -175,7 +175,7 @@ Menyimpan lembar penagihan dan riwayat transaksi:
 
 #### 2. Tabel `webhook_logs`
 Menyimpan riwayat callback / IPN dari payment gateway untuk idempotency dan debugging:
-- `source` (String): Nama provider (`midtrans` atau `xendit`).
+- `source` (String): Nama provider (`midtrans`).
 - `event` (String): Tipe event (contoh: `payment.success`).
 - `payload` (JSON): Payload biner lengkap dari gateway.
 - `status` (Enum `WebhookLogStatus`, bawaan `received`): `received`, `processed`, `amount_mismatch` (nominal webhook tidak cocok dengan `Order.chargedAmount`, order tidak dilunasi), `paid_on_closed_order` (pembayaran valid untuk order yang sudah tertutup, butuh rekonsiliasi manual), atau `stale_session` (pembatalan dari sesi gateway lama diabaikan).

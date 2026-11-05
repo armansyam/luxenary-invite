@@ -58,7 +58,7 @@ Admin dapat mendaftarkan mitra bisnis dan menetapkan hak bagi hasil secara adil:
    - **Persentase (`PERCENT`):** Mendapatkan persentase tertentu dari nominal pesanan bersih klien (contoh: 15% dari transaksi paket Eternity).
    - **Nominal Tetap (`FLAT`):** Mendapatkan nominal komisi flat per transaksi (contoh: Rp 50.000 per pesanan lunas).
 3. **Pencatatan Komisi Otomatis (`AffiliateCommission`):**
-   - Setiap kali invoice pesanan klien berubah status menjadi `PAID` (baik via Webhook Midtrans/Xendit maupun approval manual Admin), sistem otomatis menghitung komisi mitra.
+   - Setiap kali invoice pesanan klien berubah status menjadi `PAID` (baik via Webhook Midtrans maupun approval manual Admin), sistem otomatis menghitung komisi mitra.
    - Record komisi dibuat dengan status `PENDING`, dan nilai `pendingBalance` mitra bertambah secara real-time.
 
 ---
