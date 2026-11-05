@@ -2759,10 +2759,16 @@ async function applySingleNameContract(eventType: string, data: Record<string, a
   }
   const customHomePhoto = mediaMap.get("HOME_PHOTO") || "";
   const closingPhotoUrl = mediaMap.get("CLOSING_COVER") || "";
+  const sidebarPhotoUrl = mediaMap.get("DESKTOP_SIDEBAR") || data.sidebarPhotoUrl || data.landingCoverUrl || m.photo || "";
+  // Tanpa unggahan, foto tokoh dan hero kiri berisi monogram SVG data-URI (generateInitialAvatarSvg). Master yang
+  // punya ilustrasi sendiri memakai penanda ini untuk {{#if}}/{{#unless}}; unggahan klien tidak pernah berupa data-URI.
+  const isRealPhoto = (url: unknown) => typeof url === "string" && url !== "" && !url.startsWith("data:");
 
   return {
     ...data,
-    sidebarPhotoUrl: mediaMap.get("DESKTOP_SIDEBAR") || data.sidebarPhotoUrl || data.landingCoverUrl || m.photo || "",
+    sidebarPhotoUrl,
+    hasCustomSidebarPhoto: isRealPhoto(sidebarPhotoUrl),
+    hasCustomMainPhoto: isRealPhoto(m.photo),
     // Composer khitan, aqiqah, wisuda, dan gathering tidak mengisinya; tanpa ini cover desktop klien maupun bawaan
     // tema tidak pernah membuat sampul layar penuh (renderTemplate membaca landingCoverDesktopUrl).
     landingCoverDesktopUrl: mediaMap.get("LANDING_COVER_DESKTOP") || data.landingCoverDesktopUrl || data.landingCoverUrl || "",

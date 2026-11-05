@@ -160,22 +160,32 @@ export const THEME_MAP: Record<string, ThemeEntry> = {
   "festivo": { file: "festivo.html", eventType: "birthday", style: "modern" },
   "kalandra-birthday": { file: "kalandra-birthday.html", eventType: "birthday", style: "minimalist" },
   "riang": { file: "riang.html", eventType: "birthday", style: "modern" },
+  "balonku": { file: "balonku.html", eventType: "birthday", style: "modern" },
+  "gala": { file: "gala.html", eventType: "birthday", style: "minimalist" },
 
   // Khitan Series
   "al-fariz": { file: "al-fariz.html", eventType: "khitan", style: "traditional" },
   "fajar": { file: "fajar.html", eventType: "khitan", style: "traditional" },
+  "nur": { file: "nur.html", eventType: "khitan", style: "traditional" },
+  "sakinah": { file: "sakinah.html", eventType: "khitan", style: "minimalist" },
 
   // Aqiqah Series
   "al-khalid": { file: "al-khalid.html", eventType: "aqiqah", style: "minimalist" },
   "buaian": { file: "buaian.html", eventType: "aqiqah", style: "minimalist" },
+  "mungil": { file: "mungil.html", eventType: "aqiqah", style: "minimalist" },
+  "barakah": { file: "barakah.html", eventType: "aqiqah", style: "traditional" },
 
   // Wisuda Series
   "cendekia": { file: "cendekia.html", eventType: "wisuda", style: "modern" },
   "toga": { file: "toga.html", eventType: "wisuda", style: "modern" },
+  "laurel": { file: "laurel.html", eventType: "wisuda", style: "modern" },
+  "akademia": { file: "akademia.html", eventType: "wisuda", style: "minimalist" },
 
   // General / Gathering Series
   "sinergi": { file: "sinergi.html", eventType: "gathering", style: "modern" },
   "prakarsa": { file: "prakarsa.html", eventType: "gathering", style: "modern" },
+  "forum": { file: "forum.html", eventType: "gathering", style: "modern" },
+  "temu": { file: "temu.html", eventType: "gathering", style: "minimalist" },
 };
 
 const THEME_EVENT_FOLDERS: Array<[string, ThemeEntry["eventType"]]> = [

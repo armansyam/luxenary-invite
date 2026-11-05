@@ -1,0 +1,315 @@
+<!--
+  TEMA BARAKAH — Tasyakuran Aqiqah, krem emas dan teal
+  Kategori: Traditional | EventType: AQIQAH
+  Kontrak tema satu nama (lihat themes/_blueprints/birthday/BLUEPRINT_GUIDE_BIRTHDAY.md).
+  Pita bintang segi delapan (khatam), medali, dan lentera digambar sebagai SVG inline berwarna token; slot foto
+  memakai ilustrasi pengganti bila klien belum mengunggah (hasCustomMainPhoto / hasCustomSidebarPhoto).
+  Desktop >= 900px: .left-hero (DESKTOP_SIDEBAR) di kiri, .right-panel 460px di kanan.
+-->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>{{eventLabel}} {{mainNickname}}</title>
+  <link rel="stylesheet" href="/fonts/fonts.css" />
+  <style>
+    :root {
+      --primary: #b8924a;
+      --secondary: #96753a;
+      --accent: #23474a;
+      --bg-dark: #1d3a3c;
+      --bg-light: #fbf6ec;
+      --bg-canvas: #f6eedd;
+      --card-bg: #fffdf8;
+      --text-main: #23302f;
+      --text-muted: #6f6a5c;
+      --on-primary: #fffdf8;
+      --on-dark: #fbf6ec;
+      --radius-sm: 4px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --radius-full: 9999px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    ::selection { background: color-mix(in srgb, var(--primary) 40%, transparent); color: var(--text-main); }
+    html { scroll-behavior: smooth; scrollbar-width: none; }
+    html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+    body { font-family: 'Lora', Georgia, serif; background: var(--bg-canvas); color: var(--text-main); line-height: 1.75; overflow-x: hidden; }
+    body.is-locked { overflow: hidden; }
+    .serif { font-family: 'Cinzel', Georgia, serif; font-weight: 500; letter-spacing: 0.04em; }
+    .italic { font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; }
+    img { max-width: 100%; display: block; }
+
+    /* ── Ilustrasi ── */
+    .b-line { stroke: var(--primary); fill: none; stroke-width: 1.3; }
+    .b-line-teal { stroke: var(--accent); fill: none; stroke-width: 1.2; }
+    .b-fill { fill: var(--primary); }
+    .b-teal { fill: var(--accent); }
+    .b-glow { fill: color-mix(in srgb, var(--primary) 45%, transparent); }
+    .band { display: block; width: 100%; height: 34px; }
+    .lantern { animation: sway 5.5s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 0; }
+    .lantern.l2 { animation-duration: 7s; animation-delay: 1s; }
+    @keyframes sway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+
+    /* ── Cover ── */
+    .cover-screen {
+      position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;
+      padding: 54px 22px; text-align: center;
+      /* Gradien (background-image): preloader engine memaksa background-color sampul dengan !important. */
+      background: radial-gradient(120% 80% at 50% 45%, var(--bg-light) 0%, var(--bg-canvas) 70%);
+      transition: transform 1s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.9s ease, visibility 0s linear 1s;
+    }
+    .cover-screen.has-photo { background: var(--bg-canvas) center / cover no-repeat; }
+    .cover-screen.has-photo::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--bg-light) 70%, transparent), color-mix(in srgb, var(--bg-light) 94%, transparent)); }
+    .cover-screen.opened { transform: translate3d(0, -100%, 0); opacity: 0; visibility: hidden; pointer-events: none; }
+    .cover-band { position: absolute; left: 0; right: 0; }
+    .cover-band.top { top: 0; } .cover-band.bottom { bottom: 0; transform: scaleY(-1); }
+    .cover-inner { position: relative; z-index: 2; width: 100%; max-width: 330px; }
+    .medallion { width: 112px; height: 112px; margin: 0 auto 14px; }
+    .cover-badge { display: block; font-family: 'Cinzel', Georgia, serif; font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--secondary); margin-bottom: 10px; }
+    .cover-name { font-size: 34px; line-height: 1.2; color: var(--accent); overflow-wrap: break-word; }
+    .cover-info { display: block; margin-top: 6px; font-size: 17px; color: var(--secondary); }
+    .cover-rule { width: 160px; height: 16px; margin: 16px auto; }
+    .cover-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 18px; }
+    .guest-lbl { font-family: 'Cinzel', Georgia, serif; font-size: 10px; letter-spacing: 0.26em; text-transform: uppercase; color: var(--text-muted); }
+    .guest-name { font-size: 22px; color: var(--text-main); margin: 4px 0 22px; overflow-wrap: break-word; }
+    .btn-open { display: inline-flex; align-items: center; gap: 8px; padding: 12px 30px; border: 1px solid var(--accent); cursor: pointer; border-radius: var(--radius-sm); background: var(--accent); color: var(--on-dark); font-family: 'Cinzel', Georgia, serif; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; outline: 1px solid color-mix(in srgb, var(--primary) 70%, transparent); outline-offset: 3px; }
+
+    /* ── Hero kiri desktop ── */
+    .left-hero { display: none; position: fixed; left: 0; top: 0; width: calc(100% - 460px); height: 100vh; z-index: 10; overflow: hidden; background: radial-gradient(90% 80% at 50% 40%, color-mix(in srgb, var(--accent) 80%, var(--bg-dark)) 0%, var(--bg-dark) 70%) center / cover no-repeat; }
+    .left-hero.has-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, color-mix(in srgb, var(--bg-dark) 94%, transparent) 0%, color-mix(in srgb, var(--bg-dark) 20%, transparent) 55%, transparent 100%); }
+    .left-hero-art { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .left-hero-content { position: absolute; left: 4rem; right: 4rem; bottom: 4rem; z-index: 2; color: var(--on-dark); }
+    .left-hero-eyebrow { display: block; font-family: 'Cinzel', Georgia, serif; font-size: 0.74rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--primary); margin-bottom: 1rem; }
+    .left-hero-name { font-size: clamp(2.6rem, 4.6vw, 4.6rem); line-height: 1.1; overflow-wrap: break-word; }
+    .left-hero-info { display: block; margin-top: 0.6rem; font-size: 1.3rem; color: var(--primary); }
+    .left-hero-date { font-family: 'Cinzel', Georgia, serif; font-size: 0.82rem; letter-spacing: 0.2em; text-transform: uppercase; margin-top: 1rem; opacity: 0.8; }
+
+    /* ── Latar tetap ── */
+    .fixed-bg-layer { position: fixed; top: 0; right: 0; bottom: 0; width: 100%; z-index: 0; pointer-events: none; background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 45%), var(--bg-canvas); }
+    .fixed-bg-layer.has-custom-bg { background: linear-gradient(180deg, color-mix(in srgb, var(--bg-light) 70%, transparent), color-mix(in srgb, var(--bg-canvas) 85%, transparent)), var(--custom-bg) center / cover no-repeat; }
+
+    .right-panel { position: relative; z-index: 20; width: 100%; min-height: 100vh; }
+    .right-panel main { background: color-mix(in srgb, var(--bg-light) 86%, transparent); }
+
+    /* ── Beranda ── */
+    .slide-home { position: relative; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 96px 26px 76px; text-align: center; overflow: hidden; background: radial-gradient(110% 70% at 50% 40%, color-mix(in srgb, var(--accent) 85%, var(--bg-dark)) 0%, var(--bg-dark) 72%); color: var(--on-dark); }
+    .slide-home .band.top { position: absolute; top: 0; left: 0; }
+    .slide-home .band.bottom { position: absolute; bottom: 0; left: 0; transform: scaleY(-1); }
+    .home-medallion { width: 96px; height: 96px; margin: 0 auto 16px; }
+    .home-salam { font-family: 'Cinzel', Georgia, serif; font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--primary); margin-bottom: 12px; }
+    .home-name { font-size: clamp(2.4rem, 11vw, 3.3rem); line-height: 1.15; overflow-wrap: break-word; }
+    .home-info { display: block; margin-top: 8px; font-size: 19px; color: var(--primary); }
+    .home-quote { font-size: 20px; line-height: 1.55; max-width: 340px; margin: 22px auto 0; color: color-mix(in srgb, var(--on-dark) 92%, transparent); }
+    .home-quote-ref { font-family: 'Cinzel', Georgia, serif; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--primary); margin-top: 12px; }
+    .scroll-cue { margin-top: 26px; color: var(--primary); animation: cue 1.8s infinite; }
+    @keyframes cue { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+
+    /* ── Seksi ── */
+    .sec-block { position: relative; max-width: 480px; margin: 0 auto; padding: 64px 24px; text-align: center; }
+    .sec-lbl { display: block; font-family: 'Cinzel', Georgia, serif; font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--secondary); margin-bottom: 10px; }
+    .sec-h2 { font-size: 27px; line-height: 1.25; color: var(--accent); margin-bottom: 12px; }
+    .sec-sub { font-size: 14px; color: var(--text-muted); max-width: 340px; margin: 0 auto 24px; }
+
+    .star-card { position: relative; margin-top: 18px; padding: 34px 22px 28px; background: var(--card-bg); border: 1px solid color-mix(in srgb, var(--primary) 50%, transparent); outline: 1px solid color-mix(in srgb, var(--primary) 25%, transparent); outline-offset: -8px; }
+    .portrait-frame { position: relative; width: 170px; height: 170px; margin: 0 auto 20px; }
+    .portrait-frame::before { content: ""; position: absolute; inset: 0; background: var(--primary); clip-path: polygon(50% 0, 64% 14%, 85% 15%, 86% 36%, 100% 50%, 86% 64%, 85% 85%, 64% 86%, 50% 100%, 36% 86%, 15% 85%, 14% 64%, 0 50%, 14% 36%, 15% 15%, 36% 14%); }
+    .portrait, .portrait-art { position: absolute; inset: 9px; width: calc(100% - 18px); height: calc(100% - 18px); object-fit: cover; clip-path: polygon(50% 0, 64% 14%, 85% 15%, 86% 36%, 100% 50%, 86% 64%, 85% 85%, 64% 86%, 50% 100%, 36% 86%, 15% 85%, 14% 64%, 0 50%, 14% 36%, 15% 15%, 36% 14%); background: var(--bg-dark); }
+    .star-name { font-size: 24px; line-height: 1.3; color: var(--accent); overflow-wrap: break-word; }
+    .age-pill { display: inline-block; margin-top: 8px; font-size: 17px; color: var(--secondary); }
+    .star-detail { font-size: 13px; color: var(--text-muted); margin-top: 8px; }
+    .parents { margin-top: 18px; font-size: 13px; color: var(--text-muted); }
+
+    .countdown-timer { margin-bottom: 18px; }
+    #rsvp .rsvp-card-box form { text-align: left; }
+
+    /* ── Penutup ── */
+    .site-footer { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 180px 24px 128px; text-align: center; color: var(--on-dark); background: radial-gradient(110% 70% at 50% 20%, color-mix(in srgb, var(--accent) 85%, var(--bg-dark)) 0%, var(--bg-dark) 72%); overflow: hidden; }
+    .site-footer.has-closing-photo { min-height: 100vh; min-height: 100svh; }
+    .site-footer .band.top { position: absolute; top: 0; left: 0; }
+    .footer-lanterns { position: absolute; top: 34px; left: 50%; width: 240px; height: 140px; transform: translateX(-50%); }
+    .closing-content { position: relative; max-width: 380px; }
+    .closing-title { font-size: 24px; margin-bottom: 10px; color: var(--primary); }
+    .closing-text { font-size: 14px; color: color-mix(in srgb, var(--on-dark) 82%, transparent); margin: 0 auto 16px; }
+    .closing-name { font-size: 22px; color: var(--on-dark); }
+    .watermark { margin-top: 24px; font-size: 10px; }
+
+    /* ── Dock ── */
+    .bottom-dock { position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translate3d(-50%, 0, 0); z-index: 900; display: flex; gap: 2px; padding: 5px; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--bg-dark) 94%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 55%, transparent); transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease; }
+    .bottom-dock a { display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; color: var(--primary); }
+    .bottom-dock a:hover, .bottom-dock a:focus-visible { color: var(--on-primary); background: var(--primary); outline: none; }
+    .bottom-dock svg { width: 18px; height: 18px; }
+
+    .reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.8s ease, transform 0.8s ease; }
+    .reveal.is-visible { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } .cover-screen, .scroll-cue, .lantern { transition: none; animation: none; } }
+    @media (max-width: 340px) { .cover-name { font-size: 28px; } .sec-block { padding: 54px 18px; } }
+
+    @media (min-width: 900px) {
+      .left-hero { display: block; }
+      .fixed-bg-layer { left: calc(100% - 460px); width: 460px; }
+      .right-panel { margin-left: calc(100% - 460px); width: 460px; }
+      .bottom-dock { left: calc(100% - 230px); }
+    }
+  </style>
+</head>
+<body class="is-locked">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <g id="khatam">
+        <rect class="b-line" x="-11" y="-11" width="22" height="22"/>
+        <rect class="b-line" x="-11" y="-11" width="22" height="22" transform="rotate(45)"/>
+        <circle class="b-fill" r="2.6"/>
+      </g>
+      <pattern id="khatam-band" width="34" height="34" patternUnits="userSpaceOnUse">
+        <use href="#khatam" transform="translate(17 17)"/>
+        <path class="b-line" d="M0 33.5h34"/>
+      </pattern>
+      <g id="medal">
+        <circle class="b-line" r="52"/><circle class="b-line" r="44"/>
+        <g class="b-line-teal"><rect x="-30" y="-30" width="60" height="60"/><rect x="-30" y="-30" width="60" height="60" transform="rotate(45)"/></g>
+        <path class="b-fill" d="M8-16a18 18 0 1 0 12 28 15 15 0 1 1-12-28Z"/>
+        <path class="b-fill" d="M-14-8l2 5 5 2-5 2-2 5-2-5-5-2 5-2Z"/>
+      </g>
+      <g id="lamp">
+        <path class="b-line" d="M0 0v40"/><path class="b-line" d="M-14 40h28l6 10-6 40h-28l-6-40Z"/><ellipse class="b-glow" cx="0" cy="66" rx="8" ry="13"/><path class="b-line" d="M-8 90l8 12 8-12"/>
+      </g>
+    </defs>
+  </svg>
+
+  <div class="left-hero{{#if hasCustomSidebarPhoto}} has-photo{{/if}}"{{#if hasCustomSidebarPhoto}} style="background-image: url('{{sidebarPhotoUrl}}');"{{/if}}>
+    {{#unless hasCustomSidebarPhoto}}
+    <svg class="left-hero-art" viewBox="0 0 800 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <rect x="0" y="0" width="800" height="34" fill="url(#khatam-band)"/>
+      <use href="#medal" transform="translate(400 330) scale(2.4)"/>
+      <g class="lantern"><use href="#lamp" transform="translate(150 34) scale(1.3)"/></g>
+      <g class="lantern l2"><use href="#lamp" transform="translate(650 34) scale(1.1)"/></g>
+    </svg>
+    {{/unless}}
+    <div class="left-hero-content">
+      <span class="left-hero-eyebrow">{{eventLabel}}</span>
+      <h1 class="left-hero-name serif">{{mainNickname}}</h1>
+      {{#if mainInfoLine}}<span class="left-hero-info italic">{{mainInfoLine}}</span>{{/if}}
+      {{#if eventDateFormatted}}<p class="left-hero-date">{{eventDateFormatted}}</p>{{/if}}
+    </div>
+  </div>
+
+  <div class="cover-screen{{#if landingCoverUrl}} has-photo{{/if}}" id="coverScreen"{{#if landingCoverUrl}} style="background-image: url('{{landingCoverUrl}}');"{{/if}}>
+    <svg class="band cover-band top" viewBox="0 0 400 34" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="400" height="34" fill="url(#khatam-band)"/></svg>
+    <svg class="band cover-band bottom" viewBox="0 0 400 34" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="400" height="34" fill="url(#khatam-band)"/></svg>
+    <div class="cover-inner">
+      <svg class="medallion" viewBox="-56 -56 112 112" aria-hidden="true"><use href="#medal"/></svg>
+      <span class="cover-badge" data-lux-field="customLabels.coverBadge">{{eventLabel}}</span>
+      <h1 class="cover-name serif">{{mainNickname}}</h1>
+      {{#if mainInfoLine}}<span class="cover-info italic">{{mainInfoLine}}</span>{{/if}}
+      <svg class="cover-rule" viewBox="0 0 160 16" aria-hidden="true"><path class="b-line" d="M0 8h60M100 8h60"/><use href="#khatam" transform="translate(80 8) scale(0.5)"/></svg>
+      <p class="cover-sub" data-lux-field="customLabels.coverSubtitle">{{eventIntro}}</p>
+      <p class="guest-lbl">Kepada Yth.</p>
+      <p class="guest-name italic">{{guestName}}</p>
+      <button type="button" class="btn-open btn-buka" onclick="openInvitation()" data-lux-field="customLabels.openBtn">Buka Undangan</button>
+    </div>
+  </div>
+
+  <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
+
+  <div class="right-panel" id="rightPanel">
+    <section class="slide-home" id="home">
+      <svg class="band top" viewBox="0 0 400 34" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="400" height="34" fill="url(#khatam-band)"/></svg>
+      <svg class="band bottom" viewBox="0 0 400 34" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="400" height="34" fill="url(#khatam-band)"/></svg>
+      <svg class="home-medallion reveal" viewBox="-56 -56 112 112" aria-hidden="true"><use href="#medal"/></svg>
+      <p class="home-salam reveal" data-lux-field="customLabels.quoteEyebrow">Bismillahirrahmanirrahim</p>
+      <h2 class="home-name serif reveal">{{mainNickname}}</h2>
+      {{#if mainInfoLine}}<span class="home-info italic reveal">{{mainInfoLine}}</span>{{/if}}
+      {{#if openingQuote}}
+      <p class="home-quote italic reveal">{{openingQuote}}</p>
+      {{#if openingQuoteRef}}<p class="home-quote-ref">{{openingQuoteRef}}</p>{{/if}}
+      {{/if}}
+      <svg class="scroll-cue" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+    </section>
+
+    <main>
+      <section class="sec-block reveal" id="profile">
+        <span class="sec-lbl" data-lux-field="customLabels.coupleEyebrow">{{profileEyebrow}}</span>
+        <h2 class="sec-h2 serif" data-lux-field="customLabels.coupleTitle">{{profileTitle}}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.coupleSub">{{profileSub}}</p>
+        <div class="star-card">
+          <div class="portrait-frame">
+            {{#if hasCustomMainPhoto}}<img class="portrait" src="{{mainPhotoUrl}}" alt="{{mainName}}" loading="lazy" />{{/if}}
+            {{#unless hasCustomMainPhoto}}
+            <svg class="portrait-art" viewBox="-76 -76 152 152" aria-hidden="true"><use href="#medal" transform="scale(1.05)"/></svg>
+            {{/unless}}
+          </div>
+          <h3 class="star-name serif">{{mainName}}</h3>
+          {{#if mainInfoLine}}<span class="age-pill italic">{{mainInfoLine}}</span>{{/if}}
+          {{#if mainDetailLine}}<p class="star-detail">{{mainDetailLine}}</p>{{/if}}
+          <div class="parents">{{parentsHtml}}</div>
+        </div>
+      </section>
+
+      <section class="sec-block reveal" id="event">
+        <span class="sec-lbl" data-lux-field="customLabels.eventsEyebrow">Waktu & Tempat</span>
+        <h2 class="sec-h2 serif" data-lux-field="customLabels.eventsTitle">{{agendaTitle}}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.eventsSub">{{eventDateFormatted}}</p>
+        {{countdownHtml}}
+        {{eventSectionHtml}}
+      </section>
+
+      {{qrPassHtml}}
+      {{gallerySectionHtml}}
+      {{giftSectionHtml}}
+      {{extraSectionsHtml}}
+
+      <section class="sec-block reveal" id="rsvp">
+        <span class="sec-lbl" data-lux-field="customLabels.wishesEyebrow">Doa untuk Ananda</span>
+        {{rsvpSectionHtml}}
+        {{wishesSectionHtml}}
+      </section>
+
+      {{memoriesSectionHtml}}
+    </main>
+
+    <footer class="site-footer {{closingPhotoClass}}" id="footer" style="{{closingBgStyle}}">
+      <svg class="band top" viewBox="0 0 400 34" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="400" height="34" fill="url(#khatam-band)"/></svg>
+      <svg class="footer-lanterns" viewBox="0 0 240 140" aria-hidden="true">
+        <g class="lantern"><use href="#lamp" transform="translate(60 0)"/></g>
+        <g class="lantern l2"><use href="#lamp" transform="translate(120 0) scale(1.2)"/></g>
+        <g class="lantern"><use href="#lamp" transform="translate(180 0)"/></g>
+      </svg>
+      <div class="closing-content">
+        <h2 class="closing-title serif" data-lux-field="customLabels.closingTitle">Jazakumullah Khairan</h2>
+        <p class="closing-text" data-lux-field="customLabels.closingText">{{closingText}}</p>
+        <p class="closing-name serif">{{mainNickname}}</p>
+        <div class="watermark">{{brandWatermarkHtml}}</div>
+      </div>
+    </footer>
+  </div>
+
+  <nav class="bottom-dock" aria-label="Navigasi undangan">
+    <a href="#home" aria-label="Beranda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg></a>
+    <a href="#profile" aria-label="Profil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></a>
+    <a href="#event" aria-label="Acara"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="16" rx="1"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></a>
+    <a href="#gallery" aria-label="Galeri"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="1"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg></a>
+    <a href="#gift" aria-label="Hadiah"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="8" width="18" height="13" rx="1"/><path d="M12 8v13M3 12h18M12 8S10 3 7.5 4 9 8 12 8Zm0 0s2-5 4.5-4S15 8 12 8Z"/></svg></a>
+    <a href="#rsvp" aria-label="Doa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12Z"/></svg></a>
+  </nav>
+
+  <script>
+    function openInvitation() {
+      var cover = document.getElementById('coverScreen');
+      if (cover) cover.classList.add('opened');
+      document.body.classList.remove('is-locked');
+    }
+    (function () {
+      var items = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window)) { items.forEach(function (el) { el.classList.add('is-visible'); }); return; }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) { if (entry.isIntersecting) { entry.target.classList.add('is-visible'); io.unobserve(entry.target); } });
+      }, { threshold: 0.12 });
+      items.forEach(function (el) { io.observe(el); });
+    })();
+  </script>
+  {{musicPlayerHtml}}
+</body>
+</html>

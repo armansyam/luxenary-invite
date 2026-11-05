@@ -356,11 +356,11 @@ Luxenary-Invite/
 ├── themes/
 │   ├── _blueprints/           # Blueprint modular per jenis acara (wedding, birthday, khitan, aqiqah, wisuda, general)
 │   ├── wedding/               # 33 tema pernikahan: minimalist (6), modern (12), traditional (15)
-│   ├── birthday/              # 2 tema ulang tahun: festivo, kalandra-birthday
-│   ├── khitan/                # 1 tema walimatul khitan: al-fariz
-│   ├── aqiqah/                # 1 tema walimatul aqiqah: al-khalid
-│   ├── wisuda/                # 1 tema wisuda & kelulusan: cendekia
-│   └── general/               # 1 tema gathering & reuni: sinergi
+│   ├── birthday/              # 5 tema ulang tahun: festivo, kalandra-birthday, riang, balonku, gala
+│   ├── khitan/                # 4 tema walimatul khitan: al-fariz, fajar, nur, sakinah
+│   ├── aqiqah/                # 4 tema walimatul aqiqah: al-khalid, buaian, mungil, barakah
+│   ├── wisuda/                # 4 tema wisuda & kelulusan: cendekia, toga, laurel, akademia
+│   └── general/               # 4 tema gathering & reuni: sinergi, prakarsa, forum, temu
 ├── components/
 │   ├── BrandLogo.tsx
 │   ├── client/
@@ -628,6 +628,7 @@ npx vitest run
 - **Perbaikan audit 19 Okt**: order transfer berbukti tidak kedaluwarsa otomatis (penolakan bukti memberi 24 jam untuk unggah ulang), restore snapshot tertua tidak menghapus snapshot itu, login admin tidak peka huruf besar. Order yang sudah terlanjur `EXPIRED` dengan bukti perlu ditinjau manual. Rincian di `docs/SYSTEM_ARCHITECTURE.md` bagian 25.11 butir 39.
 - **Isian dasbor di HP**: di bawah 640 px semua isian di dalam `.dash-shell` (layout dasbor klien dan admin) minimal 16 px lewat satu aturan di `app/globals.css`, agar iPhone tidak memperbesar layar; desktop tetap memakai ukuran kelas Tailwind.
 - **Master tema satu nama (20 Okt)**: lima master baru `toga` (wisuda), `buaian` (aqiqah), `fajar` (khitan), `riang` (ulang tahun), `prakarsa` (acara umum) memakai kerangka desktop master pernikahan (hero kiri + panel kanan 460 px) dan semua slot media, termasuk video. Saat klien memilih tema, master disalin ke piring `data/drafts/<id>.html` dan undangan mendapat label lengkap yang dapat diubah; untuk acara non-pernikahan label bawaan diambil dari teks master yang dirender untuk jenis acaranya, bukan dari blueprint (sebelumnya "THE COUPLE"/"WISHES & RSVP" tampil di undangan terbit). Katalog menaruh tema sejenis acara di depan. Saat deploy jalankan sekali `npx tsx scripts/clean-single-name-labels.ts` (dry run), lalu `--apply`, sebelum `pm2 reload`.
+- **Master satu nama berilustrasi (5 Nov)**: sepuluh master baru, dua per jenis acara: `balonku`, `gala` (ulang tahun); `nur`, `sakinah` (khitan); `mungil`, `barakah` (aqiqah); `laurel`, `akademia` (wisuda); `forum`, `temu` (gathering). Ilustrasinya SVG inline berwarna token palet, tanpa foto atau aset gambar. Setiap slot foto punya ilustrasi pengganti lewat penanda engine `hasCustomMainPhoto` / `hasCustomSidebarPhoto` (`applySingleNameContract`), yang hanya benar bila fotonya bukan monogram SVG cadangan. Latar sampul wajib gradien (`background-image`), karena preloader engine memaksa `background-color` sampul. Persona demo tanpa foto ada di `lib/demoRegistry.ts`, label di `lib/themeDefaults.ts`.
 - **Uji alur menyeluruh (20 Okt)**: 6 jenis acara, transfer manual, Studio, tamu, resepsionis, Kamera Momen, upgrade, dan seluruh tab admin diuji di build produksi lokal. Diperbaiki: mode galeri di subdomain kini tetap di subdomain undangan (sebelumnya dialihkan ke halaman demo platform), dan ucapan tamu baru langsung tampil di tema satu nama tanpa menunggu HTML dibangun ulang. Rincian di `docs/SYSTEM_ARCHITECTURE.md` bagian 25.11 butir 41.
 - **Sampul desktop foto + sampul HP video (20 Okt)**: foto sampul desktop kini tampil di layar ≥900 px walaupun sampul HP berupa video (sebelumnya video HP menutupinya). Undangan yang sudah terbit perlu dibakar ulang lewat tombol purge admin agar ikut berubah. Rincian di `docs/SYSTEM_ARCHITECTURE.md` bagian 25.11 butir 42.
 - **Struktur `themes/` (27 Okt 2026)**: satu aturan letak `themes/<folder-acara>/<gaya>/<id>.html` (GATHERING di `general`), pemetaan hanya di `lib/themePaths.ts`, jalur lama renderer dihapus, dijaga `__tests__/unit/themeFolders.test.ts`; lihat `themes/README.md`. Slot media di Studio klien kini satu baris ringkas dengan thumbnail selalu ada.
