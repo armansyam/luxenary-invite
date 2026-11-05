@@ -57,6 +57,15 @@ describe("measureFrameWindow", () => {
     expect(adat!.aspect).toBeGreaterThan(0.6);
     expect(adat!.aspect).toBeLessThan(0.9);
     expect(await measureFrameWindow("/assets/ornaments/bugis/bingkai-adat-bugis-3d.png")).toBeNull();
+    expect(await measureFrameWindow("/assets/ornaments/bugis/pavillion-bamboo.webp")).not.toBeNull();
+  });
+
+  it("rongga kecil di dalam ilustrasi (layar kapal, celah kelopak buket) bukan jendela foto", async () => {
+    const small = await frameWithWindow("rongga.png", 400, 400, [150, 150, 250, 250]);
+    expect(await measureFrameWindow(small, root)).toBeNull();
+    expect(await measureFrameWindow("/assets/ornaments/bugis/kapal-phinisi.webp")).toBeNull();
+    expect(await measureFrameWindow("/assets/ornaments/starlit-dreams/couple-frame-1.webp")).toBeNull();
+    expect(await measureFrameWindow("/assets/ornaments/starlit-dreams/couple-frame-2.webp")).toBeNull();
   });
 });
 

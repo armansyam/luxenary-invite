@@ -9,6 +9,12 @@ const SAMPLE = 256;
 const OPEN_ALPHA = 40;
 /** Jendela yang lebih sempit dari ini (pecahan lebar atau tinggi gambar) dianggap bukan jendela foto. */
 const MIN_WINDOW = 0.08;
+/**
+ * Luas jendela minimum (pecahan luas gambar). Rongga tertutup di dalam ilustrasi, misalnya layar kapal-phinisi (5%)
+ * atau celah kelopak buket couple-frame (1,4%), lolos cek lebar/tinggi tetapi bukan tempat foto; jendela bingkai
+ * pustaka terkecil (pavillion-bamboo) 16%.
+ */
+const MIN_WINDOW_AREA = 0.12;
 
 const memo = new Map<string, FrameFit | null>();
 
@@ -17,7 +23,7 @@ const round3 = (v: number) => Math.round(v * 1000) / 1000;
 /**
  * Jendela transparan sebuah bingkai: area bolong yang tersambung dengan titik tengah gambar, dihitung dari kanal alpha.
  * Hasilnya kotak pembatas jendela (pecahan lebar/tinggi gambar) dan perbandingan lebar:tinggi jendela dalam piksel asli.
- * Null bila tengah gambar opak, jendelanya menyentuh tepi gambar (bukan jendela tertutup), atau terlalu sempit.
+ * Null bila tengah gambar opak, jendelanya menyentuh tepi gambar (bukan jendela tertutup), atau terlalu sempit/kecil.
  */
 export async function measureFrameWindow(src: string, publicDir = PUBLIC_DIR): Promise<FrameFit | null> {
   if (!isAllowedOrnamentSrc(src)) return null;
@@ -65,7 +71,7 @@ export async function measureFrameWindow(src: string, publicDir = PUBLIC_DIR): P
     }
     const enclosed = l > 0 && t > 0 && r < w - 1 && b < h - 1;
     const wl = l / w, wt = t / h, wr = (r + 1) / w, wb = (b + 1) / h;
-    if (enclosed && wr - wl >= MIN_WINDOW && wb - wt >= MIN_WINDOW) {
+    if (enclosed && wr - wl >= MIN_WINDOW && wb - wt >= MIN_WINDOW && (wr - wl) * (wb - wt) >= MIN_WINDOW_AREA) {
       fit = { l: round3(wl), t: round3(wt), r: round3(wr), b: round3(wb), aspect: round3(((wr - wl) * meta.width) / ((wb - wt) * meta.height)) };
     }
   }
