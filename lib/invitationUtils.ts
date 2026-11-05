@@ -20,6 +20,23 @@ export function isThemeCompatible(themeEventType?: string | null, invitationEven
   return themeIsWedding === invitationIsWedding;
 }
 
+export const EVENT_TYPES = ["WEDDING", "BIRTHDAY", "KHITAN", "AQIQAH", "WISUDA", "GATHERING"] as const;
+
+/**
+ * Jenis acara yang menerima undangan baru, dari pengaturan admin `enabled_event_types` (dipisah koma). Kunci yang belum
+ * ada atau kosong berarti semua: platform yang belum pernah menyimpan pengaturan ini tetap menerima semua jenis acara.
+ */
+export function parseEnabledEventTypes(raw: string | null | undefined): string[] {
+  const picked = (raw || "").split(",").map((s) => s.trim().toUpperCase());
+  const enabled = EVENT_TYPES.filter((t) => picked.includes(t));
+  return enabled.length ? enabled : [...EVENT_TYPES];
+}
+
+/** Jenis acara yang bisa dipilih klien: diaktifkan admin dan punya minimal satu tema aktif yang cocok. */
+export function selectableEventTypes(enabled: readonly string[], activeThemeEventTypes: ReadonlyArray<string | null | undefined>): string[] {
+  return enabled.filter((ev) => activeThemeEventTypes.some((t) => isThemeCompatible(t, ev)));
+}
+
 /** Tema yang dibuat untuk jenis acara undangan tampil lebih dulu; urutan katalog lainnya tetap (sort stabil). */
 export function sortThemesForEvent<T extends { eventType?: string | null }>(themes: T[], invitationEventType?: string | null): T[] {
   const ev = (invitationEventType || "WEDDING").toUpperCase();

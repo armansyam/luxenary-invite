@@ -3,6 +3,7 @@ import { logger } from "./logger";
 import { getDynamicServerRootDomain } from "./serverDomainUtils";
 import { normalizePlanType } from "./planUtils";
 import { formatRetentionLabel, parseLifecycleSettings } from "./lifecycleDates";
+import { parseEnabledEventTypes } from "./invitationUtils";
 
 export interface PricingPackageItem {
   id: "TIER_1" | "TIER_2" | "TIER_3";
@@ -48,6 +49,7 @@ export interface PublicPlatformSettings {
   customDomainRetentionDays: number;
   galleryExtensionPricePerMonth: number;
   customDomainEnabled: boolean;
+  enabledEventTypes: string[];
   addonMemoriesTopupEnabled: boolean;
   addonMemoriesTopupPhotos: number;
   addonMemoriesTopupPrice: number;
@@ -103,6 +105,10 @@ export async function getAdminSetting(key: string, defaultValue = ""): Promise<s
     logger.error("Settings", "Pengaturan gagal dibaca; nilai bawaan dipakai", err, { key });
     return defaultValue;
   }
+}
+
+export async function getEnabledEventTypes(): Promise<string[]> {
+  return parseEnabledEventTypes(await getAdminSetting("enabled_event_types"));
 }
 
 export async function getServiceAvailability(): Promise<ServiceStatusSettings> {
@@ -298,6 +304,7 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     customDomainRetentionDays: lifecycle.customDomainRetentionDays,
     galleryExtensionPricePerMonth: Number(map["gallery_extension_price_per_month"] || 50000),
     customDomainEnabled: map["custom_domain_enabled"] !== "false",
+    enabledEventTypes: parseEnabledEventTypes(map["enabled_event_types"]),
     addonMemoriesTopupEnabled: map["addon_memories_topup_enabled"] !== "false",
     addonMemoriesTopupPhotos: Number(map["addon_memories_topup_photos"] || 100),
     addonMemoriesTopupPrice: Number(map["addon_memories_topup_price"] || 35000),

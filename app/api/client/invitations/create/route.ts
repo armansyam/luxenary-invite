@@ -16,6 +16,7 @@ import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
 import { copyMasterToDraft, seedRenderedLabels } from "@/lib/renderedLabels";
 import { parseThemeDefaultMedia } from "@/lib/themeDefaultMedia";
+import { getEnabledEventTypes } from "@/lib/settings";
 
 function slugify(text: string): string {
   return text
@@ -118,6 +119,11 @@ export async function POST(req: Request) {
     );
   }
 
+  // Jenis acara yang dinonaktifkan admin hanya menutup undangan baru; draf yang sudah berjenis acara itu tetap bisa disimpan.
+  if (!existingDraft?.eventType && !(await getEnabledEventTypes()).includes(eventType)) {
+    return NextResponse.json({ error: "Jenis acara ini belum menerima undangan baru." }, { status: 400 });
+  }
+
   const participants = normalizeJsonInput(participantsJson, "object");
   if (!participants.ok) {
     return NextResponse.json({ error: "participantsJson harus berupa objek JSON yang valid." }, { status: 400 });
@@ -141,6 +147,23 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+  }
+
+  // Undangan baru tanpa pilihan tema memakai tema bawaan acaranya hanya bila tema itu aktif; selain itu tema aktif pertama
+  // yang cocok (urutan katalog). Tanpa tema aktif yang cocok undangan tidak dibuat, alih-alih memakai tema nonaktif.
+  let fallbackTheme = DEFAULT_THEME_BY_EVENT[eventType] || "kalandra";
+  if (!themeId?.trim() && !existingDraft?.themeId) {
+    const activeThemes = await prisma.theme.findMany({
+      where: { isActive: true },
+      select: { id: true, eventType: true },
+      orderBy: { sortOrder: "asc" },
+    });
+    const compatible = activeThemes.filter((t) => isThemeCompatible(t.eventType, eventType));
+    const pick = compatible.find((t) => t.id === fallbackTheme) ?? compatible.find((t) => t.eventType === eventType) ?? compatible[0];
+    if (!pick) {
+      return NextResponse.json({ error: "Belum ada tema aktif untuk jenis acara ini." }, { status: 400 });
+    }
+    fallbackTheme = pick.id;
   }
 
   const randomId = Date.now().toString(36).slice(-6);
@@ -282,7 +305,7 @@ export async function POST(req: Request) {
 
   const invitationStatus = "DRAFT";
 
-  const chosenTheme = themeId?.trim() || DEFAULT_THEME_BY_EVENT[eventType] || "kalandra";
+  const chosenTheme = themeId?.trim() || fallbackTheme;
   const { customDemoData, themeMeta, blueprint, defaultCoverBadge, initialCustomLabels } = await loadThemeLabelContext(chosenTheme, eventType);
 
   try {

@@ -12,7 +12,15 @@ export default async function Home() {
     pricingSubtitle,
     packages: pricingPackages,
     serviceStatus,
+    enabledEventTypes,
   } = await getPublicPlatformSettings();
+  const weddingOnly = enabledEventTypes.length === 1 && enabledEventTypes[0] === "WEDDING";
+  const collectionChips = [
+    { id: "WEDDING", slug: "wedding", label: "Pernikahan" },
+    { id: "BIRTHDAY", slug: "birthday", label: "Ulang Tahun" },
+    { id: "KHITAN", slug: "khitan", label: "Khitanan" },
+    { id: "WISUDA", slug: "wisuda", label: "Wisuda" },
+  ].filter((c) => enabledEventTypes.includes(c.id));
 
   const activeDomain = await getDynamicServerRootDomain();
   const brand = platformName || "Platform Undangan";
@@ -165,25 +173,22 @@ export default async function Home() {
   <div className="koleksi-text">
     <p className="section-label reveal">Koleksi Desain</p>
     <h2 className="koleksi-heading reveal reveal-delay-1" id="koleksi-heading">
-      Desain Eksklusif<br />untuk Semua Momen Spesial
+      Desain Eksklusif<br />{weddingOnly ? "untuk Hari Pernikahan Anda" : "untuk Semua Momen Spesial"}
     </h2>
     <p className="koleksi-desc reveal reveal-delay-2">
-      Dari pesta pernikahan, perayaan ulang tahun istimewa, hingga momen syukuran keluarga, setiap rancangan dibuat dengan detail untuk mencerminkan keunikan acara Anda.
+      {weddingOnly
+        ? "Setiap rancangan dibuat dengan detail untuk mencerminkan keunikan hari pernikahan Anda."
+        : "Dari pesta pernikahan, perayaan ulang tahun istimewa, hingga momen syukuran keluarga, setiap rancangan dibuat dengan detail untuk mencerminkan keunikan acara Anda."}
     </p>
+    {collectionChips.length > 1 && (
     <div className="flex flex-wrap gap-2 my-4 reveal reveal-delay-2">
-      <Link href="/demo?event=wedding" className="text-xs font-semibold px-3 py-1.5 rounded-full border border-stone-700/60 text-stone-300 hover:border-amber-500/80 hover:text-amber-300 transition">
-        Pernikahan
-      </Link>
-      <Link href="/demo?event=birthday" className="text-xs font-semibold px-3 py-1.5 rounded-full border border-stone-700/60 text-stone-300 hover:border-amber-500/80 hover:text-amber-300 transition">
-        Ulang Tahun
-      </Link>
-      <Link href="/demo?event=khitan" className="text-xs font-semibold px-3 py-1.5 rounded-full border border-stone-700/60 text-stone-300 hover:border-amber-500/80 hover:text-amber-300 transition">
-        Khitanan
-      </Link>
-      <Link href="/demo?event=wisuda" className="text-xs font-semibold px-3 py-1.5 rounded-full border border-stone-700/60 text-stone-300 hover:border-amber-500/80 hover:text-amber-300 transition">
-        Wisuda
-      </Link>
+      {collectionChips.map((c) => (
+        <Link key={c.id} href={`/demo?event=${c.slug}`} className="text-xs font-semibold px-3 py-1.5 rounded-full border border-stone-700/60 text-stone-300 hover:border-amber-500/80 hover:text-amber-300 transition">
+          {c.label}
+        </Link>
+      ))}
     </div>
+    )}
     <Link href="/demo" className="koleksi-link reveal reveal-delay-3">
       Jelajahi Semua Koleksi
     </Link>

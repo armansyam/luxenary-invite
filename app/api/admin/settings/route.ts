@@ -5,6 +5,7 @@ import { readJsonBody } from "@/lib/requestBody";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
 import { invalidateSettingsCache } from "@/lib/settings";
+import { EVENT_TYPES } from "@/lib/invitationUtils";
 import { defaultAdminSettings } from "@/prisma/defaultSettings";
 
 export const dynamic = "force-dynamic";
@@ -66,6 +67,16 @@ export async function POST(req: NextRequest) {
     const body = await readJsonBody(req);
     const updates = Array.isArray(body) ? body : [body];
     const results = [];
+
+    // Nilai tanpa jenis acara yang dikenal akan dibaca sebagai "semua jenis acara"; tolak alih-alih membuka semuanya diam-diam.
+    for (const u of updates) {
+      if (u?.key !== "enabled_event_types") continue;
+      const picked = String(u.value ?? "").split(",").map((s) => s.trim().toUpperCase()).filter((s) => (EVENT_TYPES as readonly string[]).includes(s));
+      if (!picked.length) {
+        return NextResponse.json({ error: "Pilih minimal satu jenis acara yang menerima undangan baru." }, { status: 400 });
+      }
+      u.value = EVENT_TYPES.filter((t) => picked.includes(t)).join(",");
+    }
     
     // Map of setting keys to environment variables
     const envKeyMap: Record<string, string> = {

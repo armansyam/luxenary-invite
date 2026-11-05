@@ -23,6 +23,12 @@ export const defaultSettings: DefaultSettingItem[] = [
     "updatedAt": "2026-09-16T06:28:33.039Z"
   },
   {
+    "key": "enabled_event_types",
+    "value": "WEDDING,BIRTHDAY,KHITAN,AQIQAH,WISUDA,GATHERING",
+    "label": "Jenis Acara yang Menerima Undangan Baru",
+    "group": "platform"
+  },
+  {
     "id": "53249c2c-8d5e-452d-b7b3-b7f0210f212c",
     "key": "addon_memories_topup_enabled",
     "value": "true",

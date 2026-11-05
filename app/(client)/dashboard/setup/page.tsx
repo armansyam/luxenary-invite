@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { DEFAULT_PLAN_NAMES } from "@/lib/planUtils";
-import { isThemeCompatible, sortThemesForEvent } from "@/lib/invitationUtils";
+import { isThemeCompatible, selectableEventTypes, sortThemesForEvent } from "@/lib/invitationUtils";
 import { getApexRootDomain } from "@/lib/domainUtils";
 
 // Di HP baris tombol menempel di bawah layar: langkah tema bisa setinggi belasan layar, dan tombol selesai
@@ -77,6 +77,9 @@ function SetupWizardContent() {
   });
   const [platformName, setPlatformName] = useState("");
   const [themesList, setThemesList] = useState<any[]>([]);
+  const [themesLoaded, setThemesLoaded] = useState(false);
+  const [enabledEventTypes, setEnabledEventTypes] = useState<string[] | null>(null);
+  const [eventOptionsFailed, setEventOptionsFailed] = useState(false);
 
   const [eventType, setEventType] = useState<string>("");
   const [step, setStep] = useState(0);
@@ -225,8 +228,9 @@ function SetupWizardContent() {
         if (Array.isArray(data) && data.length > 0) {
           setThemesList(data);
         }
+        setThemesLoaded(true);
       })
-      .catch(() => {});
+      .catch(() => setEventOptionsFailed(true));
 
     // Fetch custom package names from public settings (Single Source of Truth)
     fetch("/api/public/settings")
@@ -242,8 +246,13 @@ function SetupWizardContent() {
         if (data.platformName) {
           setPlatformName(data.platformName);
         }
+        if (Array.isArray(data.enabledEventTypes)) {
+          setEnabledEventTypes(data.enabledEventTypes);
+        } else {
+          setEventOptionsFailed(true);
+        }
       })
-      .catch(() => {});
+      .catch(() => setEventOptionsFailed(true));
 
     // Resolve order planType if order ID provided in URL
     if (queryOrder) {
@@ -260,6 +269,25 @@ function SetupWizardContent() {
 
   // Seluruh tema desain bebas dipilih di semua paket (All-Access Themes)
   const availableThemes = themesList;
+
+  // Jenis acara yang ditawarkan: diaktifkan admin dan punya tema aktif yang cocok. API pembuatan undangan menegakkan aturan
+  // yang sama, jadi daftar ini hanya penyaring tampilan.
+  const eventOptionsReady = enabledEventTypes !== null && themesLoaded;
+  const selectableEvents = eventOptionsReady ? selectableEventTypes(enabledEventTypes, themesList.map((t: any) => t.eventType)) : [];
+  const selectableKey = selectableEvents.join(",");
+
+  useEffect(() => {
+    if (!eventOptionsReady || !isDraftLoaded) return;
+    // Draf lokal bisa menyimpan jenis acara yang kini ditutup: kembali ke langkah pertama alih-alih gagal saat disimpan.
+    if (eventType && !selectableEvents.includes(eventType)) {
+      setEventType("");
+      setThemeId("");
+      setStep(0);
+      return;
+    }
+    if (!eventType && selectableEvents.length === 1) setEventType(selectableEvents[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventOptionsReady, isDraftLoaded, eventType, selectableKey]);
 
 
 
@@ -455,7 +483,18 @@ function SetupWizardContent() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {!eventOptionsReady && (
+              <p className="text-center text-xs text-stone-500">
+                {eventOptionsFailed ? "Pilihan jenis acara gagal dimuat. Muat ulang halaman ini." : "Memuat pilihan jenis acara…"}
+              </p>
+            )}
+            {eventOptionsReady && selectableEvents.length === 0 && (
+              <p className="text-center text-xs text-stone-500">
+                Belum ada jenis acara yang menerima undangan baru. Silakan hubungi admin.
+              </p>
+            )}
+
+            <div className={`grid gap-4 ${selectableEvents.length === 1 ? "grid-cols-1 max-w-sm mx-auto" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`}>
               {[
                 {
                   id: "WEDDING",
@@ -517,7 +556,7 @@ function SetupWizardContent() {
                     </svg>
                   ),
                 },
-              ].map((item) => {
+              ].filter((item) => selectableEvents.includes(item.id)).map((item) => {
                 const isSelected = eventType === item.id;
                 return (
                   <div

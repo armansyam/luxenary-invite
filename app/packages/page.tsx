@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { BrandLogo } from "@/components/BrandLogo";
+import { BUILDER_EVENT_LABELS, type BuilderEventType } from "@/lib/themeBuilder/spec";
 
 export default function PackageSelectionPage() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function PackageSelectionPage() {
   const [loading, setLoading] = useState(true);
   const [platformName, setPlatformName] = useState("");
   const [serviceStatus, setServiceStatus] = useState<any>(null);
+  const [enabledEventTypes, setEnabledEventTypes] = useState<string[]>([]);
 
   useEffect(() => {
     // 1. Cek status: HANYA redirect jika user SUDAH MEMILIKI UNDANGAN atau SUDAH BAYAR LUNAS (PAID)
@@ -41,6 +43,9 @@ export default function PackageSelectionPage() {
           }
           if (data.serviceStatus) {
             setServiceStatus(data.serviceStatus);
+          }
+          if (Array.isArray(data.enabledEventTypes)) {
+            setEnabledEventTypes(data.enabledEventTypes);
           }
         }
         setLoading(false);
@@ -80,11 +85,13 @@ export default function PackageSelectionPage() {
           </p>
         </div>
 
-        {/* Multi-event reassurance badge */}
+        {/* Multi-event reassurance badge: hanya jenis acara yang menerima undangan baru */}
+        {enabledEventTypes.length > 1 && (
         <div className="max-w-2xl mx-auto mb-8 p-3.5 bg-amber-50/80 border border-amber-200/80 rounded-2xl flex items-center justify-center gap-2.5 text-center text-xs text-amber-950">
           <span className="w-2 h-2 rounded-full bg-amber-600 shrink-0"></span>
-          <span><strong>Multi-Acara Fleksibel:</strong> Seluruh paket di bawah mendukung semua jenis acara — Pernikahan, Ulang Tahun, Khitanan, Aqiqah, Wisuda, dan Syukuran.</span>
+          <span><strong>Multi-Acara Fleksibel:</strong> Seluruh paket di bawah mendukung jenis acara {enabledEventTypes.map((ev) => BUILDER_EVENT_LABELS[ev as BuilderEventType] ?? ev).join(", ")}.</span>
         </div>
+        )}
 
         {/* Dynamic Service Status Notice */}
         {isClosed && (

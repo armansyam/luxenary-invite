@@ -5,6 +5,8 @@ import Link from "next/link";
 import { AdminProfileSettings } from "@/components/admin/AdminProfileSettings";
 import { AdminAboutSettings } from "@/components/admin/AdminAboutSettings";
 import { SettingsCard, FieldRow } from "@/components/admin/AdminSettingsUI";
+import { EVENT_TYPES, parseEnabledEventTypes } from "@/lib/invitationUtils";
+import { BUILDER_EVENT_LABELS } from "@/lib/themeBuilder/spec";
 
 const AVAILABLE_CAPABILITIES = [
   { id: "guest_memories", label: "Galeri Kenangan Tamu (Live Photo Drop)" },
@@ -2403,6 +2405,56 @@ export default function AdminSettingsTab(props: Props) {
       )}
     </div>
   </SettingsCard>
+
+  {/* Jenis acara yang menerima undangan baru */}
+  {(() => {
+    const enabled = parseEnabledEventTypes(settingsMap["enabled_event_types"]);
+    const toggle = (ev: string) => {
+      const next = enabled.includes(ev) ? enabled.filter((e) => e !== ev) : [...enabled, ev];
+      setSetting("enabled_event_types", EVENT_TYPES.filter((t) => next.includes(t)).join(","));
+    };
+    return (
+      <SettingsCard
+        title="Jenis Acara yang Menerima Undangan Baru"
+        description="Klien baru hanya dapat memilih jenis acara yang dicentang dan memiliki minimal satu tema aktif. Undangan yang sudah dibuat tidak terpengaruh. Beranda, halaman paket, dan katalog demo hanya menampilkan jenis acara yang dicentang."
+        isEditing={Boolean(editSection["event_types"])}
+        onEdit={() => toggleEditSection("event_types")}
+        onCancel={() => cancelEdit("event_types", ["enabled_event_types"])}
+        onSave={() => saveSettings(["enabled_event_types"], setSavingPlatformCustom, "event_types")}
+        saving={savingPlatformCustom}
+        isDirty={isSectionDirty(["enabled_event_types"])}
+        saveSuccess={settingsSaved["event_types"]}
+        saveSuccessMessage="Jenis acara aktif berhasil disimpan"
+        viewContent={
+          <div className="flex flex-wrap gap-2">
+            {EVENT_TYPES.map((ev) => (
+              <span key={ev} className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${enabled.includes(ev) ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-gray-50 text-gray-400 border-gray-200"}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${enabled.includes(ev) ? "bg-emerald-500" : "bg-gray-300"}`} />
+                {BUILDER_EVENT_LABELS[ev]}
+              </span>
+            ))}
+          </div>
+        }
+      >
+        <FieldRow label="Jenis Acara Aktif" description="Minimal satu jenis acara harus dicentang.">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {EVENT_TYPES.map((ev) => (
+              <label key={ev} className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 cursor-pointer hover:border-amber-400 transition">
+                <input
+                  type="checkbox"
+                  checked={enabled.includes(ev)}
+                  disabled={enabled.length === 1 && enabled.includes(ev)}
+                  onChange={() => toggle(ev)}
+                  className="w-4 h-4 accent-amber-600 cursor-pointer disabled:cursor-not-allowed"
+                />
+                {BUILDER_EVENT_LABELS[ev]}
+              </label>
+            ))}
+          </div>
+        </FieldRow>
+      </SettingsCard>
+    );
+  })()}
 
   {/* WhatsApp Template Settings */}
   <SettingsCard

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { BrandLogo } from "@/components/BrandLogo";
+import { isThemeCompatible } from "@/lib/invitationUtils";
 import "./demo.css";
 
 interface ThemeItem {
@@ -23,6 +24,9 @@ export default function CatalogGridShowcase() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
   const [loading, setLoading] = useState(true);
+  // null = pengaturan belum terbaca (atau gagal dibaca): katalog menampilkan semua tema, pembuatan undangan tetap dibatasi server.
+  const [enabledEventTypes, setEnabledEventTypes] = useState<string[] | null>(null);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [platformName, setPlatformName] = useState("Platform Undangan");
   const [siteHost, setSiteHost] = useState("");
 
@@ -49,7 +53,8 @@ export default function CatalogGridShowcase() {
   useEffect(() => {
     fetch("/api/public/settings").then(r => r.json()).then(d => {
       if (d?.platformName) setPlatformName(d.platformName);
-    }).catch(() => {});
+      if (Array.isArray(d?.enabledEventTypes)) setEnabledEventTypes(d.enabledEventTypes);
+    }).catch(() => {}).finally(() => setSettingsLoaded(true));
   }, []);
 
   useEffect(() => {
@@ -76,8 +81,13 @@ export default function CatalogGridShowcase() {
       .catch(() => setLoading(false));
   }, [platformName]);
 
-  const filteredThemes = themes.filter((t) => {
-    const matchesEvent = selectedEvent === "all" || (t.eventType || "WEDDING").toLowerCase() === selectedEvent.toLowerCase();
+  // Tema yang tidak bisa dipakai jenis acara aktif mana pun tidak ditawarkan; filter acara yang ditutup kembali ke "Semua".
+  const offeredThemes = enabledEventTypes ? themes.filter((t) => enabledEventTypes.some((ev) => isThemeCompatible(t.eventType, ev))) : themes;
+  const effectiveEvent = enabledEventTypes && selectedEvent !== "all" && !enabledEventTypes.includes(selectedEvent.toUpperCase()) ? "all" : selectedEvent;
+  const catalogLoading = loading || !settingsLoaded;
+
+  const filteredThemes = offeredThemes.filter((t) => {
+    const matchesEvent = effectiveEvent === "all" || (t.eventType || "WEDDING").toLowerCase() === effectiveEvent.toLowerCase();
     const matchesCategory = selectedCategory === "all" || t.category.toLowerCase() === selectedCategory.toLowerCase();
     return matchesEvent && matchesCategory;
   });
@@ -151,7 +161,8 @@ export default function CatalogGridShowcase() {
               Setiap tema dibangun dengan struktur visual unik, tata letak premium, dan dapat disesuaikan penuh dengan foto dan konsep acara Anda.
             </p>
 
-            {/* Level 1: Event Type Selector */}
+            {/* Level 1: Event Type Selector (hanya jenis acara aktif; disembunyikan bila tinggal satu) */}
+            {(!enabledEventTypes || enabledEventTypes.length > 1) && (
             <div className="flex items-center gap-1.5 sm:gap-2 mt-6 overflow-x-auto scrollbar-none px-4 -mx-4 sm:mx-0 sm:px-0 justify-start sm:justify-center-safe flex-nowrap py-1">
               {[
                 { id: "all", label: "Semua Acara" },
@@ -161,7 +172,7 @@ export default function CatalogGridShowcase() {
                 { id: "aqiqah", label: "Aqiqah" },
                 { id: "wisuda", label: "Wisuda" },
                 { id: "gathering", label: "Gathering" },
-              ].map((ev) => (
+              ].filter((ev) => ev.id === "all" || !enabledEventTypes || enabledEventTypes.includes(ev.id.toUpperCase())).map((ev) => (
                 <button
                   key={ev.id}
                   onClick={() => {
@@ -174,7 +185,7 @@ export default function CatalogGridShowcase() {
                     }
                   }}
                   className={`px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs font-bold transition cursor-pointer whitespace-nowrap shrink-0 ${
-                    selectedEvent === ev.id
+                    effectiveEvent === ev.id
                       ? "bg-amber-900 text-white shadow-xs"
                       : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
                   }`}
@@ -183,6 +194,7 @@ export default function CatalogGridShowcase() {
                 </button>
               ))}
             </div>
+            )}
 
             {/* Level 2: Style Filter Tabs */}
             <div className="flex items-center gap-2 mt-2.5 overflow-x-auto scrollbar-none px-4 -mx-4 sm:mx-0 sm:px-0 justify-start sm:justify-center-safe flex-nowrap py-1">
@@ -230,7 +242,7 @@ export default function CatalogGridShowcase() {
       {mainTab === "themes" ? (
         /* Grid Showcase Tema */
         <section className="max-w-[1400px] mx-auto px-4 sm:px-6 mt-6">
-          {loading ? (
+          {catalogLoading ? (
             <div className="flex items-center justify-center py-20">
               <div className="w-8 h-8 border-2 border-amber-800 border-t-transparent rounded-full animate-spin"></div>
             </div>
