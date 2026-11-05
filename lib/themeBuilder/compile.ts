@@ -86,13 +86,6 @@ const VARIANT_CSS: Record<keyof BuilderVariants, Record<string, string>> = {
     .cover-names { font-size: 44px; line-height: 1.05; }
     .cover-subtitle { margin-left: 0; }`,
   },
-  coverDesktop: {
-    // Blueprint mengunci sampul ke kolom 460 px di desktop; latarnya sudah cover desktop (atau cover mobile sebagai cadangan).
-    global: `
-    @media (min-width: 900px) {
-      .cover-overlay { width: 100% !important; left: 0 !important; right: 0 !important; }
-    }`,
-  },
   opening: {
     card: `
     .opening-center { width: 100%; max-width: 380px; padding: 28px 22px; background: color-mix(in srgb, var(--card-bg) 92%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 18%, transparent); border-radius: var(--radius-lg); box-shadow: var(--shadow-elevated); }`,

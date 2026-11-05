@@ -165,20 +165,15 @@ describe("kompilator master", () => {
     }
   });
 
-  it("sampul desktop: split tetap di kolom 460 px, global melepas kunci kolom", () => {
+  it("sampul desktop selalu di kolom 460 px; varian lama coverDesktop (termasuk global) diabaikan", () => {
     const unlock = ".cover-overlay { width: 100% !important; left: 0 !important; right: 0 !important; }";
-    const split = compileBuilderMaster(defaultBuilderSpec(), blueprint);
-    expect(defaultBuilderSpec().variants.coverDesktop).toBe("split");
-    expect(split).not.toContain(unlock);
-    const global = compileBuilderMaster({ ...defaultBuilderSpec(), variants: { ...defaultBuilderSpec().variants, coverDesktop: "global" } }, blueprint);
-    expect(global).toContain(unlock);
-    // Aturan varian ditulis sesudah kunci kolom milik blueprint, sehingga !important-nya yang berlaku.
-    expect(global.indexOf(unlock)).toBeGreaterThan(global.indexOf("width: 460px !important"));
-    // Spesifikasi lama tanpa coverDesktop tetap sah dan jatuh ke split.
-    const legacy = parseBuilderSpec({ ...defaultBuilderSpec(), variants: { ...defaultBuilderSpec().variants, coverDesktop: undefined } });
-    expect(legacy.ok && legacy.spec.variants.coverDesktop).toBe("split");
-    const bogus = parseBuilderSpec({ ...defaultBuilderSpec(), variants: { ...defaultBuilderSpec().variants, coverDesktop: "miring" } });
-    expect(bogus.ok).toBe(false);
+    expect(compileBuilderMaster(defaultBuilderSpec(), blueprint)).not.toContain(unlock);
+    // Spesifikasi tersimpan sebelum 5 Nov 2026 masih membawa coverDesktop: tetap sah, tanpa kunci kolom yang dilepas.
+    for (const legacyValue of ["global", "split"]) {
+      const legacy = parseBuilderSpec({ ...defaultBuilderSpec(), variants: { ...defaultBuilderSpec().variants, coverDesktop: legacyValue } });
+      expect(legacy.ok, legacyValue).toBe(true);
+      if (legacy.ok) expect(compileBuilderMaster(legacy.spec, blueprint)).not.toContain(unlock);
+    }
   });
 
   it("menaruh ornamen di penanda seksi dengan posisi berbasis persen", () => {

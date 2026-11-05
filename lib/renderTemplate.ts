@@ -1828,9 +1828,8 @@ export async function renderTemplateFile(
 
   if (!hasDesktopCover && hasSplitLayout) {
     // Tanpa cover landscape, sampul HP (umumnya portrait 9:16) tampil utuh di kolom undangan 460 px, sesuai janji
-    // Studio; tema tulisan tangan yang melebarkan sampul ke seluruh layar memotong foto itu. Tanpa !important dan
-    // dengan spesifisitas :root body, sehingga varian builder "global" (yang memakai !important) tetap menang.
-    // left: auto + right: 0 benar untuk sampul fixed seluas layar maupun sampul absolute di dalam kolom kanan.
+    // Studio; tema tulisan tangan yang melebarkan sampul ke seluruh layar memotong foto itu. Spesifisitas :root body
+    // menang atas aturan sampul master tanpa !important. left: auto + right: 0 benar untuk sampul fixed seluas layar maupun sampul absolute di dalam kolom kanan.
     coverDesktopCssStyle = `
 <style id="lux-cover-desktop-split">
   @media (min-width: 900px) {

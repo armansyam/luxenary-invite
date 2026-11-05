@@ -67,7 +67,6 @@ export interface BuilderFonts {
 
 export interface BuilderVariants {
   cover: string;
-  coverDesktop: string;
   opening: string;
   couple: string;
   countdown: string;
@@ -651,15 +650,6 @@ export const VARIANT_GROUPS: Array<{ key: keyof BuilderVariants; label: string; 
     ],
   },
   {
-    key: "coverDesktop",
-    label: "Sampul di desktop",
-    section: "cover",
-    options: [
-      { id: "split", label: "Di kolom undangan", hint: "Hero kiri tetap tampil; layar penuh hanya bila klien mengunggah cover desktop" },
-      { id: "global", label: "Layar penuh", hint: "Sampul menutup seluruh layar desktop; foto vertikal terpotong" },
-    ],
-  },
-  {
     key: "opening",
     label: "Pembuka",
     section: "opening",
@@ -772,7 +762,7 @@ export function defaultBuilderSpec(eventType: BuilderEventType = "WEDDING"): Bui
     texts: {},
     eventsPlacement: "section",
     radius: "soft",
-    variants: { cover: "classic", coverDesktop: "split", opening: "classic", couple: "stacked", countdown: "boxes", closing: "classic", headings: "classic", sidebar: "bottom-left" },
+    variants: { cover: "classic", opening: "classic", couple: "stacked", countdown: "boxes", closing: "classic", headings: "classic", sidebar: "bottom-left" },
     animation: "rise",
     ornaments: [],
   };
@@ -935,7 +925,8 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
   for (const group of VARIANT_GROUPS) {
     const value = input.variants?.[group.key];
     // Grup varian yang ditambahkan belakangan tidak ada di spesifikasi tersimpan, ekspor, maupun riwayat versi: jatuh ke
-    // bawaan, bukan galat. Nilai yang ada tetapi tidak dikenal tetap ditolak.
+    // bawaan, bukan galat. Nilai yang ada tetapi tidak dikenal tetap ditolak. Grup yang dihapus (coverDesktop, 5 Nov
+    // 2026) tidak dibaca lagi, jadi nilai lamanya diabaikan.
     variants[group.key] = value === undefined
       ? base.variants[group.key]
       : pickEnum(value, group.options.map((o) => o.id), `Varian ${group.label}`, errors) ?? base.variants[group.key];
