@@ -6,6 +6,7 @@ import {
   DEFAULT_ORNAMENT_TEXT,
   EDITABLE_TEXT_KEYS,
   FLOW_EXCLUDED_BLOCKS,
+  LOOP_ANIMATIONS,
   ORNAMENT_GAP_LIMITS,
   ORNAMENT_TEXT_COLORS,
   ORNAMENT_TEXT_FONTS,
@@ -13,6 +14,7 @@ import {
   contrastRatio,
   familyBlocks,
   familyOrnamentMediaSlots,
+  familyOrnamentTextTokens,
   familySections,
   ornamentLimits,
   sectionLabelFor,
@@ -22,11 +24,14 @@ import {
   type BuilderOrnament,
   type BuilderPalette,
   type CanvasMode,
+  type LoopAnimation,
   type OrnamentMediaSlot,
   type OrnamentSection,
   type OrnamentText,
+  type OrnamentTextToken,
   type StackMove,
 } from "@/lib/themeBuilder/spec";
+import type { OrnamentAlign } from "@/components/admin/themeBuilder/BuilderPreview";
 
 /** Cara ornamen ditempatkan: bebas di seksi, menempel ke blok (anak blok), atau sebaris sebelum blok. */
 export type OrnamentPlacement = { mode: "free" } | { mode: "attach"; block: AttachableBlockId } | { mode: "flow"; block: BuilderBlockId };
@@ -46,6 +51,7 @@ interface Props {
   onDuplicate: () => void;
   onRemove: () => void;
   onClose: () => void;
+  onAlign?: (align: OrnamentAlign) => void;
 }
 
 export function Slider({ label, value, min, max, step = 0.5, suffix = "", numeric = false, resetTo, onChange }: { label: string; value: number; min: number; max: number; step?: number; suffix?: string; numeric?: boolean; resetTo?: number; onChange: (v: number, final: boolean) => void }) {
@@ -125,7 +131,21 @@ function Toggle<T extends string>({ label, hint, value, options, onChange }: { l
 
 const DEFAULT_TEXT_SIZE = DEFAULT_ORNAMENT_TEXT.size;
 
-export default function OrnamentInspector({ ornament: o, eventType, palette, canvasMode, usedLabelKeys, onPlace, stack, onReorder, onChange, onDuplicate, onRemove, onClose }: Props) {
+export default function OrnamentInspector({
+  ornament: o,
+  eventType,
+  palette,
+  canvasMode,
+  usedLabelKeys,
+  onPlace,
+  stack,
+  onReorder,
+  onChange,
+  onDuplicate,
+  onRemove,
+  onClose,
+  onAlign,
+}: Props) {
   const set = (patch: Partial<BuilderOrnament>) => onChange(patch, true);
   const setText = (patch: Partial<OrnamentText>, final: boolean) => o.text && onChange({ text: { ...o.text, ...patch } }, final);
   const freeKey = EDITABLE_TEXT_KEYS.find((k) => !usedLabelKeys.includes(k));
@@ -170,6 +190,32 @@ export default function OrnamentInspector({ ornament: o, eventType, palette, can
       <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
         {o.text && (
           <div className="space-y-3 rounded-xl border border-stone-200 bg-stone-50/60 p-3">
+            <div>
+              <label className="block">
+                <span className="text-[11.5px] font-semibold text-stone-600">Sumber Teks</span>
+                <select
+                  value={o.text.token ?? ""}
+                  onChange={(e) => {
+                    const token = (e.target.value || undefined) as OrnamentTextToken | undefined;
+                    setText({ token }, true);
+                  }}
+                  className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-[12px] font-medium text-stone-700 outline-none focus:border-amber-500 cursor-pointer"
+                >
+                  <option value="">Teks Kustom (Ketik Manual)</option>
+                  {familyOrnamentTextTokens(eventType).map((tok) => (
+                    <option key={tok.id} value={tok.id}>
+                      {tok.label} ({tok.sample})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {o.text.token && (
+                <p className="mt-1 text-[10.5px] leading-snug text-amber-800 bg-amber-50 rounded-lg p-2">
+                  Teks hias otomatis mengikuti data klien (inisial/nama/tanggal) saat undangan dibuat. Tulisan di bawah adalah teks contoh / fallback.
+                </p>
+              )}
+            </div>
+
             <label className="block">
               <span className="text-[11.5px] font-semibold text-stone-600">Tulisan</span>
               <input
@@ -325,6 +371,39 @@ export default function OrnamentInspector({ ornament: o, eventType, palette, can
             {familySections(eventType).map((s) => <option key={s} value={s}>{sectionLabelFor(s, eventType)}</option>)}
           </select>
         </label>
+
+        {mode !== "flow" && onAlign && (
+          <div>
+            <span className="text-[11.5px] font-semibold text-stone-600">Rapatkan (Snap Tepi & Tengah)</span>
+            <div className="mt-1.5 grid grid-cols-3 gap-1">
+              <button type="button" onClick={() => onAlign("left")} className="rounded-lg border border-stone-200 py-1.5 text-[11px] font-semibold text-stone-700 hover:bg-stone-50 cursor-pointer">Kiri</button>
+              <button type="button" onClick={() => onAlign("center-x")} className="rounded-lg border border-stone-200 py-1.5 text-[11px] font-semibold text-stone-700 hover:bg-stone-50 cursor-pointer">Tengah X</button>
+              <button type="button" onClick={() => onAlign("right")} className="rounded-lg border border-stone-200 py-1.5 text-[11px] font-semibold text-stone-700 hover:bg-stone-50 cursor-pointer">Kanan</button>
+              <button type="button" onClick={() => onAlign("top")} className="rounded-lg border border-stone-200 py-1.5 text-[11px] font-semibold text-stone-700 hover:bg-stone-50 cursor-pointer">Atas</button>
+              <button type="button" onClick={() => onAlign("center-y")} className="rounded-lg border border-stone-200 py-1.5 text-[11px] font-semibold text-stone-700 hover:bg-stone-50 cursor-pointer">Tengah Y</button>
+              <button type="button" onClick={() => onAlign("bottom")} className="rounded-lg border border-stone-200 py-1.5 text-[11px] font-semibold text-stone-700 hover:bg-stone-50 cursor-pointer">Bawah</button>
+            </div>
+          </div>
+        )}
+
+        <div>
+          <span className="text-[11.5px] font-semibold text-stone-600">Animasi Putar (Loop)</span>
+          <select
+            value={o.loop ?? "none"}
+            onChange={(e) => {
+              const val = e.target.value;
+              set({ loop: val === "none" ? undefined : (val as LoopAnimation) });
+            }}
+            className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-[12px] font-medium text-stone-700 outline-none focus:border-amber-500 cursor-pointer"
+          >
+            {LOOP_ANIMATIONS.map((a) => (
+              <option key={a.id} value={a.id}>{a.label}</option>
+            ))}
+          </select>
+          <p className="mt-1 text-[10.5px] leading-snug text-stone-500">
+            Animasi halus yang berjalan terus-menerus (mengambang, bergoyang, berdenyut, kilau, atau berputar).
+          </p>
+        </div>
 
         {mode !== "flow" && (
           <>

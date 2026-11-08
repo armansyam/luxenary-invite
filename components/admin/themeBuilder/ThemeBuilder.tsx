@@ -121,12 +121,36 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
   const [library, setLibrary] = useState<AssetLibrary | null>(null);
   const [uploading, setUploading] = useState(false);
   const [wideEnough, setWideEnough] = useState(true);
+  const [desktopCoverFull, setDesktopCoverFull] = useState(false);
   const dropTarget = useRef<PreviewDropTarget | null>(null);
   const actionsRef = useRef<PreviewActions | null>(null);
   const [ghost, setGhost] = useState<{ src: string; x: number; y: number } | null>(null);
 
   const snapshot = useCallback((s: BuilderSpec, m: ThemeMeta) => JSON.stringify({ s, m: { ...m, name: m.name.trim(), description: m.description.trim() } }), []);
   const dirty = loaded && snapshot(spec, meta) !== saved;
+
+  const resetAllChanges = useCallback(async () => {
+    if (!dirty) return;
+    const ok = await confirm({
+      title: "Urungkan semua perubahan?",
+      message: "Seluruh perubahan yang belum disimpan akan dikembalikan ke versi terakhir tersimpan.",
+      confirmLabel: "Urungkan Semua",
+    });
+    if (!ok) return;
+    try {
+      const parsed = JSON.parse(saved);
+      if (parsed?.s && parsed?.m) {
+        specRef.current = parsed.s;
+        setSpec(parsed.s);
+        setMeta(parsed.m);
+        history.current = { past: [], future: [] };
+        syncHistory();
+        notify("Seluruh perubahan berhasil diurungkan.", "success");
+      }
+    } catch {
+      notify("Gagal mengurungkan perubahan.", "error");
+    }
+  }, [confirm, dirty, notify, saved, syncHistory]);
 
   useEffect(() => {
     // Contoh huruf di panel memakai font lokal yang sama dengan undangan.
@@ -848,18 +872,30 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
           {dirty && !isNew && <span className="text-[11px] text-stone-400">Ada perubahan</span>}
         </div>
 
-        <div className="mx-auto flex items-center rounded-xl bg-stone-100 p-1">
-          {(Object.keys(DEVICE_SIZES) as PreviewDevice[]).map((d) => (
+        <div className="mx-auto flex items-center gap-1.5">
+          <div className="flex items-center rounded-xl bg-stone-100 p-1">
+            {(Object.keys(DEVICE_SIZES) as PreviewDevice[]).map((d) => (
+              <button
+                key={d}
+                type="button"
+                onClick={() => { setDevice(d); if (d !== "desktop" && viewSection === "sidebar") focusSection("cover"); }}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11.5px] font-semibold transition cursor-pointer ${device === d ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"}`}
+              >
+                <Icon d={d === "desktop" ? "M3 5h18v11H3zM8 20h8M12 16v4" : "M8 3h8a1 1 0 011 1v16a1 1 0 01-1 1H8a1 1 0 01-1-1V4a1 1 0 011-1zM11 18h2"} className="h-3.5 w-3.5" />
+                {DEVICE_SIZES[d].label}
+              </button>
+            ))}
+          </div>
+          {device === "desktop" && (
             <button
-              key={d}
               type="button"
-              onClick={() => { setDevice(d); if (d !== "desktop" && viewSection === "sidebar") focusSection("cover"); }}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11.5px] font-semibold transition cursor-pointer ${device === d ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"}`}
+              onClick={() => setDesktopCoverFull((v) => !v)}
+              title="Melihat tampilan cover landscape layar penuh (100vw) di desktop"
+              className={`rounded-xl px-2.5 py-1.5 text-[11px] font-semibold transition cursor-pointer border ${desktopCoverFull ? "bg-amber-600 text-white border-amber-600" : "bg-white text-stone-700 border-stone-200 hover:border-stone-300"}`}
             >
-              <Icon d={d === "desktop" ? "M3 5h18v11H3zM8 20h8M12 16v4" : "M8 3h8a1 1 0 011 1v16a1 1 0 01-1 1H8a1 1 0 01-1-1V4a1 1 0 011-1zM11 18h2"} className="h-3.5 w-3.5" />
-              {DEVICE_SIZES[d].label}
+              {desktopCoverFull ? "Cover Penuh (100vw)" : "Cover Terpisah"}
             </button>
-          ))}
+          )}
         </div>
 
         <div className="flex items-center rounded-xl bg-stone-100 p-1" title="Contoh demo memakai foto dan data contoh; Klien baru meniru undangan yang belum diunggah apa pun">
@@ -877,6 +913,16 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
         </div>
 
         <div className="flex items-center gap-1">
+          {dirty && (
+            <button
+              type="button"
+              onClick={resetAllChanges}
+              title="Urungkan seluruh perubahan yang belum tersimpan dan kembalikan ke rancangan terakhir tersimpan"
+              className="rounded-lg border border-rose-200 bg-rose-50/60 px-2.5 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-100 hover:border-rose-300 transition cursor-pointer"
+            >
+              Urungkan Semua
+            </button>
+          )}
           <button type="button" onClick={undo} disabled={!historySize.past} title="Urungkan (Ctrl+Z)" className="rounded-lg p-2 text-stone-600 hover:bg-stone-100 disabled:opacity-30 cursor-pointer disabled:cursor-default">
             <Icon d="M9 14L4 9l5-5M4 9h11a5 5 0 010 10h-3" />
           </button>
@@ -974,6 +1020,10 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
           <BuilderPreview
             dropTargetRef={dropTarget}
             actionsRef={actionsRef}
+            eventType={spec.eventType}
+            variants={spec.variants}
+            onVariantChange={(patch) => patchSpec({ variants: { ...spec.variants, ...patch } })}
+            desktopCoverFull={desktopCoverFull}
             frames={spec.frames}
             html={html}
             loading={previewLoading}
@@ -986,10 +1036,13 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
             selectedId={selectedId}
             onSelect={(id) => { setSelectedId(id); if (id) { setSelectedBlock(null); setPanel("ornaments"); } }}
             onOrnamentChange={updateOrnament}
+            onDuplicateOrnament={duplicateOrnament}
+            onDeleteOrnament={removeOrnament}
             blocks={spec.blocks}
             selectedBlock={selectedBlock}
             onSelectBlock={selectBlock}
             onBlockChange={updateBlock}
+            onResetBlock={resetBlock}
             onViewSection={setViewSection}
             onKey={handleKey}
           />
@@ -1010,6 +1063,10 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
               onDuplicate={() => duplicateOrnament(selected.id)}
               onRemove={() => removeOrnament(selected.id)}
               onClose={() => setSelectedId(null)}
+              onAlign={(align) => {
+                const patch = actionsRef.current?.alignOrnament(selected.id, align);
+                if (patch) updateOrnament(selected.id, patch, true);
+              }}
             />
           ) : selectedBlock ? (
             <BlockInspector
@@ -1024,6 +1081,8 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
               onFrameChange={(patch, final) => updateFrame(selectedBlock as FramedPhotoId, patch, final)}
               library={library}
               onUpload={uploadAssets}
+              variants={spec.variants}
+              onVariantChange={(patch) => patchSpec({ variants: { ...spec.variants, ...patch } })}
             />
           ) : (
             <div className="h-full overflow-y-auto px-4 py-4">

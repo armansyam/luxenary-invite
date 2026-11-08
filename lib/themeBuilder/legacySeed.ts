@@ -18,6 +18,7 @@ import {
   type BuilderOrnament,
   type BuilderPalette,
   type BuilderSpec,
+  type BuilderVariants,
   type OrnamentSection,
 } from "@/lib/themeBuilder/spec";
 
@@ -215,6 +216,30 @@ export function legacyOrnaments(html: string, eventType: BuilderEventType = "WED
         push({ section, src, x: 50, y: 50, anchor: "top", width: flow.width, rotate: 0, opacity: 1, flipX: false, layer: "back", before: flow.before, gap: flow.gap });
       }
     }
+
+    for (const wm of chunk.matchAll(/<div\b[^>]*\bclass=["']([^"']*\b(?:couple-watermark-initial|cover-watermark|couple-watermark)\b[^"']*)["'][^>]*>([\s\S]*?)<\/div>/gi)) {
+      const cls = wm[1];
+      const inner = wm[2];
+      const hasFirst = inner.includes("{{firstInitial}}");
+      const hasSecond = inner.includes("{{secondInitial}}");
+      if (!hasFirst && !hasSecond) continue;
+      if (hasFirst && hasSecond) {
+        push({
+          section, src: "", x: 50, y: 50, anchor: "top", width: 85, rotate: 0, opacity: 0.14, flipX: false, layer: "back",
+          text: { token: "MONOGRAM_JOINED", value: "RA", font: "heading", size: 110, color: "primary", spacing: 0.08 },
+        });
+      } else if (hasFirst) {
+        push({
+          section, src: "", x: /\binitial-right\b/.test(cls) ? 78 : 22, y: 28, anchor: "top", width: 55, rotate: 0, opacity: 0.14, flipX: false, layer: "back",
+          text: { token: "FIRST_INITIAL", value: "R", font: "heading", size: 120, color: "primary", spacing: 0 },
+        });
+      } else if (hasSecond && !isSingle) {
+        push({
+          section, src: "", x: /\binitial-left\b/.test(cls) ? 22 : 78, y: 72, anchor: "top", width: 55, rotate: 0, opacity: 0.14, flipX: false, layer: "back",
+          text: { token: "SECOND_INITIAL", value: "A", font: "heading", size: 120, color: "primary", spacing: 0 },
+        });
+      }
+    }
   }
 
   const ornaments: BuilderOrnament[] = [];
@@ -222,7 +247,7 @@ export function legacyOrnaments(html: string, eventType: BuilderEventType = "WED
   const perSection: Record<string, number> = {};
   for (const c of candidates) {
     if (ornaments.length >= MAX_ORNAMENTS) break;
-    const key = `${c.section}|${c.src}|${c.x}|${c.y}|${c.anchor}|${c.flipX}|${c.attach ?? ""}|${c.before ?? ""}|${c.slot ?? ""}`;
+    const key = `${c.section}|${c.src}|${c.x}|${c.y}|${c.anchor}|${c.flipX}|${c.attach ?? ""}|${c.before ?? ""}|${c.slot ?? ""}|${c.text?.token ?? c.text?.value ?? ""}`;
     if (seen.has(key)) continue;
     if ((perSection[c.section] ?? 0) >= MAX_ORNAMENTS_PER_SECTION) continue;
     seen.add(key);
@@ -259,9 +284,40 @@ function normalizeHex(value: string | undefined): string | null {
   return lower.length === 4 ? `#${[...lower.slice(1)].map((c) => c + c).join("")}` : lower;
 }
 
+function hexLuminance(hex: string): number {
+  const clean = hex.replace("#", "");
+  const r = parseInt(clean.slice(0, 2), 16) / 255;
+  const g = parseInt(clean.slice(2, 4), 16) / 255;
+  const b = parseInt(clean.slice(4, 6), 16) / 255;
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
 function rootVars(html: string): Map<string, string> {
   const root = html.match(/:root\s*\{([^}]*)\}/)?.[1] ?? "";
   return new Map([...root.matchAll(/(--[a-z0-9-]+)\s*:\s*([^;]+);/gi)].map((m) => [m[1], m[2].trim()] as const));
+}
+
+/** Varian tata letak seksi yang terdeteksi dari kelas CSS tema master lama agar bentuk foto tidak berubah otomatis. */
+export function legacyVariants(html: string, base: BuilderVariants): BuilderVariants {
+  if (html.includes('id="lux-builder-variants"')) return base;
+  const variants: BuilderVariants = { ...base };
+  if (/@media\s*\(\s*min-width\s*:\s*900px\s*\)\s*\{[\s\S]*?\.(?:cover-screen|cover-overlay)\s*\{[^}]*width\s*:\s*100%/i.test(html)) {
+    variants.cover = "fullscreen";
+  }
+  if (/\b(?:couple-hero-slide|couple-editorial-card|person-full-bg)\b/.test(html)) {
+    variants.couple = "backdrop";
+  } else if (/\b(?:person-photo-arch|couple-arch)\b/.test(html)) {
+    variants.couple = "arch";
+  } else if (
+    /\bcouple-frame-overlay\b/.test(html) ||
+    (/\b(?:couple-photo|person-photo)\b/.test(html) && !/\.(?:couple-photo|person-photo)[^{]*\{[^}]*border-radius\s*:\s*(?:50%|999px|var\(--radius-full\))/i.test(html))
+  ) {
+    variants.couple = "portrait";
+  }
+  if (/\b(?:home-arch-wrap|hero-arch-photo)\b/.test(html)) {
+    variants.opening = "arch";
+  }
+  return variants;
 }
 
 export function seedSpecFromMaster(html: string, eventType: BuilderEventType = "WEDDING"): LegacySeed {
@@ -271,10 +327,15 @@ export function seedSpecFromMaster(html: string, eventType: BuilderEventType = "
   const hasLight = pick("--bg-light") !== null;
   const hasDark = pick("--bg-dark") !== null;
   const bodyBg = html.match(/\bbody\s*\{[^}]*?background(?:-color)?\s*:\s*var\((--[a-z-]+)/i)?.[1];
-  const canvasMode: BuilderSpec["canvasMode"] = bodyBg === "--bg-dark" || (hasDark && !hasLight) ? "dark" : "light";
+  const textMain = pick("--text-main");
+  const scrimTransparent = /\.scrim-canvas\s*\{[^}]*background\s*:\s*transparent/i.test(html);
+  const isLightScrimWithDarkText = scrimTransparent && textMain !== null && hexLuminance(textMain) < 0.35;
+  const canvasMode: BuilderSpec["canvasMode"] =
+    !isLightScrimWithDarkText && (bodyBg === "--bg-dark" || (hasDark && !hasLight)) ? "dark" : "light";
 
   const base = defaultBuilderSpec(eventType);
-  const text = pick("--text-main", "--text-dark");
+  const explicitLight = pick("--text-light", "--on-dark");
+  const explicitDark = pick("--text-dark");
   const found: Array<keyof BuilderPalette> = [];
   const palette: BuilderPalette = { ...base.palette };
   const assign = (key: keyof BuilderPalette, value: string | null) => {
@@ -289,8 +350,14 @@ export function seedSpecFromMaster(html: string, eventType: BuilderEventType = "
   assign("bgLight", pick("--bg-light"));
   assign("bgDark", pick("--bg-dark"));
   assign("onPrimary", pick("--on-primary"));
-  assign("textLight", canvasMode === "dark" ? text ?? pick("--on-dark") : pick("--on-dark"));
-  assign("textDark", canvasMode === "dark" ? null : text);
+  const resolvedLight =
+    (explicitLight && hexLuminance(explicitLight) >= 0.5 ? explicitLight : null) ??
+    (textMain && hexLuminance(textMain) >= 0.5 ? textMain : null);
+  const resolvedDark =
+    (explicitDark && hexLuminance(explicitDark) < 0.5 ? explicitDark : null) ??
+    (textMain && hexLuminance(textMain) < 0.5 ? textMain : null);
+  assign("textLight", resolvedLight);
+  assign("textDark", resolvedDark);
 
   let texture = "";
   for (const block of html.matchAll(/\.fixed-bg-layer\s*\{([^}]*)\}/g)) {
@@ -306,8 +373,13 @@ export function seedSpecFromMaster(html: string, eventType: BuilderEventType = "
   const legacy = legacyFonts(html);
   const frames = legacyFrames(html, eventType);
   const ornaments = legacyOrnaments(html, eventType);
+  const variants = legacyVariants(html, base.variants);
+  const blocks: BuilderSpec["blocks"] = { ...base.blocks };
+  if (!html.includes('data-lux-block="opening-photo"') && !html.includes("{{homePhotoUrl}}")) {
+    blocks["opening-photo"] = { x: 0, y: 0, scale: 1, rotate: 0, hidden: true };
+  }
   return {
-    spec: { ...base, canvasMode, palette, texture, fonts: { ...base.fonts, ...legacy }, frames, ornaments },
+    spec: { ...base, canvasMode, palette, texture, fonts: { ...base.fonts, ...legacy }, variants, blocks, frames, ornaments },
     found,
     missing: allKeys.filter((k) => !found.includes(k)),
     textureFound: texture !== "",

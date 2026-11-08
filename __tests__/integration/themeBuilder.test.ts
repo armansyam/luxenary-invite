@@ -217,6 +217,59 @@ describe("kompilator master", () => {
     expect(html).toContain('class="lux-orn-frame" src="/assets/ornaments/bugis/bingkai-adat-bugis.png"');
     expect(html).toContain('[data-lux-block="opening-photo"]{display:none;}');
   });
+
+  it("mendukung urutan seksi kustom (sectionOrder) dan mengurutkan elemen di DOM serta dock navigasi", () => {
+    const spec: BuilderSpec = {
+      ...defaultBuilderSpec(),
+      sectionOrder: ["opening", "events", "couple", "countdown", "story", "rsvp", "closing"],
+    };
+    const html = compileBuilderMaster(spec, blueprint);
+    expect(auditBuilderMaster(html, blueprint)).toEqual([]);
+    const posEvents = html.indexOf('data-lux-section="events"');
+    const posCouple = html.indexOf('data-lux-section="couple"');
+    expect(posEvents).toBeGreaterThan(0);
+    expect(posCouple).toBeGreaterThan(0);
+    expect(posEvents).toBeLessThan(posCouple);
+  });
+
+  it("mendukung teks hias inisial dan monogram dinamis (token) serta animasi loop", () => {
+    const spec: BuilderSpec = {
+      ...defaultBuilderSpec(),
+      blocks: {
+        "cover-names": { x: 0, y: 0, scale: 1, rotate: 0, hidden: false, loop: "pulse" },
+      },
+      ornaments: [
+        {
+          id: "monogram01",
+          section: "cover",
+          src: "",
+          x: 50,
+          y: 20,
+          anchor: "top",
+          width: 30,
+          rotate: 0,
+          opacity: 1,
+          flipX: false,
+          layer: "front",
+          loop: "float",
+          text: {
+            value: "R & A",
+            font: "script",
+            size: 28,
+            color: "primary",
+            spacing: 0.1,
+            token: "MONOGRAM_AMP",
+          },
+        },
+      ],
+    };
+    const html = compileBuilderMaster(spec, blueprint);
+    expect(auditBuilderMaster(html, blueprint)).toEqual([]);
+    expect(html).toContain("{{coupleMonogram}}");
+    expect(html).toContain("lux-loop-float");
+    expect(html).toContain("luxBlockPulse");
+    expect(html).toContain("@keyframes luxOrnFloat");
+  });
 });
 
 describe.skipIf(!IS_TEST_DB)("rute admin Theme Builder", () => {

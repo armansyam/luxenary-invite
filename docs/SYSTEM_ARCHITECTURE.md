@@ -1,5 +1,5 @@
 # PLATFORM UNDANGAN (WHITE-LABEL) — DOKUMENTASI ARSITEKTUR SISTEM
-## Versi: 6.3.7 | Diperbarui: 1 Oktober 2026
+## Versi: 6.4.0 | Diperbarui: 8 November 2026
 
 > **SUMBER KEBENARAN TUNGGAL** untuk semua developer dan AI Agent yang bekerja di repositori ini.  
 > Dokumen ini WAJIB dibaca sebelum melakukan perubahan apapun pada kode.  
@@ -761,9 +761,30 @@ Injeksi: persona/pasangan, foto, acara, RSVP form, countdown, musik
 HTML standalone lengkap (self-contained, inline CSS/JS)
 ```
 
-### 8.1 — Theme Builder Admin (`/admin/theme-builder`, 23 Okt 2026)
+### 8.1 — Theme Builder Admin (`/admin/theme-builder`, 23 Okt 2026 - Diperbarui 8 Nov 2026)
 
-Admin membuat master tema pernikahan tanpa menulis kode. Builder **merakit di atas blueprint**, bukan kanvas kosong: hasilnya selalu satu berkas master biasa di `themes/wedding/<gaya>/<id>.html`, sehingga engine, Studio klien, dan model salin piring (`data/drafts/<id>.html`) tidak berubah.
+Admin membuat master tema pernikahan dan multi-event tanpa menulis kode. Builder **merakit di atas blueprint**, bukan kanvas kosong: hasilnya selalu satu berkas master biasa di `themes/<kategori>/<gaya>/<id>.html`, sehingga engine, Studio klien, dan model salin piring (`data/drafts/<id>.html`) tidak berubah.
+
+**Fitur & Kemampuan Mutakhir (Theme Builder 2.0 - Nov 2026):**
+1. **Pemasangan Bingkai Otomatis & Kontur Poligon (`clip-path`):**
+   - Pemindaian lubang jendela transparan otomatis (`lib/themeBuilder/frameWindow.ts`) dengan algoritma flood-fill exterior pixels.
+   - Jendela bingkai non-persegi (lengkung, kubah, asimetris, ornamen adat) otomatis dipotong menggunakan poligon 24-titik presisi (`clip-path: polygon(...)`) ditambah 1px bleed ke batas opaque untuk menghilangkan bocoran foto di luar bingkai.
+2. **Bantuan Magnetik Tepi & Tengah (Full Edge Snapping):**
+   - Menyeret ornamen dan blok di panggung editor memiliki magnet cerdas ke Tepi Kiri (`0%`), Tengah X (`50%`), Tepi Kanan (`100%`), Tepi Atas (`0%`), Tengah Y (`50%`), dan Tepi Bawah (`100%`) dengan panduan garis putus-putus oranye (*dashed alignment guides*).
+   - Menu aksi cepat perataan (Rapatkan Kiri, Tengah X, Kanan, Atas, Tengah Y, Bawah) di inspektor dan menu konteks.
+3. **Mode Pratinjau Cover Layar Penuh Desktop (`desktopCoverFull` 100vw):**
+   - Editor dapat mengaktifkan toggle mode cover 100vw di layar desktop untuk melihat, menguji, dan menata ornamen cover berorientasi landscape secara menyeluruh.
+4. **Menu Konteks Klik Kanan / Dua Jari Mac:**
+   - Klik kanan pada elemen ornamen atau blok membuka menu cepat floating untuk menjajarkan posisi (snap), mengubah layer (depan/belakang teks), duplikasi instan, reset posisi, atau ganti mode tampilan foto.
+5. **Tipografi Dinamis Inisial & Monogram (`OrnamentTextToken`):**
+   - Teks hias dapat ditautkan ke token dinamis klien: `MONOGRAM_AMP` (`{{coupleMonogram}}`), `MONOGRAM_JOINED` (`{{firstInitial}}{{secondInitial}}`), `FIRST_INITIAL` (`{{firstInitial}}`), `SECOND_INITIAL` (`{{secondInitial}}`), `COUPLE_NAMES` (`{{coupleNames}}`), dan `EVENT_DATE` (`{{eventDateFormatted}}`). Nilai otomatis disinkronkan saat undangan dibuat di studio.
+6. **Kustomisasi Urutan Seksi Undangan (`sectionOrder`):**
+   - Admin dapat mengatur urutan alur membaca tamu (`opening`, `couple`, `countdown`, `events`, `story`, `rsvp`, `closing`). Kompilator master otomatis menyusun ulang elemen `<section>` di DOM dan tautan navigasi dock bawah (`.bottom-dock`) secara konsisten.
+7. **Animasi Berputar Terus-Menerus (`LoopAnimation`):**
+   - Preset animasi kontinu: `float` (mengambang), `sway` (bergoyang), `pulse` (berdenyut), `shimmer` (kilau berkilau), dan `spin` (berputar perlahan). Kompilator menginjeksi keyframes terisolasi dengan proteksi `prefers-reduced-motion`.
+8. **Fitur Urungkan Semua Perubahan (Undo/Revert):**
+   - Tombol "Urungkan Semua" di Theme Builder Admin mengembalikan seluruh rancangan ke kondisi tersimpan terakhir.
+   - Tombol "Urungkan Semua" di Studio Editor Klien (`app/(client)/dashboard/invitation/[id]/page.tsx`) mengembalikan seluruh data formulir, media, acara, cerita, dan rekening ke snapshot terakhir tersimpan.
 
 ```
 Spesifikasi (Theme.builderSpec, lib/themeBuilder/spec.ts)

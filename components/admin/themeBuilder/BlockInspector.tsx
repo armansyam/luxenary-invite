@@ -7,16 +7,22 @@ import {
   BLOCK_LIMITS,
   BUILDER_BLOCKS,
   DEFAULT_PHOTO_FRAME,
+  FRAMED_PHOTOS,
   FRAME_SHAPES,
   FRAME_SPREAD_LIMITS,
+  LOOP_ANIMATIONS,
   OPTIONAL_BLOCKS,
   blockLabelFor,
   isDefaultBlock,
+  photoBlockMediaInfo,
   sectionLabelFor,
   type BlockProps,
   type BuilderBlockId,
   type BuilderEventType,
+  type BuilderVariants,
   type FrameFit,
+  type FramedPhotoId,
+  type LoopAnimation,
   type PhotoFrame,
 } from "@/lib/themeBuilder/spec";
 
@@ -33,6 +39,8 @@ interface Props {
   onFrameChange: (patch: Partial<PhotoFrame>, final: boolean) => void;
   library: AssetLibrary | null;
   onUpload: (files: FileList) => void;
+  variants?: BuilderVariants;
+  onVariantChange?: (patch: Partial<BuilderVariants>) => void;
 }
 
 interface LibraryFrame {
@@ -95,10 +103,28 @@ function FramePicker({ value, library, onPick }: { value: string; library: Asset
   );
 }
 
-export default function BlockInspector({ blockId, eventType, props, onChange, onReset, onClose, onCenter, frame, onFrameChange, library, onUpload }: Props) {
+export default function BlockInspector({
+  blockId,
+  eventType,
+  props,
+  onChange,
+  onReset,
+  onClose,
+  onCenter,
+  frame,
+  onFrameChange,
+  library,
+  onUpload,
+  variants,
+  onVariantChange,
+}: Props) {
   const block = BUILDER_BLOCKS.find((b) => b.id === blockId)!;
   const uploadRef = useRef<HTMLInputElement>(null);
   const z = props.z ?? 0;
+  const mediaInfo = (FRAMED_PHOTOS as readonly string[]).includes(blockId)
+    ? photoBlockMediaInfo(blockId as FramedPhotoId, eventType)
+    : null;
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-start justify-between gap-2 border-b border-stone-200 px-4 py-3">
@@ -113,6 +139,67 @@ export default function BlockInspector({ blockId, eventType, props, onChange, on
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+        {mediaInfo && (
+          <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-3 text-[11px] text-blue-900">
+            <p className="font-bold uppercase tracking-wider text-[10px] text-blue-700">Slot Foto Klien</p>
+            <p className="mt-0.5 font-semibold text-[12px]">{mediaInfo.slotLabel}</p>
+            <p className="mt-1 font-mono text-[10px] text-blue-800">Token: {mediaInfo.token}</p>
+          </div>
+        )}
+
+        {blockId === "opening-photo" && variants && onVariantChange && (
+          <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-3">
+            <span className="text-[11.5px] font-semibold text-stone-700">Tampilan Foto Pembuka (Home)</span>
+            <div className="mt-1.5 grid grid-cols-2 gap-1 rounded-xl bg-stone-100 p-1">
+              <button
+                type="button"
+                onClick={() => onVariantChange({ opening: "cinematic" })}
+                className={`rounded-lg px-2 py-1.5 text-[11px] font-semibold transition cursor-pointer ${
+                  (variants.opening ?? "cinematic") !== "backdrop" ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+                }`}
+              >
+                Bingkai Normal
+              </button>
+              <button
+                type="button"
+                onClick={() => onVariantChange({ opening: "backdrop" })}
+                className={`rounded-lg px-2 py-1.5 text-[11px] font-semibold transition cursor-pointer ${
+                  variants.opening === "backdrop" ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+                }`}
+              >
+                Latar Penuh (100vh)
+              </button>
+            </div>
+            <p className="mt-1 text-[10.5px] leading-snug text-stone-500">
+              Latar penuh menjadikan foto pembuka memenuhi 100vh layar dengan ornamen menempel di atasnya.
+            </p>
+          </div>
+        )}
+
+        {(blockId === "couple-photo-1" || blockId === "couple-photo-2") && eventType === "WEDDING" && variants && onVariantChange && (
+          <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-3">
+            <span className="text-[11.5px] font-semibold text-stone-700">Tata Letak Foto Mempelai</span>
+            <div className="mt-1.5 grid grid-cols-3 gap-1 rounded-xl bg-stone-100 p-1">
+              {[
+                { id: "side-by-side", label: "2 Kolom" },
+                { id: "stacked", label: "Kartu" },
+                { id: "portrait", label: "Potret" },
+              ].map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => onVariantChange({ couple: opt.id as any })}
+                  className={`rounded-lg px-1.5 py-1.5 text-[10.5px] font-semibold transition cursor-pointer ${
+                    (variants.couple ?? "side-by-side") === opt.id ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {!OPTIONAL_BLOCKS.includes(blockId) && (
           <p className="rounded-xl bg-stone-50 p-2.5 text-[11px] leading-snug text-stone-500">Elemen ini wajib tampil di undangan, jadi tidak bisa disembunyikan. Posisi dan ukurannya tetap bisa diatur.</p>
         )}
@@ -139,6 +226,25 @@ export default function BlockInspector({ blockId, eventType, props, onChange, on
         <Slider label="Geser tegak" value={props.y} min={BLOCK_LIMITS.y[0]} max={BLOCK_LIMITS.y[1]} step={0.5} suffix="%" numeric resetTo={0} onChange={(y, final) => onChange({ y }, final)} />
         <Slider label="Ukuran" value={props.scale} min={BLOCK_LIMITS.scale[0]} max={BLOCK_LIMITS.scale[1]} step={0.05} suffix="x" resetTo={1} onChange={(scale, final) => onChange({ scale }, final)} />
         <Slider label="Putar" value={props.rotate} min={-45} max={45} step={1} suffix="°" resetTo={0} onChange={(rotate, final) => onChange({ rotate }, final)} />
+
+        <div>
+          <span className="text-[11.5px] font-semibold text-stone-600">Animasi Putar (Loop)</span>
+          <select
+            value={props.loop ?? "none"}
+            onChange={(e) => {
+              const val = e.target.value;
+              onChange({ loop: val === "none" ? undefined : (val as LoopAnimation) }, true);
+            }}
+            className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-[12px] font-medium text-stone-700 outline-none focus:border-amber-500 cursor-pointer"
+          >
+            {LOOP_ANIMATIONS.map((a) => (
+              <option key={a.id} value={a.id}>{a.label}</option>
+            ))}
+          </select>
+          <p className="mt-1 text-[10.5px] leading-snug text-stone-500">
+            Animasi halus yang berjalan terus-menerus pada blok ini.
+          </p>
+        </div>
 
         <div>
           <div className="flex items-center justify-between">

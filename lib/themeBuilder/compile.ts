@@ -6,10 +6,13 @@ import {
   blockStyle,
   builderFamilyOf,
   type BuilderFamily,
+  familyOrderableSections,
   fontFamily,
   frameCss,
   googleFontCssUrl,
   googleFontIds,
+  isDefaultSectionOrder,
+  loopCss,
   ornamentStyle,
   type BlockProps,
   type BuilderBlockId,
@@ -18,7 +21,9 @@ import {
   type BuilderSpec,
   type BuilderTexts,
   type BuilderVariants,
+  type OrderableSection,
   type OrnamentMediaSlot,
+  type OrnamentTextToken,
 } from "@/lib/themeBuilder/spec";
 
 const BLUEPRINT_FILES: Record<BuilderFamily, string> = {
@@ -86,6 +91,14 @@ const VARIANT_CSS: Record<keyof BuilderVariants, Record<string, string>> = {
     .cover-monogram { margin-left: 0; }
     .cover-names { font-size: 44px; line-height: 1.05; }
     .cover-subtitle { margin-left: 0; }`,
+    fullscreen: `
+    @media (min-width: 900px) {
+      .cover-overlay { width: 100% !important; left: 0 !important; right: 0 !important; }
+      .cover-top { max-width: 1100px; }
+      .cover-center { max-width: 850px; }
+      .cover-bottom { max-width: 520px; }
+      .cover-names { font-size: clamp(2.8rem, 4.5vw, 4.8rem); }
+    }`,
   },
   opening: {
     card: `
@@ -114,14 +127,21 @@ const VARIANT_CSS: Record<keyof BuilderVariants, Record<string, string>> = {
     arch: `
     .couple-photo-wrap { width: 150px; height: 200px; border-radius: 999px 999px var(--radius-md) var(--radius-md); }
     .couple-photo-wrap img { border-radius: 999px 999px calc(var(--radius-md) - 4px) calc(var(--radius-md) - 4px); }`,
+    portrait: `
+    .couple-photo-wrap { width: 168px; height: auto; aspect-ratio: 3 / 4; border-radius: var(--radius-md); }
+    .couple-photo-wrap img { border-radius: calc(var(--radius-md) - 4px); }`,
     polaroid: `
     .couple-photo-wrap { width: 160px; height: 196px; padding: 8px 8px 30px; border: none; border-radius: var(--radius-sm); background: var(--card-bg); box-shadow: 10px 10px 0 color-mix(in srgb, var(--accent) 45%, transparent), var(--shadow-elevated); }
     .couple-photo-wrap img { border-radius: 2px; }
     .couple-card:first-child .couple-photo-wrap { transform: rotate(-3deg); }
     .couple-card:last-child .couple-photo-wrap { transform: rotate(3deg); }`,
     backdrop: `
-    .couple-card { position: relative; overflow: hidden; min-height: 440px; padding: 32px 24px; justify-content: flex-end; border-radius: var(--radius-lg); box-shadow: var(--shadow-elevated); background: var(--bg-dark); color: var(--on-dark); }
-    .couple-photo-wrap { position: absolute !important; inset: 0 !important; width: 100% !important; height: 100% !important; margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; z-index: 0 !important; pointer-events: none; }
+    #couple { padding-left: 0; padding-right: 0; padding-bottom: 0; }
+    #couple > .sec-eyebrow, #couple > .sec-main-title, #couple > .sec-sub { padding-left: 24px; padding-right: 24px; }
+    .couple-grid { gap: 0; width: 100%; }
+    .couple-amp { display: none; }
+    .couple-card { position: relative; overflow: hidden; width: 100%; min-height: 100dvh; padding: 48px 28px 64px; justify-content: flex-end; border-radius: 0; box-shadow: none; background: var(--bg-dark); color: var(--on-dark); }
+    .couple-photo-wrap { position: absolute !important; inset: 0 !important; width: 100% !important; height: 100% !important; max-width: none !important; aspect-ratio: auto !important; margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; z-index: 0 !important; pointer-events: none; }
     .couple-photo-wrap img { border-radius: 0 !important; }
     .couple-photo-wrap::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--overlay) 12%, transparent) 0%, color-mix(in srgb, var(--overlay) 35%, transparent) 48%, color-mix(in srgb, var(--overlay) 86%, transparent) 100%); }
     .couple-card > :not(.couple-photo-wrap) { position: relative; z-index: 2; }
@@ -195,27 +215,48 @@ const ORNAMENT_SLOT_TOKEN: Record<BuilderFamily, Record<OrnamentMediaSlot, { tok
   },
 };
 
+const ORNAMENT_TEXT_TOKEN_MARKUP: Record<BuilderFamily, Record<OrnamentTextToken, string>> = {
+  wedding: {
+    MONOGRAM_AMP: "{{coupleMonogram}}",
+    MONOGRAM_JOINED: "{{firstInitial}}{{secondInitial}}",
+    FIRST_INITIAL: "{{firstInitial}}",
+    SECOND_INITIAL: "{{secondInitial}}",
+    COUPLE_NAMES: "{{firstName}} &amp; {{secondName}}",
+    EVENT_DATE: "{{weddingDate}}",
+  },
+  single: {
+    MONOGRAM_AMP: "{{coupleMonogram}}",
+    MONOGRAM_JOINED: "{{firstInitial}}",
+    FIRST_INITIAL: "{{firstInitial}}",
+    SECOND_INITIAL: "{{firstInitial}}",
+    COUPLE_NAMES: "{{mainNickname}}",
+    EVENT_DATE: "{{eventDateFormatted}}",
+  },
+};
+
 /**
  * Ornamen yang menempel ke blok berupa `span` (bukan `div`): `<p>` menutup dirinya sendiri begitu bertemu `div`, sedangkan
  * `span` absolut tetap sah di dalam `p`, judul, dan tautan. Teks hias di-escape di sini; `{{ }}` dan kurung sudut sudah
- * ditolak oleh `parseBuilderSpec`.
+ * ditolak oleh `parseBuilderSpec`, kecuali token dinamis dari daftar `ORNAMENT_TEXT_TOKEN_MARKUP`.
  */
 function ornamentHtml(o: BuilderOrnament, family: BuilderFamily = "wedding", blockHidden = false): string {
   const tag = o.attach ? "span" : "div";
   // Ornamen sebaris adalah elemen alur: kelas `lux-orn` (absolut, tembus klik) tidak dipakai, dan gambarnya diberi gaya sendiri.
   // Ia disembunyikan bersama bloknya (`lux-flow-off`), karena berada di luar elemen blok dan tidak ikut `display:none` blok.
-  const classes = (o.before ? ["lux-flow", blockHidden && "lux-flow-off"] : ["lux-orn", o.layer === "front" && "is-front", o.attach && "is-attached"]).concat(o.text ? ["lux-orn-text"] : []).filter(Boolean).join(" ");
+  const loopClass = o.loop && o.loop !== "none" ? `lux-loop-${o.loop}` : "";
+  const classes = (o.before ? ["lux-flow", blockHidden && "lux-flow-off"] : ["lux-orn", o.layer === "front" && "is-front", o.attach && "is-attached"]).concat(o.text ? ["lux-orn-text"] : []).concat(loopClass ? [loopClass] : []).filter(Boolean).join(" ");
   const beforeAttr = o.before ? ` data-orn-before="${o.before}"` : "";
   const loading = EAGER_SECTIONS.has(o.section) ? "eager" : "lazy";
   const imgStyle = o.before ? ` style="display:block;width:100%;height:auto;"` : "";
   let inner: string;
   if (o.text) {
-    inner = escapeText(o.text.value);
+    inner = o.text.token ? ORNAMENT_TEXT_TOKEN_MARKUP[family][o.text.token] : escapeText(o.text.value);
   } else if (o.slot) {
     const win = o.fit ?? { l: 0.12, t: 0.12, r: 0.88, b: 0.88 };
     const pct = (v: number) => Math.round(v * 1000) / 1000;
     const slotInfo = ORNAMENT_SLOT_TOKEN[family][o.slot];
-    const photoStyle = `position:absolute;left:${pct(win.l * 100)}%;top:${pct(win.t * 100)}%;width:${pct((win.r - win.l) * 100)}%;height:${pct((win.b - win.t) * 100)}%;object-fit:cover;z-index:0;`;
+    const clipStyle = "clip" in win && win.clip ? `clip-path:${win.clip};-webkit-clip-path:${win.clip};` : "";
+    const photoStyle = `position:absolute;left:${pct(win.l * 100)}%;top:${pct(win.t * 100)}%;width:${pct((win.r - win.l) * 100)}%;height:${pct((win.b - win.t) * 100)}%;object-fit:cover;z-index:0;${clipStyle}`;
     const photoImg = `<img class="lux-orn-photo" src="{{${slotInfo.token}}}" alt="" loading="${loading}" decoding="async" draggable="false" style="${photoStyle}" />`;
     const wrappedPhoto = slotInfo.cond ? `{{#if ${slotInfo.cond}}}${photoImg}{{/if}}` : photoImg;
     const frameStyle = o.before ? ' style="position:relative;z-index:1;display:block;width:100%;height:auto;"' : imgStyle;
@@ -252,6 +293,71 @@ function attachCss(ornaments: BuilderOrnament[]): string {
 }
 
 const openingTagOf = (block: string) => new RegExp(`<[a-zA-Z0-9]+\\b[^>]*\\bdata-lux-block="${block}"[^>]*>`);
+
+const SECTION_CHUNK_PATTERNS: Record<OrderableSection, RegExp> = {
+  opening: /<section\b[^>]*\bdata-lux-section="opening"[^>]*>[\s\S]*?<\/section>/,
+  couple: /<section\b[^>]*\bdata-lux-section="couple"[^>]*>[\s\S]*?<\/section>/,
+  countdown: /<section\b[^>]*\bdata-lux-section="countdown"[^>]*>[\s\S]*?<\/section>/,
+  events: /<section\b[^>]*\bdata-lux-section="events"[^>]*>[\s\S]*?<\/section>/,
+  story: /\{\{#if showStory\}\}\s*<section\b[^>]*\bdata-lux-section="story"[^>]*>[\s\S]*?<\/section>\s*\{\{\/if\}\}/,
+  rsvp: /<section\b[^>]*\bdata-lux-section="rsvp"[^>]*>[\s\S]*?<\/section>/,
+  closing: /<footer\b[^>]*\bdata-lux-section="closing"[^>]*>[\s\S]*?<\/footer>/,
+};
+
+const DOCK_HREF_SECTION: Partial<Record<string, OrderableSection>> = {
+  "#home": "opening",
+  "#couple": "couple",
+  "#events": "events",
+  "#story": "story",
+  "#rsvp": "rsvp",
+};
+
+/** Mengurutkan ulang seksi utama di `<main>` dan tautan `<nav class="bottom-dock">` sesuai `spec.sectionOrder`. */
+function reorderSections(html: string, spec: BuilderSpec): string {
+  if (!spec.sectionOrder || isDefaultSectionOrder(spec.sectionOrder, spec.eventType)) return html;
+  const defaults = familyOrderableSections(spec.eventType);
+  const desired = spec.sectionOrder.filter((id): id is OrderableSection => defaults.includes(id));
+  for (const id of defaults) if (!desired.includes(id)) desired.push(id);
+
+  const chunks = new Map<OrderableSection, string>();
+  let out = html;
+  defaults.forEach((sec, idx) => {
+    const match = out.match(SECTION_CHUNK_PATTERNS[sec]);
+    if (match) {
+      chunks.set(sec, match[0]);
+      out = out.replace(SECTION_CHUNK_PATTERNS[sec], `<!-- __LUX_SEC_SLOT_${idx}__ -->`);
+    }
+  });
+  if (chunks.size === defaults.length) {
+    desired.forEach((sec, idx) => {
+      const chunk = chunks.get(sec);
+      if (chunk) out = out.replace(`<!-- __LUX_SEC_SLOT_${idx}__ -->`, () => chunk);
+    });
+  } else {
+    out = html;
+  }
+
+  out = out.replace(/<nav class="bottom-dock[^"]*">([\s\S]*?)<\/nav>/, (full, inner: string) => {
+    const linkRe = /<a\s+href="(#[a-z]+)"[^>]*>[\s\S]*?<\/a>/g;
+    const links: Array<{ sec: OrderableSection; markup: string }> = [];
+    let slotIdx = 0;
+    const templated = inner.replace(linkRe, (m, href: string) => {
+      const sec = DOCK_HREF_SECTION[href];
+      if (!sec) return m;
+      links.push({ sec, markup: m });
+      return `<!-- __LUX_DOCK_${slotIdx++}__ -->`;
+    });
+    if (links.length < 2) return full;
+    const sorted = [...links].sort((a, b) => desired.indexOf(a.sec) - desired.indexOf(b.sec));
+    let rebuilt = templated;
+    sorted.forEach((item, idx) => {
+      rebuilt = rebuilt.replace(`<!-- __LUX_DOCK_${idx}__ -->`, () => item.markup);
+    });
+    return full.replace(inner, rebuilt);
+  });
+
+  return out;
+}
 
 /** Memasang ornamen sebaris sebagai saudara tepat sebelum elemen blok, sehingga berlaku juga untuk blok berlabel. */
 function insertBeforeBlocks(html: string, ornaments: BuilderOrnament[], blocks: BuilderSpec["blocks"], family: BuilderFamily): string {
@@ -343,6 +449,13 @@ export function compileBuilderMaster(spec: BuilderSpec, blueprint = readBuilderB
   if (frameRules) {
     html = html.replace("</head>", `  <style id="lux-builder-frames">\n    ${frameRules}\n  </style>\n</head>`);
   }
+
+  const loopRules = loopCss(spec.blocks, spec.ornaments);
+  if (loopRules) {
+    html = html.replace("</head>", `  <style id="lux-builder-loops">\n    ${loopRules}\n  </style>\n</head>`);
+  }
+
+  html = reorderSections(html, spec);
 
   html = html.replace(/<!-- lux-ornaments:([a-z]+) -->/g, (marker, section: string) => {
     const items = spec.ornaments.filter((o) => o.section === section && !o.attach && !o.before);

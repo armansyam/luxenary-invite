@@ -12,8 +12,11 @@ import {
   MAX_BUILDER_TEXT_LENGTH,
   blockLabelFor,
   familyBlocks,
+  familyOrderableSections,
   familyTexts,
   familyVariantGroups,
+  isDefaultSectionOrder,
+  moveSectionInOrder,
   sectionLabelFor,
   fontFamily,
   fontLabel,
@@ -26,6 +29,7 @@ import {
   type BuilderSpec,
   type BuilderTextKey,
   type BuilderVariants,
+  type OrderableSection,
   type OrnamentSection,
 } from "@/lib/themeBuilder/spec";
 import { GoogleFontPicker } from "@/components/admin/themeBuilder/GoogleFontPicker";
@@ -500,6 +504,20 @@ function VariantThumb({ group, id, palette, dark }: { group: keyof BuilderVarian
         </span>
       );
     }
+    if (id === "portrait") {
+      return (
+        <span className={box} style={{ background: canvas }}>
+          <span className="flex items-center gap-2">
+            {[0, 1].map((i) => (
+              <span key={i} className="flex h-[52px] w-[34px] flex-col items-center justify-center gap-1 rounded-sm border" style={{ borderColor: palette.primary, background: `linear-gradient(180deg, transparent, ${palette.primary}20)` }}>
+                {photo({ width: 22, height: 28, borderRadius: 2 })}
+                {bar("16px", ink, 2)}
+              </span>
+            ))}
+          </span>
+        </span>
+      );
+    }
     const p = id === "arch" ? { width: 16, height: 22, borderRadius: "999px 999px 3px 3px" } : id === "polaroid" ? { width: 18, height: 20, borderRadius: 2, boxShadow: `3px 3px 0 ${palette.accent}` } : { width: 18, height: 18, borderRadius: "50%" };
     return (
       <span className={box} style={{ background: canvas }}>
@@ -617,6 +635,70 @@ export function LayoutPanel({
             );
           })}
         </div>
+      </Section>
+
+      <Section
+        title="Urutan seksi undangan"
+        hint="Atur urutan alur membaca tamu. Sampul (Cover), Panel Desktop (Sidebar), dan Penutup (Closing) tetap pada posisinya."
+      >
+        {(() => {
+          const defaultOrder = familyOrderableSections(spec.eventType);
+          const sectionsInOrder = spec.sectionOrder && spec.sectionOrder.length ? spec.sectionOrder : defaultOrder;
+          return (
+            <div className="space-y-1.5">
+              {sectionsInOrder.map((sec, idx) => (
+                <div
+                  key={sec}
+                  className="flex items-center justify-between rounded-xl border border-stone-200 bg-white px-3 py-2 text-[12px] font-semibold text-stone-700"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-stone-100 text-[10px] font-bold text-stone-500">
+                      {idx + 1}
+                    </span>
+                    <span>{sectionLabelFor(sec, spec.eventType)}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      title="Pindah ke atas"
+                      disabled={idx === 0}
+                      onClick={() => {
+                        const next = moveSectionInOrder(spec.eventType, sectionsInOrder, sec, -1);
+                        onChange({ sectionOrder: next });
+                        onFocusSection(sec);
+                      }}
+                      className="rounded p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer"
+                    >
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" d="M5 15l7-7 7 7" /></svg>
+                    </button>
+                    <button
+                      type="button"
+                      title="Pindah ke bawah"
+                      disabled={idx === sectionsInOrder.length - 1}
+                      onClick={() => {
+                        const next = moveSectionInOrder(spec.eventType, sectionsInOrder, sec, 1);
+                        onChange({ sectionOrder: next });
+                        onFocusSection(sec);
+                      }}
+                      className="rounded p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-700 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer"
+                    >
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {!isDefaultSectionOrder(spec.sectionOrder, spec.eventType) && (
+                <button
+                  type="button"
+                  onClick={() => onChange({ sectionOrder: undefined })}
+                  className="mt-2 w-full rounded-xl border border-stone-200 py-2 text-[11px] font-semibold text-stone-600 hover:bg-stone-50 cursor-pointer"
+                >
+                  Kembalikan Urutan ke Bawaan
+                </button>
+              )}
+            </div>
+          );
+        })()}
       </Section>
 
       {familyVariantGroups(spec.eventType).map((group) => (

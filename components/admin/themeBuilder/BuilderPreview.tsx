@@ -5,20 +5,26 @@ import {
   BLOCK_LIMITS,
   BUILDER_BLOCKS,
   DEFAULT_BLOCK_PROPS,
+  OPTIONAL_BLOCKS,
   ORNAMENT_SECTIONS,
   blockZIndex,
   ornamentLimits,
   ornamentStyle,
   frameCss,
+  loopCss,
+  photoBlockMediaInfo,
   type BlockProps,
   type BuilderBlockId,
   type BuilderBlocks,
+  type BuilderEventType,
   type BuilderFrames,
   type BuilderOrnament,
+  type BuilderVariants,
   type OrnamentSection,
 } from "@/lib/themeBuilder/spec";
 
 export type PreviewDevice = "mobile" | "small" | "desktop";
+export type OrnamentAlign = "left" | "center-x" | "right" | "top" | "center-y" | "bottom" | "full-width";
 
 export const DEVICE_SIZES: Record<PreviewDevice, { width: number; height: number; label: string }> = {
   mobile: { width: 375, height: 760, label: "HP 375" },
@@ -36,11 +42,17 @@ export interface PreviewDropTarget {
 export interface PreviewActions {
   /** Nilai geser mendatar (persen lebar blok) yang menaruh tengah blok tepat di tengah seksinya. */
   centerBlockX: (id: BuilderBlockId) => number | null;
+  /** Menjajarkan ornamen rapat ke tepi kiri/kanan/atas/bawah atau tengah seksinya berdasarkan ukuran nyata di layar. */
+  alignOrnament: (id: string, align: OrnamentAlign) => Partial<BuilderOrnament> | null;
 }
 
 interface Props {
   dropTargetRef: RefObject<PreviewDropTarget | null>;
   actionsRef: RefObject<PreviewActions | null>;
+  eventType: BuilderEventType;
+  variants: BuilderVariants;
+  onVariantChange: (patch: Partial<BuilderVariants>) => void;
+  desktopCoverFull?: boolean;
   frames: BuilderFrames;
   html: string | null;
   loading: boolean;
@@ -53,10 +65,13 @@ interface Props {
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   onOrnamentChange: (id: string, patch: Partial<BuilderOrnament>, final: boolean) => void;
+  onDuplicateOrnament?: (id: string) => void;
+  onDeleteOrnament?: (id: string) => void;
   blocks: BuilderBlocks;
   selectedBlock: BuilderBlockId | null;
   onSelectBlock: (id: BuilderBlockId | null) => void;
   onBlockChange: (id: BuilderBlockId, patch: Partial<BlockProps>, final: boolean) => void;
+  onResetBlock?: (id: BuilderBlockId) => void;
   onViewSection: (section: OrnamentSection) => void;
   onKey: (e: KeyboardEvent) => boolean;
 }
@@ -78,15 +93,16 @@ const BUILDER_CHROME_CSS = `
   .lux-b-handle, .lux-b-rot { position: absolute; z-index: 2; pointer-events: auto; box-sizing: border-box; }
   .lux-b-handle { right: -8px; bottom: -8px; width: 16px; height: 16px; border-radius: 50%; background: #ffffff; border: 2px solid #d97706; cursor: nwse-resize; }
   .lux-b-rot { left: -8px; top: -8px; width: 16px; height: 16px; border-radius: 50%; background: #d97706; border: 2px solid #ffffff; cursor: alias; }
-  [data-lux-section] > .lux-b-guide { position: absolute !important; top: 0; bottom: 0; left: 50%; width: 0; border-left: 1px dashed #d97706; z-index: 70 !important; pointer-events: none; }
+  [data-lux-section] > .lux-b-guide { position: absolute !important; top: 0; bottom: 0; left: 50%; width: 0; border-left: 1.5px dashed #d97706; z-index: 70 !important; pointer-events: none; }
+  [data-lux-section] > .lux-b-guide-h { position: absolute !important; left: 0; right: 0; top: 50%; height: 0; border-top: 1.5px dashed #d97706; z-index: 70 !important; pointer-events: none; }
   html.lux-b-dropping [data-lux-section] { outline: 2px dashed #f59e0b; outline-offset: -6px; }
 `;
 
-const SNAP_THRESHOLD = 1.2;
+const SNAP_THRESHOLD = 1.4;
 
 type DragState =
-  | { kind: "block"; id: BuilderBlockId; startX: number; startY: number; baseX: number; baseY: number; w: number; h: number; section: HTMLElement | null; naturalCenter: number }
-  | { kind: "move"; id: string; section: HTMLElement; frame: BlockFrame | null; offsetX: number; offsetY: number; moved: boolean }
+  | { kind: "block"; id: BuilderBlockId; startX: number; startY: number; baseX: number; baseY: number; w: number; h: number; section: HTMLElement | null; naturalCenter: number; naturalCenterY: number; rw: number; rh: number }
+  | { kind: "move"; id: string; section: HTMLElement; frame: BlockFrame | null; el: HTMLElement; offsetX: number; offsetY: number; moved: boolean }
   | { kind: "resize"; id: string; section: HTMLElement; frame: BlockFrame | null; el: HTMLElement }
   | { kind: "rotate"; id: string; el: HTMLElement; startAngle: number; startRotate: number };
 
@@ -137,12 +153,35 @@ const pointerAngle = (el: HTMLElement, clientX: number, clientY: number) => {
   return (Math.atan2(clientY - (r.top + r.height / 2), clientX - (r.left + r.width / 2)) * 180) / Math.PI;
 };
 
+type GuideAxis = "x" | "y";
+
+/** Garis pemandu magnet di dalam seksi: `x` = garis tegak pada persen lebar, `y` = garis mendatar pada persen tinggi. */
+function setGuides(doc: Document, section: HTMLElement | null, guides: Array<{ axis: GuideAxis; at: number }>) {
+  doc.querySelectorAll(".lux-b-guide, .lux-b-guide-h").forEach((g) => g.remove());
+  if (!section) return;
+  for (const { axis, at } of guides) {
+    const g = doc.createElement("div");
+    g.className = axis === "x" ? "lux-b-guide" : "lux-b-guide-h";
+    // Garis di tepi 100% digeser setebal garis agar tidak terpotong `overflow:hidden` seksi.
+    const pos = at >= 100 ? "calc(100% - 2px)" : `${at}%`;
+    if (axis === "x") g.style.left = pos;
+    else g.style.top = pos;
+    section.appendChild(g);
+  }
+}
+
+/** Menu klik kanan (atau klik dua jari di Mac) pada pratinjau, diposisikan di koordinat layar admin. */
+type ContextTarget =
+  | { kind: "ornament"; id: string; x: number; y: number }
+  | { kind: "block"; id: BuilderBlockId; x: number; y: number };
+
 export default function BuilderPreview(props: Props) {
-  const { html, loading, device, editOrnaments, playAnimations, replayNonce, jump, ornaments, selectedId, blocks, selectedBlock } = props;
+  const { html, loading, device, editOrnaments, playAnimations, replayNonce, jump, ornaments, selectedId, blocks, selectedBlock, desktopCoverFull = false } = props;
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [docVersion, setDocVersion] = useState(0);
+  const [menu, setMenu] = useState<ContextTarget | null>(null);
 
   // Nilai terbaru untuk pendengar di dalam iframe yang dipasang sekali per muat.
   const latest = useRef({ props, ornaments });
@@ -242,13 +281,6 @@ export default function BuilderPreview(props: Props) {
       const y = anchor === "bottom" ? ((r.bottom - clientY) / r.height) * 100 : ((clientY - r.top) / r.height) * 100;
       return { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
     };
-    const showGuide = (section: HTMLElement, on: boolean) => {
-      section.querySelectorAll(":scope > .lux-b-guide").forEach((g) => g.remove());
-      if (!on) return;
-      const g = doc.createElement("div");
-      g.className = "lux-b-guide";
-      section.appendChild(g);
-    };
 
     // Tengah tampilan blok tanpa pergeseran miliknya sendiri: rect sekarang dikurangi translate yang sedang berlaku.
     const naturalCenterOf = (blockEl: HTMLElement, x: number) => {
@@ -278,6 +310,9 @@ export default function BuilderPreview(props: Props) {
 
     doc.addEventListener("pointerdown", (e) => {
       if (!latest.current.props.editOrnaments) return;
+      // Klik kanan / klik dua jari (Mac) hanya membuka menu konteks: tidak menyeret dan tidak membatalkan pilihan.
+      if (e.button !== 0) return;
+      setMenu(null);
       const target = e.target as HTMLElement;
       const onHandle = target.classList.contains("lux-b-handle") || target.classList.contains("lux-b-rot");
       const stack = onHandle ? [] : editableAt(e.clientX, e.clientY);
@@ -297,9 +332,12 @@ export default function BuilderPreview(props: Props) {
           const current = latest.current.props.blocks[id] ?? DEFAULT_BLOCK_PROPS;
           latest.current.props.onSelectBlock(id);
           doc.documentElement.classList.add("lux-b-dragging");
+          const br = blockEl.getBoundingClientRect();
+          const bh = blockEl.offsetHeight || 1;
           drag.current = {
             kind: "block", id, startX: e.clientX, startY: e.clientY, baseX: current.x, baseY: current.y,
-            w: blockEl.offsetWidth || 1, h: blockEl.offsetHeight || 1, section: sectionOf(blockEl), naturalCenter: naturalCenterOf(blockEl, current.x),
+            w: blockEl.offsetWidth || 1, h: bh, section: sectionOf(blockEl), naturalCenter: naturalCenterOf(blockEl, current.x),
+            naturalCenterY: br.top + br.height / 2 - (current.y / 100) * bh, rw: br.width, rh: br.height,
           };
           return;
         }
@@ -324,9 +362,36 @@ export default function BuilderPreview(props: Props) {
         drag.current = { kind: "rotate", id, el: orn, startAngle: pointerAngle(orn, e.clientX, e.clientY), startRotate: o.rotate };
       } else {
         const r = orn.getBoundingClientRect();
-        drag.current = { kind: "move", id, section, frame, offsetX: e.clientX - (r.left + r.width / 2), offsetY: e.clientY - (r.top + r.height / 2), moved: false };
+        drag.current = { kind: "move", id, section, frame, el: orn, offsetX: e.clientX - (r.left + r.width / 2), offsetY: e.clientY - (r.top + r.height / 2), moved: false };
       }
     }, true);
+
+    doc.addEventListener("contextmenu", (e) => {
+      if (!latest.current.props.editOrnaments) return;
+      const stack = editableAt(e.clientX, e.clientY);
+      const picked = stack[0];
+      if (!picked) return;
+      e.preventDefault();
+      // Koordinat iframe dipetakan ke koordinat panggung admin (pratinjau diskalakan).
+      const frameEl = iframeRef.current;
+      const stage = stageRef.current;
+      if (!frameEl || !stage) return;
+      const fr = frameEl.getBoundingClientRect();
+      const st = stage.getBoundingClientRect();
+      const k = fr.width / (frameEl.offsetWidth || 1);
+      const x = fr.left - st.left + e.clientX * k;
+      const y = fr.top - st.top + e.clientY * k;
+      if (picked.classList.contains("lux-orn") || picked.classList.contains("lux-flow")) {
+        const id = picked.dataset.ornId;
+        if (!id) return;
+        latest.current.props.onSelect(id);
+        setMenu({ kind: "ornament", id, x, y });
+      } else if (picked.dataset.luxBlock) {
+        const id = picked.dataset.luxBlock as BuilderBlockId;
+        latest.current.props.onSelectBlock(id);
+        setMenu({ kind: "block", id, x, y });
+      }
+    });
 
     doc.addEventListener("pointermove", (e) => {
       const d = drag.current;
@@ -336,14 +401,20 @@ export default function BuilderPreview(props: Props) {
         // Menempel ke posisi bawaan (0) saat dekat, supaya blok mudah dikembalikan ke tengah alurnya.
         const snap = (v: number) => (Math.abs(v) < 1 ? 0 : v);
         let x = snap(clampTo(Math.round((d.baseX + ((e.clientX - d.startX) / d.w) * 100) * 10) / 10, BLOCK_LIMITS.x));
-        const y = snap(clampTo(Math.round((d.baseY + ((e.clientY - d.startY) / d.h) * 100) * 10) / 10, BLOCK_LIMITS.y));
-        // Menempel ke tengah seksi bila tengah blok berjarak kurang dari 6 px; garis pemandu menandainya.
-        let centered = false;
+        let y = snap(clampTo(Math.round((d.baseY + ((e.clientY - d.startY) / d.h) * 100) * 10) / 10, BLOCK_LIMITS.y));
+        // Magnet ke tepi kiri, tengah, dan kanan seksi (serta atas, tengah, bawah) bila jaraknya kurang dari 6 px.
         if (d.section) {
-          const centerX = clampTo(Math.round((((sectionCenter(d.section) - d.naturalCenter) / d.w) * 100) * 10) / 10, BLOCK_LIMITS.x);
-          centered = (Math.abs(x - centerX) / 100) * d.w < 6;
-          if (centered) x = centerX;
-          showGuide(d.section, centered);
+          const s = d.section.getBoundingClientRect();
+          const guides: Array<{ axis: GuideAxis; at: number }> = [];
+          const toX = (centerPx: number) => clampTo(Math.round((((centerPx - d.naturalCenter) / d.w) * 100) * 10) / 10, BLOCK_LIMITS.x);
+          const toY = (centerPx: number) => clampTo(Math.round((((centerPx - d.naturalCenterY) / d.h) * 100) * 10) / 10, BLOCK_LIMITS.y);
+          const xTargets: Array<[number, number]> = [[toX(s.left + d.rw / 2), 0], [toX(sectionCenter(d.section)), 50], [toX(s.right - d.rw / 2), 100]];
+          const yTargets: Array<[number, number]> = [[toY(s.top + d.rh / 2), 0], [toY(s.top + s.height / 2), 50], [toY(s.bottom - d.rh / 2), 100]];
+          const hitX = xTargets.find(([v]) => (Math.abs(x - v) / 100) * d.w < 6);
+          if (hitX) { x = hitX[0]; guides.push({ axis: "x", at: hitX[1] }); }
+          const hitY = yTargets.find(([v]) => (Math.abs(y - v) / 100) * d.h < 6);
+          if (hitY) { y = hitY[0]; guides.push({ axis: "y", at: hitY[1] }); }
+          setGuides(doc, d.section, guides);
         }
         latest.current.props.onBlockChange(d.id, { x, y }, false);
         return;
@@ -355,12 +426,28 @@ export default function BuilderPreview(props: Props) {
         if (d.frame && !inBlock) return;
         let { x, y } = inBlock ? { x: inBlock.x, y: o.anchor === "bottom" ? 100 - inBlock.y : inBlock.y } : percent(d.section, e.clientX - d.offsetX, e.clientY - d.offsetY, o.anchor);
         const limits = ornamentLimits(o);
+        const guides: Array<{ axis: GuideAxis; at: number }> = [];
+        if (!d.frame) {
+          // Magnet tepi: ornamen rapat kiri/kanan/atas/bawah seksi, atau tepat di tengah mendatar/tegak.
+          const s = d.section.getBoundingClientRect();
+          const r = d.el.getBoundingClientRect();
+          const halfW = ((r.width / 2) / (s.width || 1)) * 100;
+          const halfH = ((r.height / 2) / (s.height || 1)) * 100;
+          const tolX = (6 / (s.width || 1)) * 100;
+          const tolY = (6 / (s.height || 1)) * 100;
+          const xTargets: Array<[number, number]> = [[halfW, 0], [50, 50], [100 - halfW, 100]];
+          // y diukur dari anchor; garis pemandu selalu dalam persen dari atas seksi.
+          const yTargets: Array<[number, number]> = o.anchor === "bottom"
+            ? [[100 - halfH, 0], [50, 50], [halfH, 100]]
+            : [[halfH, 0], [50, 50], [100 - halfH, 100]];
+          const hitX = xTargets.find(([v]) => Math.abs(x - v) < Math.max(tolX, SNAP_THRESHOLD));
+          if (hitX) { x = hitX[0]; guides.push({ axis: "x", at: hitX[1] }); }
+          const hitY = yTargets.find(([v]) => Math.abs(y - v) < tolY);
+          if (hitY) { y = hitY[0]; guides.push({ axis: "y", at: hitY[1] }); }
+        }
         x = Math.round(Math.max(limits.x[0], Math.min(limits.x[1], x)) * 10) / 10;
         y = Math.round(Math.max(limits.y[0], Math.min(limits.y[1], y)) * 10) / 10;
-        const snapped = Math.abs(x - 50) < SNAP_THRESHOLD;
-        if (snapped) x = 50;
-        // Garis pemandu tengah seksi tidak berlaku untuk ornamen yang diukur terhadap blok.
-        if (!d.frame) showGuide(d.section, snapped);
+        if (!d.frame) setGuides(doc, d.section, guides);
         d.moved = true;
         latest.current.props.onOrnamentChange(d.id, { x, y }, false);
       } else if (d.kind === "resize") {
@@ -392,11 +479,11 @@ export default function BuilderPreview(props: Props) {
       drag.current = null;
       doc.documentElement.classList.remove("lux-b-dragging");
       if (d.kind === "block") {
-        if (d.section) showGuide(d.section, false);
+        setGuides(doc, null, []);
         latest.current.props.onBlockChange(d.id, {}, true);
         return;
       }
-      if (d.kind !== "rotate") showGuide(d.section, false);
+      setGuides(doc, null, []);
       latest.current.props.onOrnamentChange(d.id, {}, true);
     };
     doc.addEventListener("pointerup", endDrag);
@@ -479,11 +566,69 @@ export default function BuilderPreview(props: Props) {
         const x = ((s.left + s.width / 2 - natural) / w) * 100;
         return Math.max(BLOCK_LIMITS.x[0], Math.min(BLOCK_LIMITS.x[1], Math.round(x * 10) / 10));
       },
+      alignOrnament: (id, align) => {
+        const doc = getDoc();
+        const o = latest.current.ornaments.find((item) => item.id === id);
+        const el = doc?.querySelector(`[data-orn-id="${id}"]`) as HTMLElement | null;
+        if (!o || !el || o.before) return null;
+        // Acuan: kotak blok bagi ornamen menempel, seksi bagi ornamen bebas.
+        const host = (o.attach ? el.closest("[data-lux-block]") : el.closest("[data-lux-section]")) as HTMLElement | null;
+        if (!host) return null;
+        const s = host.getBoundingClientRect();
+        const r = el.getBoundingClientRect();
+        const halfW = ((r.width / 2) / (s.width || 1)) * 100;
+        const halfH = ((r.height / 2) / (s.height || 1)) * 100;
+        const round = (v: number) => Math.round(v * 10) / 10;
+        const bottom = o.anchor === "bottom";
+        let patch: Partial<BuilderOrnament>;
+        switch (align) {
+          case "left": patch = { x: round(halfW) }; break;
+          case "center-x": patch = { x: 50 }; break;
+          case "right": patch = { x: round(100 - halfW) }; break;
+          case "top": patch = { y: round(bottom ? 100 - halfH : halfH) }; break;
+          case "center-y": patch = { y: 50 }; break;
+          case "bottom": patch = { y: round(bottom ? halfH : 100 - halfH) }; break;
+          case "full-width": patch = { x: 50, width: 100 }; break;
+        }
+        const limits = ornamentLimits({ ...o, ...patch });
+        if (patch.x !== undefined) patch.x = Math.max(limits.x[0], Math.min(limits.x[1], patch.x));
+        if (patch.y !== undefined) patch.y = Math.max(limits.y[0], Math.min(limits.y[1], patch.y));
+        return patch;
+      },
     };
     return () => {
       actionsRef.current = null;
     };
   }, [actionsRef]);
+
+  // Sampul desktop penuh (landscape 100vw) hanya untuk meninjau dan menata elemen sampul; tidak tersimpan ke master.
+  useEffect(() => {
+    const doc = getDoc();
+    if (!doc) return;
+    let style = doc.getElementById("lux-b-desktop-cover-live") as HTMLStyleElement | null;
+    if (!style) {
+      style = doc.createElement("style");
+      style.id = "lux-b-desktop-cover-live";
+      doc.head.appendChild(style);
+    }
+    style.textContent = device === "desktop" && desktopCoverFull
+      ? "@media (min-width: 900px) { .cover-overlay, .cover-screen { left: 0 !important; right: 0 !important; width: 100% !important; z-index: 30 !important; } }"
+      : "";
+  }, [device, desktopCoverFull, docVersion]);
+
+  // Animasi loop blok dan ornamen diterapkan langsung agar terlihat tanpa memuat ulang pratinjau.
+  useEffect(() => {
+    const doc = getDoc();
+    if (!doc) return;
+    doc.getElementById("lux-builder-loops")?.remove();
+    let style = doc.getElementById("lux-b-loops-live") as HTMLStyleElement | null;
+    if (!style) {
+      style = doc.createElement("style");
+      style.id = "lux-b-loops-live";
+      doc.head.appendChild(style);
+    }
+    style.textContent = loopCss(blocks, ornaments);
+  }, [blocks, ornaments, docVersion]);
 
   // Bingkai foto ditulis ulang langsung ke dokumen pratinjau agar perubahan bentuk dan bingkai terlihat saat itu juga.
   useEffect(() => {
@@ -594,7 +739,11 @@ export default function BuilderPreview(props: Props) {
   }, [playAnimations, replayNonce, docVersion]);
 
   return (
-    <div ref={stageRef} className="relative flex-1 min-w-0 overflow-hidden bg-[radial-gradient(circle_at_1px_1px,#d6d3d1_1px,transparent_0)] [background-size:18px_18px] bg-stone-100">
+    <div
+      ref={stageRef}
+      onPointerDown={() => setMenu(null)}
+      className="relative flex-1 min-w-0 overflow-hidden bg-[radial-gradient(circle_at_1px_1px,#d6d3d1_1px,transparent_0)] [background-size:18px_18px] bg-stone-100"
+    >
       <div className="absolute inset-0 flex items-center justify-center">
         <div
           className="relative shrink-0 origin-center"
@@ -615,6 +764,193 @@ export default function BuilderPreview(props: Props) {
           </div>
         </div>
       </div>
+      {menu && (
+        <div
+          className="absolute z-50 min-w-[190px] rounded-lg border border-stone-800 bg-stone-900/95 p-1 text-xs text-stone-200 shadow-2xl backdrop-blur-sm"
+          style={{
+            left: Math.max(10, Math.min(menu.x, (stageRef.current?.clientWidth ?? 600) - 200)),
+            top: Math.max(10, Math.min(menu.y, (stageRef.current?.clientHeight ?? 600) - 260)),
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          {menu.kind === "ornament" && (() => {
+            const orn = ornaments.find((o) => o.id === menu.id);
+            if (!orn) return null;
+            return (
+              <div className="flex flex-col gap-0.5">
+                <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-stone-400 border-b border-stone-800 mb-0.5 truncate">
+                  {orn.text ? `Teks: ${orn.text.value}` : `Ornamen (${orn.id})`}
+                </div>
+                <div className="px-2 pt-0.5 text-[10px] font-semibold text-stone-400">Rapatkan (Snap)</div>
+                <div className="grid grid-cols-3 gap-0.5 px-1 py-0.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const patch = actionsRef.current?.alignOrnament(menu.id, "left");
+                      if (patch) props.onOrnamentChange(menu.id, patch, true);
+                      setMenu(null);
+                    }}
+                    className="rounded px-1.5 py-1 text-center hover:bg-stone-800 hover:text-white"
+                  >
+                    Kiri
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const patch = actionsRef.current?.alignOrnament(menu.id, "center-x");
+                      if (patch) props.onOrnamentChange(menu.id, patch, true);
+                      setMenu(null);
+                    }}
+                    className="rounded px-1.5 py-1 text-center hover:bg-stone-800 hover:text-white"
+                  >
+                    Tengah
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const patch = actionsRef.current?.alignOrnament(menu.id, "right");
+                      if (patch) props.onOrnamentChange(menu.id, patch, true);
+                      setMenu(null);
+                    }}
+                    className="rounded px-1.5 py-1 text-center hover:bg-stone-800 hover:text-white"
+                  >
+                    Kanan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const patch = actionsRef.current?.alignOrnament(menu.id, "top");
+                      if (patch) props.onOrnamentChange(menu.id, patch, true);
+                      setMenu(null);
+                    }}
+                    className="rounded px-1.5 py-1 text-center hover:bg-stone-800 hover:text-white"
+                  >
+                    Atas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const patch = actionsRef.current?.alignOrnament(menu.id, "center-y");
+                      if (patch) props.onOrnamentChange(menu.id, patch, true);
+                      setMenu(null);
+                    }}
+                    className="rounded px-1.5 py-1 text-center hover:bg-stone-800 hover:text-white"
+                  >
+                    Tengah Y
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const patch = actionsRef.current?.alignOrnament(menu.id, "bottom");
+                      if (patch) props.onOrnamentChange(menu.id, patch, true);
+                      setMenu(null);
+                    }}
+                    className="rounded px-1.5 py-1 text-center hover:bg-stone-800 hover:text-white"
+                  >
+                    Bawah
+                  </button>
+                </div>
+                <div className="border-t border-stone-800 my-0.5" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    props.onOrnamentChange(menu.id, { layer: "front" }, true);
+                    setMenu(null);
+                  }}
+                  className="flex items-center justify-between rounded px-2 py-1 text-left hover:bg-stone-800 hover:text-white"
+                >
+                  <span>Di Depan Teks</span>
+                  {orn.layer === "front" && <span className="text-[10px] text-amber-400">Aktif</span>}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    props.onOrnamentChange(menu.id, { layer: "back" }, true);
+                    setMenu(null);
+                  }}
+                  className="flex items-center justify-between rounded px-2 py-1 text-left hover:bg-stone-800 hover:text-white"
+                >
+                  <span>Di Belakang Teks</span>
+                  {orn.layer === "back" && <span className="text-[10px] text-amber-400">Aktif</span>}
+                </button>
+                {props.onDuplicateOrnament && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      props.onDuplicateOrnament?.(menu.id);
+                      setMenu(null);
+                    }}
+                    className="flex items-center gap-1.5 rounded px-2 py-1 text-left hover:bg-stone-800 hover:text-white"
+                  >
+                    Duplikat Ornamen
+                  </button>
+                )}
+                {props.onDeleteOrnament && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      props.onDeleteOrnament?.(menu.id);
+                      setMenu(null);
+                    }}
+                    className="flex items-center gap-1.5 rounded px-2 py-1 text-left text-red-400 hover:bg-red-950/60 hover:text-red-300"
+                  >
+                    Hapus Ornamen
+                  </button>
+                )}
+              </div>
+            );
+          })()}
+          {menu.kind === "block" && (() => {
+            const blk = BUILDER_BLOCKS.find((b) => b.id === menu.id);
+            const isFramed = menu.id === "opening-photo" || menu.id === "couple-photo-1" || menu.id === "couple-photo-2";
+            return (
+              <div className="flex flex-col gap-0.5">
+                <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-stone-400 border-b border-stone-800 mb-0.5 truncate">
+                  {blk?.label ?? menu.id}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const cx = actionsRef.current?.centerBlockX(menu.id);
+                    props.onBlockChange(menu.id, { x: cx ?? 0 }, true);
+                    setMenu(null);
+                  }}
+                  className="flex items-center gap-1.5 rounded px-2 py-1 text-left hover:bg-stone-800 hover:text-white"
+                >
+                  Tengahkan Blok
+                </button>
+                {props.onResetBlock && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      props.onResetBlock?.(menu.id);
+                      setMenu(null);
+                    }}
+                    className="flex items-center gap-1.5 rounded px-2 py-1 text-left hover:bg-stone-800 hover:text-white"
+                  >
+                    Reset Posisi & Skala
+                  </button>
+                )}
+                {isFramed && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const cur = props.variants.opening ?? "cinematic";
+                      props.onVariantChange({
+                        opening: cur === "backdrop" ? "cinematic" : "backdrop",
+                      });
+                      setMenu(null);
+                    }}
+                    className="flex items-center gap-1.5 rounded px-2 py-1 text-left text-amber-400 hover:bg-stone-800 hover:text-amber-300"
+                  >
+                    Ganti Mode Tampilan Foto
+                  </button>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      )}
       {loading && (
         <div className="pointer-events-none absolute right-4 top-4 flex items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-semibold text-stone-600 shadow-sm ring-1 ring-stone-200">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" />
@@ -624,7 +960,7 @@ export default function BuilderPreview(props: Props) {
       <div className="pointer-events-none absolute bottom-3 left-1/2 flex -translate-x-1/2 flex-col items-center gap-1 whitespace-nowrap">
         {editOrnaments && (
           <span className="rounded-full bg-white/90 px-3 py-1 text-[10px] font-medium text-stone-700 shadow-sm ring-1 ring-stone-200">
-            Seret elemen bertepi putus-putus · Alt+klik: pilih yang di bawahnya
+            Seret elemen bertepi putus-putus · Klik kanan: menu cepat · Alt+klik: lapis bawah
           </span>
         )}
         <span className="rounded-full bg-stone-900/80 px-3 py-1 text-[10px] font-medium text-white">

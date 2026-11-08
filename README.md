@@ -2,7 +2,7 @@
 
 > **Platform Undangan Digital Multi-Event B2C Self-Service (Wedding, Birthday, Khitan, Aqiqah, Wisuda, Gathering)**  
 > Next.js 16.3.8 · Prisma 7.9/7.10 (PostgreSQL) · NextAuth v5 · Gateway 2-Arah (Midtrans) · Nodemailer SMTP · Cloudflare R2  
-> **Versi Aplikasi: 1.0.1 (lini rilis produksi pertama 1.0; tag `v1.0.0`, lalu `v1.0.1` menyembunyikan amplop di portofolio) | Versi Dokumen: 6.3.6 | Diperbarui: 3 November 2026**  
+> **Versi Aplikasi: 1.1.0 | Versi Dokumen: 6.4.0 | Diperbarui: 8 November 2026**  
 > Versi yang sedang berjalan di server tampil di Admin > Pengaturan > Tentang Aplikasi (dibaca dari `package.json` dan commit build).
 
 > [!IMPORTANT]

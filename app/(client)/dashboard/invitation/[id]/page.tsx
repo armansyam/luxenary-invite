@@ -1036,6 +1036,33 @@ export default function EditInvitation() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invitation, media, events, stories, bankList, savedSnapshot]);
 
+  const revertAllChanges = async () => {
+    if (!savedSnapshot) return;
+    const ok = await feedback.confirm({
+      title: "Urungkan semua perubahan?",
+      message: "Seluruh perubahan yang belum disimpan pada semua formulir akan dikembalikan ke kondisi terakhir tersimpan.",
+      confirmLabel: "Urungkan Semua",
+    });
+    if (!ok) return;
+
+    if (savedSnapshot.invitation) {
+      setInvitation(JSON.parse(JSON.stringify(savedSnapshot.invitation)));
+    }
+    if (savedSnapshot.media) {
+      setMedia(JSON.parse(JSON.stringify(savedSnapshot.media)));
+    }
+    if (savedSnapshot.events) {
+      setEvents(JSON.parse(JSON.stringify(savedSnapshot.events)));
+    }
+    if (savedSnapshot.stories) {
+      setStories(JSON.parse(JSON.stringify(savedSnapshot.stories)));
+    }
+    if (savedSnapshot.bankList) {
+      setBankList(JSON.parse(JSON.stringify(savedSnapshot.bankList)));
+    }
+    feedback.notify("Seluruh perubahan berhasil diurungkan.", "success");
+  };
+
   // Event Handlers & Chronological Auto-Sort
   const sortEventsChronologically = (list: any[]) => {
     return [...list].sort((a, b) => {
@@ -1899,6 +1926,20 @@ export default function EditInvitation() {
                   </svg>
                   <span>Buka Amplop</span>
                 </button>
+                {Object.values(isDirty).some(Boolean) && (
+                  <button
+                    type="button"
+                    onClick={revertAllChanges}
+                    disabled={saving}
+                    className="px-3.5 py-1.5 bg-stone-900 hover:bg-rose-950/60 text-stone-300 hover:text-rose-300 font-medium rounded-lg text-xs transition border border-stone-800 hover:border-rose-800/60 shadow-xs flex items-center gap-1.5 cursor-pointer"
+                    title="Urungkan seluruh perubahan yang belum disimpan"
+                  >
+                    <svg className="w-3.5 h-3.5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h10a5 5 0 015 5v2m0 0l-4-4m4 4l4-4M3 10l4-4m-4 4l4 4" />
+                    </svg>
+                    <span>Urungkan Semua</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => saveSection()}

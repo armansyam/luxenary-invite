@@ -30,8 +30,22 @@ export type AnimationPreset = "none" | "fade" | "rise" | "zoom" | "slide" | "blu
 export type OrnamentLayer = "back" | "front";
 export type OrnamentAnchor = "top" | "bottom";
 
+export const LOOP_ANIMATIONS = [
+  { id: "none", label: "Tanpa loop", hint: "Diam di tempat" },
+  { id: "float", label: "Mengambang", hint: "Naik-turun halus" },
+  { id: "sway", label: "Bergoyang", hint: "Ayun kiri-kanan" },
+  { id: "pulse", label: "Berdenyut", hint: "Membesar-mengecil halus" },
+  { id: "shimmer", label: "Berkilau", hint: "Redup-terang perlahan" },
+  { id: "spin", label: "Berputar", hint: "Putaran lambat 360°" },
+] as const;
+export type LoopAnimation = (typeof LOOP_ANIMATIONS)[number]["id"];
+
 export const ORNAMENT_SECTIONS = ["cover", "sidebar", "opening", "couple", "countdown", "events", "story", "rsvp", "closing"] as const;
 export type OrnamentSection = (typeof ORNAMENT_SECTIONS)[number];
+
+/** Seksi isi di dalam panel gulir utama yang urutannya dapat ditukar oleh admin di builder. */
+export const ORDERABLE_SECTIONS = ["opening", "couple", "countdown", "events", "story", "rsvp", "closing"] as const;
+export type OrderableSection = (typeof ORDERABLE_SECTIONS)[number];
 
 export const SECTION_LABELS: Record<OrnamentSection, string> = {
   cover: "Sampul",
@@ -92,7 +106,38 @@ export const ORNAMENT_TEXT_COLORS = [
 ] as const;
 export type OrnamentTextColor = (typeof ORNAMENT_TEXT_COLORS)[number]["id"];
 
-export const ORNAMENT_TEXT_LIMITS = { size: [10, 96], spacing: [0, 0.5], length: 80 } as const;
+export const ORNAMENT_TEXT_LIMITS = { size: [10, 160], spacing: [0, 0.5], length: 80 } as const;
+
+/**
+ * Token dinamis untuk teks hias: isi teks otomatis mengikuti inisial, nama panggilan, atau tanggal acara klien dari
+ * mesin render (`themeEngine.ts`), bukan teks statis yang sama untuk semua klien.
+ */
+export const ORNAMENT_TEXT_TOKENS = [
+  { id: "MONOGRAM_AMP", label: "Inisial pasangan (R & A)", sampleWedding: "R & A", sampleSingle: "Z" },
+  { id: "MONOGRAM_JOINED", label: "Inisial gabung tanpa & (RA)", sampleWedding: "RA", sampleSingle: "Z" },
+  { id: "FIRST_INITIAL", label: "Inisial mempelai pertama (R)", sampleWedding: "R", sampleSingle: "Z" },
+  { id: "SECOND_INITIAL", label: "Inisial mempelai kedua (A)", sampleWedding: "A", sampleSingle: "Z" },
+  { id: "COUPLE_NAMES", label: "Nama pasangan (Raditya & Alana)", sampleWedding: "Raditya & Alana", sampleSingle: "Zahra" },
+  { id: "EVENT_DATE", label: "Tanggal acara", sampleWedding: "Sabtu, 14 November 2026", sampleSingle: "Sabtu, 14 November 2026" },
+] as const;
+export type OrnamentTextToken = (typeof ORNAMENT_TEXT_TOKENS)[number]["id"];
+
+export function familyOrnamentTextTokens(eventType: BuilderEventType): Array<{ id: OrnamentTextToken; label: string; sample: string }> {
+  const single = builderFamilyOf(eventType) === "single";
+  return ORNAMENT_TEXT_TOKENS
+    .filter((t) => !single || (t.id !== "SECOND_INITIAL" && t.id !== "MONOGRAM_JOINED"))
+    .map((t) => ({
+      id: t.id,
+      label: single
+        ? t.id === "MONOGRAM_AMP" || t.id === "FIRST_INITIAL"
+          ? "Inisial tokoh utama (Z)"
+          : t.id === "COUPLE_NAMES"
+            ? "Nama panggilan utama"
+            : t.label
+        : t.label,
+      sample: single ? t.sampleSingle : t.sampleWedding,
+    }));
+}
 
 /**
  * Kunci label untuk teks hias yang boleh diubah klien di Studio. Teks itu menjadi label `customLabels.<kunci>` seperti
@@ -104,8 +149,10 @@ export const EDITABLE_TEXT_KEYS = ["hias1", "hias2", "hias3"] as const;
 export const MAX_DECORATIVE_LABEL_LENGTH = 120;
 export type EditableTextKey = (typeof EDITABLE_TEXT_KEYS)[number];
 
-/** Teks hias bebas (mis. "Save the Date"): tertulis di master; klien hanya dapat mengubahnya bila `labelKey` ada. */
+/** Teks hias bebas (mis. "Save the Date") atau token inisial/nama dinamis (`token`): tertulis di master; klien dapat mengubahnya bila `labelKey` ada. */
 export interface OrnamentText {
+  /** Token data klien otomatis (mis. inisial R & A, R, A); bila diisi, isi teks diambil dari data klien saat render. */
+  token?: OrnamentTextToken;
   /** Isi teks; bila `labelKey` ada, ini teks awal sebelum klien mengubahnya. */
   labelKey?: EditableTextKey;
   value: string;
@@ -201,6 +248,8 @@ export interface BuilderOrnament {
   slot?: OrnamentMediaSlot;
   /** Jendela transparan ornamen bingkai (0..1); diukur otomatis oleh server bila `slot` dipilih. */
   fit?: FrameFit | null;
+  /** Animasi berulang (loop) halus pada ornamen. */
+  loop?: LoopAnimation;
 }
 
 /**
@@ -302,6 +351,8 @@ export interface BlockProps {
   hidden: boolean;
   /** Lapisan di antara elemen seksi yang sama: 0 = urutan bawaan, positif ke depan, negatif ke belakang. */
   z?: number;
+  /** Animasi berulang (loop) halus pada elemen. */
+  loop?: LoopAnimation;
 }
 export type BuilderBlocks = Partial<Record<BuilderBlockId, BlockProps>>;
 
@@ -344,8 +395,47 @@ const SINGLE_BLOCK_LABELS: Partial<Record<BuilderBlockId, string>> = {
   "couple-parents-1": "Orang tua",
 };
 
-export function familySections(eventType: BuilderEventType): readonly OrnamentSection[] {
-  return builderFamilyOf(eventType) === "single" ? ORNAMENT_SECTIONS.filter((s) => !SINGLE_ABSENT_SECTIONS.includes(s)) : ORNAMENT_SECTIONS;
+export function familyOrderableSections(eventType: BuilderEventType, order?: readonly OrderableSection[]): OrderableSection[] {
+  const allowed = ORDERABLE_SECTIONS.filter((s) => !(builderFamilyOf(eventType) === "single" && SINGLE_ABSENT_SECTIONS.includes(s)));
+  if (!order || !order.length) return [...allowed];
+  const picked: OrderableSection[] = [];
+  for (const s of order) {
+    if ((allowed as readonly string[]).includes(s) && !picked.includes(s)) picked.push(s);
+  }
+  for (const s of allowed) {
+    if (!picked.includes(s)) picked.push(s);
+  }
+  return picked;
+}
+
+export function isDefaultSectionOrder(order: readonly OrderableSection[] | undefined, eventType: BuilderEventType = "WEDDING"): boolean {
+  if (!order || !order.length) return true;
+  const def = familyOrderableSections(eventType);
+  const cur = familyOrderableSections(eventType, order);
+  return def.length === cur.length && def.every((s, i) => s === cur[i]);
+}
+
+export function moveSectionInOrder(
+  eventType: BuilderEventType,
+  order: readonly OrderableSection[] | undefined,
+  section: OrderableSection,
+  dir: -1 | 1,
+): OrderableSection[] {
+  const current = familyOrderableSections(eventType, order);
+  const idx = current.indexOf(section);
+  const nextIdx = idx + dir;
+  if (idx === -1 || nextIdx < 0 || nextIdx >= current.length) return current;
+  const copy = [...current];
+  const [item] = copy.splice(idx, 1);
+  copy.splice(nextIdx, 0, item);
+  return copy;
+}
+
+export function familySections(eventType: BuilderEventType, order?: readonly OrderableSection[]): readonly OrnamentSection[] {
+  if (!order || !order.length) {
+    return builderFamilyOf(eventType) === "single" ? ORNAMENT_SECTIONS.filter((s) => !SINGLE_ABSENT_SECTIONS.includes(s)) : ORNAMENT_SECTIONS;
+  }
+  return ["cover", "sidebar", ...familyOrderableSections(eventType, order)];
 }
 
 export function sectionLabelFor(section: OrnamentSection, eventType: BuilderEventType): string {
@@ -365,7 +455,7 @@ export const DEFAULT_BLOCK_PROPS: BlockProps = { x: 0, y: 0, scale: 1, rotate: 0
 // ratusan piksel, dan elemen sempit (monogram, tanggal) untuk mencapai tengah layar.
 export const BLOCK_LIMITS = { x: [-1500, 1500], y: [-1500, 1500], scale: [0.5, 2], rotate: [-180, 180], z: [-9, 9] } as const;
 
-export const isDefaultBlock = (p: BlockProps) => p.x === 0 && p.y === 0 && p.scale === 1 && p.rotate === 0 && !p.hidden && !p.z;
+export const isDefaultBlock = (p: BlockProps) => p.x === 0 && p.y === 0 && p.scale === 1 && p.rotate === 0 && !p.hidden && !p.z && (!p.loop || p.loop === "none");
 
 /**
  * Isi seksi bertumpuk pada z-index 2 (ornamen belakang 1, ornamen depan 3), jadi lapisan blok dihitung dari 2. Blok
@@ -436,6 +526,7 @@ export type FramedPhotoId = (typeof FRAMED_PHOTOS)[number];
 export const FRAME_SHAPES = [
   { id: "default", label: "Bawaan" },
   { id: "rect", label: "Persegi" },
+  { id: "portrait", label: "Potret 3:4" },
   { id: "rounded", label: "Lembut" },
   { id: "arch", label: "Lengkung" },
   { id: "oval", label: "Oval" },
@@ -446,6 +537,7 @@ export type FrameShape = (typeof FRAME_SHAPES)[number]["id"];
 /**
  * Jendela transparan sebuah bingkai, hasil pengukuran alpha di server (lib/themeBuilder/frameWindow.ts): kotak
  * pembatas sebagai pecahan 0..1 dari lebar dan tinggi gambar, plus perbandingan lebar:tinggi jendela dalam piksel asli.
+ * Bila kontur luar bingkai melengkung masuk ke kotak jendela, `clip` berisi poligon `clip-path` agar foto tidak keluar dari bingkai.
  */
 export interface FrameFit {
   l: number;
@@ -453,6 +545,7 @@ export interface FrameFit {
   r: number;
   b: number;
   aspect: number;
+  clip?: string;
 }
 
 export interface PhotoFrame {
@@ -473,6 +566,42 @@ export const FRAME_SPREAD_LIMITS = [0, 60] as const;
 
 export const isDefaultFrame = (f: PhotoFrame) => f.shape === "default" && f.ornament === "" && !f.hideRing;
 
+/** Informasi slot media dan token engine untuk setiap blok foto yang dapat dibingkai atau dijadikan latar seksi. */
+export function photoBlockMediaInfo(blockId: FramedPhotoId, eventType: BuilderEventType): {
+  slot: OrnamentMediaSlot;
+  slotLabel: string;
+  token: string;
+  variantKey: "opening" | "couple";
+  backdropVariant: string;
+} {
+  const single = builderFamilyOf(eventType) === "single";
+  if (blockId === "opening-photo") {
+    return {
+      slot: "HOME_PHOTO",
+      slotLabel: "Foto Pembuka (Home)",
+      token: "{{homePhotoUrl}}",
+      variantKey: "opening",
+      backdropVariant: "backdrop",
+    };
+  }
+  if (blockId === "couple-photo-1") {
+    return {
+      slot: "GROOM_PHOTO",
+      slotLabel: single ? "Foto Profil Utama" : "Foto Mempelai Pertama",
+      token: single ? "{{mainPhotoUrl}}" : "{{firstPhotoUrl}}",
+      variantKey: "couple",
+      backdropVariant: "backdrop",
+    };
+  }
+  return {
+    slot: "BRIDE_PHOTO",
+    slotLabel: "Foto Mempelai Kedua",
+    token: "{{secondPhotoUrl}}",
+    variantKey: "couple",
+    backdropVariant: "backdrop",
+  };
+}
+
 /** Lebar dan jarak bawah bawaan tiap slot foto di blueprint (`.opening-photo`, `.couple-photo-wrap`). */
 const FRAME_BASE: Record<FramedPhotoId, { width: string; gap: string }> = {
   "opening-photo": { width: "min(62%,240px)", gap: "1.25rem" },
@@ -480,12 +609,13 @@ const FRAME_BASE: Record<FramedPhotoId, { width: string; gap: string }> = {
   "couple-photo-2": { width: "min(140px,100%)", gap: "16px" },
 };
 
-const FRAME_RADIUS: Record<Exclude<FrameShape, "default">, { radius: string; square: boolean }> = {
-  rect: { radius: "0", square: false },
-  rounded: { radius: "var(--radius-lg)", square: false },
-  arch: { radius: "999px 999px var(--radius-md) var(--radius-md)", square: false },
-  oval: { radius: "50%", square: false },
-  circle: { radius: "50%", square: true },
+const FRAME_RADIUS: Record<Exclude<FrameShape, "default">, { radius: string; aspect?: string }> = {
+  rect: { radius: "0" },
+  portrait: { radius: "var(--radius-sm)", aspect: "3/4" },
+  rounded: { radius: "var(--radius-lg)" },
+  arch: { radius: "999px 999px var(--radius-md) var(--radius-md)" },
+  oval: { radius: "50%" },
+  circle: { radius: "50%", aspect: "1/1" },
 };
 
 /**
@@ -502,7 +632,7 @@ export function frameCss(frames: BuilderFrames): string {
     if (f.ornament && f.fit) {
       // Bingkai berjendela: pembungkus foto = jendela (perbandingan dan ukuran), bingkai digambar di atasnya dengan
       // jendelanya tepat menimpa pembungkus. Bentuk datang dari alpha bingkai, jadi foto dibiarkan persegi di bawahnya.
-      const { l, t, r, b, aspect } = f.fit;
+      const { l, t, r, b, aspect, clip } = f.fit;
       const ww = r - l;
       const wh = b - t;
       const pct = (v: number) => Math.round(v * 1000) / 1000;
@@ -514,20 +644,72 @@ export function frameCss(frames: BuilderFrames): string {
       // min-height:0 mengunci tinggi ke perbandingan jendela.
       const base = FRAME_BASE[id];
       const over = (v: number) => pct((v / wh) / aspect);
+      const clipRule = clip ? `clip-path:${clip};-webkit-clip-path:${clip};` : "";
       rules.push(`${sel}{position:relative;overflow:visible;min-height:0;width:${base.width};height:auto;aspect-ratio:${aspect};margin-top:calc(${base.width} * ${over(t)});margin-bottom:calc(${base.width} * ${over(1 - b)} + ${base.gap});border:0;padding:0;border-radius:0;box-shadow:none;}`);
       // `> img`: hanya foto klien; gambar ornamen yang menempel ke blok ini juga berupa img dan tidak boleh ikut dipotong.
-      rules.push(`${sel} > img{width:100%;height:100%;object-fit:cover;border-radius:0;display:block;}`);
+      rules.push(`${sel} > img{width:100%;height:100%;object-fit:cover;border-radius:0;display:block;${clipRule}}`);
       rules.push(`${sel}::after{content:"";position:absolute;left:${pct((-l / ww) * 100)}%;top:${pct((-t / wh) * 100)}%;width:${pct(100 / ww)}%;height:${pct(100 / wh)}%;background:url('${f.ornament}') 0 0/100% 100% no-repeat;pointer-events:none;z-index:2;}`);
       continue;
     }
     const shape = f.shape === "default" ? null : FRAME_RADIUS[f.shape];
-    rules.push(`${sel}{position:relative;overflow:visible;${shape ? `border-radius:${shape.radius};${shape.square ? "aspect-ratio:1/1;" : ""}` : ""}${f.hideRing ? "border:0;padding:0;box-shadow:none;" : ""}}`);
+    rules.push(`${sel}{position:relative;overflow:visible;${shape ? `border-radius:${shape.radius};${shape.aspect ? `aspect-ratio:${shape.aspect};height:auto;` : ""}` : ""}${f.hideRing ? "border:0;padding:0;box-shadow:none;" : ""}}`);
     rules.push(`${sel} > img{width:100%;height:100%;object-fit:cover;${shape ? `border-radius:${shape.radius};` : "border-radius:inherit;"}}`);
     if (f.ornament) {
       rules.push(`${sel}::after{content:"";position:absolute;inset:-${f.spread}%;background:url('${f.ornament}') center/contain no-repeat;pointer-events:none;z-index:2;}`);
     }
   }
   return rules.join("\n    ");
+}
+
+const ORN_LOOP_RULES: Record<Exclude<LoopAnimation, "none">, string> = {
+  float: "luxOrnFloat 4.2s ease-in-out infinite",
+  sway: "luxOrnSway 4.8s ease-in-out infinite",
+  pulse: "luxOrnPulse 3.6s ease-in-out infinite",
+  shimmer: "luxOrnShimmer 3.4s ease-in-out infinite",
+  spin: "luxOrnSpin 18s linear infinite",
+};
+
+const BLOCK_LOOP_RULES: Record<Exclude<LoopAnimation, "none">, string> = {
+  float: "luxBlockFloat 4.2s ease-in-out infinite",
+  sway: "luxBlockSway 4.8s ease-in-out infinite",
+  pulse: "luxBlockPulse 3.6s ease-in-out infinite",
+  shimmer: "luxBlockShimmer 3.4s ease-in-out infinite",
+  spin: "luxBlockSpin 18s linear infinite",
+};
+
+/**
+ * CSS animasi loop untuk blok dan ornamen. Ornamen memakai inline `transform`, sehingga keyframe ornamen menganimasikan
+ * properti transform individual (`translate`, `rotate`, `scale`); sebaliknya blok memakai inline `translate`/`rotate`/`scale`,
+ * sehingga keyframe blok menganimasikan `transform`. Keduanya terkomposisi bersih tanpa saling menimpa.
+ */
+export function loopCss(blocks: BuilderBlocks, ornaments: BuilderOrnament[]): string {
+  const rules: string[] = [];
+  for (const [id, props] of Object.entries(blocks) as Array<[BuilderBlockId, BlockProps]>) {
+    if (props.loop && props.loop !== "none") {
+      rules.push(`[data-lux-block="${id}"]{animation:${BLOCK_LOOP_RULES[props.loop]};}`);
+    }
+  }
+  for (const o of ornaments) {
+    if (o.loop && o.loop !== "none") {
+      rules.push(`[data-orn-id="${o.id}"]{animation:${ORN_LOOP_RULES[o.loop]};}`);
+    }
+  }
+  if (!rules.length) return "";
+  return [
+    "@media (prefers-reduced-motion: no-preference) {",
+    "  @keyframes luxOrnFloat { 0%, 100% { translate: 0 0; } 50% { translate: 0 -7px; } }",
+    "  @keyframes luxOrnSway { 0%, 100% { rotate: -3.5deg; } 50% { rotate: 3.5deg; } }",
+    "  @keyframes luxOrnPulse { 0%, 100% { scale: 1; } 50% { scale: 1.06; } }",
+    "  @keyframes luxOrnShimmer { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.18) drop-shadow(0 0 8px color-mix(in srgb, var(--accent) 45%, transparent)); } }",
+    "  @keyframes luxOrnSpin { from { rotate: 0deg; } to { rotate: 360deg; } }",
+    "  @keyframes luxBlockFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }",
+    "  @keyframes luxBlockSway { 0%, 100% { transform: rotate(-2.5deg); } 50% { transform: rotate(2.5deg); } }",
+    "  @keyframes luxBlockPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }",
+    "  @keyframes luxBlockShimmer { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.15); } }",
+    "  @keyframes luxBlockSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }",
+    ...rules.map((r) => `  ${r}`),
+    "}",
+  ].join("\n    ");
 }
 
 /**
@@ -547,6 +729,8 @@ export const BUILDER_TEXTS = [
   { key: "coupleEyebrow", label: "Teks kecil mempelai", group: "Mempelai", kind: "engine" },
   { key: "coupleTitle", label: "Judul mempelai", group: "Mempelai", kind: "engine" },
   { key: "coupleSub", label: "Kalimat di bawah judul", group: "Mempelai", kind: "engine" },
+  { key: "groomRole", label: "Label mempelai pertama", group: "Mempelai", kind: "engine" },
+  { key: "brideRole", label: "Label mempelai kedua", group: "Mempelai", kind: "engine" },
   { key: "countdownEyebrow", label: "Teks kecil hitung mundur", group: "Hitung mundur", kind: "static" },
   { key: "countdownTitle", label: "Judul hitung mundur", group: "Hitung mundur", kind: "static" },
   { key: "countdownSub", label: "Kalimat hitung mundur", group: "Hitung mundur", kind: "static" },
@@ -639,6 +823,8 @@ export interface BuilderSpec {
   /** Teks bawaan label (judul, tombol, sapaan) yang menggantikan bawaan blueprint; klien tetap bisa mengubahnya di Studio. */
   texts: BuilderTexts;
   eventsPlacement: EventsPlacement;
+  /** Urutan kustom seksi di dalam panel gulir utama; tidak disimpan bila masih mengikuti urutan bawaan. */
+  sectionOrder?: OrderableSection[];
   radius: RadiusStyle;
   variants: BuilderVariants;
   animation: AnimationPreset;
@@ -727,6 +913,7 @@ export const VARIANT_GROUPS: Array<{ key: keyof BuilderVariants; label: string; 
       { id: "framed", label: "Berbingkai", hint: "Garis bingkai tipis di tepi layar" },
       { id: "arch", label: "Jendela lengkung", hint: "Nama di dalam lengkung kaca buram" },
       { id: "editorial", label: "Editorial", hint: "Rata kiri seperti sampul majalah" },
+      { id: "fullscreen", label: "Desktop penuh", hint: "Sampul landscape layar penuh di desktop (100vw)" },
     ],
   },
   {
@@ -749,8 +936,9 @@ export const VARIANT_GROUPS: Array<{ key: keyof BuilderVariants; label: string; 
       { id: "stacked", label: "Bertumpuk", hint: "Foto bulat, atas dan bawah" },
       { id: "side", label: "Berdampingan", hint: "Dua kolom kiri dan kanan" },
       { id: "arch", label: "Lengkung", hint: "Foto tinggi berujung lengkung" },
+      { id: "portrait", label: "Potret 3:4", hint: "Foto tegak proporsi potret 3:4" },
       { id: "polaroid", label: "Polaroid", hint: "Foto persegi dengan bayangan geser" },
-      { id: "backdrop", label: "Latar foto penuh", hint: "Foto mempelai menjadi background penuh kartu" },
+      { id: "backdrop", label: "Latar foto penuh", hint: "Foto mempelai menjadi background penuh 100vh" },
     ],
   },
   {
@@ -862,11 +1050,17 @@ export function isAllowedOrnamentSrc(src: unknown): src is string {
   return typeof src === "string" && ORNAMENT_SRC_RE.test(src) && /\.(webp|png|jpe?g)$/i.test(src) && !src.includes("..");
 }
 
-/** Teks hias dari masukan tak tepercaya: satu baris, tanpa < > atau {{ }}, huruf dan warna hanya dari katalog. */
+/** Teks hias dari masukan tak tepercaya: satu baris, tanpa < > atau {{ }}, huruf, warna, dan token hanya dari katalog. */
 function parseOrnamentText(raw: unknown, label: string, errors: string[]): OrnamentText | null {
   if (!raw || typeof raw !== "object") { errors.push(`${label}: teks tidak terbaca.`); return null; }
   const input = raw as Record<string, unknown>;
-  const value = typeof input.value === "string" ? input.value.replace(/\s+/g, " ").trim() : "";
+  const tokenEntry = ORNAMENT_TEXT_TOKENS.find((t) => t.id === input.token);
+  if (input.token !== undefined && input.token !== null && input.token !== "" && !tokenEntry) {
+    errors.push(`${label}: sumber teks dinamis tidak dikenali.`);
+    return null;
+  }
+  const rawValue = typeof input.value === "string" ? input.value.replace(/\s+/g, " ").trim() : "";
+  const value = rawValue || (tokenEntry ? tokenEntry.sampleWedding : "");
   if (!value) { errors.push(`${label}: teks tidak boleh kosong.`); return null; }
   if (value.length > ORNAMENT_TEXT_LIMITS.length) { errors.push(`${label}: teks maksimal ${ORNAMENT_TEXT_LIMITS.length} karakter.`); return null; }
   if (/[<>]|\{\{|\}\}/.test(value)) { errors.push(`${label}: teks tidak boleh memuat < > atau {{ }}.`); return null; }
@@ -874,9 +1068,13 @@ function parseOrnamentText(raw: unknown, label: string, errors: string[]): Ornam
   const color = ORNAMENT_TEXT_COLORS.find((c) => c.id === input.color)?.id;
   if (!font) { errors.push(`${label}: huruf teks tidak dikenali.`); return null; }
   if (!color) { errors.push(`${label}: warna teks tidak dikenali.`); return null; }
-  const labelKey = EDITABLE_TEXT_KEYS.find((k) => k === input.labelKey);
-  if (input.labelKey !== undefined && input.labelKey !== null && !labelKey) { errors.push(`${label}: kunci label teks tidak dikenali.`); return null; }
+  const labelKey = tokenEntry ? undefined : EDITABLE_TEXT_KEYS.find((k) => k === input.labelKey);
+  if (!tokenEntry && input.labelKey !== undefined && input.labelKey !== null && !labelKey) {
+    errors.push(`${label}: kunci label teks tidak dikenali.`);
+    return null;
+  }
   return {
+    ...(tokenEntry ? { token: tokenEntry.id } : {}),
     ...(labelKey ? { labelKey } : {}),
     value,
     font,
@@ -886,15 +1084,18 @@ function parseOrnamentText(raw: unknown, label: string, errors: string[]): Ornam
   };
 }
 
+const CLIP_POLYGON_RE = /^polygon\(\s*\d+(?:\.\d+)?%\s+\d+(?:\.\d+)?%(?:\s*,\s*\d+(?:\.\d+)?%\s+\d+(?:\.\d+)?%){2,64}\s*\)$/;
+
 function parseFrameFit(raw: unknown): FrameFit | null {
   if (!raw || typeof raw !== "object") return null;
-  const { l, t, r, b, aspect } = raw as Record<string, unknown>;
+  const { l, t, r, b, aspect, clip } = raw as Record<string, unknown>;
   const nums = [l, t, r, b, aspect];
   if (!nums.every((n) => typeof n === "number" && Number.isFinite(n))) return null;
   const [L, T, R, B, A] = nums as number[];
   const inside = [L, T, R, B].every((n) => n >= 0 && n <= 1);
   if (!inside || R - L < 0.05 || B - T < 0.05 || A < 0.2 || A > 5) return null;
-  return { l: L, t: T, r: R, b: B, aspect: A };
+  const validClip = typeof clip === "string" && CLIP_POLYGON_RE.test(clip) ? clip : undefined;
+  return { l: L, t: T, r: R, b: B, aspect: A, ...(validClip ? { clip: validClip } : {}) };
 }
 
 const clamp = (value: unknown, min: number, max: number, fallback: number) => {
@@ -952,6 +1153,7 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
   }
 
   // Spesifikasi lama tanpa blocks tetap sah; blok yang tidak dikenal diabaikan, nilai di luar batas dijepit.
+  const loopIds = LOOP_ANIMATIONS.map((l) => l.id) as readonly LoopAnimation[];
   const blocks: BuilderBlocks = {};
   for (const { id, label } of BUILDER_BLOCKS) {
     const raw = input.blocks?.[id];
@@ -969,6 +1171,10 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
     };
     const z = Math.round(clamp(raw.z, BLOCK_LIMITS.z[0], BLOCK_LIMITS.z[1], 0));
     if (z) props.z = z;
+    if (raw.loop !== undefined && raw.loop !== null && raw.loop !== "none") {
+      const loop = pickEnum<LoopAnimation>(raw.loop, loopIds, `Animasi loop ${label}`, errors);
+      if (loop && loop !== "none") props.loop = loop;
+    }
     if (!isDefaultBlock(props)) blocks[id] = props;
   }
 
@@ -977,6 +1183,16 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
 
   // Spesifikasi lama tanpa eventsPlacement tetap sah dan berarti jadwal di seksi Acara.
   const eventsPlacement = pickEnum<EventsPlacement>(input.eventsPlacement ?? "section", EVENTS_PLACEMENTS.map((p) => p.id), "Tempat jadwal acara", errors);
+
+  let sectionOrder: OrderableSection[] | undefined;
+  if (input.sectionOrder !== undefined && input.sectionOrder !== null) {
+    if (!Array.isArray(input.sectionOrder) || input.sectionOrder.some((s: unknown) => typeof s !== "string" || !(ORDERABLE_SECTIONS as readonly string[]).includes(s))) {
+      errors.push("Urutan seksi tidak dikenali.");
+    } else {
+      const normalized = familyOrderableSections(eventType ?? "WEDDING", input.sectionOrder as OrderableSection[]);
+      if (!isDefaultSectionOrder(normalized, eventType ?? "WEDDING")) sectionOrder = normalized;
+    }
+  }
 
   // Spesifikasi lama tanpa frames tetap sah; bingkai bawaan dibuang, ornamen bingkai hanya dari pustaka ornamen.
   const frames: BuilderFrames = {};
@@ -1068,6 +1284,12 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
         if (!fit) { errors.push(`${label}: jendela bingkai tidak valid.`); continue; }
       }
     }
+    let loop: LoopAnimation | undefined;
+    if (o.loop !== undefined && o.loop !== null && o.loop !== "none") {
+      const parsedLoop = pickEnum<LoopAnimation>(o.loop, loopIds, `${label}: animasi loop`, errors);
+      if (!parsedLoop) continue;
+      if (parsedLoop !== "none") loop = parsedLoop;
+    }
     perSection[section] = (perSection[section] ?? 0) + 1;
     if (perSection[section] > MAX_ORNAMENTS_PER_SECTION) { errors.push(`Seksi ${SECTION_LABELS[section]} paling banyak ${MAX_ORNAMENTS_PER_SECTION} ornamen.`); continue; }
     ornaments.push({
@@ -1087,13 +1309,31 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
       ...(before ? { before, gap: clamp(o.gap, ORNAMENT_GAP_LIMITS[0], ORNAMENT_GAP_LIMITS[1], DEFAULT_ORNAMENT_GAP) } : {}),
       ...(text ? { text } : {}),
       ...(slot ? { slot, ...(fit ? { fit } : {}) } : {}),
+      ...(loop ? { loop } : {}),
     });
   }
 
   if (errors.length || !eventType || !canvasMode || !radius || !animation || !eventsPlacement) return { ok: false, errors };
   return {
     ok: true,
-    spec: { version: BUILDER_SPEC_VERSION, eventType, canvasMode, palette, fonts, texture, defaultMedia, blocks, frames, texts, eventsPlacement, radius, variants, animation, ornaments },
+    spec: {
+      version: BUILDER_SPEC_VERSION,
+      eventType,
+      canvasMode,
+      palette,
+      fonts,
+      texture,
+      defaultMedia,
+      blocks,
+      frames,
+      texts,
+      eventsPlacement,
+      ...(sectionOrder ? { sectionOrder } : {}),
+      radius,
+      variants,
+      animation,
+      ornaments,
+    },
   };
 }
 
