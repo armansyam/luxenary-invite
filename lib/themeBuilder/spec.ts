@@ -40,11 +40,11 @@ export const LOOP_ANIMATIONS = [
 ] as const;
 export type LoopAnimation = (typeof LOOP_ANIMATIONS)[number]["id"];
 
-export const ORNAMENT_SECTIONS = ["cover", "sidebar", "opening", "couple", "countdown", "events", "story", "rsvp", "closing"] as const;
+export const ORNAMENT_SECTIONS = ["cover", "sidebar", "opening", "couple", "countdown", "events", "story", "gallery", "rsvp", "closing"] as const;
 export type OrnamentSection = (typeof ORNAMENT_SECTIONS)[number];
 
 /** Seksi isi di dalam panel gulir utama yang urutannya dapat ditukar oleh admin di builder. */
-export const ORDERABLE_SECTIONS = ["opening", "couple", "countdown", "events", "story", "rsvp", "closing"] as const;
+export const ORDERABLE_SECTIONS = ["opening", "couple", "countdown", "events", "story", "gallery", "rsvp", "closing"] as const;
 export type OrderableSection = (typeof ORDERABLE_SECTIONS)[number];
 
 export const SECTION_LABELS: Record<OrnamentSection, string> = {
@@ -55,6 +55,7 @@ export const SECTION_LABELS: Record<OrnamentSection, string> = {
   countdown: "Hitung mundur",
   events: "Acara",
   story: "Kisah",
+  gallery: "Galeri foto",
   rsvp: "RSVP & ucapan",
   closing: "Penutup",
 };
@@ -87,6 +88,8 @@ export interface BuilderVariants {
   closing: string;
   headings: string;
   sidebar: string;
+  gallery: string;
+  events: string;
 }
 
 export const ORNAMENT_TEXT_FONTS = [
@@ -984,6 +987,27 @@ export const VARIANT_GROUPS: Array<{ key: keyof BuilderVariants; label: string; 
       { id: "top-left", label: "Kiri atas", hint: "Nama di pojok kiri atas" },
     ],
   },
+  {
+    key: "gallery",
+    label: "Model galeri",
+    section: "gallery",
+    options: [
+      { id: "grid", label: "Grid simetris", hint: "Kotak teratur 2-4 kolom rapi" },
+      { id: "masonry", label: "Mosaik (Masonry)", hint: "Kolom asimetris adaptif tinggi foto" },
+      { id: "carousel", label: "Slider geser (Carousel)", hint: "Kartu horizontal geser layar penuh" },
+      { id: "polaroid", label: "Polaroid vintage", hint: "Kartu foto berbingkai miring dengan bayangan" },
+    ],
+  },
+  {
+    key: "events",
+    label: "Model jadwal acara",
+    section: "events",
+    options: [
+      { id: "cards", label: "Kartu terpisah", hint: "Satu kartu mandiri per sesi acara" },
+      { id: "timeline", label: "Garis waktu (Timeline)", hint: "Titik vertikal menyambung antar sesi" },
+      { id: "minimal", label: "Daftar minimal", hint: "Tipografi bersih bergaris pemisah tipis" },
+    ],
+  },
 ];
 
 /** Satu nama: grup mempelai menata seksi profil; tata letak dua kolom tidak berarti untuk satu kartu. */
@@ -1032,7 +1056,7 @@ export function defaultBuilderSpec(eventType: BuilderEventType = "WEDDING"): Bui
     texts: {},
     eventsPlacement: "section",
     radius: "soft",
-    variants: { cover: "classic", opening: "classic", couple: "stacked", countdown: "boxes", closing: "classic", headings: "classic", sidebar: "bottom-left" },
+    variants: { cover: "classic", opening: "classic", couple: "stacked", countdown: "boxes", closing: "classic", headings: "classic", sidebar: "bottom-left", gallery: "grid", events: "cards" },
     animation: "rise",
     ornaments: [],
   };

@@ -55,7 +55,7 @@ describe("validasi teks hias dan penempelan", () => {
   it("menerima teks hias, mengosongkan src, dan menjepit ukuran", () => {
     const r = parse([{ ...orn({ id: "txt00001" }), src: "ngawur", text: { ...text, size: 9999, spacing: -4 } }]);
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.spec.ornaments[0]).toMatchObject({ src: "", text: { value: "Save the Date", size: 96, spacing: 0 } });
+    if (r.ok) expect(r.spec.ornaments[0]).toMatchObject({ src: "", text: { value: "Save the Date", size: 160, spacing: 0 } });
   });
 
   it("menolak teks kosong, terlalu panjang, bertanda kurung sudut atau token, huruf dan warna di luar katalog", () => {

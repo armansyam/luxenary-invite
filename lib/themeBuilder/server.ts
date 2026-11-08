@@ -136,8 +136,8 @@ export async function renderBuilderPreview(spec: BuilderSpec, demoThemeId = DEFA
     if (fallbackHome) demo.media.push({ mediaSlot: "HOME_PHOTO", localPath: fallbackHome });
   }
   const base = mode === "client" ? { ...demo, media: [], themeDefaultMedia: builderDefaultMedia(spec) } : demo;
-  // Rancangan belum tersimpan, jadi teks bawaannya dibawa langsung (undangan nyata membacanya dari Theme.builderSpec).
-  const data = (await composeInvitationData({ ...base, builderTexts: spec.texts })) as Record<string, any>;
+  // Rancangan belum tersimpan, jadi teks bawaan dan spesifikasi dibawa langsung (undangan nyata membacanya dari Theme.builderSpec).
+  const data = (await composeInvitationData({ ...base, builderTexts: spec.texts, builderSpec: spec })) as Record<string, any>;
   const html = await renderTemplateFile("builder-preview", data, { eventType: spec.eventType, templateSource: compiled.html });
   return { html, issues: compiled.issues, labels: extractRenderedLabels(html) };
 }

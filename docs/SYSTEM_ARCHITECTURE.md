@@ -785,6 +785,10 @@ Admin membuat master tema pernikahan dan multi-event tanpa menulis kode. Builder
 8. **Fitur Urungkan Semua Perubahan (Undo/Revert):**
    - Tombol "Urungkan Semua" di Theme Builder Admin mengembalikan seluruh rancangan ke kondisi tersimpan terakhir.
    - Tombol "Urungkan Semua" di Studio Editor Klien (`app/(client)/dashboard/invitation/[id]/page.tsx`) mengembalikan seluruh data formulir, media, acara, cerita, dan rekening ke snapshot terakhir tersimpan.
+9. **Kustomisasi Model Seksi Modular (Galeri & Jadwal Acara):**
+   - **Model Galeri (`spec.variants.gallery`):** Pilihan tata letak galeri dinamis mencakup `grid` (simetris teratur), `masonry` (mosaik kolom dinamis asimetris), `carousel` (slider horizontal snap layar penuh), dan `polaroid` (kartu berbingkai putih miring dengan bayangan halus).
+   - **Model Jadwal Acara (`spec.variants.events`):** Pilihan tata letak jadwal mencakup `cards` (kartu mandiri berbingkai per sesi), `timeline` (garis waktu vertikal bertitik penanda menyambung), dan `minimal` (tipografi ringkas bergaris pemisah tipis).
+   - Seksi galeri (`gallery`) terintegrasi penuh ke dalam `ORDERABLE_SECTIONS` dan `ORNAMENT_SECTIONS`, memungkinkan admin mengubah urutan kemunculan galeri serta menyematkan ornamen visual langsung ke dalam seksi galeri.
 
 ```
 Spesifikasi (Theme.builderSpec, lib/themeBuilder/spec.ts)

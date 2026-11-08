@@ -200,6 +200,33 @@ export default function BlockInspector({
           </div>
         )}
 
+        {blockId === "events-list" && variants && onVariantChange && (
+          <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-3">
+            <span className="text-[11.5px] font-semibold text-stone-700">Model Jadwal Acara</span>
+            <div className="mt-1.5 grid grid-cols-3 gap-1 rounded-xl bg-stone-100 p-1">
+              {[
+                { id: "cards", label: "Kartu" },
+                { id: "timeline", label: "Timeline" },
+                { id: "minimal", label: "Minimal" },
+              ].map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => onVariantChange({ events: opt.id as any })}
+                  className={`rounded-lg px-1.5 py-1.5 text-[10.5px] font-semibold transition cursor-pointer ${
+                    (variants.events ?? "cards") === opt.id ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-[10.5px] leading-snug text-stone-500">
+              Menampilkan jadwal acara sebagai kartu mandiri, alur garis waktu vertikal, atau baris tipografi minimalis.
+            </p>
+          </div>
+        )}
+
         {!OPTIONAL_BLOCKS.includes(blockId) && (
           <p className="rounded-xl bg-stone-50 p-2.5 text-[11px] leading-snug text-stone-500">Elemen ini wajib tampil di undangan, jadi tidak bisa disembunyikan. Posisi dan ukurannya tetap bisa diatur.</p>
         )}

@@ -216,6 +216,11 @@ export async function composeWeddingData(inv: any) {
   );
   const blueprint = builderApplied.blueprint;
 
+  const rawThemeSpec = (inv.builderSpec ?? dbTheme?.builderSpec) as any;
+  const themeVariants = rawThemeSpec && typeof rawThemeSpec === "object" && rawThemeSpec.variants ? rawThemeSpec.variants : {};
+  const galleryVariant = String(themeVariants.gallery || "grid");
+  const eventsVariant = String(themeVariants.events || "cards");
+
 
   const showStory = featureSettings.showStory !== undefined ? Boolean(featureSettings.showStory) : true;
   const showGallery = featureSettings.showGallery !== undefined ? Boolean(featureSettings.showGallery) : true;
@@ -378,7 +383,7 @@ export async function composeWeddingData(inv: any) {
       const unifiedMapUrl = safeHref(rawEventsList[0]?.mapsUrl);
 
       eventsHtml = `
-        <div class="events-unified-container">
+        <div class="events-unified-container events-variant-${eventsVariant}" data-events-variant="${eventsVariant}">
           <div class="events-sessions-stack">
             ${sessionsListHtml}
           </div>
@@ -590,17 +595,18 @@ export async function composeWeddingData(inv: any) {
     `).join("");
 
     gallerySectionHtml = `
-      <section class="sec-flow" id="moments">
-        <span class="sec-eyebrow" data-lux-field="customLabels.galleryEyebrow">${escapeHtml(gallerySectionEyebrow)}</span>
-        <h2 class="sec-main-title serif" data-lux-field="customLabels.galleryTitle">${escapeHtml(gallerySectionTitle)}</h2>
-        <p class="moment-quote serif" data-lux-field="customLabels.galleryQuote">
+      <section class="sec-flow gallery-variant-${galleryVariant}" id="moments" data-lux-section="gallery" data-gallery-variant="${galleryVariant}">
+        <!-- lux-ornaments:gallery -->
+        <span class="sec-eyebrow" data-lux-field="customLabels.galleryEyebrow" data-lux-block="gallery-eyebrow">${escapeHtml(gallerySectionEyebrow)}</span>
+        <h2 class="sec-main-title serif" data-lux-field="customLabels.galleryTitle" data-lux-block="gallery-title">${escapeHtml(gallerySectionTitle)}</h2>
+        <p class="moment-quote serif" data-lux-field="customLabels.galleryQuote" data-lux-block="gallery-quote">
           “${escapeHtml(galleryQuote)}”
         </p>
 
         ${videoPlayerHtml}
 
         ${allPhotos.length > 0 ? `
-        <div class="moments-grid-10">
+        <div class="moments-grid-10 is-${galleryVariant}" data-lux-block="gallery-grid">
           ${photosFeedHtml}
         </div>
 
@@ -2140,7 +2146,8 @@ export async function composeBirthdayData(inv: any) {
   // sehingga tema satu nama mana pun dapat menampilkan data ulang tahun. Hitung mundur, musik, Momen, QR, dan seksi
   // tambahan dibangun applySingleNameContract.
   const galleryPhotos = await collectGalleryPhotos(inv, featureSettings);
-  const gallerySectionHtml = buildUniversalGallerySection(galleryPhotos, customLabels.galleryTitle || "Galeri Foto", showGallery);
+  const galleryVariant = (inv.builderSpec as any)?.variants?.gallery || "grid";
+  const gallerySectionHtml = buildUniversalGallerySection(galleryPhotos, customLabels.galleryTitle || "Galeri Foto", showGallery, galleryVariant);
   const rsvpSectionHtml = buildUniversalRsvpSection(inv.id);
   const wishesSectionHtml = buildUniversalWishesSection(inv.rsvps || [], inv.id);
   const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital", personName, showGift);
@@ -2335,21 +2342,23 @@ function buildUniversalEventCards(events: any[], fallbackName: string): string {
 function buildUniversalGallerySection(
   galleryPhotos: string[],
   galleryTitle: string = "Dokumentasi Momen",
-  showGallery: boolean = true
+  showGallery: boolean = true,
+  galleryVariant: string = "grid"
 ): string {
   if (!showGallery || galleryPhotos.length === 0) return "";
 
   const galleryItemsHtml = galleryPhotos.map((src, idx) => `
-    <div style="aspect-ratio: 1/1; border-radius: var(--radius-md, 14px); overflow: hidden; border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); background: var(--card-bg);">
+    <div class="moment-photo-item" data-idx="${idx}" onclick="luxOpenZoom(${idx})" style="aspect-ratio: 1/1; border-radius: var(--radius-md, 14px); overflow: hidden; border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); background: var(--card-bg);">
       <img src="${escapeHtml(src)}" alt="Momen ${idx + 1}" style="width: 100%; height: 100%; object-fit: cover; display: block;" loading="lazy" referrerpolicy="no-referrer" />
     </div>
   `).join("");
 
   return `
-    <section class="sec-block" id="gallery">
-      <span class="sec-lbl" data-lux-field="customLabels.galleryEyebrow">Galeri</span>
-      <h2 class="sec-h2 serif" data-lux-field="customLabels.galleryTitle">${escapeHtml(galleryTitle)}</h2>
-      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 16px;">
+    <section class="sec-block gallery-variant-${galleryVariant}" id="gallery" data-lux-section="gallery" data-gallery-variant="${galleryVariant}">
+      <!-- lux-ornaments:gallery -->
+      <span class="sec-lbl" data-lux-field="customLabels.galleryEyebrow" data-lux-block="gallery-eyebrow">Galeri</span>
+      <h2 class="sec-h2 serif" data-lux-field="customLabels.galleryTitle" data-lux-block="gallery-title">${escapeHtml(galleryTitle)}</h2>
+      <div class="moments-grid-10 is-${galleryVariant}" data-lux-block="gallery-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 16px;">
         ${galleryItemsHtml}
       </div>
     </section>
@@ -2863,7 +2872,8 @@ export async function composeKhitanData(inv: any) {
   const parentsHtml = parentNames ? `<p>Putra tercinta dari:</p><h4 class="serif" style="color: var(--text-main); font-size: 16px; margin: 4px 0;">${parentNames}</h4>` : "";
 
   const eventSectionHtml = buildUniversalEventCards(events, "Walimatul Khitan");
-  const gallerySectionHtml = buildUniversalGallerySection(await collectGalleryPhotos(inv, featureSettings), customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false);
+  const galleryVariant = (inv.builderSpec as any)?.variants?.gallery || "grid";
+  const gallerySectionHtml = buildUniversalGallerySection(await collectGalleryPhotos(inv, featureSettings), customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false, galleryVariant);
   const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital", childName, featureSettings.showGift !== false);
   const rsvpSectionHtml = buildUniversalRsvpSection(invitationId);
   const wishesSectionHtml = buildUniversalWishesSection(inv.rsvps || [], inv.id);
@@ -2954,7 +2964,8 @@ export async function composeAqiqahData(inv: any) {
   const parentsHtml = parentNames ? `<p>Putra/Putri tercinta dari:</p><h4 class="serif" style="color: var(--text-main); font-size: 16px; margin: 4px 0;">${parentNames}</h4>` : "";
 
   const eventSectionHtml = buildUniversalEventCards(events, "Tasyakuran Aqiqah");
-  const gallerySectionHtml = buildUniversalGallerySection(await collectGalleryPhotos(inv, featureSettings), customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false);
+  const galleryVariant = (inv.builderSpec as any)?.variants?.gallery || "grid";
+  const gallerySectionHtml = buildUniversalGallerySection(await collectGalleryPhotos(inv, featureSettings), customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false, galleryVariant);
   const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital", fatherName || babyName, featureSettings.showGift !== false);
   const rsvpSectionHtml = buildUniversalRsvpSection(invitationId);
   const wishesSectionHtml = buildUniversalWishesSection(inv.rsvps || [], inv.id);
@@ -3049,7 +3060,8 @@ export async function composeWisudaData(inv: any) {
   const graduateHonorsBadgeHtml = honors ? `<span style="display: inline-block; padding: 4px 12px; border-radius: var(--radius-full, 9999px); background: color-mix(in srgb, var(--accent) 20%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); color: var(--accent); font-size: 11px; font-weight: 700; margin-top: 8px;">Predikat: ${escapeHtml(honors)}</span>` : "";
 
   const eventSectionHtml = buildUniversalEventCards(events, "Syukuran Kelulusan");
-  const gallerySectionHtml = buildUniversalGallerySection(await collectGalleryPhotos(inv, featureSettings), customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false);
+  const galleryVariant = (inv.builderSpec as any)?.variants?.gallery || "grid";
+  const gallerySectionHtml = buildUniversalGallerySection(await collectGalleryPhotos(inv, featureSettings), customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false, galleryVariant);
   const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital", graduateName, featureSettings.showGift !== false);
   const rsvpSectionHtml = buildUniversalRsvpSection(invitationId);
   const wishesSectionHtml = buildUniversalWishesSection(inv.rsvps || [], inv.id);
@@ -3140,7 +3152,8 @@ export async function composeGatheringData(inv: any) {
   const dresscodeHtml = dresscode ? `<p style="font-size: 12px; color: var(--primary); margin-top: 6px;">Dress Code: <b>${escapeHtml(dresscode)}</b></p>` : "";
 
   const eventSectionHtml = buildUniversalEventCards(events, eventTitle);
-  const gallerySectionHtml = buildUniversalGallerySection(await collectGalleryPhotos(inv, featureSettings), customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false);
+  const galleryVariant = (inv.builderSpec as any)?.variants?.gallery || "grid";
+  const gallerySectionHtml = buildUniversalGallerySection(await collectGalleryPhotos(inv, featureSettings), customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false, galleryVariant);
   const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital / Donasi", organizerName || eventTitle, featureSettings.showGift !== false);
   const rsvpSectionHtml = buildUniversalRsvpSection(invitationId);
   const wishesSectionHtml = buildUniversalWishesSection(inv.rsvps || [], inv.id);

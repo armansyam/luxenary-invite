@@ -150,6 +150,7 @@ export function legacyOrnaments(html: string, eventType: BuilderEventType = "WED
     countdown: { before: "countdown-eyebrow", width: 18, gap: 10 },
     events: { before: "events-eyebrow", width: 18, gap: 10 },
     story: { before: "story-eyebrow", width: 18, gap: 10 },
+    gallery: { before: "rsvp-eyebrow", width: 18, gap: 10 },
     rsvp: { before: "rsvp-eyebrow", width: 18, gap: 10 },
     closing: { before: "closing-quote", width: 32, gap: 14 },
   };

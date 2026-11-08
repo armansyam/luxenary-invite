@@ -194,6 +194,34 @@ const VARIANT_CSS: Record<keyof BuilderVariants, Record<string, string>> = {
       .sidebar-desktop::after { background: linear-gradient(to bottom, color-mix(in srgb, var(--overlay) 85%, transparent) 0%, color-mix(in srgb, var(--overlay) 30%, transparent) 50%, transparent 100%); }
     }`,
   },
+  gallery: {
+    masonry: `
+    #moments .moments-grid-10, #gallery .moments-grid-10 { display: block !important; column-count: 2 !important; column-gap: 8px !important; }
+    @media (min-width: 600px) { #moments .moments-grid-10, #gallery .moments-grid-10 { column-count: 3 !important; } }
+    #moments .moment-photo-item, #gallery .moment-photo-item { display: inline-block !important; width: 100% !important; margin-bottom: 8px !important; break-inside: avoid !important; aspect-ratio: auto !important; }
+    #moments .moment-photo-item img, #gallery .moment-photo-item img { height: auto !important; display: block !important; }
+    #moments .moment-photo-item.is-landscape, #gallery .moment-photo-item.is-landscape { grid-column: auto !important; aspect-ratio: auto !important; }`,
+    carousel: `
+    #moments .moments-grid-10, #gallery .moments-grid-10 { display: flex !important; overflow-x: auto !important; scroll-snap-type: x mandatory !important; -webkit-overflow-scrolling: touch !important; gap: 12px !important; padding: 10px 4px 18px !important; scrollbar-width: thin !important; }
+    #moments .moment-photo-item, #gallery .moment-photo-item { flex: 0 0 72% !important; max-width: 320px !important; aspect-ratio: 3 / 4 !important; scroll-snap-align: center !important; border-radius: var(--radius-lg) !important; box-shadow: var(--shadow-elevated) !important; }
+    @media (min-width: 600px) { #moments .moment-photo-item, #gallery .moment-photo-item { flex: 0 0 44% !important; } }`,
+    polaroid: `
+    #moments .moments-grid-10, #gallery .moments-grid-10 { display: flex !important; flex-wrap: wrap !important; justify-content: center !important; gap: 16px 12px !important; padding: 12px 0 !important; }
+    #moments .moment-photo-item, #gallery .moment-photo-item { width: min(160px, 46%) !important; aspect-ratio: 1 / 1.25 !important; padding: 8px 8px 28px !important; background: var(--card-bg) !important; border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent) !important; border-radius: var(--radius-sm) !important; box-shadow: var(--shadow-elevated) !important; transition: transform 0.3s ease !important; }
+    #moments .moment-photo-item:nth-child(odd), #gallery .moment-photo-item:nth-child(odd) { transform: rotate(-2.5deg) !important; }
+    #moments .moment-photo-item:nth-child(even), #gallery .moment-photo-item:nth-child(even) { transform: rotate(2deg) !important; }
+    #moments .moment-photo-item:hover, #gallery .moment-photo-item:hover { transform: scale(1.05) rotate(0deg) !important; z-index: 4 !important; }
+    #moments .moment-photo-item img, #gallery .moment-photo-item img { border-radius: 2px !important; height: 100% !important; }`,
+  },
+  events: {
+    timeline: `
+    .events-sessions-stack, #events .events-unified-container { position: relative !important; padding-left: 22px !important; border-left: 2px dashed color-mix(in srgb, var(--primary) 40%, transparent) !important; margin-left: 14px !important; }
+    .event-block-item, .unified-session { position: relative !important; background: transparent !important; border: none !important; box-shadow: none !important; padding: 14px 0 18px 12px !important; text-align: left !important; }
+    .event-block-item::before, .unified-session::before { content: '' !important; position: absolute !important; left: -29px !important; top: 18px !important; width: 12px !important; height: 12px !important; border-radius: 50% !important; background: var(--primary) !important; border: 2px solid var(--bg-light) !important; box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 40%, transparent) !important; }`,
+    minimal: `
+    .event-block-item, .unified-session, .event-unified-venue-card { background: transparent !important; border: none !important; border-bottom: 1px solid color-mix(in srgb, var(--primary) 25%, transparent) !important; border-radius: 0 !important; box-shadow: none !important; padding: 18px 0 !important; }
+    .btn-map-outline { border-radius: var(--radius-sm) !important; }`,
+  },
 };
 
 const EAGER_SECTIONS = new Set(["cover", "sidebar", "opening"]);
@@ -300,6 +328,7 @@ const SECTION_CHUNK_PATTERNS: Record<OrderableSection, RegExp> = {
   countdown: /<section\b[^>]*\bdata-lux-section="countdown"[^>]*>[\s\S]*?<\/section>/,
   events: /<section\b[^>]*\bdata-lux-section="events"[^>]*>[\s\S]*?<\/section>/,
   story: /\{\{#if showStory\}\}\s*<section\b[^>]*\bdata-lux-section="story"[^>]*>[\s\S]*?<\/section>\s*\{\{\/if\}\}/,
+  gallery: /(?:<section\b[^>]*\bdata-lux-section="gallery"[^>]*>[\s\S]*?<\/section>|\{\{gallerySectionHtml\}\})/,
   rsvp: /<section\b[^>]*\bdata-lux-section="rsvp"[^>]*>[\s\S]*?<\/section>/,
   closing: /<footer\b[^>]*\bdata-lux-section="closing"[^>]*>[\s\S]*?<\/footer>/,
 };
@@ -309,6 +338,8 @@ const DOCK_HREF_SECTION: Partial<Record<string, OrderableSection>> = {
   "#couple": "couple",
   "#events": "events",
   "#story": "story",
+  "#moments": "gallery",
+  "#gallery": "gallery",
   "#rsvp": "rsvp",
 };
 

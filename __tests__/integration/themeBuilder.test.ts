@@ -221,15 +221,47 @@ describe("kompilator master", () => {
   it("mendukung urutan seksi kustom (sectionOrder) dan mengurutkan elemen di DOM serta dock navigasi", () => {
     const spec: BuilderSpec = {
       ...defaultBuilderSpec(),
-      sectionOrder: ["opening", "events", "couple", "countdown", "story", "rsvp", "closing"],
+      sectionOrder: ["opening", "events", "couple", "countdown", "gallery", "story", "rsvp", "closing"],
     };
     const html = compileBuilderMaster(spec, blueprint);
     expect(auditBuilderMaster(html, blueprint)).toEqual([]);
     const posEvents = html.indexOf('data-lux-section="events"');
     const posCouple = html.indexOf('data-lux-section="couple"');
+    const posGallery = html.indexOf('{{gallerySectionHtml}}');
+    const posStory = html.indexOf('data-lux-section="story"');
     expect(posEvents).toBeGreaterThan(0);
     expect(posCouple).toBeGreaterThan(0);
+    expect(posGallery).toBeGreaterThan(0);
+    expect(posStory).toBeGreaterThan(0);
     expect(posEvents).toBeLessThan(posCouple);
+    expect(posGallery).toBeLessThan(posStory);
+  });
+
+  it("mendukung varian model seksi kustom (gallery & events) dengan token CSS dinamis", () => {
+    const galleryMasonry: BuilderSpec = {
+      ...defaultBuilderSpec(),
+      variants: { ...defaultBuilderSpec().variants, gallery: "masonry", events: "timeline" },
+    };
+    const htmlMasonry = compileBuilderMaster(galleryMasonry, blueprint);
+    expect(auditBuilderMaster(htmlMasonry, blueprint)).toEqual([]);
+    expect(htmlMasonry).toContain("column-count: 2");
+    expect(htmlMasonry).toContain("events-sessions-stack");
+
+    const galleryCarousel: BuilderSpec = {
+      ...defaultBuilderSpec(),
+      variants: { ...defaultBuilderSpec().variants, gallery: "carousel", events: "minimal" },
+    };
+    const htmlCarousel = compileBuilderMaster(galleryCarousel, blueprint);
+    expect(auditBuilderMaster(htmlCarousel, blueprint)).toEqual([]);
+    expect(htmlCarousel).toContain("scroll-snap-type: x mandatory");
+
+    const galleryPolaroid: BuilderSpec = {
+      ...defaultBuilderSpec(),
+      variants: { ...defaultBuilderSpec().variants, gallery: "polaroid" },
+    };
+    const htmlPolaroid = compileBuilderMaster(galleryPolaroid, blueprint);
+    expect(auditBuilderMaster(htmlPolaroid, blueprint)).toEqual([]);
+    expect(htmlPolaroid).toContain("rotate(-2.5deg)");
   });
 
   it("mendukung teks hias inisial dan monogram dinamis (token) serta animasi loop", () => {

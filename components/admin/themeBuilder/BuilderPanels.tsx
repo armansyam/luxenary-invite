@@ -565,6 +565,95 @@ function VariantThumb({ group, id, palette, dark }: { group: keyof BuilderVarian
       </span>
     );
   }
+  if (group === "gallery") {
+    if (id === "masonry") {
+      return (
+        <span className={`${box} !flex-row items-center justify-center gap-1.5 px-3`} style={{ background: canvas }}>
+          <span className="flex flex-1 flex-col gap-1">
+            {photo({ width: "100%", height: 34, borderRadius: 3 })}
+            {photo({ width: "100%", height: 20, borderRadius: 3 })}
+          </span>
+          <span className="flex flex-1 flex-col gap-1">
+            {photo({ width: "100%", height: 18, borderRadius: 3 })}
+            {photo({ width: "100%", height: 36, borderRadius: 3 })}
+          </span>
+        </span>
+      );
+    }
+    if (id === "carousel") {
+      return (
+        <span className={`${box} !flex-row items-center justify-start gap-1.5 overflow-hidden px-2`} style={{ background: canvas }}>
+          {photo({ width: 34, height: 46, flexShrink: 0, borderRadius: 4 })}
+          {photo({ width: 34, height: 46, flexShrink: 0, borderRadius: 4 })}
+          {photo({ width: 18, height: 46, flexShrink: 0, borderRadius: 4, opacity: 0.5 })}
+        </span>
+      );
+    }
+    if (id === "polaroid") {
+      return (
+        <span className={`${box} !flex-row items-center justify-center gap-1.5`} style={{ background: canvas }}>
+          <span className="flex flex-col items-center gap-0.5 rounded-sm p-1 shadow-sm" style={{ background: dark ? palette.secondary : "#ffffff", transform: "rotate(-4deg)" }}>
+            {photo({ width: 20, height: 22, borderRadius: 1 })}
+            <span className="h-1 w-3 rounded-full" style={{ background: palette.accent }} />
+          </span>
+          <span className="flex flex-col items-center gap-0.5 rounded-sm p-1 shadow-sm" style={{ background: dark ? palette.secondary : "#ffffff", transform: "rotate(4deg)" }}>
+            {photo({ width: 20, height: 22, borderRadius: 1 })}
+            <span className="h-1 w-3 rounded-full" style={{ background: palette.accent }} />
+          </span>
+        </span>
+      );
+    }
+    return (
+      <span className={`${box} !grid grid-cols-2 gap-1 p-2`} style={{ background: canvas }}>
+        {[0, 1, 2, 3].map((i) => (
+          <span key={i} className="flex h-6 w-full items-center justify-center">
+            {photo({ width: "100%", height: "100%", borderRadius: 2 })}
+          </span>
+        ))}
+      </span>
+    );
+  }
+  if (group === "events") {
+    if (id === "timeline") {
+      return (
+        <span className={`${box} items-start justify-center pl-4`} style={{ background: canvas }}>
+          <span className="relative flex flex-col gap-2 border-l border-dashed pl-2" style={{ borderColor: palette.primary }}>
+            {[0, 1].map((i) => (
+              <span key={i} className="relative flex flex-col gap-0.5">
+                <span className="absolute -left-[11px] top-1 h-1.5 w-1.5 rounded-full" style={{ background: palette.primary }} />
+                {bar("28px", ink, 2)}
+                {bar("18px", palette.primary, 1.5)}
+              </span>
+            ))}
+          </span>
+        </span>
+      );
+    }
+    if (id === "minimal") {
+      return (
+        <span className={`${box} flex-col justify-center gap-1.5 px-3`} style={{ background: canvas }}>
+          <span className="flex w-full flex-col gap-0.5 border-b pb-1" style={{ borderColor: `${palette.primary}40` }}>
+            {bar("32px", ink, 2)}
+            {bar("16px", palette.primary, 1.5)}
+          </span>
+          <span className="flex w-full flex-col gap-0.5">
+            {bar("28px", ink, 2)}
+            {bar("16px", palette.primary, 1.5)}
+          </span>
+        </span>
+      );
+    }
+    return (
+      <span className={`${box} !flex-row items-center justify-center gap-1.5 px-2`} style={{ background: canvas }}>
+        {[0, 1].map((i) => (
+          <span key={i} className="flex flex-1 flex-col items-center gap-1 rounded border p-1 shadow-xs" style={{ borderColor: `${palette.primary}35`, background: dark ? palette.secondary : "#ffffff" }}>
+            {bar("22px", ink, 2)}
+            {bar("14px", palette.primary, 1.5)}
+          </span>
+        ))}
+      </span>
+    );
+  }
   const pos: Record<string, string> = { "bottom-left": "items-start justify-end", "bottom-center": "items-center justify-end", center: "items-center justify-center", "top-left": "items-start justify-start" };
   return (
     <span className={`${box} !flex-row`} style={{ background: palette.bgDark }}>
