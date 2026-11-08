@@ -1329,6 +1329,17 @@
       display: block;
     }
 
+    .lux-orn img.lux-orn-photo {
+      position: absolute;
+      object-fit: cover;
+      z-index: 0;
+    }
+
+    .lux-orn img.lux-orn-frame {
+      position: relative;
+      z-index: 1;
+    }
+
     /* =================================================================== */
     /* 11. ANIMASI MASUK (SCROLL REVEAL)                                   */
     /* Elemen hanya disembunyikan setelah skrip di kepala dokumen menandai  */
@@ -1406,14 +1417,14 @@
   <div id="coverScreen" class="cover-screen cover-overlay" data-lux-section="cover">
     <!-- lux-ornaments:cover -->
     <div class="cover-top">
-      <p class="cover-tagline" data-lux-field="customLabels.coverBadge">{{eventLabel}}</p>
+      <p class="cover-tagline" data-lux-field="customLabels.coverBadge" data-lux-block="cover-badge">{{eventLabel}}</p>
     </div>
 
     <div class="cover-center">
       <h1 class="cover-names serif" data-lux-block="cover-names">{{mainNickname}}</h1>
       {{#if mainInfoLine}}<p class="cover-info">{{mainInfoLine}}</p>{{/if}}
       <p class="cover-date" data-lux-block="cover-date">{{eventDateFormatted}}</p>
-      <p class="cover-subtitle" data-lux-field="customLabels.coverSubtitle">{{eventIntro}}</p>
+      <p class="cover-subtitle" data-lux-field="customLabels.coverSubtitle" data-lux-block="cover-subtitle">{{eventIntro}}</p>
     </div>
 
     <div class="cover-bottom" style="width:100%; display:flex; flex-direction:column; align-items:center;">
@@ -1422,7 +1433,7 @@
         <p class="cover-guest-val" id="coverGuestName" data-lux-field="guestName" style="font-size:16px; font-weight:700;">{{guestName}}</p>
       </div>
 
-      <button type="button" class="cover-btn-open btn-buka" data-lux-field="customLabels.openBtn" onclick="openInvitation()">
+      <button type="button" class="cover-btn-open btn-buka" data-lux-field="customLabels.openBtn" data-lux-block="cover-open-btn" onclick="openInvitation()">
         <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path
             d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -1444,10 +1455,10 @@
     <aside class="sidebar-desktop" aria-label="Desktop Hero" data-lux-section="sidebar">
       <!-- lux-ornaments:sidebar -->
       <div class="sidebar-desktop-content">
-        <p class="sidebar-desktop-tagline">{{eventLabel}}</p>
-        <h1 class="sidebar-desktop-names serif">{{mainNickname}}</h1>
-        <p class="sidebar-desktop-date">{{eventDateFormatted}}</p>
-        <p class="sidebar-desktop-quote serif" data-lux-field="openingQuote">{{openingQuote}}</p>
+        <p class="sidebar-desktop-tagline" data-lux-block="sidebar-tagline">{{eventLabel}}</p>
+        <h1 class="sidebar-desktop-names serif" data-lux-block="sidebar-names">{{mainNickname}}</h1>
+        <p class="sidebar-desktop-date" data-lux-block="sidebar-date">{{eventDateFormatted}}</p>
+        <p class="sidebar-desktop-quote serif" data-lux-field="openingQuote" data-lux-block="sidebar-quote">{{openingQuote}}</p>
       </div>
     </aside>
 
@@ -1457,9 +1468,9 @@
       <section class="slide-opening" id="home" style="background: transparent;" data-lux-section="opening">
         <!-- lux-ornaments:opening -->
         <div class="opening-top" data-lux-block="opening-top" data-lux-anim="1">
-          <span class="opening-bismillah serif" data-lux-field="customLabels.openingGreeting"></span>
-          <span class="sec-eyebrow" style="letter-spacing:0.32em; margin-top:6px;">{{eventLabel}}</span>
-          {{#if eventDateFormatted}}<div class="opening-date-pill"><span>{{eventDateFormatted}}</span></div>{{/if}}
+          <span class="opening-bismillah serif" data-lux-field="customLabels.openingGreeting" data-lux-block="opening-greeting"></span>
+          <span class="sec-eyebrow" data-lux-block="opening-tagline" style="letter-spacing:0.32em; margin-top:6px;">{{eventLabel}}</span>
+          {{#if eventDateFormatted}}<div class="opening-date-pill" data-lux-block="opening-date"><span>{{eventDateFormatted}}</span></div>{{/if}}
         </div>
 
         <div class="opening-center" data-lux-anim="2">
@@ -1468,7 +1479,7 @@
             <img src="{{homePhotoUrl}}" alt="{{mainName}}" loading="lazy" />
           </div>
           {{/if}}
-          <span class="opening-sub-title" data-lux-field="customLabels.quoteEyebrow">Dengan Penuh Syukur</span>
+          <span class="opening-sub-title" data-lux-field="customLabels.quoteEyebrow" data-lux-block="opening-eyebrow">Dengan Penuh Syukur</span>
           <h1 class="opening-names serif" data-lux-block="opening-names">{{mainNickname}}</h1>
           {{#if mainInfoLine}}<p class="opening-info">{{mainInfoLine}}</p>{{/if}}
           <div class="sec-divider" style="margin: 12px auto 0;"></div>
@@ -1481,11 +1492,11 @@
         <div class="opening-bottom" data-lux-anim="3">
           {{#if openingQuote}}
           <div class="opening-quote-card" data-lux-block="opening-quote">
-            <h3 class="opening-quote-title serif" data-lux-field="customLabels.quoteTitle">Sepatah Kata</h3>
-            <p class="opening-quote-text" data-lux-field="openingQuote">
+            <h3 class="opening-quote-title serif" data-lux-field="customLabels.quoteTitle" data-lux-block="opening-quote-title">Sepatah Kata</h3>
+            <p class="opening-quote-text" data-lux-field="openingQuote" data-lux-block="opening-quote-text">
               "{{openingQuote}}"
             </p>
-            <p class="opening-quote-ref" data-lux-field="openingQuoteRef">
+            <p class="opening-quote-ref" data-lux-field="openingQuoteRef" data-lux-block="opening-quote-ref">
               {{openingQuoteRef}}
             </p>
           </div>
@@ -1501,9 +1512,9 @@
       <!-- SEKSI 2: PROFIL (kelas dan blok kartu mempelai pertama, agar varian, bingkai, dan ornamen menempel tetap berlaku) -->
       <section class="sec-flow" id="couple" data-lux-section="couple">
         <!-- lux-ornaments:couple -->
-        <span class="sec-eyebrow" data-lux-field="customLabels.coupleEyebrow" data-lux-anim="1">{{profileEyebrow}}</span>
+        <span class="sec-eyebrow" data-lux-field="customLabels.coupleEyebrow" data-lux-block="couple-eyebrow" data-lux-anim="1">{{profileEyebrow}}</span>
         <h2 class="sec-main-title serif" data-lux-field="customLabels.coupleTitle" data-lux-block="couple-title" data-lux-anim="1">{{profileTitle}}</h2>
-        <p class="sec-sub" data-lux-field="customLabels.coupleSub" data-lux-anim="2">{{profileSub}}</p>
+        <p class="sec-sub" data-lux-field="customLabels.coupleSub" data-lux-block="couple-sub" data-lux-anim="2">{{profileSub}}</p>
 
         <div class="couple-grid couple-grid-single" data-lux-anim="3">
           <div class="couple-card">
@@ -1523,9 +1534,9 @@
       <!-- SEKSI 3: HITUNG MUNDUR (target dari acara utama; tanpa tanggal tetap 00) -->
       <section class="sec-flow" id="countdown" data-lux-section="countdown">
         <!-- lux-ornaments:countdown -->
-        <span class="sec-eyebrow" data-lux-field="customLabels.countdownEyebrow" data-lux-anim="1">SAVE THE DATE</span>
+        <span class="sec-eyebrow" data-lux-field="customLabels.countdownEyebrow" data-lux-block="countdown-eyebrow" data-lux-anim="1">SAVE THE DATE</span>
         <h2 class="sec-main-title serif" data-lux-field="customLabels.countdownTitle" data-lux-block="countdown-title" data-lux-anim="1">Menghitung Hari</h2>
-        <p class="sec-sub" data-lux-field="customLabels.countdownSub" data-lux-anim="2">Kami menantikan kehadiran Bapak/Ibu/Saudara/i untuk merayakan momen istimewa ini bersama kami.</p>
+        <p class="sec-sub" data-lux-field="customLabels.countdownSub" data-lux-block="countdown-sub" data-lux-anim="2">Kami menantikan kehadiran Bapak/Ibu/Saudara/i untuk merayakan momen istimewa ini bersama kami.</p>
 
         <div class="countdown-grid" id="countdownTimer" data-lux-block="countdown" data-lux-anim="3">
           <div class="countdown-box"><span class="countdown-num" id="cdDays">00</span><span class="countdown-lbl"
@@ -1542,9 +1553,9 @@
       <!-- SEKSI 4: SUSUNAN ACARA & LOKASI (kartu sesi dari mesin) -->
       <section class="sec-flow" id="events" data-lux-section="events">
         <!-- lux-ornaments:events -->
-        <span class="sec-eyebrow" data-lux-field="customLabels.eventsEyebrow" data-lux-anim="1">WAKTU &amp; TEMPAT</span>
+        <span class="sec-eyebrow" data-lux-field="customLabels.eventsEyebrow" data-lux-block="events-eyebrow" data-lux-anim="1">WAKTU &amp; TEMPAT</span>
         <h2 class="sec-main-title serif" data-lux-field="customLabels.eventsTitle" data-lux-block="events-title" data-lux-anim="1">{{agendaTitle}}</h2>
-        <div data-lux-anim="2">
+        <div data-lux-block="events-list" data-lux-anim="2">
           {{eventSectionHtml}}
         </div>
       </section>
@@ -1558,8 +1569,8 @@
       <!-- SEKSI 5: RSVP & UCAPAN (formulir dan feed dari mesin; judul formulir ada di dalam kartu RSVP) -->
       <section class="sec-flow" id="rsvp" data-lux-section="rsvp">
         <!-- lux-ornaments:rsvp -->
-        <span class="sec-eyebrow" data-lux-field="customLabels.wishesEyebrow" data-lux-anim="1">UCAPAN &amp; DOA</span>
-        <p class="sec-sub" data-lux-field="customLabels.wishesSub" data-lux-anim="2">Doa dan ucapan Anda sangat berarti bagi kami.</p>
+        <span class="sec-eyebrow" data-lux-field="customLabels.wishesEyebrow" data-lux-block="rsvp-eyebrow" data-lux-anim="1">UCAPAN &amp; DOA</span>
+        <p class="sec-sub" data-lux-field="customLabels.wishesSub" data-lux-block="rsvp-sub" data-lux-anim="2">Doa dan ucapan Anda sangat berarti bagi kami.</p>
         <div class="rsvp-engine" data-lux-block="rsvp-form" data-lux-anim="3">
           {{rsvpSectionHtml}}
         </div>
@@ -1572,10 +1583,10 @@
       <footer class="closing-sec {{closingPhotoClass}}" style="{{closingBgStyle}}" data-lux-section="closing">
         <!-- lux-ornaments:closing -->
         <div class="closing-content" data-lux-block="closing-content" data-lux-anim="1">
-          <p class="closing-quote" data-lux-field="customLabels.closingTitle">Terima Kasih</p>
-          <p class="closing-sub" data-lux-field="customLabels.closingText">{{closingText}}</p>
-          <h3 class="closing-names serif">{{mainNickname}}</h3>
-          <p class="closing-family" data-lux-field="customLabels.closingFamily">Beserta Keluarga Besar</p>
+          <p class="closing-quote" data-lux-field="customLabels.closingTitle" data-lux-block="closing-quote">Terima Kasih</p>
+          <p class="closing-sub" data-lux-field="customLabels.closingText" data-lux-block="closing-sub">{{closingText}}</p>
+          <h3 class="closing-names serif" data-lux-block="closing-names">{{mainNickname}}</h3>
+          <p class="closing-family" data-lux-field="customLabels.closingFamily" data-lux-block="closing-family">Beserta Keluarga Besar</p>
           <div class="closing-watermark">{{brandWatermarkHtml}}</div>
         </div>
       </footer>

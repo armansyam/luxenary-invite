@@ -187,6 +187,36 @@ describe("kompilator master", () => {
     expect(html.indexOf('data-orn-id="orntop0001"')).toBeGreaterThan(coverStart);
     expect(html.indexOf('data-orn-id="orntop0001"')).toBeLessThan(html.indexOf('class="cover-top"'));
   });
+
+  it("ornamen berbingkai dengan slot media memasang foto di jendela bingkai dan menyembunyikan opening-photo ganda", () => {
+    const parsed = parseBuilderSpec({
+      ...defaultBuilderSpec(),
+      ornaments: [
+        {
+          id: "ornhome001",
+          section: "opening",
+          src: "/assets/ornaments/bugis/bingkai-adat-bugis.png",
+          x: 50,
+          y: 45,
+          anchor: "top",
+          width: 65,
+          rotate: 0,
+          opacity: 1,
+          flipX: false,
+          layer: "front",
+          slot: "HOME_PHOTO",
+          fit: { l: 0.18, t: 0.15, r: 0.82, b: 0.85, aspect: 0.75 },
+        },
+      ],
+    });
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    const html = compileBuilderMaster(parsed.spec, blueprint);
+    expect(auditBuilderMaster(html, blueprint)).toEqual([]);
+    expect(html).toContain('class="lux-orn-photo" src="{{homePhotoUrl}}"');
+    expect(html).toContain('class="lux-orn-frame" src="/assets/ornaments/bugis/bingkai-adat-bugis.png"');
+    expect(html).toContain('[data-lux-block="opening-photo"]{display:none;}');
+  });
 });
 
 describe.skipIf(!IS_TEST_DB)("rute admin Theme Builder", () => {
@@ -246,14 +276,15 @@ describe.skipIf(!IS_TEST_DB)("rute admin Theme Builder", () => {
     expect(fs.existsSync(path.join(ROOT, "themes", "wedding", "modern", `${RUN}-x.html`))).toBe(false);
   });
 
-  it("GET mengembalikan spesifikasi; tema tulisan tangan menolak dibuka di builder", async () => {
+  it("GET mengembalikan spesifikasi; tema tulisan tangan dapat dibuka di builder dari pembacaan master", async () => {
     const res = await GET(new Request(`http://x/api/admin/theme-builder?id=${themeId}`) as never);
     const data = await res.json();
     expect(data.spec.ornaments).toHaveLength(2);
     const hand = await GET(new Request("http://x/api/admin/theme-builder?id=kalandra") as never);
-    expect(hand.status).toBe(409);
-    const save = await PUT(json("http://x", "PUT", { id: "kalandra", name: "Kalandra", category: "minimalist", spec: defaultBuilderSpec() }));
-    expect(save.status).toBe(409);
+    expect(hand.status).toBe(200);
+    const handData = await hand.json();
+    expect(handData.isLegacyMaster).toBe(true);
+    expect(parseBuilderSpec(handData.spec).ok).toBe(true);
   });
 
   it("simpan dengan gaya baru memindahkan berkas master", async () => {
@@ -453,6 +484,22 @@ describe("titik awal dari tema pernikahan lama", () => {
   it("memberi tahu berapa warna tertulis mati di luar :root yang tidak ikut terbawa", () => {
     const candani = legacyFiles.find((m) => m.id === "candani")!;
     expect(seedSpecFromMaster(fs.readFileSync(candani.file, "utf8")).hexOutsideRoot).toBeGreaterThan(0);
+  });
+
+  it("mengekstrak ornamen dan bingkai foto dari tema master lama serta lolos audit kompilasi", () => {
+    for (const id of ["bugis", "makassar", "bone", "gowa", "toraja", "starlit-dreams", "vintage-forest", "burgundy-royale"]) {
+      const m = legacyFiles.find((f) => f.id === id)!;
+      const seed = seedSpecFromMaster(fs.readFileSync(m.file, "utf8"));
+      expect(seed.spec.ornaments.length, `${id} ornaments`).toBeGreaterThan(0);
+      expect(parseBuilderSpec(seed.spec).ok, `${id} valid`).toBe(true);
+      expect(auditBuilderMaster(compileBuilderMaster(seed.spec), readBuilderBlueprint("WEDDING")), `${id} audit`).toEqual([]);
+    }
+    const bugis = seedSpecFromMaster(fs.readFileSync(legacyFiles.find((f) => f.id === "bugis")!.file, "utf8")).spec;
+    expect(bugis.frames["couple-photo-1"]?.ornament).toBe("/assets/ornaments/bugis/frame-profil.webp");
+    expect(bugis.frames["couple-photo-2"]?.ornament).toBe("/assets/ornaments/bugis/frame-profil.webp");
+    expect(bugis.ornaments.some((o) => o.slot === "HOME_PHOTO")).toBe(true);
+    const makassar = seedSpecFromMaster(fs.readFileSync(legacyFiles.find((f) => f.id === "makassar")!.file, "utf8")).spec;
+    expect(makassar.frames["opening-photo"]?.ornament).toBe("/assets/ornaments/bugis/frame-passapu-phinisi.webp");
   });
 
   it.skipIf(!IS_TEST_DB)("API: daftar tema lama, titik awal, dan penolakan tema yang bukan tulisan tangan atau tidak ada", async () => {

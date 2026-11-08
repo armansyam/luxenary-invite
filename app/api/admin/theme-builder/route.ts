@@ -136,10 +136,11 @@ export async function GET(req: NextRequest) {
       const file = masterPathOf(legacyEventType, legacy.category, legacy.id);
       if (!fs.existsSync(file)) return NextResponse.json({ error: "Berkas master tema tidak ditemukan." }, { status: 404 });
       const seed = seedSpecFromMaster(fs.readFileSync(file, "utf-8"), legacyEventType);
+      const spec = await fitSpecFrames({ ...seed.spec, defaultMedia: legacyDefaultMedia(legacy.defaultMedia) });
       return NextResponse.json({
         success: true,
         theme: { id: "", name: `${legacy.name} Builder`, category: legacy.category, description: `Titik awal dari tema ${legacy.name}.`, defaultMusicUrl: legacy.defaultMusicUrl ?? "" },
-        spec: { ...seed.spec, defaultMedia: legacyDefaultMedia(legacy.defaultMedia) },
+        spec,
         report: { source: legacy.name, found: seed.found, missing: seed.missing, textureFound: seed.textureFound, fontsFound: seed.fontsFound, mediaFound: Object.keys(legacyDefaultMedia(legacy.defaultMedia)).length, hexOutsideRoot: seed.hexOutsideRoot },
       });
     }
@@ -156,15 +157,23 @@ export async function GET(req: NextRequest) {
 
     const theme = await prisma.theme.findUnique({
       where: { id },
-      select: { id: true, name: true, category: true, description: true, isActive: true, defaultMusicUrl: true, builderSpec: true },
+      select: { id: true, name: true, category: true, description: true, eventType: true, isActive: true, defaultMedia: true, defaultMusicUrl: true, builderSpec: true },
     });
     if (!theme) return NextResponse.json({ error: "Tema tidak ditemukan." }, { status: 404 });
-    const spec = storedBuilderSpec(theme.builderSpec);
+    let spec = storedBuilderSpec(theme.builderSpec);
+    let isLegacyMaster = false;
     if (!spec) {
-      return NextResponse.json({ error: "Tema ini ditulis tangan sehingga tidak bisa dibuka di builder." }, { status: 409 });
+      const legacyEventType = BUILDER_EVENT_TYPES.find((t) => t === theme.eventType) ?? "WEDDING";
+      const file = masterPathOf(legacyEventType, theme.category, theme.id);
+      if (!fs.existsSync(file)) {
+        return NextResponse.json({ error: "Berkas master tema tidak ditemukan." }, { status: 404 });
+      }
+      const seed = seedSpecFromMaster(fs.readFileSync(file, "utf-8"), legacyEventType);
+      spec = await fitSpecFrames({ ...seed.spec, defaultMedia: legacyDefaultMedia(theme.defaultMedia) });
+      isLegacyMaster = true;
     }
-    const { builderSpec: stored, ...meta } = theme;
-    return NextResponse.json({ success: true, theme: meta, spec, etag: specEtag(stored) });
+    const { builderSpec: stored, defaultMedia: _defaultMedia, eventType: _eventType, ...meta } = theme;
+    return NextResponse.json({ success: true, theme: meta, spec, etag: specEtag(stored), isLegacyMaster });
   } catch (error) {
     return routeError("ThemeBuilder", error);
   }
@@ -263,9 +272,14 @@ export async function PUT(req: NextRequest) {
     const themeId = typeof body.id === "string" ? body.id : "";
     const existing = themeId ? await prisma.theme.findUnique({ where: { id: themeId } }) : null;
     if (!existing) return NextResponse.json({ error: "Tema tidak ditemukan." }, { status: 404 });
-    const existingSpec = storedBuilderSpec(existing.builderSpec);
+    let existingSpec = storedBuilderSpec(existing.builderSpec);
+    const existingEventType = existingSpec?.eventType ?? (BUILDER_EVENT_TYPES.find((t) => t === existing.eventType) ?? "WEDDING");
     if (!existingSpec) {
-      return NextResponse.json({ error: "Tema ini ditulis tangan sehingga tidak bisa disimpan dari builder." }, { status: 409 });
+      const legacyFile = masterPathOf(existingEventType, existing.category, existing.id);
+      if (fs.existsSync(legacyFile)) {
+        const seed = seedSpecFromMaster(fs.readFileSync(legacyFile, "utf-8"), existingEventType);
+        existingSpec = await fitSpecFrames({ ...seed.spec, defaultMedia: legacyDefaultMedia(existing.defaultMedia) });
+      }
     }
 
     // Admin lain menyimpan sesudah rancangan ini dibuka: tolak agar perubahannya tidak tertimpa tanpa sepengetahuan.
@@ -280,7 +294,7 @@ export async function PUT(req: NextRequest) {
     const parsed = parseBuilderSpec(body.spec);
     if (!parsed.ok) return NextResponse.json({ error: "Rancangan tema tidak valid.", details: parsed.errors }, { status: 400 });
     // Jenis acara menentukan blueprint, folder master, dan katalog klien; undangan yang sudah memakai tema ini bergantung padanya.
-    if (parsed.spec.eventType !== existingSpec.eventType) {
+    if (parsed.spec.eventType !== existingEventType) {
       return NextResponse.json({ error: "Jenis acara tema tidak bisa diubah setelah dibuat. Buat tema baru untuk jenis acara lain." }, { status: 409 });
     }
 
@@ -298,7 +312,7 @@ export async function PUT(req: NextRequest) {
     if (existing.category !== category) await removeIfExists(builderMasterPath(existing.category as BuilderCategory, themeId, spec.eventType));
 
     // Tema yang dibuat sebelum ada riwayat: simpan keadaan sebelum penyimpanan ini agar masih bisa dikembalikan.
-    if (!(await prisma.themeBuilderRevision.count({ where: { themeId } }))) {
+    if (existingSpec && !(await prisma.themeBuilderRevision.count({ where: { themeId } }))) {
       await recordBuilderRevision(null, { id: themeId, name: existing.name, category: existing.category as BuilderCategory, description: existing.description }, existingSpec, "CREATE");
     }
 

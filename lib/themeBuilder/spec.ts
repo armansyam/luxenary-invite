@@ -130,7 +130,10 @@ export const ATTACHABLE_BLOCKS = [
   "cover-names",
   "cover-date",
   "cover-guest",
+  "sidebar-names",
+  "sidebar-date",
   "opening-top",
+  "opening-date",
   "opening-photo",
   "opening-names",
   "home-schedule",
@@ -141,10 +144,30 @@ export const ATTACHABLE_BLOCKS = [
   "couple-ig-1",
   "couple-ig-2",
   "countdown",
+  "events-list",
+  "story-list",
   "rsvp-form",
   "closing-content",
+  "closing-names",
 ] as const;
 export type AttachableBlockId = (typeof ATTACHABLE_BLOCKS)[number];
+
+/** Slot media klien yang dapat dimasukkan ke dalam jendela bingkai ornamen. */
+export const ORNAMENT_MEDIA_SLOTS = [
+  { id: "HOME_PHOTO", label: "Foto pembuka (Home)" },
+  { id: "GROOM_PHOTO", label: "Foto mempelai pertama" },
+  { id: "BRIDE_PHOTO", label: "Foto mempelai kedua" },
+  { id: "LANDING_COVER", label: "Foto sampul (Cover)" },
+  { id: "CLOSING_COVER", label: "Foto penutup" },
+] as const;
+export type OrnamentMediaSlot = (typeof ORNAMENT_MEDIA_SLOTS)[number]["id"];
+
+export function familyOrnamentMediaSlots(eventType: BuilderEventType): Array<{ id: OrnamentMediaSlot; label: string }> {
+  if (builderFamilyOf(eventType) === "wedding") return ORNAMENT_MEDIA_SLOTS.map((s) => ({ ...s }));
+  return ORNAMENT_MEDIA_SLOTS
+    .filter((s) => s.id !== "BRIDE_PHOTO")
+    .map((s) => (s.id === "GROOM_PHOTO" ? { ...s, label: "Foto profil utama" } : { ...s }));
+}
 
 export interface BuilderOrnament {
   id: string;
@@ -174,6 +197,10 @@ export interface BuilderOrnament {
   /** Jarak di atas dan bawah ornamen sebaris, piksel. */
   gap?: number;
   text?: OrnamentText;
+  /** Slot media klien yang ditampilkan di dalam jendela bingkai ornamen ini (khusus ornamen gambar). */
+  slot?: OrnamentMediaSlot;
+  /** Jendela transparan ornamen bingkai (0..1); diukur otomatis oleh server bila `slot` dipilih. */
+  fit?: FrameFit | null;
 }
 
 /**
@@ -205,15 +232,31 @@ export type BuilderDefaultMedia = Partial<Record<BuilderDefaultSlot, string>>;
  */
 export const BUILDER_BLOCKS = [
   { id: "cover-monogram", label: "Monogram di cover", section: "cover" },
+  { id: "cover-badge", label: "Teks kecil di atas cover", section: "cover" },
   { id: "cover-names", label: "Nama di cover", section: "cover" },
   { id: "cover-date", label: "Tanggal di cover", section: "cover" },
+  { id: "cover-subtitle", label: "Kalimat sapaan cover", section: "cover" },
   { id: "cover-guest", label: "Kartu nama tamu", section: "cover" },
+  { id: "cover-open-btn", label: "Tombol buka undangan", section: "cover" },
+  { id: "sidebar-tagline", label: "Teks kecil di hero kiri", section: "sidebar" },
+  { id: "sidebar-names", label: "Nama di hero kiri", section: "sidebar" },
+  { id: "sidebar-date", label: "Tanggal di hero kiri", section: "sidebar" },
+  { id: "sidebar-quote", label: "Kutipan di hero kiri", section: "sidebar" },
   { id: "opening-top", label: "Salam dan tanggal pembuka", section: "opening" },
+  { id: "opening-greeting", label: "Salam pembuka", section: "opening" },
+  { id: "opening-tagline", label: "Teks kecil pembuka", section: "opening" },
+  { id: "opening-date", label: "Tanggal pembuka", section: "opening" },
   { id: "opening-photo", label: "Foto pembuka", section: "opening" },
+  { id: "opening-eyebrow", label: "Teks kecil di atas nama pembuka", section: "opening" },
   { id: "opening-names", label: "Nama di pembuka", section: "opening" },
   { id: "home-schedule", label: "Jadwal acara di Home", section: "opening" },
-  { id: "opening-quote", label: "Kutipan pembuka", section: "opening" },
+  { id: "opening-quote", label: "Kartu kutipan pembuka", section: "opening" },
+  { id: "opening-quote-title", label: "Judul kutipan pembuka", section: "opening" },
+  { id: "opening-quote-text", label: "Isi kutipan pembuka", section: "opening" },
+  { id: "opening-quote-ref", label: "Sumber kutipan pembuka", section: "opening" },
+  { id: "couple-eyebrow", label: "Teks kecil mempelai", section: "couple" },
   { id: "couple-title", label: "Judul mempelai", section: "couple" },
+  { id: "couple-sub", label: "Kalimat pengantar mempelai", section: "couple" },
   { id: "couple-photo-1", label: "Foto mempelai pertama", section: "couple" },
   { id: "couple-role-1", label: "Label mempelai pertama", section: "couple" },
   { id: "couple-name-1", label: "Nama mempelai pertama", section: "couple" },
@@ -225,13 +268,26 @@ export const BUILDER_BLOCKS = [
   { id: "couple-name-2", label: "Nama mempelai kedua", section: "couple" },
   { id: "couple-parents-2", label: "Orang tua mempelai kedua", section: "couple" },
   { id: "couple-ig-2", label: "Instagram mempelai kedua", section: "couple" },
+  { id: "countdown-eyebrow", label: "Teks kecil hitung mundur", section: "countdown" },
   { id: "countdown-title", label: "Judul hitung mundur", section: "countdown" },
+  { id: "countdown-sub", label: "Kalimat hitung mundur", section: "countdown" },
   { id: "countdown", label: "Hitung mundur", section: "countdown" },
+  { id: "countdown-btn", label: "Tombol simpan ke kalender", section: "countdown" },
+  { id: "events-eyebrow", label: "Teks kecil acara", section: "events" },
   { id: "events-title", label: "Judul acara", section: "events" },
+  { id: "events-list", label: "Daftar kartu acara", section: "events" },
+  { id: "story-eyebrow", label: "Teks kecil kisah", section: "story" },
   { id: "story-title", label: "Judul kisah", section: "story" },
+  { id: "story-list", label: "Daftar kisah cinta", section: "story" },
+  { id: "rsvp-eyebrow", label: "Teks kecil ucapan dan RSVP", section: "rsvp" },
   { id: "rsvp-title", label: "Judul ucapan dan RSVP", section: "rsvp" },
+  { id: "rsvp-sub", label: "Kalimat pengantar ucapan", section: "rsvp" },
   { id: "rsvp-form", label: "Formulir RSVP", section: "rsvp" },
   { id: "closing-content", label: "Isi penutup", section: "closing" },
+  { id: "closing-quote", label: "Kalimat penutup", section: "closing" },
+  { id: "closing-sub", label: "Kalimat salam penutup", section: "closing" },
+  { id: "closing-names", label: "Nama di penutup", section: "closing" },
+  { id: "closing-family", label: "Keterangan keluarga di penutup", section: "closing" },
 ] as const;
 export type BuilderBlockId = (typeof BUILDER_BLOCKS)[number]["id"];
 
@@ -258,14 +314,30 @@ export const PROTECTED_BLOCKS: readonly BuilderBlockId[] = ["cover-names", "cove
 export const OPTIONAL_BLOCKS: readonly BuilderBlockId[] = BUILDER_BLOCKS.map((b) => b.id).filter((id) => !PROTECTED_BLOCKS.includes(id));
 
 /**
- * Blueprint satu nama tidak punya mempelai kedua, Instagram, monogram, seksi kisah, dan judul RSVP (judul formulir ada
- * di dalam kartu RSVP buatan mesin). Seksi profilnya memakai kelas dan blok kartu mempelai pertama, jadi hanya label
- * yang berbeda.
+ * Blueprint satu nama tidak punya mempelai kedua, Instagram, monogram, seksi kisah, tombol kalender, dan judul RSVP
+ * (judul formulir ada di dalam kartu RSVP buatan mesin). Seksi profilnya memakai kelas dan blok kartu mempelai pertama,
+ * jadi hanya label yang berbeda.
  */
-const SINGLE_ABSENT_BLOCKS: readonly BuilderBlockId[] = ["cover-monogram", "couple-ig-1", "couple-amp", "couple-photo-2", "couple-role-2", "couple-name-2", "couple-parents-2", "couple-ig-2", "story-title", "rsvp-title"];
+const SINGLE_ABSENT_BLOCKS: readonly BuilderBlockId[] = [
+  "cover-monogram",
+  "couple-ig-1",
+  "couple-amp",
+  "couple-photo-2",
+  "couple-role-2",
+  "couple-name-2",
+  "couple-parents-2",
+  "couple-ig-2",
+  "countdown-btn",
+  "story-eyebrow",
+  "story-title",
+  "story-list",
+  "rsvp-title",
+];
 const SINGLE_ABSENT_SECTIONS: readonly OrnamentSection[] = ["story"];
 const SINGLE_BLOCK_LABELS: Partial<Record<BuilderBlockId, string>> = {
+  "couple-eyebrow": "Teks kecil profil",
   "couple-title": "Judul profil",
+  "couple-sub": "Kalimat pengantar profil",
   "couple-photo-1": "Foto profil",
   "couple-role-1": "Keterangan (usia, gelar, tanggal lahir)",
   "couple-name-1": "Nama lengkap",
@@ -622,13 +694,21 @@ export const TEXTURE_OPTIONS = [
   { id: "/assets/ornaments/background/background-monocrhome.webp", label: "Monokrom" },
   { id: "/assets/ornaments/background/background-monocrhome1.webp", label: "Monokrom cahaya" },
   { id: "/assets/ornaments/background/background-red.webp", label: "Merah tua" },
+  { id: "/assets/ornaments/background/bg-maroon.webp", label: "Marun klasik" },
+  { id: "/assets/ornaments/background/bg-makassar.webp", label: "Sutra Makassar" },
 ] as const;
 
-const UPLOADED_ASSET_RE = /^\/uploads\/theme-assets\/[a-f0-9]{24}\.(?:webp|png)$/;
+const UPLOADED_ASSET_RE = /^\/uploads\/theme-assets\/[a-f0-9]{24}\.(?:webp|png|jpe?g)$/i;
+const BUILTIN_BACKDROP_RE = /^\/(?:assets\/ornaments\/background\/[A-Za-z0-9_.-]+|theme-assets\/[A-Za-z0-9_.-]+)\.(?:webp|png|jpe?g)$/i;
 
 /** Tekstur latar dan media bawaan: gambar bawaan pustaka latar, atau gambar yang diunggah admin ("" = polos). */
 export function isAllowedBackdropSrc(src: unknown): src is string {
-  return typeof src === "string" && (TEXTURE_OPTIONS.some((t) => t.id === src) || UPLOADED_ASSET_RE.test(src));
+  return typeof src === "string" && !src.includes("..") && (
+    src === "" ||
+    TEXTURE_OPTIONS.some((t) => t.id === src) ||
+    BUILTIN_BACKDROP_RE.test(src) ||
+    UPLOADED_ASSET_RE.test(src)
+  );
 }
 
 export interface VariantOption {
@@ -658,6 +738,7 @@ export const VARIANT_GROUPS: Array<{ key: keyof BuilderVariants; label: string; 
       { id: "card", label: "Kartu", hint: "Nama di dalam kartu kertas" },
       { id: "arch", label: "Foto lengkung", hint: "Foto pembuka berbentuk lengkung" },
       { id: "circle", label: "Foto bulat", hint: "Foto pembuka berbentuk lingkaran" },
+      { id: "backdrop", label: "Latar foto Home", hint: "Slot foto Home menjadi background penuh seksi pembuka" },
     ],
   },
   {
@@ -669,6 +750,7 @@ export const VARIANT_GROUPS: Array<{ key: keyof BuilderVariants; label: string; 
       { id: "side", label: "Berdampingan", hint: "Dua kolom kiri dan kanan" },
       { id: "arch", label: "Lengkung", hint: "Foto tinggi berujung lengkung" },
       { id: "polaroid", label: "Polaroid", hint: "Foto persegi dengan bayangan geser" },
+      { id: "backdrop", label: "Latar foto penuh", hint: "Foto mempelai menjadi background penuh kartu" },
     ],
   },
   {
@@ -774,10 +856,10 @@ export const MAX_ORNAMENTS_PER_SECTION = 12;
 const HEX_RE = /^#[0-9a-f]{6}$/;
 const ORNAMENT_ID_RE = /^[a-z0-9]{6,16}$/;
 // Ornamen bawaan di public/assets/ornaments/<folder>/ dan unggahan admin di public/uploads/theme-assets/ (nama hash).
-const ORNAMENT_SRC_RE = /^\/(?:assets\/ornaments\/(?!background\/)[A-Za-z0-9_-]+\/[A-Za-z0-9_.-]+|uploads\/theme-assets\/[a-f0-9]{24}\.(?:webp|png))$/;
+const ORNAMENT_SRC_RE = /^\/(?:assets\/ornaments\/(?!background\/)[A-Za-z0-9_-]+\/[A-Za-z0-9_.-]+|uploads\/theme-assets\/[a-f0-9]{24}\.(?:webp|png|jpe?g))$/i;
 
 export function isAllowedOrnamentSrc(src: unknown): src is string {
-  return typeof src === "string" && ORNAMENT_SRC_RE.test(src) && /\.(webp|png)$/i.test(src) && !src.includes("..");
+  return typeof src === "string" && ORNAMENT_SRC_RE.test(src) && /\.(webp|png|jpe?g)$/i.test(src) && !src.includes("..");
 }
 
 /** Teks hias dari masukan tak tepercaya: satu baris, tanpa < > atau {{ }}, huruf dan warna hanya dari katalog. */
@@ -975,6 +1057,17 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
       errors.push(`${label}: seksi atau blok tidak ada di tema ${BUILDER_EVENT_LABELS[family].toLowerCase()}.`);
       continue;
     }
+    let slot: OrnamentMediaSlot | undefined;
+    let fit: FrameFit | null = null;
+    if (!text && o.slot !== undefined && o.slot !== null && o.slot !== "") {
+      const allowedSlots = familyOrnamentMediaSlots(family).map((s) => s.id);
+      slot = pickEnum<OrnamentMediaSlot>(o.slot, allowedSlots, `${label}: slot media`, errors);
+      if (!slot) continue;
+      if (o.fit !== undefined && o.fit !== null) {
+        fit = parseFrameFit(o.fit);
+        if (!fit) { errors.push(`${label}: jendela bingkai tidak valid.`); continue; }
+      }
+    }
     perSection[section] = (perSection[section] ?? 0) + 1;
     if (perSection[section] > MAX_ORNAMENTS_PER_SECTION) { errors.push(`Seksi ${SECTION_LABELS[section]} paling banyak ${MAX_ORNAMENTS_PER_SECTION} ornamen.`); continue; }
     ornaments.push({
@@ -993,6 +1086,7 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
       ...(attach ? { attach } : {}),
       ...(before ? { before, gap: clamp(o.gap, ORNAMENT_GAP_LIMITS[0], ORNAMENT_GAP_LIMITS[1], DEFAULT_ORNAMENT_GAP) } : {}),
       ...(text ? { text } : {}),
+      ...(slot ? { slot, ...(fit ? { fit } : {}) } : {}),
     });
   }
 
@@ -1024,12 +1118,12 @@ export function googleFontIds(fonts: BuilderFonts): string[] {
  * huruf, ukuran, dan warna; `line-height` ditulis di sini karena kelas `.lux-orn` di blueprint memakai 0 untuk gambar.
  * `scaleX(-1)` pada teks membalik tulisan, jadi cermin hanya berlaku untuk gambar.
  */
-export function ornamentStyle(o: Pick<BuilderOrnament, "x" | "y" | "anchor" | "width" | "rotate" | "opacity" | "flipX" | "text" | "before" | "gap">): string {
+export function ornamentStyle(o: Pick<BuilderOrnament, "x" | "y" | "anchor" | "width" | "rotate" | "opacity" | "flipX" | "text" | "before" | "gap" | "slot">): string {
   const flip = o.text ? 1 : o.flipX ? -1 : 1;
   let base: string;
   if (o.before) {
     // Elemen alur: di tengah kolom, ikut menambah tinggi halaman, tanpa posisi absolut.
-    base = `display:block;width:${o.width}%;margin:${o.gap ?? DEFAULT_ORNAMENT_GAP}px auto;opacity:${o.opacity};transform:rotate(${o.rotate}deg) scaleX(${flip});`;
+    base = `display:block;width:${o.width}%;margin:${o.gap ?? DEFAULT_ORNAMENT_GAP}px auto;opacity:${o.opacity};transform:rotate(${o.rotate}deg) scaleX(${flip});${o.slot ? "position:relative;" : ""}`;
   } else {
     const vertical = o.anchor === "bottom" ? `bottom:${o.y}%` : `top:${o.y}%`;
     const shiftY = o.anchor === "bottom" ? "50%" : "-50%";

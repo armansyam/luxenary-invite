@@ -189,7 +189,7 @@ export function ColorsPanel({
   onDeleteAsset: (url: string) => void;
 }) {
   const checks = paletteChecks(spec);
-  const uploadedBackdrops = (library?.uploads ?? []).filter((u) => u.opaque).map((u) => ({ id: u.url, label: "Gambar unggahan" }));
+  const uploadedBackdrops = (library?.uploads ?? []).map((u) => ({ id: u.url, label: "Gambar unggahan" }));
   const backdrops: ReadonlyArray<{ id: string; label: string }> = [...TEXTURE_OPTIONS, ...uploadedBackdrops];
   return (
     <>
@@ -466,6 +466,15 @@ function VariantThumb({ group, id, palette, dark }: { group: keyof BuilderVarian
     );
   }
   if (group === "opening") {
+    if (id === "backdrop") {
+      return (
+        <span className={box} style={{ background: `linear-gradient(180deg, ${palette.secondary}, ${palette.bgDark})` }}>
+          {bar("32px", palette.textLight, 4)}
+          {bar("18px", palette.accent, 2)}
+          {bar("24px", palette.textLight, 2)}
+        </span>
+      );
+    }
     const shape: CSSProperties = id === "circle" ? { width: 26, height: 26, borderRadius: "50%" } : id === "arch" ? { width: 22, height: 30, borderRadius: "999px 999px 4px 4px" } : { width: 0, height: 0 };
     return (
       <span className={box} style={{ background: canvas }}>
@@ -477,6 +486,20 @@ function VariantThumb({ group, id, palette, dark }: { group: keyof BuilderVarian
     );
   }
   if (group === "couple") {
+    if (id === "backdrop") {
+      return (
+        <span className={box} style={{ background: canvas }}>
+          <span className="flex items-center gap-2">
+            {[0, 1].map((i) => (
+              <span key={i} className="flex h-[52px] w-[36px] flex-col items-center justify-end gap-1 rounded-md p-1.5" style={{ background: `linear-gradient(180deg, ${palette.accent}, ${palette.bgDark})` }}>
+                {bar("20px", palette.textLight, 3)}
+                {bar("12px", palette.accent, 2)}
+              </span>
+            ))}
+          </span>
+        </span>
+      );
+    }
     const p = id === "arch" ? { width: 16, height: 22, borderRadius: "999px 999px 3px 3px" } : id === "polaroid" ? { width: 18, height: 20, borderRadius: 2, boxShadow: `3px 3px 0 ${palette.accent}` } : { width: 18, height: 18, borderRadius: "50%" };
     return (
       <span className={box} style={{ background: canvas }}>
@@ -694,9 +717,9 @@ export function OrnamentsPanel({
           className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed px-3 py-4 text-center transition ${over ? "border-amber-500 bg-amber-50" : "border-stone-300 hover:border-stone-400 hover:bg-stone-50"}`}
         >
           <Icon d="M12 16V4m0 0l-4 4m4-4l4 4M5 20h14" className="h-5 w-5 text-stone-500" />
-          <span className="text-[12.5px] font-semibold text-stone-800">{uploading ? "Mengunggah…" : "Unggah ornamen PNG / WebP"}</span>
-          <span className="text-[11px] text-stone-500">Latar transparan, maks. 6 MB</span>
-          <input ref={fileRef} type="file" accept="image/png,image/webp" multiple hidden onChange={(e) => { if (e.target.files?.length) onUpload(e.target.files); e.target.value = ""; }} />
+          <span className="text-[12.5px] font-semibold text-stone-800">{uploading ? "Mengunggah…" : "Unggah ornamen / bingkai (PNG, WebP, JPEG)"}</span>
+          <span className="text-[11px] text-stone-500">Latar transparan untuk ornamen/bingkai, maks. 6 MB</span>
+          <input ref={fileRef} type="file" accept="image/png,image/webp,image/jpeg" multiple hidden onChange={(e) => { if (e.target.files?.length) onUpload(e.target.files); e.target.value = ""; }} />
         </div>
       </Section>
 

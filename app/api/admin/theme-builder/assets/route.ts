@@ -88,7 +88,7 @@ export async function DELETE(req: NextRequest) {
     if (!guard.ok) return guard.response;
 
     const url = new URL(req.url).searchParams.get("url") || "";
-    const match = url.match(/^\/uploads\/theme-assets\/([a-f0-9]{24}\.(?:webp|png))$/);
+    const match = url.match(/^\/uploads\/theme-assets\/([a-f0-9]{24}\.(?:webp|png|jpe?g))$/i);
     if (!match) return NextResponse.json({ error: "Hanya ornamen unggahan yang dapat dihapus." }, { status: 400 });
 
     const usage = await assetUsage(url);

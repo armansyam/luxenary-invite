@@ -89,5 +89,14 @@ export async function fitSpecFrames(spec: BuilderSpec, publicDir = PUBLIC_DIR): 
   for (const [id, frame] of Object.entries(frames) as Array<[keyof typeof frames, NonNullable<(typeof frames)[keyof typeof frames]>]>) {
     frames[id] = { ...frame, fit: frame.ornament ? await measureFrameWindow(frame.ornament, publicDir) : null };
   }
-  return { ...spec, frames };
+  const ornaments = await Promise.all(
+    spec.ornaments.map(async (o) => {
+      if (!o.slot || !o.src) {
+        const { fit: _fit, ...rest } = o;
+        return rest;
+      }
+      return { ...o, fit: await measureFrameWindow(o.src, publicDir) };
+    }),
+  );
+  return { ...spec, frames, ornaments };
 }

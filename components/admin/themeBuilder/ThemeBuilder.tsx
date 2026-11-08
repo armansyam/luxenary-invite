@@ -65,8 +65,8 @@ const newOrnamentId = () => Array.from(crypto.getRandomValues(new Uint8Array(10)
 function structuralKey(spec: BuilderSpec): string {
   // Posisi ornamen dan properti blok diterapkan langsung ke pratinjau saat menyeret, jadi tidak memicu muat ulang.
   // Bingkai foto juga diterapkan langsung lewat gaya di dokumen pratinjau.
-  // Isi, huruf, ukuran, dan warna teks hias juga diterapkan langsung; hanya jenis (teks atau gambar) dan tempat menempel yang mengubah HTML.
-  return JSON.stringify({ ...spec, blocks: {}, frames: {}, ornaments: spec.ornaments.map((o) => [o.id, o.src, o.section, o.layer, o.attach ?? "", o.before ?? "", o.text ? 1 : 0, o.text?.labelKey ?? ""]) });
+  // Isi, huruf, ukuran, dan warna teks hias juga diterapkan langsung; hanya jenis (teks atau gambar), slot media, dan tempat menempel yang mengubah HTML.
+  return JSON.stringify({ ...spec, blocks: {}, frames: {}, ornaments: spec.ornaments.map((o) => [o.id, o.src, o.section, o.layer, o.attach ?? "", o.before ?? "", o.slot ?? "", o.text ? 1 : 0, o.text?.labelKey ?? ""]) });
 }
 
 /** Posisi ornamen di antara ornamen sejenis (wadah dan lapisan sama); 0 adalah paling belakang. */
@@ -799,15 +799,33 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
             </span>
           )}
           {isNew && (
-            <select
-              aria-label="Mulai dari tema lama"
-              defaultValue=""
-              onChange={(e) => { startFromLegacy(e.target.value); e.target.value = ""; }}
-              className="rounded-lg border border-stone-200 bg-white px-2 py-1 text-[11.5px] font-semibold text-stone-600 outline-none hover:border-stone-300 cursor-pointer"
-            >
-              <option value="">Mulai dari tema lama…</option>
-              {(legacyThemes?.eventType === spec.eventType ? legacyThemes.themes : []).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
+            <>
+              <select
+                aria-label="Edit tema yang ada"
+                defaultValue=""
+                onChange={(e) => {
+                  const id = e.target.value;
+                  e.target.value = "";
+                  if (id) {
+                    allowLeave.current = true;
+                    router.push(`/admin/theme-builder?id=${encodeURIComponent(id)}`);
+                  }
+                }}
+                className="rounded-lg border border-stone-200 bg-white px-2 py-1 text-[11.5px] font-semibold text-stone-600 outline-none hover:border-stone-300 cursor-pointer"
+              >
+                <option value="">Edit tema yang ada…</option>
+                {(legacyThemes?.eventType === spec.eventType ? legacyThemes.themes : []).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+              <select
+                aria-label="Mulai dari tema lama"
+                defaultValue=""
+                onChange={(e) => { startFromLegacy(e.target.value); e.target.value = ""; }}
+                className="rounded-lg border border-stone-200 bg-white px-2 py-1 text-[11.5px] font-semibold text-stone-600 outline-none hover:border-stone-300 cursor-pointer"
+              >
+                <option value="">Mulai dari tema lama…</option>
+                {(legacyThemes?.eventType === spec.eventType ? legacyThemes.themes : []).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            </>
           )}
           {isNew && (
             <>

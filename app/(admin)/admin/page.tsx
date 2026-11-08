@@ -2910,15 +2910,13 @@ export default function AdminPage() {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                       </svg>
                                     </a>
-                                    {theme.builderSpec && (
-                                      <a
-                                        href={`/admin/theme-builder?id=${encodeURIComponent(theme.id)}`}
-                                        className="px-3 py-1.5 bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 rounded-xl text-xs font-semibold transition inline-flex items-center gap-1"
-                                        title="Ubah tampilan tema ini di Theme Builder"
-                                      >
-                                        Builder
-                                      </a>
-                                    )}
+                                    <a
+                                      href={`/admin/theme-builder?id=${encodeURIComponent(theme.id)}`}
+                                      className="px-3 py-1.5 bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 rounded-xl text-xs font-semibold transition inline-flex items-center gap-1"
+                                      title="Ubah tampilan tema ini di Theme Builder"
+                                    >
+                                      Builder
+                                    </a>
                                     <button
                                       type="button"
                                       onClick={() => handleOpenDemoStudio(theme)}

@@ -131,6 +131,10 @@ export function compileAndAudit(spec: BuilderSpec): CompiledBuilderTheme {
 export async function renderBuilderPreview(spec: BuilderSpec, demoThemeId = DEFAULT_THEME_BY_EVENT[spec.eventType] || "kalandra", mode: "demo" | "client" = "demo"): Promise<CompiledBuilderTheme & { labels: Record<string, string> }> {
   const compiled = compileAndAudit(spec);
   const demo = buildDemoInvitation(demoThemeId, mode === "client" ? { galleryPhotos: [] } : undefined);
+  if (mode === "demo" && !demo.media.some((m) => m.mediaSlot === "HOME_PHOTO")) {
+    const fallbackHome = demo.media.find((m) => m.mediaSlot === "DESKTOP_SIDEBAR" || m.mediaSlot === "LANDING_COVER")?.localPath;
+    if (fallbackHome) demo.media.push({ mediaSlot: "HOME_PHOTO", localPath: fallbackHome });
+  }
   const base = mode === "client" ? { ...demo, media: [], themeDefaultMedia: builderDefaultMedia(spec) } : demo;
   // Rancangan belum tersimpan, jadi teks bawaannya dibawa langsung (undangan nyata membacanya dari Theme.builderSpec).
   const data = (await composeInvitationData({ ...base, builderTexts: spec.texts })) as Record<string, any>;
@@ -212,7 +216,7 @@ export function builtinOrnamentGroups(): OrnamentLibraryGroup[] {
       label: d.name.replace(/_assets.*$/i, "").replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
       items: fs
         .readdirSync(path.join(BUILTIN_ORNAMENT_DIR, d.name))
-        .filter((f) => /^[A-Za-z0-9_.-]+\.(webp|png)$/i.test(f))
+        .filter((f) => /^[A-Za-z0-9_.-]+\.(webp|png|jpe?g)$/i.test(f))
         .sort()
         .map((f) => `/assets/ornaments/${d.name}/${f}`),
     }))
@@ -249,7 +253,7 @@ export function uploadedOrnaments(): Array<{ url: string; size: number; uploaded
   if (!fs.existsSync(THEME_ASSET_DIR)) return [];
   return fs
     .readdirSync(THEME_ASSET_DIR)
-    .filter((f) => /^[a-f0-9]{24}\.(webp|png)$/.test(f))
+    .filter((f) => /^[a-f0-9]{24}\.(webp|png|jpe?g)$/i.test(f))
     .map((f) => {
       const stat = fs.statSync(path.join(THEME_ASSET_DIR, f));
       return { url: `${THEME_ASSET_URL_PREFIX}${f}`, size: stat.size, uploadedAt: stat.mtimeMs };

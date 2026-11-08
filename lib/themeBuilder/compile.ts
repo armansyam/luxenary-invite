@@ -18,6 +18,7 @@ import {
   type BuilderSpec,
   type BuilderTexts,
   type BuilderVariants,
+  type OrnamentMediaSlot,
 } from "@/lib/themeBuilder/spec";
 
 const BLUEPRINT_FILES: Record<BuilderFamily, string> = {
@@ -93,6 +94,14 @@ const VARIANT_CSS: Record<keyof BuilderVariants, Record<string, string>> = {
     .opening-photo { aspect-ratio: 3 / 4.2; border-radius: 999px 999px var(--radius-md) var(--radius-md); }`,
     circle: `
     .opening-photo { width: min(58%, 220px); aspect-ratio: 1; border-radius: 50%; }`,
+    backdrop: `
+    .slide-opening { overflow: hidden; }
+    .slide-opening > .opening-center { position: static; transform: none !important; filter: none !important; }
+    .slide-opening > .opening-center > :not(.opening-photo) { position: relative; z-index: 2; }
+    .opening-photo { position: absolute !important; inset: 0 !important; width: 100% !important; height: 100% !important; max-width: none !important; aspect-ratio: auto !important; margin: 0 !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; z-index: 0 !important; pointer-events: none; }
+    .opening-photo::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--overlay) 55%, transparent) 0%, color-mix(in srgb, var(--overlay) 35%, transparent) 45%, color-mix(in srgb, var(--overlay) 80%, transparent) 100%); }
+    .slide-opening:has(.opening-photo) .opening-bismillah, .slide-opening:has(.opening-photo) .sec-eyebrow, .slide-opening:has(.opening-photo) .opening-sub-title, .slide-opening:has(.opening-photo) .opening-names, .slide-opening:has(.opening-photo) .opening-names em, .slide-opening:has(.opening-photo) .opening-info, .slide-opening:has(.opening-photo) .scroll-indicator { color: var(--on-dark); text-shadow: 0 2px 12px color-mix(in srgb, var(--overlay) 45%, transparent); }
+    .slide-opening:has(.opening-photo) .sec-divider { background: var(--accent); }`,
   },
   couple: {
     side: `
@@ -110,6 +119,15 @@ const VARIANT_CSS: Record<keyof BuilderVariants, Record<string, string>> = {
     .couple-photo-wrap img { border-radius: 2px; }
     .couple-card:first-child .couple-photo-wrap { transform: rotate(-3deg); }
     .couple-card:last-child .couple-photo-wrap { transform: rotate(3deg); }`,
+    backdrop: `
+    .couple-card { position: relative; overflow: hidden; min-height: 440px; padding: 32px 24px; justify-content: flex-end; border-radius: var(--radius-lg); box-shadow: var(--shadow-elevated); background: var(--bg-dark); color: var(--on-dark); }
+    .couple-photo-wrap { position: absolute !important; inset: 0 !important; width: 100% !important; height: 100% !important; margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; z-index: 0 !important; pointer-events: none; }
+    .couple-photo-wrap img { border-radius: 0 !important; }
+    .couple-photo-wrap::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--overlay) 12%, transparent) 0%, color-mix(in srgb, var(--overlay) 35%, transparent) 48%, color-mix(in srgb, var(--overlay) 86%, transparent) 100%); }
+    .couple-card > :not(.couple-photo-wrap) { position: relative; z-index: 2; }
+    .couple-role { color: var(--accent); }
+    .couple-name, .couple-ig { color: var(--on-dark); text-shadow: 0 2px 10px color-mix(in srgb, var(--overlay) 45%, transparent); }
+    .couple-parents, .couple-detail { color: color-mix(in srgb, var(--on-dark) 88%, transparent); }`,
   },
   countdown: {
     circles: `
@@ -160,12 +178,29 @@ const VARIANT_CSS: Record<keyof BuilderVariants, Record<string, string>> = {
 
 const EAGER_SECTIONS = new Set(["cover", "sidebar", "opening"]);
 
+const ORNAMENT_SLOT_TOKEN: Record<BuilderFamily, Record<OrnamentMediaSlot, { token: string; cond?: string }>> = {
+  wedding: {
+    HOME_PHOTO: { token: "homePhotoUrl", cond: "hasCustomHomePhoto" },
+    GROOM_PHOTO: { token: "firstPhotoUrl" },
+    BRIDE_PHOTO: { token: "secondPhotoUrl" },
+    LANDING_COVER: { token: "landingCoverUrl" },
+    CLOSING_COVER: { token: "closingPhotoUrl", cond: "closingPhotoUrl" },
+  },
+  single: {
+    HOME_PHOTO: { token: "homePhotoUrl", cond: "hasCustomHomePhoto" },
+    GROOM_PHOTO: { token: "mainPhotoUrl", cond: "mainPhotoUrl" },
+    BRIDE_PHOTO: { token: "mainPhotoUrl", cond: "mainPhotoUrl" },
+    LANDING_COVER: { token: "landingCoverUrl" },
+    CLOSING_COVER: { token: "closingPhotoUrl", cond: "closingPhotoUrl" },
+  },
+};
+
 /**
  * Ornamen yang menempel ke blok berupa `span` (bukan `div`): `<p>` menutup dirinya sendiri begitu bertemu `div`, sedangkan
  * `span` absolut tetap sah di dalam `p`, judul, dan tautan. Teks hias di-escape di sini; `{{ }}` dan kurung sudut sudah
  * ditolak oleh `parseBuilderSpec`.
  */
-function ornamentHtml(o: BuilderOrnament, blockHidden = false): string {
+function ornamentHtml(o: BuilderOrnament, family: BuilderFamily = "wedding", blockHidden = false): string {
   const tag = o.attach ? "span" : "div";
   // Ornamen sebaris adalah elemen alur: kelas `lux-orn` (absolut, tembus klik) tidak dipakai, dan gambarnya diberi gaya sendiri.
   // Ia disembunyikan bersama bloknya (`lux-flow-off`), karena berada di luar elemen blok dan tidak ikut `display:none` blok.
@@ -173,7 +208,22 @@ function ornamentHtml(o: BuilderOrnament, blockHidden = false): string {
   const beforeAttr = o.before ? ` data-orn-before="${o.before}"` : "";
   const loading = EAGER_SECTIONS.has(o.section) ? "eager" : "lazy";
   const imgStyle = o.before ? ` style="display:block;width:100%;height:auto;"` : "";
-  const inner = o.text ? escapeText(o.text.value) : `<img src="${o.src}" alt="" loading="${loading}" decoding="async" draggable="false"${imgStyle} />`;
+  let inner: string;
+  if (o.text) {
+    inner = escapeText(o.text.value);
+  } else if (o.slot) {
+    const win = o.fit ?? { l: 0.12, t: 0.12, r: 0.88, b: 0.88 };
+    const pct = (v: number) => Math.round(v * 1000) / 1000;
+    const slotInfo = ORNAMENT_SLOT_TOKEN[family][o.slot];
+    const photoStyle = `position:absolute;left:${pct(win.l * 100)}%;top:${pct(win.t * 100)}%;width:${pct((win.r - win.l) * 100)}%;height:${pct((win.b - win.t) * 100)}%;object-fit:cover;z-index:0;`;
+    const photoImg = `<img class="lux-orn-photo" src="{{${slotInfo.token}}}" alt="" loading="${loading}" decoding="async" draggable="false" style="${photoStyle}" />`;
+    const wrappedPhoto = slotInfo.cond ? `{{#if ${slotInfo.cond}}}${photoImg}{{/if}}` : photoImg;
+    const frameStyle = o.before ? ' style="position:relative;z-index:1;display:block;width:100%;height:auto;"' : imgStyle;
+    const frameImg = `<img class="lux-orn-frame" src="${o.src}" alt="" loading="${loading}" decoding="async" draggable="false"${frameStyle} />`;
+    inner = `${wrappedPhoto}${frameImg}`;
+  } else {
+    inner = `<img src="${o.src}" alt="" loading="${loading}" decoding="async" draggable="false"${imgStyle} />`;
+  }
   // Teks hias yang boleh diubah klien menjadi label biasa: kunci sudah dibatasi ke EDITABLE_TEXT_KEYS oleh parseBuilderSpec.
   // `aria-hidden` dibuang karena label klien adalah isi undangan yang harus terbaca pembaca layar.
   const editable = o.text?.labelKey ? ` data-lux-field="customLabels.${o.text.labelKey}"` : "";
@@ -204,7 +254,7 @@ function attachCss(ornaments: BuilderOrnament[]): string {
 const openingTagOf = (block: string) => new RegExp(`<[a-zA-Z0-9]+\\b[^>]*\\bdata-lux-block="${block}"[^>]*>`);
 
 /** Memasang ornamen sebaris sebagai saudara tepat sebelum elemen blok, sehingga berlaku juga untuk blok berlabel. */
-function insertBeforeBlocks(html: string, ornaments: BuilderOrnament[], blocks: BuilderSpec["blocks"]): string {
+function insertBeforeBlocks(html: string, ornaments: BuilderOrnament[], blocks: BuilderSpec["blocks"], family: BuilderFamily): string {
   const byBlock = new Map<string, BuilderOrnament[]>();
   for (const o of ornaments) if (o.before) byBlock.set(o.before, [...(byBlock.get(o.before) ?? []), o]);
   let out = html;
@@ -212,21 +262,21 @@ function insertBeforeBlocks(html: string, ornaments: BuilderOrnament[], blocks: 
     const opening = openingTagOf(block);
     if (!opening.test(out)) throw new Error(`Penanda blok ${block} tidak ada di blueprint.`);
     const hidden = Boolean(blocks[block as BuilderBlockId]?.hidden);
-    const markup = items.map((o) => ornamentHtml(o, hidden)).join("");
+    const markup = items.map((o) => ornamentHtml(o, family, hidden)).join("");
     out = out.replace(opening, (tag) => `${markup}${tag}`);
   }
   return out;
 }
 
 /** Memasang ornamen sebagai anak pertama elemen blok. Blok yang hilang dari blueprint adalah galat, bukan ornamen yang diam-diam hilang. */
-function attachToBlocks(html: string, ornaments: BuilderOrnament[]): string {
+function attachToBlocks(html: string, ornaments: BuilderOrnament[], family: BuilderFamily): string {
   const byBlock = new Map<string, BuilderOrnament[]>();
   for (const o of ornaments) if (o.attach) byBlock.set(o.attach, [...(byBlock.get(o.attach) ?? []), o]);
   let out = html;
   for (const [block, items] of byBlock) {
     const opening = openingTagOf(block);
     if (!opening.test(out)) throw new Error(`Penanda blok ${block} tidak ada di blueprint.`);
-    const markup = items.map((o) => ornamentHtml(o)).join("");
+    const markup = items.map((o) => ornamentHtml(o, family)).join("");
     out = out.replace(opening, (tag) => `${tag}${markup}`);
   }
   return out;
@@ -256,10 +306,15 @@ export function compileBuilderMaster(spec: BuilderSpec, blueprint = readBuilderB
     html = html.replace("</head>", `  <style id="lux-builder-variants">${variantCss}\n  </style>\n</head>`);
   }
 
-  // Id blok berasal dari daftar tetap dan nilainya angka terjepit, jadi aman disisipkan tanpa escape.
-  const blockRules = (Object.entries(spec.blocks) as Array<[BuilderBlockId, BlockProps]>)
-    .map(([id, props]) => `[data-lux-block="${id}"]{${blockStyle(props)}}`)
-    .join("\n    ");
+  const family = builderFamilyOf(spec.eventType);
+  // Bila ornamen bingkai di seksi yang sama sudah mengisi slot foto pembuka, sembunyikan kotak foto pembuka bawaan
+  // agar foto tidak tampil ganda (kecuali admin sudah mengatur blok opening-photo secara eksplisit).
+  const autoHideHomePhoto = spec.ornaments.some((o) => o.section === "opening" && o.slot === "HOME_PHOTO") && !spec.blocks["opening-photo"];
+  const blockEntries = Object.entries(spec.blocks) as Array<[BuilderBlockId, BlockProps]>;
+  const blockRules = [
+    ...blockEntries.map(([id, props]) => `[data-lux-block="${id}"]{${blockStyle(props)}}`),
+    ...(autoHideHomePhoto ? ['[data-lux-block="opening-photo"]{display:none;}'] : []),
+  ].join("\n    ");
   if (blockRules) {
     html = html.replace("</head>", `  <style id="lux-builder-blocks">\n    ${blockRules}\n  </style>\n</head>`);
   }
@@ -267,7 +322,7 @@ export function compileBuilderMaster(spec: BuilderSpec, blueprint = readBuilderB
   // Jadwal acara dipindahkan (bukan digandakan) ke Home: token hanya boleh muncul sekali karena HTML-nya membawa
   // target sunting Studio. Seksi Acara tetap ada di DOM (penanda seksi dan ornamennya) tetapi disembunyikan.
   if (spec.eventsPlacement === "home") {
-    const eventsToken = EVENTS_TOKEN[builderFamilyOf(spec.eventType)];
+    const eventsToken = EVENTS_TOKEN[family];
     html = html.replace(eventsToken, "").replace("<!-- lux-home-schedule -->", eventsToken);
     html = html.replace("</head>", `  <style id="lux-builder-events">\n    .home-schedule { display: block; }\n    #events { display: none; }\n    a[href="#events"] { display: none !important; }\n  </style>\n</head>`);
   }
@@ -291,14 +346,14 @@ export function compileBuilderMaster(spec: BuilderSpec, blueprint = readBuilderB
 
   html = html.replace(/<!-- lux-ornaments:([a-z]+) -->/g, (marker, section: string) => {
     const items = spec.ornaments.filter((o) => o.section === section && !o.attach && !o.before);
-    return items.length ? items.map((o) => ornamentHtml(o)).join("\n    ") : marker;
+    return items.length ? items.map((o) => ornamentHtml(o, family)).join("\n    ") : marker;
   });
 
   if (spec.ornaments.some((o) => o.before)) {
     html = html.replace("</head>", `  <style id="lux-builder-flow">\n    .lux-flow-off { display: none !important; }\n  </style>\n</head>`);
   }
 
-  return applyStaticTexts(insertBeforeBlocks(attachToBlocks(html, spec.ornaments), spec.ornaments, spec.blocks), spec.texts);
+  return applyStaticTexts(insertBeforeBlocks(attachToBlocks(html, spec.ornaments, family), spec.ornaments, spec.blocks, family), spec.texts);
 }
 
 const escapeText = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
