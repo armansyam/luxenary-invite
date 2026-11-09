@@ -6,6 +6,7 @@ import { SANITIZE_GUEST_LABEL_JS } from "@/lib/checkinQr";
 import { LIVE_EDIT_FIELD_PATTERN } from "@/lib/liveEditFields";
 import { isSafePathSegment } from "@/lib/fsSafe";
 import { masterFilePath } from "@/lib/themePaths";
+import { applyMasterOverrides, resolveVariant } from "@/lib/themeVariants";
 import { logger } from "@/lib/logger";
 import { stripEmptyMediaRefs } from "@/lib/emptyMediaRefs";
 
@@ -1575,9 +1576,12 @@ export async function renderTemplateFile(
 
   // Pratinjau Theme Builder mengirim master hasil kompilasi yang belum ditulis ke disk: tanpa berkas master maupun piring.
   const templateSource = options?.templateSource;
-  const info: ThemeEntry | undefined = templateSource === undefined
+  let info: ThemeEntry | undefined = templateSource === undefined
     ? resolveThemeEntry(templateName)
     : { file: `${templateName}.html`, eventType: "wedding", style: "modern" };
+  // Varian Tema tidak punya berkas sendiri: master induknya dirender dengan override :root (lib/themeVariants.ts).
+  const variant = templateSource === undefined && !info ? await resolveVariant(templateName) : null;
+  if (variant) info = resolveThemeEntry(variant.parentId);
   if (!info) {
     throw new Error(`[renderTemplate] Tema "${templateName}" tidak terdaftar di THEME_MAP dan berkas masternya tidak ditemukan.`);
   }
@@ -1634,6 +1638,8 @@ export async function renderTemplateFile(
     tpl = templateSource;
   } else {
     tpl = await readMasterTemplate(tplPath);
+    // Override disisipkan sebelum piring dibekukan: undangan varian tetap sama walau admin mengubah variannya nanti.
+    if (variant) tpl = applyMasterOverrides(tpl, variant.overrides);
     if (draftPath) {
       const cleaned = tpl.replace(/<!--\s*lux-theme:[^>]*-->\n?/g, "").replace(/<!--\s*lux-event:[^>]*-->\n?/g, "");
       try {

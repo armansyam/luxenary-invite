@@ -15,6 +15,7 @@ import { logger } from "@/lib/logger";
 import { applyThemeDefaultMedia, parseThemeDefaultMedia } from "@/lib/themeDefaultMedia";
 import { applyBuilderTexts, builderTextLabels, builderTextsOf } from "@/lib/themeBuilder/texts";
 import { storedVariant } from "@/lib/themeBuilder/spec";
+import { resolveVariant } from "@/lib/themeVariants";
 
 /** Sesi jadwal terima tamu (patokan yang sama dengan masa aktif), atau objek kosong bila belum bertanggal. */
 function primaryEventOf(events: unknown): any {
@@ -166,6 +167,9 @@ export async function composeTemplateData(
 export async function composeInvitationData(inv: any) {
   // Media bawaan tema (salinan di undangan) mengisi slot yang belum diisi klien; foto klien selalu menang.
   inv = { ...inv, media: applyThemeDefaultMedia(inv.media || [], parseThemeDefaultMedia(inv.themeDefaultMedia)) };
+  // Varian Tema memakai teks bawaan, data demo, dan musik master induknya; hanya warna dan huruf yang berbeda (renderTemplate).
+  const variant = await resolveVariant(inv.themeId);
+  if (variant) inv = { ...inv, themeId: variant.parentId };
   let data: Record<string, any>;
   switch (inv.eventType || "WEDDING") {
     case "BIRTHDAY":

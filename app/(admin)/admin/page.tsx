@@ -2910,7 +2910,15 @@ export default function AdminPage() {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                       </svg>
                                     </a>
-                                    {theme.builderSpec != null ? (
+                                    {theme.masterOverrides != null ? (
+                                      <a
+                                        href={`/admin/theme-variants?id=${encodeURIComponent(theme.id)}`}
+                                        className="px-3 py-1.5 bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 rounded-xl text-xs font-semibold transition inline-flex items-center gap-1"
+                                        title={`Varian warna/huruf dari ${theme.parentTheme ?? "master"}`}
+                                      >
+                                        Edit Varian
+                                      </a>
+                                    ) : theme.builderSpec != null ? (
                                       <a
                                         href={`/admin/theme-builder?id=${encodeURIComponent(theme.id)}`}
                                         className="px-3 py-1.5 bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 rounded-xl text-xs font-semibold transition inline-flex items-center gap-1"
@@ -2919,13 +2927,22 @@ export default function AdminPage() {
                                         Builder
                                       </a>
                                     ) : (
-                                      <a
-                                        href={`/admin/theme-builder?from=${encodeURIComponent(theme.id)}`}
-                                        className="px-3 py-1.5 bg-white hover:bg-stone-100 text-stone-600 border border-stone-200 rounded-xl text-xs font-medium transition inline-flex items-center gap-1"
-                                        title="Gunakan tema ini sebagai titik awal rancangan tema builder baru"
-                                      >
-                                        Clone to Builder
-                                      </a>
+                                      <>
+                                        <a
+                                          href={`/admin/theme-variants?parent=${encodeURIComponent(theme.id)}`}
+                                          className="px-3 py-1.5 bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 rounded-xl text-xs font-semibold transition inline-flex items-center gap-1"
+                                          title="Buat tema baru dari desain ini dengan warna dan huruf lain, tanpa mengubah master aslinya"
+                                        >
+                                          Buat Varian
+                                        </a>
+                                        <a
+                                          href={`/admin/theme-builder?from=${encodeURIComponent(theme.id)}`}
+                                          className="px-3 py-1.5 bg-white hover:bg-stone-100 text-stone-600 border border-stone-200 rounded-xl text-xs font-medium transition inline-flex items-center gap-1"
+                                          title="Gunakan tema ini sebagai titik awal rancangan tema builder baru"
+                                        >
+                                          Clone to Builder
+                                        </a>
+                                      </>
                                     )}
                                     <button
                                       type="button"

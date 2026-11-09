@@ -76,6 +76,7 @@ erDiagram
         string series
         boolean isActive
         json builderSpec
+        json masterOverrides
         json defaultMedia
     }
 
@@ -253,6 +254,7 @@ Master katalog tema fisik resmi di sistem (54 tema terdaftar lintas 6 jenis acar
 - `sortOrder` (Int): Urutan penampilan di galeri.
 - `defaultMusicUrl` (String, Nullable): Lagu latar bawaan tema.
 - `builderSpec` (Json, Nullable, `@map("builder_spec")`): Spesifikasi rancangan Theme Builder (`BuilderSpec` dari `lib/themeBuilder/spec.ts`). Berisi palet, tipografi, tekstur, varian seksi, blok konten, bingkai, dan ornamen. Bernilai `NULL` untuk tema master yang ditulis tangan (*handcrafted*).
+- `masterOverrides` (Json, Nullable, `@map("master_overrides")`, migrasi `20261110100000_theme_master_overrides`): Varian Tema (`lib/themeVariants.ts`). Baris varian menumpang ke master tulisan tangan lewat `parentTheme` dan berisi `{ "colors": { "--var": "#rrggbb" }, "fonts": { "--lux-font-x": "<id font katalog | g:Nama>" } }` yang menimpa variabel `:root` master induk saat render. Varian tidak punya berkas master sendiri. Bernilai `NULL` untuk tema biasa.
 - `defaultMedia` (Json, Nullable, `@map("default_media")`): Media bawaan tema per slot (`{ SLOT: "/path" }`, dari `lib/themeDefaultMedia.ts`). Disalin ke undangan saat tema dipilih.
 
 Tema tidak memiliki harga atau label premium: kolom `isPremium` dan `price` dihapus (migrasi `20261001120000_drop_theme_price_and_premium`) karena paket dibedakan oleh kapabilitas fitur, bukan oleh tema, dan semua tema terbuka untuk semua paket. Kolom `isFeatured` juga dihapus (migrasi `20261001150000_db_integrity_theme_fk_amount_precision`) karena tidak dibaca dan tidak ditulis kode mana pun; `isFeatured` yang dipakai halaman harga adalah properti paket di `admin_settings`, bukan tema.

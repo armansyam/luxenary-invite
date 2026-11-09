@@ -293,6 +293,8 @@ model Theme {
   builderSpec     Json?         @map("builder_spec")
   /// Media bawaan tema per slot ({ SLOT: "/path" }); lib/themeDefaultMedia.ts. Disalin ke undangan saat tema dipilih.
   defaultMedia    Json?         @map("default_media")
+  /// Varian Tema (lib/themeVariants.ts): override variabel :root master induk `parentTheme`; null untuk tema biasa.
+  masterOverrides Json?         @map("master_overrides")
   createdAt       DateTime      @default(now())
   invitations     Invitation[]
   builderRevisions ThemeBuilderRevision[]

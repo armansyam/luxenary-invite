@@ -153,6 +153,12 @@ Memerlukan autentikasi admin (`role: ADMIN` atau `SUPER_ADMIN`):
 | | `POST` | `/api/admin/themes/sync` | Sinkronisasi master tema fisik di disk ke database, auto-compile static demo, dan auto-purge Cloudflare edge cache. Tema tanpa berkas yang masih dipakai undangan dipertahankan (`retainedWithoutFile`); sisanya dihapus (`purgedCount`). |
 | | `POST` | `/api/admin/themes/{id}/demo-asset` | Mengunggah thumbnail cover atau video demo tema resmi. |
 | | `POST` | `/api/admin/themes/{id}/demo-data` | Menyimpan custom mock dataset untuk rendering preview demo statis tema tertentu. |
+| **Varian Tema** | `GET` | `/api/admin/theme-variants?parent={id}` | Token master induk tulisan tangan: kelompok warna per nilai asli dan variabel huruf. Induk builder/varian ditolak 409. |
+| | `GET` | `/api/admin/theme-variants?id={id}` | Varian (nama, status, `masterOverrides`) beserta token induknya. |
+| | `POST` | `/api/admin/theme-variants` | Membuat varian nonaktif `{ parentId, name, description?, overrides }`; metadata, musik, dan media bawaan disalin dari induk; font Google diunduh. |
+| | `POST` | `/api/admin/theme-variants?preview` | HTML pratinjau master induk dengan override dan data demo induk. |
+| | `PUT` | `/api/admin/theme-variants` | Ubah nama/override atau terbitkan (`isActive`); terbit mengompilasi demo statis, mengantrekan thumbnail, dan purge cache. |
+| | `DELETE` | `/api/admin/theme-variants?id={id}` | Hapus varian yang belum dipakai undangan (dipakai → 409). |
 | **Theme Builder** | `GET` | `/api/admin/theme-builder?id={id}` | Membaca spesifikasi builder tema (`Theme.builderSpec`). Tema handcrafted ditolak dengan HTTP 409 (`code: "HANDCRAFTED"`). |
 | | `GET` | `/api/admin/theme-builder?from={id}` | Mengekstrak palet, huruf, tekstur, ornamen, dan bingkai dari master fisik bawaan untuk draf baru (Clone to Builder). |
 | | `GET` | `/api/admin/theme-builder?legacy=1` | Daftar tema master bawaan yang dapat disalin menjadi draf builder baru (filter opsional: `eventType`). |
