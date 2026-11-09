@@ -4,22 +4,38 @@ import { useEffect, useRef, useState } from "react";
 import { Slider } from "@/components/admin/themeBuilder/OrnamentInspector";
 import type { AssetLibrary } from "@/components/admin/themeBuilder/BuilderPanels";
 import {
+  BLOCK_COLOR_TOKENS,
+  BLOCK_FONT_ROLES,
+  BLOCK_FONT_WEIGHTS,
   BLOCK_LIMITS,
+  BLOCK_TEXT_TRANSFORMS,
   BUILDER_BLOCKS,
   DEFAULT_PHOTO_FRAME,
+  EDITORIAL_PHOTO_FILTERS,
+  FONT_OPTIONS,
   FRAMED_PHOTOS,
   FRAME_SHAPES,
   FRAME_SPREAD_LIMITS,
   LOOP_ANIMATIONS,
   OPTIONAL_BLOCKS,
   blockLabelFor,
+  fontLabel,
+  googleFontIds,
   isDefaultBlock,
+  peerBlocksForRole,
   photoBlockMediaInfo,
   sectionLabelFor,
+  type BlockColorToken,
+  type BlockFontRole,
+  type BlockFontValue,
+  type BlockFontWeight,
   type BlockProps,
+  type BlockTextTransform,
   type BuilderBlockId,
   type BuilderEventType,
+  type BuilderFonts,
   type BuilderVariants,
+  type EditorialPhotoFilter,
   type FrameFit,
   type FramedPhotoId,
   type LoopAnimation,
@@ -39,8 +55,13 @@ interface Props {
   onFrameChange: (patch: Partial<PhotoFrame>, final: boolean) => void;
   library: AssetLibrary | null;
   onUpload: (files: FileList) => void;
+  fonts?: BuilderFonts;
   variants?: BuilderVariants;
   onVariantChange?: (patch: Partial<BuilderVariants>) => void;
+  copiedStyle?: Partial<BlockProps> | null;
+  onCopyStyle?: () => void;
+  onPasteStyle?: () => void;
+  onApplyToRoleGroup?: (peers: BuilderBlockId[], label: string) => void;
 }
 
 interface LibraryFrame {
@@ -115,8 +136,13 @@ export default function BlockInspector({
   onFrameChange,
   library,
   onUpload,
+  fonts,
   variants,
   onVariantChange,
+  copiedStyle,
+  onCopyStyle,
+  onPasteStyle,
+  onApplyToRoleGroup,
 }: Props) {
   const block = BUILDER_BLOCKS.find((b) => b.id === blockId)!;
   const uploadRef = useRef<HTMLInputElement>(null);
@@ -124,6 +150,7 @@ export default function BlockInspector({
   const mediaInfo = (FRAMED_PHOTOS as readonly string[]).includes(blockId)
     ? photoBlockMediaInfo(blockId as FramedPhotoId, eventType)
     : null;
+  const roleGroup = peerBlocksForRole(blockId, eventType);
 
   return (
     <div className="flex h-full flex-col">
@@ -151,46 +178,51 @@ export default function BlockInspector({
           <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-3">
             <span className="text-[11.5px] font-semibold text-stone-700">Tampilan Foto Pembuka (Home)</span>
             <div className="mt-1.5 grid grid-cols-2 gap-1 rounded-xl bg-stone-100 p-1">
-              <button
-                type="button"
-                onClick={() => onVariantChange({ opening: "cinematic" })}
-                className={`rounded-lg px-2 py-1.5 text-[11px] font-semibold transition cursor-pointer ${
-                  (variants.opening ?? "cinematic") !== "backdrop" ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
-                }`}
-              >
-                Bingkai Normal
-              </button>
-              <button
-                type="button"
-                onClick={() => onVariantChange({ opening: "backdrop" })}
-                className={`rounded-lg px-2 py-1.5 text-[11px] font-semibold transition cursor-pointer ${
-                  variants.opening === "backdrop" ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
-                }`}
-              >
-                Latar Penuh (100vh)
-              </button>
-            </div>
-            <p className="mt-1 text-[10.5px] leading-snug text-stone-500">
-              Latar penuh menjadikan foto pembuka memenuhi 100vh layar dengan ornamen menempel di atasnya.
-            </p>
-          </div>
-        )}
-
-        {(blockId === "couple-photo-1" || blockId === "couple-photo-2") && eventType === "WEDDING" && variants && onVariantChange && (
-          <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-3">
-            <span className="text-[11.5px] font-semibold text-stone-700">Tata Letak Foto Mempelai</span>
-            <div className="mt-1.5 grid grid-cols-3 gap-1 rounded-xl bg-stone-100 p-1">
               {[
-                { id: "side-by-side", label: "2 Kolom" },
-                { id: "stacked", label: "Kartu" },
-                { id: "portrait", label: "Potret" },
+                { id: "classic", label: "Bingkai Normal" },
+                { id: "arch", label: "Lengkung" },
+                { id: "circle", label: "Bulat" },
+                { id: "backdrop", label: "Latar 100vh" },
               ].map((opt) => (
                 <button
                   key={opt.id}
                   type="button"
-                  onClick={() => onVariantChange({ couple: opt.id as any })}
+                  onClick={() => onVariantChange({ opening: opt.id })}
+                  className={`rounded-lg px-2 py-1.5 text-[11px] font-semibold transition cursor-pointer ${
+                    (variants.opening ?? "classic") === opt.id ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-[10.5px] leading-snug text-stone-500">
+              Latar 100vh menjadikan foto pembuka memenuhi layar penuh seksi pembuka.
+            </p>
+          </div>
+        )}
+
+        {(blockId === "couple-photo-1" || blockId === "couple-photo-2") && variants && onVariantChange && (
+          <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-3">
+            <span className="text-[11.5px] font-semibold text-stone-700">
+              {eventType === "WEDDING" ? "Tata Letak Foto Mempelai" : "Tata Letak Foto Profil"}
+            </span>
+            <div className="mt-1.5 grid grid-cols-3 gap-1 rounded-xl bg-stone-100 p-1">
+              {[
+                { id: "stacked", label: "Bertumpuk" },
+                ...(eventType === "WEDDING" ? [{ id: "side", label: "2 Kolom" }] : []),
+                { id: "arch", label: "Lengkung" },
+                { id: "portrait", label: "Potret" },
+                { id: "polaroid", label: "Polaroid" },
+                { id: "editorial", label: "Editorial" },
+                { id: "backdrop", label: "Latar 100vh" },
+              ].map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => onVariantChange({ couple: opt.id })}
                   className={`rounded-lg px-1.5 py-1.5 text-[10.5px] font-semibold transition cursor-pointer ${
-                    (variants.couple ?? "side-by-side") === opt.id ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+                    (variants.couple ?? "stacked") === opt.id ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
                   }`}
                 >
                   {opt.label}
@@ -227,6 +259,179 @@ export default function BlockInspector({
           </div>
         )}
 
+        {blockId === "story-list" && variants && onVariantChange && (
+          <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-3">
+            <span className="text-[11.5px] font-semibold text-stone-700">Model Kisah Cinta</span>
+            <div className="mt-1.5 grid grid-cols-3 gap-1 rounded-xl bg-stone-100 p-1">
+              {[
+                { id: "timeline", label: "Timeline" },
+                { id: "cards", label: "Kartu" },
+                { id: "minimal", label: "Minimal" },
+              ].map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => onVariantChange({ story: opt.id as any })}
+                  className={`rounded-lg px-1.5 py-1.5 text-[10.5px] font-semibold transition cursor-pointer ${
+                    (variants.story ?? "timeline") === opt.id ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-[10.5px] leading-snug text-stone-500">
+              Menampilkan alur kisah cinta sebagai garis waktu vertikal, kartu bertumpuk, atau baris minimal.
+            </p>
+          </div>
+        )}
+
+        {blockId === "cover-guest" && variants && onVariantChange && (
+          <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-3">
+            <span className="text-[11.5px] font-semibold text-stone-700">Wadah Nama Tamu</span>
+            <div className="mt-1.5 grid grid-cols-4 gap-1 rounded-xl bg-stone-100 p-1">
+              {[
+                { id: "box", label: "Kotak" },
+                { id: "pill", label: "Kapsul" },
+                { id: "underline", label: "Garis" },
+                { id: "hidden", label: "Sembunyi" },
+              ].map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => onVariantChange({ guestCard: opt.id })}
+                  className={`rounded-lg px-1 py-1.5 text-[10.5px] font-semibold transition cursor-pointer ${
+                    (variants.guestCard ?? "box") === opt.id ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-[10.5px] leading-snug text-stone-500">
+              Bentuk kartu sapaan tamu di layar sampul pembuka.
+            </p>
+          </div>
+        )}
+
+        {blockId === "cover-date" && variants && onVariantChange && (
+          <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-3">
+            <span className="text-[11.5px] font-semibold text-stone-700">Format Tanggal Sampul</span>
+            <div className="mt-1.5 grid grid-cols-2 gap-1 rounded-xl bg-stone-100 p-1">
+              {[
+                { id: "inline", label: "Sebaris" },
+                { id: "split", label: "Editorial" },
+              ].map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => onVariantChange({ coverDate: opt.id })}
+                  className={`rounded-lg px-1.5 py-1.5 text-[10.5px] font-semibold transition cursor-pointer ${
+                    (variants.coverDate ?? "inline") === opt.id ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(blockId === "cover-open-btn" || blockId === "countdown-btn") && variants && onVariantChange && (
+          <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-3">
+            <span className="text-[11.5px] font-semibold text-stone-700">Gaya Tombol Undangan</span>
+            <div className="mt-1.5 grid grid-cols-4 gap-1 rounded-xl bg-stone-100 p-1">
+              {[
+                { id: "solid", label: "Penuh" },
+                { id: "outline", label: "Garis" },
+                { id: "glass", label: "Kaca" },
+                { id: "minimal", label: "Teks" },
+              ].map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => onVariantChange({ buttons: opt.id })}
+                  className={`rounded-lg px-1 py-1.5 text-[10.5px] font-semibold transition cursor-pointer ${
+                    (variants.buttons ?? "solid") === opt.id ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-[10.5px] leading-snug text-stone-500">
+              Mengatur tampilan seluruh tombol aksi utama di tema (sampul, kalender, RSVP, peta, dan salin rekening).
+            </p>
+          </div>
+        )}
+
+        {(blockId === "opening-quote" || blockId === "rsvp-form") && variants && onVariantChange && (
+          <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-3">
+            <span className="text-[11.5px] font-semibold text-stone-700">Permukaan Kartu &amp; Kotak</span>
+            <div className="mt-1.5 grid grid-cols-4 gap-1 rounded-xl bg-stone-100 p-1">
+              {[
+                { id: "solid", label: "Kertas" },
+                { id: "glass", label: "Kaca" },
+                { id: "outlined", label: "Bingkai" },
+                { id: "flat", label: "Tanpa Kotak" },
+              ].map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => onVariantChange({ cards: opt.id })}
+                  className={`rounded-lg px-1 py-1.5 text-[10.5px] font-semibold transition cursor-pointer ${
+                    (variants.cards ?? "solid") === opt.id ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-[10.5px] leading-snug text-stone-500">
+              Mengatur permukaan kartu kutipan, formulir RSVP, kartu ucapan, lokasi, dan rekening hadiah.
+            </p>
+          </div>
+        )}
+
+        {(onCopyStyle || onPasteStyle || (roleGroup && onApplyToRoleGroup)) && (
+          <div className="space-y-1.5 rounded-xl border border-stone-200 bg-stone-50/70 p-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-stone-500">Salin &amp; Samakan Gaya</span>
+              {copiedStyle && <span className="text-[10px] font-medium text-amber-700">Siap ditempel</span>}
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {onCopyStyle && (
+                <button
+                  type="button"
+                  onClick={onCopyStyle}
+                  className="rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-stone-700 transition hover:bg-stone-100 cursor-pointer"
+                >
+                  Salin Gaya Blok
+                </button>
+              )}
+              {onPasteStyle && (
+                <button
+                  type="button"
+                  disabled={!copiedStyle}
+                  onClick={onPasteStyle}
+                  className="rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-stone-700 transition hover:bg-stone-100 disabled:opacity-40 disabled:hover:bg-white cursor-pointer"
+                >
+                  Tempel Gaya
+                </button>
+              )}
+            </div>
+            {roleGroup && onApplyToRoleGroup && (
+              <button
+                type="button"
+                onClick={() => onApplyToRoleGroup(roleGroup.peers, roleGroup.label)}
+                className="w-full rounded-lg border border-amber-300 bg-amber-50/80 px-2.5 py-1.5 text-[11px] font-semibold text-amber-900 transition hover:bg-amber-100 cursor-pointer"
+              >
+                Samakan ke {roleGroup.label} ({roleGroup.peers.length} blok)
+              </button>
+            )}
+          </div>
+        )}
+
         {!OPTIONAL_BLOCKS.includes(blockId) && (
           <p className="rounded-xl bg-stone-50 p-2.5 text-[11px] leading-snug text-stone-500">Elemen ini wajib tampil di undangan, jadi tidak bisa disembunyikan. Posisi dan ukurannya tetap bisa diatur.</p>
         )}
@@ -253,6 +458,218 @@ export default function BlockInspector({
         <Slider label="Geser tegak" value={props.y} min={BLOCK_LIMITS.y[0]} max={BLOCK_LIMITS.y[1]} step={0.5} suffix="%" numeric resetTo={0} onChange={(y, final) => onChange({ y }, final)} />
         <Slider label="Ukuran" value={props.scale} min={BLOCK_LIMITS.scale[0]} max={BLOCK_LIMITS.scale[1]} step={0.05} suffix="x" resetTo={1} onChange={(scale, final) => onChange({ scale }, final)} />
         <Slider label="Putar" value={props.rotate} min={-45} max={45} step={1} suffix="°" resetTo={0} onChange={(rotate, final) => onChange({ rotate }, final)} />
+
+        <Slider
+          label="Opasitas"
+          value={props.opacity !== undefined ? Math.round(props.opacity * 100) : 100}
+          min={10}
+          max={100}
+          step={5}
+          suffix="%"
+          resetTo={100}
+          onChange={(val, final) => onChange({ opacity: val >= 100 ? undefined : Math.round(val) / 100 }, final)}
+        />
+
+        <div>
+          <span className="text-[11.5px] font-semibold text-stone-600">Perataan Teks</span>
+          <div className="mt-1 grid grid-cols-3 gap-1 rounded-xl bg-stone-100 p-1">
+            {[
+              { id: "left", label: "Kiri" },
+              { id: "center", label: "Tengah" },
+              { id: "right", label: "Kanan" },
+            ].map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => onChange({ align: props.align === opt.id ? undefined : (opt.id as any) }, true)}
+                className={`rounded-lg px-1.5 py-1.5 text-[11px] font-semibold transition cursor-pointer ${
+                  props.align === opt.id ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <Slider
+          label="Jarak huruf (Tracking)"
+          value={props.tracking ?? 0}
+          min={0}
+          max={12}
+          step={0.5}
+          suffix="px"
+          resetTo={0}
+          onChange={(val, final) => onChange({ tracking: val <= 0 ? undefined : val }, final)}
+        />
+
+        <Slider
+          label="Tinggi baris (Line-Height)"
+          value={props.lineHeight ?? 0}
+          min={0.85}
+          max={2.2}
+          step={0.05}
+          suffix="x"
+          resetTo={0}
+          onChange={(val, final) => onChange({ lineHeight: val < 0.85 ? undefined : val }, final)}
+        />
+
+        <Slider
+          label="Lebar maksimal"
+          value={props.maxWidth ?? 0}
+          min={180}
+          max={600}
+          step={10}
+          suffix="px"
+          numeric
+          resetTo={0}
+          onChange={(val, final) => onChange({ maxWidth: val < 180 ? undefined : val }, final)}
+        />
+
+        {!(FRAMED_PHOTOS as readonly string[]).includes(blockId) && (
+          <div className="space-y-2.5 rounded-xl border border-stone-200 bg-stone-50/50 p-3">
+            <p className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-stone-500">Tipografi Blok</p>
+
+            <div>
+              <span className="text-[11.5px] font-semibold text-stone-600">Peran / Keluarga Huruf</span>
+              <div className="mt-1 grid grid-cols-4 gap-1 rounded-xl bg-stone-100 p-1">
+                <button
+                  type="button"
+                  onClick={() => onChange({ font: undefined }, true)}
+                  className={`rounded-lg px-1 py-1.5 text-[10.5px] font-semibold transition cursor-pointer ${
+                    !props.font ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+                  }`}
+                >
+                  Bawaan
+                </button>
+                {BLOCK_FONT_ROLES.map((r) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => onChange({ font: props.font === r.id ? undefined : (r.id as BlockFontRole) }, true)}
+                    className={`rounded-lg px-1 py-1.5 text-[10.5px] font-semibold transition cursor-pointer ${
+                      props.font === r.id ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+                    }`}
+                  >
+                    {r.id === "script" ? "Script" : r.label}
+                  </button>
+                ))}
+              </div>
+              <select
+                value={props.font && !BLOCK_FONT_ROLES.some((r) => r.id === props.font) ? props.font : ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  onChange({ font: val === "" ? undefined : (val as BlockFontValue) }, true);
+                }}
+                className="mt-1.5 w-full rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-[11.5px] font-medium text-stone-700 outline-none focus:border-amber-500 cursor-pointer"
+              >
+                <option value="">Font katalog khusus blok (opsional)…</option>
+                {FONT_OPTIONS.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.label} ({f.kind})
+                  </option>
+                ))}
+                {googleFontIds(
+                  fonts ?? { heading: "playfair", body: "plus-jakarta", script: "great-vibes" },
+                  props.font ? { [blockId]: props } : undefined
+                ).map((gid) => (
+                  <option key={gid} value={gid}>
+                    {fontLabel(gid)} (Google)
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <span className="text-[11.5px] font-semibold text-stone-600">Gaya Kapital (Transform)</span>
+              <div className="mt-1 grid grid-cols-4 gap-1 rounded-xl bg-stone-100 p-1">
+                {BLOCK_TEXT_TRANSFORMS.map((t) => {
+                  const active = (props.transform ?? "none") === t.id;
+                  const shortLabel = t.id === "uppercase" ? "AA" : t.id === "capitalize" ? "Aa" : t.id === "lowercase" ? "aa" : "Normal";
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      title={t.label}
+                      onClick={() => onChange({ transform: t.id === "none" ? undefined : (t.id as BlockTextTransform) }, true)}
+                      className={`rounded-lg px-1 py-1.5 text-[10.5px] font-semibold transition cursor-pointer ${
+                        active ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+                      }`}
+                    >
+                      {shortLabel}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <span className="text-[11.5px] font-semibold text-stone-600">Ketebalan &amp; Miring</span>
+              <div className="mt-1 grid grid-cols-5 gap-1 rounded-xl bg-stone-100 p-1">
+                {BLOCK_FONT_WEIGHTS.map((w) => (
+                  <button
+                    key={w}
+                    type="button"
+                    onClick={() => onChange({ weight: props.weight === w ? undefined : (w as BlockFontWeight) }, true)}
+                    className={`rounded-lg px-1 py-1.5 text-[10.5px] font-semibold transition cursor-pointer ${
+                      props.weight === w ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+                    }`}
+                  >
+                    {w}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  title="Cetak miring (Italic)"
+                  onClick={() => onChange({ italic: props.italic ? undefined : true }, true)}
+                  className={`rounded-lg px-1 py-1.5 text-[11px] italic font-serif font-semibold transition cursor-pointer ${
+                    props.italic ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+                  }`}
+                >
+                  I
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <span className="text-[11.5px] font-semibold text-stone-600">Warna Teks (Token Palet)</span>
+              <select
+                value={props.color ?? ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  onChange({ color: val === "" ? undefined : (val as BlockColorToken) }, true);
+                }}
+                className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-[12px] font-medium text-stone-700 outline-none focus:border-amber-500 cursor-pointer"
+              >
+                <option value="">Bawaan seksi</option>
+                {BLOCK_COLOR_TOKENS.map((c) => (
+                  <option key={c.id} value={c.id}>{c.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+
+        {(FRAMED_PHOTOS as readonly string[]).includes(blockId) && (
+          <div>
+            <span className="text-[11.5px] font-semibold text-stone-600">Filter Foto Editorial</span>
+            <select
+              value={props.filter ?? "none"}
+              onChange={(e) => {
+                const val = e.target.value as EditorialPhotoFilter;
+                onChange({ filter: val === "none" ? undefined : val }, true);
+              }}
+              className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-[12px] font-medium text-stone-700 outline-none focus:border-amber-500 cursor-pointer"
+            >
+              {EDITORIAL_PHOTO_FILTERS.map((f) => (
+                <option key={f.id} value={f.id}>{f.label}</option>
+              ))}
+            </select>
+            <p className="mt-1 text-[10.5px] leading-snug text-stone-500">
+              Gaya filter visual khusus foto (warna bingkai dan teks tetap terjaga).
+            </p>
+          </div>
+        )}
 
         <div>
           <span className="text-[11.5px] font-semibold text-stone-600">Animasi Putar (Loop)</span>

@@ -52,6 +52,8 @@ interface Props {
   onRemove: () => void;
   onClose: () => void;
   onAlign?: (align: OrnamentAlign) => void;
+  onFillFourCorners?: () => void;
+  onCopyToSections?: (target: OrnamentSection | "all-flow") => void;
 }
 
 export function Slider({ label, value, min, max, step = 0.5, suffix = "", numeric = false, resetTo, onChange }: { label: string; value: number; min: number; max: number; step?: number; suffix?: string; numeric?: boolean; resetTo?: number; onChange: (v: number, final: boolean) => void }) {
@@ -145,6 +147,8 @@ export default function OrnamentInspector({
   onRemove,
   onClose,
   onAlign,
+  onFillFourCorners,
+  onCopyToSections,
 }: Props) {
   const set = (patch: Partial<BuilderOrnament>) => onChange(patch, true);
   const setText = (patch: Partial<OrnamentText>, final: boolean) => o.text && onChange({ text: { ...o.text, ...patch } }, final);
@@ -468,10 +472,60 @@ export default function OrnamentInspector({
         </div>
 
         {!o.text && (
-          <button type="button" onClick={() => set({ flipX: !o.flipX })} className="flex w-full items-center justify-between rounded-xl border border-stone-200 px-3 py-2 text-[12px] font-semibold text-stone-700 hover:bg-stone-50 cursor-pointer">
-            Cerminkan kiri-kanan
-            <span className={`h-1.5 w-1.5 rounded-full ${o.flipX ? "bg-amber-500" : "bg-stone-300"}`} />
-          </button>
+          <div className="space-y-1.5">
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onClick={() => set({ flipX: !o.flipX })}
+                className="flex items-center justify-between rounded-xl border border-stone-200 px-3 py-2 text-[11.5px] font-semibold text-stone-700 hover:bg-stone-50 cursor-pointer"
+              >
+                Cermin Kiri-Kanan
+                <span className={`h-1.5 w-1.5 rounded-full ${o.flipX ? "bg-amber-500" : "bg-stone-300"}`} />
+              </button>
+              <button
+                type="button"
+                onClick={() => set({ flipY: !o.flipY ? true : undefined })}
+                className="flex items-center justify-between rounded-xl border border-stone-200 px-3 py-2 text-[11.5px] font-semibold text-stone-700 hover:bg-stone-50 cursor-pointer"
+              >
+                Cermin Atas-Bawah
+                <span className={`h-1.5 w-1.5 rounded-full ${o.flipY ? "bg-amber-500" : "bg-stone-300"}`} />
+              </button>
+            </div>
+            {mode === "free" && onFillFourCorners && (
+              <button
+                type="button"
+                onClick={onFillFourCorners}
+                className="w-full rounded-xl border border-amber-200 bg-amber-50/70 px-3 py-2 text-center text-[11.5px] font-semibold text-amber-900 transition hover:bg-amber-100 cursor-pointer"
+                title="Gandakan ornamen ini secara simetris ke 4 sudut seksi (Kiri-Atas, Kanan-Atas, Kiri-Bawah, Kanan-Bawah)"
+              >
+                Pasang ke 4 Sudut Seksi
+              </button>
+            )}
+          </div>
+        )}
+
+        {mode === "free" && onCopyToSections && (
+          <div>
+            <span className="text-[11.5px] font-semibold text-stone-600">Salin ke seksi lain</span>
+            <select
+              value=""
+              onChange={(e) => {
+                const val = e.target.value as OrnamentSection | "all-flow" | "";
+                if (val) onCopyToSections(val);
+              }}
+              className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-800 outline-none focus:border-amber-500 cursor-pointer"
+            >
+              <option value="" disabled>Pilih seksi tujuan salinan…</option>
+              <option value="all-flow">Semua seksi isi (Home s/d RSVP)</option>
+              {familySections(eventType)
+                .filter((s) => s !== o.section)
+                .map((s) => (
+                  <option key={s} value={s}>
+                    Seksi {sectionLabelFor(s, eventType)}
+                  </option>
+                ))}
+            </select>
+          </div>
         )}
       </div>
 

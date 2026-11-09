@@ -21,7 +21,7 @@ import { auditBuilderMaster } from "@/lib/themeBuilder/audit";
 import { builderDefaultMedia, renderBuilderPreview } from "@/lib/themeBuilder/server";
 import { legacyDefaultMedia, legacyFonts, seedSpecFromMaster } from "@/lib/themeBuilder/legacySeed";
 import { compileBuilderMaster, readBuilderBlueprint } from "@/lib/themeBuilder/compile";
-import { BUILDER_BLOCKS, VARIANT_GROUPS, blockStyle, defaultBuilderSpec, parseBuilderSpec, paletteChecks, PALETTE_PRESETS, type BuilderSpec } from "@/lib/themeBuilder/spec";
+import { BUILDER_BLOCKS, VARIANT_GROUPS, blockStyle, defaultBuilderSpec, ornamentStyle, parseBuilderSpec, paletteChecks, PALETTE_PRESETS, peerBlocksForRole, type BuilderSpec } from "@/lib/themeBuilder/spec";
 import { GET, POST, PUT, PATCH } from "@/app/api/admin/theme-builder/route";
 import { POST as previewPost } from "@/app/api/admin/theme-builder/preview/route";
 import { POST as assetPost, DELETE as assetDelete } from "@/app/api/admin/theme-builder/assets/route";
@@ -264,6 +264,47 @@ describe("kompilator master", () => {
     expect(htmlPolaroid).toContain("rotate(-2.5deg)");
   });
 
+  it("mendukung varian navigasi, kartu tamu, tanggal sampul, pemisah seksi, couple editorial, dan opasitas tekstur tanpa warna statis", () => {
+    const customSpec: BuilderSpec = {
+      ...defaultBuilderSpec(),
+      textureOpacity: 45,
+      variants: {
+        ...defaultBuilderSpec().variants,
+        couple: "editorial",
+        nav: "drawer",
+        guestCard: "pill",
+        coverDate: "split",
+        dividers: "ornate",
+      },
+    };
+    const parsed = parseBuilderSpec(customSpec);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.spec.textureOpacity).toBe(45);
+    const html = compileBuilderMaster(parsed.spec, blueprint);
+    expect(auditBuilderMaster(html, blueprint)).toEqual([]);
+    expect(html).toContain(".fixed-bg-layer:not(.has-custom-bg) { opacity: 0.45; }");
+    expect(html).toContain("counter-reset: lux-nav");
+    expect(html).toContain('class="lux-drawer-toggle"');
+    expect(html).toContain('class="cover-date-split"');
+    expect(html).toContain("{{weddingDateDay}}");
+    expect(html).toContain("border-radius: var(--radius-full)");
+    expect(html).toContain("grid-template-columns: minmax(96px, 38%) minmax(0, 1fr)");
+
+    const minimalVariants: BuilderSpec = {
+      ...defaultBuilderSpec(),
+      variants: {
+        ...defaultBuilderSpec().variants,
+        nav: "none",
+        guestCard: "underline",
+        dividers: "gradient",
+      },
+    };
+    const htmlMinimal = compileBuilderMaster(minimalVariants, blueprint);
+    expect(auditBuilderMaster(htmlMinimal, blueprint)).toEqual([]);
+    expect(htmlMinimal).toContain(".bottom-dock { display: none !important; }");
+  });
+
   it("mendukung teks hias inisial dan monogram dinamis (token) serta animasi loop", () => {
     const spec: BuilderSpec = {
       ...defaultBuilderSpec(),
@@ -361,15 +402,16 @@ describe.skipIf(!IS_TEST_DB)("rute admin Theme Builder", () => {
     expect(fs.existsSync(path.join(ROOT, "themes", "wedding", "modern", `${RUN}-x.html`))).toBe(false);
   });
 
-  it("GET mengembalikan spesifikasi; tema tulisan tangan dapat dibuka di builder dari pembacaan master", async () => {
+  it("GET mengembalikan spesifikasi; tema tulisan tangan ditolak langsung (409) dan diarahkan ke Clone to Builder (from=...)", async () => {
     const res = await GET(new Request(`http://x/api/admin/theme-builder?id=${themeId}`) as never);
     const data = await res.json();
     expect(data.spec.ornaments).toHaveLength(2);
     const hand = await GET(new Request("http://x/api/admin/theme-builder?id=kalandra") as never);
-    expect(hand.status).toBe(200);
-    const handData = await hand.json();
-    expect(handData.isLegacyMaster).toBe(true);
-    expect(parseBuilderSpec(handData.spec).ok).toBe(true);
+    expect(hand.status).toBe(409);
+    const clone = await GET(new Request("http://x/api/admin/theme-builder?from=kalandra") as never);
+    expect(clone.status).toBe(200);
+    const cloneData = await clone.json();
+    expect(parseBuilderSpec(cloneData.spec).ok).toBe(true);
   });
 
   it("simpan dengan gaya baru memindahkan berkas master", async () => {
@@ -512,14 +554,75 @@ describe("blok konten dengan properti relatif", () => {
     expect(parseBuilderSpec({ ...defaultBuilderSpec(), blocks: { countdown: "x" } }).ok).toBe(false);
   });
 
-  it("kompilasi menulis translate, rotate, dan scale individual (tidak menimpa transform) dan master tetap lolos audit", () => {
-    const spec = { ...defaultBuilderSpec(), blocks: { "cover-names": { x: 12, y: -4, scale: 1.1, rotate: 3, hidden: false } } };
+  it("kompilasi menulis translate, rotate, scale, dan properti editorial serta mikro-tipografi blok dan master tetap lolos audit", () => {
+    const spec: BuilderSpec = {
+      ...defaultBuilderSpec(),
+      blocks: {
+        "cover-names": {
+          x: 12,
+          y: -4,
+          scale: 1.1,
+          rotate: 3,
+          hidden: false,
+          opacity: 0.9,
+          align: "center",
+          tracking: 2,
+          maxWidth: 400,
+          font: "script",
+          transform: "uppercase",
+          italic: true,
+          weight: 600,
+          color: "accent",
+        },
+        "couple-photo-1": { x: 0, y: 0, scale: 1, rotate: 0, hidden: false, filter: "grayscale" },
+      },
+    };
+    const parsed = parseBuilderSpec(spec);
+    expect(parsed.ok).toBe(true);
     const html = compileBuilderMaster(spec, blueprintHtml);
-    expect(blockStyle({ x: 12, y: -4, scale: 1.1, rotate: 3, hidden: false })).toBe("translate:12% -4%;rotate:3deg;scale:1.1;");
-    expect(html).toContain('[data-lux-block="cover-names"]{translate:12% -4%;rotate:3deg;scale:1.1;}');
-    expect(html).not.toMatch(/\[data-lux-block="cover-names"\]\{[^}]*\btransform\s*:/);
+    expect(
+      blockStyle({
+        x: 12,
+        y: -4,
+        scale: 1.1,
+        rotate: 3,
+        hidden: false,
+        opacity: 0.9,
+        align: "center",
+        tracking: 2,
+        maxWidth: 400,
+        font: "script",
+        transform: "uppercase",
+        italic: true,
+        weight: 600,
+        color: "accent",
+      })
+    ).toBe(
+      "translate:12% -4%;rotate:3deg;scale:1.1;opacity:0.9;text-align:center;letter-spacing:2px;max-width:400px;margin-left:auto;margin-right:auto;font-family:var(--font-script) !important;text-transform:uppercase !important;font-style:italic !important;font-weight:600 !important;color:var(--accent) !important;"
+    );
+    expect(html).toContain(
+      '[data-lux-block="cover-names"]{translate:12% -4%;rotate:3deg;scale:1.1;opacity:0.9;text-align:center;letter-spacing:2px;max-width:400px;margin-left:auto;margin-right:auto;font-family:var(--font-script) !important;text-transform:uppercase !important;font-style:italic !important;font-weight:600 !important;color:var(--accent) !important;}'
+    );
+    expect(html).toContain('[data-lux-block="couple-photo-1"] img{filter:grayscale(100%);}');
+    expect(html).not.toMatch(/\[data-lux-block="cover-names"\]\{[^}]*(?<![-\w])transform\s*:/);
     expect(auditBuilderMaster(html, blueprintHtml)).toEqual([]);
     expect(compileBuilderMaster(defaultBuilderSpec(), blueprintHtml)).not.toContain("lux-builder-blocks");
+
+    const catalogFontSpec = parseBuilderSpec({
+      ...defaultBuilderSpec(),
+      blocks: {
+        "cover-names": { x: 0, y: 0, scale: 1, rotate: 0, hidden: false, font: "playfair" },
+        "opening-names": { x: 0, y: 0, scale: 1, rotate: 0, hidden: false, font: "g:Italiana" },
+      },
+    });
+    expect(catalogFontSpec.ok).toBe(true);
+    if (catalogFontSpec.ok) {
+      const compiledCatalog = compileBuilderMaster(catalogFontSpec.spec, blueprintHtml);
+      expect(compiledCatalog).toContain("font-family:'Playfair Display', Georgia, serif !important;");
+      expect(compiledCatalog).toContain("font-family:'Italiana', Georgia, serif !important;");
+      expect(compiledCatalog).toContain('/uploads/fonts/italiana/font.css');
+      expect(auditBuilderMaster(compiledCatalog, blueprintHtml)).toEqual([]);
+    }
   });
 
   it("audit menandai master yang kehilangan penanda blok", () => {
@@ -585,6 +688,14 @@ describe("titik awal dari tema pernikahan lama", () => {
     expect(bugis.ornaments.some((o) => o.slot === "HOME_PHOTO")).toBe(true);
     const makassar = seedSpecFromMaster(fs.readFileSync(legacyFiles.find((f) => f.id === "makassar")!.file, "utf8")).spec;
     expect(makassar.frames["opening-photo"]?.ornament).toBe("/assets/ornaments/bugis/frame-passapu-phinisi.webp");
+    const valente = seedSpecFromMaster(fs.readFileSync(legacyFiles.find((f) => f.id === "valente")!.file, "utf8")).spec;
+    expect(valente.variants.couple).toBe("editorial");
+    expect(valente.variants.nav).toBe("drawer");
+    expect(valente.blocks["cover-monogram"]?.hidden).toBe(true);
+    const kalandra = seedSpecFromMaster(fs.readFileSync(legacyFiles.find((f) => f.id === "kalandra")!.file, "utf8")).spec;
+    expect(kalandra.variants.cover).toBe("fullscreen");
+    expect(kalandra.variants.coverDate).toBe("split");
+    expect(kalandra.variants.guestCard).toBe("underline");
   });
 
   it.skipIf(!IS_TEST_DB)("API: daftar tema lama, titik awal, dan penolakan tema yang bukan tulisan tangan atau tidak ada", async () => {
@@ -640,5 +751,96 @@ describe("titik awal dari tema pernikahan lama", () => {
     const parsed = parseBuilderSpec(body.spec);
     expect(parsed.ok).toBe(true);
     if (parsed.ok) expect(parsed.spec.eventType).toBe("KHITAN");
+  });
+
+  it("5 peralatan studio tambahan: flipY ornamen, lineHeight blok, varian buttons & cards, serta peerBlocksForRole", () => {
+    const base = defaultBuilderSpec();
+    const raw = {
+      ...base,
+      variants: {
+        ...base.variants,
+        buttons: "glass",
+        cards: "outlined",
+      },
+      blocks: {
+        "couple-title": { x: 0, y: 0, scale: 1, rotate: 0, hidden: false, lineHeight: 1.35 },
+      },
+      ornaments: [
+        {
+          id: "ornflipy01",
+          section: "cover" as const,
+          src: "/assets/ornaments/flowers/flower-tl.webp",
+          x: 20,
+          y: 10,
+          anchor: "top" as const,
+          width: 35,
+          rotate: 15,
+          opacity: 0.9,
+          flipX: true,
+          flipY: true,
+          layer: "front" as const,
+        },
+      ],
+    };
+
+    const parsed = parseBuilderSpec(raw);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+
+    expect(parsed.spec.variants.buttons).toBe("glass");
+    expect(parsed.spec.variants.cards).toBe("outlined");
+    expect(parsed.spec.blocks["couple-title"]?.lineHeight).toBe(1.35);
+    expect(parsed.spec.ornaments[0].flipY).toBe(true);
+    expect(ornamentStyle(parsed.spec.ornaments[0])).toContain("scaleX(-1) scaleY(-1)");
+    expect(blockStyle(parsed.spec.blocks["couple-title"]!)).toContain("line-height:1.35 !important;");
+
+    const master = compileBuilderMaster(parsed.spec);
+    expect(master).toContain("backdrop-filter: blur(12px)");
+    expect(master).toContain(".opening-quote-card, .rsvp-form-box");
+    expect(auditBuilderMaster(master, readBuilderBlueprint("WEDDING"))).toEqual([]);
+
+    const titleRole = peerBlocksForRole("couple-title", "WEDDING");
+    expect(titleRole).not.toBeNull();
+    expect(titleRole?.peers).toContain("events-title");
+    expect(titleRole?.peers).toContain("story-title");
+
+    const singleTitleRole = peerBlocksForRole("couple-title", "BIRTHDAY");
+    expect(singleTitleRole?.peers).not.toContain("story-title");
+  });
+
+  it("peralatan kelengkapan studio tambahan: scrimOpacity foto sampul/penutup dan varian kerapatan seksi (spacing)", () => {
+    const base = defaultBuilderSpec();
+    const raw = {
+      ...base,
+      scrimOpacity: 75,
+      variants: {
+        ...base.variants,
+        spacing: "airy",
+      },
+    };
+    const parsed = parseBuilderSpec(raw);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+
+    expect(parsed.spec.scrimOpacity).toBe(75);
+    expect(parsed.spec.variants.spacing).toBe("airy");
+
+    const master = compileBuilderMaster(parsed.spec);
+    expect(master).toContain("padding-top: 84px !important; padding-bottom: 84px !important;");
+    expect(master).toContain("color-mix(in srgb, var(--overlay) 75%, transparent)");
+    expect(auditBuilderMaster(master, readBuilderBlueprint("WEDDING"))).toEqual([]);
+
+    const compactSpec = parseBuilderSpec({
+      ...base,
+      scrimOpacity: 55,
+      variants: { ...base.variants, spacing: "compact" },
+    });
+    expect(compactSpec.ok).toBe(true);
+    if (compactSpec.ok) {
+      expect(compactSpec.spec.scrimOpacity).toBeUndefined();
+      const compactMaster = compileBuilderMaster(compactSpec.spec);
+      expect(compactMaster).toContain("padding-top: 36px !important; padding-bottom: 36px !important;");
+      expect(auditBuilderMaster(compactMaster, readBuilderBlueprint("WEDDING"))).toEqual([]);
+    }
   });
 });

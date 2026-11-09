@@ -1264,7 +1264,7 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
     var docks = document.querySelectorAll('.bottom-dock');
     Array.prototype.forEach.call(docks, function(dock) {
       // Dock tersembunyi (lebar 0) tidak dapat diukur: kelas tahap sebelumnya dibiarkan, diukur ulang saat tampil.
-      if (!dock.getBoundingClientRect().width) return;
+      if (!dock.getBoundingClientRect().width || dock.querySelector('.lux-drawer-toggle')) return;
       // Transisi tema (mis. transition: all pada tombol dock) dimatikan selama pengukuran. Tanpa ini melepas dan memasang
       // kelas tahap memulai animasi ukuran tombol, ResizeObserver memanggil fungsi ini lagi tiap frame, dan dock berkedip
       // tanpa henti sambil terukur di tengah animasi. Layout dipaksa sebelum kelas dilepas agar tidak ada animasi yang mulai.
@@ -1687,6 +1687,20 @@ export async function renderTemplateFile(
     }
     /* Tahap fitBottomDock(): compact = tombol navigasi berbagi lebar layar; tight = label dirapatkan; icons = label disembunyikan.
        Tombol audio (lingkaran berukuran tetap) tidak ikut direntangkan. measuring hanya ada selama pengukuran. */
+    .bottom-dock > button.dock-a {
+      color: var(--text-muted);
+      font-family: var(--font-body);
+      font-size: 0.65rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+      padding: 0;
+    }
+    .bottom-dock > button.dock-a > svg {
+      width: 18px;
+      height: 18px;
+    }
     .bottom-dock.lux-dock-measuring,
     .bottom-dock.lux-dock-measuring > * {
       transition: none !important;

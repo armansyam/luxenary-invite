@@ -22,6 +22,7 @@ import {
   FRAMED_PHOTOS,
   defaultBuilderSpec,
   fontLabel,
+  googleFontIds,
   isDefaultBlock,
   isDefaultFrame,
   isStackPeer,
@@ -66,7 +67,7 @@ function structuralKey(spec: BuilderSpec): string {
   // Posisi ornamen dan properti blok diterapkan langsung ke pratinjau saat menyeret, jadi tidak memicu muat ulang.
   // Bingkai foto juga diterapkan langsung lewat gaya di dokumen pratinjau.
   // Isi, huruf, ukuran, dan warna teks hias juga diterapkan langsung; hanya jenis (teks atau gambar), slot media, dan tempat menempel yang mengubah HTML.
-  return JSON.stringify({ ...spec, blocks: {}, frames: {}, ornaments: spec.ornaments.map((o) => [o.id, o.src, o.section, o.layer, o.attach ?? "", o.before ?? "", o.slot ?? "", o.text ? 1 : 0, o.text?.labelKey ?? ""]) });
+  return JSON.stringify({ ...spec, blocks: {}, blockGoogleFonts: googleFontIds(spec.fonts, spec.blocks), frames: {}, ornaments: spec.ornaments.map((o) => [o.id, o.src, o.section, o.layer, o.attach ?? "", o.before ?? "", o.slot ?? "", o.text ? 1 : 0, o.text?.labelKey ?? ""]) });
 }
 
 /** Posisi ornamen di antara ornamen sejenis (wadah dan lapisan sama); 0 adalah paling belakang. */
@@ -81,7 +82,7 @@ const Icon = ({ d, className = "h-4 w-4" }: { d: string; className?: string }) =
   </svg>
 );
 
-export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
+export default function ThemeBuilder({ themeId, fromId }: { themeId: string | null; fromId?: string | null }) {
   const router = useRouter();
   const { notify, confirm } = useFeedback();
 
@@ -176,6 +177,25 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
     if (themeId && loadedFor.current === themeId) return;
     (async () => {
       if (!themeId) {
+        if (fromId) {
+          const res = await fetch(`/api/admin/theme-builder?from=${encodeURIComponent(fromId)}`, { cache: "no-store" });
+          const data = await res.json().catch(() => ({}));
+          if (cancelled) return;
+          if (!res.ok) {
+            setLoadError(data.error || "Tema lama gagal dibaca.");
+            return;
+          }
+          const m: ThemeMeta = { id: "", name: data.theme.name, category: data.theme.category, description: data.theme.description || "", defaultMusicUrl: data.theme.defaultMusicUrl || "" };
+          specRef.current = data.spec;
+          setSpec(data.spec);
+          setMeta(m);
+          setIsNew(true);
+          setSaved(snapshot(data.spec, m));
+          setLoaded(true);
+          const r = data.report as { source: string; found: string[]; missing: string[]; fontsFound: string[]; mediaFound: number; hexOutsideRoot: number };
+          notify(`Titik awal dari ${r.source}: ${r.found.length} dari ${r.found.length + r.missing.length} warna palet, ${r.fontsFound.length} dari 3 huruf, dan ${r.mediaFound} media bawaan terbaca${r.hexOutsideRoot ? `; ${r.hexOutsideRoot} warna lain di tema lama ditulis mati dan tidak ikut` : ""}. Tata letak mengikuti blueprint.`, "info");
+          return;
+        }
         const initial = defaultBuilderSpec();
         const initialMeta: ThemeMeta = { id: "", name: "", category: "modern", description: "", defaultMusicUrl: "" };
         setSaved(snapshot(initial, initialMeta));
@@ -201,7 +221,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
       setLoaded(true);
     })().catch(() => !cancelled && setLoadError("Tema gagal dimuat. Periksa koneksi lalu muat ulang halaman."));
     return () => { cancelled = true; };
-  }, [themeId, snapshot]);
+  }, [themeId, fromId, snapshot, notify]);
 
   const loadLibrary = useCallback(async () => {
     const res = await fetch("/api/admin/theme-builder/assets", { cache: "no-store" });
@@ -434,6 +454,51 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
     apply({ ...specRef.current, blocks }, "commit");
   }, [apply]);
 
+  const [copiedBlockStyle, setCopiedBlockStyle] = useState<Partial<BlockProps> | null>(null);
+
+  const extractBlockVisualStyle = useCallback((p: BlockProps): Partial<BlockProps> => ({
+    scale: p.scale,
+    rotate: p.rotate,
+    opacity: p.opacity,
+    align: p.align,
+    tracking: p.tracking,
+    lineHeight: p.lineHeight,
+    maxWidth: p.maxWidth,
+    font: p.font,
+    transform: p.transform,
+    italic: p.italic,
+    weight: p.weight,
+    color: p.color,
+    filter: p.filter,
+    loop: p.loop,
+  }), []);
+
+  const copyBlockStyle = useCallback((id: BuilderBlockId) => {
+    const source = specRef.current.blocks[id] ?? DEFAULT_BLOCK_PROPS;
+    setCopiedBlockStyle(extractBlockVisualStyle(source));
+    notify("Gaya blok disalin. Pilih blok lain lalu klik Tempel Gaya.", "info");
+  }, [extractBlockVisualStyle, notify]);
+
+  const pasteBlockStyle = useCallback((id: BuilderBlockId) => {
+    if (!copiedBlockStyle) return;
+    updateBlock(id, copiedBlockStyle, true);
+    notify("Gaya blok ditempel.");
+  }, [copiedBlockStyle, notify, updateBlock]);
+
+  const applyStyleToRoleGroup = useCallback((sourceId: BuilderBlockId, peers: BuilderBlockId[], label: string) => {
+    const current = specRef.current;
+    const source = current.blocks[sourceId] ?? DEFAULT_BLOCK_PROPS;
+    const stylePatch = extractBlockVisualStyle(source);
+    const blocks = { ...current.blocks };
+    for (const peerId of peers) {
+      const merged = { ...(blocks[peerId] ?? DEFAULT_BLOCK_PROPS), ...stylePatch };
+      if (isDefaultBlock(merged)) delete blocks[peerId];
+      else blocks[peerId] = merged;
+    }
+    apply({ ...current, blocks }, "commit");
+    notify(`Gaya diterapkan ke ${label} (${peers.length} blok).`);
+  }, [apply, extractBlockVisualStyle, notify]);
+
   const updateFrame = useCallback((id: FramedPhotoId, patch: Partial<PhotoFrame>, final: boolean) => {
     const current = specRef.current;
     const merged = { ...(current.frames[id] ?? DEFAULT_PHOTO_FRAME), ...patch };
@@ -576,6 +641,84 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
     if (copy.text?.labelKey) copy.text = { ...copy.text, labelKey: undefined };
     apply({ ...specRef.current, ornaments: [...specRef.current.ornaments, copy] }, "commit");
     setSelectedId(copy.id);
+  }, [apply, notify]);
+
+  /** Menempatkan ornamen sudut secara simetris ke 4 sudut seksi sekaligus (Kiri-Atas, Kanan-Atas, Kiri-Bawah, Kanan-Bawah). */
+  const fillFourCornersOrnament = useCallback((id: string) => {
+    const current = specRef.current;
+    const source = current.ornaments.find((o) => o.id === id);
+    if (!source || source.text || source.attach || source.before) return;
+    const inSecCount = current.ornaments.filter((o) => o.section === source.section).length;
+    if (current.ornaments.length + 3 > MAX_ORNAMENTS) {
+      return notify(`Melebihi batas ${MAX_ORNAMENTS} ornamen per tema.`, "error");
+    }
+    if (inSecCount + 3 > MAX_ORNAMENTS_PER_SECTION) {
+      return notify(`Seksi ${sectionLabelFor(source.section, current.eventType)} tidak cukup ruang untuk 3 ornamen sudut tambahan (maks. ${MAX_ORNAMENTS_PER_SECTION}).`, "error");
+    }
+    const dx = Math.round((source.x <= 50 ? source.x : 100 - source.x) * 10) / 10;
+    const dy = Math.round((source.y <= 50 ? source.y : 100 - source.y) * 10) / 10;
+    const base: BuilderOrnament = { ...source, x: dx, y: dy, anchor: "top", flipX: false, flipY: undefined, rotate: 0 };
+    const topRight: BuilderOrnament = { ...base, id: newOrnamentId(), x: Math.round((100 - dx) * 10) / 10, y: dy, anchor: "top", flipX: true, flipY: undefined };
+    const bottomLeft: BuilderOrnament = { ...base, id: newOrnamentId(), x: dx, y: dy, anchor: "bottom", flipX: false, flipY: true };
+    const bottomRight: BuilderOrnament = { ...base, id: newOrnamentId(), x: Math.round((100 - dx) * 10) / 10, y: dy, anchor: "bottom", flipX: true, flipY: true };
+    const nextOrnaments = current.ornaments.map((o) => (o.id === id ? base : o)).concat([topRight, bottomLeft, bottomRight]);
+    apply({ ...current, ornaments: nextOrnaments }, "commit");
+    notify(`Ornamen dipasang simetris ke 4 sudut seksi ${sectionLabelFor(source.section, current.eventType)}.`);
+  }, [apply, notify]);
+
+  /** Menyalin ornamen bebas terpilih ke seksi lain atau ke semua seksi isi (Home s/d RSVP). */
+  const copyOrnamentToSections = useCallback((id: string, target: OrnamentSection | "all-flow") => {
+    const current = specRef.current;
+    const source = current.ornaments.find((o) => o.id === id);
+    if (!source || source.attach || source.before) return;
+    const flowSecs = (["opening", "couple", "countdown", "events", "story", "rsvp"] as OrnamentSection[]).filter(
+      (s) => familySections(current.eventType).includes(s) && s !== source.section
+    );
+    const targets: OrnamentSection[] = target === "all-flow" ? flowSecs : [target];
+    const additions: BuilderOrnament[] = [];
+    for (const sec of targets) {
+      if (current.ornaments.length + additions.length >= MAX_ORNAMENTS) break;
+      const secCount = current.ornaments.filter((o) => o.section === sec).length + additions.filter((o) => o.section === sec).length;
+      if (secCount >= MAX_ORNAMENTS_PER_SECTION) continue;
+      const copy: BuilderOrnament = { ...source, id: newOrnamentId(), section: sec };
+      if (copy.text?.labelKey) copy.text = { ...copy.text, labelKey: undefined };
+      additions.push(copy);
+    }
+    if (!additions.length) {
+      return notify("Seksi tujuan sudah penuh atau batas ornamen tema tercapai.", "error");
+    }
+    apply({ ...current, ornaments: [...current.ornaments, ...additions] }, "commit");
+    notify(
+      target === "all-flow"
+        ? `Ornamen disalin ke ${additions.length} seksi isi.`
+        : `Ornamen disalin ke seksi ${sectionLabelFor(target, current.eventType)}.`
+    );
+  }, [apply, notify]);
+
+  /** Menyalin semua ornamen bebas di seksi aktif ke seluruh seksi isi lainnya (Home s/d RSVP). */
+  const copySectionOrnamentsToAllFlow = useCallback((sourceSection: OrnamentSection) => {
+    const current = specRef.current;
+    const sources = current.ornaments.filter((o) => o.section === sourceSection && !o.attach && !o.before);
+    if (!sources.length) return;
+    const flowSecs = (["opening", "couple", "countdown", "events", "story", "rsvp"] as OrnamentSection[]).filter(
+      (s) => familySections(current.eventType).includes(s) && s !== sourceSection
+    );
+    const additions: BuilderOrnament[] = [];
+    for (const sec of flowSecs) {
+      for (const src of sources) {
+        if (current.ornaments.length + additions.length >= MAX_ORNAMENTS) break;
+        const secCount = current.ornaments.filter((o) => o.section === sec).length + additions.filter((o) => o.section === sec).length;
+        if (secCount >= MAX_ORNAMENTS_PER_SECTION) break;
+        const copy: BuilderOrnament = { ...src, id: newOrnamentId(), section: sec };
+        if (copy.text?.labelKey) copy.text = { ...copy.text, labelKey: undefined };
+        additions.push(copy);
+      }
+    }
+    if (!additions.length) {
+      return notify("Batas ornamen tercapai atau seksi tujuan sudah penuh.", "error");
+    }
+    apply({ ...current, ornaments: [...current.ornaments, ...additions] }, "commit");
+    notify(`${additions.length} ornamen disalin ke seksi isi lainnya.`);
   }, [apply, notify]);
 
   const save = useCallback(async () => {
@@ -771,7 +914,16 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
         <div className="max-w-sm rounded-2xl bg-white p-6 shadow-sm ring-1 ring-stone-200">
           <p className="text-sm font-bold text-stone-900">Builder tidak dapat dibuka</p>
           <p className="mt-2 text-[13px] text-stone-600">{loadError}</p>
-          <a href="/admin?tab=themes" className="mt-4 inline-block rounded-xl bg-stone-900 px-4 py-2 text-xs font-semibold text-white">Kembali ke katalog tema</a>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            {themeId && (
+              <a href={`/admin/theme-builder?from=${encodeURIComponent(themeId)}`} className="inline-block rounded-xl bg-amber-600 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-700">
+                Clone to Builder
+              </a>
+            )}
+            <a href="/admin?tab=themes" className="inline-block rounded-xl bg-stone-900 px-4 py-2 text-xs font-semibold text-white hover:bg-stone-800">
+              Kembali ke katalog tema
+            </a>
+          </div>
         </div>
       </div>
     );
@@ -823,33 +975,15 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
             </span>
           )}
           {isNew && (
-            <>
-              <select
-                aria-label="Edit tema yang ada"
-                defaultValue=""
-                onChange={(e) => {
-                  const id = e.target.value;
-                  e.target.value = "";
-                  if (id) {
-                    allowLeave.current = true;
-                    router.push(`/admin/theme-builder?id=${encodeURIComponent(id)}`);
-                  }
-                }}
-                className="rounded-lg border border-stone-200 bg-white px-2 py-1 text-[11.5px] font-semibold text-stone-600 outline-none hover:border-stone-300 cursor-pointer"
-              >
-                <option value="">Edit tema yang ada…</option>
-                {(legacyThemes?.eventType === spec.eventType ? legacyThemes.themes : []).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
-              <select
-                aria-label="Mulai dari tema lama"
-                defaultValue=""
-                onChange={(e) => { startFromLegacy(e.target.value); e.target.value = ""; }}
-                className="rounded-lg border border-stone-200 bg-white px-2 py-1 text-[11.5px] font-semibold text-stone-600 outline-none hover:border-stone-300 cursor-pointer"
-              >
-                <option value="">Mulai dari tema lama…</option>
-                {(legacyThemes?.eventType === spec.eventType ? legacyThemes.themes : []).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
-            </>
+            <select
+              aria-label="Mulai dari tema lama"
+              defaultValue=""
+              onChange={(e) => { startFromLegacy(e.target.value); e.target.value = ""; }}
+              className="rounded-lg border border-stone-200 bg-white px-2 py-1 text-[11.5px] font-semibold text-stone-600 outline-none hover:border-stone-300 cursor-pointer"
+            >
+              <option value="">Mulai dari tema lama…</option>
+              {(legacyThemes?.eventType === spec.eventType ? legacyThemes.themes : []).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
           )}
           {isNew && (
             <>
@@ -983,6 +1117,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
               onStartDrag={startLibraryDrag}
               onSelect={setSelectedId}
               onDeleteAsset={deleteAsset}
+              onCopySectionToAllFlow={() => copySectionOrnamentsToAllFlow(viewSection)}
             />
           ) : panel === "motion" ? (
             <MotionPanel spec={spec} onChange={patchSpec} onReplay={() => setReplayNonce((n) => n + 1)} />
@@ -1037,6 +1172,7 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
             onSelect={(id) => { setSelectedId(id); if (id) { setSelectedBlock(null); setPanel("ornaments"); } }}
             onOrnamentChange={updateOrnament}
             onDuplicateOrnament={duplicateOrnament}
+            onFillFourCornersOrnament={fillFourCornersOrnament}
             onDeleteOrnament={removeOrnament}
             blocks={spec.blocks}
             selectedBlock={selectedBlock}
@@ -1067,6 +1203,8 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
                 const patch = actionsRef.current?.alignOrnament(selected.id, align);
                 if (patch) updateOrnament(selected.id, patch, true);
               }}
+              onFillFourCorners={() => fillFourCornersOrnament(selected.id)}
+              onCopyToSections={(target) => copyOrnamentToSections(selected.id, target)}
             />
           ) : selectedBlock ? (
             <BlockInspector
@@ -1081,8 +1219,13 @@ export default function ThemeBuilder({ themeId }: { themeId: string | null }) {
               onFrameChange={(patch, final) => updateFrame(selectedBlock as FramedPhotoId, patch, final)}
               library={library}
               onUpload={uploadAssets}
+              fonts={spec.fonts}
               variants={spec.variants}
               onVariantChange={(patch) => patchSpec({ variants: { ...spec.variants, ...patch } })}
+              copiedStyle={copiedBlockStyle}
+              onCopyStyle={() => copyBlockStyle(selectedBlock)}
+              onPasteStyle={() => pasteBlockStyle(selectedBlock)}
+              onApplyToRoleGroup={(peers, label) => applyStyleToRoleGroup(selectedBlock, peers, label)}
             />
           ) : (
             <div className="h-full overflow-y-auto px-4 py-4">

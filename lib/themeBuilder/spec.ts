@@ -90,6 +90,15 @@ export interface BuilderVariants {
   sidebar: string;
   gallery: string;
   events: string;
+  story: string;
+  gift: string;
+  nav: string;
+  guestCard: string;
+  coverDate: string;
+  dividers: string;
+  buttons: string;
+  cards: string;
+  spacing: string;
 }
 
 export const ORNAMENT_TEXT_FONTS = [
@@ -234,6 +243,8 @@ export interface BuilderOrnament {
   rotate: number;
   opacity: number;
   flipX: boolean;
+  /** Cerminkan atas-bawah (scaleY(-1)) untuk ornamen gambar; opsional agar kompatibel mundur. */
+  flipY?: boolean;
   layer: OrnamentLayer;
   /** Menempel ke blok: posisi dan lebar relatif ke kotak blok, sehingga ikut bergeser bersama blok dan isi klien. `section` mengikuti seksi blok itu. */
   attach?: AttachableBlockId;
@@ -343,6 +354,53 @@ export const BUILDER_BLOCKS = [
 ] as const;
 export type BuilderBlockId = (typeof BUILDER_BLOCKS)[number]["id"];
 
+export const EDITORIAL_PHOTO_FILTERS = [
+  { id: "none", label: "Normal" },
+  { id: "grayscale", label: "Hitam Putih" },
+  { id: "sepia", label: "Vintage Sepia" },
+  { id: "warm", label: "Golden Warm" },
+  { id: "dramatic", label: "Kontras Tinggi" },
+] as const;
+export type EditorialPhotoFilter = (typeof EDITORIAL_PHOTO_FILTERS)[number]["id"];
+
+export const PHOTO_FILTER_CSS: Record<EditorialPhotoFilter, string> = {
+  none: "",
+  grayscale: "grayscale(100%)",
+  sepia: "sepia(60%) contrast(105%)",
+  warm: "sepia(30%) saturate(120%) brightness(102%)",
+  dramatic: "contrast(125%) brightness(95%)",
+};
+
+export const BLOCK_FONT_ROLES = [
+  { id: "heading", label: "Judul" },
+  { id: "body", label: "Isi" },
+  { id: "script", label: "Tulisan tangan" },
+] as const;
+export type BlockFontRole = (typeof BLOCK_FONT_ROLES)[number]["id"];
+export type BlockFontValue = BlockFontRole | (typeof FONT_OPTIONS)[number]["id"] | `g:${string}`;
+
+export const BLOCK_TEXT_TRANSFORMS = [
+  { id: "none", label: "Normal" },
+  { id: "uppercase", label: "HURUF BESAR" },
+  { id: "capitalize", label: "Kapital Awal" },
+  { id: "lowercase", label: "huruf kecil" },
+] as const;
+export type BlockTextTransform = (typeof BLOCK_TEXT_TRANSFORMS)[number]["id"];
+
+export const BLOCK_FONT_WEIGHTS = [300, 400, 600, 700] as const;
+export type BlockFontWeight = (typeof BLOCK_FONT_WEIGHTS)[number];
+
+export const BLOCK_COLOR_TOKENS = [
+  { id: "primary", label: "Primary", css: "var(--primary)" },
+  { id: "secondary", label: "Secondary", css: "var(--secondary)" },
+  { id: "accent", label: "Aksen", css: "var(--accent)" },
+  { id: "textMain", label: "Teks Utama", css: "var(--text-main)" },
+  { id: "textMuted", label: "Teks Redup", css: "var(--text-muted)" },
+  { id: "textLight", label: "Teks Terang", css: "var(--on-dark)" },
+  { id: "onPrimary", label: "Di Atas Primary", css: "var(--on-primary)" },
+] as const;
+export type BlockColorToken = (typeof BLOCK_COLOR_TOKENS)[number]["id"];
+
 export interface BlockProps {
   /** Geser mendatar dan tegak, dalam persen lebar dan tinggi elemen itu sendiri. */
   x: number;
@@ -356,6 +414,28 @@ export interface BlockProps {
   z?: number;
   /** Animasi berulang (loop) halus pada elemen. */
   loop?: LoopAnimation;
+  /** Opasitas elemen (0.1 - 1.0, bawaan 1). */
+  opacity?: number;
+  /** Perataan teks khusus elemen ("left" | "center" | "right"). */
+  align?: "left" | "center" | "right";
+  /** Jarak antarhuruf (letter-spacing) dalam piksel (0 - 12 px). */
+  tracking?: number;
+  /** Filter visual khusus foto ("none" | "grayscale" | "sepia" | "warm" | "dramatic"). */
+  filter?: EditorialPhotoFilter;
+  /** Batas lebar maksimal elemen dalam piksel (180 - 600 px). */
+  maxWidth?: number;
+  /** Peran huruf ("heading" | "body" | "script") atau ID font katalog/Google khusus blok. */
+  font?: BlockFontValue;
+  /** Transformasi huruf khusus blok ("none" | "uppercase" | "capitalize" | "lowercase"). */
+  transform?: BlockTextTransform;
+  /** Gaya huruf miring (italic) khusus blok. */
+  italic?: boolean;
+  /** Ketebalan huruf (font-weight) khusus blok (300 | 400 | 600 | 700). */
+  weight?: BlockFontWeight;
+  /** Token warna teks palet khusus blok. */
+  color?: BlockColorToken;
+  /** Tinggi baris (line-height) khusus blok teks (0.85 - 2.2). */
+  lineHeight?: number;
 }
 export type BuilderBlocks = Partial<Record<BuilderBlockId, BlockProps>>;
 
@@ -458,7 +538,80 @@ export const DEFAULT_BLOCK_PROPS: BlockProps = { x: 0, y: 0, scale: 1, rotate: 0
 // ratusan piksel, dan elemen sempit (monogram, tanggal) untuk mencapai tengah layar.
 export const BLOCK_LIMITS = { x: [-1500, 1500], y: [-1500, 1500], scale: [0.5, 2], rotate: [-180, 180], z: [-9, 9] } as const;
 
-export const isDefaultBlock = (p: BlockProps) => p.x === 0 && p.y === 0 && p.scale === 1 && p.rotate === 0 && !p.hidden && !p.z && (!p.loop || p.loop === "none");
+export const isDefaultBlock = (p: BlockProps) =>
+  p.x === 0 &&
+  p.y === 0 &&
+  p.scale === 1 &&
+  p.rotate === 0 &&
+  !p.hidden &&
+  !p.z &&
+  (!p.loop || p.loop === "none") &&
+  (p.opacity === undefined || p.opacity === 1) &&
+  !p.align &&
+  (!p.tracking || p.tracking === 0) &&
+  (!p.filter || p.filter === "none") &&
+  !p.maxWidth &&
+  !p.font &&
+  (!p.transform || p.transform === "none") &&
+  !p.italic &&
+  !p.weight &&
+  !p.color &&
+  !p.lineHeight;
+
+/**
+ * Kelompok peran blok sejenis untuk fitur "Samakan ke Semua Serupa" di BlockInspector.
+ * Membantu admin menerapkan gaya tipografi (font, warna, weight, tracking, lineHeight, transform) ke semua judul seksi,
+ * eyebrow, atau kalimat pengantar sekaligus tanpa klik satu-satu.
+ */
+const BLOCK_ROLE_GROUPS: Array<{ id: string; label: string; members: readonly BuilderBlockId[] }> = [
+  {
+    id: "section-titles",
+    label: "Semua Judul Seksi",
+    members: ["couple-title", "countdown-title", "events-title", "story-title", "rsvp-title"],
+  },
+  {
+    id: "eyebrows",
+    label: "Semua Teks Kecil (Eyebrow)",
+    members: ["cover-badge", "opening-tagline", "opening-eyebrow", "couple-eyebrow", "countdown-eyebrow", "events-eyebrow", "story-eyebrow", "rsvp-eyebrow"],
+  },
+  {
+    id: "subtitles",
+    label: "Semua Kalimat Pengantar (Sub)",
+    members: ["cover-subtitle", "couple-sub", "countdown-sub", "rsvp-sub", "closing-quote", "closing-sub"],
+  },
+  {
+    id: "hero-names",
+    label: "Semua Nama Utama (Sampul/Home/Penutup)",
+    members: ["cover-names", "sidebar-names", "opening-names", "closing-names"],
+  },
+  {
+    id: "couple-names",
+    label: "Kedua Nama Mempelai",
+    members: ["couple-name-1", "couple-name-2"],
+  },
+  {
+    id: "couple-roles",
+    label: "Kedua Label Mempelai",
+    members: ["couple-role-1", "couple-role-2"],
+  },
+  {
+    id: "couple-parents",
+    label: "Kedua Orang Tua Mempelai",
+    members: ["couple-parents-1", "couple-parents-2"],
+  },
+];
+
+export function peerBlocksForRole(
+  blockId: BuilderBlockId,
+  eventType: BuilderEventType = "WEDDING",
+): { label: string; peers: BuilderBlockId[] } | null {
+  const grp = BLOCK_ROLE_GROUPS.find((g) => g.members.includes(blockId));
+  if (!grp) return null;
+  const allowed = new Set(familyBlocks(eventType).map((b) => b.id));
+  const peers = grp.members.filter((m) => allowed.has(m));
+  if (peers.length < 2) return null;
+  return { label: grp.label, peers };
+}
 
 /**
  * Isi seksi bertumpuk pada z-index 2 (ornamen belakang 1, ornamen depan 3), jadi lapisan blok dihitung dari 2. Blok
@@ -469,6 +622,11 @@ export const BLOCK_BASE_Z = 2;
 /** Nilai `z-index` blok, atau null bila memakai urutan bawaan. */
 export const blockZIndex = (p: BlockProps): number | null => (p.z ? BLOCK_BASE_Z + p.z : null);
 
+export function blockFontFamilyCss(font: string): string {
+  if (BLOCK_FONT_ROLES.some((r) => r.id === font)) return `var(--font-${font})`;
+  return fontFamily(font, "heading");
+}
+
 /**
  * Deklarasi CSS satu blok. Memakai properti transform individual (translate, rotate, scale) agar tidak menimpa
  * `transform` milik varian (mis. polaroid) maupun animasi masuk. `z-index` butuh `position`, dan semua blok di
@@ -476,7 +634,28 @@ export const blockZIndex = (p: BlockProps): number | null => (p.z ? BLOCK_BASE_Z
  */
 export function blockStyle(p: BlockProps): string {
   const z = blockZIndex(p);
-  return `translate:${p.x}% ${p.y}%;rotate:${p.rotate}deg;scale:${p.scale};${z === null ? "" : `position:relative;z-index:${z};`}${p.hidden ? "display:none;" : ""}`;
+  const parts: string[] = [
+    `translate:${p.x}% ${p.y}%;rotate:${p.rotate}deg;scale:${p.scale};`,
+  ];
+  if (z !== null) parts.push(`position:relative;z-index:${z};`);
+  if (p.hidden) parts.push("display:none;");
+  if (p.opacity !== undefined && p.opacity < 1) parts.push(`opacity:${p.opacity};`);
+  if (p.align) parts.push(`text-align:${p.align};`);
+  if (p.tracking) parts.push(`letter-spacing:${p.tracking}px;`);
+  if (p.maxWidth) parts.push(`max-width:${p.maxWidth}px;margin-left:auto;margin-right:auto;`);
+  if (p.font) parts.push(`font-family:${blockFontFamilyCss(p.font)} !important;`);
+  if (p.transform && p.transform !== "none") parts.push(`text-transform:${p.transform} !important;`);
+  if (p.italic) parts.push("font-style:italic !important;");
+  if (p.weight) parts.push(`font-weight:${p.weight} !important;`);
+  if (p.lineHeight) parts.push(`line-height:${p.lineHeight} !important;`);
+  if (p.color) {
+    const token = BLOCK_COLOR_TOKENS.find((c) => c.id === p.color);
+    if (token) parts.push(`color:${token.css} !important;`);
+  }
+  if (p.filter && p.filter !== "none" && PHOTO_FILTER_CSS[p.filter]) {
+    parts.push(`filter:${PHOTO_FILTER_CSS[p.filter]};`);
+  }
+  return parts.join("");
 }
 
 /**
@@ -818,6 +997,10 @@ export interface BuilderSpec {
   fonts: BuilderFonts;
   /** URL tekstur latar kanvas, atau "" tanpa tekstur. */
   texture: string;
+  /** Opasitas tekstur latar kanvas (10 - 100%, bawaan 100); hanya disimpan bila < 100. */
+  textureOpacity?: number;
+  /** Kepekatan lapisan gelap (scrim) di atas foto Sampul, Sidebar, dan Penutup (10 - 90%, bawaan 55). */
+  scrimOpacity?: number;
   /** Gambar bawaan per slot (dari pustaka latar); dipakai sampai klien mengunggah foto sendiri. */
   defaultMedia: BuilderDefaultMedia;
   /** Properti relatif blok konten; hanya blok yang diubah dari bawaan yang tersimpan. */
@@ -941,6 +1124,7 @@ export const VARIANT_GROUPS: Array<{ key: keyof BuilderVariants; label: string; 
       { id: "arch", label: "Lengkung", hint: "Foto tinggi berujung lengkung" },
       { id: "portrait", label: "Potret 3:4", hint: "Foto tegak proporsi potret 3:4" },
       { id: "polaroid", label: "Polaroid", hint: "Foto persegi dengan bayangan geser" },
+      { id: "editorial", label: "Editorial", hint: "Asimetris bergaya majalah dengan garis aksen" },
       { id: "backdrop", label: "Latar foto penuh", hint: "Foto mempelai menjadi background penuh 100vh" },
     ],
   },
@@ -1008,12 +1192,107 @@ export const VARIANT_GROUPS: Array<{ key: keyof BuilderVariants; label: string; 
       { id: "minimal", label: "Daftar minimal", hint: "Tipografi bersih bergaris pemisah tipis" },
     ],
   },
+  {
+    key: "story",
+    label: "Model kisah cinta",
+    section: "story",
+    options: [
+      { id: "timeline", label: "Garis waktu (Timeline)", hint: "Chapter bertingkat dengan garis vertikal" },
+      { id: "cards", label: "Kartu cerita (Cards)", hint: "Kartu cerita berbayangan elegan" },
+      { id: "minimal", label: "Daftar minimal", hint: "Tipografi monolog bersih tanpa garis" },
+    ],
+  },
+  {
+    key: "gift",
+    label: "Model tanda kasih",
+    section: null,
+    options: [
+      { id: "cards", label: "Kartu bertumpuk", hint: "Kartu rekening perbankan mandiri" },
+      { id: "tabs", label: "Tab ringkas", hint: "Pilihan rekening dengan kartu berelevasi" },
+      { id: "minimal", label: "Daftar minimal", hint: "Garis pemisah tipis tanpa kartu" },
+    ],
+  },
+  {
+    key: "nav",
+    label: "Model navigasi",
+    section: null,
+    options: [
+      { id: "dock", label: "Dock bawah", hint: "Menu apung kaca buram di bawah layar" },
+      { id: "drawer", label: "Indeks pojok atas", hint: "Menu indeks bernomor di pojok kanan atas" },
+      { id: "none", label: "Tanpa navigasi", hint: "Sembunyikan menu navigasi untuk layar bersih" },
+    ],
+  },
+  {
+    key: "guestCard",
+    label: "Wadah nama tamu",
+    section: "cover",
+    options: [
+      { id: "box", label: "Kotak kaca", hint: "Kotak kaca buram berbingkai halus" },
+      { id: "pill", label: "Kapsul (Pill)", hint: "Kapsul bulat memanjang bergaya modern" },
+      { id: "underline", label: "Garis bawah", hint: "Tipografi bersih dengan garis bawah aksen" },
+      { id: "hidden", label: "Sembunyikan", hint: "Tanpa kartu tamu di layar sampul" },
+    ],
+  },
+  {
+    key: "coverDate",
+    label: "Format tanggal sampul",
+    section: "cover",
+    options: [
+      { id: "inline", label: "Sebaris", hint: "Tanggal tampil sebaris di bawah nama" },
+      { id: "split", label: "Editorial berbingkai", hint: "Tanggal berbingkai garis aksen atas-bawah" },
+    ],
+  },
+  {
+    key: "dividers",
+    label: "Garis pemisah seksi",
+    section: null,
+    options: [
+      { id: "line", label: "Garis tipis", hint: "Garis pemisah halus standar" },
+      { id: "none", label: "Tanpa garis", hint: "Sembunyikan semua garis pemisah seksi" },
+      { id: "ornate", label: "Permata tengah", hint: "Garis meruncing dengan simbol permata di tengah" },
+      { id: "gradient", label: "Pendar gradien", hint: "Garis bercahaya dari warna primary ke aksen" },
+    ],
+  },
+  {
+    key: "buttons",
+    label: "Gaya tombol aksi",
+    section: null,
+    options: [
+      { id: "solid", label: "Blok warna (Solid)", hint: "Tombol berisi warna primary penuh" },
+      { id: "outline", label: "Garis tepi (Outline)", hint: "Tombol transparan dengan bingkai tegas" },
+      { id: "glass", label: "Kaca buram (Glass)", hint: "Tombol kaca buram modern dengan aksen halus" },
+      { id: "minimal", label: "Teks minimal", hint: "Tipografi bersih dengan garis bawah aksen" },
+    ],
+  },
+  {
+    key: "cards",
+    label: "Gaya kartu konten",
+    section: null,
+    options: [
+      { id: "solid", label: "Kertas klasik", hint: "Kartu berisi latar lembut dengan bayangan halus" },
+      { id: "glass", label: "Kaca buram (Glass)", hint: "Kartu semi-transparan dengan efek blur" },
+      { id: "outlined", label: "Bingkai tipis", hint: "Kartu transparan dengan garis bingkai tegas" },
+      { id: "flat", label: "Tanpa kotak (Flat)", hint: "Isi menyatu langsung dengan kanvas tanpa kotak" },
+    ],
+  },
+  {
+    key: "spacing",
+    label: "Jarak antar-seksi",
+    section: null,
+    options: [
+      { id: "normal", label: "Standar", hint: "Ruang napas seimbang antar-seksi" },
+      { id: "compact", label: "Rapat (Compact)", hint: "Jarak vertikal lebih ringkas dan padat" },
+      { id: "airy", label: "Lega Editorial", hint: "Ruang napas vertikal luas bergaya majalah" },
+    ],
+  },
 ];
 
 /** Satu nama: grup mempelai menata seksi profil; tata letak dua kolom tidak berarti untuk satu kartu. */
 export function familyVariantGroups(eventType: BuilderEventType): typeof VARIANT_GROUPS {
   if (builderFamilyOf(eventType) === "wedding") return VARIANT_GROUPS;
-  return VARIANT_GROUPS.map((g) => (g.key === "couple" ? { ...g, label: "Profil", options: g.options.filter((o) => o.id !== "side") } : g));
+  return VARIANT_GROUPS
+    .filter((g) => g.key !== "story")
+    .map((g) => (g.key === "couple" ? { ...g, label: "Profil", options: g.options.filter((o) => o.id !== "side") } : g));
 }
 
 export const ANIMATION_OPTIONS: Array<{ id: AnimationPreset; label: string; hint: string }> = [
@@ -1056,7 +1335,26 @@ export function defaultBuilderSpec(eventType: BuilderEventType = "WEDDING"): Bui
     texts: {},
     eventsPlacement: "section",
     radius: "soft",
-    variants: { cover: "classic", opening: "classic", couple: "stacked", countdown: "boxes", closing: "classic", headings: "classic", sidebar: "bottom-left", gallery: "grid", events: "cards" },
+    variants: {
+      cover: "classic",
+      opening: "classic",
+      couple: "stacked",
+      countdown: "boxes",
+      closing: "classic",
+      headings: "classic",
+      sidebar: "bottom-left",
+      gallery: "grid",
+      events: "cards",
+      story: "timeline",
+      gift: "cards",
+      nav: "dock",
+      guestCard: "box",
+      coverDate: "inline",
+      dividers: "line",
+      buttons: "solid",
+      cards: "solid",
+      spacing: "normal",
+    },
     animation: "rise",
     ornaments: [],
   };
@@ -1166,6 +1464,17 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
   }
   const texture = typeof input.texture === "string" ? input.texture : "";
   if (!isAllowedBackdropSrc(texture)) errors.push("Tekstur latar tidak dikenali.");
+  let textureOpacity: number | undefined;
+  if (input.textureOpacity !== undefined && input.textureOpacity !== null) {
+    const op = Math.round(clamp(input.textureOpacity, 10, 100, 100));
+    if (op < 100) textureOpacity = op;
+  }
+
+  let scrimOpacity: number | undefined;
+  if (input.scrimOpacity !== undefined && input.scrimOpacity !== null) {
+    const sc = Math.round(clamp(input.scrimOpacity, 10, 90, 55));
+    if (sc !== 55) scrimOpacity = sc;
+  }
 
   // Spesifikasi lama tanpa defaultMedia tetap sah; gambar bawaan dari pustaka latar atau unggahan admin.
   const defaultMedia: BuilderDefaultMedia = {};
@@ -1198,6 +1507,72 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
     if (raw.loop !== undefined && raw.loop !== null && raw.loop !== "none") {
       const loop = pickEnum<LoopAnimation>(raw.loop, loopIds, `Animasi loop ${label}`, errors);
       if (loop && loop !== "none") props.loop = loop;
+    }
+    if (raw.opacity !== undefined && raw.opacity !== null) {
+      const op = clamp(raw.opacity, 0.1, 1, 1);
+      if (op < 1) props.opacity = op;
+    }
+    if (raw.align !== undefined && raw.align !== null && ["left", "center", "right"].includes(raw.align)) {
+      props.align = raw.align;
+    }
+    if (raw.tracking !== undefined && raw.tracking !== null) {
+      const tr = clamp(raw.tracking, 0, 12, 0);
+      if (tr > 0) props.tracking = tr;
+    }
+    if (raw.maxWidth !== undefined && raw.maxWidth !== null) {
+      const mw = clamp(raw.maxWidth, 180, 600, 0);
+      if (mw >= 180) props.maxWidth = mw;
+    }
+    if (raw.filter !== undefined && raw.filter !== null && raw.filter !== "none") {
+      const filter = pickEnum<EditorialPhotoFilter>(
+        raw.filter,
+        EDITORIAL_PHOTO_FILTERS.map((f) => f.id),
+        `Filter foto ${label}`,
+        errors
+      );
+      if (filter && filter !== "none") props.filter = filter;
+    }
+    if (raw.font !== undefined && raw.font !== null && raw.font !== "") {
+      const allowedBlockFonts = [...BLOCK_FONT_ROLES.map((f) => f.id), ...fontIds];
+      if (typeof raw.font === "string" && isGoogleFontId(raw.font)) {
+        props.font = raw.font as BlockFontValue;
+      } else {
+        const font = pickEnum<string>(raw.font, allowedBlockFonts, `Huruf blok ${label}`, errors);
+        if (font) props.font = font as BlockFontValue;
+      }
+    }
+    if (raw.transform !== undefined && raw.transform !== null && raw.transform !== "none") {
+      const transform = pickEnum<BlockTextTransform>(
+        raw.transform,
+        BLOCK_TEXT_TRANSFORMS.map((t) => t.id),
+        `Transformasi teks ${label}`,
+        errors
+      );
+      if (transform && transform !== "none") props.transform = transform;
+    }
+    if (raw.italic === true) {
+      props.italic = true;
+    }
+    if (raw.weight !== undefined && raw.weight !== null) {
+      const w = Number(raw.weight);
+      if ((BLOCK_FONT_WEIGHTS as readonly number[]).includes(w)) {
+        props.weight = w as BlockFontWeight;
+      } else {
+        errors.push(`Ketebalan huruf ${label} tidak dikenali.`);
+      }
+    }
+    if (raw.color !== undefined && raw.color !== null && raw.color !== "") {
+      const color = pickEnum<BlockColorToken>(
+        raw.color,
+        BLOCK_COLOR_TOKENS.map((c) => c.id),
+        `Warna teks ${label}`,
+        errors
+      );
+      if (color) props.color = color;
+    }
+    if (raw.lineHeight !== undefined && raw.lineHeight !== null) {
+      const lh = clamp(raw.lineHeight, 0.85, 2.2, 0);
+      if (lh >= 0.85) props.lineHeight = lh;
     }
     if (!isDefaultBlock(props)) blocks[id] = props;
   }
@@ -1328,6 +1703,7 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
       rotate: clamp(o.rotate, -180, 180, 0),
       opacity: clamp(o.opacity, 0.05, 1, 1),
       flipX: o.flipX === true,
+      ...(o.flipY === true && !text ? { flipY: true } : {}),
       layer: !before && o.layer === "front" ? "front" : "back",
       ...(attach ? { attach } : {}),
       ...(before ? { before, gap: clamp(o.gap, ORNAMENT_GAP_LIMITS[0], ORNAMENT_GAP_LIMITS[1], DEFAULT_ORNAMENT_GAP) } : {}),
@@ -1347,6 +1723,8 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
       palette,
       fonts,
       texture,
+      ...(textureOpacity !== undefined ? { textureOpacity } : {}),
+      ...(scrimOpacity !== undefined ? { scrimOpacity } : {}),
       defaultMedia,
       blocks,
       frames,
@@ -1373,8 +1751,11 @@ export function fontFamily(id: string, role: keyof BuilderFonts = "heading"): st
 }
 
 /** Keluarga Google berbeda yang dipakai spesifikasi, urut kemunculan. */
-export function googleFontIds(fonts: BuilderFonts): string[] {
-  return [...new Set([fonts.heading, fonts.body, fonts.script].filter(isGoogleFontId))];
+export function googleFontIds(fonts: BuilderFonts, blocks?: BuilderBlocks): string[] {
+  const blockFonts = Object.values(blocks ?? {})
+    .map((b) => b?.font)
+    .filter((f): f is BlockFontValue => typeof f === "string");
+  return [...new Set([fonts.heading, fonts.body, fonts.script, ...blockFonts].filter(isGoogleFontId))];
 }
 
 /**
@@ -1382,16 +1763,17 @@ export function googleFontIds(fonts: BuilderFonts): string[] {
  * huruf, ukuran, dan warna; `line-height` ditulis di sini karena kelas `.lux-orn` di blueprint memakai 0 untuk gambar.
  * `scaleX(-1)` pada teks membalik tulisan, jadi cermin hanya berlaku untuk gambar.
  */
-export function ornamentStyle(o: Pick<BuilderOrnament, "x" | "y" | "anchor" | "width" | "rotate" | "opacity" | "flipX" | "text" | "before" | "gap" | "slot">): string {
+export function ornamentStyle(o: Pick<BuilderOrnament, "x" | "y" | "anchor" | "width" | "rotate" | "opacity" | "flipX" | "flipY" | "text" | "before" | "gap" | "slot">): string {
   const flip = o.text ? 1 : o.flipX ? -1 : 1;
+  const flipY = !o.text && o.flipY ? " scaleY(-1)" : "";
   let base: string;
   if (o.before) {
     // Elemen alur: di tengah kolom, ikut menambah tinggi halaman, tanpa posisi absolut.
-    base = `display:block;width:${o.width}%;margin:${o.gap ?? DEFAULT_ORNAMENT_GAP}px auto;opacity:${o.opacity};transform:rotate(${o.rotate}deg) scaleX(${flip});${o.slot ? "position:relative;" : ""}`;
+    base = `display:block;width:${o.width}%;margin:${o.gap ?? DEFAULT_ORNAMENT_GAP}px auto;opacity:${o.opacity};transform:rotate(${o.rotate}deg) scaleX(${flip})${flipY};${o.slot ? "position:relative;" : ""}`;
   } else {
     const vertical = o.anchor === "bottom" ? `bottom:${o.y}%` : `top:${o.y}%`;
     const shiftY = o.anchor === "bottom" ? "50%" : "-50%";
-    base = `left:${o.x}%;${vertical};width:${o.width}%;opacity:${o.opacity};transform:translate(-50%,${shiftY}) rotate(${o.rotate}deg) scaleX(${flip});`;
+    base = `left:${o.x}%;${vertical};width:${o.width}%;opacity:${o.opacity};transform:translate(-50%,${shiftY}) rotate(${o.rotate}deg) scaleX(${flip})${flipY};`;
   }
   if (!o.text) return base;
   const color = ORNAMENT_TEXT_COLORS.find((c) => c.id === o.text!.color)!.css;

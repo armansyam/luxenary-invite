@@ -2,11 +2,15 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import {
+  BLOCK_COLOR_TOKENS,
   BLOCK_LIMITS,
   BUILDER_BLOCKS,
   DEFAULT_BLOCK_PROPS,
+  FRAMED_PHOTOS,
   OPTIONAL_BLOCKS,
   ORNAMENT_SECTIONS,
+  PHOTO_FILTER_CSS,
+  blockFontFamilyCss,
   blockZIndex,
   ornamentLimits,
   ornamentStyle,
@@ -66,6 +70,7 @@ interface Props {
   onSelect: (id: string | null) => void;
   onOrnamentChange: (id: string, patch: Partial<BuilderOrnament>, final: boolean) => void;
   onDuplicateOrnament?: (id: string) => void;
+  onFillFourCornersOrnament?: (id: string) => void;
   onDeleteOrnament?: (id: string) => void;
   blocks: BuilderBlocks;
   selectedBlock: BuilderBlockId | null;
@@ -697,6 +702,56 @@ export default function BuilderPreview(props: Props) {
       const z = blockZIndex(p);
       el.style.position = z === null ? "" : "relative";
       el.style.zIndex = z === null ? "" : String(z);
+      el.style.opacity = p.opacity !== undefined && p.opacity < 1 ? String(p.opacity) : "";
+      el.style.textAlign = p.align ?? "";
+      el.style.letterSpacing = p.tracking ? `${p.tracking}px` : "";
+      if (p.lineHeight) {
+        el.style.setProperty("line-height", String(p.lineHeight), "important");
+      } else {
+        el.style.removeProperty("line-height");
+      }
+      el.style.maxWidth = p.maxWidth ? `${p.maxWidth}px` : "";
+      if (p.maxWidth) {
+        el.style.marginLeft = "auto";
+        el.style.marginRight = "auto";
+      } else {
+        el.style.marginLeft = "";
+        el.style.marginRight = "";
+      }
+      if (p.font) {
+        el.style.setProperty("font-family", blockFontFamilyCss(p.font), "important");
+      } else {
+        el.style.removeProperty("font-family");
+      }
+      if (p.transform && p.transform !== "none") {
+        el.style.setProperty("text-transform", p.transform, "important");
+      } else {
+        el.style.removeProperty("text-transform");
+      }
+      if (p.italic) {
+        el.style.setProperty("font-style", "italic", "important");
+      } else {
+        el.style.removeProperty("font-style");
+      }
+      if (p.weight) {
+        el.style.setProperty("font-weight", String(p.weight), "important");
+      } else {
+        el.style.removeProperty("font-weight");
+      }
+      const colorToken = p.color ? BLOCK_COLOR_TOKENS.find((c) => c.id === p.color) : null;
+      if (colorToken) {
+        el.style.setProperty("color", colorToken.css, "important");
+      } else {
+        el.style.removeProperty("color");
+      }
+      const filterCss = p.filter && p.filter !== "none" ? PHOTO_FILTER_CSS[p.filter] : "";
+      if ((FRAMED_PHOTOS as readonly string[]).includes(id)) {
+        const img = el.querySelector("img") as HTMLElement | null;
+        if (img) img.style.filter = filterCss || "";
+        el.style.filter = "";
+      } else {
+        el.style.filter = filterCss || "";
+      }
     }
   }, [blocks, docVersion]);
 
@@ -873,6 +928,44 @@ export default function BuilderPreview(props: Props) {
                   <span>Di Belakang Teks</span>
                   {orn.layer === "back" && <span className="text-[10px] text-amber-400">Aktif</span>}
                 </button>
+                {!orn.text && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        props.onOrnamentChange(menu.id, { flipX: !orn.flipX }, true);
+                        setMenu(null);
+                      }}
+                      className="flex items-center justify-between rounded px-2 py-1 text-left hover:bg-stone-800 hover:text-white"
+                    >
+                      <span>Cermin Kiri-Kanan</span>
+                      {orn.flipX && <span className="text-[10px] text-amber-400">Aktif</span>}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        props.onOrnamentChange(menu.id, { flipY: !orn.flipY ? true : undefined }, true);
+                        setMenu(null);
+                      }}
+                      className="flex items-center justify-between rounded px-2 py-1 text-left hover:bg-stone-800 hover:text-white"
+                    >
+                      <span>Cermin Atas-Bawah</span>
+                      {orn.flipY && <span className="text-[10px] text-amber-400">Aktif</span>}
+                    </button>
+                    {!orn.attach && !orn.before && props.onFillFourCornersOrnament && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          props.onFillFourCornersOrnament?.(menu.id);
+                          setMenu(null);
+                        }}
+                        className="flex items-center justify-between rounded px-2 py-1 text-left text-amber-300 hover:bg-stone-800 hover:text-amber-200"
+                      >
+                        <span>Pasang ke 4 Sudut Seksi</span>
+                      </button>
+                    )}
+                  </>
+                )}
                 {props.onDuplicateOrnament && (
                   <button
                     type="button"
@@ -902,7 +995,12 @@ export default function BuilderPreview(props: Props) {
           })()}
           {menu.kind === "block" && (() => {
             const blk = BUILDER_BLOCKS.find((b) => b.id === menu.id);
-            const isFramed = menu.id === "opening-photo" || menu.id === "couple-photo-1" || menu.id === "couple-photo-2";
+            const isOpeningPhoto = menu.id === "opening-photo";
+            const isCouplePhoto = menu.id === "couple-photo-1" || menu.id === "couple-photo-2";
+            const isCoverGuest = menu.id === "cover-guest";
+            const isCoverDate = menu.id === "cover-date";
+            const isButtonBlock = menu.id === "cover-open-btn" || menu.id === "countdown-btn";
+            const isCardBlock = menu.id === "opening-quote" || menu.id === "rsvp-form";
             return (
               <div className="flex flex-col gap-0.5">
                 <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-stone-400 border-b border-stone-800 mb-0.5 truncate">
@@ -931,19 +1029,94 @@ export default function BuilderPreview(props: Props) {
                     Reset Posisi & Skala
                   </button>
                 )}
-                {isFramed && (
+                {isOpeningPhoto && (
                   <button
                     type="button"
                     onClick={() => {
-                      const cur = props.variants.opening ?? "cinematic";
+                      const cur = props.variants.opening ?? "classic";
                       props.onVariantChange({
-                        opening: cur === "backdrop" ? "cinematic" : "backdrop",
+                        opening: cur === "backdrop" ? "classic" : "backdrop",
                       });
                       setMenu(null);
                     }}
                     className="flex items-center gap-1.5 rounded px-2 py-1 text-left text-amber-400 hover:bg-stone-800 hover:text-amber-300"
                   >
                     Ganti Mode Tampilan Foto
+                  </button>
+                )}
+                {isCouplePhoto && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const opts = props.eventType === "WEDDING"
+                        ? ["stacked", "side", "arch", "portrait", "polaroid", "editorial", "backdrop"]
+                        : ["stacked", "arch", "portrait", "polaroid", "editorial", "backdrop"];
+                      const cur = props.variants.couple ?? "stacked";
+                      const next = opts[(opts.indexOf(cur) + 1) % opts.length];
+                      props.onVariantChange({ couple: next });
+                      setMenu(null);
+                    }}
+                    className="flex items-center gap-1.5 rounded px-2 py-1 text-left text-amber-400 hover:bg-stone-800 hover:text-amber-300"
+                  >
+                    Ganti Tata Letak Foto
+                  </button>
+                )}
+                {isCoverGuest && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const opts = ["box", "pill", "underline", "hidden"];
+                      const cur = props.variants.guestCard ?? "box";
+                      const next = opts[(opts.indexOf(cur) + 1) % opts.length];
+                      props.onVariantChange({ guestCard: next });
+                      setMenu(null);
+                    }}
+                    className="flex items-center gap-1.5 rounded px-2 py-1 text-left text-amber-400 hover:bg-stone-800 hover:text-amber-300"
+                  >
+                    Ganti Bentuk Kartu Tamu
+                  </button>
+                )}
+                {isCoverDate && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const cur = props.variants.coverDate ?? "inline";
+                      props.onVariantChange({ coverDate: cur === "split" ? "inline" : "split" });
+                      setMenu(null);
+                    }}
+                    className="flex items-center gap-1.5 rounded px-2 py-1 text-left text-amber-400 hover:bg-stone-800 hover:text-amber-300"
+                  >
+                    Ganti Format Tanggal
+                  </button>
+                )}
+                {isButtonBlock && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const opts = ["solid", "outline", "glass", "minimal"];
+                      const cur = props.variants.buttons ?? "solid";
+                      const next = opts[(opts.indexOf(cur) + 1) % opts.length];
+                      props.onVariantChange({ buttons: next });
+                      setMenu(null);
+                    }}
+                    className="flex items-center gap-1.5 rounded px-2 py-1 text-left text-amber-400 hover:bg-stone-800 hover:text-amber-300"
+                  >
+                    Ganti Gaya Tombol
+                  </button>
+                )}
+                {isCardBlock && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const opts = ["solid", "glass", "outlined", "flat"];
+                      const cur = props.variants.cards ?? "solid";
+                      const next = opts[(opts.indexOf(cur) + 1) % opts.length];
+                      props.onVariantChange({ cards: next });
+                      setMenu(null);
+                    }}
+                    className="flex items-center gap-1.5 rounded px-2 py-1 text-left text-amber-400 hover:bg-stone-800 hover:text-amber-300"
+                  >
+                    Ganti Gaya Kartu
                   </button>
                 )}
               </div>

@@ -220,6 +220,8 @@ export async function composeWeddingData(inv: any) {
   const themeVariants = rawThemeSpec && typeof rawThemeSpec === "object" && rawThemeSpec.variants ? rawThemeSpec.variants : {};
   const galleryVariant = String(themeVariants.gallery || "grid");
   const eventsVariant = String(themeVariants.events || "cards");
+  const storyVariant = String(themeVariants.story || "timeline");
+  const giftVariant = String(themeVariants.gift || "cards");
 
 
   const showStory = featureSettings.showStory !== undefined ? Boolean(featureSettings.showStory) : true;
@@ -295,8 +297,6 @@ export async function composeWeddingData(inv: any) {
   const secondDisplayName = isGroomFirst ? brideDisplayName : groomDisplayName;
   const firstRole = isGroomFirst ? "The Groom" : "The Bride";
   const secondRole = isGroomFirst ? "The Bride" : "The Groom";
-  const firstRoleLabel = isGroomFirst ? "Mempelai Pria" : "Mempelai Wanita";
-  const secondRoleLabel = isGroomFirst ? "Mempelai Wanita" : "Mempelai Pria";
   const firstFather = isGroomFirst ? groomFather : brideFather;
   const firstMother = isGroomFirst ? groomMother : brideMother;
   const secondFather = isGroomFirst ? brideFather : groomFather;
@@ -477,6 +477,10 @@ export async function composeWeddingData(inv: any) {
     ...builderApplied.labels,
     ...(featureSettings.customLabels || {}),
   };
+  const groomRoleLabel = (customLabels as any).groomRole || "Mempelai Pria";
+  const brideRoleLabel = (customLabels as any).brideRole || "Mempelai Wanita";
+  const firstRoleLabel = isGroomFirst ? groomRoleLabel : brideRoleLabel;
+  const secondRoleLabel = isGroomFirst ? brideRoleLabel : groomRoleLabel;
   const quoteSectionTitle = customLabels.quoteTitle || featureSettings.quoteTitle || blueprint.quoteSectionTitle;
   const quoteSectionEyebrow = customLabels.quoteEyebrow || blueprint.quoteSectionEyebrow;
   const openingGreeting = customLabels.openingGreeting !== undefined ? customLabels.openingGreeting : (blueprint.openingGreeting || "");
@@ -532,7 +536,7 @@ export async function composeWeddingData(inv: any) {
     }).join("");
 
     storySectionHtml = `
-      <section class="sec-flow sec-journey" id="story">
+      <section class="sec-flow sec-journey story-variant-${storyVariant}" id="story" data-story-variant="${storyVariant}">
         <span class="sec-eyebrow reveal" data-lux-field="customLabels.storyEyebrow" style="text-align:center;">${escapeHtml(storySectionEyebrow)}</span>
         <h2 class="sec-main-title journey-title serif reveal delay-1" data-lux-field="customLabels.storyTitle">${escapeHtml(storySectionTitle)}</h2>
         <div class="journey-timeline journey-chapters reveal-up delay-2">
@@ -606,8 +610,18 @@ export async function composeWeddingData(inv: any) {
         ${videoPlayerHtml}
 
         ${allPhotos.length > 0 ? `
-        <div class="moments-grid-10 is-${galleryVariant}" data-lux-block="gallery-grid">
-          ${photosFeedHtml}
+        <div class="moments-grid-wrap moments-carousel-wrap">
+          <div class="moments-grid-10 is-${galleryVariant}" data-lux-block="gallery-grid" id="momentsGridContainer">
+            ${photosFeedHtml}
+          </div>
+          ${galleryVariant === "carousel" ? `
+          <button type="button" class="carousel-nav-btn carousel-nav-prev" onclick="luxScrollCarousel(-1)" aria-label="Foto sebelumnya">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <button type="button" class="carousel-nav-btn carousel-nav-next" onclick="luxScrollCarousel(1)" aria-label="Foto selanjutnya">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          </button>
+          ` : ""}
         </div>
 
         <button type="button" class="btn-outline-box btn-show-gallery" onclick="luxOpenFullGallery()">
@@ -722,6 +736,13 @@ export async function composeWeddingData(inv: any) {
       <script>
         window.LUX_ALL_PHOTOS = ${jsonForInlineScript(allPhotos)};
         window.luxActivePhotoIdx = 0;
+
+        window.luxScrollCarousel = function(dir) {
+          var el = document.getElementById("momentsGridContainer") || document.querySelector(".moments-grid-10.is-carousel");
+          if (!el) return;
+          var step = Math.min(el.clientWidth * 0.75, 300);
+          el.scrollBy({ left: dir * step, behavior: "smooth" });
+        };
 
         function ensureModalsOnBody() {
           const m1 = document.getElementById('luxFullGalleryModal');
@@ -1276,7 +1297,7 @@ export async function composeWeddingData(inv: any) {
 
     // Tanpa rekening, QRIS, maupun alamat, seksi hadiah tidak dirender (bukan judul tanpa isi).
     giftSectionHtml = !hasDigitalGift && !hasAddress ? "" : `
-      <section class="sec-flow" id="gift">
+      <section class="sec-flow gift-variant-${giftVariant}" id="gift" data-gift-variant="${giftVariant}">
         <span class="sec-eyebrow" data-lux-field="customLabels.giftEyebrow">${escapeHtml(giftSectionEyebrow)}</span>
         <h2 class="sec-main-title serif" data-lux-field="customLabels.giftTitle">${escapeHtml(giftSectionTitle)}</h2>
         <p class="sec-sub" data-lux-field="customLabels.giftDesc">
@@ -1888,8 +1909,8 @@ export async function composeWeddingData(inv: any) {
     groomInstagram,
     brideInstagram,
     // Label per mempelai (tidak ikut displayOrder), dipakai kartu tema yang selalu memuat pria lalu wanita.
-    groomRole: "Mempelai Pria",
-    brideRole: "Mempelai Wanita",
+    groomRole: groomRoleLabel,
+    brideRole: brideRoleLabel,
     // Teks sampul saat tautan dibuka tanpa ?to=; skrip runtime menggantinya dengan nama tamu.
     guestName: "Tamu Undangan",
     groomPhotoUrl: groomPhoto,
@@ -2069,12 +2090,14 @@ export async function composeBirthdayData(inv: any) {
   const blueprint = getThemeBlueprint(inv.themeId || "kalandra-birthday", customDemoData || undefined);
 
   let dbThemeDefaultMusic = "";
+  let dbThemeBuilderSpec: any = null;
   try {
     const dbTheme = await prisma.theme.findUnique({
       where: { id: (inv.themeId || "kalandra-birthday").toLowerCase() },
-      select: { defaultMusicUrl: true },
+      select: { defaultMusicUrl: true, builderSpec: true },
     });
     if (dbTheme?.defaultMusicUrl) dbThemeDefaultMusic = dbTheme.defaultMusicUrl;
+    if (dbTheme?.builderSpec) dbThemeBuilderSpec = dbTheme.builderSpec;
   } catch (err) {
     logger.warn("ThemeEngine", "Musik bawaan tema tidak terbaca; musik cadangan dipakai", { themeId: inv.themeId, error: err instanceof Error ? err.message : String(err) });
   }
@@ -2146,7 +2169,7 @@ export async function composeBirthdayData(inv: any) {
   // sehingga tema satu nama mana pun dapat menampilkan data ulang tahun. Hitung mundur, musik, Momen, QR, dan seksi
   // tambahan dibangun applySingleNameContract.
   const galleryPhotos = await collectGalleryPhotos(inv, featureSettings);
-  const galleryVariant = (inv.builderSpec as any)?.variants?.gallery || "grid";
+  const galleryVariant = ((inv.builderSpec ?? dbThemeBuilderSpec) as any)?.variants?.gallery || "grid";
   const gallerySectionHtml = buildUniversalGallerySection(galleryPhotos, customLabels.galleryTitle || "Galeri Foto", showGallery, galleryVariant);
   const rsvpSectionHtml = buildUniversalRsvpSection(inv.id);
   const wishesSectionHtml = buildUniversalWishesSection(inv.rsvps || [], inv.id);
@@ -2325,18 +2348,18 @@ function buildUniversalEventCards(events: any[], fallbackName: string): string {
     const dateLabel = ev.date ? formatDateId(ev.date) : "";
     const mapsHref = safeHref(ev.mapsUrl);
     return `
-    <div style="background: color-mix(in srgb, var(--card-bg) 60%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); border-radius: var(--radius-md, 14px); padding: 18px; margin-bottom: 12px; text-align: left;">
+    <div class="event-block-item" style="background: color-mix(in srgb, var(--card-bg) 60%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); border-radius: var(--radius-md, 14px); padding: 18px; margin-bottom: 12px; text-align: left;">
       <span style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 1px;">${escapeHtml(ev.title || "Acara")}</span>
       <h3 class="serif" style="font-size: 18px; color: var(--text-main); margin: 6px 0 4px;">${escapeHtml(ev.name || ev.title || fallbackName)}</h3>
       ${dateLabel ? `<p style="font-size: 13px; color: var(--text-main);">${escapeHtml(dateLabel)}</p>` : ""}
       ${ev.time ? `<p style="font-size: 13px; color: var(--text-muted);">${escapeHtml(ev.time)}</p>` : ""}
       ${ev.location ? `<p style="font-size: 13px; color: var(--text-main); margin-top: 6px;"><b>${escapeHtml(ev.location)}</b></p>` : ""}
       ${ev.address ? `<p style="font-size: 12px; color: var(--text-muted);">${escapeHtml(ev.address)}</p>` : ""}
-      ${mapsHref ? `<a href="${mapsHref}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 10px; font-size: 12px; color: var(--primary); text-decoration: underline; font-weight: 600;">Petunjuk Lokasi Google Maps</a>` : ""}
+      ${mapsHref ? `<a href="${mapsHref}" target="_blank" rel="noopener noreferrer" class="btn-map-outline" style="display: inline-block; margin-top: 10px; font-size: 12px; color: var(--primary); text-decoration: underline; font-weight: 600;">Petunjuk Lokasi Google Maps</a>` : ""}
     </div>
   `;
   }).join("");
-  return `<div class="events-stack">${cards}</div>`;
+  return `<div class="events-stack events-sessions-stack">${cards}</div>`;
 }
 
 function buildUniversalGallerySection(
@@ -2358,8 +2381,26 @@ function buildUniversalGallerySection(
       <!-- lux-ornaments:gallery -->
       <span class="sec-lbl" data-lux-field="customLabels.galleryEyebrow" data-lux-block="gallery-eyebrow">Galeri</span>
       <h2 class="sec-h2 serif" data-lux-field="customLabels.galleryTitle" data-lux-block="gallery-title">${escapeHtml(galleryTitle)}</h2>
-      <div class="moments-grid-10 is-${galleryVariant}" data-lux-block="gallery-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 16px;">
-        ${galleryItemsHtml}
+      <div class="moments-grid-wrap moments-carousel-wrap" style="margin-top: 16px;">
+        <div class="moments-grid-10 is-${galleryVariant}" data-lux-block="gallery-grid" id="momentsGridContainer" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+          ${galleryItemsHtml}
+        </div>
+        ${galleryVariant === "carousel" ? `
+        <button type="button" class="carousel-nav-btn carousel-nav-prev" onclick="luxScrollCarousel(-1)" aria-label="Foto sebelumnya">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <button type="button" class="carousel-nav-btn carousel-nav-next" onclick="luxScrollCarousel(1)" aria-label="Foto selanjutnya">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </button>
+        <script>
+          window.luxScrollCarousel = window.luxScrollCarousel || function(dir) {
+            var el = document.getElementById("momentsGridContainer") || document.querySelector(".moments-grid-10.is-carousel");
+            if (!el) return;
+            var step = Math.min(el.clientWidth * 0.75, 300);
+            el.scrollBy({ left: dir * step, behavior: "smooth" });
+          };
+        </script>
+        ` : ""}
       </div>
     </section>
   `;
@@ -2373,7 +2414,7 @@ function buildUniversalGiftSection(
 ): string {
   if (!showGift || !bankAccounts || bankAccounts.length === 0) return "";
   const bankCardsHtml = bankAccounts.map((b: any) => `
-    <div style="background: var(--card-bg); border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent); border-radius: var(--radius-md, 14px); padding: 18px; text-align: center;">
+    <div class="bank-card" style="background: var(--card-bg); border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent); border-radius: var(--radius-md, 14px); padding: 18px; text-align: center;">
       <span style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary) 30%, var(--text-main)); letter-spacing: 1px;">${escapeHtml(b.bank || "Bank")}</span>
       <div style="font-family: monospace; font-size: 18px; font-weight: 700; color: var(--text-main); margin: 8px 0; letter-spacing: 1px;">${escapeHtml(b.number || b.accountNumber || "")}</div>
       <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">a.n ${escapeHtml(b.name || b.accountName || fallbackOwnerName)}</p>
@@ -2386,7 +2427,7 @@ function buildUniversalGiftSection(
       <span class="sec-lbl" data-lux-field="customLabels.giftEyebrow">Tanda Kasih</span>
       <h2 class="sec-h2 serif" data-lux-field="customLabels.giftTitle">${escapeHtml(giftTitle)}</h2>
       <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Doa restu Anda merupakan karunia terindah bagi kami. Namun apabila bermaksud memberikan tanda kasih, Anda dapat melalui:</p>
-      <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
+      <div class="bank-cards-list gift-cards-stack" style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
         ${bankCardsHtml}
       </div>
     </section>
@@ -2840,12 +2881,14 @@ export async function composeKhitanData(inv: any) {
   const customLabels = featureSettings.customLabels || {};
 
   let dbThemeDefaultMusic = "";
+  let dbThemeBuilderSpec: any = null;
   try {
     const dbTheme = await prisma.theme.findUnique({
       where: { id: (inv.themeId || "al-fariz").toLowerCase() },
-      select: { defaultMusicUrl: true },
+      select: { defaultMusicUrl: true, builderSpec: true },
     });
     if (dbTheme?.defaultMusicUrl) dbThemeDefaultMusic = dbTheme.defaultMusicUrl;
+    if (dbTheme?.builderSpec) dbThemeBuilderSpec = dbTheme.builderSpec;
   } catch (err) {
     logger.warn("ThemeEngine", "Musik bawaan tema tidak terbaca; musik cadangan dipakai", { themeId: inv.themeId, error: err instanceof Error ? err.message : String(err) });
   }
@@ -2872,7 +2915,7 @@ export async function composeKhitanData(inv: any) {
   const parentsHtml = parentNames ? `<p>Putra tercinta dari:</p><h4 class="serif" style="color: var(--text-main); font-size: 16px; margin: 4px 0;">${parentNames}</h4>` : "";
 
   const eventSectionHtml = buildUniversalEventCards(events, "Walimatul Khitan");
-  const galleryVariant = (inv.builderSpec as any)?.variants?.gallery || "grid";
+  const galleryVariant = ((inv.builderSpec ?? dbThemeBuilderSpec) as any)?.variants?.gallery || "grid";
   const gallerySectionHtml = buildUniversalGallerySection(await collectGalleryPhotos(inv, featureSettings), customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false, galleryVariant);
   const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital", childName, featureSettings.showGift !== false);
   const rsvpSectionHtml = buildUniversalRsvpSection(invitationId);
@@ -2932,12 +2975,14 @@ export async function composeAqiqahData(inv: any) {
   const customLabels = featureSettings.customLabels || {};
 
   let dbThemeDefaultMusic = "";
+  let dbThemeBuilderSpec: any = null;
   try {
     const dbTheme = await prisma.theme.findUnique({
       where: { id: (inv.themeId || "al-khalid").toLowerCase() },
-      select: { defaultMusicUrl: true },
+      select: { defaultMusicUrl: true, builderSpec: true },
     });
     if (dbTheme?.defaultMusicUrl) dbThemeDefaultMusic = dbTheme.defaultMusicUrl;
+    if (dbTheme?.builderSpec) dbThemeBuilderSpec = dbTheme.builderSpec;
   } catch (err) {
     logger.warn("ThemeEngine", "Musik bawaan tema tidak terbaca; musik cadangan dipakai", { themeId: inv.themeId, error: err instanceof Error ? err.message : String(err) });
   }
@@ -2964,7 +3009,7 @@ export async function composeAqiqahData(inv: any) {
   const parentsHtml = parentNames ? `<p>Putra/Putri tercinta dari:</p><h4 class="serif" style="color: var(--text-main); font-size: 16px; margin: 4px 0;">${parentNames}</h4>` : "";
 
   const eventSectionHtml = buildUniversalEventCards(events, "Tasyakuran Aqiqah");
-  const galleryVariant = (inv.builderSpec as any)?.variants?.gallery || "grid";
+  const galleryVariant = ((inv.builderSpec ?? dbThemeBuilderSpec) as any)?.variants?.gallery || "grid";
   const gallerySectionHtml = buildUniversalGallerySection(await collectGalleryPhotos(inv, featureSettings), customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false, galleryVariant);
   const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital", fatherName || babyName, featureSettings.showGift !== false);
   const rsvpSectionHtml = buildUniversalRsvpSection(invitationId);
@@ -3023,12 +3068,14 @@ export async function composeWisudaData(inv: any) {
   const customLabels = featureSettings.customLabels || {};
 
   let dbThemeDefaultMusic = "";
+  let dbThemeBuilderSpec: any = null;
   try {
     const dbTheme = await prisma.theme.findUnique({
       where: { id: (inv.themeId || "cendekia").toLowerCase() },
-      select: { defaultMusicUrl: true },
+      select: { defaultMusicUrl: true, builderSpec: true },
     });
     if (dbTheme?.defaultMusicUrl) dbThemeDefaultMusic = dbTheme.defaultMusicUrl;
+    if (dbTheme?.builderSpec) dbThemeBuilderSpec = dbTheme.builderSpec;
   } catch (err) {
     logger.warn("ThemeEngine", "Musik bawaan tema tidak terbaca; musik cadangan dipakai", { themeId: inv.themeId, error: err instanceof Error ? err.message : String(err) });
   }
@@ -3060,7 +3107,7 @@ export async function composeWisudaData(inv: any) {
   const graduateHonorsBadgeHtml = honors ? `<span style="display: inline-block; padding: 4px 12px; border-radius: var(--radius-full, 9999px); background: color-mix(in srgb, var(--accent) 20%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); color: var(--accent); font-size: 11px; font-weight: 700; margin-top: 8px;">Predikat: ${escapeHtml(honors)}</span>` : "";
 
   const eventSectionHtml = buildUniversalEventCards(events, "Syukuran Kelulusan");
-  const galleryVariant = (inv.builderSpec as any)?.variants?.gallery || "grid";
+  const galleryVariant = ((inv.builderSpec ?? dbThemeBuilderSpec) as any)?.variants?.gallery || "grid";
   const gallerySectionHtml = buildUniversalGallerySection(await collectGalleryPhotos(inv, featureSettings), customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false, galleryVariant);
   const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital", graduateName, featureSettings.showGift !== false);
   const rsvpSectionHtml = buildUniversalRsvpSection(invitationId);
@@ -3123,12 +3170,14 @@ export async function composeGatheringData(inv: any) {
   const customLabels = featureSettings.customLabels || {};
 
   let dbThemeDefaultMusic = "";
+  let dbThemeBuilderSpec: any = null;
   try {
     const dbTheme = await prisma.theme.findUnique({
       where: { id: (inv.themeId || "sinergi").toLowerCase() },
-      select: { defaultMusicUrl: true },
+      select: { defaultMusicUrl: true, builderSpec: true },
     });
     if (dbTheme?.defaultMusicUrl) dbThemeDefaultMusic = dbTheme.defaultMusicUrl;
+    if (dbTheme?.builderSpec) dbThemeBuilderSpec = dbTheme.builderSpec;
   } catch (err) {
     logger.warn("ThemeEngine", "Musik bawaan tema tidak terbaca; musik cadangan dipakai", { themeId: inv.themeId, error: err instanceof Error ? err.message : String(err) });
   }
@@ -3152,7 +3201,7 @@ export async function composeGatheringData(inv: any) {
   const dresscodeHtml = dresscode ? `<p style="font-size: 12px; color: var(--primary); margin-top: 6px;">Dress Code: <b>${escapeHtml(dresscode)}</b></p>` : "";
 
   const eventSectionHtml = buildUniversalEventCards(events, eventTitle);
-  const galleryVariant = (inv.builderSpec as any)?.variants?.gallery || "grid";
+  const galleryVariant = ((inv.builderSpec ?? dbThemeBuilderSpec) as any)?.variants?.gallery || "grid";
   const gallerySectionHtml = buildUniversalGallerySection(await collectGalleryPhotos(inv, featureSettings), customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false, galleryVariant);
   const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital / Donasi", organizerName || eventTitle, featureSettings.showGift !== false);
   const rsvpSectionHtml = buildUniversalRsvpSection(invitationId);

@@ -160,20 +160,18 @@ export async function GET(req: NextRequest) {
       select: { id: true, name: true, category: true, description: true, eventType: true, isActive: true, defaultMedia: true, defaultMusicUrl: true, builderSpec: true },
     });
     if (!theme) return NextResponse.json({ error: "Tema tidak ditemukan." }, { status: 404 });
-    let spec = storedBuilderSpec(theme.builderSpec);
-    let isLegacyMaster = false;
+    const spec = storedBuilderSpec(theme.builderSpec);
     if (!spec) {
-      const legacyEventType = BUILDER_EVENT_TYPES.find((t) => t === theme.eventType) ?? "WEDDING";
-      const file = masterPathOf(legacyEventType, theme.category, theme.id);
-      if (!fs.existsSync(file)) {
-        return NextResponse.json({ error: "Berkas master tema tidak ditemukan." }, { status: 404 });
-      }
-      const seed = seedSpecFromMaster(fs.readFileSync(file, "utf-8"), legacyEventType);
-      spec = await fitSpecFrames({ ...seed.spec, defaultMedia: legacyDefaultMedia(theme.defaultMedia) });
-      isLegacyMaster = true;
+      return NextResponse.json(
+        {
+          error: `Tema "${theme.name}" adalah tema master bawaan (handcrafted) dan tidak menggunakan sistem builder. Gunakan opsi Clone to Builder untuk membuat tema builder baru dari tema ini.`,
+          code: "HANDCRAFTED",
+        },
+        { status: 409 }
+      );
     }
     const { builderSpec: stored, defaultMedia: _defaultMedia, eventType: _eventType, ...meta } = theme;
-    return NextResponse.json({ success: true, theme: meta, spec, etag: specEtag(stored), isLegacyMaster });
+    return NextResponse.json({ success: true, theme: meta, spec, etag: specEtag(stored), isLegacyMaster: false });
   } catch (error) {
     return routeError("ThemeBuilder", error);
   }
@@ -272,15 +270,12 @@ export async function PUT(req: NextRequest) {
     const themeId = typeof body.id === "string" ? body.id : "";
     const existing = themeId ? await prisma.theme.findUnique({ where: { id: themeId } }) : null;
     if (!existing) return NextResponse.json({ error: "Tema tidak ditemukan." }, { status: 404 });
-    let existingSpec = storedBuilderSpec(existing.builderSpec);
-    const existingEventType = existingSpec?.eventType ?? (BUILDER_EVENT_TYPES.find((t) => t === existing.eventType) ?? "WEDDING");
+    const existingSpec = storedBuilderSpec(existing.builderSpec);
+    // Master tulisan tangan tidak dirakit dari blueprint; menyimpan hasil kompilasi blueprint ke path-nya menimpa desain aslinya.
     if (!existingSpec) {
-      const legacyFile = masterPathOf(existingEventType, existing.category, existing.id);
-      if (fs.existsSync(legacyFile)) {
-        const seed = seedSpecFromMaster(fs.readFileSync(legacyFile, "utf-8"), existingEventType);
-        existingSpec = await fitSpecFrames({ ...seed.spec, defaultMedia: legacyDefaultMedia(existing.defaultMedia) });
-      }
+      return NextResponse.json({ error: "Tema ini ditulis tangan sehingga tidak bisa disimpan dari builder. Berkas master aslinya tidak diubah.", code: "HANDCRAFTED" }, { status: 409 });
     }
+    const existingEventType = existingSpec.eventType;
 
     // Admin lain menyimpan sesudah rancangan ini dibuka: tolak agar perubahannya tidak tertimpa tanpa sepengetahuan.
     if (typeof body.baseEtag === "string" && body.baseEtag !== specEtag(existing.builderSpec)) {
@@ -312,7 +307,7 @@ export async function PUT(req: NextRequest) {
     if (existing.category !== category) await removeIfExists(builderMasterPath(existing.category as BuilderCategory, themeId, spec.eventType));
 
     // Tema yang dibuat sebelum ada riwayat: simpan keadaan sebelum penyimpanan ini agar masih bisa dikembalikan.
-    if (existingSpec && !(await prisma.themeBuilderRevision.count({ where: { themeId } }))) {
+    if (!(await prisma.themeBuilderRevision.count({ where: { themeId } }))) {
       await recordBuilderRevision(null, { id: themeId, name: existing.name, category: existing.category as BuilderCategory, description: existing.description }, existingSpec, "CREATE");
     }
 

@@ -305,7 +305,9 @@ export function legacyVariants(html: string, base: BuilderVariants): BuilderVari
   if (/@media\s*\(\s*min-width\s*:\s*900px\s*\)\s*\{[\s\S]*?\.(?:cover-screen|cover-overlay)\s*\{[^}]*width\s*:\s*100%/i.test(html)) {
     variants.cover = "fullscreen";
   }
-  if (/\b(?:couple-hero-slide|couple-editorial-card|person-full-bg)\b/.test(html)) {
+  if (/\bcouple-editorial-card\b/.test(html)) {
+    variants.couple = "editorial";
+  } else if (/\b(?:couple-hero-slide|person-full-bg)\b/.test(html)) {
     variants.couple = "backdrop";
   } else if (/\b(?:person-photo-arch|couple-arch)\b/.test(html)) {
     variants.couple = "arch";
@@ -317,6 +319,37 @@ export function legacyVariants(html: string, base: BuilderVariants): BuilderVari
   }
   if (/\b(?:home-arch-wrap|hero-arch-photo)\b/.test(html)) {
     variants.opening = "arch";
+  }
+  if (/\b(?:side-nav-drawer|btn-top-menu)\b/.test(html)) {
+    variants.nav = "drawer";
+  }
+  if (/\bcover-date-(?:part|split)\b/.test(html)) {
+    variants.coverDate = "split";
+  }
+  if (/\.(?:cover-guest-card|cover-guest-box|guest-box)[^{]*\{[^}]*border-radius\s*:\s*(?:50px|100px|999px|9999px|var\(--radius-full\))/i.test(html)) {
+    variants.guestCard = "pill";
+  } else if (
+    /\.(?:cover-guest-card|cover-guest-box|guest-box)[^{]*\{[^}]*border-bottom\s*:/i.test(html) ||
+    (!/(?<![-\w])(?:cover-guest-box|cover-guest-card|guest-box|guest-card)(?![-\w])/.test(html) && /\bcoverGuestName\b/.test(html))
+  ) {
+    variants.guestCard = "underline";
+  }
+  if (/\.sec-divider[^{]*\{[^}]*display\s*:\s*none/i.test(html)) {
+    variants.dividers = "none";
+  } else if (/\.sec-divider::after/.test(html)) {
+    variants.dividers = "ornate";
+  } else if (/\.sec-divider[^{]*\{[^}]*linear-gradient/i.test(html)) {
+    variants.dividers = "gradient";
+  }
+  if (/\.(?:cover-btn-open|btn-buka)[^{]*\{[^}]*background\s*:\s*transparent/i.test(html)) {
+    variants.buttons = /\.(?:cover-btn-open|btn-buka)[^{]*\{[^}]*border-bottom\s*:/i.test(html) ? "minimal" : "outline";
+  } else if (/\.(?:cover-btn-open|btn-buka)[^{]*\{[^}]*backdrop-filter\s*:\s*blur/i.test(html)) {
+    variants.buttons = "glass";
+  }
+  if (/\.(?:rsvp-form-box|opening-quote-card)[^{]*\{[^}]*backdrop-filter\s*:\s*blur/i.test(html)) {
+    variants.cards = "glass";
+  } else if (/\.(?:rsvp-form-box|opening-quote-card)[^{]*\{[^}]*background\s*:\s*transparent/i.test(html)) {
+    variants.cards = "outlined";
   }
   return variants;
 }
@@ -378,6 +411,15 @@ export function seedSpecFromMaster(html: string, eventType: BuilderEventType = "
   const blocks: BuilderSpec["blocks"] = { ...base.blocks };
   if (!html.includes('data-lux-block="opening-photo"') && !html.includes("{{homePhotoUrl}}")) {
     blocks["opening-photo"] = { x: 0, y: 0, scale: 1, rotate: 0, hidden: true };
+  }
+  const hasMonogram =
+    html.includes('data-lux-block="cover-monogram"') ||
+    html.includes("cover-monogram-circle") ||
+    /\bcover-monogram\b/.test(html) ||
+    /\{\{coupleMonogram\}\}/.test(html) ||
+    /\{\{monogramInitial\}\}/.test(html);
+  if (!hasMonogram && builderFamilyOf(eventType) === "wedding") {
+    blocks["cover-monogram"] = { x: 0, y: 0, scale: 1, rotate: 0, hidden: true };
   }
   return {
     spec: { ...base, canvasMode, palette, texture, fonts: { ...base.fonts, ...legacy }, variants, blocks, frames, ornaments },

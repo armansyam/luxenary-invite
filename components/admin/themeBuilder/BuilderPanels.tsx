@@ -281,6 +281,26 @@ export function ColorsPanel({
             </div>
           ))}
         </div>
+        {spec.texture && (
+          <div className="mt-3 border-t border-stone-100 pt-3">
+            <div className="flex items-center justify-between text-[11.5px] font-semibold text-stone-700">
+              <span>Opasitas tekstur</span>
+              <span className="font-mono text-[11px] text-stone-500">{spec.textureOpacity ?? 100}%</span>
+            </div>
+            <input
+              type="range"
+              min={10}
+              max={100}
+              step={5}
+              value={spec.textureOpacity ?? 100}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                onChange({ textureOpacity: v >= 100 ? undefined : v });
+              }}
+              className="mt-1.5 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-stone-200 accent-amber-600"
+            />
+          </div>
+        )}
       </Section>
 
       <Section title="Media bawaan" hint="Dipakai sampai klien mengunggah foto sendiri. Slot yang tidak dipilih memakai warna palet. Foto orang tidak pernah punya bawaan.">
@@ -314,6 +334,39 @@ export function ColorsPanel({
               </div>
             </div>
           ))}
+        </div>
+        <div className="mt-3 border-t border-stone-100 pt-3">
+          <div className="flex items-center justify-between text-[11.5px] font-semibold text-stone-700">
+            <span className="flex items-center gap-1.5">
+              Gelap Lapisan Foto (Scrim Sampul & Penutup)
+              {spec.scrimOpacity !== undefined && spec.scrimOpacity !== 55 && (
+                <button
+                  type="button"
+                  title="Kembalikan ke 55%"
+                  onClick={() => onChange({ scrimOpacity: undefined })}
+                  className="rounded px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 hover:bg-amber-50 cursor-pointer"
+                >
+                  55%
+                </button>
+              )}
+            </span>
+            <span className="font-mono text-[11px] text-stone-500">{spec.scrimOpacity ?? 55}%</span>
+          </div>
+          <input
+            type="range"
+            min={10}
+            max={90}
+            step={5}
+            value={spec.scrimOpacity ?? 55}
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              onChange({ scrimOpacity: v === 55 ? undefined : v });
+            }}
+            className="mt-1.5 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-stone-200 accent-amber-600"
+          />
+          <p className="mt-1 text-[10.5px] leading-snug text-stone-500">
+            Mengatur kegelapan selimut di atas foto Sampul, Panel Kiri Desktop, dan Penutup agar teks judul tetap terbaca jelas.
+          </p>
         </div>
       </Section>
 
@@ -518,6 +571,20 @@ function VariantThumb({ group, id, palette, dark }: { group: keyof BuilderVarian
         </span>
       );
     }
+    if (id === "editorial") {
+      return (
+        <span className={`${box} flex-col justify-center gap-1.5 px-3`} style={{ background: canvas }}>
+          <span className="flex w-full items-center gap-1.5 border-l-2 pl-1.5" style={{ borderColor: palette.accent }}>
+            {photo({ width: 16, height: 20, borderRadius: 2 })}
+            <span className="flex flex-col gap-0.5">{bar("22px", ink, 2)}{bar("14px", palette.primary, 1.5)}</span>
+          </span>
+          <span className="flex w-full items-center justify-end gap-1.5 border-r-2 pr-1.5" style={{ borderColor: palette.accent }}>
+            <span className="flex flex-col items-end gap-0.5">{bar("22px", ink, 2)}{bar("14px", palette.primary, 1.5)}</span>
+            {photo({ width: 16, height: 20, borderRadius: 2 })}
+          </span>
+        </span>
+      );
+    }
     const p = id === "arch" ? { width: 16, height: 22, borderRadius: "999px 999px 3px 3px" } : id === "polaroid" ? { width: 18, height: 20, borderRadius: 2, boxShadow: `3px 3px 0 ${palette.accent}` } : { width: 18, height: 18, borderRadius: "50%" };
     return (
       <span className={box} style={{ background: canvas }}>
@@ -651,6 +718,237 @@ function VariantThumb({ group, id, palette, dark }: { group: keyof BuilderVarian
             {bar("14px", palette.primary, 1.5)}
           </span>
         ))}
+      </span>
+    );
+  }
+  if (group === "story") {
+    if (id === "cards") {
+      return (
+        <span className={`${box} flex-col justify-center gap-1.5 px-2`} style={{ background: canvas }}>
+          <span className="flex w-full flex-col gap-0.5 rounded border p-1 shadow-xs" style={{ borderColor: `${palette.primary}30`, background: dark ? palette.secondary : "#ffffff" }}>
+            {bar("28px", ink, 2)}
+            {bar("16px", palette.primary, 1.5)}
+          </span>
+          <span className="flex w-full flex-col gap-0.5 rounded border p-1 shadow-xs" style={{ borderColor: `${palette.primary}30`, background: dark ? palette.secondary : "#ffffff" }}>
+            {bar("24px", ink, 2)}
+            {bar("14px", palette.primary, 1.5)}
+          </span>
+        </span>
+      );
+    }
+    if (id === "minimal") {
+      return (
+        <span className={`${box} flex-col justify-center gap-2 px-3`} style={{ background: canvas }}>
+          <span className="flex w-full flex-col gap-0.5 border-b pb-1" style={{ borderColor: `${palette.primary}30` }}>
+            {bar("30px", ink, 2)}
+            {bar("18px", palette.primary, 1.5)}
+          </span>
+          <span className="flex w-full flex-col gap-0.5">
+            {bar("26px", ink, 2)}
+            {bar("14px", palette.primary, 1.5)}
+          </span>
+        </span>
+      );
+    }
+    return (
+      <span className={`${box} items-start justify-center pl-4`} style={{ background: canvas }}>
+        <span className="relative flex flex-col gap-2 border-l border-dashed pl-2" style={{ borderColor: palette.primary }}>
+          {[0, 1].map((i) => (
+            <span key={i} className="relative flex flex-col gap-0.5">
+              <span className="absolute -left-[11px] top-1 h-1.5 w-1.5 rounded-full" style={{ background: palette.primary }} />
+              {bar("28px", ink, 2)}
+              {bar("16px", palette.primary, 1.5)}
+            </span>
+          ))}
+        </span>
+      </span>
+    );
+  }
+  if (group === "gift") {
+    if (id === "tabs") {
+      return (
+        <span className={`${box} flex-col justify-center gap-1 px-2`} style={{ background: canvas }}>
+          <span className="flex w-full items-center gap-1 rounded bg-stone-200/50 p-0.5">
+            <span className="flex-1 rounded py-0.5 text-center text-[8px] font-bold" style={{ background: palette.primary, color: palette.onPrimary }}>Pria</span>
+            <span className="flex-1 py-0.5 text-center text-[8px]" style={{ color: ink }}>Wanita</span>
+          </span>
+          <span className="flex w-full flex-col items-center gap-0.5 rounded border p-1 shadow-xs" style={{ borderColor: `${palette.primary}30`, background: dark ? palette.secondary : "#ffffff" }}>
+            {bar("24px", ink, 2)}
+            {bar("14px", palette.primary, 1.5)}
+          </span>
+        </span>
+      );
+    }
+    if (id === "minimal") {
+      return (
+        <span className={`${box} flex-col justify-center gap-1.5 px-3`} style={{ background: canvas }}>
+          <span className="flex w-full flex-col gap-0.5 border-b pb-1" style={{ borderColor: `${palette.primary}30` }}>
+            {bar("26px", ink, 2)}
+            {bar("18px", palette.primary, 1.5)}
+          </span>
+          <span className="flex w-full flex-col gap-0.5">
+            {bar("22px", ink, 2)}
+            {bar("16px", palette.primary, 1.5)}
+          </span>
+        </span>
+      );
+    }
+    return (
+      <span className={`${box} flex-col justify-center gap-1.5 px-3`} style={{ background: canvas }}>
+        {[0, 1].map((i) => (
+          <span key={i} className="flex w-full items-center justify-between rounded border px-2 py-1 shadow-xs" style={{ borderColor: `${palette.primary}30`, background: dark ? palette.secondary : "#ffffff" }}>
+            <span className="flex flex-col gap-0.5">{bar("20px", ink, 2)}{bar("12px", palette.primary, 1)}</span>
+            <span className="h-3 w-6 rounded-sm" style={{ background: `${palette.primary}25` }} />
+          </span>
+        ))}
+      </span>
+    );
+  }
+  if (group === "nav") {
+    if (id === "drawer") {
+      return (
+        <span className={`${box} relative`} style={{ background: canvas }}>
+          <span className="absolute right-2 top-1.5 flex flex-col gap-0.5 rounded border px-1.5 py-1 shadow-xs" style={{ borderColor: `${palette.primary}40`, background: dark ? palette.secondary : "#ffffff" }}>
+            {["01", "02", "03"].map((n) => (
+              <span key={n} className="flex items-center gap-1">
+                <span className="text-[6px] font-bold" style={{ color: palette.accent }}>{n}</span>
+                {bar("14px", ink, 1.5)}
+              </span>
+            ))}
+          </span>
+        </span>
+      );
+    }
+    if (id === "none") {
+      return (
+        <span className={box} style={{ background: canvas }}>
+          {bar("28px", `${ink}50`, 2)}
+        </span>
+      );
+    }
+    return (
+      <span className={`${box} justify-end pb-2`} style={{ background: canvas }}>
+        <span className="flex items-center gap-1.5 rounded-full border px-2.5 py-1 shadow-xs" style={{ borderColor: `${palette.primary}40`, background: dark ? palette.secondary : "#ffffff" }}>
+          {[0, 1, 2, 3].map((i) => (
+            <span key={i} className="h-1.5 w-1.5 rounded-full" style={{ background: i === 0 ? palette.primary : `${ink}45` }} />
+          ))}
+        </span>
+      </span>
+    );
+  }
+  if (group === "guestCard") {
+    return (
+      <span className={box} style={{ background: `linear-gradient(160deg, ${palette.secondary}, ${palette.bgDark})` }}>
+        {id === "hidden" ? (
+          <span className="text-[8px] font-semibold tracking-wider uppercase" style={{ color: `${palette.textLight}70` }}>Tanpa kartu</span>
+        ) : id === "pill" ? (
+          <span className="flex flex-col items-center gap-0.5 rounded-full border px-3 py-1" style={{ borderColor: `${palette.textLight}60`, background: `${palette.textLight}18` }}>
+            {bar("16px", palette.accent, 1.5)}
+            {bar("28px", palette.textLight, 2)}
+          </span>
+        ) : id === "underline" ? (
+          <span className="flex flex-col items-center gap-1 border-b px-2 pb-1" style={{ borderColor: palette.accent }}>
+            {bar("16px", `${palette.textLight}90`, 1.5)}
+            {bar("30px", palette.textLight, 2.5)}
+          </span>
+        ) : (
+          <span className="flex flex-col items-center gap-1 rounded-md border px-2.5 py-1.5" style={{ borderColor: `${palette.textLight}45`, background: `${palette.bgDark}55` }}>
+            {bar("18px", palette.accent, 1.5)}
+            {bar("28px", palette.textLight, 2.5)}
+          </span>
+        )}
+      </span>
+    );
+  }
+  if (group === "coverDate") {
+    return (
+      <span className={box} style={{ background: `linear-gradient(160deg, ${palette.secondary}, ${palette.bgDark})` }}>
+        {id === "split" ? (
+          <span className="flex items-center gap-1.5 border-y px-2 py-1" style={{ borderColor: palette.accent }}>
+            <span className="h-1 w-1 rounded-full" style={{ background: palette.accent }} />
+            {bar("26px", palette.textLight, 2)}
+            <span className="h-1 w-1 rounded-full" style={{ background: palette.accent }} />
+          </span>
+        ) : (
+          bar("32px", palette.accent, 2)
+        )}
+      </span>
+    );
+  }
+  if (group === "dividers") {
+    return (
+      <span className={box} style={{ background: canvas }}>
+        {bar("24px", ink, 2.5)}
+        {id === "none" ? null : id === "ornate" ? (
+          <span className="flex items-center gap-1">
+            {bar("14px", palette.accent, 1)}
+            <span className="h-1.5 w-1.5 rotate-45" style={{ background: palette.accent }} />
+            {bar("14px", palette.accent, 1)}
+          </span>
+        ) : id === "gradient" ? (
+          <span className="block h-0.5 w-12 rounded-full" style={{ background: `linear-gradient(90deg, transparent, ${palette.primary}, ${palette.accent}, transparent)` }} />
+        ) : (
+          bar("20px", palette.accent, 1.5)
+        )}
+      </span>
+    );
+  }
+  if (group === "buttons") {
+    return (
+      <span className={box} style={{ background: canvas }}>
+        {id === "solid" ? (
+          <span className="flex h-4 w-11 items-center justify-center rounded-full shadow-xs" style={{ background: palette.primary }}>
+            {bar("18px", palette.bgLight, 2)}
+          </span>
+        ) : id === "outline" ? (
+          <span className="flex h-4 w-11 items-center justify-center rounded-full" style={{ border: `1.5px solid ${palette.primary}` }}>
+            {bar("18px", palette.primary, 2)}
+          </span>
+        ) : id === "glass" ? (
+          <span className="flex h-4 w-11 items-center justify-center rounded-full" style={{ background: `${palette.primary}22`, border: `1px solid ${palette.accent}` }}>
+            {bar("18px", ink, 2)}
+          </span>
+        ) : (
+          <span className="flex flex-col items-center gap-0.5">
+            {bar("22px", palette.primary, 2)}
+            <span className="block h-[1px] w-7" style={{ background: palette.primary }} />
+          </span>
+        )}
+      </span>
+    );
+  }
+  if (group === "cards") {
+    return (
+      <span className={box} style={{ background: canvas }}>
+        {id === "solid" ? (
+          <span className="flex h-7 w-11 flex-col items-center justify-center gap-1 rounded shadow-xs" style={{ background: dark ? palette.secondary : "#ffffff", border: `1px solid ${palette.accent}55` }}>
+            {bar("20px", ink, 2)}{bar("14px", palette.accent, 1.5)}
+          </span>
+        ) : id === "glass" ? (
+          <span className="flex h-7 w-11 flex-col items-center justify-center gap-1 rounded" style={{ background: `${palette.accent}22`, border: `1px solid ${palette.accent}88` }}>
+            {bar("20px", ink, 2)}{bar("14px", palette.accent, 1.5)}
+          </span>
+        ) : id === "outlined" ? (
+          <span className="flex h-7 w-11 flex-col items-center justify-center gap-1 rounded" style={{ border: `1.5px solid ${palette.accent}` }}>
+            {bar("20px", ink, 2)}{bar("14px", palette.accent, 1.5)}
+          </span>
+        ) : (
+          <span className="flex h-7 w-11 flex-col items-center justify-center gap-1" style={{ borderBottom: `1px dashed ${palette.accent}` }}>
+            {bar("20px", ink, 2)}{bar("14px", palette.accent, 1.5)}
+          </span>
+        )}
+      </span>
+    );
+  }
+  if (group === "spacing") {
+    const gapClass = id === "compact" ? "gap-0.5" : id === "airy" ? "gap-2.5" : "gap-1.5";
+    return (
+      <span className={`${box} ${gapClass}`} style={{ background: canvas }}>
+        {bar("24px", ink, 2)}
+        <span className="block h-[1px] w-8" style={{ background: `${palette.accent}88` }} />
+        {bar("28px", palette.accent, 2)}
+        <span className="block h-[1px] w-8" style={{ background: `${palette.accent}88` }} />
+        {bar("20px", ink, 2)}
       </span>
     );
   }
@@ -790,6 +1088,10 @@ export function LayoutPanel({
         })()}
       </Section>
 
+      <Section title="Sudut kartu & tombol" hint="Kelengkungan sudut kartu acara, bingkai kutipan, formulir RSVP, dan tombol aksi.">
+        <Segmented value={spec.radius} options={RADIUS_OPTIONS.map((r) => ({ id: r.id, label: r.label }))} onChange={(radius) => onChange({ radius })} />
+      </Section>
+
       {familyVariantGroups(spec.eventType).map((group) => (
         <Section key={group.key} title={group.label} hint={group.key === "sidebar" ? "Hanya tampil di layar desktop, di sebelah kiri kolom undangan." : group.key === "headings" ? "Berlaku untuk semua judul seksi." : undefined}>
           <div className="grid grid-cols-2 gap-2">
@@ -830,6 +1132,7 @@ export function OrnamentsPanel({
   onStartDrag,
   onSelect,
   onDeleteAsset,
+  onCopySectionToAllFlow,
 }: {
   spec: BuilderSpec;
   library: AssetLibrary | null;
@@ -842,6 +1145,7 @@ export function OrnamentsPanel({
   onStartDrag: (src: string, e: ReactPointerEvent<HTMLElement>) => void;
   onSelect: (id: string) => void;
   onDeleteAsset: (url: string) => void;
+  onCopySectionToAllFlow?: () => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [openGroup, setOpenGroup] = useState<string>("uploads");
@@ -922,6 +1226,15 @@ export function OrnamentsPanel({
           </div>
         )}
         {inSection.some((o) => o.attach) && <p className="mt-2 text-[10.5px] text-stone-500">Titik biru: menempel ke blok dan ikut bergeser bersamanya.</p>}
+        {inSection.some((o) => !o.attach && !o.before) && onCopySectionToAllFlow && (
+          <button
+            type="button"
+            onClick={onCopySectionToAllFlow}
+            className="mt-2.5 w-full rounded-xl border border-amber-200 bg-amber-50/70 px-3 py-2 text-center text-[11.5px] font-semibold text-amber-900 transition hover:bg-amber-100 cursor-pointer"
+          >
+            Salin Ornamen Seksi Ini ke Semua Seksi Isi
+          </button>
+        )}
       </Section>
 
       <Section title="Pustaka">

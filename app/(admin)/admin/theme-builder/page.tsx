@@ -5,8 +5,10 @@ import { useSearchParams } from "next/navigation";
 import ThemeBuilder from "@/components/admin/themeBuilder/ThemeBuilder";
 
 function ThemeBuilderRoute() {
-  const id = useSearchParams().get("id");
-  return <ThemeBuilder themeId={id} />;
+  const searchParams = useSearchParams();
+  const id = searchParams.get("id");
+  const from = searchParams.get("from");
+  return <ThemeBuilder themeId={id} fromId={from} />;
 }
 
 export default function ThemeBuilderPage() {

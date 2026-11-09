@@ -24,13 +24,13 @@ export interface ThumbnailJobStatus {
 export function requestThemeThumbnails(themeId: string): void {
   if (!isSafePathSegment(themeId)) throw new Error(`ID tema tidak valid: ${JSON.stringify(themeId)}`);
   fs.mkdirSync(THUMBNAIL_JOB_DIR, { recursive: true });
-  fs.writeFileSync(path.join(THUMBNAIL_JOB_DIR, `${themeId}.queued`), new Date().toISOString());
+  fs.writeFileSync(path.join(/*turbopackIgnore: true*/ THUMBNAIL_JOB_DIR, `${themeId}.queued`), new Date().toISOString());
   startWorker();
 }
 
 function startWorker(): void {
   const cwd = /*turbopackIgnore: true*/ process.cwd();
-  const log = fs.openSync(path.join(THUMBNAIL_JOB_DIR, "worker.log"), "a");
+  const log = fs.openSync(path.join(/*turbopackIgnore: true*/ THUMBNAIL_JOB_DIR, "worker.log"), "a");
   const child = spawn(path.join(cwd, "node_modules", ".bin", "tsx"), [path.join("scripts", "theme-thumbnail-worker.ts")], {
     cwd,
     detached: true,
@@ -45,7 +45,7 @@ function startWorker(): void {
 
 export function themeThumbnailStatus(themeId: string): ThumbnailJobStatus {
   if (!isSafePathSegment(themeId)) return { state: "idle" };
-  const file = (ext: string) => path.join(THUMBNAIL_JOB_DIR, `${themeId}.${ext}`);
+  const file = (ext: string) => path.join(/*turbopackIgnore: true*/ THUMBNAIL_JOB_DIR, `${themeId}.${ext}`);
   if (fs.existsSync(file("running"))) return { state: "running" };
   if (fs.existsSync(file("queued"))) return { state: "queued" };
   if (!fs.existsSync(file("json"))) return { state: "idle" };

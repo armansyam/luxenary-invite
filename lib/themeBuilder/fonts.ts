@@ -207,5 +207,5 @@ export async function ensureGoogleFont(
 
 /** Semua font Google di spesifikasi wajib ada di server sebelum master dikompilasi. */
 export async function ensureSpecFonts(spec: BuilderSpec, options: Parameters<typeof ensureGoogleFont>[1] = {}): Promise<void> {
-  for (const id of googleFontIds(spec.fonts)) await ensureGoogleFont(googleFontFamilyName(id), options);
+  for (const id of googleFontIds(spec.fonts, spec.blocks)) await ensureGoogleFont(googleFontFamilyName(id), options);
 }
