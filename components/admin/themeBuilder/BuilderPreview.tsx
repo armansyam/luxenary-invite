@@ -58,6 +58,8 @@ interface Props {
   onVariantChange: (patch: Partial<BuilderVariants>) => void;
   desktopCoverFull?: boolean;
   frames: BuilderFrames;
+  /** Gaya desain dan CSS kustom yang ditulis langsung ke pratinjau, tanpa menunggu render ulang server. */
+  design: { css: string; custom: string; preset: string };
   html: string | null;
   loading: boolean;
   device: PreviewDevice;
@@ -659,6 +661,29 @@ export default function BuilderPreview(props: Props) {
     }
     style.textContent = frameCss(frames);
   }, [frames, docVersion]);
+
+  // Latar seksi, kartu/tombol, tata letak desktop, animasi, dan CSS kustom ditulis ulang langsung ke master yang sedang
+  // tampil; urutannya dijaga (CSS kustom setelah gaya desain) agar sama dengan master tersimpan.
+  const { design } = props;
+  useEffect(() => {
+    const doc = getDoc();
+    if (!doc) return;
+    let designStyle = doc.getElementById("lux-builder-design") as HTMLStyleElement | null;
+    if (!designStyle) {
+      designStyle = doc.createElement("style");
+      designStyle.id = "lux-builder-design";
+      doc.head.appendChild(designStyle);
+    }
+    designStyle.textContent = design.css;
+    let customStyle = doc.getElementById("lux-builder-custom") as HTMLStyleElement | null;
+    if (!customStyle && design.custom) {
+      customStyle = doc.createElement("style");
+      customStyle.id = "lux-builder-custom";
+      designStyle.after(customStyle);
+    }
+    if (customStyle) customStyle.textContent = design.custom;
+    doc.documentElement.setAttribute("data-lux-anim-preset", design.preset);
+  }, [design, docVersion]);
 
   useEffect(() => {
     if (docVersion) navigate(jump.section);

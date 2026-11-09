@@ -12,7 +12,7 @@ import { resolveInvitationDisplayName, getMediaSlotLabel, eventNoun, isThemeComp
 import { useFeedback } from "@/components/ui/Feedback";
 import { getApexRootDomain } from "@/lib/domainUtils";
 import { EDITABLE_TEXT_KEYS, MAX_DECORATIVE_LABEL_LENGTH, sectionLabelFor, type BuilderEventType } from "@/lib/themeBuilder/spec";
-import type { EditableText } from "@/lib/themeBuilder/texts";
+import type { EditableText, FreeSectionText } from "@/lib/themeBuilder/texts";
 
 // Pilihan tema dimuat secara dinamis dari API /api/public/themes untuk menjamin sinkronisasi status aktif
 
@@ -889,7 +889,8 @@ export default function EditInvitation() {
     const dirty1 = (
       invitation.themeId !== savedSnapshot.invitation?.themeId ||
       getFeatureSetting("weddingTagline", "THE WEDDING OF") !== getSavedFeatureSetting("weddingTagline", "THE WEDDING OF") ||
-      EDITABLE_TEXT_KEYS.some((key) => getCustomLabel(key, "") !== getSavedCustomLabel(key, ""))
+      EDITABLE_TEXT_KEYS.some((key) => getCustomLabel(key, "") !== getSavedCustomLabel(key, "")) ||
+      ((themesList.find((t) => t.id === invitation.themeId)?.freeTexts ?? []) as FreeSectionText[]).some((t) => getCustomLabel(t.key, "") !== getSavedCustomLabel(t.key, ""))
     );
 
     // Sec 2: Sampul & Visual
@@ -1034,7 +1035,7 @@ export default function EditInvitation() {
       sec16: dirty16,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [invitation, media, events, stories, bankList, savedSnapshot]);
+  }, [invitation, media, events, stories, bankList, savedSnapshot, themesList]);
 
   const revertAllChanges = async () => {
     if (!savedSnapshot) return;
@@ -2494,6 +2495,47 @@ export default function EditInvitation() {
                           placeholder={text.value}
                           className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-base sm:text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                         />
+                      </div>
+                    ))
+                  )}
+                </div>
+              );
+            })()}
+
+            {(() => {
+              const freeTexts: FreeSectionText[] = selectedThemeObj?.freeTexts ?? [];
+              if (freeTexts.length === 0) return null;
+              // Sama seperti teks hias: label seksi bebas tema lama dibuang saat tema berganti, jadi isi setelah tema disimpan.
+              const themeSaved = invitation.themeId === savedSnapshot?.invitation?.themeId;
+              const groups = [...new Set(freeTexts.map((t) => t.group))];
+              return (
+                <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-3">
+                  <div>
+                    <label className="block text-xs font-bold text-stone-900">Teks Seksi Tambahan Tema</label>
+                    <p className="text-[10px] text-stone-500">Seksi tambahan dari desain tema (doa, catatan, protokol, kartu). Kosongkan isian untuk menyembunyikan baris itu.</p>
+                  </div>
+                  {!themeSaved ? (
+                    <p className="text-[11px] text-stone-600">Simpan pilihan tema terlebih dahulu untuk mengubah teks seksi tambahan tema ini.</p>
+                  ) : (
+                    groups.map((group) => (
+                      <div key={group} className="space-y-2 border-t border-stone-200 pt-2 first:border-t-0 first:pt-0">
+                        <p className="text-[11px] font-bold uppercase tracking-wide text-stone-500">{group}</p>
+                        {freeTexts.filter((t) => t.group === group).map((text) => {
+                          const common = {
+                            id: `free-${text.key}`,
+                            maxLength: text.maxLength,
+                            value: getCustomLabel(text.key, text.value),
+                            onChange: (e: { target: { value: string } }) => updateCustomLabel(text.key, e.target.value),
+                            placeholder: text.value,
+                            className: "w-full p-2.5 bg-white border border-stone-200 rounded-xl text-base sm:text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30",
+                          };
+                          return (
+                            <div key={text.key}>
+                              <label htmlFor={common.id} className="block text-[11px] font-bold text-stone-700 mb-1">{text.label}</label>
+                              {text.multiline ? <textarea rows={3} {...common} /> : <input type="text" {...common} />}
+                            </div>
+                          );
+                        })}
                       </div>
                     ))
                   )}

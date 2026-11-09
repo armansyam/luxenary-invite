@@ -1,4 +1,17 @@
-import { BUILDER_TEXTS, EDITABLE_TEXT_KEYS, parseBuilderTexts, type BuilderTextKey, type BuilderTexts, type EditableTextKey, type OrnamentSection } from "@/lib/themeBuilder/spec";
+import {
+  BUILDER_TEXTS,
+  EDITABLE_TEXT_KEYS,
+  FREE_SECTION_LIMITS,
+  freeCardLabelKeys,
+  freeExtraLabelKeys,
+  freeSectionLabelKeys,
+  parseBuilderSpec,
+  parseBuilderTexts,
+  type BuilderTextKey,
+  type BuilderTexts,
+  type EditableTextKey,
+  type OrnamentSection,
+} from "@/lib/themeBuilder/spec";
 import type { ThemeBlueprint } from "@/lib/themeDefaults";
 
 /** Label "engine" yang bawaannya hidup di blueprint tema: kunci label Studio -> kolom ThemeBlueprint. */
@@ -75,6 +88,52 @@ export function editableTextsOf(spec: unknown): EditableText[] {
     texts.push({ key, value: o.text.value, section: o.section });
   }
   return texts.sort((a, b) => a.key.localeCompare(b.key));
+}
+
+export interface FreeSectionText {
+  key: string;
+  label: string;
+  /** Teks awal dari rancangan admin. */
+  value: string;
+  multiline: boolean;
+  maxLength: number;
+  /** Nama seksi bebas, untuk mengelompokkan isian di Studio. */
+  group: string;
+}
+
+/**
+ * Isian Studio untuk teks seksi bebas Theme Builder (judul, isi, kartu, kutipan, label tombol peta), urut seperti di
+ * undangan. Teks ini tidak punya kolom tetap, jadi Studio membacanya dari `Theme.builderSpec`; tanpa spesifikasi kosong.
+ */
+export function freeSectionTextsOf(spec: unknown): FreeSectionText[] {
+  const parsed = spec ? parseBuilderSpec(spec) : null;
+  if (!parsed?.ok) return [];
+  const texts: FreeSectionText[] = [];
+  parsed.spec.freeSections?.forEach((f, idx) => {
+    const group = f.title || `Seksi bebas ${idx + 1}`;
+    const k = freeSectionLabelKeys(f.id);
+    const x = freeExtraLabelKeys(f.id);
+    texts.push(
+      { key: k.eyebrow, label: "Teks kecil", value: f.eyebrow, multiline: false, maxLength: FREE_SECTION_LIMITS.eyebrow, group },
+      { key: k.title, label: "Judul", value: f.title, multiline: false, maxLength: FREE_SECTION_LIMITS.title, group },
+      { key: k.body, label: "Isi", value: f.body, multiline: true, maxLength: FREE_SECTION_LIMITS.body, group },
+    );
+    if (f.quote) {
+      texts.push(
+        { key: x.quote, label: "Kutipan", value: f.quote.text, multiline: true, maxLength: FREE_SECTION_LIMITS.quote, group },
+        { key: x.quoteSource, label: "Sumber kutipan", value: f.quote.source, multiline: false, maxLength: FREE_SECTION_LIMITS.quoteSource, group },
+      );
+    }
+    f.cards?.forEach((c, i) => {
+      const ck = freeCardLabelKeys(f.id, i + 1);
+      texts.push(
+        { key: ck.title, label: `Kartu ${i + 1}: judul`, value: c.title, multiline: false, maxLength: FREE_SECTION_LIMITS.cardTitle, group },
+        { key: ck.body, label: `Kartu ${i + 1}: isi`, value: c.body, multiline: true, maxLength: FREE_SECTION_LIMITS.cardBody, group },
+      );
+    });
+    if (f.mapButton) texts.push({ key: x.mapBtn, label: "Label tombol peta", value: f.mapButton.label, multiline: false, maxLength: FREE_SECTION_LIMITS.mapLabel, group });
+  });
+  return texts;
 }
 
 /** Teks bawaan dari kolom `Theme.builderSpec`; kosong untuk tema tulisan tangan atau spesifikasi tanpa teks. */

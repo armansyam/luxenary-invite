@@ -322,6 +322,10 @@ export function legacyVariants(html: string, base: BuilderVariants): BuilderVari
   if (/\b(?:home-arch-wrap|hero-arch-photo)\b/.test(html)) {
     variants.opening = "arch";
   }
+  // Hitung mundur berupa strip angka tanpa kotak (mis. Valente `countdown-editorial-strip`).
+  if (/\bcountdown-(?:editorial-strip|strip|minimal|line)\b/.test(html)) {
+    variants.countdown = "minimal";
+  }
   if (/\b(?:side-nav-drawer|btn-top-menu)\b/.test(html)) {
     variants.nav = "drawer";
   }

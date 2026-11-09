@@ -46,7 +46,18 @@ function formatDateId(dateStr: string | Date): string {
  * Foto galeri klien dari folder Google Drive, daftar URL, lalu slot media GALLERY. Sengaja tanpa cadangan foto demo
  * tema: undangan klien tidak boleh menampilkan foto model orang lain, dan galeri tanpa foto tidak dirender.
  */
-async function collectGalleryPhotos(inv: any, featureSettings: Record<string, any>): Promise<string[]> {
+// Hasil per objek undangan: composer dan galeri mini seksi bebas memakai daftar yang sama tanpa membaca folder Drive dua kali.
+const galleryPhotoCache = new WeakMap<object, Promise<string[]>>();
+
+function collectGalleryPhotos(inv: any, featureSettings: Record<string, any>): Promise<string[]> {
+  const cached = galleryPhotoCache.get(inv);
+  if (cached) return cached;
+  const result = readGalleryPhotos(inv, featureSettings);
+  galleryPhotoCache.set(inv, result);
+  return result;
+}
+
+async function readGalleryPhotos(inv: any, featureSettings: Record<string, any>): Promise<string[]> {
   const photos: string[] = [];
   const driveFolderUrl = String(featureSettings.galleryDriveFolderUrl || "").trim();
   if (driveFolderUrl) {
@@ -155,20 +166,42 @@ export async function composeTemplateData(
 export async function composeInvitationData(inv: any) {
   // Media bawaan tema (salinan di undangan) mengisi slot yang belum diisi klien; foto klien selalu menang.
   inv = { ...inv, media: applyThemeDefaultMedia(inv.media || [], parseThemeDefaultMedia(inv.themeDefaultMedia)) };
+  let data: Record<string, any>;
   switch (inv.eventType || "WEDDING") {
     case "BIRTHDAY":
-      return applySingleNameContract("BIRTHDAY", await composeBirthdayData(inv), inv);
+      data = await applySingleNameContract("BIRTHDAY", await composeBirthdayData(inv), inv);
+      break;
     case "KHITAN":
-      return applySingleNameContract("KHITAN", await composeKhitanData(inv), inv);
+      data = await applySingleNameContract("KHITAN", await composeKhitanData(inv), inv);
+      break;
     case "AQIQAH":
-      return applySingleNameContract("AQIQAH", await composeAqiqahData(inv), inv);
+      data = await applySingleNameContract("AQIQAH", await composeAqiqahData(inv), inv);
+      break;
     case "WISUDA":
-      return applySingleNameContract("WISUDA", await composeWisudaData(inv), inv);
+      data = await applySingleNameContract("WISUDA", await composeWisudaData(inv), inv);
+      break;
     case "GATHERING":
-      return applySingleNameContract("GATHERING", await composeGatheringData(inv), inv);
+      data = await applySingleNameContract("GATHERING", await composeGatheringData(inv), inv);
+      break;
     default:
-      return composeWeddingData(inv);
+      data = await composeWeddingData(inv);
   }
+  return { ...data, ...(await builderFreeSectionTokens(inv)) };
+}
+
+/**
+ * Token untuk seksi bebas Theme Builder di semua jenis acara: enam foto galeri pertama (mengikuti saklar galeri klien)
+ * dan tautan peta acara pertama yang punya peta. Kosong berarti elemennya tidak dirender (`{{#if}}`).
+ */
+async function builderFreeSectionTokens(inv: any): Promise<Record<string, string>> {
+  const featureSettings = parseFeatureSettings(inv.featureSettings) as Record<string, any>;
+  const photos = featureSettings.showGallery === false ? [] : await collectGalleryPhotos(inv, featureSettings);
+  const tokens: Record<string, string> = {};
+  for (let i = 0; i < 6; i++) tokens[`luxGalleryPhoto${i + 1}`] = photos[i] || "";
+  const events = Array.isArray(inv.eventData) ? inv.eventData : [];
+  // Tanpa escape di sini: renderTemplate meng-escape semua nilai token, sama seperti token mapsUrl.
+  tokens.luxPrimaryMapUrl = safeExternalUrl(events.find((ev: any) => safeExternalUrl(ev?.mapsUrl))?.mapsUrl) || "";
+  return tokens;
 }
 
 export async function composeWeddingData(inv: any) {

@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useFeedback } from "@/components/ui/Feedback";
+import { animationPlan, designCss } from "@/lib/themeBuilder/designCss";
+import { applyBuilderTemplate, type BuilderTemplate } from "@/lib/themeBuilder/templates";
 import {
   MAX_ORNAMENTS,
   MAX_ORNAMENTS_PER_SECTION,
@@ -67,7 +69,17 @@ function structuralKey(spec: BuilderSpec): string {
   // Posisi ornamen dan properti blok diterapkan langsung ke pratinjau saat menyeret, jadi tidak memicu muat ulang.
   // Bingkai foto juga diterapkan langsung lewat gaya di dokumen pratinjau.
   // Isi, huruf, ukuran, dan warna teks hias juga diterapkan langsung; hanya jenis (teks atau gambar), slot media, dan tempat menempel yang mengubah HTML.
-  return JSON.stringify({ ...spec, blocks: {}, blockGoogleFonts: googleFontIds(spec.fonts, spec.blocks), frames: {}, ornaments: spec.ornaments.map((o) => [o.id, o.src, o.section, o.layer, o.attach ?? "", o.before ?? "", o.slot ?? "", o.text ? 1 : 0, o.text?.labelKey ?? ""]) });
+  // Alat desain yang hanya mengubah CSS (latar seksi, kartu/tombol, tata letak desktop, animasi, CSS kustom, gaya dan
+  // animasi seksi bebas) diterapkan langsung lewat `designCss`; teks dan struktur seksi bebas tetap memicu render ulang.
+  const { sectionStyles: _sectionStyles, surface: _surface, desktopLayout: _desktopLayout, sectionAnimations: _sectionAnimations, animationSpeed: _animationSpeed, customCss: _customCss, ...rest } = spec;
+  return JSON.stringify({
+    ...rest,
+    blocks: {},
+    blockGoogleFonts: googleFontIds(spec.fonts, spec.blocks),
+    frames: {},
+    freeSections: spec.freeSections?.map(({ style: _style, animation: _animation, ...f }) => f),
+    ornaments: spec.ornaments.map((o) => [o.id, o.src, o.section, o.layer, o.attach ?? "", o.before ?? "", o.slot ?? "", o.text ? 1 : 0, o.text?.labelKey ?? ""]),
+  });
 }
 
 /** Posisi ornamen di antara ornamen sejenis (wadah dan lapisan sama); 0 adalah paling belakang. */
@@ -308,6 +320,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
   }, [loadLibrary, notify, syncHistory]);
 
   const structure = useMemo(() => structuralKey(spec), [spec]);
+  const liveDesign = useMemo(() => ({ css: designCss(spec), custom: spec.customCss ?? "", preset: animationPlan(spec).htmlPreset }), [spec]);
   useEffect(() => {
     if (!loaded) return;
     const controller = new AbortController();
@@ -356,6 +369,18 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
   }, [syncHistory]);
 
   const patchSpec = useCallback((patch: Partial<BuilderSpec>) => apply({ ...specRef.current, ...patch }, "commit"), [apply]);
+
+  // Template mengganti hampir seluruh rancangan; dicatat sebagai satu langkah sehingga bisa diurungkan dengan Ctrl+Z.
+  const applyTemplate = useCallback(async (template: BuilderTemplate) => {
+    const ok = await confirm({
+      title: `Pakai template "${template.label}"?`,
+      message: "Warna, huruf, varian, latar seksi, ornamen, dan posisi elemen diganti oleh template. Teks bawaan dan media bawaan tetap. Langkah ini bisa diurungkan.",
+      confirmLabel: "Pakai Template",
+    });
+    if (!ok) return;
+    apply(applyBuilderTemplate(template, specRef.current), "commit");
+    notify(`Template "${template.label}" dipasang.`, "success");
+  }, [apply, confirm, notify]);
 
   /**
    * Hanya untuk tema yang belum disimpan: jenis acara menentukan blueprint. Ornamen di seksi atau blok yang tidak ada di
@@ -1097,7 +1122,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
           {!loaded ? (
             <p className="px-5 py-6 text-sm text-stone-500">Memuat rancangan…</p>
           ) : panel === "colors" ? (
-            <ColorsPanel spec={spec} library={library} uploading={uploading} onChange={patchSpec} onUpload={uploadAssets} onDeleteAsset={deleteAsset} />
+            <ColorsPanel spec={spec} library={library} uploading={uploading} onChange={patchSpec} onUpload={uploadAssets} onDeleteAsset={deleteAsset} onApplyTemplate={applyTemplate} />
           ) : panel === "type" ? (
             <TypePanel spec={spec} onChange={patchSpec} />
           ) : panel === "texts" ? (
@@ -1160,6 +1185,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
             onVariantChange={(patch) => patchSpec({ variants: { ...spec.variants, ...patch } })}
             desktopCoverFull={desktopCoverFull}
             frames={spec.frames}
+            design={liveDesign}
             html={html}
             loading={previewLoading}
             device={device}

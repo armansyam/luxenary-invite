@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { getThemeBlueprint, type ThemeBlueprint } from "@/lib/themeDefaults";
 import { applyBuilderTexts, builderTextsOf } from "@/lib/themeBuilder/texts";
-import { EDITABLE_TEXT_KEYS } from "@/lib/themeBuilder/spec";
+import { EDITABLE_TEXT_KEYS, isFreeSectionLabelKey } from "@/lib/themeBuilder/spec";
 
 export interface ThemeLabelContext {
   customDemoData: any;
@@ -153,9 +153,9 @@ export function reconcileLabelsOnThemeChange(
   const current = clientLabels ?? {};
   const kept: Record<string, string> = {};
   for (const [key, value] of Object.entries(current)) {
-    // Teks hias (hias1-hias3) terikat pada posisi dan gaya di satu tema, bukan pada arti seperti "tombol buka": tulisan
+    // Teks hias (hias1-hias3) dan teks seksi bebas builder (free1Title, dst.) terikat pada posisi dan gaya di satu tema, bukan pada arti seperti "tombol buka": tulisan
     // klien untuk slot tema lama tidak dibawa ke slot tema baru yang kebetulan memakai kunci sama.
-    if ((EDITABLE_TEXT_KEYS as readonly string[]).includes(key)) continue;
+    if ((EDITABLE_TEXT_KEYS as readonly string[]).includes(key) || isFreeSectionLabelKey(key)) continue;
     const untouched = snapshot !== undefined && key in snapshot && snapshot[key] === value;
     if (!untouched) kept[key] = value;
   }

@@ -25,6 +25,9 @@ import {
   isGoogleFontId,
   paletteChecks,
   ANIMATION_SPEEDS,
+  NESTABLE_GUESTS,
+  NESTING_HOSTS,
+  type NestingHost,
   COUNTDOWN_PLACEMENTS,
   DESKTOP_LAYOUTS,
   FREE_PHOTO_SHAPES,
@@ -61,6 +64,7 @@ import {
   type SurfaceStyle,
 } from "@/lib/themeBuilder/spec";
 import { GoogleFontPicker } from "@/components/admin/themeBuilder/GoogleFontPicker";
+import { BUILDER_TEMPLATES, type BuilderTemplate } from "@/lib/themeBuilder/templates";
 
 export type PanelId = "colors" | "type" | "texts" | "layout" | "ornaments" | "motion" | "publish";
 
@@ -399,6 +403,7 @@ export function ColorsPanel({
   onChange,
   onUpload,
   onDeleteAsset,
+  onApplyTemplate,
 }: {
   spec: BuilderSpec;
   library: AssetLibrary | null;
@@ -406,12 +411,34 @@ export function ColorsPanel({
   onChange: (patch: Partial<BuilderSpec>) => void;
   onUpload: (files: FileList) => void;
   onDeleteAsset: (url: string) => void;
+  onApplyTemplate: (template: BuilderTemplate) => void;
 }) {
   const checks = paletteChecks(spec);
   const uploadedBackdrops = (library?.uploads ?? []).map((u) => ({ id: u.url, label: "Gambar unggahan" }));
   const backdrops: ReadonlyArray<{ id: string; label: string }> = [...TEXTURE_OPTIONS, ...uploadedBackdrops];
   return (
     <>
+      <Section title="Template awal" hint="Rancangan lengkap sekali klik (warna, huruf, varian, latar seksi, tata letak, animasi). Teks dan media bawaan tetap; sisanya diganti.">
+        <div className="grid grid-cols-1 gap-2">
+          {BUILDER_TEMPLATES.map((t) => {
+            const p = t.build(spec.eventType);
+            return (
+              <button key={t.id} type="button" onClick={() => onApplyTemplate(t)} className="flex items-center gap-3 rounded-xl border border-stone-200 p-2 text-left transition hover:border-amber-400 cursor-pointer">
+                <span className="flex h-10 w-14 shrink-0 overflow-hidden rounded-lg" style={{ background: p.canvasMode === "dark" ? p.palette.bgDark : p.palette.bgLight }}>
+                  <span className="flex flex-1 items-center justify-center text-[13px]" style={{ color: p.canvasMode === "dark" ? p.palette.textLight : p.palette.textDark, fontFamily: fontFamily(p.fonts.heading, "heading") }}>Aa</span>
+                  <span className="w-2.5" style={{ background: p.palette.primary }} />
+                  <span className="w-2.5" style={{ background: p.palette.accent }} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[12.5px] font-semibold text-stone-800">{t.label}</span>
+                  <span className="block text-[10.5px] leading-snug text-stone-500">{t.hint}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </Section>
+
       <Section title="Palet siap pakai" hint="Pilih titik awal, lalu sesuaikan warnanya di bawah.">
         <div className="grid grid-cols-2 gap-2">
           {PALETTE_PRESETS.map((preset) => {
@@ -1297,6 +1324,8 @@ export function LayoutPanel({
         </div>
       </Section>
 
+      <NestingEditor spec={spec} onChange={onChange} onFocusSection={onFocusSection} />
+
       <Section title="Tata letak desktop" hint="Hanya berlaku di layar 900px ke atas. HP selalu satu kolom.">
         <div className="grid grid-cols-2 gap-2">
           {DESKTOP_LAYOUTS.map((d) => {
@@ -1420,6 +1449,49 @@ export function LayoutPanel({
   );
 }
 
+function NestingEditor({ spec, onChange, onFocusSection }: { spec: BuilderSpec; onChange: (patch: Partial<BuilderSpec>) => void; onFocusSection: (s: OrnamentSection) => void }) {
+  const family = familyOrderableSections(spec.eventType);
+  const nesting = spec.sectionNesting ?? {};
+  const guests = NESTABLE_GUESTS.filter((g) => family.includes(g));
+  return (
+    <Section title="Tumpangkan seksi" hint="Masukkan satu seksi ke dalam seksi lain, misalnya Kisah di dalam Mempelai atau RSVP di dalam Penutup. Seksi yang menumpang tampil di akhir isi seksi tuannya.">
+      <div className="space-y-1.5">
+        {guests.map((guest) => {
+          const current = nesting[guest] ?? "";
+          const hosts = NESTING_HOSTS.filter((h) =>
+            family.includes(h) && (h as string) !== guest && !(h in nesting) && !(h === "events" && spec.eventsPlacement === "home"),
+          );
+          return (
+            <label key={guest} className="flex items-center justify-between gap-2 text-[12px] font-semibold text-stone-700">
+              {sectionLabelFor(guest, spec.eventType)}
+              <select
+                value={current}
+                // Seksi yang sedang ditumpangi tidak bisa ikut menumpang (rantai ditolak validasi).
+                disabled={Object.values(nesting).includes(guest as NestingHost)}
+                onChange={(e) => {
+                  const next = { ...nesting };
+                  const host = e.target.value as NestingHost | "";
+                  if (host) next[guest] = host;
+                  else delete next[guest];
+                  // Seksi bebas yang diletakkan sesudah seksi tamu ikut pindah ke sesudah tuannya.
+                  const freeSections = spec.freeSections?.map((f) => (host && f.after === guest ? { ...f, after: host as OrderableSection } : f));
+                  onChange({ sectionNesting: Object.keys(next).length ? next : undefined, ...(freeSections ? { freeSections } : {}) });
+                  onFocusSection(host || guest);
+                }}
+                className="w-[160px] rounded-lg border border-stone-200 bg-white px-2 py-1 text-[12px] text-stone-800 outline-none focus:border-amber-500 disabled:opacity-50"
+              >
+                <option value="">Seksi sendiri</option>
+                {hosts.map((h) => <option key={h} value={h}>Di dalam {sectionLabelFor(h, spec.eventType)}</option>)}
+                {current && !hosts.includes(current) && <option value={current}>Di dalam {sectionLabelFor(current, spec.eventType)}</option>}
+              </select>
+            </label>
+          );
+        })}
+      </div>
+    </Section>
+  );
+}
+
 function DesktopLayoutThumb({ id, palette }: { id: DesktopLayout; palette: BuilderPalette }) {
   const photo = <span className="h-full flex-1" style={{ background: `linear-gradient(135deg, ${palette.accent}, ${palette.secondary})` }} />;
   const column = (w: string) => <span className="h-full shrink-0 border-x" style={{ width: w, background: palette.bgLight, borderColor: palette.primary }} />;
@@ -1480,7 +1552,7 @@ function FreeSectionsEditor({
   onFocusSection: (s: OrnamentSection) => void;
 }) {
   const list = spec.freeSections ?? [];
-  const hosts = familyOrderableSections(spec.eventType, spec.sectionOrder).filter((s) => s !== "closing" && !(s === "countdown" && (spec.countdownPlacement ?? "section") !== "section"));
+  const hosts = familyOrderableSections(spec.eventType, spec.sectionOrder).filter((s) => s !== "closing" && !(s === "countdown" && (spec.countdownPlacement ?? "section") !== "section") && !(s in (spec.sectionNesting ?? {})));
   const [styleOpen, setStyleOpen] = useState<FreeSectionId | null>(null);
   const slots = familyOrnamentMediaSlots(spec.eventType);
   const save = (next: FreeSection[]) => onChange({ freeSections: next.length ? next : undefined });
@@ -1583,6 +1655,45 @@ function FreeSectionsEditor({
                   <textarea rows={2} value={c.body} maxLength={FREE_SECTION_LIMITS.cardBody} aria-label={`Isi kartu ${ci + 1}`} onChange={(e) => update(f.id, { cards: (f.cards ?? []).map((x, j) => (j === ci ? { ...x, body: cleanFreeText(e.target.value) } : x)) })} className={inputClass} spellCheck={false} />
                 </div>
               ))}
+            </div>
+
+            <div className="mt-3 rounded-lg border border-stone-100 bg-stone-50/60 p-2.5">
+              <label className="flex items-center justify-between gap-2 text-[11.5px] font-semibold text-stone-700">
+                Kutipan
+                <input type="checkbox" checked={Boolean(f.quote)} onChange={(e) => update(f.id, { quote: e.target.checked ? { text: "Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu pasangan hidup.", source: "QS. Ar-Rum: 21" } : undefined })} className="h-4 w-4 accent-amber-600 cursor-pointer" />
+              </label>
+              {f.quote && (
+                <>
+                  <textarea rows={3} value={f.quote.text} maxLength={FREE_SECTION_LIMITS.quote} aria-label="Isi kutipan" onChange={(e) => f.quote && update(f.id, { quote: { ...f.quote, text: cleanFreeText(e.target.value) } })} className={inputClass} spellCheck={false} />
+                  <input type="text" value={f.quote.source} maxLength={FREE_SECTION_LIMITS.quoteSource} aria-label="Sumber kutipan" placeholder="Sumber" onChange={(e) => f.quote && update(f.id, { quote: { ...f.quote, source: cleanFreeText(e.target.value) } })} className={inputClass} spellCheck={false} />
+                </>
+              )}
+            </div>
+
+            <div className="mt-3 rounded-lg border border-stone-100 bg-stone-50/60 p-2.5">
+              <label className="flex items-center justify-between gap-2 text-[11.5px] font-semibold text-stone-700">
+                Galeri mini dari foto klien
+                <input type="checkbox" checked={Boolean(f.gallery)} onChange={(e) => update(f.id, { gallery: e.target.checked ? { count: 3 } : undefined })} className="h-4 w-4 accent-amber-600 cursor-pointer" />
+              </label>
+              {f.gallery && (
+                <div className="mt-2">
+                  <RangeRow label="Jumlah foto" value={f.gallery.count} unit="" min={FREE_SECTION_LIMITS.gallery[0]} max={FREE_SECTION_LIMITS.gallery[1]} onChange={(count) => update(f.id, { gallery: { count } })} />
+                  <p className="mt-1 text-[10.5px] leading-snug text-stone-500">Memakai foto galeri pertama milik klien; tersembunyi bila klien belum punya foto galeri atau mematikan galeri.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-3 rounded-lg border border-stone-100 bg-stone-50/60 p-2.5">
+              <label className="flex items-center justify-between gap-2 text-[11.5px] font-semibold text-stone-700">
+                Tombol peta lokasi
+                <input type="checkbox" checked={Boolean(f.mapButton)} onChange={(e) => update(f.id, { mapButton: e.target.checked ? { label: "Buka Peta Lokasi" } : undefined })} className="h-4 w-4 accent-amber-600 cursor-pointer" />
+              </label>
+              {f.mapButton && (
+                <>
+                  <input type="text" value={f.mapButton.label} maxLength={FREE_SECTION_LIMITS.mapLabel} aria-label="Label tombol peta" onChange={(e) => f.mapButton && update(f.id, { mapButton: { label: cleanFreeText(e.target.value) } })} className={inputClass} spellCheck={false} />
+                  <p className="mt-1 text-[10.5px] leading-snug text-stone-500">Menuju tautan peta acara pertama yang diisi klien; tersembunyi bila belum ada.</p>
+                </>
+              )}
             </div>
 
             <label className="mt-3 flex items-center justify-between gap-2 text-[11.5px] font-semibold text-stone-600">

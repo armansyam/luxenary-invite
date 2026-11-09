@@ -1,0 +1,59 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`template awal > snapshot CSS desain template (perubahan tampilan yang tidak disengaja terlihat di sini) 1`] = `
+{
+  "adat-emas": ".opening-quote-card, .rsvp-form-box, .wish-item, .event-block-item, .event-unified-venue-card, .bank-card, .story-chapter-block, .lux-free-card { border: 1px solid color-mix(in srgb, var(--primary) 38%, transparent) !important; }
+    .cover-btn-open, .btn-cal, .btn-submit-rsvp, .btn-map-outline, .btn-outline-box, .btn-copy { border-radius: var(--radius-full) !important; }
+    [data-lux-section="couple"] { background: radial-gradient(ellipse at 50% 35%, color-mix(in srgb, var(--bg-dark) 70%, transparent) 0%, color-mix(in srgb, color-mix(in srgb, var(--bg-dark) 70%, transparent) 35%, transparent) 55%, transparent 100%), url('/assets/ornaments/background/bg-maroon.webp') center / cover no-repeat !important; --lux-eyebrow: var(--primary); --lux-heading: var(--text-main); --lux-line: var(--primary); --text-main: var(--on-dark); --text-muted: color-mix(in srgb, var(--on-dark) 74%, transparent); --primary: color-mix(in srgb, var(--accent) 55%, var(--on-dark)); --on-primary: var(--bg-dark); --card-bg: color-mix(in srgb, var(--bg-dark) 72%, var(--on-dark)); color: var(--text-main); }
+    [data-lux-section="rsvp"] { background: linear-gradient(135deg, var(--lux-base-primary) 0%, color-mix(in srgb, var(--lux-base-primary) 55%, var(--accent)) 100%) !important; --lux-eyebrow: var(--primary); --lux-heading: var(--text-main); --lux-line: var(--primary); --text-main: var(--on-dark); --text-muted: color-mix(in srgb, var(--on-dark) 74%, transparent); --primary: color-mix(in srgb, var(--accent) 55%, var(--on-dark)); --on-primary: var(--bg-dark); --card-bg: color-mix(in srgb, var(--bg-dark) 72%, var(--on-dark)); color: var(--text-main); }",
+  "botani-sage": "[data-lux-section="events"] { background: linear-gradient(0deg, var(--bg-light) 0%, transparent 100%) !important; }
+    
+    .lux-free-sec .lux-free-body { white-space: pre-line; max-width: 520px; margin-left: auto; margin-right: auto; }
+    .lux-free-photo { margin: 8px auto 20px; width: 100%; max-width: 340px; overflow: hidden; border-radius: var(--radius-md); box-shadow: var(--shadow-subtle); }
+    .lux-free-photo.is-bottom { margin: 20px auto 8px; }
+    .lux-free-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .lux-free-photo.is-rect { aspect-ratio: 4 / 5; }
+    .lux-free-photo.is-wide { aspect-ratio: 16 / 10; max-width: 100%; }
+    .lux-free-photo.is-arch { aspect-ratio: 3 / 4; max-width: 260px; border-radius: 999px 999px var(--radius-md) var(--radius-md); }
+    .lux-free-photo.is-circle { aspect-ratio: 1; max-width: 220px; border-radius: 50%; }
+    .lux-free-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 18px; text-align: left; }
+    .lux-free-card { padding: 16px 14px; background: var(--card-bg); border: 1px solid color-mix(in srgb, var(--primary) 22%, transparent); border-radius: var(--radius-md); box-shadow: var(--shadow-subtle); }
+    .lux-free-card-title { font-size: 15px; font-weight: 600; color: var(--text-main); margin-bottom: 6px; }
+    .lux-free-card-body { font-size: 12.5px; line-height: 1.6; color: var(--text-muted); white-space: pre-line; }
+    .lux-free-quote { margin: 20px auto 4px; max-width: 420px; padding: 18px 20px; border-left: 2px solid var(--accent); background: color-mix(in srgb, var(--card-bg) 70%, transparent); border-radius: 0 var(--radius-md) var(--radius-md) 0; text-align: left; }
+    .lux-free-quote-text { font-family: var(--font-heading); font-style: italic; font-size: 16px; line-height: 1.6; color: var(--text-main); white-space: pre-line; }
+    .lux-free-quote-source { display: block; margin-top: 8px; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--primary); }
+    .lux-free-gallery { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 18px auto 0; max-width: 420px; }
+    .lux-free-gallery.is-2, .lux-free-gallery.is-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .lux-free-gallery:not(:has(img)) { display: none; }
+    .lux-free-gallery img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius-sm); }
+    .lux-free-map { display: inline-flex; margin-top: 18px; }
+    .lux-free-sec :is(.lux-free-card-title, .lux-free-card-body, .lux-free-quote-source):empty:not([contenteditable="true"]) { display: none; }
+    .lux-free-sec.lux-free-left .lux-free-photo, .lux-free-sec.lux-free-left .lux-free-quote, .lux-free-sec.lux-free-left .lux-free-gallery { margin-left: 0; }
+    .lux-free-sec.lux-free-right .lux-free-photo, .lux-free-sec.lux-free-right .lux-free-quote, .lux-free-sec.lux-free-right .lux-free-gallery { margin-right: 0; }
+    .lux-free-sec :is(.sec-eyebrow, .sec-main-title, .lux-free-body):empty:not([contenteditable="true"]) { display: none; }
+    .lux-free-sec :is(.sec-eyebrow, .sec-main-title, .lux-free-body)[contenteditable="true"]:empty { min-height: 1.2em; min-width: 6em; }
+    .lux-free-sec.lux-free-left { text-align: left; }
+    .lux-free-sec.lux-free-left :is(.sec-divider, .lux-free-body) { margin-left: 0; }
+    .lux-free-sec.lux-free-right { text-align: right; }
+    .lux-free-sec.lux-free-right :is(.sec-divider, .lux-free-body) { margin-right: 0; }
+    html.lux-anim-ready[data-lux-anim-preset="grow"] [data-lux-anim]:not(.lux-in) { opacity: 0; transform: scale(0.78); filter: none; }",
+  "klasik-krem": "[data-lux-section="countdown"] { background: linear-gradient(180deg, var(--lux-base-card) 0%, transparent 100%) !important; }",
+  "majalah-gelap": ".opening-quote-card, .rsvp-form-box, .wish-item, .event-block-item, .event-unified-venue-card, .bank-card, .story-chapter-block, .lux-free-card { border: 1px solid color-mix(in srgb, var(--primary) 38%, transparent) !important; box-shadow: none !important; }
+    
+    .lux-nested-countdown { padding: 4px 0 28px !important; min-height: 0 !important; background: none; }
+    .slide-opening .lux-nested-countdown { width: 100%; max-width: 380px; margin: 12px auto 0; }
+    html.lux-anim-ready [data-lux-anim] { transition-duration: 1.4s; }",
+  "minimal-modern": "@media (min-width: 900px) {
+      .app-container, .main-scroll-panel { width: 600px !important; max-width: 600px !important; margin-left: calc(100% - 600px) !important; }
+      .sidebar-desktop { left: 0 !important; width: calc(100% - 600px) !important; }
+      .fixed-bg-layer, .scrim-canvas { width: 600px !important; left: calc(100% - 600px) !important; right: auto !important; }
+      .cover-overlay { width: 600px !important; left: calc(100% - 600px) !important; right: auto !important; }
+      .bottom-dock { left: calc(calc(100% - 600px) + 300px) !important; width: calc(600px - 28px) !important; max-width: calc(600px - 28px) !important; }
+      .modal-bg { left: calc(100% - 600px) !important; right: auto !important; width: 600px !important; }
+      #luxCopyToast { left: calc(calc(100% - 600px) + 300px) !important; }
+    }
+    html.lux-anim-ready[data-lux-anim-preset="slide-right"] [data-lux-anim]:not(.lux-in) { opacity: 0; transform: translateX(24px); filter: none; }
+    html.lux-anim-ready [data-lux-anim] { transition-duration: 0.5s; }",
+}
+`;

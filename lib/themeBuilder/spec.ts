@@ -26,7 +26,7 @@ export const builderFamilyOf = (eventType: BuilderEventType): BuilderFamily => (
 
 export type CanvasMode = "light" | "dark";
 export type RadiusStyle = "sharp" | "soft" | "round";
-export type AnimationPreset = "none" | "fade" | "rise" | "zoom" | "slide" | "blur";
+export type AnimationPreset = "none" | "fade" | "rise" | "zoom" | "slide" | "blur" | "drop" | "grow" | "flip" | "swing" | "slide-right";
 export type OrnamentLayer = "back" | "front";
 export type OrnamentAnchor = "top" | "bottom";
 
@@ -1065,7 +1065,17 @@ export const SURFACE_LIMITS = { cardBorder: [0, 4], cardRadius: [0, 40], buttonR
 
 export const FREE_SECTION_IDS = ["free1", "free2", "free3"] as const;
 export type FreeSectionId = (typeof FREE_SECTION_IDS)[number];
-export const FREE_SECTION_LIMITS = { eyebrow: 60, title: 120, body: 800, cards: 4, cardTitle: 80, cardBody: 300 } as const;
+export const FREE_SECTION_LIMITS = { eyebrow: 60, title: 120, body: 800, cards: 4, cardTitle: 80, cardBody: 300, quote: 400, quoteSource: 80, mapLabel: 40, gallery: [2, 6] } as const;
+
+/**
+ * Seksi yang bisa ditumpangkan ke seksi lain (tamu) dan seksi yang bisa ditumpangi (tuan). Pembuka dan Penutup selalu
+ * di ujung alur, hitung mundur punya `countdownPlacement` sendiri, dan galeri tidak bisa menjadi tuan karena isinya
+ * token mesin (`{{gallerySectionHtml}}`), bukan markup blueprint.
+ */
+export const NESTABLE_GUESTS = ["couple", "events", "story", "gallery", "rsvp"] as const satisfies readonly OrderableSection[];
+export const NESTING_HOSTS = ["opening", "couple", "events", "story", "rsvp", "closing"] as const satisfies readonly OrderableSection[];
+export type NestableGuest = (typeof NESTABLE_GUESTS)[number];
+export type NestingHost = (typeof NESTING_HOSTS)[number];
 export type FreeSectionAlign = "left" | "center" | "right";
 
 export const FREE_PHOTO_SHAPES = [
@@ -1124,11 +1134,20 @@ export interface FreeSection {
   photo?: FreeSectionPhoto;
   /** Kartu kecil (mis. protokol, keluarga, catatan), label klien `<id>Card<n>Title|Body`. */
   cards?: FreeSectionCard[];
+  /** Kutipan berbingkai dengan sumber, label klien `<id>Quote` dan `<id>QuoteSource`. */
+  quote?: { text: string; source: string };
+  /** Galeri mini dari foto galeri klien (2-6 foto pertama); seksi tetap tampil tanpa galeri bila klien belum punya foto. */
+  gallery?: { count: number };
+  /** Tombol peta ke lokasi acara utama; disembunyikan bila acara belum punya tautan peta. Label klien `<id>MapBtn`. */
+  mapButton?: { label: string };
   /** Animasi masuk seksi ini; kosong mengikuti animasi global. */
   animation?: AnimationPreset;
 }
 export const freeSectionLabelKeys = (id: FreeSectionId) => ({ eyebrow: `${id}Eyebrow`, title: `${id}Title`, body: `${id}Body` });
 export const freeCardLabelKeys = (id: FreeSectionId, n: number) => ({ title: `${id}Card${n}Title`, body: `${id}Card${n}Body` });
+export const freeExtraLabelKeys = (id: FreeSectionId) => ({ quote: `${id}Quote`, quoteSource: `${id}QuoteSource`, mapBtn: `${id}MapBtn` });
+/** Label klien milik seksi bebas; terikat pada rancangan satu tema seperti teks hias, jadi tidak dibawa saat tema berganti. */
+export const isFreeSectionLabelKey = (key: string) => /^free[1-3](?:Eyebrow|Title|Body|Card[1-4](?:Title|Body)|Quote|QuoteSource|MapBtn)$/.test(key);
 
 export const MAX_CUSTOM_CSS_LENGTH = 8000;
 
@@ -1195,6 +1214,8 @@ export interface BuilderSpec {
   desktopLayout?: DesktopLayout;
   /** Animasi masuk per seksi yang menimpa `animation` global. */
   sectionAnimations?: Partial<Record<OrderableSection, AnimationPreset>>;
+  /** Seksi tamu → seksi tuan: seksi tamu dipindah ke akhir isi seksi tuannya. */
+  sectionNesting?: Partial<Record<NestableGuest, NestingHost>>;
   /** Tidak disimpan bila "normal". */
   animationSpeed?: AnimationSpeed;
 }
@@ -1495,7 +1516,15 @@ export const ANIMATION_OPTIONS: Array<{ id: AnimationPreset; label: string; hint
   { id: "zoom", label: "Membesar", hint: "Muncul dari sedikit lebih kecil" },
   { id: "slide", label: "Geser", hint: "Muncul dari kiri" },
   { id: "blur", label: "Fokus", hint: "Dari buram menjadi tajam" },
+  { id: "drop", label: "Turun", hint: "Muncul sambil turun dari atas" },
+  { id: "grow", label: "Mekar", hint: "Tumbuh dari kecil, lebih terasa dari Membesar" },
+  { id: "flip", label: "Balik", hint: "Berputar dari sumbu datar seperti kartu dibalik" },
+  { id: "swing", label: "Ayun", hint: "Sedikit miring lalu tegak" },
+  { id: "slide-right", label: "Geser kanan", hint: "Muncul dari kanan" },
 ];
+
+/** Preset yang tidak punya aturan di blueprint; aturannya dipasang builder di gaya desain saat dipakai global. */
+export const EXTRA_ANIMATION_PRESETS: readonly AnimationPreset[] = ["drop", "grow", "flip", "swing", "slide-right"];
 
 export const RADIUS_OPTIONS: Array<{ id: RadiusStyle; label: string; values: [number, number, number] }> = [
   { id: "sharp", label: "Tegas", values: [2, 4, 6] },
@@ -1983,6 +2012,26 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
     }
   }
 
+  const sectionNesting: Partial<Record<NestableGuest, NestingHost>> = {};
+  if (input.sectionNesting !== undefined && input.sectionNesting !== null) {
+    if (typeof input.sectionNesting !== "object") errors.push("Penumpangan seksi tidak terbaca.");
+    else {
+      const familySecs = familyOrderableSections(family);
+      const entries = Object.entries(input.sectionNesting as Record<string, unknown>);
+      const guests = new Set(entries.map(([g]) => g));
+      for (const [guest, host] of entries) {
+        const g = NESTABLE_GUESTS.find((x) => x === guest && familySecs.includes(x));
+        const h = NESTING_HOSTS.find((x) => x === host && familySecs.includes(x));
+        if (!g || !h) { errors.push(`Penumpangan seksi ${guest} → ${String(host)} tidak dikenali.`); continue; }
+        if ((g as string) === h) { errors.push(`Seksi ${SECTION_LABELS[g]} tidak bisa menumpang pada dirinya sendiri.`); continue; }
+        // Rantai (A di B, B di C) membuat urutan pemindahan bergantung urutan kunci; ditolak agar hasilnya pasti.
+        if (guests.has(h)) { errors.push(`Seksi ${SECTION_LABELS[h]} sedang menumpang, jadi tidak bisa ditumpangi.`); continue; }
+        if (h === "events" && eventsPlacement === "home") { errors.push("Seksi Acara disembunyikan saat jadwal dipindah ke Home, jadi tidak bisa ditumpangi."); continue; }
+        sectionNesting[g] = h;
+      }
+    }
+  }
+
   const freeSections: FreeSection[] = [];
   if (input.freeSections !== undefined && input.freeSections !== null) {
     if (!Array.isArray(input.freeSections) || input.freeSections.length > FREE_SECTION_IDS.length) {
@@ -1990,7 +2039,7 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
     } else {
       // Penutup selalu di akhir alur (footer), jadi seksi bebas tidak bisa diletakkan sesudahnya. Hitung mundur yang
       // menumpang di seksi lain bukan seksi alur lagi; seksi bebas sesudahnya akan ikut masuk ke seksi tumpangannya.
-      const hosts = familyOrderableSections(family).filter((s) => s !== "closing" && !(s === "countdown" && countdownPlacement !== "section"));
+      const hosts = familyOrderableSections(family).filter((s) => s !== "closing" && !(s === "countdown" && countdownPlacement !== "section") && !(s in sectionNesting));
       const usedIds = new Set<string>();
       for (const [i, raw] of (input.freeSections as unknown[]).entries()) {
         const label = `Seksi teks bebas #${i + 1}`;
@@ -2046,12 +2095,37 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
           if (preset !== animation) sectionAnimation = preset;
         }
 
-        if (!title && !body && !photo && !cards.length) { errors.push(`${label}: isi judul, teks, foto, atau kartu.`); continue; }
+        let quote: FreeSection["quote"];
+        if (f.quote !== undefined && f.quote !== null) {
+          const q = (typeof f.quote === "object" ? f.quote : {}) as Record<string, unknown>;
+          const qText = freeSectionText(q.text, FREE_SECTION_LIMITS.quote, `${label}: kutipan`, errors);
+          const qSource = freeSectionText(q.source, FREE_SECTION_LIMITS.quoteSource, `${label}: sumber kutipan`, errors);
+          if (qText === null || qSource === null) continue;
+          if (!qText) { errors.push(`${label}: kutipan kosong.`); continue; }
+          quote = { text: qText, source: qSource };
+        }
+        let gallery: FreeSection["gallery"];
+        if (f.gallery !== undefined && f.gallery !== null) {
+          const g = (typeof f.gallery === "object" ? f.gallery : {}) as Record<string, unknown>;
+          gallery = { count: Math.round(clamp(g.count, FREE_SECTION_LIMITS.gallery[0], FREE_SECTION_LIMITS.gallery[1], 3)) };
+        }
+        let mapButton: FreeSection["mapButton"];
+        if (f.mapButton !== undefined && f.mapButton !== null) {
+          const m = (typeof f.mapButton === "object" ? f.mapButton : {}) as Record<string, unknown>;
+          const mLabel = freeSectionText(m.label, FREE_SECTION_LIMITS.mapLabel, `${label}: label tombol peta`, errors);
+          if (mLabel === null) continue;
+          mapButton = { label: mLabel || "Buka Peta Lokasi" };
+        }
+
+        if (!title && !body && !photo && !cards.length && !quote && !gallery && !mapButton) { errors.push(`${label}: isi judul, teks, foto, kartu, kutipan, galeri, atau tombol peta.`); continue; }
         freeSections.push({
           id, after, eyebrow, title, body, align,
           ...(style && !isDefaultSectionStyle(style) ? { style } : {}),
           ...(photo ? { photo } : {}),
           ...(cards.length ? { cards } : {}),
+          ...(quote ? { quote } : {}),
+          ...(gallery ? { gallery } : {}),
+          ...(mapButton ? { mapButton } : {}),
           ...(sectionAnimation ? { animation: sectionAnimation } : {}),
         });
       }
@@ -2100,6 +2174,7 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
       ...(desktopLayout !== "split" ? { desktopLayout } : {}),
       ...(Object.keys(sectionAnimations).length ? { sectionAnimations } : {}),
       ...(animationSpeed !== "normal" ? { animationSpeed } : {}),
+      ...(Object.keys(sectionNesting).length ? { sectionNesting } : {}),
     },
   };
 }

@@ -21,7 +21,8 @@ describe("spesifikasi lama", () => {
   it("tetap sah dan tidak mendapat kolom baru", () => {
     const spec = okSpec({});
     for (const key of ["sectionStyles", "paletteExtra", "surface", "freeSections", "customCss"]) expect(spec).not.toHaveProperty(key);
-    expect(styleBlock(compiled(spec), "lux-builder-design")).toBe("");
+    // Tag selalu ada (pratinjau menulis ulang isinya langsung), tetapi kosong untuk spesifikasi tanpa alat desain.
+    expect(styleBlock(compiled(spec), "lux-builder-design").trim()).toBe("");
   });
 });
 
@@ -230,6 +231,7 @@ describe("clone master lebih setia", () => {
     expect(seed.spec.blocks["countdown-title"]?.hidden).toBe(true);
     expect(seed.spec.blocks["events-title"]?.transform).toBe("uppercase");
     expect(seed.spec.canvasMode).toBe("dark");
+    expect(seed.spec.variants.countdown).toBe("minimal");
     expect(Object.keys(seed.spec.paletteExtra ?? {}).sort()).toEqual(["eyebrow", "heading", "line"]);
     // Warna tambahan hasil clone wajib terbaca di kanvas clone.
     expect(contrastRatio(seed.spec.paletteExtra!.heading!, seed.spec.palette.bgDark)).toBeGreaterThanOrEqual(4.5);
