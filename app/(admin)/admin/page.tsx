@@ -2897,8 +2897,8 @@ export default function AdminPage() {
                                 </div>
 
                                 {/* 3. Bottom Action Row (Hirarki Bawah) */}
-                                <div className="px-4 pb-4 pt-3 border-t border-gray-100 flex items-center justify-between gap-2 bg-stone-50/50">
-                                  <div className="flex items-center gap-2">
+                                <div className="px-4 pb-4 pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2 bg-stone-50/50">
+                                  <div className="flex flex-wrap items-center gap-2 [&>*]:whitespace-nowrap">
                                     <a
                                       href={`/demo/${theme.id}`}
                                       target="_blank"
@@ -2914,9 +2914,9 @@ export default function AdminPage() {
                                       <a
                                         href={`/admin/theme-variants?id=${encodeURIComponent(theme.id)}`}
                                         className="px-3 py-1.5 bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 rounded-xl text-xs font-semibold transition inline-flex items-center gap-1"
-                                        title={`Varian warna/huruf dari ${theme.parentTheme ?? "master"}`}
+                                        title={`Ubah warna dan huruf varian dari ${theme.parentTheme ?? "master"} di editor varian`}
                                       >
-                                        Edit Varian
+                                        Edit
                                       </a>
                                     ) : theme.builderSpec != null ? (
                                       <a
@@ -2924,7 +2924,7 @@ export default function AdminPage() {
                                         className="px-3 py-1.5 bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 rounded-xl text-xs font-semibold transition inline-flex items-center gap-1"
                                         title="Ubah tampilan tema ini di Theme Builder"
                                       >
-                                        Builder
+                                        Edit
                                       </a>
                                     ) : (
                                       <>
@@ -2938,9 +2938,9 @@ export default function AdminPage() {
                                         <a
                                           href={`/admin/theme-builder?from=${encodeURIComponent(theme.id)}`}
                                           className="px-3 py-1.5 bg-white hover:bg-stone-100 text-stone-600 border border-stone-200 rounded-xl text-xs font-medium transition inline-flex items-center gap-1"
-                                          title="Gunakan tema ini sebagai titik awal rancangan tema builder baru"
+                                          title="Buat tema builder baru dengan tema ini sebagai titik awal; master aslinya tidak berubah"
                                         >
-                                          Clone to Builder
+                                          Salin ke Builder
                                         </a>
                                       </>
                                     )}

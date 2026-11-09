@@ -37,8 +37,8 @@ Saat membuka tema master bawaan fisik (*handcrafted*, seperti **Valente** di `th
    - **`PUT`**: Pengaman dipertahankan agar tidak ada permintaan API yang dapat menimpa berkas tema fisik yang bukan bertipe builder.
 2. **`app/(admin)/admin/page.tsx`:**
    - Tombol aksi pada kartu tema tabel admin kini dinamis:
-     - Jika `theme.builderSpec != null`: Menampilkan tombol **Builder** (`href="/admin/theme-builder?id=${theme.id}"`).
-     - Jika `theme.builderSpec == null`: Menampilkan tombol **Clone to Builder** (`href="/admin/theme-builder?from=${theme.id}"`).
+     - Jika `theme.builderSpec != null`: Menampilkan tombol **Edit** (`href="/admin/theme-builder?id=${theme.id}"`; bernama "Builder" sebelum 10 Nov 2026).
+     - Jika `theme.builderSpec == null`: Menampilkan tombol **Buat Varian** dan **Salin ke Builder** (`href="/admin/theme-builder?from=${theme.id}"`; bernama "Clone to Builder" sebelum 10 Nov 2026).
 3. **`app/(admin)/admin/theme-builder/page.tsx` & `components/admin/themeBuilder/ThemeBuilder.tsx`:**
    - `page.tsx` kini membaca parameter query `from = useSearchParams().get("from")` dan menyalurkannya ke `<ThemeBuilder themeId={id} fromId={from} />`.
    - `ThemeBuilder.tsx` menangani `fromId`: jika dibuka tanpa `themeId` tapi memiliki `fromId`, sistem memanggil endpoint `GET /api/admin/theme-builder?from=<id>` untuk menyalin palet, font, dan tekstur tema lama sebagai draf tema builder baru tanpa menyentuh file master aslinya.
@@ -155,7 +155,7 @@ Rincian lengkap: `docs/SYSTEM_ARCHITECTURE.md` bagian 8.1 butir 14–16.
 ### G. Varian Tema atas Master Tulisan Tangan (10 Nov 2026 — commit `709a4c5e`, `88b73a78`, dan alat bantu editor)
 Jawaban atas "master lama tidak bisa diedit di builder": master tulisan tangan tetap tidak dibuka di builder (lihat bagian 1), tetapi warna dan hurufnya kini bisa diganti lewat **Varian Tema**. Rincian: `docs/SYSTEM_ARCHITECTURE.md` bagian 8.1 butir 17–19.
 1. **Fase 0 — tokenisasi**: seluruh 54 master memakai variabel `:root` (`--lux-c-<hex>`, `--lux-font-*`) lewat `lib/themeTokenize.ts` dan `scripts/tokenize-masters.ts` (idempoten). Master baru wajib mengikuti `docs/PANDUAN_PEMBUATAN_TEMA_BARU.md` bagian 4A.
-2. **Fase 1–3**: varian = baris `Theme` dengan `parentTheme` + `masterOverrides` (JSON), tanpa berkas master sendiri. `renderTemplateFile` memakai master induk dan menyisipkan `<style id="lux-master-overrides">` sebelum piring undangan dibekukan; data demo, teks, dan musik dari induk. Editor `/admin/theme-variants`, rute `/api/admin/theme-variants`, tombol **Buat Varian** / **Edit Varian** di katalog.
+2. **Fase 1–3**: varian = baris `Theme` dengan `parentTheme` + `masterOverrides` (JSON), tanpa berkas master sendiri. `renderTemplateFile` memakai master induk dan menyisipkan `<style id="lux-master-overrides">` sebelum piring undangan dibekukan; data demo, teks, dan musik dari induk. Editor `/admin/theme-variants`, rute `/api/admin/theme-variants`, tombol **Buat Varian** (master) / **Edit** (varian) di katalog.
 3. **Alat bantu editor**: label pemakaian warna (`masterColorUsage`), warna tak terpakai disembunyikan, **Warnai ulang dengan palet** (`recolorWithPalette`, terang-gelap dipertahankan), cek keterbacaan dari pratinjau (`components/admin/variantReadability.ts`, hanya teks yang menjadi di bawah WCAG AA akibat varian).
 4. **Pembanding tampilan**: `scripts/verify-master-visual.ts` (`npm run test:master-visual`), wajib dijalankan setiap mengubah CSS master yang seharusnya tidak mengubah tampilan.
 5. **Batas yang diketahui**: ornamen berupa gambar, warna di dalam `<script>`, dan atribut SVG `fill`/`stroke` tidak ikut berganti warna. Klien belum bisa memilih varian warna sendiri di Studio; varian dipilih sebagai tema terpisah di katalog.
