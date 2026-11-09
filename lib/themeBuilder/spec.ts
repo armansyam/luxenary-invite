@@ -1065,8 +1065,49 @@ export const SURFACE_LIMITS = { cardBorder: [0, 4], cardRadius: [0, 40], buttonR
 
 export const FREE_SECTION_IDS = ["free1", "free2", "free3"] as const;
 export type FreeSectionId = (typeof FREE_SECTION_IDS)[number];
-export const FREE_SECTION_LIMITS = { eyebrow: 60, title: 120, body: 800 } as const;
+export const FREE_SECTION_LIMITS = { eyebrow: 60, title: 120, body: 800, cards: 4, cardTitle: 80, cardBody: 300 } as const;
 export type FreeSectionAlign = "left" | "center" | "right";
+
+export const FREE_PHOTO_SHAPES = [
+  { id: "rect", label: "Persegi" },
+  { id: "wide", label: "Lebar" },
+  { id: "arch", label: "Lengkung" },
+  { id: "circle", label: "Bulat" },
+] as const;
+export type FreePhotoShape = (typeof FREE_PHOTO_SHAPES)[number]["id"];
+
+/** Foto seksi bebas: gambar pustaka/unggahan admin, atau slot foto klien (berganti saat klien mengunggah). */
+export type FreeSectionPhoto =
+  | { source: "asset"; src: string; shape: FreePhotoShape; position: "top" | "bottom" }
+  | { source: "slot"; slot: OrnamentMediaSlot; shape: FreePhotoShape; position: "top" | "bottom" };
+
+export interface FreeSectionCard {
+  title: string;
+  body: string;
+}
+
+/** Hitung mundur di seksinya sendiri, di dalam seksi Acara (di atas jadwal), atau di Home (di atas jadwal Home). */
+export const COUNTDOWN_PLACEMENTS = [
+  { id: "section", label: "Seksi sendiri", hint: "Hitung mundur punya seksi sendiri." },
+  { id: "events", label: "Di dalam Acara", hint: "Hitung mundur menyatu di seksi Acara, di atas jadwal." },
+  { id: "opening", label: "Di Home", hint: "Hitung mundur tampil di halaman Home." },
+] as const;
+export type CountdownPlacement = (typeof COUNTDOWN_PLACEMENTS)[number]["id"];
+
+export const DESKTOP_LAYOUTS = [
+  { id: "split", label: "Foto kiri, undangan kanan", hint: "Bawaan: foto di kiri, kolom undangan 460px di kanan." },
+  { id: "split-left", label: "Undangan kiri, foto kanan", hint: "Kolom undangan di kiri, foto panel di kanan." },
+  { id: "wide", label: "Kolom lebar", hint: "Foto kiri, kolom undangan 600px di kanan." },
+  { id: "centered", label: "Tengah tanpa foto", hint: "Kolom undangan di tengah layar di atas latar kanvas, tanpa panel foto." },
+] as const;
+export type DesktopLayout = (typeof DESKTOP_LAYOUTS)[number]["id"];
+
+export const ANIMATION_SPEEDS = [
+  { id: "slow", label: "Pelan", seconds: 1.4 },
+  { id: "normal", label: "Normal", seconds: 0.9 },
+  { id: "fast", label: "Cepat", seconds: 0.5 },
+] as const;
+export type AnimationSpeed = (typeof ANIMATION_SPEEDS)[number]["id"];
 
 /**
  * Seksi teks bebas buatan admin (mis. kutipan, catatan keluarga, protokol), disisipkan setelah seksi `after`. Isinya
@@ -1080,8 +1121,14 @@ export interface FreeSection {
   body: string;
   align: FreeSectionAlign;
   style?: SectionStyle;
+  photo?: FreeSectionPhoto;
+  /** Kartu kecil (mis. protokol, keluarga, catatan), label klien `<id>Card<n>Title|Body`. */
+  cards?: FreeSectionCard[];
+  /** Animasi masuk seksi ini; kosong mengikuti animasi global. */
+  animation?: AnimationPreset;
 }
 export const freeSectionLabelKeys = (id: FreeSectionId) => ({ eyebrow: `${id}Eyebrow`, title: `${id}Title`, body: `${id}Body` });
+export const freeCardLabelKeys = (id: FreeSectionId, n: number) => ({ title: `${id}Card${n}Title`, body: `${id}Card${n}Body` });
 
 export const MAX_CUSTOM_CSS_LENGTH = 8000;
 
@@ -1142,6 +1189,14 @@ export interface BuilderSpec {
   surface?: SurfaceStyle;
   freeSections?: FreeSection[];
   customCss?: string;
+  /** Tidak disimpan bila "section" (bawaan). */
+  countdownPlacement?: CountdownPlacement;
+  /** Tidak disimpan bila "split" (bawaan). */
+  desktopLayout?: DesktopLayout;
+  /** Animasi masuk per seksi yang menimpa `animation` global. */
+  sectionAnimations?: Partial<Record<OrderableSection, AnimationPreset>>;
+  /** Tidak disimpan bila "normal". */
+  animationSpeed?: AnimationSpeed;
 }
 
 // Font yang tersedia lokal di public/fonts/fonts.css; font lain tidak dimuat oleh undangan.
@@ -1910,13 +1965,32 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
   }
   if (rawSurface.buttonPill === true) surface.buttonPill = true;
 
+  const countdownPlacement = pickEnum<CountdownPlacement>(input.countdownPlacement ?? "section", COUNTDOWN_PLACEMENTS.map((p) => p.id), "Letak hitung mundur", errors);
+  // Saat jadwal pindah ke Home, seksi Acara disembunyikan; hitung mundur di dalamnya ikut hilang.
+  if (countdownPlacement === "events" && eventsPlacement === "home") errors.push("Hitung mundur tidak bisa di dalam seksi Acara saat jadwal acara dipindah ke Home.");
+  const desktopLayout = pickEnum<DesktopLayout>(input.desktopLayout ?? "split", DESKTOP_LAYOUTS.map((d) => d.id), "Tata letak desktop", errors);
+  const animationSpeed = pickEnum<AnimationSpeed>(input.animationSpeed ?? "normal", ANIMATION_SPEEDS.map((s) => s.id), "Kecepatan animasi", errors);
+  const animationIds = ANIMATION_OPTIONS.map((a) => a.id);
+  const sectionAnimations: Partial<Record<OrderableSection, AnimationPreset>> = {};
+  if (input.sectionAnimations !== undefined && input.sectionAnimations !== null) {
+    if (typeof input.sectionAnimations !== "object") errors.push("Animasi per seksi tidak terbaca.");
+    else {
+      for (const [key, value] of Object.entries(input.sectionAnimations as Record<string, unknown>)) {
+        if (!familyOrderableSections(family).includes(key as OrderableSection)) { errors.push(`Animasi seksi ${key} tidak dikenali.`); continue; }
+        const preset = pickEnum<AnimationPreset>(value, animationIds, `Animasi seksi ${SECTION_LABELS[key as OrderableSection]}`, errors);
+        if (preset && preset !== animation) sectionAnimations[key as OrderableSection] = preset;
+      }
+    }
+  }
+
   const freeSections: FreeSection[] = [];
   if (input.freeSections !== undefined && input.freeSections !== null) {
     if (!Array.isArray(input.freeSections) || input.freeSections.length > FREE_SECTION_IDS.length) {
       errors.push(`Seksi teks bebas paling banyak ${FREE_SECTION_IDS.length}.`);
     } else {
-      // Penutup selalu di akhir alur (footer), jadi seksi bebas tidak bisa diletakkan sesudahnya.
-      const hosts = familyOrderableSections(family).filter((s) => s !== "closing");
+      // Penutup selalu di akhir alur (footer), jadi seksi bebas tidak bisa diletakkan sesudahnya. Hitung mundur yang
+      // menumpang di seksi lain bukan seksi alur lagi; seksi bebas sesudahnya akan ikut masuk ke seksi tumpangannya.
+      const hosts = familyOrderableSections(family).filter((s) => s !== "closing" && !(s === "countdown" && countdownPlacement !== "section"));
       const usedIds = new Set<string>();
       for (const [i, raw] of (input.freeSections as unknown[]).entries()) {
         const label = `Seksi teks bebas #${i + 1}`;
@@ -1932,9 +2006,54 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
         const title = freeSectionText(f.title, FREE_SECTION_LIMITS.title, `${label}: judul`, errors);
         const body = freeSectionText(f.body, FREE_SECTION_LIMITS.body, `${label}: isi`, errors);
         if (!after || !align || eyebrow === null || title === null || body === null) continue;
-        if (!title && !body) { errors.push(`${label}: judul atau isi wajib diisi.`); continue; }
         const style = f.style === undefined || f.style === null ? null : parseSectionStyle(f.style, label, errors);
-        freeSections.push({ id, after, eyebrow, title, body, align, ...(style && !isDefaultSectionStyle(style) ? { style } : {}) });
+
+        let photo: FreeSectionPhoto | undefined;
+        if (f.photo !== undefined && f.photo !== null) {
+          const p = f.photo as Record<string, unknown>;
+          const shape = pickEnum<FreePhotoShape>(p.shape ?? "rect", FREE_PHOTO_SHAPES.map((s) => s.id), `${label}: bentuk foto`, errors);
+          const position = pickEnum<"top" | "bottom">(p.position ?? "top", ["top", "bottom"], `${label}: letak foto`, errors);
+          if (!shape || !position) continue;
+          if (p.source === "slot") {
+            const slot = pickEnum<OrnamentMediaSlot>(p.slot, familyOrnamentMediaSlots(family).map((s) => s.id), `${label}: slot foto`, errors);
+            if (!slot) continue;
+            photo = { source: "slot", slot, shape, position };
+          } else if (p.source === "asset") {
+            if (!(isAllowedOrnamentSrc(p.src) || (isAllowedBackdropSrc(p.src) && p.src !== ""))) { errors.push(`${label}: foto harus dari pustaka gambar.`); continue; }
+            photo = { source: "asset", src: p.src as string, shape, position };
+          } else { errors.push(`${label}: sumber foto tidak dikenali.`); continue; }
+        }
+
+        const cards: FreeSectionCard[] = [];
+        if (f.cards !== undefined && f.cards !== null) {
+          if (!Array.isArray(f.cards) || f.cards.length > FREE_SECTION_LIMITS.cards) { errors.push(`${label}: kartu paling banyak ${FREE_SECTION_LIMITS.cards}.`); continue; }
+          let bad = false;
+          for (const [k, rawCard] of (f.cards as unknown[]).entries()) {
+            const c = (rawCard && typeof rawCard === "object" ? rawCard : {}) as Record<string, unknown>;
+            const cTitle = freeSectionText(c.title, FREE_SECTION_LIMITS.cardTitle, `${label}: judul kartu ${k + 1}`, errors);
+            const cBody = freeSectionText(c.body, FREE_SECTION_LIMITS.cardBody, `${label}: isi kartu ${k + 1}`, errors);
+            if (cTitle === null || cBody === null) { bad = true; continue; }
+            if (!cTitle && !cBody) { errors.push(`${label}: kartu ${k + 1} kosong.`); bad = true; continue; }
+            cards.push({ title: cTitle, body: cBody });
+          }
+          if (bad) continue;
+        }
+
+        let sectionAnimation: AnimationPreset | undefined;
+        if (f.animation !== undefined && f.animation !== null) {
+          const preset = pickEnum<AnimationPreset>(f.animation, animationIds, `${label}: animasi`, errors);
+          if (!preset) continue;
+          if (preset !== animation) sectionAnimation = preset;
+        }
+
+        if (!title && !body && !photo && !cards.length) { errors.push(`${label}: isi judul, teks, foto, atau kartu.`); continue; }
+        freeSections.push({
+          id, after, eyebrow, title, body, align,
+          ...(style && !isDefaultSectionStyle(style) ? { style } : {}),
+          ...(photo ? { photo } : {}),
+          ...(cards.length ? { cards } : {}),
+          ...(sectionAnimation ? { animation: sectionAnimation } : {}),
+        });
       }
     }
   }
@@ -1950,7 +2069,7 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
     }
   }
 
-  if (errors.length || !eventType || !canvasMode || !radius || !animation || !eventsPlacement) return { ok: false, errors };
+  if (errors.length || !eventType || !canvasMode || !radius || !animation || !eventsPlacement || !countdownPlacement || !desktopLayout || !animationSpeed) return { ok: false, errors };
   return {
     ok: true,
     spec: {
@@ -1977,6 +2096,10 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
       ...(Object.keys(surface).length ? { surface } : {}),
       ...(freeSections.length ? { freeSections } : {}),
       ...(customCss ? { customCss } : {}),
+      ...(countdownPlacement !== "section" ? { countdownPlacement } : {}),
+      ...(desktopLayout !== "split" ? { desktopLayout } : {}),
+      ...(Object.keys(sectionAnimations).length ? { sectionAnimations } : {}),
+      ...(animationSpeed !== "normal" ? { animationSpeed } : {}),
     },
   };
 }

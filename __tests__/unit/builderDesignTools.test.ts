@@ -6,7 +6,7 @@ import { describe, it, expect } from "vitest";
 import { auditBuilderMaster } from "@/lib/themeBuilder/audit";
 import { compileBuilderMaster, readBuilderBlueprint } from "@/lib/themeBuilder/compile";
 import { uploadedAssetFiles } from "@/lib/themeBuilder/bundle";
-import { customCssError, defaultBuilderSpec, parseBuilderSpec, storedVariant, type BuilderEventType, type BuilderSpec } from "@/lib/themeBuilder/spec";
+import { contrastRatio, customCssError, defaultBuilderSpec, parseBuilderSpec, storedVariant, type BuilderEventType, type BuilderSpec } from "@/lib/themeBuilder/spec";
 
 const parse = (patch: Record<string, unknown>, eventType: BuilderEventType = "WEDDING") => parseBuilderSpec({ ...defaultBuilderSpec(eventType), ...patch });
 const compiled = (spec: BuilderSpec) => compileBuilderMaster(spec, readBuilderBlueprint(spec.eventType));
@@ -140,6 +140,102 @@ describe("CSS kustom", () => {
   ])("menolak %s", (css) => {
     expect(customCssError(css)).not.toBeNull();
     expect(parse({ customCss: css }).ok).toBe(false);
+  });
+});
+
+describe("hitung mundur menumpang", () => {
+  it.each([["events", 'data-lux-block="events-list"', 'data-lux-section="events"'], ["opening", 'class="home-schedule"', 'data-lux-section="opening"']] as const)(
+    "%s: dipindah, bukan digandakan, dan tetap berpenanda seksi",
+    (placement, anchor, host) => {
+      for (const eventType of ["WEDDING", "KHITAN"] as const) {
+        const html = compiled(okSpec({ countdownPlacement: placement }, eventType));
+        expect(html.match(/id="countdownTimer"/g)).toHaveLength(1);
+        const at = html.indexOf('data-lux-section="countdown"');
+        expect(html.indexOf(host)).toBeLessThan(at);
+        expect(at).toBeLessThan(html.indexOf(anchor));
+        expect(html).toContain("lux-nested-countdown");
+        expect(auditBuilderMaster(html, readBuilderBlueprint(eventType))).toEqual([]);
+      }
+    },
+  );
+
+  it("bawaan tidak menyimpan kolom dan bentrok dengan jadwal di Home ditolak", () => {
+    expect(okSpec({ countdownPlacement: "section" })).not.toHaveProperty("countdownPlacement");
+    expect(parse({ countdownPlacement: "events", eventsPlacement: "home" }).ok).toBe(false);
+    expect(parse({ countdownPlacement: "opening", eventsPlacement: "home" }).ok).toBe(true);
+  });
+});
+
+describe("seksi bebas dengan foto dan kartu", () => {
+  const base = { id: "free1", after: "couple", eyebrow: "", title: "", body: "", align: "center" };
+  it("foto slot klien memakai token engine bersyarat dan kartu berlabel klien", () => {
+    const html = compiled(okSpec({ freeSections: [{ ...base, photo: { source: "slot", slot: "HOME_PHOTO", shape: "arch", position: "bottom" }, cards: [{ title: "Protokol", body: "Bermasker" }, { title: "", body: "Isi saja" }] }] }));
+    expect(html).toContain('{{#if hasCustomHomePhoto}}<figure class="lux-free-photo is-arch is-bottom"');
+    expect(html).toContain('data-lux-field="customLabels.free1Card1Title">Protokol</h3>');
+    expect(html).toContain('data-lux-field="customLabels.free1Card2Body">Isi saja</p>');
+    expect(auditBuilderMaster(html, readBuilderBlueprint("WEDDING"))).toEqual([]);
+  });
+
+  it("foto pustaka diterima, URL luar dan kartu berlebih ditolak", () => {
+    expect(compiled(okSpec({ freeSections: [{ ...base, photo: { source: "asset", src: "/assets/ornaments/background/bg-maroon.webp", shape: "wide", position: "top" } }] }))).toContain('<img src="/assets/ornaments/background/bg-maroon.webp"');
+    expect(parse({ freeSections: [{ ...base, photo: { source: "asset", src: "https://x.test/a.png" } }] }).ok).toBe(false);
+    expect(parse({ freeSections: [{ ...base, title: "x", cards: Array.from({ length: 5 }, () => ({ title: "a", body: "" })) }] }).ok).toBe(false);
+    expect(parse({ freeSections: [{ ...base, photo: { source: "slot", slot: "BRIDE_PHOTO" } }] }, "AQIQAH").ok).toBe(false);
+  });
+
+  it("seksi bebas tidak boleh menumpang pada hitung mundur yang sudah menumpang", () => {
+    expect(parse({ countdownPlacement: "events", freeSections: [{ ...base, title: "x", after: "countdown" }] }).ok).toBe(false);
+  });
+});
+
+describe("tata letak desktop", () => {
+  it.each([["split-left", "margin-left: 0px !important"], ["wide", "width: 600px !important"], ["centered", ".sidebar-desktop { display: none !important; }"]] as const)("%s", (layout, needle) => {
+    const css = styleBlock(compiled(okSpec({ desktopLayout: layout })), "lux-builder-design");
+    expect(css).toContain("@media (min-width: 900px)");
+    expect(css).toContain(needle);
+  });
+
+  it("sampul layar penuh dan navigasi laci tidak dipaksa ke lebar kolom", () => {
+    const css = styleBlock(compiled(okSpec({ desktopLayout: "wide", variants: { ...defaultBuilderSpec().variants, cover: "fullscreen", nav: "drawer" } })), "lux-builder-design");
+    expect(css).not.toContain(".cover-overlay { width: 600px");
+    expect(css).not.toContain(".bottom-dock { left:");
+    expect(css).toContain("right: calc(100% - calc(100% - 600px) - 600px + 20px) !important;");
+  });
+});
+
+describe("animasi per seksi", () => {
+  it("menimpa preset per seksi dan kecepatan; preset sama dengan global tidak disimpan", () => {
+    const spec = okSpec({ animation: "rise", animationSpeed: "fast", sectionAnimations: { couple: "zoom", events: "rise" } });
+    expect(spec.sectionAnimations).toEqual({ couple: "zoom" });
+    const html = compiled(spec);
+    const css = styleBlock(html, "lux-builder-design");
+    expect(css).toContain('html.lux-anim-ready [data-lux-section="couple"] [data-lux-anim]:not(.lux-in) { opacity: 0; transform: scale(0.94); filter: none; }');
+    expect(css).toContain("transition-duration: 0.5s");
+    expect(html).toContain('data-lux-anim-preset="rise"');
+  });
+
+  it("global tanpa animasi tetapi ada seksi beranimasi: skrip dinyalakan dan sisanya tetap tampil", () => {
+    const html = compiled(okSpec({ animation: "none", sectionAnimations: { couple: "blur" } }));
+    expect(html).toContain('data-lux-anim-preset="fade"');
+    expect(styleBlock(html, "lux-builder-design")).toContain("html.lux-anim-ready [data-lux-anim]:not(.lux-in) { opacity: 1; transform: none; filter: none; }");
+  });
+});
+
+describe("clone master lebih setia", () => {
+  it("Valente: hitung mundur di Acara, judul kapital, dan warna eyebrow/judul/garis dari :root", async () => {
+    const fs = await import("fs");
+    const { seedSpecFromMaster } = await import("@/lib/themeBuilder/legacySeed");
+    const seed = seedSpecFromMaster(fs.readFileSync("themes/wedding/minimalist/valente.html", "utf-8"), "WEDDING");
+    expect(seed.spec.countdownPlacement).toBe("events");
+    expect(seed.spec.blocks["countdown-title"]?.hidden).toBe(true);
+    expect(seed.spec.blocks["events-title"]?.transform).toBe("uppercase");
+    expect(seed.spec.canvasMode).toBe("dark");
+    expect(Object.keys(seed.spec.paletteExtra ?? {}).sort()).toEqual(["eyebrow", "heading", "line"]);
+    // Warna tambahan hasil clone wajib terbaca di kanvas clone.
+    expect(contrastRatio(seed.spec.paletteExtra!.heading!, seed.spec.palette.bgDark)).toBeGreaterThanOrEqual(4.5);
+    const parsed = parseBuilderSpec(seed.spec);
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) expect(auditBuilderMaster(compiled(parsed.spec), readBuilderBlueprint("WEDDING"))).toEqual([]);
   });
 });
 

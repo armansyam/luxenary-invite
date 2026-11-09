@@ -24,6 +24,15 @@ import {
   googleFontIds,
   isGoogleFontId,
   paletteChecks,
+  ANIMATION_SPEEDS,
+  COUNTDOWN_PLACEMENTS,
+  DESKTOP_LAYOUTS,
+  FREE_PHOTO_SHAPES,
+  familyOrnamentMediaSlots,
+  type AnimationPreset,
+  type DesktopLayout,
+  type FreeSectionPhoto,
+  type OrnamentMediaSlot,
   CARD_SHADOWS,
   DEFAULT_SECTION_IMAGE_OPACITY,
   DEFAULT_SECTION_STYLE,
@@ -1248,13 +1257,61 @@ export function LayoutPanel({
                 type="button"
                 aria-pressed={active}
                 onClick={() => {
-                  onChange({ eventsPlacement: p.id });
+                  // Seksi Acara disembunyikan saat jadwal di Home; hitung mundur yang menumpang di sana dikembalikan.
+                  onChange({ eventsPlacement: p.id, ...(p.id === "home" && spec.countdownPlacement === "events" ? { countdownPlacement: undefined } : {}) });
                   onFocusSection(p.id === "home" ? "opening" : "events");
                 }}
                 className={`rounded-xl border p-2.5 text-left transition cursor-pointer ${active ? "border-amber-500 ring-2 ring-amber-500/20" : "border-stone-200 hover:border-stone-300"}`}
               >
                 <span className="block text-[12px] font-semibold text-stone-800">{p.label}</span>
                 <span className="mt-0.5 block text-[10.5px] leading-snug text-stone-500">{p.hint}</span>
+              </button>
+            );
+          })}
+        </div>
+      </Section>
+
+      <Section title="Letak hitung mundur" hint="Satukan hitung mundur dengan seksi lain seperti tema majalah. Saat menumpang, judul hitung mundur bisa disembunyikan lewat Posisi elemen.">
+        <div className="grid grid-cols-3 gap-2">
+          {COUNTDOWN_PLACEMENTS.map((p) => {
+            const active = (spec.countdownPlacement ?? "section") === p.id;
+            const disabled = p.id === "events" && spec.eventsPlacement === "home";
+            return (
+              <button
+                key={p.id}
+                type="button"
+                aria-pressed={active}
+                disabled={disabled}
+                title={disabled ? "Seksi Acara disembunyikan saat jadwal dipindah ke Home." : p.hint}
+                onClick={() => {
+                  const after = (spec.freeSections ?? []).map((f) => (p.id !== "section" && f.after === "countdown" ? { ...f, after: "events" as OrderableSection } : f));
+                  onChange({ countdownPlacement: p.id === "section" ? undefined : p.id, ...(spec.freeSections?.length ? { freeSections: after } : {}) });
+                  onFocusSection(p.id === "opening" ? "opening" : p.id === "events" ? "events" : "countdown");
+                }}
+                className={`rounded-xl border p-2 text-left transition disabled:opacity-40 cursor-pointer ${active ? "border-amber-500 ring-2 ring-amber-500/20" : "border-stone-200 hover:border-stone-300"}`}
+              >
+                <span className="block text-[11.5px] font-semibold text-stone-800">{p.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </Section>
+
+      <Section title="Tata letak desktop" hint="Hanya berlaku di layar 900px ke atas. HP selalu satu kolom.">
+        <div className="grid grid-cols-2 gap-2">
+          {DESKTOP_LAYOUTS.map((d) => {
+            const active = (spec.desktopLayout ?? "split") === d.id;
+            return (
+              <button
+                key={d.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => onChange({ desktopLayout: d.id === "split" ? undefined : d.id })}
+                className={`rounded-xl border p-2 text-left transition cursor-pointer ${active ? "border-amber-500 ring-2 ring-amber-500/20" : "border-stone-200 hover:border-stone-300"}`}
+              >
+                <DesktopLayoutThumb id={d.id} palette={spec.palette} />
+                <span className="mt-1.5 block text-[11.5px] font-semibold text-stone-800">{d.label}</span>
+                <span className="block text-[10.5px] leading-snug text-stone-500">{d.hint}</span>
               </button>
             );
           })}
@@ -1363,6 +1420,19 @@ export function LayoutPanel({
   );
 }
 
+function DesktopLayoutThumb({ id, palette }: { id: DesktopLayout; palette: BuilderPalette }) {
+  const photo = <span className="h-full flex-1" style={{ background: `linear-gradient(135deg, ${palette.accent}, ${palette.secondary})` }} />;
+  const column = (w: string) => <span className="h-full shrink-0 border-x" style={{ width: w, background: palette.bgLight, borderColor: palette.primary }} />;
+  return (
+    <span className="flex h-[46px] w-full overflow-hidden rounded-md border border-stone-200" style={{ background: palette.bgLight }}>
+      {id === "split" && <>{photo}{column("34%")}</>}
+      {id === "split-left" && <>{column("34%")}{photo}</>}
+      {id === "wide" && <>{photo}{column("46%")}</>}
+      {id === "centered" && <span className="flex h-full w-full justify-center" style={{ background: `color-mix(in srgb, ${palette.bgLight} 75%, ${palette.primary})` }}>{column("38%")}</span>}
+    </span>
+  );
+}
+
 function SurfaceEditor({ spec, onChange }: { spec: BuilderSpec; onChange: (patch: Partial<BuilderSpec>) => void }) {
   const surface = spec.surface ?? {};
   const set = (patch: Partial<SurfaceStyle>) => {
@@ -1410,8 +1480,9 @@ function FreeSectionsEditor({
   onFocusSection: (s: OrnamentSection) => void;
 }) {
   const list = spec.freeSections ?? [];
-  const hosts = familyOrderableSections(spec.eventType, spec.sectionOrder).filter((s) => s !== "closing");
+  const hosts = familyOrderableSections(spec.eventType, spec.sectionOrder).filter((s) => s !== "closing" && !(s === "countdown" && (spec.countdownPlacement ?? "section") !== "section"));
   const [styleOpen, setStyleOpen] = useState<FreeSectionId | null>(null);
+  const slots = familyOrnamentMediaSlots(spec.eventType);
   const save = (next: FreeSection[]) => onChange({ freeSections: next.length ? next : undefined });
   const update = (id: FreeSectionId, patch: Partial<FreeSection>) => save(list.map((f) => (f.id === id ? { ...f, ...patch } : f)));
   const freeId = FREE_SECTION_IDS.find((id) => !list.some((f) => f.id === id));
@@ -1450,6 +1521,77 @@ function FreeSectionsEditor({
             <div className="mt-2">
               <Segmented value={f.align} options={[{ id: "left", label: "Kiri" }, { id: "center", label: "Tengah" }, { id: "right", label: "Kanan" }]} onChange={(align) => update(f.id, { align })} />
             </div>
+
+            <div className="mt-3 rounded-lg border border-stone-100 bg-stone-50/60 p-2.5">
+              <p className="text-[11.5px] font-semibold text-stone-700">Foto</p>
+              <select
+                value={f.photo ? (f.photo.source === "slot" ? `slot:${f.photo.slot}` : "asset") : ""}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  const shape = f.photo?.shape ?? "rect";
+                  const position = f.photo?.position ?? "top";
+                  if (!v) update(f.id, { photo: undefined });
+                  else if (v === "asset") update(f.id, { photo: { source: "asset", src: backdrops.find((b) => b.id)?.id ?? "", shape, position } });
+                  else update(f.id, { photo: { source: "slot", slot: v.slice(5) as OrnamentMediaSlot, shape, position } });
+                }}
+                className={inputClass}
+              >
+                <option value="">Tanpa foto</option>
+                <option value="asset">Gambar dari pustaka</option>
+                {slots.map((s) => <option key={s.id} value={`slot:${s.id}`}>Foto klien: {s.label}</option>)}
+              </select>
+              {f.photo?.source === "slot" && (f.photo.slot === "HOME_PHOTO" || f.photo.slot === "CLOSING_COVER") && (
+                <p className="mt-1 text-[10.5px] leading-snug text-stone-500">Foto ini hanya tampil setelah klien mengunggahnya; tanpa unggahan, foto disembunyikan.</p>
+              )}
+              {f.photo?.source === "asset" && (
+                <div className="mt-2 grid grid-cols-6 gap-1.5">
+                  {backdrops.filter((b) => b.id).map((b) => (
+                    <button
+                      key={b.id}
+                      type="button"
+                      title={b.label}
+                      aria-pressed={f.photo?.source === "asset" && f.photo.src === b.id}
+                      onClick={() => f.photo && update(f.id, { photo: { ...f.photo, source: "asset", src: b.id } as FreeSectionPhoto })}
+                      className={`aspect-[3/4] rounded-md border bg-cover bg-center cursor-pointer ${f.photo?.source === "asset" && f.photo.src === b.id ? "border-amber-500 ring-2 ring-amber-300" : "border-stone-200"}`}
+                      style={{ backgroundImage: `url('${b.id}')` }}
+                    />
+                  ))}
+                </div>
+              )}
+              {f.photo && (
+                <div className="mt-2 space-y-2">
+                  <Segmented value={f.photo.shape} options={FREE_PHOTO_SHAPES.map((s) => ({ id: s.id, label: s.label }))} onChange={(shape) => f.photo && update(f.id, { photo: { ...f.photo, shape } })} />
+                  <Segmented value={f.photo.position} options={[{ id: "top", label: "Di atas" }, { id: "bottom", label: "Di bawah" }]} onChange={(position) => f.photo && update(f.id, { photo: { ...f.photo, position } })} />
+                </div>
+              )}
+            </div>
+
+            <div className="mt-3 rounded-lg border border-stone-100 bg-stone-50/60 p-2.5">
+              <div className="flex items-center justify-between">
+                <p className="text-[11.5px] font-semibold text-stone-700">Kartu ({f.cards?.length ?? 0}/{FREE_SECTION_LIMITS.cards})</p>
+                {(f.cards?.length ?? 0) < FREE_SECTION_LIMITS.cards && (
+                  <button type="button" onClick={() => update(f.id, { cards: [...(f.cards ?? []), { title: "Judul kartu", body: "Isi kartu" }] })} className="text-[11px] font-semibold text-amber-700 hover:underline cursor-pointer">Tambah kartu</button>
+                )}
+              </div>
+              {(f.cards ?? []).map((c, ci) => (
+                <div key={ci} className="mt-2 border-t border-stone-200 pt-2">
+                  <div className="flex items-center justify-between text-[11px] font-semibold text-stone-500">
+                    Kartu {ci + 1}
+                    <button type="button" onClick={() => { const next = (f.cards ?? []).filter((_, j) => j !== ci); update(f.id, { cards: next.length ? next : undefined }); }} className="text-red-700 hover:underline cursor-pointer">Hapus</button>
+                  </div>
+                  <input type="text" value={c.title} maxLength={FREE_SECTION_LIMITS.cardTitle} aria-label={`Judul kartu ${ci + 1}`} onChange={(e) => update(f.id, { cards: (f.cards ?? []).map((x, j) => (j === ci ? { ...x, title: cleanFreeText(e.target.value) } : x)) })} className={inputClass} spellCheck={false} />
+                  <textarea rows={2} value={c.body} maxLength={FREE_SECTION_LIMITS.cardBody} aria-label={`Isi kartu ${ci + 1}`} onChange={(e) => update(f.id, { cards: (f.cards ?? []).map((x, j) => (j === ci ? { ...x, body: cleanFreeText(e.target.value) } : x)) })} className={inputClass} spellCheck={false} />
+                </div>
+              ))}
+            </div>
+
+            <label className="mt-3 flex items-center justify-between gap-2 text-[11.5px] font-semibold text-stone-600">
+              Animasi seksi ini
+              <select value={f.animation ?? ""} onChange={(e) => update(f.id, { animation: (e.target.value || undefined) as AnimationPreset | undefined })} className="w-[150px] rounded-lg border border-stone-200 bg-white px-2 py-1 text-[12px] text-stone-800 outline-none focus:border-amber-500">
+                <option value="">Ikut global</option>
+                {ANIMATION_OPTIONS.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
+              </select>
+            </label>
             <button type="button" onClick={() => setStyleOpen(styleOpen === f.id ? null : f.id)} aria-expanded={styleOpen === f.id} className="mt-2 w-full rounded-lg border border-stone-200 py-1.5 text-[11px] font-semibold text-stone-600 hover:bg-stone-50 cursor-pointer">
               {styleOpen === f.id ? "Tutup latar seksi" : f.style ? "Ubah latar seksi (diatur)" : "Atur latar seksi"}
             </button>
@@ -1666,6 +1808,7 @@ export function OrnamentsPanel({
 
 export function MotionPanel({ spec, onChange, onReplay }: { spec: BuilderSpec; onChange: (patch: Partial<BuilderSpec>) => void; onReplay: () => void }) {
   return (
+    <>
     <Section title="Animasi masuk" hint="Isi seksi muncul saat tamu menggulir. Tamu yang mengaktifkan pengurangan gerak di HP-nya tetap melihat isi tanpa animasi.">
       <div className="grid grid-cols-2 gap-2">
         {ANIMATION_OPTIONS.map((a) => (
@@ -1685,6 +1828,40 @@ export function MotionPanel({ spec, onChange, onReplay }: { spec: BuilderSpec; o
         Putar ulang di pratinjau
       </button>
     </Section>
+    <Section title="Kecepatan animasi">
+      <Segmented
+        value={spec.animationSpeed ?? "normal"}
+        options={ANIMATION_SPEEDS.map((s) => ({ id: s.id, label: s.label }))}
+        onChange={(v) => { onChange({ animationSpeed: v === "normal" ? undefined : v }); onReplay(); }}
+      />
+    </Section>
+    <Section title="Animasi per seksi" hint="Beri seksi tertentu animasi berbeda dari animasi global, misalnya Mempelai membesar sementara seksi lain naik. Animasi seksi teks bebas diatur di panel Tata letak.">
+      <div className="space-y-1.5">
+        {familyOrderableSections(spec.eventType, spec.sectionOrder).map((sec) => {
+          const value = spec.sectionAnimations?.[sec] ?? "";
+          return (
+            <label key={sec} className="flex items-center justify-between gap-2 text-[12px] font-semibold text-stone-700">
+              {sectionLabelFor(sec, spec.eventType)}
+              <select
+                value={value}
+                onChange={(e) => {
+                  const next = { ...(spec.sectionAnimations ?? {}) };
+                  if (e.target.value) next[sec] = e.target.value as AnimationPreset;
+                  else delete next[sec];
+                  onChange({ sectionAnimations: Object.keys(next).length ? next : undefined });
+                  onReplay();
+                }}
+                className="w-[150px] rounded-lg border border-stone-200 bg-white px-2 py-1 text-[12px] text-stone-800 outline-none focus:border-amber-500"
+              >
+                <option value="">Ikut global</option>
+                {ANIMATION_OPTIONS.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
+              </select>
+            </label>
+          );
+        })}
+      </div>
+    </Section>
+    </>
   );
 }
 

@@ -384,8 +384,9 @@ export default function BuilderPreview(props: Props) {
       const fr = frameEl.getBoundingClientRect();
       const st = stage.getBoundingClientRect();
       const k = fr.width / (frameEl.offsetWidth || 1);
-      const x = fr.left - st.left + e.clientX * k;
-      const y = fr.top - st.top + e.clientY * k;
+      // Dijepit di sini agar menu tidak keluar panggung; render tidak boleh membaca ukuran panggung lewat ref.
+      const x = Math.max(10, Math.min(fr.left - st.left + e.clientX * k, stage.clientWidth - 200));
+      const y = Math.max(10, Math.min(fr.top - st.top + e.clientY * k, stage.clientHeight - 260));
       if (picked.classList.contains("lux-orn") || picked.classList.contains("lux-flow")) {
         const id = picked.dataset.ornId;
         if (!id) return;
@@ -606,6 +607,17 @@ export default function BuilderPreview(props: Props) {
     };
   }, [actionsRef]);
 
+  // Dipakai tombol menu klik-kanan: ref hanya dibaca saat tombol diklik, bukan selama render menu.
+  const snapOrnament = (id: string, align: OrnamentAlign) => {
+    const patch = actionsRef.current?.alignOrnament(id, align);
+    if (patch) props.onOrnamentChange(id, patch, true);
+    setMenu(null);
+  };
+  const centerBlock = (id: BuilderBlockId) => {
+    props.onBlockChange(id, { x: actionsRef.current?.centerBlockX(id) ?? 0 }, true);
+    setMenu(null);
+  };
+
   // Sampul desktop penuh (landscape 100vw) hanya untuk meninjau dan menata elemen sampul; tidak tersimpan ke master.
   useEffect(() => {
     const doc = getDoc();
@@ -822,10 +834,7 @@ export default function BuilderPreview(props: Props) {
       {menu && (
         <div
           className="absolute z-50 min-w-[190px] rounded-lg border border-stone-800 bg-stone-900/95 p-1 text-xs text-stone-200 shadow-2xl backdrop-blur-sm"
-          style={{
-            left: Math.max(10, Math.min(menu.x, (stageRef.current?.clientWidth ?? 600) - 200)),
-            top: Math.max(10, Math.min(menu.y, (stageRef.current?.clientHeight ?? 600) - 260)),
-          }}
+          style={{ left: menu.x, top: menu.y }}
           onPointerDown={(e) => e.stopPropagation()}
         >
           {menu.kind === "ornament" && (() => {
@@ -840,66 +849,42 @@ export default function BuilderPreview(props: Props) {
                 <div className="grid grid-cols-3 gap-0.5 px-1 py-0.5">
                   <button
                     type="button"
-                    onClick={() => {
-                      const patch = actionsRef.current?.alignOrnament(menu.id, "left");
-                      if (patch) props.onOrnamentChange(menu.id, patch, true);
-                      setMenu(null);
-                    }}
+                    onClick={() => snapOrnament(menu.id, "left")}
                     className="rounded px-1.5 py-1 text-center hover:bg-stone-800 hover:text-white"
                   >
                     Kiri
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      const patch = actionsRef.current?.alignOrnament(menu.id, "center-x");
-                      if (patch) props.onOrnamentChange(menu.id, patch, true);
-                      setMenu(null);
-                    }}
+                    onClick={() => snapOrnament(menu.id, "center-x")}
                     className="rounded px-1.5 py-1 text-center hover:bg-stone-800 hover:text-white"
                   >
                     Tengah
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      const patch = actionsRef.current?.alignOrnament(menu.id, "right");
-                      if (patch) props.onOrnamentChange(menu.id, patch, true);
-                      setMenu(null);
-                    }}
+                    onClick={() => snapOrnament(menu.id, "right")}
                     className="rounded px-1.5 py-1 text-center hover:bg-stone-800 hover:text-white"
                   >
                     Kanan
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      const patch = actionsRef.current?.alignOrnament(menu.id, "top");
-                      if (patch) props.onOrnamentChange(menu.id, patch, true);
-                      setMenu(null);
-                    }}
+                    onClick={() => snapOrnament(menu.id, "top")}
                     className="rounded px-1.5 py-1 text-center hover:bg-stone-800 hover:text-white"
                   >
                     Atas
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      const patch = actionsRef.current?.alignOrnament(menu.id, "center-y");
-                      if (patch) props.onOrnamentChange(menu.id, patch, true);
-                      setMenu(null);
-                    }}
+                    onClick={() => snapOrnament(menu.id, "center-y")}
                     className="rounded px-1.5 py-1 text-center hover:bg-stone-800 hover:text-white"
                   >
                     Tengah Y
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      const patch = actionsRef.current?.alignOrnament(menu.id, "bottom");
-                      if (patch) props.onOrnamentChange(menu.id, patch, true);
-                      setMenu(null);
-                    }}
+                    onClick={() => snapOrnament(menu.id, "bottom")}
                     className="rounded px-1.5 py-1 text-center hover:bg-stone-800 hover:text-white"
                   >
                     Bawah
@@ -1008,11 +993,7 @@ export default function BuilderPreview(props: Props) {
                 </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    const cx = actionsRef.current?.centerBlockX(menu.id);
-                    props.onBlockChange(menu.id, { x: cx ?? 0 }, true);
-                    setMenu(null);
-                  }}
+                  onClick={() => centerBlock(menu.id)}
                   className="flex items-center gap-1.5 rounded px-2 py-1 text-left hover:bg-stone-800 hover:text-white"
                 >
                   Tengahkan Blok

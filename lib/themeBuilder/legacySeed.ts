@@ -4,11 +4,13 @@ import {
   MAX_ORNAMENTS_PER_SECTION,
   TEXTURE_OPTIONS,
   builderFamilyOf,
+  contrastRatio,
   defaultBuilderSpec,
   familyBlocks,
   familySections,
   isAllowedBackdropSrc,
   isAllowedOrnamentSrc,
+  peerBlocksForRole,
   type AttachableBlockId,
   type BuilderBlockId,
   type BuilderDefaultMedia,
@@ -354,6 +356,61 @@ export function legacyVariants(html: string, base: BuilderVariants): BuilderVari
   return variants;
 }
 
+/** Aturan CSS pertama (di luar @media) untuk salah satu kelas, sebagai teks deklarasi. */
+function firstRuleBody(html: string, classes: readonly string[]): string | null {
+  const css = html.replace(/@media[^{]*\{(?:[^{}]*\{[^}]*\})*[^{}]*\}/g, "");
+  const re = new RegExp(`\\.(?:${classes.join("|")})\\s*\\{([^}]*)\\}`, "i");
+  return css.match(re)?.[1] ?? null;
+}
+
+/**
+ * Struktur dan warna khas master yang bisa dipetakan ke alat builder: hitung mundur yang menumpang di seksi acara, judul
+ * seksi kapital, dan warna eyebrow/judul/garis yang berbeda dari palet. Hanya pola yang pasti yang dibaca; sisanya
+ * tetap bawaan builder.
+ */
+export function legacyStructure(
+  html: string,
+  eventType: BuilderEventType,
+  palette: BuilderPalette,
+  vars: Map<string, string>,
+  canvas: string,
+): { countdownPlacement?: "events"; blocks: BuilderSpec["blocks"]; paletteExtra: NonNullable<BuilderSpec["paletteExtra"]> } {
+  const blocks: BuilderSpec["blocks"] = {};
+  const hidden = { x: 0, y: 0, scale: 1, rotate: 0, hidden: true };
+  const eventsSection = html.match(/<section\b[^>]*\bid="(?:event|events|section-events|acara)"[^>]*>([\s\S]*?)<\/section>/i)?.[1] ?? "";
+  const countdownInEvents = /\bid="cdDays"/.test(eventsSection);
+  if (countdownInEvents) {
+    // Master seperti Valente hanya menaruh angka hitung mundur di bawah judul acara, tanpa judul hitung mundur sendiri.
+    for (const id of ["countdown-eyebrow", "countdown-title", "countdown-sub"] as const) blocks[id] = { ...hidden };
+  }
+
+  const heading = firstRuleBody(html, ["sec-title", "sec-heading", "section-title", "sec-main-title"]);
+  if (heading && /text-transform\s*:\s*uppercase/i.test(heading)) {
+    const titles = peerBlocksForRole("couple-title", eventType)?.peers ?? [];
+    // Digabung, bukan diganti: judul hitung mundur yang baru disembunyikan di atas harus tetap tersembunyi.
+    for (const id of titles) blocks[id] = { x: 0, y: 0, scale: 1, rotate: 0, hidden: false, ...blocks[id], transform: "uppercase" };
+  }
+
+  const colorOf = (body: string | null, prop: "color" | "background") => {
+    const raw = body?.match(new RegExp(`(?:^|;|\\s)${prop}\\s*:\\s*([^;]+)`, "i"))?.[1]?.trim();
+    if (!raw) return null;
+    const ref = raw.match(/^var\((--[a-z0-9-]+)\)$/i)?.[1];
+    return normalizeHex(ref ? vars.get(ref) : raw);
+  };
+  // Kanvas hasil clone bisa berbeda dari kanvas master (mis. master gelap terbaca terang); warna yang tidak terbaca di
+  // kanvas clone tidak dibawa, karena judul putih di atas krem lebih buruk daripada warna palet bawaan.
+  const readable = (hex: string, min: number) => contrastRatio(hex, canvas) >= min;
+  const paletteExtra: NonNullable<BuilderSpec["paletteExtra"]> = {};
+  const eyebrow = colorOf(firstRuleBody(html, ["sec-eyebrow", "eyebrow", "sec-label", "section-eyebrow", "sec-lbl"]), "color");
+  if (eyebrow && eyebrow !== palette.primary && readable(eyebrow, 3)) paletteExtra.eyebrow = eyebrow;
+  const headingColor = colorOf(heading, "color");
+  if (headingColor && headingColor !== palette.textDark && headingColor !== palette.textLight && readable(headingColor, 4.5)) paletteExtra.heading = headingColor;
+  const line = colorOf(firstRuleBody(html, ["sec-divider", "divider"]), "background");
+  if (line && line !== palette.primary && readable(line, 1.3)) paletteExtra.line = line;
+
+  return { ...(countdownInEvents ? { countdownPlacement: "events" as const } : {}), blocks, paletteExtra };
+}
+
 export function seedSpecFromMaster(html: string, eventType: BuilderEventType = "WEDDING"): LegacySeed {
   const vars = rootVars(html);
   const pick = (...names: string[]) => names.map((n) => normalizeHex(vars.get(n))).find((v): v is string => v !== null) ?? null;
@@ -364,8 +421,12 @@ export function seedSpecFromMaster(html: string, eventType: BuilderEventType = "
   const textMain = pick("--text-main");
   const scrimTransparent = /\.scrim-canvas\s*\{[^}]*background\s*:\s*transparent/i.test(html);
   const isLightScrimWithDarkText = scrimTransparent && textMain !== null && hexLuminance(textMain) < 0.35;
+  // Master yang tidak memakai nama --bg-dark/--bg-light (mis. Valente: body memakai --bg-root #000) dibaca dari
+  // terang-gelapnya warna latar body itu sendiri.
+  const bodyBgHex = bodyBg ? normalizeHex(vars.get(bodyBg)) : null;
+  const darkBody = !hasDark && !hasLight && bodyBgHex !== null && hexLuminance(bodyBgHex) < 0.18;
   const canvasMode: BuilderSpec["canvasMode"] =
-    !isLightScrimWithDarkText && (bodyBg === "--bg-dark" || (hasDark && !hasLight)) ? "dark" : "light";
+    !isLightScrimWithDarkText && (bodyBg === "--bg-dark" || (hasDark && !hasLight) || darkBody) ? "dark" : "light";
 
   const base = defaultBuilderSpec(eventType);
   const explicitLight = pick("--text-light", "--on-dark");
@@ -382,7 +443,7 @@ export function seedSpecFromMaster(html: string, eventType: BuilderEventType = "
   assign("secondary", pick("--secondary"));
   assign("accent", pick("--accent"));
   assign("bgLight", pick("--bg-light"));
-  assign("bgDark", pick("--bg-dark"));
+  assign("bgDark", pick("--bg-dark") ?? (darkBody ? pick("--bg-main") ?? bodyBgHex : null));
   assign("onPrimary", pick("--on-primary"));
   const resolvedLight =
     (explicitLight && hexLuminance(explicitLight) >= 0.5 ? explicitLight : null) ??
@@ -421,8 +482,16 @@ export function seedSpecFromMaster(html: string, eventType: BuilderEventType = "
   if (!hasMonogram && builderFamilyOf(eventType) === "wedding") {
     blocks["cover-monogram"] = { x: 0, y: 0, scale: 1, rotate: 0, hidden: true };
   }
+  const structure = legacyStructure(html, eventType, palette, vars, canvasMode === "dark" ? palette.bgDark : palette.bgLight);
+  // Jadwal di Home menyembunyikan seksi Acara, jadi hitung mundur tidak dipindah ke sana pada master seperti itu.
+  const countdownPlacement = structure.countdownPlacement && base.eventsPlacement !== "home" ? structure.countdownPlacement : undefined;
+  Object.assign(blocks, structure.blocks);
   return {
-    spec: { ...base, canvasMode, palette, texture, fonts: { ...base.fonts, ...legacy }, variants, blocks, frames, ornaments },
+    spec: {
+      ...base, canvasMode, palette, texture, fonts: { ...base.fonts, ...legacy }, variants, blocks, frames, ornaments,
+      ...(countdownPlacement ? { countdownPlacement } : {}),
+      ...(Object.keys(structure.paletteExtra).length ? { paletteExtra: structure.paletteExtra } : {}),
+    },
     found,
     missing: allKeys.filter((k) => !found.includes(k)),
     textureFound: texture !== "",

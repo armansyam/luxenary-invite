@@ -6,6 +6,11 @@ import {
   FRAMED_PHOTOS,
   SECTION_BG_TOKENS,
   freeSectionLabelKeys,
+  freeCardLabelKeys,
+  ANIMATION_SPEEDS,
+  type AnimationPreset,
+  type CountdownPlacement,
+  type FreeSectionPhoto,
   type CardShadow,
   type FreeSection,
   type SectionGradient,
@@ -573,7 +578,7 @@ function extraPaletteCss(spec: BuilderSpec): string {
 }
 
 // Daftar yang sama dengan varian `cards` dan `buttons`; nilai bebas di sini menimpa varian karena dipasang sesudahnya.
-const CARD_SURFACE_SELECTOR = ".opening-quote-card, .rsvp-form-box, .wish-item, .event-block-item, .event-unified-venue-card, .bank-card, .story-chapter-block";
+const CARD_SURFACE_SELECTOR = ".opening-quote-card, .rsvp-form-box, .wish-item, .event-block-item, .event-unified-venue-card, .bank-card, .story-chapter-block, .lux-free-card";
 const BUTTON_SELECTOR = ".cover-btn-open, .btn-cal, .btn-submit-rsvp, .btn-map-outline, .btn-outline-box, .btn-copy";
 const CARD_SHADOW_CSS: Record<CardShadow, string> = { none: "none", soft: "var(--shadow-subtle)", deep: "var(--shadow-elevated)" };
 
@@ -593,6 +598,20 @@ function surfaceCss(surface: SurfaceStyle | undefined): string {
  */
 const FREE_SECTION_CSS = `
     .lux-free-sec .lux-free-body { white-space: pre-line; max-width: 520px; margin-left: auto; margin-right: auto; }
+    .lux-free-photo { margin: 8px auto 20px; width: 100%; max-width: 340px; overflow: hidden; border-radius: var(--radius-md); box-shadow: var(--shadow-subtle); }
+    .lux-free-photo.is-bottom { margin: 20px auto 8px; }
+    .lux-free-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .lux-free-photo.is-rect { aspect-ratio: 4 / 5; }
+    .lux-free-photo.is-wide { aspect-ratio: 16 / 10; max-width: 100%; }
+    .lux-free-photo.is-arch { aspect-ratio: 3 / 4; max-width: 260px; border-radius: 999px 999px var(--radius-md) var(--radius-md); }
+    .lux-free-photo.is-circle { aspect-ratio: 1; max-width: 220px; border-radius: 50%; }
+    .lux-free-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 18px; text-align: left; }
+    .lux-free-card { padding: 16px 14px; background: var(--card-bg); border: 1px solid color-mix(in srgb, var(--primary) 22%, transparent); border-radius: var(--radius-md); box-shadow: var(--shadow-subtle); }
+    .lux-free-card-title { font-size: 15px; font-weight: 600; color: var(--text-main); margin-bottom: 6px; }
+    .lux-free-card-body { font-size: 12.5px; line-height: 1.6; color: var(--text-muted); white-space: pre-line; }
+    .lux-free-sec :is(.lux-free-card-title, .lux-free-card-body):empty:not([contenteditable="true"]) { display: none; }
+    .lux-free-sec.lux-free-left .lux-free-photo { margin-left: 0; }
+    .lux-free-sec.lux-free-right .lux-free-photo { margin-right: 0; }
     .lux-free-sec :is(.sec-eyebrow, .sec-main-title, .lux-free-body):empty:not([contenteditable="true"]) { display: none; }
     .lux-free-sec :is(.sec-eyebrow, .sec-main-title, .lux-free-body)[contenteditable="true"]:empty { min-height: 1.2em; min-width: 6em; }
     .lux-free-sec.lux-free-left { text-align: left; }
@@ -600,19 +619,116 @@ const FREE_SECTION_CSS = `
     .lux-free-sec.lux-free-right { text-align: right; }
     .lux-free-sec.lux-free-right :is(.sec-divider, .lux-free-body) { margin-right: 0; }`;
 
-function freeSectionHtml(f: FreeSection): string {
+/** Foto slot klien memakai token engine yang sama dengan ornamen berslot, dibungkus syarat bila slotnya boleh kosong. */
+function freePhotoHtml(photo: FreeSectionPhoto, family: BuilderFamily): string {
+  const cls = `lux-free-photo is-${photo.shape}${photo.position === "bottom" ? " is-bottom" : ""}`;
+  if (photo.source === "asset") return `<figure class="${cls}" data-lux-anim="2"><img src="${photo.src}" alt="" loading="lazy" decoding="async" /></figure>`;
+  const info = ORNAMENT_SLOT_TOKEN[family][photo.slot];
+  const figure = `<figure class="${cls}" data-lux-anim="2"><img src="{{${info.token}}}" alt="" loading="lazy" decoding="async" /></figure>`;
+  return info.cond ? `{{#if ${info.cond}}}${figure}{{/if}}` : figure;
+}
+
+function freeSectionHtml(f: FreeSection, family: BuilderFamily): string {
   const keys = freeSectionLabelKeys(f.id);
+  const photo = f.photo ? freePhotoHtml(f.photo, family) : "";
+  const cards = f.cards?.length
+    ? `
+        <div class="lux-free-cards" data-lux-anim="3">${f.cards.map((c, i) => {
+          const k = freeCardLabelKeys(f.id, i + 1);
+          return `
+          <div class="lux-free-card"><h3 class="lux-free-card-title serif" data-lux-field="customLabels.${k.title}">${escapeText(c.title)}</h3><p class="lux-free-card-body" data-lux-field="customLabels.${k.body}">${escapeText(c.body)}</p></div>`;
+        }).join("")}
+        </div>`
+    : "";
   return `
       <section class="sec-flow lux-free-sec lux-free-${f.align}" id="${f.id}" data-lux-section="free">
+        ${f.photo?.position === "top" ? photo : ""}
         <span class="sec-eyebrow" data-lux-field="customLabels.${keys.eyebrow}" data-lux-anim="1">${escapeText(f.eyebrow)}</span>
         <h2 class="sec-main-title serif" data-lux-field="customLabels.${keys.title}" data-lux-anim="1">${escapeText(f.title)}</h2>
         <div class="sec-divider" data-lux-anim="1"></div>
-        <p class="sec-sub lux-free-body" data-lux-field="customLabels.${keys.body}" data-lux-anim="2">${escapeText(f.body)}</p>
+        <p class="sec-sub lux-free-body" data-lux-field="customLabels.${keys.body}" data-lux-anim="2">${escapeText(f.body)}</p>${cards}
+        ${f.photo?.position === "bottom" ? photo : ""}
       </section>`;
 }
 
+/**
+ * Hitung mundur dipindah (bukan digandakan) ke dalam seksi lain: id dan penanda `countdownTimer` harus tetap tunggal
+ * karena skrip hitung mundur mencarinya dengan id. Seksi tetap berupa `<section data-lux-section="countdown">` di dalam
+ * seksi tuannya, jadi ornamen, gaya, dan blok hitung mundur tetap berlaku.
+ */
+function nestCountdown(html: string, placement: CountdownPlacement): string {
+  if (placement === "section") return html;
+  const match = html.match(SECTION_CHUNK_PATTERNS.countdown);
+  if (!match) throw new Error("Seksi hitung mundur tidak ada di blueprint.");
+  const chunk = match[0].replace(/^<section class="sec-flow"/, '<section class="sec-flow lux-nested-countdown"');
+  const without = html.replace(SECTION_CHUNK_PATTERNS.countdown, "");
+  const anchor = placement === "events" ? /<div data-lux-block="events-list"/ : /<div class="home-schedule"/;
+  if (!anchor.test(without)) throw new Error(`Tempat hitung mundur (${placement}) tidak ada di blueprint.`);
+  return without.replace(anchor, (tag) => `${chunk}\n        ${tag}`);
+}
+
+const NESTED_COUNTDOWN_CSS = `
+    .lux-nested-countdown { padding: 4px 0 28px !important; min-height: 0 !important; background: none; }
+    .slide-opening .lux-nested-countdown { width: 100%; max-width: 380px; margin: 12px auto 0; }`;
+
+/**
+ * Kolom undangan desktop. Angka lebar dan posisi kolom disalin ke semua elemen yang di blueprint memakai 460px (kolom,
+ * latar, sampul, dock, modal, toast), karena elemen fixed itu tidak mewarisi lebar kolom.
+ */
+function desktopLayoutCss(spec: BuilderSpec): string {
+  const layout = spec.desktopLayout ?? "split";
+  if (layout === "split") return "";
+  const w = layout === "wide" ? 600 : layout === "centered" ? 520 : 460;
+  const col = layout === "split-left" ? "0px" : layout === "centered" ? `calc(50% - ${w / 2}px)` : `calc(100% - ${w}px)`;
+  const mid = `calc(${col} + ${w / 2}px)`;
+  const rules = [
+    `.app-container, .main-scroll-panel { width: ${w}px !important; max-width: ${w}px !important; margin-left: ${col} !important; }`,
+    layout === "centered"
+      ? ".sidebar-desktop { display: none !important; }\n      .fixed-bg-layer, .scrim-canvas { width: 100% !important; left: 0 !important; right: 0 !important; }\n      .app-container, .main-scroll-panel { border-right: 1px solid color-mix(in srgb, var(--primary) 25%, transparent); }"
+      : `.sidebar-desktop { left: ${layout === "split-left" ? `${w}px` : "0"} !important; width: calc(100% - ${w}px) !important; }\n      .fixed-bg-layer, .scrim-canvas { width: ${w}px !important; left: ${col} !important; right: auto !important; }`,
+    layout === "split-left" ? ".app-container, .main-scroll-panel { border-left: none !important; border-right: 1px solid color-mix(in srgb, var(--primary) 25%, transparent); box-shadow: 15px 0 45px color-mix(in srgb, var(--overlay) 50%, transparent) !important; }" : "",
+    // Sampul "Desktop penuh" sengaja selebar layar; kolomnya tidak dipaksa ke lebar undangan.
+    spec.variants.cover === "fullscreen" ? "" : `.cover-overlay { width: ${w}px !important; left: ${col} !important; right: auto !important; }`,
+    // Laci navigasi menempel ke tepi kanan kolom undangan, bukan tepi kanan layar (yang bisa berupa panel foto).
+    spec.variants.nav === "drawer"
+      ? `body nav.bottom-dock, body nav.bottom-dock.lux-dock-compact { right: calc(100% - ${col} - ${w}px + 20px) !important; }`
+      : `.bottom-dock { left: ${mid} !important; width: calc(${w}px - 28px) !important; max-width: calc(${w}px - 28px) !important; }`,
+    `.modal-bg { left: ${col} !important; right: auto !important; width: ${w}px !important; }`,
+    `#luxCopyToast { left: ${mid} !important; }`,
+  ].filter(Boolean);
+  return `@media (min-width: 900px) {\n      ${rules.join("\n      ")}\n    }`;
+}
+
+const PRESET_HIDDEN: Record<AnimationPreset, string> = {
+  none: "opacity: 1; transform: none; filter: none;",
+  fade: "opacity: 0; transform: none; filter: none;",
+  rise: "opacity: 0; transform: translateY(28px); filter: none;",
+  zoom: "opacity: 0; transform: scale(0.94); filter: none;",
+  slide: "opacity: 0; transform: translateX(-24px); filter: none;",
+  blur: "opacity: 0; transform: none; filter: blur(8px);",
+};
+
+/**
+ * Animasi per seksi dan kecepatan. Skrip blueprint hanya menyalakan animasi (`lux-anim-ready`) bila preset di `<html>`
+ * bukan "none"; bila global "none" tetapi ada seksi beranimasi, `<html>` diberi preset "fade" dan semua elemen lain
+ * dikembalikan tampil lewat aturan dasar "none".
+ */
+function animationPlan(spec: BuilderSpec): { htmlPreset: AnimationPreset; css: string } {
+  const perSection = Object.entries(spec.sectionAnimations ?? {}) as Array<[OrderableSection, AnimationPreset]>;
+  const perFree = (spec.freeSections ?? []).flatMap((f) => (f.animation ? [[f.id, f.animation] as const] : []));
+  const anyOverride = perSection.some(([, p]) => p !== "none") || perFree.some(([, p]) => p !== "none");
+  const htmlPreset: AnimationPreset = spec.animation === "none" && anyOverride ? "fade" : spec.animation;
+  const rules: string[] = [];
+  if (spec.animation === "none" && anyOverride) rules.push(`html.lux-anim-ready [data-lux-anim]:not(.lux-in) { ${PRESET_HIDDEN.none} }`);
+  for (const [sec, preset] of perSection) rules.push(`html.lux-anim-ready [data-lux-section="${sec}"] [data-lux-anim]:not(.lux-in) { ${PRESET_HIDDEN[preset]} }`);
+  for (const [id, preset] of perFree) rules.push(`html.lux-anim-ready #${id} [data-lux-anim]:not(.lux-in) { ${PRESET_HIDDEN[preset]} }`);
+  const speed = ANIMATION_SPEEDS.find((s) => s.id === (spec.animationSpeed ?? "normal"))?.seconds ?? 0.9;
+  if (spec.animationSpeed && spec.animationSpeed !== "normal") rules.push(`html.lux-anim-ready [data-lux-anim] { transition-duration: ${speed}s; }`);
+  return { htmlPreset, css: rules.join("\n    ") };
+}
+
 /** Seksi bebas disisipkan sesudah seksi tuannya (setelah pengurutan ulang); beberapa seksi dengan tuan sama tetap urut. */
-function insertFreeSections(html: string, sections: FreeSection[]): string {
+function insertFreeSections(html: string, sections: FreeSection[], family: BuilderFamily): string {
   const byHost = new Map<OrderableSection, FreeSection[]>();
   for (const f of sections) byHost.set(f.after, [...(byHost.get(f.after) ?? []), f]);
   let out = html;
@@ -620,7 +736,7 @@ function insertFreeSections(html: string, sections: FreeSection[]): string {
     const match = out.match(SECTION_CHUNK_PATTERNS[host]);
     if (!match || match.index === undefined) throw new Error(`Seksi ${host} untuk seksi teks bebas tidak ada di blueprint.`);
     const end = match.index + match[0].length;
-    out = `${out.slice(0, end)}${items.map(freeSectionHtml).join("")}${out.slice(end)}`;
+    out = `${out.slice(0, end)}${items.map((f) => freeSectionHtml(f, family)).join("")}${out.slice(end)}`;
   }
   return out;
 }
@@ -709,7 +825,8 @@ export function compileBuilderMaster(spec: BuilderSpec, blueprint = readBuilderB
   if (!/:root\s*\{[^}]*\}/.test(blueprint)) throw new Error("Blueprint tidak memiliki blok :root.");
   let html = blueprint.replace(/:root\s*\{[^}]*\}/, rootBlock(spec));
 
-  html = html.replace(/<html lang="id"[^>]*>/, `<html lang="id" data-lux-anim-preset="${spec.animation}">`);
+  const animation = animationPlan(spec);
+  html = html.replace(/<html lang="id"[^>]*>/, `<html lang="id" data-lux-anim-preset="${animation.htmlPreset}">`);
 
   // Id font Google sudah dibatasi pola "g:<huruf, angka, spasi>" oleh parseBuilderSpec, jadi URL berkasnya aman disisipkan.
   const googleLinks = googleFontIds(spec.fonts, spec.blocks)
@@ -795,13 +912,22 @@ export function compileBuilderMaster(spec: BuilderSpec, blueprint = readBuilderB
 
   const sectionRules = (Object.entries(spec.sectionStyles ?? {}) as Array<[OrderableSection, SectionStyle]>).map(([sec, style]) => sectionStyleCss(SECTION_SELECTOR[sec], style));
   const freeRules = (spec.freeSections ?? []).flatMap((f) => (f.style ? [sectionStyleCss(`#${f.id}`, f.style)] : []));
-  const designRules = [extraPaletteCss(spec), surfaceCss(spec.surface), ...sectionRules, ...(spec.freeSections?.length ? [FREE_SECTION_CSS, ...freeRules] : [])].filter(Boolean).join("\n    ");
+  const designRules = [
+    extraPaletteCss(spec),
+    surfaceCss(spec.surface),
+    spec.countdownPlacement && spec.countdownPlacement !== "section" ? NESTED_COUNTDOWN_CSS : "",
+    ...sectionRules,
+    ...(spec.freeSections?.length ? [FREE_SECTION_CSS, ...freeRules] : []),
+    desktopLayoutCss(spec),
+    animation.css,
+  ].filter(Boolean).join("\n    ");
   if (designRules) {
     html = html.replace("</head>", () => `  <style id="lux-builder-design">\n    ${designRules}\n  </style>\n</head>`);
   }
 
   html = reorderSections(html, spec);
-  if (spec.freeSections?.length) html = insertFreeSections(html, spec.freeSections);
+  html = nestCountdown(html, spec.countdownPlacement ?? "section");
+  if (spec.freeSections?.length) html = insertFreeSections(html, spec.freeSections, family);
 
   // CSS kustom dipasang paling akhir agar menimpa gaya builder lain; isinya sudah lolos `customCssError` di parseBuilderSpec.
   if (spec.customCss) {
