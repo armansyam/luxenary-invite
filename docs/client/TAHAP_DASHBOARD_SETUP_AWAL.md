@@ -75,7 +75,7 @@ flowchart TD
 ## 3. Rincian Teknis per Langkah Wizard
 
 ### LANGKAH 0: Pilihan Jenis Acara (Event Type Selector)
-* **Komponen:** [`app/(client)/dashboard/setup/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/(client)/dashboard/setup/page.tsx) (`step === 0`)
+* **Komponen:** [`app/(client)/dashboard/setup/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/(client)/dashboard/setup/page.tsx) (`step === 0`)
 * **Tujuan:** Menentukan kategori acara digital yang akan dibuat:
   - `WEDDING` (Pernikahan / Walimatul 'Urs)
   - `BIRTHDAY` (Ulang Tahun / Sweet Seventeen / Milad)
@@ -89,7 +89,7 @@ flowchart TD
 ---
 
 ### LANGKAH 1: Identitas Penyelenggara / Pasangan (Adaptif)
-* **Komponen:** [`app/(client)/dashboard/setup/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/(client)/dashboard/setup/page.tsx) (`step === 1`)
+* **Komponen:** [`app/(client)/dashboard/setup/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/(client)/dashboard/setup/page.tsx) (`step === 1`)
 * **Tujuan:** Menangkap profil utama penyelenggara/tokoh sesuai jenis acara.
 * **Elemen Formulir:**
   1. **Wedding:**
@@ -105,7 +105,7 @@ flowchart TD
 ---
 
 ### LANGKAH 2: Hari Bahagia, Wilayah & Waktu Acara Terstruktur
-* **Komponen:** [`app/(client)/dashboard/setup/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/(client)/dashboard/setup/page.tsx) (`step === 2`)
+* **Komponen:** [`app/(client)/dashboard/setup/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/(client)/dashboard/setup/page.tsx) (`step === 2`)
 * **Tujuan:** Menentukan patokan tanggal, kota lokasi sentral, zona waktu resmi, serta waktu sesi terstruktur.
 * **Elemen Formulir:**
   1. **Tanggal Acara Utama (`weddingDate`) — *Boleh kosong*:** Format `YYYY-MM-DD`. Bila terisi, server membuat kartu acara awal (Akad dan Resepsi untuk pernikahan, satu acara utama untuk jenis lain); bila kosong, `eventData` tetap kosong dan tanggal diisi di Studio Editor.
@@ -116,7 +116,7 @@ flowchart TD
 ---
 
 ### LANGKAH 3: Pemilihan Desain Tema Terisolasi
-* **Komponen:** [`app/(client)/dashboard/setup/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/(client)/dashboard/setup/page.tsx) (`step === 3`)
+* **Komponen:** [`app/(client)/dashboard/setup/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/(client)/dashboard/setup/page.tsx) (`step === 3`)
 * **Tujuan:** Memilih tema perdana yang difilter secara ketat sesuai `eventType` yang dipilih di Langkah 0.
 * **Navigasi Kategori Dinamis:** Tab filter kategori gaya (`all`, `minimalist`, `modern`, `traditional`) secara cerdas hanya menampilkan tab kategori yang memang memiliki tema pada jenis acara tersebut.
 * **Tanpa Auto-Select di Wizard:** Variabel `themeId` diinisialisasi sebagai string kosong `""`; wizard tidak memilihkan tema.

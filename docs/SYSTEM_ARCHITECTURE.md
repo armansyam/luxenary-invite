@@ -165,7 +165,7 @@
 │
 ├── prisma.config.ts           # Konfigurasi Prisma 7 DB URL
 │
-├── themes/                   # Template HTML tema undangan (39 Tema Fisik Lintas 6 Kategori Acara)
+├── themes/                   # Template HTML tema undangan (54 Tema Fisik Lintas 6 Kategori Acara)
 │   ├── _blueprints/          # Master Blueprints per EventType
 │   │   ├── wedding/          # starter-blueprint.html
 │   │   ├── birthday/         # starter-blueprint-birthday.html
@@ -173,12 +173,12 @@
 │   │   ├── aqiqah/           # starter-blueprint-aqiqah.html
 │   │   ├── wisuda/           # starter-blueprint-wisuda.html
 │   │   └── general/          # starter-blueprint-general.html
-│   ├── wedding/              # 34 Tema Pernikahan (Minimalist, Modern, Traditional)
-│   ├── birthday/             # 2 Tema Ulang Tahun (kalandra-birthday, festivo)
-│   ├── khitan/               # 1 Tema Khitan (al-fariz)
-│   ├── aqiqah/               # 1 Tema Aqiqah (al-khalid)
-│   ├── wisuda/               # 1 Tema Wisuda (cendekia)
-│   └── general/              # 1 Tema Acara Umum / Gathering (sinergi)
+│   ├── wedding/              # 33 Tema Pernikahan (Minimalist, Modern, Traditional)
+│   ├── birthday/             # 5 Tema Ulang Tahun (Minimalist, Modern)
+│   ├── khitan/               # 4 Tema Khitan (Minimalist, Traditional)
+│   ├── aqiqah/               # 4 Tema Aqiqah (Minimalist, Traditional)
+│   ├── wisuda/               # 4 Tema Wisuda (Minimalist, Modern)
+│   └── general/              # 4 Tema Acara Umum / Gathering (Minimalist, Modern)
 │
 ├── public/
 │   ├── published/            # ⭐ Output HTML statis (subdomain.html + invitationSlug.html)
@@ -1101,8 +1101,8 @@ PATCH → terbit hanya bila audit lolos → compileAndSaveStaticDemo
       - Jika tamu scroll kembali ke atas memasuki `#home`, audio FAB kembali tersembunyi secara otomatis (`setControls(true, false)`).
     - **Sinkronisasi Baku Cetak Biru (Blueprint 1:1 Synchronization):**
       - Seluruh berkas cetak biru sistem dijaga 100% identik tanpa deviasi baris kode (*zero drift*):
-        1. [`themes/_blueprints/wedding/starter-blueprint.html`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/themes/_blueprints/wedding/starter-blueprint.html) (Master Sistem).
-        2. [`public/downloads/starter-blueprint.html`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/public/downloads/starter-blueprint.html) (File Unduhan Desainer di UI Admin).
+        1. [`themes/_blueprints/wedding/starter-blueprint.html`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/themes/_blueprints/wedding/starter-blueprint.html) (Master Sistem).
+        2. [`public/downloads/starter-blueprint.html`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/public/downloads/starter-blueprint.html) (File Unduhan Desainer di UI Admin).
       - Dilengkapi kustomisasi gaya seleksi kursor `::selection` dinamis berbasis `color-mix(in srgb, var(--primary) 30%, transparent)`.
     - **Ultra-Clean Outro Auto-Hide:** Saat tamu tiba di seksi penutup / outro footer paling bawah (`isNearBottom`), dock navigasi (`.bottom-dock`) dan kontrol mengambang (`.music-fab` / `#musicToggle`) otomatis tersembunyi (*autohide*) secara mutlak agar tampilan outro 100vh bebas gangguan visual dan bersih total. Seluruh kontrol akan meluncur masuk kembali (*reveal*) secara instan begitu tamu melakukan gestur scroll ke atas (`delta < -SCROLL_THRESHOLD`).
     - **Akar Masalah Kebocoran Visual (Visual Leak):** Pada peramban ponsel atau jaringan lambat, DOM HTML di-parse lebih cepat daripada unduhan berkas gambar cover pembuka (`landingCoverUrl`). Jika layar penutup (*cover screen*) memiliki gradasi transparan, seksi isi undangan di bawahnya (`.page-wrap`, profil mempelai, floating bar) sempat bocor terlihat sekejap (*flash of unstyled/underlying content*).
@@ -1217,10 +1217,10 @@ PATCH → terbit hanya bila audit lolos → compileAndSaveStaticDemo
       * Seluruh duplikasi file `background.webp` di `public/demo/{burgundy-royale, vintage-forest, starlit-dreams}/` telah dihapus permanen.
       * `globalBgUrl` di `lib/demoRegistry.ts` dinormalisasi menjadi string kosong `""` agar tema demo menampilkan keindahan ornamen fallback kanonikal tanpa memicu override `--custom-bg`.
     - **Gender-Adaptive Couple Framework & Anti-Desynchronization Architecture (`#couple`):**
-      * Engine ([lib/themeEngine.ts](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/lib/themeEngine.ts) & [lib/demoRegistry.ts](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/lib/demoRegistry.ts)) memancarkan token `firstGender` (`"groom"` / `"bride"`), `secondGender` (`"bride"` / `"groom"`), `firstPhotoUrl`, `secondPhotoUrl`, `firstGenderLabel`, `secondGenderLabel`, dan boolean `isGroomFirst`/`isBrideFirst`.
-      * Master template ([themes/wedding/traditional/makassar.html](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/themes/wedding/traditional/makassar.html) & starter blueprint) mengikat kartu profil ke class `.couple-{{firstGender}}` dan `.couple-{{secondGender}}`. Ornamen khas adat (seperti Badik Pria vs Dedaunan Wanita) diikat ke class CSS `.couple-groom` dan `.couple-bride`, sehingga berpindah posisi otomatis mengikuti orangnya tanpa risiko tertukar saat opsi `BRIDE_FIRST` diaktifkan.
+      * Engine ([lib/themeEngine.ts](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/lib/themeEngine.ts) & [lib/demoRegistry.ts](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/lib/demoRegistry.ts)) memancarkan token `firstGender` (`"groom"` / `"bride"`), `secondGender` (`"bride"` / `"groom"`), `firstPhotoUrl`, `secondPhotoUrl`, `firstGenderLabel`, `secondGenderLabel`, dan boolean `isGroomFirst`/`isBrideFirst`.
+      * Master template ([themes/wedding/traditional/makassar.html](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/themes/wedding/traditional/makassar.html) & starter blueprint) mengikat kartu profil ke class `.couple-{{firstGender}}` dan `.couple-{{secondGender}}`. Ornamen khas adat (seperti Badik Pria vs Dedaunan Wanita) diikat ke class CSS `.couple-groom` dan `.couple-bride`, sehingga berpindah posisi otomatis mengikuti orangnya tanpa risiko tertukar saat opsi `BRIDE_FIRST` diaktifkan.
     - **Resolusi Miss-Colour Tombol Maps & Glassmorphism Depth Consistency:**
-      * Menghapus circular dependency `background: currentColor; color: var(--bg-dark);` pada [public/css/modules.css](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/public/css/modules.css) baris 351 yang menyebabkan teks tombol peta hilang saat hover (black-on-black).
+      * Menghapus circular dependency `background: currentColor; color: var(--bg-dark);` pada [public/css/modules.css](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/public/css/modules.css) baris 351 yang menyebabkan teks tombol peta hilang saat hover (black-on-black).
       * Menyelaraskan seluruh kartu seksi acara (`.event-card`), amplop digital (`.gift-card`), reservasi (`.rsvp-form-box`), dan ucapan (`.wish-item`) ke formula glassmorphism seragam (`color-mix(in srgb, var(--theme-card) 65%, transparent); backdrop-filter: blur(14px)`).
       * Menyelaraskan ID countdown timer `id="cdMinutes"` & `id="cdSeconds"` dengan fallback dual-query di runtime JS.
 
@@ -2001,7 +2001,7 @@ Setiap inisialisasi tagihan ke Midtrans mengirimkan informasi komprehensif untuk
 - **Proteksi Tagihan Usang (*Superseded Order Guard*):**
   - Jika klien membuka tautan riwayat/bookmark invoice lama (`?order=OLD_ID`) padahal sudah memiliki tagihan baru dengan `orderType` yang sama:
     - API `GET /api/client/orders/[id]/status` mendeteksi `isSuperseded: true` dan menyertakan `activeOrderId`.
-    - Kasir [`app/checkout/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/checkout/page.tsx) otomatis melakukan *instant redirection* ke tagihan aktif terbaru (`/checkout?order=NEW_ID`).
+    - Kasir [`app/checkout/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/checkout/page.tsx) otomatis melakukan *instant redirection* ke tagihan aktif terbaru (`/checkout?order=NEW_ID`).
   - Endpoint `POST /api/client/orders/[id]/upload-proof` memblokir keras upaya pengunggahan bukti bayar pada order usang yang telah digantikan oleh order baru.
 
 ### 15.6 — Alur Transfer Bank Manual & Pengiriman Cloudflare R2
@@ -2013,9 +2013,9 @@ Setiap inisialisasi tagihan ke Midtrans mengirimkan informasi komprehensif untuk
   - Persetujuan admin di portal `/admin` seketika mengubah status menjadi `PAID` dan mengeksekusi `applyUpgradePlan` untuk mengaktifkan paket/add-on secara instan.
 
 ### 15.7 — Identitas Publik & Proteksi Hak Cipta Statis (Luxenary Public Identity Banner & DevTools Guard)
-- **Banner ASCII & Lisensi Eksklusif:** Setiap dokumen publik (Root Layout [`app/layout.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/layout.tsx), 16 master template [`themes/`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/themes), serta seluruh kompilasi demo statis [`public/demo/`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/public/demo)) dilengkapi komentar lisensi resmi di baris pertama dokumen.
+- **Banner ASCII & Lisensi Eksklusif:** Setiap dokumen publik (Root Layout [`app/layout.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/layout.tsx), 16 master template [`themes/`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/themes), serta seluruh kompilasi demo statis [`public/demo/`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/public/demo)) dilengkapi komentar lisensi resmi di baris pertama dokumen.
 - **Isolasi Brand & Dynamic Domain Penuh (Zero-Hardcode Whitelabel):** Seluruh antarmuka publik, modul tamu (Guest Moments, Receptionist Scanner), layout metadata, gateway invoice, dan fitur paket tidak lagi menggunakan nilai hardcode. Nama platform dan domain aktif diselesaikan secara dinamis melalui `admin_settings.platform_name` dan environment `NEXT_PUBLIC_ROOT_DOMAIN` / request host. Penamaan paket antar-tier, subjudul section harga homepage (`pricing_subtitle`), dan butir-butir fitur (`features_tier1`, `features_tier2`, `features_tier3`) diresolusi dinamis dari database tanpa pembatasan regex statis, sehingga perubahan di panel admin `/admin` langsung tampil apa adanya secara instan.
-- **Pipeline Kompilasi Otomatis:** Engine [`lib/renderTemplate.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/lib/renderTemplate.ts) dan [`lib/staticPublisher.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/lib/staticPublisher.ts) menjamin setiap undangan yang dibake saat publish (`public/published/ids/[id].html`) maupun diakses di subdomain/custom domain secara otomatis menyertakan banner identitas dan skrip proteksi konsol sebelum tag `</body>`.
+- **Pipeline Kompilasi Otomatis:** Engine [`lib/renderTemplate.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/lib/renderTemplate.ts) dan [`lib/staticPublisher.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/lib/staticPublisher.ts) menjamin setiap undangan yang dibake saat publish (`public/published/ids/[id].html`) maupun diakses di subdomain/custom domain secara otomatis menyertakan banner identitas dan skrip proteksi konsol sebelum tag `</body>`.
 - **Kartu Notifikasi Penolakan Menetap (*Persistent Rejection Card*):**
   - Jika admin menolak bukti pembayaran di portal `/admin`, order tetap `status: "PENDING"`, bukti lama dihapus (`proofImageUrl` kosong), dan alasan dicatat di `rejectReason` sehingga klien dapat mengunggah ulang. Enum `OrderStatus` hanya `PENDING`/`PAID`/`EXPIRED`; nilai `FAILED` dihapus oleh migrasi `20261006100000_drop_order_status_failed` (baris lama: ditolak admin → `PENDING` + alasan tanpa bukti, gagal gateway → `EXPIRED`).
   - Kasir klien menampilkan kartu peringatan merah permanen tepat di atas formulir unggah ulang yang menampilkan alasan penolakan dari admin secara dinamis dan tidak hilang saat halaman di-refresh.
@@ -2599,7 +2599,7 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
    - Mencegah musik tema live preview bocor berputar di latar belakang saat beralih kembali ke tab **Form Data**.
    - Menghubungkan event `handleStudioTabClick("form")` dan `useEffect` unmount dengan pengiriman pesan `postMessage({ type: "LUX_PAUSE_AUDIO" })` serta *direct DOM `.pause()`* ke seluruh dokumen iframe aktif.
 4. **Sinkronisasi Rute Demo Tamu (`/demo/sharemoment` & `/demo/memories`):**
-   - `/demo/sharemoment` disinkronkan ke mesin kamera disposable modern ([`GuestMomentClient`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/components/features/GuestMomentClient.tsx)) lengkap dengan Web Audio shutter sound, 5 preset filter analog, date stamp retro, dan *opening showcase*.
+   - `/demo/sharemoment` disinkronkan ke mesin kamera disposable modern ([`GuestMomentClient`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/components/features/GuestMomentClient.tsx)) lengkap dengan Web Audio shutter sound, 5 preset filter analog, date stamp retro, dan *opening showcase*.
    - `/demo/memories` ditransformasikan dari model flat 1-foto menjadi arsitektur **Roll Stack (1 Card / Tamu)** berlapis fisik dengan badge jumlah foto dan modal lightbox swipe multi-foto yang terhubung dengan `sessionStorage` jepretan kamera demo.
 5. **Arsitektur Zero-Setup Unified Demo Sandbox (Otomasi Jalur Demo):**
    - Seluruh tema showroom (`/demo/[theme]`) mengarahkan tombol *"BUKA KAMERA KENANGAN"* ke `/demo/sharemoment?theme=[theme]`, tombol *"BUKA GALERI MOMEN LENGKAP"* ke `/demo/memories?theme=[theme]`, dan kartu tiket QR pass ke `/demo/receptionist`.
@@ -2923,7 +2923,7 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
    - Kotak doa dan ucapan tamu selalu terisi real-time dari database tanpa perlu membakar ulang file HTML atau membatalkan cache edge Cloudflare.
 
 3. **URL-Specific Purge Otomatis pada Aksi "Update Publikasi" (`DEPLOY_AND_LOCK`):**
-   - Di [app/api/client/invitations/[id]/route.ts](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/invitations/%5Bid%5D/route.ts), saat pengantin menyelesaikan revisi di studio melalui masa Emergency Unlock dan mengklik **"Update Publikasi & Kunci Kembali"**, sistem secara atomik:
+   - Di [app/api/client/invitations/[id]/route.ts](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/invitations/%5Bid%5D/route.ts), saat pengantin menyelesaikan revisi di studio melalui masa Emergency Unlock dan mengklik **"Update Publikasi & Kunci Kembali"**, sistem secara atomik:
      1. Mengompilasi ulang berkas HTML fisik `public/published/ids/<id>.html`.
      2. Menembak API `purgeCloudflareCache` terisolasi hanya untuk URL spesifik undangan terkait (`https://subdomain.luxvite.id/`, `https://luxvite.id/slug`, dan custom domain jika ada).
      3. Mengosongkan `adminUnlockedUntil = null` untuk mengunci kembali studio editor secara otomatis.
@@ -3150,11 +3150,11 @@ Luxenary-Invite dielevasi dari sistem undangan pernikahan murni menjadi platform
 ### 24.1 Gerbang Pembayaran Mutlak (*Hard Payment Barrier*)
 1. **Aturan Akses Dasbor Klien:**
    - Akses ke `/dashboard`, `/dashboard/invitation/[id]`, `/dashboard/guests`, `/dashboard/rsvp`, `/dashboard/moments`, dan `/dashboard/settings` **DIBLOKIR MUTLAK** bagi pengguna yang belum menyelesaikan transaksi (`status: PAID`).
-   - Penanganan pada level client component ([`app/(client)/dashboard/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/%28client%29/dashboard/page.tsx)) dan endpoint state ([`app/api/client/onboarding-state/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/onboarding-state/route.ts)):
+   - Penanganan pada level client component ([`app/(client)/dashboard/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/%28client%29/dashboard/page.tsx)) dan endpoint state ([`app/api/client/onboarding-state/route.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/onboarding-state/route.ts)):
      - Pengguna tanpa pesanan $\rightarrow$ dialihkan otomatis ke `/packages`.
      - Pengguna dengan pesanan `PENDING` $\rightarrow$ dialihkan ke `/payment` (jika checkout terkonfirmasi) atau `/checkout`.
      - Hanya pengguna dengan pesanan `PAID` yang diizinkan masuk ke `/dashboard/setup` lalu ke `/dashboard`.
-2. **Aturan Backend Pembuatan Draf ([`app/api/client/invitations/create/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/invitations/create/route.ts)):**
+2. **Aturan Backend Pembuatan Draf ([`app/api/client/invitations/create/route.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/invitations/create/route.ts)):**
    - API memverifikasi kepemilikan record `Order` dengan `status: "PAID"`.
    - Jika order berbayar tidak ditemukan, request pembuatan draf langsung dibatalkan dengan **HTTP 403 Forbidden**. Tidak ada celah bagi pengguna belum bayar untuk membuat draf undangan.
 
@@ -3315,7 +3315,9 @@ Migrasi: `20260930045346_add_order_charged_amount` (kolom `orders.chargedAmount`
 
 ## 26. Matriks Fitur Tema (hasil render mesin nyata, 1 Oktober 2026)
 
-Katalog berisi **39 tema fisik** (33 Wedding: 12 modern, 6 minimalist, 15 traditional; 1 Birthday modern, 1 Birthday minimalist, 1 Khitan, 1 Aqiqah, 1 Wisuda, 1 General). Semuanya terbuka untuk semua paket (`TIER_1`, `TIER_2`, `TIER_3`); tema tidak punya harga maupun label premium (kolom `isPremium` dan `price` dihapus oleh migrasi `20261001120000_drop_theme_price_and_premium`, termasuk lencana "Premium" di pemilih tema klien). Paket (Serenade, Symphony, Eternity) dibedakan oleh kapabilitas fitur (`capabilities_tier1..3`, kuota roll kamera, retensi), bukan oleh tema; `minimalist`/`modern`/`traditional` adalah kategori gaya desain, bukan nama paket.
+Katalog berisi **54 tema fisik mandiri** (33 Wedding: 12 modern, 6 minimalist, 15 traditional; 5 Birthday, 4 Khitan, 4 Aqiqah, 4 Wisuda, 4 General). Semuanya terbuka untuk semua paket (`TIER_1`, `TIER_2`, `TIER_3`); tema tidak punya harga maupun label premium (kolom `isPremium` dan `price` dihapus oleh migrasi `20261001120000_drop_theme_price_and_premium`, termasuk lencana "Premium" di pemilih tema klien). Paket (Serenade, Symphony, Eternity) dibedakan oleh kapabilitas fitur (`capabilities_tier1..3`, kuota roll kamera, retensi), bukan oleh tema; `minimalist`/`modern`/`traditional` adalah kategori gaya desain, bukan nama paket.
+
+> *Catatan Evolusi:* Matriks pengukuran di bawah adalah hasil audit baseline 39 tema awal (1 Oktober 2026). Pada 3–5 November 2026, katalog diperluas menjadi **54 tema fisik mandiri** (penambahan 15 master berilustrasi non-wedding baru: `balonku`, `gala`, `riang`, `fajar`, `nur`, `sakinah`, `barakah`, `buaian`, `mungil`, `akademia`, `laurel`, `toga`, `forum`, `prakarsa`, `temu`) yang seluruhnya telah mengadopsi layout split desktop dan token dinamis, serta diperkaya oleh generator visual **Theme Builder Unlimited 3.0** di `/admin/theme-builder` (November 2026).
 
 Angka berikut diukur dengan merender seluruh 39 tema lewat `renderTemplateFile` (`lib/renderTemplate.ts`) memakai data berpenanda unik pada database uji, lalu memeriksa keluarannya. Pernyataan "seluruh tema" di bagian lain dokumen ini bersifat historis per tahap pengembangan; bagian inilah yang mencerminkan keadaan sekarang. Tidak ada error render pada 39 tema.
 

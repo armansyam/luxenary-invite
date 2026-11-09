@@ -94,7 +94,7 @@ flowchart TD
 | **Masa Berlaku (MaxAge)**| `3600` (1 Jam) | Otomatis hangus jika Admin meninggalkan sesi tanpa logout manual |
 
 ### B. Struktur Objek Sesi Saat Mode Remote
-Saat mode remote aktif, callback `session` di [`auth.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/auth.ts) menghasilkan struktur data berikut pada sisi server:
+Saat mode remote aktif, callback `session` di [`auth.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/auth.ts) menghasilkan struktur data berikut pada sisi server:
 ```typescript
 session.user = {
   id: clientUser.id,              // ID Klien target (kunci kueri Prisma di API klien)
@@ -112,7 +112,7 @@ session.user = {
 ## 4. Alur Eksekusi Hulu-ke-Hilir (Code Tracing)
 
 ### Langkah 1: Inisiasi Sesi dari UI Admin
-Admin dapat memulai sesi remote melalui 3 pintu masuk di [`app/(admin)/admin/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/(admin)/admin/page.tsx):
+Admin dapat memulai sesi remote melalui 3 pintu masuk di [`app/(admin)/admin/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/(admin)/admin/page.tsx):
 1. **Tabel Undangan:** Ikon monitor pada kolom *Aksi*.
 2. **Tabel Daftar Klien:** Ikon monitor di samping tombol *Kelola Klien*.
 3. **Modal Kelola Klien:** Tombol utama *"Remote Dasbor Klien Ini"*.
@@ -163,7 +163,7 @@ Setiap kali dasbor memanggil API internal (misalnya `fetch("/api/client/invitati
 * Database kueri `prisma.invitation.findMany({ where: { userId: user.id } })` langsung mengambil undangan sah milik Klien tersebut.
 
 ### Langkah 5: Tampilan Banner & Proteksi Onboarding Layout
-Di [`app/(client)/dashboard/layout.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/(client)/dashboard/layout.tsx):
+Di [`app/(client)/dashboard/layout.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/(client)/dashboard/layout.tsx):
 1. **Banner Merah Berdenyut:**
    Mengambil data via `GET /api/admin/remote-session` dan menampilkan:
    *"MODE REMOTE AKTIF: Anda sedang mengendalikan dashboard milik [Nama Klien]"* lengkap dengan tombol *"Kembali ke Admin"*.
@@ -215,7 +215,7 @@ Enum `InvitationStatus` hanya berisi `DRAFT`, `PUBLISHED`, `TAKEN_DOWN`, `ARCHIV
 ### 1. Perlindungan Terhadap Eskalasi Hak Akses (Anti-Privilege Escalation)
 * **Pertanyaan:** Apakah user klien biasa dapat memalsukan cookie `lux_remote_client_id` di browser devtools untuk meremote akun klien lain?
 * **Mitigasi Faktual:** **TIDAK BISA.**
-  Di [`auth.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/auth.ts), pembacaan cookie `lux_remote_client_id` secara ketat dibungkus oleh pengaman:
+  Di [`auth.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/auth.ts), pembacaan cookie `lux_remote_client_id` secara ketat dibungkus oleh pengaman:
   ```typescript
   if ((session?.user as any)?.isAdmin) { ... }
   ```

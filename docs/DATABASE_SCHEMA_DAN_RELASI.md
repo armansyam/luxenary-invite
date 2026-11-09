@@ -23,6 +23,7 @@ erDiagram
     Invitation ||--o{ Rsvp : "receives"
     Invitation ||--o{ GuestMemory : "collects"
     Theme ||--o{ Invitation : "dipakai (RESTRICT)"
+    Theme ||--o{ ThemeBuilderRevision : "revisions (CASCADE)"
     Expense ||--o{ AffiliateCommission : "payout (SET NULL)"
     Guest ||--o| Rsvp : "submits"
     Admin ||--o{ AdminAuditLog : "logs"
@@ -74,6 +75,18 @@ erDiagram
         enum category
         string series
         boolean isActive
+        json builderSpec
+        json defaultMedia
+    }
+
+    ThemeBuilderRevision {
+        string id PK
+        string themeId FK
+        json spec
+        string name
+        enum category
+        string action
+        datetime createdAt
     }
 
     Guest {
@@ -229,8 +242,8 @@ Menyimpan daftar aset visual mempelai:
 - `localPath` (String): URL file di Cloudflare R2 CDN atau path storage lokal.
 
 #### 3. Tabel `themes` (Model `Theme`)
-Master katalog tema fisik resmi di sistem (39 tema terdaftar):
-- `id` (String, Primary Key): Identifier unik tema (contoh: `kalandra`, `artisan`, `festivo`).
+Master katalog tema fisik resmi di sistem (54 tema terdaftar lintas 6 jenis acara):
+- `id` (String, Primary Key): Identifier unik tema (contoh: `kalandra`, `artisan`, `festivo`, `al-fariz`).
 - `name` (String): Nama komersial tema.
 - `eventType` (Enum `EventType`): Afiliasi tipe acara (`WEDDING`, `BIRTHDAY`, `KHITAN`, `AQIQAH`, `WISUDA`, `GATHERING`).
 - `category` (Enum `ThemeCategory`, bawaan `minimalist`): Kategori gaya desain (`minimalist`, `modern`, `traditional`).
@@ -239,8 +252,23 @@ Master katalog tema fisik resmi di sistem (39 tema terdaftar):
 - `isActive` (Boolean): Flag status aktif di katalog showroom & kasir.
 - `sortOrder` (Int): Urutan penampilan di galeri.
 - `defaultMusicUrl` (String, Nullable): Lagu latar bawaan tema.
+- `builderSpec` (Json, Nullable, `@map("builder_spec")`): Spesifikasi rancangan Theme Builder (`BuilderSpec` dari `lib/themeBuilder/spec.ts`). Berisi palet, tipografi, tekstur, varian seksi, blok konten, bingkai, dan ornamen. Bernilai `NULL` untuk tema master yang ditulis tangan (*handcrafted*).
+- `defaultMedia` (Json, Nullable, `@map("default_media")`): Media bawaan tema per slot (`{ SLOT: "/path" }`, dari `lib/themeDefaultMedia.ts`). Disalin ke undangan saat tema dipilih.
 
 Tema tidak memiliki harga atau label premium: kolom `isPremium` dan `price` dihapus (migrasi `20261001120000_drop_theme_price_and_premium`) karena paket dibedakan oleh kapabilitas fitur, bukan oleh tema, dan semua tema terbuka untuk semua paket. Kolom `isFeatured` juga dihapus (migrasi `20261001150000_db_integrity_theme_fk_amount_precision`) karena tidak dibaca dan tidak ditulis kode mana pun; `isFeatured` yang dipakai halaman harga adalah properti paket di `admin_settings`, bukan tema.
+
+#### 4. Tabel `theme_builder_revisions` (Model `ThemeBuilderRevision`)
+Menyimpan riwayat versi draf tema Theme Builder (maksimal 30 revisi terbaru per tema):
+- `id` (UUID, Primary Key): Identitas unik snapshot revisi.
+- `themeId` (String, Foreign Key `themes.id`, `onDelete: Cascade`): ID tema pemilik revisi.
+- `spec` (Json): Snapshot spesifikasi builder (`BuilderSpec`) saat disimpan.
+- `name` (String): Nama tema saat snapshot dibuat.
+- `category` (Enum `ThemeCategory`): Kategori gaya desain tema.
+- `description` (String, Nullable): Deskripsi draf tema.
+- `action` (String): Tindakan pemicu (`CREATE` untuk draf awal/kloning/impor, `SAVE` untuk penyimpanan berikutnya).
+- `adminName` (String, Nullable): Nama administrator yang menyimpan revisi.
+- `createdAt` (DateTime, default `now()`): Waktu revisi disimpan.
+- Indeks: `@@index([themeId, createdAt])`.
 
 > **Media Khusus Non-Enum (`app/api/client/upload/route.ts`):**
 > Media berikut dikelola secara langsung melalui penamaan file deterministik:

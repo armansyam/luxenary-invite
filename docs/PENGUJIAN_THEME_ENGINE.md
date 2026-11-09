@@ -78,3 +78,14 @@ Kode dan tes tidak bisa membuktikan urutan tumpukan atau pemotongan; ukur di bro
 ```
 
 Hasil 27 Okt 2026: 38 dari 38 demo ber-layout split lulus; 6 tema (`kalandra-birthday`, `festivo`, `al-fariz`, `al-khalid`, `cendekia`, `sinergi`) memakai latar layar penuh tanpa hero kiri. Demo harus dibangun ulang lebih dulu (`npx tsx scripts/rebuild-static-demos.ts`), karena yang disajikan adalah cache `public/demo/<id>/index.html`.
+
+## F. Pengujian Komprehensif Theme Builder Unlimited 3.0 (9 Nov 2026)
+
+Cakupan suite pengujian Theme Builder menyeluruh (9 berkas uji, 135 tes, 100% lulus):
+1. **`__tests__/integration/themeBuilder.test.ts` (42 tes):** Kontrak blueprint (pernikahan & satu nama), validasi `parseBuilderSpec`, kompilator `compileBuilderMaster`, isolasi tema handcrafted (HTTP 409), kloning tema bawaan (`?from=`), varian navigasi (`drawer`), tanggal sampul (`split`), mikro-tipografi per blok, varian tombol/kartu/kerapatan seksi (`spacing`), gelap lapisan foto (`scrimOpacity`), cermin vertikal (`flipY`), dan audit 0 hex statis di luar `:root`.
+2. **`__tests__/integration/builderSingleName.test.ts` (10 tes) & `builderSingleNameFlow.test.ts` (4 tes):** Kontrak blueprint satu nama (`themes/_blueprints/single-name/starter-blueprint-single.html`), isolasi `SINGLE_ABSENT_BLOCKS`, dan varian galeri/jadwal/hadiah lintas kelima jenis acara satu nama.
+3. **`__tests__/integration/builderThemeClientFlow.test.ts` (4 tes):** Alur klien dari pemilihan tema builder hingga studio dan publikasi.
+4. **`__tests__/integration/builderTextsLayers.test.ts` (9 tes):** Alur 3 lapis teks (blueprint default $\rightarrow$ builder custom default $\rightarrow$ client studio override) serta sinkronisasi label peran mempelai (`groomRole`/`brideRole`).
+5. **`__tests__/integration/builderHardening.test.ts` (6 tes):** Pengujian ketahanan batas input ekstrim, sanitasi, dan isolasi aset.
+6. **`__tests__/unit/builderLayout.test.ts` (18 tes) & `builderAttach.test.ts` (30 tes):** Algoritma peletakan blok relatif dan penempelan ornamen/bingkai.
+7. **`__tests__/unit/googleFonts.test.ts` (12 tes):** Penanganan font Google dinamis dan caching lokal `.woff2`.

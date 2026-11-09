@@ -67,13 +67,13 @@ flowchart TD
 ## 3. Rincian Teknis per Tahap
 
 ### TAHAP 1: Masuk dengan Akun Google
-* **Halaman UI:** [`app/login/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/login/page.tsx)
+* **Halaman UI:** [`app/login/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/login/page.tsx)
 * **Aksi Pengguna:** Menekan tombol tunggal *"Masuk dengan Akun Google"*.
 * **Trigger Kode:**
   ```typescript
   signIn("google", { callbackUrl: "/onboarding" });
   ```
-* **Eksekusi Backend ([`auth.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/auth.ts) & [`lib/auth.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/lib/auth.ts)):**
+* **Eksekusi Backend ([`auth.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/auth.ts) & [`lib/auth.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/lib/auth.ts)):**
   - Mengambil data profil Google: `sub` (Google ID), `email`, `name`, `picture`.
   - Fungsi `upsertGoogleUser()` memeriksa database:
     - Jika user baru, sistem membuat baris baru di tabel `User` dengan `role: "CLIENT"`.
@@ -84,8 +84,8 @@ flowchart TD
 ---
 
 ### TAHAP 2: Pengecekan Keaktifan Akun (Onboarding Hub & Hard Payment Barrier)
-* **Halaman UI:** [`app/onboarding/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/onboarding/page.tsx)
-* **API Backend:** `GET /api/client/onboarding-state` ([`app/api/client/onboarding-state/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/onboarding-state/route.ts))
+* **Halaman UI:** [`app/onboarding/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/onboarding/page.tsx)
+* **API Backend:** `GET /api/client/onboarding-state` ([`app/api/client/onboarding-state/route.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/onboarding-state/route.ts))
 * **Prinsip Gerbang Mutlak (*Hard Payment Barrier*):**
   Pengguna yang belum memiliki pesanan `PAID` **mustahil** dapat mengakses `/dashboard` atau membuat draf undangan baru. Jika membuka rute dashboard secara langsung, pengguna akan dicegat dan diarahkan ke rute yang sesuai di bawah.
 * **Logika Keputusan:**
@@ -104,7 +104,7 @@ flowchart TD
 ---
 
 ### TAHAP 3: Pemilihan Paket Undangan
-* **Halaman UI:** [`app/packages/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/packages/page.tsx)
+* **Halaman UI:** [`app/packages/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/packages/page.tsx)
 * **Data Dinamis:** Diambil dari endpoint `GET /api/public/settings` (kunci per tier di `admin_settings`, mis. `desc_tier1`, `features_tier1`, `capabilities_tier1`).
 * **Pilihan Paket:**
   - **Serenade (`TIER_1`):** paket dasar, tanpa kapabilitas tambahan pada bawaan seed.
@@ -121,9 +121,9 @@ flowchart TD
 ---
 
 ### TAHAP 4: Kasir Checkout
-* **Halaman UI:** [`app/checkout/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/checkout/page.tsx)
+* **Halaman UI:** [`app/checkout/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/checkout/page.tsx)
 * **Inisialisasi Invoice:**
-  - Halaman kasir memanggil `POST /api/orders/create` ([`app/api/orders/create/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/orders/create/route.ts)).
+  - Halaman kasir memanggil `POST /api/orders/create` ([`app/api/orders/create/route.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/api/orders/create/route.ts)).
   - Membuat transaksi baru di tabel `Order` dengan `status: "PENDING"`.
 * **Proteksi Siklus Transaksi Pending (Single Active Order per User):**
   - Klien yang bolak-balik antara `/packages` dan `/checkout` untuk mengubah paket (misal dari Serenade ke Eternity) **TIDAK AKAN** melipatgandakan invoice di database.
@@ -147,7 +147,7 @@ flowchart TD
 ---
 
 ### TAHAP 5: Proses Pembayaran QRIS (Metode Utama)
-* **API Checkout:** `POST /api/payments/checkout` ([`app/api/payments/checkout/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/payments/checkout/route.ts))
+* **API Checkout:** `POST /api/payments/checkout` ([`app/api/payments/checkout/route.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/api/payments/checkout/route.ts))
 * **Alur Eksekusi:**
   1. Klien menekan tombol *"Bayar via QRIS"*.
   2. Server memanggil driver gateway `midtrans`.
@@ -160,7 +160,7 @@ flowchart TD
   5. Pengguna membuka aplikasi m-Banking (BCA Mobile, Livin Mandiri, BRImo, BNI) atau e-Wallet (GoPay, OVO, Dana, ShopeePay) di HP mereka, lalu memindai kode QRIS tersebut.
   6. **Deteksi Realtime Tanpa Reload (Server-Sent Events):**
      - Browser klien mendengarkan streaming event dari:  
-       [`app/api/payments/status-stream/[orderId]/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/payments/status-stream/%5BorderId%5D/route.ts).
+       [`app/api/payments/status-stream/[orderId]/route.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/api/payments/status-stream/%5BorderId%5D/route.ts).
   7. **Konfirmasi Masuk (Webhook Gateway):**
      - Server gateway mengirim sinyal Webhook ke endpoint sistem (`/api/webhook/midtrans`).
      - Sistem memvalidasi signature hash resmi dari gateway.
@@ -242,7 +242,7 @@ flowchart TD
 
 ---
 
-### TAHAP 6: Eksekusi Pasca-Bayar & Aktivasi Layanan ([`lib/upgradeHelper.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/lib/upgradeHelper.ts))
+### TAHAP 6: Eksekusi Pasca-Bayar & Aktivasi Layanan ([`lib/upgradeHelper.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/lib/upgradeHelper.ts))
 
 Setiap kali transaksi disetujui lunas (baik otomatis via Webhook QRIS maupun manual via tombol persetujuan Admin), sistem mengeksekusi pipeline pasca-bayar:
 
@@ -251,7 +251,7 @@ Setiap kali transaksi disetujui lunas (baik otomatis via Webhook QRIS maupun man
 2. **Penegakan Arsitektur Single State (`purgeObsoleteUserOrders`):**
    - Otomatis mencari dan memusnahkan sisa draft/order usang non-PAID milik klien beserta seluruh file struknya di Cloudflare R2.
 3. **Pencabangan Tipe Order (`orderType`):**
-   - **`NEW`:** Transaksi paket pertama ➔ Mengarahkan klien masuk ke Formulir Setup Undangan ([`app/(client)/dashboard/setup/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/(client)/dashboard/setup/page.tsx)).
+   - **`NEW`:** Transaksi paket pertama ➔ Mengarahkan klien masuk ke Formulir Setup Undangan ([`app/(client)/dashboard/setup/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/(client)/dashboard/setup/page.tsx)).
    - **`UPGRADE` (`applyUpgradePlan`):** Memperbarui `planType` pada order awal milik undangan sasaran (`linkedInvitationId` ➔ `invitation.orderId`) ke tier yang lebih tinggi (misal: Serenade ➔ Symphony).
     - **`GALLERY_EXTENSION` (`applyGalleryExtension`):** Menambahkan masa simpan foto kenangan tamu ke `galleryExpiresAt` pada undangan klien dan membuka kembali kunci unggah foto kenangan tamu (`memoriesUploadLocked: false`).
     - **`MEMORIES_TOPUP` (`applyMemoriesTopup`):** Menambahkan kuota foto kenangan tamu (`extraMemoriesQuota`) pada undangan klien.

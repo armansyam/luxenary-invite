@@ -49,14 +49,14 @@ flowchart TD
 ## Fase 1: Autentikasi & Registrasi Otomatis (Google OAuth)
 
 ### 1. Titik Masuk UI
-*   **File:** [`app/login/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/login/page.tsx)
+*   **File:** [`app/login/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/login/page.tsx)
 *   **Mekanisme:** Tidak ada form manual username/password untuk klien. Akses menggunakan tombol tunggal Google Sign-In yang memanggil fungsi bawaan NextAuth:
     ```typescript
     await signIn("google", { callbackUrl: "/onboarding" });
     ```
 
 ### 2. Penanganan Sisi Server (NextAuth v5)
-*   **File:** [`auth.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/auth.ts) & [`auth.config.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/auth.config.ts)
+*   **File:** [`auth.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/auth.ts) & [`auth.config.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/auth.config.ts)
 *   **Logika Faktual:**
     1. Menggunakan adapter Prisma (`PrismaAdapter(prisma)`).
     2. Jika email baru pertama kali masuk, record dibuat otomatis di tabel `User` dengan default role:
@@ -72,11 +72,11 @@ flowchart TD
 ## Fase 2: Dispatcher Status Klien (Onboarding Hub)
 
 ### 1. Halaman Hub
-*   **File:** [`app/onboarding/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/onboarding/page.tsx)
+*   **File:** [`app/onboarding/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/onboarding/page.tsx)
 *   Halaman ini adalah layar transisi (*loading spinner minimalis*) yang secara otomatis memicu pemanggilan API: `GET /api/client/onboarding-state`.
 
 ### 2. Logika Penentu Rute
-*   **File:** [`app/api/client/onboarding-state/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/onboarding-state/route.ts)
+*   **File:** [`app/api/client/onboarding-state/route.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/onboarding-state/route.ts)
 *   **Hirarki Keputusan (Decision Tree Faktual):**
     ```typescript
     // 1. Cek apakah user sudah memiliki undangan di database
@@ -162,9 +162,9 @@ flowchart TD
     ```
 
 ### 3. Proteksi Mutlak: Klien Belum Bayar Dilarang Buka Dashboard
-- **Di Sisi UI Dashboard ([`app/(client)/dashboard/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/%28client%29/dashboard/page.tsx#L98-L110)):**
+- **Di Sisi UI Dashboard ([`app/(client)/dashboard/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/%28client%29/dashboard/page.tsx#L98-L110)):**
   Jika pengguna yang belum memiliki undangan berstatus bayar mencoba mengakses `/dashboard`, komponen `useEffect` otomatis memanggil `/api/client/onboarding-state`. Ketika `redirectUrl` diterima (`/packages` atau `/payment`), router seketika mengeksekusi `router.replace(redirectUrl)`. Tidak ada celah bagi pengguna belum bayar untuk melihat isi antarmuka dashboard.
-- **Di Sisi Backend API ([`app/api/client/invitations/create/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/invitations/create/route.ts#L106-L130)):**
+- **Di Sisi Backend API ([`app/api/client/invitations/create/route.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/invitations/create/route.ts#L106-L130)):**
   Sebelum mengeksekusi pembuatan draf, API memeriksa tabel `Order` milik user:
   ```typescript
   const paidOrder = await prisma.order.findFirst({
@@ -189,7 +189,7 @@ flowchart TD
 ## Fase 3: Katalog & Pemilihan Paket Layanan
 
 ### 1. Tampilan Katalog
-*   **File:** [`app/packages/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/packages/page.tsx)
+*   **File:** [`app/packages/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/packages/page.tsx)
 *   **Logika Dinamis:** Paket tidak di-hardcode. Halaman melakukan fetch ke `GET /api/public/settings` untuk mengambil konfigurasi paket dari database (kunci `AdminSetting` per tier, mis. `desc_tier1`, `features_tier1`, `capabilities_tier1`, `memories_shots_quota_tier1`; tidak ada kunci tunggal `platform_packages`).
 *   **Tingkatan Tier Paket:**
     *   **TIER_1 (Serenade):** Paket esensial intim, undangan online berkelas, pemutar musik, galeri foto, RSVP & seluruh tema terbuka.
@@ -203,7 +203,7 @@ flowchart TD
 ## Fase 4: Checkout & Kasir Pembayaran (Kontrol Penuh Admin)
 
 ### 1. Antarmuka Kasir & Logika Saluran Pembayaran
-*   **File:** [`app/checkout/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/checkout/page.tsx) & [`app/payment/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/payment/page.tsx)
+*   **File:** [`app/checkout/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/checkout/page.tsx) & [`app/payment/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/payment/page.tsx)
 *   **Aturan Saluran Pembayaran (*Zero Client Decision*):**
     Klien **tidak memiliki pilihan** untuk memilih metode pembayaran sendiri. Saluran ditentukan 100% oleh Admin melalui `AdminSetting` key `payment_mode`:
     - **Mode `GATEWAY`:** Kasir hanya memunculkan saluran QRIS otomatis (Midtrans). Form transfer manual disembunyikan secara total.
@@ -213,7 +213,7 @@ flowchart TD
     2. Jika checkout dikonfirmasi $\rightarrow$ status `checkoutConfirmedAt` dicatat, dan klien diarahkan ke halaman pembayaran aktif: `/payment?order=${order.id}`.
 
 ### 2. Penanganan Pembayaran Real-Time
-*   **File Stream SSE:** [`app/api/payments/status-stream/[orderId]/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/payments/status-stream/%5BorderId%5D/route.ts)
+*   **File Stream SSE:** [`app/api/payments/status-stream/[orderId]/route.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/api/payments/status-stream/%5BorderId%5D/route.ts)
 *   **Alur:**
     1. Klien membuka koneksi Server-Sent Events (SSE) saat kode QRIS ditampilkan di layar.
     2. Saat pembeli memindai QRIS dan membayar via m-Banking/e-Wallet, gateway mengirim Webhook HTTP POST ke:
@@ -234,7 +234,7 @@ flowchart TD
 ## Fase 5: Wizard Penyiapan Undangan Awal (Setup Wizard Multi-Event)
 
 ### 1. Form Penyiapan 4 Langkah Adaptif
-*   **File:** [`app/(client)/dashboard/setup/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/%28client%29/dashboard/setup/page.tsx)
+*   **File:** [`app/(client)/dashboard/setup/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/%28client%29/dashboard/setup/page.tsx)
 *   **Fitur Keamanan Draft Lokal:**
     Menggunakan `localStorage ("luxenary_setup_draft")`. Jika koneksi terputus atau halaman ter-refresh di tengah jalan, seluruh data input pulih otomatis.
 *   **Tahapan Form Wizard:**
@@ -256,7 +256,7 @@ flowchart TD
        - Navigasi tab kategori gaya dinamis (`all`, `minimalist`, `modern`, `traditional`) menyesuaikan tema yang tersedia pada jenis acara tersebut.
 
 ### 2. Backend Pembuat Undangan
-*   **File:** [`app/api/client/invitations/create/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/invitations/create/route.ts)
+*   **File:** [`app/api/client/invitations/create/route.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/invitations/create/route.ts)
 *   **Operasi Kritis yang Dilakukan:**
     1. **Guard Validasi Order & Event Type:** Menolak (HTTP 400, "Jenis acara wajib dipilih.") bila `eventType` kosong atau tidak sah; tidak ada lagi bawaan diam-diam ke `WEDDING`. Memverifikasi bahwa order ID benar-benar berstatus `PAID`, milik user yang bersangkutan, dan jika `themeId` diisi, temanya wajib memiliki `eventType` yang sesuai (jika tidak cocok, sistem fallback aman ke `DEFAULT_THEME_BY_EVENT`).
     2. **Pembuatan Canonical Flat Slug Permanen:**
@@ -275,7 +275,7 @@ flowchart TD
 ## Fase 6: Masuk ke Dashboard Utama & Studio Editor
 
 ### 1. Middleware Edge Guard
-*   **File:** [`middleware.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/middleware.ts)
+*   **File:** [`middleware.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/middleware.ts)
 *   **Aturan Akses:**
     *   Jika user mencoba mengakses rute `/dashboard/*` tanpa cookie sesi login ➔ dialihkan paksa ke `/login`.
     *   Jika user dengan role `ADMIN` login ➔ otomatis dialihkan ke `/admin`.
@@ -284,19 +284,19 @@ flowchart TD
 ### 2. Workspace Client Dashboard
 Klien kini memiliki akses ke 4 modul utama:
 1.  **Ringkasan Undangan (`/dashboard`):** Menampilkan status undangan (`DRAFT` / `PUBLISHED`), total kuota tamu, daftar konfirmasi RSVP masuk, dan pintasan cepat.
-2.  **Studio Editor Undangan ([`app/(client)/dashboard/invitation/[id]/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/%28client%29/dashboard/invitation/%5Bid%5D/page.tsx)):**
+2.  **Studio Editor Undangan ([`app/(client)/dashboard/invitation/[id]/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/%28client%29/dashboard/invitation/%5Bid%5D/page.tsx)):**
     *   Split-screen visual: Form kontrol di sebelah kiri dan Live Preview iframe di sebelah kanan.
     *   Arsitektur Piring (*Draft Plate*): File draft fisik berada di `data/drafts/${id}.html`.
     *   Sinkronisasi realtime menggunakan event bus `BroadcastChannel("lux_preview_sync")`.
-3.  **Buku Tamu & Pengiriman Undangan WhatsApp ([`app/(client)/dashboard/guests/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/%28client%29/dashboard/guests/page.tsx)):**
+3.  **Buku Tamu & Pengiriman Undangan WhatsApp ([`app/(client)/dashboard/guests/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/%28client%29/dashboard/guests/page.tsx)):**
     *   Kelola daftar tamu, kategori undangan, dan sesi acara.
     *   Tombol **"Kirim WA"** (Tautan langsung `https://wa.me/628...?text=...`) yang otomatis mengisi pesan undangan personal beserta tautan nama tamu tanpa perlu mengetik manual.
     *   Tiket QR Check-in per tamu untuk penerimaan di meja resepsionis pada hari H.
-4.  **Pengaturan, Domain & Terbit ([`app/(client)/dashboard/settings/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/%28client%29/dashboard/settings/page.tsx)):**
+4.  **Pengaturan, Domain & Terbit ([`app/(client)/dashboard/settings/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/%28client%29/dashboard/settings/page.tsx)):**
     *   Live checker ketersediaan subdomain (misal: `dimas-clarissa.luxvite.id`).
     *   Konfigurasi PIN 4-digit panitia resepsionis (dienkripsi AES-256).
     *   Validasi kelayakan penerbitan (`isPublishable`).
-    *   Tombol Publikasikan yang memicu baking file HTML statis mandiri via [`lib/staticPublisher.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/lib/staticPublisher.ts).
+    *   Tombol Publikasikan yang memicu baking file HTML statis mandiri via [`lib/staticPublisher.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/lib/staticPublisher.ts).
 
 ---
 
@@ -385,7 +385,7 @@ model Invitation {
 ## 10. Daftar Template Sistem
 
 ### A. Template Pesan Undangan WhatsApp Klien
-Diatur pada halaman [`app/(client)/dashboard/guests/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/%28client%29/dashboard/guests/page.tsx). Calon pengantin dapat memilih preset atau mengedit teks sendiri:
+Diatur pada halaman [`app/(client)/dashboard/guests/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/%28client%29/dashboard/guests/page.tsx). Calon pengantin dapat memilih preset atau mengedit teks sendiri:
 
 #### 1. Preset Formal & Sakral (Default)
 ```text

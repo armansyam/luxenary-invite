@@ -21,7 +21,7 @@
      - Saat klien mengganti tema pada draft lama (`isThemeChanged`), lagu otomatis diperbarui ke lagu tema yang baru.
      - Klien tetap memiliki hak untuk mengganti atau mematikan musik di Dasbor Klien.
 
-3. **Restrukturisasi UI Katalog Tema Admin ([`app/(admin)/admin/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/%28admin%29/admin/page.tsx)):**
+3. **Restrukturisasi UI Katalog Tema Admin ([`app/(admin)/admin/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/%28admin%29/admin/page.tsx)):**
    - **Tombol Hapus Tema (Merah):** Dipindahkan ke dalam modal **Edit Tema** (dilengkapi konfirmasi `window.confirm`) demi keamanan dari salah klik.
    - **Tombol Toggle Aktif/Nonaktif:** Diposisikan di luar kartu tema (toolbar bawah kartu showroom) dengan indikator visual hijau/abu-abu dan *optimistic state update* (tanpa memicu reload 8-query berat `loadOverviewData()`).
    - **Badge Status Kiri Atas:** Dibuat murni visual (`pointer-events-none`) agar tidak menjadi tombol ganda.
@@ -44,22 +44,22 @@
 
 | Berkas | Status & Fakta Perubahan |
 |---|---|
-| [`prisma/schema.prisma`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/prisma/schema.prisma) | Menambahkan `defaultMusicUrl String? @map("default_music_url")` pada model `Theme` dan default category `"minimalist"`. |
-| [`lib/prisma.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/lib/prisma.ts) | Menghapus hack `_runtimeDataModel` dan `isStale`; kembali ke kanonikal Next.js singleton. |
-| [`app/(admin)/admin/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/%28admin%29/admin/page.tsx) | Tombol toggle di luar kartu, tombol hapus di dalam modal edit, dropdown musik dari pustaka, penghapusan 18 palet studio. |
-| [`app/api/admin/themes/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/admin/themes/route.ts) | Dukungan `defaultMusicUrl` pada POST/PUT, penghapusan 90+ blocking `fs.existsSync`, cleanup `theme_demo_${id}` pada DELETE. |
-| [`app/api/client/invitations/create/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/invitations/create/route.ts) | Pewarisan `defaultMusicUrl` tema ke undangan baru & penanganan ganti tema pada draft lama (`isThemeChanged`). |
-| [`app/api/client/invitations/[id]/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/invitations/%5Bid%5D/route.ts) | Non-blocking draft plate unlink: `await fs.unlink(draftPath).catch(() => {})`. |
-| [`app/api/public/themes/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/public/themes/route.ts) | Hapus blocking `fs.existsSync`, selaraskan series/isPremium kategori `minimalist`. |
-| [`app/api/admin/overview/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/admin/overview/route.ts) | Hapus blocking `fs.existsSync` dan import yang tidak terpakai. |
-| [`lib/themeEngine.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/lib/themeEngine.ts) | Nonaktifkan injeksi token warna tema ke HTML, prioritaskan `theme.defaultMusicUrl` pada fallback audio player. |
-| [`lib/renderTemplate.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/lib/renderTemplate.ts) | Hapus listener `LUX_PALETTE_CHANGED` dari client scripts. |
-| [`lib/demoRegistry.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/lib/demoRegistry.ts) | Kategori & series diselaraskan ke `"minimalist"` untuk 4 tema utama. |
-| [`app/portfolio/PortfolioGallery.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/portfolio/PortfolioGallery.tsx) | Union type bersih: `"minimalist" \| "traditional" \| "modern" \| string`. |
-| [`lib/colorPalettes.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/lib/colorPalettes.ts) | File palet dinamis usang dihapus permanen (0 caller / zero dead code). |
-| [`themes/starter-blueprint.html`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/themes/starter-blueprint.html) & 6 Tema Master | Token `{{colorPrimary}}` dll. diganti dengan nilai hex CSS mandiri. |
-| [`docs/SYSTEM_ARCHITECTURE.md`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/SYSTEM_ARCHITECTURE.md) | Sinkronisasi dokumen arsitektur: *Theme-Locked Palette*, *Minimalist Series*, & *Theme Default Music*. |
-| [`docs/S-Invitation.md`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/S-Invitation.md) | Sinkronisasi spesifikasi modul: eliminasi filter dan terminologi premium ke minimalist. |
+| [`prisma/schema.prisma`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/prisma/schema.prisma) | Menambahkan `defaultMusicUrl String? @map("default_music_url")` pada model `Theme` dan default category `"minimalist"`. |
+| [`lib/prisma.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/lib/prisma.ts) | Menghapus hack `_runtimeDataModel` dan `isStale`; kembali ke kanonikal Next.js singleton. |
+| [`app/(admin)/admin/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/%28admin%29/admin/page.tsx) | Tombol toggle di luar kartu, tombol hapus di dalam modal edit, dropdown musik dari pustaka, penghapusan 18 palet studio. |
+| [`app/api/admin/themes/route.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/api/admin/themes/route.ts) | Dukungan `defaultMusicUrl` pada POST/PUT, penghapusan 90+ blocking `fs.existsSync`, cleanup `theme_demo_${id}` pada DELETE. |
+| [`app/api/client/invitations/create/route.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/invitations/create/route.ts) | Pewarisan `defaultMusicUrl` tema ke undangan baru & penanganan ganti tema pada draft lama (`isThemeChanged`). |
+| [`app/api/client/invitations/[id]/route.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/invitations/%5Bid%5D/route.ts) | Non-blocking draft plate unlink: `await fs.unlink(draftPath).catch(() => {})`. |
+| [`app/api/public/themes/route.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/api/public/themes/route.ts) | Hapus blocking `fs.existsSync`, selaraskan series/isPremium kategori `minimalist`. |
+| [`app/api/admin/overview/route.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/api/admin/overview/route.ts) | Hapus blocking `fs.existsSync` dan import yang tidak terpakai. |
+| [`lib/themeEngine.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/lib/themeEngine.ts) | Nonaktifkan injeksi token warna tema ke HTML, prioritaskan `theme.defaultMusicUrl` pada fallback audio player. |
+| [`lib/renderTemplate.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/lib/renderTemplate.ts) | Hapus listener `LUX_PALETTE_CHANGED` dari client scripts. |
+| [`lib/demoRegistry.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/lib/demoRegistry.ts) | Kategori & series diselaraskan ke `"minimalist"` untuk 4 tema utama. |
+| [`app/portfolio/PortfolioGallery.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/portfolio/PortfolioGallery.tsx) | Union type bersih: `"minimalist" \| "traditional" \| "modern" \| string`. |
+| [`lib/colorPalettes.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/lib/colorPalettes.ts) | File palet dinamis usang dihapus permanen (0 caller / zero dead code). |
+| [`themes/starter-blueprint.html`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/themes/starter-blueprint.html) & 6 Tema Master | Token `{{colorPrimary}}` dll. diganti dengan nilai hex CSS mandiri. |
+| [`docs/SYSTEM_ARCHITECTURE.md`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/SYSTEM_ARCHITECTURE.md) | Sinkronisasi dokumen arsitektur: *Theme-Locked Palette*, *Minimalist Series*, & *Theme Default Music*. |
+| [`docs/S-Invitation.md`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/S-Invitation.md) | Sinkronisasi spesifikasi modul: eliminasi filter dan terminologi premium ke minimalist. |
 
 ---
 

@@ -20,25 +20,64 @@ Sistem undangan platform **Luxenary Invite** menggunakan arsitektur **100% Nativ
 
 ---
 
-## 1.1. Inventaris Faktual 39 Tema Platform (Multi-Event)
+## 1.1. Inventaris Faktual 54 Tema Platform (Multi-Event)
 
-Saat ini platform memiliki **39 tema fisik mandiri** yang terdaftar di database dan disk, mencakup 6 jenis acara:
+Saat ini platform memiliki **54 tema fisik mandiri** yang terdaftar di database dan disk, mencakup 6 jenis acara (`THEME_MAP` di [`lib/renderTemplate.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/lib/renderTemplate.ts)):
 
 | Jenis Acara (`eventType`) | Total Tema | Daftar Tema Aktif di Disk & Database |
 |:---|:---:|:---|
 | **WEDDING** | **33 Tema** | • **Minimalist (6):** `aeterna`, `artisan`, `aurelia`, `kalandra`, `valente`, `verona`<br>• **Modern (12):** `ameera`, `badrika`, `burgundy-royale`, `candani`, `chronicle`, `lumina`, `mayang`, `papercut`, `solaria`, `starlit-dreams`, `vintage-forest`, `wave`<br>• **Traditional (15):** `bone`, `bugis`, `bulukumba`, `dillalucky`, `gowa`, `lagaligo`, `makale`, `makassar`, `maros`, `prameswari`, `rantepao`, `soppeng`, `takalar`, `toraja`, `wajo` |
-| **BIRTHDAY** | **2 Tema** | • `kalandra-birthday` (Minimalist)<br>• `festivo` (Modern) |
-| **KHITAN** | **1 Tema** | • `al-fariz` (Traditional) |
-| **AQIQAH** | **1 Tema** | • `al-khalid` (Minimalist) |
-| **WISUDA** | **1 Tema** | • `cendekia` (Modern) |
-| **GATHERING** | **1 Tema** | • `sinergi` (Modern) |
-| **TOTAL** | **39 Tema** | **Tersinkronisasi 100% via `npm run themes:sync`** |
+| **BIRTHDAY** | **5 Tema** | • **Minimalist (2):** `gala`, `kalandra-birthday`<br>• **Modern (3):** `balonku`, `festivo`, `riang` |
+| **KHITAN** | **4 Tema** | • **Minimalist (1):** `sakinah`<br>• **Traditional (3):** `al-fariz`, `fajar`, `nur` |
+| **AQIQAH** | **4 Tema** | • **Minimalist (3):** `al-khalid`, `buaian`, `mungil`<br>• **Traditional (1):** `barakah` |
+| **WISUDA** | **4 Tema** | • **Minimalist (1):** `akademia`<br>• **Modern (3):** `cendekia`, `laurel`, `toga` |
+| **GATHERING** | **4 Tema** | • **Minimalist (1):** `temu`<br>• **Modern (3):** `forum`, `prakarsa`, `sinergi` |
+| **TOTAL** | **54 Tema** | **Tersinkronisasi 100% via `npm run themes:sync` & `THEME_MAP`** |
 
 ### Sistem Thumbnail Ganda Beresolusi Tinggi (Retina DevTools)
 Setiap tema di direktori `public/demo/{themeId}/` wajib dilengkapi oleh dua berkas thumbnail WebP kompresi tajam:
 1. `thumbnail_mobile.webp`: Resolusi **400 × 800 px** (emulasi viewport smartphone, rasio 1:2).
 2. `thumbnail_desktop.webp`: Resolusi **1280 × 800 px** (emulasi viewport layar desktop/laptop, rasio 16:10).
-- Skrip generator otomatis: `npm run generate:thumbnails` ([`scripts/generate-all-thumbnails.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/scripts/generate-all-thumbnails.ts)) memanfaatkan Chrome DevTools Protocol (CDP) headless native screenshot.
+- Skrip generator otomatis: `npm run generate:thumbnails` ([`scripts/generate-all-thumbnails.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/scripts/generate-all-thumbnails.ts)) memanfaatkan Chrome DevTools Protocol (CDP) headless native screenshot. Selain itu, sistem dilengkapi *Background Thumbnail Worker* ([`scripts/theme-thumbnail-worker.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/scripts/theme-thumbnail-worker.ts) & [`lib/themeThumbnailJob.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/lib/themeThumbnailJob.ts)) yang otomatis memotret thumbnail saat tema builder diterbitkan.
+
+---
+
+## 1.2. Theme Builder Admin (`/admin/theme-builder`) & Unlimited 3.0
+
+Selain mengunggah file template fisik `.html`, Admin memiliki instrumen visual **Theme Builder Admin** untuk merancang tema baru dari canvas interaktif:
+
+### 1. Proteksi Mutlak Master Bawaan Handcrafted (Anti-Overwrite Protection)
+- Tema master fisik tulisan tangan (`builderSpec === null`) **DILINDUNGI MUTLAK** dari penimpaan berkas fisik blueprint:
+  - Pemanggilan `GET /api/admin/theme-builder?id=<handcrafted_id>` secara tegas ditolak dengan **HTTP 409 Conflict** (`code: "HANDCRAFTED"`).
+  - Pada kartu tema di panel admin, tema handcrafted menampilkan tombol **"Clone to Builder"** (`/admin/theme-builder?from=<id>`).
+  - Fitur **Clone to Builder** membaca palet, huruf, tekstur, ornamen, dan bingkai dari tema master lama via [`lib/themeBuilder/legacySeed.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/lib/themeBuilder/legacySeed.ts), lalu membentuk draf tema baru yang independen tanpa memodifikasi berkas aslinya.
+- Tema buatan Theme Builder (`builderSpec !== null`) menampilkan tombol **"Builder"** (`/admin/theme-builder?id=<id>`) dan dapat diedit langsung di kanvas studio.
+
+### 2. Peralatan Studio Theme Builder Unlimited 3.0
+- **11 Kontrol Editorial & Mikro-Tipografi Blok (`BlockProps`):**
+  - Opasitas (10%–100%), perataan teks (`left`/`center`/`right`), letter-spacing (0–12px), batas lebar maksimal (180–600px).
+  - Filter foto editorial (`none`, `grayscale`, `sepia`, `warm`, `dramatic`) yang terisolasi pada tag `img`.
+  - Pemilihan peran font (`heading`, `body`, `script`) atau font spesifik lokal/Google Font (`g:<Family>`) yang di-bundle otomatis.
+  - Kapitalisasi (`uppercase`/`capitalize`/`lowercase`), miring (`italic`), ketebalan (`300`/`400`/`600`/`700`), dan tinggi baris/line-height (`0.85`–`2.2`).
+  - Pemilihan warna teks berbasis token palet dinamis (`var(--primary)`, `var(--accent)`, dll.).
+- **Salin / Tempel Gaya Blok & 1-Klik "Samakan ke Semua Serupa" (`peerBlocksForRole`):** Menyalin tipografi dari satu blok dan menyamakan gayanya ke seluruh blok sejenis dalam 1 klik.
+- **Cermin Vertikal Ornamen (`flipY`) & Otomasi 4 Sudut:**
+  - Cermin atas-bawah (`scaleY(-1)`) melengkapi cermin kiri-kanan (`scaleX(-1)`).
+  - Tombol **"Pasang ke 4 Sudut Seksi"** (`fillFourCornersOrnament`) menggandakan ornamen sudut secara simetris ke 4 sudut seksi.
+  - Fitur **"Salin Ornamen Seksi Ini ke Semua Seksi Isi"** (`copySectionOrnamentsToAllFlow`).
+- **Varian Desain Modular Global:**
+  - Sistem Navigasi: `dock`, `drawer` (tombol menu kapsul melayang yang membuka laci samping), `none`.
+  - Kartu Tamu Sampul: `box`, `pill`, `underline`, `hidden`.
+  - Format Tanggal Sampul: `inline`, `split` (`DD / MM • YYYY`).
+  - Tata Letak Mempelai: `stacked`, `side`, `arch`, `portrait`, `polaroid`, `editorial` (majalah zig-zag), `backdrop`.
+  - Garis Pemisah: `line`, `none`, `ornate`, `gradient`.
+  - Gaya Tombol Global: `solid`, `outline`, `glass`, `minimal`.
+  - Permukaan Kartu Global: `solid`, `glass`, `outlined`, `flat`.
+  - Kerapatan Vertikal Antar-Seksi: `normal`, `compact`, `airy`.
+  - Slider Opasitas Tekstur Latar (`textureOpacity` 10%–100%) dan Gelap Lapisan Foto (`scrimOpacity` 10%–90%).
+- **Audit Otomatis & Riwayat Versi:**
+  - Setiap kompilasi tema master divalidasi oleh [`lib/themeBuilder/audit.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/lib/themeBuilder/audit.ts) (0 hex statis di luar `:root`, integritas blok token).
+  - Setiap kali disimpan, riwayat versi dicatat di tabel `theme_builder_revisions` (maks 30 versi) dan dapat dipulihkan kapan saja.
 
 ---
 
@@ -134,7 +173,7 @@ Tema yang dipakai undangan tidak dapat dihapus lewat panel (lihat penjagaan di a
 * **Status:** **100% Aman & Terlindungi.**
 * Saat pertama kali klien membuka studio undangan, sistem menyalin (*forking*) kode dari master template ke dalam file draft mandiri klien di `data/drafts/{invitationId}.html`.
 * Ketika Admin menghapus master tema di `themes/`, file piring draft klien **tidak tersentuh**.
-* Sistem renderer ([`lib/renderTemplate.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/lib/renderTemplate.ts)) selalu memprioritaskan piring draft fisik milik klien sebelum mencari file master.
+* Sistem renderer ([`lib/renderTemplate.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/lib/renderTemplate.ts)) selalu memprioritaskan piring draft fisik milik klien sebelum mencari file master.
 * Klien tetap dapat melakukan preview, mengubah teks, mengunggah foto, dan mem-publish undangan mereka tanpa hambatan (*zero breaking change*).
 
 #### Skenario B: Piring Draft Belum Terbentuk / Klien Baru Memilih Tema
@@ -152,7 +191,7 @@ Tema yang dipakai undangan tidak dapat dihapus lewat panel (lihat penjagaan di a
 
 #### Skenario C: Klien Mengganti Tema di Dashboard
 * Jika klien menyadari tema lama tidak lagi diinginkan atau telah dihapus, klien dapat memilih tema baru di Dashboard Setup atau Pengaturan Tema.
-* Endpoint API Klien ([`app/api/client/invitations/[id]/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/invitations/[id]/route.ts)) akan secara otomatis:
+* Endpoint API Klien ([`app/api/client/invitations/[id]/route.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/invitations/[id]/route.ts)) akan secara otomatis:
   1. Menghapus piring draft lama di `data/drafts/{invitationId}.html` (`fs.unlink`).
   2. Mengganti `themeId` di database dengan ID tema baru yang dipilih.
   3. Menyalin master tema baru ke piring draft saat klien kembali membuka halaman studio.

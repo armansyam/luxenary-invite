@@ -20,7 +20,7 @@ Diperbarui 29 Oktober 2026. Status setiap alur sebelum rilis produksi pertama, b
 | Email (notifikasi, uji SMTP) | SMTP sink lokal | Lulus; penyedia SMTP sungguhan belum |
 | Kompresi video dan musik | ffmpeg 9.0.2 | Lulus |
 | Tampilan klien dan admin | Peramban di 320, 375, dan 1440 px | Lulus, tanpa gulir horizontal |
-| Unit dan integrasi | `npx vitest run` pada `luxenary_test` | 123 berkas, 1287 tes lulus |
+| Unit dan integrasi | `npx vitest run` pada `luxenary_test` | 136 berkas, 1500+ tes lulus (termasuk 9 berkas uji Theme Builder Unlimited 3.0) |
 | Tipe dan lint | `npx tsc --noEmit`, `npx eslint` | Exit 0 |
 | Skrip audit (`hygiene`, `security`, `stress`, `themes`, `nas`, dan lainnya) | Rangkaian skrip `scripts/` | 13 dari 14 lulus. `integrity` gagal hanya karena tema uji lokal `uji-builder-lengkap` (tidak ikut git, tanpa thumbnail) |
 

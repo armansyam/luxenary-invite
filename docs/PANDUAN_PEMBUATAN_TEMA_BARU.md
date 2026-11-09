@@ -49,7 +49,7 @@ Setiap tema wajib mengikuti struktur responsif dua panel (*Split-Screen Desktop 
 
 ## 3. Kamus Token Placeholder Template
 
-Mesin render [lib/renderTemplate.ts](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/lib/renderTemplate.ts) secara otomatis menggantikan placeholder `{{token}}` dengan data riil dari database:
+Mesin render [lib/renderTemplate.ts](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/lib/renderTemplate.ts) secara otomatis menggantikan placeholder `{{token}}` dengan data riil dari database:
 
 ### A. Token Profil Pernikahan (Wedding)
 - `{{groomName}}`: Nama lengkap mempelai pria.

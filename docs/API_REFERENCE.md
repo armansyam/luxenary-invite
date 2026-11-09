@@ -153,6 +153,18 @@ Memerlukan autentikasi admin (`role: ADMIN` atau `SUPER_ADMIN`):
 | | `POST` | `/api/admin/themes/sync` | Sinkronisasi master tema fisik di disk ke database, auto-compile static demo, dan auto-purge Cloudflare edge cache. Tema tanpa berkas yang masih dipakai undangan dipertahankan (`retainedWithoutFile`); sisanya dihapus (`purgedCount`). |
 | | `POST` | `/api/admin/themes/{id}/demo-asset` | Mengunggah thumbnail cover atau video demo tema resmi. |
 | | `POST` | `/api/admin/themes/{id}/demo-data` | Menyimpan custom mock dataset untuk rendering preview demo statis tema tertentu. |
+| **Theme Builder** | `GET` | `/api/admin/theme-builder?id={id}` | Membaca spesifikasi builder tema (`Theme.builderSpec`). Tema handcrafted ditolak dengan HTTP 409 (`code: "HANDCRAFTED"`). |
+| | `GET` | `/api/admin/theme-builder?from={id}` | Mengekstrak palet, huruf, tekstur, ornamen, dan bingkai dari master fisik bawaan untuk draf baru (Clone to Builder). |
+| | `GET` | `/api/admin/theme-builder?legacy=1` | Daftar tema master bawaan yang dapat disalin menjadi draf builder baru (filter opsional: `eventType`). |
+| | `POST` | `/api/admin/theme-builder` | Membuat draf tema builder baru: menulis berkas master fisik di `themes/`, baris di `themes`, dan revisi awal di `theme_builder_revisions`. |
+| | `PUT` | `/api/admin/theme-builder` | Menyimpan spesifikasi builder, mengompilasi master fisik, mencatat revisi baru (maks. 30 per tema), dan memperbarui demo katalog jika aktif. |
+| | `POST` | `/api/admin/theme-builder/preview` | Merender pratinjau tema builder on-the-fly (`persona: demo|client`) tanpa menulis berkas fisik. |
+| | `POST` | `/api/admin/theme-builder/publish` | Memvalidasi audit master (`auditBuilderMaster`) dan mengaktifkan tema di katalog publik (`isActive: true`). |
+| | `GET` | `/api/admin/theme-builder/revisions?id={id}` | Mengambil daftar riwayat revisi draf tema yang tersimpan di `theme_builder_revisions`. |
+| | `POST` | `/api/admin/theme-builder/restore-revision` | Memulihkan spesifikasi tema ke titik snapshot revisi tertentu. |
+| | `GET` / `POST` | `/api/admin/theme-builder/fonts` | Membaca katalog Google Fonts atau mengunduh & meng-cache berkas font `.woff2` secara lokal di server. |
+| | `GET` | `/api/admin/theme-builder/frame-window` | Memindai dan mengukur lubang transparan poligon jendela bingkai foto dari pustaka ornamen. |
+| | `POST` / `DELETE` | `/api/admin/theme-builder/assets` | Mengunggah ornamen/tekstur baru ke pustaka (PNG dikonversi ke WebP) atau menghapus aset yang tidak sedang digunakan tema. |
 | **Pustaka Musik**| `GET` / `POST` | `/api/admin/music` | Mengambil katalog musik latar dan mengunggah berkas audio MP3/OGG resmi. |
 | | `PUT` / `DELETE` | `/api/admin/music/{id}` | Memperbarui metadata lagu atau menghapus berkas musik dari disk dan database. |
 | **Portfolio** | `GET` / `POST` | `/api/admin/portfolio` | Mengelola katalog showcase etalase publik (kloning mandiri aset & HTML undangan terpilih). `GET` → `{ portfolios, candidates }`; `candidates` = seluruh undangan `PUBLISHED` (id, status, invitationSlug, eventType, participantsJson). |
