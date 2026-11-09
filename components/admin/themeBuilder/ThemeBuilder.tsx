@@ -176,7 +176,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
   }, []);
 
   useEffect(() => {
-    const check = () => setWideEnough(window.innerWidth >= 1100);
+    const check = () => setWideEnough(window.innerWidth >= 1024);
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
@@ -926,7 +926,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
       <div className="flex min-h-screen items-center justify-center bg-stone-100 p-6 text-center">
         <div className="max-w-sm rounded-2xl bg-white p-6 shadow-sm ring-1 ring-stone-200">
           <p className="text-sm font-bold text-stone-900">Theme Builder butuh layar lebar</p>
-          <p className="mt-2 text-[13px] leading-relaxed text-stone-600">Buka dari laptop atau komputer dengan lebar layar minimal 1100 px. Pratinjau HP tetap tersedia di dalam builder.</p>
+          <p className="mt-2 text-[13px] leading-relaxed text-stone-600">Buka dari laptop, komputer, atau tablet dalam posisi mendatar dengan lebar layar minimal 1024 px. Pratinjau HP tetap tersedia di dalam builder.</p>
           <a href="/admin?tab=themes" className="mt-4 inline-block rounded-xl bg-stone-900 px-4 py-2 text-xs font-semibold text-white">Kembali ke katalog tema</a>
         </div>
       </div>
@@ -966,7 +966,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
           style={{ left: ghost.x, top: ghost.y }}
         />
       )}
-      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-stone-200 bg-white px-3">
+      <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-stone-200 bg-white px-3 py-2 xl:h-14 xl:flex-nowrap xl:py-0">
         <button type="button" onClick={leave} className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-stone-600 hover:bg-stone-100 cursor-pointer">
           <Icon d="M15 18l-6-6 6-6" />
           Katalog
@@ -978,7 +978,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
             onChange={(e) => setMeta((m) => ({ ...m, name: e.target.value }))}
             placeholder="Tema tanpa nama"
             maxLength={60}
-            className="w-56 truncate rounded-lg border border-transparent bg-transparent px-2 py-1 text-sm font-bold text-stone-900 outline-none hover:border-stone-200 focus:border-amber-500"
+            className="w-36 truncate rounded-lg border xl:w-56 border-transparent bg-transparent px-2 py-1 text-sm font-bold text-stone-900 outline-none hover:border-stone-200 focus:border-amber-500"
           />
           <span className="flex items-center gap-1.5 rounded-full bg-stone-100 px-2.5 py-1 text-[10.5px] font-semibold text-stone-600">
             <span className={`h-1.5 w-1.5 rounded-full ${isNew ? "bg-stone-400" : isActive ? "bg-emerald-500" : "bg-amber-500"}`} />
@@ -1031,17 +1031,19 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
           {dirty && !isNew && <span className="text-[11px] text-stone-400">Ada perubahan</span>}
         </div>
 
-        <div className="mx-auto flex items-center gap-1.5">
+        <div className="mx-auto flex shrink-0 items-center gap-1.5">
           <div className="flex items-center rounded-xl bg-stone-100 p-1">
             {(Object.keys(DEVICE_SIZES) as PreviewDevice[]).map((d) => (
               <button
                 key={d}
                 type="button"
                 onClick={() => { setDevice(d); if (d !== "desktop" && viewSection === "sidebar") focusSection("cover"); }}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11.5px] font-semibold transition cursor-pointer ${device === d ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"}`}
+                title={DEVICE_SIZES[d].label}
+                aria-label={DEVICE_SIZES[d].label}
+                className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 xl:px-3 text-[11.5px] font-semibold transition cursor-pointer ${device === d ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"}`}
               >
                 <Icon d={d === "desktop" ? "M3 5h18v11H3zM8 20h8M12 16v4" : "M8 3h8a1 1 0 011 1v16a1 1 0 01-1 1H8a1 1 0 01-1-1V4a1 1 0 011-1zM11 18h2"} className="h-3.5 w-3.5" />
-                {DEVICE_SIZES[d].label}
+                <span className="hidden xl:inline">{DEVICE_SIZES[d].label}</span>
               </button>
             ))}
           </div>
@@ -1057,7 +1059,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
           )}
         </div>
 
-        <div className="flex items-center rounded-xl bg-stone-100 p-1" title="Contoh demo memakai foto dan data contoh; Klien baru meniru undangan yang belum diunggah apa pun">
+        <div className="flex shrink-0 items-center rounded-xl bg-stone-100 p-1" title="Contoh demo memakai foto dan data contoh; Klien baru meniru undangan yang belum diunggah apa pun">
           {([["demo", "Contoh demo"], ["client", "Klien baru"]] as const).map(([mode, label]) => (
             <button
               key={mode}
@@ -1071,7 +1073,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
           ))}
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           {dirty && (
             <button
               type="button"
@@ -1115,7 +1117,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
           ))}
         </nav>
 
-        <aside className="w-[340px] shrink-0 overflow-y-auto border-r border-stone-200 bg-white">
+        <aside className="w-[300px] shrink-0 overflow-y-auto border-r border-stone-200 bg-white xl:w-[340px]">
           <div className="sticky top-0 z-10 border-b border-stone-200 bg-white/95 px-5 py-3 backdrop-blur">
             <h2 className="text-sm font-bold text-stone-900">{PANEL_TABS.find((t) => t.id === panel)?.label}</h2>
           </div>
@@ -1210,7 +1212,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
           />
         </main>
 
-        <aside className="w-[290px] shrink-0 border-l border-stone-200 bg-white">
+        <aside className="w-[260px] shrink-0 border-l border-stone-200 bg-white xl:w-[290px]">
           {selected ? (
             <OrnamentInspector
               ornament={selected}

@@ -4,8 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useFeedback } from "@/components/ui/Feedback";
 import { GoogleFontPicker } from "@/components/admin/themeBuilder/GoogleFontPicker";
-import { FONT_OPTIONS, fontLabel, isGoogleFontId } from "@/lib/themeBuilder/spec";
-import { overrideCssFromTokens, type MasterFontToken, type MasterOverrides } from "@/lib/themeVariantCss";
+import { FONT_OPTIONS, PALETTE_PRESETS, fontLabel, isGoogleFontId } from "@/lib/themeBuilder/spec";
+import { overrideCssFromTokens, recolorWithPalette, type ColorUsage, type ColorUsageKind, type MasterFontToken, type MasterOverrides } from "@/lib/themeVariantCss";
+import { measureText, newlyUnreadable, type TextSample } from "@/components/admin/variantReadability";
 
 interface ColorGroup {
   value: string;
@@ -34,6 +35,15 @@ function groupLabel(names: string[]): string {
 
 const emptyOverrides = (): MasterOverrides => ({ colors: {}, fonts: {} });
 
+const USAGE_LABELS: Array<[ColorUsageKind, string]> = [["bg", "Latar"], ["text", "Teks"], ["line", "Garis"], ["shadow", "Bayangan"], ["icon", "Ikon"]];
+
+function groupUsage(names: string[], usage: Record<string, ColorUsage>): { total: number; parts: Array<[string, number]> } {
+  const sum: ColorUsage = { bg: 0, text: 0, line: 0, shadow: 0, icon: 0 };
+  for (const n of names) for (const [k] of USAGE_LABELS) sum[k] += usage[n]?.[k] ?? 0;
+  const parts = USAGE_LABELS.filter(([k]) => sum[k] > 0).sort((a, b) => sum[b[0]] - sum[a[0]]).map(([k, label]) => [label, sum[k]] as [string, number]);
+  return { total: parts.reduce((a, [, n]) => a + n, 0), parts };
+}
+
 /**
  * Editor Varian Tema: warna (per kelompok nilai asli) dan huruf (per keluarga) master tulisan tangan. Pratinjau memakai
  * render server sekali, lalu override ditulis langsung ke `<style id="lux-master-overrides">` di iframe.
@@ -54,6 +64,9 @@ export default function ThemeVariantEditor({ parentId, variantId }: { parentId: 
   const [device, setDevice] = useState<(typeof DEVICES)[number]["id"]>("mobile");
   const [busy, setBusy] = useState(false);
   const [pickerFor, setPickerFor] = useState<string | null>(null);
+  const [usage, setUsage] = useState<Record<string, ColorUsage>>({});
+  const [showUnused, setShowUnused] = useState(false);
+  const [unreadable, setUnreadable] = useState<TextSample[]>([]);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const [stageWidth, setStageWidth] = useState(800);
@@ -73,6 +86,7 @@ export default function ThemeVariantEditor({ parentId, variantId }: { parentId: 
       setParent(data.parent);
       setGroups(data.colorGroups);
       setFontTokens(data.fonts);
+      setUsage(data.usage ?? {});
       const loaded: LoadedVariant | null = data.variant ?? null;
       setVariant(loaded);
       const n = loaded?.name ?? `${data.parent.name} Varian`;
@@ -124,6 +138,58 @@ export default function ThemeVariantEditor({ parentId, variantId }: { parentId: 
   }, [overrides, fontTokens]);
 
   useEffect(() => { applyToPreview(); }, [applyToPreview]);
+
+  // Keterbacaan diukur dari pratinjau pada saat yang sama: tanpa override (master asli) lalu dengan override, sehingga
+  // animasi atau skrip master yang mengubah tampilan di antara dua pengukuran tidak menghasilkan laporan palsu. Hanya
+  // teks yang menjadi sulit dibaca karena varian yang dilaporkan.
+  const checkReadability = useCallback(() => {
+    const doc = iframeRef.current?.contentDocument;
+    const style = doc?.getElementById("lux-master-overrides");
+    if (!doc || !style) return;
+    // Transisi warna master membuat getComputedStyle mengembalikan nilai awal transisi, bukan nilai akhirnya.
+    const freeze = doc.createElement("style");
+    freeze.textContent = "*,*::before,*::after{transition:none!important}";
+    doc.head.appendChild(freeze);
+    const css = style.textContent;
+    style.textContent = "";
+    const before = measureText(doc);
+    style.textContent = css;
+    const after = measureText(doc);
+    freeze.remove();
+    setUnreadable(newlyUnreadable(before, after));
+  }, []);
+
+  useEffect(() => {
+    if (!previewHtml) return;
+    const t = setTimeout(checkReadability, 500);
+    return () => clearTimeout(t);
+  }, [overrides, previewHtml, device, checkReadability]);
+
+  const showInPreview = (el: Element) => {
+    const highlight = () => {
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+      const target = el as HTMLElement;
+      const prev = target.style.outline;
+      target.style.outline = "2px dashed currentColor";
+      setTimeout(() => { target.style.outline = prev; }, 1600);
+    };
+    // Teks di luar sampul tertutup layar sampul sampai undangan dibuka; tombol buka master dipakai agar kunci gulir dan
+    // animasi buka master berjalan seperti pada undangan asli. Semua master menandai sampul terbuka dengan kelas `opened`.
+    const doc = el.ownerDocument;
+    const cover = doc.getElementById("coverScreen");
+    const open = cover?.querySelector<HTMLElement>('[onclick*="penInvitation("]');
+    if (cover && open && !cover.contains(el) && !cover.classList.contains("opened")) {
+      open.click();
+      setTimeout(highlight, 1200);
+    } else highlight();
+  };
+
+  const sortedGroups = useMemo(() => groups.map((g) => ({ g, use: groupUsage(g.names, usage) })).sort((a, b) => b.use.total - a.use.total), [groups, usage]);
+  const unusedCount = sortedGroups.filter((x) => x.use.total === 0).length;
+
+  const applyPalette = (palette: (typeof PALETTE_PRESETS)[number]["palette"]) => {
+    setOverrides((prev) => ({ ...prev, colors: recolorWithPalette(groups, palette) }));
+  };
 
   const fontFamilies = useMemo(() => {
     const byFamily = new Map<string, MasterFontToken[]>();
@@ -230,11 +296,11 @@ export default function ThemeVariantEditor({ parentId, variantId }: { parentId: 
 
   return (
     <div className="flex h-screen flex-col bg-stone-100">
-      <header className="flex items-center gap-3 border-b border-stone-200 bg-white px-4 py-2.5">
+      <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-stone-200 bg-white px-4 py-2.5">
         <a href="/admin?tab=themes" className="rounded-lg px-2 py-1 text-xs font-semibold text-stone-600 hover:bg-stone-100">← Katalog</a>
         <div className="min-w-0">
           <p className="text-[10.5px] font-semibold uppercase tracking-wider text-stone-500">Varian dari {parent?.name ?? "…"}</p>
-          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={80} placeholder="Nama varian" aria-label="Nama varian" className="w-64 rounded-md border border-transparent px-1 text-sm font-semibold text-stone-900 outline-none hover:border-stone-200 focus:border-amber-500" />
+          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={80} placeholder="Nama varian" aria-label="Nama varian" className="w-44 sm:w-64 rounded-md border border-transparent px-1 text-sm font-semibold text-stone-900 outline-none hover:border-stone-200 focus:border-amber-500" />
         </div>
         <span className={`ml-1 inline-flex items-center gap-1.5 text-[11px] font-medium ${variant?.isActive ? "text-emerald-700" : "text-stone-500"}`}>
           <span className={`h-1.5 w-1.5 rounded-full ${variant?.isActive ? "bg-emerald-500" : "bg-stone-400"}`} />
@@ -258,8 +324,8 @@ export default function ThemeVariantEditor({ parentId, variantId }: { parentId: 
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1">
-        <aside className="w-[380px] shrink-0 overflow-y-auto border-r border-stone-200 bg-white">
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        <aside className="max-h-[45vh] w-full shrink-0 overflow-y-auto border-b border-stone-200 bg-white md:max-h-none md:w-[340px] md:border-b-0 md:border-r lg:w-[380px]">
           <section className="border-b border-stone-200/80 px-5 py-4">
             <p className="text-[11.5px] leading-relaxed text-stone-600">
               Varian memakai tata letak, ornamen, dan teks master <b>{parent?.name}</b>; hanya warna dan huruf yang diganti. Master aslinya tidak diubah. Ornamen berupa gambar dan warna di dalam skrip tidak ikut berganti warna.
@@ -276,9 +342,44 @@ export default function ThemeVariantEditor({ parentId, variantId }: { parentId: 
 
           <section className="border-b border-stone-200/80 px-5 py-4">
             <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-stone-500">Warna</h3>
-            <p className="mt-1 text-[11px] text-stone-500">Setiap baris adalah satu warna asli master; mengubahnya mengganti semua tempat yang memakai warna itu.</p>
+            <p className="mt-1 text-[11px] text-stone-500">Setiap baris adalah satu warna asli master; mengubahnya mengganti semua tempat yang memakai warna itu. Urutan dari yang paling banyak dipakai.</p>
+
+            <div className="mt-3 rounded-xl border border-stone-200 p-3">
+              <p className="text-[11.5px] font-semibold text-stone-700">Warnai ulang dengan palet</p>
+              <p className="mt-0.5 text-[10.5px] leading-snug text-stone-500">Rona diambil dari palet, terang-gelap tiap warna asli dipertahankan agar kontras teks dan latar master tetap. Hasilnya bisa disetel ulang per baris.</p>
+              <div className="mt-2 grid grid-cols-2 gap-1.5">
+                {PALETTE_PRESETS.map((p) => (
+                  <button key={p.id} type="button" onClick={() => applyPalette(p.palette)} className="flex items-center gap-2 rounded-lg border border-stone-200 px-2 py-1.5 text-left text-[11px] font-medium text-stone-700 hover:border-stone-400 cursor-pointer">
+                    <span className="flex shrink-0 overflow-hidden rounded-md ring-1 ring-stone-900/10">
+                      {[p.palette.bgDark, p.palette.primary, p.palette.accent, p.palette.bgLight].map((c, i) => <span key={i} className="h-5 w-2.5" style={{ background: c }} />)}
+                    </span>
+                    <span className="truncate">{p.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {unreadable.length > 0 && (
+              <div role="status" className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3">
+                <p className="text-[11.5px] font-semibold text-red-800">{unreadable.length} teks menjadi sulit dibaca</p>
+                <p className="mt-0.5 text-[10.5px] leading-snug text-red-700">Kontrasnya di bawah batas WCAG AA setelah warna diganti, padahal di master asli terbaca. Klik untuk menunjukkan di pratinjau.</p>
+                <ul className="mt-2 space-y-1">
+                  {unreadable.slice(0, 8).map((s) => (
+                    <li key={s.key}>
+                      <button type="button" onClick={() => showInPreview(s.el)} className="flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left text-[11px] text-red-900 hover:bg-red-100 cursor-pointer">
+                        <span className="min-w-0 flex-1 truncate">&ldquo;{s.text}&rdquo;</span>
+                        <span className="shrink-0 font-mono text-[10.5px]">{s.ratio.toFixed(1)} / {s.min}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                {unreadable.length > 8 && <p className="mt-1 text-[10.5px] text-red-700">+{unreadable.length - 8} teks lain</p>}
+              </div>
+            )}
+            <button type="button" onClick={checkReadability} className="mt-2 text-[10.5px] font-semibold text-stone-500 hover:text-stone-800 hover:underline cursor-pointer">Periksa ulang keterbacaan bagian yang tampil</button>
+
             <div className="mt-3 space-y-1.5">
-              {groups.map((g) => {
+              {sortedGroups.filter((x) => showUnused || x.use.total > 0).map(({ g, use }) => {
                 const current = overrides.colors[g.names[0]] ?? g.value;
                 const changed = current !== g.value;
                 return (
@@ -288,7 +389,9 @@ export default function ThemeVariantEditor({ parentId, variantId }: { parentId: 
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[12px] font-semibold text-stone-800" title={g.names.join(", ")}>{groupLabel(g.names)}</span>
-                      <span className="block text-[10.5px] text-stone-500">asli <span className="font-mono">{g.value}</span> · {g.names.length} variabel</span>
+                      <span className="block truncate text-[10.5px] text-stone-500">
+                        {use.total > 0 ? use.parts.map(([label, n]) => `${label} ${n}`).join(" · ") : "Tidak dipakai di CSS master"} · asli <span className="font-mono">{g.value}</span>
+                      </span>
                     </span>
                     <input
                       value={current}
@@ -302,6 +405,11 @@ export default function ThemeVariantEditor({ parentId, variantId }: { parentId: 
                 );
               })}
             </div>
+            {unusedCount > 0 && (
+              <button type="button" onClick={() => setShowUnused((v) => !v)} className="mt-2 text-[11px] font-semibold text-amber-700 hover:underline cursor-pointer">
+                {showUnused ? "Sembunyikan" : "Tampilkan"} {unusedCount} warna yang tidak dipakai CSS master
+              </button>
+            )}
           </section>
 
           <section className="px-5 py-4">

@@ -128,6 +128,10 @@ menimpa variabel `:root` ini; warna atau huruf yang tertulis langsung tidak ikut
 - Setelah menambah master baru, jalankan `npx tsx scripts/tokenize-masters.ts` (laporan) lalu `--write`; tokenizer membuat
   variabel `--lux-c-<hex>` dan `--lux-font-*` untuk yang masih tertulis langsung. Warna di `<script>` dan atribut SVG
   `fill`/`stroke` tidak bisa memakai `var()` dan tidak ikut varian.
+- Buktikan tokenisasi atau perapian CSS master tidak mengubah tampilan: `npm run test:master-visual -- --theme=<id>`
+  (versi working tree dibandingkan dengan `HEAD`; `--ref=<commit>` untuk pembanding lain; butuh `DATABASE_URL` ke
+  `luxenary_test` dan Chrome lewat `CHROME_PATH`). Keluaran "SAMA" di 375 dan 1440 px berarti CSS terhitung setiap elemen
+  identik.
 
 ---
 

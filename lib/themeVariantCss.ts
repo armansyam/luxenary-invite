@@ -65,6 +65,90 @@ export function masterColorGroups(html: string): Array<{ value: string; names: s
   return [...groups].map(([value, names]) => ({ value, names }));
 }
 
+export type ColorUsageKind = "bg" | "text" | "line" | "shadow" | "icon";
+export type ColorUsage = Record<ColorUsageKind, number>;
+
+const USAGE_OF_PROPERTY = (prop: string): ColorUsageKind | null => {
+  if (prop.startsWith("background")) return "bg";
+  if (prop === "color" || prop === "caret-color" || prop === "text-decoration-color" || prop === "-webkit-text-fill-color") return "text";
+  if (prop.startsWith("border") || prop.startsWith("outline") || prop === "column-rule-color") return "line";
+  if (prop === "box-shadow" || prop === "text-shadow" || prop === "filter") return "shadow";
+  if (prop === "fill" || prop === "stroke" || prop === "stop-color") return "icon";
+  return null;
+};
+
+/**
+ * Berapa kali tiap variabel warna dipakai per jenis properti di CSS master (isi `<style>` dan atribut `style`, di luar
+ * :root). Editor varian memakainya untuk memberi label "Latar", "Teks", dan seterusnya, mengurutkan, dan menyembunyikan
+ * warna yang tidak dipakai.
+ */
+export function masterColorUsage(html: string): Record<string, ColorUsage> {
+  const usage: Record<string, ColorUsage> = {};
+  const css = [
+    ...[...html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)].map((m) => m[1]),
+    ...[...html.matchAll(/\sstyle="([^"]*)"/gi)].map((m) => m[1]),
+  ].join("\n").replace(/:root\s*\{[^}]*\}/g, "");
+  // Variabel lokal di selektor (`.kartu { --isi: var(--bg-card) }`) meneruskan pemakaiannya ke variabel sumber.
+  const aliases = new Map<string, Set<string>>();
+  const direct: Array<[ColorUsageKind, string]> = [];
+  for (const m of css.matchAll(/(--[\w-]+|[a-z-]+)\s*:\s*([^;{}]+)/gi)) {
+    const refs = [...m[2].matchAll(/var\(\s*(--[\w-]+)/g)].map((v) => v[1]);
+    if (m[1].startsWith("--")) {
+      const set = aliases.get(m[1]) ?? new Set<string>();
+      refs.forEach((r) => set.add(r));
+      aliases.set(m[1], set);
+      continue;
+    }
+    const kind = USAGE_OF_PROPERTY(m[1].toLowerCase());
+    if (kind) refs.forEach((r) => direct.push([kind, r]));
+  }
+  const credit = (name: string, kind: ColorUsageKind, depth: number) => {
+    const u = (usage[name] ??= { bg: 0, text: 0, line: 0, shadow: 0, icon: 0 });
+    u[kind]++;
+    if (depth < 4) aliases.get(name)?.forEach((src) => src !== name && credit(src, kind, depth + 1));
+  };
+  for (const [kind, name] of direct) credit(name, kind, 0);
+  return usage;
+}
+
+function hexToHsl(hex: string): [number, number, number] {
+  const n = parseInt(hex.slice(1), 16);
+  const r = ((n >> 16) & 255) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  if (max === min) return [0, 0, l];
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  const h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return [h * 60, s, l];
+}
+
+function hslToHex(h: number, s: number, l: number): string {
+  const k = (n: number) => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  return `#${[f(0), f(8), f(4)].map((x) => Math.round(Math.max(0, Math.min(1, x)) * 255).toString(16).padStart(2, "0")).join("")}`;
+}
+
+/**
+ * Pewarnaan ulang master dengan palet: terang-gelap (lightness) tiap warna asli dipertahankan sehingga hubungan kontras
+ * teks dan latar master tetap, sedangkan rona dan kepekatan diambil dari palet. Warna netral (abu, hampir tanpa rona)
+ * hanya diberi sedikit rona latar palet agar tidak berubah menjadi warna mencolok; warna berona mengikuti warna utama
+ * (gelap) atau aksen (terang).
+ */
+export function recolorWithPalette(groups: Array<{ value: string; names: string[] }>, palette: { primary: string; accent: string; bgDark: string; bgLight: string }): Record<string, string> {
+  const [bgH, bgS] = hexToHsl(palette.bgDark);
+  const [pH, pS] = hexToHsl(palette.primary);
+  const [aH, aS] = hexToHsl(palette.accent);
+  const colors: Record<string, string> = {};
+  for (const g of groups) {
+    const [, s, l] = hexToHsl(g.value);
+    const next = s < 0.12 ? hslToHex(bgH, Math.min(bgS, 0.18) * (1 - Math.abs(l - 0.5)), l) : l < 0.5 ? hslToHex(pH, Math.max(pS, s * 0.8), l) : hslToHex(aH, Math.max(aS, s * 0.8), l);
+    if (next !== g.value) for (const n of g.names) colors[n] = next;
+  }
+  return colors;
+}
+
 /** Masukan admin dicocokkan dengan variabel yang benar-benar ada di master induk; nilai yang sama dengan aslinya dibuang. */
 export function parseMasterOverrides(raw: unknown, parentHtml: string): { ok: true; value: MasterOverrides } | { ok: false; errors: string[] } {
   const errors: string[] = [];

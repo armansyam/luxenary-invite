@@ -30,6 +30,7 @@ import { ensureGoogleFont, FontError } from "@/lib/themeBuilder/fonts";
 import { googleFontFamilyName, isGoogleFontId } from "@/lib/themeBuilder/spec";
 import { recordBuilderAudit, slugifyThemeId, themeIdTaken } from "@/lib/themeBuilder/server";
 import { applyMasterOverrides, clearVariantCache, masterColorGroups, masterTokens, parseMasterOverrides, type MasterOverrides } from "@/lib/themeVariants";
+import { masterColorUsage } from "@/lib/themeVariantCss";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +49,7 @@ async function loadParent(parentId: string) {
 }
 
 function tokenPayload(html: string) {
-  return { colorGroups: masterColorGroups(html), fonts: masterTokens(html).fonts };
+  return { colorGroups: masterColorGroups(html), fonts: masterTokens(html).fonts, usage: masterColorUsage(html) };
 }
 
 /** Font Google pada override diunduh ke server sebelum dipakai, sama seperti font Theme Builder. */

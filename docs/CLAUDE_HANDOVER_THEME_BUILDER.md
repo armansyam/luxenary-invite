@@ -1,6 +1,6 @@
 # 📋 DOKUMEN SERAH TERIMA & LAPORAN EKSEKUSI TEKNIS (HANDOVER REPORT)
 **Topik:** Audit Komprehensif Sistem, Investigasi Akar Masalah Theme Builder vs Master Handcrafted, & Eksekusi Perbaikan Selesai  
-**Tanggal:** 9 November 2026  
+**Tanggal:** 9 November 2026 (diperbarui 10 November 2026: bagian 2F–2H, alat desain bebas builder dan Varian Tema)  
 **Status Eksekusi:** SELESAI & TERVERIFIKASI EMPIRIS (`npx tsc --noEmit` Exit 0, Vitest 50 Files / 622 Tests Passed)  
 **Dokumen Master Terkait:** `docs/SYSTEM_ARCHITECTURE.md`, `README.md`, `docs/S-Invitation.md`  
 
@@ -140,6 +140,30 @@ Untuk meningkatkan fleksibilitas tata letak mendekati kualitas tema editorial/ma
 
 ---
 
+### F. Alat Desain Bebas Theme Builder (10 Nov 2026 — commit `fed3f165`, `373b0e23`, `b686401f`)
+Rincian lengkap: `docs/SYSTEM_ARCHITECTURE.md` bagian 8.1 butir 14–16.
+1. **Latar per seksi (`spec.sectionStyles`)**: warna token, gradasi, gambar, dan nada terang/gelap per seksi; nada mengatur ulang variabel `--lux-*` agar eyebrow dan judul tetap terbaca.
+2. **Warna tambahan (`spec.paletteExtra`)** dan **permukaan kartu/tombol bebas (`spec.surfaces`)** dengan nilai dari token palet.
+3. **Seksi bebas (`spec.freeSections`)**: teks, foto, kartu, kutipan, galeri mini (`luxGalleryPhotoN`), tombol peta (`luxPrimaryMapUrl`), dan animasi sendiri. Teksnya dapat diisi klien di Studio ("Teks Seksi Tambahan Tema", `freeSectionTextsOf`, `GET /api/public/themes` mengirim `freeTexts`).
+4. **Struktur**: `countdownPlacement` (hitung mundur di dalam seksi Acara), `sectionNesting` (seksi menumpang di seksi lain, `NESTABLE_GUESTS`/`NESTING_HOSTS`), `desktopLayout`, `sectionAnimations`/`animationSpeed`, dan preset animasi tambahan (`drop`, `grow`, `flip`, `swing`, `slide-right`).
+5. **CSS kustom (`spec.customCss`)** divalidasi `customCssError` (maks. 8000 karakter; ditolak bila memuat `<`, `{{`, `@import`, `url(`, sintaks skrip lama, warna hex/rgb/hsl, atau kurung kurawal tidak seimbang).
+6. **Pratinjau desain langsung**: `lib/themeBuilder/designCss.ts` (murni) menghasilkan `<style id="lux-builder-design">` yang ditulis langsung ke iframe; `structuralKey` di `ThemeBuilder.tsx` mengecualikan kolom yang hanya CSS sehingga perubahan tersebut tidak memicu render ulang server.
+7. **5 template awal (`lib/themeBuilder/templates.ts`, `applyBuilderTemplate`)**.
+8. **Clone to Builder lebih dekat ke master**: `legacyStructure` membaca hitung mundur di seksi Acara, judul kapital, kanvas gelap dari luminans latar `body`, dan `paletteExtra` dengan cek kontras.
+9. `compile.ts` mencari batas `<section>` dengan `sectionRange` (seimbang, aman untuk seksi bersarang).
+
+### G. Varian Tema atas Master Tulisan Tangan (10 Nov 2026 — commit `709a4c5e`, `88b73a78`, dan alat bantu editor)
+Jawaban atas "master lama tidak bisa diedit di builder": master tulisan tangan tetap tidak dibuka di builder (lihat bagian 1), tetapi warna dan hurufnya kini bisa diganti lewat **Varian Tema**. Rincian: `docs/SYSTEM_ARCHITECTURE.md` bagian 8.1 butir 17–19.
+1. **Fase 0 — tokenisasi**: seluruh 54 master memakai variabel `:root` (`--lux-c-<hex>`, `--lux-font-*`) lewat `lib/themeTokenize.ts` dan `scripts/tokenize-masters.ts` (idempoten). Master baru wajib mengikuti `docs/PANDUAN_PEMBUATAN_TEMA_BARU.md` bagian 4A.
+2. **Fase 1–3**: varian = baris `Theme` dengan `parentTheme` + `masterOverrides` (JSON), tanpa berkas master sendiri. `renderTemplateFile` memakai master induk dan menyisipkan `<style id="lux-master-overrides">` sebelum piring undangan dibekukan; data demo, teks, dan musik dari induk. Editor `/admin/theme-variants`, rute `/api/admin/theme-variants`, tombol **Buat Varian** / **Edit Varian** di katalog.
+3. **Alat bantu editor**: label pemakaian warna (`masterColorUsage`), warna tak terpakai disembunyikan, **Warnai ulang dengan palet** (`recolorWithPalette`, terang-gelap dipertahankan), cek keterbacaan dari pratinjau (`components/admin/variantReadability.ts`, hanya teks yang menjadi di bawah WCAG AA akibat varian).
+4. **Pembanding tampilan**: `scripts/verify-master-visual.ts` (`npm run test:master-visual`), wajib dijalankan setiap mengubah CSS master yang seharusnya tidak mengubah tampilan.
+5. **Batas yang diketahui**: ornamen berupa gambar, warna di dalam `<script>`, dan atribut SVG `fill`/`stroke` tidak ikut berganti warna. Klien belum bisa memilih varian warna sendiri di Studio; varian dipilih sebagai tema terpisah di katalog.
+
+### H. Layar Kecil (10 Nov 2026)
+- Theme Builder bisa dibuka mulai lebar 1024 px (sebelumnya 1100): panel kiri/kanan 300/260 px dan header dua baris di bawah 1280 px; di atas 1280 px tetap 340/290 px dan satu baris.
+- Editor varian tersusun bertumpuk di bawah 768 px.
+
 ## 📊 3. Bukti Verifikasi Empiris (Empirical Verification Proof)
 
 1. **TypeScript Static Typecheck (`npx tsc --noEmit`):**
@@ -163,4 +187,6 @@ Ketiga dokumen master arsitektur telah diperbarui secara sinkron (9 Nov 2026):
 1. `docs/SYSTEM_ARCHITECTURE.md` (Bagian 8.1 Butir 10, 11, 12, 13).
 2. `README.md` (Catatan Perubahan Theme Builder Unlimited 3.0 & Audit 9 Nov 2026).
 3. `docs/S-Invitation.md` (Spesifikasi Theme Builder Butir 58 & 59).
+
+Pembaruan 10 Nov 2026: `docs/SYSTEM_ARCHITECTURE.md` bagian 8.1 butir 14–19, `docs/S-Invitation.md` butir 60–65, `README.md` (catatan Tokenisasi, Varian Tema, dan alat bantu editor), `docs/PANDUAN_PEMBUATAN_TEMA_BARU.md` bagian 4A, `docs/admin/MANAJEMEN_TEMA_ADMIN.md`.
 
