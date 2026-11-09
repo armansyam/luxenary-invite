@@ -1060,6 +1060,8 @@ export default function EditInvitation() {
     if (savedSnapshot.bankList) {
       setBankList(JSON.parse(JSON.stringify(savedSnapshot.bankList)));
     }
+    // Sunting langsung mengubah DOM iframe pratinjau; state yang dikembalikan tidak menyentuh DOM itu, jadi iframe dimuat ulang.
+    setLiveIframeKey((k) => k + 1);
     feedback.notify("Seluruh perubahan berhasil diurungkan.", "success");
   };
 

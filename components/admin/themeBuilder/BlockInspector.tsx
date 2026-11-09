@@ -244,7 +244,7 @@ export default function BlockInspector({
                 <button
                   key={opt.id}
                   type="button"
-                  onClick={() => onVariantChange({ events: opt.id as any })}
+                  onClick={() => onVariantChange({ events: opt.id })}
                   className={`rounded-lg px-1.5 py-1.5 text-[10.5px] font-semibold transition cursor-pointer ${
                     (variants.events ?? "cards") === opt.id ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
                   }`}
@@ -271,7 +271,7 @@ export default function BlockInspector({
                 <button
                   key={opt.id}
                   type="button"
-                  onClick={() => onVariantChange({ story: opt.id as any })}
+                  onClick={() => onVariantChange({ story: opt.id })}
                   className={`rounded-lg px-1.5 py-1.5 text-[10.5px] font-semibold transition cursor-pointer ${
                     (variants.story ?? "timeline") === opt.id ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
                   }`}
@@ -473,15 +473,15 @@ export default function BlockInspector({
         <div>
           <span className="text-[11.5px] font-semibold text-stone-600">Perataan Teks</span>
           <div className="mt-1 grid grid-cols-3 gap-1 rounded-xl bg-stone-100 p-1">
-            {[
+            {([
               { id: "left", label: "Kiri" },
               { id: "center", label: "Tengah" },
               { id: "right", label: "Kanan" },
-            ].map((opt) => (
+            ] as const).map((opt) => (
               <button
                 key={opt.id}
                 type="button"
-                onClick={() => onChange({ align: props.align === opt.id ? undefined : (opt.id as any) }, true)}
+                onClick={() => onChange({ align: props.align === opt.id ? undefined : opt.id }, true)}
                 className={`rounded-lg px-1.5 py-1.5 text-[11px] font-semibold transition cursor-pointer ${
                   props.align === opt.id ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
                 }`}

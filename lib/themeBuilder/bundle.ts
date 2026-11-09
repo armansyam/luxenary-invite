@@ -38,9 +38,10 @@ export interface BuilderBundle {
   assets: Record<string, string>;
 }
 
-/** Nama berkas unggahan yang ditaut spesifikasi (tekstur, media bawaan, ornamen, dan ornamen bingkai). */
+/** Nama berkas unggahan yang ditaut spesifikasi (tekstur, media bawaan, ornamen, ornamen bingkai, dan gambar latar seksi). */
 export function uploadedAssetFiles(spec: BuilderSpec): string[] {
-  const urls = [spec.texture, ...Object.values(spec.defaultMedia), ...spec.ornaments.map((o) => o.src), ...Object.values(spec.frames).map((f) => f.ornament)];
+  const sectionImages = [...Object.values(spec.sectionStyles ?? {}), ...(spec.freeSections ?? []).map((f) => f.style)].map((s) => s?.image);
+  const urls = [spec.texture, ...Object.values(spec.defaultMedia), ...spec.ornaments.map((o) => o.src), ...Object.values(spec.frames).map((f) => f.ornament), ...sectionImages];
   const files = new Set<string>();
   for (const url of urls) {
     if (typeof url === "string" && url.startsWith(THEME_ASSET_URL_PREFIX)) files.add(url.slice(THEME_ASSET_URL_PREFIX.length));

@@ -24,13 +24,32 @@ import {
   googleFontIds,
   isGoogleFontId,
   paletteChecks,
+  CARD_SHADOWS,
+  DEFAULT_SECTION_IMAGE_OPACITY,
+  DEFAULT_SECTION_STYLE,
+  FREE_SECTION_IDS,
+  FREE_SECTION_LIMITS,
+  MAX_CUSTOM_CSS_LENGTH,
+  PALETTE_EXTRA_FIELDS,
+  SECTION_BG_TOKENS,
+  SECTION_GRADIENTS,
+  SECTION_IMAGE_OPACITY_LIMITS,
+  SECTION_TONES,
+  SURFACE_LIMITS,
+  customCssError,
+  isDefaultSectionStyle,
   type BuilderBlockId,
   type BuilderPalette,
   type BuilderSpec,
   type BuilderTextKey,
   type BuilderVariants,
+  type CardShadow,
+  type FreeSection,
+  type FreeSectionId,
   type OrderableSection,
   type OrnamentSection,
+  type SectionStyle,
+  type SurfaceStyle,
 } from "@/lib/themeBuilder/spec";
 import { GoogleFontPicker } from "@/components/admin/themeBuilder/GoogleFontPicker";
 
@@ -177,6 +196,193 @@ function BackdropUpload({ uploading, onUpload }: { uploading: boolean; onUpload:
   );
 }
 
+const rangeClass = "mt-1.5 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-stone-200 accent-amber-600";
+
+function RangeRow({ label, value, unit, min, max, step = 1, onChange, onReset }: { label: string; value: number | undefined; unit: string; min: number; max: number; step?: number; onChange: (v: number) => void; onReset?: () => void }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between text-[11.5px] font-semibold text-stone-700">
+        <span className="flex items-center gap-1.5">
+          {label}
+          {value !== undefined && onReset && (
+            <button type="button" onClick={onReset} className="rounded px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 hover:bg-amber-50 cursor-pointer">Ikut varian</button>
+          )}
+        </span>
+        <span className="font-mono text-[11px] text-stone-500">{value === undefined ? "varian" : `${value}${unit}`}</span>
+      </div>
+      <input type="range" min={min} max={max} step={step} value={value ?? min} onChange={(e) => onChange(Number(e.target.value))} className={rangeClass} aria-label={label} />
+    </div>
+  );
+}
+
+/** Warna contoh token latar seksi di panel, dihitung dari palet yang sama dengan :root master. */
+function sectionTokenSwatch(token: SectionStyle["bg"], palette: BuilderPalette, dark: boolean): string {
+  const canvas = dark ? palette.bgDark : palette.bgLight;
+  switch (token) {
+    case "light": return palette.bgLight;
+    case "dark": return palette.bgDark;
+    case "primary": return palette.primary;
+    case "secondary": return palette.secondary;
+    case "accent": return palette.accent;
+    case "card": return `color-mix(in srgb, ${canvas} ${dark ? 86 : 78}%, ${palette.textLight})`;
+    default: return canvas;
+  }
+}
+
+function SectionStyleEditor({
+  value,
+  palette,
+  dark,
+  backdrops,
+  onChange,
+}: {
+  value: SectionStyle;
+  palette: BuilderPalette;
+  dark: boolean;
+  backdrops: ReadonlyArray<{ id: string; label: string }>;
+  onChange: (next: SectionStyle) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="mb-1.5 text-[11px] font-semibold text-stone-600">Warna latar</p>
+        <div className="grid grid-cols-7 gap-1.5">
+          {SECTION_BG_TOKENS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              title={t.label}
+              aria-pressed={value.bg === t.id}
+              onClick={() => onChange({ ...value, bg: t.id })}
+              className={`flex aspect-square items-center justify-center rounded-md border text-[9px] font-semibold transition cursor-pointer ${value.bg === t.id ? "border-amber-500 ring-2 ring-amber-300" : "border-stone-200 hover:border-stone-400"}`}
+              style={{ background: sectionTokenSwatch(t.id, palette, dark), color: dark ? palette.textLight : palette.textDark }}
+            >
+              {t.id === "none" ? "Ikut" : ""}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <p className="mb-1.5 text-[11px] font-semibold text-stone-600">Gradasi</p>
+        <div className="grid grid-cols-3 gap-1">
+          {SECTION_GRADIENTS.map((g) => (
+            <button
+              key={g.id}
+              type="button"
+              aria-pressed={value.gradient === g.id}
+              disabled={value.bg === "none" && !value.image}
+              onClick={() => onChange({ ...value, gradient: g.id })}
+              className={`rounded-lg border px-1.5 py-1 text-[10.5px] font-semibold transition disabled:opacity-40 cursor-pointer ${value.gradient === g.id ? "border-amber-500 bg-amber-50 text-stone-900" : "border-stone-200 text-stone-600 hover:border-stone-300"}`}
+            >
+              {g.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <p className="mb-1.5 text-[11px] font-semibold text-stone-600">Nada teks</p>
+        <Segmented value={value.tone} options={SECTION_TONES.map((t) => ({ id: t.id, label: t.label }))} onChange={(tone) => onChange({ ...value, tone })} />
+      </div>
+      <div>
+        <p className="mb-1.5 text-[11px] font-semibold text-stone-600">Gambar latar seksi</p>
+        <div className="grid grid-cols-6 gap-1.5">
+          {backdrops.map((t) => {
+            const selected = (value.image ?? "") === t.id;
+            return (
+              <button
+                key={t.id || "none"}
+                type="button"
+                title={t.id ? t.label : "Tanpa gambar"}
+                aria-pressed={selected}
+                onClick={() => {
+                  const next: SectionStyle = { ...value };
+                  if (t.id) next.image = t.id;
+                  else { delete next.image; delete next.imageOpacity; }
+                  onChange(next);
+                }}
+                className={`flex aspect-[3/4] items-center justify-center overflow-hidden rounded-md border bg-cover bg-center transition cursor-pointer ${selected ? "border-amber-500 ring-2 ring-amber-300" : "border-stone-200 hover:border-stone-400"}`}
+                style={{ backgroundColor: sectionTokenSwatch("none", palette, dark), backgroundImage: t.id ? `url('${t.id}')` : undefined }}
+              >
+                {!t.id && <span className="text-[9px] font-semibold text-stone-500">Tanpa</span>}
+              </button>
+            );
+          })}
+        </div>
+        {value.image && (
+          <div className="mt-2">
+            <RangeRow
+              label="Gambar tembus"
+              value={value.imageOpacity ?? DEFAULT_SECTION_IMAGE_OPACITY}
+              unit="%"
+              min={SECTION_IMAGE_OPACITY_LIMITS[0]}
+              max={SECTION_IMAGE_OPACITY_LIMITS[1]}
+              step={5}
+              onChange={(v) => onChange({ ...value, imageOpacity: v === DEFAULT_SECTION_IMAGE_OPACITY ? undefined : v })}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SectionBackgroundsEditor({ spec, backdrops, onChange }: { spec: BuilderSpec; backdrops: ReadonlyArray<{ id: string; label: string }>; onChange: (patch: Partial<BuilderSpec>) => void }) {
+  const [open, setOpen] = useState<OrderableSection | null>(null);
+  const setStyle = (sec: OrderableSection, style: SectionStyle | null) => {
+    const next = { ...(spec.sectionStyles ?? {}) };
+    if (!style || isDefaultSectionStyle(style)) delete next[sec];
+    else next[sec] = style;
+    onChange({ sectionStyles: Object.keys(next).length ? next : undefined });
+  };
+  return (
+    <Section title="Latar per seksi" hint="Beri tiap seksi latar sendiri: warna palet, gradasi, atau gambar, dengan nada teks yang sesuai. Penutup hanya memakai latar ini bila klien tidak memasang foto penutup.">
+      <div className="space-y-1.5">
+        {familyOrderableSections(spec.eventType, spec.sectionOrder).map((sec) => {
+          const style = spec.sectionStyles?.[sec];
+          const expanded = open === sec;
+          return (
+            <div key={sec} className={`rounded-xl border ${expanded ? "border-amber-400" : "border-stone-200"}`}>
+              <button type="button" onClick={() => setOpen(expanded ? null : sec)} aria-expanded={expanded} className="flex w-full items-center justify-between px-3 py-2 text-left text-[12px] font-semibold text-stone-700 cursor-pointer">
+                <span className="flex items-center gap-2">
+                  <span className="h-4 w-4 rounded border border-stone-300" style={{ background: style ? sectionTokenSwatch(style.bg, spec.palette, spec.canvasMode === "dark") : "transparent" }} />
+                  {sectionLabelFor(sec, spec.eventType)}
+                </span>
+                <span className="text-[10.5px] font-medium text-stone-500">{style ? "Diatur" : "Ikut kanvas"}</span>
+              </button>
+              {expanded && (
+                <div className="border-t border-stone-100 px-3 py-3">
+                  <SectionStyleEditor value={style ?? DEFAULT_SECTION_STYLE} palette={spec.palette} dark={spec.canvasMode === "dark"} backdrops={backdrops} onChange={(next) => setStyle(sec, next)} />
+                  {style && (
+                    <button type="button" onClick={() => setStyle(sec, null)} className="mt-3 w-full rounded-lg border border-stone-200 py-1.5 text-[11px] font-semibold text-stone-600 hover:bg-stone-50 cursor-pointer">
+                      Kembalikan ke kanvas
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </Section>
+  );
+}
+
+/** Warna tambahan yang boleh kosong: kosong berarti mengikuti palet, dan contoh warnanya memakai nilai palet itu. */
+function OptionalColorField({ label, hint, value, fallback, onChange }: { label: string; hint: string; value: string | undefined; fallback: string; onChange: (v: string | undefined) => void }) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="min-w-0 flex-1">
+        <ColorField label={label} hint={value ? hint : `${hint} · mengikuti palet`} value={value ?? fallback} onChange={(v) => onChange(v)} />
+      </div>
+      {value && (
+        <button type="button" onClick={() => onChange(undefined)} className="shrink-0 text-[11px] font-semibold text-stone-500 hover:text-stone-800 hover:underline cursor-pointer">
+          Palet
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function ColorsPanel({
   spec,
   library,
@@ -234,6 +440,30 @@ export function ColorsPanel({
           {PALETTE_FIELDS.map((f) => (
             <ColorField key={f.key} label={f.label} hint={f.hint} value={spec.palette[f.key]} onChange={(v) => onChange({ palette: { ...spec.palette, [f.key]: v } })} />
           ))}
+        </div>
+      </Section>
+
+      <Section title="Warna tambahan" hint="Opsional. Untuk tema yang butuh warna khusus di luar palet, misalnya teks kecil merah marun di atas judul putih.">
+        <div className="-mx-1 space-y-0.5">
+          {PALETTE_EXTRA_FIELDS.map((f) => {
+            const dark = spec.canvasMode === "dark";
+            const fallback = f.key === "heading" ? (dark ? spec.palette.textLight : spec.palette.textDark) : f.key === "card" ? (dark ? spec.palette.bgDark : spec.palette.bgLight) : spec.palette.primary;
+            return (
+              <OptionalColorField
+                key={f.key}
+                label={f.label}
+                hint={f.hint}
+                value={spec.paletteExtra?.[f.key]}
+                fallback={fallback}
+                onChange={(v) => {
+                  const next = { ...(spec.paletteExtra ?? {}) };
+                  if (v) next[f.key] = v;
+                  else delete next[f.key];
+                  onChange({ paletteExtra: Object.keys(next).length ? next : undefined });
+                }}
+              />
+            );
+          })}
         </div>
       </Section>
 
@@ -302,6 +532,8 @@ export function ColorsPanel({
           </div>
         )}
       </Section>
+
+      <SectionBackgroundsEditor spec={spec} backdrops={backdrops} onChange={onChange} />
 
       <Section title="Media bawaan" hint="Dipakai sampai klien mengunggah foto sendiri. Slot yang tidak dipilih memakai warna palet. Foto orang tidak pernah punya bawaan.">
         <BackdropUpload uploading={uploading} onUpload={onUpload} />
@@ -499,6 +731,8 @@ export function TypePanel({ spec, onChange }: { spec: BuilderSpec; onChange: (pa
 function VariantThumb({ group, id, palette, dark }: { group: keyof BuilderVariants; id: string; palette: BuilderPalette; dark: boolean }) {
   const canvas = dark ? palette.bgDark : palette.bgLight;
   const ink = dark ? palette.textLight : palette.textDark;
+  // Rumus yang sama dengan --card-bg di compile.ts (kanvas terang 78% + teks terang), agar thumbnail mengikuti palet.
+  const card = dark ? palette.secondary : `color-mix(in srgb, ${palette.bgLight} 78%, ${palette.textLight})`;
   const bar = (w: string, color = ink, h = 3, extra: CSSProperties = {}) => <span className="block rounded-full" style={{ width: w, height: h, background: color, opacity: 0.8, ...extra }} />;
   const photo = (style: CSSProperties) => <span className="block" style={{ background: `linear-gradient(135deg, ${palette.accent}, ${palette.secondary})`, ...style }} />;
   const box = "relative flex h-[74px] w-full flex-col items-center justify-center gap-1 overflow-hidden rounded-lg";
@@ -535,7 +769,7 @@ function VariantThumb({ group, id, palette, dark }: { group: keyof BuilderVarian
     const shape: CSSProperties = id === "circle" ? { width: 26, height: 26, borderRadius: "50%" } : id === "arch" ? { width: 22, height: 30, borderRadius: "999px 999px 4px 4px" } : { width: 0, height: 0 };
     return (
       <span className={box} style={{ background: canvas }}>
-        <span className={`flex flex-col items-center gap-1 ${id === "card" ? "rounded-md px-3 py-2 shadow-sm" : ""}`} style={id === "card" ? { background: dark ? palette.secondary : "#ffffff" } : undefined}>
+        <span className={`flex flex-col items-center gap-1 ${id === "card" ? "rounded-md px-3 py-2 shadow-sm" : ""}`} style={id === "card" ? { background: card } : undefined}>
           {(id === "arch" || id === "circle") && photo(shape)}
           {bar("30px", ink, 4)}{bar("16px", palette.primary, 2)}
         </span>
@@ -612,7 +846,7 @@ function VariantThumb({ group, id, palette, dark }: { group: keyof BuilderVarian
       <span className={box} style={{ background: canvas }}>
         <span
           className="flex flex-col items-center gap-1 px-3 py-2"
-          style={id === "card" ? { background: dark ? palette.secondary : "#ffffff", borderRadius: 6 } : id === "framed" ? { border: `1px solid ${palette.primary}`, outline: `1px solid ${palette.primary}`, outlineOffset: 2, borderRadius: 4 } : undefined}
+          style={id === "card" ? { background: card, borderRadius: 6 } : id === "framed" ? { border: `1px solid ${palette.primary}`, outline: `1px solid ${palette.primary}`, outlineOffset: 2, borderRadius: 4 } : undefined}
         >
           {bar("26px")}{bar("18px", palette.primary, 2)}{bar("22px", ink, 2)}
         </span>
@@ -659,11 +893,11 @@ function VariantThumb({ group, id, palette, dark }: { group: keyof BuilderVarian
     if (id === "polaroid") {
       return (
         <span className={`${box} !flex-row items-center justify-center gap-1.5`} style={{ background: canvas }}>
-          <span className="flex flex-col items-center gap-0.5 rounded-sm p-1 shadow-sm" style={{ background: dark ? palette.secondary : "#ffffff", transform: "rotate(-4deg)" }}>
+          <span className="flex flex-col items-center gap-0.5 rounded-sm p-1 shadow-sm" style={{ background: card, transform: "rotate(-4deg)" }}>
             {photo({ width: 20, height: 22, borderRadius: 1 })}
             <span className="h-1 w-3 rounded-full" style={{ background: palette.accent }} />
           </span>
-          <span className="flex flex-col items-center gap-0.5 rounded-sm p-1 shadow-sm" style={{ background: dark ? palette.secondary : "#ffffff", transform: "rotate(4deg)" }}>
+          <span className="flex flex-col items-center gap-0.5 rounded-sm p-1 shadow-sm" style={{ background: card, transform: "rotate(4deg)" }}>
             {photo({ width: 20, height: 22, borderRadius: 1 })}
             <span className="h-1 w-3 rounded-full" style={{ background: palette.accent }} />
           </span>
@@ -713,7 +947,7 @@ function VariantThumb({ group, id, palette, dark }: { group: keyof BuilderVarian
     return (
       <span className={`${box} !flex-row items-center justify-center gap-1.5 px-2`} style={{ background: canvas }}>
         {[0, 1].map((i) => (
-          <span key={i} className="flex flex-1 flex-col items-center gap-1 rounded border p-1 shadow-xs" style={{ borderColor: `${palette.primary}35`, background: dark ? palette.secondary : "#ffffff" }}>
+          <span key={i} className="flex flex-1 flex-col items-center gap-1 rounded border p-1 shadow-xs" style={{ borderColor: `${palette.primary}35`, background: card }}>
             {bar("22px", ink, 2)}
             {bar("14px", palette.primary, 1.5)}
           </span>
@@ -725,11 +959,11 @@ function VariantThumb({ group, id, palette, dark }: { group: keyof BuilderVarian
     if (id === "cards") {
       return (
         <span className={`${box} flex-col justify-center gap-1.5 px-2`} style={{ background: canvas }}>
-          <span className="flex w-full flex-col gap-0.5 rounded border p-1 shadow-xs" style={{ borderColor: `${palette.primary}30`, background: dark ? palette.secondary : "#ffffff" }}>
+          <span className="flex w-full flex-col gap-0.5 rounded border p-1 shadow-xs" style={{ borderColor: `${palette.primary}30`, background: card }}>
             {bar("28px", ink, 2)}
             {bar("16px", palette.primary, 1.5)}
           </span>
-          <span className="flex w-full flex-col gap-0.5 rounded border p-1 shadow-xs" style={{ borderColor: `${palette.primary}30`, background: dark ? palette.secondary : "#ffffff" }}>
+          <span className="flex w-full flex-col gap-0.5 rounded border p-1 shadow-xs" style={{ borderColor: `${palette.primary}30`, background: card }}>
             {bar("24px", ink, 2)}
             {bar("14px", palette.primary, 1.5)}
           </span>
@@ -772,7 +1006,7 @@ function VariantThumb({ group, id, palette, dark }: { group: keyof BuilderVarian
             <span className="flex-1 rounded py-0.5 text-center text-[8px] font-bold" style={{ background: palette.primary, color: palette.onPrimary }}>Pria</span>
             <span className="flex-1 py-0.5 text-center text-[8px]" style={{ color: ink }}>Wanita</span>
           </span>
-          <span className="flex w-full flex-col items-center gap-0.5 rounded border p-1 shadow-xs" style={{ borderColor: `${palette.primary}30`, background: dark ? palette.secondary : "#ffffff" }}>
+          <span className="flex w-full flex-col items-center gap-0.5 rounded border p-1 shadow-xs" style={{ borderColor: `${palette.primary}30`, background: card }}>
             {bar("24px", ink, 2)}
             {bar("14px", palette.primary, 1.5)}
           </span>
@@ -796,7 +1030,7 @@ function VariantThumb({ group, id, palette, dark }: { group: keyof BuilderVarian
     return (
       <span className={`${box} flex-col justify-center gap-1.5 px-3`} style={{ background: canvas }}>
         {[0, 1].map((i) => (
-          <span key={i} className="flex w-full items-center justify-between rounded border px-2 py-1 shadow-xs" style={{ borderColor: `${palette.primary}30`, background: dark ? palette.secondary : "#ffffff" }}>
+          <span key={i} className="flex w-full items-center justify-between rounded border px-2 py-1 shadow-xs" style={{ borderColor: `${palette.primary}30`, background: card }}>
             <span className="flex flex-col gap-0.5">{bar("20px", ink, 2)}{bar("12px", palette.primary, 1)}</span>
             <span className="h-3 w-6 rounded-sm" style={{ background: `${palette.primary}25` }} />
           </span>
@@ -808,7 +1042,7 @@ function VariantThumb({ group, id, palette, dark }: { group: keyof BuilderVarian
     if (id === "drawer") {
       return (
         <span className={`${box} relative`} style={{ background: canvas }}>
-          <span className="absolute right-2 top-1.5 flex flex-col gap-0.5 rounded border px-1.5 py-1 shadow-xs" style={{ borderColor: `${palette.primary}40`, background: dark ? palette.secondary : "#ffffff" }}>
+          <span className="absolute right-2 top-1.5 flex flex-col gap-0.5 rounded border px-1.5 py-1 shadow-xs" style={{ borderColor: `${palette.primary}40`, background: card }}>
             {["01", "02", "03"].map((n) => (
               <span key={n} className="flex items-center gap-1">
                 <span className="text-[6px] font-bold" style={{ color: palette.accent }}>{n}</span>
@@ -828,7 +1062,7 @@ function VariantThumb({ group, id, palette, dark }: { group: keyof BuilderVarian
     }
     return (
       <span className={`${box} justify-end pb-2`} style={{ background: canvas }}>
-        <span className="flex items-center gap-1.5 rounded-full border px-2.5 py-1 shadow-xs" style={{ borderColor: `${palette.primary}40`, background: dark ? palette.secondary : "#ffffff" }}>
+        <span className="flex items-center gap-1.5 rounded-full border px-2.5 py-1 shadow-xs" style={{ borderColor: `${palette.primary}40`, background: card }}>
           {[0, 1, 2, 3].map((i) => (
             <span key={i} className="h-1.5 w-1.5 rounded-full" style={{ background: i === 0 ? palette.primary : `${ink}45` }} />
           ))}
@@ -921,7 +1155,7 @@ function VariantThumb({ group, id, palette, dark }: { group: keyof BuilderVarian
     return (
       <span className={box} style={{ background: canvas }}>
         {id === "solid" ? (
-          <span className="flex h-7 w-11 flex-col items-center justify-center gap-1 rounded shadow-xs" style={{ background: dark ? palette.secondary : "#ffffff", border: `1px solid ${palette.accent}55` }}>
+          <span className="flex h-7 w-11 flex-col items-center justify-center gap-1 rounded shadow-xs" style={{ background: card, border: `1px solid ${palette.accent}55` }}>
             {bar("20px", ink, 2)}{bar("14px", palette.accent, 1.5)}
           </span>
         ) : id === "glass" ? (
@@ -965,17 +1199,20 @@ function VariantThumb({ group, id, palette, dark }: { group: keyof BuilderVarian
 
 export function LayoutPanel({
   spec,
+  library,
   onChange,
   onFocusSection,
   selectedBlock,
   onSelectBlock,
 }: {
   spec: BuilderSpec;
+  library: AssetLibrary | null;
   onChange: (patch: Partial<BuilderSpec>) => void;
   onFocusSection: (s: OrnamentSection) => void;
   selectedBlock: BuilderBlockId | null;
   onSelectBlock: (id: BuilderBlockId) => void;
 }) {
+  const backdrops: ReadonlyArray<{ id: string; label: string }> = [...TEXTURE_OPTIONS, ...(library?.uploads ?? []).map((u) => ({ id: u.url, label: "Gambar unggahan" }))];
   return (
     <>
       <Section title="Posisi elemen" hint="Klik elemen di pratinjau atau pilih di sini, lalu seret atau atur geser, ukuran, dan putar. Posisi relatif terhadap elemen itu sendiri, jadi tetap mengalir bersama isi klien dan mengikuti lebar layar.">
@@ -1092,6 +1329,10 @@ export function LayoutPanel({
         <Segmented value={spec.radius} options={RADIUS_OPTIONS.map((r) => ({ id: r.id, label: r.label }))} onChange={(radius) => onChange({ radius })} />
       </Section>
 
+      <SurfaceEditor spec={spec} onChange={onChange} />
+
+      <FreeSectionsEditor spec={spec} backdrops={backdrops} onChange={onChange} onFocusSection={onFocusSection} />
+
       {familyVariantGroups(spec.eventType).map((group) => (
         <Section key={group.key} title={group.label} hint={group.key === "sidebar" ? "Hanya tampil di layar desktop, di sebelah kiri kolom undangan." : group.key === "headings" ? "Berlaku untuk semua judul seksi." : undefined}>
           <div className="grid grid-cols-2 gap-2">
@@ -1116,7 +1357,164 @@ export function LayoutPanel({
           </div>
         </Section>
       ))}
+
+      <CustomCssEditor value={spec.customCss ?? ""} onChange={(customCss) => onChange({ customCss: customCss.trim() ? customCss : undefined })} />
     </>
+  );
+}
+
+function SurfaceEditor({ spec, onChange }: { spec: BuilderSpec; onChange: (patch: Partial<BuilderSpec>) => void }) {
+  const surface = spec.surface ?? {};
+  const set = (patch: Partial<SurfaceStyle>) => {
+    const next: SurfaceStyle = { ...surface, ...patch };
+    for (const key of Object.keys(next) as Array<keyof SurfaceStyle>) if (next[key] === undefined || next[key] === false) delete next[key];
+    onChange({ surface: Object.keys(next).length ? next : undefined });
+  };
+  return (
+    <Section title="Kartu & tombol (nilai bebas)" hint="Menimpa varian kartu dan tombol di bawah dengan angka pasti. Kosongkan (Ikut varian) untuk kembali ke varian.">
+      <div className="space-y-3">
+        <RangeRow label="Tebal garis kartu" value={surface.cardBorder} unit="px" min={SURFACE_LIMITS.cardBorder[0]} max={SURFACE_LIMITS.cardBorder[1]} onChange={(v) => set({ cardBorder: v })} onReset={() => set({ cardBorder: undefined })} />
+        <RangeRow label="Sudut kartu" value={surface.cardRadius} unit="px" min={SURFACE_LIMITS.cardRadius[0]} max={SURFACE_LIMITS.cardRadius[1]} onChange={(v) => set({ cardRadius: v })} onReset={() => set({ cardRadius: undefined })} />
+        <div>
+          <p className="mb-1.5 text-[11.5px] font-semibold text-stone-700">Bayangan kartu</p>
+          <Segmented
+            value={surface.cardShadow ?? "variant"}
+            options={[{ id: "variant", label: "Varian" }, ...CARD_SHADOWS.map((s) => ({ id: s.id, label: s.label }))]}
+            onChange={(v) => set({ cardShadow: v === "variant" ? undefined : (v as CardShadow) })}
+          />
+        </div>
+        <label className="flex items-center justify-between gap-2 text-[11.5px] font-semibold text-stone-700">
+          Tombol kapsul penuh
+          <input type="checkbox" checked={surface.buttonPill === true} onChange={(e) => set({ buttonPill: e.target.checked })} className="h-4 w-4 accent-amber-600 cursor-pointer" />
+        </label>
+        {!surface.buttonPill && (
+          <RangeRow label="Sudut tombol" value={surface.buttonRadius} unit="px" min={SURFACE_LIMITS.buttonRadius[0]} max={SURFACE_LIMITS.buttonRadius[1]} onChange={(v) => set({ buttonRadius: v })} onReset={() => set({ buttonRadius: undefined })} />
+        )}
+      </div>
+    </Section>
+  );
+}
+
+/** Karakter yang ditolak parseBuilderSpec dibuang saat diketik, agar pratinjau tidak gagal karena satu huruf. */
+const cleanFreeText = (value: string) => value.replace(/[<>]/g, "").replace(/\{\{|\}\}/g, "");
+
+function FreeSectionsEditor({
+  spec,
+  backdrops,
+  onChange,
+  onFocusSection,
+}: {
+  spec: BuilderSpec;
+  backdrops: ReadonlyArray<{ id: string; label: string }>;
+  onChange: (patch: Partial<BuilderSpec>) => void;
+  onFocusSection: (s: OrnamentSection) => void;
+}) {
+  const list = spec.freeSections ?? [];
+  const hosts = familyOrderableSections(spec.eventType, spec.sectionOrder).filter((s) => s !== "closing");
+  const [styleOpen, setStyleOpen] = useState<FreeSectionId | null>(null);
+  const save = (next: FreeSection[]) => onChange({ freeSections: next.length ? next : undefined });
+  const update = (id: FreeSectionId, patch: Partial<FreeSection>) => save(list.map((f) => (f.id === id ? { ...f, ...patch } : f)));
+  const freeId = FREE_SECTION_IDS.find((id) => !list.some((f) => f.id === id));
+  const inputClass = "mt-1 w-full rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-[12.5px] text-stone-800 outline-none focus:border-amber-500";
+  return (
+    <Section title="Seksi teks bebas" hint={`Tambah hingga ${FREE_SECTION_IDS.length} seksi sendiri (kutipan, doa, catatan keluarga, protokol) di antara seksi bawaan. Klien bisa mengubah teksnya di Studio.`}>
+      <div className="space-y-3">
+        {list.map((f, idx) => (
+          <div key={f.id} className="rounded-xl border border-stone-200 p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] font-bold text-stone-800">Seksi bebas {idx + 1}</span>
+              <button type="button" onClick={() => save(list.filter((x) => x.id !== f.id))} className="text-[11px] font-semibold text-red-700 hover:underline cursor-pointer">Hapus</button>
+            </div>
+            <label className="mt-2 block text-[11.5px] font-semibold text-stone-600">
+              Letak (sesudah seksi)
+              <select
+                value={f.after}
+                onChange={(e) => { update(f.id, { after: e.target.value as OrderableSection }); onFocusSection(e.target.value as OrderableSection); }}
+                className={inputClass}
+              >
+                {hosts.map((h) => <option key={h} value={h}>{sectionLabelFor(h, spec.eventType)}</option>)}
+              </select>
+            </label>
+            <label className="mt-2 block text-[11.5px] font-semibold text-stone-600">
+              Teks kecil
+              <input type="text" value={f.eyebrow} maxLength={FREE_SECTION_LIMITS.eyebrow} onChange={(e) => update(f.id, { eyebrow: cleanFreeText(e.target.value) })} className={inputClass} spellCheck={false} />
+            </label>
+            <label className="mt-2 block text-[11.5px] font-semibold text-stone-600">
+              Judul
+              <input type="text" value={f.title} maxLength={FREE_SECTION_LIMITS.title} onChange={(e) => update(f.id, { title: cleanFreeText(e.target.value) })} className={inputClass} spellCheck={false} />
+            </label>
+            <label className="mt-2 block text-[11.5px] font-semibold text-stone-600">
+              Isi
+              <textarea rows={4} value={f.body} maxLength={FREE_SECTION_LIMITS.body} onChange={(e) => update(f.id, { body: cleanFreeText(e.target.value) })} className={inputClass} spellCheck={false} />
+            </label>
+            <div className="mt-2">
+              <Segmented value={f.align} options={[{ id: "left", label: "Kiri" }, { id: "center", label: "Tengah" }, { id: "right", label: "Kanan" }]} onChange={(align) => update(f.id, { align })} />
+            </div>
+            <button type="button" onClick={() => setStyleOpen(styleOpen === f.id ? null : f.id)} aria-expanded={styleOpen === f.id} className="mt-2 w-full rounded-lg border border-stone-200 py-1.5 text-[11px] font-semibold text-stone-600 hover:bg-stone-50 cursor-pointer">
+              {styleOpen === f.id ? "Tutup latar seksi" : f.style ? "Ubah latar seksi (diatur)" : "Atur latar seksi"}
+            </button>
+            {styleOpen === f.id && (
+              <div className="mt-3">
+                <SectionStyleEditor
+                  value={f.style ?? DEFAULT_SECTION_STYLE}
+                  palette={spec.palette}
+                  dark={spec.canvasMode === "dark"}
+                  backdrops={backdrops}
+                  onChange={(style) => update(f.id, { style: isDefaultSectionStyle(style) ? undefined : style })}
+                />
+              </div>
+            )}
+          </div>
+        ))}
+        {freeId && (
+          <button
+            type="button"
+            onClick={() => {
+              const after = hosts.includes("couple") ? "couple" : hosts[0];
+              save([...list, { id: freeId, after, eyebrow: "Sepatah Kata", title: "Judul Seksi", body: "Tulis pesan, doa, atau catatan untuk tamu di sini.", align: "center" }]);
+              onFocusSection(after);
+            }}
+            className="w-full rounded-xl border border-dashed border-stone-300 py-2 text-[12px] font-semibold text-stone-700 transition hover:border-stone-400 hover:bg-stone-50 cursor-pointer"
+          >
+            Tambah seksi teks bebas
+          </button>
+        )}
+      </div>
+    </Section>
+  );
+}
+
+/** CSS kustom baru dikirim ke rancangan bila lolos aturan yang sama dengan server, supaya pratinjau tidak gagal di tengah mengetik. */
+function CustomCssEditor({ value, onChange }: { value: string; onChange: (css: string) => void }) {
+  const [draft, setDraft] = useState(value);
+  const [lastValue, setLastValue] = useState(value);
+  if (value !== lastValue) {
+    setLastValue(value);
+    setDraft(value);
+  }
+  const error = draft.trim() ? customCssError(draft.trim()) : null;
+  return (
+    <Section title="CSS kustom (lanjutan)" hint="Untuk detail yang belum punya alat. Pakai token palet seperti var(--primary), var(--accent), var(--text-main), atau color-mix(); warna hex, rgb, url(), dan @import ditolak. Dipasang paling akhir.">
+      <textarea
+        rows={8}
+        value={draft}
+        maxLength={MAX_CUSTOM_CSS_LENGTH}
+        spellCheck={false}
+        onChange={(e) => {
+          const next = e.target.value;
+          setDraft(next);
+          // Dikirim tanpa trim: menimpa draf dengan nilai ter-trim akan membuang baris baru yang sedang diketik. Server men-trim saat parse.
+          if (!next.trim() || !customCssError(next.trim())) onChange(next);
+        }}
+        placeholder={".sec-main-title { letter-spacing: 0.08em; }"}
+        className={`w-full rounded-lg border bg-white px-2.5 py-2 font-mono text-[11.5px] text-stone-800 outline-none ${error ? "border-amber-500" : "border-stone-200 focus:border-amber-500"}`}
+        aria-invalid={Boolean(error)}
+      />
+      <div className="mt-1 flex items-center justify-between text-[10.5px]">
+        <span className={error ? "font-semibold text-amber-700" : "text-stone-500"}>{error ?? (value ? "Terpasang di pratinjau." : "Kosong.")}</span>
+        <span className="font-mono text-stone-400">{draft.length}/{MAX_CUSTOM_CSS_LENGTH}</span>
+      </div>
+    </Section>
   );
 }
 

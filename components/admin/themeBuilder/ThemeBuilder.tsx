@@ -1103,7 +1103,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
           ) : panel === "texts" ? (
             <TextsPanel spec={spec} labels={labels} onChange={patchSpec} />
           ) : panel === "layout" ? (
-            <LayoutPanel spec={spec} onChange={patchSpec} onFocusSection={focusSection} selectedBlock={selectedBlock} onSelectBlock={selectBlock} />
+            <LayoutPanel spec={spec} library={library} onChange={patchSpec} onFocusSection={focusSection} selectedBlock={selectedBlock} onSelectBlock={selectBlock} />
           ) : panel === "ornaments" ? (
             <OrnamentsPanel
               spec={spec}

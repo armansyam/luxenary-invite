@@ -2,7 +2,15 @@ import fs from "fs";
 import path from "path";
 import {
   BUILDER_TEXTS,
+  DEFAULT_SECTION_IMAGE_OPACITY,
   FRAMED_PHOTOS,
+  SECTION_BG_TOKENS,
+  freeSectionLabelKeys,
+  type CardShadow,
+  type FreeSection,
+  type SectionGradient,
+  type SectionStyle,
+  type SurfaceStyle,
   PHOTO_FILTER_CSS,
   RADIUS_OPTIONS,
   blockStyle,
@@ -43,6 +51,13 @@ export function readBuilderBlueprint(eventType: BuilderEventType): string {
   return fs.readFileSync(path.join(/*turbopackIgnore: true*/ process.cwd(), BLUEPRINT_FILES[builderFamilyOf(eventType)]), "utf-8");
 }
 
+/** Warna tambahan disimpan sebagai variabel di :root (satu-satunya tempat hex yang lolos audit), lalu dipakai oleh `extraPaletteCss`. */
+function extraPaletteVars(spec: BuilderSpec): string {
+  const extra = spec.paletteExtra ?? {};
+  const vars: Array<[string, string | undefined]> = [["--lux-eyebrow", extra.eyebrow], ["--lux-heading", extra.heading], ["--lux-line", extra.line]];
+  return vars.filter(([, v]) => v).map(([name, v]) => `\n      ${name}: ${v};`).join("");
+}
+
 function rootBlock(spec: BuilderSpec): string {
   const p = spec.palette;
   const dark = spec.canvasMode === "dark";
@@ -60,8 +75,11 @@ function rootBlock(spec: BuilderSpec): string {
       --on-primary: ${p.onPrimary};
       --success: ${dark ? "#68d391" : "#2f855a"};
       --danger: ${dark ? "#fc8181" : "#c53030"};
+      --on-light: ${p.textDark};
       --bg-canvas: var(${dark ? "--bg-dark" : "--bg-light"});
-      --card-bg: color-mix(in srgb, var(--bg-canvas) ${dark ? 86 : 78}%, var(--on-dark));
+      --card-bg: ${spec.paletteExtra?.card ?? `color-mix(in srgb, var(--bg-canvas) ${dark ? 86 : 78}%, var(--on-dark))`};
+      --lux-base-primary: var(--primary);
+      --lux-base-card: var(--card-bg);${extraPaletteVars(spec)}
       --overlay: var(--bg-dark);
       --shadow-color: color-mix(in srgb, var(--bg-dark) ${dark ? 40 : 16}%, transparent);
       --canvas-texture: ${texture};
@@ -498,6 +516,115 @@ const DOCK_HREF_SECTION: Partial<Record<string, OrderableSection>> = {
   "#rsvp": "rsvp",
 };
 
+/** Penutup hanya diberi latar saat klien tidak memasang foto penutup; foto penutup punya scrim sendiri. */
+const SECTION_SELECTOR: Record<OrderableSection, string> = {
+  opening: '[data-lux-section="opening"]',
+  couple: '[data-lux-section="couple"]',
+  countdown: '[data-lux-section="countdown"]',
+  events: '[data-lux-section="events"]',
+  story: '[data-lux-section="story"]',
+  gallery: '[data-lux-section="gallery"]',
+  rsvp: '[data-lux-section="rsvp"]',
+  closing: '[data-lux-section="closing"].no-closing-photo',
+};
+
+function gradientLayer(color: string, gradient: SectionGradient): string {
+  switch (gradient) {
+    case "fade-down": return `linear-gradient(180deg, ${color} 0%, transparent 100%)`;
+    case "fade-up": return `linear-gradient(0deg, ${color} 0%, transparent 100%)`;
+    case "radial": return `radial-gradient(ellipse at 50% 35%, ${color} 0%, color-mix(in srgb, ${color} 35%, transparent) 55%, transparent 100%)`;
+    case "diagonal": return `linear-gradient(135deg, ${color} 0%, color-mix(in srgb, ${color} 55%, var(--accent)) 100%)`;
+    default: return `linear-gradient(${color}, ${color})`;
+  }
+}
+
+/**
+ * Latar dan nada teks satu seksi. Nada mendefinisikan ulang variabel teks di dalam seksi (bukan warna per elemen) agar
+ * judul, teks kecil, kartu, dan tombol di seksi itu ikut berganti. `!important` mengalahkan `style="background:
+ * transparent"` yang tertulis langsung di seksi pembuka blueprint.
+ */
+function sectionStyleCss(selector: string, s: SectionStyle): string {
+  const color = SECTION_BG_TOKENS.find((t) => t.id === s.bg)?.css ?? "";
+  const rules: string[] = [];
+  if (s.image) {
+    const veil = `color-mix(in srgb, ${color || "var(--bg-canvas)"} ${100 - (s.imageOpacity ?? DEFAULT_SECTION_IMAGE_OPACITY)}%, transparent)`;
+    rules.push(`background: ${gradientLayer(veil, s.gradient)}, url('${s.image}') center / cover no-repeat !important;`);
+  } else if (color) {
+    rules.push(`background: ${gradientLayer(color, s.gradient)} !important;`);
+  }
+  // Nada teks dipilih agar terbaca di latar seksi ini, jadi warna tambahan global (eyebrow/judul/garis) ikut nada di dalamnya.
+  if (s.tone !== "auto") rules.push("--lux-eyebrow: var(--primary); --lux-heading: var(--text-main); --lux-line: var(--primary);");
+  if (s.tone === "light") {
+    // Aksen dicampur teks terang: aksen murni sering terlalu dekat dengan latar warna utama/kedua sehingga teks kecil hilang.
+    rules.push("--text-main: var(--on-dark); --text-muted: color-mix(in srgb, var(--on-dark) 74%, transparent); --primary: color-mix(in srgb, var(--accent) 55%, var(--on-dark)); --on-primary: var(--bg-dark); --card-bg: color-mix(in srgb, var(--bg-dark) 72%, var(--on-dark)); color: var(--text-main);");
+  } else if (s.tone === "dark") {
+    rules.push("--text-main: var(--on-light); --text-muted: color-mix(in srgb, var(--on-light) 70%, transparent); --primary: var(--lux-base-primary); --card-bg: color-mix(in srgb, var(--bg-light) 78%, var(--on-dark)); color: var(--text-main);");
+  }
+  return rules.length ? `${selector} { ${rules.join(" ")} }` : "";
+}
+
+function extraPaletteCss(spec: BuilderSpec): string {
+  const extra = spec.paletteExtra ?? {};
+  return [
+    extra.eyebrow ? ".sec-eyebrow { color: var(--lux-eyebrow); }" : "",
+    extra.heading ? ".sec-main-title { color: var(--lux-heading); }" : "",
+    extra.line ? ".sec-divider { background: var(--lux-line); }" : "",
+  ].filter(Boolean).join("\n    ");
+}
+
+// Daftar yang sama dengan varian `cards` dan `buttons`; nilai bebas di sini menimpa varian karena dipasang sesudahnya.
+const CARD_SURFACE_SELECTOR = ".opening-quote-card, .rsvp-form-box, .wish-item, .event-block-item, .event-unified-venue-card, .bank-card, .story-chapter-block";
+const BUTTON_SELECTOR = ".cover-btn-open, .btn-cal, .btn-submit-rsvp, .btn-map-outline, .btn-outline-box, .btn-copy";
+const CARD_SHADOW_CSS: Record<CardShadow, string> = { none: "none", soft: "var(--shadow-subtle)", deep: "var(--shadow-elevated)" };
+
+function surfaceCss(surface: SurfaceStyle | undefined): string {
+  if (!surface) return "";
+  const card: string[] = [];
+  if (surface.cardBorder !== undefined) card.push(surface.cardBorder === 0 ? "border: none !important;" : `border: ${surface.cardBorder}px solid color-mix(in srgb, var(--primary) 38%, transparent) !important;`);
+  if (surface.cardRadius !== undefined) card.push(`border-radius: ${surface.cardRadius}px !important;`);
+  if (surface.cardShadow) card.push(`box-shadow: ${CARD_SHADOW_CSS[surface.cardShadow]} !important;`);
+  const button = surface.buttonPill ? "border-radius: var(--radius-full) !important;" : surface.buttonRadius !== undefined ? `border-radius: ${surface.buttonRadius}px !important;` : "";
+  return [card.length ? `${CARD_SURFACE_SELECTOR} { ${card.join(" ")} }` : "", button ? `${BUTTON_SELECTOR} { ${button} }` : ""].filter(Boolean).join("\n    ");
+}
+
+/**
+ * Seksi teks bebas. Elemen kosong disembunyikan untuk tamu tetapi tetap bisa diklik saat disunting di Studio, supaya
+ * klien masih bisa mengisi teks kecil atau isi yang dikosongkan admin.
+ */
+const FREE_SECTION_CSS = `
+    .lux-free-sec .lux-free-body { white-space: pre-line; max-width: 520px; margin-left: auto; margin-right: auto; }
+    .lux-free-sec :is(.sec-eyebrow, .sec-main-title, .lux-free-body):empty:not([contenteditable="true"]) { display: none; }
+    .lux-free-sec :is(.sec-eyebrow, .sec-main-title, .lux-free-body)[contenteditable="true"]:empty { min-height: 1.2em; min-width: 6em; }
+    .lux-free-sec.lux-free-left { text-align: left; }
+    .lux-free-sec.lux-free-left :is(.sec-divider, .lux-free-body) { margin-left: 0; }
+    .lux-free-sec.lux-free-right { text-align: right; }
+    .lux-free-sec.lux-free-right :is(.sec-divider, .lux-free-body) { margin-right: 0; }`;
+
+function freeSectionHtml(f: FreeSection): string {
+  const keys = freeSectionLabelKeys(f.id);
+  return `
+      <section class="sec-flow lux-free-sec lux-free-${f.align}" id="${f.id}" data-lux-section="free">
+        <span class="sec-eyebrow" data-lux-field="customLabels.${keys.eyebrow}" data-lux-anim="1">${escapeText(f.eyebrow)}</span>
+        <h2 class="sec-main-title serif" data-lux-field="customLabels.${keys.title}" data-lux-anim="1">${escapeText(f.title)}</h2>
+        <div class="sec-divider" data-lux-anim="1"></div>
+        <p class="sec-sub lux-free-body" data-lux-field="customLabels.${keys.body}" data-lux-anim="2">${escapeText(f.body)}</p>
+      </section>`;
+}
+
+/** Seksi bebas disisipkan sesudah seksi tuannya (setelah pengurutan ulang); beberapa seksi dengan tuan sama tetap urut. */
+function insertFreeSections(html: string, sections: FreeSection[]): string {
+  const byHost = new Map<OrderableSection, FreeSection[]>();
+  for (const f of sections) byHost.set(f.after, [...(byHost.get(f.after) ?? []), f]);
+  let out = html;
+  for (const [host, items] of byHost) {
+    const match = out.match(SECTION_CHUNK_PATTERNS[host]);
+    if (!match || match.index === undefined) throw new Error(`Seksi ${host} untuk seksi teks bebas tidak ada di blueprint.`);
+    const end = match.index + match[0].length;
+    out = `${out.slice(0, end)}${items.map(freeSectionHtml).join("")}${out.slice(end)}`;
+  }
+  return out;
+}
+
 /** Mengurutkan ulang seksi utama di `<main>` dan tautan `<nav class="bottom-dock">` sesuai `spec.sectionOrder`. */
 function reorderSections(html: string, spec: BuilderSpec): string {
   if (!spec.sectionOrder || isDefaultSectionOrder(spec.sectionOrder, spec.eventType)) return html;
@@ -666,7 +793,21 @@ export function compileBuilderMaster(spec: BuilderSpec, blueprint = readBuilderB
     html = html.replace("</head>", `  <style id="lux-builder-loops">\n    ${loopRules}\n  </style>\n</head>`);
   }
 
+  const sectionRules = (Object.entries(spec.sectionStyles ?? {}) as Array<[OrderableSection, SectionStyle]>).map(([sec, style]) => sectionStyleCss(SECTION_SELECTOR[sec], style));
+  const freeRules = (spec.freeSections ?? []).flatMap((f) => (f.style ? [sectionStyleCss(`#${f.id}`, f.style)] : []));
+  const designRules = [extraPaletteCss(spec), surfaceCss(spec.surface), ...sectionRules, ...(spec.freeSections?.length ? [FREE_SECTION_CSS, ...freeRules] : [])].filter(Boolean).join("\n    ");
+  if (designRules) {
+    html = html.replace("</head>", () => `  <style id="lux-builder-design">\n    ${designRules}\n  </style>\n</head>`);
+  }
+
   html = reorderSections(html, spec);
+  if (spec.freeSections?.length) html = insertFreeSections(html, spec.freeSections);
+
+  // CSS kustom dipasang paling akhir agar menimpa gaya builder lain; isinya sudah lolos `customCssError` di parseBuilderSpec.
+  if (spec.customCss) {
+    const css = spec.customCss;
+    html = html.replace("</head>", () => `  <style id="lux-builder-custom">\n${css}\n  </style>\n</head>`);
+  }
 
   if (spec.variants.nav === "drawer") {
     html = html.replace(

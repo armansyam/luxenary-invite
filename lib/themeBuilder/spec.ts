@@ -989,6 +989,126 @@ export function parseBuilderTexts(input: unknown, errors: string[] = []): Builde
   return texts;
 }
 
+/**
+ * Latar seksi diambil dari token palet, bukan hex bebas, agar mengikuti palet dan lolos audit warna. "primary" dan
+ * "card" memakai salinan di :root (`--lux-base-*`) karena nada teks seksi mendefinisikan ulang `--primary` dan `--card-bg`.
+ */
+export const SECTION_BG_TOKENS = [
+  { id: "none", label: "Ikut kanvas", css: "" },
+  { id: "light", label: "Latar terang", css: "var(--bg-light)" },
+  { id: "dark", label: "Latar gelap", css: "var(--bg-dark)" },
+  { id: "primary", label: "Warna utama", css: "var(--lux-base-primary)" },
+  { id: "secondary", label: "Warna kedua", css: "var(--secondary)" },
+  { id: "accent", label: "Aksen", css: "var(--accent)" },
+  { id: "card", label: "Permukaan kartu", css: "var(--lux-base-card)" },
+] as const;
+export type SectionBgToken = (typeof SECTION_BG_TOKENS)[number]["id"];
+
+export const SECTION_GRADIENTS = [
+  { id: "solid", label: "Rata" },
+  { id: "fade-down", label: "Pudar ke bawah" },
+  { id: "fade-up", label: "Pudar ke atas" },
+  { id: "radial", label: "Sorot tengah" },
+  { id: "diagonal", label: "Diagonal ke aksen" },
+] as const;
+export type SectionGradient = (typeof SECTION_GRADIENTS)[number]["id"];
+
+export const SECTION_TONES = [
+  { id: "auto", label: "Ikut kanvas" },
+  { id: "light", label: "Teks terang" },
+  { id: "dark", label: "Teks gelap" },
+] as const;
+export type SectionTone = (typeof SECTION_TONES)[number]["id"];
+
+export interface SectionStyle {
+  bg: SectionBgToken;
+  gradient: SectionGradient;
+  /** Warna teks di dalam seksi; "light" untuk latar gelap, "dark" untuk latar terang. */
+  tone: SectionTone;
+  /** Gambar latar seksi dari pustaka latar atau unggahan admin, di bawah lapisan warna latar seksi. */
+  image?: string;
+  /** Seberapa tembus gambar latar terlihat di balik lapisan warna (10 - 100%, bawaan 40). */
+  imageOpacity?: number;
+}
+export const DEFAULT_SECTION_STYLE: SectionStyle = { bg: "none", gradient: "solid", tone: "auto" };
+export const SECTION_IMAGE_OPACITY_LIMITS = [10, 100] as const;
+export const DEFAULT_SECTION_IMAGE_OPACITY = 40;
+export const isDefaultSectionStyle = (s: SectionStyle) => s.bg === "none" && s.tone === "auto" && !s.image;
+export type SectionStyles = Partial<Record<OrderableSection, SectionStyle>>;
+
+export const PALETTE_EXTRA_FIELDS = [
+  { key: "eyebrow", label: "Teks kecil seksi", hint: "Eyebrow di atas judul seksi (bawaan: warna utama)" },
+  { key: "heading", label: "Judul seksi", hint: "Judul besar tiap seksi (bawaan: warna teks)" },
+  { key: "line", label: "Garis pemisah", hint: "Garis di bawah judul seksi (bawaan: warna utama)" },
+  { key: "card", label: "Permukaan kartu", hint: "Latar kartu acara, RSVP, kutipan, rekening" },
+] as const;
+export type PaletteExtraKey = (typeof PALETTE_EXTRA_FIELDS)[number]["key"];
+export type PaletteExtra = Partial<Record<PaletteExtraKey, string>>;
+
+export const CARD_SHADOWS = [
+  { id: "none", label: "Tanpa" },
+  { id: "soft", label: "Halus" },
+  { id: "deep", label: "Dalam" },
+] as const;
+export type CardShadow = (typeof CARD_SHADOWS)[number]["id"];
+
+/** Nilai bebas kartu dan tombol di atas varian; kunci yang kosong mengikuti varian dan pilihan sudut. */
+export interface SurfaceStyle {
+  cardBorder?: number;
+  cardShadow?: CardShadow;
+  cardRadius?: number;
+  buttonRadius?: number;
+  /** Tombol berbentuk kapsul penuh; mengalahkan buttonRadius. */
+  buttonPill?: boolean;
+}
+export const SURFACE_LIMITS = { cardBorder: [0, 4], cardRadius: [0, 40], buttonRadius: [0, 40] } as const;
+
+export const FREE_SECTION_IDS = ["free1", "free2", "free3"] as const;
+export type FreeSectionId = (typeof FREE_SECTION_IDS)[number];
+export const FREE_SECTION_LIMITS = { eyebrow: 60, title: 120, body: 800 } as const;
+export type FreeSectionAlign = "left" | "center" | "right";
+
+/**
+ * Seksi teks bebas buatan admin (mis. kutipan, catatan keluarga, protokol), disisipkan setelah seksi `after`. Isinya
+ * label klien `customLabels.<id>Eyebrow|Title|Body`, jadi klien tetap bisa mengubahnya di Studio.
+ */
+export interface FreeSection {
+  id: FreeSectionId;
+  after: OrderableSection;
+  eyebrow: string;
+  title: string;
+  body: string;
+  align: FreeSectionAlign;
+  style?: SectionStyle;
+}
+export const freeSectionLabelKeys = (id: FreeSectionId) => ({ eyebrow: `${id}Eyebrow`, title: `${id}Title`, body: `${id}Body` });
+
+export const MAX_CUSTOM_CSS_LENGTH = 8000;
+
+/**
+ * CSS kustom admin disisipkan apa adanya ke `<style>` master yang dibuka tamu, jadi ditolak bila bisa keluar dari tag
+ * style (`<`), memuat token engine (`{{`), mengambil berkas luar (`@import`, `url(`), menjalankan skrip lama
+ * (`expression(`, `javascript:`, `behavior`, `-moz-binding`), atau memakai warna mati (hex, rgb, hsl) yang memutus
+ * palet dan ditolak audit master.
+ */
+export function customCssError(css: string): string | null {
+  if (css.length > MAX_CUSTOM_CSS_LENGTH) return `CSS kustom maksimal ${MAX_CUSTOM_CSS_LENGTH} karakter.`;
+  if (/</.test(css)) return "CSS kustom tidak boleh memuat karakter <.";
+  // Token engine diawali dua kurung buka (spasi di antaranya juga dibaca engine); "}}" sah di CSS bersarang seperti @media.
+  if (/\{\s*\{/.test(css)) return "CSS kustom tidak boleh memuat {{.";
+  if (/@import|@charset|@namespace/i.test(css)) return "CSS kustom tidak boleh memakai @import, @charset, atau @namespace.";
+  if (/url\s*\(/i.test(css)) return "CSS kustom tidak boleh memakai url(); pakai ornamen atau latar seksi untuk gambar.";
+  if (/expression\s*\(|javascript:|behavior\s*:|-moz-binding/i.test(css)) return "CSS kustom memuat sintaks yang dilarang.";
+  if (/#[0-9a-fA-F]{3,8}\b/.test(css) || /\b(?:rgba?|hsla?)\s*\(/i.test(css)) return "CSS kustom tidak boleh memakai warna mati (hex, rgb, hsl); pakai var(--primary), var(--accent), atau color-mix().";
+  let depth = 0;
+  for (const ch of css) {
+    if (ch === "{") depth++;
+    else if (ch === "}" && --depth < 0) return "Kurung kurawal CSS kustom tidak seimbang.";
+  }
+  if (depth !== 0) return "Kurung kurawal CSS kustom tidak seimbang.";
+  return null;
+}
+
 export interface BuilderSpec {
   version: number;
   eventType: BuilderEventType;
@@ -1015,6 +1135,13 @@ export interface BuilderSpec {
   variants: BuilderVariants;
   animation: AnimationPreset;
   ornaments: BuilderOrnament[];
+  /** Latar dan nada teks per seksi; hanya seksi yang diubah dari bawaan yang tersimpan. */
+  sectionStyles?: SectionStyles;
+  /** Warna tambahan opsional di luar 8 warna palet; kunci kosong mengikuti palet. */
+  paletteExtra?: PaletteExtra;
+  surface?: SurfaceStyle;
+  freeSections?: FreeSection[];
+  customCss?: string;
 }
 
 // Font yang tersedia lokal di public/fonts/fonts.css; font lain tidak dimuat oleh undangan.
@@ -1287,6 +1414,17 @@ export const VARIANT_GROUPS: Array<{ key: keyof BuilderVariants; label: string; 
   },
 ];
 
+/**
+ * Varian dari `builderSpec` mentah (kolom DB atau rancangan pratinjau) tanpa validasi penuh. Nilai disisipkan ke atribut
+ * `class` HTML engine, jadi hanya id dari katalog grup yang diterima; selain itu bawaan grup.
+ */
+export function storedVariant(raw: unknown, key: keyof BuilderVariants): string {
+  const variants = raw && typeof raw === "object" ? (raw as { variants?: Record<string, unknown> }).variants : undefined;
+  const value = variants?.[key];
+  const group = VARIANT_GROUPS.find((g) => g.key === key);
+  return typeof value === "string" && group?.options.some((o) => o.id === value) ? value : defaultBuilderSpec().variants[key];
+}
+
 /** Satu nama: grup mempelai menata seksi profil; tata letak dua kolom tidak berarti untuk satu kartu. */
 export function familyVariantGroups(eventType: BuilderEventType): typeof VARIANT_GROUPS {
   if (builderFamilyOf(eventType) === "wedding") return VARIANT_GROUPS;
@@ -1430,6 +1568,31 @@ function pickEnum<T extends string>(value: unknown, allowed: readonly T[], field
   if (typeof value === "string" && (allowed as readonly string[]).includes(value)) return value as T;
   errors.push(`${field} tidak dikenali.`);
   return undefined;
+}
+
+function parseSectionStyle(raw: unknown, label: string, errors: string[]): SectionStyle | null {
+  if (!raw || typeof raw !== "object") { errors.push(`${label}: gaya seksi tidak terbaca.`); return null; }
+  const input = raw as Record<string, unknown>;
+  const bg = pickEnum<SectionBgToken>(input.bg ?? "none", SECTION_BG_TOKENS.map((t) => t.id), `${label}: latar`, errors);
+  const gradient = pickEnum<SectionGradient>(input.gradient ?? "solid", SECTION_GRADIENTS.map((g) => g.id), `${label}: gradasi`, errors);
+  const tone = pickEnum<SectionTone>(input.tone ?? "auto", SECTION_TONES.map((t) => t.id), `${label}: nada teks`, errors);
+  if (!bg || !gradient || !tone) return null;
+  const style: SectionStyle = { bg, gradient, tone };
+  if (input.image !== undefined && input.image !== null && input.image !== "") {
+    if (!isAllowedBackdropSrc(input.image)) { errors.push(`${label}: gambar latar harus dari pustaka latar.`); return null; }
+    style.image = input.image;
+    const op = Math.round(clamp(input.imageOpacity, SECTION_IMAGE_OPACITY_LIMITS[0], SECTION_IMAGE_OPACITY_LIMITS[1], DEFAULT_SECTION_IMAGE_OPACITY));
+    if (op !== DEFAULT_SECTION_IMAGE_OPACITY) style.imageOpacity = op;
+  }
+  return style;
+}
+
+/** Teks seksi bebas: dibatasi panjangnya dan tanpa < > atau {{ }}, karena disisipkan ke master sebagai teks bawaan label. */
+function freeSectionText(value: unknown, max: number, label: string, errors: string[]): string | null {
+  const text = typeof value === "string" ? value.trim() : "";
+  if (text.length > max) { errors.push(`${label} maksimal ${max} karakter.`); return null; }
+  if (/[<>]|\{\{|\}\}/.test(text)) { errors.push(`${label} tidak boleh memuat < > atau {{ }}.`); return null; }
+  return text;
 }
 
 export type ParseResult = { ok: true; spec: BuilderSpec } | { ok: false; errors: string[] };
@@ -1713,6 +1876,80 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
     });
   }
 
+  // Lima kolom di bawah ditambahkan 10 Nov 2026; spesifikasi lama tanpa kolom ini tetap sah dan berarti bawaan.
+  const family = eventType ?? "WEDDING";
+  const sectionStyles: SectionStyles = {};
+  if (input.sectionStyles !== undefined && input.sectionStyles !== null) {
+    if (typeof input.sectionStyles !== "object") errors.push("Gaya seksi tidak terbaca.");
+    else {
+      for (const [key, raw] of Object.entries(input.sectionStyles as Record<string, unknown>)) {
+        if (!familyOrderableSections(family).includes(key as OrderableSection)) { errors.push(`Gaya seksi ${key} tidak dikenali.`); continue; }
+        const style = parseSectionStyle(raw, `Seksi ${SECTION_LABELS[key as OrderableSection]}`, errors);
+        if (style && !isDefaultSectionStyle(style)) sectionStyles[key as OrderableSection] = style;
+      }
+    }
+  }
+
+  const paletteExtra: PaletteExtra = {};
+  for (const { key, label } of PALETTE_EXTRA_FIELDS) {
+    const value = input.paletteExtra?.[key];
+    if (value === undefined || value === null || value === "") continue;
+    const hex = typeof value === "string" ? value.trim().toLowerCase() : "";
+    if (!HEX_RE.test(hex)) errors.push(`Warna ${label} harus berformat #rrggbb.`);
+    else paletteExtra[key] = hex;
+  }
+
+  const surface: SurfaceStyle = {};
+  const rawSurface = input.surface && typeof input.surface === "object" ? input.surface : {};
+  if (rawSurface.cardBorder !== undefined && rawSurface.cardBorder !== null) surface.cardBorder = Math.round(clamp(rawSurface.cardBorder, ...SURFACE_LIMITS.cardBorder, 1));
+  if (rawSurface.cardRadius !== undefined && rawSurface.cardRadius !== null) surface.cardRadius = Math.round(clamp(rawSurface.cardRadius, ...SURFACE_LIMITS.cardRadius, 16));
+  if (rawSurface.buttonRadius !== undefined && rawSurface.buttonRadius !== null) surface.buttonRadius = Math.round(clamp(rawSurface.buttonRadius, ...SURFACE_LIMITS.buttonRadius, 8));
+  if (rawSurface.cardShadow !== undefined && rawSurface.cardShadow !== null) {
+    const shadow = pickEnum<CardShadow>(rawSurface.cardShadow, CARD_SHADOWS.map((s) => s.id), "Bayangan kartu", errors);
+    if (shadow) surface.cardShadow = shadow;
+  }
+  if (rawSurface.buttonPill === true) surface.buttonPill = true;
+
+  const freeSections: FreeSection[] = [];
+  if (input.freeSections !== undefined && input.freeSections !== null) {
+    if (!Array.isArray(input.freeSections) || input.freeSections.length > FREE_SECTION_IDS.length) {
+      errors.push(`Seksi teks bebas paling banyak ${FREE_SECTION_IDS.length}.`);
+    } else {
+      // Penutup selalu di akhir alur (footer), jadi seksi bebas tidak bisa diletakkan sesudahnya.
+      const hosts = familyOrderableSections(family).filter((s) => s !== "closing");
+      const usedIds = new Set<string>();
+      for (const [i, raw] of (input.freeSections as unknown[]).entries()) {
+        const label = `Seksi teks bebas #${i + 1}`;
+        if (!raw || typeof raw !== "object") { errors.push(`${label} tidak terbaca.`); continue; }
+        const f = raw as Record<string, unknown>;
+        const id = pickEnum<FreeSectionId>(f.id, FREE_SECTION_IDS, `${label}: id`, errors);
+        if (!id) continue;
+        if (usedIds.has(id)) { errors.push(`${label}: id ganda.`); continue; }
+        usedIds.add(id);
+        const after = pickEnum<OrderableSection>(f.after, hosts, `${label}: letak`, errors);
+        const align = pickEnum<FreeSectionAlign>(f.align ?? "center", ["left", "center", "right"], `${label}: perataan`, errors);
+        const eyebrow = freeSectionText(f.eyebrow, FREE_SECTION_LIMITS.eyebrow, `${label}: teks kecil`, errors);
+        const title = freeSectionText(f.title, FREE_SECTION_LIMITS.title, `${label}: judul`, errors);
+        const body = freeSectionText(f.body, FREE_SECTION_LIMITS.body, `${label}: isi`, errors);
+        if (!after || !align || eyebrow === null || title === null || body === null) continue;
+        if (!title && !body) { errors.push(`${label}: judul atau isi wajib diisi.`); continue; }
+        const style = f.style === undefined || f.style === null ? null : parseSectionStyle(f.style, label, errors);
+        freeSections.push({ id, after, eyebrow, title, body, align, ...(style && !isDefaultSectionStyle(style) ? { style } : {}) });
+      }
+    }
+  }
+
+  let customCss: string | undefined;
+  if (input.customCss !== undefined && input.customCss !== null && input.customCss !== "") {
+    if (typeof input.customCss !== "string") errors.push("CSS kustom harus berupa teks.");
+    else {
+      const css = input.customCss.trim();
+      const cssError = customCssError(css);
+      if (cssError) errors.push(cssError);
+      else if (css) customCss = css;
+    }
+  }
+
   if (errors.length || !eventType || !canvasMode || !radius || !animation || !eventsPlacement) return { ok: false, errors };
   return {
     ok: true,
@@ -1735,6 +1972,11 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
       variants,
       animation,
       ornaments,
+      ...(Object.keys(sectionStyles).length ? { sectionStyles } : {}),
+      ...(Object.keys(paletteExtra).length ? { paletteExtra } : {}),
+      ...(Object.keys(surface).length ? { surface } : {}),
+      ...(freeSections.length ? { freeSections } : {}),
+      ...(customCss ? { customCss } : {}),
     },
   };
 }

@@ -14,6 +14,7 @@ import { getEventTimezoneOffset, getPrimaryEvent, resolveEventTimezone } from "@
 import { logger } from "@/lib/logger";
 import { applyThemeDefaultMedia, parseThemeDefaultMedia } from "@/lib/themeDefaultMedia";
 import { applyBuilderTexts, builderTextLabels, builderTextsOf } from "@/lib/themeBuilder/texts";
+import { storedVariant } from "@/lib/themeBuilder/spec";
 
 /** Sesi jadwal terima tamu (patokan yang sama dengan masa aktif), atau objek kosong bila belum bertanggal. */
 function primaryEventOf(events: unknown): any {
@@ -477,8 +478,8 @@ export async function composeWeddingData(inv: any) {
     ...builderApplied.labels,
     ...(featureSettings.customLabels || {}),
   };
-  const groomRoleLabel = (customLabels as any).groomRole || "Mempelai Pria";
-  const brideRoleLabel = (customLabels as any).brideRole || "Mempelai Wanita";
+  const groomRoleLabel = customLabels.groomRole || "Mempelai Pria";
+  const brideRoleLabel = customLabels.brideRole || "Mempelai Wanita";
   const firstRoleLabel = isGroomFirst ? groomRoleLabel : brideRoleLabel;
   const secondRoleLabel = isGroomFirst ? brideRoleLabel : groomRoleLabel;
   const quoteSectionTitle = customLabels.quoteTitle || featureSettings.quoteTitle || blueprint.quoteSectionTitle;
@@ -2169,7 +2170,7 @@ export async function composeBirthdayData(inv: any) {
   // sehingga tema satu nama mana pun dapat menampilkan data ulang tahun. Hitung mundur, musik, Momen, QR, dan seksi
   // tambahan dibangun applySingleNameContract.
   const galleryPhotos = await collectGalleryPhotos(inv, featureSettings);
-  const galleryVariant = ((inv.builderSpec ?? dbThemeBuilderSpec) as any)?.variants?.gallery || "grid";
+  const galleryVariant = storedVariant(inv.builderSpec ?? dbThemeBuilderSpec, "gallery");
   const gallerySectionHtml = buildUniversalGallerySection(galleryPhotos, customLabels.galleryTitle || "Galeri Foto", showGallery, galleryVariant);
   const rsvpSectionHtml = buildUniversalRsvpSection(inv.id);
   const wishesSectionHtml = buildUniversalWishesSection(inv.rsvps || [], inv.id);
@@ -2915,7 +2916,7 @@ export async function composeKhitanData(inv: any) {
   const parentsHtml = parentNames ? `<p>Putra tercinta dari:</p><h4 class="serif" style="color: var(--text-main); font-size: 16px; margin: 4px 0;">${parentNames}</h4>` : "";
 
   const eventSectionHtml = buildUniversalEventCards(events, "Walimatul Khitan");
-  const galleryVariant = ((inv.builderSpec ?? dbThemeBuilderSpec) as any)?.variants?.gallery || "grid";
+  const galleryVariant = storedVariant(inv.builderSpec ?? dbThemeBuilderSpec, "gallery");
   const gallerySectionHtml = buildUniversalGallerySection(await collectGalleryPhotos(inv, featureSettings), customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false, galleryVariant);
   const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital", childName, featureSettings.showGift !== false);
   const rsvpSectionHtml = buildUniversalRsvpSection(invitationId);
@@ -3009,7 +3010,7 @@ export async function composeAqiqahData(inv: any) {
   const parentsHtml = parentNames ? `<p>Putra/Putri tercinta dari:</p><h4 class="serif" style="color: var(--text-main); font-size: 16px; margin: 4px 0;">${parentNames}</h4>` : "";
 
   const eventSectionHtml = buildUniversalEventCards(events, "Tasyakuran Aqiqah");
-  const galleryVariant = ((inv.builderSpec ?? dbThemeBuilderSpec) as any)?.variants?.gallery || "grid";
+  const galleryVariant = storedVariant(inv.builderSpec ?? dbThemeBuilderSpec, "gallery");
   const gallerySectionHtml = buildUniversalGallerySection(await collectGalleryPhotos(inv, featureSettings), customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false, galleryVariant);
   const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital", fatherName || babyName, featureSettings.showGift !== false);
   const rsvpSectionHtml = buildUniversalRsvpSection(invitationId);
@@ -3107,7 +3108,7 @@ export async function composeWisudaData(inv: any) {
   const graduateHonorsBadgeHtml = honors ? `<span style="display: inline-block; padding: 4px 12px; border-radius: var(--radius-full, 9999px); background: color-mix(in srgb, var(--accent) 20%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); color: var(--accent); font-size: 11px; font-weight: 700; margin-top: 8px;">Predikat: ${escapeHtml(honors)}</span>` : "";
 
   const eventSectionHtml = buildUniversalEventCards(events, "Syukuran Kelulusan");
-  const galleryVariant = ((inv.builderSpec ?? dbThemeBuilderSpec) as any)?.variants?.gallery || "grid";
+  const galleryVariant = storedVariant(inv.builderSpec ?? dbThemeBuilderSpec, "gallery");
   const gallerySectionHtml = buildUniversalGallerySection(await collectGalleryPhotos(inv, featureSettings), customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false, galleryVariant);
   const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital", graduateName, featureSettings.showGift !== false);
   const rsvpSectionHtml = buildUniversalRsvpSection(invitationId);
@@ -3201,7 +3202,7 @@ export async function composeGatheringData(inv: any) {
   const dresscodeHtml = dresscode ? `<p style="font-size: 12px; color: var(--primary); margin-top: 6px;">Dress Code: <b>${escapeHtml(dresscode)}</b></p>` : "";
 
   const eventSectionHtml = buildUniversalEventCards(events, eventTitle);
-  const galleryVariant = ((inv.builderSpec ?? dbThemeBuilderSpec) as any)?.variants?.gallery || "grid";
+  const galleryVariant = storedVariant(inv.builderSpec ?? dbThemeBuilderSpec, "gallery");
   const gallerySectionHtml = buildUniversalGallerySection(await collectGalleryPhotos(inv, featureSettings), customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false, galleryVariant);
   const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital / Donasi", organizerName || eventTitle, featureSettings.showGift !== false);
   const rsvpSectionHtml = buildUniversalRsvpSection(invitationId);
