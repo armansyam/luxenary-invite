@@ -26,7 +26,7 @@
 
   <style>
     @font-face {
-      font-family: "Yaqoote Script";
+      font-family: var(--lux-font-yaqoote-script);
       src: url("/fonts/aeterna/YaqooteScript.woff2") format("woff2");
       font-weight: normal;
       font-style: normal;
@@ -52,6 +52,15 @@
       --shadow-elevated: 0 14px 36px color-mix(in srgb, var(--primary) 16%, transparent);
       --glass-bg: color-mix(in srgb, var(--bg-light) 92%, transparent);
       --glass-border: color-mix(in srgb, var(--accent) 35%, transparent);
+      /* Ditambahkan tokenisasi master (warna dan huruf yang sebelumnya tertulis langsung). */
+      --lux-c-121212: #121212;
+      --lux-c-a1a1aa: #a1a1aa;
+      --lux-font-yaqoote-script: "Yaqoote Script";
+      --lux-font-plus-jakarta-sans: "Plus Jakarta Sans", -apple-system, sans-serif;
+      --lux-font-cormorant-garamond: "Cormorant Garamond", Georgia, serif;
+      --lux-font-yaqoote-script-2: "Yaqoote Script", cursive;
+      --lux-font-traditional-arabic: "Traditional Arabic", "Amiri", "Cormorant Garamond", serif;
+      --lux-font-cormorant-garamond-2: 'Cormorant Garamond', serif;
     }
 
     * {
@@ -73,7 +82,7 @@
     }
 
     body {
-      font-family: "Plus Jakarta Sans", -apple-system, sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       background-color: var(--bg-dark);
       color: var(--text-main);
       overflow-x: hidden;
@@ -105,12 +114,12 @@
     /* Headings & Scripts */
     h1, h2, h3, h4,
     .sec-main-title {
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: var(--lux-font-cormorant-garamond);
       letter-spacing: 0.05em;
     }
 
     .script-accent {
-      font-family: "Yaqoote Script", cursive;
+      font-family: var(--lux-font-yaqoote-script-2);
       font-weight: 400;
     }
 
@@ -170,12 +179,12 @@
       line-height: 1.1;
       color: #ffffff;
       margin-bottom: 1rem;
-      font-family: "Yaqoote Script", cursive;
+      font-family: var(--lux-font-yaqoote-script-2);
       text-shadow: 0 4px 24px rgba(0, 0, 0, 0.7);
     }
 
     .sidebar-desktop-names span {
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: var(--lux-font-cormorant-garamond);
       color: var(--accent);
       font-size: 0.8em;
       margin: 0 0.4rem;
@@ -195,7 +204,7 @@
       line-height: 1.7;
       color: rgba(255, 255, 255, 0.88);
       max-width: 520px;
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: var(--lux-font-cormorant-garamond);
       text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
     }
 
@@ -346,7 +355,7 @@
     .cover-names {
       font-size: clamp(3rem, 9.5vw, 4.2rem);
       line-height: 1.15;
-      font-family: "Yaqoote Script", cursive;
+      font-family: var(--lux-font-yaqoote-script-2);
       color: #ffffff;
       margin: 0.2rem 0 0.8rem;
       font-weight: 400;
@@ -354,7 +363,7 @@
     }
 
     .cover-names span {
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: var(--lux-font-cormorant-garamond);
       color: var(--accent);
       font-size: 0.65em;
       margin: 0 0.4rem;
@@ -393,7 +402,7 @@
       font-weight: 600;
       color: #ffffff;
       letter-spacing: 0.04em;
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: var(--lux-font-cormorant-garamond);
     }
 
     .btn-open-monochrome {
@@ -405,7 +414,7 @@
       padding: 13px 26px;
       border-radius: var(--radius-full);
       background: var(--bg-light);
-      color: #121212;
+      color: var(--lux-c-121212);
       border: 1px solid var(--glass-border);
       font-size: 0.82rem;
       font-weight: 600;
@@ -524,13 +533,13 @@
       font-size: clamp(2.8rem, 8vw, 3.8rem);
       line-height: 1.15;
       color: var(--text-main);
-      font-family: "Yaqoote Script", cursive;
+      font-family: var(--lux-font-yaqoote-script-2);
       margin-bottom: 0.5rem;
       font-weight: 400;
     }
 
     .home-names span {
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: var(--lux-font-cormorant-garamond);
       color: var(--secondary);
       font-size: 0.7em;
       margin: 0 0.3rem;
@@ -570,7 +579,7 @@
       font-weight: 500;
       color: var(--text-main);
       line-height: 1;
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: var(--lux-font-cormorant-garamond);
       margin-bottom: 4px;
     }
 
@@ -590,7 +599,7 @@
     }
 
     .greeting-text {
-      font-family: "Traditional Arabic", "Amiri", "Cormorant Garamond", serif;
+      font-family: var(--lux-font-traditional-arabic);
       font-size: 1.45rem;
       color: var(--secondary);
       margin-bottom: 1.2rem;
@@ -598,7 +607,7 @@
     }
 
     .quote-content {
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: var(--lux-font-cormorant-garamond);
       font-size: 1.15rem;
       font-style: italic;
       line-height: 1.8;
@@ -653,7 +662,7 @@
 
     .couple-name {
       font-size: 1.8rem;
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: var(--lux-font-cormorant-garamond);
       color: var(--text-main);
       margin-bottom: 0.3rem;
       font-weight: 600;
@@ -702,7 +711,7 @@
     }
 
     .couple-divider-amp {
-      font-family: "Yaqoote Script", cursive;
+      font-family: var(--lux-font-yaqoote-script-2);
       font-size: 3.8rem;
       color: var(--secondary);
       line-height: 1;
@@ -753,7 +762,7 @@
 
     .ev-name {
       font-size: 1.5rem;
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: var(--lux-font-cormorant-garamond);
       color: var(--text-main);
       margin-bottom: 0.4rem;
       font-weight: 600;
@@ -795,7 +804,7 @@
 
     .ev-venue {
       font-size: 1.05rem;
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: var(--lux-font-cormorant-garamond);
       color: var(--text-main);
       margin-bottom: 0.3rem;
       font-weight: 600;
@@ -894,7 +903,7 @@
 
     .story-title {
       font-size: 1.35rem;
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: var(--lux-font-cormorant-garamond);
       color: var(--text-main);
       margin-bottom: 0.4rem;
       font-weight: 600;
@@ -926,7 +935,7 @@
 
     .gift-bank-name {
       font-size: 1.25rem;
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: var(--lux-font-cormorant-garamond);
       letter-spacing: 0.1em;
       color: var(--secondary);
       font-weight: 600;
@@ -1104,7 +1113,7 @@
       font-size: 0.95rem;
       font-weight: 600;
       color: var(--text-main);
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: var(--lux-font-cormorant-garamond);
     }
 
     .wish-status-badge {
@@ -1126,7 +1135,7 @@
 
     .wish-timestamp {
       font-size: 0.68rem;
-      color: #a1a1aa;
+      color: var(--lux-c-a1a1aa);
       margin-top: 6px;
       display: block;
     }
@@ -1157,7 +1166,7 @@
     }
 
     .closing-quote-text {
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: var(--lux-font-cormorant-garamond);
       font-size: 1.15rem;
       font-style: italic;
       color: var(--text-main);
@@ -1168,14 +1177,14 @@
 
     .closing-names {
       font-size: 2.8rem;
-      font-family: "Yaqoote Script", cursive;
+      font-family: var(--lux-font-yaqoote-script-2);
       color: var(--text-main);
       margin-bottom: 0.4rem;
       font-weight: 400;
     }
 
     .closing-names span {
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: var(--lux-font-cormorant-garamond);
       font-size: 0.7em;
       margin: 0 0.3rem;
       vertical-align: middle;
@@ -1734,7 +1743,7 @@
       </button>
 
       <span class="sec-eyebrow" style="margin-top:0.5rem;">TIKET KEHADIRAN</span>
-      <h3 style="font-family:'Cormorant Garamond',serif; font-size:1.5rem; margin-bottom:0.4rem;">QR Check-in Tamu</h3>
+      <h3 style="font-family:var(--lux-font-cormorant-garamond-2); font-size:1.5rem; margin-bottom:0.4rem;">QR Check-in Tamu</h3>
       <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:1.2rem;">Tunjukkan kode QR ini kepada resepsionis di lokasi acara.</p>
 
       <div style="background:var(--bg-light); border-radius:12px; padding:1.2rem; display:inline-block; border:1px solid var(--glass-border); margin-bottom:1rem;">

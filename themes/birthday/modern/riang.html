@@ -30,15 +30,18 @@
       --radius-md: 20px;
       --radius-lg: 30px;
       --radius-full: 9999px;
+      /* Ditambahkan tokenisasi master (warna dan huruf yang sebelumnya tertulis langsung). */
+      --lux-font-jost: 'Jost', system-ui, sans-serif;
+      --lux-font-dm-serif-display: 'DM Serif Display', Georgia, serif;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     ::selection { background: color-mix(in srgb, var(--accent) 55%, transparent); color: var(--text-main); }
     html { scroll-behavior: smooth; scrollbar-width: none; }
     html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
-    body { font-family: 'Jost', system-ui, sans-serif; background: var(--bg-canvas); color: var(--text-main); line-height: 1.65; overflow-x: hidden; }
+    body { font-family: var(--lux-font-jost); background: var(--bg-canvas); color: var(--text-main); line-height: 1.65; overflow-x: hidden; }
     body.is-locked { overflow: hidden; }
-    .serif { font-family: 'DM Serif Display', Georgia, serif; font-weight: 400; }
+    .serif { font-family: var(--lux-font-dm-serif-display); font-weight: 400; }
     img { max-width: 100%; display: block; }
 
     /* ── Cover ── */

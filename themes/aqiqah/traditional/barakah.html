@@ -30,16 +30,20 @@
       --radius-md: 12px;
       --radius-lg: 20px;
       --radius-full: 9999px;
+      /* Ditambahkan tokenisasi master (warna dan huruf yang sebelumnya tertulis langsung). */
+      --lux-font-lora: 'Lora', Georgia, serif;
+      --lux-font-cinzel: 'Cinzel', Georgia, serif;
+      --lux-font-cormorant-garamond: 'Cormorant Garamond', Georgia, serif;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     ::selection { background: color-mix(in srgb, var(--primary) 40%, transparent); color: var(--text-main); }
     html { scroll-behavior: smooth; scrollbar-width: none; }
     html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
-    body { font-family: 'Lora', Georgia, serif; background: var(--bg-canvas); color: var(--text-main); line-height: 1.75; overflow-x: hidden; }
+    body { font-family: var(--lux-font-lora); background: var(--bg-canvas); color: var(--text-main); line-height: 1.75; overflow-x: hidden; }
     body.is-locked { overflow: hidden; }
-    .serif { font-family: 'Cinzel', Georgia, serif; font-weight: 500; letter-spacing: 0.04em; }
-    .italic { font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; }
+    .serif { font-family: var(--lux-font-cinzel); font-weight: 500; letter-spacing: 0.04em; }
+    .italic { font-family: var(--lux-font-cormorant-garamond); font-style: italic; }
     img { max-width: 100%; display: block; }
 
     /* ── Ilustrasi ── */
@@ -68,24 +72,24 @@
     .cover-band.top { top: 0; } .cover-band.bottom { bottom: 0; transform: scaleY(-1); }
     .cover-inner { position: relative; z-index: 2; width: 100%; max-width: 330px; }
     .medallion { width: 112px; height: 112px; margin: 0 auto 14px; }
-    .cover-badge { display: block; font-family: 'Cinzel', Georgia, serif; font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--secondary); margin-bottom: 10px; }
+    .cover-badge { display: block; font-family: var(--lux-font-cinzel); font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--secondary); margin-bottom: 10px; }
     .cover-name { font-size: 34px; line-height: 1.2; color: var(--accent); overflow-wrap: break-word; }
     .cover-info { display: block; margin-top: 6px; font-size: 17px; color: var(--secondary); }
     .cover-rule { width: 160px; height: 16px; margin: 16px auto; }
     .cover-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 18px; }
-    .guest-lbl { font-family: 'Cinzel', Georgia, serif; font-size: 10px; letter-spacing: 0.26em; text-transform: uppercase; color: var(--text-muted); }
+    .guest-lbl { font-family: var(--lux-font-cinzel); font-size: 10px; letter-spacing: 0.26em; text-transform: uppercase; color: var(--text-muted); }
     .guest-name { font-size: 22px; color: var(--text-main); margin: 4px 0 22px; overflow-wrap: break-word; }
-    .btn-open { display: inline-flex; align-items: center; gap: 8px; padding: 12px 30px; border: 1px solid var(--accent); cursor: pointer; border-radius: var(--radius-sm); background: var(--accent); color: var(--on-dark); font-family: 'Cinzel', Georgia, serif; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; outline: 1px solid color-mix(in srgb, var(--primary) 70%, transparent); outline-offset: 3px; }
+    .btn-open { display: inline-flex; align-items: center; gap: 8px; padding: 12px 30px; border: 1px solid var(--accent); cursor: pointer; border-radius: var(--radius-sm); background: var(--accent); color: var(--on-dark); font-family: var(--lux-font-cinzel); font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; outline: 1px solid color-mix(in srgb, var(--primary) 70%, transparent); outline-offset: 3px; }
 
     /* ── Hero kiri desktop ── */
     .left-hero { display: none; position: fixed; left: 0; top: 0; width: calc(100% - 460px); height: 100vh; z-index: 10; overflow: hidden; background: radial-gradient(90% 80% at 50% 40%, color-mix(in srgb, var(--accent) 80%, var(--bg-dark)) 0%, var(--bg-dark) 70%) center / cover no-repeat; }
     .left-hero.has-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, color-mix(in srgb, var(--bg-dark) 94%, transparent) 0%, color-mix(in srgb, var(--bg-dark) 20%, transparent) 55%, transparent 100%); }
     .left-hero-art { position: absolute; inset: 0; width: 100%; height: 100%; }
     .left-hero-content { position: absolute; left: 4rem; right: 4rem; bottom: 4rem; z-index: 2; color: var(--on-dark); }
-    .left-hero-eyebrow { display: block; font-family: 'Cinzel', Georgia, serif; font-size: 0.74rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--primary); margin-bottom: 1rem; }
+    .left-hero-eyebrow { display: block; font-family: var(--lux-font-cinzel); font-size: 0.74rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--primary); margin-bottom: 1rem; }
     .left-hero-name { font-size: clamp(2.6rem, 4.6vw, 4.6rem); line-height: 1.1; overflow-wrap: break-word; }
     .left-hero-info { display: block; margin-top: 0.6rem; font-size: 1.3rem; color: var(--primary); }
-    .left-hero-date { font-family: 'Cinzel', Georgia, serif; font-size: 0.82rem; letter-spacing: 0.2em; text-transform: uppercase; margin-top: 1rem; opacity: 0.8; }
+    .left-hero-date { font-family: var(--lux-font-cinzel); font-size: 0.82rem; letter-spacing: 0.2em; text-transform: uppercase; margin-top: 1rem; opacity: 0.8; }
 
     /* ── Latar tetap ── */
     .fixed-bg-layer { position: fixed; top: 0; right: 0; bottom: 0; width: 100%; z-index: 0; pointer-events: none; background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 45%), var(--bg-canvas); }
@@ -99,17 +103,17 @@
     .slide-home .band.top { position: absolute; top: 0; left: 0; }
     .slide-home .band.bottom { position: absolute; bottom: 0; left: 0; transform: scaleY(-1); }
     .home-medallion { width: 96px; height: 96px; margin: 0 auto 16px; }
-    .home-salam { font-family: 'Cinzel', Georgia, serif; font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--primary); margin-bottom: 12px; }
+    .home-salam { font-family: var(--lux-font-cinzel); font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--primary); margin-bottom: 12px; }
     .home-name { font-size: clamp(2.4rem, 11vw, 3.3rem); line-height: 1.15; overflow-wrap: break-word; }
     .home-info { display: block; margin-top: 8px; font-size: 19px; color: var(--primary); }
     .home-quote { font-size: 20px; line-height: 1.55; max-width: 340px; margin: 22px auto 0; color: color-mix(in srgb, var(--on-dark) 92%, transparent); }
-    .home-quote-ref { font-family: 'Cinzel', Georgia, serif; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--primary); margin-top: 12px; }
+    .home-quote-ref { font-family: var(--lux-font-cinzel); font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--primary); margin-top: 12px; }
     .scroll-cue { margin-top: 26px; color: var(--primary); animation: cue 1.8s infinite; }
     @keyframes cue { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
 
     /* ── Seksi ── */
     .sec-block { position: relative; max-width: 480px; margin: 0 auto; padding: 64px 24px; text-align: center; }
-    .sec-lbl { display: block; font-family: 'Cinzel', Georgia, serif; font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--secondary); margin-bottom: 10px; }
+    .sec-lbl { display: block; font-family: var(--lux-font-cinzel); font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--secondary); margin-bottom: 10px; }
     .sec-h2 { font-size: 27px; line-height: 1.25; color: var(--accent); margin-bottom: 12px; }
     .sec-sub { font-size: 14px; color: var(--text-muted); max-width: 340px; margin: 0 auto 24px; }
 

@@ -116,6 +116,21 @@ function openInvitation() {
 
 ---
 
+## 4A. Warna dan Huruf Wajib Lewat Variabel `:root` (Varian Tema)
+
+Sejak 10 Nov 2026 seluruh master ditokenisasi (`scripts/tokenize-masters.ts`, `lib/themeTokenize.ts`): warna berwarna dan
+`font-family` di CSS hanya boleh dirujuk lewat variabel yang didefinisikan di satu-satunya blok `:root` master. Varian Tema
+menimpa variabel `:root` ini; warna atau huruf yang tertulis langsung tidak ikut berganti.
+
+- Tulis warna sebagai `var(--nama)` atau `color-mix(in srgb, var(--nama) 40%, transparent)`, bukan hex/`rgba()` langsung.
+  Hitam/putih netral untuk bayangan dan overlay boleh tetap ditulis langsung.
+- Tulis huruf sebagai `font-family: var(--font-heading)` (atau variabel sejenis) dengan tumpukan lengkap di `:root`.
+- Setelah menambah master baru, jalankan `npx tsx scripts/tokenize-masters.ts` (laporan) lalu `--write`; tokenizer membuat
+  variabel `--lux-c-<hex>` dan `--lux-font-*` untuk yang masih tertulis langsung. Warna di `<script>` dan atribut SVG
+  `fill`/`stroke` tidak bisa memakai `var()` dan tidak ikut varian.
+
+---
+
 ## 5. Cara Registrasi Tema Baru ke Sistem
 
 1. Buat file HTML baru di dalam folder tema yang sesuai dengan jenis acara dan gayanya:

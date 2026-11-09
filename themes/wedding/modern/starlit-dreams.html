@@ -27,7 +27,7 @@
 
   <style>
     @font-face {
-      font-family: "Geraldo Island";
+      font-family: var(--lux-font-geraldo-island);
       src: url("/fonts/starlit-dreams/Geraldo-Island.woff2") format("woff2");
       font-weight: normal;
       font-style: normal;
@@ -35,7 +35,7 @@
     }
 
     @font-face {
-      font-family: "Romland";
+      font-family: var(--lux-font-romland);
       src: url("/fonts/starlit-dreams/Romland.woff2") format("woff2");
       font-weight: normal;
       font-style: normal;
@@ -63,6 +63,16 @@
       --glass-bg: color-mix(in srgb, var(--bg-light) 14%, transparent);
       --glass-blur: blur(4px);
       --glass-border: color-mix(in srgb, var(--bg-light) 30%, transparent);
+      /* Ditambahkan tokenisasi master (warna dan huruf yang sebelumnya tertulis langsung). */
+      --lux-c-333333: #333333;
+      --lux-font-geraldo-island: "Geraldo Island";
+      --lux-font-romland: "Romland";
+      --lux-font-plus-jakarta-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+      --lux-font-geraldo-island-2: "Geraldo Island", "Cinzel", "Marcellus", Georgia, serif;
+      --lux-font-romland-2: "Romland", "Great Vibes", cursive;
+      --lux-font-romland-3: "Romland", cursive;
+      --lux-font-cinzel: "Cinzel", Georgia, serif;
+      --lux-font-geraldo-island-3: "Geraldo Island", serif;
     }
 
     * {
@@ -89,7 +99,7 @@
     }
 
     body {
-      font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       background: var(--bg-dark);
       color: var(--text-main);
       line-height: 1.6;
@@ -109,12 +119,12 @@
     .serif,
     h1, h2, h3, h4,
     .font-serif {
-      font-family: "Geraldo Island", "Cinzel", "Marcellus", Georgia, serif;
+      font-family: var(--lux-font-geraldo-island-2);
       letter-spacing: 0.02em;
     }
 
     .script-accent {
-      font-family: "Romland", "Great Vibes", cursive;
+      font-family: var(--lux-font-romland-2);
       font-weight: 400;
     }
 
@@ -178,7 +188,7 @@
     }
 
     .sidebar-desktop-names span {
-      font-family: "Romland", cursive;
+      font-family: var(--lux-font-romland-3);
       color: var(--accent);
       font-size: 1.05em;
       margin: 0 0.35rem;
@@ -418,7 +428,7 @@
 
     .cover-names span {
       display: inline-block;
-      font-family: "Romland", cursive;
+      font-family: var(--lux-font-romland-3);
       color: var(--accent);
       margin: 0 0.25rem;
       font-size: 0.95em;
@@ -644,7 +654,7 @@
     }
 
     .hero-names span {
-      font-family: "Romland", cursive;
+      font-family: var(--lux-font-romland-3);
       color: var(--accent);
       margin: 0 0.25rem;
     }
@@ -694,7 +704,7 @@
       font-weight: 700;
       color: var(--text-main);
       line-height: 1.2;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
     }
 
     .cd-label {
@@ -844,7 +854,7 @@
     }
 
     .couple-divider-amp {
-      font-family: "Romland", cursive;
+      font-family: var(--lux-font-romland-3);
       font-size: 3rem;
       color: var(--accent);
       line-height: 1;
@@ -1004,7 +1014,7 @@
     }
 
     .jf-signature {
-      font-family: "Geraldo Island", serif;
+      font-family: var(--lux-font-geraldo-island-3);
       font-size: 1.6rem;
       color: var(--text-main);
     }
@@ -1404,7 +1414,7 @@
       border-radius: 50%;
       border: 1px solid rgba(0, 0, 0, 0.1);
       background: var(--bg-light);
-      color: #333;
+      color: var(--lux-c-333333);
       font-size: 14px;
       cursor: pointer;
       display: flex;

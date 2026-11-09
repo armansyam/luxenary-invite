@@ -43,6 +43,17 @@
       --mayang-border-bright: color-mix(in srgb, var(--accent, #cfa859) 75%, transparent);
       --mayang-border-dim: color-mix(in srgb, var(--accent, #cfa859) 22%, transparent);
       --border-glow: 0 0 25px color-mix(in srgb, var(--primary, #cfa859) 30%, transparent);
+      /* Ditambahkan tokenisasi master (warna dan huruf yang sebelumnya tertulis langsung). */
+      --lux-c-120c06: #120c06;
+      --lux-c-cfa859: #cfa859;
+      --lux-c-0a0604: #0a0604;
+      --lux-font-playfair-display: 'Playfair Display', 'Plus Jakarta Sans', serif;
+      --lux-font-cinzel-decorative: 'Cinzel Decorative', 'Playfair Display', serif;
+      --lux-font-pinyon-script: 'Pinyon Script', 'Alex Brush', cursive;
+      --lux-font-plus-jakarta-sans: 'Plus Jakarta Sans', sans-serif;
+      --lux-font-pinyon-script-2: 'Pinyon Script', cursive;
+      --lux-font-playfair-display-2: 'Playfair Display', serif;
+      --lux-font-cinzel-decorative-2: 'Cinzel Decorative', serif;
     }
 
     ::selection {
@@ -56,8 +67,8 @@
       scrollbar-width: none;
     }
     body {
-      font-family: 'Playfair Display', 'Plus Jakarta Sans', serif;
-      background-color: var(--bg-dark, #120c06);
+      font-family: var(--lux-font-playfair-display);
+      background-color: var(--bg-dark, var(--lux-c-120c06));
       color: #ffffff;
       overflow-x: hidden;
       width: 100%;
@@ -82,8 +93,8 @@
       height: 100dvh;
       background-image: radial-gradient(
         circle at 50% 25%,
-        color-mix(in srgb, var(--primary, #cfa859) 30%, var(--bg-dark, #120c06) 82%) 0%,
-        color-mix(in srgb, var(--bg-dark, #120c06) 96%, transparent) 88%
+        color-mix(in srgb, var(--primary, var(--lux-c-cfa859)) 30%, var(--bg-dark, var(--lux-c-120c06)) 82%) 0%,
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-120c06)) 96%, transparent) 88%
       ), url('/assets/ornaments/background/background-flower.webp');
       background-size: cover;
       background-position: center;
@@ -94,15 +105,15 @@
     .fixed-bg-layer.has-custom-bg {
       background-image: radial-gradient(
         circle at 50% 25%,
-        color-mix(in srgb, var(--primary, #cfa859) 30%, var(--bg-dark, #120c06) 82%) 0%,
-        color-mix(in srgb, var(--bg-dark, #120c06) 96%, transparent) 88%
+        color-mix(in srgb, var(--primary, var(--lux-c-cfa859)) 30%, var(--bg-dark, var(--lux-c-120c06)) 82%) 0%,
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-120c06)) 96%, transparent) 88%
       ), var(--custom-bg);
     }
 
     /* TYPOGRAPHY CLASSES */
-    .font-mayang-title { font-family: 'Cinzel Decorative', 'Playfair Display', serif; }
-    .font-mayang-script { font-family: 'Pinyon Script', 'Alex Brush', cursive; }
-    .font-mayang-sans { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .font-mayang-title { font-family: var(--lux-font-cinzel-decorative); }
+    .font-mayang-script { font-family: var(--lux-font-pinyon-script); }
+    .font-mayang-sans { font-family: var(--lux-font-plus-jakarta-sans); }
 
     /* ANIMATIONS & MICRO-INTERACTIONS */
     @keyframes mayangFloat {
@@ -135,8 +146,8 @@
       -ms-overflow-style: none; scrollbar-width: none;
       background: radial-gradient(
         circle at center,
-        color-mix(in srgb, var(--primary, #cfa859) 28%, var(--bg-dark, #120c06) 90%) 0%,
-        color-mix(in srgb, var(--bg-dark, #120c06) 98%, transparent) 100%
+        color-mix(in srgb, var(--primary, var(--lux-c-cfa859)) 28%, var(--bg-dark, var(--lux-c-120c06)) 90%) 0%,
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-120c06)) 98%, transparent) 100%
       ), url('{{landingCoverUrl}}') center/cover no-repeat;
       transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s ease, visibility 0s linear 0.85s;
     }
@@ -148,7 +159,7 @@
     .cover-monogram-circle {
       width: 56px; height: 56px; border-radius: 50%; border: 1px solid var(--mayang-gold-light);
       display: flex; align-items: center; justify-content: center;
-      font-family: 'Cinzel Decorative', 'Playfair Display', serif; font-size: 1rem; font-weight: 600;
+      font-family: var(--lux-font-cinzel-decorative); font-size: 1rem; font-weight: 600;
       color: var(--mayang-gold-light); margin-bottom: 1.2rem;
       background: color-mix(in srgb, var(--mayang-dark) 65%, transparent);
       box-shadow: 0 4px 20px rgba(0,0,0,0.5);
@@ -156,11 +167,11 @@
     }
 
     .cover-badge {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       font-size: 0.72rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--mayang-gold-light); margin-bottom: 0.5rem; font-weight: 600;
     }
     .cover-names {
-      font-size: clamp(3.2rem, 12vw, 5.2rem); font-family: 'Pinyon Script', cursive; color: var(--mayang-gold);
+      font-size: clamp(3.2rem, 12vw, 5.2rem); font-family: var(--lux-font-pinyon-script-2); color: var(--mayang-gold);
       text-shadow: 0 4px 25px rgba(0,0,0,0.9); margin-bottom: 1.5rem; font-weight: normal; line-height: 1.15;
     }
     .cover-guest-card {
@@ -168,14 +179,14 @@
       border-radius: 16px; padding: 1.2rem 2rem; margin-bottom: 1.8rem;
       backdrop-filter: blur(12px); box-shadow: var(--border-glow); max-width: 340px; width: 100%;
     }
-    .cover-guest-lbl { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,255,255,0.7); }
-    .cover-guest-val { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: #fff; margin-top: 0.3rem; font-weight: 600; font-style: italic; }
+    .cover-guest-lbl { font-family: var(--lux-font-plus-jakarta-sans); font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,255,255,0.7); }
+    .cover-guest-val { font-family: var(--lux-font-playfair-display-2); font-size: 1.4rem; color: #fff; margin-top: 0.3rem; font-weight: 600; font-style: italic; }
     
     .btn-buka-undangan {
       display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
       padding: 0.95rem 2.8rem; background: linear-gradient(90deg, var(--primary, var(--mayang-gold)) 0%, var(--accent, var(--mayang-gold-light)) 50%, var(--primary, var(--mayang-gold)) 100%);
       background-size: 200% auto;
-      color: var(--bg-dark, #120c06); font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--bg-dark, var(--lux-c-120c06)); font-family: var(--lux-font-plus-jakarta-sans); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase;
       border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 6px 20px color-mix(in srgb, var(--mayang-gold) 45%, transparent);
       transition: all 0.35s ease;
     }
@@ -190,7 +201,7 @@
     }
     .sidebar-desktop::after {
       content: ''; position: absolute; inset: 0;
-      background: linear-gradient(to top, var(--bg-dark, #120c06) 0%, color-mix(in srgb, var(--bg-dark, #120c06) 30%, transparent) 50%, transparent 100%);
+      background: linear-gradient(to top, var(--bg-dark, var(--lux-c-120c06)) 0%, color-mix(in srgb, var(--bg-dark, var(--lux-c-120c06)) 30%, transparent) 50%, transparent 100%);
     }
     .sidebar-desktop-content {
       position: absolute; bottom: 4rem; left: 3.5rem; right: 3.5rem; z-index: 20; color: #fff;
@@ -254,17 +265,17 @@
     }
 
     .sec-eyebrow {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       font-size: 0.72rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--mayang-gold-light); display: block; margin-bottom: 0.4rem; font-weight: 600;
     }
     .sec-heading {
-      font-size: clamp(2.4rem, 8vw, 3.4rem); font-family: 'Pinyon Script', cursive; color: var(--mayang-gold); margin-bottom: 0.3rem; font-weight: normal;
+      font-size: clamp(2.4rem, 8vw, 3.4rem); font-family: var(--lux-font-pinyon-script-2); color: var(--mayang-gold); margin-bottom: 0.3rem; font-weight: normal;
       text-shadow: 0 2px 15px rgba(0,0,0,0.6);
       overflow-wrap: break-word;
       word-break: break-word;
     }
     .sec-subheading {
-      font-family: 'Playfair Display', serif;
+      font-family: var(--lux-font-playfair-display-2);
       font-size: 0.82rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--mayang-gold-light); margin-bottom: 2.2rem; font-style: italic;
     }
 
@@ -313,7 +324,7 @@
       box-shadow: 0 15px 35px rgba(0,0,0,0.65), 0 0 22px color-mix(in srgb, var(--mayang-gold) 25%, transparent);
       position: relative;
       z-index: 2;
-      background: color-mix(in srgb, var(--bg-dark, #120c06) 85%, transparent);
+      background: color-mix(in srgb, var(--bg-dark, var(--lux-c-120c06)) 85%, transparent);
     }
     .couple-photo-wrap img {
       width: 100%;
@@ -325,7 +336,7 @@
 
     /* WATERMARK INITIAL DI SAMPING FOTO (BOLD EDITORIAL SCALE) */
     .couple-watermark-initial {
-      font-family: 'Cinzel Decorative', 'Playfair Display', serif;
+      font-family: var(--lux-font-cinzel-decorative);
       font-weight: 700;
       font-size: clamp(9.5rem, 32vw, 13rem);
       line-height: 0.8;
@@ -334,7 +345,7 @@
       transform: translateY(-50%);
       pointer-events: none;
       z-index: 1;
-      background: linear-gradient(180deg, var(--mayang-gold) 10%, rgba(207,168,89,0.18) 75%, transparent 100%);
+      background: linear-gradient(180deg, var(--mayang-gold) 10%, color-mix(in srgb, var(--lux-c-cfa859) 18%, transparent) 75%, transparent 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       opacity: 0.35;
@@ -360,7 +371,7 @@
     }
 
     .couple-role {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       font-size: 0.72rem;
       letter-spacing: 0.25em;
       text-transform: uppercase;
@@ -372,7 +383,7 @@
     .couple-name {
       font-size: 1.55rem;
       color: #ffffff;
-      font-family: 'Cinzel Decorative', serif;
+      font-family: var(--lux-font-cinzel-decorative-2);
       font-weight: 600;
       line-height: 1.25;
       margin-bottom: 0.5rem;
@@ -382,7 +393,7 @@
       font-size: 0.84rem;
       color: rgba(255,255,255,0.85);
       line-height: 1.6;
-      font-family: 'Playfair Display', serif;
+      font-family: var(--lux-font-playfair-display-2);
       font-style: italic;
       margin-bottom: 0.7rem;
     }
@@ -394,7 +405,7 @@
       align-items: center;
       gap: 0.4rem;
       color: var(--mayang-gold);
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       font-size: 0.72rem;
       letter-spacing: 0.12em;
       text-decoration: none;
@@ -417,7 +428,7 @@
       z-index: 5;
     }
     .connector-amp {
-      font-family: 'Pinyon Script', cursive;
+      font-family: var(--lux-font-pinyon-script-2);
       font-size: 3.5rem;
       color: var(--mayang-gold);
       opacity: 0.85;
@@ -431,16 +442,16 @@
       background: var(--mayang-card); border: 1px solid var(--mayang-border); border-radius: 14px;
       padding: 0.85rem; min-width: 68px; text-align: center; box-shadow: 0 6px 20px rgba(0,0,0,0.4);
     }
-    .countdown-val { font-size: 1.7rem; font-weight: 700; font-family: 'Playfair Display', serif; color: var(--mayang-gold); line-height: 1; }
-    .countdown-lbl { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.15em; color: rgba(255,255,255,0.7); margin-top: 0.3rem; font-weight: 500; }
+    .countdown-val { font-size: 1.7rem; font-weight: 700; font-family: var(--lux-font-playfair-display-2); color: var(--mayang-gold); line-height: 1; }
+    .countdown-lbl { font-family: var(--lux-font-plus-jakarta-sans); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.15em; color: rgba(255,255,255,0.7); margin-top: 0.3rem; font-weight: 500; }
 
     .btn-cal {
       display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.8rem 2.2rem;
       border: 1px solid var(--mayang-gold); border-radius: 50px; color: var(--mayang-gold-light);
-      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+      font-family: var(--lux-font-plus-jakarta-sans); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
       text-decoration: none; transition: all 0.3s; background: color-mix(in srgb, var(--mayang-dark) 60%, transparent);
     }
-    .btn-cal:hover { background: var(--mayang-gold); color: var(--bg-dark, #120c06); transform: translateY(-2px); }
+    .btn-cal:hover { background: var(--mayang-gold); color: var(--bg-dark, var(--lux-c-120c06)); transform: translateY(-2px); }
 
     /* EVENTS UNIFIED CONTAINER STYLING */
     .events-unified-container { display: flex; flex-direction: column; gap: 1.5rem; width: 100%; max-width: 440px; }
@@ -449,24 +460,24 @@
       background: var(--mayang-card); border: 1px solid var(--mayang-border); border-radius: 18px;
       padding: 1.8rem 1.4rem; text-align: center; box-shadow: var(--border-glow);
     }
-    .ev-cat { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--mayang-gold-light); font-weight: 600; margin-bottom: 0.3rem; display: block; }
-    .ev-name { font-size: 1.5rem; color: var(--mayang-gold); font-family: 'Cinzel Decorative', serif; margin-bottom: 0.4rem; }
-    .ev-time { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.85rem; color: rgba(255,255,255,0.9); font-weight: 500; }
+    .ev-cat { font-family: var(--lux-font-plus-jakarta-sans); font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--mayang-gold-light); font-weight: 600; margin-bottom: 0.3rem; display: block; }
+    .ev-name { font-size: 1.5rem; color: var(--mayang-gold); font-family: var(--lux-font-cinzel-decorative-2); margin-bottom: 0.4rem; }
+    .ev-time { font-family: var(--lux-font-plus-jakarta-sans); font-size: 0.85rem; color: rgba(255,255,255,0.9); font-weight: 500; }
     
     .event-unified-venue-card {
       background: var(--mayang-card); border: 1px solid var(--mayang-border); border-radius: 18px;
       padding: 1.8rem 1.4rem; text-align: center; box-shadow: var(--border-glow);
     }
-    .venue-card-lbl { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--mayang-gold-light); font-weight: 600; margin-bottom: 0.4rem; display: block; }
-    .ev-venue-unified { font-size: 1.4rem; color: #ffffff; font-family: 'Cinzel Decorative', serif; margin-bottom: 0.4rem; }
+    .venue-card-lbl { font-family: var(--lux-font-plus-jakarta-sans); font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--mayang-gold-light); font-weight: 600; margin-bottom: 0.4rem; display: block; }
+    .ev-venue-unified { font-size: 1.4rem; color: #ffffff; font-family: var(--lux-font-cinzel-decorative-2); margin-bottom: 0.4rem; }
     .ev-address-unified { font-size: 0.82rem; color: rgba(255,255,255,0.8); line-height: 1.6; margin-bottom: 1.2rem; font-style: italic; }
     .btn-map-outline {
       display: inline-flex; align-items: center; justify-content: center; padding: 0.8rem 2.2rem;
       border: 1px solid var(--mayang-gold); border-radius: 50px; color: var(--mayang-gold-light);
-      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
+      font-family: var(--lux-font-plus-jakarta-sans); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
       text-decoration: none; transition: all 0.3s;
     }
-    .btn-map-outline:hover { background: var(--mayang-gold); color: var(--bg-dark, #120c06); }
+    .btn-map-outline:hover { background: var(--mayang-gold); color: var(--bg-dark, var(--lux-c-120c06)); }
 
     /* JOURNEY / STORY STYLING (VERTICAL GLOWING LUXURY TIMELINE) */
     .mayang-story-flow {
@@ -507,28 +518,28 @@
       box-shadow: 0 0 10px 2px color-mix(in srgb, var(--mayang-gold) 65%, transparent), 0 0 20px color-mix(in srgb, var(--mayang-gold) 35%, transparent);
       z-index: 2;
     }
-    .sc-label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--mayang-gold); font-weight: 600; display: block; margin-bottom: 0.2rem; }
-    .sc-title { font-size: 1.25rem; color: var(--mayang-gold-light); font-family: 'Cinzel Decorative', serif; margin-bottom: 0.4rem; }
+    .sc-label { font-family: var(--lux-font-plus-jakarta-sans); font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--mayang-gold); font-weight: 600; display: block; margin-bottom: 0.2rem; }
+    .sc-title { font-size: 1.25rem; color: var(--mayang-gold-light); font-family: var(--lux-font-cinzel-decorative-2); margin-bottom: 0.4rem; }
     .sc-desc { font-size: 0.84rem; color: rgba(255,255,255,0.85); line-height: 1.7; font-style: italic; }
     .journey-footer { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin-top: 1.25rem; width: 100%; max-width: 440px; }
     .jf-line { flex: 1; height: 1px; background: var(--mayang-border); }
-    .jf-signature { font-family: 'Pinyon Script', cursive; font-size: 2rem; color: var(--mayang-gold); }
+    .jf-signature { font-family: var(--lux-font-pinyon-script-2); font-size: 2rem; color: var(--mayang-gold); }
 
     /* GALLERY PUZZLE GRID & LIGHTBOX */
     .btn-show-gallery, .btn-outline-box {
       display: inline-flex; align-items: center; justify-content: center; padding: 0.8rem 2.2rem;
       border: 1px solid var(--mayang-gold); border-radius: 50px; color: var(--mayang-gold-light);
-      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
+      font-family: var(--lux-font-plus-jakarta-sans); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
       cursor: pointer; background: transparent; transition: all 0.3s;
     }
-    .btn-show-gallery:hover, .btn-outline-box:hover { background: var(--mayang-gold); color: var(--bg-dark, #120c06); }
+    .btn-show-gallery:hover, .btn-outline-box:hover { background: var(--mayang-gold); color: var(--bg-dark, var(--lux-c-120c06)); }
 
     /* DIGITAL GIFT & BANK CARDS */
     .bank-card {
       background: var(--mayang-card); border: 1px solid var(--mayang-border); border-radius: 18px;
       padding: 1.5rem; margin-bottom: 1rem; text-align: left; box-shadow: var(--border-glow); width: 100%; max-width: 440px;
     }
-    .bank-label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.85rem; font-weight: 700; color: var(--mayang-gold); display: block; margin-bottom: 0.2rem; }
+    .bank-label { font-family: var(--lux-font-plus-jakarta-sans); font-size: 0.85rem; font-weight: 700; color: var(--mayang-gold); display: block; margin-bottom: 0.2rem; }
     .bank-owner { font-size: 0.78rem; color: rgba(255,255,255,0.75); display: block; margin-bottom: 0.6rem; font-style: italic; }
     .bank-row {
       display: flex; align-items: center; justify-content: space-between;
@@ -536,21 +547,21 @@
     }
     .bank-number { font-family: monospace; font-size: 1.05rem; color: #ffffff; letter-spacing: 0.08em; }
     .btn-copy {
-      background: var(--mayang-gold); color: var(--bg-dark, #120c06); border: none; padding: 0.45rem 1rem;
-      border-radius: 6px; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.7rem; cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase;
+      background: var(--mayang-gold); color: var(--bg-dark, var(--lux-c-120c06)); border: none; padding: 0.45rem 1rem;
+      border-radius: 6px; font-family: var(--lux-font-plus-jakarta-sans); font-weight: 700; font-size: 0.7rem; cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase;
     }
 
     /* WISHES & RSVP FORM */
     .rsvp-form-wrap { text-align: left; margin-top: 1.5rem; width: 100%; max-width: 440px; }
     .form-row { margin-bottom: 1rem; }
-    .form-lbl { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: var(--mayang-gold-light); display: block; margin-bottom: 0.3rem; }
+    .form-lbl { font-family: var(--lux-font-plus-jakarta-sans); font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: var(--mayang-gold-light); display: block; margin-bottom: 0.3rem; }
     .form-in, .form-sel, .form-ta {
       width: 100%; padding: 0.8rem 1rem; background: color-mix(in srgb, var(--mayang-dark) 85%, transparent); border: 1px solid var(--mayang-border);
-      border-radius: 10px; color: #ffffff; font-size: 0.85rem; outline: none; font-family: 'Plus Jakarta Sans', sans-serif;
+      border-radius: 10px; color: #ffffff; font-size: 0.85rem; outline: none; font-family: var(--lux-font-plus-jakarta-sans);
     }
     .btn-rsvp-submit {
       width: 100%; padding: 1rem; background: linear-gradient(90deg, var(--primary, var(--mayang-gold)) 0%, var(--accent, var(--mayang-gold-light)) 50%, var(--primary, var(--mayang-gold)) 100%);
-      color: var(--bg-dark, #120c06); border: none; border-radius: 50px; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.8rem;
+      color: var(--bg-dark, var(--lux-c-120c06)); border: none; border-radius: 50px; font-family: var(--lux-font-plus-jakarta-sans); font-weight: 700; font-size: 0.8rem;
       letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; transition: all 0.3s;
     }
     .wishes-list {
@@ -567,7 +578,7 @@
       padding: 1.1rem; background: var(--mayang-card); border: 1px solid var(--mayang-border);
       border-radius: 14px; text-align: left;
     }
-    .wish-name { font-family: 'Cinzel Decorative', serif; font-weight: 600; font-size: 0.9rem; color: var(--mayang-gold); }
+    .wish-name { font-family: var(--lux-font-cinzel-decorative-2); font-weight: 600; font-size: 0.9rem; color: var(--mayang-gold); }
     .wish-msg { font-size: 0.82rem; color: rgba(255,255,255,0.9); line-height: 1.6; margin-top: 0.3rem; font-style: italic; }
 
     /* QR PASS CARD */
@@ -575,10 +586,10 @@
       background: var(--mayang-card); border: 1px solid var(--mayang-border); border-radius: 24px;
       padding: 2.4rem 1.5rem; text-align: center; box-shadow: var(--border-glow); width: 100%; max-width: 440px;
     }
-    .pass-tagline { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--mayang-gold-light); display: block; margin-bottom: 0.4rem; }
-    .pass-names { font-size: 2rem; color: var(--mayang-gold); font-family: 'Pinyon Script', cursive; margin-bottom: 0.2rem; }
+    .pass-tagline { font-family: var(--lux-font-plus-jakarta-sans); font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--mayang-gold-light); display: block; margin-bottom: 0.4rem; }
+    .pass-names { font-size: 2rem; color: var(--mayang-gold); font-family: var(--lux-font-pinyon-script-2); margin-bottom: 0.2rem; }
     .pass-qr-wrapper { background: #ffffff; padding: 14px; display: inline-block; border-radius: 14px; margin: 1.2rem 0; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
-    .pass-guest-name { font-size: 1.35rem; color: #ffffff; font-family: 'Cinzel Decorative', serif; }
+    .pass-guest-name { font-size: 1.35rem; color: #ffffff; font-family: var(--lux-font-cinzel-decorative-2); }
 
     /* DOCK */
     .bottom-dock {
@@ -594,7 +605,7 @@
       opacity: 0;
       pointer-events: none;
     }
-    .dock-btn { color: rgba(255,255,255,0.7); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.65rem; text-decoration: none; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
+    .dock-btn { color: rgba(255,255,255,0.7); font-family: var(--lux-font-plus-jakarta-sans); font-size: 0.65rem; text-decoration: none; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
     .dock-btn:hover, .dock-btn.active { color: var(--mayang-gold); }
     .dock-btn svg { width: 18px; height: 18px; fill: currentColor; }
     .dock-music-btn {
@@ -614,7 +625,7 @@
     /* MODAL POPUP */
     .modal-bg {
       position: fixed; inset: 0; z-index: 10000;
-      background: rgba(10, 6, 4, 0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      background: color-mix(in srgb, var(--lux-c-0a0604) 88%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
       display: flex; align-items: center; justify-content: center; padding: 1.5rem;
       opacity: 0; pointer-events: none; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
@@ -632,7 +643,7 @@
       cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.85rem;
       transition: all 0.2s ease;
     }
-    .modal-close:hover { background: var(--mayang-gold); color: var(--bg-dark, #120c06); }
+    .modal-close:hover { background: var(--mayang-gold); color: var(--bg-dark, var(--lux-c-120c06)); }
 
     /* FOOTER & CLOSING (Adaptive Full-Height 100vh) */
     .site-footer {
@@ -664,7 +675,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, color-mix(in srgb, var(--bg-dark, #120c06) 60%, transparent) 50%, color-mix(in srgb, var(--bg-dark, #120c06) 95%, transparent) 100%);
+      background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, color-mix(in srgb, var(--bg-dark, var(--lux-c-120c06)) 60%, transparent) 50%, color-mix(in srgb, var(--bg-dark, var(--lux-c-120c06)) 95%, transparent) 100%);
       pointer-events: none;
       z-index: 1;
     }
@@ -973,7 +984,7 @@
       {{qrAccessCardHtml}}
       <div style="margin-top:1.2rem;padding:0.9rem;background:var(--mayang-card);border:1px solid var(--mayang-border);border-radius:12px;text-align:center;">
         <span style="font-size:0.62rem;letter-spacing:0.2em;color:var(--mayang-gold-light);text-transform:uppercase;font-weight:600;display:block;margin-bottom:0.4rem;">Voucher Souvenir</span>
-        <div style="font-family:monospace;font-weight:700;font-size:0.85rem;color:#ffffff;letter-spacing:0.12em;padding:0.45rem;background:color-mix(in srgb, var(--bg-dark, #120c06) 80%, transparent);border:1px solid var(--mayang-border);border-radius:6px;">SOUVENIR-{{invitationId}}</div>
+        <div style="font-family:monospace;font-weight:700;font-size:0.85rem;color:#ffffff;letter-spacing:0.12em;padding:0.45rem;background:color-mix(in srgb, var(--bg-dark, var(--lux-c-120c06)) 80%, transparent);border:1px solid var(--mayang-border);border-radius:6px;">SOUVENIR-{{invitationId}}</div>
       </div>
     </div>
   </div>

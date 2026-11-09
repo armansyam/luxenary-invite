@@ -29,6 +29,12 @@
       --radius-md: 16px;
       --radius-lg: 24px;
       --radius-full: 9999px;
+      /* Ditambahkan tokenisasi master (warna dan huruf yang sebelumnya tertulis langsung). */
+      --lux-c-0f172a: #0f172a;
+      --lux-c-38bdf8: #38bdf8;
+      --lux-c-09090b: #09090b;
+      --lux-c-71717a: #71717a;
+      --lux-font-plus-jakarta-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     }
 
     * {
@@ -44,7 +50,7 @@
     }
 
     body {
-      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       background: var(--bg-dark);
       color: var(--text-main);
       line-height: 1.6;
@@ -70,10 +76,10 @@
       background-image: 
         linear-gradient(
           to bottom,
-          color-mix(in srgb, var(--bg-dark, #0f172a) 75%, transparent) 0%,
-          color-mix(in srgb, var(--primary, #38bdf8) 35%, transparent) 40%,
-          color-mix(in srgb, var(--bg-dark, #0f172a) 85%, transparent) 75%,
-          color-mix(in srgb, var(--bg-dark, #0f172a) 95%, transparent) 100%
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-0f172a)) 75%, transparent) 0%,
+          color-mix(in srgb, var(--primary, var(--lux-c-38bdf8)) 35%, transparent) 40%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-0f172a)) 85%, transparent) 75%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-0f172a)) 95%, transparent) 100%
         ),
         url('/assets/ornaments/background/background-monocrhome1.webp');
       background-size: cover;
@@ -86,10 +92,10 @@
       background-image: 
         linear-gradient(
           to bottom,
-          color-mix(in srgb, var(--bg-dark, #0f172a) 75%, transparent) 0%,
-          color-mix(in srgb, var(--primary, #38bdf8) 35%, transparent) 40%,
-          color-mix(in srgb, var(--bg-dark, #0f172a) 85%, transparent) 75%,
-          color-mix(in srgb, var(--bg-dark, #0f172a) 95%, transparent) 100%
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-0f172a)) 75%, transparent) 0%,
+          color-mix(in srgb, var(--primary, var(--lux-c-38bdf8)) 35%, transparent) 40%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-0f172a)) 85%, transparent) 75%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-0f172a)) 95%, transparent) 100%
         ),
         var(--custom-bg);
     }
@@ -121,7 +127,7 @@
     .cover-overlay {
       position: absolute;
       inset: 0;
-      background: linear-gradient(to bottom, rgba(9, 9, 11, 0.4) 0%, rgba(9, 9, 11, 0.95) 100%);
+      background: linear-gradient(to bottom, color-mix(in srgb, var(--lux-c-09090b) 40%, transparent) 0%, color-mix(in srgb, var(--lux-c-09090b) 95%, transparent) 100%);
       z-index: 1;
     }
 
@@ -504,7 +510,7 @@
     <footer style="padding: 40px 24px 80px; text-align: center; border-top: 1px solid var(--card-border);">
       <p style="font-size: 13px; color: var(--text-muted);">Terima kasih atas doa dan kehadiran Anda yang sangat berarti.</p>
       <p style="font-size: 15px; font-weight: 800; color: var(--text-main); margin-top: 6px;">{{mainName}}</p>
-      <div style="margin-top: 24px; font-size: 11px; color: #71717a;">
+      <div style="margin-top: 24px; font-size: 11px; color: var(--lux-c-71717a);">
         Crafted with <span style="color: var(--secondary);">Luxenary</span>
       </div>
     </footer>

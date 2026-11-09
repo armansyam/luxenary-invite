@@ -30,7 +30,7 @@
 
   <style>
     @font-face {
-      font-family: "Iskry Regular";
+      font-family: var(--lux-font-iskry-regular);
       src: url("/fonts/burgundy-royale/Iskry-Regular.woff2") format("woff2");
       font-weight: normal;
       font-style: normal;
@@ -57,6 +57,17 @@
       --shadow-elevated: 0 16px 45px color-mix(in srgb, var(--primary) 22%, transparent);
       --glass-bg: color-mix(in srgb, var(--bg-light) 92%, transparent);
       --glass-border: color-mix(in srgb, var(--accent) 45%, transparent);
+      /* Ditambahkan tokenisasi master (warna dan huruf yang sebelumnya tertulis langsung). */
+      --lux-font-iskry-regular: "Iskry Regular";
+      --lux-font-plus-jakarta-sans: "Plus Jakarta Sans", -apple-system, sans-serif;
+      --lux-font-vidaloka: "Vidaloka", "Cinzel", Georgia, serif;
+      --lux-font-cinzel: "Cinzel", Georgia, serif;
+      --lux-font-imperial-script: "Imperial Script", cursive;
+      --lux-font-iskry-regular-2: "Iskry Regular", "Vidaloka", serif;
+      --lux-font-vidaloka-2: "Vidaloka", Georgia, serif;
+      --lux-font-traditional-arabic: "Traditional Arabic", "Amiri", "Cinzel", serif;
+      --lux-font-vidaloka-3: 'Vidaloka', serif;
+      --lux-font-cinzel-2: 'Cinzel', serif;
     }
 
     * {
@@ -78,7 +89,7 @@
     }
 
     body {
-      font-family: "Plus Jakarta Sans", -apple-system, sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       background-color: var(--bg-dark);
       color: var(--text-main);
       overflow-x: hidden;
@@ -111,22 +122,22 @@
     .vidaloka,
     h1, h2, h3, h4,
     .sec-main-title {
-      font-family: "Vidaloka", "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-vidaloka);
       letter-spacing: 0.02em;
     }
 
     .font-cinzel {
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
       letter-spacing: 0.15em;
     }
 
     .script-accent {
-      font-family: "Imperial Script", cursive;
+      font-family: var(--lux-font-imperial-script);
       font-weight: 400;
     }
 
     .font-iskry {
-      font-family: "Iskry Regular", "Vidaloka", serif;
+      font-family: var(--lux-font-iskry-regular-2);
     }
 
     /* =================================================================== */
@@ -178,7 +189,7 @@
       color: var(--accent);
       margin-bottom: 0.8rem;
       font-weight: 600;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
     }
 
     .sidebar-desktop-names {
@@ -186,12 +197,12 @@
       line-height: 1.1;
       color: #ffffff;
       margin-bottom: 1rem;
-      font-family: "Vidaloka", Georgia, serif;
+      font-family: var(--lux-font-vidaloka-2);
       text-shadow: 0 4px 24px rgba(0, 0, 0, 0.7);
     }
 
     .sidebar-desktop-names span {
-      font-family: "Imperial Script", cursive;
+      font-family: var(--lux-font-imperial-script);
       color: var(--accent);
       font-size: 1.1em;
       margin: 0 0.4rem;
@@ -204,7 +215,7 @@
       text-transform: uppercase;
       margin-bottom: 1.25rem;
       font-weight: 500;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
     }
 
     .sidebar-desktop-quote {
@@ -380,7 +391,7 @@
       text-transform: uppercase;
       color: var(--accent);
       font-weight: 600;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
       margin-bottom: 1rem;
       background: rgba(0, 0, 0, 0.35);
       backdrop-filter: blur(6px);
@@ -392,13 +403,13 @@
       text-transform: uppercase;
       color: rgba(255, 255, 255, 0.85);
       margin-bottom: 0.5rem;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
     }
 
     .cover-names {
       font-size: clamp(2.8rem, 9vw, 3.8rem);
       line-height: 1.15;
-      font-family: "Vidaloka", Georgia, serif;
+      font-family: var(--lux-font-vidaloka-2);
       color: #ffffff;
       margin: 0.2rem 0 0.8rem;
       font-weight: 400;
@@ -406,7 +417,7 @@
     }
 
     .cover-names span {
-      font-family: "Imperial Script", cursive;
+      font-family: var(--lux-font-imperial-script);
       color: var(--accent);
       font-size: 1em;
       margin: 0 0.35rem;
@@ -418,7 +429,7 @@
       text-transform: uppercase;
       color: var(--accent);
       font-weight: 500;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
       margin-bottom: 1.2rem;
     }
 
@@ -438,7 +449,7 @@
       color: rgba(255, 255, 255, 0.75);
       margin-bottom: 0.3rem;
       display: block;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
     }
 
     .cover-guest-name {
@@ -446,7 +457,7 @@
       font-weight: 600;
       color: #ffffff;
       letter-spacing: 0.03em;
-      font-family: "Vidaloka", Georgia, serif;
+      font-family: var(--lux-font-vidaloka-2);
     }
 
     .btn-open-royale {
@@ -464,7 +475,7 @@
       font-weight: 700;
       letter-spacing: 0.2em;
       text-transform: uppercase;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
       cursor: pointer;
       box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
       transition: all 0.3s ease;
@@ -509,7 +520,7 @@
       color: var(--primary);
       margin-bottom: 0.6rem;
       font-weight: 700;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
     }
 
     .sec-main-title {
@@ -518,7 +529,7 @@
       color: var(--primary);
       margin-bottom: 0.8rem;
       font-weight: 400;
-      font-family: "Vidaloka", Georgia, serif;
+      font-family: var(--lux-font-vidaloka-2);
       overflow-wrap: break-word;
     }
 
@@ -584,20 +595,20 @@
       color: var(--primary);
       margin-bottom: 0.5rem;
       font-weight: 600;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
     }
 
     .home-names {
       font-size: clamp(2.6rem, 8vw, 3.4rem);
       line-height: 1.15;
       color: var(--primary);
-      font-family: "Vidaloka", Georgia, serif;
+      font-family: var(--lux-font-vidaloka-2);
       margin-bottom: 0.5rem;
       font-weight: 400;
     }
 
     .home-names span {
-      font-family: "Imperial Script", cursive;
+      font-family: var(--lux-font-imperial-script);
       color: var(--secondary);
       font-size: 0.95em;
       margin: 0 0.3rem;
@@ -609,7 +620,7 @@
       text-transform: uppercase;
       color: var(--secondary);
       font-weight: 600;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
       margin-bottom: 1.8rem;
     }
 
@@ -647,7 +658,7 @@
       font-weight: 600;
       color: var(--primary);
       line-height: 1;
-      font-family: "Iskry Regular", "Vidaloka", serif;
+      font-family: var(--lux-font-iskry-regular-2);
       margin-bottom: 4px;
     }
 
@@ -657,7 +668,7 @@
       text-transform: uppercase;
       color: var(--text-muted);
       font-weight: 600;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
     }
 
     /* Section Quote / Sacred Union */
@@ -668,7 +679,7 @@
     }
 
     .greeting-text {
-      font-family: "Traditional Arabic", "Amiri", "Cinzel", serif;
+      font-family: var(--lux-font-traditional-arabic);
       font-size: 1.45rem;
       color: var(--primary);
       margin-bottom: 1.2rem;
@@ -676,7 +687,7 @@
     }
 
     .quote-content {
-      font-family: "Vidaloka", Georgia, serif;
+      font-family: var(--lux-font-vidaloka-2);
       font-size: 1.15rem;
       line-height: 1.8;
       color: var(--text-main);
@@ -691,7 +702,7 @@
       text-transform: uppercase;
       color: var(--primary);
       font-weight: 700;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
     }
 
     /* Section Mempelai (#couple) */
@@ -729,7 +740,7 @@
 
     .couple-name {
       font-size: 1.85rem;
-      font-family: "Vidaloka", Georgia, serif;
+      font-family: var(--lux-font-vidaloka-2);
       color: var(--primary);
       margin-bottom: 0.3rem;
       font-weight: 500;
@@ -741,7 +752,7 @@
       text-transform: uppercase;
       color: var(--secondary);
       font-weight: 700;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
       margin-bottom: 0.6rem;
     }
 
@@ -765,7 +776,7 @@
       text-decoration: none;
       transition: all 0.3s ease;
       background: var(--glass-bg);
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
       letter-spacing: 0.1em;
     }
 
@@ -782,7 +793,7 @@
     }
 
     .couple-divider-amp {
-      font-family: "Imperial Script", cursive;
+      font-family: var(--lux-font-imperial-script);
       font-size: 4rem;
       color: var(--secondary);
       line-height: 1;
@@ -826,14 +837,14 @@
       text-transform: uppercase;
       color: var(--primary);
       font-weight: 700;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
       margin-bottom: 0.8rem;
       background: color-mix(in srgb, var(--accent) 25%, transparent);
     }
 
     .ev-name {
       font-size: 1.6rem;
-      font-family: "Vidaloka", Georgia, serif;
+      font-family: var(--lux-font-vidaloka-2);
       color: var(--primary);
       margin-bottom: 0.4rem;
       font-weight: 500;
@@ -870,13 +881,13 @@
       text-transform: uppercase;
       color: var(--secondary);
       font-weight: 700;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
       margin-bottom: 0.5rem;
     }
 
     .ev-venue {
       font-size: 1.15rem;
-      font-family: "Vidaloka", Georgia, serif;
+      font-family: var(--lux-font-vidaloka-2);
       color: var(--text-main);
       margin-bottom: 0.3rem;
       font-weight: 600;
@@ -905,7 +916,7 @@
       letter-spacing: 0.18em;
       text-transform: uppercase;
       font-weight: 600;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
       transition: all 0.3s ease;
       box-shadow: 0 4px 15px color-mix(in srgb, var(--primary) 25%, transparent);
     }
@@ -970,13 +981,13 @@
       text-transform: uppercase;
       color: var(--primary);
       font-weight: 700;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
       margin-bottom: 0.3rem;
     }
 
     .story-title {
       font-size: 1.4rem;
-      font-family: "Vidaloka", Georgia, serif;
+      font-family: var(--lux-font-vidaloka-2);
       color: var(--primary);
       margin-bottom: 0.4rem;
       font-weight: 500;
@@ -1008,7 +1019,7 @@
 
     .gift-bank-name {
       font-size: 1.35rem;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
       letter-spacing: 0.1em;
       color: var(--primary);
       font-weight: 700;
@@ -1045,7 +1056,7 @@
       letter-spacing: 0.16em;
       text-transform: uppercase;
       font-weight: 700;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
       cursor: pointer;
       transition: all 0.3s ease;
     }
@@ -1079,7 +1090,7 @@
       color: var(--text-muted);
       margin-bottom: 0.4rem;
       font-weight: 700;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
     }
 
     .form-input,
@@ -1146,7 +1157,7 @@
       letter-spacing: 0.18em;
       text-transform: uppercase;
       font-weight: 700;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
       cursor: pointer;
       transition: all 0.3s ease;
       box-shadow: 0 4px 15px color-mix(in srgb, var(--primary) 25%, transparent);
@@ -1189,7 +1200,7 @@
       font-size: 1rem;
       font-weight: 600;
       color: var(--primary);
-      font-family: "Vidaloka", Georgia, serif;
+      font-family: var(--lux-font-vidaloka-2);
     }
 
     .wish-status-badge {
@@ -1201,7 +1212,7 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
     }
 
     .wish-text-body {
@@ -1246,7 +1257,7 @@
     }
 
     .closing-quote-text {
-      font-family: "Vidaloka", Georgia, serif;
+      font-family: var(--lux-font-vidaloka-2);
       font-size: 1.15rem;
       color: var(--text-main);
       max-width: 360px;
@@ -1256,14 +1267,14 @@
 
     .closing-names {
       font-size: 2.6rem;
-      font-family: "Vidaloka", Georgia, serif;
+      font-family: var(--lux-font-vidaloka-2);
       color: var(--primary);
       margin-bottom: 0.4rem;
       font-weight: 400;
     }
 
     .closing-names span {
-      font-family: "Imperial Script", cursive;
+      font-family: var(--lux-font-imperial-script);
       color: var(--secondary);
       font-size: 1.05em;
       margin: 0 0.35rem;
@@ -1274,7 +1285,7 @@
       color: var(--text-muted);
       letter-spacing: 0.16em;
       text-transform: uppercase;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
     }
 
     /* =================================================================== */
@@ -1317,7 +1328,7 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
       font-weight: 600;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
       border-radius: var(--radius-full);
       transition: all 0.2s ease;
     }
@@ -1428,7 +1439,7 @@
       letter-spacing: 0.12em;
       text-transform: uppercase;
       font-weight: 600;
-      font-family: "Cinzel", Georgia, serif;
+      font-family: var(--lux-font-cinzel);
       box-shadow: 0 8px 25px color-mix(in srgb, var(--primary) 35%, transparent);
       z-index: 11000;
       opacity: 0;
@@ -1828,7 +1839,7 @@
       </button>
 
       <span class="sec-eyebrow" style="margin-top:0.5rem;">TIKET KEHADIRAN</span>
-      <h3 style="font-family:'Vidaloka',serif; font-size:1.5rem; margin-bottom:0.4rem; color:var(--primary);">QR Check-in Tamu</h3>
+      <h3 style="font-family:var(--lux-font-vidaloka-3); font-size:1.5rem; margin-bottom:0.4rem; color:var(--primary);">QR Check-in Tamu</h3>
       <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:1.2rem;">Tunjukkan kode QR ini kepada resepsionis di lokasi acara.</p>
 
       <div style="background:var(--bg-light); border-radius:12px; padding:1.2rem; display:inline-block; border:1px solid var(--glass-border); margin-bottom:1rem;">
@@ -1841,7 +1852,7 @@
         </svg>
       </div>
 
-      <div style="font-size:0.75rem; color:var(--text-muted); letter-spacing:0.15em; text-transform:uppercase; font-family:'Cinzel',serif;">
+      <div style="font-size:0.75rem; color:var(--text-muted); letter-spacing:0.15em; text-transform:uppercase; font-family:var(--lux-font-cinzel-2);">
         {{firstName}} &amp; {{secondName}}
       </div>
     </div>

@@ -29,18 +29,26 @@
       --radius-md: 16px;
       --radius-lg: 24px;
       --radius-full: 9999px;
+      /* Ditambahkan tokenisasi master (warna dan huruf yang sebelumnya tertulis langsung). */
+      --lux-c-022c22: #022c22;
+      --lux-c-059669: #059669;
+      --lux-c-042f2e: #042f2e;
+      --lux-c-5eead4: #5eead4;
+      --lux-c-0d9488: #0d9488;
+      --lux-font-plus-jakarta-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --lux-font-playfair-display: 'Playfair Display', Georgia, serif;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     ::selection { background: color-mix(in srgb, var(--primary) 40%, transparent); color: #ffffff; }
     body {
-      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       background: var(--bg-canvas);
       color: var(--text-main);
       line-height: 1.6;
       overflow-x: hidden;
     }
-    .serif { font-family: 'Playfair Display', Georgia, serif; }
+    .serif { font-family: var(--lux-font-playfair-display); }
 
     .lux-wrapper {
       max-width: 480px;
@@ -61,10 +69,10 @@
       background-image: 
         linear-gradient(
           to bottom,
-          color-mix(in srgb, var(--bg-dark, #022c22) 75%, transparent) 0%,
-          color-mix(in srgb, var(--primary, #059669) 40%, transparent) 40%,
-          color-mix(in srgb, var(--bg-dark, #022c22) 85%, transparent) 75%,
-          color-mix(in srgb, var(--bg-dark, #022c22) 95%, transparent) 100%
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-022c22)) 75%, transparent) 0%,
+          color-mix(in srgb, var(--primary, var(--lux-c-059669)) 40%, transparent) 40%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-022c22)) 85%, transparent) 75%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-022c22)) 95%, transparent) 100%
         ),
         url('/assets/ornaments/background/background-monocrhome1.webp');
       background-size: cover;
@@ -77,10 +85,10 @@
       background-image: 
         linear-gradient(
           to bottom,
-          color-mix(in srgb, var(--bg-dark, #022c22) 75%, transparent) 0%,
-          color-mix(in srgb, var(--primary, #059669) 40%, transparent) 40%,
-          color-mix(in srgb, var(--bg-dark, #022c22) 85%, transparent) 75%,
-          color-mix(in srgb, var(--bg-dark, #022c22) 95%, transparent) 100%
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-022c22)) 75%, transparent) 0%,
+          color-mix(in srgb, var(--primary, var(--lux-c-059669)) 40%, transparent) 40%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-022c22)) 85%, transparent) 75%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-022c22)) 95%, transparent) 100%
         ),
         var(--custom-bg);
     }
@@ -105,7 +113,7 @@
     .cover-overlay {
       position: absolute;
       inset: 0;
-      background: linear-gradient(to bottom, rgba(4, 47, 46, 0.65) 0%, rgba(4, 47, 46, 0.95) 100%);
+      background: linear-gradient(to bottom, color-mix(in srgb, var(--lux-c-042f2e) 65%, transparent) 0%, color-mix(in srgb, var(--lux-c-042f2e) 95%, transparent) 100%);
       z-index: 1;
     }
     .cover-content { position: relative; z-index: 2; max-width: 380px; }
@@ -122,7 +130,7 @@
       font-weight: 700;
       letter-spacing: 1.5px;
       text-transform: uppercase;
-      color: #5eead4;
+      color: var(--lux-c-5eead4);
       margin-bottom: 20px;
     }
 
@@ -154,14 +162,14 @@
       font-weight: 700;
       border: none;
       cursor: pointer;
-      box-shadow: 0 4px 15px rgba(13, 148, 136, 0.4);
+      box-shadow: 0 4px 15px color-mix(in srgb, var(--lux-c-0d9488) 40%, transparent);
       transition: transform 0.2s, box-shadow 0.2s;
     }
-    .btn-open:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(13, 148, 136, 0.6); }
+    .btn-open:hover { transform: translateY(-2px); box-shadow: 0 8px 25px color-mix(in srgb, var(--lux-c-0d9488) 60%, transparent); }
 
     /* Sections */
     .sec-block { padding: 48px 24px; text-align: center; border-bottom: 1px solid color-mix(in srgb, var(--primary) 15%, transparent); }
-    .sec-lbl { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #5eead4; margin-bottom: 8px; }
+    .sec-lbl { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--lux-c-5eead4); margin-bottom: 8px; }
     .sec-h2 { font-size: 24px; font-weight: 800; color: #ffffff; margin-bottom: 16px; }
 
     .event-card {

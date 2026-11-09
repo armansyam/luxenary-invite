@@ -30,15 +30,18 @@
       --radius-md: 4px;
       --radius-lg: 8px;
       --radius-full: 9999px;
+      /* Ditambahkan tokenisasi master (warna dan huruf yang sebelumnya tertulis langsung). */
+      --lux-font-plus-jakarta-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --lux-font-cormorant-garamond: 'Cormorant Garamond', Georgia, serif;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     ::selection { background: color-mix(in srgb, var(--primary) 25%, transparent); color: var(--text-main); }
     html { scroll-behavior: smooth; scrollbar-width: none; }
     html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
-    body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; background: var(--bg-canvas); color: var(--text-main); line-height: 1.7; overflow-x: hidden; }
+    body { font-family: var(--lux-font-plus-jakarta-sans); background: var(--bg-canvas); color: var(--text-main); line-height: 1.7; overflow-x: hidden; }
     body.is-locked { overflow: hidden; }
-    .serif { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; }
+    .serif { font-family: var(--lux-font-cormorant-garamond); font-weight: 600; }
     img { max-width: 100%; display: block; }
 
     /* ── Ilustrasi ── */

@@ -29,15 +29,19 @@
       --radius-md: 12px;
       --radius-lg: 20px;
       --radius-full: 9999px;
+      /* Ditambahkan tokenisasi master (warna dan huruf yang sebelumnya tertulis langsung). */
+      --lux-font-lora: 'Lora', Georgia, serif;
+      --lux-font-cinzel: 'Cinzel', 'Lora', serif;
+      --lux-font-cinzel-2: 'Cinzel', serif;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     ::selection { background: color-mix(in srgb, var(--primary) 45%, transparent); color: var(--text-main); }
     html { scroll-behavior: smooth; scrollbar-width: none; }
     html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
-    body { font-family: 'Lora', Georgia, serif; background: var(--bg-canvas); color: var(--text-main); line-height: 1.7; overflow-x: hidden; }
+    body { font-family: var(--lux-font-lora); background: var(--bg-canvas); color: var(--text-main); line-height: 1.7; overflow-x: hidden; }
     body.is-locked { overflow: hidden; }
-    .serif { font-family: 'Cinzel', 'Lora', serif; letter-spacing: 0.03em; font-weight: 400; }
+    .serif { font-family: var(--lux-font-cinzel); letter-spacing: 0.03em; font-weight: 400; }
     img { max-width: 100%; display: block; }
 
     /* ── Cover ── */
@@ -58,7 +62,7 @@
     .cover-sub { font-size: 13px; color: var(--text-muted); margin: 14px 0 20px; }
     .guest-lbl { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-muted); }
     .guest-name { font-size: 18px; color: var(--text-main); margin: 4px 0 22px; }
-    .btn-open { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; border: none; cursor: pointer; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--accent), var(--primary)); color: var(--on-primary); font-family: 'Cinzel', serif; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; box-shadow: 0 10px 24px color-mix(in srgb, var(--primary) 30%, transparent); transition: transform 0.3s ease; }
+    .btn-open { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; border: none; cursor: pointer; border-radius: var(--radius-full); background: linear-gradient(135deg, var(--accent), var(--primary)); color: var(--on-primary); font-family: var(--lux-font-cinzel-2); font-size: 12px; font-weight: 700; letter-spacing: 0.12em; box-shadow: 0 10px 24px color-mix(in srgb, var(--primary) 30%, transparent); transition: transform 0.3s ease; }
     .btn-open:hover { transform: translateY(-2px); }
 
     /* ── Hero kiri desktop (slot DESKTOP_SIDEBAR) ── */

@@ -33,6 +33,16 @@
       --text-main: #f5f5f7;
       --text-muted: rgba(245, 245, 247, 0.65);
       --border: rgba(255, 255, 255, 0.12);
+      /* Ditambahkan tokenisasi master (warna dan huruf yang sebelumnya tertulis langsung). */
+      --lux-c-070709: #070709;
+      --lux-c-0f0f12: #0f0f12;
+      --lux-c-111114: #111114;
+      --lux-c-8c583a: #8c583a;
+      --lux-c-a86b47: #a86b47;
+      --lux-c-fdf8f4: #fdf8f4;
+      --lux-c-21150e: #21150e;
+      --lux-font-jost: 'Jost', sans-serif;
+      --lux-font-cinzel: 'Cinzel', serif;
     }
 
     ::selection {
@@ -47,7 +57,7 @@
 
     html,
     body {
-      font-family: 'Jost', sans-serif;
+      font-family: var(--lux-font-jost);
       background: var(--bg-dark);
       color: var(--text-main);
       overflow-x: hidden;
@@ -69,7 +79,7 @@
     h2,
     h3,
     .serif {
-      font-family: 'Cinzel', serif;
+      font-family: var(--lux-font-cinzel);
       font-weight: 400;
     }
 
@@ -168,7 +178,7 @@
 
     .cover-guest-name {
       font-size: clamp(1.4rem, 6vw, 2.1rem);
-      font-family: 'Cinzel', serif;
+      font-family: var(--lux-font-cinzel);
       font-style: italic;
       color: #ffffff;
       line-height: 1.1;
@@ -192,7 +202,7 @@
       letter-spacing: 0.25em;
       text-transform: uppercase;
       cursor: pointer;
-      font-family: 'Jost', sans-serif;
+      font-family: var(--lux-font-jost);
       font-weight: 500;
       transition: all 0.35s ease;
       width: 100%;
@@ -202,7 +212,7 @@
 
     .btn-buka:hover {
       background: var(--text-main, #ffffff);
-      color: #070709;
+      color: var(--lux-c-070709);
     }
 
     .btn-qr-ghost {
@@ -212,7 +222,7 @@
       font-size: 0.65rem;
       letter-spacing: 0.18em;
       cursor: pointer;
-      font-family: 'Jost', sans-serif;
+      font-family: var(--lux-font-jost);
       text-transform: uppercase;
     }
 
@@ -239,7 +249,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(to top, rgba(7, 7, 9, 0.88) 0%, rgba(7, 7, 9, 0.15) 45%, transparent 100%);
+      background: linear-gradient(to top, color-mix(in srgb, var(--lux-c-070709) 88%, transparent) 0%, color-mix(in srgb, var(--lux-c-070709) 15%, transparent) 45%, transparent 100%);
     }
 
     .left-hero-content {
@@ -302,10 +312,10 @@
       background-image: 
         linear-gradient(
           to bottom,
-          color-mix(in srgb, var(--bg-dark, #070709) 55%, transparent) 0%,
-          color-mix(in srgb, var(--bg-dark, #070709) 40%, transparent) 35%,
-          color-mix(in srgb, var(--bg-dark, #070709) 82%, transparent) 70%,
-          color-mix(in srgb, var(--bg-dark, #070709) 94%, transparent) 100%
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-070709)) 55%, transparent) 0%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-070709)) 40%, transparent) 35%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-070709)) 82%, transparent) 70%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-070709)) 94%, transparent) 100%
         ),
         url('/assets/ornaments/background/background-monocrhome1.webp');
     }
@@ -315,10 +325,10 @@
       background-image: 
         linear-gradient(
           to bottom,
-          color-mix(in srgb, var(--bg-dark, #070709) 55%, transparent) 0%,
-          color-mix(in srgb, var(--bg-dark, #070709) 40%, transparent) 35%,
-          color-mix(in srgb, var(--bg-dark, #070709) 82%, transparent) 70%,
-          color-mix(in srgb, var(--bg-dark, #070709) 94%, transparent) 100%
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-070709)) 55%, transparent) 0%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-070709)) 40%, transparent) 35%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-070709)) 82%, transparent) 70%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-070709)) 94%, transparent) 100%
         ),
         var(--custom-bg);
     }
@@ -400,7 +410,7 @@
     }
 
     .opening-quote-text {
-      font-family: 'Cinzel', serif;
+      font-family: var(--lux-font-cinzel);
       font-style: italic;
       font-size: 1.05rem;
       color: rgba(255, 255, 255, 0.75);
@@ -455,7 +465,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(to top, var(--bg-dark, #070709) 0%, color-mix(in srgb, var(--bg-dark, #070709) 45%, transparent) 45%, transparent 100%);
+      background: linear-gradient(to top, var(--bg-dark, var(--lux-c-070709)) 0%, color-mix(in srgb, var(--bg-dark, var(--lux-c-070709)) 45%, transparent) 45%, transparent 100%);
       z-index: 1;
     }
 
@@ -625,7 +635,7 @@
       font-style: italic;
       font-size: 1.15rem;
       color: rgba(255, 255, 255, 0.85);
-      font-family: 'Cinzel', serif;
+      font-family: var(--lux-font-cinzel);
     }
 
     /* SECTIONS COMMON FLOW */
@@ -688,7 +698,7 @@
       font-weight: 300;
       color: #ffffff;
       line-height: 1;
-      font-family: 'Cinzel', serif;
+      font-family: var(--lux-font-cinzel);
     }
 
     .cd-txt {
@@ -720,7 +730,7 @@
 
     .btn-outline-box:hover {
       background: var(--text-main, #ffffff);
-      color: #070709;
+      color: var(--lux-c-070709);
     }
 
     /* EVENTS STACK & UNIFIED VENUE */
@@ -754,7 +764,7 @@
       font-weight: 400;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      font-family: 'Cinzel', serif;
+      font-family: var(--lux-font-cinzel);
       margin-bottom: 0.3rem;
     }
 
@@ -796,7 +806,7 @@
 
     .btn-map-outline:hover {
       background: var(--text-main, #ffffff);
-      color: #070709;
+      color: var(--lux-c-070709);
     }
 
     .events-unified-container {
@@ -1004,7 +1014,7 @@
 
     .gift-tab-btn.active {
       background: var(--text-main, #ffffff);
-      color: #070709;
+      color: var(--lux-c-070709);
       font-weight: 700;
     }
 
@@ -1048,7 +1058,7 @@
 
     .btn-copy {
       background: var(--text-main, #ffffff);
-      color: #070709;
+      color: var(--lux-c-070709);
       border: none;
       padding: 0.35rem 0.8rem;
       font-size: 0.65rem;
@@ -1087,7 +1097,7 @@
       color: #ffffff;
       font-size: 0.85rem;
       outline: none;
-      font-family: 'Jost', sans-serif;
+      font-family: var(--lux-font-jost);
       transition: border-color 0.2s;
     }
 
@@ -1101,7 +1111,7 @@
       width: 100%;
       padding: 0.95rem;
       background: var(--text-main, #ffffff);
-      color: #070709;
+      color: var(--lux-c-070709);
       border: none;
       font-weight: 700;
       font-size: 0.75rem;
@@ -1182,7 +1192,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(to bottom, transparent 0%, color-mix(in srgb, var(--bg-dark, #070709) 55%, transparent) 50%, var(--bg-dark, #070709) 100%);
+      background: linear-gradient(to bottom, transparent 0%, color-mix(in srgb, var(--bg-dark, var(--lux-c-070709)) 55%, transparent) 50%, var(--bg-dark, var(--lux-c-070709)) 100%);
       pointer-events: none;
       z-index: 1;
     }
@@ -1211,7 +1221,7 @@
       bottom: 18px;
       left: 50%;
       transform: translate3d(-50%, 0, 0);
-      background: rgba(15, 15, 18, 0.92);
+      background: color-mix(in srgb, var(--lux-c-0f0f12) 92%, transparent);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.15);
@@ -1264,7 +1274,7 @@
       width: 40px;
       height: 40px;
       border-radius: 50%;
-      background: rgba(15, 15, 18, 0.85);
+      background: color-mix(in srgb, var(--lux-c-0f0f12) 85%, transparent);
       border: 1px solid rgba(255, 255, 255, 0.2);
       color: rgba(255, 255, 255, 0.8);
       display: flex;
@@ -1315,7 +1325,7 @@
     }
 
     .modal-card {
-      background: var(--bg-dark, #111114);
+      background: var(--bg-dark, var(--lux-c-111114));
       border: 1px solid var(--border);
       padding: 2.2rem 1.8rem;
       width: 100%;
@@ -1433,7 +1443,7 @@
   </style>
 </head>
 
-<body style="--gold: #8c583a; --gold-dim: #a86b47; --gold-pale: #fdf8f4; --bg-dark: #21150e;">
+<body style="--gold: var(--lux-c-8c583a); --gold-dim: var(--lux-c-a86b47); --gold-pale: var(--lux-c-fdf8f4); --bg-dark: var(--lux-c-21150e);">
 
   <!-- FIXED LEFT HERO (DESKTOP ONLY) -->
   <div class="left-hero" style="background-image: url('{{sidebarPhotoUrl}}');">
@@ -1446,7 +1456,7 @@
 
   <!-- COVER SCREEN -->
   <div class="cover-screen" id="coverScreen"
-    style="background-image: linear-gradient(to bottom, rgba(7,7,9,0.2) 0%, rgba(7,7,9,0.0) 25%, rgba(7,7,9,0.55) 60%, rgba(7,7,9,0.92) 100%), url('{{landingCoverUrl}}');">
+    style="background-image: linear-gradient(to bottom, color-mix(in srgb, var(--lux-c-070709) 20%, transparent) 0%, color-mix(in srgb, var(--lux-c-070709) 0%, transparent) 25%, color-mix(in srgb, var(--lux-c-070709) 55%, transparent) 60%, color-mix(in srgb, var(--lux-c-070709) 92%, transparent) 100%), url('{{landingCoverUrl}}');">
     <div class="cover-top">
       <span class="cover-date-part">{{#if weddingDateDay}}{{weddingDateDay}}/{{weddingDateMonth}}{{/if}}</span>
       <span class="cover-date-part">{{weddingDateYear}}</span>
@@ -1475,7 +1485,7 @@
 
     <!-- 1. SLIDE 1: OPENING VIEW (100vh FULLSCREEN) -->
     <section class="slide-opening" id="home"
-      style="background-image: linear-gradient(to bottom, rgba(7,7,9,0.60) 0%, rgba(7,7,9,0.45) 40%, rgba(7,7,9,0.88) 100%), url('{{homePhotoCssUrl}}');">
+      style="background-image: linear-gradient(to bottom, color-mix(in srgb, var(--lux-c-070709) 60%, transparent) 0%, color-mix(in srgb, var(--lux-c-070709) 45%, transparent) 40%, color-mix(in srgb, var(--lux-c-070709) 88%, transparent) 100%), url('{{homePhotoCssUrl}}');">
       <div class="opening-top-date">
         <span>{{#if weddingDateDay}}{{weddingDateDay}}/{{weddingDateMonth}}{{/if}}</span>
         <span>{{weddingDateYear}}</span>

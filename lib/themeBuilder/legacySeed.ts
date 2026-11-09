@@ -42,8 +42,13 @@ const fontIdOf = (family: string) => FONT_OPTIONS.find((f) => f.label === family
 /** Huruf tiap peran dari keluarga yang paling sering dipakai di master lama; peran tanpa keluarga dikenali memakai bawaan. */
 export function legacyFonts(html: string): Partial<BuilderFonts> {
   const counts = new Map<string, number>();
+  // Master yang sudah ditokenisasi (lib/themeTokenize.ts) menulis `font-family: var(--lux-font-*)`; nilainya dibaca dari
+  // :root agar hasilnya sama dengan master sebelum tokenisasi. Variabel font milik master sendiri tetap tidak dihitung.
+  const vars = rootVars(html);
   for (const m of html.matchAll(/font-family\s*:\s*([^;}]+)/gi)) {
-    const first = m[1].split(",")[0].trim().replace(/^['"]|['"]$/g, "");
+    const ref = m[1].trim().match(/^var\((--lux-font-[\w-]+)\)/)?.[1];
+    const value = ref ? vars.get(ref) ?? "" : m[1];
+    const first = value.split(",")[0].trim().replace(/^['"]|['"]$/g, "");
     if (first in LEGACY_FONT_ROLES) counts.set(first, (counts.get(first) ?? 0) + 1);
   }
   const fonts: Partial<BuilderFonts> = {};

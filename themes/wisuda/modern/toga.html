@@ -29,15 +29,19 @@
       --radius-md: 14px;
       --radius-lg: 22px;
       --radius-full: 9999px;
+      /* Ditambahkan tokenisasi master (warna dan huruf yang sebelumnya tertulis langsung). */
+      --lux-font-lora: 'Lora', Georgia, serif;
+      --lux-font-cinzel: 'Cinzel', 'Lora', serif;
+      --lux-font-cinzel-2: 'Cinzel', serif;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     ::selection { background: color-mix(in srgb, var(--primary) 45%, transparent); color: var(--text-main); }
     html { scroll-behavior: smooth; scrollbar-width: none; }
     html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
-    body { font-family: 'Lora', Georgia, serif; background: var(--bg-canvas); color: var(--text-main); line-height: 1.65; overflow-x: hidden; }
+    body { font-family: var(--lux-font-lora); background: var(--bg-canvas); color: var(--text-main); line-height: 1.65; overflow-x: hidden; }
     body.is-locked { overflow: hidden; }
-    .serif { font-family: 'Cinzel', 'Lora', serif; letter-spacing: 0.02em; font-weight: 400; }
+    .serif { font-family: var(--lux-font-cinzel); letter-spacing: 0.02em; font-weight: 400; }
     img { max-width: 100%; display: block; }
 
     /* ── Cover ── */
@@ -75,7 +79,7 @@
     .btn-open {
       display: inline-flex; align-items: center; gap: 8px; padding: 13px 30px; border: none; cursor: pointer;
       border-radius: var(--radius-full); background: linear-gradient(135deg, var(--accent), var(--primary));
-      color: var(--on-primary); font-family: 'Cinzel', serif; font-size: 12px; font-weight: 700; letter-spacing: 0.12em;
+      color: var(--on-primary); font-family: var(--lux-font-cinzel-2); font-size: 12px; font-weight: 700; letter-spacing: 0.12em;
       box-shadow: 0 8px 24px color-mix(in srgb, var(--primary) 35%, transparent); transition: transform 0.3s ease;
     }
     .btn-open:hover { transform: translateY(-2px); }

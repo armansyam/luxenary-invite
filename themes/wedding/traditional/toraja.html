@@ -50,6 +50,17 @@
       --radius-full: 9999px;
       --shadow-subtle: 0 4px 20px rgba(0, 0, 0, 0.4);
       --shadow-elevated: 0 12px 36px rgba(0, 0, 0, 0.6);
+      /* Ditambahkan tokenisasi master (warna dan huruf yang sebelumnya tertulis langsung). */
+      --lux-c-1a0404: #1a0404;
+      --lux-c-750b0a: #750b0a;
+      --lux-c-0d0806: #0d0806;
+      --lux-c-c9a84c: #c9a84c;
+      --lux-font-plus-jakarta-sans: 'Plus Jakarta Sans', sans-serif;
+      --lux-font-cinzel: 'Cinzel', 'Cinzel Decorative', Georgia, serif;
+      --lux-font-great-vibes: 'Great Vibes', cursive;
+      --lux-font-cormorant-garamond: 'Cormorant Garamond', serif;
+      --lux-font-cinzel-2: 'Cinzel', serif;
+      --lux-font-cinzel-3: 'Cinzel', monospace;
     }
 
     ::selection {
@@ -66,8 +77,8 @@
       scrollbar-width: none;
     }
     body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background-color: var(--bg-dark, #1a0404);
+      font-family: var(--lux-font-plus-jakarta-sans);
+      background-color: var(--bg-dark, var(--lux-c-1a0404));
       color: #ffffff;
       overflow-x: hidden;
       width: 100%;
@@ -88,12 +99,12 @@
 
     /* TYPOGRAPHY CLASSES */
     .font-toraja-title, .serif, h1, h2, h3, h4 {
-      font-family: 'Cinzel', 'Cinzel Decorative', Georgia, serif;
+      font-family: var(--lux-font-cinzel);
       letter-spacing: 0.08em;
     }
-    .font-toraja-accent { font-family: 'Great Vibes', cursive; }
-    .font-toraja-quote { font-family: 'Cormorant Garamond', serif; font-style: italic; }
-    .font-toraja-sans { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .font-toraja-accent { font-family: var(--lux-font-great-vibes); }
+    .font-toraja-quote { font-family: var(--lux-font-cormorant-garamond); font-style: italic; }
+    .font-toraja-sans { font-family: var(--lux-font-plus-jakarta-sans); }
 
     /* ANIMATIONS & MICRO-INTERACTIONS */
     @keyframes torajaFloat {
@@ -127,8 +138,8 @@
       height: 100vh;
       background-image: linear-gradient(
         180deg,
-        color-mix(in srgb, var(--bg-dark, #1a0404) 70%, transparent) 0%,
-        color-mix(in srgb, var(--bg-dark, #1a0404) 70%, transparent) 100%
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-1a0404)) 70%, transparent) 0%,
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-1a0404)) 70%, transparent) 100%
       ), url('/assets/ornaments/background/background-red.webp');
       background-size: cover;
       background-position: center;
@@ -139,8 +150,8 @@
     .fixed-bg-layer.has-custom-bg {
       background-image: linear-gradient(
         180deg,
-        color-mix(in srgb, var(--bg-dark, #1a0404) 70%, transparent) 0%,
-        color-mix(in srgb, var(--bg-dark, #1a0404) 70%, transparent) 100%
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-1a0404)) 70%, transparent) 0%,
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-1a0404)) 70%, transparent) 100%
       ), var(--custom-bg);
     }
 
@@ -169,8 +180,8 @@
       inset: 0;
       background: linear-gradient(
         to top,
-        color-mix(in srgb, var(--bg-dark, #1a0404) 92%, transparent) 0%,
-        color-mix(in srgb, var(--bg-dark, #1a0404) 30%, transparent) 30%,
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-1a0404)) 92%, transparent) 0%,
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-1a0404)) 30%, transparent) 30%,
         transparent 60%
       );
       pointer-events: none;
@@ -307,9 +318,9 @@
       background: linear-gradient(
         to bottom,
         rgba(0, 0, 0, 0.35) 0%,
-        color-mix(in srgb, var(--primary, #750b0a) 35%, transparent) 35%,
-        color-mix(in srgb, var(--bg-dark, #1a0404) 82%, transparent) 70%,
-        var(--bg-dark, #1a0404) 100%
+        color-mix(in srgb, var(--primary, var(--lux-c-750b0a)) 35%, transparent) 35%,
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-1a0404)) 82%, transparent) 70%,
+        var(--bg-dark, var(--lux-c-1a0404)) 100%
       ), url('{{landingCoverUrl}}') center/cover no-repeat;
       transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s ease, visibility 0s linear 0.85s;
     }
@@ -363,12 +374,12 @@
       opacity: 0.22;
     }
     .cover-names {
-      font-size: clamp(2.4rem, 8vw, 3.6rem); font-family: 'Cinzel', serif; color: var(--toraja-gold);
+      font-size: clamp(2.4rem, 8vw, 3.6rem); font-family: var(--lux-font-cinzel-2); color: var(--toraja-gold);
       text-shadow: 0 4px 25px rgba(0,0,0,0.9); margin-bottom: 1.2rem; font-weight: 600; line-height: 1.15;
       letter-spacing: 0.08em;
     }
     .cover-guest-card {
-      background: color-mix(in srgb, var(--primary, #750b0a) 32%, var(--bg-dark, #1a0404) 80%);
+      background: color-mix(in srgb, var(--primary, var(--lux-c-750b0a)) 32%, var(--bg-dark, var(--lux-c-1a0404)) 80%);
       border: 1px solid var(--border-gold);
       border-radius: var(--radius-md); padding: 1.1rem 1.8rem; margin-bottom: 1.4rem;
       backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
@@ -376,7 +387,7 @@
       max-width: 340px; width: 100%;
     }
     .cover-guest-lbl { font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--toraja-gold); }
-    .cover-guest-val { font-family: 'Cinzel', serif; font-size: 1.2rem; color: #fff; margin-top: 0.25rem; font-weight: 600; letter-spacing: 0.05em; }
+    .cover-guest-val { font-family: var(--lux-font-cinzel-2); font-size: 1.2rem; color: #fff; margin-top: 0.25rem; font-weight: 600; letter-spacing: 0.05em; }
 
     .btn-buka-undangan {
       display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
@@ -443,7 +454,7 @@
       font-weight: 600; margin-bottom: 0.5rem; display: block;
     }
     .sec-main-title, .section-title {
-      font-family: 'Cinzel', serif; font-size: 2.1rem; color: #ffffff; letter-spacing: 0.08em;
+      font-family: var(--lux-font-cinzel-2); font-size: 2.1rem; color: #ffffff; letter-spacing: 0.08em;
       margin-bottom: 1rem; line-height: 1.25;
     }
     .sec-sub, .section-subtitle {
@@ -581,7 +592,7 @@
 
     /* HORIZONTAL RESPONSIVE NAMES WHEN HOME PHOTO IS ACTIVE */
     .home-names-row {
-      font-family: 'Cinzel', serif;
+      font-family: var(--lux-font-cinzel-2);
       font-size: clamp(1.3rem, 4.8vw, 1.9rem);
       color: var(--toraja-gold);
       line-height: 1.15;
@@ -596,14 +607,14 @@
       letter-spacing: 0.04em;
     }
     .home-names-row .amp {
-      font-family: 'Great Vibes', cursive;
+      font-family: var(--lux-font-great-vibes);
       font-size: 1.15em;
       color: #ffffff;
       font-weight: normal;
     }
 
     .home-names {
-      font-family: 'Cinzel', serif;
+      font-family: var(--lux-font-cinzel-2);
       font-size: clamp(2.4rem, 8vw, 3.4rem);
       color: var(--toraja-gold);
       line-height: 1.15;
@@ -611,7 +622,7 @@
       text-shadow: 0 4px 20px rgba(0,0,0,0.8);
     }
     .home-names span {
-      font-family: 'Great Vibes', cursive;
+      font-family: var(--lux-font-great-vibes);
       font-size: 0.8em;
       color: #ffffff;
       display: block;
@@ -653,7 +664,7 @@
       box-shadow: 0 6px 18px rgba(0,0,0,0.4);
     }
     .cd-num, .countdown-num {
-      font-family: 'Cinzel', serif;
+      font-family: var(--lux-font-cinzel-2);
       font-size: 1.6rem;
       color: var(--toraja-gold);
       font-weight: 700;
@@ -804,7 +815,7 @@
       transform: scaleY(-1);
     }
     .couple-name {
-      font-family: 'Cinzel', serif; font-size: clamp(1.4rem, 5vw, 1.8rem); color: var(--toraja-gold); font-weight: 600;
+      font-family: var(--lux-font-cinzel-2); font-size: clamp(1.4rem, 5vw, 1.8rem); color: var(--toraja-gold); font-weight: 600;
       margin-bottom: 0.35rem; letter-spacing: 0.05em; line-height: 1.25;
     }
     .couple-title-full {
@@ -848,7 +859,7 @@
       );
     }
     .couple-divider-symbol {
-      font-family: 'Great Vibes', cursive;
+      font-family: var(--lux-font-great-vibes);
       font-size: 2.8rem;
       color: var(--toraja-gold);
       line-height: 1;
@@ -865,7 +876,7 @@
       -webkit-backdrop-filter: blur(12px);
     }
     .ev-venue-unified {
-      font-family: 'Cinzel', serif !important;
+      font-family: var(--lux-font-cinzel-2) !important;
       color: var(--toraja-gold) !important;
       font-weight: 600;
     }
@@ -976,16 +987,16 @@
       border: 1px solid var(--border-gold) !important;
     }
     .gift-bank-name {
-      font-family: 'Cinzel', serif; font-size: 1.15rem; color: var(--toraja-gold); margin-bottom: 0.5rem;
+      font-family: var(--lux-font-cinzel-2); font-size: 1.15rem; color: var(--toraja-gold); margin-bottom: 0.5rem;
     }
     .gift-acc-num {
-      font-family: 'Cinzel', monospace; font-size: 1.35rem; letter-spacing: 0.1em; color: #ffffff; margin-bottom: 0.4rem;
+      font-family: var(--lux-font-cinzel-3); font-size: 1.35rem; letter-spacing: 0.1em; color: #ffffff; margin-bottom: 0.4rem;
     }
     .gift-acc-holder {
       font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.2rem;
     }
     .btn-copy {
-      background: color-mix(in srgb, var(--bg-dark, #1a0404) 85%, transparent);
+      background: color-mix(in srgb, var(--bg-dark, var(--lux-c-1a0404)) 85%, transparent);
       color: var(--toraja-gold); border: 1px solid var(--border-gold);
       padding: 0.55rem 1.4rem; border-radius: var(--radius-full);
       font-size: 0.78rem; font-weight: 600; letter-spacing: 0.1em; cursor: pointer; transition: all 0.3s ease;
@@ -1001,7 +1012,7 @@
       border: 1px solid var(--border-gold);
       border-radius: 9999px;
       overflow: hidden;
-      background: color-mix(in srgb, var(--bg-dark, #0d0806) 75%, transparent);
+      background: color-mix(in srgb, var(--bg-dark, var(--lux-c-0d0806)) 75%, transparent);
       backdrop-filter: blur(10px);
       padding: 3px;
       gap: 4px;
@@ -1013,7 +1024,7 @@
       background: transparent;
       border: none;
       border-radius: 9999px;
-      color: var(--toraja-gold, #c9a84c);
+      color: var(--toraja-gold, var(--lux-c-c9a84c));
       opacity: 0.65;
       font-size: 0.75rem;
       font-weight: 600;
@@ -1028,11 +1039,11 @@
     }
 
     .gift-tab-btn.active {
-      background: var(--toraja-gold, #c9a84c);
-      color: var(--toraja-dark, #0d0806);
+      background: var(--toraja-gold, var(--lux-c-c9a84c));
+      color: var(--toraja-dark, var(--lux-c-0d0806));
       opacity: 1;
       font-weight: 700;
-      box-shadow: 0 0 14px rgba(201, 168, 76, 0.4);
+      box-shadow: 0 0 14px color-mix(in srgb, var(--lux-c-c9a84c) 40%, transparent);
     }
 
     .rsvp-form-box {
@@ -1044,7 +1055,7 @@
       display: block; font-size: 0.78rem; color: var(--toraja-gold); margin-bottom: 0.4rem; font-weight: 600; letter-spacing: 0.05em;
     }
     .form-in, .form-sel, .form-ta {
-      width: 100%; background: color-mix(in srgb, var(--bg-dark, #1a0404) 85%, transparent);
+      width: 100%; background: color-mix(in srgb, var(--bg-dark, var(--lux-c-1a0404)) 85%, transparent);
       border: 1px solid var(--border-gold); color: var(--text-main, #ffffff); padding: 0.75rem 1rem; border-radius: 10px;
       font-family: inherit; font-size: 16px; outline: none; transition: border-color 0.3s ease;
     }
@@ -1098,9 +1109,9 @@
       inset: 0;
       background: linear-gradient(
         to top,
-        color-mix(in srgb, var(--bg-dark, #1a0404) 95%, transparent) 0%,
-        color-mix(in srgb, var(--bg-dark, #1a0404) 55%, transparent) 45%,
-        color-mix(in srgb, var(--bg-dark, #1a0404) 15%, transparent) 100%
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-1a0404)) 95%, transparent) 0%,
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-1a0404)) 55%, transparent) 45%,
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-1a0404)) 15%, transparent) 100%
       );
       z-index: 1;
       pointer-events: none;
@@ -1125,7 +1136,7 @@
       margin-top: auto;
     }
     .closing-thankyou {
-      font-family: 'Great Vibes', cursive; font-size: 3.2rem; color: var(--toraja-gold);
+      font-family: var(--lux-font-great-vibes); font-size: 3.2rem; color: var(--toraja-gold);
       margin-bottom: 0.8rem; line-height: 1.2; text-shadow: 0 4px 20px rgba(0,0,0,0.8);
     }
 
@@ -1134,7 +1145,7 @@
       position: fixed; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); left: 50%;
       transform: translate3d(-50%, 0, 0); z-index: 100; display: flex; align-items: center; justify-content: space-around;
       gap: 0.15rem;
-      background: color-mix(in srgb, var(--bg-dark, #1a0404) 85%, transparent);
+      background: color-mix(in srgb, var(--bg-dark, var(--lux-c-1a0404)) 85%, transparent);
       border: 1px solid var(--border-gold); border-radius: var(--radius-full);
       padding: 0.35rem 0.5rem; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
       box-shadow: 0 10px 35px rgba(0,0,0,0.7), 0 0 20px var(--gold-glow);

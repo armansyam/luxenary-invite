@@ -61,6 +61,25 @@
       --shadow-elevated: 0 12px 36px rgba(0, 0, 0, 0.45);
       --gold-glow: 0 0 20px rgba(249, 231, 188, 0.2);
       --bugis-gold-logo: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--accent, #f9e7bc) 90%, white) 0%, color-mix(in srgb, var(--accent, #f9e7bc) 65%, #8c6d1f) 45%, #9a7638 85%, #694e1e 100%);
+      /* Ditambahkan tokenisasi master (warna dan huruf yang sebelumnya tertulis langsung). */
+      --lux-c-f9e7bc: #f9e7bc;
+      --lux-c-021712: #021712;
+      --lux-c-045a44: #045a44;
+      --lux-c-302008: #302008;
+      --lux-c-deb974: #deb974;
+      --lux-c-fbf8f1: #fbf8f1;
+      --lux-c-140204: #140204;
+      --lux-c-dfb76c: #dfb76c;
+      --lux-c-8c6d1f: #8c6d1f;
+      --lux-c-694e1e: #694e1e;
+      --lux-c-032119: #032119;
+      --lux-font-plus-jakarta-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --lux-font-lontara: 'Lontara';
+      --lux-font-lontara-2: 'Lontara', 'Cormorant Garamond', Georgia, serif;
+      --lux-font-cormorant-garamond: 'Cormorant Garamond', Georgia, serif;
+      --lux-font-italianno: 'Italianno', 'Parisienne', cursive;
+      --lux-font-cormorant-garamond-2: 'Cormorant Garamond', serif;
+      --lux-font-plus-jakarta-sans-2: 'Plus Jakarta Sans', sans-serif;
     }
 
     * {
@@ -71,12 +90,12 @@
     }
 
     ::selection {
-      background: color-mix(in srgb, var(--accent, #f9e7bc) 35%, transparent);
+      background: color-mix(in srgb, var(--accent, var(--lux-c-f9e7bc)) 35%, transparent);
       color: #ffffff;
     }
 
     ::-moz-selection {
-      background: color-mix(in srgb, var(--accent, #f9e7bc) 35%, transparent);
+      background: color-mix(in srgb, var(--accent, var(--lux-c-f9e7bc)) 35%, transparent);
       color: #ffffff;
     }
 
@@ -87,7 +106,7 @@
     }
 
     body {
-      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       background: var(--bugis-emerald-deep);
       color: var(--text-main);
       line-height: 1.6;
@@ -106,7 +125,7 @@
 
     /* Tipografi Sastra Klasik Bugis */
     @font-face {
-      font-family: 'Lontara';
+      font-family: var(--lux-font-lontara);
       src: url('/fonts/Lontara.ttf') format('truetype');
       font-weight: normal;
       font-style: normal;
@@ -114,7 +133,7 @@
     }
 
     .font-lontara {
-      font-family: 'Lontara', 'Cormorant Garamond', Georgia, serif;
+      font-family: var(--lux-font-lontara-2);
       letter-spacing: 0.12em;
       line-height: 1.2;
     }
@@ -122,21 +141,21 @@
     .font-serif,
     h1, h2, h3, h4,
     .sec-main-title {
-      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-family: var(--lux-font-cormorant-garamond);
       letter-spacing: 0.03em;
     }
 
     .font-script,
     .cover-names,
     .sidebar-names {
-      font-family: 'Italianno', 'Parisienne', cursive;
+      font-family: var(--lux-font-italianno);
     }
 
     /* Pola Tenun Geometris Adat Bugis (Bugis Geometric Lattice Pattern) */
     .bugis-pattern-bg {
       background-image:
-        repeating-linear-gradient(45deg, transparent, transparent 12px, rgba(249, 231, 188, 0.04) 12px, rgba(249, 231, 188, 0.04) 24px),
-        repeating-linear-gradient(-45deg, transparent, transparent 12px, rgba(249, 231, 188, 0.04) 12px, rgba(249, 231, 188, 0.04) 24px);
+        repeating-linear-gradient(45deg, transparent, transparent 12px, color-mix(in srgb, var(--lux-c-f9e7bc) 4%, transparent) 12px, color-mix(in srgb, var(--lux-c-f9e7bc) 4%, transparent) 24px),
+        repeating-linear-gradient(-45deg, transparent, transparent 12px, color-mix(in srgb, var(--lux-c-f9e7bc) 4%, transparent) 12px, color-mix(in srgb, var(--lux-c-f9e7bc) 4%, transparent) 24px);
     }
 
     /* =================================================================== */
@@ -167,9 +186,9 @@
       inset: 0;
       background: linear-gradient(
         to top,
-        var(--bg-dark, #021712) 0%,
-        color-mix(in srgb, var(--bg-dark, #021712) 50%, transparent) 50%,
-        color-mix(in srgb, var(--bg-dark, #021712) 20%, transparent) 100%
+        var(--bg-dark, var(--lux-c-021712)) 0%,
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-021712)) 50%, transparent) 50%,
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-021712)) 20%, transparent) 100%
       );
     }
 
@@ -286,9 +305,9 @@
       z-index: 9999;
       background: linear-gradient(
         180deg,
-        color-mix(in srgb, var(--bg-dark, #021712) 45%, transparent) 0%,
-        color-mix(in srgb, var(--bg-dark, #021712) 85%, transparent) 60%,
-        color-mix(in srgb, var(--bg-dark, #021712) 98%, transparent) 100%
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-021712)) 45%, transparent) 0%,
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-021712)) 85%, transparent) 60%,
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-021712)) 98%, transparent) 100%
       ),
       url('{{landingCoverUrl}}') center/cover no-repeat;
       display: flex;
@@ -331,9 +350,9 @@
       background-image: 
         linear-gradient(
           180deg,
-          color-mix(in srgb, var(--bg-dark, #021712) 75%, transparent) 0%,
-          color-mix(in srgb, var(--bg-dark, #021712) 52%, transparent) 45%,
-          var(--bg-dark, #021712) 100%
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-021712)) 75%, transparent) 0%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-021712)) 52%, transparent) 45%,
+          var(--bg-dark, var(--lux-c-021712)) 100%
         ),
         url('/assets/ornaments/background/bg-maroon.webp');
     }
@@ -343,9 +362,9 @@
       background-image: 
         linear-gradient(
           180deg,
-          color-mix(in srgb, var(--bg-dark, #021712) 75%, transparent) 0%,
-          color-mix(in srgb, var(--bg-dark, #021712) 52%, transparent) 45%,
-          var(--bg-dark, #021712) 100%
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-021712)) 75%, transparent) 0%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-021712)) 52%, transparent) 45%,
+          var(--bg-dark, var(--lux-c-021712)) 100%
         ),
         var(--custom-bg);
     }
@@ -682,8 +701,8 @@
       cursor: pointer;
       user-select: none;
       -webkit-tap-highlight-color: transparent;
-      background: color-mix(in srgb, var(--primary, #045a44) 20%, var(--bg-dark, #021712) 88%);
-      border: 1px solid color-mix(in srgb, var(--accent, #f9e7bc) 30%, transparent);
+      background: color-mix(in srgb, var(--primary, var(--lux-c-045a44)) 20%, var(--bg-dark, var(--lux-c-021712)) 88%);
+      border: 1px solid color-mix(in srgb, var(--accent, var(--lux-c-f9e7bc)) 30%, transparent);
       border-radius: 6px;
       box-shadow: 0 12px 26px rgba(0, 0, 0, 0.65);
       transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -691,7 +710,7 @@
 
     .envelope-box:hover {
       transform: translateY(-2px);
-      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.75), 0 0 16px color-mix(in srgb, var(--accent, #f9e7bc) 15%, transparent);
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.75), 0 0 16px color-mix(in srgb, var(--accent, var(--lux-c-f9e7bc)) 15%, transparent);
     }
 
     /* KARTU UNDANGAN: 100% TERSEMBUNYI SAAT TERTUTUP, MENYEMBUL SAAT DIBUKA */
@@ -701,8 +720,8 @@
       right: 10px;
       bottom: 6px;
       min-height: 85px;
-      background: color-mix(in srgb, var(--primary, #045a44) 18%, var(--bg-dark, #021712) 90%);
-      border: 1px solid color-mix(in srgb, var(--accent, #f9e7bc) 38%, transparent);
+      background: color-mix(in srgb, var(--primary, var(--lux-c-045a44)) 18%, var(--bg-dark, var(--lux-c-021712)) 90%);
+      border: 1px solid color-mix(in srgb, var(--accent, var(--lux-c-f9e7bc)) 38%, transparent);
       border-radius: var(--radius-sm);
       padding: 8px 10px 10px;
       text-align: center;
@@ -720,7 +739,7 @@
       opacity: 1;
       visibility: visible;
       /* z-index tetap 2 agar bagian bawah kartu tertanam di dalam saku amplop */
-      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.5), 0 0 12px color-mix(in srgb, var(--accent, #f9e7bc) 20%, transparent);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.5), 0 0 12px color-mix(in srgb, var(--accent, var(--lux-c-f9e7bc)) 20%, transparent);
       transition-delay: 0.25s;
     }
 
@@ -762,10 +781,10 @@
     .envelope-pocket {
       position: absolute;
       inset: 0;
-      background: color-mix(in srgb, var(--primary, #045a44) 18%, var(--bg-dark, #021712) 94%);
+      background: color-mix(in srgb, var(--primary, var(--lux-c-045a44)) 18%, var(--bg-dark, var(--lux-c-021712)) 94%);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      border-top: 1px solid color-mix(in srgb, var(--accent, #f9e7bc) 28%, transparent);
+      border-top: 1px solid color-mix(in srgb, var(--accent, var(--lux-c-f9e7bc)) 28%, transparent);
       border-radius: 0 0 6px 6px;
       clip-path: polygon(0 0, 50% 52px, 100% 0, 100% 100%, 0 100%);
       box-shadow: 0 12px 26px rgba(0, 0, 0, 0.6), inset 0 4px 10px rgba(0, 0, 0, 0.35);
@@ -782,10 +801,10 @@
       height: 64px;
       background: linear-gradient(
         180deg,
-        color-mix(in srgb, var(--primary, #045a44) 30%, var(--bg-dark, #021712) 80%) 0%,
-        color-mix(in srgb, var(--primary, #045a44) 18%, var(--bg-dark, #021712) 84%) 100%
+        color-mix(in srgb, var(--primary, var(--lux-c-045a44)) 30%, var(--bg-dark, var(--lux-c-021712)) 80%) 0%,
+        color-mix(in srgb, var(--primary, var(--lux-c-045a44)) 18%, var(--bg-dark, var(--lux-c-021712)) 84%) 100%
       );
-      border-bottom: 1px solid color-mix(in srgb, var(--accent, #f9e7bc) 45%, transparent);
+      border-bottom: 1px solid color-mix(in srgb, var(--accent, var(--lux-c-f9e7bc)) 45%, transparent);
       border-radius: 6px 6px 0 0;
       clip-path: polygon(0 0, 100% 0, 50% 100%);
       transform-origin: top center;
@@ -811,7 +830,7 @@
       height: 24px;
       border-radius: var(--radius-full);
       background: var(--bugis-gold-logo);
-      border: 1.5px solid color-mix(in srgb, var(--accent, #f9e7bc) 65%, transparent);
+      border: 1.5px solid color-mix(in srgb, var(--accent, var(--lux-c-f9e7bc)) 65%, transparent);
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6), var(--gold-glow);
       display: flex;
       align-items: center;
@@ -825,10 +844,10 @@
     }
 
     .envelope-wax-seal span {
-      font-family: 'Cormorant Garamond', serif;
+      font-family: var(--lux-font-cormorant-garamond-2);
       font-size: 8.5px;
       font-weight: 700;
-      color: #302008;
+      color: var(--lux-c-302008);
       letter-spacing: 0.08em;
     }
 
@@ -874,8 +893,8 @@
       left: 50%;
       transform: translate3d(-50%, 0, 0);
       z-index: 900;
-      background: color-mix(in srgb, var(--bg-dark, #021712) 36%, transparent);
-      border: 1px solid color-mix(in srgb, var(--accent, #f9e7bc) 22%, transparent);
+      background: color-mix(in srgb, var(--bg-dark, var(--lux-c-021712)) 36%, transparent);
+      border: 1px solid color-mix(in srgb, var(--accent, var(--lux-c-f9e7bc)) 22%, transparent);
       border-radius: var(--radius-full);
       padding: 0.5rem 0.8rem;
       display: flex;
@@ -963,8 +982,8 @@
       opacity: 0.04 !important;
       background: linear-gradient(
         180deg,
-        var(--bugis-gold-warm, #f9e7bc) 0%,
-        var(--bugis-gold-antique, #deb974) 60%,
+        var(--bugis-gold-warm, var(--lux-c-f9e7bc)) 0%,
+        var(--bugis-gold-antique, var(--lux-c-deb974)) 60%,
         transparent 100%
       );
       -webkit-background-clip: text;
@@ -1111,7 +1130,7 @@
       display: block;
       line-height: 1;
       margin-bottom: 6px;
-      font-family: 'Cormorant Garamond', serif;
+      font-family: var(--lux-font-cormorant-garamond-2);
     }
 
     .countdown-lbl {
@@ -1142,7 +1161,7 @@
 
     .btn-cal:hover {
       background: var(--bugis-gold-antique);
-      color: var(--bg-dark, #021712);
+      color: var(--bg-dark, var(--lux-c-021712));
       box-shadow: var(--gold-glow);
     }
 
@@ -1186,7 +1205,7 @@
       z-index: 2;
     }
     .lagaligo-story-flow .sc-label {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans-2);
       font-size: 0.65rem;
       letter-spacing: 0.25em;
       text-transform: uppercase;
@@ -1198,12 +1217,12 @@
     .lagaligo-story-flow .sc-title {
       font-size: 1.25rem;
       color: var(--bugis-gold-antique);
-      font-family: 'Cormorant Garamond', serif;
+      font-family: var(--lux-font-cormorant-garamond-2);
       margin-bottom: 0.4rem;
     }
     .lagaligo-story-flow .sc-desc {
       font-size: 0.84rem;
-      color: rgba(251, 248, 241, 0.85);
+      color: color-mix(in srgb, var(--lux-c-fbf8f1) 85%, transparent);
       line-height: 1.7;
       font-style: italic;
     }
@@ -1239,7 +1258,7 @@
 
     .gift-tab-btn.active {
       background: var(--bugis-gold-antique);
-      color: var(--bg-dark, #021712);
+      color: var(--bg-dark, var(--lux-c-021712));
       border-color: var(--bugis-gold-antique);
       box-shadow: var(--gold-glow);
     }
@@ -1276,7 +1295,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: color-mix(in srgb, var(--bg-dark, #021712) 65%, transparent);
+      background: color-mix(in srgb, var(--bg-dark, var(--lux-c-021712)) 65%, transparent);
       border: 1px solid var(--bugis-border);
       border-radius: var(--radius-sm);
       padding: 10px 14px;
@@ -1293,7 +1312,7 @@
 
     .btn-copy {
       background: var(--bugis-gold-antique);
-      color: var(--bg-dark, #021712);
+      color: var(--bg-dark, var(--lux-c-021712));
       border: none;
       padding: 6px 14px;
       border-radius: var(--radius-sm);
@@ -1317,7 +1336,7 @@
       border: 1px solid var(--bugis-border);
       border-radius: 9999px;
       overflow: hidden;
-      background: color-mix(in srgb, var(--bugis-card-bg, #140204) 80%, transparent);
+      background: color-mix(in srgb, var(--bugis-card-bg, var(--lux-c-140204)) 80%, transparent);
       backdrop-filter: blur(10px);
       padding: 3px;
       gap: 4px;
@@ -1329,7 +1348,7 @@
       background: transparent;
       border: none;
       border-radius: 9999px;
-      color: var(--bugis-gold, #dfb76c);
+      color: var(--bugis-gold, var(--lux-c-dfb76c));
       opacity: 0.65;
       font-size: 0.75rem;
       font-weight: 600;
@@ -1344,8 +1363,8 @@
     }
 
     .gift-tab-btn.active {
-      background: var(--bugis-gold, #dfb76c);
-      color: var(--bugis-dark, #140204);
+      background: var(--bugis-gold, var(--lux-c-dfb76c));
+      color: var(--bugis-dark, var(--lux-c-140204));
       opacity: 1;
       font-weight: 700;
       box-shadow: var(--gold-glow);
@@ -1431,7 +1450,7 @@
       border-radius: var(--radius-sm);
       font-size: 13px;
       font-family: inherit;
-      background: color-mix(in srgb, var(--bg-dark, #021712) 65%, transparent);
+      background: color-mix(in srgb, var(--bg-dark, var(--lux-c-021712)) 65%, transparent);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
       color: #ffffff;
@@ -1443,15 +1462,15 @@
     .form-select:focus,
     .form-textarea:focus {
       border-color: var(--bugis-gold-antique);
-      box-shadow: 0 0 10px rgba(249, 231, 188, 0.2);
+      box-shadow: 0 0 10px color-mix(in srgb, var(--lux-c-f9e7bc) 20%, transparent);
     }
 
     .btn-submit-rsvp {
       width: 100%;
       padding: 14px;
       border-radius: var(--radius-sm);
-      background: linear-gradient(135deg, var(--bugis-gold-antique) 0%, color-mix(in srgb, var(--bugis-gold-antique) 65%, #8c6d1f) 50%, color-mix(in srgb, var(--bugis-gold-antique) 40%, #694e1e) 100%);
-      color: #032119;
+      background: linear-gradient(135deg, var(--bugis-gold-antique) 0%, color-mix(in srgb, var(--bugis-gold-antique) 65%, var(--lux-c-8c6d1f)) 50%, color-mix(in srgb, var(--bugis-gold-antique) 40%, var(--lux-c-694e1e)) 100%);
+      color: var(--lux-c-032119);
       font-size: 12px;
       font-weight: 700;
       letter-spacing: 0.12em;
@@ -1464,7 +1483,7 @@
 
     .btn-submit-rsvp:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5), 0 0 15px rgba(249, 231, 188, 0.3);
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5), 0 0 15px color-mix(in srgb, var(--lux-c-f9e7bc) 30%, transparent);
     }
 
     .wishes-feed-list {
@@ -1547,9 +1566,9 @@
       inset: 0;
       background: linear-gradient(
         to bottom,
-        color-mix(in srgb, var(--bg-dark, #021712) 30%, transparent) 0%,
-        color-mix(in srgb, var(--bg-dark, #021712) 70%, transparent) 50%,
-        color-mix(in srgb, var(--bg-dark, #021712) 96%, transparent) 100%
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-021712)) 30%, transparent) 0%,
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-021712)) 70%, transparent) 50%,
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-021712)) 96%, transparent) 100%
       );
       pointer-events: none;
       z-index: 1;

@@ -47,6 +47,20 @@
       --sunset-border: rgba(229, 152, 102, 0.35);
       --sunset-border-bright: rgba(229, 152, 102, 0.7);
       --sunset-glow: 0 0 25px rgba(196, 104, 73, 0.3);
+      /* Ditambahkan tokenisasi master (warna dan huruf yang sebelumnya tertulis langsung). */
+      --lux-c-fbeee6: #fbeee6;
+      --lux-c-190e0a: #190e0a;
+      --lux-c-c46849: #c46849;
+      --lux-c-e59866: #e59866;
+      --lux-c-261610: #261610;
+      --lux-c-190f0a: #190f0a;
+      --lux-font-dm-serif-display: 'DM Serif Display', 'Plus Jakarta Sans', serif;
+      --lux-font-dm-serif-display-2: 'DM Serif Display', 'Playfair Display', serif;
+      --lux-font-great-vibes: 'Great Vibes', 'Pinyon Script', cursive;
+      --lux-font-plus-jakarta-sans: 'Plus Jakarta Sans', sans-serif;
+      --lux-font-great-vibes-2: 'Great Vibes', cursive;
+      --lux-font-dm-serif-display-3: 'DM Serif Display', serif;
+      --lux-font-playfair-display: 'Playfair Display', serif;
     }
 
     ::selection {
@@ -66,9 +80,9 @@
     }
 
     body {
-      font-family: 'DM Serif Display', 'Plus Jakarta Sans', serif;
+      font-family: var(--lux-font-dm-serif-display);
       background-color: var(--bg-dark, var(--sunset-dark));
-      color: #fbeee6;
+      color: var(--lux-c-fbeee6);
       overflow-x: hidden;
       width: 100%;
       -ms-overflow-style: none;
@@ -89,7 +103,7 @@
       inset: 0;
       width: 100%;
       height: 100vh;
-      background-image: radial-gradient(circle at 50% 10%, color-mix(in srgb, var(--primary, #c46849) 35%, #190e0a) 0%, rgba(25, 14, 10, 0.95) 85%),
+      background-image: radial-gradient(circle at 50% 10%, color-mix(in srgb, var(--primary, var(--lux-c-c46849)) 35%, var(--lux-c-190e0a)) 0%, color-mix(in srgb, var(--lux-c-190e0a) 95%, transparent) 85%),
         url('/assets/ornaments/background/background-cream.webp');
       background-size: cover;
       background-position: center;
@@ -98,21 +112,21 @@
       pointer-events: none;
     }
     .fixed-bg-layer.has-custom-bg {
-      background-image: radial-gradient(circle at 50% 10%, color-mix(in srgb, var(--primary, #c46849) 35%, #190e0a) 0%, rgba(25, 14, 10, 0.95) 85%),
+      background-image: radial-gradient(circle at 50% 10%, color-mix(in srgb, var(--primary, var(--lux-c-c46849)) 35%, var(--lux-c-190e0a)) 0%, color-mix(in srgb, var(--lux-c-190e0a) 95%, transparent) 85%),
         var(--custom-bg);
     }
 
     /* TYPOGRAPHY CLASSES */
     .font-sunset-title {
-      font-family: 'DM Serif Display', 'Playfair Display', serif;
+      font-family: var(--lux-font-dm-serif-display-2);
     }
 
     .font-sunset-script {
-      font-family: 'Great Vibes', 'Pinyon Script', cursive;
+      font-family: var(--lux-font-great-vibes);
     }
 
     .font-sunset-sans {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
     }
 
     /* ANIMATIONS & MICRO-INTERACTIONS */
@@ -121,12 +135,12 @@
       0%,
       100% {
         transform: translateY(0px) scale(1);
-        filter: drop-shadow(0 6px 18px rgba(229, 152, 102, 0.4));
+        filter: drop-shadow(0 6px 18px color-mix(in srgb, var(--lux-c-e59866) 40%, transparent));
       }
 
       50% {
         transform: translateY(-7px) scale(1.03);
-        filter: drop-shadow(0 12px 28px rgba(229, 152, 102, 0.65));
+        filter: drop-shadow(0 12px 28px color-mix(in srgb, var(--lux-c-e59866) 65%, transparent));
       }
     }
 
@@ -152,7 +166,7 @@
       justify-content: center;
       text-align: center;
       padding: 2.5rem 1.5rem;
-      background: radial-gradient(circle at center, rgba(38, 22, 16, 0.9) 0%, rgba(25, 14, 10, 0.98) 100%),
+      background: radial-gradient(circle at center, color-mix(in srgb, var(--lux-c-261610) 90%, transparent) 0%, color-mix(in srgb, var(--lux-c-190e0a) 98%, transparent) 100%),
       url('{{landingCoverUrl}}') center/cover no-repeat;
       transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s ease, visibility 0s linear 0.85s;
     }
@@ -174,7 +188,7 @@
     }
 
     .cover-badge {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       font-size: 0.72rem;
       letter-spacing: 0.35em;
       text-transform: uppercase;
@@ -185,7 +199,7 @@
 
     .cover-names {
       font-size: clamp(3.2rem, 12vw, 5.2rem);
-      font-family: 'Great Vibes', cursive;
+      font-family: var(--lux-font-great-vibes-2);
       color: var(--sunset-amber);
       text-shadow: 0 4px 25px rgba(0, 0, 0, 0.9);
       margin-bottom: 1.5rem;
@@ -206,15 +220,15 @@
     }
 
     .cover-guest-lbl {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       font-size: 0.7rem;
       letter-spacing: 0.2em;
       text-transform: uppercase;
-      color: rgba(251, 238, 230, 0.7);
+      color: color-mix(in srgb, var(--lux-c-fbeee6) 70%, transparent);
     }
 
     .cover-guest-val {
-      font-family: 'DM Serif Display', serif;
+      font-family: var(--lux-font-dm-serif-display-3);
       font-size: 1.4rem;
       color: #fff;
       margin-top: 0.3rem;
@@ -230,7 +244,7 @@
       background: linear-gradient(90deg, var(--sunset-terracotta) 0%, var(--sunset-amber) 50%, var(--sunset-terracotta) 100%);
       background-size: 200% auto;
       color: #ffffff;
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       font-weight: 700;
       font-size: 0.8rem;
       letter-spacing: 0.2em;
@@ -238,14 +252,14 @@
       border: none;
       border-radius: 50px;
       cursor: pointer;
-      box-shadow: 0 6px 20px rgba(196, 104, 73, 0.45);
+      box-shadow: 0 6px 20px color-mix(in srgb, var(--lux-c-c46849) 45%, transparent);
       transition: all 0.35s ease;
     }
 
     .btn-buka-undangan:hover {
       background-position: right center;
       transform: translateY(-2px);
-      box-shadow: 0 10px 25px rgba(196, 104, 73, 0.65);
+      box-shadow: 0 10px 25px color-mix(in srgb, var(--lux-c-c46849) 65%, transparent);
     }
 
     /* RESPONSIVE LAYOUT */
@@ -271,7 +285,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(to top, rgba(25, 14, 10, 0.96) 0%, rgba(25, 14, 10, 0.3) 50%, transparent 100%);
+      background: linear-gradient(to top, color-mix(in srgb, var(--lux-c-190e0a) 96%, transparent) 0%, color-mix(in srgb, var(--lux-c-190e0a) 30%, transparent) 50%, transparent 100%);
     }
 
     .sidebar-desktop-content {
@@ -367,7 +381,7 @@
     }
 
     .sec-eyebrow {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       font-size: 0.72rem;
       letter-spacing: 0.3em;
       text-transform: uppercase;
@@ -379,7 +393,7 @@
 
     .sec-heading {
       font-size: clamp(2.4rem, 8vw, 3.4rem);
-      font-family: 'Great Vibes', cursive;
+      font-family: var(--lux-font-great-vibes-2);
       color: var(--sunset-amber);
       margin-bottom: 0.3rem;
       font-weight: normal;
@@ -387,7 +401,7 @@
     }
 
     .sec-subheading {
-      font-family: 'DM Serif Display', serif;
+      font-family: var(--lux-font-dm-serif-display-3);
       font-size: 0.82rem;
       letter-spacing: 0.22em;
       text-transform: uppercase;
@@ -435,13 +449,13 @@
       font-size: 1.7rem;
       color: var(--sunset-sand);
       margin-bottom: 0.4rem;
-      font-family: 'DM Serif Display', serif;
+      font-family: var(--lux-font-dm-serif-display-3);
     }
 
     .couple-parents {
-      font-family: 'Playfair Display', serif;
+      font-family: var(--lux-font-playfair-display);
       font-size: 0.84rem;
-      color: rgba(251, 238, 230, 0.85);
+      color: color-mix(in srgb, var(--lux-c-fbeee6) 85%, transparent);
       line-height: 1.6;
       font-style: italic;
     }
@@ -451,14 +465,14 @@
       align-items: center;
       gap: 0.4rem;
       margin-top: 0.8rem;
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       font-size: 0.78rem;
       color: var(--sunset-amber);
       text-decoration: none;
       font-weight: 600;
       padding: 0.4rem 1rem;
       border-radius: 50px;
-      background: rgba(229, 152, 102, 0.1);
+      background: color-mix(in srgb, var(--lux-c-e59866) 10%, transparent);
       border: 1px solid var(--sunset-border);
     }
 
@@ -483,17 +497,17 @@
     .countdown-val {
       font-size: 1.7rem;
       font-weight: 700;
-      font-family: 'DM Serif Display', serif;
+      font-family: var(--lux-font-dm-serif-display-3);
       color: var(--sunset-amber);
       line-height: 1;
     }
 
     .countdown-lbl {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       font-size: 0.65rem;
       text-transform: uppercase;
       letter-spacing: 0.15em;
-      color: rgba(251, 238, 230, 0.7);
+      color: color-mix(in srgb, var(--lux-c-fbeee6) 70%, transparent);
       margin-top: 0.3rem;
       font-weight: 500;
     }
@@ -506,19 +520,19 @@
       border: 1px solid var(--sunset-amber);
       border-radius: 50px;
       color: var(--sunset-sand);
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       font-size: 0.75rem;
       font-weight: 600;
       letter-spacing: 0.15em;
       text-transform: uppercase;
       text-decoration: none;
       transition: all 0.3s;
-      background: rgba(38, 22, 16, 0.6);
+      background: color-mix(in srgb, var(--lux-c-261610) 60%, transparent);
     }
 
     .btn-cal:hover {
       background: var(--sunset-amber);
-      color: #190e0a;
+      color: var(--lux-c-190e0a);
       transform: translateY(-2px);
     }
 
@@ -548,7 +562,7 @@
     }
 
     .ev-cat {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       font-size: 0.65rem;
       letter-spacing: 0.3em;
       text-transform: uppercase;
@@ -561,14 +575,14 @@
     .ev-name {
       font-size: 1.5rem;
       color: var(--sunset-amber);
-      font-family: 'DM Serif Display', serif;
+      font-family: var(--lux-font-dm-serif-display-3);
       margin-bottom: 0.4rem;
     }
 
     .ev-time {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       font-size: 0.85rem;
-      color: rgba(251, 238, 230, 0.9);
+      color: color-mix(in srgb, var(--lux-c-fbeee6) 90%, transparent);
       font-weight: 500;
     }
 
@@ -582,7 +596,7 @@
     }
 
     .venue-card-lbl {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       font-size: 0.65rem;
       letter-spacing: 0.3em;
       text-transform: uppercase;
@@ -595,14 +609,14 @@
     .ev-venue-unified {
       font-size: 1.4rem;
       color: #ffffff;
-      font-family: 'DM Serif Display', serif;
+      font-family: var(--lux-font-dm-serif-display-3);
       margin-bottom: 0.4rem;
     }
 
     .ev-address-unified {
-      font-family: 'Playfair Display', serif;
+      font-family: var(--lux-font-playfair-display);
       font-size: 0.82rem;
-      color: rgba(251, 238, 230, 0.8);
+      color: color-mix(in srgb, var(--lux-c-fbeee6) 80%, transparent);
       line-height: 1.6;
       margin-bottom: 1.2rem;
       font-style: italic;
@@ -616,7 +630,7 @@
       border: 1px solid var(--sunset-amber);
       border-radius: 50px;
       color: var(--sunset-sand);
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       font-size: 0.72rem;
       font-weight: 600;
       letter-spacing: 0.2em;
@@ -627,7 +641,7 @@
 
     .btn-map-outline:hover {
       background: var(--sunset-amber);
-      color: #190e0a;
+      color: var(--lux-c-190e0a);
     }
 
     /* JOURNEY / STORY STYLING */
@@ -650,7 +664,7 @@
 
     .story-chapter-block {
       padding-bottom: 0.8rem;
-      border-bottom: 1px dashed rgba(229, 152, 102, 0.25);
+      border-bottom: 1px dashed color-mix(in srgb, var(--lux-c-e59866) 25%, transparent);
     }
 
     .story-chapter-block:last-child {
@@ -658,7 +672,7 @@
     }
 
     .sc-label {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       font-size: 0.65rem;
       letter-spacing: 0.25em;
       text-transform: uppercase;
@@ -671,14 +685,14 @@
     .sc-title {
       font-size: 1.25rem;
       color: var(--sunset-sand);
-      font-family: 'DM Serif Display', serif;
+      font-family: var(--lux-font-dm-serif-display-3);
       margin-bottom: 0.4rem;
     }
 
     .sc-desc {
-      font-family: 'Playfair Display', serif;
+      font-family: var(--lux-font-playfair-display);
       font-size: 0.84rem;
-      color: rgba(251, 238, 230, 0.85);
+      color: color-mix(in srgb, var(--lux-c-fbeee6) 85%, transparent);
       line-height: 1.7;
       font-style: italic;
     }
@@ -694,11 +708,11 @@
     .jf-line {
       flex: 1;
       height: 1px;
-      background: rgba(229, 152, 102, 0.3);
+      background: color-mix(in srgb, var(--lux-c-e59866) 30%, transparent);
     }
 
     .jf-signature {
-      font-family: 'Great Vibes', cursive;
+      font-family: var(--lux-font-great-vibes-2);
       font-size: 2rem;
       color: var(--sunset-amber);
     }
@@ -714,7 +728,7 @@
       border: 1px solid var(--sunset-amber);
       border-radius: 50px;
       color: var(--sunset-sand);
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       font-size: 0.72rem;
       font-weight: 600;
       letter-spacing: 0.2em;
@@ -727,7 +741,7 @@
     .btn-show-gallery:hover,
     .btn-outline-box:hover {
       background: var(--sunset-amber);
-      color: #190e0a;
+      color: var(--lux-c-190e0a);
     }
 
     /* DIGITAL GIFT & BANK CARDS */
@@ -744,7 +758,7 @@
     }
 
     .bank-label {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       font-size: 0.85rem;
       font-weight: 700;
       color: var(--sunset-amber);
@@ -753,9 +767,9 @@
     }
 
     .bank-owner {
-      font-family: 'Playfair Display', serif;
+      font-family: var(--lux-font-playfair-display);
       font-size: 0.78rem;
-      color: rgba(251, 238, 230, 0.75);
+      color: color-mix(in srgb, var(--lux-c-fbeee6) 75%, transparent);
       display: block;
       margin-bottom: 0.6rem;
       font-style: italic;
@@ -765,7 +779,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: rgba(25, 14, 10, 0.85);
+      background: color-mix(in srgb, var(--lux-c-190e0a) 85%, transparent);
       border: 1px solid var(--sunset-border);
       border-radius: 10px;
       padding: 0.7rem 1rem;
@@ -780,11 +794,11 @@
 
     .btn-copy {
       background: var(--sunset-amber);
-      color: #190e0a;
+      color: var(--lux-c-190e0a);
       border: none;
       padding: 0.45rem 1rem;
       border-radius: 6px;
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       font-weight: 700;
       font-size: 0.7rem;
       cursor: pointer;
@@ -805,7 +819,7 @@
     }
 
     .form-lbl {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       font-size: 0.7rem;
       font-weight: 600;
       text-transform: uppercase;
@@ -820,13 +834,13 @@
     .form-ta {
       width: 100%;
       padding: 0.8rem 1rem;
-      background: rgba(25, 14, 10, 0.85);
+      background: color-mix(in srgb, var(--lux-c-190e0a) 85%, transparent);
       border: 1px solid var(--sunset-border);
       border-radius: 10px;
       color: #ffffff;
       font-size: 0.85rem;
       outline: none;
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
     }
 
     .btn-rsvp-submit {
@@ -836,7 +850,7 @@
       color: var(--sunset-sand);
       border: none;
       border-radius: 50px;
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       font-weight: 700;
       font-size: 0.8rem;
       letter-spacing: 0.2em;
@@ -873,7 +887,7 @@
     }
 
     .wish-name {
-      font-family: 'DM Serif Display', serif;
+      font-family: var(--lux-font-dm-serif-display-3);
       font-weight: 600;
       font-size: 0.9rem;
       color: var(--sunset-amber);
@@ -881,11 +895,11 @@
 
     .wish-msg {
       font-size: 0.82rem;
-      color: rgba(251, 238, 230, 0.9);
+      color: color-mix(in srgb, var(--lux-c-fbeee6) 90%, transparent);
       line-height: 1.6;
       margin-top: 0.3rem;
       font-style: italic;
-      font-family: 'Playfair Display', serif;
+      font-family: var(--lux-font-playfair-display);
     }
 
     /* QR PASS CARD */
@@ -901,7 +915,7 @@
     }
 
     .pass-tagline {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       font-size: 0.65rem;
       letter-spacing: 0.3em;
       text-transform: uppercase;
@@ -913,7 +927,7 @@
     .pass-names {
       font-size: 2rem;
       color: var(--sunset-amber);
-      font-family: 'Great Vibes', cursive;
+      font-family: var(--lux-font-great-vibes-2);
       margin-bottom: 0.2rem;
     }
 
@@ -929,7 +943,7 @@
     .pass-guest-name {
       font-size: 1.35rem;
       color: #ffffff;
-      font-family: 'DM Serif Display', serif;
+      font-family: var(--lux-font-dm-serif-display-3);
     }
 
     /* DOCK */
@@ -939,7 +953,7 @@
       left: 50%;
       transform: translate3d(-50%, 0, 0);
       z-index: 100;
-      background: rgba(38, 22, 16, 0.95);
+      background: color-mix(in srgb, var(--lux-c-261610) 95%, transparent);
       border: 1px solid var(--sunset-border);
       border-radius: 50px;
       padding: 0.5rem 1.2rem;
@@ -962,8 +976,8 @@
     }
 
     .dock-btn {
-      color: rgba(251, 238, 230, 0.7);
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: color-mix(in srgb, var(--lux-c-fbeee6) 70%, transparent);
+      font-family: var(--lux-font-plus-jakarta-sans);
       font-size: 0.65rem;
       text-decoration: none;
       display: flex;
@@ -990,9 +1004,9 @@
       width: 40px;
       height: 40px;
       border-radius: 50%;
-      background: color-mix(in srgb, var(--solaria-bg, #190f0a) 85%, transparent);
-      border: 1px solid var(--solaria-border, rgba(229, 152, 102, 0.3));
-      color: var(--sunset-amber, #e59866);
+      background: color-mix(in srgb, var(--solaria-bg, var(--lux-c-190f0a)) 85%, transparent);
+      border: 1px solid var(--solaria-border, color-mix(in srgb, var(--lux-c-e59866) 30%, transparent));
+      color: var(--sunset-amber, var(--lux-c-e59866));
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1053,7 +1067,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2) 0%, color-mix(in srgb, var(--bg-dark, #190f0a) 60%, transparent) 50%, color-mix(in srgb, var(--bg-dark, #190f0a) 95%, transparent) 100%);
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2) 0%, color-mix(in srgb, var(--bg-dark, var(--lux-c-190f0a)) 60%, transparent) 50%, color-mix(in srgb, var(--bg-dark, var(--lux-c-190f0a)) 95%, transparent) 100%);
       pointer-events: none;
       z-index: 1;
     }
@@ -1110,7 +1124,7 @@
           SUNSET CELEBRATION</p>
         <h2 class="font-sunset-script" style="font-size: 4.8rem; color: var(--sunset-amber); margin: 0.5rem 0;">
           {{firstName}} &amp; {{secondName}}</h2>
-        <p class="font-sunset-sans" style="letter-spacing: 0.15em; font-size: 0.85rem; color: rgba(251,238,230,0.75);">
+        <p class="font-sunset-sans" style="letter-spacing: 0.15em; font-size: 0.85rem; color: color-mix(in srgb, var(--lux-c-fbeee6) 75%, transparent);">
           {{weddingDate}}</p>
       </div>
     </div>
@@ -1126,7 +1140,7 @@
             <img src="{{homePhotoUrl}}" alt="{{firstName}} &amp; {{secondName}}" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
           </div>
           <h2 class="sec-heading" style="font-size: clamp(2.6rem, 9vw, 3.6rem); margin-bottom: 0.2rem;">{{firstName}} &amp; {{secondName}}</h2>
-          <p style="font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: 0.2em; font-size: 0.82rem; text-transform: uppercase; color: var(--sunset-sand); font-weight: 500;">{{weddingDate}}</p>
+          <p style="font-family: var(--lux-font-plus-jakarta-sans); letter-spacing: 0.2em; font-size: 0.82rem; text-transform: uppercase; color: var(--sunset-sand); font-weight: 500;">{{weddingDate}}</p>
         </div>
       </section>
 
@@ -1137,7 +1151,7 @@
           <span class="sec-eyebrow" data-lux-field="customLabels.quoteEyebrow">{{quoteSectionEyebrow}}</span>
           <h2 class="sec-heading" data-lux-field="customLabels.quoteTitle" style="margin-bottom: 0.8rem;">{{quoteSectionTitle}}</h2>
           <p
-            style="font-size: 0.94rem; line-height: 1.9; color: rgba(251,238,230,0.9); max-width: 420px; margin: 0 auto; font-style: italic; font-family: 'Playfair Display', serif;">
+            style="font-size: 0.94rem; line-height: 1.9; color: color-mix(in srgb, var(--lux-c-fbeee6) 90%, transparent); max-width: 420px; margin: 0 auto; font-style: italic; font-family: var(--lux-font-playfair-display);">
             "{{openingQuote}}"
           </p>
           <span class="font-sunset-sans"
@@ -1185,7 +1199,7 @@
               <img src="{{firstPhotoUrl}}" alt="{{firstDisplayName}}">
             </div>
             <h3 class="couple-name">{{firstDisplayName}}</h3>
-            {{#if firstRoleLabel}}<p class="couple-role" style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--sunset-amber); margin: 0.1rem 0 0.3rem; font-weight: 600;">{{firstRoleLabel}}</p>{{/if}}
+            {{#if firstRoleLabel}}<p class="couple-role" style="font-family: var(--lux-font-plus-jakarta-sans); font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--sunset-amber); margin: 0.1rem 0 0.3rem; font-weight: 600;">{{firstRoleLabel}}</p>{{/if}}
             <p class="couple-parents">
               {{firstParentPrefix}}<br />
               <strong>{{firstFather}} &amp; {{firstMother}}</strong>
@@ -1201,7 +1215,7 @@
               <img src="{{secondPhotoUrl}}" alt="{{secondDisplayName}}">
             </div>
             <h3 class="couple-name">{{secondDisplayName}}</h3>
-            {{#if secondRoleLabel}}<p class="couple-role" style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--sunset-amber); margin: 0.1rem 0 0.3rem; font-weight: 600;">{{secondRoleLabel}}</p>{{/if}}
+            {{#if secondRoleLabel}}<p class="couple-role" style="font-family: var(--lux-font-plus-jakarta-sans); font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--sunset-amber); margin: 0.1rem 0 0.3rem; font-weight: 600;">{{secondRoleLabel}}</p>{{/if}}
             <p class="couple-parents">
               {{secondParentPrefix}}<br />
               <strong>{{secondFather}} &amp; {{secondMother}}</strong>

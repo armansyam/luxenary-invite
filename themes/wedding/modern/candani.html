@@ -44,6 +44,19 @@
       --floral-border-bright: color-mix(in srgb, var(--accent, #d68f76) 75%, transparent);
       --floral-border-dim: color-mix(in srgb, var(--accent, #d68f76) 22%, transparent);
       --floral-glow: 0 0 25px color-mix(in srgb, var(--primary, #ab5e44) 30%, transparent);
+      /* Ditambahkan tokenisasi master (warna dan huruf yang sebelumnya tertulis langsung). */
+      --lux-c-140c08: #140c08;
+      --lux-c-fbf7f4: #fbf7f4;
+      --lux-c-ab5e44: #ab5e44;
+      --lux-c-df8c66: #df8c66;
+      --lux-c-0a0604: #0a0604;
+      --lux-font-jost: 'Jost', 'Plus Jakarta Sans', sans-serif;
+      --lux-font-italiana: 'Italiana', 'Playfair Display', serif;
+      --lux-font-parisienne: 'Parisienne', 'Allura', cursive;
+      --lux-font-jost-2: 'Jost', sans-serif;
+      --lux-font-parisienne-2: 'Parisienne', cursive;
+      --lux-font-italiana-2: 'Italiana', serif;
+      --lux-font-playfair-display: 'Playfair Display', serif;
     }
 
     ::selection {
@@ -57,9 +70,9 @@
       scrollbar-width: none;
     }
     body {
-      font-family: 'Jost', 'Plus Jakarta Sans', sans-serif;
-      background-color: var(--bg-dark, #140c08);
-      color: #fbf7f4;
+      font-family: var(--lux-font-jost);
+      background-color: var(--bg-dark, var(--lux-c-140c08));
+      color: var(--lux-c-fbf7f4);
       overflow-x: hidden;
       width: 100%;
       -ms-overflow-style: none;
@@ -83,8 +96,8 @@
       height: 100dvh;
       background-image: radial-gradient(
         circle at 50% 25%,
-        color-mix(in srgb, var(--primary, #ab5e44) 30%, var(--bg-dark, #140c08) 82%) 0%,
-        color-mix(in srgb, var(--bg-dark, #140c08) 96%, transparent) 88%
+        color-mix(in srgb, var(--primary, var(--lux-c-ab5e44)) 30%, var(--bg-dark, var(--lux-c-140c08)) 82%) 0%,
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-140c08)) 96%, transparent) 88%
       ), url('/assets/ornaments/background/background-cream.webp');
       background-size: cover;
       background-position: center;
@@ -95,15 +108,15 @@
     .fixed-bg-layer.has-custom-bg {
       background-image: radial-gradient(
         circle at 50% 25%,
-        color-mix(in srgb, var(--primary, #ab5e44) 30%, var(--bg-dark, #140c08) 82%) 0%,
-        color-mix(in srgb, var(--bg-dark, #140c08) 96%, transparent) 88%
+        color-mix(in srgb, var(--primary, var(--lux-c-ab5e44)) 30%, var(--bg-dark, var(--lux-c-140c08)) 82%) 0%,
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-140c08)) 96%, transparent) 88%
       ), var(--custom-bg);
     }
 
     /* TYPOGRAPHY CLASSES */
-    .font-floral-title { font-family: 'Italiana', 'Playfair Display', serif; }
-    .font-floral-script { font-family: 'Parisienne', 'Allura', cursive; }
-    .font-floral-sans { font-family: 'Jost', sans-serif; }
+    .font-floral-title { font-family: var(--lux-font-italiana); }
+    .font-floral-script { font-family: var(--lux-font-parisienne); }
+    .font-floral-sans { font-family: var(--lux-font-jost-2); }
 
     /* ANIMATIONS & MICRO-INTERACTIONS */
     @keyframes floralPetalGlow {
@@ -129,7 +142,7 @@
       text-align: center; padding: calc(1.5rem + env(safe-area-inset-top, 0px)) 1.5rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
       overflow-y: auto; overscroll-behavior: contain;
       -ms-overflow-style: none; scrollbar-width: none;
-      background: radial-gradient(circle at center, color-mix(in srgb, var(--primary, #ab5e44) 28%, var(--bg-dark, #140c08) 90%) 0%, color-mix(in srgb, var(--bg-dark, #140c08) 98%, transparent) 100%), url('{{landingCoverUrl}}') center/cover no-repeat;
+      background: radial-gradient(circle at center, color-mix(in srgb, var(--primary, var(--lux-c-ab5e44)) 28%, var(--bg-dark, var(--lux-c-140c08)) 90%) 0%, color-mix(in srgb, var(--bg-dark, var(--lux-c-140c08)) 98%, transparent) 100%), url('{{landingCoverUrl}}') center/cover no-repeat;
       transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s ease, visibility 0s linear 0.85s;
     }
     .cover-screen::-webkit-scrollbar, .cover-overlay::-webkit-scrollbar { display: none; }
@@ -143,11 +156,11 @@
     }
 
     .cover-badge {
-      font-family: 'Jost', sans-serif;
+      font-family: var(--lux-font-jost-2);
       font-size: 0.78rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--floral-sand); margin-bottom: 0.5rem; font-weight: 500;
     }
     .cover-names {
-      font-size: clamp(3.2rem, 12vw, 5.2rem); font-family: 'Parisienne', cursive; color: var(--floral-terracotta-light);
+      font-size: clamp(3.2rem, 12vw, 5.2rem); font-family: var(--lux-font-parisienne-2); color: var(--floral-terracotta-light);
       text-shadow: 0 4px 25px rgba(0,0,0,0.9); margin-bottom: 1.5rem; font-weight: normal; line-height: 1.15;
     }
     .cover-guest-card {
@@ -155,14 +168,14 @@
       border-radius: 16px; padding: 1.2rem 2rem; margin-bottom: 1.8rem;
       backdrop-filter: blur(12px); box-shadow: var(--floral-glow); max-width: 340px; width: 100%;
     }
-    .cover-guest-lbl { font-family: 'Jost', sans-serif; font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(251,247,244,0.7); }
-    .cover-guest-val { font-family: 'Italiana', serif; font-size: 1.4rem; color: #fff; margin-top: 0.3rem; font-weight: 600; }
+    .cover-guest-lbl { font-family: var(--lux-font-jost-2); font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: color-mix(in srgb, var(--lux-c-fbf7f4) 70%, transparent); }
+    .cover-guest-val { font-family: var(--lux-font-italiana-2); font-size: 1.4rem; color: #fff; margin-top: 0.3rem; font-weight: 600; }
     
     .btn-buka-undangan {
       display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
       padding: 0.95rem 2.8rem; background: linear-gradient(90deg, var(--floral-terracotta) 0%, var(--floral-terracotta-light) 50%, var(--floral-terracotta) 100%);
       background-size: 200% auto;
-      color: #ffffff; font-family: 'Jost', sans-serif; font-weight: 600; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase;
+      color: #ffffff; font-family: var(--lux-font-jost-2); font-weight: 600; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase;
       border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 6px 20px color-mix(in srgb, var(--floral-terracotta) 45%, transparent);
       transition: all 0.35s ease;
     }
@@ -177,7 +190,7 @@
     }
     .sidebar-desktop::after, .left-hero::after {
       content: ''; position: absolute; inset: 0;
-      background: linear-gradient(to top, var(--bg-dark, #140c08) 0%, color-mix(in srgb, var(--bg-dark, #140c08) 30%, transparent) 50%, transparent 100%);
+      background: linear-gradient(to top, var(--bg-dark, var(--lux-c-140c08)) 0%, color-mix(in srgb, var(--bg-dark, var(--lux-c-140c08)) 30%, transparent) 50%, transparent 100%);
     }
     .sidebar-desktop-content {
       position: absolute; bottom: 4rem; left: 3.5rem; right: 3.5rem; z-index: 20; color: #fff;
@@ -241,17 +254,17 @@
     }
 
     .sec-eyebrow {
-      font-family: 'Jost', sans-serif;
+      font-family: var(--lux-font-jost-2);
       font-size: 0.72rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--floral-sand); display: block; margin-bottom: 0.4rem; font-weight: 600;
     }
     .sec-heading {
-      font-size: clamp(2.4rem, 8vw, 3.4rem); font-family: 'Parisienne', cursive; color: var(--floral-terracotta-light); margin-bottom: 0.3rem; font-weight: normal;
+      font-size: clamp(2.4rem, 8vw, 3.4rem); font-family: var(--lux-font-parisienne-2); color: var(--floral-terracotta-light); margin-bottom: 0.3rem; font-weight: normal;
       text-shadow: 0 2px 15px rgba(0,0,0,0.6);
       overflow-wrap: break-word;
       word-break: break-word;
     }
     .sec-subheading {
-      font-family: 'Italiana', serif;
+      font-family: var(--lux-font-italiana-2);
       font-size: 0.82rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--floral-sand); margin-bottom: 2.2rem;
     }
 
@@ -301,7 +314,7 @@
       box-shadow: 0 15px 35px rgba(0,0,0,0.65), 0 0 22px color-mix(in srgb, var(--floral-terracotta-light) 25%, transparent);
       position: relative;
       z-index: 2;
-      background: color-mix(in srgb, var(--bg-dark, #140c08) 85%, transparent);
+      background: color-mix(in srgb, var(--bg-dark, var(--lux-c-140c08)) 85%, transparent);
     }
     .couple-photo-wrap img {
       width: 100%;
@@ -313,7 +326,7 @@
 
     /* WATERMARK GRADIENT INITIAL DI SAMPING FOTO (BOLD EDITORIAL SCALE) */
     .couple-watermark-initial {
-      font-family: 'Italiana', 'Playfair Display', serif;
+      font-family: var(--lux-font-italiana);
       font-weight: 700;
       font-size: clamp(9.5rem, 32vw, 13rem);
       line-height: 0.8;
@@ -322,7 +335,7 @@
       transform: translateY(-50%);
       pointer-events: none;
       z-index: 1;
-      background: linear-gradient(180deg, var(--floral-terracotta-light) 10%, rgba(223,140,102,0.18) 75%, transparent 100%);
+      background: linear-gradient(180deg, var(--floral-terracotta-light) 10%, color-mix(in srgb, var(--lux-c-df8c66) 18%, transparent) 75%, transparent 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       opacity: 0.45;
@@ -348,7 +361,7 @@
     }
 
     .couple-role {
-      font-family: 'Jost', sans-serif;
+      font-family: var(--lux-font-jost-2);
       font-size: 0.68rem;
       letter-spacing: 0.24em;
       text-transform: uppercase;
@@ -361,7 +374,7 @@
       font-size: 1.65rem;
       color: var(--floral-terracotta-light);
       margin-bottom: 0.35rem;
-      font-family: 'Italiana', serif;
+      font-family: var(--lux-font-italiana-2);
       font-weight: 600;
       line-height: 1.25;
       text-shadow: 0 2px 10px rgba(0,0,0,0.7);
@@ -372,7 +385,7 @@
       gap: 0.15rem;
       margin-top: 0.2rem;
       font-size: 0.82rem;
-      color: rgba(251,247,244,0.88);
+      color: color-mix(in srgb, var(--lux-c-fbf7f4) 88%, transparent);
       line-height: 1.45;
       text-shadow: 0 2px 8px rgba(0,0,0,0.6);
     }
@@ -385,7 +398,7 @@
       text-align: right;
     }
     .parent-prefix {
-      font-family: 'Jost', sans-serif;
+      font-family: var(--lux-font-jost-2);
       font-size: 0.63rem;
       letter-spacing: 0.22em;
       text-transform: uppercase;
@@ -398,9 +411,9 @@
     .parent-father,
     .parent-mother {
       font-style: italic;
-      font-family: 'Playfair Display', serif;
+      font-family: var(--lux-font-playfair-display);
       font-size: 0.84rem;
-      color: rgba(251,247,244,0.92);
+      color: color-mix(in srgb, var(--lux-c-fbf7f4) 92%, transparent);
       display: block;
     }
     .couple-ig {
@@ -408,7 +421,7 @@
       align-items: center;
       gap: 0.4rem;
       margin-top: 0.7rem;
-      font-family: 'Jost', sans-serif;
+      font-family: var(--lux-font-jost-2);
       font-size: 0.74rem;
       color: var(--floral-terracotta-light);
       text-decoration: none;
@@ -431,7 +444,7 @@
       margin: -0.6rem 0;
     }
     .connector-amp {
-      font-family: 'Parisienne', cursive;
+      font-family: var(--lux-font-parisienne-2);
       font-size: 2.8rem;
       color: var(--floral-sand);
       opacity: 0.75;
@@ -457,13 +470,13 @@
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
     }
-    .countdown-val { font-size: 1.45rem; font-weight: 700; font-family: 'Italiana', serif; color: var(--floral-terracotta-light); line-height: 1; }
-    .countdown-lbl { font-family: 'Jost', sans-serif; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.14em; color: rgba(251,247,244,0.75); margin-top: 0.25rem; font-weight: 500; }
+    .countdown-val { font-size: 1.45rem; font-weight: 700; font-family: var(--lux-font-italiana-2); color: var(--floral-terracotta-light); line-height: 1; }
+    .countdown-lbl { font-family: var(--lux-font-jost-2); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.14em; color: color-mix(in srgb, var(--lux-c-fbf7f4) 75%, transparent); margin-top: 0.25rem; font-weight: 500; }
 
     .btn-cal {
       display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.65rem 1.8rem;
       border: 1px solid var(--floral-terracotta-light); border-radius: 50px; color: var(--floral-sand);
-      font-family: 'Jost', sans-serif; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+      font-family: var(--lux-font-jost-2); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
       text-decoration: none; transition: all 0.3s; background: color-mix(in srgb, var(--floral-card) 55%, transparent);
       backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
       box-shadow: 0 4px 15px rgba(0,0,0,0.3);
@@ -477,21 +490,21 @@
       background: var(--floral-card); border: 1px solid var(--floral-border); border-radius: 18px;
       padding: 1.8rem 1.4rem; text-align: center; box-shadow: var(--floral-glow);
     }
-    .ev-cat { font-family: 'Jost', sans-serif; font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--floral-sand); font-weight: 600; margin-bottom: 0.3rem; display: block; }
-    .ev-name { font-size: 1.5rem; color: var(--floral-terracotta-light); font-family: 'Italiana', serif; margin-bottom: 0.4rem; }
-    .ev-time { font-family: 'Jost', sans-serif; font-size: 0.85rem; color: rgba(251,247,244,0.9); font-weight: 500; }
+    .ev-cat { font-family: var(--lux-font-jost-2); font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--floral-sand); font-weight: 600; margin-bottom: 0.3rem; display: block; }
+    .ev-name { font-size: 1.5rem; color: var(--floral-terracotta-light); font-family: var(--lux-font-italiana-2); margin-bottom: 0.4rem; }
+    .ev-time { font-family: var(--lux-font-jost-2); font-size: 0.85rem; color: color-mix(in srgb, var(--lux-c-fbf7f4) 90%, transparent); font-weight: 500; }
     
     .event-unified-venue-card {
       background: var(--floral-card); border: 1px solid var(--floral-border); border-radius: 18px;
       padding: 1.8rem 1.4rem; text-align: center; box-shadow: var(--floral-glow);
     }
-    .venue-card-lbl { font-family: 'Jost', sans-serif; font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--floral-sand); font-weight: 600; margin-bottom: 0.4rem; display: block; }
-    .ev-venue-unified { font-size: 1.4rem; color: #ffffff; font-family: 'Italiana', serif; margin-bottom: 0.4rem; }
-    .ev-address-unified { font-size: 0.82rem; color: rgba(251,247,244,0.8); line-height: 1.6; margin-bottom: 1.2rem; font-family: 'Playfair Display', serif; font-style: italic; }
+    .venue-card-lbl { font-family: var(--lux-font-jost-2); font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--floral-sand); font-weight: 600; margin-bottom: 0.4rem; display: block; }
+    .ev-venue-unified { font-size: 1.4rem; color: #ffffff; font-family: var(--lux-font-italiana-2); margin-bottom: 0.4rem; }
+    .ev-address-unified { font-size: 0.82rem; color: color-mix(in srgb, var(--lux-c-fbf7f4) 80%, transparent); line-height: 1.6; margin-bottom: 1.2rem; font-family: var(--lux-font-playfair-display); font-style: italic; }
     .btn-map-outline {
       display: inline-flex; align-items: center; justify-content: center; padding: 0.8rem 2.2rem;
       border: 1px solid var(--floral-terracotta-light); border-radius: 50px; color: var(--floral-sand);
-      font-family: 'Jost', sans-serif; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
+      font-family: var(--lux-font-jost-2); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
       text-decoration: none; transition: all 0.3s;
     }
     .btn-map-outline:hover { background: var(--floral-terracotta-light); color: #fff; }
@@ -535,19 +548,19 @@
       box-shadow: 0 0 10px 2px color-mix(in srgb, var(--floral-terracotta-light) 65%, transparent), 0 0 20px color-mix(in srgb, var(--floral-terracotta-light) 35%, transparent);
       z-index: 2;
     }
-    .sc-label { font-family: 'Jost', sans-serif; font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--floral-terracotta-light); font-weight: 600; display: block; margin-bottom: 0.2rem; }
-    .sc-title { font-size: 1.25rem; color: var(--floral-sand); font-family: 'Italiana', serif; margin-bottom: 0.4rem; }
-    .sc-desc { font-size: 0.84rem; color: rgba(251,247,244,0.85); line-height: 1.7; font-family: 'Playfair Display', serif; font-style: italic; }
+    .sc-label { font-family: var(--lux-font-jost-2); font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--floral-terracotta-light); font-weight: 600; display: block; margin-bottom: 0.2rem; }
+    .sc-title { font-size: 1.25rem; color: var(--floral-sand); font-family: var(--lux-font-italiana-2); margin-bottom: 0.4rem; }
+    .sc-desc { font-size: 0.84rem; color: color-mix(in srgb, var(--lux-c-fbf7f4) 85%, transparent); line-height: 1.7; font-family: var(--lux-font-playfair-display); font-style: italic; }
     .journey-footer { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin-top: 1.25rem; width: 100%; max-width: 440px; }
     .jf-line { flex: 1; height: 1px; background: var(--floral-border-dim); }
-    .jf-signature { font-family: 'Parisienne', cursive; font-size: 2rem; color: var(--floral-terracotta-light); }
+    .jf-signature { font-family: var(--lux-font-parisienne-2); font-size: 2rem; color: var(--floral-terracotta-light); }
 
     /* GALLERY PUZZLE GRID & LIGHTBOX */
 
     .btn-show-gallery, .btn-outline-box {
       display: inline-flex; align-items: center; justify-content: center; padding: 0.8rem 2.2rem;
       border: 1px solid var(--floral-terracotta-light); border-radius: 50px; color: var(--floral-sand);
-      font-family: 'Jost', sans-serif; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
+      font-family: var(--lux-font-jost-2); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
       cursor: pointer; background: transparent; transition: all 0.3s;
     }
     .btn-show-gallery:hover, .btn-outline-box:hover { background: var(--floral-terracotta-light); color: #fff; }
@@ -557,29 +570,29 @@
       background: var(--floral-card); border: 1px solid var(--floral-border); border-radius: 18px;
       padding: 1.5rem; margin-bottom: 1rem; text-align: left; box-shadow: var(--floral-glow); width: 100%; max-width: 440px;
     }
-    .bank-label { font-family: 'Jost', sans-serif; font-size: 0.85rem; font-weight: 700; color: var(--floral-terracotta-light); display: block; margin-bottom: 0.2rem; }
-    .bank-owner { font-size: 0.78rem; color: rgba(251,247,244,0.75); display: block; margin-bottom: 0.6rem; font-style: italic; }
+    .bank-label { font-family: var(--lux-font-jost-2); font-size: 0.85rem; font-weight: 700; color: var(--floral-terracotta-light); display: block; margin-bottom: 0.2rem; }
+    .bank-owner { font-size: 0.78rem; color: color-mix(in srgb, var(--lux-c-fbf7f4) 75%, transparent); display: block; margin-bottom: 0.6rem; font-style: italic; }
     .bank-row {
       display: flex; align-items: center; justify-content: space-between;
-      background: color-mix(in srgb, var(--bg-dark, #140c08) 88%, transparent); border: 1px solid var(--floral-border); border-radius: 10px; padding: 0.7rem 1rem;
+      background: color-mix(in srgb, var(--bg-dark, var(--lux-c-140c08)) 88%, transparent); border: 1px solid var(--floral-border); border-radius: 10px; padding: 0.7rem 1rem;
     }
     .bank-number { font-family: monospace; font-size: 1.05rem; color: #ffffff; letter-spacing: 0.08em; }
     .btn-copy {
       background: var(--floral-terracotta-light); color: #fff; border: none; padding: 0.45rem 1rem;
-      border-radius: 6px; font-family: 'Jost', sans-serif; font-weight: 700; font-size: 0.7rem; cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase;
+      border-radius: 6px; font-family: var(--lux-font-jost-2); font-weight: 700; font-size: 0.7rem; cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase;
     }
 
     /* WISHES & RSVP FORM */
     .rsvp-form-wrap { text-align: left; margin-top: 1.5rem; width: 100%; max-width: 440px; }
     .form-row { margin-bottom: 1rem; }
-    .form-lbl { font-family: 'Jost', sans-serif; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: var(--floral-sand); display: block; margin-bottom: 0.3rem; }
+    .form-lbl { font-family: var(--lux-font-jost-2); font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: var(--floral-sand); display: block; margin-bottom: 0.3rem; }
     .form-in, .form-sel, .form-ta {
-      width: 100%; padding: 0.8rem 1rem; background: color-mix(in srgb, var(--bg-dark, #140c08) 88%, transparent); border: 1px solid var(--floral-border);
-      border-radius: 10px; color: #ffffff; font-size: 0.85rem; outline: none; font-family: 'Jost', sans-serif;
+      width: 100%; padding: 0.8rem 1rem; background: color-mix(in srgb, var(--bg-dark, var(--lux-c-140c08)) 88%, transparent); border: 1px solid var(--floral-border);
+      border-radius: 10px; color: #ffffff; font-size: 0.85rem; outline: none; font-family: var(--lux-font-jost-2);
     }
     .btn-rsvp-submit {
       width: 100%; padding: 1rem; background: linear-gradient(90deg, var(--floral-terracotta) 0%, var(--floral-terracotta-light) 50%, var(--floral-terracotta) 100%);
-      color: #ffffff; border: none; border-radius: 50px; font-family: 'Jost', sans-serif; font-weight: 700; font-size: 0.8rem;
+      color: #ffffff; border: none; border-radius: 50px; font-family: var(--lux-font-jost-2); font-weight: 700; font-size: 0.8rem;
       letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; transition: all 0.3s;
     }
     .wishes-list {
@@ -596,18 +609,18 @@
       padding: 1.1rem; background: var(--floral-card); border: 1px solid var(--floral-border);
       border-radius: 14px; text-align: left;
     }
-    .wish-name { font-family: 'Italiana', serif; font-weight: 600; font-size: 0.9rem; color: var(--floral-terracotta-light); }
-    .wish-msg { font-size: 0.82rem; color: rgba(251,247,244,0.9); line-height: 1.6; margin-top: 0.3rem; font-style: italic; }
+    .wish-name { font-family: var(--lux-font-italiana-2); font-weight: 600; font-size: 0.9rem; color: var(--floral-terracotta-light); }
+    .wish-msg { font-size: 0.82rem; color: color-mix(in srgb, var(--lux-c-fbf7f4) 90%, transparent); line-height: 1.6; margin-top: 0.3rem; font-style: italic; }
 
     /* QR PASS CARD */
     .access-pass-card {
       background: var(--floral-card); border: 1px solid var(--floral-border); border-radius: 24px;
       padding: 2.4rem 1.5rem; text-align: center; box-shadow: var(--floral-glow); width: 100%; max-width: 440px;
     }
-    .pass-tagline { font-family: 'Jost', sans-serif; font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--floral-sand); display: block; margin-bottom: 0.4rem; }
-    .pass-names { font-size: 2rem; color: var(--floral-terracotta-light); font-family: 'Parisienne', cursive; margin-bottom: 0.2rem; }
+    .pass-tagline { font-family: var(--lux-font-jost-2); font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--floral-sand); display: block; margin-bottom: 0.4rem; }
+    .pass-names { font-size: 2rem; color: var(--floral-terracotta-light); font-family: var(--lux-font-parisienne-2); margin-bottom: 0.2rem; }
     .pass-qr-wrapper { background: #ffffff; padding: 14px; display: inline-block; border-radius: 14px; margin: 1.2rem 0; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
-    .pass-guest-name { font-size: 1.35rem; color: #ffffff; font-family: 'Italiana', serif; }
+    .pass-guest-name { font-size: 1.35rem; color: #ffffff; font-family: var(--lux-font-italiana-2); }
 
     /* DOCK */
     .bottom-dock {
@@ -623,7 +636,7 @@
       opacity: 0;
       pointer-events: none;
     }
-    .dock-btn { color: rgba(251,247,244,0.7); font-family: 'Jost', sans-serif; font-size: 0.65rem; text-decoration: none; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
+    .dock-btn { color: color-mix(in srgb, var(--lux-c-fbf7f4) 70%, transparent); font-family: var(--lux-font-jost-2); font-size: 0.65rem; text-decoration: none; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
     .dock-btn:hover, .dock-btn.active { color: var(--floral-terracotta-light); }
     .dock-btn svg { width: 18px; height: 18px; fill: currentColor; }
     .dock-music-btn {
@@ -643,7 +656,7 @@
     /* MODAL POPUP */
     .modal-bg {
       position: fixed; inset: 0; z-index: 10000;
-      background: rgba(10, 6, 4, 0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      background: color-mix(in srgb, var(--lux-c-0a0604) 88%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
       display: flex; align-items: center; justify-content: center; padding: 1.5rem;
       opacity: 0; pointer-events: none; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
@@ -693,7 +706,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, color-mix(in srgb, var(--bg-dark, #140c08) 60%, transparent) 50%, color-mix(in srgb, var(--bg-dark, #140c08) 95%, transparent) 100%);
+      background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, color-mix(in srgb, var(--bg-dark, var(--lux-c-140c08)) 60%, transparent) 50%, color-mix(in srgb, var(--bg-dark, var(--lux-c-140c08)) 95%, transparent) 100%);
       pointer-events: none;
       z-index: 1;
     }
@@ -741,7 +754,7 @@
       <div class="sidebar-desktop-content">
         <p class="font-floral-sans" style="letter-spacing: 0.3em; text-transform: uppercase; color: var(--floral-sand); font-size: 0.75rem;">{{weddingTagline}}</p>
         <h2 class="font-floral-script" style="font-size: 4.8rem; color: var(--floral-terracotta-light); margin: 0.5rem 0;">{{firstName}} &amp; {{secondName}}</h2>
-        <p class="font-floral-sans" style="letter-spacing: 0.15em; font-size: 0.85rem; color: rgba(251,247,244,0.75);">{{weddingDate}}</p>
+        <p class="font-floral-sans" style="letter-spacing: 0.15em; font-size: 0.85rem; color: color-mix(in srgb, var(--lux-c-fbf7f4) 75%, transparent);">{{weddingDate}}</p>
       </div>
     </div>
 
@@ -761,7 +774,7 @@
             <circle cx="65" cy="12" r="1.5" fill="var(--floral-terracotta-light)"/>
             <circle cx="95" cy="12" r="1.5" fill="var(--floral-terracotta-light)"/>
           </svg>
-          <p style="font-size: 0.88rem; line-height: 1.75; color: rgba(251,247,244,0.95); max-width: 360px; margin: 0 auto; font-style: italic; font-family: 'Playfair Display', serif; text-shadow: 0 2px 12px rgba(0,0,0,0.95);">
+          <p style="font-size: 0.88rem; line-height: 1.75; color: color-mix(in srgb, var(--lux-c-fbf7f4) 95%, transparent); max-width: 360px; margin: 0 auto; font-style: italic; font-family: var(--lux-font-playfair-display); text-shadow: 0 2px 12px rgba(0,0,0,0.95);">
             "{{openingQuote}}"
           </p>
           <span class="font-floral-sans" style="display: block; font-size: 0.72rem; color: var(--floral-sand); margin-top: 0.5rem; letter-spacing: 0.22em; text-shadow: 0 2px 10px rgba(0,0,0,0.85);">{{openingQuoteRef}}</span>
@@ -955,12 +968,12 @@
 
       <footer class="site-footer {{closingPhotoClass}}" style="{{closingBgStyle}}">
         <div class="closing-content">
-          <p class="font-floral-sans" style="font-size: 0.85rem; color: rgba(251,247,244,0.8); line-height: 1.7; margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto;">
+          <p class="font-floral-sans" style="font-size: 0.85rem; color: color-mix(in srgb, var(--lux-c-fbf7f4) 80%, transparent); line-height: 1.7; margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto;">
             Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu bagi kami.
           </p>
           <p class="font-floral-sans" style="font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--floral-sand); font-weight: 600; margin-bottom: 0.5rem;">Kami Yang Berbahagia,</p>
           <h3 class="font-floral-script" style="font-size: 3.2rem; color: var(--floral-terracotta-light); margin-bottom: 0.4rem;">{{firstName}} &amp; {{secondName}}</h3>
-          <p class="font-floral-sans" style="font-size: 0.75rem; color: rgba(251,247,244,0.7); letter-spacing: 0.2em; text-transform: uppercase; margin-top: 0.5rem;">
+          <p class="font-floral-sans" style="font-size: 0.75rem; color: color-mix(in srgb, var(--lux-c-fbf7f4) 70%, transparent); letter-spacing: 0.2em; text-transform: uppercase; margin-top: 0.5rem;">
             TERIMA KASIH ATAS DOA DAN KEHADIRAN ANDA
           </p>
         </div>
@@ -1009,7 +1022,7 @@
       {{qrAccessCardHtml}}
       <div style="margin-top:1.2rem;padding:0.9rem;background:var(--floral-card);border:1px solid var(--floral-border);border-radius:12px;text-align:center;">
         <span style="font-size:0.62rem;letter-spacing:0.2em;color:var(--floral-sand);text-transform:uppercase;font-weight:600;display:block;margin-bottom:0.4rem;">Voucher Souvenir</span>
-        <div style="font-family:monospace;font-weight:700;font-size:0.85rem;color:#ffffff;letter-spacing:0.12em;padding:0.45rem;background:color-mix(in srgb, var(--bg-dark, #140c08) 80%, transparent);border:1px solid var(--floral-border);border-radius:6px;">SOUVENIR-{{invitationId}}</div>
+        <div style="font-family:monospace;font-weight:700;font-size:0.85rem;color:#ffffff;letter-spacing:0.12em;padding:0.45rem;background:color-mix(in srgb, var(--bg-dark, var(--lux-c-140c08)) 80%, transparent);border:1px solid var(--floral-border);border-radius:6px;">SOUVENIR-{{invitationId}}</div>
       </div>
     </div>
   </div>

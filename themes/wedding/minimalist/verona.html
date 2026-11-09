@@ -26,7 +26,7 @@
 
   <style>
     @font-face {
-      font-family: "The Nautigal";
+      font-family: var(--lux-font-the-nautigal);
       src: url("/fonts/verona/TheNautigal.woff2") format("woff2");
       font-weight: normal;
       font-style: normal;
@@ -34,7 +34,7 @@
     }
 
     @font-face {
-      font-family: "Editor Light";
+      font-family: var(--lux-font-editor-light);
       src: url("/fonts/verona/Editor-Light.woff2") format("woff2");
       font-weight: normal;
       font-style: normal;
@@ -42,7 +42,7 @@
     }
 
     @font-face {
-      font-family: "Gloriousity Two";
+      font-family: var(--lux-font-gloriousity-two);
       src: url("/fonts/verona/Gloriousity-Two.woff2") format("woff2");
       font-weight: normal;
       font-style: normal;
@@ -68,6 +68,20 @@
       --shadow-elevated: 0 16px 40px color-mix(in srgb, var(--primary) 18%, transparent);
       --glass-bg: color-mix(in srgb, var(--bg-light) 90%, transparent);
       --glass-border: color-mix(in srgb, var(--accent) 30%, transparent);
+      /* Ditambahkan tokenisasi master (warna dan huruf yang sebelumnya tertulis langsung). */
+      --lux-c-1a1816: #1a1816;
+      --lux-c-9c948b: #9c948b;
+      --lux-font-the-nautigal: "The Nautigal";
+      --lux-font-editor-light: "Editor Light";
+      --lux-font-gloriousity-two: "Gloriousity Two";
+      --lux-font-plus-jakarta-sans: "Plus Jakarta Sans", "Open Sans", -apple-system, sans-serif;
+      --lux-font-playfair-display: "Playfair Display", "Cormorant Garamond", Georgia, serif;
+      --lux-font-cormorant-garamond: "Cormorant Garamond", Georgia, serif;
+      --lux-font-the-nautigal-2: "The Nautigal", "Gloriousity Two", cursive;
+      --lux-font-playfair-display-2: "Playfair Display", Georgia, serif;
+      --lux-font-the-nautigal-3: "The Nautigal", cursive;
+      --lux-font-traditional-arabic: "Traditional Arabic", "Amiri", "Playfair Display", serif;
+      --lux-font-playfair-display-3: 'Playfair Display', serif;
     }
 
     * {
@@ -89,7 +103,7 @@
     }
 
     body {
-      font-family: "Plus Jakarta Sans", "Open Sans", -apple-system, sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       background-color: var(--bg-dark);
       color: var(--text-main);
       overflow-x: hidden;
@@ -122,16 +136,16 @@
     .playfair,
     h1, h2, h3, h4,
     .sec-main-title {
-      font-family: "Playfair Display", "Cormorant Garamond", Georgia, serif;
+      font-family: var(--lux-font-playfair-display);
       letter-spacing: 0.02em;
     }
 
     .font-cormorant {
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: var(--lux-font-cormorant-garamond);
     }
 
     .script-accent {
-      font-family: "The Nautigal", "Gloriousity Two", cursive;
+      font-family: var(--lux-font-the-nautigal-2);
       font-weight: 400;
     }
 
@@ -192,11 +206,11 @@
       color: #ffffff;
       margin-bottom: 1rem;
       text-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
-      font-family: "Playfair Display", Georgia, serif;
+      font-family: var(--lux-font-playfair-display-2);
     }
 
     .sidebar-desktop-names span {
-      font-family: "The Nautigal", cursive;
+      font-family: var(--lux-font-the-nautigal-3);
       color: var(--accent);
       font-size: 1.2em;
       margin: 0 0.35rem;
@@ -216,7 +230,7 @@
       line-height: 1.7;
       color: rgba(255, 255, 255, 0.88);
       max-width: 520px;
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: var(--lux-font-cormorant-garamond);
       text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
     }
 
@@ -367,7 +381,7 @@
     .cover-names {
       font-size: clamp(2.4rem, 8vw, 3.2rem);
       line-height: 1.15;
-      font-family: "Playfair Display", Georgia, serif;
+      font-family: var(--lux-font-playfair-display-2);
       color: #ffffff;
       margin: 0.2rem 0 0.6rem;
       font-weight: 500;
@@ -375,7 +389,7 @@
     }
 
     .cover-names span {
-      font-family: "The Nautigal", cursive;
+      font-family: var(--lux-font-the-nautigal-3);
       color: var(--accent);
       font-size: 1.25em;
       margin: 0 0.3rem;
@@ -413,7 +427,7 @@
       font-weight: 600;
       color: #ffffff;
       letter-spacing: 0.04em;
-      font-family: "Playfair Display", Georgia, serif;
+      font-family: var(--lux-font-playfair-display-2);
     }
 
     .btn-open-minimal {
@@ -425,7 +439,7 @@
       padding: 13px 26px;
       border-radius: var(--radius-full);
       background: var(--bg-light);
-      color: #1a1816;
+      color: var(--lux-c-1a1816);
       border: 1px solid var(--glass-border);
       font-size: 0.82rem;
       font-weight: 600;
@@ -560,13 +574,13 @@
       font-size: clamp(2.3rem, 7vw, 3rem);
       line-height: 1.15;
       color: var(--text-main);
-      font-family: "Playfair Display", Georgia, serif;
+      font-family: var(--lux-font-playfair-display-2);
       margin-bottom: 0.6rem;
       font-weight: 500;
     }
 
     .home-names span {
-      font-family: "The Nautigal", cursive;
+      font-family: var(--lux-font-the-nautigal-3);
       color: var(--secondary);
       font-size: 1.2em;
       margin: 0 0.25rem;
@@ -605,7 +619,7 @@
       font-weight: 600;
       color: var(--text-main);
       line-height: 1;
-      font-family: "Playfair Display", Georgia, serif;
+      font-family: var(--lux-font-playfair-display-2);
       margin-bottom: 4px;
     }
 
@@ -625,7 +639,7 @@
     }
 
     .greeting-text {
-      font-family: "Traditional Arabic", "Amiri", "Playfair Display", serif;
+      font-family: var(--lux-font-traditional-arabic);
       font-size: 1.45rem;
       color: var(--secondary);
       margin-bottom: 1.2rem;
@@ -633,7 +647,7 @@
     }
 
     .quote-content {
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: var(--lux-font-cormorant-garamond);
       font-size: 1.12rem;
       font-style: italic;
       line-height: 1.75;
@@ -682,7 +696,7 @@
 
     .couple-name {
       font-size: 1.6rem;
-      font-family: "Playfair Display", Georgia, serif;
+      font-family: var(--lux-font-playfair-display-2);
       color: var(--text-main);
       margin-bottom: 0.4rem;
       font-weight: 600;
@@ -731,7 +745,7 @@
     }
 
     .couple-divider-amp {
-      font-family: "The Nautigal", cursive;
+      font-family: var(--lux-font-the-nautigal-3);
       font-size: 3.5rem;
       color: var(--secondary);
       line-height: 1;
@@ -781,7 +795,7 @@
 
     .ev-name {
       font-size: 1.4rem;
-      font-family: "Playfair Display", Georgia, serif;
+      font-family: var(--lux-font-playfair-display-2);
       color: var(--text-main);
       margin-bottom: 0.4rem;
       font-weight: 500;
@@ -823,7 +837,7 @@
 
     .ev-venue {
       font-size: 1.05rem;
-      font-family: "Playfair Display", Georgia, serif;
+      font-family: var(--lux-font-playfair-display-2);
       color: var(--text-main);
       margin-bottom: 0.3rem;
       font-weight: 600;
@@ -921,7 +935,7 @@
 
     .story-title {
       font-size: 1.25rem;
-      font-family: "Playfair Display", Georgia, serif;
+      font-family: var(--lux-font-playfair-display-2);
       color: var(--text-main);
       margin-bottom: 0.4rem;
       font-weight: 500;
@@ -953,7 +967,7 @@
 
     .gift-bank-name {
       font-size: 1.15rem;
-      font-family: "Playfair Display", Georgia, serif;
+      font-family: var(--lux-font-playfair-display-2);
       letter-spacing: 0.1em;
       color: var(--secondary);
       font-weight: 600;
@@ -1131,7 +1145,7 @@
       font-size: 0.92rem;
       font-weight: 600;
       color: var(--text-main);
-      font-family: "Playfair Display", Georgia, serif;
+      font-family: var(--lux-font-playfair-display-2);
     }
 
     .wish-status-badge {
@@ -1153,7 +1167,7 @@
 
     .wish-timestamp {
       font-size: 0.68rem;
-      color: #9c948b;
+      color: var(--lux-c-9c948b);
       margin-top: 6px;
       display: block;
     }
@@ -1184,7 +1198,7 @@
     }
 
     .closing-quote-text {
-      font-family: "Cormorant Garamond", Georgia, serif;
+      font-family: var(--lux-font-cormorant-garamond);
       font-size: 1.15rem;
       font-style: italic;
       color: var(--text-main);
@@ -1195,7 +1209,7 @@
 
     .closing-names {
       font-size: 2.2rem;
-      font-family: "Playfair Display", Georgia, serif;
+      font-family: var(--lux-font-playfair-display-2);
       color: var(--text-main);
       margin-bottom: 0.4rem;
       font-weight: 500;
@@ -1753,7 +1767,7 @@
       </button>
 
       <span class="sec-eyebrow" style="margin-top:0.5rem;">TIKET KEHADIRAN</span>
-      <h3 style="font-family:'Playfair Display',serif; font-size:1.4rem; margin-bottom:0.4rem;">QR Check-in Tamu</h3>
+      <h3 style="font-family:var(--lux-font-playfair-display-3); font-size:1.4rem; margin-bottom:0.4rem;">QR Check-in Tamu</h3>
       <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:1.2rem;">Tunjukkan kode QR ini kepada resepsionis di lokasi acara.</p>
 
       <div style="background:var(--bg-light); border-radius:12px; padding:1.2rem; display:inline-block; border:1px solid var(--glass-border); margin-bottom:1rem;">

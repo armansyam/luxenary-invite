@@ -43,6 +43,20 @@
       --border-gold-bright: color-mix(in srgb, var(--accent, #e6c67a) 85%, transparent);
       --gold-glow: color-mix(in srgb, var(--accent, #e6c67a) 32%, transparent);
       --text-muted: color-mix(in srgb, #ffffff 75%, transparent);
+      /* Ditambahkan tokenisasi master (warna dan huruf yang sebelumnya tertulis langsung). */
+      --lux-c-180309: #180309;
+      --lux-c-e6c67a: #e6c67a;
+      --lux-c-5e091e: #5e091e;
+      --lux-c-140204: #140204;
+      --lux-c-5a0b10: #5a0b10;
+      --lux-c-dfb76c: #dfb76c;
+      --lux-c-0f0203: #0f0203;
+      --lux-font-plus-jakarta-sans: 'Plus Jakarta Sans', sans-serif;
+      --lux-font-cinzel: 'Cinzel', 'Cinzel Decorative', serif;
+      --lux-font-great-vibes: 'Great Vibes', cursive;
+      --lux-font-cormorant-garamond: 'Cormorant Garamond', serif;
+      --lux-font-cinzel-2: 'Cinzel', serif;
+      --lux-font-cinzel-3: 'Cinzel', monospace;
     }
 
     ::selection {
@@ -52,8 +66,8 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html { scroll-behavior: smooth; }
     body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background-color: var(--bg-dark, #180309);
+      font-family: var(--lux-font-plus-jakarta-sans);
+      background-color: var(--bg-dark, var(--lux-c-180309));
       color: #ffffff;
       overflow-x: hidden;
       width: 100%;
@@ -69,14 +83,14 @@
         45deg,
         transparent,
         transparent 5px,
-        color-mix(in srgb, var(--accent, #e6c67a) 3%, transparent) 5px,
-        color-mix(in srgb, var(--accent, #e6c67a) 3%, transparent) 10px
+        color-mix(in srgb, var(--accent, var(--lux-c-e6c67a)) 3%, transparent) 5px,
+        color-mix(in srgb, var(--accent, var(--lux-c-e6c67a)) 3%, transparent) 10px
       ), linear-gradient(
         180deg,
-        color-mix(in srgb, var(--bg-dark, #180309) 84%, transparent) 0%,
-        color-mix(in srgb, var(--primary, #5e091e) 58%, transparent) 35%,
-        color-mix(in srgb, var(--bg-dark, #180309) 86%, transparent) 75%,
-        color-mix(in srgb, var(--bg-dark, #180309) 96%, transparent) 100%
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-180309)) 84%, transparent) 0%,
+        color-mix(in srgb, var(--primary, var(--lux-c-5e091e)) 58%, transparent) 35%,
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-180309)) 86%, transparent) 75%,
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-180309)) 96%, transparent) 100%
       ), url('/assets/ornaments/background/bg-maroon.webp');
       background-size: auto, cover, cover;
       background-position: center;
@@ -89,22 +103,22 @@
         45deg,
         transparent,
         transparent 5px,
-        color-mix(in srgb, var(--accent, #e6c67a) 3%, transparent) 5px,
-        color-mix(in srgb, var(--accent, #e6c67a) 3%, transparent) 10px
+        color-mix(in srgb, var(--accent, var(--lux-c-e6c67a)) 3%, transparent) 5px,
+        color-mix(in srgb, var(--accent, var(--lux-c-e6c67a)) 3%, transparent) 10px
       ), linear-gradient(
         180deg,
-        color-mix(in srgb, var(--bg-dark, #180309) 84%, transparent) 0%,
-        color-mix(in srgb, var(--primary, #5e091e) 58%, transparent) 35%,
-        color-mix(in srgb, var(--bg-dark, #180309) 86%, transparent) 75%,
-        color-mix(in srgb, var(--bg-dark, #180309) 96%, transparent) 100%
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-180309)) 84%, transparent) 0%,
+        color-mix(in srgb, var(--primary, var(--lux-c-5e091e)) 58%, transparent) 35%,
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-180309)) 86%, transparent) 75%,
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-180309)) 96%, transparent) 100%
       ), var(--custom-bg);
     }
 
     /* TYPOGRAPHY CLASSES */
-    .font-bugis-title { font-family: 'Cinzel', 'Cinzel Decorative', serif; letter-spacing: 0.12em; }
-    .font-bugis-accent { font-family: 'Great Vibes', cursive; }
-    .font-bugis-quote { font-family: 'Cormorant Garamond', serif; font-style: italic; }
-    .font-bugis-sans { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .font-bugis-title { font-family: var(--lux-font-cinzel); letter-spacing: 0.12em; }
+    .font-bugis-accent { font-family: var(--lux-font-great-vibes); }
+    .font-bugis-quote { font-family: var(--lux-font-cormorant-garamond); font-style: italic; }
+    .font-bugis-sans { font-family: var(--lux-font-plus-jakarta-sans); }
 
     /* ANIMATIONS & MICRO-INTERACTIONS */
     @keyframes bugisFloat {
@@ -181,12 +195,12 @@
       position: fixed;
       inset: 0;
       z-index: 9999;
-      background-color: var(--bg-dark, #140204);
+      background-color: var(--bg-dark, var(--lux-c-140204));
       background-image: linear-gradient(
         180deg,
-        color-mix(in srgb, var(--bg-dark, #140204) 75%, transparent) 0%,
-        color-mix(in srgb, var(--primary, #5a0b10) 50%, transparent) 40%,
-        color-mix(in srgb, var(--bg-dark, #140204) 90%, transparent) 100%
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 75%, transparent) 0%,
+        color-mix(in srgb, var(--primary, var(--lux-c-5a0b10)) 50%, transparent) 40%,
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 90%, transparent) 100%
       ), url('/assets/ornaments/background/bg-maroon.webp'), url('{{landingCoverUrl}}');
       background-size: cover;
       background-position: center;
@@ -238,13 +252,13 @@
     }
     .cover-names span {
       display: block;
-      font-family: 'Great Vibes', cursive;
+      font-family: var(--lux-font-great-vibes);
       font-size: 2.1rem;
       color: var(--bugis-gold);
       margin: 0.2rem 0;
     }
     .cover-guest-box {
-      background: color-mix(in srgb, var(--primary, #5a0b10) 32%, var(--bg-dark, #140204) 80%);
+      background: color-mix(in srgb, var(--primary, var(--lux-c-5a0b10)) 32%, var(--bg-dark, var(--lux-c-140204)) 80%);
       border: 1px solid var(--border-gold);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
@@ -256,7 +270,7 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.45);
     }
     .cover-guest-lbl { font-size: 0.75rem; color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; }
-    .cover-guest-val { font-family: 'Cinzel', serif; font-size: 1.2rem; color: #fff; margin-top: 0.25rem; font-weight: 600; letter-spacing: 0.05em; }
+    .cover-guest-val { font-family: var(--lux-font-cinzel-2); font-size: 1.2rem; color: #fff; margin-top: 0.25rem; font-weight: 600; letter-spacing: 0.05em; }
 
     .btn-buka-undangan {
       background: linear-gradient(135deg, var(--bugis-maroon), color-mix(in srgb, var(--bugis-maroon) 70%, #000));
@@ -264,7 +278,7 @@
       border: 1.5px solid var(--border-gold-bright);
       padding: 0.85rem 2.2rem;
       border-radius: 9999px;
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-plus-jakarta-sans);
       font-size: 0.85rem;
       font-weight: 600;
       letter-spacing: 0.15em;
@@ -306,14 +320,14 @@
         z-index: 10;
         background-image: linear-gradient(
           to right,
-          color-mix(in srgb, var(--bg-dark, #140204) 40%, transparent) 0%,
-          color-mix(in srgb, var(--bg-dark, #140204) 95%, transparent) 100%
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 40%, transparent) 0%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 95%, transparent) 100%
         ), url('{{sidebarPhotoUrl}}'), url('/assets/ornaments/background/bg-maroon.webp');
         background-size: cover;
         background-position: center;
       }
       .sidebar-desktop .sb-brand {
-        font-family: 'Cinzel', serif;
+        font-family: var(--lux-font-cinzel-2);
         font-size: 1.1rem;
         letter-spacing: 0.25em;
         color: var(--bugis-gold);
@@ -321,14 +335,14 @@
         text-transform: uppercase;
       }
       .sidebar-desktop .sb-names {
-        font-family: 'Cinzel', serif;
+        font-family: var(--lux-font-cinzel-2);
         font-size: 3.8rem;
         color: #fff;
         line-height: 1.1;
         margin-bottom: 1.2rem;
       }
       .sidebar-desktop .sb-names span {
-        font-family: 'Great Vibes', cursive;
+        font-family: var(--lux-font-great-vibes);
         color: var(--bugis-gold);
         font-size: 3.4rem;
         display: block;
@@ -418,7 +432,7 @@
       font-weight: 600;
     }
     .sec-main-title {
-      font-family: 'Cinzel', serif;
+      font-family: var(--lux-font-cinzel-2);
       font-size: 2.1rem;
       color: #ffffff;
       letter-spacing: 0.08em;
@@ -438,7 +452,7 @@
       align-items: center;
       padding: clamp(2rem, 5vh, 3.5rem) 1.5rem;
       position: relative;
-      background: radial-gradient(circle at center, color-mix(in srgb, var(--primary, #5a0b10) 30%, transparent) 0%, transparent 70%);
+      background: radial-gradient(circle at center, color-mix(in srgb, var(--primary, var(--lux-c-5a0b10)) 30%, transparent) 0%, transparent 70%);
     }
     .home-emblem-wrap {
       width: 140px;
@@ -495,14 +509,14 @@
       pointer-events: none;
     }
     .home-names {
-      font-family: 'Cinzel', serif;
+      font-family: var(--lux-font-cinzel-2);
       font-size: 2.6rem;
       color: #ffffff;
       line-height: 1.15;
       margin-bottom: 1.2rem;
     }
     .home-names span {
-      font-family: 'Great Vibes', cursive;
+      font-family: var(--lux-font-great-vibes);
       font-size: 2.3rem;
       color: var(--bugis-gold);
       display: block;
@@ -539,7 +553,7 @@
       backdrop-filter: blur(10px);
     }
     .cd-num {
-      font-family: 'Cinzel', serif;
+      font-family: var(--lux-font-cinzel-2);
       font-size: 1.45rem;
       color: var(--bugis-gold);
       font-weight: 700;
@@ -579,7 +593,7 @@
       object-fit: cover;
     }
     .couple-name {
-      font-family: 'Cinzel', serif;
+      font-family: var(--lux-font-cinzel-2);
       font-size: 1.45rem;
       color: #ffffff;
       margin-bottom: 0.6rem;
@@ -627,7 +641,7 @@
       margin-bottom: 0.8rem;
     }
     .ev-title {
-      font-family: 'Cinzel', serif;
+      font-family: var(--lux-font-cinzel-2);
       font-size: 1.35rem;
       color: #ffffff;
       margin-bottom: 0.8rem;
@@ -699,7 +713,7 @@
       height: 16px;
       border-radius: 50%;
       background: var(--bugis-gold);
-      border: 3px solid var(--bg-dark, #140204);
+      border: 3px solid var(--bg-dark, var(--lux-c-140204));
       box-shadow: 0 0 12px var(--border-gold-bright);
     }
     .sc-label {
@@ -710,7 +724,7 @@
       font-weight: 600;
     }
     .sc-title {
-      font-family: 'Cinzel', serif;
+      font-family: var(--lux-font-cinzel-2);
       font-size: 1.15rem;
       color: #ffffff;
       margin: 0.25rem 0 0.5rem;
@@ -731,13 +745,13 @@
       text-align: center;
     }
     .gift-bank-name {
-      font-family: 'Cinzel', serif;
+      font-family: var(--lux-font-cinzel-2);
       font-size: 1.15rem;
       color: var(--bugis-gold);
       margin-bottom: 0.5rem;
     }
     .gift-acc-num {
-      font-family: 'Cinzel', monospace;
+      font-family: var(--lux-font-cinzel-3);
       font-size: 1.35rem;
       letter-spacing: 0.1em;
       color: #ffffff;
@@ -749,7 +763,7 @@
       margin-bottom: 1.2rem;
     }
     .btn-copy {
-      background: color-mix(in srgb, var(--bg-dark, #140204) 85%, transparent);
+      background: color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 85%, transparent);
       color: var(--bugis-gold);
       border: 1px solid var(--border-gold);
       padding: 0.5rem 1.4rem;
@@ -762,7 +776,7 @@
     }
     .btn-copy:hover {
       background: var(--bugis-gold);
-      color: var(--bg-dark, #140204);
+      color: var(--bg-dark, var(--lux-c-140204));
     }
 
     .gift-tabs {
@@ -772,7 +786,7 @@
       border: 1px solid var(--border-gold);
       border-radius: 9999px;
       overflow: hidden;
-      background: color-mix(in srgb, var(--bg-dark, #140204) 75%, transparent);
+      background: color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 75%, transparent);
       backdrop-filter: blur(10px);
       padding: 3px;
       gap: 4px;
@@ -784,7 +798,7 @@
       background: transparent;
       border: none;
       border-radius: 9999px;
-      color: var(--bugis-gold, #dfb76c);
+      color: var(--bugis-gold, var(--lux-c-dfb76c));
       opacity: 0.65;
       font-size: 0.75rem;
       font-weight: 600;
@@ -799,11 +813,11 @@
     }
 
     .gift-tab-btn.active {
-      background: var(--bugis-gold, #dfb76c);
-      color: var(--bg-dark, #140204);
+      background: var(--bugis-gold, var(--lux-c-dfb76c));
+      color: var(--bg-dark, var(--lux-c-140204));
       opacity: 1;
       font-weight: 700;
-      box-shadow: 0 0 14px var(--gold-glow, rgba(223, 183, 108, 0.35));
+      box-shadow: 0 0 14px var(--gold-glow, color-mix(in srgb, var(--lux-c-dfb76c) 35%, transparent));
     }
 
     /* RSVP & WISHES */
@@ -827,7 +841,7 @@
     }
     .form-in, .form-sel, .form-ta {
       width: 100%;
-      background: color-mix(in srgb, var(--bg-dark, #140204) 85%, transparent);
+      background: color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 85%, transparent);
       border: 1px solid var(--border-gold);
       color: #ffffff;
       padding: 0.75rem 1rem;
@@ -914,8 +928,8 @@
       background: linear-gradient(
         to bottom,
         rgba(0, 0, 0, 0.15) 0%,
-        color-mix(in srgb, var(--bg-dark, #0f0203) 45%, transparent) 45%,
-        color-mix(in srgb, var(--bg-dark, #0f0203) 92%, transparent) 100%
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-0f0203)) 45%, transparent) 45%,
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-0f0203)) 92%, transparent) 100%
       );
       pointer-events: none;
       z-index: 1;
@@ -950,7 +964,7 @@
       bottom: calc(18px + env(safe-area-inset-bottom, 0px));
       left: 50%;
       transform: translate3d(-50%, 0, 0);
-      background: color-mix(in srgb, var(--bg-dark, #140204) 85%, transparent);
+      background: color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 85%, transparent);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       border: 1px solid var(--border-gold);
@@ -1030,7 +1044,7 @@
       width: 44px;
       height: 44px;
       border-radius: 50%;
-      background: color-mix(in srgb, var(--bg-dark, #140204) 85%, transparent);
+      background: color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 85%, transparent);
       border: 1px solid var(--border-gold);
       color: var(--bugis-gold);
       display: flex;
@@ -1192,7 +1206,7 @@
           {{/if}}
         </div>
 
-        <div class="reveal-on-scroll" style="font-family: 'Great Vibes', cursive; font-size: 2.8rem; color: var(--bugis-gold); margin: 0.5rem 0 2rem;">&amp;</div>
+        <div class="reveal-on-scroll" style="font-family: var(--lux-font-great-vibes); font-size: 2.8rem; color: var(--bugis-gold); margin: 0.5rem 0 2rem;">&amp;</div>
 
         <!-- BRIDE CARD -->
         <div class="couple-card reveal-on-scroll">

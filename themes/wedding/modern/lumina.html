@@ -43,6 +43,16 @@
       --cinema-border: rgba(255, 255, 255, 0.14);
       --cinema-border-bright: rgba(255, 255, 255, 0.45);
       --cinema-border-glow: 0 0 25px rgba(255, 255, 255, 0.12);
+      /* Ditambahkan tokenisasi master (warna dan huruf yang sebelumnya tertulis langsung). */
+      --lux-c-f4f4f5: #f4f4f5;
+      --lux-c-18181b: #18181b;
+      --lux-c-09090b: #09090b;
+      --lux-c-121216: #121216;
+      --lux-c-0b0b0e: #0b0b0e;
+      --lux-font-outfit: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+      --lux-font-cinzel-decorative: 'Cinzel Decorative', serif;
+      --lux-font-outfit-2: 'Outfit', sans-serif;
+      --lux-font-plus-jakarta-sans: 'Plus Jakarta Sans', sans-serif;
     }
 
     ::selection {
@@ -56,9 +66,9 @@
       scrollbar-width: none;
     }
     body {
-      font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--lux-font-outfit);
       background-color: var(--bg-dark, var(--cinema-dark));
-      color: #f4f4f5;
+      color: var(--lux-c-f4f4f5);
       overflow-x: hidden;
       width: 100%;
       -ms-overflow-style: none;
@@ -80,7 +90,7 @@
       left: 0;
       width: 100%;
       height: 100vh;
-      background-image: radial-gradient(circle at 50% 10%, rgba(24,24,27,0.82) 0%, rgba(9,9,11,0.94) 85%),
+      background-image: radial-gradient(circle at 50% 10%, color-mix(in srgb, var(--lux-c-18181b) 82%, transparent) 0%, color-mix(in srgb, var(--lux-c-09090b) 94%, transparent) 85%),
         url('/assets/ornaments/background/background-flower.webp');
       background-size: cover;
       background-position: center;
@@ -89,14 +99,14 @@
       pointer-events: none;
     }
     .fixed-bg-layer.has-custom-bg {
-      background-image: radial-gradient(circle at 50% 10%, rgba(24,24,27,0.82) 0%, rgba(9,9,11,0.94) 85%),
+      background-image: radial-gradient(circle at 50% 10%, color-mix(in srgb, var(--lux-c-18181b) 82%, transparent) 0%, color-mix(in srgb, var(--lux-c-09090b) 94%, transparent) 85%),
         var(--custom-bg);
     }
 
     /* TYPOGRAPHY CLASSES */
-    .font-cinema-title { font-family: 'Cinzel Decorative', serif; }
-    .font-cinema-sans { font-family: 'Outfit', sans-serif; }
-    .font-cinema-body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .font-cinema-title { font-family: var(--lux-font-cinzel-decorative); }
+    .font-cinema-sans { font-family: var(--lux-font-outfit-2); }
+    .font-cinema-body { font-family: var(--lux-font-plus-jakarta-sans); }
 
     /* ANIMATIONS & MICRO-INTERACTIONS */
     @keyframes cinemaGlow {
@@ -119,7 +129,7 @@
       position: fixed; inset: 0; z-index: 9999;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       text-align: center; padding: 2.5rem 1.5rem;
-      background: radial-gradient(circle at center, rgba(18,18,22,0.9) 0%, rgba(9,9,11,0.98) 100%), url('{{landingCoverUrl}}') center/cover no-repeat;
+      background: radial-gradient(circle at center, color-mix(in srgb, var(--lux-c-121216) 90%, transparent) 0%, color-mix(in srgb, var(--lux-c-09090b) 98%, transparent) 100%), url('{{landingCoverUrl}}') center/cover no-repeat;
       transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s ease, visibility 0s linear 0.85s;
     }
     .cover-overlay.opened,
@@ -145,7 +155,7 @@
       animation: cinemaGlow 4s infinite ease-in-out;
     }
     .cover-names {
-      font-size: clamp(2.8rem, 10vw, 4.8rem); font-family: 'Cinzel Decorative', serif; font-weight: 300;
+      font-size: clamp(2.8rem, 10vw, 4.8rem); font-family: var(--lux-font-cinzel-decorative); font-weight: 300;
       color: #fff; text-shadow: 0 4px 25px rgba(0,0,0,0.8); margin-bottom: 1.8rem; line-height: 1.1;
     }
     .cover-names em { font-style: italic; font-size: 0.75em; color: var(--silver-muted); display: inline-block; margin: 0 0.15em; }
@@ -156,7 +166,7 @@
       backdrop-filter: blur(20px); box-shadow: var(--cinema-border-glow); max-width: 340px; width: 100%;
     }
     .cover-guest-lbl { font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,255,255,0.7); }
-    .cover-guest-val { font-size: 1.35rem; color: #fff; margin-top: 0.3rem; font-weight: 500; font-family: 'Outfit', sans-serif; }
+    .cover-guest-val { font-size: 1.35rem; color: #fff; margin-top: 0.3rem; font-weight: 500; font-family: var(--lux-font-outfit-2); }
     
     .btn-buka-undangan {
       display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
@@ -176,7 +186,7 @@
     }
     .sidebar-desktop::after {
       content: ''; position: absolute; inset: 0;
-      background: linear-gradient(to top, rgba(9,9,11,0.96) 0%, rgba(9,9,11,0.3) 50%, transparent 100%);
+      background: linear-gradient(to top, color-mix(in srgb, var(--lux-c-09090b) 96%, transparent) 0%, color-mix(in srgb, var(--lux-c-09090b) 30%, transparent) 50%, transparent 100%);
     }
     .sidebar-desktop-content {
       position: absolute; bottom: 4rem; left: 3.5rem; right: 3.5rem; z-index: 20; color: #fff;
@@ -195,7 +205,7 @@
         left: 0;
         right: 0;
         padding: 4rem 2.5rem;
-        background-image: radial-gradient(circle at center, rgba(18,18,22,0.78) 0%, rgba(9,9,11,0.96) 100%),
+        background-image: radial-gradient(circle at center, color-mix(in srgb, var(--lux-c-121216) 78%, transparent) 0%, color-mix(in srgb, var(--lux-c-09090b) 96%, transparent) 100%),
           url('{{landingCoverDesktopUrl}}'),
           url('{{landingCoverUrl}}');
         background-size: cover;
@@ -239,7 +249,7 @@
     /* SEKSI HERO / OPENING SLIDE (LATAR HOME) */
     #home.sec-hero-cinema {
       position: relative;
-      background-image: linear-gradient(180deg, rgba(9,9,11,0.35) 0%, rgba(9,9,11,0.65) 60%, rgba(9,9,11,0.96) 100%),
+      background-image: linear-gradient(180deg, color-mix(in srgb, var(--lux-c-09090b) 35%, transparent) 0%, color-mix(in srgb, var(--lux-c-09090b) 65%, transparent) 60%, color-mix(in srgb, var(--lux-c-09090b) 96%, transparent) 100%),
         url('{{homePhotoCssUrl}}');
       background-size: cover;
       background-position: center;
@@ -320,7 +330,7 @@
     .sec-eyebrow { font-size: 0.7rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--silver-muted); display: block; margin-bottom: 0.4rem; font-weight: 600; }
     .sec-heading {
       font-size: clamp(2.3rem, 7vw, 3.2rem);
-      font-family: 'Cinzel Decorative', serif;
+      font-family: var(--lux-font-cinzel-decorative);
       color: var(--text-main, #ffffff);
       margin-bottom: 0.5rem;
       font-weight: 300;
@@ -359,7 +369,7 @@
     .couple-photo-wrap::after {
       bottom: -2px; right: -2px; border-width: 0 2px 2px 0;
     }
-    .couple-name { font-size: 1.6rem; color: #fff; margin-bottom: 0.3rem; font-family: 'Cinzel Decorative', serif; font-weight: 400; }
+    .couple-name { font-size: 1.6rem; color: #fff; margin-bottom: 0.3rem; font-family: var(--lux-font-cinzel-decorative); font-weight: 400; }
     .couple-parents { font-size: 0.84rem; color: rgba(255,255,255,0.75); line-height: 1.6; }
     .couple-ig { display: inline-block; margin-top: 0.6rem; font-size: 0.78rem; color: #fff; text-decoration: none; font-weight: 500; }
 
@@ -369,7 +379,7 @@
       background: var(--cinema-card); border: 1px solid var(--cinema-border); border-radius: 12px;
       padding: 0.85rem; min-width: 68px; text-align: center; backdrop-filter: blur(15px);
     }
-    .countdown-val { font-size: 1.7rem; font-weight: 700; color: #ffffff; line-height: 1; font-family: 'Outfit', sans-serif; }
+    .countdown-val { font-size: 1.7rem; font-weight: 700; color: #ffffff; line-height: 1; font-family: var(--lux-font-outfit-2); }
     .countdown-lbl { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.15em; color: rgba(255,255,255,0.7); margin-top: 0.3rem; }
 
     .btn-cal {
@@ -378,7 +388,7 @@
       font-size: 0.75rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
       text-decoration: none; transition: all 0.3s;
     }
-    .btn-cal:hover { background: #fff; color: #09090b; }
+    .btn-cal:hover { background: #fff; color: var(--lux-c-09090b); }
 
     /* EVENTS UNIFIED CONTAINER STYLING */
     .events-unified-container { display: flex; flex-direction: column; gap: 1.5rem; width: 100%; max-width: 440px; }
@@ -388,7 +398,7 @@
       padding: 1.8rem 1.4rem; text-align: center; backdrop-filter: blur(20px);
     }
     .ev-cat { font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--silver-muted); font-weight: 600; margin-bottom: 0.3rem; display: block; }
-    .ev-name { font-size: 1.4rem; color: #fff; font-family: 'Cinzel Decorative', serif; margin-bottom: 0.4rem; }
+    .ev-name { font-size: 1.4rem; color: #fff; font-family: var(--lux-font-cinzel-decorative); margin-bottom: 0.4rem; }
     .ev-time { font-size: 0.85rem; color: rgba(255,255,255,0.85); }
     
     /* MULTI-SESSION DATE BADGE */
@@ -411,7 +421,7 @@
       padding: 1.8rem 1.4rem; text-align: center; backdrop-filter: blur(20px);
     }
     .venue-card-lbl { font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--silver-muted); font-weight: 600; margin-bottom: 0.4rem; display: block; }
-    .ev-venue-unified { font-size: 1.3rem; color: #ffffff; font-family: 'Cinzel Decorative', serif; margin-bottom: 0.4rem; }
+    .ev-venue-unified { font-size: 1.3rem; color: #ffffff; font-family: var(--lux-font-cinzel-decorative); margin-bottom: 0.4rem; }
     .ev-address-unified { font-size: 0.82rem; color: rgba(255,255,255,0.75); line-height: 1.6; margin-bottom: 1.2rem; }
     .btn-map-outline {
       display: inline-flex; align-items: center; justify-content: center; padding: 0.8rem 2.2rem;
@@ -419,7 +429,7 @@
       font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
       text-decoration: none; transition: all 0.3s;
     }
-    .btn-map-outline:hover { background: #fff; color: #09090b; }
+    .btn-map-outline:hover { background: #fff; color: var(--lux-c-09090b); }
 
     /* JOURNEY / STORY CINEMATIC REEL TIMELINE */
     .journey-card-container {
@@ -472,17 +482,17 @@
     }
     .sc-title,
     .chapter-heading {
-      font-size: 1.25rem; color: #fff; font-family: 'Cinzel Decorative', serif;
+      font-size: 1.25rem; color: #fff; font-family: var(--lux-font-cinzel-decorative);
       margin-bottom: 0.4rem; letter-spacing: 0.04em;
     }
     .sc-desc,
     .chapter-desc {
       font-size: 0.85rem; color: rgba(255, 255, 255, 0.82);
-      line-height: 1.75; font-family: 'Plus Jakarta Sans', sans-serif;
+      line-height: 1.75; font-family: var(--lux-font-plus-jakarta-sans);
     }
     .journey-footer { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; }
     .jf-line { flex: 1; height: 1px; background: var(--cinema-border); }
-    .jf-signature { font-family: 'Cinzel Decorative', serif; font-size: 1.2rem; color: #fff; }
+    .jf-signature { font-family: var(--lux-font-cinzel-decorative); font-size: 1.2rem; color: #fff; }
 
     /* GALLERY PUZZLE GRID & LIGHTBOX */
 
@@ -492,7 +502,7 @@
       font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
       cursor: pointer; background: transparent; transition: all 0.3s;
     }
-    .btn-show-gallery:hover, .btn-outline-box:hover { background: #fff; color: #09090b; }
+    .btn-show-gallery:hover, .btn-outline-box:hover { background: #fff; color: var(--lux-c-09090b); }
 
     /* DIGITAL GIFT & BANK CARDS */
     .bank-card {
@@ -503,7 +513,7 @@
     .bank-owner { font-size: 0.78rem; color: var(--silver-muted); display: block; margin-bottom: 0.6rem; }
     .bank-row {
       display: flex; align-items: center; justify-content: space-between;
-      background: rgba(9,9,11,0.85); border: 1px solid var(--cinema-border); border-radius: 10px; padding: 0.7rem 1rem;
+      background: color-mix(in srgb, var(--lux-c-09090b) 85%, transparent); border: 1px solid var(--cinema-border); border-radius: 10px; padding: 0.7rem 1rem;
     }
     .bank-number { font-family: monospace; font-size: 1.05rem; color: #ffffff; letter-spacing: 0.08em; }
     .btn-copy {
@@ -516,8 +526,8 @@
     .form-row { margin-bottom: 1rem; }
     .form-lbl { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: var(--silver-muted); display: block; margin-bottom: 0.3rem; }
     .form-in, .form-sel, .form-ta {
-      width: 100%; padding: 0.8rem 1rem; background: rgba(9,9,11,0.85); border: 1px solid var(--cinema-border);
-      border-radius: 10px; color: #ffffff; font-size: 0.85rem; outline: none; font-family: 'Plus Jakarta Sans', sans-serif;
+      width: 100%; padding: 0.8rem 1rem; background: color-mix(in srgb, var(--lux-c-09090b) 85%, transparent); border: 1px solid var(--cinema-border);
+      border-radius: 10px; color: #ffffff; font-size: 0.85rem; outline: none; font-family: var(--lux-font-plus-jakarta-sans);
     }
     .btn-rsvp-submit {
       width: 100%; padding: 1rem; background: var(--silver-white);
@@ -547,14 +557,14 @@
       padding: 2.4rem 1.5rem; text-align: center; backdrop-filter: blur(20px); width: 100%; max-width: 440px;
     }
     .pass-tagline { font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--silver-muted); display: block; margin-bottom: 0.4rem; }
-    .pass-names { font-size: 2rem; color: #fff; font-family: 'Cinzel Decorative', serif; margin-bottom: 0.2rem; }
+    .pass-names { font-size: 2rem; color: #fff; font-family: var(--lux-font-cinzel-decorative); margin-bottom: 0.2rem; }
     .pass-qr-wrapper { background: #ffffff; padding: 14px; display: inline-block; border-radius: 14px; margin: 1.2rem 0; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
     .pass-guest-name { font-size: 1.35rem; color: #ffffff; }
 
     /* DOCK */
     .bottom-dock {
       position: fixed; bottom: 20px; left: 50%; transform: translate3d(-50%, 0, 0); z-index: 100;
-      background: rgba(18, 18, 22, 0.95); border: 1px solid var(--cinema-border); border-radius: 50px;
+      background: color-mix(in srgb, var(--lux-c-121216) 95%, transparent); border: 1px solid var(--cinema-border); border-radius: 50px;
       padding: 0.5rem 1.2rem; display: flex; gap: 1.4rem; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
       box-shadow: 0 10px 30px rgba(0,0,0,0.6); max-width: 440px; width: calc(100% - 30px); justify-content: space-around;
       transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
@@ -576,7 +586,7 @@
       width: 40px;
       height: 40px;
       border-radius: 50%;
-      background: color-mix(in srgb, var(--cinema-bg, #0b0b0e) 85%, transparent);
+      background: color-mix(in srgb, var(--cinema-bg, var(--lux-c-0b0b0e)) 85%, transparent);
       border: 1px solid var(--cinema-border, rgba(255, 255, 255, 0.15));
       color: #ffffff;
       display: flex;
@@ -631,7 +641,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, color-mix(in srgb, var(--bg-dark, #0b0b0e) 60%, transparent) 50%, color-mix(in srgb, var(--bg-dark, #0b0b0e) 95%, transparent) 100%);
+      background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, color-mix(in srgb, var(--bg-dark, var(--lux-c-0b0b0e)) 60%, transparent) 50%, color-mix(in srgb, var(--bg-dark, var(--lux-c-0b0b0e)) 95%, transparent) 100%);
       pointer-events: none;
       z-index: 1;
     }
