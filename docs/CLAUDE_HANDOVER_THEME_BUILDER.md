@@ -160,6 +160,9 @@ Jawaban atas "master lama tidak bisa diedit di builder": master tulisan tangan t
 4. **Pembanding tampilan**: `scripts/verify-master-visual.ts` (`npm run test:master-visual`), wajib dijalankan setiap mengubah CSS master yang seharusnya tidak mengubah tampilan.
 5. **Batas yang diketahui**: ornamen berupa gambar, warna di dalam `<script>`, dan atribut SVG `fill`/`stroke` tidak ikut berganti warna. Klien belum bisa memilih varian warna sendiri di Studio; varian dipilih sebagai tema terpisah di katalog.
 
+### I. Editor Master (10 Nov 2026)
+Solusi atas "menyunting tema lama lewat builder mengganggu karena hasilnya disusun ulang dari blueprint": tombol **Edit** pada master tulisan tangan membuka `/admin/theme-variants?master=<id>`, yang menyunting master itu sendiri lewat lapisan `masterOverrides` (warna, huruf, gambar bawaan pengganti, seksi tersembunyi, CSS tambahan). Berkas master tidak ditulis; render menyisipkan `<style id="lux-master-edits">` sebelum piring dibekukan; varian menumpuk di atasnya. Blueprint builder tidak perlu diubah untuk ini. Rincian: `docs/SYSTEM_ARCHITECTURE.md` bagian 8.1 butir 20.
+
 ### H. Layar Kecil (10 Nov 2026)
 - Theme Builder bisa dibuka mulai lebar 1024 px (sebelumnya 1100): panel kiri/kanan 300/260 px dan header dua baris di bawah 1280 px; di atas 1280 px tetap 340/290 px dan satu baris.
 - Editor varian tersusun bertumpuk di bawah 768 px.

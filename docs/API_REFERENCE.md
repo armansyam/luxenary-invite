@@ -157,7 +157,10 @@ Memerlukan autentikasi admin (`role: ADMIN` atau `SUPER_ADMIN`):
 | | `GET` | `/api/admin/theme-variants?id={id}` | Varian (nama, status, `masterOverrides`) beserta token induknya. |
 | | `POST` | `/api/admin/theme-variants` | Membuat varian nonaktif `{ parentId, name, description?, overrides }`; metadata, musik, dan media bawaan disalin dari induk; font Google diunduh. |
 | | `POST` | `/api/admin/theme-variants?preview` | HTML pratinjau master induk dengan override dan data demo induk. |
-| | `PUT` | `/api/admin/theme-variants` | Ubah nama/override atau terbitkan (`isActive`); terbit mengompilasi demo statis, mengantrekan thumbnail, dan purge cache. |
+| | `PUT` | `/api/admin/theme-variants` | Ubah nama/override atau terbitkan (`isActive`); terbit mengompilasi demo statis, mengantrekan thumbnail, dan purge cache. Varian hanya boleh warna dan huruf. |
+| **Editor Master** | `GET` | `/api/admin/theme-variants?master={id}` | Master tulisan tangan beserta suntingan tersimpannya, token warna/huruf, gambar bawaan (`images`), dan id seksi (`sections`). |
+| | `PUT` | `/api/admin/theme-variants` | `{ masterId, overrides }`: simpan suntingan master (`colors`, `fonts`, `images`, `hiddenSections`, `css`); kosong = kembali ke asli. Demo master dan varian aktifnya dibuat ulang; audit `THEME_MASTER_EDIT`. |
+| | `POST` | `/api/admin/theme-variants?preview` | Dengan `mode: "master"`: pratinjau master mentah + suntingan. |
 | | `DELETE` | `/api/admin/theme-variants?id={id}` | Hapus varian yang belum dipakai undangan (dipakai → 409). |
 | **Theme Builder** | `GET` | `/api/admin/theme-builder?id={id}` | Membaca spesifikasi builder tema (`Theme.builderSpec`). Tema handcrafted ditolak dengan HTTP 409 (`code: "HANDCRAFTED"`). |
 | | `GET` | `/api/admin/theme-builder?from={id}` | Mengekstrak palet, huruf, tekstur, ornamen, dan bingkai dari master fisik bawaan untuk draf baru (Clone to Builder). |

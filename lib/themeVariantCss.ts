@@ -2,13 +2,52 @@
  * Bagian murni Varian Tema (tanpa database), dipakai bersama oleh server (render, rute admin) dan editor varian di
  * peramban (pratinjau warna langsung). Resolusi varian dari DB ada di lib/themeVariants.ts.
  */
-import { FONT_OPTIONS, googleFontCssUrl, googleFontFamilyName, isGoogleFontId } from "@/lib/themeBuilder/spec";
+import { FONT_OPTIONS, customCssError, googleFontCssUrl, googleFontFamilyName, isGoogleFontId } from "@/lib/themeBuilder/spec";
 
 export interface MasterOverrides {
   /** Nama variabel warna master → #rrggbb. */
   colors: Record<string, string>;
   /** Nama variabel huruf master → id font katalog lokal atau "g:<Nama Google Font>". */
   fonts: Record<string, string>;
+  /** Gambar bawaan master (`/assets/...`) → gambar unggahan admin (`/uploads/theme-assets/<hash>.webp`). */
+  images?: Record<string, string>;
+  /** id `<section>` master yang disembunyikan beserta tautan navigasinya. */
+  hiddenSections?: string[];
+  /** CSS tambahan, aturan yang sama dengan CSS kustom Theme Builder (`customCssError`). */
+  css?: string;
+}
+
+const ASSET_REF_RE = /\/assets\/[\w./-]+\.(?:webp|png|jpe?g|svg|gif|avif)/gi;
+const UPLOADED_ASSET_RE = /^\/uploads\/theme-assets\/[a-f0-9]{24}\.(?:webp|png|jpe?g)$/;
+const SECTION_ID_RE = /^[a-z][a-z0-9_-]{0,60}$/i;
+
+/** Gambar bawaan yang dirujuk master (latar, ornamen, bingkai) beserta jumlah rujukannya, terbanyak dulu. */
+export function masterImageRefs(html: string): Array<{ path: string; count: number }> {
+  const counts = new Map<string, number>();
+  for (const m of html.matchAll(ASSET_REF_RE)) counts.set(m[0], (counts.get(m[0]) ?? 0) + 1);
+  return [...counts].map(([p, count]) => ({ path: p, count })).sort((a, b) => b.count - a.count || a.path.localeCompare(b.path));
+}
+
+/** Seksi master yang punya id (bisa disembunyikan), urut sesuai kemunculan. */
+export function masterSections(html: string): string[] {
+  const ids: string[] = [];
+  for (const m of html.matchAll(/<section\b[^>]*\bid="([^"]+)"/gi)) if (SECTION_ID_RE.test(m[1]) && !ids.includes(m[1])) ids.push(m[1]);
+  return ids;
+}
+
+/** CSS penyembunyi seksi dan CSS tambahan; nilai divalidasi ulang karena isinya masuk ke halaman tamu. */
+export function masterExtraCss(overrides: MasterOverrides, onSkip?: (name: string) => void): string {
+  const parts: string[] = [];
+  for (const id of overrides.hiddenSections ?? []) {
+    if (!SECTION_ID_RE.test(id)) { onSkip?.(id); continue; }
+    parts.push(`#${id}, a[href="#${id}"] { display: none !important; }`);
+  }
+  const css = overrides.css?.trim();
+  if (css) {
+    if (customCssError(css)) onSkip?.("css");
+    else parts.push(css);
+  }
+  return parts.join("\n");
 }
 
 export interface MasterColorToken {
@@ -173,8 +212,32 @@ export function parseMasterOverrides(raw: unknown, parentHtml: string): { ok: tr
     if (typeof v !== "string" || !(fontIds.includes(v) || isGoogleFontId(v))) { errors.push(`Huruf untuk ${name} tidak dikenali.`); continue; }
     value.fonts[name] = v;
   }
-  if (Object.keys(value.colors).length + Object.keys(value.fonts).length > MAX_MASTER_OVERRIDES) errors.push(`Override paling banyak ${MAX_MASTER_OVERRIDES}.`);
+  const images = input.images && typeof input.images === "object" ? (input.images as Record<string, unknown>) : {};
+  const refs = new Set(masterImageRefs(parentHtml).map((r) => r.path));
+  for (const [original, v] of Object.entries(images)) {
+    if (!refs.has(original)) { errors.push(`Gambar ${original.slice(0, 80)} tidak dipakai master.`); continue; }
+    if (typeof v !== "string" || !UPLOADED_ASSET_RE.test(v)) { errors.push(`Pengganti ${original.split("/").pop()} harus gambar unggahan builder.`); continue; }
+    (value.images ??= {})[original] = v;
+  }
+  const sections = new Set(masterSections(parentHtml));
+  const hidden = Array.isArray(input.hiddenSections) ? input.hiddenSections : [];
+  for (const id of hidden) {
+    if (typeof id !== "string" || !sections.has(id)) { errors.push(`Seksi ${String(id).slice(0, 60)} tidak ada di master.`); continue; }
+    if (!(value.hiddenSections ??= []).includes(id)) value.hiddenSections.push(id);
+  }
+  if (typeof input.css === "string" && input.css.trim()) {
+    const cssError = customCssError(input.css.trim());
+    if (cssError) errors.push(cssError);
+    else value.css = input.css.trim();
+  }
+  const total = Object.keys(value.colors).length + Object.keys(value.fonts).length + Object.keys(value.images ?? {}).length + (value.hiddenSections?.length ?? 0);
+  if (total > MAX_MASTER_OVERRIDES) errors.push(`Override paling banyak ${MAX_MASTER_OVERRIDES}.`);
   return errors.length ? { ok: false, errors } : { ok: true, value };
+}
+
+/** Jumlah perubahan dalam override (untuk tampilan "N perubahan" dan cek kosong). */
+export function overrideCount(o: MasterOverrides): number {
+  return Object.keys(o.colors ?? {}).length + Object.keys(o.fonts ?? {}).length + Object.keys(o.images ?? {}).length + (o.hiddenSections?.length ?? 0) + (o.css?.trim() ? 1 : 0);
 }
 
 /** Tumpukan huruf pengganti: keluarga baru dengan cadangan generik dari tumpukan aslinya (serif tetap serif). */
@@ -212,10 +275,20 @@ export function overrideCssFromTokens(overrides: MasterOverrides, fontTokens: Ma
   return { css: decls.length ? `:root { ${decls.join(" ")} }` : "", fontLinks: [...links] };
 }
 
-/** Master induk ditambah override, disisipkan terakhir di `<head>` agar menang atas `:root` master. */
-export function applyMasterOverridesTo(parentHtml: string, overrides: MasterOverrides, onSkip?: (name: string) => void): string {
-  const { css, fontLinks } = masterOverrideCss(overrides, parentHtml, onSkip);
-  if (!css) return parentHtml;
-  const head = `${fontLinks.map((href) => `<link rel="stylesheet" href="${href}" />\n`).join("")}<style id="lux-master-overrides">${css}</style>\n`;
-  return parentHtml.replace(/<\/head>/i, () => `${head}</head>`);
+/**
+ * Master ditambah override: gambar bawaan diganti pada setiap rujukannya, lalu `<style>` (variabel `:root`, seksi
+ * tersembunyi, CSS tambahan) disisipkan terakhir di `<head>` agar menang atas CSS master. `styleId` membedakan suntingan
+ * master sendiri (`lux-master-edits`) dari override varian (`lux-master-overrides`) yang ditumpuk di atasnya.
+ */
+export function applyMasterOverridesTo(parentHtml: string, overrides: MasterOverrides, onSkip?: (name: string) => void, styleId = "lux-master-overrides"): string {
+  let html = parentHtml;
+  for (const [original, replacement] of Object.entries(overrides.images ?? {})) {
+    if (!/^\/assets\/[\w./-]+$/.test(original) || !UPLOADED_ASSET_RE.test(replacement)) { onSkip?.(original); continue; }
+    html = html.split(original).join(replacement);
+  }
+  const { css: rootCss, fontLinks } = masterOverrideCss(overrides, parentHtml, onSkip);
+  const css = [rootCss, masterExtraCss(overrides, onSkip)].filter(Boolean).join("\n");
+  if (!css) return html;
+  const head = `${fontLinks.map((href) => `<link rel="stylesheet" href="${href}" />\n`).join("")}<style id="${styleId}">${css}</style>\n`;
+  return html.replace(/<\/head>/i, () => `${head}</head>`);
 }

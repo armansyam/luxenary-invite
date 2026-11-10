@@ -186,9 +186,13 @@ function htmlFilesUnder(dir: string): string[] {
  */
 export async function assetUsage(url: string): Promise<string[]> {
   const usage: string[] = [];
-  const themes = await prisma.theme.findMany({ where: { builderSpec: { not: Prisma.DbNull } }, select: { id: true, builderSpec: true } });
+  // Gambar pengganti Editor Master tersimpan di masterOverrides baris master tulisan tangan.
+  const themes = await prisma.theme.findMany({
+    where: { OR: [{ builderSpec: { not: Prisma.DbNull } }, { masterOverrides: { not: Prisma.DbNull } }] },
+    select: { id: true, builderSpec: true, masterOverrides: true },
+  });
   for (const t of themes) {
-    if (t.builderSpec && JSON.stringify(t.builderSpec).includes(url)) usage.push(`tema ${t.id}`);
+    if (JSON.stringify([t.builderSpec, t.masterOverrides]).includes(url)) usage.push(`tema ${t.id}`);
   }
   for (const dir of REFERENCE_DIRS) {
     for (const file of htmlFilesUnder(dir)) {

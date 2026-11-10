@@ -6,7 +6,7 @@ import ThemeVariantEditor from "@/components/admin/ThemeVariantEditor";
 
 function ThemeVariantRoute() {
   const searchParams = useSearchParams();
-  return <ThemeVariantEditor parentId={searchParams.get("parent")} variantId={searchParams.get("id")} />;
+  return <ThemeVariantEditor parentId={searchParams.get("parent")} variantId={searchParams.get("id")} masterId={searchParams.get("master")} />;
 }
 
 export default function ThemeVariantPage() {

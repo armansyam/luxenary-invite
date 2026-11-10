@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useFeedback } from "@/components/ui/Feedback";
 import { GoogleFontPicker } from "@/components/admin/themeBuilder/GoogleFontPicker";
-import { FONT_OPTIONS, PALETTE_PRESETS, fontLabel, isGoogleFontId } from "@/lib/themeBuilder/spec";
-import { overrideCssFromTokens, recolorWithPalette, type ColorUsage, type ColorUsageKind, type MasterFontToken, type MasterOverrides } from "@/lib/themeVariantCss";
+import { FONT_OPTIONS, PALETTE_PRESETS, customCssError, fontLabel, isGoogleFontId } from "@/lib/themeBuilder/spec";
+import { masterExtraCss, overrideCount, overrideCssFromTokens, recolorWithPalette, type ColorUsage, type ColorUsageKind, type MasterFontToken, type MasterOverrides } from "@/lib/themeVariantCss";
 import { measureText, newlyUnreadable, type TextSample } from "@/components/admin/variantReadability";
 
 interface ColorGroup {
@@ -44,11 +44,32 @@ function groupUsage(names: string[], usage: Record<string, ColorUsage>): { total
   return { total: parts.reduce((a, [, n]) => a + n, 0), parts };
 }
 
+interface LoadedMaster {
+  id: string;
+  name: string;
+  isActive: boolean;
+  variantCount: number;
+}
+
+/** Salinan override yang aman diubah (objek dan larik baru di setiap tingkat). */
+function cloneOverrides(o: Partial<MasterOverrides> | null | undefined): MasterOverrides {
+  return {
+    colors: { ...(o?.colors ?? {}) },
+    fonts: { ...(o?.fonts ?? {}) },
+    ...(o?.images && Object.keys(o.images).length ? { images: { ...o.images } } : {}),
+    ...(o?.hiddenSections?.length ? { hiddenSections: [...o.hiddenSections] } : {}),
+    ...(o?.css?.trim() ? { css: o.css } : {}),
+  };
+}
+
 /**
- * Editor Varian Tema: warna (per kelompok nilai asli) dan huruf (per keluarga) master tulisan tangan. Pratinjau memakai
- * render server sekali, lalu override ditulis langsung ke `<style id="lux-master-overrides">` di iframe.
+ * Editor Varian Tema dan Editor Master. Varian: warna (per kelompok nilai asli) dan huruf (per keluarga) sebagai tema
+ * baru. Master (`masterId`): master tulisan tangan itu sendiri, ditambah gambar pengganti, seksi tersembunyi, dan CSS
+ * tambahan; berkas master tidak pernah ditulis. Pratinjau memakai render server, lalu warna, huruf, seksi, dan CSS
+ * ditulis langsung ke `<style id="lux-master-overrides">` di iframe; penggantian gambar merender ulang pratinjau.
  */
-export default function ThemeVariantEditor({ parentId, variantId }: { parentId: string | null; variantId: string | null }) {
+export default function ThemeVariantEditor({ parentId, variantId, masterId = null }: { parentId: string | null; variantId: string | null; masterId?: string | null }) {
+  const masterMode = Boolean(masterId);
   const router = useRouter();
   const { notify, confirm } = useFeedback();
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -67,6 +88,11 @@ export default function ThemeVariantEditor({ parentId, variantId }: { parentId: 
   const [usage, setUsage] = useState<Record<string, ColorUsage>>({});
   const [showUnused, setShowUnused] = useState(false);
   const [unreadable, setUnreadable] = useState<TextSample[]>([]);
+  const [master, setMaster] = useState<LoadedMaster | null>(null);
+  const [imageRefs, setImageRefs] = useState<Array<{ path: string; count: number }>>([]);
+  const [sections, setSections] = useState<string[]>([]);
+  const [uploadingFor, setUploadingFor] = useState<string | null>(null);
+  const previewImagesRef = useRef<string>("");
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const [stageWidth, setStageWidth] = useState(800);
@@ -74,37 +100,67 @@ export default function ThemeVariantEditor({ parentId, variantId }: { parentId: 
   const snapshot = useCallback((n: string, d: string, o: MasterOverrides) => JSON.stringify({ n: n.trim(), d: d.trim(), o }), []);
   const dirty = snapshot(name, description, overrides) !== savedSnapshot;
 
+  /** Render server (master mentah + override pada mode master; suntingan master induk + override pada mode varian). */
+  const fetchPreview = useCallback(async (themeParentId: string, o: MasterOverrides): Promise<{ html?: string; error?: string }> => {
+    const res = await fetch("/api/admin/theme-variants?preview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ parentId: themeParentId, overrides: o, ...(masterMode ? { mode: "master" } : {}) }),
+    });
+    const data = await res.json().catch(() => ({}));
+    return res.ok ? { html: data.html } : { error: [data.error, ...(data.details ?? [])].filter(Boolean).join(" ") || "Pratinjau gagal dibuat." };
+  }, [masterMode]);
+
   useEffect(() => {
-    const url = variantId ? `/api/admin/theme-variants?id=${encodeURIComponent(variantId)}` : parentId ? `/api/admin/theme-variants?parent=${encodeURIComponent(parentId)}` : null;
+    const url = masterId
+      ? `/api/admin/theme-variants?master=${encodeURIComponent(masterId)}`
+      : variantId ? `/api/admin/theme-variants?id=${encodeURIComponent(variantId)}` : parentId ? `/api/admin/theme-variants?parent=${encodeURIComponent(parentId)}` : null;
     if (!url) { setLoadError("Pilih tema master dari katalog admin untuk membuat varian."); return; }
     let cancelled = false;
     (async () => {
       const res = await fetch(url, { cache: "no-store" });
       const data = await res.json().catch(() => ({}));
       if (cancelled) return;
-      if (!res.ok) { setLoadError(data.error || "Data varian gagal dimuat."); return; }
+      if (!res.ok) { setLoadError(data.error || "Data tema gagal dimuat."); return; }
       setParent(data.parent);
       setGroups(data.colorGroups);
       setFontTokens(data.fonts);
       setUsage(data.usage ?? {});
+      setImageRefs(data.images ?? []);
+      setSections(data.sections ?? []);
       const loaded: LoadedVariant | null = data.variant ?? null;
       setVariant(loaded);
-      const n = loaded?.name ?? `${data.parent.name} Varian`;
+      if (data.master) setMaster({ id: data.master.id, name: data.master.name, isActive: data.master.isActive, variantCount: data.variantCount ?? 0 });
+      const n = data.master?.name ?? loaded?.name ?? `${data.parent.name} Varian`;
       const d = loaded?.description ?? "";
-      const o = { colors: { ...(loaded?.overrides?.colors ?? {}) }, fonts: { ...(loaded?.overrides?.fonts ?? {}) } };
+      const o = cloneOverrides(data.master?.overrides ?? loaded?.overrides);
       setName(n);
       setDescription(d);
       setOverrides(o);
-      setSavedSnapshot(loaded ? snapshot(n, d, o) : "");
-      const preview = await fetch("/api/admin/theme-variants?preview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ parentId: data.parent.id, overrides: o }) });
-      const pdata = await preview.json().catch(() => ({}));
+      setSavedSnapshot(loaded || data.master ? snapshot(n, d, o) : "");
+      previewImagesRef.current = JSON.stringify(o.images ?? {});
+      const preview = await fetchPreview(data.parent.id, o);
       if (!cancelled) {
-        if (preview.ok) setPreviewHtml(pdata.html);
-        else setLoadError(pdata.error || "Pratinjau gagal dibuat.");
+        if (preview.html) setPreviewHtml(preview.html);
+        else setLoadError(preview.error ?? "Pratinjau gagal dibuat.");
       }
-    })().catch(() => !cancelled && setLoadError("Data varian gagal dimuat. Periksa koneksi."));
+    })().catch(() => !cancelled && setLoadError("Data tema gagal dimuat. Periksa koneksi."));
     return () => { cancelled = true; };
-  }, [parentId, variantId, snapshot]);
+  }, [parentId, variantId, masterId, snapshot, fetchPreview]);
+
+  // Gambar pengganti tertulis di HTML dan CSS master (atribut src, url()), jadi pratinjau dirender ulang di server.
+  useEffect(() => {
+    if (!parent || !previewHtml) return;
+    const key = JSON.stringify(overrides.images ?? {});
+    if (key === previewImagesRef.current) return;
+    const t = setTimeout(async () => {
+      previewImagesRef.current = key;
+      const preview = await fetchPreview(parent.id, overrides);
+      if (preview.html) setPreviewHtml(preview.html);
+      else notify(preview.error ?? "Pratinjau gagal dibuat.", "error");
+    }, 400);
+    return () => clearTimeout(t);
+  }, [overrides, parent, previewHtml, fetchPreview, notify]);
 
   useEffect(() => {
     const el = stageRef.current;
@@ -134,7 +190,7 @@ export default function ThemeVariantEditor({ parentId, variantId }: { parentId: 
       style.id = "lux-master-overrides";
       doc.head.appendChild(style);
     }
-    style.textContent = css;
+    style.textContent = [css, masterExtraCss(overrides)].filter(Boolean).join("\n");
   }, [overrides, fontTokens]);
 
   useEffect(() => { applyToPreview(); }, [applyToPreview]);
@@ -219,9 +275,80 @@ export default function ThemeVariantEditor({ parentId, variantId }: { parentId: 
     });
   };
 
-  const changedCount = Object.keys(overrides.colors).length + Object.keys(overrides.fonts).length;
+  const changedCount = overrideCount(overrides);
+  const cssError = overrides.css?.trim() ? customCssError(overrides.css.trim()) : null;
+
+  const setImage = (original: string, url: string | null) => {
+    setOverrides((prev) => {
+      const images = { ...(prev.images ?? {}) };
+      if (url) images[original] = url;
+      else delete images[original];
+      const next: MasterOverrides = { ...prev, images };
+      if (!Object.keys(images).length) delete next.images;
+      return next;
+    });
+  };
+
+  const uploadImage = async (original: string, file: File) => {
+    setUploadingFor(original);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/admin/theme-builder/assets", { method: "POST", body: form });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { notify(data.error || "Gambar gagal diunggah.", "error"); return; }
+      setImage(original, data.url);
+    } finally {
+      setUploadingFor(null);
+    }
+  };
+
+  const toggleSection = (id: string, visible: boolean) => {
+    setOverrides((prev) => {
+      const hidden = new Set(prev.hiddenSections ?? []);
+      if (visible) hidden.delete(id);
+      else hidden.add(id);
+      const next: MasterOverrides = { ...prev, hiddenSections: sections.filter((s) => hidden.has(s)) };
+      if (!next.hiddenSections?.length) delete next.hiddenSections;
+      return next;
+    });
+  };
+
+  const setCss = (css: string) => {
+    setOverrides((prev) => {
+      const next: MasterOverrides = { ...prev, css };
+      if (!css.trim()) delete next.css;
+      return next;
+    });
+  };
+
+  const saveMaster = async (): Promise<boolean> => {
+    if (!master) return false;
+    if (cssError) { notify(cssError, "error"); return false; }
+    const ok = await confirm({
+      title: "Simpan suntingan master?",
+      message: `Perubahan berlaku untuk demo dan undangan baru yang memakai ${master.name}${master.variantCount ? ` serta ${master.variantCount} variannya` : ""}. Undangan yang sudah dibuat tetap memakai tampilan bekunya. Berkas master asli tidak diubah; "Kembalikan semua" lalu Simpan mengembalikan tampilan aslinya.`,
+      confirmLabel: "Simpan",
+    });
+    if (!ok) return false;
+    setBusy(true);
+    try {
+      const res = await fetch("/api/admin/theme-variants", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ masterId: master.id, overrides }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        notify([data.error, ...(data.details ?? [])].filter(Boolean).join(" ") || "Suntingan gagal disimpan.", "error");
+        return false;
+      }
+      setSavedSnapshot(snapshot(name, description, overrides));
+      notify(data.count ? "Suntingan master disimpan. Demo dan thumbnail sedang dibuat ulang." : "Master kembali ke tampilan aslinya.", "success");
+      return true;
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const save = async (): Promise<string | null> => {
+    if (masterMode) return (await saveMaster()) ? master?.id ?? null : null;
     if (!parent) return null;
     if (!name.trim()) { notify("Nama varian wajib diisi.", "error"); return null; }
     setBusy(true);
@@ -283,7 +410,7 @@ export default function ThemeVariantEditor({ parentId, variantId }: { parentId: 
     return (
       <div className="flex min-h-screen items-center justify-center bg-stone-100 p-6">
         <div className="max-w-md rounded-2xl border border-stone-200 bg-white p-6 text-center shadow-sm">
-          <p className="text-sm font-semibold text-stone-800">Varian tidak dapat dibuka</p>
+          <p className="text-sm font-semibold text-stone-800">{masterMode ? "Master tidak dapat dibuka" : "Varian tidak dapat dibuka"}</p>
           <p className="mt-1 text-[13px] text-stone-600">{loadError}</p>
           <a href="/admin?tab=themes" className="mt-4 inline-block rounded-xl bg-stone-900 px-4 py-2 text-xs font-semibold text-white">Kembali ke katalog tema</a>
         </div>
@@ -298,14 +425,27 @@ export default function ThemeVariantEditor({ parentId, variantId }: { parentId: 
     <div className="flex h-screen flex-col bg-stone-100">
       <header className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-stone-200 bg-white px-4 py-2.5">
         <a href="/admin?tab=themes" className="rounded-lg px-2 py-1 text-xs font-semibold text-stone-600 hover:bg-stone-100">← Katalog</a>
-        <div className="min-w-0">
-          <p className="text-[10.5px] font-semibold uppercase tracking-wider text-stone-500">Varian dari {parent?.name ?? "…"}</p>
-          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={80} placeholder="Nama varian" aria-label="Nama varian" className="w-44 sm:w-64 rounded-md border border-transparent px-1 text-sm font-semibold text-stone-900 outline-none hover:border-stone-200 focus:border-amber-500" />
-        </div>
-        <span className={`ml-1 inline-flex items-center gap-1.5 text-[11px] font-medium ${variant?.isActive ? "text-emerald-700" : "text-stone-500"}`}>
-          <span className={`h-1.5 w-1.5 rounded-full ${variant?.isActive ? "bg-emerald-500" : "bg-stone-400"}`} />
-          {variant ? (variant.isActive ? "Terbit" : "Draf") : "Belum disimpan"}{dirty && variant ? " · ada perubahan" : ""}
-        </span>
+        {masterMode ? (
+          <div className="min-w-0">
+            <p className="text-[10.5px] font-semibold uppercase tracking-wider text-stone-500">Edit master tulisan tangan</p>
+            <p className="px-1 text-sm font-semibold text-stone-900">{master?.name ?? "…"}</p>
+          </div>
+        ) : (
+          <div className="min-w-0">
+            <p className="text-[10.5px] font-semibold uppercase tracking-wider text-stone-500">Varian dari {parent?.name ?? "…"}</p>
+            <input value={name} onChange={(e) => setName(e.target.value)} maxLength={80} placeholder="Nama varian" aria-label="Nama varian" className="w-44 sm:w-64 rounded-md border border-transparent px-1 text-sm font-semibold text-stone-900 outline-none hover:border-stone-200 focus:border-amber-500" />
+          </div>
+        )}
+        {(() => {
+          const active = masterMode ? master?.isActive : variant?.isActive;
+          const label = masterMode ? (master ? (master.isActive ? "Tayang" : "Nonaktif") : "") : variant ? (variant.isActive ? "Terbit" : "Draf") : "Belum disimpan";
+          return (
+            <span className={`ml-1 inline-flex items-center gap-1.5 text-[11px] font-medium ${active ? "text-emerald-700" : "text-stone-500"}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${active ? "bg-emerald-500" : "bg-stone-400"}`} />
+              {label}{dirty && (variant || masterMode) ? " · ada perubahan" : ""}
+            </span>
+          );
+        })()}
         <div className="ml-auto flex items-center gap-2">
           <div className="flex rounded-lg bg-stone-100 p-0.5">
             {DEVICES.map((d) => (
@@ -318,8 +458,8 @@ export default function ThemeVariantEditor({ parentId, variantId }: { parentId: 
               {variant.isActive ? "Tarik dari katalog" : "Terbitkan"}
             </button>
           )}
-          <button type="button" onClick={() => void save()} disabled={busy || (!dirty && Boolean(variant))} className="rounded-xl bg-stone-900 px-4 py-1.5 text-xs font-semibold text-white hover:bg-stone-800 disabled:opacity-40 cursor-pointer">
-            {variant ? "Simpan" : "Simpan draf"}
+          <button type="button" onClick={() => void save()} disabled={busy || (!dirty && (Boolean(variant) || masterMode))} className="rounded-xl bg-stone-900 px-4 py-1.5 text-xs font-semibold text-white hover:bg-stone-800 disabled:opacity-40 cursor-pointer">
+            {variant || masterMode ? "Simpan" : "Simpan draf"}
           </button>
         </div>
       </header>
@@ -327,15 +467,23 @@ export default function ThemeVariantEditor({ parentId, variantId }: { parentId: 
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <aside className="max-h-[45vh] w-full shrink-0 overflow-y-auto border-b border-stone-200 bg-white md:max-h-none md:w-[340px] md:border-b-0 md:border-r lg:w-[380px]">
           <section className="border-b border-stone-200/80 px-5 py-4">
-            <p className="text-[11.5px] leading-relaxed text-stone-600">
-              Varian memakai tata letak, ornamen, dan teks master <b>{parent?.name}</b>; hanya warna dan huruf yang diganti. Master aslinya tidak diubah. Ornamen berupa gambar dan warna di dalam skrip tidak ikut berganti warna.
-            </p>
-            <label className="mt-3 block text-[11.5px] font-semibold text-stone-600">
-              Deskripsi singkat
-              <input value={description} onChange={(e) => setDescription(e.target.value)} maxLength={300} className="mt-1 w-full rounded-lg border border-stone-200 px-2.5 py-1.5 text-[12.5px] text-stone-800 outline-none focus:border-amber-500" />
-            </label>
+            {masterMode ? (
+              <p className="text-[11.5px] leading-relaxed text-stone-600">
+                Menyunting <b>{master?.name}</b> di atas desain aslinya: tata letak, animasi, dan ornamen tetap seperti master tulisan tangan. Yang bisa diubah: warna, huruf, gambar bawaan, seksi yang tampil, dan CSS tambahan. Berkas master tidak ditimpa; undangan yang sudah dibuat tidak berubah.
+              </p>
+            ) : (
+              <>
+                <p className="text-[11.5px] leading-relaxed text-stone-600">
+                  Varian memakai tata letak, ornamen, dan teks master <b>{parent?.name}</b>; hanya warna dan huruf yang diganti. Master aslinya tidak diubah. Ornamen berupa gambar dan warna di dalam skrip tidak ikut berganti warna.
+                </p>
+                <label className="mt-3 block text-[11.5px] font-semibold text-stone-600">
+                  Deskripsi singkat
+                  <input value={description} onChange={(e) => setDescription(e.target.value)} maxLength={300} className="mt-1 w-full rounded-lg border border-stone-200 px-2.5 py-1.5 text-[12.5px] text-stone-800 outline-none focus:border-amber-500" />
+                </label>
+              </>
+            )}
             <div className="mt-3 flex items-center justify-between text-[11px] text-stone-500">
-              <span>{changedCount} perubahan dari master</span>
+              <span>{changedCount} perubahan dari {masterMode ? "desain asli" : "master"}</span>
               {changedCount > 0 && <button type="button" onClick={() => setOverrides(emptyOverrides())} className="font-semibold text-amber-700 hover:underline cursor-pointer">Kembalikan semua</button>}
             </div>
           </section>
@@ -444,6 +592,71 @@ export default function ThemeVariantEditor({ parentId, variantId }: { parentId: 
               })}
             </div>
           </section>
+
+          {masterMode && (
+            <>
+              <section className="border-t border-stone-200/80 px-5 py-4">
+                <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-stone-500">Gambar bawaan</h3>
+                <p className="mt-1 text-[11px] text-stone-500">Latar, ornamen, dan bingkai yang dipakai master. Gambar pengganti diunggah ke pustaka builder (PNG, WebP, atau JPEG) dan mengganti setiap tempat gambar asli dipakai.</p>
+                {imageRefs.length === 0 ? (
+                  <p className="mt-3 text-[11px] text-stone-500">Master ini tidak memakai gambar bawaan; ornamennya digambar langsung di kode.</p>
+                ) : (
+                  <ul className="mt-3 space-y-2">
+                    {imageRefs.map((ref) => {
+                      const current = overrides.images?.[ref.path];
+                      return (
+                        <li key={ref.path} className="flex items-center gap-2.5 rounded-xl px-1 py-1 hover:bg-stone-50">
+                          <span className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-stone-100 ring-1 ring-stone-900/10">
+                            <img src={current ?? ref.path} alt="" className="h-full w-full object-contain" />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-[12px] font-semibold text-stone-800" title={ref.path}>{ref.path.split("/").pop()}</span>
+                            <span className="block text-[10.5px] text-stone-500">{ref.count} tempat{current ? " · diganti" : ""}</span>
+                          </span>
+                          <label className={`shrink-0 rounded-lg border border-stone-200 px-2 py-1 text-[11px] font-semibold text-stone-700 hover:border-stone-400 ${uploadingFor ? "opacity-50" : "cursor-pointer"}`}>
+                            {uploadingFor === ref.path ? "Mengunggah…" : "Ganti"}
+                            <input type="file" accept="image/png,image/webp,image/jpeg" className="hidden" disabled={Boolean(uploadingFor)} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void uploadImage(ref.path, f); }} />
+                          </label>
+                          {current && <button type="button" onClick={() => setImage(ref.path, null)} className="text-[10.5px] font-semibold text-stone-500 hover:text-stone-800 cursor-pointer">Asli</button>}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
+
+              <section className="border-t border-stone-200/80 px-5 py-4">
+                <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-stone-500">Seksi yang tampil</h3>
+                <p className="mt-1 text-[11px] text-stone-500">Seksi yang dimatikan disembunyikan beserta tautan menunya.</p>
+                <div className="mt-3 grid grid-cols-2 gap-1.5">
+                  {sections.map((id) => {
+                    const visible = !overrides.hiddenSections?.includes(id);
+                    return (
+                      <label key={id} className="flex items-center gap-2 rounded-lg border border-stone-200 px-2 py-1.5 text-[11.5px] text-stone-700 cursor-pointer">
+                        <input type="checkbox" checked={visible} onChange={(e) => toggleSection(id, e.target.checked)} className="accent-stone-900" />
+                        <span className={`truncate font-mono ${visible ? "" : "text-stone-400 line-through"}`}>{id}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <section className="border-t border-stone-200/80 px-5 py-4">
+                <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-stone-500">CSS tambahan</h3>
+                <p className="mt-1 text-[11px] text-stone-500">Penyesuaian halus, aturan yang sama dengan CSS kustom Theme Builder: warna lewat <span className="font-mono">var(--…)</span> atau <span className="font-mono">color-mix()</span>, tanpa hex, url(), atau @import.</p>
+                <textarea
+                  value={overrides.css ?? ""}
+                  onChange={(e) => setCss(e.target.value)}
+                  rows={6}
+                  spellCheck={false}
+                  aria-label="CSS tambahan"
+                  placeholder=".sec-title { letter-spacing: 0.08em; }"
+                  className={`mt-2 w-full rounded-lg border px-2.5 py-2 font-mono text-[11.5px] text-stone-800 outline-none ${cssError ? "border-red-300 focus:border-red-500" : "border-stone-200 focus:border-amber-500"}`}
+                />
+                {cssError && <p className="mt-1 text-[11px] text-red-700">{cssError}</p>}
+              </section>
+            </>
+          )}
         </aside>
 
         <div ref={stageRef} className="relative flex min-w-0 flex-1 justify-center overflow-auto p-4">

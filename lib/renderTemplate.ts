@@ -6,7 +6,7 @@ import { SANITIZE_GUEST_LABEL_JS } from "@/lib/checkinQr";
 import { LIVE_EDIT_FIELD_PATTERN } from "@/lib/liveEditFields";
 import { isSafePathSegment } from "@/lib/fsSafe";
 import { masterFilePath } from "@/lib/themePaths";
-import { applyMasterOverrides, resolveVariant } from "@/lib/themeVariants";
+import { applyMasterOverrides, resolveMasterEdits, resolveVariant } from "@/lib/themeVariants";
 import { logger } from "@/lib/logger";
 import { stripEmptyMediaRefs } from "@/lib/emptyMediaRefs";
 
@@ -1638,7 +1638,10 @@ export async function renderTemplateFile(
     tpl = templateSource;
   } else {
     tpl = await readMasterTemplate(tplPath);
-    // Override disisipkan sebelum piring dibekukan: undangan varian tetap sama walau admin mengubah variannya nanti.
+    // Suntingan Editor Master dan override varian disisipkan sebelum piring dibekukan: undangan yang sudah dibuat tetap
+    // sama walau admin menyunting master atau variannya nanti. Varian menumpuk di atas suntingan master induknya.
+    const masterEdits = await resolveMasterEdits(variant ? variant.parentId : templateName);
+    if (masterEdits) tpl = applyMasterOverrides(tpl, masterEdits, "lux-master-edits");
     if (variant) tpl = applyMasterOverrides(tpl, variant.overrides);
     if (draftPath) {
       const cleaned = tpl.replace(/<!--\s*lux-theme:[^>]*-->\n?/g, "").replace(/<!--\s*lux-event:[^>]*-->\n?/g, "");
