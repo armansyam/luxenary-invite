@@ -2507,7 +2507,6 @@ export default function EditInvitation() {
               if (freeTexts.length === 0) return null;
               // Sama seperti teks hias: label seksi bebas tema lama dibuang saat tema berganti, jadi isi setelah tema disimpan.
               const themeSaved = invitation.themeId === savedSnapshot?.invitation?.themeId;
-              const groups = [...new Set(freeTexts.map((t) => t.group))];
               return (
                 <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-3">
                   <div>
@@ -2517,27 +2516,7 @@ export default function EditInvitation() {
                   {!themeSaved ? (
                     <p className="text-[11px] text-stone-600">Simpan pilihan tema terlebih dahulu untuk mengubah teks seksi tambahan tema ini.</p>
                   ) : (
-                    groups.map((group) => (
-                      <div key={group} className="space-y-2 border-t border-stone-200 pt-2 first:border-t-0 first:pt-0">
-                        <p className="text-[11px] font-bold uppercase tracking-wide text-stone-500">{group}</p>
-                        {freeTexts.filter((t) => t.group === group).map((text) => {
-                          const common = {
-                            id: `free-${text.key}`,
-                            maxLength: text.maxLength,
-                            value: getCustomLabel(text.key, text.value),
-                            onChange: (e: { target: { value: string } }) => updateCustomLabel(text.key, e.target.value),
-                            placeholder: text.value,
-                            className: "w-full p-2.5 bg-white border border-stone-200 rounded-xl text-base sm:text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30",
-                          };
-                          return (
-                            <div key={text.key}>
-                              <label htmlFor={common.id} className="block text-[11px] font-bold text-stone-700 mb-1">{text.label}</label>
-                              {text.multiline ? <textarea rows={3} {...common} /> : <input type="text" {...common} />}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ))
+                    <FreeSectionTextFields freeTexts={freeTexts} getValue={getCustomLabel} onChange={updateCustomLabel} />
                   )}
                 </div>
               );
@@ -6134,6 +6113,39 @@ function PhotoInput({
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Isian "Teks Seksi Tambahan Tema" per kelompok seksi. Dirender sebagai komponen sendiri karena di dalam EditInvitation
+ * React Compiler menganggap updateCustomLabel (yang menyentuh ref iframe pratinjau) dibaca saat render (react-hooks/refs).
+ */
+function FreeSectionTextFields({ freeTexts, getValue, onChange }: { freeTexts: FreeSectionText[]; getValue: (key: string, fallback: string) => string; onChange: (key: string, value: string) => void }) {
+  const groups = [...new Set(freeTexts.map((t) => t.group))];
+  return (
+    <>
+      {groups.map((group) => (
+        <div key={group} className="space-y-2 border-t border-stone-200 pt-2 first:border-t-0 first:pt-0">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-stone-500">{group}</p>
+          {freeTexts.filter((t) => t.group === group).map((text) => {
+            const common = {
+              id: `free-${text.key}`,
+              maxLength: text.maxLength,
+              value: getValue(text.key, text.value),
+              onChange: (e: { target: { value: string } }) => onChange(text.key, e.target.value),
+              placeholder: text.value,
+              className: "w-full p-2.5 bg-white border border-stone-200 rounded-xl text-base sm:text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30",
+            };
+            return (
+              <div key={text.key}>
+                <label htmlFor={common.id} className="block text-[11px] font-bold text-stone-700 mb-1">{text.label}</label>
+                {text.multiline ? <textarea rows={3} {...common} /> : <input type="text" {...common} />}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+    </>
   );
 }
 
