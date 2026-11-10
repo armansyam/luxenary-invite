@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import { describe, expect, it } from "vitest";
 import { masterColorGroups, masterColorUsage, recolorWithPalette } from "@/lib/themeVariantCss";
-import { blend, newlyUnreadable, parseCssColor, toHex, type TextSample } from "@/components/admin/variantReadability";
+import { blend, gradientAverage, newlyUnreadable, parseCssColor, toHex, type TextSample } from "@/components/admin/variantReadability";
 import { PALETTE_PRESETS, contrastRatio } from "@/lib/themeBuilder/spec";
 
 const html = `<style>:root{--bg:#ffffff;--ink:#222222;--gold:#c9a978;--spare:#123456}
@@ -48,6 +48,14 @@ describe("variantReadability", () => {
     expect(parseCssColor("color(srgb 1 0 0 / 0.25)")).toEqual([255, 0, 0, 0.25]);
     expect(parseCssColor("oklch(0.5 0.1 20)")).toBeNull();
     expect(toHex(blend([0, 0, 0, 0.5], [255, 255, 255, 1]))).toBe("#808080");
+  });
+
+  it("gradasi berlapis ditumpuk per lapisan; foto di bawah scrim tipis tidak dinilai", () => {
+    const cream = gradientAverage("linear-gradient(90deg, rgba(0, 0, 0, 0) 21px, rgba(122, 31, 43, 0.3) 21px, rgba(0, 0, 0, 0) 22px), linear-gradient(rgb(251, 249, 245), rgb(243, 239, 232))");
+    expect(contrastRatio(toHex(cream!), "#1d1d1f")).toBeGreaterThan(10);
+    expect(gradientAverage('linear-gradient(rgba(10, 10, 10, 0.3), rgba(10, 10, 10, 0.96)), url("a.webp")')).toEqual([10, 10, 10, 1]);
+    expect(gradientAverage('linear-gradient(rgba(10, 10, 10, 0.1), rgba(10, 10, 10, 0.2)), url("a.webp")')).toBeNull();
+    expect(gradientAverage('url("a.webp")')).toBeNull();
   });
 
   it("hanya melaporkan teks yang terbaca di master asli lalu gagal setelah varian", () => {

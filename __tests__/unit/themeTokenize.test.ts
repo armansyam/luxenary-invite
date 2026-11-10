@@ -44,6 +44,13 @@ describe("tokenizeMaster", () => {
     expect(html).toContain("border-color: var(--lux-c-8b2636);");
   });
 
+  it("blok @font-face tidak disentuh (var() tidak sah di deskriptornya, huruf tidak akan termuat)", () => {
+    const css = "@font-face { font-family: 'Lontara'; src: url('/fonts/Lontara.ttf'); } .x { font-family: 'Lontara', serif; }";
+    const { html } = tokenizeMaster(page(css));
+    expect(html).toContain("@font-face { font-family: 'Lontara'; src: url('/fonts/Lontara.ttf'); }");
+    expect(html).toContain(".x { font-family: var(--lux-font-lontara); }");
+  });
+
   it("font-family menjadi variabel per tumpukan; var/inherit/monospace dibiarkan", () => {
     const css = "h1 { font-family: 'Cinzel', serif; } h2 { font-family: 'Cinzel', Georgia, serif !important; } p { font-family: var(--font-body); } code { font-family: monospace; }";
     const { html, report } = tokenizeMaster(page(css));
@@ -89,5 +96,10 @@ describe("master di repo sudah ditokenisasi", () => {
   it.each(files)("%s: tokenisasi ulang tidak mengubah apa pun", (file) => {
     const html = fs.readFileSync(file, "utf-8");
     expect(tokenizeMaster(html).html).toBe(html);
+  });
+
+  it.each(files)("%s: deskriptor font-family @font-face berupa nama, bukan var()", (file) => {
+    const html = fs.readFileSync(file, "utf-8");
+    for (const m of html.matchAll(/@font-face\s*\{([^}]*)\}/gi)) expect(m[1]).not.toMatch(/font-family\s*:\s*var\(/i);
   });
 });

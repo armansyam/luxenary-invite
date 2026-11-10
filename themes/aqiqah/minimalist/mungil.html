@@ -81,7 +81,7 @@
     .cover-sub { font-size: 13px; color: var(--text-muted); margin: 14px 0 16px; }
     .guest-lbl { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-muted); }
     .guest-name { font-size: 22px; color: var(--text-main); margin: 2px 0 18px; overflow-wrap: break-word; }
-    .btn-open { display: inline-flex; align-items: center; gap: 8px; padding: 13px 28px; border: 0; cursor: pointer; border-radius: var(--radius-full); background: var(--primary); color: var(--on-primary); font-family: inherit; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; box-shadow: 0 8px 20px color-mix(in srgb, var(--primary) 35%, transparent); }
+    .btn-open { display: inline-flex; align-items: center; gap: 8px; padding: 13px 28px; border: 0; cursor: pointer; border-radius: var(--radius-full); background: color-mix(in srgb, var(--primary) 45%, var(--text-main)); color: var(--on-primary); font-family: inherit; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; box-shadow: 0 8px 20px color-mix(in srgb, var(--primary) 35%, transparent); }
 
     /* ── Hero kiri desktop ── */
     .left-hero { display: none; position: fixed; left: 0; top: 0; width: calc(100% - 460px); height: 100vh; z-index: 10; overflow: hidden; background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 30%, var(--bg-canvas)), var(--bg-canvas) 60%, color-mix(in srgb, var(--accent) 22%, var(--bg-light))) center / cover no-repeat; }
@@ -91,7 +91,7 @@
     .left-hero.has-photo .left-hero-content { color: var(--on-dark); }
     .left-hero-eyebrow { display: inline-block; padding: 6px 16px; border-radius: var(--radius-full); background: color-mix(in srgb, var(--accent) 55%, transparent); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 1rem; }
     .left-hero-name { font-size: clamp(3rem, 6vw, 5.6rem); line-height: 1; overflow-wrap: break-word; }
-    .left-hero-info { display: block; margin-top: 0.8rem; color: var(--secondary); font-weight: 500; }
+    .left-hero-info { display: block; margin-top: 0.8rem; color: color-mix(in srgb, var(--secondary) 47%, var(--text-main)); font-weight: 500; }
     .left-hero.has-photo .left-hero-info { color: var(--on-dark); }
     .left-hero-date { font-size: 0.85rem; letter-spacing: 0.16em; text-transform: uppercase; margin-top: 1rem; opacity: 0.75; }
 
@@ -105,11 +105,11 @@
     /* ── Beranda ── */
     .slide-home { position: relative; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 90px 26px 70px; text-align: center; overflow: hidden; background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 25%, var(--bg-canvas)), var(--bg-light)); }
     .home-moon { width: 150px; height: 120px; margin: 0 auto 16px; }
-    .home-salam { font-size: 10px; font-weight: 600; letter-spacing: 0.3em; text-transform: uppercase; color: var(--secondary); margin-bottom: 12px; }
+    .home-salam { font-size: 10px; font-weight: 600; letter-spacing: 0.3em; text-transform: uppercase; color: color-mix(in srgb, var(--secondary) 47%, var(--text-main)); margin-bottom: 12px; }
     .home-name { font-size: clamp(3rem, 14vw, 4.2rem); line-height: 1; color: var(--text-main); overflow-wrap: break-word; }
-    .home-info { display: block; margin-top: 10px; color: var(--secondary); }
+    .home-info { display: block; margin-top: 10px; color: color-mix(in srgb, var(--secondary) 47%, var(--text-main)); }
     .home-quote { font-size: 20px; line-height: 1.45; max-width: 340px; margin: 22px auto 0; color: var(--text-main); }
-    .home-quote-ref { font-size: 10px; font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; color: color-mix(in srgb, var(--accent) 80%, var(--text-main)); margin-top: 12px; }
+    .home-quote-ref { font-size: 10px; font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; color: color-mix(in srgb, var(--accent) 29%, var(--text-main)); margin-top: 12px; }
     .scroll-cue { margin-top: 26px; color: var(--secondary); animation: cue 1.8s infinite; }
     @keyframes cue { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
 

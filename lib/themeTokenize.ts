@@ -9,8 +9,8 @@
  *   warna ikut mengubah semua bayangan;
  * - warna di `<script>` (kanvas dan JS tidak memahami `var()`) dan atribut SVG `fill`/`stroke` (atribut presentasi
  *   tidak mendukung `var()`);
- * - isi `url(...)`, nilai di dalam blok `:root` itu sendiri, dan `font-family` yang sudah memakai `var()`, `inherit`,
- *   `initial`, atau hanya `monospace`.
+ * - isi `url(...)`, nilai di dalam blok `:root` itu sendiri, blok `@font-face`, dan `font-family` yang sudah memakai
+ *   `var()`, `inherit`, `initial`, atau hanya `monospace`.
  */
 
 export interface TokenizeReport {
@@ -100,11 +100,13 @@ export function tokenizeMaster(html: string): { html: string; report: TokenizeRe
   const tokenizeCss = (css: string): string => {
     // Blok :root disamarkan agar nilai variabelnya sendiri tidak diganti; badan lain diproses dari yang terdalam.
     // Token engine ({{...}}) juga disamarkan: kurung kurawalnya membuat badan deklarasi yang memuatnya tidak terbaca.
+    // Blok @font-face juga disamarkan: deskriptor font-family di sana adalah nama yang didaftarkan, bukan pemakaian, dan
+    // var() tidak sah di deskriptor @font-face sehingga hurufnya tidak termuat sama sekali.
     const roots: string[] = [];
     const tokens: string[] = [];
     const masked = css
       .replace(/\{\{[^{}]*\}\}/g, (t) => { tokens.push(t); return `\u0000T${tokens.length - 1}\u0000`; })
-      .replace(/:root\s*\{[^}]*\}/g, (r) => { roots.push(r); return `\u0000R${roots.length - 1}\u0000`; });
+      .replace(/:root\s*\{[^}]*\}|@font-face\s*\{[^}]*\}/gi, (r) => { roots.push(r); return `\u0000R${roots.length - 1}\u0000`; });
     return masked
       .replace(/\{([^{}]*)\}/g, (_m, body: string) => `{${tokenizeBody(body)}}`)
       .replace(/\u0000R(\d+)\u0000/g, (_m, i) => roots[+i])

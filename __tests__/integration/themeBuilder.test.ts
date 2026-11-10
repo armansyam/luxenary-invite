@@ -73,7 +73,9 @@ describe("blueprint pernikahan sebagai dasar master", () => {
 
   it("mendefinisikan semua variabel CSS yang dibaca potongan HTML engine", () => {
     const engine = fs.readFileSync(path.join(ROOT, "lib", "themeEngine.ts"), "utf8");
-    const vars = [...new Set([...engine.matchAll(/var\((--[a-z-]+)/g)].map((m) => m[1]))];
+    // Variabel bercadangan (`var(--event-accent, var(--primary))`) adalah kait opsional master; yang wajib ada di blueprint
+    // hanya yang dibaca tanpa cadangan.
+    const vars = [...new Set([...engine.matchAll(/var\((--[a-z-]+)\s*\)/g)].map((m) => m[1]))];
     expect(vars.filter((v) => !new RegExp(`${v}\\s*:`).test(blueprint))).toEqual([]);
   });
 

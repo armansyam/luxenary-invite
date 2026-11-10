@@ -2380,20 +2380,24 @@ export async function composeBirthdayData(inv: any) {
 // UNIVERSAL SECTION BUILDERS (NON-WEDDING)
 // ==========================================
 
-/** Kartu sesi tema khitan/aqiqah/wisuda/gathering: tanggal, jam, tempat, dan peta hanya tampil bila diisi klien. */
+/**
+ * Kartu sesi tema khitan/aqiqah/wisuda/gathering: tanggal, jam, tempat, dan peta hanya tampil bila diisi klien.
+ * Label acara dan tautan peta memakai `--event-accent` bila master menetapkannya (kanvas gelap yang `--primary`-nya
+ * tidak terbaca di atas kartu), selain itu `--primary`.
+ */
 function buildUniversalEventCards(events: any[], fallbackName: string): string {
   const cards = events.map((ev: any) => {
     const dateLabel = ev.date ? formatDateId(ev.date) : "";
     const mapsHref = safeHref(ev.mapsUrl);
     return `
     <div class="event-block-item" style="background: color-mix(in srgb, var(--card-bg) 60%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); border-radius: var(--radius-md, 14px); padding: 18px; margin-bottom: 12px; text-align: left;">
-      <span style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 1px;">${escapeHtml(ev.title || "Acara")}</span>
+      <span style="font-size: 11px; font-weight: 700; color: var(--event-accent, var(--primary)); text-transform: uppercase; letter-spacing: 1px;">${escapeHtml(ev.title || "Acara")}</span>
       <h3 class="serif" style="font-size: 18px; color: var(--text-main); margin: 6px 0 4px;">${escapeHtml(ev.name || ev.title || fallbackName)}</h3>
       ${dateLabel ? `<p style="font-size: 13px; color: var(--text-main);">${escapeHtml(dateLabel)}</p>` : ""}
       ${ev.time ? `<p style="font-size: 13px; color: var(--text-muted);">${escapeHtml(ev.time)}</p>` : ""}
       ${ev.location ? `<p style="font-size: 13px; color: var(--text-main); margin-top: 6px;"><b>${escapeHtml(ev.location)}</b></p>` : ""}
       ${ev.address ? `<p style="font-size: 12px; color: var(--text-muted);">${escapeHtml(ev.address)}</p>` : ""}
-      ${mapsHref ? `<a href="${mapsHref}" target="_blank" rel="noopener noreferrer" class="btn-map-outline" style="display: inline-block; margin-top: 10px; font-size: 12px; color: var(--primary); text-decoration: underline; font-weight: 600;">Petunjuk Lokasi Google Maps</a>` : ""}
+      ${mapsHref ? `<a href="${mapsHref}" target="_blank" rel="noopener noreferrer" class="btn-map-outline" style="display: inline-block; margin-top: 10px; font-size: 12px; color: var(--event-accent, var(--primary)); text-decoration: underline; font-weight: 600;">Petunjuk Lokasi Google Maps</a>` : ""}
     </div>
   `;
   }).join("");

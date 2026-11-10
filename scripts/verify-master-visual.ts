@@ -8,7 +8,7 @@
  *   --ref=<git-ref>     (bawaan HEAD) versi "sebelum" diambil dari git, versi "sesudah" dari working tree; tanpa --theme
  *                       yang dibandingkan hanya master yang berubah terhadap ref itu.
  *   --transform=tokenize versi "sesudah" = hasil tokenizeMaster atas berkas saat ini.
- *   --theme=a,b         batasi ke id master tertentu.  --widths=375,1440  lebar yang diuji.
+ *   --theme=a,b         batasi ke id master tertentu.  --widths=375,1440  lebar yang diuji.  --show=5  jumlah selisih yang dicetak.
  *
  * Setiap putaran menyertakan kontrol negatif: satu salinan master diberi perubahan warna kecil dan harus terdeteksi;
  * bila tidak, skrip gagal karena pembanding tidak peka.
@@ -16,83 +16,17 @@
  * Contoh: DATABASE_URL=postgresql://postgres@localhost:5432/luxenary_test npx tsx scripts/verify-master-visual.ts --theme=valente
  */
 import "dotenv/config";
-import { execFileSync, spawn } from "child_process";
+import { execFileSync } from "child_process";
 import fs from "fs";
-import os from "os";
-import path from "path";
 import { tokenizeMaster } from "../lib/themeTokenize";
-import { composeInvitationData } from "../lib/themeEngine";
-import { renderTemplateFile } from "../lib/renderTemplate";
-import { buildDemoInvitation } from "../lib/demoInvitation";
 import { prisma } from "../lib/prisma";
+import { FREEZE, arg, listMasters, requireTestDatabase, startChrome, startRenderServer } from "./masterHarness";
 
-const arg = (name: string) => process.argv.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
-const EVENT_OF_DIR: Record<string, string> = { wedding: "WEDDING", birthday: "BIRTHDAY", khitan: "KHITAN", aqiqah: "AQIQAH", wisuda: "WISUDA", general: "GATHERING" };
 const PROPS = [
   "color", "background-color", "background-image", "border-top-color", "border-right-color", "border-bottom-color", "border-left-color",
   "outline-color", "box-shadow", "text-shadow", "fill", "stroke", "filter", "opacity", "font-family", "font-size", "font-weight",
   "font-style", "letter-spacing", "line-height", "text-transform", "display", "padding", "margin", "border-radius", "content",
 ];
-const FREEZE = "<style>*,*::before,*::after{animation:none!important;transition:none!important}</style>";
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-interface MasterFile { id: string; rel: string; eventType: string }
-
-function listMasters(): MasterFile[] {
-  const out: MasterFile[] = [];
-  for (const [dir, eventType] of Object.entries(EVENT_OF_DIR)) {
-    const evDir = path.join("themes", dir);
-    if (!fs.existsSync(evDir)) continue;
-    for (const style of fs.readdirSync(evDir)) {
-      const styleDir = path.join(evDir, style);
-      if (!fs.statSync(styleDir).isDirectory()) continue;
-      for (const f of fs.readdirSync(styleDir).filter((x) => x.endsWith(".html"))) out.push({ id: f.replace(/\.html$/, ""), rel: path.join(styleDir, f), eventType });
-    }
-  }
-  return out;
-}
-
-function chromePath(): string {
-  const candidates = [process.env.CHROME_PATH, "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", "/usr/bin/google-chrome", "/usr/bin/chromium"];
-  const found = candidates.find((c): c is string => Boolean(c && fs.existsSync(c)));
-  if (!found) throw new Error("Chrome tidak ditemukan; set CHROME_PATH.");
-  return found;
-}
-
-class Cdp {
-  private id = 0;
-  private pending = new Map<number, (msg: any) => void>();
-  private loadWaiters: Array<() => void> = [];
-  sessionId = "";
-  constructor(private ws: WebSocket) {
-    ws.onmessage = (event) => {
-      const msg = JSON.parse(String(event.data));
-      if (msg.id && this.pending.has(msg.id)) {
-        this.pending.get(msg.id)!(msg);
-        this.pending.delete(msg.id);
-      } else if (msg.method === "Page.loadEventFired") this.loadWaiters.splice(0).forEach((w) => w());
-    };
-  }
-  send(method: string, params: Record<string, unknown> = {}, session = true): Promise<any> {
-    const id = ++this.id;
-    this.ws.send(JSON.stringify({ id, method, params, ...(session && this.sessionId ? { sessionId: this.sessionId } : {}) }));
-    return new Promise((resolve, reject) => {
-      this.pending.set(id, (msg) => (msg.error ? reject(new Error(`${method}: ${msg.error.message}`)) : resolve(msg.result)));
-      setTimeout(() => this.pending.has(id) && (this.pending.delete(id), reject(new Error(`${method} melewati batas waktu`))), 30000);
-    });
-  }
-  async goto(url: string) {
-    const loaded = new Promise<void>((r) => this.loadWaiters.push(r));
-    await this.send("Page.navigate", { url });
-    await Promise.race([loaded, sleep(15000)]);
-    await sleep(400);
-  }
-  async eval<T>(expression: string): Promise<T> {
-    const r = await this.send("Runtime.evaluate", { expression, returnByValue: true });
-    if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description || r.exceptionDetails.text);
-    return r.result.value as T;
-  }
-}
 
 const COLLECT = `(() => {
   const props = ${JSON.stringify(PROPS)};
@@ -104,6 +38,9 @@ const COLLECT = `(() => {
       out.push([i + ":" + el.tagName + (pseudo || ""), props.map((p) => cs.getPropertyValue(p))]);
     }
   });
+  // Deklarasi @font-face yang tidak sah (mis. var() di deskriptor font-family) tidak terdaftar sama sekali; nama huruf
+  // terhitung tetap sama sehingga hanya daftar ini yang menangkapnya.
+  out.push(["@font-face", [[...new Set([...document.fonts].map((f) => f.family))].sort().join(", ")]]);
   return out;
 })()`;
 
@@ -136,13 +73,13 @@ function compare(before: Array<[string, string[]]>, after: Array<[string, string
   for (const [key, values] of before) {
     const other = afterMap.get(key);
     if (!other) { diffs.push(`${key} hilang`); continue; }
-    values.forEach((v, i) => { if (!sameValue(v, other[i])) diffs.push(`${key} ${PROPS[i]}: ${v} -> ${other[i]}`); });
+    values.forEach((v, i) => { if (!sameValue(v, other[i])) diffs.push(`${key} ${key === "@font-face" ? "keluarga terdaftar" : PROPS[i]}: ${v} -> ${other[i]}`); });
   }
   return diffs;
 }
 
 async function main() {
-  if (!/\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "")) throw new Error("Jalankan dengan DATABASE_URL ke database luxenary_test.");
+  requireTestDatabase();
   const ref = arg("ref") ?? "HEAD";
   const transform = arg("transform");
   const widths = (arg("widths") ?? "375,1440").split(",").map(Number);
@@ -155,38 +92,21 @@ async function main() {
   }
   if (!masters.length) { console.log("Tidak ada master untuk dibandingkan."); return; }
 
-  const work = fs.mkdtempSync(path.join(os.tmpdir(), "lux-visual-"));
-  const render = async (m: MasterFile, source: string, tag: string) => {
-    const data = await composeInvitationData(buildDemoInvitation(m.id, undefined, m.eventType));
-    const html = (await renderTemplateFile(m.id, data as Record<string, any>, { eventType: m.eventType, templateSource: source })).replace(/<\/head>/i, `${FREEZE}</head>`);
-    const file = path.join(work, `${m.id}-${tag}.html`);
-    fs.writeFileSync(file, html);
-    return `file://${file}`;
-  };
+  const server = await startRenderServer();
+  const render = (m: (typeof masters)[number], source: string, tag: string) => server.render(m, source, tag, FREEZE);
+  const show = Number(arg("show") ?? 5);
 
-  const port = 9800 + Math.floor(Math.random() * 150);
-  const profile = fs.mkdtempSync(path.join(os.tmpdir(), "lux-visual-chrome-"));
-  const chrome = spawn(chromePath(), ["--headless=new", "--disable-gpu", "--hide-scrollbars", "--allow-file-access-from-files", `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`]);
+  const { cdp, close } = await startChrome();
   let failed = 0;
   try {
-    let version: any = null;
-    for (let i = 0; i < 40 && !version; i++) {
-      version = await fetch(`http://127.0.0.1:${port}/json/version`).then((r) => r.json()).catch(() => null);
-      if (!version) await sleep(250);
-    }
-    if (!version) throw new Error("Chrome DevTools tidak siap.");
-    const ws = new WebSocket(version.webSocketDebuggerUrl);
-    await new Promise((r) => (ws.onopen = r));
-    const cdp = new Cdp(ws);
-    const { targetId } = await cdp.send("Target.createTarget", { url: "about:blank" }, false);
-    cdp.sessionId = (await cdp.send("Target.attachToTarget", { targetId, flatten: true }, false)).sessionId;
-    await cdp.send("Page.enable");
     await cdp.send("Emulation.setScriptExecutionDisabled", { value: true });
 
     const styles = async (url: string, width: number) => {
       await cdp.send("Emulation.setDeviceMetricsOverride", { width, height: 900, deviceScaleFactor: 1, mobile: width < 768 });
       await cdp.goto(url);
       await cdp.send("Emulation.setScriptExecutionDisabled", { value: false });
+      // Tinggi teks (dan margin auto di sekitarnya) baru final setelah huruf web selesai dimuat.
+      await cdp.eval("document.fonts.ready.then(() => true)");
       const result = await cdp.eval<Array<[string, string[]]>>(COLLECT);
       await cdp.send("Emulation.setScriptExecutionDisabled", { value: true });
       return result;
@@ -210,15 +130,12 @@ async function main() {
         const diffs = compare(await styles(a, width), await styles(b, width));
         if (diffs.length) failed++;
         console.log(`${diffs.length ? "BEDA " : "SAMA "} ${m.id} @${width}px${diffs.length ? `  ${diffs.length} selisih` : ""}`);
-        diffs.slice(0, 5).forEach((d) => console.log(`        ${d}`));
+        diffs.slice(0, show).forEach((d) => console.log(`        ${d}`));
       }
     }
   } finally {
-    const exited = new Promise((r) => chrome.once("exit", r));
-    chrome.kill();
-    await Promise.race([exited, sleep(5000)]);
-    fs.rmSync(work, { recursive: true, force: true });
-    fs.rmSync(profile, { recursive: true, force: true });
+    await close();
+    await server.close();
     await prisma.$disconnect();
   }
   console.log(failed ? `${failed} perbandingan berbeda.` : "Semua perbandingan sama.");

@@ -166,6 +166,9 @@ Solusi atas "menyunting tema lama lewat builder mengganggu karena hasilnya disus
 ### J. Foto Uji Pratinjau (10 Nov 2026)
 Tab **Foto uji** dan mode pratinjau **Foto uji**: foto contoh per slot media (`lib/themeBuilder/simSlots.ts`, `app/api/admin/theme-builder/sim-media/route.ts`) dirender seperti unggahan klien lewat `renderBuilderPreview(..., "sim", sim)`. Foto sementara di `public/uploads/builder-sim/`, dihapus `runStaleDataCleanup` setelah 3 hari. Rincian: `docs/SYSTEM_ARCHITECTURE.md` bagian 8.1 butir 21.
 
+### K. Keterbacaan dan Huruf Master (10 Nov 2026)
+Setiap mengubah CSS master, jalankan `npm run audit:master-contrast -- --strict` (gerbang: 0 teks berat) dan `npm run test:master-visual` (hanya properti yang dimaksud berubah). Deskriptor `font-family` di `@font-face` harus nama keluarga, bukan `var()`; tokenizer kini melewati blok itu. Rincian: `docs/SYSTEM_ARCHITECTURE.md` bagian 8.1 butir 22.
+
 ### H. Layar Kecil (10 Nov 2026)
 - Theme Builder bisa dibuka mulai lebar 1024 px (sebelumnya 1100): panel kiri/kanan 300/260 px dan header dua baris di bawah 1280 px; di atas 1280 px tetap 340/290 px dan satu baris.
 - Editor varian tersusun bertumpuk di bawah 768 px.
