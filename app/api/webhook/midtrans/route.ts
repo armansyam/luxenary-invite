@@ -135,6 +135,12 @@ export async function POST(req: NextRequest) {
     if (order.status === "PAID") {
       // Pemenuhan layanan yang gagal pada pengiriman sebelumnya dicoba lagi di sini (idempoten lewat fulfilledAt).
       if (!order.fulfilledAt) await applyUpgradePlan(orderId);
+      if (webhookLogId) {
+        await prisma.webhookLog.update({
+          where: { id: webhookLogId },
+          data: { status: "processed", processedAt: new Date() },
+        }).catch((err) => logger.warn("MidtransWebhook", "Gagal memperbarui status webhookLog", { orderId, error: String(err) }));
+      }
       return NextResponse.json({ status: "ok", note: "already_paid" });
     }
 
@@ -260,6 +266,15 @@ export async function POST(req: NextRequest) {
         orderId,
         trxStatus,
       });
+    }
+
+    // Pelunasan sudah menandai log-nya sendiri. Notifikasi lain (pending, cancel, expire, deny) juga selesai ditangani di
+    // sini, sehingga "received" hanya tersisa bila penanganan berhenti di tengah (order tidak ada, atau 503 minta kirim ulang).
+    if (!isPaid && webhookLogId) {
+      await prisma.webhookLog.update({
+        where: { id: webhookLogId },
+        data: { status: "processed", processedAt: new Date() },
+      }).catch((err) => logger.warn("MidtransWebhook", "Gagal memperbarui status webhookLog", { orderId, error: String(err) }));
     }
 
     return NextResponse.json({ status: "ok" });

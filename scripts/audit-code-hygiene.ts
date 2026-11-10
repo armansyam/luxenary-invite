@@ -202,7 +202,8 @@ export class CodeHygieneAuditor {
       "no-closing-photo", "has-closing-photo", "qr-btn", "dock-btn", "nav-item", "opened",
       "fade-in", "zoom-in", "rotate-disc", "revealed",
       "event-unified-venue-card", "event-block-item", "events-unified-container", "events-sessions-stack",
-      "ev-venue-unified", "ev-addr-unified", "venue-card-lbl", "couple-groom", "couple-bride", "couple-gender-ornament"
+      "ev-venue-unified", "ev-addr-unified", "venue-card-lbl", "couple-groom", "couple-bride", "couple-gender-ornament",
+      "serif"
     ]);
 
     for (const file of themeFiles) {
