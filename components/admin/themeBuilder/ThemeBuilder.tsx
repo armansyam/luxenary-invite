@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useFeedback } from "@/components/ui/Feedback";
 import { animationPlan, designCss } from "@/lib/themeBuilder/designCss";
 import { applyBuilderTemplate, type BuilderTemplate } from "@/lib/themeBuilder/templates";
+import { SIM_GALLERY_MAX, parseSimMedia, type SimMedia, type SimSlot } from "@/lib/themeBuilder/simSlots";
 import {
   MAX_ORNAMENTS,
   MAX_ORNAMENTS_PER_SECTION,
@@ -48,6 +49,7 @@ import {
   OrnamentsPanel,
   PANEL_TABS,
   PublishPanel,
+  SimulatePanel,
   TextsPanel,
   TypePanel,
   type AssetLibrary,
@@ -58,8 +60,21 @@ import {
 } from "@/components/admin/themeBuilder/BuilderPanels";
 
 type Issue = { code: string; message: string };
+type PreviewMode = "demo" | "client" | "sim";
 
 const HISTORY_LIMIT = 60;
+// Foto uji disimpan di peramban admin agar tidak perlu diunggah ulang tiap membuka builder; berkasnya di server
+// kedaluwarsa setelah SIM_MEDIA_MAX_AGE_DAYS, dan foto yang sudah hilang dibuang saat dimuat.
+const SIM_STORAGE_KEY = "lux-builder-sim-media";
+
+function readStoredSim(): SimMedia {
+  try {
+    return parseSimMedia(JSON.parse(window.localStorage.getItem(SIM_STORAGE_KEY) || "{}"));
+  } catch {
+    // Penyimpanan peramban diblokir atau isinya rusak: mulai tanpa foto uji.
+    return { slots: {}, gallery: [] };
+  }
+}
 const PREVIEW_DEBOUNCE_MS = 400;
 
 const newOrnamentId = () => Array.from(crypto.getRandomValues(new Uint8Array(10)), (b) => (b % 36).toString(36)).join("");
@@ -120,7 +135,9 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
 
   const [panel, setPanel] = useState<PanelId>("colors");
   const [device, setDevice] = useState<PreviewDevice>("mobile");
-  const [previewMode, setPreviewMode] = useState<"demo" | "client">("demo");
+  const [previewMode, setPreviewMode] = useState<PreviewMode>("demo");
+  const [sim, setSim] = useState<SimMedia>({ slots: {}, gallery: [] });
+  const [simUploading, setSimUploading] = useState<string | null>(null);
   const [viewSection, setViewSection] = useState<OrnamentSection>("cover");
   const [jump, setJump] = useState<{ section: OrnamentSection; nonce: number }>({ section: "cover", nonce: 0 });
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -319,6 +336,64 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
     notify(`Rancangan diimpor: ${notes.join("; ")}. Isi nama lalu simpan sebagai draf.`, data.missingAssets.length ? "error" : "success");
   }, [loadLibrary, notify, syncHistory]);
 
+  // Foto uji tersimpan dimuat sekali; foto yang sudah dihapus cron di server (404) dibuang dari daftar.
+  useEffect(() => {
+    const stored = readStoredSim();
+    const urls = [...Object.values(stored.slots), ...stored.gallery].filter((u): u is string => Boolean(u));
+    if (!urls.length) return;
+    let cancelled = false;
+    Promise.all(urls.map(async (u) => [u, (await fetch(u, { method: "HEAD" }).catch(() => null))?.ok ?? false] as const)).then((checks) => {
+      if (cancelled) return;
+      const alive = new Set(checks.filter(([, ok]) => ok).map(([u]) => u));
+      setSim({
+        slots: Object.fromEntries(Object.entries(stored.slots).filter(([, u]) => u && alive.has(u))),
+        gallery: stored.gallery.filter((u) => alive.has(u)),
+      });
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  const updateSim = useCallback((next: SimMedia) => {
+    setSim(next);
+    try {
+      window.localStorage.setItem(SIM_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // Penyimpanan peramban diblokir: foto uji tetap berlaku sampai halaman ditutup.
+    }
+  }, []);
+
+  const uploadSim = useCallback(async (target: SimSlot["slot"] | "GALLERY", files: FileList) => {
+    setSimUploading(target);
+    let next: SimMedia = { slots: { ...sim.slots }, gallery: [...sim.gallery] };
+    try {
+      const list = target === "GALLERY" ? Array.from(files).slice(0, SIM_GALLERY_MAX - next.gallery.length) : [files[0]];
+      for (const file of list) {
+        const form = new FormData();
+        form.append("file", file);
+        const res = await fetch("/api/admin/theme-builder/sim-media", { method: "POST", body: form });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) { notify(`${file.name}: ${data.error || "gagal diunggah."}`, "error"); continue; }
+        next = target === "GALLERY"
+          ? { ...next, gallery: next.gallery.includes(data.url) ? next.gallery : [...next.gallery, data.url] }
+          : { ...next, slots: { ...next.slots, [target]: data.url } };
+      }
+      updateSim(next);
+      setPreviewMode("sim");
+    } finally {
+      setSimUploading(null);
+    }
+  }, [sim, notify, updateSim]);
+
+  const removeSim = useCallback((target: SimSlot["slot"] | "GALLERY", url?: string) => {
+    if (target === "GALLERY") updateSim({ ...sim, gallery: sim.gallery.filter((u) => u !== url) });
+    else {
+      const slots = { ...sim.slots };
+      delete slots[target];
+      updateSim({ ...sim, slots });
+    }
+  }, [sim, updateSim]);
+
+  const simKey = previewMode === "sim" ? JSON.stringify(sim) : "";
   const structure = useMemo(() => structuralKey(spec), [spec]);
   const liveDesign = useMemo(() => ({ css: designCss(spec), custom: spec.customCss ?? "", preset: animationPlan(spec).htmlPreset }), [spec]);
   useEffect(() => {
@@ -330,7 +405,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
         const res = await fetch("/api/admin/theme-builder/preview", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ spec: specRef.current, mode: previewMode }),
+          body: JSON.stringify({ spec: specRef.current, mode: previewMode, ...(previewMode === "sim" ? { sim: JSON.parse(simKey) } : {}) }),
           signal: controller.signal,
         });
         const data = await res.json().catch(() => ({}));
@@ -348,7 +423,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
       }
     }, PREVIEW_DEBOUNCE_MS);
     return () => { controller.abort(); window.clearTimeout(timer); };
-  }, [structure, loaded, notify, previewMode]);
+  }, [structure, loaded, notify, previewMode, simKey]);
 
   /** "live" mengubah tampilan tanpa riwayat (saat menyeret); "commit" mencatat satu langkah undo. */
   const apply = useCallback((next: BuilderSpec, mode: "live" | "commit") => {
@@ -966,13 +1041,13 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
           style={{ left: ghost.x, top: ghost.y }}
         />
       )}
-      <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-stone-200 bg-white px-3 py-2 xl:h-14 xl:flex-nowrap xl:py-0">
+      <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-stone-200 bg-white px-3 py-2">
         <button type="button" onClick={leave} className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-stone-600 hover:bg-stone-100 cursor-pointer">
           <Icon d="M15 18l-6-6 6-6" />
           Katalog
         </button>
         <span className="h-6 w-px bg-stone-200" />
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <input
             value={meta.name}
             onChange={(e) => setMeta((m) => ({ ...m, name: e.target.value }))}
@@ -1040,10 +1115,10 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
                 onClick={() => { setDevice(d); if (d !== "desktop" && viewSection === "sidebar") focusSection("cover"); }}
                 title={DEVICE_SIZES[d].label}
                 aria-label={DEVICE_SIZES[d].label}
-                className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 xl:px-3 text-[11.5px] font-semibold transition cursor-pointer ${device === d ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"}`}
+                className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 2xl:px-3 text-[11.5px] font-semibold transition cursor-pointer ${device === d ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"}`}
               >
                 <Icon d={d === "desktop" ? "M3 5h18v11H3zM8 20h8M12 16v4" : "M8 3h8a1 1 0 011 1v16a1 1 0 01-1 1H8a1 1 0 01-1-1V4a1 1 0 011-1zM11 18h2"} className="h-3.5 w-3.5" />
-                <span className="hidden xl:inline">{DEVICE_SIZES[d].label}</span>
+                <span className="hidden 2xl:inline">{DEVICE_SIZES[d].label}</span>
               </button>
             ))}
           </div>
@@ -1051,16 +1126,16 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
             <button
               type="button"
               onClick={() => setDesktopCoverFull((v) => !v)}
-              title="Melihat tampilan cover landscape layar penuh (100vw) di desktop"
-              className={`rounded-xl px-2.5 py-1.5 text-[11px] font-semibold transition cursor-pointer border ${desktopCoverFull ? "bg-amber-600 text-white border-amber-600" : "bg-white text-stone-700 border-stone-200 hover:border-stone-300"}`}
+              title="Sampul desktop tampil layar penuh hanya bila klien mengunggah foto sampul desktop mendatar; selain itu terbelah dengan panel kiri. Coba dengan foto sungguhan lewat tab Foto uji."
+              className={`whitespace-nowrap rounded-xl px-2.5 py-1.5 text-[11px] font-semibold transition cursor-pointer border ${desktopCoverFull ? "bg-amber-600 text-white border-amber-600" : "bg-white text-stone-700 border-stone-200 hover:border-stone-300"}`}
             >
-              {desktopCoverFull ? "Cover Penuh (100vw)" : "Cover Terpisah"}
+              {desktopCoverFull ? "Sampul: layar penuh" : "Sampul: terbelah"}
             </button>
           )}
         </div>
 
-        <div className="flex shrink-0 items-center rounded-xl bg-stone-100 p-1" title="Contoh demo memakai foto dan data contoh; Klien baru meniru undangan yang belum diunggah apa pun">
-          {([["demo", "Contoh demo"], ["client", "Klien baru"]] as const).map(([mode, label]) => (
+        <div className="flex shrink-0 items-center rounded-xl bg-stone-100 p-1" title="Contoh demo memakai foto dan data contoh; Klien baru meniru undangan yang belum diunggah apa pun; Foto uji memakai foto simulasi dari tab Foto uji">
+          {([["demo", "Contoh demo"], ["client", "Klien baru"], ["sim", "Foto uji"]] as const).map(([mode, label]) => (
             <button
               key={mode}
               type="button"
@@ -1148,6 +1223,17 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
             />
           ) : panel === "motion" ? (
             <MotionPanel spec={spec} onChange={patchSpec} onReplay={() => setReplayNonce((n) => n + 1)} />
+          ) : panel === "simulate" ? (
+            <SimulatePanel
+              eventType={spec.eventType}
+              sim={sim}
+              active={previewMode === "sim"}
+              uploading={simUploading}
+              onUpload={uploadSim}
+              onRemove={removeSim}
+              onActivate={() => setPreviewMode("sim")}
+              onClear={() => updateSim({ slots: {}, gallery: [] })}
+            />
           ) : (
             <PublishPanel
               spec={spec}
@@ -1167,7 +1253,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
 
         <main className="flex min-w-0 flex-1 flex-col">
           <div className="flex shrink-0 items-center gap-1.5 overflow-x-auto border-b border-stone-200 bg-white/70 px-3 py-2">
-            <span className="mr-1 text-[10.5px] font-bold uppercase tracking-[0.1em] text-stone-400">Lompat ke</span>
+            <span className="mr-1 shrink-0 whitespace-nowrap text-[10.5px] font-bold uppercase tracking-[0.1em] text-stone-400">Lompat ke</span>
             {chips.map((s) => (
               <button
                 key={s}

@@ -63,10 +63,12 @@ import {
   type SectionStyle,
   type SurfaceStyle,
 } from "@/lib/themeBuilder/spec";
+import type { BuilderEventType } from "@/lib/themeBuilder/spec";
+import { SIM_GALLERY_MAX, SIM_MEDIA_MAX_AGE_DAYS, simSlotsFor, type SimMedia, type SimSlot } from "@/lib/themeBuilder/simSlots";
 import { GoogleFontPicker } from "@/components/admin/themeBuilder/GoogleFontPicker";
 import { BUILDER_TEMPLATES, type BuilderTemplate } from "@/lib/themeBuilder/templates";
 
-export type PanelId = "colors" | "type" | "texts" | "layout" | "ornaments" | "motion" | "publish";
+export type PanelId = "colors" | "type" | "texts" | "layout" | "ornaments" | "motion" | "simulate" | "publish";
 
 export interface AssetLibrary {
   uploads: Array<{ url: string; size: number; uploadedAt: number; opaque: boolean }>;
@@ -122,6 +124,7 @@ export const PANEL_TABS: Array<{ id: PanelId; label: string; icon: string }> = [
   { id: "layout", label: "Tata letak", icon: "M4 5h16v5H4zM4 14h7v5H4zM15 14h5v5h-5z" },
   { id: "ornaments", label: "Ornamen", icon: "M12 3c1.5 3 4 4.5 7 5-3 1-5.5 3-7 7-1.5-4-4-6-7-7 3-.5 5.5-2 7-5zM5 18l1.5 3M19 18l-1.5 3" },
   { id: "motion", label: "Animasi", icon: "M4 12h4l3-7 4 14 3-7h2" },
+  { id: "simulate", label: "Foto uji", icon: "M4 7h3l2-2h6l2 2h3v12H4zM12 16a3 3 0 100-6 3 3 0 000 6z" },
   { id: "publish", label: "Terbit", icon: "M12 16V4m0 0l-4 4m4-4l4 4M5 20h14" },
 ];
 
@@ -1914,6 +1917,76 @@ export function OrnamentsPanel({
         )}
       </Section>
     </>
+  );
+}
+
+/**
+ * Foto uji (simulasi): foto contoh per slot media klien untuk melihat rancangan dengan foto nyata sebelum terbit. Foto
+ * tidak masuk ke tema; slot kosong tampil seperti klien yang belum mengunggah (bawaan tema).
+ */
+export function SimulatePanel({ eventType, sim, active, uploading, onUpload, onRemove, onActivate, onClear }: {
+  eventType: BuilderEventType;
+  sim: SimMedia;
+  active: boolean;
+  uploading: string | null;
+  onUpload: (target: SimSlot["slot"] | "GALLERY", files: FileList) => void;
+  onRemove: (target: SimSlot["slot"] | "GALLERY", url?: string) => void;
+  onActivate: () => void;
+  onClear: () => void;
+}) {
+  const filled = Object.keys(sim.slots).length + sim.gallery.length;
+  return (
+    <div>
+      <Section title="Simulasi foto klien" hint={`Foto uji hanya untuk pratinjau: tidak tersimpan di tema dan terhapus otomatis setelah ${SIM_MEDIA_MAX_AGE_DAYS} hari. Slot kosong tampil seperti klien yang belum mengunggah.`}>
+        <div className="flex items-center justify-between gap-2">
+          {active ? (
+            <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-emerald-700"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />Pratinjau memakai foto uji</span>
+          ) : (
+            <button type="button" onClick={onActivate} className="rounded-lg bg-stone-900 px-3 py-1.5 text-[11.5px] font-semibold text-white hover:bg-stone-800 cursor-pointer">Tampilkan di pratinjau</button>
+          )}
+          {filled > 0 && <button type="button" onClick={onClear} className="text-[11px] font-semibold text-stone-500 hover:text-stone-800 hover:underline cursor-pointer">Kosongkan semua</button>}
+        </div>
+      </Section>
+      <Section title="Slot media">
+        <ul className="space-y-2">
+          {simSlotsFor(eventType).map((s) => {
+            const url = sim.slots[s.slot];
+            return (
+              <li key={s.slot} className="flex items-center gap-2.5">
+                <span className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-stone-100 ring-1 ring-stone-900/10">
+                  {url && <img src={url} alt="" className="h-full w-full object-cover" />}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[12px] font-semibold text-stone-800">{s.label}</span>
+                  <span className="block text-[10.5px] leading-snug text-stone-500">{s.hint}</span>
+                </span>
+                <label className={`shrink-0 rounded-lg border border-stone-200 px-2 py-1 text-[11px] font-semibold text-stone-700 hover:border-stone-400 ${uploading ? "opacity-50" : "cursor-pointer"}`}>
+                  {uploading === s.slot ? "Mengunggah…" : url ? "Ganti" : "Unggah"}
+                  <input type="file" accept="image/png,image/webp,image/jpeg" className="hidden" disabled={Boolean(uploading)} onChange={(e) => { if (e.target.files?.length) onUpload(s.slot, e.target.files); e.target.value = ""; }} />
+                </label>
+                {url && <button type="button" onClick={() => onRemove(s.slot)} aria-label={`Hapus foto ${s.label}`} className="text-[11px] font-semibold text-stone-400 hover:text-stone-800 cursor-pointer">Hapus</button>}
+              </li>
+            );
+          })}
+        </ul>
+      </Section>
+      <Section title={`Galeri (${sim.gallery.length}/${SIM_GALLERY_MAX})`} hint="Campurkan foto potret dan mendatar untuk melihat susunan galeri.">
+        <div className="grid grid-cols-4 gap-1.5">
+          {sim.gallery.map((url) => (
+            <div key={url} className="group relative aspect-square overflow-hidden rounded-lg bg-stone-100 ring-1 ring-stone-900/10">
+              <img src={url} alt="" className="h-full w-full object-cover" />
+              <button type="button" onClick={() => onRemove("GALLERY", url)} aria-label="Hapus foto galeri" className="absolute right-1 top-1 rounded-md bg-white/90 px-1 text-[10px] font-semibold text-stone-700 opacity-0 transition group-hover:opacity-100 focus:opacity-100 cursor-pointer">Hapus</button>
+            </div>
+          ))}
+          {sim.gallery.length < SIM_GALLERY_MAX && (
+            <label className={`flex aspect-square items-center justify-center rounded-lg border border-dashed border-stone-300 text-[10.5px] font-semibold text-stone-500 hover:border-stone-500 ${uploading ? "opacity-50" : "cursor-pointer"}`}>
+              {uploading === "GALLERY" ? "…" : "+ Foto"}
+              <input type="file" multiple accept="image/png,image/webp,image/jpeg" className="hidden" disabled={Boolean(uploading)} onChange={(e) => { if (e.target.files?.length) onUpload("GALLERY", e.target.files); e.target.value = ""; }} />
+            </label>
+          )}
+        </div>
+      </Section>
+    </div>
   );
 }
 

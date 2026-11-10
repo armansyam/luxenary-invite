@@ -6,6 +6,7 @@ import { parseBuilderSpec } from "@/lib/themeBuilder/spec";
 import { ensureSpecFonts } from "@/lib/themeBuilder/fonts";
 import { fitSpecFrames } from "@/lib/themeBuilder/frameWindow";
 import { renderBuilderPreview } from "@/lib/themeBuilder/server";
+import { parseSimMedia } from "@/lib/themeBuilder/simSlots";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,8 @@ export async function POST(req: NextRequest) {
 
     await ensureSpecFonts(parsed.spec);
     const spec = await fitSpecFrames(parsed.spec);
-    const { html, issues, labels } = await renderBuilderPreview(spec, undefined, body.mode === "client" ? "client" : "demo");
+    const mode = body.mode === "client" || body.mode === "sim" ? body.mode : "demo";
+    const { html, issues, labels } = await renderBuilderPreview(spec, undefined, mode, mode === "sim" ? parseSimMedia(body.sim) : undefined);
     return NextResponse.json({ success: true, html, issues, labels });
   } catch (error) {
     return routeError("ThemeBuilderPreview", error);

@@ -12,6 +12,7 @@ import { getLifecycleSettings } from "./lifecycleSettings";
 import { applyUpgradePlan } from "./upgradeHelper";
 import { participantNames } from "./participantUtils";
 import { releaseInvitationSubdomain } from "./subdomainRelease";
+import { SIM_MEDIA_MAX_AGE_DAYS } from "./themeBuilder/simSlots";
 
 const CONTEXT = "LifecycleCleanup";
 const RETENTION_WARNING_LEAD_MS = 3 * DAY_MS;
@@ -290,6 +291,7 @@ export interface StaleDataCleanupResult {
   refulfilledOrders: number;
   purgedRateLimitRows: number;
   purgedWebhookLogs: number;
+  purgedSimMedia: number;
 }
 
 const FULFILLMENT_GRACE_MS = 5 * 60 * 1000;
@@ -358,6 +360,7 @@ export async function runStaleDataCleanup(options: LifecycleCleanupOptions = {})
 
   const refulfilledOrders = await refulfillStuckOrders(now, dryRun);
   const purgedRateLimitRows = await purgeExpiredRateLimitRows(dryRun);
+  const purgedSimMedia = await purgeSimMedia(now, dryRun);
 
   // Muatan webhook lengkap adalah bukti sengketa pembayaran, jadi disimpan jauh lebih lama daripada order usang.
   const staleWebhookWhere = { createdAt: { lt: new Date(now.getTime() - WEBHOOK_LOG_RETENTION_DAYS * DAY_MS) } };
@@ -365,11 +368,30 @@ export async function runStaleDataCleanup(options: LifecycleCleanupOptions = {})
   const staleOrders = await prisma.order.findMany({ where: staleWhere, select: { proofImageUrl: true } });
   if (dryRun) {
     const purgedWebhookLogs = await prisma.webhookLog.count({ where: staleWebhookWhere });
-    return { orphanedDrafts, deletedOrders: staleOrders.length, refulfilledOrders, purgedRateLimitRows, purgedWebhookLogs };
+    return { orphanedDrafts, deletedOrders: staleOrders.length, refulfilledOrders, purgedRateLimitRows, purgedWebhookLogs, purgedSimMedia };
   }
 
   await Promise.all(staleOrders.map((order) => deleteFile(order.proofImageUrl)));
   const deleted = await prisma.order.deleteMany({ where: staleWhere });
   const purgedWebhookLogs = (await prisma.webhookLog.deleteMany({ where: staleWebhookWhere })).count;
-  return { orphanedDrafts, deletedOrders: deleted.count, refulfilledOrders, purgedRateLimitRows, purgedWebhookLogs };
+  return { orphanedDrafts, deletedOrders: deleted.count, refulfilledOrders, purgedRateLimitRows, purgedWebhookLogs, purgedSimMedia };
+}
+
+/** Foto simulasi pratinjau builder (public/uploads/builder-sim) yang lebih tua dari SIM_MEDIA_MAX_AGE_DAYS. */
+async function purgeSimMedia(now: Date, dryRun: boolean): Promise<number> {
+  const dir = path.join(process.cwd(), "public", "uploads", "builder-sim");
+  const files = await fs.promises.readdir(dir).catch((err: NodeJS.ErrnoException) => {
+    if (err.code === "ENOENT") return [] as string[];
+    throw err;
+  });
+  const cutoff = now.getTime() - SIM_MEDIA_MAX_AGE_DAYS * DAY_MS;
+  let purged = 0;
+  for (const file of files) {
+    if (!/^[a-f0-9]{24}\.webp$/.test(file)) continue;
+    const full = path.join(dir, file);
+    if ((await fs.promises.stat(full)).mtimeMs >= cutoff) continue;
+    if (!dryRun) await fs.promises.rm(full, { force: true });
+    purged++;
+  }
+  return purged;
 }

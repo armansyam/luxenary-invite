@@ -174,6 +174,7 @@ Memerlukan autentikasi admin (`role: ADMIN` atau `SUPER_ADMIN`):
 | | `GET` / `POST` | `/api/admin/theme-builder/fonts` | Membaca katalog Google Fonts atau mengunduh & meng-cache berkas font `.woff2` secara lokal di server. |
 | | `GET` | `/api/admin/theme-builder/frame-window` | Memindai dan mengukur lubang transparan poligon jendela bingkai foto dari pustaka ornamen. |
 | | `POST` / `DELETE` | `/api/admin/theme-builder/assets` | Mengunggah ornamen/tekstur baru ke pustaka (PNG dikonversi ke WebP) atau menghapus aset yang tidak sedang digunakan tema. |
+| | `POST` | `/api/admin/theme-builder/sim-media` | Foto uji pratinjau (PNG/WebP/JPEG, maks. 12 MB) → WebP sementara di `/uploads/builder-sim/<hash>.webp`; dihapus cron setelah 3 hari. Dipakai `POST /api/admin/theme-builder/preview` dengan `mode: "sim"` dan `sim: { slots, gallery }`. |
 | **Pustaka Musik**| `GET` / `POST` | `/api/admin/music` | Mengambil katalog musik latar dan mengunggah berkas audio MP3/OGG resmi. |
 | | `PUT` / `DELETE` | `/api/admin/music/{id}` | Memperbarui metadata lagu atau menghapus berkas musik dari disk dan database. |
 | **Portfolio** | `GET` / `POST` | `/api/admin/portfolio` | Mengelola katalog showcase etalase publik (kloning mandiri aset & HTML undangan terpilih). `GET` → `{ portfolios, candidates }`; `candidates` = seluruh undangan `PUBLISHED` (id, status, invitationSlug, eventType, participantsJson). |

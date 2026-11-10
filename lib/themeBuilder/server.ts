@@ -9,6 +9,7 @@ import { extractRenderedLabels, renderTemplateFile, resolveThemeEntry, THEME_MAP
 import { auditBuilderMaster, type MasterIssue } from "@/lib/themeBuilder/audit";
 import { compileBuilderMaster, readBuilderBlueprint } from "@/lib/themeBuilder/compile";
 import { parseBuilderSpec, type BuilderEventType, type BuilderSpec } from "@/lib/themeBuilder/spec";
+import type { SimMedia } from "@/lib/themeBuilder/simSlots";
 import { DEFAULT_THEME_BY_EVENT } from "@/lib/invitationUtils";
 import { isSafePathSegment } from "@/lib/fsSafe";
 import { adminActorId } from "@/lib/adminAuth";
@@ -126,16 +127,21 @@ export function compileAndAudit(spec: BuilderSpec): CompiledBuilderTheme {
 
 /**
  * Pratinjau dirender oleh engine undangan klien. Mode "demo" memakai foto dan data contoh; mode "client" meniru klien
- * baru yang belum mengunggah apa pun, sehingga yang tampil hanyalah bawaan tema, monogram, dan palet.
+ * baru yang belum mengunggah apa pun, sehingga yang tampil hanyalah bawaan tema, monogram, dan palet; mode "sim" seperti
+ * "client" ditambah foto simulasi admin per slot (lib/themeBuilder/simSlots.ts), yang menempati slot itu persis seperti
+ * unggahan klien (termasuk sampul desktop mendatar yang membuat sampul layar penuh).
  */
-export async function renderBuilderPreview(spec: BuilderSpec, demoThemeId = DEFAULT_THEME_BY_EVENT[spec.eventType] || "kalandra", mode: "demo" | "client" = "demo"): Promise<CompiledBuilderTheme & { labels: Record<string, string> }> {
+export async function renderBuilderPreview(spec: BuilderSpec, demoThemeId = DEFAULT_THEME_BY_EVENT[spec.eventType] || "kalandra", mode: "demo" | "client" | "sim" = "demo", sim?: SimMedia): Promise<CompiledBuilderTheme & { labels: Record<string, string> }> {
   const compiled = compileAndAudit(spec);
-  const demo = buildDemoInvitation(demoThemeId, mode === "client" ? { galleryPhotos: [] } : undefined);
+  const demo = buildDemoInvitation(demoThemeId, mode === "demo" ? undefined : { galleryPhotos: [] });
   if (mode === "demo" && !demo.media.some((m) => m.mediaSlot === "HOME_PHOTO")) {
     const fallbackHome = demo.media.find((m) => m.mediaSlot === "DESKTOP_SIDEBAR" || m.mediaSlot === "LANDING_COVER")?.localPath;
     if (fallbackHome) demo.media.push({ mediaSlot: "HOME_PHOTO", localPath: fallbackHome });
   }
-  const base = mode === "client" ? { ...demo, media: [], themeDefaultMedia: builderDefaultMedia(spec) } : demo;
+  const simMedia = mode === "sim" && sim
+    ? [...Object.entries(sim.slots).map(([mediaSlot, localPath]) => ({ mediaSlot, localPath: localPath as string })), ...sim.gallery.map((localPath) => ({ mediaSlot: "GALLERY", localPath }))]
+    : [];
+  const base = mode === "demo" ? demo : { ...demo, media: simMedia, themeDefaultMedia: builderDefaultMedia(spec) };
   // Rancangan belum tersimpan, jadi teks bawaan dan spesifikasi dibawa langsung (undangan nyata membacanya dari Theme.builderSpec).
   const data = (await composeInvitationData({ ...base, builderTexts: spec.texts, builderSpec: spec })) as Record<string, any>;
   const html = await renderTemplateFile("builder-preview", data, { eventType: spec.eventType, templateSource: compiled.html });
