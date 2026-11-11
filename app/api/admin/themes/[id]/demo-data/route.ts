@@ -8,6 +8,8 @@ import { logger } from "@/lib/logger";
 import { isSafePathSegment } from "@/lib/fsSafe";
 import { routeError } from "@/lib/routeError";
 import { readJsonBody } from "@/lib/requestBody";
+import { loadThemeArtPreview } from "@/lib/themeArtPreview";
+import { parseThemeDefaultMedia } from "@/lib/themeDefaultMedia";
 
 export const dynamic = "force-dynamic";
 
@@ -105,11 +107,16 @@ export async function GET(
       resolvedData.audioUrl = dbTheme?.defaultMusicUrl || blueprint.defaultMusicUrl || "";
     }
 
+    // Gambar yang tampil di demo bila slot tidak punya berkas demo: media bawaan tema, lalu gambar bawaan master.
+    const themeMedia = await prisma.theme.findUnique({ where: { id: themeId }, select: { defaultMedia: true } });
+    const builtinMedia = { ...(await loadThemeArtPreview(themeId)), ...parseThemeDefaultMedia(themeMedia?.defaultMedia) };
+
     return NextResponse.json({
       success: true,
       themeId,
       data: resolvedData,
       isCustom,
+      builtinMedia,
     });
   } catch (err) {
     return routeError("ThemeDemoData", err, "Gagal memuat data demo");

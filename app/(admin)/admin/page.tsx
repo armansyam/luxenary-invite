@@ -570,6 +570,10 @@ export default function AdminPage() {
   const [demoStudioTheme, setDemoStudioTheme] = useState<any | null>(null);
   const [demoStudioTab, setDemoStudioTab] = useState<"visual" | "profile" | "stories" | "narratives" | "vendors">("visual");
   const [demoStudioData, setDemoStudioData] = useState<any>({});
+  // Gambar yang tampil di demo saat slot tidak punya berkas demo (media bawaan tema atau gambar bawaan master), dan slot
+  // yang berkas demonya tidak ada di server (gambar gagal dimuat).
+  const [demoBuiltinMedia, setDemoBuiltinMedia] = useState<Record<string, string>>({});
+  const [missingDemoSlots, setMissingDemoSlots] = useState<Record<string, boolean>>({});
   const [initialDemoStudioData, setInitialDemoStudioData] = useState<any>({});
   const [stagedDemoFiles, setStagedDemoFiles] = useState<Record<string, File>>({});
   const [stagedDeletedSlots, setStagedDeletedSlots] = useState<Record<string, boolean>>({});
@@ -1318,8 +1322,10 @@ export default function AdminPage() {
     }
 
     try {
+      setMissingDemoSlots({});
       const res = await fetch(`/api/admin/themes/${theme.id}/demo-data`);
       const json = await res.json();
+      setDemoBuiltinMedia(json.builtinMedia && typeof json.builtinMedia === "object" ? json.builtinMedia : {});
       if (json.success && json.data) {
         setDemoStudioData(json.data);
         setInitialDemoStudioData(JSON.parse(JSON.stringify(json.data)));
@@ -3892,6 +3898,10 @@ export default function AdminPage() {
                             const savedUrl = cleanBaseUrl ? `${cleanBaseUrl}?v=${cacheVersion}` : "";
 
                             const effectiveSrc = isDeleted ? "" : (localPreview || savedUrl);
+                            const builtinSlot: Record<string, string> = { cover: "LANDING_COVER", cover_desktop: "LANDING_COVER_DESKTOP", hero: "DESKTOP_SIDEBAR", background: "GLOBAL_FIXED_BG", home: "HOME_PHOTO", footer: "CLOSING_COVER" };
+                            const builtinSrc = builtinSlot[item.slot] ? demoBuiltinMedia[builtinSlot[item.slot]] : undefined;
+                            // Tanpa berkas demo (kosong, dikosongkan, atau berkas tidak ada) demo menampilkan gambar bawaan tema.
+                            const showBuiltin = Boolean(builtinSrc) && !isStaged && !localPreview && (isDeleted || !effectiveSrc || Boolean(missingDemoSlots[item.slot]));
                             const isVideoSlot = Boolean(
                               item.allowVideo && (
                                 (stagedFile && (stagedFile.type?.startsWith("video/") || /\.(mp4|webm|mov)$/i.test(stagedFile.name))) ||
@@ -3926,6 +3936,8 @@ export default function AdminPage() {
                                       <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-md flex items-center gap-1">
                                         <span>✓</span> Tersimpan
                                       </span>
+                                    ) : showBuiltin ? (
+                                      <span className="text-[10px] font-semibold text-stone-600">Bawaan tema</span>
                                     ) : !effectiveSrc ? (
                                       <span className="text-[10px] font-semibold text-gray-400 italic">Kosong</span>
                                     ) : (
@@ -3970,12 +3982,22 @@ export default function AdminPage() {
                                       className="w-full h-full object-cover object-top relative z-1"
                                       onError={(e) => {
                                         (e.target as HTMLElement).style.display = "none";
+                                        if (!missingDemoSlots[item.slot]) setMissingDemoSlots((prev) => ({ ...prev, [item.slot]: true }));
                                       }}
                                       onLoad={(e) => {
                                         (e.target as HTMLElement).style.display = "block";
+                                        if (missingDemoSlots[item.slot]) setMissingDemoSlots((prev) => ({ ...prev, [item.slot]: false }));
                                       }}
                                     />
                                   ) : null}
+                                  {showBuiltin && (
+                                    <>
+                                      <img src={builtinSrc} alt={`${item.label} bawaan tema`} className="absolute inset-0 w-full h-full object-cover object-top z-1" />
+                                      <div className="absolute bottom-2 left-2 px-1.5 py-0.5 bg-black/70 text-[9px] font-semibold tracking-wide text-white rounded pointer-events-none z-10">
+                                        Bawaan tema{isDeleted ? " (setelah dikosongkan)" : ""}
+                                      </div>
+                                    </>
+                                  )}
                                   {effectiveSrc && isVideoSlot && (
                                     <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-black/80 backdrop-blur-xs text-[9px] font-bold tracking-wider text-amber-300 rounded border border-amber-500/30 pointer-events-none z-10">
                                       VIDEO MP4

@@ -26,7 +26,7 @@ import { mergeFeatureSettingsInput, parseFeatureSettings } from "@/lib/featureSe
 import { featureSettingsForThemeChange } from "@/lib/themeLabels";
 import { seedRenderedLabels } from "@/lib/renderedLabels";
 import { loadThemeDefaultMedia } from "@/lib/themeDefaultMedia";
-import { themeArtPreviews } from "@/lib/themeArtPreview";
+import { loadThemeArtPreview } from "@/lib/themeArtPreview";
 import { themeMainColor } from "@/lib/themePalette";
 
 
@@ -143,7 +143,7 @@ export async function GET(
       staffPin: displayPin, // Tampilkan PIN plain-text (sudah di-decrypt) ke owner yang login
       previewToken: createPreviewToken(invitation.id),
       themeMainColor: themeMainColor(invitation.id),
-      themeArtPreview: themeArtPreviews(invitation.themeId),
+      themeArtPreview: await loadThemeArtPreview(invitation.themeId),
       mediaMap,
       ...lockStatus,
       planMemoriesQuota: await getPlanMemoriesQuota(invitation.order?.planType),
