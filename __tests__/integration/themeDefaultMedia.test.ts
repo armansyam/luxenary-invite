@@ -125,6 +125,14 @@ describe("engine: bawaan tema di data undangan", () => {
     const singleHtml = await renderTemplateFile("al-fariz", single, { eventType: "KHITAN" });
     expect(singleHtml).toContain('id="lux-cover-desktop-split"');
 
+    // Master berilustrasi dengan sampul mendatar sendiri: layar penuh tanpa foto sampul, split lagi begitu ada foto portrait.
+    const illustrated = "<!DOCTYPE html><html><head><title>x</title><style>.left-hero{width:calc(100% - 460px)}</style></head><body><div class=\"cover-screen\" data-lux-desktop-cover=\"full\"></div></body></html>";
+    const noPhoto = (await composeInvitationData({ ...buildDemoInvitation("al-fariz"), media: [], themeDefaultMedia: null })) as Record<string, any>;
+    const fullHtml = await renderTemplateFile("vitest-illustrated", { ...noPhoto, landingCoverUrl: "" }, { eventType: "KHITAN", templateSource: illustrated });
+    expect(fullHtml).not.toContain('id="lux-cover-desktop-split"');
+    const portraitHtml = await renderTemplateFile("vitest-illustrated", single, { eventType: "KHITAN", templateSource: illustrated });
+    expect(portraitHtml).toContain('id="lux-cover-desktop-split"');
+
     // Master tanpa hero kiri tidak memuat calc(100% - 460px); sampulnya tidak dipersempit.
     const columnHtml = await renderTemplateFile("vitest-column", split, { eventType: "WEDDING", templateSource: "<!DOCTYPE html><html><head><title>x</title></head><body><div class=\"cover-screen\"></div></body></html>" });
     expect(columnHtml).not.toContain('id="lux-cover-desktop-split"');

@@ -1,0 +1,375 @@
+<!--
+  TEMA DOMBA — Aqiqah / Domba Kecil di Padang Rumput
+  Kategori: Minimalist | EventType: AQIQAH
+  Kontrak tema satu nama (lihat themes/_blueprints/aqiqah/).
+  Domba berbulu, bukit bergelombang, dan bunga kecil digambar sebagai SVG inline yang warnanya mengikuti token palet;
+  setiap slot foto punya ilustrasi pengganti ({{#unless}}) sehingga undangan tetap utuh tanpa unggahan.
+  Desktop >= 900px: .left-hero (DESKTOP_SIDEBAR) di kiri, .right-panel 460px di kanan.
+-->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>{{eventLabel}} {{mainNickname}}</title>
+  <link rel="stylesheet" href="/fonts/fonts.css" />
+  <style>
+    :root {
+      --primary: #7aa874;
+      --secondary: #3d6a3a;
+      --accent: #f2c76e;
+      --tertiary: #f1b5a6;
+      --hill-a: #a9cf9a;
+      --hill-b: #8fbf82;
+      --wool: #ffffff;
+      --face: #5b4a42;
+      --bg-dark: #34503a;
+      --bg-light: #fbfdf6;
+      --bg-canvas: #eef6e6;
+      --card-bg: #ffffff;
+      --text-main: #2f3f31;
+      --text-muted: #607060;
+      --on-primary: #ffffff;
+      --on-dark: #f8fbf2;
+      --radius-sm: 12px;
+      --radius-md: 20px;
+      --radius-lg: 32px;
+      --radius-full: 9999px;
+      --font-heading: 'Lora', Georgia, serif;
+      --font-body: 'Jost', system-ui, sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    ::selection { background: color-mix(in srgb, var(--hill-a) 60%, transparent); color: var(--text-main); }
+    html { scroll-behavior: smooth; scrollbar-width: none; }
+    html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+    body { font-family: var(--font-body); background: var(--bg-canvas); color: var(--text-main); line-height: 1.65; overflow-x: hidden; }
+    body.is-locked { overflow: hidden; }
+    .serif { font-family: var(--font-heading); font-weight: 600; }
+    img { max-width: 100%; display: block; }
+
+    /* ── Ilustrasi: warna dari token ── */
+    .dm-hill-a { fill: var(--hill-a); }
+    .dm-hill-b { fill: var(--hill-b); }
+    .dm-hill-c { fill: var(--primary); }
+    .dm-wool { fill: var(--wool); }
+    .dm-wool-shade { fill: color-mix(in srgb, var(--hill-a) 30%, var(--wool)); }
+    .dm-face { fill: var(--face); }
+    .dm-ear { fill: color-mix(in srgb, var(--tertiary) 70%, var(--face)); }
+    .dm-eye { fill: var(--wool); }
+    .dm-cheek { fill: var(--tertiary); }
+    .dm-leg { fill: var(--face); }
+    .dm-flower { fill: var(--accent); }
+    .dm-flower-b { fill: var(--tertiary); }
+    .dm-flower-c { fill: var(--wool); }
+    .dm-stem { stroke: var(--secondary); stroke-width: 2; fill: none; stroke-linecap: round; }
+    .dm-sun { fill: color-mix(in srgb, var(--accent) 70%, transparent); }
+    .dm-cloud { fill: var(--wool); }
+    .graze { transform-box: fill-box; transform-origin: 50% 100%; animation: graze 4.5s ease-in-out infinite; }
+    .graze.g2 { animation-delay: -1.6s; animation-duration: 5.5s; }
+    .drift { animation: drift 16s ease-in-out infinite alternate; }
+    @keyframes graze { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-2.5deg) translateY(1px); } }
+    @keyframes drift { from { transform: translateX(-12px); } to { transform: translateX(12px); } }
+
+    /* ── Cover ── */
+    .cover-screen {
+      position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; overflow: hidden;
+      padding: 24px 20px 150px; text-align: center; background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 22%, var(--bg-light)) 0%, var(--bg-light) 45%, var(--bg-canvas) 100%);
+      transition: transform 0.9s cubic-bezier(0.65, 0, 0.35, 1), opacity 0.8s ease, visibility 0s linear 0.9s;
+    }
+    .cover-screen.has-photo { background: var(--bg-dark) center / cover no-repeat; }
+    .cover-screen.has-photo::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--bg-light) 35%, transparent), color-mix(in srgb, var(--bg-light) 85%, transparent) 60%); }
+    .cover-screen.opened { transform: translate3d(0, -100%, 0); opacity: 0; visibility: hidden; pointer-events: none; }
+    .meadow { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 230px; pointer-events: none; }
+    .sky-bits { position: absolute; top: 0; left: 0; width: 100%; height: 200px; pointer-events: none; }
+    .cover-inner { position: relative; z-index: 2; width: 100%; max-width: 330px; }
+    .wool-card { position: relative; padding: 30px 22px 24px; border-radius: var(--radius-lg); background: var(--card-bg); box-shadow: 0 14px 34px color-mix(in srgb, var(--bg-dark) 12%, transparent); }
+    .wool-card::before { content: ""; position: absolute; left: 10px; right: 10px; top: -16px; height: 34px; background: radial-gradient(circle 17px at 17px 17px, var(--card-bg) 98%, transparent) 0 0 / 34px 34px repeat-x; }
+    .cover-badge { display: inline-block; padding: 5px 14px; border-radius: var(--radius-full); background: color-mix(in srgb, var(--hill-a) 40%, var(--card-bg)); color: var(--secondary); font-size: 10px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; }
+    .cover-name { font-size: 46px; line-height: 1.05; color: var(--text-main); margin-top: 10px; overflow-wrap: break-word; }
+    .cover-info { margin-top: 8px; font-size: 13px; color: var(--secondary); font-weight: 500; }
+    .cover-sub { font-size: 13px; color: var(--text-muted); margin: 10px 0 16px; }
+    .guest-lbl { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-muted); }
+    .guest-name { font-size: 22px; color: var(--text-main); margin: 2px 0 18px; overflow-wrap: break-word; }
+    .btn-open { display: inline-flex; align-items: center; gap: 8px; padding: 13px 30px; border: 0; cursor: pointer; border-radius: var(--radius-full); background: var(--secondary); color: var(--on-primary); font-family: inherit; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; box-shadow: 0 8px 20px color-mix(in srgb, var(--secondary) 30%, transparent); transition: transform 0.18s ease; }
+    .btn-open:hover { transform: translateY(-2px); }
+
+    /* ── Hero kiri desktop (slot DESKTOP_SIDEBAR) ── */
+    .left-hero { display: none; position: fixed; left: 0; top: 0; width: calc(100% - 460px); height: 100vh; z-index: 10; overflow: hidden; background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 22%, var(--bg-light)) 0%, var(--bg-light) 55%) center / cover no-repeat; }
+    .left-hero.has-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, color-mix(in srgb, var(--bg-dark) 86%, transparent) 0%, color-mix(in srgb, var(--bg-dark) 14%, transparent) 55%, transparent 100%); }
+    .left-hero-art { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .left-hero-content { position: absolute; left: 3.5rem; right: 3.5rem; top: 4.5rem; z-index: 2; color: var(--text-main); }
+    .left-hero.has-photo .left-hero-content { top: auto; bottom: 4rem; color: var(--on-dark); }
+    .left-hero-eyebrow { display: inline-block; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; color: var(--secondary); margin-bottom: 0.6rem; }
+    .left-hero.has-photo .left-hero-eyebrow { color: var(--accent); }
+    .left-hero-name { font-size: clamp(3rem, 6vw, 5.4rem); line-height: 1.02; overflow-wrap: break-word; }
+    .left-hero-info { margin-top: 0.6rem; font-size: 1rem; font-weight: 500; }
+    .left-hero-date { font-size: 0.85rem; letter-spacing: 0.14em; text-transform: uppercase; margin-top: 0.8rem; opacity: 0.85; }
+
+    /* ── Latar tetap (slot GLOBAL_FIXED_BG): bunga rumput samar ── */
+    .fixed-bg-layer {
+      position: fixed; top: 0; right: 0; bottom: 0; width: 100%; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(circle at 16px 16px, color-mix(in srgb, var(--accent) 40%, transparent) 2.5px, transparent 3px) 0 0 / 64px 64px,
+        radial-gradient(circle at 48px 44px, color-mix(in srgb, var(--tertiary) 40%, transparent) 2.5px, transparent 3px) 0 0 / 64px 64px,
+        var(--bg-canvas);
+    }
+    .fixed-bg-layer.has-custom-bg { background: linear-gradient(180deg, color-mix(in srgb, var(--bg-light) 62%, transparent), color-mix(in srgb, var(--bg-canvas) 80%, transparent)), var(--custom-bg) center / cover no-repeat; }
+
+    .right-panel { position: relative; z-index: 20; width: 100%; min-height: 100vh; }
+    .right-panel main { background: color-mix(in srgb, var(--bg-light) 82%, transparent); }
+
+    /* ── Beranda (slot HOME_PHOTO) ── */
+    .slide-home { position: relative; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 24px 170px; text-align: center; overflow: hidden; background: linear-gradient(180deg, var(--bg-light), color-mix(in srgb, var(--hill-a) 22%, var(--bg-light))); }
+    .home-meadow { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 150px; pointer-events: none; }
+    .home-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.28em; text-transform: uppercase; color: var(--secondary); margin-bottom: 10px; }
+    .home-name { font-size: clamp(3rem, 14vw, 4.2rem); line-height: 1.02; color: var(--text-main); overflow-wrap: break-word; }
+    .home-info { margin-top: 8px; font-size: 13px; color: var(--secondary); font-weight: 500; }
+    .home-quote { font-size: 19px; line-height: 1.5; max-width: 340px; margin: 22px auto 0; color: var(--text-main); font-style: italic; font-weight: 400; }
+    .home-quote-ref { font-size: 11px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--secondary); margin-top: 12px; }
+    .scroll-cue { margin-top: 24px; color: var(--text-muted); animation: cue 1.6s infinite; }
+    @keyframes cue { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+
+    /* ── Sistem seksi ── */
+    .sec-block { position: relative; max-width: 480px; margin: 0 auto; padding: 60px 24px; text-align: center; }
+    .dm-sprig { display: block; width: 70px; height: 30px; margin: 0 auto 10px; }
+    .sec-lbl { display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; color: var(--secondary); margin-bottom: 8px; }
+    .sec-h2 { font-size: 32px; line-height: 1.15; color: var(--text-main); margin-bottom: 12px; }
+    .sec-sub { font-size: 14px; color: var(--text-muted); max-width: 350px; margin: 0 auto 22px; }
+
+    .meadow-card { position: relative; margin-top: 108px; padding: 34px 22px 26px; border-radius: var(--radius-lg); background: linear-gradient(180deg, var(--card-bg) 70%, color-mix(in srgb, var(--hill-a) 22%, var(--card-bg))); box-shadow: 0 16px 34px color-mix(in srgb, var(--bg-dark) 10%, transparent); }
+    .portrait-wrap { position: relative; width: 168px; height: 168px; margin: -96px auto 18px; border-radius: var(--radius-full); padding: 6px; background: var(--card-bg); box-shadow: 0 0 0 6px color-mix(in srgb, var(--hill-a) 55%, transparent); }
+    .portrait { width: 100%; height: 100%; border-radius: var(--radius-full); object-fit: cover; background: var(--bg-canvas); }
+    .portrait-art { width: 100%; height: 100%; border-radius: var(--radius-full); background: color-mix(in srgb, var(--accent) 18%, var(--bg-light)); }
+    .star-name { font-size: 28px; line-height: 1.15; color: var(--text-main); overflow-wrap: break-word; }
+    .age-pill { display: inline-block; margin-top: 12px; padding: 7px 16px; border-radius: var(--radius-full); background: color-mix(in srgb, var(--hill-a) 30%, var(--card-bg)); color: var(--text-main); font-weight: 500; font-size: 13px; }
+    .star-detail { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+    .parents { margin-top: 18px; font-size: 13px; color: var(--text-muted); }
+
+    .countdown-timer { margin-bottom: 18px; }
+    #rsvp .rsvp-card-box form { text-align: left; }
+
+    /* ── Penutup (slot CLOSING_COVER) ── */
+    .site-footer { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 200px 24px 128px; text-align: center; color: var(--on-dark); background: linear-gradient(180deg, var(--primary) 0%, var(--bg-dark) 70%); overflow: hidden; }
+    .site-footer.has-closing-photo { min-height: 100vh; min-height: 100svh; }
+    .footer-flock { position: absolute; top: 40px; left: 50%; width: 240px; height: 130px; transform: translateX(-50%); }
+    .closing-content { position: relative; max-width: 380px; }
+    .closing-title { font-size: 36px; line-height: 1.15; margin-bottom: 10px; }
+    .closing-text { font-size: 14px; color: color-mix(in srgb, var(--on-dark) 88%, transparent); margin: 0 auto 16px; }
+    .closing-name { font-size: 26px; color: var(--accent); }
+    .watermark { margin-top: 24px; font-size: 10px; }
+
+    /* ── Dock ── */
+    .bottom-dock { position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translate3d(-50%, 0, 0); z-index: 900; display: flex; gap: 4px; padding: 6px; border-radius: var(--radius-full); background: color-mix(in srgb, var(--card-bg) 96%, transparent); box-shadow: 0 10px 26px color-mix(in srgb, var(--bg-dark) 16%, transparent); transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease; }
+    .bottom-dock a { display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: var(--radius-full); color: var(--text-main); }
+    .bottom-dock a:hover, .bottom-dock a:focus-visible { color: var(--on-primary); background: var(--secondary); outline: none; }
+    .bottom-dock svg { width: 19px; height: 19px; }
+
+    .reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1); }
+    .reveal.is-visible { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } .cover-screen, .scroll-cue, .graze, .drift { transition: none; animation: none; } }
+    @media (max-width: 340px) { .cover-name { font-size: 36px; } .star-name { font-size: 24px; } .sec-block { padding: 52px 18px; } }
+
+    /* Sampul desktop layar penuh (tanpa foto sampul): komposisi mendatar menggantikan gambar HP. */
+    .cover-wide { display: none; position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+    @media (min-width: 900px) {
+      .cover-screen:not(.has-photo) { padding-bottom: 120px; }
+      .cover-screen:not(.has-photo) .cover-wide { display: block; }
+      .cover-screen:not(.has-photo) .sky-bits, .cover-screen:not(.has-photo) .meadow { display: none; }
+      .left-hero { display: block; }
+      .fixed-bg-layer { left: calc(100% - 460px); width: 460px; }
+      .right-panel { margin-left: calc(100% - 460px); width: 460px; }
+      .bottom-dock { left: calc(100% - 230px); }
+    }
+  </style>
+</head>
+<body class="is-locked">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <g id="dm-lamb">
+        <rect class="dm-leg" x="22" y="58" width="7" height="20" rx="3.5"/><rect class="dm-leg" x="36" y="60" width="7" height="18" rx="3.5"/><rect class="dm-leg" x="58" y="60" width="7" height="18" rx="3.5"/><rect class="dm-leg" x="72" y="58" width="7" height="20" rx="3.5"/>
+        <g class="dm-wool"><circle cx="30" cy="44" r="16"/><circle cx="48" cy="34" r="18"/><circle cx="68" cy="40" r="17"/><circle cx="76" cy="54" r="13"/><circle cx="24" cy="56" r="12"/><circle cx="50" cy="56" r="18"/></g>
+        <circle class="dm-wool-shade" cx="56" cy="62" r="10"/>
+        <ellipse class="dm-ear" cx="88" cy="32" rx="9" ry="4" transform="rotate(-25 88 32)"/>
+        <ellipse class="dm-face" cx="94" cy="44" rx="14" ry="17"/>
+        <g class="dm-wool"><circle cx="88" cy="28" r="7"/><circle cx="97" cy="26" r="6"/></g>
+        <circle class="dm-eye" cx="98" cy="42" r="2.2"/><circle class="dm-cheek" cx="100" cy="51" r="3"/>
+      </g>
+      <g id="dm-flower"><path class="dm-stem" d="M8 30V14"/><g class="dm-flower"><circle cx="8" cy="6" r="4"/><circle cx="2.5" cy="10" r="4"/><circle cx="13.5" cy="10" r="4"/><circle cx="5" cy="15" r="4"/><circle cx="11" cy="15" r="4"/></g><circle class="dm-flower-c" cx="8" cy="11" r="3"/></g>
+      <g id="dm-flower-b"><path class="dm-stem" d="M8 30V14"/><g class="dm-flower-b"><circle cx="8" cy="6" r="4"/><circle cx="2.5" cy="10" r="4"/><circle cx="13.5" cy="10" r="4"/><circle cx="5" cy="15" r="4"/><circle cx="11" cy="15" r="4"/></g><circle class="dm-flower" cx="8" cy="11" r="3"/></g>
+      <g id="dm-cloud" class="dm-cloud"><ellipse cx="40" cy="24" rx="40" ry="14"/><circle cx="28" cy="16" r="14"/><circle cx="50" cy="12" r="16"/></g>
+    </defs>
+  </svg>
+
+  <div class="left-hero{{#if hasCustomSidebarPhoto}} has-photo{{/if}}"{{#if hasCustomSidebarPhoto}} style="background-image: url('{{sidebarPhotoUrl}}');"{{/if}}>
+    {{#unless hasCustomSidebarPhoto}}
+    <svg class="left-hero-art" viewBox="0 0 800 900" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+      <circle class="dm-sun" cx="660" cy="150" r="70"/>
+      <g class="drift"><use href="#dm-cloud" transform="translate(470 220) scale(1.8)"/><use href="#dm-cloud" transform="translate(640 330) scale(1.2)"/></g>
+      <path class="dm-hill-a" d="M0 560c160-80 320-60 470 10s240 30 330-10v340H0Z"/>
+      <path class="dm-hill-b" d="M0 680c140-60 290-50 420 0s250 40 380 0v220H0Z"/>
+      <path class="dm-hill-c" d="M0 790c200-40 400-30 600 10 80 16 140 10 200 0v100H0Z"/>
+      <g class="graze"><use href="#dm-lamb" transform="translate(150 520) scale(1.8)"/></g>
+      <g class="graze g2"><use href="#dm-lamb" transform="translate(560 640) scale(-1.5 1.5)"/></g>
+      <g class="graze"><use href="#dm-lamb" transform="translate(360 700) scale(1.2)"/></g>
+      <use href="#dm-flower" transform="translate(90 760) scale(1.6)"/><use href="#dm-flower-b" transform="translate(300 800) scale(1.4)"/><use href="#dm-flower" transform="translate(660 790) scale(1.5)"/><use href="#dm-flower-b" transform="translate(720 600) scale(1.3)"/>
+    </svg>
+    {{/unless}}
+    <div class="left-hero-content">
+      <span class="left-hero-eyebrow">{{eventLabel}}</span>
+      <h1 class="left-hero-name serif">{{mainNickname}}</h1>
+      {{#if mainInfoLine}}<p class="left-hero-info">{{mainInfoLine}}</p>{{/if}}
+      {{#if eventDateFormatted}}<p class="left-hero-date">{{eventDateFormatted}}</p>{{/if}}
+    </div>
+  </div>
+
+  <div class="cover-screen{{#if landingCoverUrl}} has-photo{{/if}}" id="coverScreen" data-lux-desktop-cover="full"{{#if landingCoverUrl}} style="background-image: url('{{landingCoverUrl}}');"{{/if}}>
+    {{#unless landingCoverUrl}}
+    <svg class="cover-wide" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+      <circle class="dm-sun" cx="1180" cy="150" r="80"/>
+      <g class="drift"><use href="#dm-cloud" transform="translate(160 110) scale(2)"/><use href="#dm-cloud" transform="translate(900 200) scale(1.4)"/><use href="#dm-cloud" transform="translate(560 80) scale(1.1)"/></g>
+      <path class="dm-hill-a" d="M0 560c240-90 480-80 720 10s480 60 720-20v350H0Z"/>
+      <path class="dm-hill-b" d="M0 680c220-60 440-50 660 6s500 50 780-20v234H0Z"/>
+      <path class="dm-hill-c" d="M0 800c300-36 600-30 900 6 220 26 380 20 540 0v94H0Z"/>
+      <g class="graze"><use href="#dm-lamb" transform="translate(140 560) scale(1.8)"/></g>
+      <g class="graze g2"><use href="#dm-lamb" transform="translate(420 700) scale(1.2)"/></g>
+      <g class="graze g2"><use href="#dm-lamb" transform="translate(1320 600) scale(-1.7 1.7)"/></g>
+      <g class="graze"><use href="#dm-lamb" transform="translate(1060 730) scale(-1.1 1.1)"/></g>
+      <use href="#dm-flower" transform="translate(80 800) scale(1.6)"/><use href="#dm-flower-b" transform="translate(330 830) scale(1.4)"/><use href="#dm-flower" transform="translate(620 840) scale(1.2)"/><use href="#dm-flower-b" transform="translate(860 820) scale(1.4)"/><use href="#dm-flower" transform="translate(1200 830) scale(1.5)"/><use href="#dm-flower-b" transform="translate(1380 780) scale(1.3)"/>
+    </svg>
+    {{/unless}}
+    <svg class="sky-bits" viewBox="0 0 400 200" preserveAspectRatio="xMidYMin slice" aria-hidden="true">
+      <circle class="dm-sun" cx="330" cy="60" r="34"/>
+      <g class="drift"><use href="#dm-cloud" transform="translate(30 50)"/><use href="#dm-cloud" transform="translate(250 110) scale(0.8)"/></g>
+    </svg>
+    <svg class="meadow" viewBox="0 0 400 230" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+      <path class="dm-hill-a" d="M0 90c80-40 160-34 240 4s120 16 160-4v140H0Z"/>
+      <path class="dm-hill-b" d="M0 150c70-30 150-26 220 2s130 20 180 0v78H0Z"/>
+      <g class="graze"><use href="#dm-lamb" transform="translate(40 70) scale(0.95)"/></g>
+      <g class="graze g2"><use href="#dm-lamb" transform="translate(360 112) scale(-0.8 0.8)"/></g>
+      <use href="#dm-flower" transform="translate(170 170)"/><use href="#dm-flower-b" transform="translate(196 186) scale(0.8)"/><use href="#dm-flower" transform="translate(300 190) scale(0.9)"/><use href="#dm-flower-b" transform="translate(20 190) scale(0.8)"/>
+    </svg>
+    <div class="cover-inner">
+      <div class="wool-card">
+        <span class="cover-badge" data-lux-field="customLabels.coverBadge">{{eventLabel}}</span>
+        <h1 class="cover-name serif">{{mainNickname}}</h1>
+        {{#if mainInfoLine}}<p class="cover-info">{{mainInfoLine}}</p>{{/if}}
+        <p class="cover-sub" data-lux-field="customLabels.coverSubtitle">{{eventIntro}}</p>
+        <p class="guest-lbl">Kepada Yth.</p>
+        <p class="guest-name serif">{{guestName}}</p>
+        <button type="button" class="btn-open btn-buka" onclick="openInvitation()" data-lux-field="customLabels.openBtn">Buka Undangan</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
+
+  <div class="right-panel" id="rightPanel">
+    <section class="slide-home" id="home">
+      <span class="home-eyebrow reveal" data-lux-field="customLabels.quoteEyebrow">Buah Hati Kami</span>
+      <h2 class="home-name serif reveal">{{mainNickname}}</h2>
+      {{#if mainInfoLine}}<p class="home-info reveal">{{mainInfoLine}}</p>{{/if}}
+      {{#if openingQuote}}
+      <p class="home-quote serif reveal">{{openingQuote}}</p>
+      {{#if openingQuoteRef}}<p class="home-quote-ref">{{openingQuoteRef}}</p>{{/if}}
+      {{/if}}
+      <svg class="scroll-cue" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+      <svg class="home-meadow" viewBox="0 0 400 150" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+        <path class="dm-hill-a" d="M0 60c90-34 180-30 260 4s110 12 140-2v88H0Z"/>
+        <path class="dm-hill-b" d="M0 110c80-22 160-20 230 2s120 14 170 0v38H0Z"/>
+        <g class="graze"><use href="#dm-lamb" transform="translate(140 40) scale(0.9)"/></g>
+        <use href="#dm-flower" transform="translate(60 106) scale(0.9)"/><use href="#dm-flower-b" transform="translate(320 104) scale(0.9)"/>
+      </svg>
+    </section>
+
+    <main>
+      <section class="sec-block reveal" id="profile">
+        <svg class="dm-sprig" viewBox="0 0 70 30" aria-hidden="true"><use href="#dm-flower" transform="translate(12 0)"/><use href="#dm-flower-b" transform="translate(28 -2) scale(1.1)"/><use href="#dm-flower" transform="translate(46 0)"/></svg>
+        <span class="sec-lbl" data-lux-field="customLabels.coupleEyebrow">{{profileEyebrow}}</span>
+        <h2 class="sec-h2 serif" data-lux-field="customLabels.coupleTitle">{{profileTitle}}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.coupleSub">{{profileSub}}</p>
+        <div class="meadow-card">
+          <div class="portrait-wrap">
+            {{#if hasCustomMainPhoto}}<img class="portrait" src="{{mainPhotoUrl}}" alt="{{mainName}}" loading="lazy" />{{/if}}
+            {{#unless hasCustomMainPhoto}}
+            <svg class="portrait-art" viewBox="0 0 160 160" aria-hidden="true">
+              <use href="#dm-cloud" transform="translate(14 22) scale(0.6)"/>
+              <path class="dm-hill-a" d="M0 110c40-16 80-14 120 2s30 6 40 0v48H0Z"/>
+              <g class="graze"><use href="#dm-lamb" transform="translate(22 52) scale(1)"/></g>
+              <use href="#dm-flower" transform="translate(120 120) scale(0.8)"/>
+            </svg>
+            {{/unless}}
+          </div>
+          <h3 class="star-name serif">{{mainName}}</h3>
+          {{#if mainInfoLine}}<span class="age-pill">{{mainInfoLine}}</span>{{/if}}
+          {{#if mainDetailLine}}<p class="star-detail">{{mainDetailLine}}</p>{{/if}}
+          <div class="parents">{{parentsHtml}}</div>
+        </div>
+      </section>
+
+      <section class="sec-block reveal" id="event">
+        <svg class="dm-sprig" viewBox="0 0 70 30" aria-hidden="true"><use href="#dm-flower-b" transform="translate(20 0)"/><use href="#dm-flower" transform="translate(36 -2) scale(1.1)"/></svg>
+        <span class="sec-lbl" data-lux-field="customLabels.eventsEyebrow">Waktu & Tempat</span>
+        <h2 class="sec-h2 serif" data-lux-field="customLabels.eventsTitle">{{agendaTitle}}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.eventsSub">{{eventDateFormatted}}</p>
+        {{countdownHtml}}
+        {{eventSectionHtml}}
+      </section>
+
+      {{qrPassHtml}}
+      {{gallerySectionHtml}}
+      {{giftSectionHtml}}
+      {{extraSectionsHtml}}
+
+      <section class="sec-block reveal" id="rsvp">
+        <span class="sec-lbl" data-lux-field="customLabels.wishesEyebrow">Doa & Ucapan</span>
+        {{rsvpSectionHtml}}
+        {{wishesSectionHtml}}
+      </section>
+
+      {{memoriesSectionHtml}}
+    </main>
+
+    <footer class="site-footer {{closingPhotoClass}}" id="footer" style="{{closingBgStyle}}">
+      <svg class="footer-flock" viewBox="0 0 240 130" aria-hidden="true">
+        <path class="dm-hill-a" d="M0 100c60-20 120-18 180 2 30 10 45 8 60 2v26H0Z"/>
+        <g class="graze"><use href="#dm-lamb" transform="translate(20 34) scale(0.9)"/></g>
+        <g class="graze g2"><use href="#dm-lamb" transform="translate(222 46) scale(-0.75 0.75)"/></g>
+      </svg>
+      <div class="closing-content">
+        <h2 class="closing-title serif" data-lux-field="customLabels.closingTitle">Jazakumullah Khairan</h2>
+        <p class="closing-text" data-lux-field="customLabels.closingText">{{closingText}}</p>
+        <p class="closing-name serif">{{mainNickname}}</p>
+        <div class="watermark">{{brandWatermarkHtml}}</div>
+      </div>
+    </footer>
+  </div>
+
+  <nav class="bottom-dock" aria-label="Navigasi undangan">
+    <a href="#home" aria-label="Beranda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg></a>
+    <a href="#profile" aria-label="Profil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></a>
+    <a href="#event" aria-label="Acara"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></a>
+    <a href="#gallery" aria-label="Galeri"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg></a>
+    <a href="#gift" aria-label="Kado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="8" width="18" height="13" rx="1"/><path d="M12 8v13M3 12h18M12 8S10 3 7.5 4 9 8 12 8Zm0 0s2-5 4.5-4S15 8 12 8Z"/></svg></a>
+    <a href="#rsvp" aria-label="Ucapan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12Z"/></svg></a>
+  </nav>
+
+  <script>
+    function openInvitation() {
+      var cover = document.getElementById('coverScreen');
+      if (cover) cover.classList.add('opened');
+      document.body.classList.remove('is-locked');
+    }
+    (function () {
+      var items = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window)) { items.forEach(function (el) { el.classList.add('is-visible'); }); return; }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) { if (entry.isIntersecting) { entry.target.classList.add('is-visible'); io.unobserve(entry.target); } });
+      }, { threshold: 0.12 });
+      items.forEach(function (el) { io.observe(el); });
+    })();
+  </script>
+  {{musicPlayerHtml}}
+</body>
+</html>

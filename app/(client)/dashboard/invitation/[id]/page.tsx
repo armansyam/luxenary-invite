@@ -2610,6 +2610,7 @@ export default function EditInvitation() {
                 allowVideo={true}
                 invitationId={invitationId}
                 slot="LANDING_COVER_DESKTOP"
+                defaultUrl={themeDefaultOf(invitation, "LANDING_COVER_DESKTOP")}
                 onUploadStart={handleUploadStart}
                 onUploadEnd={handleUploadEnd}
                 expectOrientation="landscape"
@@ -2623,6 +2624,7 @@ export default function EditInvitation() {
                 allowVideo={true}
                 invitationId={invitationId}
                 slot="HOME_PHOTO"
+                defaultUrl={themeDefaultOf(invitation, "HOME_PHOTO")}
                 onUploadStart={handleUploadStart}
                 onUploadEnd={handleUploadEnd}
               />
@@ -5771,11 +5773,16 @@ function Input({
   );
 }
 
-/** Media bawaan tema untuk satu slot (salinan di undangan); kosong bila tema tidak menyediakannya. */
+/**
+ * Media bawaan tema untuk satu slot (salinan di undangan), lalu pratinjau ilustrasi master berilustrasi
+ * (`themeArtPreview`, hanya tampilan); kosong bila tema tidak menyediakan keduanya.
+ */
 function themeDefaultOf(invitation: any, slot: string): string {
-  const defaults = invitation?.themeDefaultMedia;
-  const url = defaults && typeof defaults === "object" ? defaults[slot] : "";
-  return typeof url === "string" ? url : "";
+  for (const source of [invitation?.themeDefaultMedia, invitation?.themeArtPreview]) {
+    const url = source && typeof source === "object" ? source[slot] : "";
+    if (typeof url === "string" && url) return url;
+  }
+  return "";
 }
 
 /** Ukuran asli foto/video di peramban; null bila format tidak bisa dibaca peramban (peringatan orientasi dilewati). */

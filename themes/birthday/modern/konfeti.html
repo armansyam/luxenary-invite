@@ -1,0 +1,375 @@
+<!--
+  TEMA KONFETI — Ulang Tahun / Pesta Malam Penuh Konfeti
+  Kategori: Modern | EventType: BIRTHDAY
+  Kontrak tema satu nama (lihat themes/_blueprints/birthday/BLUEPRINT_GUIDE_BIRTHDAY.md).
+  Ledakan konfeti, pita keriting, dan kartu tiket berlubang digambar sebagai SVG/CSS yang warnanya mengikuti token palet;
+  setiap slot foto punya ilustrasi pengganti ({{#unless}}) sehingga undangan tetap utuh tanpa unggahan.
+  Desktop >= 900px: .left-hero (DESKTOP_SIDEBAR) di kiri, .right-panel 460px di kanan.
+-->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>{{eventLabel}} {{mainNickname}}</title>
+  <link rel="stylesheet" href="/fonts/fonts.css" />
+  <style>
+    :root {
+      --primary: #ff6b6b;
+      --secondary: #bf3a3a;
+      --accent: #ffd166;
+      --tertiary: #06d6a0;
+      --sky: #4cc9f0;
+      --night: #14213d;
+      --bg-dark: #14213d;
+      --bg-light: #fffaf0;
+      --bg-canvas: #fdf3e1;
+      --card-bg: #ffffff;
+      --text-main: #14213d;
+      --text-muted: #55617a;
+      --on-primary: #14213d;
+      --on-dark: #fffaf0;
+      --radius-sm: 10px;
+      --radius-md: 18px;
+      --radius-lg: 26px;
+      --radius-full: 9999px;
+      --font-heading: 'DM Serif Display', Georgia, serif;
+      --font-body: 'Jost', system-ui, sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    ::selection { background: color-mix(in srgb, var(--accent) 60%, transparent); color: var(--text-main); }
+    html { scroll-behavior: smooth; scrollbar-width: none; }
+    html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+    body { font-family: var(--font-body); background: var(--bg-canvas); color: var(--text-main); line-height: 1.65; overflow-x: hidden; }
+    body.is-locked { overflow: hidden; }
+    .serif { font-family: var(--font-heading); font-weight: 400; }
+    img { max-width: 100%; display: block; }
+
+    /* ── Ilustrasi: warna dari token ── */
+    .kf-a { fill: var(--primary); }
+    .kf-b { fill: var(--accent); }
+    .kf-c { fill: var(--tertiary); }
+    .kf-d { fill: var(--sky); }
+    .kf-e { fill: var(--on-dark); }
+    .kf-ribbon-a { stroke: var(--primary); stroke-width: 4; fill: none; stroke-linecap: round; }
+    .kf-ribbon-b { stroke: var(--accent); stroke-width: 4; fill: none; stroke-linecap: round; }
+    .kf-ribbon-c { stroke: var(--tertiary); stroke-width: 4; fill: none; stroke-linecap: round; }
+    .kf-ribbon-d { stroke: var(--sky); stroke-width: 4; fill: none; stroke-linecap: round; }
+    .kf-burst { stroke: var(--accent); stroke-width: 3; fill: none; stroke-linecap: round; }
+    .kf-horn { fill: var(--primary); }
+    .kf-horn-band { fill: var(--accent); }
+    .kf-horn-tip { fill: var(--tertiary); }
+    .kf-star { fill: var(--accent); }
+    .fall-a { animation: fall 6s ease-in-out infinite; }
+    .fall-b { animation: fall 8s ease-in-out infinite reverse; }
+    .twinkle { transform-box: fill-box; transform-origin: center; animation: twinkle 2.4s ease-in-out infinite; }
+    @keyframes fall { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(12px) rotate(8deg); } }
+    @keyframes twinkle { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(0.6); opacity: 0.6; } }
+
+    /* ── Cover ── */
+    .cover-screen {
+      position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; overflow: hidden;
+      padding: 24px 20px; text-align: center; background: radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--sky) 22%, var(--night)) 0%, var(--night) 64%);
+      transition: transform 0.9s cubic-bezier(0.65, 0, 0.35, 1), opacity 0.8s ease, visibility 0s linear 0.9s;
+    }
+    .cover-screen.has-photo { background: var(--night) center / cover no-repeat; }
+    .cover-screen.has-photo::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--night) 35%, transparent), color-mix(in srgb, var(--night) 85%, transparent)); }
+    .cover-screen.opened { transform: scale(1.08); opacity: 0; visibility: hidden; pointer-events: none; }
+    .confetti { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .cover-inner { position: relative; z-index: 2; width: 100%; max-width: 330px; }
+    .ticket { position: relative; padding: 30px 24px 24px; border-radius: var(--radius-md); background: var(--card-bg); color: var(--text-main); box-shadow: 0 22px 50px color-mix(in srgb, black 40%, transparent);
+      -webkit-mask: radial-gradient(circle 12px at 0 62%, transparent 98%, black) left / 51% 100% no-repeat, radial-gradient(circle 12px at 100% 62%, transparent 98%, black) right / 51% 100% no-repeat;
+      mask: radial-gradient(circle 12px at 0 62%, transparent 98%, black) left / 51% 100% no-repeat, radial-gradient(circle 12px at 100% 62%, transparent 98%, black) right / 51% 100% no-repeat; }
+    .ticket-perf { position: absolute; left: 18px; right: 18px; top: 62%; border-top: 2px dashed color-mix(in srgb, var(--night) 22%, transparent); }
+    .ticket-top { padding-bottom: 22px; }
+    .ticket-bottom { padding-top: 18px; }
+    .admit { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 10px; font-weight: 600; letter-spacing: 0.32em; text-transform: uppercase; color: var(--secondary); }
+    .admit::before, .admit::after { content: "★"; color: var(--accent); font-size: 12px; letter-spacing: 0; }
+    .cover-name { font-size: 50px; line-height: 1; margin-top: 10px; color: var(--text-main); overflow-wrap: break-word; }
+    .cover-info { display: inline-block; margin-top: 12px; padding: 7px 18px; border-radius: var(--radius-full); background: var(--accent); color: var(--text-main); font-size: 13px; font-weight: 600; letter-spacing: 0.04em; transform: rotate(-3deg); }
+    .cover-sub { font-size: 13px; color: var(--text-muted); margin-top: 12px; }
+    .guest-lbl { font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--text-muted); }
+    .guest-name { font-size: 22px; color: var(--text-main); margin: 2px 0 16px; overflow-wrap: break-word; }
+    .btn-open { display: inline-flex; align-items: center; gap: 8px; padding: 13px 30px; border: 0; cursor: pointer; border-radius: var(--radius-full); background: var(--night); color: var(--on-dark); font-family: inherit; font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 60%, transparent); transition: transform 0.18s ease; }
+    .btn-open:hover { transform: translateY(-2px); }
+
+    /* ── Hero kiri desktop (slot DESKTOP_SIDEBAR) ── */
+    .left-hero { display: none; position: fixed; left: 0; top: 0; width: calc(100% - 460px); height: 100vh; z-index: 10; overflow: hidden; background: radial-gradient(ellipse at 40% 30%, color-mix(in srgb, var(--sky) 20%, var(--night)) 0%, var(--night) 70%) center / cover no-repeat; color: var(--on-dark); }
+    .left-hero.has-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, color-mix(in srgb, var(--night) 90%, transparent) 0%, color-mix(in srgb, var(--night) 20%, transparent) 60%, transparent 100%); }
+    .left-hero-art { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .left-hero-content { position: absolute; left: 3.5rem; right: 3.5rem; bottom: 4rem; z-index: 2; }
+    .left-hero-eyebrow { display: inline-block; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.3em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.8rem; }
+    .left-hero-name { font-size: clamp(3.2rem, 6.5vw, 6rem); line-height: 0.95; overflow-wrap: break-word; }
+    .left-hero-info { display: inline-block; margin-top: 1rem; padding: 7px 18px; border-radius: var(--radius-full); background: var(--accent); color: var(--text-main); font-weight: 600; font-size: 0.95rem; transform: rotate(-2deg); }
+    .left-hero-date { font-size: 0.85rem; letter-spacing: 0.16em; text-transform: uppercase; margin-top: 1rem; opacity: 0.85; }
+
+    /* ── Latar tetap (slot GLOBAL_FIXED_BG): konfeti samar ── */
+    .fixed-bg-layer {
+      position: fixed; top: 0; right: 0; bottom: 0; width: 100%; z-index: 0; pointer-events: none;
+      background:
+        linear-gradient(35deg, transparent 47%, color-mix(in srgb, var(--primary) 22%, transparent) 47% 53%, transparent 53%) 0 0 / 70px 70px,
+        linear-gradient(-35deg, transparent 47%, color-mix(in srgb, var(--tertiary) 22%, transparent) 47% 53%, transparent 53%) 35px 35px / 70px 70px,
+        var(--bg-canvas);
+    }
+    .fixed-bg-layer.has-custom-bg { background: linear-gradient(180deg, color-mix(in srgb, var(--bg-light) 60%, transparent), color-mix(in srgb, var(--bg-canvas) 80%, transparent)), var(--custom-bg) center / cover no-repeat; }
+
+    .right-panel { position: relative; z-index: 20; width: 100%; min-height: 100vh; }
+    .right-panel main { background: color-mix(in srgb, var(--bg-light) 84%, transparent); }
+
+    /* ── Beranda (slot HOME_PHOTO) ── */
+    .slide-home { position: relative; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 90px 24px 70px; text-align: center; overflow: hidden; background: var(--night); color: var(--on-dark); }
+    .home-confetti { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .home-horn { position: relative; width: 140px; height: 110px; margin: 0 auto 8px; }
+    .home-eyebrow { position: relative; font-size: 11px; font-weight: 600; letter-spacing: 0.34em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+    .home-name { position: relative; font-size: clamp(3.2rem, 15vw, 4.6rem); line-height: 1; overflow-wrap: break-word; }
+    .home-info { position: relative; display: inline-block; margin-top: 12px; padding: 7px 18px; border-radius: var(--radius-full); background: var(--accent); color: var(--text-main); font-weight: 600; font-size: 13px; transform: rotate(-3deg); }
+    .home-quote { position: relative; font-size: 20px; line-height: 1.4; max-width: 340px; margin: 24px auto 0; color: var(--on-dark); }
+    .home-quote-ref { position: relative; font-size: 11px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--tertiary); margin-top: 12px; }
+    .scroll-cue { position: relative; margin-top: 26px; color: color-mix(in srgb, var(--on-dark) 70%, transparent); animation: cue 1.6s infinite; }
+    @keyframes cue { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+
+    /* ── Sistem seksi ── */
+    .sec-block { position: relative; max-width: 480px; margin: 0 auto; padding: 60px 24px; text-align: center; }
+    .sec-lbl { display: inline-flex; align-items: center; gap: 8px; font-size: 10px; font-weight: 600; letter-spacing: 0.3em; text-transform: uppercase; color: var(--secondary); margin-bottom: 8px; }
+    .sec-lbl::before, .sec-lbl::after { content: ""; width: 18px; height: 3px; border-radius: 3px; background: linear-gradient(90deg, var(--primary) 0 33%, var(--accent) 0 66%, var(--tertiary) 0); }
+    .sec-h2 { font-size: 34px; line-height: 1.1; color: var(--text-main); margin-bottom: 12px; }
+    .sec-sub { font-size: 14px; color: var(--text-muted); max-width: 350px; margin: 0 auto 22px; }
+
+    .pass-card { position: relative; margin-top: 104px; padding: 26px 22px; border-radius: var(--radius-md); background: var(--card-bg); box-shadow: 0 14px 30px color-mix(in srgb, var(--night) 12%, transparent); border-top: 6px solid var(--primary); }
+    .pass-card::after { content: ""; position: absolute; left: 0; right: 0; top: -6px; height: 6px; border-radius: var(--radius-md) var(--radius-md) 0 0; background: linear-gradient(90deg, var(--primary) 0 25%, var(--accent) 0 50%, var(--tertiary) 0 75%, var(--sky) 0); }
+    .portrait-wrap { position: relative; width: 170px; height: 170px; margin: -80px auto 16px; border-radius: 28px; transform: rotate(-4deg); padding: 6px; background: var(--card-bg); box-shadow: 0 10px 24px color-mix(in srgb, var(--night) 18%, transparent); }
+    .portrait { width: 100%; height: 100%; border-radius: 22px; object-fit: cover; background: var(--night); }
+    .portrait-art { width: 100%; height: 100%; border-radius: 22px; background: var(--night); }
+    .star-name { font-size: 32px; line-height: 1.1; color: var(--text-main); overflow-wrap: break-word; }
+    .age-pill { display: inline-block; margin-top: 12px; padding: 7px 16px; border-radius: var(--radius-full); background: var(--accent); color: var(--text-main); font-weight: 600; font-size: 13px; }
+    .star-detail { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+    .parents { margin-top: 18px; font-size: 13px; color: var(--text-muted); }
+
+    .countdown-timer { margin-bottom: 18px; }
+    #rsvp .rsvp-card-box form { text-align: left; }
+
+    /* ── Penutup (slot CLOSING_COVER) ── */
+    .site-footer { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 250px 24px 128px; text-align: center; color: var(--on-dark); background: var(--night); overflow: hidden; }
+    .site-footer.has-closing-photo { min-height: 100vh; min-height: 100svh; }
+    .footer-confetti { position: absolute; top: 0; left: 0; width: 100%; height: 240px; }
+    .closing-content { position: relative; max-width: 380px; }
+    .closing-title { font-size: 44px; line-height: 1.05; margin-bottom: 10px; }
+    .closing-text { font-size: 14px; color: color-mix(in srgb, var(--on-dark) 86%, transparent); margin: 0 auto 16px; }
+    .closing-name { display: inline-block; font-size: 26px; padding: 4px 18px; border-radius: var(--radius-full); background: var(--accent); color: var(--text-main); transform: rotate(-2deg); }
+    .watermark { margin-top: 26px; font-size: 10px; }
+
+    /* ── Dock ── */
+    .bottom-dock { position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translate3d(-50%, 0, 0); z-index: 900; display: flex; gap: 4px; padding: 6px; border-radius: var(--radius-full); background: var(--night); box-shadow: 0 10px 26px color-mix(in srgb, var(--night) 35%, transparent); transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease; }
+    .bottom-dock a { display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: var(--radius-full); color: var(--on-dark); }
+    .bottom-dock a:hover, .bottom-dock a:focus-visible { color: var(--text-main); background: var(--accent); outline: none; }
+    .bottom-dock svg { width: 19px; height: 19px; }
+
+    .reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.34, 1.4, 0.64, 1); }
+    .reveal.is-visible { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } .cover-screen, .scroll-cue, .fall-a, .fall-b, .twinkle { transition: none; animation: none; } }
+    @media (max-width: 340px) { .cover-name, .star-name { font-size: 36px; } .sec-block { padding: 52px 18px; } }
+
+    /* Sampul desktop layar penuh (tanpa foto sampul): komposisi mendatar menggantikan gambar HP. */
+    .cover-wide { display: none; position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+    @media (min-width: 900px) {
+      .cover-screen:not(.has-photo) .cover-wide { display: block; }
+      .cover-screen:not(.has-photo) .confetti { display: none; }
+      .left-hero { display: block; }
+      .fixed-bg-layer { left: calc(100% - 460px); width: 460px; }
+      .right-panel { margin-left: calc(100% - 460px); width: 460px; }
+      .bottom-dock { left: calc(100% - 230px); }
+    }
+  </style>
+</head>
+<body class="is-locked">
+  <div class="left-hero{{#if hasCustomSidebarPhoto}} has-photo{{/if}}"{{#if hasCustomSidebarPhoto}} style="background-image: url('{{sidebarPhotoUrl}}');"{{/if}}>
+    {{#unless hasCustomSidebarPhoto}}
+    <svg class="left-hero-art" viewBox="0 0 800 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <g class="fall-a"><rect class="kf-a" x="80" y="90" width="26" height="12" rx="3" transform="rotate(-25 93 96)"/><rect class="kf-c" x="610" y="140" width="26" height="12" rx="3" transform="rotate(30 623 146)"/><rect class="kf-b" x="300" y="70" width="26" height="12" rx="3" transform="rotate(60 313 76)"/><circle class="kf-d" cx="460" cy="120" r="9"/><circle class="kf-a" cx="720" cy="300" r="8"/></g>
+      <g class="fall-b"><rect class="kf-d" x="170" y="260" width="26" height="12" rx="3" transform="rotate(40 183 266)"/><rect class="kf-b" x="680" y="220" width="26" height="12" rx="3" transform="rotate(-50 693 226)"/><rect class="kf-a" x="520" y="360" width="26" height="12" rx="3" transform="rotate(15 533 366)"/><circle class="kf-c" cx="120" cy="420" r="9"/><circle class="kf-b" cx="380" cy="300" r="7"/></g>
+      <path class="kf-ribbon-a" d="M60 40c40 30-30 60 10 90s-30 60 10 90"/>
+      <path class="kf-ribbon-b" d="M740 30c-40 30 30 60-10 90s30 60-10 90"/>
+      <path class="kf-ribbon-c" d="M420 20c30 26-24 52 6 78s-24 52 6 78"/>
+      <path class="kf-ribbon-d" d="M250 140c34 26-26 54 8 80"/>
+      <g transform="translate(470 520) rotate(-20)">
+        <path class="kf-burst" d="M120 -60v-40M170 -40l26-30M70 -40 44-70M190 10h40M50 10H10"/>
+        <path class="kf-horn" d="M0 40 150 0v80Z"/><rect class="kf-horn-band" x="40" y="22" width="14" height="44" transform="skewY(-14)"/><rect class="kf-horn-band" x="90" y="10" width="14" height="60" transform="skewY(-14)"/><ellipse class="kf-horn-tip" cx="150" cy="40" rx="12" ry="40"/>
+      </g>
+      <g class="twinkle"><path class="kf-star" d="M700 500l8 18 20 2-15 13 5 19-18-10-18 10 5-19-15-13 20-2Z"/></g>
+      <g class="twinkle"><path class="kf-star" d="M660 680l6 14 15 1-11 10 4 15-14-8-14 8 4-15-11-10 15-1Z"/></g>
+    </svg>
+    {{/unless}}
+    <div class="left-hero-content">
+      <span class="left-hero-eyebrow">{{eventLabel}}</span>
+      <h1 class="left-hero-name serif">{{mainNickname}}</h1>
+      {{#if mainInfoLine}}<span class="left-hero-info">{{mainInfoLine}}</span>{{/if}}
+      {{#if eventDateFormatted}}<p class="left-hero-date">{{eventDateFormatted}}</p>{{/if}}
+    </div>
+  </div>
+
+  <div class="cover-screen{{#if landingCoverUrl}} has-photo{{/if}}" id="coverScreen" data-lux-desktop-cover="full"{{#if landingCoverUrl}} style="background-image: url('{{landingCoverUrl}}');"{{/if}}>
+    {{#unless landingCoverUrl}}
+    <svg class="cover-wide" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <g class="fall-a"><rect class="kf-a" x="120" y="90" width="30" height="14" rx="3" transform="rotate(-25 135 97)"/><rect class="kf-c" x="1180" y="120" width="30" height="14" rx="3" transform="rotate(30 1195 127)"/><rect class="kf-b" x="430" y="60" width="30" height="14" rx="3" transform="rotate(60 445 67)"/><circle class="kf-d" cx="760" cy="80" r="10"/><circle class="kf-a" cx="1320" cy="300" r="9"/><rect class="kf-d" x="980" y="200" width="30" height="14" rx="3" transform="rotate(-40 995 207)"/></g>
+      <g class="fall-b"><rect class="kf-d" x="250" y="330" width="30" height="14" rx="3" transform="rotate(40 265 337)"/><rect class="kf-b" x="1290" y="560" width="30" height="14" rx="3" transform="rotate(-50 1305 567)"/><rect class="kf-a" x="1040" y="780" width="30" height="14" rx="3" transform="rotate(15 1055 787)"/><circle class="kf-c" cx="160" cy="620" r="10"/><circle class="kf-b" cx="560" cy="820" r="8"/><rect class="kf-c" x="380" y="720" width="30" height="14" rx="3" transform="rotate(70 395 727)"/></g>
+      <path class="kf-ribbon-a" d="M60 20c46 34-34 68 12 102s-34 68 12 102"/>
+      <path class="kf-ribbon-b" d="M1380 10c-46 34 34 68-12 102s34 68-12 102"/>
+      <path class="kf-ribbon-c" d="M640 0c34 28-28 56 6 84"/>
+      <path class="kf-ribbon-d" d="M880 900c-34-28 28-56-6-84s28-56-6-84"/>
+      <path class="kf-ribbon-c" d="M60 900c46-34-34-68 12-102"/>
+      <g transform="translate(160 430) rotate(-25)">
+        <path class="kf-burst" d="M170 -50 196 -80M120 -60v-40M200 10h44"/>
+        <path class="kf-horn" d="M0 40 150 0v80Z"/><rect class="kf-horn-band" x="40" y="22" width="14" height="44" transform="skewY(-14)"/><rect class="kf-horn-band" x="90" y="10" width="14" height="60" transform="skewY(-14)"/><ellipse class="kf-horn-tip" cx="150" cy="40" rx="12" ry="40"/>
+      </g>
+      <g transform="translate(1280 520) rotate(205)">
+        <path class="kf-burst" d="M170 -50 196 -80M120 -60v-40M200 10h44"/>
+        <path class="kf-horn" d="M0 40 150 0v80Z"/><rect class="kf-horn-band" x="40" y="22" width="14" height="44" transform="skewY(-14)"/><rect class="kf-horn-band" x="90" y="10" width="14" height="60" transform="skewY(-14)"/><ellipse class="kf-horn-tip" cx="150" cy="40" rx="12" ry="40"/>
+      </g>
+      <g class="twinkle"><path class="kf-star" d="M330 180l8 18 20 2-15 13 5 19-18-10-18 10 5-19-15-13 20-2Z"/></g>
+      <g class="twinkle"><path class="kf-star" d="M1110 690l7 15 16 2-12 11 4 16-15-9-15 9 4-16-12-11 16-2Z"/></g>
+    </svg>
+    {{/unless}}
+    <svg class="confetti" viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <g class="fall-a"><rect class="kf-a" x="40" y="60" width="16" height="8" rx="2" transform="rotate(-30 48 64)"/><rect class="kf-c" x="320" y="90" width="16" height="8" rx="2" transform="rotate(40 328 94)"/><rect class="kf-b" x="180" y="40" width="16" height="8" rx="2" transform="rotate(70 188 44)"/><circle class="kf-d" cx="270" cy="150" r="6"/><circle class="kf-a" cx="90" cy="170" r="5"/></g>
+      <g class="fall-b"><rect class="kf-d" x="60" y="660" width="16" height="8" rx="2" transform="rotate(20 68 664)"/><rect class="kf-b" x="330" y="700" width="16" height="8" rx="2" transform="rotate(-40 338 704)"/><rect class="kf-a" x="200" y="740" width="16" height="8" rx="2" transform="rotate(60 208 744)"/><circle class="kf-c" cx="360" cy="600" r="6"/><circle class="kf-b" cx="30" cy="560" r="5"/></g>
+      <path class="kf-ribbon-a" d="M20 10c26 20-20 40 6 60s-20 40 6 60"/>
+      <path class="kf-ribbon-b" d="M380 0c-26 20 20 40-6 60s20 40-6 60"/>
+      <path class="kf-ribbon-c" d="M30 690c26 18-20 36 6 54"/>
+      <path class="kf-ribbon-d" d="M370 660c-26 18 20 36-6 54"/>
+      <g class="twinkle"><path class="kf-star" d="M130 110l5 11 12 1-9 8 3 12-11-6-11 6 3-12-9-8 12-1Z"/></g>
+      <g class="twinkle"><path class="kf-star" d="M300 640l4 9 10 1-7 6 2 10-9-5-9 5 2-10-7-6 10-1Z"/></g>
+    </svg>
+    <div class="cover-inner">
+      <div class="ticket">
+        <div class="ticket-top">
+          <p class="admit" data-lux-field="customLabels.coverBadge">{{eventLabel}}</p>
+          <h1 class="cover-name serif">{{mainNickname}}</h1>
+          {{#if mainInfoLine}}<span class="cover-info">{{mainInfoLine}}</span>{{/if}}
+          <p class="cover-sub" data-lux-field="customLabels.coverSubtitle">{{eventIntro}}</p>
+        </div>
+        <span class="ticket-perf" aria-hidden="true"></span>
+        <div class="ticket-bottom">
+          <p class="guest-lbl">Tiket untuk</p>
+          <p class="guest-name serif">{{guestName}}</p>
+          <button type="button" class="btn-open btn-buka" onclick="openInvitation()" data-lux-field="customLabels.openBtn">Buka Undangan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
+
+  <div class="right-panel" id="rightPanel">
+    <section class="slide-home" id="home">
+      <svg class="home-confetti" viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <g class="fall-b"><rect class="kf-a" x="50" y="120" width="16" height="8" rx="2" transform="rotate(25 58 124)"/><rect class="kf-c" x="330" y="200" width="16" height="8" rx="2" transform="rotate(-35 338 204)"/><circle class="kf-b" cx="300" cy="90" r="6"/><circle class="kf-d" cx="70" cy="300" r="5"/><rect class="kf-b" x="40" y="620" width="16" height="8" rx="2" transform="rotate(50 48 624)"/><rect class="kf-d" x="340" y="680" width="16" height="8" rx="2" transform="rotate(-20 348 684)"/><circle class="kf-a" cx="320" cy="560" r="6"/></g>
+        <path class="kf-ribbon-b" d="M24 30c24 18-18 36 6 54s-18 36 6 54"/>
+        <path class="kf-ribbon-c" d="M376 20c-24 18 18 36-6 54s18 36-6 54"/>
+      </svg>
+      <svg class="home-horn reveal" viewBox="0 0 140 110" aria-hidden="true">
+        <path class="kf-burst" d="M108 22l12-16M120 44h18M112 66l14 10"/>
+        <g transform="rotate(-18 60 60)"><path class="kf-horn" d="M10 60 100 34v52Z"/><rect class="kf-horn-band" x="34" y="48" width="9" height="28" transform="skewY(-14)"/><rect class="kf-horn-band" x="64" y="40" width="9" height="38" transform="skewY(-14)"/><ellipse class="kf-horn-tip" cx="100" cy="60" rx="8" ry="26"/></g>
+        <circle class="kf-a" cx="20" cy="20" r="4"/><circle class="kf-c" cx="34" cy="96" r="4"/><rect class="kf-d" x="90" y="92" width="10" height="5" rx="2" transform="rotate(30 95 94)"/>
+      </svg>
+      <span class="home-eyebrow reveal" data-lux-field="customLabels.quoteEyebrow">It's Party Time</span>
+      <h2 class="home-name serif reveal">{{mainNickname}}</h2>
+      {{#if mainInfoLine}}<span class="home-info reveal">{{mainInfoLine}}</span>{{/if}}
+      {{#if openingQuote}}
+      <p class="home-quote serif reveal">{{openingQuote}}</p>
+      {{#if openingQuoteRef}}<p class="home-quote-ref">{{openingQuoteRef}}</p>{{/if}}
+      {{/if}}
+      <svg class="scroll-cue" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+    </section>
+
+    <main>
+      <section class="sec-block reveal" id="profile">
+        <span class="sec-lbl" data-lux-field="customLabels.coupleEyebrow">{{profileEyebrow}}</span>
+        <h2 class="sec-h2 serif" data-lux-field="customLabels.coupleTitle">{{profileTitle}}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.coupleSub">{{profileSub}}</p>
+        <div class="pass-card">
+          <div class="portrait-wrap">
+            {{#if hasCustomMainPhoto}}<img class="portrait" src="{{mainPhotoUrl}}" alt="{{mainName}}" loading="lazy" />{{/if}}
+            {{#unless hasCustomMainPhoto}}
+            <svg class="portrait-art" viewBox="0 0 160 160" aria-hidden="true">
+              <rect class="kf-a" x="20" y="24" width="14" height="7" rx="2" transform="rotate(-30 27 27)"/><rect class="kf-c" x="120" y="30" width="14" height="7" rx="2" transform="rotate(40 127 33)"/><circle class="kf-b" cx="132" cy="120" r="5"/><circle class="kf-d" cx="28" cy="122" r="5"/>
+              <path class="kf-ribbon-b" d="M40 140c14-10-10-20 4-30"/><path class="kf-ribbon-c" d="M120 140c-14-10 10-20-4-30"/>
+              <path class="kf-a" d="M80 30 112 118H48Z"/>
+              <path class="kf-b" d="M71 55h18l4 12H67ZM62 80h36l4 12H58ZM53 105h54l4 12H49Z"/>
+              <circle class="kf-e" cx="80" cy="28" r="9"/>
+            </svg>
+            {{/unless}}
+          </div>
+          <h3 class="star-name serif">{{mainName}}</h3>
+          {{#if mainInfoLine}}<span class="age-pill">{{mainInfoLine}}</span>{{/if}}
+          {{#if mainDetailLine}}<p class="star-detail">{{mainDetailLine}}</p>{{/if}}
+          <div class="parents">{{parentsHtml}}</div>
+        </div>
+      </section>
+
+      <section class="sec-block reveal" id="event">
+        <span class="sec-lbl" data-lux-field="customLabels.eventsEyebrow">Catat Tanggalnya</span>
+        <h2 class="sec-h2 serif" data-lux-field="customLabels.eventsTitle">{{agendaTitle}}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.eventsSub">{{eventDateFormatted}}</p>
+        {{countdownHtml}}
+        {{eventSectionHtml}}
+      </section>
+
+      {{qrPassHtml}}
+      {{gallerySectionHtml}}
+      {{giftSectionHtml}}
+      {{extraSectionsHtml}}
+
+      <section class="sec-block reveal" id="rsvp">
+        <span class="sec-lbl" data-lux-field="customLabels.wishesEyebrow">Kirim Ucapan</span>
+        {{rsvpSectionHtml}}
+        {{wishesSectionHtml}}
+      </section>
+
+      {{memoriesSectionHtml}}
+    </main>
+
+    <footer class="site-footer {{closingPhotoClass}}" id="footer" style="{{closingBgStyle}}">
+      <svg class="footer-confetti" viewBox="0 0 400 240" preserveAspectRatio="xMidYMin slice" aria-hidden="true">
+        <g class="fall-a"><rect class="kf-a" x="60" y="40" width="18" height="9" rx="2" transform="rotate(-30 69 44)"/><rect class="kf-c" x="300" y="60" width="18" height="9" rx="2" transform="rotate(40 309 64)"/><rect class="kf-b" x="190" y="30" width="18" height="9" rx="2" transform="rotate(70 199 34)"/><circle class="kf-d" cx="250" cy="110" r="7"/><circle class="kf-a" cx="120" cy="130" r="6"/><circle class="kf-b" cx="340" cy="150" r="5"/></g>
+        <path class="kf-ribbon-a" d="M30 0c26 20-20 40 6 60s-20 40 6 60"/>
+        <path class="kf-ribbon-d" d="M370 0c-26 20 20 40-6 60s20 40-6 60"/>
+        <path class="kf-ribbon-b" d="M200 70c20 16-16 32 4 48"/>
+      </svg>
+      <div class="closing-content">
+        <h2 class="closing-title serif" data-lux-field="customLabels.closingTitle">Sampai Jumpa di Pesta!</h2>
+        <p class="closing-text" data-lux-field="customLabels.closingText">{{closingText}}</p>
+        <p class="closing-name serif">{{mainNickname}}</p>
+        <div class="watermark">{{brandWatermarkHtml}}</div>
+      </div>
+    </footer>
+  </div>
+
+  <nav class="bottom-dock" aria-label="Navigasi undangan">
+    <a href="#home" aria-label="Beranda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg></a>
+    <a href="#profile" aria-label="Profil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></a>
+    <a href="#event" aria-label="Acara"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></a>
+    <a href="#gallery" aria-label="Galeri"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg></a>
+    <a href="#gift" aria-label="Kado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="8" width="18" height="13" rx="1"/><path d="M12 8v13M3 12h18M12 8S10 3 7.5 4 9 8 12 8Zm0 0s2-5 4.5-4S15 8 12 8Z"/></svg></a>
+    <a href="#rsvp" aria-label="Ucapan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12Z"/></svg></a>
+  </nav>
+
+  <script>
+    function openInvitation() {
+      var cover = document.getElementById('coverScreen');
+      if (cover) cover.classList.add('opened');
+      document.body.classList.remove('is-locked');
+    }
+    (function () {
+      var items = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window)) { items.forEach(function (el) { el.classList.add('is-visible'); }); return; }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) { if (entry.isIntersecting) { entry.target.classList.add('is-visible'); io.unobserve(entry.target); } });
+      }, { threshold: 0.12 });
+      items.forEach(function (el) { io.observe(el); });
+    })();
+  </script>
+  {{musicPlayerHtml}}
+</body>
+</html>

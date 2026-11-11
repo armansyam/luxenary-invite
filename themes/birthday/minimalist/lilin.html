@@ -1,0 +1,400 @@
+<!--
+  TEMA LILIN — Ulang Tahun / Kue Bertingkat & Lilin
+  Kategori: Minimalist | EventType: BIRTHDAY
+  Kontrak tema satu nama (lihat themes/_blueprints/birthday/BLUEPRINT_GUIDE_BIRTHDAY.md).
+  Kue bertingkat, lilin berkedip, dan taburan meses digambar sebagai SVG inline yang warnanya mengikuti token palet;
+  setiap slot foto punya ilustrasi pengganti ({{#unless}}) sehingga undangan tetap utuh tanpa unggahan.
+  Desktop >= 900px: .left-hero (DESKTOP_SIDEBAR) di kiri, .right-panel 460px di kanan.
+-->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>{{eventLabel}} {{mainNickname}}</title>
+  <link rel="stylesheet" href="/fonts/fonts.css" />
+  <style>
+    :root {
+      --primary: #e8708a;
+      --secondary: #a63e55;
+      --accent: #f6c56b;
+      --tertiary: #8fc9b8;
+      --cream: #fff3e2;
+      --cocoa: #6b3f2a;
+      --bg-dark: #4a2a1f;
+      --bg-light: #fffaf3;
+      --bg-canvas: #fdf0e4;
+      --card-bg: #ffffff;
+      --text-main: #4a2a1f;
+      --text-muted: #8a6656;
+      --on-primary: #ffffff;
+      --on-dark: #fff6ec;
+      --radius-sm: 12px;
+      --radius-md: 20px;
+      --radius-lg: 30px;
+      --radius-full: 9999px;
+      --font-heading: 'Playfair Display', Georgia, serif;
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-script: 'Great Vibes', cursive;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    ::selection { background: color-mix(in srgb, var(--primary) 35%, transparent); color: var(--text-main); }
+    html { scroll-behavior: smooth; scrollbar-width: none; }
+    html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+    body { font-family: var(--font-body); background: var(--bg-canvas); color: var(--text-main); line-height: 1.65; overflow-x: hidden; }
+    body.is-locked { overflow: hidden; }
+    .serif { font-family: var(--font-heading); font-weight: 600; }
+    .script { font-family: var(--font-script); font-weight: 400; }
+    img { max-width: 100%; display: block; }
+
+    /* ── Ilustrasi: warna dari token ── */
+    .ck-plate { fill: color-mix(in srgb, var(--cocoa) 18%, transparent); }
+    .ck-base { fill: var(--cocoa); }
+    .ck-mid { fill: var(--primary); }
+    .ck-top { fill: var(--cream); }
+    .ck-drip { fill: var(--card-bg); }
+    .ck-berry { fill: var(--secondary); }
+    .ck-leaf { fill: var(--tertiary); }
+    .ck-candle-a { fill: var(--tertiary); }
+    .ck-candle-b { fill: var(--accent); }
+    .ck-candle-c { fill: var(--primary); }
+    .ck-stripe { fill: color-mix(in srgb, var(--card-bg) 70%, transparent); }
+    .ck-wick { stroke: var(--cocoa); stroke-width: 1.4; fill: none; stroke-linecap: round; }
+    .ck-flame { fill: var(--accent); }
+    .ck-flame-core { fill: var(--card-bg); }
+    .ck-glow { fill: url(#ck-glow-grad); }
+    .ck-glow-stop { stop-color: var(--accent); stop-opacity: 0.45; }
+    .ck-glow-stop-end { stop-color: var(--accent); stop-opacity: 0; }
+    .ck-sprinkle-a { fill: var(--primary); }
+    .ck-sprinkle-b { fill: var(--tertiary); }
+    .ck-sprinkle-c { fill: var(--accent); }
+    .flicker { transform-box: fill-box; transform-origin: 50% 100%; animation: flicker 1.6s ease-in-out infinite; }
+    .flicker.f2 { animation-duration: 1.9s; animation-delay: -0.4s; }
+    .flicker.f3 { animation-duration: 1.4s; animation-delay: -0.8s; }
+    @keyframes flicker { 0%, 100% { transform: scale(1, 1) rotate(-2deg); } 40% { transform: scale(0.92, 1.08) rotate(2deg); } 70% { transform: scale(1.04, 0.94) rotate(-1deg); } }
+
+    /* ── Cover ── */
+    .cover-screen {
+      position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;
+      padding: 28px 22px; text-align: center;
+      background:
+        radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--accent) 22%, transparent) 0, transparent 46%),
+        linear-gradient(180deg, var(--bg-light) 0%, var(--bg-canvas) 100%);
+      transition: transform 0.9s cubic-bezier(0.65, 0, 0.35, 1), opacity 0.8s ease, visibility 0s linear 0.9s;
+    }
+    .cover-screen.has-photo { background: var(--bg-dark) center / cover no-repeat; }
+    .cover-screen.has-photo::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--bg-light) 30%, transparent), color-mix(in srgb, var(--bg-light) 94%, transparent) 62%); }
+    .cover-screen.opened { transform: translate3d(0, -100%, 0); opacity: 0; visibility: hidden; pointer-events: none; }
+    .sprinkles { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .cover-inner { position: relative; z-index: 2; width: 100%; max-width: 340px; }
+    .cover-cake { width: 210px; height: 200px; margin: 0 auto -4px; display: block; }
+    @media (max-height: 700px) { .cover-cake { width: 160px; height: 152px; } }
+    .cover-label { position: relative; padding: 26px 22px 24px; border-radius: var(--radius-lg); background: var(--card-bg); box-shadow: 0 16px 40px color-mix(in srgb, var(--cocoa) 14%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 18%, transparent); }
+    .cover-label::before { content: ""; position: absolute; left: 14px; right: 14px; top: 10px; height: 8px; background: radial-gradient(circle at 4px 4px, color-mix(in srgb, var(--primary) 40%, transparent) 3px, transparent 3.5px) 0 0 / 16px 8px repeat-x; }
+    .cover-badge { display: inline-block; margin-top: 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.24em; text-transform: uppercase; color: var(--secondary); }
+    .cover-name { font-size: 46px; line-height: 1.02; color: var(--text-main); margin-top: 6px; overflow-wrap: break-word; }
+    .cover-info { display: inline-block; margin-top: 10px; padding: 6px 16px; border-radius: var(--radius-full); background: color-mix(in srgb, var(--accent) 45%, var(--card-bg)); color: var(--text-main); font-size: 13px; font-weight: 700; }
+    .cover-sub { font-size: 13px; color: var(--text-muted); margin: 12px 0 16px; }
+    .guest-lbl { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-muted); }
+    .guest-name { font-size: 22px; color: var(--text-main); margin: 2px 0 18px; overflow-wrap: break-word; }
+    .btn-open { display: inline-flex; align-items: center; gap: 8px; padding: 13px 30px; border: 0; cursor: pointer; border-radius: var(--radius-full); background: var(--secondary); color: var(--on-primary); font-family: inherit; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; box-shadow: 0 10px 22px color-mix(in srgb, var(--secondary) 32%, transparent); transition: transform 0.18s ease; }
+    .btn-open:hover { transform: translateY(-2px); }
+
+    /* ── Hero kiri desktop (slot DESKTOP_SIDEBAR) ── */
+    .left-hero { display: none; position: fixed; left: 0; top: 0; width: calc(100% - 460px); height: 100vh; z-index: 10; overflow: hidden; background: linear-gradient(160deg, var(--bg-light) 0%, var(--bg-canvas) 60%, color-mix(in srgb, var(--primary) 18%, var(--bg-canvas)) 100%) center / cover no-repeat; }
+    .left-hero.has-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, color-mix(in srgb, var(--bg-dark) 86%, transparent) 0%, color-mix(in srgb, var(--bg-dark) 14%, transparent) 55%, transparent 100%); }
+    .left-hero-art { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .left-hero-content { position: absolute; left: 3.5rem; right: 3.5rem; bottom: 4rem; z-index: 2; color: var(--text-main); }
+    .left-hero.has-photo .left-hero-content { color: var(--on-dark); }
+    .left-hero-eyebrow { display: inline-block; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.24em; text-transform: uppercase; color: var(--secondary); margin-bottom: 0.6rem; }
+    .left-hero.has-photo .left-hero-eyebrow { color: var(--accent); }
+    .left-hero-name { font-size: clamp(3rem, 6vw, 5.5rem); line-height: 1; overflow-wrap: break-word; }
+    .left-hero-info { display: inline-block; margin-top: 0.8rem; padding: 6px 16px; border-radius: var(--radius-full); background: color-mix(in srgb, var(--accent) 45%, var(--card-bg)); color: var(--text-main); font-weight: 700; font-size: 0.95rem; }
+    .left-hero-date { font-size: 0.85rem; letter-spacing: 0.14em; text-transform: uppercase; margin-top: 1rem; opacity: 0.85; }
+
+    /* ── Latar tetap (slot GLOBAL_FIXED_BG): taburan meses ── */
+    .fixed-bg-layer {
+      position: fixed; top: 0; right: 0; bottom: 0; width: 100%; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(circle at 12px 10px, color-mix(in srgb, var(--primary) 26%, transparent) 2px, transparent 2.5px) 0 0 / 46px 46px,
+        radial-gradient(circle at 34px 30px, color-mix(in srgb, var(--tertiary) 30%, transparent) 2px, transparent 2.5px) 0 0 / 46px 46px,
+        var(--bg-canvas);
+    }
+    .fixed-bg-layer.has-custom-bg { background: linear-gradient(180deg, color-mix(in srgb, var(--bg-light) 62%, transparent), color-mix(in srgb, var(--bg-canvas) 80%, transparent)), var(--custom-bg) center / cover no-repeat; }
+
+    .right-panel { position: relative; z-index: 20; width: 100%; min-height: 100vh; }
+    .right-panel main { background: color-mix(in srgb, var(--bg-light) 82%, transparent); }
+
+    /* ── Beranda (slot HOME_PHOTO) ── */
+    .slide-home { position: relative; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 90px 24px 70px; text-align: center; overflow: hidden; background: linear-gradient(180deg, var(--bg-light), var(--bg-canvas)); }
+    .home-candles { width: 170px; height: 120px; margin: 0 auto 10px; }
+    .home-eyebrow { font-size: 34px; color: var(--secondary); line-height: 1; margin-bottom: 4px; }
+    .home-name { font-size: clamp(3rem, 14vw, 4.2rem); line-height: 1; color: var(--text-main); overflow-wrap: break-word; }
+    .home-info { display: inline-block; margin-top: 12px; padding: 6px 16px; border-radius: var(--radius-full); background: color-mix(in srgb, var(--accent) 45%, var(--card-bg)); color: var(--text-main); font-weight: 700; font-size: 13px; }
+    .home-quote { font-size: 19px; line-height: 1.45; max-width: 340px; margin: 22px auto 0; color: var(--text-main); font-style: italic; font-weight: 400; }
+    .home-quote-ref { font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--secondary); margin-top: 12px; }
+    .scroll-cue { margin-top: 26px; color: var(--text-muted); animation: cue 1.6s infinite; }
+    @keyframes cue { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+
+    /* ── Sistem seksi ── */
+    .sec-block { position: relative; max-width: 480px; margin: 0 auto; padding: 60px 24px; text-align: center; }
+    .sec-lbl { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.24em; text-transform: uppercase; color: var(--secondary); margin-bottom: 8px; }
+    .sec-h2 { font-size: 32px; line-height: 1.15; color: var(--text-main); margin-bottom: 12px; }
+    .sec-sub { font-size: 14px; color: var(--text-muted); max-width: 350px; margin: 0 auto 22px; }
+    .ck-divider { width: 120px; height: 18px; margin: 0 auto 14px; display: block; }
+
+    .slice-card { position: relative; margin-top: 106px; padding: 34px 22px 26px; border-radius: var(--radius-lg); background: var(--card-bg); box-shadow: 0 16px 34px color-mix(in srgb, var(--cocoa) 12%, transparent); }
+    .portrait-wrap { position: relative; width: 168px; height: 168px; margin: -96px auto 18px; border-radius: var(--radius-full); padding: 7px; background: radial-gradient(circle, var(--card-bg) 60%, transparent 61%), repeating-conic-gradient(var(--primary) 0 10deg, var(--cream) 10deg 20deg); }
+    .portrait { width: 100%; height: 100%; border-radius: var(--radius-full); object-fit: cover; border: 4px solid var(--card-bg); background: var(--bg-canvas); }
+    .portrait-art { width: 100%; height: 100%; border-radius: var(--radius-full); border: 4px solid var(--card-bg); background: var(--bg-canvas); }
+    .star-name { font-size: 30px; line-height: 1.12; color: var(--text-main); overflow-wrap: break-word; }
+    .age-pill { display: inline-block; margin-top: 12px; padding: 7px 16px; border-radius: var(--radius-full); background: color-mix(in srgb, var(--primary) 18%, var(--card-bg)); color: var(--text-main); font-weight: 700; font-size: 13px; }
+    .star-detail { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+    .parents { margin-top: 18px; font-size: 13px; color: var(--text-muted); }
+
+    .countdown-timer { margin-bottom: 18px; }
+    #rsvp .rsvp-card-box form { text-align: left; }
+
+    /* ── Penutup (slot CLOSING_COVER) ── */
+    .site-footer { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 200px 24px 128px; text-align: center; color: var(--on-dark); background: linear-gradient(180deg, var(--secondary) 0%, var(--bg-dark) 70%); overflow: hidden; }
+    .site-footer.has-closing-photo { min-height: 100vh; min-height: 100svh; }
+    .footer-candles { position: absolute; top: 34px; left: 50%; width: 230px; height: 150px; transform: translateX(-50%); }
+    .closing-content { position: relative; max-width: 380px; }
+    .closing-title { font-size: 46px; line-height: 1.1; margin-bottom: 8px; color: var(--accent); }
+    .closing-text { font-size: 14px; color: color-mix(in srgb, var(--on-dark) 88%, transparent); margin: 0 auto 16px; }
+    .closing-name { font-size: 28px; color: var(--on-dark); }
+    .watermark { margin-top: 24px; font-size: 10px; }
+
+    /* ── Dock ── */
+    .bottom-dock { position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translate3d(-50%, 0, 0); z-index: 900; display: flex; gap: 4px; padding: 6px; border-radius: var(--radius-full); background: color-mix(in srgb, var(--card-bg) 95%, transparent); box-shadow: 0 10px 26px color-mix(in srgb, var(--cocoa) 20%, transparent); transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease; }
+    .bottom-dock a { display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: var(--radius-full); color: var(--text-main); }
+    .bottom-dock a:hover, .bottom-dock a:focus-visible { color: var(--on-primary); background: var(--secondary); outline: none; }
+    .bottom-dock svg { width: 19px; height: 19px; }
+
+    .reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.34, 1.3, 0.64, 1); }
+    .reveal.is-visible { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } .cover-screen, .scroll-cue, .flicker { transition: none; animation: none; } }
+    @media (max-width: 340px) { .cover-name, .star-name { font-size: 34px; } .sec-block { padding: 52px 18px; } }
+
+    /* Sampul desktop layar penuh (tanpa foto sampul): komposisi mendatar menggantikan gambar HP. */
+    .cover-wide { display: none; position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+    @media (min-width: 900px) {
+      .cover-screen:not(.has-photo) .cover-wide { display: block; }
+      .cover-screen:not(.has-photo) .sprinkles, .cover-screen:not(.has-photo) .cover-cake { display: none; }
+      .cover-screen:not(.has-photo) .cover-inner { max-width: 380px; }
+      .left-hero { display: block; }
+      .fixed-bg-layer { left: calc(100% - 460px); width: 460px; }
+      .right-panel { margin-left: calc(100% - 460px); width: 460px; }
+      .bottom-dock { left: calc(100% - 230px); }
+    }
+  </style>
+</head>
+<body class="is-locked">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs><radialGradient id="ck-glow-grad"><stop offset="0" class="ck-glow-stop"/><stop offset="1" class="ck-glow-stop-end"/></radialGradient></defs>
+  </svg>
+  <div class="left-hero{{#if hasCustomSidebarPhoto}} has-photo{{/if}}"{{#if hasCustomSidebarPhoto}} style="background-image: url('{{sidebarPhotoUrl}}');"{{/if}}>
+    {{#unless hasCustomSidebarPhoto}}
+    <svg class="left-hero-art" viewBox="0 0 800 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <g class="ck-sprinkle-a"><rect x="90" y="120" width="22" height="7" rx="3.5" transform="rotate(-30 101 123)"/><rect x="640" y="180" width="22" height="7" rx="3.5" transform="rotate(25 651 183)"/><rect x="180" y="420" width="22" height="7" rx="3.5" transform="rotate(60 191 423)"/></g>
+      <g class="ck-sprinkle-b"><rect x="560" y="90" width="22" height="7" rx="3.5" transform="rotate(-50 571 93)"/><rect x="120" y="300" width="22" height="7" rx="3.5" transform="rotate(15 131 303)"/><rect x="700" y="400" width="22" height="7" rx="3.5" transform="rotate(-20 711 403)"/></g>
+      <g class="ck-sprinkle-c"><circle cx="260" cy="160" r="6"/><circle cx="520" cy="300" r="6"/><circle cx="690" cy="560" r="6"/></g>
+      <use href="#ck-cake" transform="translate(290 120) scale(0.8)"/>
+    </svg>
+    {{/unless}}
+    <div class="left-hero-content">
+      <span class="left-hero-eyebrow">{{eventLabel}}</span>
+      <h1 class="left-hero-name serif">{{mainNickname}}</h1>
+      {{#if mainInfoLine}}<span class="left-hero-info">{{mainInfoLine}}</span>{{/if}}
+      {{#if eventDateFormatted}}<p class="left-hero-date">{{eventDateFormatted}}</p>{{/if}}
+    </div>
+  </div>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <g id="ck-cake">
+        <ellipse class="ck-glow" cx="150" cy="40" rx="150" ry="90"/>
+        <ellipse class="ck-plate" cx="150" cy="430" rx="210" ry="26"/>
+        <rect class="ck-base" x="0" y="300" width="300" height="130" rx="18"/>
+        <path class="ck-drip" d="M0 318c0-10 8-18 18-18h264c10 0 18 8 18 18v12c-14 0-14 26-28 26s-14-20-28-20-14 30-28 30-14-24-28-24-14 18-28 18-14-28-28-28-14 22-28 22-14-18-28-18-14 26-28 26-14-22-28-22-14 14-20 14Z"/>
+        <rect class="ck-mid" x="40" y="190" width="220" height="114" rx="16"/>
+        <path class="ck-top" d="M40 206c0-9 7-16 16-16h188c9 0 16 7 16 16v10c-12 0-12 22-24 22s-12-16-24-16-12 24-24 24-12-20-24-20-12 16-24 16-12-22-24-22-12 18-24 18-12-14-24-14-12 20-24 20Z"/>
+        <circle class="ck-berry" cx="80" cy="180" r="14"/><circle class="ck-berry" cx="150" cy="176" r="15"/><circle class="ck-berry" cx="220" cy="180" r="14"/>
+        <path class="ck-leaf" d="M150 162c6-10 16-12 22-8-6 8-14 10-22 8ZM80 166c-6-9-15-10-20-6 5 7 13 9 20 6Z"/>
+        <rect class="ck-candle-a" x="94" y="86" width="16" height="84" rx="5"/><rect class="ck-candle-b" x="142" y="70" width="16" height="100" rx="5"/><rect class="ck-candle-c" x="190" y="86" width="16" height="84" rx="5"/>
+        <path class="ck-stripe" d="M94 100l16-8v10l-16 8ZM94 128l16-8v10l-16 8ZM142 86l16-8v10l-16 8ZM142 114l16-8v10l-16 8ZM142 142l16-8v10l-16 8ZM190 100l16-8v10l-16 8ZM190 128l16-8v10l-16 8Z"/>
+        <path class="ck-wick" d="M102 86v-10M150 70v-10M198 86v-10"/>
+        <g class="flicker"><path class="ck-flame" d="M102 48c8 10 10 18 0 28-10-10-8-18 0-28Z"/><path class="ck-flame-core" d="M102 62c3 4 4 7 0 11-4-4-3-7 0-11Z"/></g>
+        <g class="flicker f2"><path class="ck-flame" d="M150 32c8 10 10 18 0 28-10-10-8-18 0-28Z"/><path class="ck-flame-core" d="M150 46c3 4 4 7 0 11-4-4-3-7 0-11Z"/></g>
+        <g class="flicker f3"><path class="ck-flame" d="M198 48c8 10 10 18 0 28-10-10-8-18 0-28Z"/><path class="ck-flame-core" d="M198 62c3 4 4 7 0 11-4-4-3-7 0-11Z"/></g>
+      </g>
+      <g id="ck-gift">
+        <rect class="ck-mid" x="0" y="30" width="110" height="90" rx="8"/><rect class="ck-candle-b" x="48" y="30" width="14" height="90"/>
+        <rect class="ck-berry" x="-6" y="18" width="122" height="22" rx="6"/><rect class="ck-candle-b" x="48" y="18" width="14" height="22"/>
+        <path class="ck-candle-b" d="M55 18C40 0 22 0 24 10s20 8 31 8ZM55 18C70 0 88 0 86 10S66 18 55 18Z"/>
+      </g>
+    </defs>
+  </svg>
+
+  <div class="cover-screen{{#if landingCoverUrl}} has-photo{{/if}}" id="coverScreen" data-lux-desktop-cover="full"{{#if landingCoverUrl}} style="background-image: url('{{landingCoverUrl}}');"{{/if}}>
+    {{#unless landingCoverUrl}}
+    <svg class="cover-wide" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <g class="ck-sprinkle-a"><rect x="120" y="110" width="26" height="9" rx="4.5" transform="rotate(-30 133 114)"/><rect x="1240" y="160" width="26" height="9" rx="4.5" transform="rotate(35 1253 164)"/><rect x="640" y="80" width="26" height="9" rx="4.5" transform="rotate(60 653 84)"/><rect x="900" y="800" width="26" height="9" rx="4.5" transform="rotate(-20 913 804)"/><rect x="420" y="780" width="26" height="9" rx="4.5" transform="rotate(40 433 784)"/></g>
+      <g class="ck-sprinkle-b"><rect x="980" y="90" width="26" height="9" rx="4.5" transform="rotate(-50 993 94)"/><rect x="260" y="250" width="26" height="9" rx="4.5" transform="rotate(15 273 254)"/><rect x="1330" y="520" width="26" height="9" rx="4.5" transform="rotate(-25 1343 524)"/><rect x="560" y="860" width="26" height="9" rx="4.5" transform="rotate(70 573 864)"/></g>
+      <g class="ck-sprinkle-c"><circle cx="400" cy="140" r="8"/><circle cx="1100" cy="260" r="8"/><circle cx="1380" cy="760" r="8"/><circle cx="80" cy="560" r="8"/><circle cx="760" cy="830" r="7"/></g>
+      <use href="#ck-cake" transform="translate(80 300) scale(1.15)"/>
+      <use href="#ck-gift" transform="translate(1110 600) scale(1.5)"/>
+      <use href="#ck-gift" transform="translate(1260 680) rotate(8) scale(1)"/>
+    </svg>
+    {{/unless}}
+    <svg class="sprinkles" viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <g class="ck-sprinkle-a"><rect x="40" y="80" width="14" height="5" rx="2.5" transform="rotate(-30 47 82)"/><rect x="330" y="150" width="14" height="5" rx="2.5" transform="rotate(40 337 152)"/><rect x="70" y="620" width="14" height="5" rx="2.5" transform="rotate(20 77 622)"/><rect x="300" y="720" width="14" height="5" rx="2.5" transform="rotate(-45 307 722)"/></g>
+      <g class="ck-sprinkle-b"><rect x="300" y="60" width="14" height="5" rx="2.5" transform="rotate(-60 307 62)"/><rect x="30" y="300" width="14" height="5" rx="2.5" transform="rotate(10 37 302)"/><rect x="350" y="560" width="14" height="5" rx="2.5" transform="rotate(70 357 562)"/></g>
+      <g class="ck-sprinkle-c"><circle cx="120" cy="40" r="4"/><circle cx="370" cy="330" r="4"/><circle cx="40" cy="480" r="4"/><circle cx="200" cy="760" r="4"/></g>
+    </svg>
+    <div class="cover-inner">
+      <svg class="cover-cake" viewBox="0 0 220 210" aria-hidden="true">
+        <ellipse class="ck-glow" cx="110" cy="46" rx="92" ry="44"/>
+        <ellipse class="ck-plate" cx="110" cy="200" rx="104" ry="10"/>
+        <rect class="ck-mid" x="30" y="120" width="160" height="80" rx="12"/>
+        <path class="ck-top" d="M30 132c0-7 5-12 12-12h136c7 0 12 5 12 12v8c-9 0-9 16-18 16s-9-12-18-12-9 18-18 18-9-15-18-15-9 12-18 12-9-16-18-16-9 14-18 14-9-11-18-11-9 15-18 15Z"/>
+        <circle class="ck-berry" cx="62" cy="114" r="10"/><circle class="ck-berry" cx="110" cy="111" r="11"/><circle class="ck-berry" cx="158" cy="114" r="10"/>
+        <rect class="ck-candle-a" x="74" y="46" width="11" height="62" rx="4"/><rect class="ck-candle-b" x="104.5" y="34" width="11" height="74" rx="4"/><rect class="ck-candle-c" x="135" y="46" width="11" height="62" rx="4"/>
+        <path class="ck-stripe" d="M74 58l11-6v7l-11 6ZM74 80l11-6v7l-11 6ZM104.5 48l11-6v7l-11 6ZM104.5 70l11-6v7l-11 6ZM104.5 92l11-6v7l-11 6ZM135 58l11-6v7l-11 6ZM135 80l11-6v7l-11 6Z"/>
+        <path class="ck-wick" d="M79.5 46v-8M110 34v-8M140.5 46v-8"/>
+        <g class="flicker"><path class="ck-flame" d="M79.5 16c6 8 8 14 0 22-8-8-6-14 0-22Z"/><path class="ck-flame-core" d="M79.5 27c2 3 3 5 0 8-3-3-2-5 0-8Z"/></g>
+        <g class="flicker f2"><path class="ck-flame" d="M110 4c6 8 8 14 0 22-8-8-6-14 0-22Z"/><path class="ck-flame-core" d="M110 15c2 3 3 5 0 8-3-3-2-5 0-8Z"/></g>
+        <g class="flicker f3"><path class="ck-flame" d="M140.5 16c6 8 8 14 0 22-8-8-6-14 0-22Z"/><path class="ck-flame-core" d="M140.5 27c2 3 3 5 0 8-3-3-2-5 0-8Z"/></g>
+      </svg>
+      <div class="cover-label">
+        <span class="cover-badge" data-lux-field="customLabels.coverBadge">{{eventLabel}}</span>
+        <h1 class="cover-name serif">{{mainNickname}}</h1>
+        {{#if mainInfoLine}}<span class="cover-info">{{mainInfoLine}}</span>{{/if}}
+        <p class="cover-sub" data-lux-field="customLabels.coverSubtitle">{{eventIntro}}</p>
+        <p class="guest-lbl">Spesial untuk</p>
+        <p class="guest-name serif">{{guestName}}</p>
+        <button type="button" class="btn-open btn-buka" onclick="openInvitation()" data-lux-field="customLabels.openBtn">Buka Undangan</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
+
+  <div class="right-panel" id="rightPanel">
+    <section class="slide-home" id="home">
+      <svg class="home-candles reveal" viewBox="0 0 170 120" aria-hidden="true">
+        <ellipse class="ck-glow" cx="85" cy="40" rx="80" ry="40"/>
+        <rect class="ck-candle-c" x="34" y="56" width="14" height="60" rx="5"/><rect class="ck-candle-a" x="78" y="44" width="14" height="72" rx="5"/><rect class="ck-candle-b" x="122" y="56" width="14" height="60" rx="5"/>
+        <path class="ck-stripe" d="M34 70l14-7v8l-14 7ZM34 94l14-7v8l-14 7ZM78 58l14-7v8l-14 7ZM78 82l14-7v8l-14 7ZM122 70l14-7v8l-14 7ZM122 94l14-7v8l-14 7Z"/>
+        <path class="ck-wick" d="M41 56v-8M85 44v-8M129 56v-8"/>
+        <g class="flicker"><path class="ck-flame" d="M41 24c7 9 9 16 0 24-9-8-7-15 0-24Z"/><path class="ck-flame-core" d="M41 36c2 3 3 6 0 9-3-3-2-6 0-9Z"/></g>
+        <g class="flicker f2"><path class="ck-flame" d="M85 12c7 9 9 16 0 24-9-8-7-15 0-24Z"/><path class="ck-flame-core" d="M85 24c2 3 3 6 0 9-3-3-2-6 0-9Z"/></g>
+        <g class="flicker f3"><path class="ck-flame" d="M129 24c7 9 9 16 0 24-9-8-7-15 0-24Z"/><path class="ck-flame-core" d="M129 36c2 3 3 6 0 9-3-3-2-6 0-9Z"/></g>
+      </svg>
+      <span class="home-eyebrow script reveal" data-lux-field="customLabels.quoteEyebrow">Make a Wish</span>
+      <h2 class="home-name serif reveal">{{mainNickname}}</h2>
+      {{#if mainInfoLine}}<span class="home-info reveal">{{mainInfoLine}}</span>{{/if}}
+      {{#if openingQuote}}
+      <p class="home-quote serif reveal">{{openingQuote}}</p>
+      {{#if openingQuoteRef}}<p class="home-quote-ref">{{openingQuoteRef}}</p>{{/if}}
+      {{/if}}
+      <svg class="scroll-cue" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+    </section>
+
+    <main>
+      <section class="sec-block reveal" id="profile">
+        <svg class="ck-divider" viewBox="0 0 120 18" aria-hidden="true"><g class="ck-sprinkle-a"><rect x="10" y="6" width="14" height="5" rx="2.5" transform="rotate(-20 17 8)"/><rect x="96" y="6" width="14" height="5" rx="2.5" transform="rotate(20 103 8)"/></g><g class="ck-sprinkle-b"><rect x="34" y="8" width="14" height="5" rx="2.5" transform="rotate(30 41 10)"/><rect x="72" y="8" width="14" height="5" rx="2.5" transform="rotate(-30 79 10)"/></g><circle class="ck-sprinkle-c" cx="60" cy="9" r="5"/></svg>
+        <span class="sec-lbl" data-lux-field="customLabels.coupleEyebrow">{{profileEyebrow}}</span>
+        <h2 class="sec-h2 serif" data-lux-field="customLabels.coupleTitle">{{profileTitle}}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.coupleSub">{{profileSub}}</p>
+        <div class="slice-card">
+          <div class="portrait-wrap">
+            {{#if hasCustomMainPhoto}}<img class="portrait" src="{{mainPhotoUrl}}" alt="{{mainName}}" loading="lazy" />{{/if}}
+            {{#unless hasCustomMainPhoto}}
+            <svg class="portrait-art" viewBox="0 0 160 160" aria-hidden="true">
+              <ellipse class="ck-plate" cx="80" cy="132" rx="56" ry="8"/>
+              <path class="ck-mid" d="M44 86h72l-10 46H54Z"/>
+              <path class="ck-stripe" d="M58 86l4 46h6l-3-46ZM78 86v46h5V86ZM98 86l-3 46h6l4-46Z"/>
+              <path class="ck-top" d="M40 88c0-22 18-40 40-40s40 18 40 40c-6 0-6 8-13 8s-7-6-13-6-7 8-14 8-7-8-14-8-7 6-13 6-7-8-13-8Z"/>
+              <circle class="ck-berry" cx="80" cy="44" r="9"/><path class="ck-leaf" d="M80 36c4-7 11-8 15-5-4 6-10 7-15 5Z"/>
+              <g class="ck-sprinkle-a"><rect x="56" y="62" width="9" height="3.5" rx="1.75" transform="rotate(-30 60 64)"/><rect x="92" y="70" width="9" height="3.5" rx="1.75" transform="rotate(25 96 72)"/></g>
+              <g class="ck-sprinkle-b"><rect x="72" y="58" width="9" height="3.5" rx="1.75" transform="rotate(40 76 60)"/><rect x="100" y="56" width="9" height="3.5" rx="1.75" transform="rotate(-40 104 58)"/></g>
+            </svg>
+            {{/unless}}
+          </div>
+          <h3 class="star-name serif">{{mainName}}</h3>
+          {{#if mainInfoLine}}<span class="age-pill">{{mainInfoLine}}</span>{{/if}}
+          {{#if mainDetailLine}}<p class="star-detail">{{mainDetailLine}}</p>{{/if}}
+          <div class="parents">{{parentsHtml}}</div>
+        </div>
+      </section>
+
+      <section class="sec-block reveal" id="event">
+        <span class="sec-lbl" data-lux-field="customLabels.eventsEyebrow">Tiup Lilinnya Kapan?</span>
+        <h2 class="sec-h2 serif" data-lux-field="customLabels.eventsTitle">{{agendaTitle}}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.eventsSub">{{eventDateFormatted}}</p>
+        {{countdownHtml}}
+        {{eventSectionHtml}}
+      </section>
+
+      {{qrPassHtml}}
+      {{gallerySectionHtml}}
+      {{giftSectionHtml}}
+      {{extraSectionsHtml}}
+
+      <section class="sec-block reveal" id="rsvp">
+        <span class="sec-lbl" data-lux-field="customLabels.wishesEyebrow">Kirim Ucapan</span>
+        {{rsvpSectionHtml}}
+        {{wishesSectionHtml}}
+      </section>
+
+      {{memoriesSectionHtml}}
+    </main>
+
+    <footer class="site-footer {{closingPhotoClass}}" id="footer" style="{{closingBgStyle}}">
+      <svg class="footer-candles" viewBox="0 0 230 150" aria-hidden="true">
+        <ellipse class="ck-glow" cx="115" cy="50" rx="110" ry="50"/>
+        <rect class="ck-candle-a" x="40" y="70" width="16" height="74" rx="5"/><rect class="ck-candle-b" x="80" y="56" width="16" height="88" rx="5"/><rect class="ck-candle-c" x="120" y="50" width="16" height="94" rx="5"/><rect class="ck-candle-a" x="160" y="64" width="16" height="80" rx="5"/>
+        <path class="ck-wick" d="M48 70v-9M88 56v-9M128 50v-9M168 64v-9"/>
+        <g class="flicker"><path class="ck-flame" d="M48 34c8 10 10 18 0 27-10-9-8-17 0-27Z"/></g>
+        <g class="flicker f2"><path class="ck-flame" d="M88 20c8 10 10 18 0 27-10-9-8-17 0-27Z"/></g>
+        <g class="flicker f3"><path class="ck-flame" d="M128 14c8 10 10 18 0 27-10-9-8-17 0-27Z"/></g>
+        <g class="flicker"><path class="ck-flame" d="M168 28c8 10 10 18 0 27-10-9-8-17 0-27Z"/></g>
+      </svg>
+      <div class="closing-content">
+        <h2 class="closing-title script" data-lux-field="customLabels.closingTitle">Terima Kasih</h2>
+        <p class="closing-text" data-lux-field="customLabels.closingText">{{closingText}}</p>
+        <p class="closing-name serif">{{mainNickname}}</p>
+        <div class="watermark">{{brandWatermarkHtml}}</div>
+      </div>
+    </footer>
+  </div>
+
+  <nav class="bottom-dock" aria-label="Navigasi undangan">
+    <a href="#home" aria-label="Beranda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg></a>
+    <a href="#profile" aria-label="Profil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></a>
+    <a href="#event" aria-label="Acara"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></a>
+    <a href="#gallery" aria-label="Galeri"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg></a>
+    <a href="#gift" aria-label="Kado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="8" width="18" height="13" rx="1"/><path d="M12 8v13M3 12h18M12 8S10 3 7.5 4 9 8 12 8Zm0 0s2-5 4.5-4S15 8 12 8Z"/></svg></a>
+    <a href="#rsvp" aria-label="Ucapan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12Z"/></svg></a>
+  </nav>
+
+  <script>
+    function openInvitation() {
+      var cover = document.getElementById('coverScreen');
+      if (cover) cover.classList.add('opened');
+      document.body.classList.remove('is-locked');
+    }
+    (function () {
+      var items = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window)) { items.forEach(function (el) { el.classList.add('is-visible'); }); return; }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) { if (entry.isIntersecting) { entry.target.classList.add('is-visible'); io.unobserve(entry.target); } });
+      }, { threshold: 0.12 });
+      items.forEach(function (el) { io.observe(el); });
+    })();
+  </script>
+  {{musicPlayerHtml}}
+</body>
+</html>

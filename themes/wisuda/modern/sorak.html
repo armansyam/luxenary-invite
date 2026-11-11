@@ -1,0 +1,414 @@
+<!--
+  TEMA SORAK — Wisuda / Lempar Toga di Panggung
+  Kategori: Modern | EventType: WISUDA
+  Kontrak tema satu nama (lihat themes/_blueprints/wisuda/).
+  Toga yang dilempar ke udara, pita kertas, lampu sorot, dan tirai panggung digambar sebagai SVG yang warnanya mengikuti
+  token palet; setiap slot foto punya ilustrasi pengganti ({{#unless}}) sehingga undangan tetap utuh tanpa unggahan.
+  Desktop >= 900px: sampul layar penuh dengan komposisi mendatar sendiri (data-lux-desktop-cover="full") selama klien belum
+  mengunggah foto sampul; setelah dibuka .left-hero (DESKTOP_SIDEBAR) di kiri, .right-panel 460px di kanan.
+-->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>{{eventLabel}} {{mainNickname}}</title>
+  <link rel="stylesheet" href="/fonts/fonts.css" />
+  <style>
+    :root {
+      --primary: #7a1f35;
+      --secondary: #561526;
+      --accent: #f2b33d;
+      --tertiary: #2f5d8c;
+      --cap: #1d1a2a;
+      --cap-top: #2e2a40;
+      --tassel: #f2b33d;
+      --curtain: #7a1f35;
+      --curtain-fold: #561526;
+      --confetti-a: #f2b33d;
+      --confetti-b: #e2687f;
+      --confetti-c: #5f9bd1;
+      --confetti-d: #7fc4a4;
+      --bg-dark: #241425;
+      --bg-light: #fff8ef;
+      --bg-canvas: #fbefe4;
+      --card-bg: #fffaf3;
+      --text-main: #2a1520;
+      --text-muted: #67505a;
+      --on-primary: #fff8ef;
+      --on-dark: #fff4e6;
+      --radius-sm: 10px;
+      --radius-md: 18px;
+      --radius-lg: 28px;
+      --radius-full: 9999px;
+      --font-heading: 'DM Serif Display', 'Playfair Display', Georgia, serif;
+      --font-body: 'Jost', 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-script: 'Great Vibes', cursive;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    ::selection { background: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--text-main); }
+    html { scroll-behavior: smooth; scrollbar-width: none; }
+    html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+    body { font-family: var(--font-body); background: var(--bg-canvas); color: var(--text-main); line-height: 1.65; overflow-x: hidden; }
+    body.is-locked { overflow: hidden; }
+    .serif { font-family: var(--font-heading); font-weight: 400; }
+    .script { font-family: var(--font-script); font-weight: 400; }
+    img { max-width: 100%; display: block; }
+
+    /* ── Ilustrasi: warna dari token ── */
+    .sr-cap { fill: var(--cap); }
+    .sr-cap-top { fill: var(--cap-top); }
+    .sr-tassel { fill: var(--tassel); }
+    .sr-tassel-line { fill: none; stroke: var(--tassel); stroke-width: 2.4; stroke-linecap: round; }
+    .sr-curtain { fill: var(--curtain); }
+    .sr-curtain-fold { fill: var(--curtain-fold); }
+    .sr-valance { fill: var(--curtain-fold); }
+    .sr-fringe { fill: var(--accent); }
+    .sr-beam { fill: color-mix(in srgb, var(--accent) 22%, transparent); }
+    .sr-stage { fill: var(--secondary); }
+    .sr-stage-edge { fill: var(--accent); }
+    .sr-c1 { fill: var(--confetti-a); }
+    .sr-c2 { fill: var(--confetti-b); }
+    .sr-c3 { fill: var(--confetti-c); }
+    .sr-c4 { fill: var(--confetti-d); }
+    .sr-streamer-a { fill: none; stroke: var(--confetti-b); stroke-width: 4; stroke-linecap: round; }
+    .sr-streamer-b { fill: none; stroke: var(--confetti-c); stroke-width: 4; stroke-linecap: round; }
+    .toss { animation: toss 4.5s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    .toss.d1 { animation-delay: -1.5s; }
+    .toss.d2 { animation-delay: -3s; }
+    .fall { animation: fall 6s linear infinite; }
+    .fall.d1 { animation-delay: -2s; }
+    .fall.d2 { animation-delay: -4s; }
+    @keyframes toss { 0%, 100% { transform: translateY(0) rotate(-8deg); } 50% { transform: translateY(-16px) rotate(8deg); } }
+    @keyframes fall { 0% { transform: translateY(-20px); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(60px); opacity: 0; } }
+
+    /* ── Cover ── */
+    .cover-screen {
+      position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; overflow: hidden;
+      padding: 120px 22px 110px; text-align: center; background: radial-gradient(ellipse at 50% 20%, var(--bg-light), var(--bg-canvas) 70%);
+      transition: transform 0.9s cubic-bezier(0.65, 0, 0.35, 1), opacity 0.8s ease, visibility 0s linear 0.9s;
+    }
+    .cover-screen.has-photo { background: var(--bg-dark) center / cover no-repeat; }
+    .cover-screen.has-photo::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--bg-dark) 30%, transparent), color-mix(in srgb, var(--bg-dark) 88%, transparent) 60%); }
+    .cover-screen.opened { transform: translate3d(0, 100%, 0); opacity: 0; visibility: hidden; pointer-events: none; }
+    .stage-top { position: absolute; left: 0; right: 0; top: 0; width: 100%; height: 150px; pointer-events: none; }
+    .stage-floor { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 110px; pointer-events: none; }
+    .cover-screen.has-photo .stage-floor { display: none; }
+    .cover-inner { position: relative; z-index: 2; width: 100%; max-width: 320px; }
+    .caps-fly { width: 220px; height: 110px; margin: 0 auto 4px; }
+    .cover-screen.has-photo .caps-fly { display: none; }
+    .cover-badge { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: 0.3em; text-transform: uppercase; color: var(--primary); }
+    .cover-name { font-size: 50px; line-height: 1.02; margin-top: 8px; color: var(--text-main); overflow-wrap: break-word; }
+    .cover-screen.has-photo .cover-badge { color: var(--accent); }
+    .cover-screen.has-photo .cover-name, .cover-screen.has-photo .guest-name { color: var(--on-dark); }
+    .cover-info { margin-top: 6px; font-size: 14px; color: var(--text-muted); }
+    .cover-sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+    .cover-screen.has-photo .cover-info, .cover-screen.has-photo .cover-sub, .cover-screen.has-photo .guest-lbl { color: color-mix(in srgb, var(--on-dark) 85%, transparent); }
+    .guest-lbl { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-muted); margin-top: 16px; }
+    .guest-name { font-size: 22px; color: var(--text-main); margin: 2px 0 14px; overflow-wrap: break-word; }
+    .btn-open { display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; border: 0; cursor: pointer; border-radius: var(--radius-full); background: var(--primary); color: var(--on-primary); font-family: inherit; font-size: 13px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; box-shadow: 0 10px 24px color-mix(in srgb, var(--primary) 35%, transparent); transition: transform 0.2s ease; }
+    .btn-open:hover { transform: translateY(-2px) scale(1.02); }
+    .cover-wide { display: none; position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    @media (max-height: 700px) { .cover-screen { padding-top: 96px; padding-bottom: 80px; } .stage-top { height: 110px; } .stage-floor { height: 80px; } .caps-fly { height: 80px; } }
+
+    /* ── Hero kiri desktop ── */
+    .left-hero { display: none; position: fixed; left: 0; top: 0; width: calc(100% - 460px); height: 100vh; z-index: 10; overflow: hidden; background: radial-gradient(ellipse at 50% 30%, var(--bg-light), var(--bg-canvas) 75%) center / cover no-repeat; }
+    .left-hero.has-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, color-mix(in srgb, var(--bg-dark) 90%, transparent) 0%, color-mix(in srgb, var(--bg-dark) 14%, transparent) 55%, transparent 100%); }
+    .left-hero-art { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .left-hero-content { position: absolute; left: 3.5rem; right: 3.5rem; top: 50%; transform: translateY(-20%); z-index: 2; color: var(--text-main); text-align: center; }
+    .left-hero.has-photo .left-hero-content { top: auto; bottom: 4rem; transform: none; text-align: left; color: var(--on-dark); }
+    .left-hero-eyebrow { display: inline-block; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.3em; text-transform: uppercase; color: var(--primary); margin-bottom: 0.5rem; }
+    .left-hero.has-photo .left-hero-eyebrow { color: var(--accent); }
+    .left-hero-name { font-size: clamp(3.2rem, 6.4vw, 6rem); line-height: 1; overflow-wrap: break-word; }
+    .left-hero-info { margin-top: 0.5rem; font-size: 1.05rem; }
+    .left-hero-date { font-size: 0.85rem; letter-spacing: 0.14em; text-transform: uppercase; margin-top: 0.8rem; opacity: 0.85; }
+
+    /* ── Latar tetap ── */
+    .fixed-bg-layer {
+      position: fixed; top: 0; right: 0; bottom: 0; width: 100%; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(circle at 15% 20%, color-mix(in srgb, var(--confetti-b) 14%, transparent) 0 3px, transparent 4px) 0 0 / 70px 70px,
+        radial-gradient(circle at 70% 60%, color-mix(in srgb, var(--confetti-c) 14%, transparent) 0 3px, transparent 4px) 0 0 / 90px 90px,
+        var(--bg-canvas);
+    }
+    .fixed-bg-layer.has-custom-bg { background: linear-gradient(180deg, color-mix(in srgb, var(--bg-light) 62%, transparent), color-mix(in srgb, var(--bg-canvas) 82%, transparent)), var(--custom-bg) center / cover no-repeat; }
+
+    .right-panel { position: relative; z-index: 20; width: 100%; min-height: 100vh; }
+    .right-panel main { background: color-mix(in srgb, var(--bg-light) 84%, transparent); }
+
+    /* ── Beranda ── */
+    .slide-home { position: relative; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 24px 70px; text-align: center; overflow: hidden; background: linear-gradient(180deg, var(--bg-light), var(--bg-canvas)); }
+    .home-caps { width: 230px; height: 120px; margin: 0 auto 4px; }
+    .home-eyebrow { font-size: 36px; color: var(--primary); line-height: 1; margin-bottom: 6px; }
+    .home-name { font-size: clamp(3rem, 14vw, 4.4rem); line-height: 1.02; color: var(--text-main); overflow-wrap: break-word; }
+    .home-info { margin-top: 8px; font-size: 14px; color: var(--text-muted); }
+    .home-quote { font-size: 20px; line-height: 1.45; max-width: 340px; margin: 22px auto 0; color: var(--text-main); font-family: var(--font-heading); font-style: italic; }
+    .home-quote-ref { font-size: 11px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--primary); margin-top: 12px; }
+    .scroll-cue { margin-top: 24px; color: var(--primary); animation: cue 1.6s infinite; }
+    @keyframes cue { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+
+    /* ── Seksi ── */
+    .sec-block { position: relative; max-width: 480px; margin: 0 auto; padding: 60px 24px; text-align: center; }
+    .sr-divider { display: block; width: 140px; height: 26px; margin: 0 auto 10px; }
+    .sec-lbl { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: 0.26em; text-transform: uppercase; color: var(--primary); margin-bottom: 8px; }
+    .sec-h2 { font-size: 34px; line-height: 1.12; color: var(--text-main); margin-bottom: 12px; }
+    .sec-sub { font-size: 14px; color: var(--text-muted); max-width: 350px; margin: 0 auto 22px; }
+
+    .ticket-card { position: relative; margin-top: 20px; padding: 28px 22px 26px; border-radius: var(--radius-lg); background: var(--card-bg); box-shadow: 0 18px 36px color-mix(in srgb, var(--secondary) 12%, transparent); overflow: hidden; }
+    .ticket-card::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 8px; background: linear-gradient(90deg, var(--confetti-a), var(--confetti-b), var(--confetti-c), var(--confetti-d)); }
+    .portrait-wrap { position: relative; width: 170px; height: 210px; margin: 6px auto 18px; border-radius: 90px 90px var(--radius-md) var(--radius-md); overflow: hidden; background: var(--bg-canvas); border: 4px solid var(--accent); }
+    .portrait { width: 100%; height: 100%; object-fit: cover; }
+    .portrait-art { width: 100%; height: 100%; }
+    .star-name { font-size: 30px; line-height: 1.12; color: var(--text-main); overflow-wrap: break-word; }
+    .age-pill { display: inline-block; margin-top: 12px; padding: 6px 16px; border-radius: var(--radius-full); background: color-mix(in srgb, var(--accent) 30%, var(--card-bg)); color: var(--text-main); font-weight: 600; font-size: 13px; }
+    .star-detail { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+    .parents { margin-top: 18px; font-size: 13px; color: var(--text-muted); }
+
+    .countdown-timer { margin-bottom: 18px; }
+    #rsvp .rsvp-card-box form { text-align: left; }
+
+    /* ── Penutup ── */
+    .site-footer { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 220px 24px 128px; text-align: center; color: var(--on-dark); background: linear-gradient(180deg, var(--primary) 0%, var(--bg-dark) 80%); overflow: hidden; }
+    .site-footer.has-closing-photo { min-height: 100vh; min-height: 100svh; }
+    .footer-caps { position: absolute; top: 30px; left: 50%; width: 300px; height: 170px; transform: translateX(-50%); }
+    .closing-content { position: relative; max-width: 380px; }
+    .closing-title { font-size: 48px; line-height: 1.1; margin-bottom: 10px; color: var(--accent); }
+    .closing-text { font-size: 14px; color: color-mix(in srgb, var(--on-dark) 88%, transparent); margin: 0 auto 16px; }
+    .closing-name { font-size: 30px; }
+    .watermark { margin-top: 24px; font-size: 10px; }
+
+    /* ── Dock ── */
+    .bottom-dock { position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translate3d(-50%, 0, 0); z-index: 900; display: flex; gap: 4px; padding: 6px; border-radius: var(--radius-full); background: var(--card-bg); box-shadow: 0 10px 26px color-mix(in srgb, var(--secondary) 22%, transparent); transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease; }
+    .bottom-dock a { display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 50%; color: var(--primary); }
+    .bottom-dock a:hover, .bottom-dock a:focus-visible { color: var(--on-primary); background: var(--primary); outline: none; }
+    .bottom-dock svg { width: 19px; height: 19px; }
+
+    .reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1); }
+    .reveal.is-visible { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } .cover-screen, .scroll-cue, .toss, .fall { transition: none; animation: none; } }
+    @media (max-width: 340px) { .cover-name { font-size: 38px; } .star-name { font-size: 24px; } .sec-block { padding: 52px 18px; } }
+
+    @media (min-width: 900px) {
+      .cover-screen:not(.has-photo) .cover-wide { display: block; }
+      .cover-screen:not(.has-photo) .stage-top, .cover-screen:not(.has-photo) .stage-floor { display: none; }
+      .cover-screen:not(.has-photo) { padding-top: 60px; padding-bottom: 150px; }
+      .left-hero { display: block; }
+      .fixed-bg-layer { left: calc(100% - 460px); width: 460px; }
+      .right-panel { margin-left: calc(100% - 460px); width: 460px; }
+      .bottom-dock { left: calc(100% - 230px); }
+    }
+  </style>
+</head>
+<body class="is-locked">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <g id="sr-cap">
+        <path class="sr-cap" d="M-34 6v18c0 8 15 14 34 14s34-6 34-14V6Z"/>
+        <path class="sr-cap-top" d="M0-20 60 0 0 20-60 0Z"/>
+        <circle class="sr-tassel" cx="0" cy="0" r="4"/>
+        <path class="sr-tassel-line" d="M0 0 40 6v26"/><path class="sr-tassel" d="M36 30h8l2 14h-12Z"/>
+      </g>
+      <g id="sr-curtain-l">
+        <path class="sr-curtain" d="M0 0h220c-20 120-40 240-100 360H0Z"/>
+        <path class="sr-curtain-fold" d="M40 0c10 120 4 240-10 360h18c12-120 18-240 8-360ZM110 0c6 110 0 220-20 330l16 6c22-110 26-220 22-336ZM170 0c-2 90-12 180-34 270l14 8c22-90 32-180 38-278Z"/>
+      </g>
+      <g id="sr-valance">
+        <rect class="sr-valance" x="0" y="0" width="1440" height="34"/>
+        <path class="sr-curtain" d="M0 34q60 50 120 0t120 0 120 0 120 0 120 0 120 0 120 0 120 0 120 0 120 0 120 0 120 0V20H0Z"/>
+        <path class="sr-fringe" d="M0 34q60 50 120 0t120 0 120 0 120 0 120 0 120 0 120 0 120 0 120 0 120 0 120 0 120 0v4q-60 50-120 0t-120 0-120 0-120 0-120 0-120 0-120 0-120 0-120 0-120 0-120 0-120 0Z"/>
+      </g>
+      <g id="sr-confetti">
+        <rect class="sr-c1" x="0" y="0" width="10" height="5" transform="rotate(20)"/>
+        <rect class="sr-c2" x="40" y="20" width="10" height="5" transform="rotate(-30 45 22)"/>
+        <circle class="sr-c3" cx="80" cy="6" r="4"/>
+        <rect class="sr-c4" x="110" y="30" width="10" height="5" transform="rotate(50 115 32)"/>
+        <circle class="sr-c1" cx="150" cy="14" r="3.5"/>
+        <rect class="sr-c3" x="20" y="50" width="9" height="5" transform="rotate(-60 24 52)"/>
+        <circle class="sr-c2" cx="96" cy="60" r="3.5"/>
+        <rect class="sr-c1" x="136" y="62" width="10" height="5" transform="rotate(10 140 64)"/>
+      </g>
+      <path id="sr-beam" d="M0 0 120 600H-120Z"/>
+    </defs>
+  </svg>
+
+  <div class="left-hero{{#if hasCustomSidebarPhoto}} has-photo{{/if}}"{{#if hasCustomSidebarPhoto}} style="background-image: url('{{sidebarPhotoUrl}}');"{{/if}}>
+    {{#unless hasCustomSidebarPhoto}}
+    <svg class="left-hero-art" viewBox="0 0 800 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <use class="sr-beam" href="#sr-beam" transform="translate(400 0) scale(1.4 1.5)"/>
+      <use href="#sr-curtain-l" transform="translate(-20 0) scale(1 2.5)"/>
+      <use href="#sr-curtain-l" transform="translate(820 0) scale(-1 2.5)"/>
+      <use href="#sr-valance" transform="scale(0.56 1)"/>
+      <g class="toss"><use href="#sr-cap" transform="translate(300 220) rotate(-14) scale(1.5)"/></g>
+      <g class="toss d1"><use href="#sr-cap" transform="translate(500 170) rotate(12) scale(1.3)"/></g>
+      <g class="toss d2"><use href="#sr-cap" transform="translate(410 300) rotate(-4) scale(1.1)"/></g>
+      <g class="fall"><use href="#sr-confetti" transform="translate(250 100) scale(1.6)"/></g>
+      <g class="fall d1"><use href="#sr-confetti" transform="translate(420 380) scale(1.4)"/></g>
+      <rect class="sr-stage" x="0" y="780" width="800" height="120"/><rect class="sr-stage-edge" x="0" y="780" width="800" height="8"/>
+    </svg>
+    {{/unless}}
+    <div class="left-hero-content">
+      <span class="left-hero-eyebrow">{{eventLabel}}</span>
+      <h1 class="left-hero-name serif">{{mainNickname}}</h1>
+      {{#if mainInfoLine}}<p class="left-hero-info">{{mainInfoLine}}</p>{{/if}}
+      {{#if eventDateFormatted}}<p class="left-hero-date">{{eventDateFormatted}}</p>{{/if}}
+    </div>
+  </div>
+
+  <div class="cover-screen{{#if landingCoverUrl}} has-photo{{/if}}" id="coverScreen" data-lux-desktop-cover="full"{{#if landingCoverUrl}} style="background-image: url('{{landingCoverUrl}}');"{{/if}}>
+    {{#unless landingCoverUrl}}
+    <svg class="cover-wide" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <use class="sr-beam" href="#sr-beam" transform="translate(360 0) rotate(12) scale(1.4 1.6)"/>
+      <use class="sr-beam" href="#sr-beam" transform="translate(1080 0) rotate(-12) scale(1.4 1.6)"/>
+      <use href="#sr-curtain-l" transform="translate(0 0) scale(1.3 2.5)"/>
+      <use href="#sr-curtain-l" transform="translate(1440 0) scale(-1.3 2.5)"/>
+      <use href="#sr-valance"/>
+      <g class="toss"><use href="#sr-cap" transform="translate(400 280) rotate(-18) scale(1.6)"/></g>
+      <g class="toss d1"><use href="#sr-cap" transform="translate(1040 240) rotate(16) scale(1.5)"/></g>
+      <g class="toss d2"><use href="#sr-cap" transform="translate(470 560) rotate(8) scale(1.1)"/></g>
+      <g class="toss"><use href="#sr-cap" transform="translate(980 540) rotate(-10) scale(1.2)"/></g>
+      <path class="sr-streamer-a" d="M300 120c40 40-20 80 20 120s-20 80 20 120"/>
+      <path class="sr-streamer-b" d="M1140 110c-40 40 20 80-20 120s20 80-20 120"/>
+      <g class="fall"><use href="#sr-confetti" transform="translate(560 90) scale(1.6)"/></g>
+      <g class="fall d1"><use href="#sr-confetti" transform="translate(760 120) scale(1.5)"/></g>
+      <g class="fall d2"><use href="#sr-confetti" transform="translate(330 400) scale(1.4)"/></g>
+      <g class="fall"><use href="#sr-confetti" transform="translate(960 380) scale(1.3)"/></g>
+      <rect class="sr-stage" x="0" y="800" width="1440" height="100"/><rect class="sr-stage-edge" x="0" y="800" width="1440" height="8"/>
+    </svg>
+    {{/unless}}
+    <svg class="stage-top" viewBox="0 0 400 150" preserveAspectRatio="xMidYMin slice" aria-hidden="true">
+      <use href="#sr-curtain-l" transform="scale(0.45 0.42)"/>
+      <use href="#sr-curtain-l" transform="translate(400 0) scale(-0.45 0.42)"/>
+      <use href="#sr-valance" transform="scale(0.28 0.8)"/>
+      <g class="fall"><use href="#sr-confetti" transform="translate(110 50)"/></g>
+      <g class="fall d1"><use href="#sr-confetti" transform="translate(200 70) scale(0.8)"/></g>
+    </svg>
+    <svg class="stage-floor" viewBox="0 0 400 110" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+      <use href="#sr-confetti" transform="translate(40 20) scale(0.9)"/>
+      <use href="#sr-confetti" transform="translate(230 30) scale(0.8)"/>
+      <rect class="sr-stage" x="0" y="80" width="400" height="30"/><rect class="sr-stage-edge" x="0" y="80" width="400" height="5"/>
+    </svg>
+    <div class="cover-inner">
+      <svg class="caps-fly" viewBox="0 0 220 110" aria-hidden="true">
+        <g class="toss"><use href="#sr-cap" transform="translate(60 60) rotate(-16) scale(0.8)"/></g>
+        <g class="toss d1"><use href="#sr-cap" transform="translate(160 50) rotate(14) scale(0.9)"/></g>
+      </svg>
+      <span class="cover-badge" data-lux-field="customLabels.coverBadge">{{eventLabel}}</span>
+      <h1 class="cover-name serif">{{mainNickname}}</h1>
+      {{#if mainInfoLine}}<p class="cover-info">{{mainInfoLine}}</p>{{/if}}
+      <p class="cover-sub" data-lux-field="customLabels.coverSubtitle">{{eventIntro}}</p>
+      <p class="guest-lbl">Kepada Yth.</p>
+      <p class="guest-name serif">{{guestName}}</p>
+      <button type="button" class="btn-open btn-buka" onclick="openInvitation()" data-lux-field="customLabels.openBtn">Buka Undangan</button>
+    </div>
+  </div>
+
+  <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
+
+  <div class="right-panel" id="rightPanel">
+    <section class="slide-home" id="home">
+      <svg class="home-caps reveal" viewBox="0 0 230 120" aria-hidden="true">
+        <g class="fall"><use href="#sr-confetti" transform="translate(30 0) scale(1.1)"/></g>
+        <g class="toss"><use href="#sr-cap" transform="translate(70 70) rotate(-12)"/></g>
+        <g class="toss d1"><use href="#sr-cap" transform="translate(160 60) rotate(10)"/></g>
+      </svg>
+      <span class="home-eyebrow script reveal" data-lux-field="customLabels.quoteEyebrow">Alhamdulillah</span>
+      <h2 class="home-name serif reveal">{{mainNickname}}</h2>
+      {{#if mainInfoLine}}<p class="home-info reveal">{{mainInfoLine}}</p>{{/if}}
+      {{#if openingQuote}}
+      <p class="home-quote reveal">{{openingQuote}}</p>
+      {{#if openingQuoteRef}}<p class="home-quote-ref">{{openingQuoteRef}}</p>{{/if}}
+      {{/if}}
+      <svg class="scroll-cue" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+    </section>
+
+    <main>
+      <section class="sec-block reveal" id="profile">
+        <svg class="sr-divider" viewBox="0 0 140 26" aria-hidden="true"><use href="#sr-confetti" transform="translate(0 2) scale(0.9 0.3)"/></svg>
+        <span class="sec-lbl" data-lux-field="customLabels.coupleEyebrow">{{profileEyebrow}}</span>
+        <h2 class="sec-h2 serif" data-lux-field="customLabels.coupleTitle">{{profileTitle}}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.coupleSub">{{profileSub}}</p>
+        <div class="ticket-card">
+          <div class="portrait-wrap">
+            {{#if hasCustomMainPhoto}}<img class="portrait" src="{{mainPhotoUrl}}" alt="{{mainName}}" loading="lazy" />{{/if}}
+            {{#unless hasCustomMainPhoto}}
+            <svg class="portrait-art" viewBox="0 0 170 210" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <use class="sr-beam" href="#sr-beam" transform="translate(85 0) scale(0.6 0.4)"/>
+              <use href="#sr-confetti" transform="translate(10 20)"/>
+              <g class="toss"><use href="#sr-cap" transform="translate(85 120) rotate(-10) scale(1.2)"/></g>
+            </svg>
+            {{/unless}}
+          </div>
+          <h3 class="star-name serif">{{mainName}}</h3>
+          {{#if mainInfoLine}}<span class="age-pill">{{mainInfoLine}}</span>{{/if}}
+          {{#if mainDetailLine}}<p class="star-detail">{{mainDetailLine}}</p>{{/if}}
+          <div class="parents">{{parentsHtml}}</div>
+        </div>
+      </section>
+
+      <section class="sec-block reveal" id="event">
+        <svg class="sr-divider" viewBox="0 0 140 26" aria-hidden="true"><use href="#sr-confetti" transform="translate(0 2) scale(0.9 0.3)"/></svg>
+        <span class="sec-lbl" data-lux-field="customLabels.eventsEyebrow">Waktu & Tempat</span>
+        <h2 class="sec-h2 serif" data-lux-field="customLabels.eventsTitle">{{agendaTitle}}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.eventsSub">{{eventDateFormatted}}</p>
+        {{countdownHtml}}
+        {{eventSectionHtml}}
+      </section>
+
+      {{qrPassHtml}}
+      {{gallerySectionHtml}}
+      {{giftSectionHtml}}
+      {{extraSectionsHtml}}
+
+      <section class="sec-block reveal" id="rsvp">
+        <span class="sec-lbl" data-lux-field="customLabels.wishesEyebrow">Kirim Ucapan</span>
+        {{rsvpSectionHtml}}
+        {{wishesSectionHtml}}
+      </section>
+
+      {{memoriesSectionHtml}}
+    </main>
+
+    <footer class="site-footer {{closingPhotoClass}}" id="footer" style="{{closingBgStyle}}">
+      <svg class="footer-caps" viewBox="0 0 300 170" aria-hidden="true">
+        <g class="fall"><use href="#sr-confetti" transform="translate(70 10)"/></g>
+        <g class="toss"><use href="#sr-cap" transform="translate(90 100) rotate(-16)"/></g>
+        <g class="toss d1"><use href="#sr-cap" transform="translate(150 70) rotate(4) scale(1.1)"/></g>
+        <g class="toss d2"><use href="#sr-cap" transform="translate(215 110) rotate(18)"/></g>
+      </svg>
+      <div class="closing-content">
+        <h2 class="closing-title script" data-lux-field="customLabels.closingTitle">Terima Kasih</h2>
+        <p class="closing-text" data-lux-field="customLabels.closingText">{{closingText}}</p>
+        <p class="closing-name serif">{{mainNickname}}</p>
+        <div class="watermark">{{brandWatermarkHtml}}</div>
+      </div>
+    </footer>
+  </div>
+
+  <nav class="bottom-dock" aria-label="Navigasi undangan">
+    <a href="#home" aria-label="Beranda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg></a>
+    <a href="#profile" aria-label="Profil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></a>
+    <a href="#event" aria-label="Acara"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></a>
+    <a href="#gallery" aria-label="Galeri"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg></a>
+    <a href="#gift" aria-label="Kado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="8" width="18" height="13" rx="1"/><path d="M12 8v13M3 12h18M12 8S10 3 7.5 4 9 8 12 8Zm0 0s2-5 4.5-4S15 8 12 8Z"/></svg></a>
+    <a href="#rsvp" aria-label="Ucapan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12Z"/></svg></a>
+  </nav>
+
+  <script>
+    function openInvitation() {
+      var cover = document.getElementById('coverScreen');
+      if (cover) cover.classList.add('opened');
+      document.body.classList.remove('is-locked');
+    }
+    (function () {
+      var items = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window)) { items.forEach(function (el) { el.classList.add('is-visible'); }); return; }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) { if (entry.isIntersecting) { entry.target.classList.add('is-visible'); io.unobserve(entry.target); } });
+      }, { threshold: 0.12 });
+      items.forEach(function (el) { io.observe(el); });
+    })();
+  </script>
+  {{musicPlayerHtml}}
+</body>
+</html>

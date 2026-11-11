@@ -1,0 +1,340 @@
+<!--
+  TEMA GIRIH — Khitan / Geometri Bintang Delapan
+  Kategori: Modern | EventType: KHITAN
+  Kontrak tema satu nama (lihat themes/_blueprints/khitan/).
+  Pola ubin bintang delapan, roset bintang bersilang, dan medali segi delapan digambar sebagai SVG/CSS yang warnanya
+  mengikuti token palet; setiap slot foto punya ilustrasi pengganti ({{#unless}}) sehingga undangan tetap utuh tanpa unggahan.
+  Desktop >= 900px: .left-hero (DESKTOP_SIDEBAR) di kiri, .right-panel 460px di kanan.
+-->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>{{eventLabel}} {{mainNickname}}</title>
+  <link rel="stylesheet" href="/fonts/fonts.css" />
+  <style>
+    :root {
+      --primary: #0e5e6f;
+      --secondary: #0a3f4b;
+      --accent: #e3c58f;
+      --tertiary: #3aa3a0;
+      --sand: #f1e4c8;
+      --deep: #072d36;
+      --bg-dark: #072d36;
+      --bg-light: #fdfaf2;
+      --bg-canvas: #f4ecdb;
+      --card-bg: #fffdf7;
+      --text-main: #0b3540;
+      --text-muted: #4f6668;
+      --on-primary: #fdfaf2;
+      --on-dark: #fbf3e2;
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --radius-full: 9999px;
+      --font-heading: 'DM Serif Display', Georgia, serif;
+      --font-body: 'Jost', system-ui, sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    ::selection { background: color-mix(in srgb, var(--accent) 50%, transparent); color: var(--text-main); }
+    html { scroll-behavior: smooth; scrollbar-width: none; }
+    html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+    body { font-family: var(--font-body); background: var(--bg-canvas); color: var(--text-main); line-height: 1.65; overflow-x: hidden; }
+    body.is-locked { overflow: hidden; }
+    .serif { font-family: var(--font-heading); font-weight: 400; }
+    img { max-width: 100%; display: block; }
+
+    /* ── Ilustrasi: warna dari token ── */
+    .gh-line { stroke: var(--accent); stroke-width: 2; fill: none; stroke-linejoin: round; }
+    .gh-line-soft { stroke: color-mix(in srgb, var(--accent) 45%, transparent); stroke-width: 1.2; fill: none; stroke-linejoin: round; }
+    .gh-line-primary { stroke: var(--primary); stroke-width: 2; fill: none; }
+    .gh-fill-a { fill: var(--tertiary); }
+    .gh-fill-b { fill: var(--primary); }
+    .gh-fill-c { fill: var(--accent); }
+    .gh-fill-d { fill: var(--deep); }
+    .gh-sand { fill: var(--sand); }
+    .spin-slow { transform-box: fill-box; transform-origin: center; animation: spin 60s linear infinite; }
+    .spin-rev { transform-box: fill-box; transform-origin: center; animation: spin 80s linear infinite reverse; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Pola ubin bintang delapan (CSS) ── */
+    .tile-bg {
+      background-color: var(--secondary);
+      background-image:
+        conic-gradient(from 22.5deg at 50% 50%, color-mix(in srgb, var(--accent) 22%, transparent) 0 12.5%, transparent 0 25%, color-mix(in srgb, var(--accent) 22%, transparent) 0 37.5%, transparent 0 50%, color-mix(in srgb, var(--accent) 22%, transparent) 0 62.5%, transparent 0 75%, color-mix(in srgb, var(--accent) 22%, transparent) 0 87.5%, transparent 0),
+        conic-gradient(from 0deg at 50% 50%, color-mix(in srgb, var(--tertiary) 25%, transparent) 0 12.5%, transparent 0 25%, color-mix(in srgb, var(--tertiary) 25%, transparent) 0 37.5%, transparent 0 50%, color-mix(in srgb, var(--tertiary) 25%, transparent) 0 62.5%, transparent 0 75%, color-mix(in srgb, var(--tertiary) 25%, transparent) 0 87.5%, transparent 0);
+      background-size: 64px 64px, 64px 64px;
+      background-position: 0 0, 32px 32px;
+    }
+
+    /* ── Cover ── */
+    .cover-screen {
+      position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; overflow: hidden;
+      padding: 24px 20px; text-align: center; color: var(--on-dark);
+      transition: transform 0.9s cubic-bezier(0.65, 0, 0.35, 1), opacity 0.8s ease, visibility 0s linear 0.9s;
+    }
+    .cover-screen::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 50%, color-mix(in srgb, var(--deep) 30%, transparent) 20%, color-mix(in srgb, var(--deep) 85%, transparent) 85%); pointer-events: none; }
+    .cover-screen.has-photo { background: var(--deep) center / cover no-repeat; }
+    .cover-screen.has-photo::after { background: color-mix(in srgb, var(--deep) 72%, transparent); }
+    .cover-screen.opened { transform: scale(1.06); opacity: 0; visibility: hidden; pointer-events: none; }
+    .rosette { position: absolute; top: 50%; left: 50%; width: 560px; height: 560px; transform: translate(-50%, -50%); pointer-events: none; z-index: 1; }
+    .cover-inner { position: relative; z-index: 2; width: 100%; max-width: 300px; }
+    .octagon { position: relative; padding: 46px 26px 34px; background: var(--card-bg); color: var(--text-main);
+      clip-path: polygon(30% 0, 70% 0, 100% 22%, 100% 78%, 70% 100%, 30% 100%, 0 78%, 0 22%); }
+    .octagon-outline { position: absolute; inset: -6px; z-index: -1; background: var(--accent); clip-path: polygon(30% 0, 70% 0, 100% 22%, 100% 78%, 70% 100%, 30% 100%, 0 78%, 0 22%); }
+    .octagon-wrap { position: relative; isolation: isolate; filter: drop-shadow(0 22px 40px color-mix(in srgb, black 40%, transparent)); }
+    .cover-badge { font-size: 10px; font-weight: 600; letter-spacing: 0.3em; text-transform: uppercase; color: var(--primary); }
+    .cover-name { font-size: 42px; line-height: 1.05; margin-top: 8px; overflow-wrap: break-word; }
+    .cover-info { margin-top: 6px; font-size: 12px; color: var(--text-muted); }
+    .cover-sub { font-size: 13px; color: var(--text-muted); margin: 10px 0 12px; }
+    .guest-lbl { font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--text-muted); }
+    .guest-name { font-size: 22px; margin: 2px 0 14px; overflow-wrap: break-word; }
+    .btn-open { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border: 0; cursor: pointer; border-radius: var(--radius-sm); background: var(--primary); color: var(--on-primary); font-family: inherit; font-size: 12px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; transition: transform 0.18s ease, background 0.18s ease; }
+    .btn-open:hover { transform: translateY(-2px); background: var(--secondary); }
+
+    /* ── Hero kiri desktop (slot DESKTOP_SIDEBAR) ── */
+    .left-hero { display: none; position: fixed; left: 0; top: 0; width: calc(100% - 460px); height: 100vh; z-index: 10; overflow: hidden; color: var(--on-dark); }
+    .left-hero::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 50%, color-mix(in srgb, var(--deep) 25%, transparent) 15%, color-mix(in srgb, var(--deep) 88%, transparent) 85%); pointer-events: none; }
+    .left-hero.has-photo { background: var(--deep) center / cover no-repeat; }
+    .left-hero.has-photo::after { background: linear-gradient(to top, color-mix(in srgb, var(--deep) 92%, transparent) 0%, color-mix(in srgb, var(--deep) 20%, transparent) 60%, transparent 100%); }
+    .left-hero-art { position: absolute; top: 50%; left: 50%; width: 760px; height: 760px; transform: translate(-50%, -50%); z-index: 1; }
+    .left-hero-content { position: absolute; left: 3.5rem; right: 3.5rem; top: 50%; transform: translateY(-50%); z-index: 2; text-align: center; }
+    .left-hero.has-photo .left-hero-content { top: auto; bottom: 4rem; transform: none; text-align: left; }
+    .left-hero-eyebrow { display: inline-block; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.32em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.8rem; }
+    .left-hero-name { font-size: clamp(3rem, 6vw, 5.4rem); line-height: 1; overflow-wrap: break-word; }
+    .left-hero-info { margin-top: 0.6rem; font-size: 1rem; opacity: 0.9; }
+    .left-hero-date { font-size: 0.85rem; letter-spacing: 0.16em; text-transform: uppercase; margin-top: 0.8rem; color: var(--accent); }
+
+    /* ── Latar tetap (slot GLOBAL_FIXED_BG): ubin samar ── */
+    .fixed-bg-layer {
+      position: fixed; top: 0; right: 0; bottom: 0; width: 100%; z-index: 0; pointer-events: none; background-color: var(--bg-canvas);
+      background-image: conic-gradient(from 22.5deg at 50% 50%, color-mix(in srgb, var(--primary) 8%, transparent) 0 12.5%, transparent 0 25%, color-mix(in srgb, var(--primary) 8%, transparent) 0 37.5%, transparent 0 50%, color-mix(in srgb, var(--primary) 8%, transparent) 0 62.5%, transparent 0 75%, color-mix(in srgb, var(--primary) 8%, transparent) 0 87.5%, transparent 0);
+      background-size: 56px 56px;
+    }
+    .fixed-bg-layer.has-custom-bg { background: linear-gradient(180deg, color-mix(in srgb, var(--bg-light) 62%, transparent), color-mix(in srgb, var(--bg-canvas) 80%, transparent)), var(--custom-bg) center / cover no-repeat; }
+
+    .right-panel { position: relative; z-index: 20; width: 100%; min-height: 100vh; }
+    .right-panel main { background: color-mix(in srgb, var(--bg-light) 88%, transparent); }
+
+    /* ── Beranda (slot HOME_PHOTO) ── */
+    .slide-home { position: relative; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 90px 24px 70px; text-align: center; overflow: hidden; color: var(--on-dark); }
+    .slide-home::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--deep) 55%, transparent), color-mix(in srgb, var(--deep) 85%, transparent)); pointer-events: none; }
+    .slide-home > * { position: relative; z-index: 1; }
+    .home-star { width: 120px; height: 120px; margin: 0 auto 16px; }
+    .home-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.32em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+    .home-name { font-size: clamp(3rem, 14vw, 4.2rem); line-height: 1.02; overflow-wrap: break-word; }
+    .home-info { margin-top: 8px; font-size: 13px; opacity: 0.9; }
+    .home-quote { font-size: 20px; line-height: 1.5; max-width: 340px; margin: 22px auto 0; }
+    .home-quote-ref { font-size: 11px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); margin-top: 12px; }
+    .scroll-cue { margin-top: 24px; color: color-mix(in srgb, var(--on-dark) 70%, transparent); animation: cue 1.6s infinite; }
+    @keyframes cue { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+
+    /* ── Sistem seksi ── */
+    .sec-block { position: relative; max-width: 480px; margin: 0 auto; padding: 60px 24px; text-align: center; }
+    .gh-divider { display: block; width: 160px; height: 22px; margin: 0 auto 10px; }
+    .sec-lbl { display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.3em; text-transform: uppercase; color: var(--primary); margin-bottom: 8px; }
+    .sec-h2 { font-size: 34px; line-height: 1.12; color: var(--text-main); margin-bottom: 12px; }
+    .sec-sub { font-size: 14px; color: var(--text-muted); max-width: 350px; margin: 0 auto 22px; }
+
+    .geo-card { position: relative; margin-top: 108px; padding: 34px 22px 26px; border-radius: var(--radius-md); background: var(--card-bg); box-shadow: 0 16px 34px color-mix(in srgb, var(--deep) 10%, transparent); border-top: 4px solid var(--accent); }
+    .portrait-wrap { position: relative; width: 168px; height: 168px; margin: -100px auto 18px; padding: 6px; background: var(--accent); clip-path: polygon(30% 0, 70% 0, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0 70%, 0 30%); }
+    .portrait { width: 100%; height: 100%; object-fit: cover; background: var(--secondary); clip-path: inherit; }
+    .portrait-art { width: 100%; height: 100%; background: var(--secondary); clip-path: polygon(30% 0, 70% 0, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0 70%, 0 30%); }
+    .star-name { font-size: 30px; line-height: 1.12; color: var(--text-main); overflow-wrap: break-word; }
+    .age-pill { display: inline-block; margin-top: 12px; padding: 7px 16px; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--accent) 30%, var(--card-bg)); color: var(--text-main); font-weight: 600; font-size: 13px; }
+    .star-detail { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+    .parents { margin-top: 18px; font-size: 13px; color: var(--text-muted); }
+
+    .countdown-timer { margin-bottom: 18px; }
+    #rsvp .rsvp-card-box form { text-align: left; }
+
+    /* ── Penutup (slot CLOSING_COVER) ── */
+    .site-footer { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 220px 24px 128px; text-align: center; color: var(--on-dark); overflow: hidden; }
+    .site-footer::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--deep) 45%, transparent), color-mix(in srgb, var(--deep) 92%, transparent) 70%); pointer-events: none; }
+    .site-footer.has-closing-photo { min-height: 100vh; min-height: 100svh; }
+    .footer-star { position: absolute; top: 40px; left: 50%; width: 140px; height: 140px; transform: translateX(-50%); z-index: 1; }
+    .closing-content { position: relative; z-index: 1; max-width: 380px; }
+    .closing-title { font-size: 34px; line-height: 1.15; margin-bottom: 10px; color: var(--accent); }
+    .closing-text { font-size: 14px; color: color-mix(in srgb, var(--on-dark) 88%, transparent); margin: 0 auto 16px; }
+    .closing-name { font-size: 28px; }
+    .watermark { margin-top: 24px; font-size: 10px; }
+
+    /* ── Dock ── */
+    .bottom-dock { position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translate3d(-50%, 0, 0); z-index: 900; display: flex; gap: 4px; padding: 6px; border-radius: var(--radius-md); background: var(--deep); box-shadow: 0 10px 26px color-mix(in srgb, var(--deep) 35%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent); transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease; }
+    .bottom-dock a { display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: var(--radius-sm); color: var(--on-dark); }
+    .bottom-dock a:hover, .bottom-dock a:focus-visible { color: var(--deep); background: var(--accent); outline: none; }
+    .bottom-dock svg { width: 19px; height: 19px; }
+
+    .reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1); }
+    .reveal.is-visible { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } .cover-screen, .scroll-cue, .spin-slow, .spin-rev { transition: none; animation: none; } }
+    @media (max-width: 340px) { .cover-name { font-size: 32px; } .star-name { font-size: 24px; } .sec-block { padding: 52px 18px; } }
+
+    /* Sampul desktop layar penuh (tanpa foto sampul): roset besar di kedua sisi pola ubin. */
+    .cover-wide { display: none; position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+
+    @media (min-width: 900px) {
+      .cover-screen:not(.has-photo) .cover-wide { display: block; }
+      .left-hero { display: block; }
+      .fixed-bg-layer { left: calc(100% - 460px); width: 460px; }
+      .right-panel { margin-left: calc(100% - 460px); width: 460px; }
+      .bottom-dock { left: calc(100% - 230px); }
+    }
+  </style>
+</head>
+<body class="is-locked">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <path id="gh-star8" d="M50 0l14.6 14.6H85.4v20.8L100 50 85.4 64.6v20.8H64.6L50 100 35.4 85.4H14.6V64.6L0 50l14.6-14.6V14.6h20.8Z"/>
+      <path id="gh-cross8" d="M50 18 60 40 82 50 60 60 50 82 40 60 18 50 40 40Z"/>
+      <g id="gh-rosette">
+        <use href="#gh-star8" class="gh-fill-b" transform="translate(150 150) scale(3) translate(-50 -50)"/>
+        <use href="#gh-star8" class="gh-line" transform="translate(150 150) scale(3) translate(-50 -50)"/>
+        <use href="#gh-star8" class="gh-line-soft" transform="translate(150 150) rotate(22.5) scale(2.4) translate(-50 -50)"/>
+        <use href="#gh-star8" class="gh-fill-a" transform="translate(150 150) scale(1.6) translate(-50 -50)"/>
+        <use href="#gh-star8" class="gh-line" transform="translate(150 150) rotate(22.5) scale(1.6) translate(-50 -50)"/>
+        <use href="#gh-cross8" class="gh-fill-c" transform="translate(150 150) scale(1.2) translate(-50 -50)"/>
+        <circle class="gh-fill-d" cx="150" cy="150" r="14"/><circle class="gh-line" cx="150" cy="150" r="14"/>
+      </g>
+      <g id="gh-ring">
+        <circle class="gh-line-soft" cx="280" cy="280" r="270"/>
+        <circle class="gh-line-soft" cx="280" cy="280" r="226"/>
+        <g class="gh-line-soft"><use href="#gh-star8" transform="translate(280 30) scale(0.5) translate(-50 -50)"/><use href="#gh-star8" transform="translate(530 280) scale(0.5) translate(-50 -50)"/><use href="#gh-star8" transform="translate(280 530) scale(0.5) translate(-50 -50)"/><use href="#gh-star8" transform="translate(30 280) scale(0.5) translate(-50 -50)"/><use href="#gh-star8" transform="translate(457 103) scale(0.4) translate(-50 -50)"/><use href="#gh-star8" transform="translate(457 457) scale(0.4) translate(-50 -50)"/><use href="#gh-star8" transform="translate(103 457) scale(0.4) translate(-50 -50)"/><use href="#gh-star8" transform="translate(103 103) scale(0.4) translate(-50 -50)"/></g>
+      </g>
+    </defs>
+  </svg>
+
+  <div class="left-hero tile-bg{{#if hasCustomSidebarPhoto}} has-photo{{/if}}"{{#if hasCustomSidebarPhoto}} style="background-image: url('{{sidebarPhotoUrl}}');"{{/if}}>
+    {{#unless hasCustomSidebarPhoto}}
+    <svg class="left-hero-art" viewBox="0 0 560 560" aria-hidden="true"><g class="spin-slow"><use href="#gh-ring"/></g></svg>
+    {{/unless}}
+    <div class="left-hero-content">
+      <span class="left-hero-eyebrow">{{eventLabel}}</span>
+      <h1 class="left-hero-name serif">{{mainNickname}}</h1>
+      {{#if mainInfoLine}}<p class="left-hero-info">{{mainInfoLine}}</p>{{/if}}
+      {{#if eventDateFormatted}}<p class="left-hero-date">{{eventDateFormatted}}</p>{{/if}}
+    </div>
+  </div>
+
+  <div class="cover-screen tile-bg{{#if landingCoverUrl}} has-photo{{/if}}" id="coverScreen" data-lux-desktop-cover="full"{{#if landingCoverUrl}} style="background-image: url('{{landingCoverUrl}}');"{{/if}}>
+    {{#unless landingCoverUrl}}
+    <svg class="cover-wide" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <g class="spin-rev"><use href="#gh-rosette" transform="translate(-140 210) scale(1.6)"/></g>
+      <g class="spin-rev"><use href="#gh-rosette" transform="translate(1100 210) scale(1.6)"/></g>
+    </svg>
+    {{/unless}}
+    <svg class="rosette" viewBox="0 0 560 560" aria-hidden="true"><g class="spin-slow"><use href="#gh-ring"/></g></svg>
+    <div class="cover-inner">
+      <div class="octagon-wrap">
+        <span class="octagon-outline" aria-hidden="true"></span>
+        <div class="octagon">
+          <span class="cover-badge" data-lux-field="customLabels.coverBadge">{{eventLabel}}</span>
+          <h1 class="cover-name serif">{{mainNickname}}</h1>
+          {{#if mainInfoLine}}<p class="cover-info">{{mainInfoLine}}</p>{{/if}}
+          <p class="cover-sub" data-lux-field="customLabels.coverSubtitle">{{eventIntro}}</p>
+          <p class="guest-lbl">Kepada Yth.</p>
+          <p class="guest-name serif">{{guestName}}</p>
+          <button type="button" class="btn-open btn-buka" onclick="openInvitation()" data-lux-field="customLabels.openBtn">Buka Undangan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
+
+  <div class="right-panel" id="rightPanel">
+    <section class="slide-home tile-bg" id="home">
+      <svg class="home-star reveal" viewBox="0 0 300 300" aria-hidden="true"><g class="spin-rev"><use href="#gh-rosette"/></g></svg>
+      <span class="home-eyebrow reveal" data-lux-field="customLabels.quoteEyebrow">{{eventLabel}}</span>
+      <h2 class="home-name serif reveal">{{mainNickname}}</h2>
+      {{#if mainInfoLine}}<p class="home-info reveal">{{mainInfoLine}}</p>{{/if}}
+      {{#if openingQuote}}
+      <p class="home-quote serif reveal">{{openingQuote}}</p>
+      {{#if openingQuoteRef}}<p class="home-quote-ref">{{openingQuoteRef}}</p>{{/if}}
+      {{/if}}
+      <svg class="scroll-cue" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+    </section>
+
+    <main>
+      <section class="sec-block reveal" id="profile">
+        <svg class="gh-divider" viewBox="0 0 160 22" aria-hidden="true"><path class="gh-line-primary" d="M2 11h56M102 11h56"/><use href="#gh-star8" class="gh-fill-b" transform="translate(69 0) scale(0.22)"/></svg>
+        <span class="sec-lbl" data-lux-field="customLabels.coupleEyebrow">{{profileEyebrow}}</span>
+        <h2 class="sec-h2 serif" data-lux-field="customLabels.coupleTitle">{{profileTitle}}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.coupleSub">{{profileSub}}</p>
+        <div class="geo-card">
+          <div class="portrait-wrap">
+            {{#if hasCustomMainPhoto}}<img class="portrait" src="{{mainPhotoUrl}}" alt="{{mainName}}" loading="lazy" />{{/if}}
+            {{#unless hasCustomMainPhoto}}
+            <svg class="portrait-art" viewBox="0 0 300 300" aria-hidden="true"><use href="#gh-rosette"/></svg>
+            {{/unless}}
+          </div>
+          <h3 class="star-name serif">{{mainName}}</h3>
+          {{#if mainInfoLine}}<span class="age-pill">{{mainInfoLine}}</span>{{/if}}
+          {{#if mainDetailLine}}<p class="star-detail">{{mainDetailLine}}</p>{{/if}}
+          <div class="parents">{{parentsHtml}}</div>
+        </div>
+      </section>
+
+      <section class="sec-block reveal" id="event">
+        <svg class="gh-divider" viewBox="0 0 160 22" aria-hidden="true"><path class="gh-line-primary" d="M2 11h56M102 11h56"/><use href="#gh-star8" class="gh-fill-b" transform="translate(69 0) scale(0.22)"/></svg>
+        <span class="sec-lbl" data-lux-field="customLabels.eventsEyebrow">Waktu & Tempat</span>
+        <h2 class="sec-h2 serif" data-lux-field="customLabels.eventsTitle">{{agendaTitle}}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.eventsSub">{{eventDateFormatted}}</p>
+        {{countdownHtml}}
+        {{eventSectionHtml}}
+      </section>
+
+      {{qrPassHtml}}
+      {{gallerySectionHtml}}
+      {{giftSectionHtml}}
+      {{extraSectionsHtml}}
+
+      <section class="sec-block reveal" id="rsvp">
+        <span class="sec-lbl" data-lux-field="customLabels.wishesEyebrow">Doa & Ucapan</span>
+        {{rsvpSectionHtml}}
+        {{wishesSectionHtml}}
+      </section>
+
+      {{memoriesSectionHtml}}
+    </main>
+
+    <footer class="site-footer tile-bg {{closingPhotoClass}}" id="footer" style="{{closingBgStyle}}">
+      <svg class="footer-star" viewBox="0 0 300 300" aria-hidden="true"><g class="spin-rev"><use href="#gh-rosette"/></g></svg>
+      <div class="closing-content">
+        <h2 class="closing-title serif" data-lux-field="customLabels.closingTitle">Jazakumullah Khairan</h2>
+        <p class="closing-text" data-lux-field="customLabels.closingText">{{closingText}}</p>
+        <p class="closing-name serif">{{mainNickname}}</p>
+        <div class="watermark">{{brandWatermarkHtml}}</div>
+      </div>
+    </footer>
+  </div>
+
+  <nav class="bottom-dock" aria-label="Navigasi undangan">
+    <a href="#home" aria-label="Beranda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg></a>
+    <a href="#profile" aria-label="Profil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></a>
+    <a href="#event" aria-label="Acara"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></a>
+    <a href="#gallery" aria-label="Galeri"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg></a>
+    <a href="#gift" aria-label="Kado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="8" width="18" height="13" rx="1"/><path d="M12 8v13M3 12h18M12 8S10 3 7.5 4 9 8 12 8Zm0 0s2-5 4.5-4S15 8 12 8Z"/></svg></a>
+    <a href="#rsvp" aria-label="Ucapan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12Z"/></svg></a>
+  </nav>
+
+  <script>
+    function openInvitation() {
+      var cover = document.getElementById('coverScreen');
+      if (cover) cover.classList.add('opened');
+      document.body.classList.remove('is-locked');
+    }
+    (function () {
+      var items = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window)) { items.forEach(function (el) { el.classList.add('is-visible'); }); return; }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) { if (entry.isIntersecting) { entry.target.classList.add('is-visible'); io.unobserve(entry.target); } });
+      }, { threshold: 0.12 });
+      items.forEach(function (el) { io.observe(el); });
+    })();
+  </script>
+  {{musicPlayerHtml}}
+</body>
+</html>

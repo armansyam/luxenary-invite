@@ -163,30 +163,55 @@ export const THEME_MAP: Record<string, ThemeEntry> = {
   "riang": { file: "riang.html", eventType: "birthday", style: "modern" },
   "balonku": { file: "balonku.html", eventType: "birthday", style: "modern" },
   "gala": { file: "gala.html", eventType: "birthday", style: "minimalist" },
+  "lilin": { file: "lilin.html", eventType: "birthday", style: "minimalist" },
+  "konfeti": { file: "konfeti.html", eventType: "birthday", style: "modern" },
+  "antariksa": { file: "antariksa.html", eventType: "birthday", style: "modern" },
+  "rimba": { file: "rimba.html", eventType: "birthday", style: "minimalist" },
+  "karnaval": { file: "karnaval.html", eventType: "birthday", style: "modern" },
 
   // Khitan Series
   "al-fariz": { file: "al-fariz.html", eventType: "khitan", style: "traditional" },
   "fajar": { file: "fajar.html", eventType: "khitan", style: "traditional" },
   "nur": { file: "nur.html", eventType: "khitan", style: "traditional" },
   "sakinah": { file: "sakinah.html", eventType: "khitan", style: "minimalist" },
+  "kubah": { file: "kubah.html", eventType: "khitan", style: "traditional" },
+  "sajadah": { file: "sajadah.html", eventType: "khitan", style: "traditional" },
+  "girih": { file: "girih.html", eventType: "khitan", style: "modern" },
+  "serambi": { file: "serambi.html", eventType: "khitan", style: "minimalist" },
+  "firdaus": { file: "firdaus.html", eventType: "khitan", style: "traditional" },
 
   // Aqiqah Series
   "al-khalid": { file: "al-khalid.html", eventType: "aqiqah", style: "minimalist" },
   "buaian": { file: "buaian.html", eventType: "aqiqah", style: "minimalist" },
   "mungil": { file: "mungil.html", eventType: "aqiqah", style: "minimalist" },
   "barakah": { file: "barakah.html", eventType: "aqiqah", style: "traditional" },
+  "domba": { file: "domba.html", eventType: "aqiqah", style: "minimalist" },
+  "lelap": { file: "lelap.html", eventType: "aqiqah", style: "minimalist" },
+  "pelangi": { file: "pelangi.html", eventType: "aqiqah", style: "modern" },
+  "kelopak": { file: "kelopak.html", eventType: "aqiqah", style: "modern" },
+  "embun": { file: "embun.html", eventType: "aqiqah", style: "traditional" },
 
   // Wisuda Series
   "cendekia": { file: "cendekia.html", eventType: "wisuda", style: "modern" },
   "toga": { file: "toga.html", eventType: "wisuda", style: "modern" },
   "laurel": { file: "laurel.html", eventType: "wisuda", style: "modern" },
   "akademia": { file: "akademia.html", eventType: "wisuda", style: "minimalist" },
+  "pena": { file: "pena.html", eventType: "wisuda", style: "minimalist" },
+  "medali": { file: "medali.html", eventType: "wisuda", style: "modern" },
+  "sorak": { file: "sorak.html", eventType: "wisuda", style: "modern" },
+  "ijazah": { file: "ijazah.html", eventType: "wisuda", style: "traditional" },
+  "pustaka": { file: "pustaka.html", eventType: "wisuda", style: "minimalist" },
 
   // General / Gathering Series
   "sinergi": { file: "sinergi.html", eventType: "gathering", style: "modern" },
   "prakarsa": { file: "prakarsa.html", eventType: "gathering", style: "modern" },
   "forum": { file: "forum.html", eventType: "gathering", style: "modern" },
   "temu": { file: "temu.html", eventType: "gathering", style: "minimalist" },
+  "cakrawala": { file: "cakrawala.html", eventType: "gathering", style: "modern" },
+  "jamuan": { file: "jamuan.html", eventType: "gathering", style: "traditional" },
+  "panggung": { file: "panggung.html", eventType: "gathering", style: "modern" },
+  "lapang": { file: "lapang.html", eventType: "gathering", style: "minimalist" },
+  "prisma": { file: "prisma.html", eventType: "gathering", style: "minimalist" },
 };
 
 const THEME_EVENT_FOLDERS: Array<[string, ThemeEntry["eventType"]]> = [
@@ -1858,8 +1883,12 @@ export async function renderTemplateFile(
   // Tata letak split (hero kiri + kolom isi 460 px di kanan) ditandai lebar kolom itu di CSS master. Master tanpa hero
   // kiri (satu kolom di tengah) tidak memuatnya: sampul yang dipersempit akan membuka isi undangan di belakangnya.
   const hasSplitLayout = tpl.includes("calc(100% - 460px)");
+  // Master berilustrasi yang menyusun sampul mendatar sendiri (data-lux-desktop-cover="full") tampil layar penuh selama
+  // klien belum mengunggah foto sampul: alasan split (foto portrait terpotong bila dilebarkan) tidak berlaku untuk
+  // gambar vektor. Begitu ada foto sampul portrait, aturan split di bawah tetap berlaku.
+  const illustratedFullCover = /data-lux-desktop-cover="full"/.test(tpl) && !data.landingCoverUrl;
 
-  if (!hasDesktopCover && hasSplitLayout) {
+  if (!hasDesktopCover && hasSplitLayout && !illustratedFullCover) {
     // Tanpa cover landscape, sampul HP (umumnya portrait 9:16) tampil utuh di kolom undangan 460 px, sesuai janji
     // Studio; tema tulisan tangan yang melebarkan sampul ke seluruh layar memotong foto itu. Spesifisitas :root body
     // menang atas aturan sampul master tanpa !important. left: auto + right: 0 benar untuk sampul fixed seluas layar maupun sampul absolute di dalam kolom kanan.

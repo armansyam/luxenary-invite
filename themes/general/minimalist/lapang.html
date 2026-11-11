@@ -1,0 +1,405 @@
+<!--
+  TEMA LAPANG — Gathering / Kumpul di Alam Terbuka
+  Kategori: Minimalist | EventType: GATHERING
+  Kontrak tema satu nama (lihat themes/_blueprints/general/). {{mainNickname}} berisi judul acara, jadi tipografi judul
+  disiapkan untuk judul panjang. Cocok untuk halalbihalal, piknik keluarga, family day, atau outing kantor.
+  Perbukitan, tenda, umbul-umbul, pohon, tikar piknik, dan matahari digambar sebagai SVG yang warnanya mengikuti token
+  palet; setiap slot foto punya ilustrasi pengganti ({{#unless}}).
+  Desktop >= 900px: sampul layar penuh dengan komposisi mendatar sendiri (data-lux-desktop-cover="full") selama klien belum
+  mengunggah foto sampul; setelah dibuka .left-hero (DESKTOP_SIDEBAR) di kiri, .right-panel 460px di kanan.
+-->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>{{mainNickname}}</title>
+  <link rel="stylesheet" href="/fonts/fonts.css" />
+  <style>
+    :root {
+      --primary: #2f6a3e;
+      --secondary: #214d2c;
+      --accent: #f2b84b;
+      --tertiary: #9c4626;
+      --sky: #dff0ee;
+      --sun: #f6c453;
+      --hill-far: #a9cf8e;
+      --hill-mid: #7fb36a;
+      --hill-near: #5a9a4e;
+      --tree: #3f7a44;
+      --trunk: #7a5234;
+      --tent-a: #f4ede0;
+      --tent-b: #d9644a;
+      --flag-a: #d9644a;
+      --flag-b: #f2b84b;
+      --flag-c: #4f8fb8;
+      --mat-a: #d9644a;
+      --mat-b: #f4ede0;
+      --bg-dark: #1c3a24;
+      --bg-light: #f8f8f0;
+      --bg-canvas: #eef2e4;
+      --card-bg: #fffef9;
+      --text-main: #1d2c20;
+      --text-muted: #536056;
+      --on-primary: #f8f8f0;
+      --on-dark: #f3f6ea;
+      --radius-sm: 10px;
+      --radius-md: 18px;
+      --radius-lg: 28px;
+      --radius-full: 9999px;
+      --font-heading: 'Playfair Display', Georgia, serif;
+      --font-body: 'Jost', 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-script: 'Great Vibes', cursive;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    ::selection { background: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--text-main); }
+    html { scroll-behavior: smooth; scrollbar-width: none; }
+    html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+    body { font-family: var(--font-body); background: var(--bg-canvas); color: var(--text-main); line-height: 1.65; overflow-x: hidden; }
+    body.is-locked { overflow: hidden; }
+    .serif { font-family: var(--font-heading); font-weight: 700; }
+    .script { font-family: var(--font-script); font-weight: 400; }
+    img { max-width: 100%; display: block; }
+
+    /* ── Ilustrasi: warna dari token ── */
+    .lp-sky { fill: var(--sky); }
+    .lp-sun { fill: var(--sun); }
+    .lp-ray { fill: color-mix(in srgb, var(--sun) 30%, transparent); }
+    .lp-cloud { fill: var(--bg-light); }
+    .lp-far { fill: var(--hill-far); }
+    .lp-mid { fill: var(--hill-mid); }
+    .lp-near { fill: var(--hill-near); }
+    .lp-tree { fill: var(--tree); }
+    .lp-trunk { fill: var(--trunk); }
+    .lp-tent-a { fill: var(--tent-a); }
+    .lp-tent-b { fill: var(--tent-b); }
+    .lp-pole { fill: none; stroke: var(--trunk); stroke-width: 3; }
+    .lp-string { fill: none; stroke: color-mix(in srgb, var(--text-main) 40%, transparent); stroke-width: 1.4; }
+    .lp-f1 { fill: var(--flag-a); }
+    .lp-f2 { fill: var(--flag-b); }
+    .lp-f3 { fill: var(--flag-c); }
+    .lp-mat-a { fill: var(--mat-a); }
+    .lp-mat-b { fill: var(--mat-b); }
+    .lp-basket { fill: var(--trunk); }
+    .lp-basket-weave { fill: none; stroke: color-mix(in srgb, var(--trunk) 60%, var(--tent-a)); stroke-width: 2; }
+    .drift { animation: drift 14s ease-in-out infinite; }
+    .drift.d1 { animation-delay: -7s; }
+    .flutter { animation: flutter 2.6s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 0; }
+    .spin-sun { animation: spin 50s linear infinite; transform-box: fill-box; transform-origin: center; }
+    @keyframes drift { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(24px); } }
+    @keyframes flutter { 0%, 100% { transform: skewX(0); } 50% { transform: skewX(6deg); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Cover ── */
+    .cover-screen {
+      position: fixed; inset: 0; z-index: 9999; display: flex; align-items: flex-start; justify-content: center; overflow: hidden;
+      /* Gradien, bukan warna polos: mesin memaksa background-color sampul gelap (!important) agar tidak berkedip putih saat memuat. */
+      padding: 15vh 24px 40px; text-align: center; background: linear-gradient(var(--sky), var(--sky));
+      transition: transform 0.9s cubic-bezier(0.65, 0, 0.35, 1), opacity 0.8s ease, visibility 0s linear 0.9s;
+    }
+    .cover-screen.has-photo { align-items: center; padding-top: 30px; background: var(--bg-dark) center / cover no-repeat; }
+    .cover-screen.has-photo::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--bg-light) 20%, transparent), color-mix(in srgb, var(--bg-light) 90%, transparent) 55%); }
+    .cover-screen.opened { transform: translate3d(0, -100%, 0); opacity: 0; visibility: hidden; pointer-events: none; }
+    .field { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .cover-inner { position: relative; z-index: 2; width: 100%; max-width: 340px; }
+    .cover-badge { display: inline-block; padding: 6px 16px; border-radius: var(--radius-full); background: var(--primary); color: var(--on-primary); font-size: 11px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; }
+    .cover-name { font-size: clamp(30px, 9.5vw, 42px); line-height: 1.1; margin-top: 14px; color: var(--text-main); overflow-wrap: break-word; }
+    .cover-info { margin-top: 8px; font-size: 14px; color: var(--text-muted); }
+    .cover-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+    .guest-lbl { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-muted); margin-top: 16px; }
+    .guest-name { font-size: 22px; color: var(--text-main); margin: 2px 0 14px; overflow-wrap: break-word; }
+    .btn-open { display: inline-flex; align-items: center; gap: 8px; padding: 12px 26px; border: 0; cursor: pointer; border-radius: var(--radius-full); background: var(--tertiary); color: var(--on-primary); font-family: inherit; font-size: 14px; font-weight: 600; letter-spacing: 0.06em; box-shadow: 0 8px 20px color-mix(in srgb, var(--tertiary) 30%, transparent); transition: transform 0.2s ease; }
+    .btn-open:hover { transform: translateY(-2px); }
+    .cover-wide { display: none; position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+    /* ── Hero kiri desktop ── */
+    .left-hero { display: none; position: fixed; left: 0; top: 0; width: calc(100% - 460px); height: 100vh; z-index: 10; overflow: hidden; background: var(--sky) center / cover no-repeat; }
+    .left-hero.has-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, color-mix(in srgb, var(--bg-dark) 90%, transparent) 0%, color-mix(in srgb, var(--bg-dark) 14%, transparent) 55%, transparent 100%); }
+    .left-hero-art { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .left-hero-content { position: absolute; left: 3.5rem; right: 3.5rem; top: 4.5rem; z-index: 2; color: var(--text-main); max-width: 34rem; }
+    .left-hero.has-photo .left-hero-content { top: auto; bottom: 4rem; color: var(--on-dark); }
+    .left-hero-eyebrow { display: inline-block; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; color: var(--tertiary); margin-bottom: 0.6rem; }
+    .left-hero.has-photo .left-hero-eyebrow { color: var(--accent); }
+    .left-hero-name { font-size: clamp(2.4rem, 4.4vw, 4rem); line-height: 1.08; overflow-wrap: break-word; }
+    .left-hero-info { margin-top: 0.6rem; font-size: 1.05rem; }
+    .left-hero-date { font-size: 0.85rem; letter-spacing: 0.14em; text-transform: uppercase; margin-top: 0.8rem; opacity: 0.85; }
+
+    /* ── Latar tetap ── */
+    .fixed-bg-layer {
+      position: fixed; top: 0; right: 0; bottom: 0; width: 100%; z-index: 0; pointer-events: none;
+      background: linear-gradient(180deg, var(--sky), var(--bg-canvas) 35%);
+    }
+    .fixed-bg-layer.has-custom-bg { background: linear-gradient(180deg, color-mix(in srgb, var(--bg-light) 62%, transparent), color-mix(in srgb, var(--bg-canvas) 82%, transparent)), var(--custom-bg) center / cover no-repeat; }
+
+    .right-panel { position: relative; z-index: 20; width: 100%; min-height: 100vh; }
+    .right-panel main { background: color-mix(in srgb, var(--bg-light) 86%, transparent); }
+
+    /* ── Beranda ── */
+    .slide-home { position: relative; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 24px 220px; text-align: center; overflow: hidden; background: linear-gradient(180deg, var(--sky), var(--bg-light)); }
+    .home-hills { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 200px; }
+    .home-eyebrow { font-size: 36px; color: var(--tertiary); line-height: 1; margin-bottom: 8px; }
+    .home-name { font-size: clamp(2.2rem, 10vw, 3rem); line-height: 1.1; color: var(--text-main); overflow-wrap: break-word; }
+    .home-info { margin-top: 8px; font-size: 14px; color: var(--text-muted); }
+    .home-quote { font-size: 19px; line-height: 1.5; max-width: 340px; margin: 22px auto 0; color: var(--text-main); font-family: var(--font-heading); font-style: italic; font-weight: 400; }
+    .home-quote-ref { font-size: 11px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--tertiary); margin-top: 12px; }
+    .scroll-cue { position: relative; z-index: 1; margin-top: 24px; color: var(--tertiary); animation: cue 1.6s infinite; }
+    @keyframes cue { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+
+    /* ── Seksi ── */
+    .sec-block { position: relative; max-width: 480px; margin: 0 auto; padding: 60px 24px; text-align: center; }
+    .lp-divider { display: block; width: 140px; height: 28px; margin: 0 auto 10px; }
+    .sec-lbl { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; color: var(--tertiary); margin-bottom: 8px; }
+    .sec-h2 { font-size: 32px; line-height: 1.15; color: var(--text-main); margin-bottom: 12px; }
+    .sec-sub { font-size: 14px; color: var(--text-muted); max-width: 350px; margin: 0 auto 22px; }
+
+    .postcard { position: relative; margin-top: 10px; padding: 12px 12px 22px; border-radius: var(--radius-md); background: var(--card-bg); box-shadow: 0 16px 34px color-mix(in srgb, var(--secondary) 12%, transparent); }
+    .portrait-wrap { position: relative; width: 100%; aspect-ratio: 16 / 10; margin-bottom: 18px; border-radius: var(--radius-sm); overflow: hidden; background: var(--sky); }
+    .portrait { width: 100%; height: 100%; object-fit: cover; }
+    .portrait-art { width: 100%; height: 100%; }
+    .star-name { font-size: 26px; line-height: 1.18; color: var(--text-main); padding: 0 10px; overflow-wrap: break-word; }
+    .age-pill { display: block; margin-top: 8px; padding: 0 10px; font-size: 14px; color: var(--text-muted); }
+    .star-detail { display: inline-block; margin-top: 12px; padding: 6px 14px; border-radius: var(--radius-full); background: color-mix(in srgb, var(--hill-far) 40%, var(--card-bg)); color: var(--text-main); font-size: 12px; font-weight: 600; }
+    .parents { margin-top: 14px; font-size: 13px; color: var(--text-muted); }
+
+    .countdown-timer { margin-bottom: 18px; }
+    #rsvp .rsvp-card-box form { text-align: left; }
+
+    /* ── Penutup ── */
+    .site-footer { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 80px 24px 280px; text-align: center; color: var(--on-dark); background: linear-gradient(180deg, var(--primary), var(--secondary)); overflow: hidden; }
+    .site-footer.has-closing-photo { min-height: 100vh; min-height: 100svh; justify-content: flex-end; padding-bottom: 128px; }
+    .footer-field { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 200px; }
+    .site-footer.has-closing-photo .footer-field { display: none; }
+    .closing-content { position: relative; max-width: 380px; }
+    .closing-title { font-size: 48px; line-height: 1.1; margin-bottom: 10px; color: var(--accent); }
+    .closing-text { font-size: 14px; color: color-mix(in srgb, var(--on-dark) 90%, transparent); margin: 0 auto 16px; }
+    .closing-name { font-size: 24px; }
+    .watermark { margin-top: 24px; font-size: 10px; }
+
+    /* ── Dock ── */
+    .bottom-dock { position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translate3d(-50%, 0, 0); z-index: 900; display: flex; gap: 4px; padding: 6px; border-radius: var(--radius-full); background: var(--card-bg); box-shadow: 0 10px 26px color-mix(in srgb, var(--secondary) 22%, transparent); transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease; }
+    .bottom-dock a { display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 50%; color: var(--primary); }
+    .bottom-dock a:hover, .bottom-dock a:focus-visible { color: var(--on-primary); background: var(--primary); outline: none; }
+    .bottom-dock svg { width: 19px; height: 19px; }
+
+    .reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1); }
+    .reveal.is-visible { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } .cover-screen, .scroll-cue, .drift, .flutter, .spin-sun { transition: none; animation: none; } }
+    @media (max-width: 340px) { .star-name { font-size: 22px; } .sec-block { padding: 52px 18px; } }
+
+    @media (min-width: 900px) {
+      .cover-screen:not(.has-photo) { padding-top: 12vh; }
+      .cover-screen:not(.has-photo) .cover-wide { display: block; }
+      .cover-screen:not(.has-photo) .field { display: none; }
+      .left-hero { display: block; }
+      .fixed-bg-layer { left: calc(100% - 460px); width: 460px; }
+      .right-panel { margin-left: calc(100% - 460px); width: 460px; }
+      .bottom-dock { left: calc(100% - 230px); }
+    }
+  </style>
+</head>
+<body class="is-locked">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <g id="lp-sun"><g class="spin-sun"><path class="lp-ray" d="M0-90 10-50H-10ZM0 90 10 50H-10ZM-90 0-50 10V-10ZM90 0 50 10V-10ZM-64-64-30-42-42-30ZM64 64 30 42 42 30ZM64-64 42-30 30-42ZM-64 64-42 30-30 42Z"/></g><circle class="lp-sun" r="40"/></g>
+      <path id="lp-cloud" d="M0 30c0-12 12-18 22-14 4-10 18-16 30-8 10-6 26-2 28 10 12 0 18 6 18 12Z"/>
+      <g id="lp-hills">
+        <path class="lp-far" d="M0 80C120 20 220 40 320 70s200 10 280-30v160H0Z"/>
+        <path class="lp-mid" d="M0 120C100 80 200 90 300 110s220-10 300-40v130H0Z"/>
+        <path class="lp-near" d="M0 160c120-30 240-20 360 0s180-10 240-20v60H0Z"/>
+      </g>
+      <g id="lp-tree"><rect class="lp-trunk" x="-4" y="0" width="8" height="40"/><circle class="lp-tree" cx="0" cy="-10" r="26"/><circle class="lp-tree" cx="-16" cy="6" r="18"/><circle class="lp-tree" cx="16" cy="4" r="18"/></g>
+      <g id="lp-tent">
+        <path class="lp-tent-a" d="M0 80 60 0l60 80Z"/>
+        <path class="lp-tent-b" d="M60 0 30 40v40h-6ZM60 0l30 40v40h6Z"/>
+        <path class="lp-tent-b" d="M48 80 60 46l12 34Z"/>
+        <path class="lp-pole" d="M60 0v-14"/><path class="lp-f1" d="M60-14l14 5-14 5Z"/>
+      </g>
+      <g id="lp-bunting">
+        <path class="lp-string" d="M0 0q150 40 300 0"/>
+        <g class="flutter"><path class="lp-f1" d="M20 5l10 22 10-20Z"/></g><g class="flutter"><path class="lp-f2" d="M55 13l10 22 10-20Z"/></g>
+        <g class="flutter"><path class="lp-f3" d="M90 19l10 22 10-20Z"/></g><g class="flutter"><path class="lp-f1" d="M125 22l10 22 10-21Z"/></g>
+        <g class="flutter"><path class="lp-f2" d="M160 22l10 22 10-21Z"/></g><g class="flutter"><path class="lp-f3" d="M195 19l10 22 10-20Z"/></g>
+        <g class="flutter"><path class="lp-f1" d="M230 13l10 22 10-20Z"/></g><g class="flutter"><path class="lp-f2" d="M262 5l10 22 10-20Z"/></g>
+      </g>
+      <g id="lp-picnic">
+        <path class="lp-mat-a" d="M0 30 40 0h120l-40 30Z"/>
+        <path class="lp-mat-b" d="M20 15h120l-10 7.5H10ZM60 0l-40 30h10L70 0ZM100 0 60 30h10l40-30Z"/>
+        <path class="lp-basket" d="M70-6h40l-4 20H74Z"/><path class="lp-basket-weave" d="M74-14c4-8 28-8 32 0M74 2h32M78-6l2 20M90-6v20M102-6l-2 20"/>
+      </g>
+    </defs>
+  </svg>
+
+  <div class="left-hero{{#if hasCustomSidebarPhoto}} has-photo{{/if}}"{{#if hasCustomSidebarPhoto}} style="background-image: url('{{sidebarPhotoUrl}}');"{{/if}}>
+    {{#unless hasCustomSidebarPhoto}}
+    <svg class="left-hero-art" viewBox="0 0 800 900" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+      <use href="#lp-sun" transform="translate(640 380) scale(1.3)"/>
+      <g class="drift"><use class="lp-cloud" href="#lp-cloud" transform="translate(80 400) scale(1.6)"/></g>
+      <use href="#lp-hills" transform="translate(0 520) scale(1.34 1.9)"/>
+      <use href="#lp-tree" transform="translate(110 640) scale(1.6)"/>
+      <use href="#lp-tree" transform="translate(700 620) scale(1.3)"/>
+      <use href="#lp-bunting" transform="translate(180 600) scale(1.5)"/>
+      <use href="#lp-tent" transform="translate(220 700) scale(1.4)"/>
+      <use href="#lp-tent" transform="translate(430 720) scale(1.1)"/>
+      <use href="#lp-picnic" transform="translate(480 820) scale(1.4)"/>
+    </svg>
+    {{/unless}}
+    <div class="left-hero-content">
+      <span class="left-hero-eyebrow">{{eventLabel}}</span>
+      <h1 class="left-hero-name serif">{{mainNickname}}</h1>
+      {{#if mainInfoLine}}<p class="left-hero-info">{{mainInfoLine}}</p>{{/if}}
+      {{#if eventDateFormatted}}<p class="left-hero-date">{{eventDateFormatted}}</p>{{/if}}
+    </div>
+  </div>
+
+  <div class="cover-screen{{#if landingCoverUrl}} has-photo{{/if}}" id="coverScreen" data-lux-desktop-cover="full"{{#if landingCoverUrl}} style="background-image: url('{{landingCoverUrl}}');"{{/if}}>
+    {{#unless landingCoverUrl}}
+    <svg class="cover-wide" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+      <use href="#lp-sun" transform="translate(1220 170) scale(1.4)"/>
+      <g class="drift"><use class="lp-cloud" href="#lp-cloud" transform="translate(120 140) scale(1.8)"/></g>
+      <g class="drift d1"><use class="lp-cloud" href="#lp-cloud" transform="translate(960 260) scale(1.3)"/></g>
+      <use href="#lp-hills" transform="translate(0 560) scale(2.4 1.7)"/>
+      <use href="#lp-tree" transform="translate(110 640) scale(1.8)"/>
+      <use href="#lp-tree" transform="translate(1330 620) scale(1.7)"/>
+      <use href="#lp-tree" transform="translate(1210 680) scale(1.2)"/>
+      <use href="#lp-bunting" transform="translate(140 600) scale(1.2)"/>
+      <use href="#lp-bunting" transform="translate(940 610) scale(1.2)"/>
+      <use href="#lp-tent" transform="translate(190 690) scale(1.3)"/>
+      <use href="#lp-tent" transform="translate(1040 700) scale(1.4)"/>
+      <use href="#lp-picnic" transform="translate(620 820) scale(1.3)"/>
+    </svg>
+    {{/unless}}
+    {{#unless landingCoverUrl}}
+    <svg class="field" viewBox="0 0 400 800" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+      <use href="#lp-sun" transform="translate(330 70) scale(0.8)"/>
+      <g class="drift"><use class="lp-cloud" href="#lp-cloud" transform="translate(10 60)"/></g>
+      <use href="#lp-hills" transform="translate(-50 590) scale(0.9 1.1)"/>
+      <use href="#lp-tree" transform="translate(40 640) scale(1.1)"/>
+      <use href="#lp-tree" transform="translate(360 630)"/>
+      <use href="#lp-bunting" transform="translate(60 640) scale(0.95)"/>
+      <use href="#lp-tent" transform="translate(90 690) scale(0.9)"/>
+      <use href="#lp-tent" transform="translate(230 700) scale(0.75)"/>
+      <use href="#lp-picnic" transform="translate(150 760) scale(0.8)"/>
+    </svg>
+    {{/unless}}
+    <div class="cover-inner">
+      <span class="cover-badge" data-lux-field="customLabels.coverBadge">{{eventLabel}}</span>
+      <h1 class="cover-name serif">{{mainNickname}}</h1>
+      {{#if mainInfoLine}}<p class="cover-info">{{mainInfoLine}}</p>{{/if}}
+      <p class="cover-sub" data-lux-field="customLabels.coverSubtitle">{{eventIntro}}</p>
+      <p class="guest-lbl">Kepada Yth.</p>
+      <p class="guest-name serif">{{guestName}}</p>
+      <button type="button" class="btn-open btn-buka" onclick="openInvitation()" data-lux-field="customLabels.openBtn">Buka Undangan</button>
+    </div>
+  </div>
+
+  <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
+
+  <div class="right-panel" id="rightPanel">
+    <section class="slide-home" id="home">
+      <span class="home-eyebrow script reveal" data-lux-field="customLabels.quoteEyebrow">Ayo Berkumpul</span>
+      <h2 class="home-name serif reveal">{{mainNickname}}</h2>
+      {{#if mainInfoLine}}<p class="home-info reveal">{{mainInfoLine}}</p>{{/if}}
+      {{#if openingQuote}}
+      <p class="home-quote reveal">{{openingQuote}}</p>
+      {{#if openingQuoteRef}}<p class="home-quote-ref">{{openingQuoteRef}}</p>{{/if}}
+      {{/if}}
+      <svg class="scroll-cue" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+      <svg class="home-hills" viewBox="0 0 400 200" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+        <use href="#lp-hills" transform="scale(0.67 1)"/>
+        <use href="#lp-tree" transform="translate(50 120)"/>
+        <use href="#lp-tent" transform="translate(250 100) scale(0.8)"/>
+      </svg>
+    </section>
+
+    <main>
+      <section class="sec-block reveal" id="profile">
+        <svg class="lp-divider" viewBox="0 0 140 28" aria-hidden="true"><use href="#lp-bunting" transform="scale(0.47 0.6)"/></svg>
+        <span class="sec-lbl" data-lux-field="customLabels.coupleEyebrow">{{profileEyebrow}}</span>
+        <h2 class="sec-h2 serif" data-lux-field="customLabels.coupleTitle">{{profileTitle}}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.coupleSub">{{profileSub}}</p>
+        <div class="postcard">
+          <div class="portrait-wrap">
+            {{#if hasCustomMainPhoto}}<img class="portrait" src="{{mainPhotoUrl}}" alt="{{mainName}}" loading="lazy" />{{/if}}
+            {{#unless hasCustomMainPhoto}}
+            <svg class="portrait-art" viewBox="0 0 320 200" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+              <use href="#lp-sun" transform="translate(260 50) scale(0.6)"/>
+              <use href="#lp-hills" transform="translate(0 40) scale(0.54 0.8)"/>
+              <use href="#lp-tree" transform="translate(40 130) scale(0.8)"/>
+              <use href="#lp-tent" transform="translate(110 120) scale(0.7)"/>
+              <use href="#lp-picnic" transform="translate(190 168) scale(0.6)"/>
+            </svg>
+            {{/unless}}
+          </div>
+          <h3 class="star-name serif">{{mainName}}</h3>
+          {{#if mainInfoLine}}<span class="age-pill">{{mainInfoLine}}</span>{{/if}}
+          {{#if mainDetailLine}}<p class="star-detail">{{mainDetailLine}}</p>{{/if}}
+          <div class="parents">{{parentsHtml}}</div>
+        </div>
+      </section>
+
+      <section class="sec-block reveal" id="event">
+        <svg class="lp-divider" viewBox="0 0 140 28" aria-hidden="true"><use href="#lp-bunting" transform="scale(0.47 0.6)"/></svg>
+        <span class="sec-lbl" data-lux-field="customLabels.eventsEyebrow">Agenda</span>
+        <h2 class="sec-h2 serif" data-lux-field="customLabels.eventsTitle">{{agendaTitle}}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.eventsSub">{{eventDateFormatted}}</p>
+        {{countdownHtml}}
+        {{eventSectionHtml}}
+      </section>
+
+      {{qrPassHtml}}
+      {{gallerySectionHtml}}
+      {{giftSectionHtml}}
+      {{extraSectionsHtml}}
+
+      <section class="sec-block reveal" id="rsvp">
+        <span class="sec-lbl" data-lux-field="customLabels.wishesEyebrow">Konfirmasi</span>
+        {{rsvpSectionHtml}}
+        {{wishesSectionHtml}}
+      </section>
+
+      {{memoriesSectionHtml}}
+    </main>
+
+    <footer class="site-footer {{closingPhotoClass}}" id="footer" style="{{closingBgStyle}}">
+      <div class="closing-content">
+        <h2 class="closing-title script" data-lux-field="customLabels.closingTitle">Terima Kasih</h2>
+        <p class="closing-text" data-lux-field="customLabels.closingText">{{closingText}}</p>
+        <p class="closing-name serif">{{mainNickname}}</p>
+        <div class="watermark">{{brandWatermarkHtml}}</div>
+      </div>
+      <svg class="footer-field" viewBox="0 0 400 200" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+        <use href="#lp-hills" transform="scale(0.67 1)"/>
+        <use href="#lp-tree" transform="translate(340 120)"/>
+        <use href="#lp-tent" transform="translate(60 110) scale(0.8)"/>
+        <use href="#lp-picnic" transform="translate(190 166) scale(0.7)"/>
+      </svg>
+    </footer>
+  </div>
+
+  <nav class="bottom-dock" aria-label="Navigasi undangan">
+    <a href="#home" aria-label="Beranda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg></a>
+    <a href="#profile" aria-label="Tentang"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg></a>
+    <a href="#event" aria-label="Acara"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></a>
+    <a href="#gallery" aria-label="Galeri"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg></a>
+    <a href="#rsvp" aria-label="Konfirmasi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12Z"/></svg></a>
+  </nav>
+
+  <script>
+    function openInvitation() {
+      var cover = document.getElementById('coverScreen');
+      if (cover) cover.classList.add('opened');
+      document.body.classList.remove('is-locked');
+    }
+    (function () {
+      var items = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window)) { items.forEach(function (el) { el.classList.add('is-visible'); }); return; }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) { if (entry.isIntersecting) { entry.target.classList.add('is-visible'); io.unobserve(entry.target); } });
+      }, { threshold: 0.12 });
+      items.forEach(function (el) { io.observe(el); });
+    })();
+  </script>
+  {{musicPlayerHtml}}
+</body>
+</html>

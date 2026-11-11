@@ -1,0 +1,368 @@
+<!--
+  TEMA KELOPAK — Aqiqah / Karangan Bunga & Kupu-kupu
+  Kategori: Modern | EventType: AQIQAH
+  Kontrak tema satu nama (lihat themes/_blueprints/aqiqah/).
+  Karangan bunga melingkar, kupu-kupu, dan kelopak berguguran digambar sebagai SVG inline yang warnanya mengikuti token palet;
+  setiap slot foto punya ilustrasi pengganti ({{#unless}}) sehingga undangan tetap utuh tanpa unggahan.
+  Desktop >= 900px: .left-hero (DESKTOP_SIDEBAR) di kiri, .right-panel 460px di kanan.
+-->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>{{eventLabel}} {{mainNickname}}</title>
+  <link rel="stylesheet" href="/fonts/fonts.css" />
+  <style>
+    :root {
+      --primary: #e7a1a7;
+      --secondary: #9c4e5a;
+      --accent: #d9b26f;
+      --tertiary: #9db59a;
+      --leaf-dark: #6f8f6d;
+      --petal-light: #f7d6d6;
+      --bg-dark: #5a3a40;
+      --bg-light: #fffaf8;
+      --bg-canvas: #fbefee;
+      --card-bg: #ffffff;
+      --text-main: #4a2f35;
+      --text-muted: #7a5f63;
+      --on-primary: #4a2f35;
+      --on-dark: #fff6f4;
+      --radius-sm: 12px;
+      --radius-md: 20px;
+      --radius-lg: 30px;
+      --radius-full: 9999px;
+      --font-heading: 'Cormorant Garamond', Georgia, serif;
+      --font-script: 'Great Vibes', cursive;
+      --font-body: 'Jost', system-ui, sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    ::selection { background: color-mix(in srgb, var(--primary) 45%, transparent); color: var(--text-main); }
+    html { scroll-behavior: smooth; scrollbar-width: none; }
+    html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+    body { font-family: var(--font-body); background: var(--bg-canvas); color: var(--text-main); line-height: 1.65; overflow-x: hidden; }
+    body.is-locked { overflow: hidden; }
+    .serif { font-family: var(--font-heading); font-weight: 600; }
+    .script { font-family: var(--font-script); font-weight: 400; }
+    img { max-width: 100%; display: block; }
+
+    /* ── Ilustrasi: warna dari token ── */
+    .kp-petal { fill: var(--primary); }
+    .kp-petal-light { fill: var(--petal-light); }
+    .kp-core { fill: var(--accent); }
+    .kp-leaf { fill: var(--tertiary); }
+    .kp-leaf-dark { fill: var(--leaf-dark); }
+    .kp-stem { stroke: var(--leaf-dark); stroke-width: 2; fill: none; stroke-linecap: round; }
+    .kp-wing-a { fill: var(--primary); }
+    .kp-wing-b { fill: var(--accent); }
+    .kp-body { fill: var(--text-main); }
+    .kp-dot { fill: var(--accent); }
+    .flutter { transform-box: fill-box; transform-origin: center; animation: flutter 0.9s ease-in-out infinite alternate; }
+    .fly { animation: fly 9s ease-in-out infinite; }
+    .fly.f2 { animation-duration: 11s; animation-delay: -4s; }
+    .fall { animation: fall 7s linear infinite; }
+    .fall.l2 { animation-delay: -2.4s; animation-duration: 8s; } .fall.l3 { animation-delay: -4.8s; animation-duration: 9s; }
+    @keyframes flutter { from { transform: scaleX(1); } to { transform: scaleX(0.55); } }
+    @keyframes fly { 0%, 100% { transform: translate(0, 0); } 33% { transform: translate(14px, -10px); } 66% { transform: translate(-8px, -18px); } }
+    @keyframes fall { 0% { transform: translate(0, -20px) rotate(0deg); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(30px, 140px) rotate(220deg); opacity: 0; } }
+
+    /* ── Cover ── */
+    .cover-screen {
+      position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; overflow: hidden;
+      padding: 24px 20px; text-align: center; background: radial-gradient(circle at 50% 42%, var(--bg-light) 0%, var(--bg-canvas) 55%, color-mix(in srgb, var(--primary) 30%, var(--bg-canvas)) 100%);
+      transition: transform 0.9s cubic-bezier(0.65, 0, 0.35, 1), opacity 0.8s ease, visibility 0s linear 0.9s;
+    }
+    .cover-screen.has-photo { background: var(--bg-dark) center / cover no-repeat; }
+    .cover-screen.has-photo::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--bg-light) 94%, transparent) 30%, color-mix(in srgb, var(--bg-canvas) 50%, transparent) 75%); }
+    .cover-screen.opened { transform: translate3d(0, -100%, 0); opacity: 0; visibility: hidden; pointer-events: none; }
+    .petals { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .cover-inner { position: relative; z-index: 2; width: 100%; max-width: 340px; }
+    .wreath { position: relative; width: 300px; height: 300px; margin: 0 auto 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .wreath svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .wreath > *:not(svg) { position: relative; }
+    @media (max-height: 700px) { .wreath { width: 250px; height: 250px; } }
+    .cover-badge { font-size: 10px; font-weight: 500; letter-spacing: 0.3em; text-transform: uppercase; color: var(--secondary); }
+    .cover-name { font-size: 56px; line-height: 1; color: var(--text-main); margin-top: 2px; overflow-wrap: anywhere; max-width: 190px; }
+    .cover-info { margin: -4px auto 8px; font-size: 12px; font-weight: 500; letter-spacing: 0.04em; color: var(--secondary); max-width: 300px; }
+    .cover-sub { font-size: 13px; color: var(--text-muted); margin: 0 auto 14px; max-width: 280px; }
+    .guest-lbl { font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--text-muted); }
+    .guest-name { font-size: 24px; color: var(--text-main); margin: 2px 0 16px; overflow-wrap: break-word; }
+    .btn-open { display: inline-flex; align-items: center; gap: 8px; padding: 12px 30px; border: 1px solid var(--secondary); cursor: pointer; border-radius: var(--radius-full); background: var(--secondary); color: var(--on-dark); font-family: inherit; font-size: 13px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; box-shadow: 0 8px 22px color-mix(in srgb, var(--secondary) 25%, transparent); transition: transform 0.18s ease; }
+    .btn-open:hover { transform: translateY(-2px); }
+
+    /* ── Hero kiri desktop (slot DESKTOP_SIDEBAR) ── */
+    .left-hero { display: none; position: fixed; left: 0; top: 0; width: calc(100% - 460px); height: 100vh; z-index: 10; overflow: hidden; background: radial-gradient(circle at 50% 50%, var(--bg-light) 0%, var(--bg-canvas) 50%, color-mix(in srgb, var(--primary) 30%, var(--bg-canvas)) 100%) center / cover no-repeat; }
+    .left-hero.has-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, color-mix(in srgb, var(--bg-dark) 86%, transparent) 0%, color-mix(in srgb, var(--bg-dark) 14%, transparent) 55%, transparent 100%); }
+    .left-hero-art { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .left-hero-content { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 360px; z-index: 2; color: var(--text-main); text-align: center; }
+    .left-hero.has-photo .left-hero-content { left: 3.5rem; right: 3.5rem; top: auto; bottom: 4rem; width: auto; transform: none; text-align: left; color: var(--on-dark); }
+    .left-hero-eyebrow { display: inline-block; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.3em; text-transform: uppercase; color: var(--secondary); margin-bottom: 0.4rem; }
+    .left-hero.has-photo .left-hero-eyebrow { color: var(--petal-light); }
+    .left-hero-name { font-size: clamp(3.4rem, 6vw, 5.4rem); line-height: 1; overflow-wrap: break-word; }
+    .left-hero-info { margin-top: 0.6rem; font-size: 1rem; }
+    .left-hero-date { font-size: 0.85rem; letter-spacing: 0.16em; text-transform: uppercase; margin-top: 0.8rem; opacity: 0.85; }
+
+    /* ── Latar tetap (slot GLOBAL_FIXED_BG): kelopak samar ── */
+    .fixed-bg-layer {
+      position: fixed; top: 0; right: 0; bottom: 0; width: 100%; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 7px 4px at 20px 20px, color-mix(in srgb, var(--primary) 35%, transparent) 95%, transparent) 0 0 / 60px 60px,
+        radial-gradient(ellipse 4px 7px at 48px 44px, color-mix(in srgb, var(--tertiary) 35%, transparent) 95%, transparent) 0 0 / 60px 60px,
+        var(--bg-canvas);
+    }
+    .fixed-bg-layer.has-custom-bg { background: linear-gradient(180deg, color-mix(in srgb, var(--bg-light) 62%, transparent), color-mix(in srgb, var(--bg-canvas) 80%, transparent)), var(--custom-bg) center / cover no-repeat; }
+
+    .right-panel { position: relative; z-index: 20; width: 100%; min-height: 100vh; }
+    .right-panel main { background: color-mix(in srgb, var(--bg-light) 84%, transparent); }
+
+    /* ── Beranda (slot HOME_PHOTO) ── */
+    .slide-home { position: relative; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 90px 24px 70px; text-align: center; overflow: hidden; background: linear-gradient(180deg, var(--bg-light), var(--bg-canvas)); }
+    .home-corner { position: absolute; width: 170px; height: 170px; pointer-events: none; }
+    .home-corner.tl { top: -10px; left: -10px; }
+    .home-corner.br { bottom: -10px; right: -10px; transform: rotate(180deg); }
+    .home-eyebrow { font-size: 36px; color: var(--secondary); line-height: 1; margin-bottom: 6px; }
+    .home-name { font-size: clamp(3.4rem, 16vw, 4.8rem); line-height: 1; color: var(--text-main); overflow-wrap: break-word; }
+    .home-info { margin-top: 8px; font-size: 13px; color: var(--text-muted); }
+    .home-quote { font-size: 22px; line-height: 1.45; max-width: 340px; margin: 22px auto 0; color: var(--text-main); font-style: italic; font-weight: 500; }
+    .home-quote-ref { font-size: 11px; font-weight: 500; letter-spacing: 0.22em; text-transform: uppercase; color: var(--secondary); margin-top: 12px; }
+    .scroll-cue { margin-top: 24px; color: var(--text-muted); animation: cue 1.6s infinite; }
+    @keyframes cue { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+
+    /* ── Sistem seksi ── */
+    .sec-block { position: relative; max-width: 480px; margin: 0 auto; padding: 60px 24px; text-align: center; }
+    .kp-sprig { display: block; width: 110px; height: 30px; margin: 0 auto 8px; }
+    .sec-lbl { display: inline-block; font-size: 10px; font-weight: 500; letter-spacing: 0.28em; text-transform: uppercase; color: var(--secondary); margin-bottom: 8px; }
+    .sec-h2 { font-size: 38px; line-height: 1.08; color: var(--text-main); margin-bottom: 12px; }
+    .sec-sub { font-size: 14px; color: var(--text-muted); max-width: 350px; margin: 0 auto 22px; }
+
+    .bloom-card { position: relative; margin-top: 110px; padding: 34px 22px 26px; border-radius: var(--radius-lg); background: var(--card-bg); box-shadow: 0 16px 34px color-mix(in srgb, var(--bg-dark) 8%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent); }
+    .portrait-wrap { position: relative; width: 170px; height: 170px; margin: -100px auto 18px; border-radius: var(--radius-full); padding: 6px; background: var(--card-bg); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 60%, transparent), 0 0 0 8px var(--card-bg), 0 0 0 9px color-mix(in srgb, var(--primary) 50%, transparent); }
+    .portrait { width: 100%; height: 100%; border-radius: var(--radius-full); object-fit: cover; background: var(--bg-canvas); }
+    .portrait-art { width: 100%; height: 100%; border-radius: var(--radius-full); background: color-mix(in srgb, var(--petal-light) 45%, var(--bg-light)); }
+    .star-name { font-size: 32px; line-height: 1.1; color: var(--text-main); overflow-wrap: break-word; }
+    .age-pill { display: inline-block; margin-top: 12px; padding: 7px 16px; border-radius: var(--radius-full); background: color-mix(in srgb, var(--petal-light) 60%, var(--card-bg)); color: var(--text-main); font-weight: 500; font-size: 13px; }
+    .star-detail { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+    .parents { margin-top: 18px; font-size: 13px; color: var(--text-muted); }
+
+    .countdown-timer { margin-bottom: 18px; }
+    #rsvp .rsvp-card-box form { text-align: left; }
+
+    /* ── Penutup (slot CLOSING_COVER) ── */
+    .site-footer { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 200px 24px 128px; text-align: center; color: var(--on-dark); background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 55%, var(--bg-dark)) 0%, var(--bg-dark) 70%); overflow: hidden; }
+    .site-footer.has-closing-photo { min-height: 100vh; min-height: 100svh; }
+    .footer-garland { position: absolute; top: 40px; left: 50%; width: 260px; height: 120px; transform: translateX(-50%); }
+    .closing-content { position: relative; max-width: 380px; }
+    .closing-title { font-size: 48px; line-height: 1.05; margin-bottom: 10px; color: var(--petal-light); }
+    .closing-text { font-size: 14px; color: color-mix(in srgb, var(--on-dark) 88%, transparent); margin: 0 auto 16px; }
+    .closing-name { font-size: 30px; }
+    .watermark { margin-top: 24px; font-size: 10px; }
+
+    /* ── Dock ── */
+    .bottom-dock { position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translate3d(-50%, 0, 0); z-index: 900; display: flex; gap: 4px; padding: 6px; border-radius: var(--radius-full); background: color-mix(in srgb, var(--card-bg) 96%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent); box-shadow: 0 10px 26px color-mix(in srgb, var(--bg-dark) 14%, transparent); transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease; }
+    .bottom-dock a { display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: var(--radius-full); color: var(--text-main); }
+    .bottom-dock a:hover, .bottom-dock a:focus-visible { color: var(--on-dark); background: var(--secondary); outline: none; }
+    .bottom-dock svg { width: 19px; height: 19px; }
+
+    .reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.22, 1, 0.36, 1); }
+    .reveal.is-visible { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } .cover-screen, .scroll-cue, .flutter, .fly, .fall { transition: none; animation: none; } }
+    @media (max-width: 340px) { .cover-name { font-size: 44px; } .star-name { font-size: 26px; } .sec-block { padding: 52px 18px; } }
+
+    /* Sampul desktop layar penuh (tanpa foto sampul): komposisi mendatar menggantikan gambar HP. */
+    .cover-wide { display: none; position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+    @media (min-width: 900px) {
+      .cover-screen:not(.has-photo) .cover-wide { display: block; }
+      .cover-screen:not(.has-photo) .petals { display: none; }
+      .left-hero { display: block; }
+      .fixed-bg-layer { left: calc(100% - 460px); width: 460px; }
+      .right-panel { margin-left: calc(100% - 460px); width: 460px; }
+      .bottom-dock { left: calc(100% - 230px); }
+    }
+  </style>
+</head>
+<body class="is-locked">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <g id="kp-flower"><g class="kp-petal"><ellipse cx="0" cy="-11" rx="7" ry="11"/><ellipse cx="0" cy="-11" rx="7" ry="11" transform="rotate(72)"/><ellipse cx="0" cy="-11" rx="7" ry="11" transform="rotate(144)"/><ellipse cx="0" cy="-11" rx="7" ry="11" transform="rotate(216)"/><ellipse cx="0" cy="-11" rx="7" ry="11" transform="rotate(288)"/></g><circle class="kp-core" r="5"/></g>
+      <g id="kp-flower-light"><g class="kp-petal-light"><ellipse cx="0" cy="-9" rx="6" ry="9"/><ellipse cx="0" cy="-9" rx="6" ry="9" transform="rotate(72)"/><ellipse cx="0" cy="-9" rx="6" ry="9" transform="rotate(144)"/><ellipse cx="0" cy="-9" rx="6" ry="9" transform="rotate(216)"/><ellipse cx="0" cy="-9" rx="6" ry="9" transform="rotate(288)"/></g><circle class="kp-core" r="4"/></g>
+      <path id="kp-leaf" d="M0 0C6-10 18-12 26-8 20 0 10 4 0 0Z"/>
+      <g id="kp-butterfly">
+        <g class="flutter"><path class="kp-wing-a" d="M0 0C-14-16-30-12-26 2-24 12-10 10 0 0Z"/><path class="kp-wing-b" d="M0 0C-10 8-22 14-18 22-12 28-4 16 0 0Z"/><path class="kp-wing-a" d="M0 0C14-16 30-12 26 2 24 12 10 10 0 0Z"/><path class="kp-wing-b" d="M0 0C10 8 22 14 18 22 12 28 4 16 0 0Z"/></g>
+        <rect class="kp-body" x="-1.6" y="-10" width="3.2" height="24" rx="1.6"/>
+      </g>
+      <g id="kp-sprig">
+        <path class="kp-stem" d="M0 30C20 26 40 14 60 0"/>
+        <use href="#kp-leaf" class="kp-leaf" transform="translate(16 26) rotate(-40)"/><use href="#kp-leaf" class="kp-leaf-dark" transform="translate(34 18) rotate(-110) scale(0.9)"/><use href="#kp-leaf" class="kp-leaf" transform="translate(46 10) rotate(-30) scale(0.8)"/>
+        <use href="#kp-flower" transform="translate(60 0) scale(0.8)"/>
+      </g>
+      <g id="kp-wreath">
+        <circle class="kp-stem" cx="150" cy="150" r="118" opacity="0.6"/>
+        <use href="#kp-sprig" transform="translate(40 200) rotate(-70)"/><use href="#kp-sprig" transform="translate(260 100) rotate(110)"/>
+        <use href="#kp-flower-light" transform="translate(67 67)"/><use href="#kp-flower" transform="translate(233 67) scale(0.9)"/>
+        <use href="#kp-flower" transform="translate(67 233) scale(0.9)"/><use href="#kp-flower-light" transform="translate(233 233)"/>
+        <use href="#kp-flower" transform="translate(150 32) scale(1.3)"/><use href="#kp-flower-light" transform="translate(122 38)"/><use href="#kp-flower-light" transform="translate(178 38)"/>
+        <use href="#kp-flower" transform="translate(150 268) scale(1.3)"/><use href="#kp-flower-light" transform="translate(122 262)"/><use href="#kp-flower-light" transform="translate(178 262)"/>
+        <use href="#kp-flower-light" transform="translate(32 150)"/><use href="#kp-flower-light" transform="translate(268 150)"/>
+      </g>
+    </defs>
+  </svg>
+
+  <div class="left-hero{{#if hasCustomSidebarPhoto}} has-photo{{/if}}"{{#if hasCustomSidebarPhoto}} style="background-image: url('{{sidebarPhotoUrl}}');"{{/if}}>
+    {{#unless hasCustomSidebarPhoto}}
+    <svg class="left-hero-art" viewBox="0 0 800 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <use href="#kp-wreath" transform="translate(130 180) scale(1.8)"/>
+      <use href="#kp-sprig" transform="translate(-10 120) scale(2.4)"/><use href="#kp-sprig" transform="translate(820 780) rotate(180) scale(2.4)"/>
+      <g class="fly"><use href="#kp-butterfly" transform="translate(640 220) scale(1.6)"/></g>
+      <g class="fly f2"><use href="#kp-butterfly" transform="translate(150 700) scale(1.3) rotate(-20)"/></g>
+      <g class="fall"><use href="#kp-leaf" class="kp-petal" transform="translate(320 60) scale(0.8)"/></g><g class="fall l2"><use href="#kp-leaf" class="kp-petal-light" transform="translate(520 40) scale(0.8)"/></g><g class="fall l3"><use href="#kp-leaf" class="kp-petal" transform="translate(700 380) scale(0.7)"/></g>
+    </svg>
+    {{/unless}}
+    <div class="left-hero-content">
+      <span class="left-hero-eyebrow">{{eventLabel}}</span>
+      <h1 class="left-hero-name script">{{mainNickname}}</h1>
+      {{#if mainInfoLine}}<p class="left-hero-info">{{mainInfoLine}}</p>{{/if}}
+      {{#if eventDateFormatted}}<p class="left-hero-date">{{eventDateFormatted}}</p>{{/if}}
+    </div>
+  </div>
+
+  <div class="cover-screen{{#if landingCoverUrl}} has-photo{{/if}}" id="coverScreen" data-lux-desktop-cover="full"{{#if landingCoverUrl}} style="background-image: url('{{landingCoverUrl}}');"{{/if}}>
+    {{#unless landingCoverUrl}}
+    <svg class="cover-wide" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <use href="#kp-sprig" transform="translate(-20 760) rotate(-40) scale(3.6)"/>
+      <use href="#kp-sprig" transform="translate(1460 140) rotate(140) scale(3.6)"/>
+      <use href="#kp-sprig" transform="translate(-10 60) rotate(20) scale(2.2)"/>
+      <use href="#kp-sprig" transform="translate(1450 840) rotate(200) scale(2.2)"/>
+      <use href="#kp-flower" transform="translate(300 250) scale(2)"/><use href="#kp-flower-light" transform="translate(360 300) scale(1.4)"/>
+      <use href="#kp-flower" transform="translate(1150 660) scale(2)"/><use href="#kp-flower-light" transform="translate(1090 710) scale(1.4)"/>
+      <g class="fly"><use href="#kp-butterfly" transform="translate(1180 220) scale(1.8)"/></g>
+      <g class="fly f2"><use href="#kp-butterfly" transform="translate(240 640) scale(1.5) rotate(-20)"/></g>
+      <g class="fall"><use href="#kp-leaf" class="kp-petal" transform="translate(520 40) scale(0.9)"/></g><g class="fall l2"><use href="#kp-leaf" class="kp-petal-light" transform="translate(900 60) scale(0.9)"/></g><g class="fall l3"><use href="#kp-leaf" class="kp-petal" transform="translate(1250 420) scale(0.8)"/></g><g class="fall l2"><use href="#kp-leaf" class="kp-petal" transform="translate(160 380) scale(0.8)"/></g>
+    </svg>
+    {{/unless}}
+    <svg class="petals" viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <use href="#kp-sprig" transform="translate(-4 40) scale(1.3)"/><use href="#kp-sprig" transform="translate(404 760) rotate(180) scale(1.3)"/>
+      <g class="fly"><use href="#kp-butterfly" transform="translate(330 120)"/></g>
+      <g class="fall"><use href="#kp-leaf" class="kp-petal" transform="translate(120 40) scale(0.6)"/></g><g class="fall l2"><use href="#kp-leaf" class="kp-petal-light" transform="translate(260 80) scale(0.6)"/></g><g class="fall l3"><use href="#kp-leaf" class="kp-petal" transform="translate(60 560) scale(0.6)"/></g>
+    </svg>
+    <div class="cover-inner">
+      <div class="wreath">
+        <svg viewBox="0 0 300 300" aria-hidden="true"><use href="#kp-wreath"/></svg>
+        <span class="cover-badge" data-lux-field="customLabels.coverBadge">{{eventLabel}}</span>
+        <h1 class="cover-name script">{{mainNickname}}</h1>
+      </div>
+      {{#if mainInfoLine}}<p class="cover-info">{{mainInfoLine}}</p>{{/if}}
+      <p class="cover-sub" data-lux-field="customLabels.coverSubtitle">{{eventIntro}}</p>
+      <p class="guest-lbl">Kepada Yth.</p>
+      <p class="guest-name serif">{{guestName}}</p>
+      <button type="button" class="btn-open btn-buka" onclick="openInvitation()" data-lux-field="customLabels.openBtn">Buka Undangan</button>
+    </div>
+  </div>
+
+  <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
+
+  <div class="right-panel" id="rightPanel">
+    <section class="slide-home" id="home">
+      <svg class="home-corner tl" viewBox="0 0 170 170" aria-hidden="true"><use href="#kp-sprig" transform="translate(10 140) rotate(-60) scale(1.6)"/><use href="#kp-flower" transform="translate(40 40) scale(1.2)"/><use href="#kp-flower-light" transform="translate(76 26)"/></svg>
+      <svg class="home-corner br" viewBox="0 0 170 170" aria-hidden="true"><use href="#kp-sprig" transform="translate(10 140) rotate(-60) scale(1.6)"/><use href="#kp-flower" transform="translate(40 40) scale(1.2)"/><use href="#kp-flower-light" transform="translate(76 26)"/></svg>
+      <span class="home-eyebrow script reveal" data-lux-field="customLabels.quoteEyebrow">Buah Hati Kami</span>
+      <h2 class="home-name serif reveal">{{mainNickname}}</h2>
+      {{#if mainInfoLine}}<p class="home-info reveal">{{mainInfoLine}}</p>{{/if}}
+      {{#if openingQuote}}
+      <p class="home-quote serif reveal">{{openingQuote}}</p>
+      {{#if openingQuoteRef}}<p class="home-quote-ref">{{openingQuoteRef}}</p>{{/if}}
+      {{/if}}
+      <svg class="scroll-cue" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+    </section>
+
+    <main>
+      <section class="sec-block reveal" id="profile">
+        <svg class="kp-sprig" viewBox="0 0 110 30" aria-hidden="true"><use href="#kp-flower" transform="translate(55 15) scale(0.9)"/><use href="#kp-leaf" class="kp-leaf" transform="translate(66 16) rotate(-10)"/><use href="#kp-leaf" class="kp-leaf-dark" transform="translate(44 16) rotate(190)"/></svg>
+        <span class="sec-lbl" data-lux-field="customLabels.coupleEyebrow">{{profileEyebrow}}</span>
+        <h2 class="sec-h2 serif" data-lux-field="customLabels.coupleTitle">{{profileTitle}}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.coupleSub">{{profileSub}}</p>
+        <div class="bloom-card">
+          <div class="portrait-wrap">
+            {{#if hasCustomMainPhoto}}<img class="portrait" src="{{mainPhotoUrl}}" alt="{{mainName}}" loading="lazy" />{{/if}}
+            {{#unless hasCustomMainPhoto}}
+            <svg class="portrait-art" viewBox="0 0 160 160" aria-hidden="true">
+              <use href="#kp-sprig" transform="translate(20 120) rotate(-20) scale(1.3)"/>
+              <use href="#kp-flower" transform="translate(64 70) scale(1.8)"/><use href="#kp-flower-light" transform="translate(104 92) scale(1.2)"/>
+              <g class="fly"><use href="#kp-butterfly" transform="translate(112 40) scale(0.8)"/></g>
+            </svg>
+            {{/unless}}
+          </div>
+          <h3 class="star-name serif">{{mainName}}</h3>
+          {{#if mainInfoLine}}<span class="age-pill">{{mainInfoLine}}</span>{{/if}}
+          {{#if mainDetailLine}}<p class="star-detail">{{mainDetailLine}}</p>{{/if}}
+          <div class="parents">{{parentsHtml}}</div>
+        </div>
+      </section>
+
+      <section class="sec-block reveal" id="event">
+        <svg class="kp-sprig" viewBox="0 0 110 30" aria-hidden="true"><use href="#kp-flower" transform="translate(55 15) scale(0.9)"/><use href="#kp-leaf" class="kp-leaf" transform="translate(66 16) rotate(-10)"/><use href="#kp-leaf" class="kp-leaf-dark" transform="translate(44 16) rotate(190)"/></svg>
+        <span class="sec-lbl" data-lux-field="customLabels.eventsEyebrow">Waktu & Tempat</span>
+        <h2 class="sec-h2 serif" data-lux-field="customLabels.eventsTitle">{{agendaTitle}}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.eventsSub">{{eventDateFormatted}}</p>
+        {{countdownHtml}}
+        {{eventSectionHtml}}
+      </section>
+
+      {{qrPassHtml}}
+      {{gallerySectionHtml}}
+      {{giftSectionHtml}}
+      {{extraSectionsHtml}}
+
+      <section class="sec-block reveal" id="rsvp">
+        <span class="sec-lbl" data-lux-field="customLabels.wishesEyebrow">Doa & Ucapan</span>
+        {{rsvpSectionHtml}}
+        {{wishesSectionHtml}}
+      </section>
+
+      {{memoriesSectionHtml}}
+    </main>
+
+    <footer class="site-footer {{closingPhotoClass}}" id="footer" style="{{closingBgStyle}}">
+      <svg class="footer-garland" viewBox="0 0 260 120" aria-hidden="true">
+        <use href="#kp-sprig" transform="translate(10 100) rotate(-20) scale(1.4)"/><use href="#kp-sprig" transform="translate(250 100) scale(-1.4 1.4) rotate(-20)"/>
+        <use href="#kp-flower" transform="translate(130 56) scale(1.6)"/>
+        <g class="fly"><use href="#kp-butterfly" transform="translate(200 30) scale(0.8)"/></g>
+      </svg>
+      <div class="closing-content">
+        <h2 class="closing-title script" data-lux-field="customLabels.closingTitle">Terima Kasih</h2>
+        <p class="closing-text" data-lux-field="customLabels.closingText">{{closingText}}</p>
+        <p class="closing-name serif">{{mainNickname}}</p>
+        <div class="watermark">{{brandWatermarkHtml}}</div>
+      </div>
+    </footer>
+  </div>
+
+  <nav class="bottom-dock" aria-label="Navigasi undangan">
+    <a href="#home" aria-label="Beranda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg></a>
+    <a href="#profile" aria-label="Profil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></a>
+    <a href="#event" aria-label="Acara"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></a>
+    <a href="#gallery" aria-label="Galeri"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg></a>
+    <a href="#gift" aria-label="Kado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="8" width="18" height="13" rx="1"/><path d="M12 8v13M3 12h18M12 8S10 3 7.5 4 9 8 12 8Zm0 0s2-5 4.5-4S15 8 12 8Z"/></svg></a>
+    <a href="#rsvp" aria-label="Ucapan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12Z"/></svg></a>
+  </nav>
+
+  <script>
+    function openInvitation() {
+      var cover = document.getElementById('coverScreen');
+      if (cover) cover.classList.add('opened');
+      document.body.classList.remove('is-locked');
+    }
+    (function () {
+      var items = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window)) { items.forEach(function (el) { el.classList.add('is-visible'); }); return; }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) { if (entry.isIntersecting) { entry.target.classList.add('is-visible'); io.unobserve(entry.target); } });
+      }, { threshold: 0.12 });
+      items.forEach(function (el) { io.observe(el); });
+    })();
+  </script>
+  {{musicPlayerHtml}}
+</body>
+</html>
