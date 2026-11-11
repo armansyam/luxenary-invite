@@ -64,7 +64,9 @@ function tokenPayload(html: string) {
 
 /** Gambar, seksi tersembunyi, dan CSS tambahan hanya lewat Editor Master; varian mewarisinya dari master induk. */
 function variantOnlyColorsFonts(o: MasterOverrides): string | null {
-  return Object.keys(o.images ?? {}).length || o.hiddenSections?.length || o.css ? "Varian hanya mengganti warna dan huruf. Gambar, seksi, dan CSS disunting lewat Edit pada master induknya." : null;
+  return Object.keys(o.images ?? {}).length || o.hiddenSections?.length || o.css || Object.keys(o.elements ?? {}).length || o.coverDesktop
+    ? "Varian hanya mengganti warna dan huruf. Gambar, seksi, CSS, dan tata letak elemen disunting lewat Edit pada master induknya."
+    : null;
 }
 
 /** Font Google pada override diunduh ke server sebelum dipakai, sama seperti font Theme Builder. */

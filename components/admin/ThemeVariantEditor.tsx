@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useFeedback } from "@/components/ui/Feedback";
 import { GoogleFontPicker } from "@/components/admin/themeBuilder/GoogleFontPicker";
 import { FONT_OPTIONS, PALETTE_PRESETS, customCssError, fontLabel, isGoogleFontId } from "@/lib/themeBuilder/spec";
-import { masterExtraCss, overrideCount, overrideCssFromTokens, recolorWithPalette, type ColorUsage, type ColorUsageKind, type MasterFontToken, type MasterOverrides } from "@/lib/themeVariantCss";
+import { ELEMENT_LIMITS, isElementSelector, masterExtraCss, overrideCount, overrideCssFromTokens, recolorWithPalette, type ColorUsage, type ColorUsageKind, type ElementEdit, type ElementView, type MasterFontToken, type MasterOverrides } from "@/lib/themeVariantCss";
 import { measureText, newlyUnreadable, type TextSample } from "@/components/admin/variantReadability";
 
 interface ColorGroup {
@@ -59,8 +59,42 @@ function cloneOverrides(o: Partial<MasterOverrides> | null | undefined): MasterO
     ...(o?.images && Object.keys(o.images).length ? { images: { ...o.images } } : {}),
     ...(o?.hiddenSections?.length ? { hiddenSections: [...o.hiddenSections] } : {}),
     ...(o?.css?.trim() ? { css: o.css } : {}),
+    ...(o?.elements && Object.keys(o.elements).length ? { elements: JSON.parse(JSON.stringify(o.elements)) } : {}),
+    ...(o?.coverDesktop === "full" ? { coverDesktop: "full" as const } : {}),
   };
 }
+
+const DEFAULT_ELEMENT_EDIT: ElementEdit = { x: 0, y: 0, scale: 1, rotate: 0 };
+// Kelas keadaan yang dipasang skrip atau animasi saat halaman berjalan; tidak dipakai di alamat elemen karena berubah.
+const STATE_CLASS_RE = /^(?:is-|has-|lux-|active$|opened$|open$|show$|visible$|reveal$|in-view|animate|aos)/;
+
+/**
+ * Alamat CSS elemen yang dipilih di pratinjau: dari elemen ber-id terdekat (atau akar dokumen) turun ke elemen itu,
+ * dengan kelas tetap dan `:nth-of-type` bila ada saudara bertag sama. Null bila alamat tidak unik atau tidak sah.
+ */
+function selectorFor(el: Element, doc: Document): string | null {
+  const parts: string[] = [];
+  let node: Element | null = el;
+  while (node && node.tagName !== "BODY" && node.tagName !== "HTML") {
+    if (node.id && /^[A-Za-z][\w-]{0,60}$/.test(node.id)) { parts.unshift(`#${node.id}`); break; }
+    const tag = node.tagName.toLowerCase();
+    if (!/^[a-z][a-z0-9]{0,15}$/.test(tag)) return null;
+    const classes = [...node.classList].filter((c) => /^[A-Za-z_][\w-]{0,60}$/.test(c) && !STATE_CLASS_RE.test(c)).slice(0, 3);
+    let seg = tag + classes.map((c) => `.${c}`).join("");
+    const parent: Element | null = node.parentElement;
+    if (parent) {
+      const same = [...parent.children].filter((c) => c.tagName === node!.tagName);
+      if (same.length > 1) seg += `:nth-of-type(${same.indexOf(node) + 1})`;
+    }
+    parts.unshift(seg);
+    node = parent;
+  }
+  const selector = parts.join(" > ");
+  if (!selector || !isElementSelector(selector)) return null;
+  return doc.querySelectorAll(selector).length === 1 ? selector : null;
+}
+
+const isCoverSelector = (s: string) => s === "#coverScreen" || s.startsWith("#coverScreen > ");
 
 /**
  * Editor Varian Tema dan Editor Master. Varian: warna (per kelompok nilai asli) dan huruf (per keluarga) sebagai tema
@@ -96,6 +130,16 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const [stageWidth, setStageWidth] = useState(800);
+  // Tata letak elemen (Mode Master): pilih dan seret elemen apa pun di pratinjau, posisi HP dan desktop terpisah.
+  const [layoutMode, setLayoutMode] = useState(true);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [showCover, setShowCover] = useState(true);
+  const [coverView, setCoverView] = useState<"full" | "split">("split");
+  const [docVersion, setDocVersion] = useState(0);
+  const splitStyleRef = useRef<string>("");
+  const interaction = useRef({ layoutMode: true, selected: null as string | null, view: "mobile" as ElementView });
+  const overridesRef = useRef(overrides);
+  useEffect(() => { overridesRef.current = overrides; }, [overrides]);
 
   const snapshot = useCallback((n: string, d: string, o: MasterOverrides) => JSON.stringify({ n: n.trim(), d: d.trim(), o }), []);
   const dirty = snapshot(name, description, overrides) !== savedSnapshot;
@@ -194,6 +238,155 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
   }, [overrides, fontTokens]);
 
   useEffect(() => { applyToPreview(); }, [applyToPreview]);
+
+  const viewFor = useCallback((selector: string | null): ElementView => {
+    if (device === "mobile") return "mobile";
+    return selector && isCoverSelector(selector) && coverView === "split" ? "desktopSplit" : "desktop";
+  }, [device, coverView]);
+
+  const editOf = useCallback((selector: string, view: ElementView): ElementEdit => overrides.elements?.[selector]?.[view] ?? DEFAULT_ELEMENT_EDIT, [overrides.elements]);
+
+  const setElementEdit = useCallback((selector: string, view: ElementView, patch: Partial<ElementEdit> | null) => {
+    setOverrides((prev) => {
+      const elements = { ...(prev.elements ?? {}) };
+      const edits = { ...(elements[selector] ?? {}) };
+      const merged: ElementEdit = patch ? { ...(edits[view] ?? DEFAULT_ELEMENT_EDIT), ...patch } : DEFAULT_ELEMENT_EDIT;
+      if (!merged.x && !merged.y && merged.scale === 1 && !merged.rotate && !merged.hidden) delete edits[view];
+      else edits[view] = merged;
+      if (Object.keys(edits).length) elements[selector] = edits;
+      else delete elements[selector];
+      const next: MasterOverrides = { ...prev, elements };
+      if (!Object.keys(elements).length) delete next.elements;
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    interaction.current = { layoutMode: masterMode && layoutMode, selected, view: viewFor(selected) };
+  }, [masterMode, layoutMode, selected, viewFor]);
+
+  // Penanda pilihan, sampul tersembunyi, dan tampilan sampul desktop yang sedang ditata, ditulis ke dokumen pratinjau.
+  useEffect(() => {
+    const doc = iframeRef.current?.contentDocument;
+    if (!doc?.head || !masterMode) return;
+    let style = doc.getElementById("lux-me-editor") as HTMLStyleElement | null;
+    if (!style) {
+      style = doc.createElement("style");
+      style.id = "lux-me-editor";
+      doc.head.appendChild(style);
+    }
+    const rules: string[] = [];
+    // Ilustrasi SVG master umumnya `pointer-events: none` agar tidak menghalangi tamu; di mode pilih elemen bagian yang
+    // tergambar dibuat bisa diklik supaya potongan ilustrasi (lentera, gedung, ornamen) dapat dipilih tersendiri.
+    if (layoutMode) rules.push("* { user-select: none !important; -webkit-user-select: none !important; } svg * { pointer-events: visiblePainted !important; } [data-lux-me-sel] { outline: 2px dashed var(--accent, currentColor) !important; outline-offset: 3px !important; cursor: move !important; }");
+    if (!showCover) {
+      rules.push("#coverScreen, .cover-screen, .cover-overlay, #coverOverlay { display: none !important; } html, body { overflow: auto !important; }");
+      doc.body?.classList.remove("is-locked");
+    }
+    style.textContent = rules.join("\n");
+    doc.querySelectorAll("[data-lux-me-sel]").forEach((n) => n.removeAttribute("data-lux-me-sel"));
+    if (selected && layoutMode && isElementSelector(selected)) doc.querySelector(selected)?.setAttribute("data-lux-me-sel", "");
+    // Keberadaan gaya split dari mesin menentukan set posisi sampul desktop (elementEditsCss); di sini dibuat sesuai
+    // tampilan yang sedang ditata, dan sampul layar penuh berada di atas hero kiri seperti di undangan.
+    let split = doc.getElementById("lux-cover-desktop-split") as HTMLStyleElement | null;
+    if (split && !splitStyleRef.current) splitStyleRef.current = split.textContent ?? "";
+    let fullStyle = doc.getElementById("lux-me-cover-full") as HTMLStyleElement | null;
+    if (device === "desktop" && coverView === "full") {
+      split?.remove();
+      if (!fullStyle) {
+        fullStyle = doc.createElement("style");
+        fullStyle.id = "lux-me-cover-full";
+        doc.head.appendChild(fullStyle);
+      }
+      fullStyle.textContent = "@media (min-width: 900px) { :root body #coverScreen, :root body .cover-screen, :root body .cover-overlay { left: 0 !important; right: 0 !important; width: 100% !important; z-index: 9999 !important; } }";
+    } else {
+      fullStyle?.remove();
+      if (device === "desktop" && !split) {
+        split = doc.createElement("style");
+        split.id = "lux-cover-desktop-split";
+        split.textContent = splitStyleRef.current || "@media (min-width: 900px) { :root body .cover-screen, :root body #coverScreen, :root body .cover-overlay, :root body #coverOverlay { left: auto; right: 0; width: 460px; } }";
+        doc.head.appendChild(split);
+      }
+    }
+  }, [masterMode, layoutMode, showCover, selected, device, coverView, docVersion, overrides.elements]);
+
+  // Alamat tersimpan yang tidak lagi cocok dengan master (mis. struktur master berubah) ditandai di daftar elemen.
+  const [missingSelectors, setMissingSelectors] = useState<string[]>([]);
+  useEffect(() => {
+    const doc = iframeRef.current?.contentDocument;
+    if (!doc || !masterMode) return;
+    setMissingSelectors(Object.keys(overrides.elements ?? {}).filter((s) => !isElementSelector(s) || !doc.querySelector(s)));
+  }, [masterMode, overrides.elements, docVersion]);
+
+  const selectParent = useCallback(() => {
+    const doc = iframeRef.current?.contentDocument;
+    const current = interaction.current.selected;
+    if (!doc || !current || !isElementSelector(current)) return;
+    const parentEl = doc.querySelector(current)?.parentElement;
+    const up = parentEl ? selectorFor(parentEl, doc) : null;
+    if (up) setSelected(up);
+    else notify("Elemen induknya tidak bisa dipilih.", "info");
+  }, [notify]);
+
+  /** Klik memilih elemen (tautan dan tombol master tidak dijalankan); seret elemen terpilih menggesernya. */
+  const attachLayoutHandlers = useCallback(() => {
+    const doc = iframeRef.current?.contentDocument;
+    if (!doc || !masterMode) return;
+    splitStyleRef.current = doc.getElementById("lux-cover-desktop-split")?.textContent ?? "";
+    setCoverView(doc.querySelector('[data-lux-desktop-cover="full"]') || !doc.getElementById("lux-cover-desktop-split") ? "full" : "split");
+    let drag: { selector: string; view: ElementView; startX: number; startY: number; baseX: number; baseY: number; w: number; h: number; moved: boolean } | null = null;
+    let justDragged = false;
+    doc.addEventListener("click", (e) => {
+      if (!interaction.current.layoutMode) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (justDragged) { justDragged = false; return; }
+      const target = e.target as Element | null;
+      if (!target || target === doc.body || target === doc.documentElement) return;
+      const sel = selectorFor(target, doc);
+      if (sel) setSelected(sel);
+      else notify("Elemen ini tidak bisa dipilih tersendiri. Pilih elemen di sekitarnya.", "info");
+    }, true);
+    doc.addEventListener("pointerdown", (e) => {
+      const { layoutMode: on, selected: sel, view } = interaction.current;
+      if (!on || !sel || !isElementSelector(sel)) return;
+      const el = doc.querySelector(sel);
+      if (!el || !el.contains(e.target as Node)) return;
+      e.preventDefault();
+      const current = overridesRef.current.elements?.[sel]?.[view] ?? DEFAULT_ELEMENT_EDIT;
+      // Persen translate mengacu ke ukuran elemen sebelum diperbesar. Potongan SVG memakai kotak aslinya (getBBox) kali
+      // skala kanvas, karena kotak di layar ikut melebar saat potongan berayun atau berputar.
+      let w: number;
+      let h: number;
+      const svgEl = el as unknown as SVGGraphicsElement;
+      const ctm = typeof svgEl.getBBox === "function" && el.namespaceURI === "http://www.w3.org/2000/svg" && el.tagName.toLowerCase() !== "svg" ? svgEl.getScreenCTM() : null;
+      if (ctm) {
+        const box = svgEl.getBBox();
+        const k = Math.hypot(ctm.a, ctm.b) / current.scale;
+        w = box.width * k;
+        h = box.height * k;
+      } else {
+        const rect = el.getBoundingClientRect();
+        w = rect.width / current.scale;
+        h = rect.height / current.scale;
+      }
+      drag = { selector: sel, view, startX: e.clientX, startY: e.clientY, baseX: current.x, baseY: current.y, w: w || 1, h: h || 1, moved: false };
+    }, true);
+    doc.addEventListener("pointermove", (e) => {
+      if (!drag) return;
+      if (!drag.moved && Math.abs(e.clientX - drag.startX) + Math.abs(e.clientY - drag.startY) < 3) return;
+      drag.moved = true;
+      const clamp = (v: number, [min, max]: readonly [number, number]) => Math.max(min, Math.min(max, Math.round(v * 10) / 10));
+      setElementEdit(drag.selector, drag.view, {
+        x: clamp(drag.baseX + ((e.clientX - drag.startX) / drag.w) * 100, ELEMENT_LIMITS.x),
+        y: clamp(drag.baseY + ((e.clientY - drag.startY) / drag.h) * 100, ELEMENT_LIMITS.y),
+      });
+    }, true);
+    const end = () => { if (drag?.moved) justDragged = true; drag = null; };
+    doc.addEventListener("pointerup", end, true);
+    doc.addEventListener("pointercancel", end, true);
+    setDocVersion((v) => v + 1);
+  }, [masterMode, notify, setElementEdit]);
 
   // Keterbacaan diukur dari pratinjau pada saat yang sama: tanpa override (master asli) lalu dengan override, sehingga
   // animasi atau skrip master yang mengubah tampilan di antara dua pengukuran tidak menghasilkan laporan palsu. Hanya
@@ -427,7 +620,7 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
         <a href="/admin?tab=themes" className="rounded-lg px-2 py-1 text-xs font-semibold text-stone-600 hover:bg-stone-100">← Katalog</a>
         {masterMode ? (
           <div className="min-w-0">
-            <p className="text-[10.5px] font-semibold uppercase tracking-wider text-stone-500">Edit master tulisan tangan</p>
+            <p className="text-[10.5px] font-semibold uppercase tracking-wider text-stone-500">Theme Builder · Mode Master</p>
             <p className="px-1 text-sm font-semibold text-stone-900">{master?.name ?? "…"}</p>
           </div>
         ) : (
@@ -469,7 +662,7 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
           <section className="border-b border-stone-200/80 px-5 py-4">
             {masterMode ? (
               <p className="text-[11.5px] leading-relaxed text-stone-600">
-                Menyunting <b>{master?.name}</b> di atas desain aslinya: tata letak, animasi, dan ornamen tetap seperti master tulisan tangan. Yang bisa diubah: warna, huruf, gambar bawaan, seksi yang tampil, dan CSS tambahan. Berkas master tidak ditimpa; undangan yang sudah dibuat tidak berubah.
+                Mode Master: menyunting <b>{master?.name}</b> tanpa blueprint, di atas desain aslinya. Yang bisa diubah: posisi, ukuran, putaran, dan tampil-sembunyi setiap elemen (HP dan desktop terpisah), sampul desktop layar penuh, warna, huruf, gambar bawaan, seksi yang tampil, dan CSS tambahan. Berkas master tidak ditimpa; undangan yang sudah dibuat tidak berubah.
               </p>
             ) : (
               <>
@@ -487,6 +680,85 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
               {changedCount > 0 && <button type="button" onClick={() => setOverrides(emptyOverrides())} className="font-semibold text-amber-700 hover:underline cursor-pointer">Kembalikan semua</button>}
             </div>
           </section>
+
+          {masterMode && (() => {
+            const view = viewFor(selected);
+            const edit = selected ? editOf(selected, view) : DEFAULT_ELEMENT_EDIT;
+            const viewLabel = view === "mobile" ? "HP" : view === "desktopSplit" ? "desktop, sampul split" : selected && isCoverSelector(selected) ? "desktop, sampul layar penuh" : "desktop";
+            const editedList = Object.keys(overrides.elements ?? {});
+            const slider = (label: string, key: "x" | "y" | "scale" | "rotate", [min, max]: readonly [number, number], step: number, unit: string) => (
+              <label className="block text-[11px] font-semibold text-stone-600">
+                <span className="flex justify-between"><span>{label}</span><span className="font-mono font-normal text-stone-500">{edit[key]}{unit}</span></span>
+                <input type="range" min={min} max={max} step={step} value={edit[key]} onChange={(e) => selected && setElementEdit(selected, view, { [key]: Number(e.target.value) })} className="mt-1 w-full accent-stone-900" />
+              </label>
+            );
+            return (
+              <section className="border-b border-stone-200/80 px-5 py-4">
+                <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-stone-500">Tata letak elemen</h3>
+                <p className="mt-1 text-[11px] text-stone-500">Klik elemen apa pun di pratinjau (teks, foto, potongan ilustrasi), lalu seret atau atur di bawah. Posisi HP dan Desktop disimpan terpisah.</p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  <button type="button" onClick={() => setLayoutMode((v) => !v)} aria-pressed={layoutMode} className={`rounded-lg border px-2.5 py-1 text-[11px] font-semibold cursor-pointer ${layoutMode ? "border-stone-900 bg-stone-900 text-white" : "border-stone-200 text-stone-700"}`}>{layoutMode ? "Mode pilih elemen: aktif" : "Mode pilih elemen: mati"}</button>
+                  <button type="button" onClick={() => setShowCover((v) => !v)} aria-pressed={!showCover} className="rounded-lg border border-stone-200 px-2.5 py-1 text-[11px] font-semibold text-stone-700 cursor-pointer">{showCover ? "Sembunyikan sampul" : "Tampilkan sampul"}</button>
+                </div>
+                {device === "desktop" && (
+                  <div className="mt-3 rounded-xl border border-stone-200 p-2.5">
+                    <p className="text-[11px] font-semibold text-stone-700">Sampul desktop yang ditata</p>
+                    <div className="mt-1.5 flex gap-1.5">
+                      {(["full", "split"] as const).map((v) => (
+                        <button key={v} type="button" onClick={() => setCoverView(v)} aria-pressed={coverView === v} className={`flex-1 rounded-lg border px-2 py-1 text-[11px] font-semibold cursor-pointer ${coverView === v ? "border-amber-500 bg-amber-50 text-amber-900" : "border-stone-200 text-stone-600"}`}>{v === "full" ? "Layar penuh" : "Split"}</button>
+                      ))}
+                    </div>
+                    <label className="mt-2 flex items-start gap-2 text-[11px] text-stone-600 cursor-pointer">
+                      <input type="checkbox" checked={overrides.coverDesktop === "full"} onChange={(e) => setOverrides((prev) => { const next = { ...prev }; if (e.target.checked) next.coverDesktop = "full"; else delete next.coverDesktop; return next; })} className="mt-0.5 accent-stone-900" />
+                      <span>Tampilkan sampul desktop layar penuh selama klien belum mengunggah foto sampul. Foto sampul portrait klien tetap membuat sampul split.</span>
+                    </label>
+                  </div>
+                )}
+                {selected ? (
+                  <div className="mt-3 space-y-2.5 rounded-xl bg-stone-50 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="min-w-0">
+                        <span className="block truncate font-mono text-[11px] font-semibold text-stone-800" title={selected}>{selected.split(" > ").pop()}</span>
+                        <span className="block text-[10.5px] text-amber-800">Posisi khusus tampilan {viewLabel}</span>
+                      </span>
+                      <button type="button" onClick={() => setSelected(null)} className="text-[10.5px] font-semibold text-stone-500 hover:text-stone-800 cursor-pointer">Batal pilih</button>
+                    </div>
+                    {slider("Geser mendatar", "x", ELEMENT_LIMITS.x.map((n) => n / 3) as unknown as readonly [number, number], 0.5, "%")}
+                    {slider("Geser tegak", "y", ELEMENT_LIMITS.y.map((n) => n / 3) as unknown as readonly [number, number], 0.5, "%")}
+                    {slider("Ukuran", "scale", ELEMENT_LIMITS.scale, 0.05, "×")}
+                    {slider("Putar", "rotate", ELEMENT_LIMITS.rotate, 1, "°")}
+                    <label className="flex items-center gap-2 text-[11px] font-semibold text-stone-600 cursor-pointer">
+                      <input type="checkbox" checked={Boolean(edit.hidden)} onChange={(e) => setElementEdit(selected, view, { hidden: e.target.checked || undefined })} className="accent-stone-900" />
+                      Sembunyikan di tampilan ini
+                    </label>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <button type="button" onClick={selectParent} className="rounded-lg border border-stone-200 px-2 py-1 text-[11px] font-semibold text-stone-700 hover:border-stone-400 cursor-pointer">Pilih elemen induk</button>
+                      <button type="button" onClick={() => setElementEdit(selected, view, null)} className="rounded-lg border border-stone-200 px-2 py-1 text-[11px] font-semibold text-stone-700 hover:border-stone-400 cursor-pointer">Kembalikan posisi asli</button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-3 text-[11px] text-stone-500">{layoutMode ? "Belum ada elemen terpilih." : "Aktifkan mode pilih elemen untuk memilih dari pratinjau. Saat mati, pratinjau bisa diklik seperti undangan (misalnya tombol Buka Undangan)."}</p>
+                )}
+                {editedList.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-[11px] font-semibold text-stone-600">{editedList.length} elemen ditata</p>
+                    <ul className="mt-1 space-y-1">
+                      {editedList.map((s) => {
+                        const found = !missingSelectors.includes(s);
+                        return (
+                          <li key={s} className="flex items-center gap-2 text-[11px]">
+                            <button type="button" onClick={() => setSelected(s)} className={`min-w-0 flex-1 truncate text-left font-mono hover:underline cursor-pointer ${found ? "text-stone-700" : "text-red-700"}`} title={s}>{s.split(" > ").pop()}{found ? "" : " (tidak ditemukan di master)"}</button>
+                            <span className="shrink-0 text-[10px] text-stone-400">{Object.keys(overrides.elements?.[s] ?? {}).map((v) => (v === "mobile" ? "HP" : v === "desktop" ? "Desktop" : "Split")).join(", ")}</span>
+                            <button type="button" onClick={() => setOverrides((prev) => { const elements = { ...(prev.elements ?? {}) }; delete elements[s]; const next: MasterOverrides = { ...prev, elements }; if (!Object.keys(elements).length) delete next.elements; return next; })} className="shrink-0 text-[10.5px] font-semibold text-stone-500 hover:text-red-700 cursor-pointer">Hapus</button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+              </section>
+            );
+          })()}
 
           <section className="border-b border-stone-200/80 px-5 py-4">
             <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-stone-500">Warna</h3>
@@ -666,7 +938,7 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
                 ref={iframeRef}
                 title="Pratinjau varian"
                 srcDoc={previewHtml}
-                onLoad={applyToPreview}
+                onLoad={() => { applyToPreview(); attachLayoutHandlers(); }}
                 style={{ width: deviceWidth, height: 820, transform: `scale(${scale})`, transformOrigin: "top left" }}
                 className="rounded-xl border border-stone-300 bg-white shadow-lg"
               />

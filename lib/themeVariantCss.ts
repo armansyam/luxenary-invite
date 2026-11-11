@@ -15,6 +15,112 @@ export interface MasterOverrides {
   hiddenSections?: string[];
   /** CSS tambahan, aturan yang sama dengan CSS kustom Theme Builder (`customCssError`). */
   css?: string;
+  /**
+   * Tata letak elemen master tanpa blueprint (Mode Master): alamat CSS elemen (lihat `ELEMENT_SELECTOR_RE`) → posisi
+   * per tampilan. `mobile` < 900px, `desktop` ≥ 900px; untuk elemen di dalam `#coverScreen`, `desktop` berlaku saat
+   * sampul desktop layar penuh dan `desktopSplit` saat split (ditentukan mesin, lihat `elementEditsCss`).
+   */
+  elements?: Record<string, ElementEdits>;
+  /** "full": sampul desktop layar penuh selama klien belum mengunggah foto sampul (penanda data-lux-desktop-cover). */
+  coverDesktop?: "full";
+}
+
+export interface ElementEdit {
+  /** Geser dalam persen ukuran elemen itu sendiri. */
+  x: number;
+  y: number;
+  scale: number;
+  rotate: number;
+  hidden?: boolean;
+}
+export type ElementView = "mobile" | "desktop" | "desktopSplit";
+export type ElementEdits = Partial<Record<ElementView, ElementEdit>>;
+
+/**
+ * Alamat elemen yang dibuat Editor Master: segmen `#id` atau `tag.kelas:nth-of-type(n)` yang dihubungkan " > ". Pola
+ * ketat ini mencegah isi selain selektor masuk ke CSS halaman tamu.
+ */
+const ELEMENT_SEGMENT_RE = /^(?:#[A-Za-z][\w-]{0,60}|[a-z][a-z0-9]{0,15}(?:\.[A-Za-z_][\w-]{0,60}){0,6}(?::nth-of-type\(\d{1,3}\))?)$/;
+export const ELEMENT_VIEWS: readonly ElementView[] = ["mobile", "desktop", "desktopSplit"];
+export const ELEMENT_LIMITS = { x: [-1500, 1500], y: [-1500, 1500], scale: [0.2, 3], rotate: [-180, 180] } as const;
+export const MAX_ELEMENT_EDITS = 150;
+
+export function isElementSelector(selector: string): boolean {
+  if (selector.length > 400) return false;
+  const parts = selector.split(" > ");
+  return parts.length > 0 && parts.length <= 14 && parts.every((p) => ELEMENT_SEGMENT_RE.test(p));
+}
+
+const isCoverSelector = (selector: string) => selector === "#coverScreen" || selector.startsWith("#coverScreen > ");
+
+/** Elemen di dalam `<svg>` (bukan akar svg-nya): persen translate-nya mengacu ke kanvas SVG kecuali transform-box fill-box. */
+const isInsideSvg = (selector: string) => {
+  const parts = selector.split(" > ");
+  return parts.slice(0, -1).some((p) => /^svg(?:[.:]|$)/.test(p));
+};
+
+function elementStyle(e: ElementEdit, insideSvg: boolean): string {
+  const parts = [`translate:${e.x}% ${e.y}% !important;rotate:${e.rotate}deg !important;scale:${e.scale} !important;`];
+  // Di dalam SVG, fill-box membuat geser persen mengacu ke ukuran potongan itu sendiri (sama dengan elemen HTML), dan
+  // poros tengah membuat putar serta perbesar terjadi dari tengahnya, bukan dari sudut kanvas.
+  if (insideSvg) parts.push("transform-box:fill-box;");
+  if (e.rotate || e.scale !== 1) parts.push(`${insideSvg ? "" : "transform-box:fill-box;"}transform-origin:center;`);
+  if (e.hidden) parts.push("display:none !important;");
+  return parts.join("");
+}
+
+/**
+ * CSS tata letak elemen. Elemen sampul di desktop dibedakan oleh `<style id="lux-cover-desktop-split">` yang disisipkan
+ * mesin hanya saat sampul jatuh ke split (sama dengan posisi sampul Theme Builder). Nilai divalidasi ulang di sini karena
+ * isinya masuk ke CSS halaman tamu; entri tidak sah dilewati dan dilaporkan lewat `onSkip`.
+ */
+export function elementEditsCss(elements: MasterOverrides["elements"], onSkip?: (name: string) => void): string {
+  const mobile: string[] = [];
+  const desktop: string[] = [];
+  for (const [selector, edits] of Object.entries(elements ?? {})) {
+    if (!isElementSelector(selector)) { onSkip?.(selector.slice(0, 60)); continue; }
+    const cover = isCoverSelector(selector);
+    const inSvg = isInsideSvg(selector);
+    const valid = (e: ElementEdit | undefined) => e && [e.x, e.y, e.scale, e.rotate].every((n) => typeof n === "number" && Number.isFinite(n));
+    if (valid(edits.mobile)) mobile.push(`${selector}{${elementStyle(edits.mobile!, inSvg)}}`);
+    if (valid(edits.desktop)) desktop.push(`${cover ? ":root:not(:has(#lux-cover-desktop-split)) " : ""}${selector}{${elementStyle(edits.desktop!, inSvg)}}`);
+    if (cover && valid(edits.desktopSplit)) desktop.push(`:root:has(#lux-cover-desktop-split) ${selector}{${elementStyle(edits.desktopSplit!, inSvg)}}`);
+  }
+  return [
+    mobile.length ? `@media (max-width: 899.98px) {\n${mobile.join("\n")}\n}` : "",
+    desktop.length ? `@media (min-width: 900px) {\n${desktop.join("\n")}\n}` : "",
+  ].filter(Boolean).join("\n");
+}
+
+const clampNum = (v: unknown, [min, max]: readonly [number, number], fallback: number) =>
+  typeof v === "number" && Number.isFinite(v) ? Math.min(max, Math.max(min, Math.round(v * 10) / 10)) : fallback;
+
+/** Suntingan elemen dari masukan admin; posisi bawaan (0, 0, skala 1, putar 0, tampil) tidak disimpan. */
+export function parseElementEdits(raw: unknown, errors: string[]): Record<string, ElementEdits> {
+  const out: Record<string, ElementEdits> = {};
+  if (raw === undefined || raw === null) return out;
+  if (typeof raw !== "object" || Array.isArray(raw)) { errors.push("Tata letak elemen tidak terbaca."); return out; }
+  for (const [selector, edits] of Object.entries(raw as Record<string, unknown>)) {
+    if (!isElementSelector(selector)) { errors.push(`Alamat elemen tidak sah: ${selector.slice(0, 60)}`); continue; }
+    if (!edits || typeof edits !== "object") continue;
+    const value: ElementEdits = {};
+    for (const view of ELEMENT_VIEWS) {
+      const e = (edits as Record<string, any>)[view];
+      if (!e || typeof e !== "object") continue;
+      if (view === "desktopSplit" && !isCoverSelector(selector)) continue;
+      const edit: ElementEdit = {
+        x: clampNum(e.x, ELEMENT_LIMITS.x, 0),
+        y: clampNum(e.y, ELEMENT_LIMITS.y, 0),
+        scale: clampNum(e.scale, ELEMENT_LIMITS.scale, 1),
+        rotate: clampNum(e.rotate, ELEMENT_LIMITS.rotate, 0),
+        ...(e.hidden === true ? { hidden: true } : {}),
+      };
+      if (edit.x || edit.y || edit.scale !== 1 || edit.rotate || edit.hidden) value[view] = edit;
+    }
+    if (Object.keys(value).length) out[selector] = value;
+  }
+  if (Object.keys(out).length > MAX_ELEMENT_EDITS) errors.push(`Tata letak elemen paling banyak ${MAX_ELEMENT_EDITS} elemen.`);
+  return out;
 }
 
 const ASSET_REF_RE = /\/assets\/[\w./-]+\.(?:webp|png|jpe?g|svg|gif|avif)/gi;
@@ -47,6 +153,8 @@ export function masterExtraCss(overrides: MasterOverrides, onSkip?: (name: strin
     if (customCssError(css)) onSkip?.("css");
     else parts.push(css);
   }
+  const elementsCss = elementEditsCss(overrides.elements, onSkip);
+  if (elementsCss) parts.push(elementsCss);
   return parts.join("\n");
 }
 
@@ -230,6 +338,10 @@ export function parseMasterOverrides(raw: unknown, parentHtml: string): { ok: tr
     if (cssError) errors.push(cssError);
     else value.css = input.css.trim();
   }
+  const elements = parseElementEdits(input.elements, errors);
+  if (Object.keys(elements).length) value.elements = elements;
+  if (input.coverDesktop === "full") value.coverDesktop = "full";
+  else if (input.coverDesktop !== undefined && input.coverDesktop !== null) errors.push("Mode sampul desktop tidak dikenali.");
   const total = Object.keys(value.colors).length + Object.keys(value.fonts).length + Object.keys(value.images ?? {}).length + (value.hiddenSections?.length ?? 0);
   if (total > MAX_MASTER_OVERRIDES) errors.push(`Override paling banyak ${MAX_MASTER_OVERRIDES}.`);
   return errors.length ? { ok: false, errors } : { ok: true, value };
@@ -237,7 +349,7 @@ export function parseMasterOverrides(raw: unknown, parentHtml: string): { ok: tr
 
 /** Jumlah perubahan dalam override (untuk tampilan "N perubahan" dan cek kosong). */
 export function overrideCount(o: MasterOverrides): number {
-  return Object.keys(o.colors ?? {}).length + Object.keys(o.fonts ?? {}).length + Object.keys(o.images ?? {}).length + (o.hiddenSections?.length ?? 0) + (o.css?.trim() ? 1 : 0);
+  return Object.keys(o.colors ?? {}).length + Object.keys(o.fonts ?? {}).length + Object.keys(o.images ?? {}).length + (o.hiddenSections?.length ?? 0) + (o.css?.trim() ? 1 : 0) + Object.keys(o.elements ?? {}).length + (o.coverDesktop ? 1 : 0);
 }
 
 /** Tumpukan huruf pengganti: keluarga baru dengan cadangan generik dari tumpukan aslinya (serif tetap serif). */
@@ -285,6 +397,10 @@ export function applyMasterOverridesTo(parentHtml: string, overrides: MasterOver
   for (const [original, replacement] of Object.entries(overrides.images ?? {})) {
     if (!/^\/assets\/[\w./-]+$/.test(original) || !UPLOADED_ASSET_RE.test(replacement)) { onSkip?.(original); continue; }
     html = html.split(original).join(replacement);
+  }
+  // Penanda yang dibaca renderTemplateFile: tanpa foto sampul klien, sampul desktop tidak dijatuhkan ke split.
+  if (overrides.coverDesktop === "full" && !/data-lux-desktop-cover=/.test(html)) {
+    html = html.replace(/\bid="coverScreen"/, 'id="coverScreen" data-lux-desktop-cover="full"');
   }
   const { css: rootCss, fontLinks } = masterOverrideCss(overrides, parentHtml, onSkip);
   const css = [rootCss, masterExtraCss(overrides, onSkip)].filter(Boolean).join("\n");

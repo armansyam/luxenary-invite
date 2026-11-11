@@ -28,6 +28,8 @@ export function storedOverrides(raw: unknown): MasterOverrides | null {
     ...(r.images && typeof r.images === "object" ? { images: { ...r.images } } : {}),
     ...(Array.isArray(r.hiddenSections) ? { hiddenSections: r.hiddenSections.filter((s): s is string => typeof s === "string") } : {}),
     ...(typeof r.css === "string" && r.css.trim() ? { css: r.css } : {}),
+    ...(r.elements && typeof r.elements === "object" && !Array.isArray(r.elements) ? { elements: { ...r.elements } } : {}),
+    ...(r.coverDesktop === "full" ? { coverDesktop: "full" as const } : {}),
   };
 }
 
