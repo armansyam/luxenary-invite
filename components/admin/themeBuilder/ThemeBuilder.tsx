@@ -1325,7 +1325,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
             html={html}
             loading={previewLoading}
             device={device}
-            editOrnaments={panel === "ornaments" || panel === "layout" || Boolean(selectedId) || Boolean(selectedBlock)}
+            editOrnaments={panel === "ornaments" || panel === "layout" || Boolean(selectedId) || Boolean(selectedBlock) || (device === "desktop" && viewSection === "cover")}
             playAnimations={panel === "motion"}
             replayNonce={replayNonce}
             jump={jump}

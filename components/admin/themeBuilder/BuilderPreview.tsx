@@ -621,7 +621,9 @@ export default function BuilderPreview(props: Props) {
   };
 
   // Tampilan sampul desktop yang sedang ditata (layar penuh atau split), terlepas dari keputusan mesin untuk data
-  // pratinjau ini. Posisi blok sampul diterapkan langsung oleh efek blok, jadi di sini hanya lebar sampulnya.
+  // pratinjau ini. Posisi blok sampul diterapkan langsung oleh efek blok, jadi di sini hanya lebar sampulnya. Layar penuh
+  // memakai z-index sampul blueprint (9999): `luxDesktopContainment` menaikkan hero kiri ke 50, dan nilai lebih rendah
+  // membuat hero menutupi sampul sehingga teks sampul di atas area hero tidak bisa dipilih atau diseret.
   useEffect(() => {
     const doc = getDoc();
     if (!doc) return;
@@ -634,7 +636,7 @@ export default function BuilderPreview(props: Props) {
     style.textContent = device !== "desktop"
       ? ""
       : desktopCoverFull
-        ? "@media (min-width: 900px) { .cover-overlay, .cover-screen { left: 0 !important; right: 0 !important; width: 100% !important; z-index: 30 !important; } }"
+        ? "@media (min-width: 900px) { .cover-overlay, .cover-screen { left: 0 !important; right: 0 !important; width: 100% !important; z-index: 9999 !important; } }"
         : "@media (min-width: 900px) { .cover-overlay, .cover-screen { left: auto !important; right: 0 !important; width: 460px !important; } }";
   }, [device, desktopCoverFull, docVersion]);
 
