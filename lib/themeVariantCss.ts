@@ -3,8 +3,10 @@
  * peramban (pratinjau warna langsung). Resolusi varian dari DB ada di lib/themeVariants.ts.
  */
 import { FONT_OPTIONS, customCssError, googleFontCssUrl, googleFontFamilyName, isGoogleFontId } from "@/lib/themeBuilder/spec";
+import { applyMasterLayoutHtml, masterLayoutCss, parseMasterLayout, type MasterLayout } from "@/lib/masterLayout";
 
-export interface MasterOverrides {
+/** Suntingan Editor Master (Mode Master) dan override varian; lapisan Tahap 2–3 (ornamen, seksi bebas, latar per seksi, urutan seksi) dari `MasterLayout`. */
+export interface MasterOverrides extends MasterLayout {
   /** Nama variabel warna master → #rrggbb. */
   colors: Record<string, string>;
   /** Nama variabel huruf master → id font katalog lokal atau "g:<Nama Google Font>". */
@@ -155,6 +157,8 @@ export function masterExtraCss(overrides: MasterOverrides, onSkip?: (name: strin
   }
   const elementsCss = elementEditsCss(overrides.elements, onSkip);
   if (elementsCss) parts.push(elementsCss);
+  const layoutCss = masterLayoutCss(overrides);
+  if (layoutCss) parts.push(layoutCss);
   return parts.join("\n");
 }
 
@@ -342,6 +346,7 @@ export function parseMasterOverrides(raw: unknown, parentHtml: string): { ok: tr
   if (Object.keys(elements).length) value.elements = elements;
   if (input.coverDesktop === "full") value.coverDesktop = "full";
   else if (input.coverDesktop !== undefined && input.coverDesktop !== null) errors.push("Mode sampul desktop tidak dikenali.");
+  Object.assign(value, parseMasterLayout(input, parentHtml, errors));
   const total = Object.keys(value.colors).length + Object.keys(value.fonts).length + Object.keys(value.images ?? {}).length + (value.hiddenSections?.length ?? 0);
   if (total > MAX_MASTER_OVERRIDES) errors.push(`Override paling banyak ${MAX_MASTER_OVERRIDES}.`);
   return errors.length ? { ok: false, errors } : { ok: true, value };
@@ -349,7 +354,8 @@ export function parseMasterOverrides(raw: unknown, parentHtml: string): { ok: tr
 
 /** Jumlah perubahan dalam override (untuk tampilan "N perubahan" dan cek kosong). */
 export function overrideCount(o: MasterOverrides): number {
-  return Object.keys(o.colors ?? {}).length + Object.keys(o.fonts ?? {}).length + Object.keys(o.images ?? {}).length + (o.hiddenSections?.length ?? 0) + (o.css?.trim() ? 1 : 0) + Object.keys(o.elements ?? {}).length + (o.coverDesktop ? 1 : 0);
+  return Object.keys(o.colors ?? {}).length + Object.keys(o.fonts ?? {}).length + Object.keys(o.images ?? {}).length + (o.hiddenSections?.length ?? 0) + (o.css?.trim() ? 1 : 0) + Object.keys(o.elements ?? {}).length + (o.coverDesktop ? 1 : 0)
+    + (o.ornaments?.length ?? 0) + (o.freeSections?.length ?? 0) + Object.keys(o.sectionBackgrounds ?? {}).length + (o.sectionOrder?.length ? 1 : 0);
 }
 
 /** Tumpukan huruf pengganti: keluarga baru dengan cadangan generik dari tumpukan aslinya (serif tetap serif). */
@@ -398,6 +404,7 @@ export function applyMasterOverridesTo(parentHtml: string, overrides: MasterOver
     if (!/^\/assets\/[\w./-]+$/.test(original) || !UPLOADED_ASSET_RE.test(replacement)) { onSkip?.(original); continue; }
     html = html.split(original).join(replacement);
   }
+  html = applyMasterLayoutHtml(html, overrides, onSkip);
   // Penanda yang dibaca renderTemplateFile: tanpa foto sampul klien, sampul desktop tidak dijatuhkan ke split.
   if (overrides.coverDesktop === "full" && !/data-lux-desktop-cover=/.test(html)) {
     html = html.replace(/\bid="coverScreen"/, 'id="coverScreen" data-lux-desktop-cover="full"');

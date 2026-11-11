@@ -42,6 +42,71 @@ describe("alamat elemen", () => {
   });
 });
 
+describe("Mode Master Tahap 2–3: ornamen, seksi bebas, latar per seksi, urutan seksi", () => {
+  const ORN = "/assets/ornaments/jamuan/cover-wide.webp";
+
+  it("parse menolak seksi, gambar, dan teks yang tidak sah; urutan hanya untuk seksi yang aman dipindah", () => {
+    const errors: string[] = [];
+    const bad = parseMasterOverrides({
+      colors: {}, fonts: {},
+      ornaments: [{ id: "orn12345", anchor: "tidakada", src: ORN, x: 50, y: 50, width: 30, rotate: 0, opacity: 1, layer: "back" }],
+      freeSections: [{ id: "fs123456", after: "couple", title: "Halo {{guestName}}", align: "center" }],
+      sectionBackgrounds: { couple: { color: "#ff0000" } },
+      sectionOrder: ["couple", "home"],
+    }, AURELIA);
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) errors.push(...bad.errors);
+    expect(errors.join(" ")).toMatch(/tidak ada di master/);
+    expect(errors.join(" ")).toMatch(/\{\{/);
+    expect(errors.join(" ")).toMatch(/token palet/);
+    expect(errors.join(" ")).toMatch(/Urutan seksi/);
+
+    const good = parseMasterOverrides({
+      colors: {}, fonts: {},
+      ornaments: [{ id: "orn12345", anchor: "couple", src: ORN, x: 30, y: 10, width: 40, rotate: 15, opacity: 0.8, layer: "back", hideOn: "mobile" }],
+      freeSections: [{ id: "fs123456", after: "couple", eyebrow: "Doa", title: "Untuk <b>kalian</b>", text: "Baris satu\nbaris dua", align: "center" }],
+      sectionBackgrounds: { event: { color: "dark" } },
+      sectionOrder: ["home", "event", "couple", "rsvp"],
+    }, AURELIA);
+    expect(good.ok).toBe(true);
+  });
+
+  it("render: ornamen di dalam seksi, seksi bebas sesudah seksi tujuan dengan teks di-escape, urutan ditukar, latar dari token", () => {
+    const out = applyMasterOverridesTo(AURELIA, {
+      colors: {}, fonts: {},
+      ornaments: [{ id: "orn12345", anchor: "couple", src: ORN, x: 30, y: 10, width: 40, rotate: 15, opacity: 0.8, layer: "back", hideOn: "mobile" }],
+      freeSections: [{ id: "fs123456", after: "couple", eyebrow: "Doa", title: "Untuk <b>kalian</b>", text: "Baris satu\nbaris dua", align: "center" }],
+      sectionBackgrounds: { event: { color: "dark" } },
+      sectionOrder: ["home", "event", "couple", "rsvp"],
+    }, undefined, "lux-master-edits");
+    const coupleOpen = out.search(/<section\b[^>]*\bid="couple"/);
+    const eventOpen = out.search(/<section\b[^>]*\bid="event"/);
+    expect(eventOpen).toBeGreaterThan(-1);
+    expect(eventOpen).toBeLessThan(coupleOpen);
+    expect(out.slice(coupleOpen, coupleOpen + 2000)).toContain('data-lux-mo="orn12345"');
+    expect(out).toContain('class="lux-mo lux-mo-hide-mobile"');
+    const fs = out.indexOf('id="lux-fs-fs123456"');
+    expect(fs).toBeGreaterThan(coupleOpen);
+    expect(out).toContain("Untuk &lt;b&gt;kalian&lt;/b&gt;");
+    expect(out).toContain("Baris satu<br>baris dua");
+    expect(out).toContain("#event { background-color: var(--bg-dark) !important; background-image: none !important; }");
+    expect(out).toContain(":where(#couple) { position: relative; isolation: isolate; }");
+  });
+
+  it("master yang strukturnya berubah: entri yang tidak cocok dilewati tanpa merusak HTML", () => {
+    const skipped: string[] = [];
+    const out = applyMasterOverridesTo(AURELIA, {
+      colors: {}, fonts: {},
+      ornaments: [{ id: "orn12345", anchor: "hilang", src: ORN, x: 50, y: 50, width: 30, rotate: 0, opacity: 1, layer: "back" }],
+      freeSections: [{ id: "fs123456", after: "hilang", title: "x", align: "center" }],
+      sectionOrder: ["home", "hilang"],
+    }, (n) => skipped.push(n));
+    expect(skipped).toEqual(expect.arrayContaining(["sectionOrder", "hilang"]));
+    expect(out).not.toContain("lux-fs-");
+    expect(out).not.toContain('data-lux-mo="orn12345"');
+  });
+});
+
 describe("CSS tata letak elemen", () => {
   it("HP di bawah 900px, desktop di atasnya; elemen sampul dibedakan oleh gaya split mesin", () => {
     const css = elementEditsCss({

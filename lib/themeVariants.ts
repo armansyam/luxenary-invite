@@ -30,6 +30,10 @@ export function storedOverrides(raw: unknown): MasterOverrides | null {
     ...(typeof r.css === "string" && r.css.trim() ? { css: r.css } : {}),
     ...(r.elements && typeof r.elements === "object" && !Array.isArray(r.elements) ? { elements: { ...r.elements } } : {}),
     ...(r.coverDesktop === "full" ? { coverDesktop: "full" as const } : {}),
+    ...(Array.isArray(r.ornaments) ? { ornaments: r.ornaments } : {}),
+    ...(Array.isArray(r.freeSections) ? { freeSections: r.freeSections } : {}),
+    ...(r.sectionBackgrounds && typeof r.sectionBackgrounds === "object" && !Array.isArray(r.sectionBackgrounds) ? { sectionBackgrounds: { ...r.sectionBackgrounds } } : {}),
+    ...(Array.isArray(r.sectionOrder) ? { sectionOrder: r.sectionOrder.filter((s): s is string => typeof s === "string") } : {}),
   };
 }
 

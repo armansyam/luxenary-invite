@@ -38,6 +38,7 @@ import { googleFontFamilyName, isGoogleFontId } from "@/lib/themeBuilder/spec";
 import { recordBuilderAudit, slugifyThemeId, themeIdTaken } from "@/lib/themeBuilder/server";
 import { applyMasterOverrides, clearVariantCache, masterColorGroups, masterTokens, parseMasterOverrides, storedOverrides, type MasterOverrides } from "@/lib/themeVariants";
 import { masterColorUsage, masterImageRefs, masterSections, overrideCount } from "@/lib/themeVariantCss";
+import { masterAnchors, masterReorderable } from "@/lib/masterLayout";
 
 export const dynamic = "force-dynamic";
 
@@ -59,13 +60,14 @@ async function loadParent(parentId: string) {
 }
 
 function tokenPayload(html: string) {
-  return { colorGroups: masterColorGroups(html), fonts: masterTokens(html).fonts, usage: masterColorUsage(html), images: masterImageRefs(html), sections: masterSections(html) };
+  return { colorGroups: masterColorGroups(html), fonts: masterTokens(html).fonts, usage: masterColorUsage(html), images: masterImageRefs(html), sections: masterSections(html), anchors: masterAnchors(html), reorderable: masterReorderable(html) };
 }
 
 /** Gambar, seksi tersembunyi, dan CSS tambahan hanya lewat Editor Master; varian mewarisinya dari master induk. */
 function variantOnlyColorsFonts(o: MasterOverrides): string | null {
   return Object.keys(o.images ?? {}).length || o.hiddenSections?.length || o.css || Object.keys(o.elements ?? {}).length || o.coverDesktop
-    ? "Varian hanya mengganti warna dan huruf. Gambar, seksi, CSS, dan tata letak elemen disunting lewat Edit pada master induknya."
+    || o.ornaments?.length || o.freeSections?.length || Object.keys(o.sectionBackgrounds ?? {}).length || o.sectionOrder?.length
+    ? "Varian hanya mengganti warna dan huruf. Gambar, seksi, CSS, tata letak, ornamen, dan seksi bebas disunting lewat Edit pada master induknya."
     : null;
 }
 

@@ -7,6 +7,7 @@ import { GoogleFontPicker } from "@/components/admin/themeBuilder/GoogleFontPick
 import { FONT_OPTIONS, PALETTE_PRESETS, customCssError, fontLabel, isGoogleFontId } from "@/lib/themeBuilder/spec";
 import { ELEMENT_LIMITS, isElementSelector, masterExtraCss, overrideCount, overrideCssFromTokens, recolorWithPalette, type ColorUsage, type ColorUsageKind, type ElementEdit, type ElementView, type MasterFontToken, type MasterOverrides } from "@/lib/themeVariantCss";
 import { measureText, newlyUnreadable, type TextSample } from "@/components/admin/variantReadability";
+import { MASTER_BG_TOKENS, ornamentStyle, type MasterFreeSection, type MasterOrnament, type MasterSectionBg } from "@/lib/masterLayout";
 
 interface ColorGroup {
   value: string;
@@ -61,8 +62,25 @@ function cloneOverrides(o: Partial<MasterOverrides> | null | undefined): MasterO
     ...(o?.css?.trim() ? { css: o.css } : {}),
     ...(o?.elements && Object.keys(o.elements).length ? { elements: JSON.parse(JSON.stringify(o.elements)) } : {}),
     ...(o?.coverDesktop === "full" ? { coverDesktop: "full" as const } : {}),
+    ...(o?.ornaments?.length ? { ornaments: o.ornaments.map((x) => ({ ...x })) } : {}),
+    ...(o?.freeSections?.length ? { freeSections: o.freeSections.map((x) => ({ ...x })) } : {}),
+    ...(o?.sectionBackgrounds && Object.keys(o.sectionBackgrounds).length ? { sectionBackgrounds: JSON.parse(JSON.stringify(o.sectionBackgrounds)) } : {}),
+    ...(o?.sectionOrder?.length ? { sectionOrder: [...o.sectionOrder] } : {}),
   };
 }
+
+/** Bagian override yang mengubah HTML master (bukan hanya CSS), sehingga pratinjau perlu dirender ulang di server. */
+function structuralKey(o: MasterOverrides): string {
+  return JSON.stringify({
+    images: o.images ?? {},
+    ornaments: (o.ornaments ?? []).map((x) => [x.id, x.anchor, x.src, x.hideOn ?? ""]),
+    freeSections: o.freeSections ?? [],
+    sectionOrder: o.sectionOrder ?? [],
+    coverDesktop: o.coverDesktop ?? "",
+  });
+}
+
+const newLayerId = () => (Math.random().toString(36).slice(2) + Date.now().toString(36)).slice(0, 10);
 
 const DEFAULT_ELEMENT_EDIT: ElementEdit = { x: 0, y: 0, scale: 1, rotate: 0 };
 // Kelas keadaan yang dipasang skrip atau animasi saat halaman berjalan; tidak dipakai di alamat elemen karena berubah.
@@ -127,6 +145,7 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
   const [sections, setSections] = useState<string[]>([]);
   const [uploadingFor, setUploadingFor] = useState<string | null>(null);
   const previewImagesRef = useRef<string>("");
+  const restoreScrollRef = useRef(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const [stageWidth, setStageWidth] = useState(800);
@@ -140,6 +159,30 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
   const interaction = useRef({ layoutMode: true, selected: null as string | null, view: "mobile" as ElementView });
   const overridesRef = useRef(overrides);
   useEffect(() => { overridesRef.current = overrides; }, [overrides]);
+  // Tahap 2–3: ornamen, seksi bebas, latar per seksi, urutan seksi.
+  const [anchors, setAnchors] = useState<string[]>([]);
+  const [reorderable, setReorderable] = useState<string[]>([]);
+  const [selectedOrn, setSelectedOrn] = useState<string | null>(null);
+  const [library, setLibrary] = useState<{ uploads: Array<{ url: string }>; builtin: Array<{ id: string; label: string; items: string[] }> } | null>(null);
+  const [libraryGroup, setLibraryGroup] = useState("");
+  const [ornAnchor, setOrnAnchor] = useState("");
+  const [bgSection, setBgSection] = useState("");
+  const [freeAfter, setFreeAfter] = useState("");
+  const selectedOrnRef = useRef<string | null>(null);
+  useEffect(() => { selectedOrnRef.current = selectedOrn; }, [selectedOrn]);
+
+  useEffect(() => {
+    if (!masterId) return;
+    let cancelled = false;
+    (async () => {
+      const res = await fetch("/api/admin/theme-builder/assets", { cache: "no-store" });
+      const data = await res.json().catch(() => ({}));
+      if (cancelled) return;
+      if (res.ok) setLibrary({ uploads: data.uploads ?? [], builtin: data.builtin ?? [] });
+      else notify(data.error || "Pustaka ornamen gagal dimuat.", "error");
+    })();
+    return () => { cancelled = true; };
+  }, [masterId, notify]);
 
   const snapshot = useCallback((n: string, d: string, o: MasterOverrides) => JSON.stringify({ n: n.trim(), d: d.trim(), o }), []);
   const dirty = snapshot(name, description, overrides) !== savedSnapshot;
@@ -182,7 +225,9 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
       setDescription(d);
       setOverrides(o);
       setSavedSnapshot(loaded || data.master ? snapshot(n, d, o) : "");
-      previewImagesRef.current = JSON.stringify(o.images ?? {});
+      previewImagesRef.current = structuralKey(o);
+      setAnchors(data.anchors ?? []);
+      setReorderable(data.reorderable ?? []);
       const preview = await fetchPreview(data.parent.id, o);
       if (!cancelled) {
         if (preview.html) setPreviewHtml(preview.html);
@@ -192,14 +237,17 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
     return () => { cancelled = true; };
   }, [parentId, variantId, masterId, snapshot, fetchPreview]);
 
-  // Gambar pengganti tertulis di HTML dan CSS master (atribut src, url()), jadi pratinjau dirender ulang di server.
+  // Gambar pengganti, ornamen, seksi bebas, urutan seksi, dan penanda sampul mengubah HTML master, jadi pratinjau
+  // dirender ulang di server; posisi ornamen dan CSS lain diterapkan langsung tanpa render ulang.
   useEffect(() => {
     if (!parent || !previewHtml) return;
-    const key = JSON.stringify(overrides.images ?? {});
+    const key = structuralKey(overrides);
     if (key === previewImagesRef.current) return;
     const t = setTimeout(async () => {
       previewImagesRef.current = key;
       const preview = await fetchPreview(parent.id, overrides);
+      // Posisi gulir dipertahankan agar mengetik di seksi bebas tidak melempar pratinjau kembali ke atas.
+      restoreScrollRef.current = iframeRef.current?.contentWindow?.scrollY ?? 0;
       if (preview.html) setPreviewHtml(preview.html);
       else notify(preview.error ?? "Pratinjau gagal dibuat.", "error");
     }, 400);
@@ -265,6 +313,87 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
     interaction.current = { layoutMode: masterMode && layoutMode, selected, view: viewFor(selected) };
   }, [masterMode, layoutMode, selected, viewFor]);
 
+  const updateOrnament = useCallback((id: string, patch: Partial<MasterOrnament> | null) => {
+    setOverrides((prev) => {
+      const list = (prev.ornaments ?? []).flatMap((o) => (o.id !== id ? [o] : patch ? [{ ...o, ...patch }] : []));
+      const next: MasterOverrides = { ...prev, ornaments: list };
+      if (!list.length) delete next.ornaments;
+      return next;
+    });
+  }, []);
+
+  const addOrnament = (src: string) => {
+    const anchor = ornAnchor || anchors[0];
+    if (!anchor) { notify("Master ini tidak punya seksi ber-id untuk ditempeli ornamen.", "error"); return; }
+    // Ornamen baru di depan isi agar langsung terlihat: di banyak master foto latar seksi berupa elemen isi, sehingga
+    // ornamen "di belakang isi" tertutup foto itu.
+    const o: MasterOrnament = { id: newLayerId(), anchor, src, x: 50, y: 50, width: 30, rotate: 0, opacity: 1, layer: "front" };
+    setOverrides((prev) => ({ ...prev, ornaments: [...(prev.ornaments ?? []), o] }));
+    setSelectedOrn(o.id);
+    setSelected(null);
+  };
+
+  const updateFreeSection = (id: string, patch: Partial<MasterFreeSection> | null) => {
+    setOverrides((prev) => {
+      const list = (prev.freeSections ?? []).flatMap((f) => (f.id !== id ? [f] : patch ? [{ ...f, ...patch }] : []));
+      const next: MasterOverrides = { ...prev, freeSections: list };
+      if (!list.length) delete next.freeSections;
+      return next;
+    });
+  };
+
+  const setSectionBg = (id: string, patch: Partial<MasterSectionBg> | null) => {
+    setOverrides((prev) => {
+      const bgs = { ...(prev.sectionBackgrounds ?? {}) };
+      const merged: MasterSectionBg = patch ? { ...(bgs[id] ?? {}), ...patch } : {};
+      if (!merged.color) delete merged.color;
+      if (!merged.image) { delete merged.image; delete merged.overlay; }
+      if (merged.color || merged.image) bgs[id] = merged;
+      else delete bgs[id];
+      const next: MasterOverrides = { ...prev, sectionBackgrounds: bgs };
+      if (!Object.keys(bgs).length) delete next.sectionBackgrounds;
+      return next;
+    });
+  };
+
+  const moveSection = (id: string, delta: -1 | 1) => {
+    setOverrides((prev) => {
+      const order = [...(prev.sectionOrder?.length ? prev.sectionOrder : reorderable)];
+      const i = order.indexOf(id);
+      const j = i + delta;
+      if (i < 0 || j < 0 || j >= order.length) return prev;
+      [order[i], order[j]] = [order[j], order[i]];
+      const next: MasterOverrides = { ...prev, sectionOrder: order };
+      if (order.every((s, k) => s === reorderable[k])) delete next.sectionOrder;
+      return next;
+    });
+  };
+
+  /** Unggah ke pustaka builder; mengembalikan URL atau null (pesan galat sudah ditampilkan). */
+  const uploadAsset = async (file: File): Promise<string | null> => {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch("/api/admin/theme-builder/assets", { method: "POST", body: form });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { notify(data.error || "Gambar gagal diunggah.", "error"); return null; }
+    setLibrary((lib) => (lib ? { ...lib, uploads: [{ url: data.url }, ...lib.uploads] } : lib));
+    return data.url as string;
+  };
+
+  // Posisi ornamen ditulis langsung ke elemennya di pratinjau saat diseret atau diatur; menambah atau menghapus ornamen
+  // merender ulang pratinjau di server (structuralKey).
+  useEffect(() => {
+    const doc = iframeRef.current?.contentDocument;
+    if (!doc || !masterMode) return;
+    for (const o of overrides.ornaments ?? []) {
+      const el = doc.querySelector(`[data-lux-mo="${o.id}"]`);
+      if (!el) continue;
+      el.setAttribute("style", ornamentStyle(o));
+      if (selectedOrn === o.id && layoutMode) el.setAttribute("data-lux-me-sel", "");
+      else el.removeAttribute("data-lux-me-sel");
+    }
+  }, [masterMode, overrides.ornaments, selectedOrn, layoutMode, docVersion]);
+
   // Penanda pilihan, sampul tersembunyi, dan tampilan sampul desktop yang sedang ditata, ditulis ke dokumen pratinjau.
   useEffect(() => {
     const doc = iframeRef.current?.contentDocument;
@@ -278,12 +407,19 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
     const rules: string[] = [];
     // Ilustrasi SVG master umumnya `pointer-events: none` agar tidak menghalangi tamu; di mode pilih elemen bagian yang
     // tergambar dibuat bisa diklik supaya potongan ilustrasi (lentera, gedung, ornamen) dapat dipilih tersendiri.
-    if (layoutMode) rules.push("* { user-select: none !important; -webkit-user-select: none !important; } svg * { pointer-events: visiblePainted !important; } [data-lux-me-sel] { outline: 2px dashed var(--accent, currentColor) !important; outline-offset: 3px !important; cursor: move !important; }");
+    if (layoutMode) rules.push("* { user-select: none !important; -webkit-user-select: none !important; } svg * { pointer-events: visiblePainted !important; } .lux-mo { pointer-events: auto !important; cursor: pointer; } [data-lux-me-sel] { outline: 2px dashed var(--accent, currentColor) !important; outline-offset: 3px !important; cursor: move !important; }");
     if (!showCover) {
       rules.push("#coverScreen, .cover-screen, .cover-overlay, #coverOverlay { display: none !important; } html, body { overflow: auto !important; }");
       doc.body?.classList.remove("is-locked");
     }
     style.textContent = rules.join("\n");
+    // Posisi gulir sebelum render ulang dipulihkan setelah sampul disembunyikan dan kunci gulir dilepas (sebelum itu
+    // halaman belum bisa digulir). Instan karena banyak master memakai scroll-behavior: smooth.
+    if (restoreScrollRef.current) {
+      const y = restoreScrollRef.current;
+      restoreScrollRef.current = 0;
+      requestAnimationFrame(() => doc.defaultView?.scrollTo({ top: y, behavior: "instant" }));
+    }
     doc.querySelectorAll("[data-lux-me-sel]").forEach((n) => n.removeAttribute("data-lux-me-sel"));
     if (selected && layoutMode && isElementSelector(selected)) doc.querySelector(selected)?.setAttribute("data-lux-me-sel", "");
     // Keberadaan gaya split dari mesin menentukan set posisi sampul desktop (elementEditsCss); di sini dibuat sesuai
@@ -336,6 +472,7 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
     setCoverView(doc.querySelector('[data-lux-desktop-cover="full"]') || !doc.getElementById("lux-cover-desktop-split") ? "full" : "split");
     let drag: { selector: string; view: ElementView; startX: number; startY: number; baseX: number; baseY: number; w: number; h: number; moved: boolean } | null = null;
     let justDragged = false;
+    let ornDrag: { id: string; startX: number; startY: number; baseX: number; baseY: number; w: number; h: number; moved: boolean } | null = null;
     doc.addEventListener("click", (e) => {
       if (!interaction.current.layoutMode) return;
       e.preventDefault();
@@ -343,12 +480,26 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
       if (justDragged) { justDragged = false; return; }
       const target = e.target as Element | null;
       if (!target || target === doc.body || target === doc.documentElement) return;
+      const orn = target.closest("[data-lux-mo]");
+      if (orn) { setSelectedOrn(orn.getAttribute("data-lux-mo")); setSelected(null); return; }
+      setSelectedOrn(null);
       const sel = selectorFor(target, doc);
       if (sel) setSelected(sel);
       else notify("Elemen ini tidak bisa dipilih tersendiri. Pilih elemen di sekitarnya.", "info");
     }, true);
     doc.addEventListener("pointerdown", (e) => {
       const { layoutMode: on, selected: sel, view } = interaction.current;
+      const ornId = selectedOrnRef.current;
+      const ornEl = ornId ? doc.querySelector(`[data-lux-mo="${ornId}"]`) : null;
+      if (on && ornEl && ornEl.contains(e.target as Node)) {
+        const orn = overridesRef.current.ornaments?.find((o) => o.id === ornId);
+        const host = ornEl.parentElement;
+        if (!orn || !host) return;
+        e.preventDefault();
+        const box = host.getBoundingClientRect();
+        ornDrag = { id: orn.id, startX: e.clientX, startY: e.clientY, baseX: orn.x, baseY: orn.y, w: box.width || 1, h: box.height || 1, moved: false };
+        return;
+      }
       if (!on || !sel || !isElementSelector(sel)) return;
       const el = doc.querySelector(sel);
       if (!el || !el.contains(e.target as Node)) return;
@@ -373,6 +524,14 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
       drag = { selector: sel, view, startX: e.clientX, startY: e.clientY, baseX: current.x, baseY: current.y, w: w || 1, h: h || 1, moved: false };
     }, true);
     doc.addEventListener("pointermove", (e) => {
+      if (ornDrag) {
+        if (!ornDrag.moved && Math.abs(e.clientX - ornDrag.startX) + Math.abs(e.clientY - ornDrag.startY) < 3) return;
+        ornDrag.moved = true;
+        const d = ornDrag;
+        const round = (v: number, min: number, max: number) => Math.max(min, Math.min(max, Math.round(v * 10) / 10));
+        updateOrnament(d.id, { x: round(d.baseX + ((e.clientX - d.startX) / d.w) * 100, -20, 120), y: round(d.baseY + ((e.clientY - d.startY) / d.h) * 100, -20, 120) });
+        return;
+      }
       if (!drag) return;
       if (!drag.moved && Math.abs(e.clientX - drag.startX) + Math.abs(e.clientY - drag.startY) < 3) return;
       drag.moved = true;
@@ -382,11 +541,11 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
         y: clamp(drag.baseY + ((e.clientY - drag.startY) / drag.h) * 100, ELEMENT_LIMITS.y),
       });
     }, true);
-    const end = () => { if (drag?.moved) justDragged = true; drag = null; };
+    const end = () => { if (drag?.moved || ornDrag?.moved) justDragged = true; drag = null; ornDrag = null; };
     doc.addEventListener("pointerup", end, true);
     doc.addEventListener("pointercancel", end, true);
     setDocVersion((v) => v + 1);
-  }, [masterMode, notify, setElementEdit]);
+  }, [masterMode, notify, setElementEdit, updateOrnament]);
 
   // Keterbacaan diukur dari pratinjau pada saat yang sama: tanpa override (master asli) lalu dengan override, sehingga
   // animasi atau skrip master yang mengubah tampilan di antara dua pengukuran tidak menghasilkan laporan palsu. Hanya
@@ -757,6 +916,198 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
                   </div>
                 )}
               </section>
+            );
+          })()}
+
+          {masterMode && (() => {
+            const orn = overrides.ornaments?.find((o) => o.id === selectedOrn) ?? null;
+            const groupItems = library ? (libraryGroup === "__uploads" ? library.uploads.map((u) => u.url) : library.builtin.find((g) => g.id === (libraryGroup || library.builtin[0]?.id))?.items ?? []) : [];
+            const order = overrides.sectionOrder?.length ? overrides.sectionOrder : reorderable;
+            const bgId = bgSection || anchors[0] || "";
+            const bg = overrides.sectionBackgrounds?.[bgId] ?? {};
+            const range = (label: string, value: number, min: number, max: number, step: number, unit: string, onChange: (v: number) => void) => (
+              <label className="block text-[11px] font-semibold text-stone-600">
+                <span className="flex justify-between"><span>{label}</span><span className="font-mono font-normal text-stone-500">{value}{unit}</span></span>
+                <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} className="mt-1 w-full accent-stone-900" />
+              </label>
+            );
+            const selectCls = "mt-1 w-full rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-[12px] text-stone-800 outline-none focus:border-amber-500";
+            return (
+              <>
+                <section className="border-b border-stone-200/80 px-5 py-4">
+                  <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-stone-500">Ornamen</h3>
+                  <p className="mt-1 text-[11px] text-stone-500">Tempel ornamen dari pustaka ke seksi mana pun. Klik ornamen di pratinjau untuk memilih dan menyeretnya.</p>
+                  <label className="mt-3 block text-[11px] font-semibold text-stone-600">
+                    Tempel ke seksi
+                    <select value={ornAnchor || anchors[0] || ""} onChange={(e) => setOrnAnchor(e.target.value)} className={selectCls}>
+                      {anchors.map((a) => <option key={a} value={a}>{a === "coverScreen" ? "Sampul (coverScreen)" : a}</option>)}
+                    </select>
+                  </label>
+                  {library ? (
+                    <>
+                      <select value={libraryGroup || library.builtin[0]?.id || ""} onChange={(e) => setLibraryGroup(e.target.value)} className={selectCls} aria-label="Kelompok ornamen">
+                        {library.builtin.map((g) => <option key={g.id} value={g.id}>{g.label} ({g.items.length})</option>)}
+                        <option value="__uploads">Unggahan ({library.uploads.length})</option>
+                      </select>
+                      <div className="mt-2 grid max-h-44 grid-cols-5 gap-1.5 overflow-y-auto rounded-xl border border-stone-100 p-1.5">
+                        {groupItems.map((src) => (
+                          <button key={src} type="button" onClick={() => addOrnament(src)} title="Tempel ornamen ini" className="flex aspect-square items-center justify-center rounded-lg bg-stone-50 p-1 ring-1 ring-stone-200 hover:ring-amber-500 cursor-pointer">
+                            <img src={src} alt="" className="max-h-full max-w-full object-contain" />
+                          </button>
+                        ))}
+                      </div>
+                      <label className="mt-2 inline-block cursor-pointer rounded-lg border border-stone-200 px-2.5 py-1 text-[11px] font-semibold text-stone-700 hover:border-stone-400">
+                        Unggah ornamen
+                        <input type="file" accept="image/png,image/webp,image/jpeg" className="hidden" onChange={async (e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) { const url = await uploadAsset(f); if (url) addOrnament(url); } }} />
+                      </label>
+                    </>
+                  ) : (
+                    <p className="mt-2 text-[11px] text-stone-500">Memuat pustaka ornamen…</p>
+                  )}
+                  {orn && (
+                    <div className="mt-3 space-y-2.5 rounded-xl bg-stone-50 p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <img src={orn.src} alt="" className="h-10 w-10 rounded-md object-contain ring-1 ring-stone-200" />
+                        <button type="button" onClick={() => setSelectedOrn(null)} className="text-[10.5px] font-semibold text-stone-500 hover:text-stone-800 cursor-pointer">Batal pilih</button>
+                      </div>
+                      <label className="block text-[11px] font-semibold text-stone-600">
+                        Seksi
+                        <select value={orn.anchor} onChange={(e) => updateOrnament(orn.id, { anchor: e.target.value })} className={selectCls}>
+                          {anchors.map((a) => <option key={a} value={a}>{a === "coverScreen" ? "Sampul (coverScreen)" : a}</option>)}
+                        </select>
+                      </label>
+                      {range("Posisi mendatar", orn.x, -20, 120, 0.5, "%", (v) => updateOrnament(orn.id, { x: v }))}
+                      {range("Posisi tegak", orn.y, -20, 120, 0.5, "%", (v) => updateOrnament(orn.id, { y: v }))}
+                      {range("Lebar", orn.width, 2, 150, 0.5, "%", (v) => updateOrnament(orn.id, { width: v }))}
+                      {range("Putar", orn.rotate, -180, 180, 1, "°", (v) => updateOrnament(orn.id, { rotate: v }))}
+                      {range("Opasitas", Math.round(orn.opacity * 100), 5, 100, 1, "%", (v) => updateOrnament(orn.id, { opacity: v / 100 }))}
+                      <div className="flex flex-wrap gap-3 text-[11px] font-semibold text-stone-600">
+                        <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={Boolean(orn.flipX)} onChange={(e) => updateOrnament(orn.id, { flipX: e.target.checked || undefined })} className="accent-stone-900" />Cermin kiri-kanan</label>
+                        <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={Boolean(orn.flipY)} onChange={(e) => updateOrnament(orn.id, { flipY: e.target.checked || undefined })} className="accent-stone-900" />Cermin atas-bawah</label>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <label className="block text-[11px] font-semibold text-stone-600">
+                          Lapisan
+                          <select value={orn.layer} onChange={(e) => updateOrnament(orn.id, { layer: e.target.value === "front" ? "front" : "back" })} className={selectCls}>
+                            <option value="back">Di belakang isi</option>
+                            <option value="front">Di depan isi</option>
+                          </select>
+                        </label>
+                        <label className="block text-[11px] font-semibold text-stone-600">
+                          Tampil di
+                          <select value={orn.hideOn ?? ""} onChange={(e) => updateOrnament(orn.id, { hideOn: e.target.value === "mobile" || e.target.value === "desktop" ? e.target.value : undefined })} className={selectCls}>
+                            <option value="">HP dan desktop</option>
+                            <option value="desktop">Hanya HP</option>
+                            <option value="mobile">Hanya desktop</option>
+                          </select>
+                        </label>
+                      </div>
+                      <button type="button" onClick={() => { updateOrnament(orn.id, null); setSelectedOrn(null); }} className="rounded-lg border border-red-200 px-2.5 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-50 cursor-pointer">Hapus ornamen</button>
+                    </div>
+                  )}
+                  {(overrides.ornaments?.length ?? 0) > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {overrides.ornaments!.map((o) => (
+                        <button key={o.id} type="button" onClick={() => { setSelectedOrn(o.id); setSelected(null); }} title={`Seksi ${o.anchor}`} className={`h-9 w-9 rounded-md bg-stone-50 p-0.5 ring-1 cursor-pointer ${selectedOrn === o.id ? "ring-amber-500" : "ring-stone-200"}`}>
+                          <img src={o.src} alt="" className="h-full w-full object-contain" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </section>
+
+                <section className="border-b border-stone-200/80 px-5 py-4">
+                  <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-stone-500">Seksi bebas</h3>
+                  <p className="mt-1 text-[11px] text-stone-500">Tambah seksi berisi teks dan gambar sesudah seksi master mana pun. Warna dan huruf mengikuti tema.</p>
+                  {sections.length === 0 ? (
+                    <p className="mt-2 text-[11px] text-stone-500">Master ini tidak punya seksi ber-id untuk dijadikan patokan.</p>
+                  ) : (
+                    <div className="mt-2 flex gap-2">
+                      <select value={freeAfter || sections[0]} onChange={(e) => setFreeAfter(e.target.value)} className={selectCls} aria-label="Sesudah seksi">
+                        {sections.map((s) => <option key={s} value={s}>Sesudah {s}</option>)}
+                      </select>
+                      <button type="button" onClick={() => setOverrides((prev) => ({ ...prev, freeSections: [...(prev.freeSections ?? []), { id: newLayerId(), after: freeAfter || sections[0], align: "center", title: "Judul seksi" }] }))} className="mt-1 shrink-0 rounded-lg bg-stone-900 px-3 text-[11px] font-semibold text-white cursor-pointer">Tambah</button>
+                    </div>
+                  )}
+                  <div className="mt-3 space-y-3">
+                    {(overrides.freeSections ?? []).map((f) => (
+                      <div key={f.id} className="space-y-2 rounded-xl border border-stone-200 p-3">
+                        <div className="flex items-center gap-2">
+                          <select value={f.after} onChange={(e) => updateFreeSection(f.id, { after: e.target.value })} className={selectCls} aria-label="Sesudah seksi">
+                            {sections.map((s) => <option key={s} value={s}>Sesudah {s}</option>)}
+                          </select>
+                          <select value={f.align} onChange={(e) => updateFreeSection(f.id, { align: e.target.value === "left" ? "left" : "center" })} className={selectCls} aria-label="Perataan">
+                            <option value="center">Tengah</option>
+                            <option value="left">Kiri</option>
+                          </select>
+                        </div>
+                        <input value={f.eyebrow ?? ""} maxLength={60} onChange={(e) => updateFreeSection(f.id, { eyebrow: e.target.value || undefined })} placeholder="Teks kecil (opsional)" className="w-full rounded-lg border border-stone-200 px-2.5 py-1.5 text-[12px] outline-none focus:border-amber-500" />
+                        <input value={f.title ?? ""} maxLength={120} onChange={(e) => updateFreeSection(f.id, { title: e.target.value || undefined })} placeholder="Judul" className="w-full rounded-lg border border-stone-200 px-2.5 py-1.5 text-[12px] outline-none focus:border-amber-500" />
+                        <textarea value={f.text ?? ""} maxLength={1200} rows={3} onChange={(e) => updateFreeSection(f.id, { text: e.target.value || undefined })} placeholder="Isi teks" className="w-full rounded-lg border border-stone-200 px-2.5 py-1.5 text-[12px] outline-none focus:border-amber-500" />
+                        <div className="flex flex-wrap items-center gap-2">
+                          {f.image && <img src={f.image} alt="" className="h-10 w-10 rounded-md object-cover ring-1 ring-stone-200" />}
+                          <label className="cursor-pointer rounded-lg border border-stone-200 px-2 py-1 text-[11px] font-semibold text-stone-700 hover:border-stone-400">
+                            {f.image ? "Ganti gambar" : "Tambah gambar"}
+                            <input type="file" accept="image/png,image/webp,image/jpeg" className="hidden" onChange={async (e) => { const file = e.target.files?.[0]; e.target.value = ""; if (file) { const url = await uploadAsset(file); if (url) updateFreeSection(f.id, { image: url }); } }} />
+                          </label>
+                          {f.image && <button type="button" onClick={() => updateFreeSection(f.id, { image: undefined })} className="text-[11px] font-semibold text-stone-500 hover:text-stone-800 cursor-pointer">Hapus gambar</button>}
+                          <button type="button" onClick={() => updateFreeSection(f.id, null)} className="ml-auto text-[11px] font-semibold text-red-700 hover:underline cursor-pointer">Hapus seksi</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="border-b border-stone-200/80 px-5 py-4">
+                  <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-stone-500">Latar per seksi</h3>
+                  <p className="mt-1 text-[11px] text-stone-500">Warna dari palet tema atau gambar, dengan lapisan gelap agar teks tetap terbaca. Periksa keterbacaan setelah mengubah.</p>
+                  <select value={bgId} onChange={(e) => setBgSection(e.target.value)} className={selectCls} aria-label="Seksi">
+                    {anchors.map((a) => <option key={a} value={a}>{a === "coverScreen" ? "Sampul (coverScreen)" : a}{overrides.sectionBackgrounds?.[a] ? " · diubah" : ""}</option>)}
+                  </select>
+                  {bgId && (
+                    <div className="mt-2 space-y-2">
+                      <div className="flex flex-wrap gap-1.5">
+                        <button type="button" onClick={() => setSectionBg(bgId, { color: undefined })} className={`rounded-lg border px-2 py-1 text-[11px] font-semibold cursor-pointer ${!bg.color ? "border-amber-500 bg-amber-50" : "border-stone-200"}`}>Asli</button>
+                        {MASTER_BG_TOKENS.map((t) => (
+                          <button key={t.id} type="button" onClick={() => setSectionBg(bgId, { color: t.id })} className={`rounded-lg border px-2 py-1 text-[11px] font-semibold cursor-pointer ${bg.color === t.id ? "border-amber-500 bg-amber-50" : "border-stone-200"}`}>{t.label}</button>
+                        ))}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {bg.image && <img src={bg.image} alt="" className="h-10 w-14 rounded-md object-cover ring-1 ring-stone-200" />}
+                        <label className="cursor-pointer rounded-lg border border-stone-200 px-2 py-1 text-[11px] font-semibold text-stone-700 hover:border-stone-400">
+                          {bg.image ? "Ganti gambar latar" : "Gambar latar"}
+                          <input type="file" accept="image/png,image/webp,image/jpeg" className="hidden" onChange={async (e) => { const file = e.target.files?.[0]; e.target.value = ""; if (file) { const url = await uploadAsset(file); if (url) setSectionBg(bgId, { image: url, overlay: bg.overlay ?? 40 }); } }} />
+                        </label>
+                        {bg.image && <button type="button" onClick={() => setSectionBg(bgId, { image: undefined })} className="text-[11px] font-semibold text-stone-500 hover:text-stone-800 cursor-pointer">Hapus gambar</button>}
+                        {(bg.color || bg.image) && <button type="button" onClick={() => setSectionBg(bgId, null)} className="ml-auto text-[11px] font-semibold text-amber-700 hover:underline cursor-pointer">Kembalikan latar asli</button>}
+                      </div>
+                      {bg.image && range("Lapisan gelap", bg.overlay ?? 0, 0, 90, 1, "%", (v) => setSectionBg(bgId, { overlay: v }))}
+                    </div>
+                  )}
+                </section>
+
+                <section className="border-b border-stone-200/80 px-5 py-4">
+                  <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-stone-500">Urutan seksi</h3>
+                  <p className="mt-1 text-[11px] text-stone-500">Hanya seksi yang aman dipindah. Seksi buatan mesin (galeri, kado, RSVP) dan seksi bersyarat tetap di tempatnya.</p>
+                  {order.length < 2 ? (
+                    <p className="mt-2 text-[11px] text-stone-500">Master ini tidak punya seksi yang bisa diurutkan ulang.</p>
+                  ) : (
+                    <ul className="mt-2 space-y-1">
+                      {order.map((id, i) => (
+                        <li key={id} className="flex items-center gap-2 rounded-lg border border-stone-200 px-2.5 py-1.5 text-[12px] text-stone-700">
+                          <span className="w-5 text-[10.5px] text-stone-400">{i + 1}</span>
+                          <span className="min-w-0 flex-1 truncate font-mono">{id}</span>
+                          <button type="button" onClick={() => moveSection(id, -1)} disabled={i === 0} aria-label={`Naikkan ${id}`} className="rounded px-1.5 text-stone-600 hover:bg-stone-100 disabled:opacity-30 cursor-pointer">↑</button>
+                          <button type="button" onClick={() => moveSection(id, 1)} disabled={i === order.length - 1} aria-label={`Turunkan ${id}`} className="rounded px-1.5 text-stone-600 hover:bg-stone-100 disabled:opacity-30 cursor-pointer">↓</button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {overrides.sectionOrder?.length ? (
+                    <button type="button" onClick={() => setOverrides((prev) => { const next = { ...prev }; delete next.sectionOrder; return next; })} className="mt-2 text-[11px] font-semibold text-amber-700 hover:underline cursor-pointer">Kembalikan urutan asli</button>
+                  ) : null}
+                </section>
+              </>
             );
           })()}
 
