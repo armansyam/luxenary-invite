@@ -620,7 +620,8 @@ export default function BuilderPreview(props: Props) {
     setMenu(null);
   };
 
-  // Sampul desktop penuh (landscape 100vw) hanya untuk meninjau dan menata elemen sampul; tidak tersimpan ke master.
+  // Tampilan sampul desktop yang sedang ditata (layar penuh atau split), terlepas dari keputusan mesin untuk data
+  // pratinjau ini. Posisi blok sampul diterapkan langsung oleh efek blok, jadi di sini hanya lebar sampulnya.
   useEffect(() => {
     const doc = getDoc();
     if (!doc) return;
@@ -630,9 +631,11 @@ export default function BuilderPreview(props: Props) {
       style.id = "lux-b-desktop-cover-live";
       doc.head.appendChild(style);
     }
-    style.textContent = device === "desktop" && desktopCoverFull
-      ? "@media (min-width: 900px) { .cover-overlay, .cover-screen { left: 0 !important; right: 0 !important; width: 100% !important; z-index: 30 !important; } }"
-      : "";
+    style.textContent = device !== "desktop"
+      ? ""
+      : desktopCoverFull
+        ? "@media (min-width: 900px) { .cover-overlay, .cover-screen { left: 0 !important; right: 0 !important; width: 100% !important; z-index: 30 !important; } }"
+        : "@media (min-width: 900px) { .cover-overlay, .cover-screen { left: auto !important; right: 0 !important; width: 460px !important; } }";
   }, [device, desktopCoverFull, docVersion]);
 
   // Animasi loop blok dan ornamen diterapkan langsung agar terlihat tanpa memuat ulang pratinjau.

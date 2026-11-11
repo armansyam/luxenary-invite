@@ -3,11 +3,11 @@ import { safeMediaUrl } from "@/lib/safeUrl";
 
 /**
  * Slot milik tema yang boleh punya media bawaan. Foto personal (HOME_PHOTO, GROOM_PHOTO, BRIDE_PHOTO, GALLERY) tidak
- * pernah punya foto bawaan: foto model orang lain tidak boleh sampai ke undangan klien. Cover desktop landscape juga
- * tidak: sampul layar penuh di PC hanya dari unggahan klien, tanpa itu sampul split di kolom 460 px (4 Nov 2026).
- * Nilai LANDING_COVER_DESKTOP lama di Theme.defaultMedia atau salinan undangan dibuang parseThemeDefaultMedia.
+ * pernah punya foto bawaan: foto model orang lain tidak boleh sampai ke undangan klien. Cover desktop landscape boleh
+ * (11 Nov 2026, keputusan pemilik): tema dengan gambar landscape bawaan tampil layar penuh di PC sampai klien mengganti
+ * sampulnya; sebelumnya slot ini hanya dari unggahan klien.
  */
-export const DEFAULT_MEDIA_SLOTS = ["LANDING_COVER", "DESKTOP_SIDEBAR", "GLOBAL_FIXED_BG", "CLOSING_COVER"] as const;
+export const DEFAULT_MEDIA_SLOTS = ["LANDING_COVER", "LANDING_COVER_DESKTOP", "DESKTOP_SIDEBAR", "GLOBAL_FIXED_BG", "CLOSING_COVER"] as const;
 export type DefaultMediaSlot = (typeof DEFAULT_MEDIA_SLOTS)[number];
 export type ThemeDefaultMedia = Partial<Record<DefaultMediaSlot, string>>;
 
@@ -62,7 +62,9 @@ interface MediaRow {
  * Menambahkan media bawaan tema untuk slot yang belum diisi klien. Cover bawaan hanya dipakai bila klien tidak punya
  * cover maupun latar sendiri, supaya foto klien selalu menang atas bawaan tema. GLOBAL_FIXED_BG tidak disuntikkan:
  * latar bawaan sudah dirender oleh CSS master (.fixed-bg-layer / --canvas-texture), jadi nilainya hanya menjadi
- * thumbnail "Bawaan tema" di Studio; menyuntikkannya lagi akan menumpuk dua lapisan latar.
+ * thumbnail "Bawaan tema" di Studio; menyuntikkannya lagi akan menumpuk dua lapisan latar. Cover desktop bawaan tidak
+ * dipakai bila klien sudah mengunggah sampul atau latar sendiri: tanpa itu PC menampilkan gambar tema, bukan foto klien;
+ * foto portrait klien tetap tampil split.
  */
 export function applyThemeDefaultMedia<T extends MediaRow>(media: T[], defaults: ThemeDefaultMedia): Array<T | MediaRow> {
   const filled = new Set(media.filter((m) => m.localPath).map((m) => String(m.mediaSlot)));
@@ -71,6 +73,7 @@ export function applyThemeDefaultMedia<T extends MediaRow>(media: T[], defaults:
     const url = defaults[slot];
     if (!url || filled.has(slot) || slot === "GLOBAL_FIXED_BG") continue;
     if (slot === "LANDING_COVER" && filled.has("GLOBAL_FIXED_BG")) continue;
+    if (slot === "LANDING_COVER_DESKTOP" && (filled.has("LANDING_COVER") || filled.has("GLOBAL_FIXED_BG"))) continue;
     extra.push({ mediaSlot: slot, localPath: url, isThemeDefault: true });
   }
   return extra.length ? [...media, ...extra] : media;

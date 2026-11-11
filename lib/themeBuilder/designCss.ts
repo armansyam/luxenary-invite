@@ -5,6 +5,7 @@
  */
 import {
   ANIMATION_SPEEDS,
+  coverDesktopCss,
   DEFAULT_SECTION_IMAGE_OPACITY,
   EXTRA_ANIMATION_PRESETS,
   SECTION_BG_TOKENS,
@@ -208,6 +209,7 @@ export function designCss(spec: BuilderSpec): string {
     ...sectionRules,
     ...(spec.freeSections?.length ? [FREE_SECTION_CSS, ...freeRules] : []),
     desktopLayoutCss(spec),
+    coverDesktopCss(spec.coverDesktop),
     animationPlan(spec).css,
   ].filter(Boolean).join("\n    ");
 }

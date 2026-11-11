@@ -734,6 +734,8 @@ export function compileBuilderMaster(spec: BuilderSpec, blueprint = readBuilderB
 
   const animation = animationPlan(spec);
   html = html.replace(/<html lang="id"[^>]*>/, `<html lang="id" data-lux-anim-preset="${animation.htmlPreset}">`);
+  // Penanda yang dibaca renderTemplateFile: tanpa foto sampul, sampul desktop tidak dijatuhkan ke split.
+  if (spec.coverDesktop?.mode === "full") html = html.replace('id="coverScreen"', 'id="coverScreen" data-lux-desktop-cover="full"');
 
   // Id font Google sudah dibatasi pola "g:<huruf, angka, spasi>" oleh parseBuilderSpec, jadi URL berkasnya aman disisipkan.
   const googleLinks = googleFontIds(spec.fonts, spec.blocks)

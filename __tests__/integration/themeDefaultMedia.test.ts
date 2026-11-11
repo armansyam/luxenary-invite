@@ -67,14 +67,20 @@ describe("aturan media bawaan tema", () => {
     expect(input).toHaveLength(1);
   });
 
-  it("cover desktop landscape tidak pernah punya bawaan; nilai lama dibuang, cover desktop klien tetap utuh", () => {
-    expect(validateThemeDefaultMedia({ LANDING_COVER_DESKTOP: DESKTOP })).toMatchObject({ ok: false });
-    expect(parseThemeDefaultMedia({ LANDING_COVER: COVER, LANDING_COVER_DESKTOP: DESKTOP })).toEqual({ LANDING_COVER: COVER });
-    const legacy = parseThemeDefaultMedia({ LANDING_COVER: COVER, LANDING_COVER_DESKTOP: DESKTOP });
-    expect(applyThemeDefaultMedia([], legacy).some((m) => m.mediaSlot === "LANDING_COVER_DESKTOP")).toBe(false);
+  it("cover desktop landscape boleh punya bawaan; mengalah pada sampul, latar, atau cover desktop milik klien", () => {
+    const DESKTOP_ASSET = "/assets/ornaments/background/background-flower.webp";
+    expect(validateThemeDefaultMedia({ LANDING_COVER_DESKTOP: DESKTOP_ASSET })).toEqual({ ok: true, value: { LANDING_COVER_DESKTOP: DESKTOP_ASSET } });
+    const defaults = parseThemeDefaultMedia({ LANDING_COVER: COVER, LANDING_COVER_DESKTOP: DESKTOP_ASSET });
+    expect(applyThemeDefaultMedia([], defaults).find((m) => m.mediaSlot === "LANDING_COVER_DESKTOP")?.localPath).toBe(DESKTOP_ASSET);
+
+    // Foto sampul portrait klien tidak boleh digantikan gambar tema di PC: sampul jatuh ke split dengan foto klien.
+    const ownCover = [{ mediaSlot: "LANDING_COVER", localPath: "/uploads/invitations/a/c.webp" }];
+    expect(applyThemeDefaultMedia(ownCover, defaults).some((m) => m.mediaSlot === "LANDING_COVER_DESKTOP")).toBe(false);
+    const ownBg = [{ mediaSlot: "GLOBAL_FIXED_BG", localPath: "/uploads/invitations/a/bg.webp" }];
+    expect(applyThemeDefaultMedia(ownBg, defaults).some((m) => m.mediaSlot === "LANDING_COVER_DESKTOP")).toBe(false);
 
     const ownDesktop = [{ mediaSlot: "LANDING_COVER_DESKTOP", localPath: "/uploads/invitations/a/d.webp" }];
-    expect(applyThemeDefaultMedia(ownDesktop, legacy).filter((m) => m.mediaSlot === "LANDING_COVER_DESKTOP")).toEqual(ownDesktop);
+    expect(applyThemeDefaultMedia(ownDesktop, defaults).filter((m) => m.mediaSlot === "LANDING_COVER_DESKTOP")).toEqual(ownDesktop);
   });
 });
 
@@ -90,21 +96,34 @@ describe("engine: bawaan tema di data undangan", () => {
     expect(owned.landingCoverUrl).toBe(own);
   });
 
-  it("cover desktop bawaan lama di salinan undangan tidak lagi membuat sampul layar penuh", async () => {
-    const legacy = { LANDING_COVER: COVER, LANDING_COVER_DESKTOP: DESKTOP };
-    const bare = (await composeInvitationData(virtual({ themeDefaultMedia: legacy }))) as Record<string, any>;
+  it("cover desktop bawaan tema membuat sampul layar penuh sampai klien mengunggah sampul portrait", async () => {
+    const DESKTOP_ASSET = "/assets/ornaments/background/background-flower.webp";
+    const defaults = { LANDING_COVER: COVER, LANDING_COVER_DESKTOP: DESKTOP_ASSET };
+    const bare = (await composeInvitationData(virtual({ themeDefaultMedia: defaults }))) as Record<string, any>;
     const bareHtml = await renderTemplateFile("kalandra", bare, { eventType: "WEDDING" });
-    expect(bareHtml).not.toContain("FULLSCREEN OVERRIDE");
-    expect(bareHtml).not.toContain(DESKTOP);
-    expect(bareHtml).toContain('id="lux-cover-desktop-split"');
+    expect(bareHtml).toContain("FULLSCREEN OVERRIDE");
+    expect(bareHtml).toContain(DESKTOP_ASSET);
+    expect(bareHtml).not.toContain('id="lux-cover-desktop-split"');
+
+    const own = "/uploads/invitations/klien/cover.webp";
+    const owned = (await composeInvitationData(virtual({ themeDefaultMedia: defaults, media: [{ mediaSlot: "LANDING_COVER", localPath: own }] }))) as Record<string, any>;
+    const ownedHtml = await renderTemplateFile("kalandra", owned, { eventType: "WEDDING" });
+    expect(ownedHtml).not.toContain(DESKTOP_ASSET);
+    expect(ownedHtml).toContain('id="lux-cover-desktop-split"');
   });
 
-  it("pratinjau builder mode Klien baru: sampul split, spesifikasi lama dengan cover desktop tidak memunculkannya", async () => {
-    const legacySpec = { ...defaultBuilderSpec(), defaultMedia: { LANDING_COVER: COVER, LANDING_COVER_DESKTOP: DESKTOP } as BuilderSpec["defaultMedia"] };
-    const client = await renderBuilderPreview(legacySpec, "kalandra", "client");
-    expect(client.html).not.toContain("FULLSCREEN OVERRIDE");
-    expect(client.html).not.toContain(DESKTOP);
-    expect(client.html).toContain('id="lux-cover-desktop-split"');
+  it("pratinjau builder mode Klien baru: split tanpa gambar landscape, layar penuh dengan gambar landscape bawaan", async () => {
+    const DESKTOP_ASSET = "/assets/ornaments/background/background-flower.webp";
+    const splitSpec = { ...defaultBuilderSpec(), defaultMedia: { LANDING_COVER: COVER } };
+    const split = await renderBuilderPreview(splitSpec, "kalandra", "client");
+    expect(split.html).not.toContain("FULLSCREEN OVERRIDE");
+    expect(split.html).toContain('id="lux-cover-desktop-split"');
+
+    const fullSpec: BuilderSpec = { ...defaultBuilderSpec(), coverDesktop: { mode: "full" }, defaultMedia: { LANDING_COVER: COVER, LANDING_COVER_DESKTOP: DESKTOP_ASSET } };
+    const full = await renderBuilderPreview(fullSpec, "kalandra", "client");
+    expect(full.html).toContain("FULLSCREEN OVERRIDE");
+    expect(full.html).toContain(DESKTOP_ASSET);
+    expect(full.html).not.toContain('id="lux-cover-desktop-split"');
   });
 
   it("tanpa cover landscape sampul masuk kolom 460 px (split) hanya pada tema bertata letak split", async () => {

@@ -62,6 +62,8 @@ interface Props {
   onCopyStyle?: () => void;
   onPasteStyle?: () => void;
   onApplyToRoleGroup?: (peers: BuilderBlockId[], label: string) => void;
+  /** Ada saat menata blok sampul di pratinjau desktop: posisinya tersimpan khusus tampilan sampul ini. */
+  desktopCoverView?: "full" | "split";
 }
 
 interface LibraryFrame {
@@ -125,6 +127,7 @@ function FramePicker({ value, library, onPick }: { value: string; library: Asset
 }
 
 export default function BlockInspector({
+  desktopCoverView,
   blockId,
   eventType,
   props,
@@ -159,6 +162,11 @@ export default function BlockInspector({
           <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-stone-500">Elemen terpilih</p>
           <p className="mt-0.5 text-[13px] font-semibold text-stone-900">{blockLabelFor(blockId, eventType)}</p>
           <p className="text-[11px] text-stone-500">Seksi {sectionLabelFor(block.section, eventType)}</p>
+          {desktopCoverView && (
+            <p className="mt-1.5 rounded-lg bg-amber-50 px-2 py-1 text-[11px] leading-snug text-amber-800">
+              Posisi, ukuran, putaran, perataan, dan lebar khusus desktop sampul {desktopCoverView === "full" ? "layar penuh" : "split"}. Tampilan mobile tidak berubah.
+            </p>
+          )}
         </div>
         <button type="button" onClick={onClose} title="Batal pilih (Esc)" className="rounded-lg p-1.5 text-stone-500 hover:bg-stone-100 cursor-pointer">
           <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>

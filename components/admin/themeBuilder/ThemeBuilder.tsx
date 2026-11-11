@@ -18,7 +18,9 @@ import {
   familyVariantGroups,
   sectionLabelFor,
   type BuilderEventType,
+  COVER_BLOCK_IDS,
   DEFAULT_BLOCK_PROPS,
+  type CoverDesktopProps,
   DEFAULT_ORNAMENT_GAP,
   DEFAULT_ORNAMENT_TEXT,
   DEFAULT_PHOTO_FRAME,
@@ -86,9 +88,11 @@ function structuralKey(spec: BuilderSpec): string {
   // Isi, huruf, ukuran, dan warna teks hias juga diterapkan langsung; hanya jenis (teks atau gambar), slot media, dan tempat menempel yang mengubah HTML.
   // Alat desain yang hanya mengubah CSS (latar seksi, kartu/tombol, tata letak desktop, animasi, CSS kustom, gaya dan
   // animasi seksi bebas) diterapkan langsung lewat `designCss`; teks dan struktur seksi bebas tetap memicu render ulang.
-  const { sectionStyles: _sectionStyles, surface: _surface, desktopLayout: _desktopLayout, sectionAnimations: _sectionAnimations, animationSpeed: _animationSpeed, customCss: _customCss, ...rest } = spec;
+  const { sectionStyles: _sectionStyles, surface: _surface, desktopLayout: _desktopLayout, sectionAnimations: _sectionAnimations, animationSpeed: _animationSpeed, customCss: _customCss, coverDesktop, ...rest } = spec;
   return JSON.stringify({
     ...rest,
+    // Posisi sampul desktop hanya CSS (designCss); mode menentukan split atau layar penuh di mesin render.
+    coverDesktopMode: coverDesktop?.mode ?? "split",
     blocks: {},
     blockGoogleFonts: googleFontIds(spec.fonts, spec.blocks),
     frames: {},
@@ -539,20 +543,64 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
     notify(`Titik awal dari ${r.source}: ${r.found.length} dari ${r.found.length + r.missing.length} warna palet, ${r.fontsFound.length} dari 3 huruf, dan ${r.mediaFound} media bawaan terbaca${r.hexOutsideRoot ? `; ${r.hexOutsideRoot} warna lain di tema lama ditulis mati dan tidak ikut` : ""}. Tata letak mengikuti blueprint.`, "info");
   }, [notify, syncHistory]);
 
+  // Di pratinjau desktop, posisi blok sampul disimpan per tampilan sampul (layar penuh atau split) agar teks di sampul
+  // selebar layar dirapikan sendiri, bukan ditarik dari susunan kolom 460px. Huruf, warna, dan properti lain tetap bersama.
+  const coverView: "full" | "split" = desktopCoverFull ? "full" : "split";
+  const isDesktopCoverBlock = useCallback((id: BuilderBlockId) => device === "desktop" && COVER_BLOCK_IDS.includes(id), [device]);
+
   const updateBlock = useCallback((id: BuilderBlockId, patch: Partial<BlockProps>, final: boolean) => {
     const current = specRef.current;
+    if (isDesktopCoverBlock(id)) {
+      const { x, y, scale, rotate, hidden, align, maxWidth, ...shared } = patch;
+      const positional = Object.fromEntries(Object.entries({ x, y, scale, rotate, hidden, align, maxWidth }).filter(([, v]) => v !== undefined)) as Partial<CoverDesktopProps>;
+      const base = current.blocks[id] ?? DEFAULT_BLOCK_PROPS;
+      const set = { ...(current.coverDesktop?.[coverView] ?? {}) };
+      const prev: CoverDesktopProps = set[id] ?? { x: base.x, y: base.y, scale: base.scale, rotate: base.rotate, hidden: base.hidden || undefined, align: base.align, maxWidth: base.maxWidth };
+      set[id] = { ...prev, ...positional };
+      const blocks = { ...current.blocks };
+      if (Object.keys(shared).length) {
+        const merged = { ...base, ...shared };
+        if (isDefaultBlock(merged)) delete blocks[id];
+        else blocks[id] = merged;
+      }
+      apply({ ...current, blocks, coverDesktop: { ...current.coverDesktop, [coverView]: set } }, final ? "commit" : "live");
+      return;
+    }
     const merged = { ...(current.blocks[id] ?? DEFAULT_BLOCK_PROPS), ...patch };
     const blocks = { ...current.blocks };
     if (isDefaultBlock(merged)) delete blocks[id];
     else blocks[id] = merged;
     apply({ ...current, blocks }, final ? "commit" : "live");
-  }, [apply]);
+  }, [apply, coverView, isDesktopCoverBlock]);
 
   const resetBlock = useCallback((id: BuilderBlockId) => {
-    const blocks = { ...specRef.current.blocks };
+    const current = specRef.current;
+    if (isDesktopCoverBlock(id)) {
+      const set = { ...(current.coverDesktop?.[coverView] ?? {}) };
+      delete set[id];
+      apply({ ...current, coverDesktop: { ...current.coverDesktop, [coverView]: set } }, "commit");
+      return;
+    }
+    const blocks = { ...current.blocks };
     delete blocks[id];
-    apply({ ...specRef.current, blocks }, "commit");
-  }, [apply]);
+    apply({ ...current, blocks }, "commit");
+  }, [apply, coverView, isDesktopCoverBlock]);
+
+  // Tampilan sampul yang ditata mengikuti mode tersimpan setiap kali mode diganti atau tema dimuat.
+  const savedCoverMode = spec.coverDesktop?.mode ?? "split";
+  useEffect(() => { setDesktopCoverFull(savedCoverMode === "full"); }, [savedCoverMode]);
+
+  /** Properti blok yang tampil di pratinjau dan inspektor: posisi desktop sampul menimpa posisi dasar. */
+  const effectiveBlocks = useMemo(() => {
+    if (device !== "desktop") return spec.blocks;
+    const set = spec.coverDesktop?.[coverView];
+    if (!set) return spec.blocks;
+    const out = { ...spec.blocks };
+    for (const [id, p] of Object.entries(set) as Array<[BuilderBlockId, CoverDesktopProps]>) {
+      out[id] = { ...(spec.blocks[id] ?? DEFAULT_BLOCK_PROPS), x: p.x, y: p.y, scale: p.scale, rotate: p.rotate, hidden: Boolean(p.hidden), align: p.align, maxWidth: p.maxWidth };
+    }
+    return out;
+  }, [device, spec.blocks, spec.coverDesktop, coverView]);
 
   const [copiedBlockStyle, setCopiedBlockStyle] = useState<Partial<BlockProps> | null>(null);
 
@@ -1126,10 +1174,10 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
             <button
               type="button"
               onClick={() => setDesktopCoverFull((v) => !v)}
-              title="Sampul desktop tampil layar penuh hanya bila klien mengunggah foto sampul desktop mendatar; selain itu terbelah dengan panel kiri. Coba dengan foto sungguhan lewat tab Foto uji."
+              title="Tampilan sampul desktop yang sedang ditata. Posisi elemen sampul disimpan terpisah untuk layar penuh dan split; mode yang dipakai tema diatur di panel Tata Letak."
               className={`whitespace-nowrap rounded-xl px-2.5 py-1.5 text-[11px] font-semibold transition cursor-pointer border ${desktopCoverFull ? "bg-amber-600 text-white border-amber-600" : "bg-white text-stone-700 border-stone-200 hover:border-stone-300"}`}
             >
-              {desktopCoverFull ? "Sampul: layar penuh" : "Sampul: terbelah"}
+              {desktopCoverFull ? "Menata: sampul layar penuh" : "Menata: sampul split"}
             </button>
           )}
         </div>
@@ -1288,7 +1336,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
             onDuplicateOrnament={duplicateOrnament}
             onFillFourCornersOrnament={fillFourCornersOrnament}
             onDeleteOrnament={removeOrnament}
-            blocks={spec.blocks}
+            blocks={effectiveBlocks}
             selectedBlock={selectedBlock}
             onSelectBlock={selectBlock}
             onBlockChange={updateBlock}
@@ -1324,7 +1372,8 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
             <BlockInspector
               blockId={selectedBlock}
               eventType={spec.eventType}
-              props={spec.blocks[selectedBlock] ?? DEFAULT_BLOCK_PROPS}
+              props={effectiveBlocks[selectedBlock] ?? DEFAULT_BLOCK_PROPS}
+              desktopCoverView={isDesktopCoverBlock(selectedBlock) ? coverView : undefined}
               onChange={(patch, final) => updateBlock(selectedBlock, patch, final)}
               onReset={() => resetBlock(selectedBlock)}
               onClose={() => setSelectedBlock(null)}

@@ -29,6 +29,7 @@ import {
   NESTING_HOSTS,
   type NestingHost,
   COUNTDOWN_PLACEMENTS,
+  COVER_DESKTOP_MODES,
   DESKTOP_LAYOUTS,
   FREE_PHOTO_SHAPES,
   familyOrnamentMediaSlots,
@@ -577,9 +578,12 @@ export function ColorsPanel({
       <Section title="Media bawaan" hint="Dipakai sampai klien mengunggah foto sendiri. Slot yang tidak dipilih memakai warna palet. Foto orang tidak pernah punya bawaan.">
         <BackdropUpload uploading={uploading} onUpload={onUpload} />
         <div className="space-y-3">
-          {BUILDER_DEFAULT_SLOTS.map(({ slot, label }) => (
+          {BUILDER_DEFAULT_SLOTS.filter(({ slot }) => slot !== "LANDING_COVER_DESKTOP" || spec.coverDesktop?.mode === "full").map(({ slot, label }) => (
             <div key={slot}>
               <p className="mb-1.5 text-[11.5px] font-semibold text-stone-700">{label}</p>
+              {slot === "LANDING_COVER_DESKTOP" && (
+                <p className="mb-1.5 text-[10.5px] leading-snug text-stone-500">Gambar mendatar untuk sampul desktop layar penuh. Klien bisa menggantinya di slot Cover Pembuka Desktop.</p>
+              )}
               <div className="grid grid-cols-7 gap-1.5">
                 {backdrops.map((t) => {
                   const selected = (spec.defaultMedia[slot] ?? "") === t.id;
@@ -1348,6 +1352,35 @@ export function LayoutPanel({
             );
           })}
         </div>
+      </Section>
+
+      <Section title="Sampul desktop" hint="Cara sampul tampil di layar 900px ke atas. Atur posisi teks tiap tampilan lewat tombol Menata di atas pratinjau desktop.">
+        <div className="grid grid-cols-2 gap-2">
+          {COVER_DESKTOP_MODES.map((m) => {
+            const active = (spec.coverDesktop?.mode ?? "split") === m.id;
+            return (
+              <button
+                key={m.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => {
+                  const { mode: _mode, ...positions } = spec.coverDesktop ?? {};
+                  const defaultMedia = { ...spec.defaultMedia };
+                  // Gambar landscape hanya sah pada layar penuh; kembali ke split melepasnya agar tema tetap tersimpan.
+                  if (m.id === "split") delete defaultMedia.LANDING_COVER_DESKTOP;
+                  onChange({ coverDesktop: m.id === "full" ? { ...positions, mode: "full" } : positions, defaultMedia });
+                }}
+                className={`rounded-xl border p-2 text-left transition cursor-pointer ${active ? "border-amber-500 ring-2 ring-amber-500/20" : "border-stone-200 hover:border-stone-300"}`}
+              >
+                <span className="block text-[11.5px] font-semibold text-stone-800">{m.label}</span>
+                <span className="block text-[10.5px] leading-snug text-stone-500">{m.hint}</span>
+              </button>
+            );
+          })}
+        </div>
+        {spec.coverDesktop?.mode === "full" && spec.defaultMedia.LANDING_COVER && !spec.defaultMedia.LANDING_COVER_DESKTOP && (
+          <p className="mt-2 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] leading-snug text-amber-800">Pilih gambar Cover desktop (landscape) di tab Warna, bagian Media bawaan, sebelum menyimpan.</p>
+        )}
       </Section>
 
       <Section

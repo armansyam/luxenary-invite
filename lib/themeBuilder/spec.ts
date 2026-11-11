@@ -278,10 +278,11 @@ export const DEFAULT_ORNAMENT_GAP = 16;
 
 /**
  * Slot yang boleh punya gambar bawaan dari builder; latar (GLOBAL_FIXED_BG) diturunkan dari `texture`. Cover desktop
- * landscape sengaja tidak ada (lib/themeDefaultMedia.ts); nilai lama di spesifikasi tersimpan diabaikan parseBuilderSpec.
+ * landscape hanya untuk sampul desktop layar penuh (`coverDesktop.mode = "full"`), lihat parseBuilderSpec.
  */
 export const BUILDER_DEFAULT_SLOTS = [
   { slot: "LANDING_COVER", label: "Cover pembuka" },
+  { slot: "LANDING_COVER_DESKTOP", label: "Cover desktop (landscape)" },
   { slot: "DESKTOP_SIDEBAR", label: "Hero kiri desktop" },
   { slot: "CLOSING_COVER", label: "Penutup" },
 ] as const;
@@ -1112,6 +1113,63 @@ export const DESKTOP_LAYOUTS = [
 ] as const;
 export type DesktopLayout = (typeof DESKTOP_LAYOUTS)[number]["id"];
 
+export const COVER_DESKTOP_MODES = [
+  { id: "split", label: "Split", hint: "Bawaan: sampul di kolom undangan 460px, hero kiri tetap tampil." },
+  { id: "full", label: "Layar penuh", hint: "Sampul selebar layar. Bila tema punya foto sampul bawaan, wajib ada gambar Cover desktop (landscape)." },
+] as const;
+export type CoverDesktopMode = (typeof COVER_DESKTOP_MODES)[number]["id"];
+
+/** Blok sampul yang posisinya bisa diatur khusus desktop (≥900px), terpisah untuk sampul layar penuh dan split. */
+export const COVER_BLOCK_IDS = BUILDER_BLOCKS.filter((b) => b.section === "cover").map((b) => b.id) as BuilderBlockId[];
+
+/** Posisi blok sampul di desktop; geser dalam persen ukuran elemen itu sendiri, sama dengan `BlockProps`. */
+export interface CoverDesktopProps {
+  x: number;
+  y: number;
+  scale: number;
+  rotate: number;
+  hidden?: boolean;
+  align?: "left" | "center" | "right";
+  maxWidth?: number;
+}
+export type CoverDesktopBlocks = Partial<Record<BuilderBlockId, CoverDesktopProps>>;
+
+export interface CoverDesktop {
+  /** Tidak disimpan bila "split" (bawaan). */
+  mode?: "full";
+  /** Posisi saat sampul desktop tampil layar penuh. */
+  full?: CoverDesktopBlocks;
+  /** Posisi saat sampul desktop tampil split (juga bila klien mengunggah foto sampul portrait pada tema layar penuh). */
+  split?: CoverDesktopBlocks;
+}
+
+export function coverDesktopStyle(p: CoverDesktopProps): string {
+  const parts = [`translate:${p.x}% ${p.y}%;rotate:${p.rotate}deg;scale:${p.scale};`];
+  if (p.hidden) parts.push("display:none;");
+  if (p.align) parts.push(`text-align:${p.align};`);
+  if (p.maxWidth) parts.push(`max-width:${p.maxWidth}px;margin-left:auto;margin-right:auto;`);
+  return parts.join("");
+}
+
+/**
+ * CSS posisi sampul desktop. Mesin render menyisipkan `<style id="lux-cover-desktop-split">` hanya saat sampul desktop
+ * jatuh ke split, jadi keberadaan elemen itu menentukan set posisi mana yang berlaku; tanpa itu sampul tampil layar
+ * penuh. Selektor `:root:has(...)` lebih spesifik daripada aturan blok dasar `[data-lux-block]`.
+ */
+export function coverDesktopCss(cd: CoverDesktop | undefined): string {
+  const scopes: Array<[keyof Omit<CoverDesktop, "mode">, string]> = [
+    ["full", ":root:not(:has(#lux-cover-desktop-split))"],
+    ["split", ":root:has(#lux-cover-desktop-split)"],
+  ];
+  const rules: string[] = [];
+  for (const [mode, scope] of scopes) {
+    for (const [id, p] of Object.entries(cd?.[mode] ?? {}) as Array<[BuilderBlockId, CoverDesktopProps]>) {
+      if (COVER_BLOCK_IDS.includes(id)) rules.push(`${scope} [data-lux-block="${id}"]{${coverDesktopStyle(p)}}`);
+    }
+  }
+  return rules.length ? `@media (min-width: 900px) {\n    ${rules.join("\n    ")}\n  }` : "";
+}
+
 export const ANIMATION_SPEEDS = [
   { id: "slow", label: "Pelan", seconds: 1.4 },
   { id: "normal", label: "Normal", seconds: 0.9 },
@@ -1212,6 +1270,8 @@ export interface BuilderSpec {
   countdownPlacement?: CountdownPlacement;
   /** Tidak disimpan bila "split" (bawaan). */
   desktopLayout?: DesktopLayout;
+  /** Mode sampul desktop dan posisi blok sampul per mode; tidak disimpan bila kosong. */
+  coverDesktop?: CoverDesktop;
   /** Animasi masuk per seksi yang menimpa `animation` global. */
   sectionAnimations?: Partial<Record<OrderableSection, AnimationPreset>>;
   /** Seksi tamu → seksi tuan: seksi tamu dipindah ke akhir isi seksi tuannya. */
@@ -1998,6 +2058,11 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
   // Saat jadwal pindah ke Home, seksi Acara disembunyikan; hitung mundur di dalamnya ikut hilang.
   if (countdownPlacement === "events" && eventsPlacement === "home") errors.push("Hitung mundur tidak bisa di dalam seksi Acara saat jadwal acara dipindah ke Home.");
   const desktopLayout = pickEnum<DesktopLayout>(input.desktopLayout ?? "split", DESKTOP_LAYOUTS.map((d) => d.id), "Tata letak desktop", errors);
+  const coverDesktop = parseCoverDesktop(input.coverDesktop, errors);
+  // Gambar landscape bawaan membuat mesin menampilkan sampul layar penuh, jadi hanya sah pada mode layar penuh. Pada mode
+  // itu foto sampul bawaan (umumnya portrait) tidak boleh ditarik selebar layar, maka gambar landscape wajib ada.
+  if (defaultMedia.LANDING_COVER_DESKTOP && coverDesktop?.mode !== "full") errors.push("Gambar Cover desktop (landscape) hanya dipakai pada sampul desktop Layar penuh.");
+  if (coverDesktop?.mode === "full" && defaultMedia.LANDING_COVER && !defaultMedia.LANDING_COVER_DESKTOP) errors.push("Sampul desktop Layar penuh butuh gambar Cover desktop (landscape) karena tema punya foto sampul bawaan.");
   const animationSpeed = pickEnum<AnimationSpeed>(input.animationSpeed ?? "normal", ANIMATION_SPEEDS.map((s) => s.id), "Kecepatan animasi", errors);
   const animationIds = ANIMATION_OPTIONS.map((a) => a.id);
   const sectionAnimations: Partial<Record<OrderableSection, AnimationPreset>> = {};
@@ -2172,11 +2237,57 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
       ...(customCss ? { customCss } : {}),
       ...(countdownPlacement !== "section" ? { countdownPlacement } : {}),
       ...(desktopLayout !== "split" ? { desktopLayout } : {}),
+      ...(coverDesktop ? { coverDesktop } : {}),
       ...(Object.keys(sectionAnimations).length ? { sectionAnimations } : {}),
       ...(animationSpeed !== "normal" ? { animationSpeed } : {}),
       ...(Object.keys(sectionNesting).length ? { sectionNesting } : {}),
     },
   };
+}
+
+/** Mode dan posisi sampul desktop; posisi bawaan (geser 0, skala 1, putar 0, tanpa opsi lain) tidak disimpan. */
+function parseCoverDesktop(raw: unknown, errors: string[]): CoverDesktop | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  if (typeof raw !== "object" || Array.isArray(raw)) {
+    errors.push("Pengaturan sampul desktop tidak terbaca.");
+    return undefined;
+  }
+  const input = raw as Record<string, any>;
+  const mode = pickEnum<CoverDesktopMode>(input.mode ?? "split", COVER_DESKTOP_MODES.map((m) => m.id), "Mode sampul desktop", errors);
+  const out: CoverDesktop = mode === "full" ? { mode: "full" } : {};
+  for (const set of ["full", "split"] as const) {
+    const blocksIn = input[set];
+    if (blocksIn === undefined || blocksIn === null) continue;
+    if (typeof blocksIn !== "object" || Array.isArray(blocksIn)) {
+      errors.push(`Posisi sampul desktop ${set === "full" ? "layar penuh" : "split"} tidak terbaca.`);
+      continue;
+    }
+    const blocks: CoverDesktopBlocks = {};
+    for (const id of COVER_BLOCK_IDS) {
+      const p = blocksIn[id];
+      if (p === undefined || p === null) continue;
+      if (typeof p !== "object") {
+        errors.push(`Posisi desktop ${id} tidak terbaca.`);
+        continue;
+      }
+      const props: CoverDesktopProps = {
+        x: clamp(p.x, BLOCK_LIMITS.x[0], BLOCK_LIMITS.x[1], 0),
+        y: clamp(p.y, BLOCK_LIMITS.y[0], BLOCK_LIMITS.y[1], 0),
+        scale: clamp(p.scale, BLOCK_LIMITS.scale[0], BLOCK_LIMITS.scale[1], 1),
+        rotate: clamp(p.rotate, BLOCK_LIMITS.rotate[0], BLOCK_LIMITS.rotate[1], 0),
+      };
+      if (p.hidden === true && OPTIONAL_BLOCKS.includes(id)) props.hidden = true;
+      if (["left", "center", "right"].includes(p.align)) props.align = p.align;
+      if (p.maxWidth !== undefined && p.maxWidth !== null) {
+        const mw = clamp(p.maxWidth, 180, 1200, 0);
+        if (mw >= 180) props.maxWidth = mw;
+      }
+      const isDefault = !props.x && !props.y && props.scale === 1 && !props.rotate && !props.hidden && !props.align && !props.maxWidth;
+      if (!isDefault) blocks[id] = props;
+    }
+    if (Object.keys(blocks).length) out[set] = blocks;
+  }
+  return out.mode || out.full || out.split ? out : undefined;
 }
 
 const GENERIC_FALLBACK: Record<keyof BuilderFonts, string> = {
