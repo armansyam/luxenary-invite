@@ -362,17 +362,20 @@
       filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
       animation: goyang1 7s ease-in-out infinite alternate;
       transform-origin: top center;
+      /* The image starts with a transparent band 4.5% of its height; translate (unlike transform) is not replaced by the animation. */
+      translate: 0 -4.5%;
     }
 
+    /* The image is cut straight along its right edge, so that edge must sit against the screen edge: mirror only the left copy. */
     .cover-botanical-top-left {
-      top: 10px;
-      left: 10px;
+      top: 0;
+      left: 0;
+      scale: -1 1;
     }
 
     .cover-botanical-top-right {
-      top: 10px;
-      right: 10px;
-      transform: scaleX(-1);
+      top: 0;
+      right: 0;
     }
 
     @keyframes goyang1 {
@@ -604,7 +607,6 @@
     .ob-top-right {
       top: -10px;
       right: -10px;
-      transform: scaleX(-1);
     }
 
     .ob-bottom-left {
