@@ -4010,6 +4010,44 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     stories: [], banks: [],
     dressCodeColors: "#1b2b4b,#f4c544,#f07a3a", dressCodeNote: "Smart Casual", turutMengundang: [], defaultPalette: "spectrum-navy",
   },
+  hablur: {
+    themeId: "hablur", themeName: "Hablur", series: "Modern", category: "modern", tagline: "THE WEDDING OF",
+    groomName: "Raka", brideName: "Nadia",
+    groomDisplayName: "Raka Pratama, S.T.", brideDisplayName: "Nadia Salsabila, S.Ds.",
+    groomRole: "Mempelai Pria", brideRole: "Mempelai Wanita",
+    groomParents: "Putra dari Bpk. Hendra Pratama & Ibu Lestari", groomFather: "Hendra Pratama", groomMother: "Lestari",
+    brideParents: "Putri dari Bpk. Arif Rahman & Ibu Dewi Kartika", brideFather: "Arif Rahman", brideMother: "Dewi Kartika",
+    groomInstagram: "rakapratama", brideInstagram: "nadiasalsa",
+    monogramInitial: "R & N",
+    targetDate: "2027-05-15T09:00:00", weddingDateFormatted: "Sabtu, 15 Mei 2027", weddingDateDay: "15", weddingDateMonth: "05", weddingDateYear: "2027",
+    openingQuote: "Dan di antara tanda-tanda kebesaran-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu merasa tenteram kepadanya.",
+    openingQuoteRef: "QS. AR-RUM : 21",
+    city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", groomPhotoUrl: "", bridePhotoUrl: "", galleryPhotos: [],
+    events: [
+      { badge: "SESI PAGI", title: "Akad Nikah", time: "09.00 – 10.30 WITA", location: "Masjid Kubah 99 Asmaul Husna", address: "Jl. Metro Tanjung Bunga, Makassar", mapsUrl: "https://maps.google.com" },
+      { badge: "SESI MALAM", title: "Resepsi Pernikahan", time: "19.00 – 21.30 WITA", location: "Ballroom Claro Makassar", address: "Jl. A. P. Pettarani No. 3, Makassar", mapsUrl: "https://maps.google.com" },
+    ],
+    stories: [
+      { chapter: "2021", title: "Pertemuan Pertama", content: "Kami bertemu di sebuah lokakarya desain dan mulai berbagi cerita sejak hari itu." },
+      { chapter: "2026", title: "Lamaran", content: "Dengan restu kedua keluarga, kami memutuskan untuk melangkah bersama." },
+    ],
+    banks: [
+      { bank: "BCA", number: "7890123456", name: "Raka Pratama" },
+      { bank: "Bank Mandiri", number: "1520012345678", name: "Nadia Salsabila" },
+    ],
+    dressCodeColors: "#1d9e8e,#e9d8b0,#eaf5f3", dressCodeNote: "Formal / nuansa teal, champagne, dan putih",
+    turutMengundang: ["Keluarga Besar Hendra Pratama", "Keluarga Besar Arif Rahman"],
+  },
+  biasan: {
+    themeId: "biasan", themeName: "Biasan", series: "Modern", category: "modern", tagline: "TEMU KOMUNITAS", eventType: "GATHERING",
+    eventTitle: "Temu Kreatif Makassar 2027", eventSubtitle: "Satu sore untuk berbagi karya, ide, dan kolaborasi", organizerName: "Komunitas Kreatif Makassar", hostName: "Panitia Temu Kreatif", dresscode: "Smart Casual", eventPhotoUrl: "",
+    targetDate: "2027-06-19T15:00:00", weddingDateFormatted: "Sabtu, 19 Juni 2027", weddingDateDay: "19", weddingDateMonth: "06", weddingDateYear: "2027",
+    openingQuote: "Ide yang baik bertemu orang yang tepat, lalu menyebar seperti cahaya yang dibiaskan kaca.", openingQuoteRef: "Panitia Temu Kreatif",
+    city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
+    events: [{ badge: "Temu Komunitas", title: "Pameran Karya & Diskusi Panel", time: "15.00 - 20.00 WITA", location: "Gedung Kesenian Societeit de Harmonie", address: "Jl. Riburane No. 15, Makassar", mapsUrl: "https://maps.google.com" }],
+    stories: [], banks: [],
+    dressCodeColors: "#22c3e6,#c6ef5c,#ff7a59", dressCodeNote: "Smart Casual", turutMengundang: [], defaultPalette: "aurora-glass",
+  },
 };
 
 /**

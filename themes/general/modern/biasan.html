@@ -1,0 +1,506 @@
+<!--
+  TEMA BIASAN — Gathering / Acara Umum, Liquid Glass
+  Kategori: Modern | EventType: GATHERING (kontrak satu nama, dapat dipakai jenis acara non-pernikahan lain)
+  {{mainNickname}} berisi judul acara, jadi tipografi judul disiapkan untuk judul panjang.
+  Kaca cair di atas aurora malam: panel kaca dengan tepi bercahaya, kilau yang mengikuti kemiringan HP atau kursor,
+  tombol berpegas, dock kaca dengan penanda tetesan, dan pembiasan tepi kaca (hanya Chromium).
+  Desktop >= 900px: sampul layar penuh (data-lux-desktop-cover="full") sampai klien mengunggah foto sampul; setelah dibuka
+  .left-hero (DESKTOP_SIDEBAR) di kiri, .right-panel 460px di kanan.
+-->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>{{mainNickname}}</title>
+  <link rel="stylesheet" href="/fonts/fonts.css" />
+  <style>
+    :root {
+      --primary: #c9f06a;
+      --secondary: #7fdcf0;
+      --accent: #ff8a66;
+      --tertiary: #ffd166;
+      --bg-dark: #070b14;
+      --bg-light: #0b1220;
+      --bg-canvas: #0a101c;
+      --overlay: #03060b;
+      --glass: #eef4fb;
+      --aura-1: #1fb5d6;
+      --aura-2: #ff7a59;
+      --aura-3: #a7d94a;
+      --aura-4: #f2b63d;
+      --text-main: #f1f5fa;
+      --text-muted: #b3bfcf;
+      --on-primary: #11180a;
+      --on-dark: #f1f5fa;
+      --card-bg: color-mix(in srgb, var(--glass) 9%, transparent);
+      --shadow-color: color-mix(in srgb, var(--overlay) 70%, transparent);
+      --radius-sm: 12px;
+      --radius-md: 18px;
+      --radius-lg: 28px;
+      --radius-full: 9999px;
+      --font-heading: 'Jost', 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-script: 'Great Vibes', cursive;
+      --lq-spring: linear(0, 0.013 0.6%, 0.05 1.2%, 0.2 2.6%, 0.567 5.6%, 0.832 8.4%, 1.006 11.3%, 1.096 14%, 1.128 16.6%, 1.122 19.1%, 1.09 22.1%, 1.034 26.7%, 1.002 31%, 0.988 35.7%, 0.991 42.8%, 1.001 53.4%, 1);
+      --lx: 0.3;
+      --ly: 0.15;
+      color-scheme: dark;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    ::selection { background: color-mix(in srgb, var(--primary) 40%, transparent); color: var(--on-dark); }
+    html { scroll-behavior: smooth; scrollbar-width: none; background: var(--bg-dark); }
+    html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+    body { font-family: var(--font-body); background: var(--bg-dark); color: var(--text-main); line-height: 1.65; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+    body.is-locked { overflow: hidden; }
+    .serif { font-family: var(--font-heading); font-weight: 600; }
+    .script { font-family: var(--font-script); font-weight: 400; }
+    img { max-width: 100%; display: block; }
+    a { color: inherit; }
+    :focus-visible { outline: 2px solid color-mix(in srgb, var(--primary) 80%, transparent); outline-offset: 3px; }
+
+    /* ── Aurora: hanya transform yang dianimasikan agar ringan saat digulir. ── */
+    .lq-aurora { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; background: linear-gradient(160deg, var(--bg-light), var(--bg-dark)); }
+    .cover-screen .lq-aurora { position: absolute; }
+    .lq-aurora span { position: absolute; width: 76vmax; height: 76vmax; border-radius: 50%; will-change: transform; animation: lq-drift 32s ease-in-out infinite alternate; }
+    .lq-aurora .a1 { left: -30vmax; top: -34vmax; background: radial-gradient(circle, color-mix(in srgb, var(--aura-1) 58%, transparent), transparent 64%); }
+    .lq-aurora .a2 { right: -32vmax; top: 4vmax; background: radial-gradient(circle, color-mix(in srgb, var(--aura-2) 46%, transparent), transparent 62%); animation-duration: 39s; animation-delay: -12s; }
+    .lq-aurora .a3 { left: -20vmax; bottom: -42vmax; background: radial-gradient(circle, color-mix(in srgb, var(--aura-3) 38%, transparent), transparent 62%); animation-duration: 36s; animation-delay: -20s; }
+    .lq-aurora .a4 { right: -24vmax; bottom: -30vmax; background: radial-gradient(circle, color-mix(in srgb, var(--aura-4) 40%, transparent), transparent 64%); animation-duration: 44s; animation-delay: -6s; }
+    @keyframes lq-drift {
+      0% { transform: translate3d(0, 0, 0) scale(1); }
+      50% { transform: translate3d(9vmax, 6vmax, 0) scale(1.12); }
+      100% { transform: translate3d(-6vmax, 10vmax, 0) scale(0.94); }
+    }
+
+    /* ── Material kaca: latar tembus pandang + blur; tepi bercahaya dari box-shadow inset yang offsetnya mengikuti arah
+       cahaya (--lx, --ly), kilau (::after) mengikuti kemiringan HP atau kursor. Tepi sengaja bukan pseudo-elemen bermask:
+       audit kontras (variantReadability) menghitung pseudo selebar panel sebagai latar penuh. ── */
+    .lq {
+      position: relative; isolation: isolate;
+      background: linear-gradient(150deg, color-mix(in srgb, var(--glass) 13%, transparent), color-mix(in srgb, var(--glass) 4%, transparent));
+      -webkit-backdrop-filter: blur(20px) saturate(165%);
+      backdrop-filter: blur(20px) saturate(165%);
+      border-radius: var(--radius-lg);
+      box-shadow:
+        inset calc((0.5 - var(--lx)) * 3px) calc((0.5 - var(--ly)) * 3px) 0 0 color-mix(in srgb, var(--glass) 50%, transparent),
+        inset 0 0 0 1px color-mix(in srgb, var(--glass) 14%, transparent),
+        inset 0 -12px 24px -20px color-mix(in srgb, var(--glass) 30%, transparent),
+        0 24px 48px -24px var(--shadow-color);
+    }
+    .lq::after {
+      content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+      background: radial-gradient(90% 70% at calc(var(--lx) * 100%) calc(var(--ly) * 100%), color-mix(in srgb, var(--glass) 16%, transparent), transparent 62%);
+    }
+    .lq-press { transition: transform 0.55s var(--lq-spring), box-shadow 0.3s ease; }
+    .lq-press:active { transform: scale(0.955); transition-duration: 0.12s; transition-timing-function: ease-out; }
+    /* Pembiasan tepi kaca: kelas dipasang skrip hanya di Chromium; Safari dan Firefox tetap memakai blur biasa. */
+    html.lq-lens .lq-lens-target { -webkit-backdrop-filter: url(#lqLens) blur(14px) saturate(170%); backdrop-filter: url(#lqLens) blur(14px) saturate(170%); }
+
+    /* ── Sampul ── */
+    .cover-screen {
+      position: fixed; inset: 0; z-index: 9999; height: 100vh; height: 100dvh;
+      display: flex; align-items: center; justify-content: center; overflow: hidden;
+      padding: calc(28px + env(safe-area-inset-top, 0px)) 20px calc(28px + env(safe-area-inset-bottom, 0px)); text-align: center;
+      /* Gradien, bukan warna polos: mesin memaksa background-color sampul gelap (!important) agar tidak berkedip saat memuat. */
+      background: linear-gradient(var(--bg-dark), var(--bg-dark));
+      transition: opacity 0.7s ease 0.25s, visibility 0s linear 0.95s;
+    }
+    .cover-screen.has-photo { background: var(--bg-dark) center / cover no-repeat; }
+    .cover-screen.has-photo .lq-aurora { display: none; }
+    .cover-screen.has-photo::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--overlay) 18%, transparent), color-mix(in srgb, var(--overlay) 72%, transparent)); }
+    .cover-screen.opened { opacity: 0; visibility: hidden; pointer-events: none; }
+    .cover-inner { position: relative; z-index: 2; width: 100%; max-width: 360px; padding: 32px 24px 26px; transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.6s ease; }
+    .cover-screen.opened .cover-inner { transform: translateY(-18px) scale(1.06); opacity: 0; }
+    .cover-badge { display: inline-block; padding: 5px 14px; border-radius: var(--radius-full); font-size: 10.5px; font-weight: 700; letter-spacing: 0.24em; text-transform: uppercase; color: var(--primary); background: color-mix(in srgb, var(--primary) 12%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); }
+    .cover-name { font-size: clamp(30px, 9.5vw, 40px); line-height: 1.08; margin-top: 14px; color: var(--on-dark); font-weight: 600; overflow-wrap: break-word; }
+    .cover-spectrum { display: block; width: 96px; height: 3px; margin: 14px auto 0; border-radius: 3px; background: linear-gradient(90deg, var(--aura-1), var(--aura-3), var(--aura-4), var(--aura-2)); }
+    .cover-info { margin-top: 12px; font-size: 14px; color: var(--text-muted); }
+    .cover-sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+    .cover-guest { margin: 20px auto 0; padding: 12px 16px; border-radius: var(--radius-md); }
+    .guest-lbl { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-main); opacity: 0.86; }
+    .guest-name { font-size: 20px; color: var(--on-dark); margin-top: 2px; overflow-wrap: break-word; }
+    .btn-open {
+      display: inline-flex; align-items: center; gap: 9px; margin-top: 18px; padding: 14px 28px; border: 0; cursor: pointer;
+      border-radius: var(--radius-full); font-family: inherit; font-size: 12.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--on-primary); background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 92%, var(--glass)), var(--primary));
+      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--glass) 70%, transparent), 0 12px 28px -12px color-mix(in srgb, var(--primary) 70%, transparent);
+    }
+
+    /* ── Hero kiri desktop ── */
+    .left-hero { display: none; position: fixed; left: 0; top: 0; width: calc(100% - 460px); height: 100vh; z-index: 10; overflow: hidden; background: transparent; }
+    .left-hero.has-photo { background: var(--bg-dark) center / cover no-repeat; }
+    .left-hero.has-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, color-mix(in srgb, var(--overlay) 82%, transparent), color-mix(in srgb, var(--overlay) 10%, transparent) 60%, transparent); }
+    .left-hero-content { position: absolute; left: 3.5rem; bottom: 3.5rem; z-index: 2; max-width: 32rem; padding: 2.4rem 2.6rem; color: var(--on-dark); }
+    .left-hero-eyebrow { display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.24em; text-transform: uppercase; color: var(--primary); margin-bottom: 0.6rem; }
+    .left-hero-name { font-size: clamp(2.4rem, 4vw, 3.6rem); line-height: 1.06; font-weight: 600; overflow-wrap: break-word; }
+    .left-hero-info { margin-top: 0.6rem; font-size: 1rem; color: var(--text-muted); }
+    .left-hero-date { font-size: 0.82rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; margin-top: 0.9rem; color: var(--secondary); }
+
+    /* ── Latar & kolom ── */
+    .fixed-bg-layer { position: fixed; top: 0; right: 0; bottom: 0; width: 100%; z-index: 0; pointer-events: none; background: transparent; }
+    .fixed-bg-layer.has-custom-bg { background: linear-gradient(180deg, color-mix(in srgb, var(--bg-dark) 55%, transparent), color-mix(in srgb, var(--bg-dark) 80%, transparent)), var(--custom-bg) center / cover no-repeat; }
+    .right-panel { position: relative; z-index: 20; width: 100%; min-height: 100vh; }
+
+    /* ── Beranda ── */
+    .slide-home { position: relative; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 72px 20px 60px; text-align: center; }
+    .home-card { width: 100%; max-width: 380px; padding: 30px 24px; }
+    .home-eyebrow { font-size: 10.5px; font-weight: 700; letter-spacing: 0.26em; text-transform: uppercase; color: var(--primary); }
+    .home-name { font-size: clamp(2rem, 9vw, 2.6rem); line-height: 1.1; font-weight: 600; margin-top: 10px; overflow-wrap: break-word; }
+    .home-info { margin-top: 8px; font-size: 14px; color: var(--text-muted); }
+    .home-quote { font-size: 16px; line-height: 1.6; max-width: 320px; margin: 20px auto 0; color: var(--text-main); }
+    .home-quote-ref { font-size: 10.5px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--secondary); margin-top: 12px; }
+    .scroll-cue { margin-top: 22px; color: var(--primary); animation: lq-cue 1.8s ease-in-out infinite; }
+    @keyframes lq-cue { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(7px); } }
+
+    /* ── Seksi (juga dipakai seksi buatan mesin: .sec-block, .sec-lbl, .sec-h2) ── */
+    .sec-block { position: relative; max-width: 480px; margin: 0 auto; padding: 68px 20px; text-align: center; }
+    .lq-divider { display: block; width: 56px; height: 3px; margin: 0 auto 14px; border-radius: 3px; background: linear-gradient(90deg, var(--aura-1), var(--aura-3), var(--aura-4), var(--aura-2)); }
+    .sec-lbl { display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: 0.24em; text-transform: uppercase; color: var(--primary); margin-bottom: 8px; }
+    .sec-h2 { font-size: 32px; line-height: 1.12; color: var(--text-main); font-weight: 600; margin-bottom: 12px; letter-spacing: 0; }
+    .sec-sub { font-size: 14px; color: var(--text-muted); max-width: 340px; margin: 0 auto 22px; }
+
+    .facet-card { margin-top: 10px; overflow: hidden; text-align: left; }
+    .portrait-wrap { position: relative; width: 100%; aspect-ratio: 16 / 10; overflow: hidden; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+    .portrait { width: 100%; height: 100%; object-fit: cover; }
+    .portrait-art { position: absolute; inset: 0; overflow: hidden; background: linear-gradient(150deg, var(--bg-light), var(--bg-dark)); }
+    .portrait-art span { position: absolute; width: 70%; aspect-ratio: 1; border-radius: 50%; animation: lq-drift 26s ease-in-out infinite alternate; }
+    .portrait-art .p1 { left: -18%; top: -30%; background: radial-gradient(circle, color-mix(in srgb, var(--aura-1) 70%, transparent), transparent 65%); }
+    .portrait-art .p2 { right: -20%; bottom: -40%; background: radial-gradient(circle, color-mix(in srgb, var(--aura-2) 60%, transparent), transparent 65%); animation-delay: -9s; }
+    .portrait-art .p3 { left: 30%; top: 10%; width: 45%; background: radial-gradient(circle, color-mix(in srgb, var(--aura-3) 55%, transparent), transparent 65%); animation-delay: -16s; }
+    .facet-body { padding: 20px 22px 24px; }
+    .star-name { font-size: 24px; line-height: 1.2; color: var(--text-main); font-weight: 600; overflow-wrap: break-word; }
+    .age-pill { display: block; margin-top: 6px; font-size: 14px; color: var(--text-muted); }
+    .star-detail { display: inline-block; margin-top: 12px; padding: 5px 12px; border-radius: var(--radius-full); background: color-mix(in srgb, var(--primary) 14%, transparent); color: var(--primary); font-size: 12px; font-weight: 600; }
+    .parents { margin-top: 14px; font-size: 13px; color: var(--text-muted); }
+
+    /* ── Komponen mesin: hitung mundur, kartu acara, kado, kartu QR, form RSVP, ucapan ── */
+    .countdown-timer { margin-bottom: 18px; }
+    .event-block-item, .bank-card, #rsvp .rsvp-card-box form, .wish-item {
+      -webkit-backdrop-filter: blur(18px) saturate(160%);
+      backdrop-filter: blur(18px) saturate(160%);
+    }
+    /* Tautan peta satu nama membawa inline style (garis bawah, tanpa padding); dijadikan tombol kaca. */
+    .btn-map-outline, .btn-outline-box, .btn-copy {
+      display: inline-flex !important; align-items: center; justify-content: center; padding: 10px 18px !important; margin-top: 14px !important;
+      font-size: 11.5px !important; font-weight: 700 !important; letter-spacing: 0.08em; line-height: 1.3; text-decoration: none !important;
+      border-radius: var(--radius-full) !important; color: var(--text-main) !important;
+      background: color-mix(in srgb, var(--glass) 10%, transparent) !important;
+      border: 1px solid color-mix(in srgb, var(--glass) 24%, transparent) !important;
+      transition: transform 0.55s var(--lq-spring);
+    }
+    .btn-map-outline:active, .btn-outline-box:active, .btn-copy:active { transform: scale(0.95); transition-duration: 0.1s; }
+    #rsvp .rsvp-card-box form { text-align: left; }
+    /* Form RSVP satu nama: mesin menulis teks putih di atas gradasi --primary→--secondary dan label "Konfirmasi" sendiri.
+       Palet ini terang, jadi tombol memakai --on-primary; label mesin disembunyikan karena label tema yang dapat diedit di Studio. */
+    #rsvp .rsvp-card-box > .sec-lbl { display: none !important; }
+    #rsvp .rsvp-card-box input, #rsvp .rsvp-card-box select, #rsvp .rsvp-card-box textarea {
+      font-family: inherit !important; font-size: 14px !important; color: var(--text-main) !important;
+      background: color-mix(in srgb, var(--glass) 7%, transparent) !important;
+      border: 1px solid color-mix(in srgb, var(--glass) 18%, transparent) !important;
+    }
+    #rsvp .rsvp-card-box input:focus, #rsvp .rsvp-card-box select:focus, #rsvp .rsvp-card-box textarea:focus { outline: none; border-color: color-mix(in srgb, var(--primary) 70%, transparent) !important; }
+    #memories a[href$="/sharemoment"],
+    #universalRsvpBtn { background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 92%, var(--glass)), var(--primary)) !important; color: var(--on-primary) !important; letter-spacing: 0.08em; text-transform: uppercase; }
+    #musicFab {
+      color: var(--text-main) !important; border: 0 !important; border-radius: 50% !important;
+      background: linear-gradient(150deg, color-mix(in srgb, var(--glass) 18%, transparent), color-mix(in srgb, var(--glass) 6%, transparent)) !important;
+      -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%);
+      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--glass) 45%, transparent), 0 14px 30px -14px var(--shadow-color) !important;
+      transition: transform 0.55s var(--lq-spring), opacity 0.3s ease;
+    }
+    #musicFab:active { transform: scale(0.9); }
+    body.is-locked #musicFab { opacity: 0; pointer-events: none; }
+
+    /* ── Penutup ── */
+    .site-footer { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; min-height: 80vh; padding: 96px 20px 128px; text-align: center; color: var(--on-dark); background-size: cover; background-position: center; }
+    .site-footer.has-closing-photo { min-height: 100vh; min-height: 100svh; }
+    .site-footer.has-closing-photo::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--overlay) 25%, transparent), color-mix(in srgb, var(--overlay) 88%, transparent)); }
+    .closing-content { position: relative; z-index: 1; max-width: 380px; padding: 30px 24px; }
+    .closing-title { font-size: 44px; line-height: 1.1; margin-bottom: 10px; color: var(--primary); }
+    .closing-text { font-size: 14px; color: var(--text-muted); margin: 0 auto 16px; }
+    .closing-name { font-size: 22px; }
+    .watermark { margin-top: 22px; font-size: 10px; }
+
+    /* ── Dock kaca: penanda tetesan (::before) diposisikan lewat --ind-x/--ind-w karena fitBottomDock menghitung setiap anak dock. ── */
+    .bottom-dock {
+      position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); z-index: 900;
+      display: flex; gap: 2px; padding: 6px; border-radius: var(--radius-full);
+      transform: translate3d(-50%, 0, 0); transition: transform 0.6s var(--lq-spring), opacity 0.3s ease;
+      --ind-x: 0px; --ind-w: 0px;
+    }
+    .bottom-dock::before {
+      content: ""; position: absolute; top: 6px; bottom: 6px; left: 0; width: var(--ind-w); border-radius: var(--radius-full); z-index: 0; pointer-events: none;
+      transform: translateX(var(--ind-x)); opacity: 0;
+      background: linear-gradient(180deg, color-mix(in srgb, var(--glass) 26%, transparent), color-mix(in srgb, var(--glass) 10%, transparent));
+      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--glass) 55%, transparent), inset 0 -1px 0 color-mix(in srgb, var(--glass) 14%, transparent);
+      transition: transform 0.65s var(--lq-spring), width 0.65s var(--lq-spring), opacity 0.3s ease;
+    }
+    .bottom-dock.has-indicator::before { opacity: 1; }
+    .bottom-dock.dock-hidden { transform: translate3d(-50%, calc(100% + 40px), 0); opacity: 0; pointer-events: none; }
+    .bottom-dock a { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; width: 46px; height: 42px; border-radius: var(--radius-full); color: var(--text-muted); transition: color 0.25s ease, transform 0.55s var(--lq-spring); }
+    .bottom-dock a.active { color: var(--text-main); }
+    .bottom-dock a:active { transform: scale(0.9); transition-duration: 0.1s; }
+    .bottom-dock svg { width: 20px; height: 20px; }
+
+    html.lq-js .lq-reveal { opacity: 0; transform: translateY(22px) scale(0.985); transition: opacity 0.8s ease, transform 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
+    html.lq-js .lq-reveal.is-visible { opacity: 1; transform: none; }
+
+    @media (max-width: 340px) { .star-name { font-size: 21px; } .sec-block { padding: 56px 16px; } .sec-h2 { font-size: 28px; } }
+    @media (prefers-reduced-transparency: reduce) {
+      .lq, .event-block-item, .bank-card, .rsvp-card-box { -webkit-backdrop-filter: none; backdrop-filter: none; background: color-mix(in srgb, var(--bg-canvas) 92%, var(--glass)); }
+      .lq::after { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .lq-aurora span, .portrait-art span, .scroll-cue { animation: none; }
+      html.lq-js .lq-reveal { opacity: 1; transform: none; transition: none; }
+      .cover-inner, .cover-screen, .bottom-dock, .bottom-dock::before, .lq-press { transition: none; }
+    }
+    @media (min-width: 900px) {
+      .cover-screen:not(.has-photo) .cover-inner { max-width: 440px; padding: 42px 38px 34px; }
+      .left-hero { display: block; }
+      .fixed-bg-layer { left: calc(100% - 460px); width: 460px; }
+      .right-panel { margin-left: calc(100% - 460px); width: 460px; border-left: 1px solid color-mix(in srgb, var(--glass) 10%, transparent); box-shadow: -24px 0 48px -24px var(--shadow-color); }
+      .bottom-dock { left: calc(100% - 230px); }
+      #musicFab { right: 16px !important; }
+    }
+  </style>
+  <script>
+    document.documentElement.classList.add('lq-js');
+  </script>
+</head>
+<body class="is-locked">
+  <!-- Peta pembiasan: kanal merah/hijau menggeser latar ke arah dalam di tepi panel, tengah netral (abu 50%). -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <filter id="lqLens" x="0" y="0" width="1" height="1" primitiveUnits="objectBoundingBox" color-interpolation-filters="sRGB">
+      <feImage x="0" y="0" width="1" height="1" preserveAspectRatio="none" result="map" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='r'%3E%3Cstop offset='0' stop-color='rgb(255,0,0)'/%3E%3Cstop offset='1' stop-color='rgb(0,0,0)'/%3E%3C/linearGradient%3E%3ClinearGradient id='g' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='rgb(0,255,0)'/%3E%3Cstop offset='1' stop-color='rgb(0,0,0)'/%3E%3C/linearGradient%3E%3Cfilter id='b'%3E%3CfeGaussianBlur stdDeviation='5'/%3E%3C/filter%3E%3C/defs%3E%3Crect width='100' height='100' fill='url(%23r)'/%3E%3Crect width='100' height='100' fill='url(%23g)' style='mix-blend-mode:screen'/%3E%3Crect x='14' y='14' width='72' height='72' rx='16' fill='rgb(128,128,128)' filter='url(%23b)'/%3E%3C/svg%3E"/>
+      <feDisplacementMap in="SourceGraphic" in2="map" scale="0.06" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </svg>
+
+  <div class="lq-aurora" aria-hidden="true"><span class="a1"></span><span class="a2"></span><span class="a3"></span><span class="a4"></span></div>
+
+  <div class="left-hero{{#if hasCustomSidebarPhoto}} has-photo{{/if}}"{{#if hasCustomSidebarPhoto}} style="background-image: url('{{sidebarPhotoUrl}}');"{{/if}}>
+    <div class="left-hero-content lq">
+      <span class="left-hero-eyebrow">{{eventLabel}}</span>
+      <h1 class="left-hero-name serif">{{mainNickname}}</h1>
+      {{#if mainInfoLine}}<p class="left-hero-info">{{mainInfoLine}}</p>{{/if}}
+      {{#if eventDateFormatted}}<p class="left-hero-date">{{eventDateFormatted}}</p>{{/if}}
+    </div>
+  </div>
+
+  <div class="cover-screen{{#if landingCoverUrl}} has-photo{{/if}}" id="coverScreen" data-lux-desktop-cover="full"{{#if landingCoverUrl}} style="background-image: url('{{landingCoverUrl}}');"{{/if}}>
+    <div class="lq-aurora" aria-hidden="true"><span class="a1"></span><span class="a2"></span><span class="a3"></span><span class="a4"></span></div>
+    <div class="cover-inner lq lq-lens-target">
+      <span class="cover-badge" data-lux-field="customLabels.coverBadge">{{eventLabel}}</span>
+      <h1 class="cover-name serif">{{mainNickname}}</h1>
+      <span class="cover-spectrum" aria-hidden="true"></span>
+      {{#if mainInfoLine}}<p class="cover-info">{{mainInfoLine}}</p>{{/if}}
+      <p class="cover-sub" data-lux-field="customLabels.coverSubtitle">{{eventIntro}}</p>
+      <div class="cover-guest lq">
+        <p class="guest-lbl">Kepada Yth.</p>
+        <p class="guest-name serif">{{guestName}}</p>
+      </div>
+      <button type="button" class="btn-open btn-buka lq-press" onclick="openInvitation()" data-lux-field="customLabels.openBtn">Buka Undangan</button>
+    </div>
+  </div>
+
+  <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
+
+  <div class="right-panel" id="rightPanel">
+    <section class="slide-home" id="home">
+      <div class="home-card lq lq-reveal">
+        <span class="home-eyebrow" data-lux-field="customLabels.quoteEyebrow">Anda Diundang</span>
+        <h2 class="home-name serif">{{mainNickname}}</h2>
+        {{#if mainInfoLine}}<p class="home-info">{{mainInfoLine}}</p>{{/if}}
+        {{#if openingQuote}}
+        <p class="home-quote">{{openingQuote}}</p>
+        {{#if openingQuoteRef}}<p class="home-quote-ref">{{openingQuoteRef}}</p>{{/if}}
+        {{/if}}
+      </div>
+      <svg class="scroll-cue" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+    </section>
+
+    <main>
+      <section class="sec-block" id="profile">
+        <span class="lq-divider lq-reveal" aria-hidden="true"></span>
+        <span class="sec-lbl lq-reveal" data-lux-field="customLabels.coupleEyebrow">{{profileEyebrow}}</span>
+        <h2 class="sec-h2 serif lq-reveal" data-lux-field="customLabels.coupleTitle">{{profileTitle}}</h2>
+        <p class="sec-sub lq-reveal" data-lux-field="customLabels.coupleSub">{{profileSub}}</p>
+        <div class="facet-card lq lq-reveal">
+          <div class="portrait-wrap">
+            {{#if hasCustomMainPhoto}}<img class="portrait" src="{{mainPhotoUrl}}" alt="{{mainName}}" loading="lazy" />{{/if}}
+            {{#unless hasCustomMainPhoto}}
+            <div class="portrait-art" aria-hidden="true"><span class="p1"></span><span class="p2"></span><span class="p3"></span></div>
+            {{/unless}}
+          </div>
+          <div class="facet-body">
+            <h3 class="star-name serif">{{mainName}}</h3>
+            {{#if mainInfoLine}}<span class="age-pill">{{mainInfoLine}}</span>{{/if}}
+            {{#if mainDetailLine}}<p class="star-detail">{{mainDetailLine}}</p>{{/if}}
+            <div class="parents">{{parentsHtml}}</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="sec-block" id="event">
+        <span class="lq-divider lq-reveal" aria-hidden="true"></span>
+        <span class="sec-lbl lq-reveal" data-lux-field="customLabels.eventsEyebrow">Agenda</span>
+        <h2 class="sec-h2 serif lq-reveal" data-lux-field="customLabels.eventsTitle">{{agendaTitle}}</h2>
+        <p class="sec-sub lq-reveal" data-lux-field="customLabels.eventsSub">{{eventDateFormatted}}</p>
+        {{countdownHtml}}
+        {{eventSectionHtml}}
+      </section>
+
+      {{qrPassHtml}}
+      {{gallerySectionHtml}}
+      {{giftSectionHtml}}
+      {{extraSectionsHtml}}
+
+      <section class="sec-block" id="rsvp">
+        <span class="sec-lbl" data-lux-field="customLabels.wishesEyebrow">Konfirmasi</span>
+        {{rsvpSectionHtml}}
+        {{wishesSectionHtml}}
+      </section>
+
+      {{memoriesSectionHtml}}
+    </main>
+
+    <footer class="site-footer {{closingPhotoClass}}" id="footer" style="{{closingBgStyle}}">
+      <div class="closing-content lq lq-reveal">
+        <h2 class="closing-title script" data-lux-field="customLabels.closingTitle">Terima Kasih</h2>
+        <p class="closing-text" data-lux-field="customLabels.closingText">{{closingText}}</p>
+        <p class="closing-name serif">{{mainNickname}}</p>
+        <div class="watermark">{{brandWatermarkHtml}}</div>
+      </div>
+    </footer>
+  </div>
+
+  <nav class="bottom-dock lq lq-lens-target dock-hidden" aria-label="Navigasi undangan">
+    <a href="#home" aria-label="Beranda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg></a>
+    <a href="#profile" aria-label="Tentang"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg></a>
+    <a href="#event" aria-label="Acara"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></a>
+    <a href="#gallery" aria-label="Galeri"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg></a>
+    <a href="#rsvp" aria-label="Konfirmasi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12Z"/></svg></a>
+  </nav>
+
+  <script>
+    // Cahaya kaca: kilau dan sudut tepi mengikuti kursor atau kemiringan HP; ditulis per frame hanya saat ada masukan.
+    var lqLight = (function () {
+      var root = document.documentElement;
+      var target = { x: 0.3, y: 0.15 };
+      var current = { x: 0.3, y: 0.15 };
+      var frame = 0;
+      var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      function step() {
+        current.x += (target.x - current.x) * 0.18;
+        current.y += (target.y - current.y) * 0.18;
+        root.style.setProperty('--lx', current.x.toFixed(3));
+        root.style.setProperty('--ly', current.y.toFixed(3));
+        if (Math.abs(target.x - current.x) > 0.002 || Math.abs(target.y - current.y) > 0.002) frame = requestAnimationFrame(step);
+        else frame = 0;
+      }
+      function set(x, y) {
+        if (reduced) return;
+        target.x = Math.min(1, Math.max(0, x));
+        target.y = Math.min(1, Math.max(0, y));
+        if (!frame) frame = requestAnimationFrame(step);
+      }
+      window.addEventListener('pointermove', function (e) {
+        if (e.pointerType === 'mouse') set(e.clientX / window.innerWidth, e.clientY / window.innerHeight);
+      }, { passive: true });
+      function onTilt(e) {
+        if (e.gamma == null || e.beta == null) return;
+        set(0.5 + e.gamma / 70, 0.5 + (e.beta - 45) / 90);
+      }
+      function listenTilt() { window.addEventListener('deviceorientation', onTilt, { passive: true }); }
+      return {
+        // iOS meminta izin sensor gerak dari sebuah sentuhan; tombol Buka Undangan adalah sentuhan itu. Ditolak = kilau diam.
+        enableTilt: function () {
+          var DOE = window.DeviceOrientationEvent;
+          if (DOE && typeof DOE.requestPermission === 'function') {
+            DOE.requestPermission().then(function (state) { if (state === 'granted') listenTilt(); }).catch(function () {});
+          } else if (DOE) {
+            listenTilt();
+          }
+        }
+      };
+    })();
+
+    (function enableLens() {
+      var brands = navigator.userAgentData && navigator.userAgentData.brands;
+      var chromium = Array.isArray(brands) && brands.some(function (b) { return /Chromium/.test(b.brand); });
+      var lessGlass = window.matchMedia && window.matchMedia('(prefers-reduced-transparency: reduce)').matches;
+      if (chromium && !lessGlass) document.documentElement.classList.add('lq-lens');
+    })();
+
+    function openInvitation() {
+      lqLight.enableTilt();
+      var cover = document.getElementById('coverScreen');
+      if (cover) cover.classList.add('opened');
+      document.body.classList.remove('is-locked');
+    }
+
+    // Dock: tersembunyi di beranda dan di ujung halaman; penanda tetesan mengikuti seksi yang sedang dibaca.
+    (function initDock() {
+      var dock = document.querySelector('.bottom-dock');
+      if (!dock) return;
+      var links = Array.prototype.slice.call(dock.querySelectorAll('a'));
+      var lastY = window.pageYOffset || 0;
+      var ticking = false;
+      function placeIndicator() {
+        var active = dock.querySelector('a.active');
+        if (!active) { dock.classList.remove('has-indicator'); return; }
+        dock.style.setProperty('--ind-x', active.offsetLeft + 'px');
+        dock.style.setProperty('--ind-w', active.offsetWidth + 'px');
+        dock.classList.add('has-indicator');
+      }
+      function setActive(id) {
+        links.forEach(function (l) { l.classList.toggle('active', l.getAttribute('href') === '#' + id); });
+        placeIndicator();
+      }
+      function update() {
+        var y = window.pageYOffset || 0;
+        var delta = y - lastY;
+        var home = document.getElementById('home');
+        var homeEnd = home ? home.offsetTop + home.offsetHeight - 140 : window.innerHeight * 0.75;
+        var nearEnd = y + window.innerHeight >= document.documentElement.scrollHeight - 80;
+        dock.classList.toggle('dock-hidden', y <= homeEnd || (nearEnd && delta >= 0));
+        if (Math.abs(delta) > 10) lastY = y;
+        ticking = false;
+      }
+      window.addEventListener('scroll', function () {
+        if (!ticking) { ticking = true; requestAnimationFrame(update); }
+      }, { passive: true });
+      links.forEach(function (link) {
+        link.addEventListener('click', function () { setActive(link.getAttribute('href').slice(1)); });
+      });
+      if ('ResizeObserver' in window) new ResizeObserver(placeIndicator).observe(dock);
+      if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) { if (entry.isIntersecting) setActive(entry.target.id); });
+        }, { rootMargin: '-35% 0px -55% 0px', threshold: 0 });
+        links.forEach(function (link) {
+          var target = document.getElementById(link.getAttribute('href').slice(1));
+          if (target) io.observe(target);
+        });
+      }
+    })();
+
+    (function initReveal() {
+      var items = document.querySelectorAll('.lq-reveal');
+      if (!('IntersectionObserver' in window)) { items.forEach(function (el) { el.classList.add('is-visible'); }); return; }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('is-visible');
+          io.unobserve(entry.target);
+        });
+      }, { rootMargin: '0px 0px -8% 0px', threshold: 0.06 });
+      items.forEach(function (el) { io.observe(el); });
+    })();
+  </script>
+  {{musicPlayerHtml}}
+</body>
+</html>

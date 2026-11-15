@@ -27,7 +27,9 @@ async function main() {
         const id = file.replace(".html", "").toLowerCase();
         if (discovered.some((d) => d.id === id)) continue;
 
+        // Versi satu nama dari tema pernikahan (`<id>-acara`) tampil dengan nama desain yang sama di katalog.
         const formattedName = id
+          .replace(/-acara$/, "")
           .split(/[-_]/)
           .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
           .join(" ");

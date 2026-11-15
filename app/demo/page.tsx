@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { BrandLogo } from "@/components/BrandLogo";
-import { isThemeCompatible } from "@/lib/invitationUtils";
+import { isThemeCompatible, sortThemesForEvent } from "@/lib/invitationUtils";
 import "./demo.css";
 
 interface ThemeItem {
@@ -86,11 +86,13 @@ export default function CatalogGridShowcase() {
   const effectiveEvent = enabledEventTypes && selectedEvent !== "all" && !enabledEventTypes.includes(selectedEvent.toUpperCase()) ? "all" : selectedEvent;
   const catalogLoading = loading || !settingsLoaded;
 
-  const filteredThemes = offeredThemes.filter((t) => {
-    const matchesEvent = effectiveEvent === "all" || (t.eventType || "WEDDING").toLowerCase() === effectiveEvent.toLowerCase();
+  // Sama dengan Setup klien: tema satu nama bisa dipakai semua jenis acara non-pernikahan; tema yang dibuat untuk acara itu di depan.
+  const matchingThemes = offeredThemes.filter((t) => {
+    const matchesEvent = effectiveEvent === "all" || isThemeCompatible(t.eventType, effectiveEvent.toUpperCase());
     const matchesCategory = selectedCategory === "all" || t.category.toLowerCase() === selectedCategory.toLowerCase();
     return matchesEvent && matchesCategory;
   });
+  const filteredThemes = effectiveEvent === "all" ? matchingThemes : sortThemesForEvent(matchingThemes, effectiveEvent);
 
   return (
     <div className="demo-catalog-root min-h-screen bg-[#faf8f5] text-stone-900 font-sans pb-24" style={{ colorScheme: "only light", backgroundColor: "#faf8f5", color: "#1c1917" }}>
@@ -317,7 +319,7 @@ export default function CatalogGridShowcase() {
                       </span>
                       {theme.eventType && theme.eventType !== "WEDDING" && (
                         <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
-                          {theme.eventType === "BIRTHDAY" ? "Ulang Tahun" : theme.eventType}
+                          Non-Pernikahan
                         </span>
                       )}
                     </div>

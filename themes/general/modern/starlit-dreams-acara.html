@@ -1,0 +1,2099 @@
+<!--
+ _      _   _  __  __  _____   _   _      _     ____   __   __
+| |    | | | | \ \/ / | ____| | \ | |    / \   |  _ \  \ \ / /
+| |    | | | |  \  /  |  _|   |  \| |   / _ \  | |_) |  \ V / 
+| |___ | |_| |  /  \  | |___  | |\  |  / ___ \ |  _ <    | |  
+|_____| \___/  /_/\_\ |_____| |_| \_| /_/   \_\|_| \_\   |_|  
+
+  ==============================================================
+  THEME BUILDER WORKSPACE: STARLIT DREAMS
+  Celestial Romantic Theme with Baroque Oval Mirrors & Mint Ribbons
+  Hak Cipta (c) Luxenary. Dilindungi undang-undang.
+  ==============================================================
+-->
+<!--
+  STARLIT DREAMS (ACARA) — versi satu nama dari tema pernikahan Starlit Dreams (themes/wedding/modern/starlit-dreams.html).
+  Kontrak satu nama (seperti prisma): dapat dipakai ulang tahun, khitan, aqiqah, wisuda, dan acara umum.
+  CSS dan gaya sama dengan versi pernikahan; seksi mempelai diganti profil tokoh, RSVP dan modul dari mesin satu nama.
+-->
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{mainNickname}}</title>
+
+  <!-- =================================================================== -->
+  <!-- 1. TYPOGRAPHY & SELF-HOSTED FONTS                                   -->
+  <!-- =================================================================== -->
+  <link rel="stylesheet" href="/fonts/fonts.css" />
+  <script src="/assets/lottie/lottie.min.js"></script>
+
+  <style>
+    @font-face {
+      font-family: "Geraldo Island";
+      src: url("/fonts/starlit-dreams/Geraldo-Island.woff2") format("woff2");
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "Romland";
+      src: url("/fonts/starlit-dreams/Romland.woff2") format("woff2");
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    /* =================================================================== */
+    /* 2. DESIGN SYSTEM & DYNAMIC PALETTE (GOLDEN STANDARD)                */
+    /* =================================================================== */
+    :root {
+      --primary: #1b3a4b;
+      --secondary: #2d5a70;
+      --accent: #6ec6e0;
+      --bg-light: #f2f7f9;
+      --bg-dark: #071f1d;
+      --text-main: #0d2b35;
+      --text-muted: color-mix(in srgb, #0d2b35 70%, transparent);
+      --radius-sm: 8px;
+      --radius-md: 16px;
+      --radius-lg: 26px;
+      --radius-full: 9999px;
+      --shadow-soft: 0 8px 24px color-mix(in srgb, var(--primary) 12%, transparent);
+      --shadow-elevated: 0 16px 40px color-mix(in srgb, var(--primary) 22%, transparent);
+      /* Kaca transparan: latar (foto klien / kanvas bawaan) harus tetap tembus di balik kartu dan panel seksi. */
+      --glass-bg: color-mix(in srgb, var(--bg-light) 14%, transparent);
+      --glass-blur: blur(4px);
+      --glass-border: color-mix(in srgb, var(--bg-light) 30%, transparent);
+      /* Ditambahkan tokenisasi master (warna dan huruf yang sebelumnya tertulis langsung). */
+      --lux-c-333333: #333333;
+      --lux-font-plus-jakarta-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+      --lux-font-geraldo-island-2: "Geraldo Island", "Cinzel", "Marcellus", Georgia, serif;
+      --lux-font-romland-2: "Romland", "Great Vibes", cursive;
+      --lux-font-romland-3: "Romland", cursive;
+      --lux-font-cinzel: "Cinzel", Georgia, serif;
+      --lux-font-geraldo-island-3: "Geraldo Island", serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    ::selection {
+      background: color-mix(in srgb, var(--primary) 40%, transparent);
+      color: #ffffff;
+    }
+
+    ::-moz-selection {
+      background: color-mix(in srgb, var(--primary) 40%, transparent);
+      color: #ffffff;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    body {
+      font-family: var(--lux-font-plus-jakarta-sans);
+      background: var(--bg-dark);
+      color: var(--text-main);
+      line-height: 1.6;
+      overflow-x: hidden;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+
+    /* Headings & Scripts */
+    .serif,
+    h1, h2, h3, h4,
+    .font-serif {
+      font-family: var(--lux-font-geraldo-island-2);
+      letter-spacing: 0.02em;
+    }
+
+    .script-accent {
+      font-family: var(--lux-font-romland-2);
+      font-weight: 400;
+    }
+
+    /* =================================================================== */
+    /* 3. ARSITEKTUR DESKTOP SPLIT & MOBILE CONTAINER                      */
+    /* =================================================================== */
+    .layout-wrapper {
+      display: flex;
+      width: 100%;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    .sidebar-desktop {
+      display: none;
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: calc(100% - 460px);
+      height: 100vh;
+      background: url("{{sidebarPhotoUrl}}") center/cover no-repeat;
+      z-index: 10;
+    }
+
+    .sidebar-desktop::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to top,
+        color-mix(in srgb, var(--bg-dark) 94%, transparent) 0%,
+        color-mix(in srgb, var(--bg-dark) 50%, transparent) 50%,
+        rgba(0, 0, 0, 0.3) 100%
+      );
+    }
+
+    .sidebar-desktop-content {
+      position: absolute;
+      bottom: 4.5rem;
+      left: 4rem;
+      right: 4rem;
+      z-index: 20;
+      color: #ffffff;
+    }
+
+    .sidebar-desktop-tagline {
+      font-size: 0.8rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.8rem;
+      font-weight: 600;
+    }
+
+    .sidebar-desktop-names {
+      font-size: clamp(2.8rem, 3.8vw, 4.4rem);
+      line-height: 1.1;
+      color: #ffffff;
+      margin-bottom: 1rem;
+      text-shadow: 0 4px 24px rgba(0, 0, 0, 0.7);
+    }
+
+    .sidebar-desktop-names span {
+      font-family: var(--lux-font-romland-3);
+      color: var(--accent);
+      font-size: 1.05em;
+      margin: 0 0.35rem;
+    }
+
+    .sidebar-desktop-date {
+      font-size: 0.95rem;
+      letter-spacing: 0.2em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 1.25rem;
+      font-weight: 500;
+    }
+
+    .sidebar-desktop-quote {
+      font-size: 1.05rem;
+      line-height: 1.7;
+      color: rgba(255, 255, 255, 0.88);
+      max-width: 520px;
+      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+    }
+
+    .app-container,
+    .main-scroll-panel {
+      width: 100%;
+      min-height: 100vh;
+      background: transparent;
+      position: relative;
+      z-index: 20;
+    }
+
+    @media (min-width: 900px) {
+      .sidebar-desktop {
+        display: block;
+      }
+      .app-container,
+      .main-scroll-panel {
+        width: 460px;
+        margin-left: auto;
+        box-shadow: -10px 0 35px rgba(0, 0, 0, 0.5);
+        border-left: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+      }
+    }
+
+    /* =================================================================== */
+    /* 4. TIGA LAPISAN KANVAS LATAR (ANTI-TABRAKAN)                        */
+    /* =================================================================== */
+    .fixed-bg-layer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 100%;
+      height: 100vh;
+      background-image: url('/assets/ornaments/background/background-monocrhome.webp');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 1;
+      filter: none;
+    }
+    .fixed-bg-layer.has-custom-bg {
+      background-image: var(--custom-bg);
+      opacity: 1;
+      filter: none;
+    }
+
+    @media (min-width: 900px) {
+      .fixed-bg-layer {
+        width: 460px;
+      }
+    }
+
+    .scrim-canvas {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 100%;
+      height: 100vh;
+      background: transparent;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    @media (min-width: 900px) {
+      .scrim-canvas {
+        width: 460px;
+      }
+    }
+
+    /* =================================================================== */
+    /* 5. COVER SCREEN (STARLIT CELESTIAL ROMANCE)                         */
+    /* =================================================================== */
+    .cover-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: var(--bg-dark);
+      background-image:
+        radial-gradient(circle at 50% 25%, color-mix(in srgb, var(--accent) 25%, transparent) 0%, transparent 65%),
+        url("{{landingCoverUrl}}");
+      background-size: cover;
+      background-position: center;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 1.5rem;
+      transition: transform 0.95s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s ease, visibility 0s linear 0.95s;
+      overflow: hidden;
+    }
+
+    @media (min-width: 900px) {
+      .cover-overlay,
+      .cover-screen {
+        width: 460px;
+        left: calc(100% - 460px);
+        right: 0;
+      }
+    }
+
+    .cover-overlay.opened,
+    .cover-screen.opened {
+      transform: translateY(-100%);
+      opacity: 0;
+      pointer-events: none;
+      visibility: hidden;
+    }
+
+    .cover-scrim {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--bg-dark) 78%, transparent) 0%,
+        color-mix(in srgb, var(--bg-dark) 92%, transparent) 100%
+      );
+      z-index: 1;
+    }
+
+    .cover-card {
+      position: relative;
+      z-index: 5;
+      width: 100%;
+      max-width: 390px;
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+      border-radius: var(--radius-lg);
+      /* Ruang bawah untuk buket di sudut bawah agar tidak menimpa tombol buka. */
+      padding: clamp(2rem, 5vh, 2.8rem) 1.5rem calc(clamp(2rem, 5vh, 2.8rem) + 2.6rem);
+      text-align: center;
+      box-shadow: 0 20px 50px color-mix(in srgb, var(--bg-dark) 45%, transparent);
+      animation: coverCardPop 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      overflow: visible;
+    }
+
+    @keyframes coverCardPop {
+      0% { opacity: 0; transform: translateY(30px) scale(0.96); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Baroque Mirror Mini Frame on Cover */
+    .cover-mirror-badge {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 12px;
+      filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.25));
+      animation: gentleFloat 6s ease-in-out infinite;
+      display: block;
+    }
+
+    @keyframes gentleFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    /* Buket cat air berpita mint: kedua aset digambar tumbuh dari pangkal pita di bawah (frame-2 condong ke kanan untuk
+       sudut kiri, frame-1 condong ke kiri untuk sudut kanan), jadi dipasang di sudut bawah kartu tanpa dibalik. */
+    .card-floral-starlit {
+      position: absolute;
+      bottom: -34px;
+      width: clamp(92px, 27vw, 128px);
+      height: auto;
+      pointer-events: none;
+      z-index: 10;
+      filter: drop-shadow(0 6px 14px color-mix(in srgb, var(--bg-dark) 22%, transparent));
+    }
+
+    .card-floral-left {
+      left: -40px;
+      transform-origin: 40% 100%;
+      animation: floralSwayL 7s ease-in-out infinite;
+    }
+
+    .card-floral-right {
+      right: -40px;
+      transform-origin: 60% 100%;
+      animation: floralSwayR 7.5s ease-in-out infinite;
+    }
+
+    @keyframes floralSwayL {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(2.5deg); }
+    }
+    @keyframes floralSwayR {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(-2.5deg); }
+    }
+
+    .cover-badge-pill {
+      display: inline-block;
+      padding: 5px 18px;
+      border-radius: var(--radius-full);
+      background: var(--glass-bg);
+      border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+      color: var(--text-main);
+      font-size: 0.72rem;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 0.8rem;
+    }
+
+    .cover-names {
+      font-size: clamp(2.4rem, 8.5vw, 3.4rem);
+      line-height: 1.15;
+      color: var(--text-main);
+      margin: 0.2rem 0 0.8rem;
+      font-weight: 500;
+    }
+
+    .cover-names span {
+      display: inline-block;
+      font-family: var(--lux-font-romland-3);
+      color: var(--accent);
+      margin: 0 0.25rem;
+      font-size: 0.95em;
+    }
+
+    .cover-date-row {
+      font-size: 0.86rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 1.4rem;
+    }
+
+    .cover-guest-box {
+      margin-top: 1rem;
+      padding: 1rem 1.2rem;
+      background: color-mix(in srgb, var(--primary) 6%, transparent);
+      border: 1px dashed color-mix(in srgb, var(--accent) 40%, transparent);
+      border-radius: var(--radius-md);
+      margin-bottom: 1.5rem;
+    }
+
+    .cover-guest-lbl {
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 0.35rem;
+      display: block;
+    }
+
+    .cover-guest-name {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: 0.02em;
+    }
+
+    .btn-open-starlit {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 13px 26px;
+      border-radius: var(--radius-full);
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: #ffffff;
+      border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+      font-size: 0.84rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 8px 24px color-mix(in srgb, var(--primary) 45%, transparent);
+      transition: all 0.3s ease;
+    }
+
+    .btn-open-starlit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px color-mix(in srgb, var(--primary) 60%, transparent);
+    }
+
+    .btn-open-starlit svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+      transition: transform 0.3s ease;
+    }
+
+    .btn-open-starlit:hover svg {
+      transform: translateX(4px);
+    }
+
+    /* =================================================================== */
+    /* 6. MAIN CONTENT SECTIONS                                             */
+    /* =================================================================== */
+    .main-content {
+      position: relative;
+      z-index: 10;
+      padding-bottom: 90px;
+    }
+
+    .sec-flow {
+      padding: 3.5rem 1.5rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .sec-eyebrow {
+      display: inline-block;
+      font-size: 0.72rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .sec-main-title {
+      font-size: clamp(1.8rem, 5vw, 2.3rem);
+      color: var(--text-main);
+      line-height: 1.25;
+      margin-bottom: 0.75rem;
+    }
+
+    .sec-sub {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      max-width: 360px;
+      margin: 0 auto 1.8rem;
+      line-height: 1.6;
+    }
+
+    /* Latar bawaan dan foto klien gelap, sedangkan kartu kaca dibuat bening agar latar terlihat jelas: seluruh teks di
+       undangan (di latar maupun di kartu) memakai tinta terang. */
+    .main-content section,
+    .cover-card {
+      --text-main: var(--bg-light);
+      --text-muted: color-mix(in srgb, var(--bg-light) 82%, transparent);
+      color: var(--text-main);
+      text-shadow: 0 1px 12px color-mix(in srgb, var(--bg-dark) 55%, transparent);
+    }
+
+    .sec-emblem {
+      display: block;
+      width: 58px;
+      height: 58px;
+      margin: 0 auto 0.7rem;
+      filter: drop-shadow(0 4px 12px color-mix(in srgb, var(--accent) 30%, transparent));
+    }
+
+    /* Kartu buatan mesin (rekening hadiah, ucapan tamu) disamakan dengan kaca tema; bawaan modul hampir bening dengan
+       garis currentColor gelap. */
+    .bank-card,
+    .wish-item {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+    }
+
+    .bank-row {
+      background: color-mix(in srgb, var(--bg-light) 10%, transparent);
+      border: 1px solid var(--glass-border);
+      opacity: 1;
+    }
+
+    /* modules.css memberi .btn-copy background: currentColor sekaligus color: var(--bg-dark), sehingga latar dan teks
+       tombol sama warnanya (tombol "Salin" tidak terbaca). */
+    .btn-copy {
+      background: var(--accent);
+      color: var(--bg-dark);
+      text-shadow: none;
+    }
+
+    /* Mesin menaruh kartu sesi langsung di pembungkus .reveal master (tanpa .events-sessions-stack), jadi jaraknya diatur
+       di sini. */
+    .event-block-item + .event-block-item {
+      margin-top: 1.2rem;
+    }
+
+    /* HERO SECTION */
+    .sec-home {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 4rem 1.5rem 3rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-mirror-wrap {
+      position: relative;
+      width: clamp(250px, 68vw, 300px);
+      margin: 0 auto 1.2rem;
+    }
+
+    /* midnight-frame.webp = midnight-icon.webp dengan kaca cermin dibuat transparan, sehingga ukiran, bunga, dan pita
+       menutup tepi foto. */
+    .hero-mirror-frame {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      height: auto;
+      display: block;
+      filter: drop-shadow(0 12px 30px color-mix(in srgb, var(--bg-dark) 35%, transparent));
+    }
+
+    /* Foto slot HOME_PHOTO di belakang bingkai, oval sedikit lebih besar dari lubang kaca (x 27.4-72.5%, y 16.5-67.8%
+       pada aset 1000x1000) agar tidak ada celah di tepi ukiran. */
+    .hero-photo-inside {
+      position: absolute;
+      top: 15.5%;
+      left: 26.4%;
+      width: 47.2%;
+      height: 53.4%;
+      border-radius: 50%;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    .hero-photo-inside img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 1.2s ease;
+    }
+
+    .hero-mirror-wrap:hover .hero-photo-inside img {
+      transform: scale(1.06);
+    }
+
+    .hero-names {
+      font-size: clamp(2.4rem, 8vw, 3.2rem);
+      color: var(--text-main);
+      line-height: 1.15;
+      margin: 0.3rem 0;
+    }
+
+    .hero-names span {
+      font-family: var(--lux-font-romland-3);
+      color: var(--accent);
+      margin: 0 0.25rem;
+    }
+
+    .hero-date-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 18px;
+      border-radius: var(--radius-full);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      color: var(--text-main);
+      font-size: 0.8rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-top: 0.6rem;
+      margin-bottom: 1.8rem;
+    }
+
+    /* COUNTDOWN TIMER */
+    .countdown-wrap {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      max-width: 360px;
+      margin: 0 auto 1.5rem;
+    }
+
+    .countdown-card {
+      flex: 1;
+      padding: 10px 6px;
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-sm);
+      text-align: center;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .cd-number {
+      display: block;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.2;
+      font-family: var(--lux-font-cinzel);
+    }
+
+    .cd-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-top: 3px;
+      display: block;
+    }
+
+    .btn-cal-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 20px;
+      border-radius: var(--radius-full);
+      background: transparent;
+      border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+      color: var(--text-main);
+      font-size: 0.76rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+
+    .btn-cal-link:hover {
+      background: color-mix(in srgb, var(--primary) 12%, transparent);
+      border-color: var(--primary);
+    }
+
+    /* QUOTE SECTION */
+    .quote-box {
+      max-width: 390px;
+      margin: 0 auto;
+      padding: 2.2rem 1.6rem;
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-soft);
+      position: relative;
+    }
+
+    .quote-greeting {
+      font-size: 1.8rem;
+      color: var(--text-main);
+      margin-bottom: 1rem;
+      line-height: 1.3;
+    }
+
+    .quote-body {
+      font-size: 0.9rem;
+      font-style: italic;
+      color: var(--text-main);
+      line-height: 1.8;
+      margin-bottom: 1.2rem;
+    }
+
+    .quote-ref {
+      font-size: 0.78rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* COUPLE SECTION */
+    .couple-cards-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      max-width: 380px;
+      margin: 0 auto;
+    }
+
+    .couple-card {
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 1.8rem 1.4rem;
+      box-shadow: var(--shadow-soft);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .couple-avatar-wrap {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      margin: 0 auto 1.2rem;
+      padding: 4px;
+      border: 2px solid var(--accent);
+      box-shadow: 0 8px 20px color-mix(in srgb, var(--primary) 20%, transparent);
+      overflow: hidden;
+    }
+
+    .couple-avatar-wrap img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .couple-name {
+      font-size: 1.35rem;
+      color: var(--text-main);
+      margin-bottom: 0.4rem;
+    }
+
+    .couple-parent-text {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+
+    .couple-parent-text strong {
+      color: var(--text-main);
+    }
+
+    .btn-ig-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      border-radius: var(--radius-full);
+      background: var(--glass-bg);
+      border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+      color: var(--text-main);
+      font-size: 0.74rem;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.25s ease;
+    }
+
+    .btn-ig-pill:hover {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .couple-divider-amp {
+      font-family: var(--lux-font-romland-3);
+      font-size: 3rem;
+      color: var(--accent);
+      line-height: 1;
+      margin: -0.5rem 0;
+    }
+
+    /* EVENTS & AGENDA (BLUEPRINT TOKEN INJECTION) */
+    .events-unified-container {
+      max-width: 390px;
+      margin: 0 auto;
+    }
+
+    .events-sessions-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      margin-bottom: 1.4rem;
+    }
+
+    .event-block-item {
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 1.5rem 1.2rem;
+      text-align: center;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .ev-cat {
+      display: inline-block;
+      padding: 3px 12px;
+      border-radius: var(--radius-full);
+      background: var(--glass-bg);
+      border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+      color: var(--text-main);
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+
+    .ev-name {
+      font-size: 1.25rem;
+      color: var(--text-main);
+      margin-bottom: 0.4rem;
+    }
+
+    .ev-time {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .event-unified-venue-card {
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 1.5rem 1.2rem;
+      text-align: center;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .venue-card-lbl {
+      display: block;
+      font-size: 0.7rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+
+    .ev-venue {
+      font-size: 1.2rem;
+      color: var(--text-main);
+      margin-bottom: 0.4rem;
+    }
+
+    .ev-addr {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 1.2rem;
+    }
+
+    .btn-map-outline {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 9px 22px;
+      border-radius: var(--radius-full);
+      background: var(--primary);
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 0.76rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 18px color-mix(in srgb, var(--primary) 35%, transparent);
+    }
+
+    .btn-map-outline:hover {
+      background: var(--secondary);
+      transform: translateY(-2px);
+    }
+
+    /* STORY SECTION */
+    .journey-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      max-width: 390px;
+      margin: 0 auto;
+    }
+
+    .story-chapter-block {
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 1.4rem 1.2rem;
+      text-align: left;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .sc-label {
+      display: inline-block;
+      font-size: 0.68rem;
+      letter-spacing: 0.2em;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+    }
+
+    .sc-title {
+      font-size: 1.15rem;
+      color: var(--text-main);
+      margin-bottom: 0.5rem;
+    }
+
+    .sc-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.65;
+    }
+
+    .journey-footer {
+      margin-top: 1.8rem;
+      text-align: center;
+    }
+
+    .jf-signature {
+      font-family: var(--lux-font-geraldo-island-3);
+      font-size: 1.6rem;
+      color: var(--text-main);
+    }
+
+    /* GALLERY GRID */
+    .gallery-grid-clean {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .moment-photo-item {
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      aspect-ratio: 1 / 1;
+      cursor: pointer;
+      position: relative;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--glass-border);
+    }
+
+    .moment-photo-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.6s ease;
+    }
+
+    .moment-photo-item:hover img {
+      transform: scale(1.08);
+    }
+
+    /* GIFT & REKENING */
+    .gift-cards-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      max-width: 380px;
+      margin: 0 auto;
+    }
+
+    .gift-bank-card {
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 1.5rem 1.2rem;
+      text-align: center;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .gb-bank-name {
+      display: block;
+      font-size: 1.2rem;
+      color: var(--primary);
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+
+    .gb-account-num {
+      display: block;
+      font-size: 1.15rem;
+      letter-spacing: 0.12em;
+      color: var(--text-main);
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+      font-family: monospace;
+    }
+
+    .gb-account-owner {
+      display: block;
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+
+    .btn-copy-gift {
+      padding: 7px 18px;
+      border-radius: var(--radius-full);
+      background: color-mix(in srgb, var(--primary) 12%, transparent);
+      border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+      color: var(--primary);
+      font-size: 0.74rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .btn-copy-gift:hover {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    /* DRESS CODE PALETTE PILLS */
+    .dresscode-palette-row {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .dress-color-pill {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 2px solid var(--bg-light);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+      transition: transform 0.25s ease;
+    }
+
+    .dress-color-pill:hover {
+      transform: scale(1.15);
+    }
+
+    /* WISHES & RSVP FORM */
+    .rsvp-form-card {
+      max-width: 390px;
+      margin: 0 auto 2rem;
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 1.8rem 1.4rem;
+      box-shadow: var(--shadow-soft);
+      text-align: left;
+    }
+
+    .form-group {
+      margin-bottom: 1.1rem;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.76rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
+      background: var(--bg-light);
+      color: var(--text-main);
+      font-size: 0.88rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.25s ease;
+    }
+
+    .form-control:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
+    }
+
+    textarea.form-control {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .btn-submit-rsvp {
+      width: 100%;
+      padding: 12px 20px;
+      border-radius: var(--radius-full);
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: #ffffff;
+      border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 8px 20px color-mix(in srgb, var(--primary) 40%, transparent);
+      transition: all 0.3s ease;
+      margin-top: 0.5rem;
+    }
+
+    .btn-submit-rsvp:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px color-mix(in srgb, var(--primary) 55%, transparent);
+    }
+
+    .wishes-stream-wrap {
+      max-width: 390px;
+      margin: 0 auto;
+      max-height: 360px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    /* CLOSING SECTION */
+    .sec-closing {
+      padding: 4rem 1.5rem 3rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .closing-photo-wrap {
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      margin: 0 auto 1.5rem;
+      overflow: hidden;
+      border: 3px solid var(--accent);
+      box-shadow: 0 10px 30px color-mix(in srgb, var(--primary) 25%, transparent);
+    }
+
+    .closing-photo-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .closing-quote {
+      font-size: 0.92rem;
+      color: var(--text-main);
+      line-height: 1.7;
+      max-width: 380px;
+      margin: 0 auto 1rem;
+    }
+
+    .closing-sub {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      margin-bottom: 1.8rem;
+    }
+
+    .closing-sign {
+      font-size: 2.4rem;
+      color: var(--text-main);
+      margin-bottom: 1rem;
+    }
+
+    /* =================================================================== */
+    /* 7. FLOATING DOCK, AUDIO FAB & MODAL                                  */
+    /* =================================================================== */
+    .bottom-dock {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: color-mix(in srgb, var(--bg-light) 92%, transparent);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-full);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @media (min-width: 900px) {
+      .bottom-dock {
+        left: calc(100% - 230px);
+      }
+    }
+
+    .bottom-dock.dock-hidden {
+      transform: translateX(-50%) translateY(120%);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .dock-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 6px 10px;
+      border-radius: var(--radius-full);
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.62rem;
+      font-weight: 600;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .dock-btn svg {
+      width: 17px;
+      height: 17px;
+      fill: currentColor;
+    }
+
+    .dock-btn:hover,
+    .dock-btn.active {
+      color: var(--primary);
+      background: color-mix(in srgb, var(--primary) 12%, transparent);
+    }
+
+    /* Tombol musik satu nama disuntikkan mesin (#musicFab, gaya inline); gaya Starlit dipasang dengan !important. */
+    #musicFab {
+      position: fixed !important;
+      bottom: 80px !important;
+      right: 20px !important;
+      width: 44px !important;
+      height: 44px !important;
+      border-radius: 50% !important;
+      background: color-mix(in srgb, var(--bg-light) 92%, transparent) !important;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border) !important;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      color: var(--primary) !important;
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 999 !important;
+      transition: all 0.35s ease;
+    }
+
+    @media (min-width: 900px) {
+      #musicFab {
+        right: 24px !important;
+      }
+    }
+
+    #musicFab.fab-hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.6);
+    }
+
+    #musicFab.playing svg {
+      animation: spinRecord 5s linear infinite;
+    }
+
+    @keyframes spinRecord {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* MODAL TIKET QR */
+    .modal-bg {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      z-index: 10000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-bg.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 360px;
+      background: var(--bg-light);
+      border-radius: var(--radius-lg);
+      padding: 2rem 1.5rem;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      position: relative;
+      text-align: center;
+      transform: translateY(20px) scale(0.96);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      border: 1px solid var(--glass-border);
+    }
+
+    .modal-bg.open .modal-card {
+      transform: translateY(0) scale(1);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      background: var(--bg-light);
+      color: var(--lux-c-333333);
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* LIGHTBOX ZOOM */
+    .lightbox-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.92);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10001;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .lightbox-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .lightbox-overlay img {
+      max-width: 90vw;
+      max-height: 85vh;
+      border-radius: var(--radius-md);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    }
+
+    .lightbox-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    /* SCROLL REVEAL ANIMATIONS */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .reveal.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .delay-1 { transition-delay: 0.12s; }
+    .delay-2 { transition-delay: 0.24s; }
+    .delay-3 { transition-delay: 0.36s; }
+
+    /* FLYING BIRDS LOTTIE LAYER */
+    .starlit-birds-layer {
+      position: absolute;
+      top: 6%;
+      left: 0;
+      width: 100%;
+      height: 180px;
+      pointer-events: none;
+      z-index: 8;
+      overflow: hidden;
+      opacity: 0.88;
+    }
+
+    /* TWINKLING STARS SPARKLE */
+    .stars-sparkle-container {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+      overflow: hidden;
+    }
+
+    .sparkle-star {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: var(--accent);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent);
+      animation: starTwinkle 3.2s ease-in-out infinite;
+    }
+
+    @keyframes starTwinkle {
+      0%, 100% { opacity: 0.12; transform: scale(0.6); }
+      50% { opacity: 0.95; transform: scale(1.3); filter: drop-shadow(0 0 6px #ffffff); }
+    }
+
+    /* Jembatan kontrak satu nama: seksi mesin (QR, galeri, kado, seksi tambahan, kenangan, RSVP) memakai .sec-block,
+       .sec-lbl, dan .sec-h2; gayanya disamakan dengan .sec-flow, .sec-eyebrow, dan .sec-main-title Starlit. */
+    .sec-block {
+      padding: 3.5rem 1.5rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .sec-lbl {
+      display: inline-block;
+      font-size: 0.72rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .sec-h2 {
+      font-size: clamp(1.8rem, 5vw, 2.3rem);
+      color: var(--text-main);
+      line-height: 1.25;
+      margin-bottom: 0.75rem;
+      overflow-wrap: break-word;
+    }
+
+    #rsvp .rsvp-card-box > .sec-lbl { display: none !important; }
+
+    /* Modul mesin memakai var(--card-bg) dan menulis label/tautan dengan var(--primary) (teal gelap) yang tenggelam di
+       kanvas gelap Starlit; di sini dipetakan ke kaca tema dan var(--accent). */
+    .main-content {
+      --card-bg: var(--glass-bg);
+    }
+
+    #event {
+      --event-accent: var(--accent);
+    }
+
+    #event .event-block-item .btn-map-outline {
+      color: var(--bg-light) !important;
+      text-decoration: none !important;
+      padding: 9px 22px !important;
+      font-size: 0.72rem !important;
+    }
+
+    #universalWishesList,
+    .closing-brand {
+      --primary: var(--accent);
+    }
+
+    #memories a[href$="/memories"] {
+      color: var(--accent) !important;
+    }
+
+    #rsvp input::placeholder,
+    #rsvp textarea::placeholder {
+      color: var(--text-muted);
+      opacity: 0.7;
+    }
+
+    .cover-names,
+    .hero-names,
+    .sidebar-desktop-names,
+    .closing-sign,
+    .ev-name,
+    .sec-main-title {
+      overflow-wrap: break-word;
+      word-break: break-word;
+    }
+
+    .cover-intro {
+      font-size: 0.82rem;
+      line-height: 1.6;
+      color: var(--text-muted);
+      max-width: 320px;
+      margin: -0.6rem auto 0;
+    }
+
+    .couple-role-pill {
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 0.2rem 0 0.4rem;
+      font-weight: 600;
+    }
+
+    .couple-parent-text p { margin: 0; }
+
+    .closing-emblem-wrap {
+      margin-top: 1.2rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .closing-emblem-line {
+      height: 1px;
+      width: 48px;
+      background: color-mix(in srgb, var(--accent) 40%, transparent);
+    }
+
+    .closing-emblem-icon {
+      width: 38px;
+      height: 38px;
+      opacity: 0.85;
+    }
+
+    .closing-brand {
+      margin-top: 1.6rem;
+      font-size: 0.7rem;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- =================================================================== -->
+  <!-- TIGA LAPISAN KANVAS LATAR                                           -->
+  <!-- =================================================================== -->
+  <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
+  <div class="scrim-canvas" aria-hidden="true"></div>
+
+  <!-- =================================================================== -->
+  <!-- SAMPUL UNDANGAN (COVER OVERLAY)                                     -->
+  <!-- =================================================================== -->
+  <div id="coverScreen" class="cover-screen cover-overlay">
+    <div class="cover-scrim"></div>
+    <div id="birdsLottieCover" class="starlit-birds-layer"></div>
+    <div class="stars-sparkle-container" id="starsCover"></div>
+
+    <div class="cover-card">
+      <img src="/assets/ornaments/starlit-dreams/couple-frame-2.webp" alt="" aria-hidden="true" class="card-floral-starlit card-floral-left" />
+      <img src="/assets/ornaments/starlit-dreams/couple-frame-1.webp" alt="" aria-hidden="true" class="card-floral-starlit card-floral-right" />
+
+      <img src="/assets/ornaments/starlit-dreams/midnight-icon.webp" alt="" aria-hidden="true" class="cover-mirror-badge" />
+
+      <span class="cover-badge-pill" data-lux-field="customLabels.coverBadge">{{eventLabel}}</span>
+      <h1 class="cover-names">{{mainNickname}}</h1>
+      <p class="cover-date-row">{{eventDateFormatted}}</p>
+      <p class="cover-intro" data-lux-field="customLabels.coverSubtitle">{{eventIntro}}</p>
+
+      <div class="cover-guest-box">
+        <span class="cover-guest-lbl">Kepada Yth. Bapak/Ibu/Saudara/i:</span>
+        <div id="coverGuestName" class="cover-guest-name">{{guestName}}</div>
+      </div>
+
+      <button id="openInvitationBtn" class="btn-open-starlit btn-buka" onclick="openInvitation()">
+        <span data-lux-field="customLabels.openBtn">Buka Undangan</span>
+        <svg viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- STRUKTUR LAYOUT DESKTOP SPLIT & MOBILE                              -->
+  <!-- =================================================================== -->
+  <div class="layout-wrapper">
+
+    <aside class="sidebar-desktop" aria-hidden="true">
+      <div class="sidebar-desktop-content">
+        <p class="sidebar-desktop-tagline">{{eventLabel}}</p>
+        <h2 class="sidebar-desktop-names">{{mainNickname}}</h2>
+        <p class="sidebar-desktop-date">{{eventDateFormatted}}</p>
+        <p class="sidebar-desktop-quote">{{eventIntro}}</p>
+      </div>
+    </aside>
+
+    <main class="app-container main-scroll-panel">
+      <div class="main-content">
+
+        <!-- 1. HERO -->
+        <section class="sec-home" id="home">
+          <div id="birdsLottieHero" class="starlit-birds-layer"></div>
+          <div class="stars-sparkle-container" id="starsHero"></div>
+
+          <div class="hero-mirror-wrap reveal">
+            <img src="/assets/ornaments/starlit-dreams/midnight-frame.webp" alt="" aria-hidden="true" class="hero-mirror-frame" />
+            <div class="hero-photo-inside">
+              {{#if hasCustomHomePhoto}}<img src="{{homePhotoUrl}}" alt="{{mainName}}" />{{/if}}{{#unless hasCustomHomePhoto}}<img src="{{mainPhotoUrl}}" alt="{{mainName}}" />{{/unless}}
+            </div>
+          </div>
+
+          <span class="sec-eyebrow reveal delay-1">{{eventLabel}}</span>
+          <h2 class="hero-names reveal delay-2">{{mainNickname}}</h2>
+          <div class="hero-date-badge reveal delay-3">{{eventDateFormatted}}</div>
+
+          <div class="countdown-wrap reveal delay-3">
+            <div class="countdown-card">
+              <span class="cd-number" id="cdDays">00</span>
+              <span class="cd-label">Hari</span>
+            </div>
+            <div class="countdown-card">
+              <span class="cd-number" id="cdHours">00</span>
+              <span class="cd-label">Jam</span>
+            </div>
+            <div class="countdown-card">
+              <span class="cd-number" id="cdMins">00</span>
+              <span class="cd-label">Menit</span>
+            </div>
+            <div class="countdown-card">
+              <span class="cd-number" id="cdSecs">00</span>
+              <span class="cd-label">Detik</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. SAPAAN PEMBUKA -->
+        <section class="sec-flow" id="quote">
+          <div class="quote-box reveal">
+            <span class="sec-eyebrow" data-lux-field="customLabels.quoteEyebrow">Anda Diundang</span>
+            <h2 class="sec-main-title serif">{{mainNickname}}</h2>
+            {{#if mainInfoLine}}<div class="quote-greeting">{{mainInfoLine}}</div>{{/if}}
+            {{#if openingQuote}}<blockquote class="quote-body" data-lux-field="openingQuote">{{openingQuote}}</blockquote>{{/if}}
+            {{#if openingQuoteRef}}<cite class="quote-ref" data-lux-field="openingQuoteRef">{{openingQuoteRef}}</cite>{{/if}}
+          </div>
+        </section>
+
+        <!-- 3. PROFIL TOKOH -->
+        <section class="sec-flow" id="profile">
+          <img src="/assets/ornaments/starlit-dreams/midnight-icon.webp" alt="" aria-hidden="true" class="sec-emblem reveal" />
+          <span class="sec-eyebrow reveal" data-lux-field="customLabels.coupleEyebrow">{{profileEyebrow}}</span>
+          <h2 class="sec-main-title serif reveal delay-1" data-lux-field="customLabels.coupleTitle">{{profileTitle}}</h2>
+          <p class="sec-sub reveal delay-2" data-lux-field="customLabels.coupleSub">{{profileSub}}</p>
+
+          <div class="couple-cards-stack">
+            <div class="couple-card reveal">
+              <div class="couple-avatar-wrap">
+                <img src="{{mainPhotoUrl}}" alt="{{mainName}}" />
+              </div>
+              <h3 class="couple-name serif">{{mainName}}</h3>
+              {{#if mainInfoLine}}<p class="couple-role-pill">{{mainInfoLine}}</p>{{/if}}
+              {{#if mainDetailLine}}<p class="couple-parent-text">{{mainDetailLine}}</p>{{/if}}
+              <div class="couple-parent-text">{{parentsHtml}}</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. WAKTU & TEMPAT -->
+        <section class="sec-flow" id="event">
+          <img src="/assets/ornaments/starlit-dreams/midnight-icon.webp" alt="" aria-hidden="true" class="sec-emblem reveal" />
+          <h2 class="sec-main-title serif reveal delay-1" data-lux-field="customLabels.eventsTitle">{{agendaTitle}}</h2>
+          <p class="sec-sub reveal delay-2">{{eventDateFormatted}}</p>
+
+          <div class="reveal delay-3">
+            {{eventSectionHtml}}
+          </div>
+        </section>
+
+        {{qrPassHtml}}
+
+        {{gallerySectionHtml}}
+
+        {{giftSectionHtml}}
+
+        {{extraSectionsHtml}}
+
+        <!-- 5. KONFIRMASI KEHADIRAN & UCAPAN (form dan daftar ucapan dari mesin satu nama) -->
+        <section class="sec-flow" id="rsvp">
+          <img src="/assets/ornaments/starlit-dreams/midnight-icon.webp" alt="" aria-hidden="true" class="sec-emblem reveal" />
+          <span class="sec-eyebrow reveal" data-lux-field="customLabels.wishesEyebrow">Konfirmasi</span>
+          {{rsvpSectionHtml}}
+          {{wishesSectionHtml}}
+        </section>
+
+        {{memoriesSectionHtml}}
+
+        <!-- 6. PENUTUP -->
+        <section class="sec-closing" id="closing">
+          {{#if hasClosingPhoto}}<div class="closing-photo-wrap reveal"><img src="{{closingPhotoUrl}}" alt="{{mainName}}" /></div>{{/if}}
+          <p class="closing-quote reveal delay-1" data-lux-field="customLabels.closingText">{{closingText}}</p>
+          <p class="closing-sub reveal delay-2" data-lux-field="customLabels.closingTitle">Terima Kasih</p>
+          <h3 class="closing-sign serif reveal delay-3">{{mainNickname}}</h3>
+          <p class="closing-sub reveal delay-3">{{eventDateFormatted}}</p>
+          <div class="closing-emblem-wrap reveal delay-3">
+            <div class="closing-emblem-line"></div>
+            <img src="/assets/ornaments/starlit-dreams/midnight-icon.webp" alt="" aria-hidden="true" class="closing-emblem-icon" />
+            <div class="closing-emblem-line"></div>
+          </div>
+          <div class="closing-brand">{{brandWatermarkHtml}}</div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- FLOATING NAVIGATION DOCK                                            -->
+  <!-- =================================================================== -->
+  <nav class="bottom-dock dock-hidden">
+    <a href="#home" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <span>Home</span>
+    </a>
+    <a href="#profile" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      <span>Profil</span>
+    </a>
+    <a href="#event" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+      <span>Acara</span>
+    </a>
+    <a href="#gallery" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+      <span>Galeri</span>
+    </a>
+    <a href="#rsvp" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+      <span>RSVP</span>
+    </a>
+  </nav>
+
+  <!-- LIGHTBOX GALLERY -->
+  <div class="lightbox-overlay" id="luxLightbox" onclick="luxCloseZoom()">
+    <button class="lightbox-close" onclick="luxCloseZoom()" aria-label="Tutup Zoom">✕</button>
+    <img id="luxLightboxImg" src="" alt="Zoom Foto" onclick="event.stopPropagation()" />
+  </div>
+
+  <script>
+    // A. Smart Mobile Fullscreen
+    function requestSmartFullscreen() {
+      const isMobile = window.innerWidth <= 1024 || ("ontouchstart" in window) || (navigator.maxTouchPoints > 0);
+      if (!isMobile) return;
+      try {
+        const docEl = document.documentElement;
+        const req = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+        if (req) {
+          const res = req.call(docEl);
+          if (res && res.catch) res.catch(function () {});
+        }
+      } catch (err) {}
+    }
+
+    // B. Buka Undangan. Audio dan tombol musik disuntikkan mesin di akhir body, jadi dicari saat dipakai.
+    function openInvitation() {
+      requestSmartFullscreen();
+      const cover = document.getElementById("coverScreen");
+      if (cover) {
+        cover.classList.add("opened");
+        cover.style.pointerEvents = "none";
+        setTimeout(function () {
+          cover.style.display = "none";
+        }, 950);
+      }
+      const fab = document.getElementById("musicFab");
+      if (fab) fab.classList.remove("fab-hidden");
+      const dock = document.querySelector(".bottom-dock");
+      if (dock) dock.classList.remove("dock-hidden");
+
+      const audio = document.getElementById("luxAudioPlayer");
+      if (audio && !window.__DISABLE_AUDIO__ && window === window.top) {
+        audio.play().then(function () {
+          if (fab) fab.classList.add("playing");
+        }).catch(function () {});
+      }
+
+      setTimeout(function () {
+        triggerScrollReveal();
+        startCountdown();
+      }, 300);
+    }
+
+    // C. Nama tamu dari ?to= / ?u=; tanpa parameter, sapaan bawaan mesin dibiarkan.
+    function resolveGuestName() {
+      const p = new URLSearchParams(window.location.search);
+      const gn = p.get("to") || p.get("u") || "";
+      if (!gn) return;
+      const coverGn = document.getElementById("coverGuestName");
+      if (coverGn) coverGn.textContent = gn;
+      const passGn = document.getElementById("passGuestName");
+      if (passGn) passGn.textContent = gn;
+      const rsvpInput = document.getElementById("universalRsvpName");
+      if (rsvpInput && !rsvpInput.value) rsvpInput.value = gn;
+    }
+    resolveGuestName();
+    document.addEventListener("DOMContentLoaded", resolveGuestName);
+
+    // D. Toggle Audio (dipanggil tombol #musicFab mesin)
+    function luxToggleAudio() {
+      const audio = document.getElementById("luxAudioPlayer");
+      const fab = document.getElementById("musicFab");
+      if (!audio) return;
+      if (audio.paused) {
+        audio.play().then(function () {
+          if (fab) fab.classList.add("playing");
+        }).catch(function () {});
+      } else {
+        audio.pause();
+        if (fab) fab.classList.remove("playing");
+      }
+    }
+    window.luxToggleAudio = luxToggleAudio;
+    window.toggleAudio = luxToggleAudio;
+
+    // E. Salin Teks Rekening / Alamat
+    function copyText(text) {
+      if (!navigator.clipboard) {
+        const input = document.createElement("input");
+        input.value = text;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand("copy");
+        document.body.removeChild(input);
+      } else {
+        navigator.clipboard.writeText(text);
+      }
+      showCopyToast("Berhasil disalin: " + text);
+    }
+    window.copyText = copyText;
+    window.luxCopy = function(text, btn) {
+      copyText(text);
+      if (btn) {
+        const oldText = btn.textContent;
+        btn.textContent = "✓ Tersalin!";
+        setTimeout(function() { btn.textContent = oldText; }, 2000);
+      }
+    };
+
+    function showCopyToast(msg) {
+      let toast = document.getElementById("luxCopyToast");
+      if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "luxCopyToast";
+        toast.style.cssText = "position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--bg-dark); color:var(--bg-light); padding:10px 22px; border-radius:999px; font-size:13px; font-weight:600; box-shadow:0 10px 30px rgba(0,0,0,0.4); z-index:99999; border:1px solid color-mix(in srgb, var(--accent) 30%, transparent); transition:all 0.3s ease; opacity:0; pointer-events:none;";
+        document.body.appendChild(toast);
+      }
+      toast.textContent = msg;
+      toast.style.opacity = "1";
+      toast.style.transform = "translateX(-50%) translateY(0)";
+      clearTimeout(window._luxCopyToastTimer);
+      window._luxCopyToastTimer = setTimeout(function () {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateX(-50%) translateY(10px)";
+      }, 2200);
+    }
+
+    // F. Countdown Timer
+    function startCountdown() {
+      const target = new Date("{{countdownTarget}}").getTime();
+      function update() {
+        const diff = target - Date.now();
+        const elD = document.getElementById("cdDays");
+        const elH = document.getElementById("cdHours");
+        const elM = document.getElementById("cdMins");
+        const elS = document.getElementById("cdSecs");
+        if (!elD || !elH || !elM || !elS) return;
+        if (isNaN(diff) || diff <= 0) {
+          elD.textContent = "00";
+          elH.textContent = "00";
+          elM.textContent = "00";
+          elS.textContent = "00";
+          return;
+        }
+        elD.textContent = String(Math.floor(diff / 86400000)).padStart(2, "0");
+        elH.textContent = String(Math.floor((diff % 86400000) / 3600000)).padStart(2, "0");
+        elM.textContent = String(Math.floor((diff % 3600000) / 60000)).padStart(2, "0");
+        elS.textContent = String(Math.floor((diff % 60000) / 1000)).padStart(2, "0");
+      }
+      update();
+      setInterval(update, 1000);
+    }
+
+    // G. Lightbox Zoom
+    function luxOpenZoom(idx) {
+      const photos = document.querySelectorAll(".moment-photo-item img");
+      if (photos[idx]) {
+        const src = photos[idx].getAttribute("src");
+        const box = document.getElementById("luxLightbox");
+        const img = document.getElementById("luxLightboxImg");
+        if (box && img) {
+          img.src = src;
+          box.classList.add("open");
+        }
+      }
+    }
+    window.luxOpenZoom = luxOpenZoom;
+
+    function luxCloseZoom() {
+      const box = document.getElementById("luxLightbox");
+      if (box) box.classList.remove("open");
+    }
+    window.luxCloseZoom = luxCloseZoom;
+
+    // H. Scroll Reveal & Smart Outro Autohide
+    function triggerScrollReveal() {
+      const observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) {
+            e.target.classList.add("is-visible");
+          }
+        });
+      }, { threshold: 0.12 });
+
+      document.querySelectorAll(".reveal").forEach(function (el) {
+        observer.observe(el);
+      });
+    }
+
+    window.addEventListener("scroll", function () {
+      const dock = document.querySelector(".bottom-dock");
+      const fab = document.getElementById("musicFab");
+      const closing = document.getElementById("closing");
+      if (!closing || !dock) return;
+
+      const closingRect = closing.getBoundingClientRect();
+      const isNearFooter = closingRect.top < window.innerHeight - 70;
+
+      if (isNearFooter) {
+        dock.classList.add("dock-hidden");
+        if (fab) fab.classList.add("fab-hidden");
+      } else {
+        const cover = document.getElementById("coverScreen");
+        if (cover && cover.classList.contains("opened")) {
+          dock.classList.remove("dock-hidden");
+          if (fab) fab.classList.remove("fab-hidden");
+        }
+      }
+    }, { passive: true });
+
+    // I. Flying Birds Lottie & Starlit Twinkling Stars
+    function initStarlitEffects() {
+      if (typeof lottie !== "undefined") {
+        const coverContainer = document.getElementById("birdsLottieCover");
+        if (coverContainer) {
+          lottie.loadAnimation({
+            container: coverContainer,
+            renderer: "svg",
+            loop: true,
+            autoplay: true,
+            path: "/assets/lottie/starlit-dreams/birds.json"
+          });
+        }
+        const heroContainer = document.getElementById("birdsLottieHero");
+        if (heroContainer) {
+          lottie.loadAnimation({
+            container: heroContainer,
+            renderer: "svg",
+            loop: true,
+            autoplay: true,
+            path: "/assets/lottie/starlit-dreams/birds.json"
+          });
+        }
+      }
+
+      function createStars(containerId, count) {
+        const c = document.getElementById(containerId);
+        if (!c) return;
+        for (let i = 0; i < count; i++) {
+          const star = document.createElement("div");
+          star.className = "sparkle-star";
+          star.style.top = Math.random() * 95 + "%";
+          star.style.left = Math.random() * 95 + "%";
+          star.style.animationDelay = (Math.random() * 3).toFixed(2) + "s";
+          star.style.animationDuration = (2.2 + Math.random() * 2).toFixed(2) + "s";
+          c.appendChild(star);
+        }
+      }
+
+      createStars("starsCover", 24);
+      createStars("starsHero", 20);
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      triggerScrollReveal();
+      initStarlitEffects();
+    });
+
+    try {
+      const bc = new BroadcastChannel("lux_preview_sync");
+      bc.onmessage = (e) => {
+        if (e.data?.type === "INVITATION_SAVED") window.location.reload();
+      };
+    } catch {}
+  </script>
+
+  {{musicPlayerHtml}}
+</body>
+</html>

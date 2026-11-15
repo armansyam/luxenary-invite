@@ -1,0 +1,2044 @@
+<!--
+ _      _   _  __  __  _____   _   _      _     ____   __   __
+| |    | | | | \ \/ / | ____| | \ | |    / \   |  _ \  \ \ / /
+| |    | | | |  \  /  |  _|   |  \| |   / _ \  | |_) |  \ V / 
+| |___ | |_| |  /  \  | |___  | |\  |  / ___ \ |  _ <    | |  
+|_____| \___/  /_/\_\ |_____| |_| \_| /_/   \_\|_| \_\   |_|  
+
+  ==============================================================
+  STOP! PERHATIAN!
+  --------------------------------------------------------------
+  Sistem dan desain tema ini adalah milik eksklusif Luxenary.
+  Dilarang keras menyalin, menduplikasi, atau menjual ulang 
+  tanpa izin resmi dari pihak Luxenary (luxenary.id).
+  
+  Hak cipta dilindungi undang-undang.
+  ==============================================================
+-->
+<!--
+  MAKASSAR (ACARA) — versi satu nama dari tema pernikahan Makassar (themes/wedding/traditional/makassar.html).
+  Kontrak satu nama (seperti prisma): dapat dipakai ulang tahun, khitan, aqiqah, wisuda, dan acara umum.
+  CSS dan gaya sama dengan versi pernikahan; seksi mempelai diganti profil tokoh, RSVP dan modul dari mesin satu nama.
+-->
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>{{mainNickname}}</title>
+
+  <!-- THEME TYPOGRAPHY: Self-Hosted Local Google Fonts -->
+  <link rel="stylesheet" href="/fonts/fonts.css">
+  <link rel="stylesheet" href="/css/modules.css">
+
+  <style>
+    :root {
+      --primary: #6b0c14;
+      --secondary: #8e141e;
+      --accent: #dfb76c;
+      --bg-light: #fdf8f4;
+      --bg-dark: #140204;
+      --text-dark: #230808;
+      --makassar-red: var(--primary, #6b0c14);
+      --makassar-navy: var(--primary, #6b0c14);
+      --makassar-gold: var(--accent, #dfb76c);
+      --makassar-dark: var(--bg-dark, #140204);
+      --makassar-card: color-mix(in srgb, var(--primary, #6b0c14) 28%, var(--bg-dark, #140204) 86%);
+      --theme-card: var(--makassar-card);
+      --border-gold: color-mix(in srgb, var(--accent, #dfb76c) 35%, transparent);
+      --border-gold-bright: color-mix(in srgb, var(--accent, #dfb76c) 80%, transparent);
+      --gold-glow: color-mix(in srgb, var(--accent, #dfb76c) 25%, transparent);
+      --text-muted: color-mix(in srgb, #ffffff 75%, transparent);
+      --text-main: #ffffff;
+      --card-bg: var(--makassar-card);
+      --event-accent: var(--makassar-gold);
+      /* Ditambahkan tokenisasi master (warna dan huruf yang sebelumnya tertulis langsung). */
+      --lux-c-140204: #140204;
+      --lux-c-6b0c14: #6b0c14;
+      --lux-c-c5a059: #c5a059;
+      --lux-c-030914: #030914;
+      --lux-c-dfb76c: #dfb76c;
+      --lux-font-plus-jakarta-sans: 'Plus Jakarta Sans', sans-serif;
+      --lux-font-cinzel: 'Cinzel', 'Cinzel Decorative', serif;
+      --lux-font-great-vibes: 'Great Vibes', cursive;
+      --lux-font-cormorant-garamond: 'Cormorant Garamond', serif;
+      --lux-font-cinzel-2: 'Cinzel', serif;
+      --lux-font-cinzel-3: 'Cinzel', monospace;
+    }
+
+    ::selection {
+      background: color-mix(in srgb, var(--accent) 40%, transparent);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      overflow-x: hidden;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    body {
+      font-family: var(--lux-font-plus-jakarta-sans);
+      background-color: var(--bg-dark, var(--lux-c-140204));
+      color: #ffffff;
+      overflow-x: hidden;
+      width: 100%;
+      max-width: 100%;
+      position: relative;
+    }
+
+    /* FIXED BACKGROUND LAYER */
+    .fixed-bg-layer {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100vh;
+      background-image: linear-gradient(180deg,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 20%, transparent) 0%,
+          color-mix(in srgb, var(--primary, var(--lux-c-6b0c14)) 22%, transparent) 35%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 42%, transparent) 75%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 62%, transparent) 100%), url('/assets/ornaments/background/background-cream.webp');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .fixed-bg-layer.has-custom-bg {
+      background-image: linear-gradient(180deg,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 20%, transparent) 0%,
+          color-mix(in srgb, var(--primary, var(--lux-c-6b0c14)) 22%, transparent) 35%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 42%, transparent) 75%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 62%, transparent) 100%), var(--custom-bg);
+    }
+
+    /* TYPOGRAPHY CLASSES */
+    .font-makassar-title {
+      font-family: var(--lux-font-cinzel);
+      letter-spacing: 0.12em;
+    }
+
+    .font-makassar-accent {
+      font-family: var(--lux-font-great-vibes);
+    }
+
+    .font-makassar-quote {
+      font-family: var(--lux-font-cormorant-garamond);
+      font-style: italic;
+    }
+
+    .font-makassar-sans {
+      font-family: var(--lux-font-plus-jakarta-sans);
+    }
+
+    /* ANIMATIONS & MICRO-INTERACTIONS */
+    @keyframes phinisiFloat {
+
+      0%,
+      100% {
+        transform: translateY(0px) rotate(0deg);
+        filter: drop-shadow(0 8px 25px var(--gold-glow));
+      }
+
+      50% {
+        transform: translateY(-8px) rotate(-1deg);
+        filter: drop-shadow(0 14px 35px var(--border-gold-bright));
+      }
+    }
+
+    @keyframes pulseGlow {
+
+      0%,
+      100% {
+        opacity: 0.8;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 1;
+        transform: scale(1.04);
+      }
+    }
+
+    .reveal-on-scroll {
+      opacity: 0;
+      transform: translateY(25px);
+      transition: all 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .reveal-on-scroll.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+
+    /* MAKASSAR BORDER FRAMES (SEAMLESS REPEAT-X ARCHITECTURE) */
+    .makassar-frame-top {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 38px;
+      background-image: url('/assets/ornaments/bugis/frame-makassar-top.webp');
+      background-repeat: repeat-x;
+      background-position: top center;
+      background-size: auto 100%;
+      pointer-events: none;
+      z-index: 14;
+      opacity: 0.98;
+      filter: drop-shadow(0 3px 10px rgba(0, 0, 0, 0.55));
+    }
+
+    .cover-screen .makassar-frame-top {
+      height: 42px;
+    }
+
+    .makassar-frame-bottom {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 42px;
+      background-image: url('/assets/ornaments/bugis/frame-makassar-bottom.webp');
+      background-repeat: repeat-x;
+      background-position: bottom center;
+      background-size: auto 100%;
+      pointer-events: none;
+      z-index: 14;
+      opacity: 0.98;
+      filter: drop-shadow(0 -3px 10px rgba(0, 0, 0, 0.55));
+    }
+
+    .cover-screen .makassar-frame-bottom {
+      height: 46px;
+    }
+
+    /* COVER SCREEN (PORTAL GATEWAY) */
+    .cover-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background-color: var(--bg-dark, var(--lux-c-140204));
+      background-image: linear-gradient(180deg,
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 25%, transparent) 0%,
+        color-mix(in srgb, var(--primary, var(--lux-c-6b0c14)) 10%, transparent) 40%,
+        color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 65%, transparent) 100%),
+      url('{{landingCoverUrl}}'),
+      url('/assets/ornaments/background/bg-makassar.webp');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s cubic-bezier(0.77, 0, 0.175, 1), visibility 0s linear 0.85s;
+    }
+
+    .cover-screen.opened {
+      transform: translateY(-100%);
+      opacity: 0;
+      pointer-events: none;
+      visibility: hidden;
+    }
+
+    .cover-emblem-wrap {
+      width: 130px;
+      height: 120px;
+      margin-bottom: 1.25rem;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cover-emblem-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 6px 22px var(--gold-glow));
+      animation: phinisiFloat 6s ease-in-out infinite;
+    }
+
+    .cover-tagline {
+      font-size: 0.75rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--makassar-gold);
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+
+    .cover-names {
+      font-size: clamp(1.8rem, 6vw, 2.4rem);
+      line-height: 1.25;
+      color: #ffffff;
+      margin-bottom: clamp(1rem, 2.5vh, 1.5rem);
+      text-shadow: 0 4px 18px rgba(0, 0, 0, 0.7);
+      text-wrap: balance;
+    }
+
+    .cover-names span {
+      display: inline-block;
+      font-family: var(--lux-font-great-vibes);
+      font-size: clamp(1.6rem, 5.2vw, 2.2rem);
+      color: var(--makassar-gold);
+      margin: 0 clamp(0.25rem, 1vw, 0.5rem);
+      vertical-align: middle;
+      line-height: 1;
+    }
+
+    .cover-guest-box {
+      background: color-mix(in srgb, var(--primary, var(--lux-c-6b0c14)) 35%, var(--bg-dark, var(--lux-c-140204)) 80%);
+      border: 1px solid var(--border-gold);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-radius: 16px;
+      padding: 1.2rem 1.6rem;
+      margin-bottom: 1.75rem;
+      width: 100%;
+      max-width: 320px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .cover-guest-lbl {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .cover-guest-val {
+      font-family: var(--lux-font-cinzel-2);
+      font-size: 1.2rem;
+      color: #fff;
+      margin-top: 0.25rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    .btn-buka-undangan {
+      background: linear-gradient(135deg, var(--makassar-navy), color-mix(in srgb, var(--makassar-navy) 70%, #000));
+      color: #ffffff;
+      border: 1.5px solid var(--border-gold-bright);
+      padding: 0.85rem 2.2rem;
+      border-radius: 9999px;
+      font-family: var(--lux-font-plus-jakarta-sans);
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      box-shadow: 0 8px 24px var(--gold-glow);
+      transition: all 0.3s ease;
+      position: relative;
+      z-index: 20;
+    }
+
+    .btn-buka-undangan:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px var(--border-gold-bright);
+      border-color: var(--border-gold-bright);
+    }
+
+    /* DESKTOP SPLIT-SCREEN 460PX ARCHITECTURE */
+    .layout-wrapper {
+      position: relative;
+      width: 100%;
+      min-height: 100vh;
+      z-index: 2;
+    }
+
+    @media (min-width: 900px) {
+      .sidebar-desktop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: calc(100% - 460px);
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 4rem 3.5rem;
+        z-index: 10;
+        background-image: linear-gradient(to right,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 35%, transparent) 0%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 85%, transparent) 100%),
+        url('{{sidebarPhotoUrl}}'),
+        url('/assets/ornaments/background/bg-makassar.webp');
+        background-size: cover;
+        background-position: center;
+      }
+
+      .sidebar-desktop .sb-brand {
+        font-family: var(--lux-font-cinzel-2);
+        font-size: 1.1rem;
+        letter-spacing: 0.25em;
+        color: var(--makassar-gold);
+        margin-bottom: 1.5rem;
+        text-transform: uppercase;
+      }
+
+      .sidebar-desktop .sb-names {
+        font-family: var(--lux-font-cinzel-2);
+        font-size: 3.8rem;
+        color: #fff;
+        line-height: 1.1;
+        margin-bottom: 1.2rem;
+      }
+
+      .sidebar-desktop .sb-names span {
+        font-family: var(--lux-font-great-vibes);
+        color: var(--makassar-gold);
+        font-size: 3.4rem;
+        display: block;
+        margin: 0.2rem 0;
+      }
+
+      .sidebar-desktop .sb-date {
+        font-size: 1.05rem;
+        letter-spacing: 0.15em;
+        color: var(--text-muted);
+        text-transform: uppercase;
+      }
+
+      .sidebar-desktop-content {
+        position: relative;
+        z-index: 2;
+        max-width: 600px;
+      }
+
+      .sidebar-desktop-emblem {
+        width: clamp(100px, 9vw, 130px);
+        height: auto;
+        margin-bottom: 1.25rem;
+        filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+      }
+
+      .sidebar-desktop-quote {
+        font-family: var(--lux-font-cormorant-garamond);
+        font-style: italic;
+        font-size: 1.15rem;
+        line-height: 1.6;
+        color: color-mix(in srgb, #ffffff 88%, var(--makassar-gold));
+        margin-top: 1.5rem;
+        max-width: 480px;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+      }
+
+
+      .main-scroll-panel {
+        width: 460px !important;
+        margin-left: calc(100% - 460px) !important;
+        background: transparent !important;
+        border-left: 1px solid var(--border-gold);
+        box-shadow: -15px 0 45px rgba(0, 0, 0, 0.6);
+        min-height: 100vh;
+      }
+
+      .fixed-bg-layer {
+        width: 460px !important;
+        left: calc(100% - 460px) !important;
+      }
+
+      .bottom-dock {
+        left: calc(100% - 230px) !important;
+        transform: translate3d(-50%, 0, 0) !important;
+        width: calc(460px - 28px) !important;
+        max-width: calc(460px - 28px) !important;
+        box-sizing: border-box !important;
+        padding: 0.35rem 0.45rem !important;
+        gap: 0.15rem !important;
+        justify-content: space-around !important;
+      }
+
+      body.lux-at-home-zone .bottom-dock,
+      .bottom-dock.dock-hidden {
+        transform: translate3d(-50%, calc(100% + 48px), 0) !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+
+      .bottom-dock .dock-a,
+      .bottom-dock .dock-btn,
+      .bottom-dock .nav-item {
+        width: auto !important;
+        height: auto !important;
+        padding: 0.25rem 0.25rem !important;
+        font-size: 0.58rem !important;
+        letter-spacing: 0 !important;
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+      }
+
+      .bottom-dock .dock-a span,
+      .bottom-dock .dock-btn span,
+      .bottom-dock .nav-item span {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        font-size: 0.55rem !important;
+        max-width: 100% !important;
+      }
+
+      .bottom-dock .dock-a svg,
+      .bottom-dock .dock-btn svg,
+      .bottom-dock .nav-item svg {
+        width: 16px !important;
+        height: 16px !important;
+      }
+    }
+
+    @media (max-width: 899px) {
+      .sidebar-desktop {
+        display: none !important;
+      }
+
+      .main-scroll-panel {
+        width: 100% !important;
+        margin: 0 !important;
+      }
+    }
+
+    /* SECTIONS COMMON STYLING */
+    .sec-flow {
+      position: relative;
+      padding: clamp(3rem, 7vh, 4.5rem) clamp(1rem, 3.5vw, 1.8rem);
+      text-align: center;
+      z-index: 5;
+    }
+
+    .sec-quote {
+      padding-top: clamp(2.5rem, 5vh, 3.5rem);
+      padding-bottom: clamp(1rem, 2vh, 1.5rem);
+    }
+
+    .sec-couple {
+      padding-top: clamp(1.2rem, 2.5vh, 1.8rem);
+    }
+
+    .sec-eyebrow {
+      font-size: 0.72rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--makassar-gold);
+      margin-bottom: 0.6rem;
+      display: block;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .sec-main-title {
+      font-family: var(--lux-font-cinzel-2);
+      font-size: clamp(1.5rem, 5.2vw, 2.1rem);
+      color: #ffffff;
+      letter-spacing: 0.08em;
+      margin-bottom: 1.2rem;
+      line-height: 1.25;
+      overflow-wrap: break-word;
+      text-wrap: balance;
+    }
+
+    /* SECTION HERO / HOME */
+    .sec-home {
+      min-height: 100vh;
+      min-height: 100dvh;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-evenly;
+      align-items: center;
+      padding: clamp(1.8rem, 4vh, 2.6rem) 1.2rem calc(clamp(1.6rem, 3.2vh, 2.2rem) + env(safe-area-inset-bottom, 0px));
+      position: relative;
+      background: radial-gradient(circle at center, color-mix(in srgb, var(--primary, var(--lux-c-6b0c14)) 35%, transparent) 0%, transparent 70%);
+      overflow: hidden;
+      text-align: center;
+    }
+
+    .sec-home .sec-eyebrow {
+      font-size: clamp(0.62rem, 1.15vh, 0.75rem);
+      margin-bottom: clamp(0.15rem, 0.4vh, 0.35rem);
+      letter-spacing: 0.22em;
+      text-align: center;
+      max-width: clamp(280px, 88vw, 380px);
+      line-height: 1.6;
+      text-wrap: balance;
+    }
+
+    /* HOME TRADITIONAL PASSAPU & PHINISI 3D FRAME */
+    .home-frame-wrap {
+      position: relative;
+      width: clamp(190px, 27vh, 245px);
+      aspect-ratio: 2 / 3;
+      margin: clamp(0.15rem, 0.4vh, 0.45rem) auto;
+      filter: drop-shadow(0 16px 40px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 20px color-mix(in srgb, var(--makassar-gold, var(--lux-c-c5a059)) 20%, transparent));
+    }
+
+    .home-frame-photo {
+      position: absolute;
+      top: 21.8%;
+      left: 10.2%;
+      width: 79.6%;
+      height: 70.4%;
+      overflow: hidden;
+      background: var(--bg-dark);
+      z-index: 1;
+    }
+
+    .home-frame-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+      display: block;
+      filter: contrast(1.03) saturate(1.05);
+    }
+
+    .home-frame-overlay {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .home-names {
+      font-family: var(--lux-font-cinzel-2);
+      font-size: clamp(1.45rem, 2.9vh, 2rem);
+      color: #ffffff;
+      line-height: 1.25;
+      margin-bottom: clamp(0.25rem, 0.7vh, 0.55rem);
+      text-wrap: balance;
+    }
+
+    .home-names span {
+      font-family: var(--lux-font-great-vibes);
+      font-size: clamp(1.35rem, 2.6vh, 1.8rem);
+      color: var(--makassar-gold);
+      display: inline-block;
+      line-height: 1;
+      margin: 0 clamp(0.25rem, 1vw, 0.5rem);
+      vertical-align: middle;
+    }
+
+    .home-date-badge {
+      display: inline-block;
+      border-top: 1px solid var(--border-gold);
+      border-bottom: 1px solid var(--border-gold);
+      padding: clamp(0.32rem, 0.7vh, 0.5rem) clamp(1.2rem, 3.8vw, 1.8rem);
+      font-size: clamp(0.68rem, 1.15vh, 0.82rem);
+      letter-spacing: 0.18em;
+      color: var(--makassar-gold);
+      text-transform: uppercase;
+      margin-top: 0;
+      white-space: nowrap;
+    }
+
+    /* COUNTDOWN SHRINE */
+    .countdown-wrap {
+      margin-top: clamp(0.35rem, 1.2vh, 0.75rem);
+      width: 100%;
+      max-width: clamp(260px, 78vw, 340px);
+    }
+
+    .countdown-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: clamp(0.35rem, 1.2vw, 0.6rem);
+    }
+
+    .cd-item {
+      background: var(--theme-card);
+      border: 1px solid var(--border-gold);
+      border-radius: 10px;
+      padding: clamp(0.35rem, 0.8vh, 0.55rem) 0.2rem;
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .cd-num {
+      font-family: var(--lux-font-cinzel-2);
+      font-size: clamp(1rem, 2vh, 1.3rem);
+      color: var(--makassar-gold);
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .cd-lbl {
+      font-size: clamp(0.52rem, 0.9vh, 0.62rem);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-top: clamp(0.15rem, 0.3vh, 0.25rem);
+    }
+
+    /* THE COUPLE SECTION */
+    .couple-card {
+      background: color-mix(in srgb, var(--theme-card) 60%, transparent);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-gold);
+      border-radius: 20px;
+      padding: clamp(1.8rem, 5vw, 2.4rem) clamp(1rem, 3.5vw, 1.6rem) clamp(2.4rem, 6vw, 3rem);
+      margin-bottom: 1.5rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45);
+    }
+
+    .couple-photo-wrap,
+    .couple-name,
+    .couple-parents,
+    .couple-ig {
+      position: relative;
+      z-index: 2;
+    }
+
+    .couple-inner-ornament {
+      position: absolute;
+      pointer-events: none;
+      z-index: 1;
+      user-select: none;
+    }
+
+    .couple-gender-ornament {
+      position: absolute;
+      bottom: 0;
+      pointer-events: none;
+      z-index: 1;
+      user-select: none;
+      background-size: contain;
+      background-repeat: no-repeat;
+      opacity: 0.28;
+    }
+
+    /* Groom: Badik & Sarung Merah di Sudut Kanan Bawah Dalam Card */
+    .couple-groom .couple-gender-ornament,
+    .groom-inner-badik {
+      right: 0;
+      bottom: 0;
+      width: clamp(70px, 19vw, 95px);
+      height: clamp(70px, 19vw, 95px);
+      background-image: url('/assets/ornaments/bugis/badik-merah-sudut.webp');
+      background-position: bottom right;
+    }
+
+    /* Bride: Dedaunan & Ranting Emas di Sudut Kiri Bawah Dalam Card */
+    .couple-bride .couple-gender-ornament,
+    .bride-inner-daun {
+      left: 0;
+      bottom: 0;
+      width: clamp(75px, 20vw, 100px);
+      height: clamp(75px, 20vw, 100px);
+      background-image: url('/assets/ornaments/bugis/daun-merah-sudut.webp');
+      background-position: bottom left;
+    }
+
+    /* COUPLE AMPERSAND WITH GOLD SPEAR DIVIDERS */
+    .couple-amp-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(0.5rem, 2vw, 1rem);
+      margin: 0.8rem auto 1.8rem;
+      width: 100%;
+      max-width: 360px;
+    }
+
+    .couple-amp-divider {
+      height: clamp(6px, 1.2vh, 9px);
+      width: clamp(55px, 18vw, 100px);
+      object-fit: contain;
+      filter: drop-shadow(0 2px 8px var(--gold-glow));
+      opacity: 0.85;
+    }
+
+    .couple-amp-char {
+      font-family: var(--lux-font-great-vibes);
+      font-size: clamp(2.4rem, 4.5vh, 3.2rem);
+      color: var(--makassar-gold);
+      line-height: 1;
+      filter: drop-shadow(0 2px 10px var(--gold-glow));
+    }
+
+    .couple-photo-wrap {
+      width: clamp(130px, 36vw, 160px);
+      height: clamp(180px, 48vw, 220px);
+      margin: 0 auto clamp(1rem, 3vw, 1.4rem);
+      border-radius: 80px 80px 16px 16px;
+      overflow: hidden;
+      border: 2px solid var(--border-gold-bright);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      position: relative;
+    }
+
+    .couple-photo-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .couple-name {
+      font-family: var(--lux-font-cinzel-2);
+      font-size: clamp(1.05rem, 3.8vw, 1.35rem);
+      color: #ffffff;
+      margin-bottom: 0.6rem;
+      line-height: 1.3;
+      letter-spacing: 0.04em;
+      text-wrap: balance;
+      overflow-wrap: break-word;
+      word-break: normal;
+    }
+
+    .couple-parents {
+      font-size: clamp(0.76rem, 2.4vw, 0.85rem);
+      line-height: 1.55;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      text-wrap: pretty;
+    }
+
+    .couple-ig {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--makassar-gold);
+      font-size: clamp(0.74rem, 2.2vw, 0.8rem);
+      text-decoration: none;
+      border: 1px solid var(--border-gold);
+      padding: 0.35rem 0.9rem;
+      border-radius: 9999px;
+      transition: all 0.3s ease;
+    }
+
+    .couple-ig:hover {
+      background: var(--border-gold);
+      color: #ffffff;
+    }
+
+    /* EVENTS & SESSIONS */
+    .event-card,
+    .event-unified-venue-card,
+    .event-block-item {
+      background: color-mix(in srgb, var(--theme-card) 65%, transparent);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--border-gold);
+      border-radius: 18px;
+      padding: 2rem 1.6rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .ev-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--makassar-gold);
+      border-bottom: 1px solid var(--border-gold);
+      padding-bottom: 0.3rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .ev-title {
+      font-family: var(--lux-font-cinzel-2);
+      font-size: 1.35rem;
+      color: #ffffff;
+      margin-bottom: 0.8rem;
+    }
+
+    .ev-date,
+    .ev-time {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-bottom: 0.3rem;
+    }
+
+    .ev-venue {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #ffffff;
+      margin-top: 1rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .ev-address {
+      font-size: 0.85rem;
+      line-height: 1.5;
+      color: var(--text-muted);
+      margin-bottom: 1.4rem;
+    }
+
+    .btn-maps,
+    .btn-map-outline {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      background: var(--primary, var(--lux-c-6b0c14));
+      color: #ffffff;
+      border: 1px solid var(--border-gold);
+      padding: 0.65rem 1.6rem;
+      border-radius: 9999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .btn-maps:hover,
+    .btn-map-outline:hover {
+      background: var(--makassar-gold);
+      color: var(--bg-dark, var(--lux-c-140204));
+      border-color: var(--border-gold-bright);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px var(--gold-glow);
+    }
+
+    /* LOVE STORY TIMELINE */
+    .journey-timeline {
+      position: relative;
+      margin-top: 2rem;
+      padding-left: 2rem;
+      text-align: left;
+    }
+
+    .journey-timeline::before {
+      content: '';
+      position: absolute;
+      left: 7px;
+      top: 10px;
+      bottom: 10px;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--makassar-gold), color-mix(in srgb, var(--makassar-gold) 40%, transparent) 70%, transparent);
+    }
+
+    .story-chapter-block {
+      position: relative;
+      margin-bottom: 2.2rem;
+    }
+
+    .story-chapter-block::before {
+      content: '';
+      position: absolute;
+      left: -2rem;
+      top: 5px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--makassar-gold);
+      border: 3px solid var(--bg-dark, var(--lux-c-030914));
+      box-shadow: 0 0 12px var(--border-gold-bright);
+    }
+
+    .sc-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--makassar-gold);
+      font-weight: 600;
+    }
+
+    .sc-title {
+      font-family: var(--lux-font-cinzel-2);
+      font-size: 1.15rem;
+      color: #ffffff;
+      margin: 0.25rem 0 0.5rem;
+    }
+
+    .sc-desc {
+      font-size: 0.85rem;
+      line-height: 1.65;
+      color: var(--text-muted);
+    }
+
+    /* WEDDING GIFT SECTION */
+    .gift-card {
+      background: color-mix(in srgb, var(--theme-card) 65%, transparent);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--border-gold);
+      border-radius: 18px;
+      padding: 1.8rem 1.4rem;
+      margin-bottom: 1.4rem;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .gift-bank-name {
+      font-family: var(--lux-font-cinzel-2);
+      font-size: 1.15rem;
+      color: var(--makassar-gold);
+      margin-bottom: 0.5rem;
+    }
+
+    .gift-acc-num {
+      font-family: var(--lux-font-cinzel-3);
+      font-size: 1.35rem;
+      letter-spacing: 0.1em;
+      color: #ffffff;
+      margin-bottom: 0.4rem;
+    }
+
+    .gift-acc-holder {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 1.2rem;
+    }
+
+    .btn-copy {
+      background: color-mix(in srgb, var(--bg-dark, var(--lux-c-030914)) 85%, transparent);
+      color: var(--makassar-gold);
+      border: 1px solid var(--border-gold);
+      padding: 0.5rem 1.4rem;
+      border-radius: 9999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-copy:hover {
+      background: var(--makassar-gold);
+      color: var(--bg-dark, var(--lux-c-030914));
+    }
+
+    .gift-tabs {
+      display: flex;
+      max-width: 320px;
+      margin: 0 auto 1.8rem;
+      border: 1px solid var(--border-gold);
+      border-radius: 9999px;
+      overflow: hidden;
+      background: color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 75%, transparent);
+      backdrop-filter: blur(10px);
+      padding: 3px;
+      gap: 4px;
+    }
+
+    .gift-tab-btn {
+      flex: 1;
+      padding: 0.65rem 1rem;
+      background: transparent;
+      border: none;
+      border-radius: 9999px;
+      color: var(--makassar-gold, var(--lux-c-dfb76c));
+      opacity: 0.65;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      transition: all 0.3s ease;
+    }
+
+    .gift-tab-btn:hover {
+      opacity: 0.9;
+    }
+
+    .gift-tab-btn.active {
+      background: var(--makassar-gold, var(--lux-c-dfb76c));
+      color: var(--makassar-dark, var(--lux-c-140204));
+      opacity: 1;
+      font-weight: 700;
+      box-shadow: 0 0 14px var(--gold-glow, color-mix(in srgb, var(--lux-c-dfb76c) 35%, transparent));
+    }
+
+    /* RSVP & WISHES */
+    .rsvp-form-box {
+      background: color-mix(in srgb, var(--theme-card) 65%, transparent);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--border-gold);
+      border-radius: 20px;
+      padding: 2rem 1.6rem;
+      text-align: left;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--makassar-gold);
+      margin-bottom: 0.4rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    .form-in,
+    .form-sel,
+    .form-ta {
+      width: 100%;
+      background: color-mix(in srgb, var(--bg-dark, var(--lux-c-030914)) 85%, transparent);
+      border: 1px solid var(--border-gold);
+      color: #ffffff;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.3s ease;
+    }
+
+    .form-in:focus,
+    .form-sel:focus,
+    .form-ta:focus {
+      border-color: var(--border-gold-bright);
+    }
+
+    .btn-rsvp-submit {
+      width: 100%;
+      background: var(--makassar-navy);
+      color: #ffffff;
+      border: 1.5px solid var(--border-gold-bright);
+      padding: 0.85rem;
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 20px var(--gold-glow);
+    }
+
+    .btn-rsvp-submit:hover {
+      box-shadow: 0 10px 28px var(--border-gold-bright);
+    }
+
+    .wishes-stream-wrap {
+      margin-top: 2rem;
+      max-height: 320px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding-right: 0.4rem;
+    }
+
+    .wish-item {
+      background: color-mix(in srgb, var(--theme-card) 65%, transparent);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-gold);
+      border-radius: 14px;
+      padding: 1.1rem 1.2rem;
+      margin-bottom: 0.8rem;
+      text-align: left;
+    }
+
+    /* OUTRO 100VH (GLOBAL STANDARDIZATION) */
+    .site-footer {
+      min-height: 100vh;
+      min-height: 100dvh;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      text-align: center;
+      padding: clamp(2.5rem, 6vh, 4rem) 1.5rem calc(90px + env(safe-area-inset-bottom, 0px));
+      background: transparent;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    /* 1. KONDISI TANPA FOTO: Center Murni */
+    .site-footer.no-closing-photo {
+      justify-content: center;
+      align-items: center;
+      background: transparent;
+    }
+
+    /* 2. KONDISI ADA FOTO: Space-Between Memisahkan Ornamen Atas & Konten Bawah */
+    .site-footer.has-closing-photo {
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Scrim Gradient Gelap Dinamis Melindungi Keterbacaan Teks di Atas Foto */
+    .site-footer.has-closing-photo::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom,
+          rgba(0, 0, 0, 0.15) 0%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-030914)) 45%, transparent) 45%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-030914)) 92%, transparent) 100%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Ornamen Budaya Atas (Kapal Phinisi) */
+    .site-footer .closing-top-ornament {
+      position: relative;
+      z-index: 2;
+      width: 110px;
+      margin: 0 auto 1.5rem;
+    }
+
+    .site-footer.has-closing-photo .closing-top-ornament {
+      width: 90px;
+      margin: 0 auto 0.8rem;
+    }
+
+    /* Kontainer Konten Penutup (Di Bawah, Di Atas Scrim) */
+    .site-footer .closing-content {
+      position: relative;
+      z-index: 2;
+      max-width: 520px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .site-footer.has-closing-photo .closing-content {
+      margin-top: auto;
+    }
+
+    /* BOTTOM DOCK & MUSIC FAB */
+    .bottom-dock {
+      position: fixed;
+      bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+      left: 50%;
+      transform: translate3d(-50%, 0, 0);
+      background: color-mix(in srgb, var(--bg-dark, var(--lux-c-030914)) 85%, transparent);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border-gold);
+      border-radius: 9999px;
+      padding: 0.35rem 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      gap: 0.15rem;
+      z-index: 100;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.5);
+      transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+      width: calc(100% - 24px);
+      max-width: 436px;
+      box-sizing: border-box;
+    }
+
+    body.lux-at-home-zone .music-fab,
+    .music-fab.fab-hidden {
+      transform: scale(0.6) translateY(-20px) !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
+    body.lux-at-home-zone .bottom-dock,
+    .bottom-dock.dock-hidden {
+      transform: translate3d(-50%, calc(100% + 48px), 0) !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
+    .dock-a,
+    .bottom-dock .dock-btn,
+    .bottom-dock .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: 0.25rem 0.3rem;
+      border-radius: 8px;
+      font-size: 0.62rem;
+      letter-spacing: 0;
+      transition: all 0.25s ease;
+      flex: 1 1 0;
+      min-width: 0;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+
+    .dock-a span,
+    .bottom-dock .dock-btn span,
+    .bottom-dock .nav-item span {
+      font-size: 0.55rem;
+      margin-top: 0.2rem;
+      font-weight: 500;
+      color: inherit;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+
+    .dock-a svg,
+    .bottom-dock .dock-btn svg,
+    .bottom-dock .nav-item svg {
+      width: 17px;
+      height: 17px;
+      fill: none;
+      stroke: currentColor;
+    }
+
+    .dock-a:hover,
+    .dock-a.active,
+    .bottom-dock .dock-btn:hover,
+    .bottom-dock .dock-btn.active,
+    .bottom-dock .nav-item:hover,
+    .bottom-dock .nav-item.active {
+      color: var(--makassar-gold);
+      background: color-mix(in srgb, var(--makassar-gold) 15%, transparent);
+    }
+
+    .bottom-dock .qr-btn,
+    .bottom-dock button.nav-item {
+      background: transparent !important;
+      border: none !important;
+      color: var(--text-muted) !important;
+      box-shadow: none !important;
+    }
+
+    .bottom-dock .qr-btn:hover,
+    .bottom-dock button.nav-item:hover {
+      color: var(--makassar-gold) !important;
+      background: color-mix(in srgb, var(--makassar-gold) 15%, transparent) !important;
+    }
+
+    .music-fab {
+      position: fixed;
+      top: calc(18px + env(safe-area-inset-top, 0px));
+      right: calc(18px + env(safe-area-inset-right, 0px));
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--bg-dark, var(--lux-c-030914)) 85%, transparent);
+      border: 1px solid var(--border-gold);
+      color: var(--makassar-gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 100;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+      transition: all 0.3s ease;
+    }
+
+    .music-fab.playing {
+      animation: pulseGlow 2s infinite ease-in-out;
+    }
+
+    /* Jembatan kontrak satu nama: seksi mesin (QR, galeri, kado, seksi tambahan, kenangan, RSVP) memakai .sec-block,
+       .sec-lbl, dan .sec-h2; gayanya disamakan dengan .sec-flow, .sec-eyebrow, dan .sec-main-title Makassar. */
+    .sec-block {
+      position: relative;
+      padding: clamp(3rem, 7vh, 4.5rem) clamp(1rem, 3.5vw, 1.8rem);
+      text-align: center;
+      z-index: 5;
+    }
+
+    .sec-lbl {
+      font-size: 0.72rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--makassar-gold);
+      margin-bottom: 0.6rem;
+      display: block;
+      font-weight: 600;
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .sec-h2 {
+      font-family: var(--lux-font-cinzel-2);
+      font-size: clamp(1.5rem, 5.2vw, 2.1rem);
+      color: var(--text-main);
+      letter-spacing: 0.08em;
+      margin-bottom: 1.2rem;
+      line-height: 1.25;
+      overflow-wrap: break-word;
+      text-wrap: balance;
+      text-align: center;
+      font-weight: 400;
+    }
+
+    #rsvp .rsvp-card-box > .sec-lbl { display: none !important; }
+
+    .cover-names,
+    .home-names,
+    .sidebar-desktop .sb-names,
+    .couple-name,
+    .closing-name {
+      overflow-wrap: break-word;
+      word-break: break-word;
+      max-width: 100%;
+    }
+
+    .cover-subtitle {
+      font-family: var(--lux-font-cormorant-garamond);
+      font-style: italic;
+      font-size: 1.05rem;
+      line-height: 1.5;
+      color: var(--text-muted);
+      max-width: 320px;
+      margin: 0 auto 1.4rem;
+    }
+
+    .home-info,
+    .profile-info {
+      font-size: 0.78rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--makassar-gold);
+      margin-bottom: 0.6rem;
+      font-weight: 600;
+      line-height: 1.5;
+    }
+
+    .home-date-badge {
+      white-space: normal;
+      max-width: 100%;
+    }
+
+    .couple-parents p { margin: 0; }
+
+    /* Kartu acara mesin satu nama memakai gaya kartu acara Makassar; label sesi dan tautan peta memakai emas
+       (--event-accent) karena marun bawaan mesin tenggelam di kartu marun gelap. */
+    .event-block-item > span:first-child {
+      display: inline-block;
+      border-bottom: 1px solid var(--border-gold);
+      padding-bottom: 0.3rem;
+      letter-spacing: 0.2em !important;
+      line-height: 1.5;
+    }
+
+    .event-block-item {
+      text-align: center !important;
+      padding: 2rem 1.6rem !important;
+      border-radius: 18px !important;
+      border: 1px solid var(--border-gold) !important;
+      margin-bottom: 1.5rem !important;
+    }
+
+    .event-block-item h3 {
+      font-family: var(--lux-font-cinzel-2);
+      font-size: 1.3rem !important;
+      line-height: 1.35;
+      margin: 0.8rem 0 0.6rem !important;
+      overflow-wrap: break-word;
+      text-wrap: balance;
+    }
+
+    .event-block-item p { line-height: 1.55; overflow-wrap: break-word; }
+
+    #universalRsvpBtn {
+      background: var(--makassar-navy) !important;
+      color: var(--text-main) !important;
+      border: 1.5px solid var(--border-gold-bright) !important;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      box-shadow: 0 6px 20px var(--gold-glow);
+    }
+
+    #memories a[href$="/sharemoment"] {
+      background: var(--makassar-navy) !important;
+      color: var(--text-main) !important;
+      border: 1.5px solid var(--border-gold-bright);
+    }
+
+    .site-footer .closing-watermark { position: relative; z-index: 2; }
+    .site-footer.has-closing-photo .closing-watermark span { color: var(--makassar-gold) !important; }
+    #universalWishesList strong + span { color: var(--makassar-gold) !important; }
+
+    /* Kanvas krem terang membuat teks emas tipis sulit dibaca; bayangan gelap halus menjaga kontrasnya. */
+    .sec-eyebrow,
+    .sec-lbl,
+    .home-info,
+    .home-date-badge {
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.55), 0 0 2px rgba(0, 0, 0, 0.35);
+    }
+
+    .sec-events > .home-date-badge {
+      background: color-mix(in srgb, var(--theme-card) 70%, transparent);
+      border: 1px solid var(--border-gold);
+      border-radius: 9999px;
+      padding: 0.45rem 1.4rem;
+    }
+
+    @media (min-width: 900px) {
+      .sidebar-desktop .sb-names {
+        font-size: clamp(2.4rem, 3.6vw, 3.8rem);
+      }
+    }
+
+    /* Tombol musik disuntikkan mesin dengan gaya inline; tampilannya disamakan dengan tombol musik Makassar. */
+    #musicFab {
+      position: fixed !important;
+      top: calc(18px + env(safe-area-inset-top, 0px)) !important;
+      right: calc(18px + env(safe-area-inset-right, 0px)) !important;
+      bottom: auto !important;
+      width: 44px !important;
+      height: 44px !important;
+      border-radius: 50% !important;
+      background: color-mix(in srgb, var(--bg-dark, var(--lux-c-030914)) 85%, transparent) !important;
+      border: 1px solid var(--border-gold) !important;
+      color: var(--makassar-gold) !important;
+      z-index: 100 !important;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+      transition: all 0.3s ease;
+    }
+
+    #musicFab.playing {
+      animation: pulseGlow 2s infinite ease-in-out;
+    }
+
+    #musicFab.fab-hidden {
+      transform: scale(0.6) translateY(-20px) !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- FIXED BACKGROUND LAYER -->
+  <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
+
+  <!-- COVER SCREEN POP-UP (PORTAL GATE) -->
+  <div id="coverScreen" class="cover-screen">
+
+    <!-- Top & Bottom Makassar Gold Borders (Seamless Repeat Architecture) -->
+    <div class="makassar-frame-top" role="presentation"></div>
+    <div class="makassar-frame-bottom" role="presentation"></div>
+
+    <div class="cover-emblem-wrap">
+      <img src="/assets/ornaments/bugis/kapal-phinisi.webp" alt="Kapal Phinisi" class="cover-emblem-img">
+    </div>
+
+    <div class="cover-tagline" data-lux-field="customLabels.coverBadge">{{eventLabel}}</div>
+
+    <h1 class="cover-names font-makassar-title">{{mainNickname}}</h1>
+
+    <p class="cover-subtitle" data-lux-field="customLabels.coverSubtitle">{{eventIntro}}</p>
+
+    <div class="cover-guest-box">
+      <div class="cover-guest-lbl" data-lux-field="customLabels.coverGuestLabel">KEPADA YTH. BAPAK/IBU/SAUDARA/I</div>
+      <div class="cover-guest-val" id="coverGuestName">{{guestName}}</div>
+    </div>
+
+    <button type="button" class="btn-buka-undangan btn-buka" onclick="openInvitation()"
+      data-lux-field="customLabels.openBtn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>
+      Buka Undangan
+    </button>
+  </div>
+
+  <!-- MAIN LAYOUT WRAPPER (DESKTOP SPLIT 460PX) -->
+  <div class="layout-wrapper">
+
+    <!-- DESKTOP SIDEBAR (HERO WIDESCREEN) -->
+    <aside class="sidebar-desktop">
+      <div class="sidebar-desktop-content">
+        <img src="/assets/ornaments/bugis/kapal-phinisi.webp" alt="Kapal Phinisi" class="sidebar-desktop-emblem">
+        <div class="sb-brand" data-lux-field="customLabels.coverBadge">{{eventLabel}}</div>
+        <h1 class="sb-names">{{mainNickname}}</h1>
+        <div class="sb-date">{{eventDateFormatted}}</div>
+        {{#if openingQuote}}<p class="sidebar-desktop-quote">"{{openingQuote}}"</p>{{/if}}
+      </div>
+    </aside>
+
+    <!-- RIGHT SCROLLABLE PANEL (460PX) -->
+    <main class="main-scroll-panel">
+
+      <!-- SECTION 1: HOME / OPENING HERO -->
+      <section id="home" class="sec-home">
+        <!-- Top & Bottom Makassar Gold Borders (Seamless Repeat Architecture) -->
+        <div class="makassar-frame-top" role="presentation"></div>
+        <div class="makassar-frame-bottom" role="presentation"></div>
+
+        <span class="sec-eyebrow reveal-on-scroll" data-lux-field="customLabels.quoteEyebrow">Anda Diundang</span>
+
+        <div class="reveal-on-scroll" style="width: 100%;">
+          <div class="home-frame-wrap">
+            <div class="home-frame-photo">
+              {{#if hasCustomHomePhoto}}<img src="{{homePhotoUrl}}" alt="{{mainNickname}}" />{{/if}}{{#unless hasCustomHomePhoto}}<img src="{{mainPhotoUrl}}" alt="{{mainNickname}}" />{{/unless}}
+            </div>
+            <img src="/assets/ornaments/bugis/frame-passapu-phinisi.webp" alt="Bingkai Adat Makassar" class="home-frame-overlay" />
+          </div>
+        </div>
+
+        <h2 class="home-names reveal-on-scroll">{{mainNickname}}</h2>
+        {{#if mainInfoLine}}<p class="home-info reveal-on-scroll">{{mainInfoLine}}</p>{{/if}}
+
+        <div class="home-date-badge reveal-on-scroll">
+          {{eventDateFormatted}}
+        </div>
+      </section>
+
+      <!-- SECTION 2: KUTIPAN PEMBUKA -->
+      {{#if openingQuote}}
+      <section class="sec-flow sec-quote">
+        <div class="reveal-on-scroll" style="max-width: 360px; margin: 0 auto;">
+          <p class="font-makassar-quote"
+            style="font-size: 1.15rem; line-height: 1.7; color: var(--text-main); margin-bottom: 1.2rem;"
+            data-lux-field="customLabels.openingQuote">
+            {{openingQuote}}
+          </p>
+          <div
+            style="font-size: 0.8rem; letter-spacing: 0.15em; color: var(--makassar-gold); text-transform: uppercase;"
+            data-lux-field="customLabels.openingQuoteRef">
+            {{openingQuoteRef}}
+          </div>
+        </div>
+      </section>
+      {{/if}}
+
+      <!-- SECTION 3: PROFIL TOKOH -->
+      <section id="profile" class="sec-flow sec-couple">
+        <span class="sec-eyebrow reveal-on-scroll"
+          data-lux-field="customLabels.coupleEyebrow">{{profileEyebrow}}</span>
+        <h2 class="sec-main-title reveal-on-scroll" data-lux-field="customLabels.coupleTitle">{{profileTitle}}</h2>
+        <p class="reveal-on-scroll"
+          style="font-size: 0.85rem; color: var(--text-muted); max-width: 340px; margin: 0 auto 2.5rem;"
+          data-lux-field="customLabels.coupleSub">
+          {{profileSub}}
+        </p>
+
+        <div class="couple-card reveal-on-scroll">
+          <div class="couple-photo-wrap">
+            <img src="{{mainPhotoUrl}}" alt="{{mainName}}" loading="lazy">
+          </div>
+          <h3 class="couple-name">{{mainName}}</h3>
+          {{#if mainInfoLine}}<div class="profile-info">{{mainInfoLine}}</div>{{/if}}
+          {{#if mainDetailLine}}<p class="couple-parents">{{mainDetailLine}}</p>{{/if}}
+          <div class="couple-parents">{{parentsHtml}}</div>
+          <div class="couple-gender-ornament bride-inner-daun" aria-hidden="true"></div>
+        </div>
+      </section>
+
+      <!-- SECTION 4: WAKTU & TEMPAT -->
+      <section id="event" class="sec-flow sec-events">
+        <span class="sec-eyebrow reveal-on-scroll" data-lux-field="customLabels.eventsEyebrow">Waktu &amp; Tempat</span>
+        <h2 class="sec-main-title reveal-on-scroll" data-lux-field="customLabels.eventsTitle">{{agendaTitle}}</h2>
+        <div class="home-date-badge reveal-on-scroll" style="margin: 0 auto 1.8rem;">{{eventDateFormatted}}</div>
+
+        <!-- COUNTDOWN WAKTU MENUJU HARI H -->
+        <div class="countdown-wrap reveal-on-scroll" style="margin: 0 auto 2.5rem;">
+          <div class="countdown-grid" id="countdownGrid" data-target="{{countdownTarget}}">
+            <div class="cd-item">
+              <div class="cd-num" id="cdDays">00</div>
+              <div class="cd-lbl" data-lux-field="customLabels.cdDays">Hari</div>
+            </div>
+            <div class="cd-item">
+              <div class="cd-num" id="cdHours">00</div>
+              <div class="cd-lbl" data-lux-field="customLabels.cdHours">Jam</div>
+            </div>
+            <div class="cd-item">
+              <div class="cd-num" id="cdMinutes">00</div>
+              <div class="cd-lbl" data-lux-field="customLabels.cdMins">Menit</div>
+            </div>
+            <div class="cd-item">
+              <div class="cd-num" id="cdSeconds">00</div>
+              <div class="cd-lbl" data-lux-field="customLabels.cdSecs">Detik</div>
+            </div>
+          </div>
+        </div>
+
+        {{eventSectionHtml}}
+      </section>
+
+      {{qrPassHtml}}
+
+      {{gallerySectionHtml}}
+
+      {{giftSectionHtml}}
+
+      {{extraSectionsHtml}}
+
+      <!-- KONFIRMASI KEHADIRAN & UCAPAN (form dan daftar ucapan dari mesin satu nama) -->
+      <section id="rsvp" class="sec-flow sec-rsvp">
+        <span class="sec-eyebrow reveal-on-scroll" data-lux-field="customLabels.wishesEyebrow">Konfirmasi</span>
+        {{rsvpSectionHtml}}
+        {{wishesSectionHtml}}
+      </section>
+
+      {{memoriesSectionHtml}}
+
+      <!-- OUTRO / CLOSING FOOTER 100VH -->
+      <footer class="site-footer {{closingPhotoClass}}" style="{{closingBgStyle}}">
+
+        <!-- Top & Bottom Makassar Gold Borders (Seamless Repeat Architecture) -->
+        <div class="makassar-frame-top" role="presentation"></div>
+        <div class="makassar-frame-bottom" role="presentation"></div>
+
+        <!-- Top Cultural Ornament (Statis di Atas) -->
+        <div class="closing-top-ornament reveal-on-scroll">
+          <img src="/assets/ornaments/bugis/kapal-phinisi.webp" alt="Kapal Phinisi"
+            style="width: 100%; height: auto; filter: drop-shadow(0 6px 18px var(--gold-glow));">
+        </div>
+
+        <!-- Closing Content Box (Merapat ke Bawah saat Ada Foto) -->
+        <div class="closing-content">
+          <p class="font-makassar-quote reveal-on-scroll"
+            style="font-size: 1.15rem; line-height: 1.7; color: var(--text-main); max-width: 360px; margin: 0 auto 1.5rem;"
+            data-lux-field="customLabels.closingText">
+            {{closingText}}
+          </p>
+
+          <div class="reveal-on-scroll"
+            style="font-size: 0.85rem; letter-spacing: 0.15em; color: var(--makassar-gold); text-transform: uppercase;"
+            data-lux-field="customLabels.closingTitle">
+            Terima Kasih
+          </div>
+
+          <div class="font-makassar-title reveal-on-scroll closing-name"
+            style="font-size: 1.8rem; color: var(--text-main); margin-top: 1.8rem; font-weight: 600;">
+            {{mainNickname}}
+          </div>
+
+          <div class="reveal-on-scroll"
+            style="font-size: 0.8rem; letter-spacing: 0.18em; color: var(--text-muted); text-transform: uppercase; margin-top: 0.6rem;">
+            {{eventDateFormatted}}
+          </div>
+
+          <div class="closing-watermark" style="margin-top: 1.4rem; font-size: 0.65rem;">{{brandWatermarkHtml}}</div>
+        </div>
+      </footer>
+
+    </main>
+  </div>
+
+  <!-- FLOATING BOTTOM DOCK NAVIGATION -->
+  <nav class="bottom-dock dock-hidden">
+    <a href="#home" class="dock-a" aria-label="Home">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+      </svg>
+      <span>Home</span>
+    </a>
+    <a href="#profile" class="dock-a" aria-label="Profil">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+        <circle cx="12" cy="7" r="4"></circle>
+      </svg>
+      <span>Profil</span>
+    </a>
+    <a href="#event" class="dock-a" aria-label="Acara">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+        <line x1="16" y1="2" x2="16" y2="6"></line>
+        <line x1="8" y1="2" x2="8" y2="6"></line>
+        <line x1="3" y1="10" x2="21" y2="10"></line>
+      </svg>
+      <span>Acara</span>
+    </a>
+    <a href="#gallery" class="dock-a" aria-label="Galeri">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
+        <circle cx="9" cy="9" r="2"></circle>
+        <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+      </svg>
+      <span>Galeri</span>
+    </a>
+    <a href="#rsvp" class="dock-a" aria-label="RSVP">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+      </svg>
+      <span>RSVP</span>
+    </a>
+  </nav>
+
+  <!-- THEME RUNTIME SCRIPTS -->
+  <script>
+    // Tanpa ?to= sapaan bawaan jenis acara dari mesin dibiarkan.
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const gn = params.get('to') || params.get('u') || '';
+      if (!gn) return;
+      const coverGn = document.getElementById('coverGuestName');
+      if (coverGn) coverGn.textContent = gn;
+      const passGn = document.getElementById('passGuestName');
+      if (passGn) passGn.textContent = gn;
+      const rsvpNameIn = document.getElementById('universalRsvpName');
+      if (rsvpNameIn) rsvpNameIn.value = gn;
+    })();
+
+    // SMART MOBILE FULLSCREEN HELPER
+    function requestSmartFullscreen() {
+      try {
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+          elem.requestFullscreen().catch(function () { });
+        } else if (elem.webkitRequestFullscreen) {
+          elem.webkitRequestFullscreen();
+        } else if (elem.mozRequestFullScreen) {
+          elem.mozRequestFullScreen();
+        } else if (elem.msRequestFullscreen) {
+          elem.msRequestFullscreen();
+        }
+      } catch (e) { }
+
+      // Fallback for mobile browser minimal-UI scroll
+      setTimeout(function () {
+        window.scrollTo(0, 1);
+      }, 100);
+    }
+
+    // OPEN INVITATION HANDLER
+    function openInvitation() {
+      const cover = document.getElementById('coverScreen');
+      if (cover) {
+        cover.classList.add('opened');
+      }
+
+      requestSmartFullscreen();
+
+      // Audio dan tombol musik disuntikkan mesin di akhir body, jadi dicari saat dipakai.
+      const audio = document.getElementById('luxAudioPlayer');
+      if (audio && !window.__DISABLE_AUDIO__) {
+        audio.play().then(function () {
+          const fab = document.getElementById('musicFab');
+          if (fab) fab.classList.add('playing');
+        }).catch(function () { });
+      }
+
+      initDockScrollSpy();
+    }
+
+    // LIVE COUNTDOWN TIMER
+    function initCountdown() {
+      const grid = document.getElementById('countdownGrid');
+      if (!grid) return;
+      const targetStr = grid.getAttribute('data-target');
+      if (!targetStr) return;
+      const targetDate = new Date(targetStr).getTime();
+      if (isNaN(targetDate)) return;
+
+      function update() {
+        const now = Date.now();
+        const diff = Math.max(0, targetDate - now);
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        const dEl = document.getElementById('cdDays');
+        const hEl = document.getElementById('cdHours');
+        const mEl = document.getElementById('cdMinutes');
+        const sEl = document.getElementById('cdSeconds');
+        if (dEl) dEl.textContent = String(days).padStart(2, '0');
+        if (hEl) hEl.textContent = String(hours).padStart(2, '0');
+        if (mEl) mEl.textContent = String(minutes).padStart(2, '0');
+        if (sEl) sEl.textContent = String(seconds).padStart(2, '0');
+      }
+      update();
+      setInterval(update, 1000);
+    }
+
+    // REVEAL ON SCROLL
+    function initScrollInteractions() {
+      const items = document.querySelectorAll('.reveal-on-scroll');
+      const observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) {
+            e.target.classList.add('is-visible');
+          }
+        });
+      }, { threshold: 0.12 });
+
+      items.forEach(function (el) { observer.observe(el); });
+    }
+
+    // SMART DOCK & CONTROLS AUTOHIDE ON SCROLL (HOME-SAFE AUTO-HIDE)
+    (function initSmartControls() {
+      const dock = document.querySelector('.bottom-dock');
+      if (!dock) return;
+
+      let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      let ticking = false;
+      const SCROLL_THRESHOLD = 12;
+
+      function getHomeThreshold() {
+        const homeEl = document.getElementById('home');
+        if (homeEl) {
+          return Math.max(homeEl.offsetTop + homeEl.offsetHeight - 120, 100);
+        }
+        return (window.innerHeight || 600) * 0.75;
+      }
+
+      function setVisible(visible) {
+        const fab = document.getElementById('musicFab');
+        if (visible) {
+          dock.classList.remove('dock-hidden');
+          if (fab) fab.classList.remove('fab-hidden');
+        } else {
+          dock.classList.add('dock-hidden');
+          if (fab) fab.classList.add('fab-hidden');
+        }
+      }
+
+      function updateControls() {
+        const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+        const windowHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+        const docHeight = Math.max(
+          document.body.scrollHeight,
+          document.documentElement.scrollHeight,
+          document.body.offsetHeight,
+          document.documentElement.offsetHeight
+        );
+        const isNearBottom = (currentScrollY + windowHeight) >= (docHeight - 70);
+        const isAtHome = currentScrollY <= getHomeThreshold();
+
+        if (isAtHome) {
+          setVisible(false);
+          lastScrollY = currentScrollY;
+          ticking = false;
+          return;
+        }
+
+        const delta = currentScrollY - lastScrollY;
+
+        // Di ujung bawah kontrol disembunyikan; muncul lagi saat tamu menggulir ke atas.
+        if (isNearBottom) {
+          setVisible(delta < -SCROLL_THRESHOLD);
+          lastScrollY = currentScrollY;
+          ticking = false;
+          return;
+        }
+
+        if (Math.abs(delta) >= SCROLL_THRESHOLD) {
+          setVisible(delta < 0);
+          lastScrollY = currentScrollY;
+        }
+
+        ticking = false;
+      }
+
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          window.requestAnimationFrame(updateControls);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      updateControls();
+
+      dock.querySelectorAll('.dock-a').forEach(link => {
+        link.addEventListener('click', () => {
+          setVisible(link.getAttribute('href') !== '#home');
+        });
+      });
+    })();
+
+    // Smart Dock ScrollSpy & Click State Sync
+    function initDockScrollSpy() {
+      const dock = document.querySelector('.bottom-dock');
+      if (!dock || dock.dataset.spyReady) return;
+      dock.dataset.spyReady = '1';
+
+      const links = Array.from(dock.querySelectorAll('a.dock-a'));
+      const sectionMap = [];
+
+      links.forEach(link => {
+        const href = link.getAttribute('href');
+        if (href && href.startsWith('#')) {
+          const targetEl = document.getElementById(href.slice(1));
+          if (targetEl) {
+            sectionMap.push({ id: href.slice(1), link, el: targetEl });
+          }
+        }
+      });
+
+      function setActive(targetId) {
+        links.forEach(link => {
+          link.classList.toggle('active', link.getAttribute('href') === '#' + targetId);
+        });
+      }
+
+      setActive('home');
+
+      links.forEach(link => {
+        link.addEventListener('click', function () {
+          const href = this.getAttribute('href');
+          if (href && href.startsWith('#')) {
+            setActive(href.slice(1));
+          }
+        });
+      });
+
+      if ('IntersectionObserver' in window && sectionMap.length > 0) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              setActive(entry.target.id);
+            }
+          });
+        }, {
+          rootMargin: '-20% 0px -60% 0px',
+          threshold: 0
+        });
+
+        sectionMap.forEach(item => observer.observe(item.el));
+      }
+    }
+    document.addEventListener('DOMContentLoaded', initDockScrollSpy);
+
+    // COPY CLIPBOARD
+    function copyText(val, btn) {
+      if (!val) return;
+      navigator.clipboard.writeText(val).then(function () {
+        if (btn) {
+          const old = btn.textContent;
+          btn.textContent = 'TERSALIN!';
+          setTimeout(function () { btn.textContent = old; }, 2000);
+        }
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      initCountdown();
+      initScrollInteractions();
+    });
+  </script>
+  {{musicPlayerHtml}}
+</body>
+
+</html>

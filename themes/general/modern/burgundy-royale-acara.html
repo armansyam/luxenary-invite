@@ -1,0 +1,1864 @@
+<!--
+ _      _   _  __  __  _____   _   _      _     ____   __   __
+| |    | | | | \ \/ / | ____| | \ | |    / \   |  _ \  \ \ / /
+| |    | | | |  \  /  |  _|   |  \| |   / _ \  | |_) |  \ V / 
+| |___ | |_| |  /  \  | |___  | |\  |  / ___ \ |  _ <    | |  
+|_____| \___/  /_/\_\ |_____| |_| \_| /_/   \_\|_| \_\   |_|  
+
+  ==============================================================
+  THEME BUILDER WORKSPACE: BURGUNDY ROYALE
+  Opulent Vintage Burgundy & Gold with Cathedral Arches & Royal Roses
+  Hak Cipta (c) Luxenary. Dilindungi undang-undang.
+  ==============================================================
+-->
+<!--
+  BURGUNDY ROYALE (ACARA) — versi satu nama dari tema pernikahan Burgundy Royale (themes/wedding/modern/burgundy-royale.html).
+  Kontrak satu nama (seperti prisma): dapat dipakai ulang tahun, khitan, aqiqah, wisuda, dan acara umum.
+  CSS dan gaya sama dengan versi pernikahan; seksi mempelai diganti profil tokoh, RSVP dan modul dari mesin satu nama.
+-->
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>{{mainNickname}}</title>
+
+  <!-- =================================================================== -->
+  <!-- 1. TYPOGRAPHY & SELF-HOSTED FONTS                                   -->
+  <!-- =================================================================== -->
+  <link rel="stylesheet" href="/fonts/fonts.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Imperial+Script&family=Vidaloka&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="/assets/lottie/lottie.min.js"></script>
+
+  <style>
+    @font-face {
+      font-family: "Iskry Regular";
+      src: url("/fonts/burgundy-royale/Iskry-Regular.woff2") format("woff2");
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    /* =================================================================== */
+    /* 2. DESIGN SYSTEM & DYNAMIC PALETTE (GOLDEN STANDARD)                */
+    /* =================================================================== */
+    :root {
+      --primary: #54192b;
+      --secondary: #7a253f;
+      --accent: #d4a373;
+      --bg-light: #faf2f4;
+      --bg-dark: #1c070e;
+      --text-main: #2c0e17;
+      --text-muted: color-mix(in srgb, #2c0e17 70%, transparent);
+      --radius-sm: 8px;
+      --radius-md: 16px;
+      --radius-lg: 28px;
+      --radius-arch: 500px 500px 0 0;
+      --radius-full: 9999px;
+      --shadow-soft: 0 8px 25px color-mix(in srgb, var(--primary) 12%, transparent);
+      --shadow-elevated: 0 16px 45px color-mix(in srgb, var(--primary) 22%, transparent);
+      --glass-bg: color-mix(in srgb, var(--bg-light) 92%, transparent);
+      --glass-border: color-mix(in srgb, var(--accent) 45%, transparent);
+      /* Ditambahkan tokenisasi master (warna dan huruf yang sebelumnya tertulis langsung). */
+      --lux-font-plus-jakarta-sans: "Plus Jakarta Sans", -apple-system, sans-serif;
+      --lux-font-vidaloka: "Vidaloka", "Cinzel", Georgia, serif;
+      --lux-font-cinzel: "Cinzel", Georgia, serif;
+      --lux-font-imperial-script: "Imperial Script", cursive;
+      --lux-font-iskry-regular-2: "Iskry Regular", "Vidaloka", serif;
+      --lux-font-vidaloka-2: "Vidaloka", Georgia, serif;
+      --lux-font-traditional-arabic: "Traditional Arabic", "Amiri", "Cinzel", serif;
+      --lux-font-vidaloka-3: 'Vidaloka', serif;
+      --lux-font-cinzel-2: 'Cinzel', serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    ::selection {
+      background: color-mix(in srgb, var(--primary) 40%, transparent);
+      color: #ffffff;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      font-size: 16px;
+      background-color: var(--bg-dark);
+    }
+
+    body {
+      font-family: var(--lux-font-plus-jakarta-sans);
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      overflow-x: hidden;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: color-mix(in srgb, var(--accent) 45%, transparent);
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent);
+    }
+
+    .audio-player-element {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+
+    /* Headings & Scripts */
+    .vidaloka,
+    h1, h2, h3, h4,
+    .sec-main-title {
+      font-family: var(--lux-font-vidaloka);
+      letter-spacing: 0.02em;
+    }
+
+    .font-cinzel {
+      font-family: var(--lux-font-cinzel);
+      letter-spacing: 0.15em;
+    }
+
+    .script-accent {
+      font-family: var(--lux-font-imperial-script);
+      font-weight: 400;
+    }
+
+    .font-iskry {
+      font-family: var(--lux-font-iskry-regular-2);
+    }
+
+    /* =================================================================== */
+    /* 3. ARSITEKTUR DESKTOP SPLIT & MOBILE CONTAINER                      */
+    /* =================================================================== */
+    .layout-wrapper {
+      display: flex;
+      width: 100%;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    .sidebar-desktop {
+      display: none;
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: calc(100% - 460px);
+      height: 100vh;
+      background: url("{{sidebarPhotoUrl}}") center/cover no-repeat;
+      z-index: 10;
+    }
+
+    .sidebar-desktop::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to top,
+        color-mix(in srgb, var(--bg-dark) 95%, transparent) 0%,
+        color-mix(in srgb, var(--bg-dark) 55%, transparent) 50%,
+        rgba(0, 0, 0, 0.45) 100%
+      );
+    }
+
+    .sidebar-desktop-content {
+      position: absolute;
+      bottom: 4.5rem;
+      left: 4.5rem;
+      right: 4.5rem;
+      z-index: 20;
+      color: #ffffff;
+    }
+
+    .sidebar-desktop-tagline {
+      font-size: 0.8rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.8rem;
+      font-weight: 600;
+      font-family: var(--lux-font-cinzel);
+    }
+
+    .sidebar-desktop-names {
+      font-size: clamp(3rem, 4.2vw, 4.6rem);
+      line-height: 1.1;
+      color: #ffffff;
+      margin-bottom: 1rem;
+      font-family: var(--lux-font-vidaloka-2);
+      text-shadow: 0 4px 24px rgba(0, 0, 0, 0.7);
+    }
+
+    .sidebar-desktop-names span {
+      font-family: var(--lux-font-imperial-script);
+      color: var(--accent);
+      font-size: 1.1em;
+      margin: 0 0.4rem;
+    }
+
+    .sidebar-desktop-date {
+      font-size: 0.95rem;
+      letter-spacing: 0.25em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 1.25rem;
+      font-weight: 500;
+      font-family: var(--lux-font-cinzel);
+    }
+
+    .sidebar-desktop-quote {
+      font-size: 1.05rem;
+      line-height: 1.7;
+      color: rgba(255, 255, 255, 0.88);
+      max-width: 520px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+    }
+
+    .main-scroll-panel {
+      width: 100%;
+      min-height: 100vh;
+      background: transparent;
+      position: relative;
+      z-index: 20;
+    }
+
+    @media (min-width: 900px) {
+      .sidebar-desktop {
+        display: block;
+      }
+      .main-scroll-panel {
+        width: 460px;
+        margin-left: auto;
+        box-shadow: -10px 0 35px rgba(0, 0, 0, 0.5);
+        border-left: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+      }
+    }
+
+    /* =================================================================== */
+    /* 4. TIGA LAPISAN KANVAS LATAR                                        */
+    /* =================================================================== */
+    .fixed-bg-layer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 100%;
+      height: 100vh;
+      background-image: url('/assets/ornaments/background/background-red.webp');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 1;
+      filter: none;
+    }
+    .fixed-bg-layer.has-custom-bg {
+      background-image: var(--custom-bg);
+      opacity: 1;
+      filter: none;
+    }
+
+    @media (min-width: 900px) {
+      .fixed-bg-layer {
+        width: 460px;
+      }
+    }
+
+    .scrim-canvas {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 100%;
+      height: 100vh;
+      background: transparent;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    @media (min-width: 900px) {
+      .scrim-canvas {
+        width: 460px;
+      }
+    }
+
+    /* =================================================================== */
+    /* 5. COVER SCREEN (FLOATING GATEWAY)                                  */
+    /* =================================================================== */
+    .cover-screen {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      background: url("{{landingCoverUrl}}") center/cover no-repeat;
+      padding: 2.5rem 1.8rem;
+      transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s ease, visibility 0s linear 0.85s;
+      overflow: hidden;
+    }
+
+    @media (min-width: 900px) {
+      .cover-screen {
+        width: 460px;
+      }
+    }
+
+    .cover-screen.opened {
+      transform: translateY(-100%);
+      opacity: 0;
+      pointer-events: none;
+      visibility: hidden;
+    }
+
+    .cover-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to top,
+        color-mix(in srgb, var(--primary) 96%, transparent) 0%,
+        color-mix(in srgb, var(--primary) 65%, transparent) 55%,
+        rgba(0, 0, 0, 0.4) 100%
+      );
+      z-index: 1;
+    }
+
+    /* Signature Floral Corner */
+    .cover-floral-ornament {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: clamp(75px, 20vw, 100px);
+      max-width: 28vw;
+      pointer-events: none;
+      z-index: 2;
+      opacity: 0.95;
+      filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.45));
+      animation: floralFloat 6s ease-in-out infinite alternate;
+    }
+
+    @keyframes floralFloat {
+      0% { transform: translateY(0) rotate(0deg); }
+      100% { transform: translateY(5px) rotate(2deg); }
+    }
+
+    /* Signature Flying Birds Layer (Authentic Leafitation Lottie) */
+    .royale-birds-layer {
+      position: absolute;
+      top: 5%;
+      left: 0;
+      width: 100%;
+      height: 220px;
+      pointer-events: none;
+      z-index: 2;
+      opacity: 0.85;
+      overflow: hidden;
+    }
+
+    .cover-content {
+      position: relative;
+      z-index: 3;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+      color: #ffffff;
+      margin-bottom: 1.5rem;
+    }
+
+    .cover-royale-badge {
+      display: inline-block;
+      padding: 6px 20px;
+      border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+      border-radius: var(--radius-full);
+      font-size: 0.72rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 600;
+      font-family: var(--lux-font-cinzel);
+      margin-bottom: 1rem;
+      background: rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(6px);
+    }
+
+    .cover-tagline {
+      font-size: 0.76rem;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.85);
+      margin-bottom: 0.5rem;
+      font-family: var(--lux-font-cinzel);
+    }
+
+    .cover-names {
+      font-size: clamp(2.8rem, 9vw, 3.8rem);
+      line-height: 1.15;
+      font-family: var(--lux-font-vidaloka-2);
+      color: #ffffff;
+      margin: 0.2rem 0 0.8rem;
+      font-weight: 400;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    }
+
+    .cover-names span {
+      font-family: var(--lux-font-imperial-script);
+      color: var(--accent);
+      font-size: 1em;
+      margin: 0 0.35rem;
+    }
+
+    .cover-date-row {
+      font-size: 0.86rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 500;
+      font-family: var(--lux-font-cinzel);
+      margin-bottom: 1.2rem;
+    }
+
+    .cover-guest-box {
+      margin: 0.8rem 0 1.4rem;
+      padding: 1rem 1.2rem;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: var(--radius-md);
+      backdrop-filter: blur(8px);
+    }
+
+    .cover-guest-lbl {
+      font-size: 0.68rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.75);
+      margin-bottom: 0.3rem;
+      display: block;
+      font-family: var(--lux-font-cinzel);
+    }
+
+    .cover-guest-name {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #ffffff;
+      letter-spacing: 0.03em;
+      font-family: var(--lux-font-vidaloka-2);
+    }
+
+    .btn-open-royale {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 14px 28px;
+      border-radius: var(--radius-full);
+      background: linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 80%, #ffffff) 100%);
+      color: var(--primary);
+      border: 1px solid var(--accent);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-family: var(--lux-font-cinzel);
+      cursor: pointer;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      transition: all 0.3s ease;
+    }
+
+    .btn-open-royale:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+    }
+
+    .btn-open-royale svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+      transition: transform 0.3s ease;
+    }
+
+    .btn-open-royale:hover svg {
+      transform: translateX(4px);
+    }
+
+    /* =================================================================== */
+    /* 6. MAIN CONTENT SECTIONS                                             */
+    /* =================================================================== */
+    .main-content {
+      position: relative;
+      z-index: 10;
+      padding-bottom: 90px;
+    }
+
+    .sec-flow {
+      padding: 4.5rem 1.8rem;
+      position: relative;
+      text-align: center;
+    }
+
+    .sec-eyebrow {
+      display: block;
+      font-size: 0.74rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin-bottom: 0.6rem;
+      font-weight: 700;
+      font-family: var(--lux-font-cinzel);
+    }
+
+    .sec-main-title {
+      font-size: clamp(2rem, 6.5vw, 2.6rem);
+      line-height: 1.2;
+      color: var(--primary);
+      margin-bottom: 0.8rem;
+      font-weight: 400;
+      font-family: var(--lux-font-vidaloka-2);
+      overflow-wrap: break-word;
+    }
+
+    .sec-sub {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      max-width: 360px;
+      margin: 0 auto 2.2rem;
+      line-height: 1.6;
+    }
+
+    /* Floating Flower Divider */
+    .section-flower-divider {
+      width: 90px;
+      margin: 1.2rem auto;
+      display: block;
+      opacity: 0.85;
+    }
+
+    /* Opening Hero Section (#home) */
+    .sec-home {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 3.5rem 1.8rem;
+      position: relative;
+    }
+
+    /* Cathedral Arch Photo Frame */
+    .cathedral-hero-frame {
+      width: 100%;
+      max-width: 310px;
+      aspect-ratio: 3/4.2;
+      margin: 0 auto 1.8rem;
+      position: relative;
+      border-radius: var(--radius-arch);
+      overflow: hidden;
+      box-shadow: var(--shadow-elevated);
+      border: 3px solid color-mix(in srgb, var(--accent) 60%, transparent);
+      outline: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+      outline-offset: 4px;
+    }
+
+    .cathedral-hero-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.6s ease;
+    }
+
+    .cathedral-hero-frame:hover img {
+      transform: scale(1.03);
+    }
+
+    .home-tagline {
+      font-size: 0.74rem;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      font-family: var(--lux-font-cinzel);
+    }
+
+    .home-names {
+      font-size: clamp(2.6rem, 8vw, 3.4rem);
+      line-height: 1.15;
+      color: var(--primary);
+      font-family: var(--lux-font-vidaloka-2);
+      margin-bottom: 0.5rem;
+      font-weight: 400;
+    }
+
+    .home-names span {
+      font-family: var(--lux-font-imperial-script);
+      color: var(--secondary);
+      font-size: 0.95em;
+      margin: 0 0.3rem;
+    }
+
+    .home-date-box {
+      font-size: 0.86rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--secondary);
+      font-weight: 600;
+      font-family: var(--lux-font-cinzel);
+      margin-bottom: 1.8rem;
+    }
+
+    /* Countdown Grid */
+    .countdown-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      width: 100%;
+      max-width: 360px;
+      margin: 0 auto;
+    }
+
+    .countdown-box {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-sm);
+      padding: 14px 6px;
+      text-align: center;
+      box-shadow: var(--shadow-soft);
+      position: relative;
+    }
+
+    .countdown-box::before {
+      content: "";
+      position: absolute;
+      inset: 2px;
+      border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+      border-radius: 4px;
+      pointer-events: none;
+    }
+
+    .countdown-num {
+      font-size: 1.65rem;
+      font-weight: 600;
+      color: var(--primary);
+      line-height: 1;
+      font-family: var(--lux-font-iskry-regular-2);
+      margin-bottom: 4px;
+    }
+
+    .countdown-lbl {
+      font-size: 0.65rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-family: var(--lux-font-cinzel);
+    }
+
+    /* Section Quote / Sacred Union */
+    .sec-quote {
+      background: color-mix(in srgb, var(--primary) 5%, transparent);
+      border-top: 1px solid var(--glass-border);
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .greeting-text {
+      font-family: var(--lux-font-traditional-arabic);
+      font-size: 1.45rem;
+      color: var(--primary);
+      margin-bottom: 1.2rem;
+      line-height: 1.6;
+    }
+
+    .quote-content {
+      font-family: var(--lux-font-vidaloka-2);
+      font-size: 1.15rem;
+      line-height: 1.8;
+      color: var(--text-main);
+      max-width: 380px;
+      margin: 0 auto 1.2rem;
+      position: relative;
+    }
+
+    .quote-author {
+      font-size: 0.76rem;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--primary);
+      font-weight: 700;
+      font-family: var(--lux-font-cinzel);
+    }
+
+    /* Section Mempelai (#couple) */
+    .couple-container {
+      display: flex;
+      flex-direction: column;
+      gap: 3.2rem;
+      max-width: 380px;
+      margin: 0 auto;
+    }
+
+    .couple-card {
+      text-align: center;
+    }
+
+    .couple-photo-wrap {
+      width: 220px;
+      aspect-ratio: 3/4;
+      margin: 0 auto 1.4rem;
+      position: relative;
+      box-shadow: var(--shadow-elevated);
+      border-radius: var(--radius-arch);
+      border: 3px solid color-mix(in srgb, var(--accent) 60%, transparent);
+      outline: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+      outline-offset: 4px;
+      overflow: hidden;
+    }
+
+    .couple-photo-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .couple-name {
+      font-size: 1.85rem;
+      font-family: var(--lux-font-vidaloka-2);
+      color: var(--primary);
+      margin-bottom: 0.3rem;
+      font-weight: 500;
+    }
+
+    .couple-role {
+      font-size: 0.74rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--secondary);
+      font-weight: 700;
+      font-family: var(--lux-font-cinzel);
+      margin-bottom: 0.6rem;
+    }
+
+    .couple-parents {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      max-width: 280px;
+      margin: 0 auto 0.8rem;
+    }
+
+    .couple-ig {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 16px;
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-full);
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: all 0.3s ease;
+      background: var(--glass-bg);
+      font-family: var(--lux-font-cinzel);
+      letter-spacing: 0.1em;
+    }
+
+    .couple-ig:hover {
+      color: #ffffff;
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .couple-ig svg {
+      width: 13px;
+      height: 13px;
+      fill: currentColor;
+    }
+
+    .couple-divider-amp {
+      font-family: var(--lux-font-imperial-script);
+      font-size: 4rem;
+      color: var(--secondary);
+      line-height: 1;
+      margin: -1.2rem 0;
+    }
+
+    /* Section Events (#events) */
+    .events-unified-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.8rem;
+      width: 100%;
+      max-width: 440px;
+      margin: 0 auto;
+    }
+
+    .events-sessions-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1.4rem;
+      width: 100%;
+    }
+
+    .event-block-item {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 2rem 1.5rem;
+      text-align: center;
+      box-shadow: var(--shadow-soft);
+      position: relative;
+    }
+
+    .ev-cat {
+      display: inline-block;
+      padding: 5px 16px;
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-full);
+      font-size: 0.7rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--primary);
+      font-weight: 700;
+      font-family: var(--lux-font-cinzel);
+      margin-bottom: 0.8rem;
+      background: color-mix(in srgb, var(--accent) 25%, transparent);
+    }
+
+    .ev-name {
+      font-size: 1.6rem;
+      font-family: var(--lux-font-vidaloka-2);
+      color: var(--primary);
+      margin-bottom: 0.4rem;
+      font-weight: 500;
+    }
+
+    .ev-time {
+      font-size: 0.88rem;
+      color: var(--secondary);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.6rem;
+    }
+
+    .ev-notes {
+      font-size: 0.78rem;
+      font-style: italic;
+      color: var(--text-muted);
+      margin-top: 0.3rem;
+    }
+
+    .event-unified-venue-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 2rem 1.5rem;
+      text-align: center;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .venue-card-lbl {
+      display: inline-block;
+      font-size: 0.68rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--secondary);
+      font-weight: 700;
+      font-family: var(--lux-font-cinzel);
+      margin-bottom: 0.5rem;
+    }
+
+    .ev-venue {
+      font-size: 1.15rem;
+      font-family: var(--lux-font-vidaloka-2);
+      color: var(--text-main);
+      margin-bottom: 0.3rem;
+      font-weight: 600;
+    }
+
+    .ev-addr {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 1.3rem;
+    }
+
+    .btn-maps,
+    .btn-map-outline {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 24px;
+      border-radius: var(--radius-full);
+      background: var(--primary);
+      border: 1px solid var(--primary);
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 0.74rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 600;
+      font-family: var(--lux-font-cinzel);
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px color-mix(in srgb, var(--primary) 25%, transparent);
+    }
+
+    .btn-maps:hover,
+    .btn-map-outline:hover {
+      background: color-mix(in srgb, var(--primary) 85%, #000000);
+      color: #ffffff;
+      transform: translateY(-2px);
+    }
+
+    .btn-maps svg,
+    .btn-map-outline svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+
+    /* Section Story (#story) */
+    .story-timeline {
+      position: relative;
+      max-width: 380px;
+      margin: 0 auto;
+      padding-left: 2rem;
+      text-align: left;
+    }
+
+    .story-timeline::before {
+      content: "";
+      position: absolute;
+      left: 7px;
+      top: 10px;
+      bottom: 10px;
+      width: 1px;
+      background: color-mix(in srgb, var(--accent) 60%, transparent);
+    }
+
+    .story-item {
+      position: relative;
+      margin-bottom: 2.2rem;
+    }
+
+    .story-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .story-dot {
+      position: absolute;
+      left: -2rem;
+      top: 6px;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: var(--bg-light);
+      border: 2px solid var(--primary);
+    }
+
+    .story-date {
+      display: inline-block;
+      font-size: 0.74rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--primary);
+      font-weight: 700;
+      font-family: var(--lux-font-cinzel);
+      margin-bottom: 0.3rem;
+    }
+
+    .story-title {
+      font-size: 1.4rem;
+      font-family: var(--lux-font-vidaloka-2);
+      color: var(--primary);
+      margin-bottom: 0.4rem;
+      font-weight: 500;
+    }
+
+    .story-content {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.65;
+    }
+
+    /* Section Gift (#gift) */
+    .gift-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      max-width: 380px;
+      margin: 0 auto;
+    }
+
+    .gift-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 1.8rem 1.4rem;
+      text-align: center;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .gift-bank-name {
+      font-size: 1.35rem;
+      font-family: var(--lux-font-cinzel);
+      letter-spacing: 0.1em;
+      color: var(--primary);
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+
+    .gift-number {
+      font-size: 1.25rem;
+      letter-spacing: 0.12em;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 0.2rem;
+      font-family: monospace;
+    }
+
+    .gift-holder {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 1rem;
+    }
+
+    .btn-copy {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 20px;
+      border-radius: var(--radius-full);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      color: var(--primary);
+      font-size: 0.72rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-weight: 700;
+      font-family: var(--lux-font-cinzel);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-copy:hover {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    /* Section RSVP & Wishes (#wishes) */
+    .rsvp-form-container {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 2rem 1.5rem;
+      max-width: 380px;
+      margin: 0 auto 2.5rem;
+      text-align: left;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.74rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+      font-weight: 700;
+      font-family: var(--lux-font-cinzel);
+    }
+
+    .form-input,
+    .form-select,
+    .form-textarea {
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--bg-light);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-sm);
+      font-size: 16px;
+      color: var(--text-main);
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.3s ease;
+    }
+
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+      border-color: var(--primary);
+    }
+
+    .form-radio-group {
+      display: flex;
+      gap: 12px;
+    }
+
+    .radio-pill {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 500;
+      background: var(--bg-light);
+      transition: all 0.2s ease;
+    }
+
+    .radio-pill input {
+      display: none;
+    }
+
+    .radio-pill.active {
+      border-color: var(--primary);
+      background: color-mix(in srgb, var(--primary) 10%, transparent);
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .btn-submit-rsvp {
+      width: 100%;
+      padding: 14px;
+      border-radius: var(--radius-full);
+      background: var(--primary);
+      color: #ffffff;
+      border: 1px solid var(--primary);
+      font-size: 0.82rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 700;
+      font-family: var(--lux-font-cinzel);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px color-mix(in srgb, var(--primary) 25%, transparent);
+    }
+
+    .btn-submit-rsvp:hover {
+      background: color-mix(in srgb, var(--primary) 85%, #000000);
+      border-color: color-mix(in srgb, var(--primary) 85%, #000000);
+    }
+
+    /* Wishes Feed */
+    .wishes-feed-box {
+      max-width: 380px;
+      margin: 0 auto;
+      max-height: 320px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding-right: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      text-align: left;
+    }
+
+    .wish-item-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+    }
+
+    .wish-sender-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .wish-sender-name {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--primary);
+      font-family: var(--lux-font-vidaloka-2);
+    }
+
+    .wish-status-badge {
+      font-size: 0.65rem;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      background: color-mix(in srgb, var(--primary) 12%, transparent);
+      color: var(--primary);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-family: var(--lux-font-cinzel);
+    }
+
+    .wish-text-body {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    .wish-timestamp {
+      font-size: 0.68rem;
+      color: color-mix(in srgb, var(--text-muted) 80%, transparent);
+      margin-top: 6px;
+      display: block;
+    }
+
+    /* Section Closing */
+    .sec-closing {
+      padding: 5.5rem 1.8rem 4rem;
+      background: color-mix(in srgb, var(--primary) 6%, transparent);
+      border-top: 1px solid var(--glass-border);
+      position: relative;
+    }
+
+    .closing-photo-wrap {
+      width: 100%;
+      max-width: 300px;
+      aspect-ratio: 4/5;
+      margin: 0 auto 2rem;
+      border-radius: var(--radius-arch);
+      overflow: hidden;
+      box-shadow: var(--shadow-elevated);
+      border: 3px solid color-mix(in srgb, var(--accent) 60%, transparent);
+      outline: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+      outline-offset: 4px;
+    }
+
+    .closing-photo-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .closing-quote-text {
+      font-family: var(--lux-font-vidaloka-2);
+      font-size: 1.15rem;
+      color: var(--text-main);
+      max-width: 360px;
+      margin: 0 auto 1.5rem;
+      line-height: 1.7;
+    }
+
+    .closing-names {
+      font-size: 2.6rem;
+      font-family: var(--lux-font-vidaloka-2);
+      color: var(--primary);
+      margin-bottom: 0.4rem;
+      font-weight: 400;
+    }
+
+    .closing-names span {
+      font-family: var(--lux-font-imperial-script);
+      color: var(--secondary);
+      font-size: 1.05em;
+      margin: 0 0.35rem;
+    }
+
+    .closing-sub-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-family: var(--lux-font-cinzel);
+    }
+
+    /* =================================================================== */
+    /* 7. SMART BOTTOM DOCK (MOBILE EMULATION DOCK)                        */
+    /* =================================================================== */
+    .bottom-dock {
+      position: fixed;
+      bottom: calc(18px + env(safe-area-inset-bottom));
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: color-mix(in srgb, var(--bg-light) 95%, transparent);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-full);
+      padding: 6px 12px;
+      box-shadow: 0 10px 30px color-mix(in srgb, var(--primary) 15%, transparent);
+      backdrop-filter: blur(12px);
+      transition: all 0.4s ease;
+    }
+
+    @media (min-width: 900px) {
+      .bottom-dock {
+        left: calc(100% - 230px);
+        transform: translateX(-50%);
+      }
+    }
+
+    .dock-link {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 10px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 600;
+      font-family: var(--lux-font-cinzel);
+      border-radius: var(--radius-full);
+      transition: all 0.2s ease;
+    }
+
+    .dock-link:hover,
+    .dock-link.active {
+      color: var(--primary);
+      background: color-mix(in srgb, var(--accent) 35%, transparent);
+    }
+
+    .dock-link svg {
+      width: 17px;
+      height: 17px;
+      fill: currentColor;
+      margin-bottom: 2px;
+    }
+
+    .dock-audio-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      cursor: pointer;
+      margin-left: 4px;
+      transition: transform 0.3s ease;
+    }
+
+    .dock-audio-btn.playing {
+      animation: audioPulse 2s infinite ease-in-out;
+    }
+
+    @keyframes audioPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
+    .dock-audio-btn svg {
+      width: 15px;
+      height: 15px;
+      fill: currentColor;
+    }
+
+    /* Modal Check-in Ticket */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: color-mix(in srgb, var(--bg-dark) 70%, transparent);
+      backdrop-filter: blur(8px);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-card {
+      background: var(--bg-light);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 2.2rem 1.6rem;
+      max-width: 360px;
+      width: 100%;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 20px 50px color-mix(in srgb, var(--bg-dark) 40%, transparent);
+    }
+
+    .btn-close-modal {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid var(--glass-border);
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+    }
+
+    .btn-close-modal:hover {
+      color: var(--primary);
+    }
+
+    /* Toast Notification */
+    .toast-msg {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-30px);
+      background: var(--primary);
+      color: #ffffff;
+      padding: 10px 22px;
+      border-radius: var(--radius-full);
+      font-size: 0.78rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-weight: 600;
+      font-family: var(--lux-font-cinzel);
+      box-shadow: 0 8px 25px color-mix(in srgb, var(--primary) 35%, transparent);
+      z-index: 11000;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s ease;
+    }
+
+    .toast-msg.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* Jembatan kontrak satu nama: seksi mesin (QR, galeri, kado, seksi tambahan, kenangan, RSVP) memakai .sec-block,
+       .sec-lbl, dan .sec-h2; gayanya disamakan dengan .sec-flow, .sec-eyebrow, dan .sec-main-title Burgundy Royale. */
+    .sec-block {
+      padding: 4.5rem 1.8rem;
+      position: relative;
+      text-align: center;
+    }
+    .sec-lbl {
+      display: block;
+      font-size: 0.74rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin-bottom: 0.6rem;
+      font-weight: 700;
+      font-family: var(--lux-font-cinzel);
+    }
+    .sec-h2 {
+      font-size: clamp(2rem, 6.5vw, 2.6rem);
+      line-height: 1.2;
+      color: var(--primary);
+      margin-bottom: 0.8rem;
+      font-weight: 400;
+      font-family: var(--lux-font-vidaloka-2);
+      overflow-wrap: break-word;
+    }
+    #rsvp .rsvp-card-box > .sec-lbl { display: none !important; }
+    .couple-parents p { margin: 0; }
+    .ev-name { overflow-wrap: break-word; word-break: break-word; }
+    /* Tombol peta mesin membawa warna teks inline var(--primary), sama dengan latar .btn-map-outline tema. */
+    .event-block-item .btn-map-outline {
+      color: var(--bg-light) !important;
+      text-decoration: none !important;
+      margin-top: 14px !important;
+      display: flex !important;
+      justify-content: center;
+      text-align: center;
+      width: fit-content;
+      max-width: 100%;
+      margin-left: auto;
+      margin-right: auto;
+      padding: 10px 16px;
+      font-size: 10.5px !important;
+      letter-spacing: 0.06em;
+      line-height: 1.4;
+    }
+    /* Tanpa unggahan DESKTOP_SIDEBAR, sidebarPhotoUrl berisi monogram SVG mesin yang tulisan ACARA-nya jatuh di antara
+       nama dan tanggal; tekstur latar tema dipakai sebagai gantinya. */
+    .sidebar-desktop.is-avatar {
+      background: url('/assets/ornaments/background/background-red.webp') center/cover no-repeat, var(--bg-dark);
+    }
+    .cover-names, .home-names, .sidebar-desktop-names, .closing-names, .couple-name { overflow-wrap: break-word; }
+
+    /* Latar background-red.webp gelap, sedangkan seluruh teks tema berwarna burgundy gelap: lapisan scrim terang
+       dari --bg-light menjaga keterbacaan tanpa menghilangkan tekstur latar. */
+    .scrim-canvas {
+      background: color-mix(in srgb, var(--bg-light) 84%, transparent);
+    }
+
+    .cover-subtitle {
+      font-size: 0.8rem;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.82);
+      max-width: 320px;
+      margin: 0 auto 1.2rem;
+    }
+    .home-info {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 0.6rem;
+    }
+
+    /* Tombol musik satu nama disuntikkan mesin (#musicFab, gaya inline); tampilan tombol audio dock Burgundy Royale
+       dipasang dengan !important. */
+    #musicFab {
+      position: fixed !important;
+      top: calc(18px + env(safe-area-inset-top, 0px)) !important;
+      bottom: auto !important;
+      left: auto !important;
+      right: calc(18px + env(safe-area-inset-right, 0px)) !important;
+      width: 42px !important;
+      height: 42px !important;
+      border-radius: 50% !important;
+      background: var(--primary) !important;
+      color: #ffffff !important;
+      border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent) !important;
+      box-shadow: 0 6px 20px color-mix(in srgb, var(--primary) 35%, transparent) !important;
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      z-index: 1001 !important;
+      cursor: pointer;
+    }
+    #musicFab.playing { animation: audioPulse 2s infinite ease-in-out; }
+  </style>
+</head>
+
+<body>
+  <!-- =================================================================== -->
+  <!-- 3-LAYER BACKGROUND STACK                                            -->
+  <!-- =================================================================== -->
+  <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
+  <div class="scrim-canvas"></div>
+
+  <!-- =================================================================== -->
+  <!-- COVER SCREEN (PINTU PEMBUKA UNDANGAN)                               -->
+  <!-- =================================================================== -->
+  <div class="cover-screen" id="coverScreen">
+    <div class="cover-overlay"></div>
+    <div id="birdsLottieCover" class="royale-birds-layer"></div>
+    <img src="/assets/ornaments/burgundy-royale/bunga-burgundy-royale.webp" alt="" class="cover-floral-ornament" />
+
+    <div class="cover-content">
+      <span class="cover-royale-badge" data-lux-field="customLabels.coverBadge">{{eventLabel}}</span>
+      <h1 class="cover-names">{{mainNickname}}</h1>
+      <p class="cover-date-row">{{eventDateFormatted}}</p>
+
+      <div class="cover-guest-box">
+        <span class="cover-guest-lbl">KEPADA YTH. BAPAK/IBU/SAUDARA/I</span>
+        <h2 class="cover-guest-name" id="coverGuestName">{{guestName}}</h2>
+      </div>
+
+      <p class="cover-subtitle" data-lux-field="customLabels.coverSubtitle">{{eventIntro}}</p>
+
+      <button type="button" class="btn-open-royale btn-buka" id="openBtn" onclick="openInvitation()">
+        <span data-lux-field="customLabels.openBtn">Buka Undangan</span>
+        <svg viewBox="0 0 24 24">
+          <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- MAIN LAYOUT WRAPPER (DESKTOP SPLIT & MOBILE EMULATION)              -->
+  <!-- =================================================================== -->
+  <div class="layout-wrapper">
+    <aside class="sidebar-desktop{{#unless hasCustomSidebarPhoto}} is-avatar{{/unless}}">
+      <div class="sidebar-desktop-content">
+        <p class="sidebar-desktop-tagline">{{eventLabel}}</p>
+        <h2 class="sidebar-desktop-names">{{mainNickname}}</h2>
+        <p class="sidebar-desktop-date">{{eventDateFormatted}}</p>
+        {{#if openingQuote}}<p class="sidebar-desktop-quote">&ldquo;{{openingQuote}}&rdquo;</p>{{/if}}
+      </div>
+    </aside>
+
+    <main class="main-scroll-panel" id="mainScroll">
+      <div class="main-content">
+
+        <!-- SEKSI 1: PEMBUKA & HITUNG MUNDUR (#home) -->
+        <section class="sec-flow sec-home" id="home">
+          <div id="birdsLottieHero" class="royale-birds-layer"></div>
+          {{#if hasCustomHomePhoto}}<div class="cathedral-hero-frame"><img src="{{homePhotoUrl}}" alt="{{mainNickname}}" /></div>{{/if}}
+          {{#unless hasCustomHomePhoto}}<div class="cathedral-hero-frame"><img src="{{mainPhotoUrl}}" alt="{{mainNickname}}" /></div>{{/unless}}
+
+          <span class="home-tagline" data-lux-field="customLabels.quoteEyebrow">Anda Diundang</span>
+          <h2 class="home-names">{{mainNickname}}</h2>
+          {{#if mainInfoLine}}<p class="home-info">{{mainInfoLine}}</p>{{/if}}
+          <div class="home-date-box">{{eventDateFormatted}}</div>
+
+          <div class="countdown-grid" id="countdownGrid" data-target="{{countdownTarget}}">
+            <div class="countdown-box">
+              <div class="countdown-num" id="cdDays">00</div>
+              <div class="countdown-lbl">HARI</div>
+            </div>
+            <div class="countdown-box">
+              <div class="countdown-num" id="cdHours">00</div>
+              <div class="countdown-lbl">JAM</div>
+            </div>
+            <div class="countdown-box">
+              <div class="countdown-num" id="cdMinutes">00</div>
+              <div class="countdown-lbl">MENIT</div>
+            </div>
+            <div class="countdown-box">
+              <div class="countdown-num" id="cdSeconds">00</div>
+              <div class="countdown-lbl">DETIK</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SEKSI 2: KUTIPAN PEMBUKA -->
+        {{#if openingQuote}}
+        <section class="sec-flow sec-quote">
+          <p class="quote-content" data-lux-field="customLabels.openingQuote">&ldquo;{{openingQuote}}&rdquo;</p>
+          <span class="quote-author" data-lux-field="customLabels.openingQuoteRef">{{openingQuoteRef}}</span>
+        </section>
+        {{/if}}
+
+        <!-- SEKSI 3: PROFIL TOKOH (#profile) -->
+        <section class="sec-flow sec-couple" id="profile">
+          <span class="sec-eyebrow" data-lux-field="customLabels.coupleEyebrow">{{profileEyebrow}}</span>
+          <h2 class="sec-main-title" data-lux-field="customLabels.coupleTitle">{{profileTitle}}</h2>
+          <p class="sec-sub" data-lux-field="customLabels.coupleSub">{{profileSub}}</p>
+
+          <div class="couple-container">
+            <div class="couple-card">
+              <div class="couple-photo-wrap">
+                <img src="{{mainPhotoUrl}}" alt="{{mainName}}" loading="lazy" />
+              </div>
+              <h3 class="couple-name">{{mainName}}</h3>
+              {{#if mainInfoLine}}<p class="couple-role">{{mainInfoLine}}</p>{{/if}}
+              {{#if mainDetailLine}}<p class="couple-parents">{{mainDetailLine}}</p>{{/if}}
+              <div class="couple-parents">{{parentsHtml}}</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SEKSI 4: RANGKAIAN ACARA (#event) -->
+        <section class="sec-flow sec-events" id="event">
+          <h2 class="sec-main-title" data-lux-field="customLabels.eventsTitle">{{agendaTitle}}</h2>
+          <div class="home-date-box">{{eventDateFormatted}}</div>
+          {{eventSectionHtml}}
+        </section>
+
+        {{qrPassHtml}}
+
+        {{gallerySectionHtml}}
+
+        {{giftSectionHtml}}
+
+        {{extraSectionsHtml}}
+
+        <!-- SEKSI KONFIRMASI KEHADIRAN & UCAPAN (form dan daftar ucapan dari mesin satu nama) -->
+        <section class="sec-flow sec-wishes" id="rsvp">
+          <span class="sec-eyebrow" data-lux-field="customLabels.wishesEyebrow">Konfirmasi</span>
+          {{rsvpSectionHtml}}
+          {{wishesSectionHtml}}
+        </section>
+
+        {{memoriesSectionHtml}}
+
+        <!-- SEKSI PENUTUP -->
+        <section class="sec-flow sec-closing" id="closing">
+          {{#if hasClosingPhoto}}<div class="closing-photo-wrap"><img src="{{closingPhotoUrl}}" alt="{{mainNickname}}" /></div>{{/if}}
+
+          <p class="closing-quote-text" data-lux-field="customLabels.closingText">{{closingText}}</p>
+
+          <h2 class="closing-names">{{mainNickname}}</h2>
+          <p class="closing-sub-note">{{eventDateFormatted}}</p>
+          <div class="closing-sub-note" style="margin-top:1.4rem; font-size:0.68rem;">{{brandWatermarkHtml}}</div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- SMART BOTTOM DOCK (NAVIGASI RESIK)                                  -->
+  <!-- =================================================================== -->
+  <nav class="bottom-dock" id="bottomDock">
+    <a href="#home" class="dock-link active">
+      <svg viewBox="0 0 24 24">
+        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+      </svg>
+      <span>Home</span>
+    </a>
+    <a href="#profile" class="dock-link">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+      </svg>
+      <span>Profil</span>
+    </a>
+    <a href="#event" class="dock-link">
+      <svg viewBox="0 0 24 24">
+        <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/>
+      </svg>
+      <span>Acara</span>
+    </a>
+    <a href="#gallery" class="dock-link">
+      <svg viewBox="0 0 24 24">
+        <path d="M22 16V4c0-1.1-.9-2-2-2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2zm-11-4l2.03 2.71L16 11l4 5H8l3-4zM2 6v14c0 1.1.9 2 2 2h14v-2H4V6H2z"/>
+      </svg>
+      <span>Galeri</span>
+    </a>
+    <a href="#rsvp" class="dock-link">
+      <svg viewBox="0 0 24 24">
+        <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+      </svg>
+      <span>RSVP</span>
+    </a>
+  </nav>
+
+  <div class="toast-msg" id="toastMsg">Tersalin</div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      // Tanpa ?to= sapaan bawaan jenis acara dari mesin dibiarkan.
+      const urlParams = new URLSearchParams(window.location.search);
+      const toName = urlParams.get("to") || urlParams.get("u");
+      if (toName) {
+        const name = decodeURIComponent(toName.replace(/\+/g, " "));
+        const guestEl = document.getElementById("coverGuestName");
+        if (guestEl) guestEl.textContent = name;
+        const rsvpNameIn = document.getElementById("universalRsvpName");
+        if (rsvpNameIn) rsvpNameIn.value = name;
+      }
+      initCountdown();
+
+      if (typeof lottie !== "undefined") {
+        ["birdsLottieCover", "birdsLottieHero"].forEach(function (id) {
+          const el = document.getElementById(id);
+          if (el) {
+            lottie.loadAnimation({
+              container: el,
+              renderer: "svg",
+              loop: true,
+              autoplay: true,
+              path: "/assets/lottie/burgundy-royale/birds.json"
+            });
+          }
+        });
+      }
+    });
+
+    // Audio dan tombol musik disuntikkan mesin di akhir body, jadi dicari saat dipakai.
+    function openInvitation() {
+      const cover = document.getElementById("coverScreen");
+      if (cover) cover.classList.add("opened");
+      if (window.__DISABLE_AUDIO__ || window !== window.top) return;
+      const audio = document.getElementById("luxAudioPlayer");
+      if (audio) {
+        audio.play().then(() => {
+          const fab = document.getElementById("musicFab");
+          if (fab) fab.classList.add("playing");
+        }).catch(() => {});
+      }
+    }
+
+    function copyText(text, msg) {
+      if (!navigator.clipboard) {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        showToast(msg || "Tersalin ke clipboard!");
+        return;
+      }
+      navigator.clipboard.writeText(text).then(() => {
+        showToast(msg || "Tersalin ke clipboard!");
+      }).catch(() => {
+        showToast("Gagal menyalin.");
+      });
+    }
+
+    function initCountdown() {
+      const grid = document.getElementById("countdownGrid");
+      if (!grid) return;
+      const targetStr = grid.getAttribute("data-target");
+      if (!targetStr) return;
+
+      const targetTime = new Date(targetStr).getTime();
+      if (isNaN(targetTime)) return;
+
+      function update() {
+        const diff = targetTime - Date.now();
+        if (diff <= 0) return;
+        const days = Math.floor(diff / 86400000);
+        const hours = Math.floor((diff % 86400000) / 3600000);
+        const minutes = Math.floor((diff % 3600000) / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+        document.getElementById("cdDays").textContent = String(days).padStart(2, "0");
+        document.getElementById("cdHours").textContent = String(hours).padStart(2, "0");
+        document.getElementById("cdMinutes").textContent = String(minutes).padStart(2, "0");
+        document.getElementById("cdSeconds").textContent = String(seconds).padStart(2, "0");
+      }
+
+      update();
+      setInterval(update, 1000);
+    }
+
+    function showToast(text) {
+      const toast = document.getElementById("toastMsg");
+      if (!toast) return;
+      toast.textContent = text;
+      toast.classList.add("show");
+      setTimeout(() => {
+        toast.classList.remove("show");
+      }, 2500);
+    }
+
+    window.addEventListener("scroll", function () {
+      const sections = document.querySelectorAll("section[id]");
+      const scrollPos = window.scrollY + 200;
+
+      sections.forEach(sec => {
+        const top = sec.offsetTop;
+        const height = sec.offsetHeight;
+        const id = sec.getAttribute("id");
+
+        if (scrollPos >= top && scrollPos < top + height) {
+          document.querySelectorAll(".dock-link").forEach(link => {
+            link.classList.remove("active");
+            if (link.getAttribute("href") === "#" + id) {
+              link.classList.add("active");
+            }
+          });
+        }
+      });
+    });
+  </script>
+  {{musicPlayerHtml}}
+</body>
+
+</html>

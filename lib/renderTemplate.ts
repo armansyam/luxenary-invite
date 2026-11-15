@@ -156,6 +156,7 @@ export const THEME_MAP: Record<string, ThemeEntry> = {
   "burgundy-royale": { file: "burgundy-royale.html", eventType: "wedding", style: "modern" },
   "starlit-dreams": { file: "starlit-dreams.html", eventType: "wedding", style: "modern" },
   "vintage-forest": { file: "vintage-forest.html", eventType: "wedding", style: "modern" },
+  "hablur": { file: "hablur.html", eventType: "wedding", style: "modern" },
 
   // Birthday Series
   "festivo": { file: "festivo.html", eventType: "birthday", style: "modern" },
@@ -212,6 +213,42 @@ export const THEME_MAP: Record<string, ThemeEntry> = {
   "panggung": { file: "panggung.html", eventType: "gathering", style: "modern" },
   "lapang": { file: "lapang.html", eventType: "gathering", style: "minimalist" },
   "prisma": { file: "prisma.html", eventType: "gathering", style: "minimalist" },
+  "biasan": { file: "biasan.html", eventType: "gathering", style: "modern" },
+
+  // Versi satu nama dari tema pernikahan (nama sama, id berakhiran -acara): dipakai semua jenis acara non-pernikahan.
+  "kalandra-acara": { file: "kalandra-acara.html", eventType: "gathering", style: "minimalist" },
+  "valente-acara": { file: "valente-acara.html", eventType: "gathering", style: "minimalist" },
+  "aurelia-acara": { file: "aurelia-acara.html", eventType: "gathering", style: "minimalist" },
+  "artisan-acara": { file: "artisan-acara.html", eventType: "gathering", style: "minimalist" },
+  "verona-acara": { file: "verona-acara.html", eventType: "gathering", style: "minimalist" },
+  "aeterna-acara": { file: "aeterna-acara.html", eventType: "gathering", style: "minimalist" },
+  "prameswari-acara": { file: "prameswari-acara.html", eventType: "gathering", style: "traditional" },
+  "dillalucky-acara": { file: "dillalucky-acara.html", eventType: "gathering", style: "traditional" },
+  "lagaligo-acara": { file: "lagaligo-acara.html", eventType: "gathering", style: "traditional" },
+  "toraja-acara": { file: "toraja-acara.html", eventType: "gathering", style: "traditional" },
+  "rantepao-acara": { file: "rantepao-acara.html", eventType: "gathering", style: "traditional" },
+  "makale-acara": { file: "makale-acara.html", eventType: "gathering", style: "traditional" },
+  "bugis-acara": { file: "bugis-acara.html", eventType: "gathering", style: "traditional" },
+  "bone-acara": { file: "bone-acara.html", eventType: "gathering", style: "traditional" },
+  "wajo-acara": { file: "wajo-acara.html", eventType: "gathering", style: "traditional" },
+  "soppeng-acara": { file: "soppeng-acara.html", eventType: "gathering", style: "traditional" },
+  "makassar-acara": { file: "makassar-acara.html", eventType: "gathering", style: "traditional" },
+  "gowa-acara": { file: "gowa-acara.html", eventType: "gathering", style: "traditional" },
+  "maros-acara": { file: "maros-acara.html", eventType: "gathering", style: "traditional" },
+  "takalar-acara": { file: "takalar-acara.html", eventType: "gathering", style: "traditional" },
+  "bulukumba-acara": { file: "bulukumba-acara.html", eventType: "gathering", style: "traditional" },
+  "badrika-acara": { file: "badrika-acara.html", eventType: "gathering", style: "modern" },
+  "mayang-acara": { file: "mayang-acara.html", eventType: "gathering", style: "modern" },
+  "candani-acara": { file: "candani-acara.html", eventType: "gathering", style: "modern" },
+  "wave-acara": { file: "wave-acara.html", eventType: "gathering", style: "modern" },
+  "papercut-acara": { file: "papercut-acara.html", eventType: "gathering", style: "modern" },
+  "ameera-acara": { file: "ameera-acara.html", eventType: "gathering", style: "modern" },
+  "chronicle-acara": { file: "chronicle-acara.html", eventType: "gathering", style: "modern" },
+  "lumina-acara": { file: "lumina-acara.html", eventType: "gathering", style: "modern" },
+  "solaria-acara": { file: "solaria-acara.html", eventType: "gathering", style: "modern" },
+  "burgundy-royale-acara": { file: "burgundy-royale-acara.html", eventType: "gathering", style: "modern" },
+  "starlit-dreams-acara": { file: "starlit-dreams-acara.html", eventType: "gathering", style: "modern" },
+  "vintage-forest-acara": { file: "vintage-forest-acara.html", eventType: "gathering", style: "modern" },
 };
 
 const THEME_EVENT_FOLDERS: Array<[string, ThemeEntry["eventType"]]> = [
@@ -1710,6 +1747,13 @@ export async function renderTemplateFile(
   const modulesHref = getModulesCssHref();
   tpl = tpl.replace(/href="\/css\/modules\.css"/g, `href="${modulesHref}"`);
   const GLOBAL_MODULES_CSS = `<link rel="stylesheet" href="${modulesHref}">
+  <style id="luxScrollbarHide">
+    /* Keputusan pemilik (15 Nov 2026): scrollbar halaman dan daftar ucapan tidak ditampilkan di tema mana pun. Menang atas
+       thumb berwarna milik master (aeterna, verona, burgundy-royale, vintage-forest); gulir tetap berfungsi. */
+    html, body, #wishesStream, #wishesFeed, #wishesList, #luxMemoryModal, #luxMemoryModal * { scrollbar-width: none !important; }
+    html::-webkit-scrollbar, body::-webkit-scrollbar, #wishesStream::-webkit-scrollbar, #wishesFeed::-webkit-scrollbar,
+    #wishesList::-webkit-scrollbar, #luxMemoryModal ::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+  </style>
   <style id="luxSmartDockStyles">
     /* Luxenary Engine Smart Dock Home Zone State Guard */
     body.lux-at-home-zone .bottom-dock,

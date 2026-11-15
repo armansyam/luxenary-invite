@@ -1,0 +1,1788 @@
+<!--
+ _      _   _  __  __  _____   _   _      _     ____   __   __
+| |    | | | | \ \/ / | ____| | \ | |    / \   |  _ \  \ \ / /
+| |    | | | |  \  /  |  _|   |  \| |   / _ \  | |_) |  \ V / 
+| |___ | |_| |  /  \  | |___  | |\  |  / ___ \ |  _ <    | |  
+|_____| \___/  /_/\_\ |_____| |_| \_| /_/   \_\|_| \_\   |_|  
+
+  ==============================================================
+  STOP! PERHATIAN!
+  --------------------------------------------------------------
+  Sistem dan desain tema ini adalah milik eksklusif Luxenary.
+  Dilarang keras menyalin, menduplikasi, atau menjual ulang 
+  tanpa izin resmi dari pihak Luxenary (luxenary.id).
+  
+  Hak cipta dilindungi undang-undang.
+  ==============================================================
+-->
+<!--
+  CHRONICLE (ACARA) — versi satu nama dari tema pernikahan Chronicle (themes/wedding/modern/chronicle.html).
+  Kontrak satu nama (seperti prisma): dapat dipakai ulang tahun, khitan, aqiqah, wisuda, dan acara umum.
+  CSS dan gaya sama dengan versi pernikahan; seksi mempelai diganti profil tokoh, RSVP dan modul dari mesin satu nama.
+-->
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>{{mainNickname}}</title>
+
+  <!-- THEME TYPOGRAPHY: Chronicle High-Fashion Editorial -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bellefair&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,700;1,6..96,400&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="/fonts/fonts.css">
+
+  <style>
+    :root {
+      --primary: #262626;
+      --secondary: #404040;
+      --accent: #c0a062;
+      --bg-light: #f5f5f5;
+      --bg-dark: #0f0f0f;
+      --text-dark: #171717;
+      --editorial-cream: #f4ede4;
+      --editorial-paper: #eae0d0;
+      --editorial-dark: #0e0e11;
+      --editorial-card: rgba(24, 24, 29, 0.94);
+      --editorial-border: rgba(244, 237, 228, 0.22);
+      --editorial-border-bright: rgba(244, 237, 228, 0.6);
+      /* Ditambahkan tokenisasi master (warna dan huruf yang sebelumnya tertulis langsung). */
+      --lux-c-f4ede4: #f4ede4;
+      --lux-c-16161b: #16161b;
+      --lux-c-0e0e11: #0e0e11;
+      --lux-c-141419: #141419;
+      --lux-c-d4af37: #d4af37;
+      --lux-c-11100f: #11100f;
+      --lux-c-f5f2eb: #f5f2eb;
+      --lux-c-0d0d11: #0d0d11;
+      --lux-font-newsreader: 'Newsreader', serif;
+      --lux-font-bellefair: 'Bellefair', 'Bodoni Moda', serif;
+      --lux-font-syne: 'Syne', 'Plus Jakarta Sans', sans-serif;
+      --lux-font-syne-2: 'Syne', sans-serif;
+      --lux-font-bellefair-2: 'Bellefair', serif;
+      --lux-font-bodoni-moda: 'Bodoni Moda', serif;
+      --lux-font-plus-jakarta-sans: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    ::selection {
+      background: color-mix(in srgb, var(--accent) 40%, transparent);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    body {
+      font-family: var(--lux-font-newsreader);
+      background-color: var(--bg-dark, var(--editorial-dark));
+      color: var(--lux-c-f4ede4);
+      overflow-x: hidden;
+      width: 100%;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Sembunyikan scrollbar visual bawaan peramban */
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+
+    /* TYPOGRAPHY CLASSES */
+    .font-editorial-masthead {
+      font-family: var(--lux-font-bellefair);
+    }
+
+    .font-editorial-sans {
+      font-family: var(--lux-font-syne);
+    }
+
+    .font-editorial-body {
+      font-family: var(--lux-font-newsreader);
+    }
+
+    /* ANIMATIONS & MICRO-INTERACTIONS */
+    @keyframes editorialBorderScan {
+      0% {
+        border-color: color-mix(in srgb, var(--lux-c-f4ede4) 20%, transparent);
+      }
+
+      50% {
+        border-color: color-mix(in srgb, var(--lux-c-f4ede4) 60%, transparent);
+      }
+
+      100% {
+        border-color: color-mix(in srgb, var(--lux-c-f4ede4) 20%, transparent);
+      }
+    }
+
+    .reveal-on-scroll {
+      opacity: 0;
+      transform: translateY(25px);
+      transition: all 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .reveal-on-scroll.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* 1. COVER SCREEN (DREAMBOLLEN V2 OVERLAY) */
+    .cover-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2.5rem 1.5rem;
+      background: radial-gradient(circle at center, color-mix(in srgb, var(--lux-c-16161b) 90%, transparent) 0%, color-mix(in srgb, var(--lux-c-0e0e11) 98%, transparent) 100%),
+      url('{{landingCoverUrl}}') center/cover no-repeat;
+      transition: opacity 0.7s cubic-bezier(0.65, 0, 0.35, 1), visibility 0.7s;
+    }
+
+    .cover-overlay.opened,
+    .cover-screen.opened {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .cover-center {
+      width: 100%;
+      max-width: 850px;
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .cover-tagline {
+      font-family: var(--lux-font-syne-2);
+      font-size: 0.75rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--editorial-paper);
+      margin-bottom: 0.8rem;
+      font-weight: 600;
+    }
+
+    .cover-names {
+      font-size: clamp(3rem, 11vw, 5.5rem);
+      font-family: var(--lux-font-bellefair-2);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #fff;
+      line-height: 0.95;
+      margin-bottom: 1.8rem;
+    }
+
+    .cover-names em {
+      font-style: italic;
+      font-size: 0.75em;
+      display: inline-block;
+      margin: 0 0.15em;
+      color: var(--editorial-paper);
+    }
+
+    .cover-guest-pill {
+      background: var(--editorial-card);
+      border: 1px solid var(--editorial-border);
+      border-radius: 4px;
+      padding: 1.2rem 2rem;
+      margin-bottom: 2rem;
+      max-width: 340px;
+      width: 100%;
+    }
+
+    .cover-guest-to {
+      font-family: var(--lux-font-syne-2);
+      font-size: 0.7rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: color-mix(in srgb, var(--lux-c-f4ede4) 70%, transparent);
+    }
+
+    .cover-guest-val {
+      font-size: 1.35rem;
+      color: #fff;
+      margin-top: 0.3rem;
+      font-style: italic;
+      font-family: var(--lux-font-bodoni-moda);
+    }
+
+    .btn-open-issue {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      padding: 0.95rem 2.8rem;
+      background: var(--editorial-cream);
+      color: var(--lux-c-0e0e11);
+      font-family: var(--lux-font-syne-2);
+      font-weight: 700;
+      font-size: 0.78rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      box-shadow: 0 8px 25px color-mix(in srgb, var(--lux-c-f4ede4) 25%, transparent);
+      transition: all 0.35s ease;
+    }
+
+    .btn-open-issue:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px color-mix(in srgb, var(--lux-c-f4ede4) 40%, transparent);
+    }
+
+    /* RESPONSIVE LAYOUT */
+    .layout-wrapper {
+      display: flex;
+      width: 100%;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    .sidebar-desktop {
+      display: none;
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 55%;
+      height: 100vh;
+      background: url('{{sidebarPhotoUrl}}') center/cover no-repeat;
+      z-index: 10;
+    }
+
+    .sidebar-desktop::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, color-mix(in srgb, var(--lux-c-0e0e11) 96%, transparent) 0%, color-mix(in srgb, var(--lux-c-0e0e11) 30%, transparent) 50%, transparent 100%);
+    }
+
+    .sidebar-desktop-content {
+      position: absolute;
+      bottom: 4rem;
+      left: 3.5rem;
+      right: 3.5rem;
+      z-index: 20;
+      color: #fff;
+    }
+
+    /* FIXED BACKGROUND LAYER (FOKUS DI UNDANGAN) */
+    .fixed-bg-layer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100vh;
+      background-image: linear-gradient(180deg, color-mix(in srgb, var(--bg-dark, var(--lux-c-0e0e11)) 85%, transparent) 0%, color-mix(in srgb, var(--bg-dark, var(--lux-c-0e0e11)) 95%, transparent) 100%),
+      url('/assets/ornaments/background/background-cream1.webp');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      z-index: 5;
+      pointer-events: none;
+      filter: grayscale(100%);
+    }
+
+    .fixed-bg-layer.has-custom-bg {
+      filter: none;
+      background-image: linear-gradient(180deg, color-mix(in srgb, var(--bg-dark, var(--lux-c-0e0e11)) 85%, transparent) 0%, color-mix(in srgb, var(--bg-dark, var(--lux-c-0e0e11)) 95%, transparent) 100%),
+      var(--custom-bg);
+    }
+
+    .main-scroll-panel {
+      width: 100%;
+      min-height: 100vh;
+      padding-bottom: 110px;
+      position: relative;
+      z-index: 20;
+    }
+
+    @media (min-width: 900px) {
+      .sidebar-desktop {
+        display: block;
+        width: calc(100% - 460px);
+      }
+
+      .fixed-bg-layer {
+        left: calc(100% - 460px);
+        width: 460px;
+      }
+
+      .main-scroll-panel {
+        width: 460px;
+        margin-left: calc(100% - 460px);
+        min-width: 0;
+      }
+
+      .cover-overlay {
+        width: 100%;
+        left: 0;
+        right: 0;
+        padding: 4rem 2.5rem;
+        background-image: radial-gradient(circle at center, color-mix(in srgb, var(--lux-c-16161b) 78%, transparent) 0%, color-mix(in srgb, var(--lux-c-0e0e11) 94%, transparent) 100%),
+          url('{{landingCoverDesktopUrl}}'),
+          url('{{landingCoverUrl}}');
+        background-size: cover;
+        background-position: center;
+      }
+
+      .cover-center {
+        max-width: 850px;
+        margin: auto;
+      }
+
+      .cover-names {
+        font-size: clamp(3.2rem, 5.5vw, 5.5rem) !important;
+        overflow-wrap: break-word !important;
+      }
+
+      .bottom-dock {
+        left: calc(100% - 230px) !important;
+      }
+
+      .hero-editorial-title {
+        font-size: clamp(2.0rem, 2.4rem, 2.8rem) !important;
+        overflow-wrap: break-word !important;
+      }
+
+      .sec-heading {
+        font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important;
+        overflow-wrap: break-word !important;
+        word-break: break-word !important;
+      }
+    }
+
+    /* ==========================================================================
+       FULL VIEWPORT ISOLATED SLIDES (100VH SETIAP SEKSI)
+       ========================================================================== */
+    .slide-section,
+    #home {
+      width: 100%;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 5.5rem 1.8rem;
+      box-sizing: border-box;
+      position: relative;
+      text-align: center;
+    }
+
+    /* SEKSI HERO / OPENING SLIDE */
+    #home.sec-hero-editorial {
+      background-image: linear-gradient(180deg, color-mix(in srgb, var(--lux-c-0e0e11) 40%, transparent) 0%, color-mix(in srgb, var(--lux-c-0e0e11) 70%, transparent) 65%, color-mix(in srgb, var(--lux-c-0e0e11) 95%, transparent) 100%),
+      url('{{homePhotoUrl}}');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      padding: 5rem 1.8rem;
+    }
+
+    .hero-editorial-tag {
+      font-size: 0.72rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--editorial-paper);
+      margin-bottom: 0.8rem;
+      font-weight: 600;
+    }
+
+    .hero-editorial-title {
+      font-size: clamp(2.6rem, 7vw, 4rem);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #fff;
+      line-height: 1.05;
+      margin: 0.5rem 0 1.2rem;
+    }
+
+    .hero-editorial-title em {
+      font-style: italic;
+      font-size: 0.8em;
+      color: var(--editorial-paper);
+      margin: 0 0.15em;
+    }
+
+    .hero-editorial-sub {
+      font-size: 0.95rem;
+      font-style: italic;
+      color: color-mix(in srgb, var(--lux-c-f4ede4) 85%, transparent);
+      max-width: 380px;
+      margin: 0 auto 1.5rem;
+      line-height: 1.6;
+    }
+
+    .hero-scroll-indicator {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1.2rem;
+      opacity: 0.8;
+    }
+
+    @keyframes heroBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(6px); }
+    }
+
+    .hero-scroll-arrow {
+      animation: heroBounce 2s infinite ease-in-out;
+      color: var(--editorial-paper);
+    }
+
+    .sec-content-box {
+      width: 100%;
+      max-width: 440px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .masthead-banner {
+      width: 100%;
+      border-top: 1px solid var(--editorial-cream);
+      border-bottom: 1px solid var(--editorial-cream);
+      padding: 0.5rem 0;
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      font-family: var(--lux-font-syne-2);
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--editorial-paper);
+    }
+
+    .sec-eyebrow {
+      font-family: var(--lux-font-syne-2);
+      font-size: 0.68rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--editorial-paper);
+      display: block;
+      margin-bottom: 0.4rem;
+      font-weight: 600;
+    }
+
+    .sec-heading {
+      font-size: clamp(2.3rem, 7vw, 3.2rem);
+      font-family: var(--lux-font-bellefair-2);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-main, #ffffff);
+      margin-bottom: 0.6rem;
+    }
+
+    .sec-subheading {
+      font-family: var(--lux-font-syne-2);
+      font-size: 0.72rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--editorial-paper);
+      margin-bottom: 2.2rem;
+    }
+
+    /* EDITORIAL COUPLE CARDS */
+    .couple-card {
+      width: 100%;
+      background: var(--editorial-card);
+      border: 1px solid var(--editorial-border);
+      border-radius: 4px;
+      padding: 2.2rem 1.5rem;
+      margin-bottom: 1.8rem;
+      transition: all 0.4s ease;
+    }
+
+    .couple-card:hover {
+      border-color: var(--editorial-border-bright);
+      transform: translateY(-4px);
+    }
+
+    .couple-photo-wrap {
+      width: 155px;
+      height: 205px;
+      margin: 0 auto 1.3rem;
+      border-radius: 4px;
+      padding: 3px;
+      border: 1px solid var(--editorial-border);
+      overflow: hidden;
+    }
+
+    .couple-photo-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 2px;
+      filter: grayscale(20%);
+      transition: filter 0.4s ease;
+    }
+
+    .couple-photo-wrap:hover img {
+      filter: grayscale(0%);
+    }
+
+    .couple-name {
+      font-size: 1.8rem;
+      font-family: var(--lux-font-bellefair-2);
+      text-transform: uppercase;
+      color: #fff;
+      margin-bottom: 0.3rem;
+    }
+
+    .couple-parents {
+      font-family: var(--lux-font-newsreader);
+      font-size: 0.85rem;
+      color: color-mix(in srgb, var(--lux-c-f4ede4) 75%, transparent);
+      line-height: 1.6;
+      font-style: italic;
+    }
+
+    .couple-ig {
+      display: inline-block;
+      margin-top: 0.6rem;
+      font-family: var(--lux-font-syne-2);
+      font-size: 0.78rem;
+      color: var(--editorial-cream);
+      text-decoration: none;
+    }
+
+    /* COUNTDOWN */
+    .countdown-grid {
+      display: flex;
+      justify-content: center;
+      gap: 0.8rem;
+      margin: 1.8rem 0 1.2rem;
+    }
+
+    .countdown-cell {
+      background: var(--editorial-card);
+      border: 1px solid var(--editorial-border);
+      border-radius: 4px;
+      padding: 0.85rem;
+      min-width: 68px;
+      text-align: center;
+    }
+
+    .countdown-val {
+      font-size: 1.7rem;
+      font-weight: 700;
+      font-family: var(--lux-font-bellefair-2);
+      color: var(--editorial-cream);
+      line-height: 1;
+    }
+
+    .countdown-lbl {
+      font-family: var(--lux-font-syne-2);
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: color-mix(in srgb, var(--lux-c-f4ede4) 70%, transparent);
+      margin-top: 0.3rem;
+    }
+
+    .btn-cal {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.8rem 2.2rem;
+      border: 1px solid var(--editorial-paper);
+      border-radius: 4px;
+      color: var(--editorial-cream);
+      font-family: var(--lux-font-syne-2);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: all 0.3s;
+    }
+
+    .btn-cal:hover {
+      background: var(--editorial-cream);
+      color: var(--lux-c-0e0e11);
+    }
+
+    /* EVENTS UNIFIED CONTAINER STYLING */
+    .events-unified-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      width: 100%;
+      max-width: 440px;
+    }
+
+    .events-sessions-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      width: 100%;
+    }
+
+    .event-block-item {
+      background: var(--editorial-card);
+      border: 1px solid var(--editorial-border);
+      border-radius: 4px;
+      padding: 1.8rem 1.4rem;
+      text-align: center;
+    }
+
+    .ev-cat {
+      font-family: var(--lux-font-syne-2);
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--editorial-paper);
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+      display: block;
+    }
+
+    .ev-name {
+      font-size: 1.5rem;
+      color: #fff;
+      font-family: var(--lux-font-bellefair-2);
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+
+    .ev-time {
+      font-family: var(--lux-font-syne-2);
+      font-size: 0.85rem;
+      color: color-mix(in srgb, var(--lux-c-f4ede4) 85%, transparent);
+    }
+
+    .event-unified-venue-card {
+      background: var(--editorial-card);
+      border: 1px solid var(--editorial-border);
+      border-radius: 4px;
+      padding: 1.8rem 1.4rem;
+      text-align: center;
+    }
+
+    .venue-card-lbl {
+      font-family: var(--lux-font-syne-2);
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--editorial-paper);
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+      display: block;
+    }
+
+    .ev-venue-unified {
+      font-size: 1.4rem;
+      color: #ffffff;
+      font-family: var(--lux-font-bellefair-2);
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+
+    .ev-address-unified {
+      font-family: var(--lux-font-newsreader);
+      font-size: 0.84rem;
+      color: color-mix(in srgb, var(--lux-c-f4ede4) 75%, transparent);
+      line-height: 1.6;
+      margin-bottom: 1.2rem;
+      font-style: italic;
+    }
+
+    .btn-map-outline {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.8rem 2.2rem;
+      border: 1px solid var(--editorial-paper);
+      border-radius: 4px;
+      color: var(--editorial-cream);
+      font-family: var(--lux-font-syne-2);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: all 0.3s;
+    }
+
+    .btn-map-outline:hover {
+      background: var(--editorial-cream);
+      color: var(--lux-c-0e0e11);
+    }
+
+    /* JOURNEY / STORY EDITORIAL TIMELINE */
+    .journey-card-container {
+      background: var(--editorial-card);
+      border: 1px solid var(--editorial-border);
+      border-radius: 4px;
+      padding: 2rem 1.5rem;
+      text-align: left;
+      width: 100%;
+      max-width: 440px;
+    }
+
+    .journey-chapters,
+    .journey-timeline {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 1.8rem;
+      padding-left: 1.8rem;
+      margin: 1.6rem auto 0;
+      text-align: left;
+      width: 100%;
+      max-width: 440px;
+    }
+
+    .journey-timeline::before,
+    .journey-chapters::before {
+      content: '';
+      position: absolute;
+      left: 6px;
+      top: 12px;
+      bottom: 12px;
+      width: 1px;
+      background: linear-gradient(to bottom, var(--editorial-cream), var(--editorial-border));
+    }
+
+    .story-chapter-block,
+    .journey-chapter-item {
+      position: relative;
+      background: transparent;
+      border: none;
+      padding: 0.2rem 0 1.8rem 0;
+      border-bottom: 1px dashed var(--editorial-border);
+      transition: all 0.35s ease;
+    }
+
+    .story-chapter-block:last-child,
+    .journey-chapter-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0.5rem;
+    }
+
+    .story-chapter-block:hover,
+    .journey-chapter-item:hover {
+      transform: translateX(4px);
+    }
+
+    .story-chapter-block::before,
+    .journey-chapter-item::before {
+      content: '';
+      position: absolute;
+      left: calc(-1.8rem + 2px);
+      top: 0.35rem;
+      width: 9px;
+      height: 9px;
+      background: var(--editorial-cream);
+      border: 1.5px solid var(--editorial-dark);
+      transform: rotate(45deg);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--editorial-cream) 20%, transparent);
+      transition: all 0.3s ease;
+    }
+
+    .story-chapter-block:hover::before,
+    .journey-chapter-item:hover::before {
+      background: var(--editorial-cream);
+      box-shadow: 0 0 0 5px color-mix(in srgb, var(--editorial-cream) 40%, transparent);
+    }
+
+    .sc-label,
+    .chapter-eyebrow {
+      font-family: var(--lux-font-syne-2);
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--editorial-paper);
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    .sc-title,
+    .chapter-heading {
+      font-size: 1.25rem;
+      color: #fff;
+      font-family: var(--lux-font-bellefair-2);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+      letter-spacing: 0.04em;
+    }
+
+    .sc-desc,
+    .chapter-desc {
+      font-size: 0.88rem;
+      color: color-mix(in srgb, var(--lux-c-f4ede4) 80%, transparent);
+      line-height: 1.8;
+      font-style: italic;
+    }
+
+    .journey-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .jf-line {
+      flex: 1;
+      height: 1px;
+      background: var(--editorial-border);
+    }
+
+    .jf-signature {
+      font-family: var(--lux-font-bellefair-2);
+      font-size: 1.5rem;
+      text-transform: uppercase;
+      color: var(--editorial-cream);
+    }
+
+    /* GALLERY PUZZLE GRID & LIGHTBOX */
+
+    .btn-show-gallery,
+    .btn-outline-box {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.8rem 2.2rem;
+      border: 1px solid var(--editorial-paper);
+      border-radius: 4px;
+      color: var(--editorial-cream);
+      font-family: var(--lux-font-syne-2);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      cursor: pointer;
+      background: transparent;
+      transition: all 0.3s;
+    }
+
+    .btn-show-gallery:hover,
+    .btn-outline-box:hover {
+      background: var(--editorial-cream);
+      color: var(--lux-c-0e0e11);
+    }
+
+    /* DIGITAL GIFT & BANK CARDS */
+    .bank-card {
+      background: var(--editorial-card);
+      border: 1px solid var(--editorial-border);
+      border-radius: 4px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      text-align: left;
+      width: 100%;
+      max-width: 440px;
+    }
+
+    .bank-label {
+      font-family: var(--lux-font-syne-2);
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #fff;
+      display: block;
+      margin-bottom: 0.2rem;
+    }
+
+    .bank-owner {
+      font-family: var(--lux-font-newsreader);
+      font-size: 0.78rem;
+      color: color-mix(in srgb, var(--lux-c-f4ede4) 75%, transparent);
+      display: block;
+      margin-bottom: 0.6rem;
+      font-style: italic;
+    }
+
+    .bank-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: color-mix(in srgb, var(--lux-c-0e0e11) 85%, transparent);
+      border: 1px solid var(--editorial-border);
+      border-radius: 4px;
+      padding: 0.7rem 1rem;
+    }
+
+    .bank-number {
+      font-family: monospace;
+      font-size: 1.05rem;
+      color: #ffffff;
+      letter-spacing: 0.08em;
+    }
+
+    .btn-copy {
+      background: var(--editorial-cream);
+      color: var(--lux-c-0e0e11);
+      border: none;
+      padding: 0.45rem 1rem;
+      border-radius: 2px;
+      font-family: var(--lux-font-syne-2);
+      font-weight: 700;
+      font-size: 0.7rem;
+      cursor: pointer;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    /* WISHES & RSVP FORM */
+    .rsvp-form-wrap {
+      text-align: left;
+      margin-top: 1.5rem;
+      width: 100%;
+      max-width: 440px;
+    }
+
+    .form-row {
+      margin-bottom: 1rem;
+    }
+
+    .form-lbl {
+      font-family: var(--lux-font-syne-2);
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--editorial-paper);
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    .form-in,
+    .form-sel,
+    .form-ta {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      background: color-mix(in srgb, var(--lux-c-0e0e11) 85%, transparent);
+      border: 1px solid var(--editorial-border);
+      border-radius: 4px;
+      color: #ffffff;
+      font-size: 0.85rem;
+      outline: none;
+      font-family: var(--lux-font-plus-jakarta-sans);
+    }
+
+    .btn-rsvp-submit {
+      width: 100%;
+      padding: 1rem;
+      background: var(--editorial-cream);
+      color: var(--lux-c-0e0e11);
+      border: none;
+      border-radius: 4px;
+      font-family: var(--lux-font-syne-2);
+      font-weight: 700;
+      font-size: 0.8rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .wishes-list {
+      margin-top: 1.5rem;
+      max-height: 320px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      width: 100%;
+      max-width: 440px;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    .wishes-list::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+
+    .wish-item {
+      padding: 1.1rem;
+      background: var(--editorial-card);
+      border: 1px solid var(--editorial-border);
+      border-radius: 4px;
+      text-align: left;
+    }
+
+    .wish-name {
+      font-family: var(--lux-font-syne-2);
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: #fff;
+    }
+
+    .wish-msg {
+      font-size: 0.88rem;
+      color: color-mix(in srgb, var(--lux-c-f4ede4) 85%, transparent);
+      line-height: 1.6;
+      margin-top: 0.3rem;
+      font-style: italic;
+    }
+
+    /* QR PASS CARD */
+    .access-pass-card {
+      background: var(--editorial-card);
+      border: 1px solid var(--editorial-border);
+      border-radius: 4px;
+      padding: 2.4rem 1.5rem;
+      text-align: center;
+      width: 100%;
+      max-width: 440px;
+    }
+
+    .pass-tagline {
+      font-family: var(--lux-font-syne-2);
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--editorial-paper);
+      display: block;
+      margin-bottom: 0.4rem;
+    }
+
+    .pass-names {
+      font-size: 1.8rem;
+      color: #fff;
+      font-family: var(--lux-font-bellefair-2);
+      text-transform: uppercase;
+      margin-bottom: 0.2rem;
+    }
+
+    .pass-qr-wrapper {
+      background: var(--editorial-paper);
+      padding: 14px;
+      display: inline-block;
+      border-radius: 4px;
+      margin: 1.2rem 0;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .pass-guest-name {
+      font-size: 1.35rem;
+      color: #ffffff;
+      font-style: italic;
+      font-family: var(--lux-font-bodoni-moda);
+    }
+
+    /* DOCK */
+    .bottom-dock {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translate3d(-50%, 0, 0);
+      z-index: 100;
+      background: color-mix(in srgb, var(--lux-c-141419) 95%, transparent);
+      border: 1px solid var(--editorial-border);
+      border-radius: 4px;
+      padding: 0.5rem 1.2rem;
+      display: flex;
+      gap: 1.4rem;
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      max-width: 440px;
+      width: calc(100% - 30px);
+      justify-content: space-around;
+      transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform, opacity;
+    }
+
+    .bottom-dock.dock-hidden {
+      transform: translate3d(-50%, calc(100% + 32px), 0);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .dock-btn {
+      color: color-mix(in srgb, var(--lux-c-f4ede4) 70%, transparent);
+      font-family: var(--lux-font-syne-2);
+      font-size: 0.65rem;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+    }
+
+    .dock-btn:hover,
+    .dock-btn.active {
+      color: var(--editorial-cream);
+    }
+
+    .dock-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    /* Tombol musik satu nama disuntikkan mesin (#musicFab, gaya inline); gaya Chronicle dipasang dengan !important. */
+    #musicFab {
+      position: fixed !important;
+      top: 18px !important;
+      bottom: auto !important;
+      right: 18px !important;
+      width: 40px !important;
+      height: 40px !important;
+      border-radius: 50% !important;
+      background: color-mix(in srgb, var(--lux-c-11100f) 85%, transparent) !important;
+      border: 1px solid color-mix(in srgb, var(--lux-c-d4af37) 30%, transparent) !important;
+      color: var(--editorial-cream) !important;
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      z-index: 100 !important;
+      cursor: pointer;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform, opacity;
+    }
+
+    #musicFab.fab-hidden {
+      transform: translateY(-80px);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #musicFab.playing svg {
+      animation: spinVinyl 5s linear infinite;
+    }
+
+    @keyframes spinVinyl {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* FOOTER & CLOSING (Adaptive Full-Height 100vh) */
+    .site-footer {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      box-sizing: border-box;
+      text-align: center;
+      padding: 4rem 1.5rem 6.5rem;
+      background: transparent;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      border-top: 1px solid var(--cinema-border);
+    }
+
+    .site-footer.no-closing-photo {
+      justify-content: center;
+      align-items: center;
+      background: transparent;
+    }
+
+    .site-footer.has-closing-photo {
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .site-footer.has-closing-photo::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2) 0%, color-mix(in srgb, var(--bg-dark, var(--lux-c-0d0d11)) 60%, transparent) 50%, color-mix(in srgb, var(--bg-dark, var(--lux-c-0d0d11)) 95%, transparent) 100%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .site-footer .closing-content {
+      position: relative;
+      z-index: 2;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+    /* Tambahan versi satu nama: kutipan pembuka di seksi hero, intro sampul, dan nama panjang. */
+    .cover-intro {
+      font-size: 0.95rem;
+      font-style: italic;
+      line-height: 1.6;
+      color: color-mix(in srgb, var(--lux-c-f4ede4) 82%, transparent);
+      max-width: 380px;
+      margin: -0.8rem auto 1.6rem;
+    }
+
+    .cover-intro:empty {
+      display: none;
+    }
+
+    .cover-names,
+    .hero-editorial-title,
+    .sidebar-desktop-name,
+    .footer-name,
+    .couple-name,
+    .sec-heading {
+      overflow-wrap: break-word;
+      word-break: break-word;
+    }
+
+    .sidebar-desktop-name {
+      font-size: clamp(3rem, 5vw, 4.5rem);
+      line-height: 1;
+      text-transform: uppercase;
+      color: #fff;
+      margin: 0.5rem 0;
+    }
+
+    .hero-quote-text {
+      font-size: 0.98rem;
+      line-height: 1.95;
+      color: color-mix(in srgb, var(--lux-c-f4ede4) 90%, transparent);
+      max-width: 420px;
+      margin: 0 auto;
+      font-style: italic;
+    }
+
+    .hero-quote-ref {
+      display: block;
+      font-size: 0.72rem;
+      color: var(--editorial-paper);
+      margin-top: 1rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+    }
+
+    .couple-info {
+      font-size: 0.72rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--editorial-paper);
+      margin-bottom: 0.6rem;
+    }
+
+    .couple-parents p {
+      margin: 0;
+    }
+
+    .events-single-stack {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+    }
+
+    .footer-name {
+      font-size: 2.4rem;
+      color: #ffffff;
+      font-weight: 300;
+      margin-bottom: 0.4rem;
+      text-transform: uppercase;
+    }
+
+    .footer-brand {
+      margin-top: 1.4rem;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.55);
+    }
+
+    /* Jembatan kontrak satu nama: seksi mesin (QR, galeri, kado, seksi tambahan, kenangan, RSVP) memakai .sec-block,
+       .sec-lbl, dan .sec-h2; gayanya disamakan dengan .slide-section, .sec-eyebrow, dan .sec-heading Chronicle. */
+    .sec-block {
+      width: 100%;
+      max-width: 460px;
+      margin: 0 auto;
+      padding: 5rem 1.8rem;
+      box-sizing: border-box;
+      position: relative;
+      text-align: center;
+    }
+
+    .sec-lbl {
+      font-family: var(--lux-font-syne-2);
+      font-size: 0.68rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--editorial-paper);
+      display: block;
+      margin-bottom: 0.4rem;
+      font-weight: 600;
+    }
+
+    .sec-h2 {
+      font-size: clamp(2rem, 6.5vw, 2.8rem);
+      font-family: var(--lux-font-bellefair-2);
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      line-height: 1.1;
+      color: var(--text-main);
+      margin-bottom: 0.8rem;
+      overflow-wrap: break-word;
+    }
+
+    #rsvp .rsvp-card-box > .sec-lbl { display: none !important; }
+
+    /* Gaya inline mesin membaca --card-bg, --text-main, --text-muted, dan --primary; --primary Chronicle abu gelap
+       sehingga label, garis, dan tanda tangan mesin diarahkan ke warna kertas editorial agar terbaca di kanvas gelap. */
+    .main-scroll-panel {
+      --card-bg: var(--editorial-card);
+      --text-main: var(--lux-c-f4ede4);
+      --text-muted: color-mix(in srgb, var(--lux-c-f4ede4) 72%, transparent);
+      --event-accent: var(--editorial-paper);
+    }
+
+    .main-scroll-panel [style*="color: var(--primary)"] {
+      color: var(--editorial-paper) !important;
+    }
+
+    .main-scroll-panel [style*="solid color-mix(in srgb, var(--primary)"] {
+      border-color: var(--editorial-border) !important;
+      border-radius: 4px !important;
+    }
+
+    #rsvp .sec-content-box > *,
+    #event .sec-content-box > .events-single-stack {
+      width: 100%;
+    }
+
+    .main-scroll-panel .event-block-item {
+      text-align: center !important;
+    }
+
+    .main-scroll-panel .event-block-item h3 {
+      font-family: var(--lux-font-bellefair-2);
+      text-transform: uppercase;
+      overflow-wrap: break-word;
+    }
+
+    .main-scroll-panel .event-block-item .btn-map-outline {
+      text-decoration: none !important;
+      padding: 0.7rem 1.4rem !important;
+      border: 1px solid var(--editorial-paper) !important;
+      border-radius: 4px !important;
+      font-family: var(--lux-font-syne-2);
+      font-size: 0.68rem !important;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--editorial-cream) !important;
+    }
+
+    #universalRsvpBtn,
+    #memories a[href$="/sharemoment"] {
+      background: var(--editorial-cream) !important;
+      color: var(--lux-c-0e0e11) !important;
+      border-radius: 4px !important;
+      font-family: var(--lux-font-syne-2);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- 1. DREAMBOLLEN COVER OVERLAY -->
+  <div id="coverScreen" class="cover-screen cover-overlay">
+    <div class="cover-center">
+      <p class="cover-tagline" data-lux-field="customLabels.coverBadge">{{eventLabel}}</p>
+      <h1 class="cover-names">{{mainNickname}}</h1>
+      <p class="cover-intro font-editorial-body" data-lux-field="customLabels.coverSubtitle">{{eventIntro}}</p>
+
+      <div class="cover-guest-pill">
+        <p class="cover-guest-to">Kepada Yth. Bapak/Ibu/Saudara/i</p>
+        <h3 id="coverGuestName" class="cover-guest-val">{{guestName}}</h3>
+      </div>
+
+      <button class="btn-open-issue btn-buka" onclick="openInvitation()" data-lux-field="customLabels.openBtn">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+          <path
+            d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
+        </svg>
+        Buka Undangan
+      </button>
+    </div>
+  </div>
+
+  <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
+
+  <div class="layout-wrapper">
+
+    <!-- DESKTOP SIDEBAR HERO -->
+    <div class="sidebar-desktop">
+      <div class="sidebar-desktop-content">
+        <p class="font-editorial-sans"
+          style="letter-spacing: 0.3em; text-transform: uppercase; color: var(--editorial-paper); font-size: 0.75rem;">
+          {{eventLabel}}</p>
+        <h2 class="font-editorial-masthead sidebar-desktop-name">{{mainNickname}}</h2>
+        <p class="font-editorial-sans"
+          style="letter-spacing: 0.15em; font-size: 0.85rem; color: color-mix(in srgb, var(--lux-c-f4ede4) 75%, transparent);">{{eventDateFormatted}}</p>
+      </div>
+    </div>
+
+    <!-- MAIN SCROLLABLE PANEL -->
+    <main class="main-scroll-panel">
+
+      <!-- SEKSI HERO EDITORIAL / SLIDE OPENING (100VH STANDALONE) -->
+      <section id="home" class="slide-section sec-hero-editorial">
+        <div class="sec-content-box reveal-on-scroll">
+          <p class="font-editorial-sans hero-editorial-tag" data-lux-field="customLabels.quoteEyebrow">Anda Diundang</p>
+          <h1 class="font-editorial-masthead hero-editorial-title">{{mainNickname}}</h1>
+          <div class="masthead-banner" style="margin: 1.2rem 0;">
+            <span>{{eventDateFormatted}}</span>
+          </div>
+          {{#if mainInfoLine}}<p class="font-editorial-body hero-editorial-sub">{{mainInfoLine}}</p>{{/if}}
+          {{#if openingQuote}}<p class="font-editorial-body hero-quote-text">"{{openingQuote}}"</p>{{/if}}
+          {{#if openingQuoteRef}}<span class="font-editorial-sans hero-quote-ref">{{openingQuoteRef}}</span>{{/if}}
+          <div class="hero-scroll-indicator">
+            <span class="font-editorial-sans" style="font-size: 0.68rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--editorial-paper); opacity: 0.8;">Gulir Ke Bawah</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="hero-scroll-arrow">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <!-- SEKSI PROFIL TOKOH (100VH STANDALONE) -->
+      <section id="profile" class="slide-section">
+        <div class="sec-content-box reveal-on-scroll">
+          <span class="sec-eyebrow" data-lux-field="customLabels.coupleEyebrow">{{profileEyebrow}}</span>
+          <h2 class="sec-heading" data-lux-field="customLabels.coupleTitle">{{profileTitle}}</h2>
+          <p class="sec-subheading" data-lux-field="customLabels.coupleSub">{{profileSub}}</p>
+
+          <div class="couple-card">
+            <div class="couple-photo-wrap">
+              <img src="{{mainPhotoUrl}}" alt="{{mainName}}">
+            </div>
+            <h3 class="couple-name">{{mainName}}</h3>
+            {{#if mainInfoLine}}<p class="couple-info font-editorial-sans">{{mainInfoLine}}</p>{{/if}}
+            {{#if mainDetailLine}}<p class="couple-parents">{{mainDetailLine}}</p>{{/if}}
+            <div class="couple-parents">{{parentsHtml}}</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SEKSI ACARA & HITUNG MUNDUR (100VH STANDALONE) -->
+      <section id="event" class="slide-section">
+        <div class="sec-content-box reveal-on-scroll">
+          <h2 class="sec-heading" data-lux-field="customLabels.eventsTitle">{{agendaTitle}}</h2>
+          <div class="masthead-banner">
+            <span>{{eventDateFormatted}}</span>
+          </div>
+
+          <div class="countdown-grid">
+            <div class="countdown-cell">
+              <div id="cdDays" class="countdown-val">00</div>
+              <div class="countdown-lbl" data-lux-field="customLabels.cdDays">Hari</div>
+            </div>
+            <div class="countdown-cell">
+              <div id="cdHours" class="countdown-val">00</div>
+              <div class="countdown-lbl" data-lux-field="customLabels.cdHours">Jam</div>
+            </div>
+            <div class="countdown-cell">
+              <div id="cdMinutes" class="countdown-val">00</div>
+              <div class="countdown-lbl" data-lux-field="customLabels.cdMins">Menit</div>
+            </div>
+            <div class="countdown-cell">
+              <div id="cdSeconds" class="countdown-val">00</div>
+              <div class="countdown-lbl" data-lux-field="customLabels.cdSecs">Detik</div>
+            </div>
+          </div>
+
+          <div class="events-single-stack">
+            {{eventSectionHtml}}
+          </div>
+        </div>
+      </section>
+
+      {{qrPassHtml}}
+
+      <div class="reveal-on-scroll">
+        {{gallerySectionHtml}}
+      </div>
+
+      {{giftSectionHtml}}
+
+      <div class="reveal-on-scroll">
+        {{extraSectionsHtml}}
+      </div>
+
+      <!-- KONFIRMASI KEHADIRAN & UCAPAN (form dan daftar ucapan dari mesin satu nama) -->
+      <section id="rsvp" class="slide-section">
+        <div class="sec-content-box reveal-on-scroll">
+          <span class="sec-eyebrow" data-lux-field="customLabels.wishesEyebrow">Konfirmasi</span>
+          {{rsvpSectionHtml}}
+          {{wishesSectionHtml}}
+        </div>
+      </section>
+
+      <div class="reveal-on-scroll">
+        {{memoriesSectionHtml}}
+      </div>
+
+      <!-- FOOTER (Adaptive Full-Height 100vh) -->
+      <footer class="site-footer {{closingPhotoClass}}" id="footer" style="{{closingBgStyle}}">
+        <div class="closing-content">
+          <p
+            style="font-size: 0.85rem; color: rgba(255,255,255,0.8); line-height: 1.7; margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto;"
+            data-lux-field="customLabels.closingText">{{closingText}}</p>
+          <p
+            style="font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--editorial-cream); font-weight: 600; margin-bottom: 0.5rem;"
+            data-lux-field="customLabels.closingTitle">Terima Kasih</p>
+          <h3 class="font-editorial-masthead footer-name">{{mainNickname}}</h3>
+          <p
+            style="font-size: 0.75rem; color: rgba(255,255,255,0.7); letter-spacing: 0.2em; text-transform: uppercase; margin-top: 0.5rem;">
+            {{eventDateFormatted}}
+          </p>
+          <div class="footer-brand">{{brandWatermarkHtml}}</div>
+        </div>
+      </footer>
+
+    </main>
+
+  </div>
+
+  <!-- FLOATING NAVIGATION DOCK -->
+  <nav class="bottom-dock">
+    <a href="#home" class="dock-btn">
+      <svg viewBox="0 0 24 24">
+        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+      </svg>
+      <span>Home</span>
+    </a>
+    <a href="#profile" class="dock-btn">
+      <svg viewBox="0 0 24 24">
+        <path
+          d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+      </svg>
+      <span>Profil</span>
+    </a>
+    <a href="#event" class="dock-btn">
+      <svg viewBox="0 0 24 24">
+        <path
+          d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z" />
+      </svg>
+      <span>Acara</span>
+    </a>
+    <a href="#gallery" class="dock-btn">
+      <svg viewBox="0 0 24 24">
+        <path
+          d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
+      </svg>
+      <span>Galeri</span>
+    </a>
+    <a href="#rsvp" class="dock-btn">
+      <svg viewBox="0 0 24 24">
+        <path
+          d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
+      </svg>
+      <span>RSVP</span>
+    </a>
+  </nav>
+
+  <script>
+    const TARGET_DATE = "{{countdownTarget}}";
+
+    // Tanpa ?to= sapaan bawaan jenis acara dari mesin dibiarkan.
+    (function initGuestName() {
+      const params = new URLSearchParams(window.location.search);
+      const gn = params.get('to') || params.get('u') || '';
+      if (!gn) return;
+      const coverGn = document.getElementById('coverGuestName');
+      if (coverGn) coverGn.textContent = gn;
+      const fillRsvp = () => {
+        const rsvpNameIn = document.getElementById('universalRsvpName');
+        if (rsvpNameIn && !rsvpNameIn.value) rsvpNameIn.value = gn;
+      };
+      fillRsvp();
+      document.addEventListener('DOMContentLoaded', fillRsvp);
+    })();
+
+    function requestSmartFullscreen() {
+      const isMobile = window.innerWidth <= 1024 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+      if (!isMobile) return;
+      try {
+        const docEl = document.documentElement;
+        const req = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+        if (req) {
+          const res = req.call(docEl);
+          if (res && res.catch) res.catch(function () {});
+        }
+      } catch (err) {}
+    }
+
+    function openInvitation() {
+      requestSmartFullscreen();
+      const cover = document.getElementById('coverScreen') || document.getElementById('coverOverlay') || document.querySelector('.cover-screen') || document.querySelector('.cover-overlay');
+      if (cover) cover.classList.add('opened');
+      const dock = document.querySelector('.bottom-dock');
+      if (dock) dock.classList.remove('dock-hidden');
+      const musicFab = document.getElementById('musicFab');
+      if (musicFab) musicFab.classList.remove('fab-hidden');
+      if (typeof window.playAudio === 'function') {
+        window.playAudio();
+        if (musicFab) musicFab.classList.add('playing');
+      }
+      startCountdown();
+      initScrollAnimations();
+    }
+
+    // SMART AUTO-HIDE DOCK ON SCROLL DOWN, REVEAL ON SCROLL UP
+    (function initSmartDock() {
+      const dock = document.querySelector('.bottom-dock');
+      if (!dock) return;
+
+      let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      let ticking = false;
+      const SCROLL_THRESHOLD = 12;
+      const TOP_REVEAL_ZONE = 70;
+
+      function updateDock() {
+        const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+        const windowHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+        const docHeight = Math.max(
+          document.body.scrollHeight,
+          document.documentElement.scrollHeight,
+          document.body.offsetHeight,
+          document.documentElement.offsetHeight
+        );
+        const isNearBottom = (currentScrollY + windowHeight) >= (docHeight - 70);
+
+        if (currentScrollY <= TOP_REVEAL_ZONE) {
+          dock.classList.remove('dock-hidden');
+          const musicFab = document.getElementById('musicFab');
+          if (musicFab) musicFab.classList.remove('fab-hidden');
+          lastScrollY = currentScrollY;
+          ticking = false;
+          return;
+        }
+
+        const delta = currentScrollY - lastScrollY;
+        const musicFab = document.getElementById('musicFab');
+
+        // Ultra-Clean Outro: Sembunyikan dock di ujung bawah
+        // Jika tamu scroll-up (delta < -SCROLL_THRESHOLD), segera munculkan kembali kontrol
+        if (isNearBottom) {
+          if (delta < -SCROLL_THRESHOLD) {
+            dock.classList.remove('dock-hidden');
+            if (musicFab) musicFab.classList.remove('fab-hidden');
+          } else {
+            dock.classList.add('dock-hidden');
+            if (musicFab) musicFab.classList.add('fab-hidden');
+          }
+          lastScrollY = currentScrollY;
+          ticking = false;
+          return;
+        }
+
+        if (Math.abs(delta) >= SCROLL_THRESHOLD) {
+          if (delta > 0) {
+            dock.classList.add('dock-hidden');
+            if (musicFab) musicFab.classList.add('fab-hidden');
+          } else {
+            dock.classList.remove('dock-hidden');
+            if (musicFab) musicFab.classList.remove('fab-hidden');
+          }
+          lastScrollY = currentScrollY;
+        }
+
+        ticking = false;
+      }
+
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          window.requestAnimationFrame(updateDock);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      dock.querySelectorAll('.dock-btn, a').forEach(link => {
+        link.addEventListener('click', () => {
+          dock.classList.remove('dock-hidden');
+        });
+      });
+    })();
+
+    function initScrollAnimations() {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+          }
+        });
+      }, { threshold: 0.15 });
+
+      document.querySelectorAll('.reveal-on-scroll, .reveal, .reveal-up, .reveal-zoom, .reveal-fade').forEach(el => observer.observe(el));
+    }
+
+    function startCountdown() {
+      const targetTime = new Date(TARGET_DATE).getTime();
+      if (isNaN(targetTime)) return;
+
+      setInterval(() => {
+        const now = new Date().getTime();
+        const diff = targetTime - now;
+        if (diff > 0) {
+          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+          const elD = document.getElementById('cdDays');
+          const elH = document.getElementById('cdHours');
+          const elM = document.getElementById('cdMinutes');
+          const elS = document.getElementById('cdSeconds');
+
+          if (elD) elD.textContent = String(days).padStart(2, '0');
+          if (elH) elH.textContent = String(hours).padStart(2, '0');
+          if (elM) elM.textContent = String(mins).padStart(2, '0');
+          if (elS) elS.textContent = String(secs).padStart(2, '0');
+        }
+      }, 1000);
+    }
+  </script>
+
+
+  <!-- LUXENARY PROTECTION SCRIPT -->
+  <script>
+    (function () {
+      try {
+        if (window.console && console.log) {
+          console.log("%cSTOP!", "color: #ef4444; font-size: 50px; font-weight: 900; text-shadow: 2px 2px 0 #000; font-family: sans-serif;");
+          console.log("%cIni adalah properti eksklusif Luxenary.", "color: #b5833c; font-size: 20px; font-weight: bold;");
+          console.log("%cSegala bentuk pencurian kode, scraping, atau modifikasi ilegal akan direkam. Domain saat ini: " + window.location.hostname, "font-size: 14px; color: #a8a29e;");
+        }
+      } catch (e) { }
+    })();
+  </script>
+  {{musicPlayerHtml}}
+</body>
+
+</html>

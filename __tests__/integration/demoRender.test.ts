@@ -18,8 +18,12 @@ const masterPath = (themeId: string) => {
   return path.join(process.cwd(), "themes", info.eventType === "gathering" ? "general" : info.eventType, info.style, info.file);
 };
 
+// Jenis acara dikirim seperti demoPublisher (theme.eventType): tema tanpa persona sendiri, misalnya versi satu nama
+// `<id>-acara`, memakai persona bawaan jenis acaranya.
+const eventTypeOf = (themeId: string) => THEME_MAP[themeId].eventType.toUpperCase();
+
 const personaName = (themeId: string) => {
-  const d = getDemoThemeData(themeId) as any;
+  const d = getDemoThemeData(themeId, eventTypeOf(themeId)) as any;
   return d.groomName && (!d.eventType || d.eventType === "WEDDING") ? d.groomName : d.personNickname || d.childNickname || d.babyNickname || d.graduateNickname || d.eventTitle;
 };
 
@@ -32,7 +36,7 @@ describe.skipIf(!IS_TEST_DB)("demo memakai engine klien", () => {
   it("semua tema: tanpa token tersisa, persona dan ucapan contoh tampil", async () => {
     const problems: string[] = [];
     for (const themeId of Object.keys(THEME_MAP)) {
-      const inv = buildDemoInvitation(themeId);
+      const inv = buildDemoInvitation(themeId, undefined, eventTypeOf(themeId));
       const html = await renderTemplateFile(themeId, (await composeInvitationData(inv)) as any, { editMode: false, invitationId: inv.id });
       const leftover = html.match(/\{\{[^}]*\}\}/g);
       if (leftover) problems.push(`${themeId}: token ${leftover.slice(0, 3).join(" ")}`);

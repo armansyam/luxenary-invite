@@ -1,0 +1,1790 @@
+<!--
+ _      _   _  __  __  _____   _   _      _     ____   __   __
+| |    | | | | \ \/ / | ____| | \ | |    / \   |  _ \  \ \ / /
+| |    | | | |  \  /  |  _|   |  \| |   / _ \  | |_) |  \ V / 
+| |___ | |_| |  /  \  | |___  | |\  |  / ___ \ |  _ <    | |  
+|_____| \___/  /_/\_\ |_____| |_| \_| /_/   \_\|_| \_\   |_|  
+
+  ==============================================================
+  THEME BUILDER WORKSPACE: VINTAGE FOREST
+  Botanical Vintage Elegance with Eucalyptus Leaves & Roman Arches
+  Hak Cipta (c) Luxenary. Dilindungi undang-undang.
+  ==============================================================
+-->
+<!--
+  VINTAGE FOREST (ACARA) — versi satu nama dari tema pernikahan Vintage Forest (themes/wedding/modern/vintage-forest.html).
+  Kontrak satu nama (seperti prisma): dapat dipakai ulang tahun, khitan, aqiqah, wisuda, dan acara umum.
+  CSS dan gaya sama dengan versi pernikahan; seksi mempelai diganti profil tokoh, RSVP dan modul dari mesin satu nama.
+-->
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>{{mainNickname}}</title>
+
+  <!-- =================================================================== -->
+  <!-- 1. TYPOGRAPHY & GOOGLE FONTS                                        -->
+  <!-- =================================================================== -->
+  <link rel="stylesheet" href="/fonts/fonts.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Aboreto&family=Caudex:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@400;500;600;700&family=Mea+Culpa&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* =================================================================== */
+    /* 2. DESIGN SYSTEM & DYNAMIC PALETTE (GOLDEN STANDARD)                */
+    /* =================================================================== */
+    :root {
+      --primary: #2d4a36;
+      --secondary: #3d6349;
+      --accent: #8aad7e;
+      --bg-light: #f4f7f4;
+      --bg-dark: #0f1c16;
+      --text-dark: #182b1e;
+      --radius-sm: 8px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+      --radius-arch: 350px 350px 0 0;
+      --radius-arch-full: 350px 350px 350px 350px;
+      --radius-full: 9999px;
+      --shadow-soft: 0 8px 30px color-mix(in srgb, var(--primary) 12%, transparent);
+      --shadow-elevated: 0 16px 45px color-mix(in srgb, var(--primary) 22%, transparent);
+      --glass-bg: color-mix(in srgb, var(--bg-light) 90%, transparent);
+      --glass-border: color-mix(in srgb, var(--accent) 40%, transparent);
+      /* Token yang dibaca seksi mesin satu nama (kartu acara, kado, RSVP, ucapan) di atas kartu kertas terang. */
+      --text-main: var(--text-dark);
+      --text-muted: color-mix(in srgb, var(--text-dark) 72%, transparent);
+      --card-bg: var(--bg-light);
+      /* Ditambahkan tokenisasi master (warna dan huruf yang sebelumnya tertulis langsung). */
+      --lux-c-333333: #333333;
+      --lux-font-plus-jakarta-sans: "Plus Jakarta Sans", -apple-system, sans-serif;
+      --lux-font-mea-culpa: "Mea Culpa", cursive;
+      --lux-font-caudex: "Caudex", Georgia, serif;
+      --lux-font-cinzel: "Cinzel", Georgia, serif;
+      --lux-font-aboreto: "Aboreto", cursive;
+      --lux-font-caudex-2: "Caudex", serif;
+      --lux-font-plus-jakarta-sans-2: "Plus Jakarta Sans", sans-serif;
+      --lux-font-amiri: "Amiri", "Traditional Arabic", serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    ::selection {
+      background: color-mix(in srgb, var(--primary) 40%, transparent);
+      color: #ffffff;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      font-size: 16px;
+      background-color: var(--bg-dark);
+    }
+
+    body {
+      font-family: var(--lux-font-plus-jakarta-sans);
+      background-color: var(--bg-dark);
+      color: var(--text-dark);
+      overflow-x: hidden;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: color-mix(in srgb, var(--accent) 45%, transparent);
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent);
+    }
+
+    .audio-player-element {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+
+    /* Headings & Scripts */
+    .mea-culpa {
+      font-family: var(--lux-font-mea-culpa);
+      font-weight: 400;
+    }
+
+    .caudex {
+      font-family: var(--lux-font-caudex);
+    }
+
+    .cinzel {
+      font-family: var(--lux-font-cinzel);
+      letter-spacing: 0.12em;
+    }
+
+    .aboreto {
+      font-family: var(--lux-font-aboreto);
+      letter-spacing: 0.18em;
+    }
+
+    h1, h2, h3, h4,
+    .sec-main-title {
+      font-family: var(--lux-font-caudex);
+      letter-spacing: 0.02em;
+    }
+
+    /* =================================================================== */
+    /* 3. ARSITEKTUR DESKTOP SPLIT & MOBILE CONTAINER                      */
+    /* =================================================================== */
+    .layout-wrapper {
+      display: flex;
+      width: 100%;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    .sidebar-desktop {
+      display: none;
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: calc(100% - 460px);
+      height: 100vh;
+      background: url("{{sidebarPhotoUrl}}") center/cover no-repeat;
+      z-index: 10;
+    }
+
+    .sidebar-desktop::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to top,
+        color-mix(in srgb, var(--bg-dark) 95%, transparent) 0%,
+        color-mix(in srgb, var(--bg-dark) 55%, transparent) 50%,
+        rgba(0, 0, 0, 0.45) 100%
+      );
+    }
+
+    .sidebar-desktop-content {
+      position: absolute;
+      bottom: 4.5rem;
+      left: 4.5rem;
+      right: 4.5rem;
+      z-index: 20;
+      color: #ffffff;
+    }
+
+    .sidebar-desktop-tagline {
+      font-size: 0.8rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.8rem;
+      font-weight: 600;
+      font-family: var(--lux-font-cinzel);
+    }
+
+    .sidebar-desktop-names {
+      font-size: clamp(3rem, 4.5vw, 5rem);
+      line-height: 1.1;
+      color: #ffffff;
+      margin-bottom: 0.8rem;
+      font-family: var(--lux-font-mea-culpa);
+      text-shadow: 0 4px 24px rgba(0, 0, 0, 0.7);
+    }
+
+    .sidebar-desktop-names span {
+      font-family: var(--lux-font-caudex-2);
+      color: var(--accent);
+      font-size: 0.6em;
+      margin: 0 0.5rem;
+      vertical-align: middle;
+    }
+
+    .sidebar-desktop-date {
+      font-size: 0.95rem;
+      letter-spacing: 0.25em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 1.25rem;
+      font-weight: 500;
+      font-family: var(--lux-font-cinzel);
+    }
+
+    .sidebar-desktop-quote {
+      font-size: 1.05rem;
+      line-height: 1.7;
+      color: rgba(255, 255, 255, 0.88);
+      max-width: 520px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+    }
+
+    .app-container,
+    .main-scroll-panel {
+      width: 100%;
+      min-height: 100vh;
+      background: transparent;
+      position: relative;
+      z-index: 20;
+    }
+
+    @media (min-width: 900px) {
+      .sidebar-desktop {
+        display: block;
+      }
+      .app-container,
+      .main-scroll-panel {
+        width: 460px;
+        margin-left: auto;
+        box-shadow: -10px 0 35px rgba(0, 0, 0, 0.5);
+        border-left: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+      }
+    }
+
+    /* =================================================================== */
+    /* 4. TIGA LAPISAN KANVAS LATAR                                        */
+    /* =================================================================== */
+    .fixed-bg-layer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 100%;
+      height: 100vh;
+      background-image: url('/assets/ornaments/background/background-cream.webp');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 1;
+      filter: none;
+    }
+    .fixed-bg-layer.has-custom-bg {
+      background-image: var(--custom-bg);
+      opacity: 1;
+      filter: none;
+    }
+
+    @media (min-width: 900px) {
+      .fixed-bg-layer {
+        width: 460px;
+      }
+    }
+
+    .scrim-canvas {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 100%;
+      height: 100vh;
+      background: transparent;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    @media (min-width: 900px) {
+      .scrim-canvas {
+        width: 460px;
+      }
+    }
+
+    /* =================================================================== */
+    /* 5. COVER SCREEN (FLOATING GATEWAY)                                  */
+    /* =================================================================== */
+    .cover-screen {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      background: var(--bg-dark);
+      overflow: hidden;
+      transition: transform 1.2s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.8s ease, visibility 0s linear 1.2s;
+    }
+
+    @media (min-width: 900px) {
+      .cover-screen {
+        width: 460px;
+      }
+    }
+
+    .cover-screen.unlocked,
+    .cover-screen.opened {
+      transform: translateY(-100%);
+      opacity: 0;
+      pointer-events: none;
+      visibility: hidden;
+    }
+
+    .cover-backdrop-img {
+      position: absolute;
+      inset: 0;
+      background-image: url("{{landingCoverUrl}}");
+      background-size: cover;
+      background-position: center;
+      filter: brightness(0.65) saturate(1.1);
+      transform: scale(1.05);
+      transition: transform 8s ease-out;
+    }
+
+    .cover-screen:not(.unlocked):not(.opened) .cover-backdrop-img {
+      transform: scale(1);
+    }
+
+    .cover-overlay-gradient {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--bg-dark) 45%, transparent) 0%,
+        color-mix(in srgb, var(--bg-dark) 85%, transparent) 70%,
+        color-mix(in srgb, var(--bg-dark) 98%, transparent) 100%
+      );
+    }
+
+    /* Floating Botanical Leaf Ornaments on Cover */
+    .cover-botanical-corner {
+      position: absolute;
+      width: clamp(65px, 18vw, 85px);
+      max-width: 25vw;
+      height: auto;
+      pointer-events: none;
+      z-index: 5;
+      opacity: 0.9;
+      filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
+      animation: goyang1 7s ease-in-out infinite alternate;
+      transform-origin: top center;
+      /* The image starts with a transparent band 4.5% of its height; translate (unlike transform) is not replaced by the animation. */
+      translate: 0 -4.5%;
+    }
+
+    /* The image is cut straight along its right edge, so that edge must sit against the screen edge: mirror only the left copy. */
+    .cover-botanical-top-left {
+      top: 0;
+      left: 0;
+      scale: -1 1;
+    }
+
+    .cover-botanical-top-right {
+      top: 0;
+      right: 0;
+    }
+
+    @keyframes goyang1 {
+      0% { transform: rotate(0deg); }
+      25% { transform: rotate(-7deg); }
+      75% { transform: rotate(7deg); }
+      100% { transform: rotate(0deg); }
+    }
+
+    .cover-content-card {
+      position: relative;
+      z-index: 10;
+      width: 90%;
+      max-width: 400px;
+      margin-bottom: 2.5rem;
+      padding: 2.2rem 1.8rem;
+      background: color-mix(in srgb, var(--bg-dark) 88%, transparent);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-radius: var(--radius-arch);
+      border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+      text-align: center;
+      color: #ffffff;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.5);
+    }
+
+    .cover-badge-pill {
+      display: inline-block;
+      font-size: 0.68rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--accent);
+      padding: 0.35rem 1rem;
+      border-radius: var(--radius-full);
+      border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+      margin-bottom: 1.2rem;
+      font-family: var(--lux-font-cinzel);
+      background: color-mix(in srgb, var(--primary) 20%, transparent);
+    }
+
+    .cover-tagline-text {
+      font-size: 0.75rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.85);
+      margin-bottom: 0.6rem;
+      font-family: var(--lux-font-cinzel);
+    }
+
+    .cover-couple-title {
+      font-family: var(--lux-font-mea-culpa);
+      font-size: clamp(2.8rem, 3.8rem, 4.2rem);
+      line-height: 1.1;
+      color: #ffffff;
+      margin-bottom: 0.4rem;
+      text-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
+    }
+
+    .cover-couple-title span {
+      font-family: var(--lux-font-caudex-2);
+      color: var(--accent);
+      font-size: 0.55em;
+      margin: 0 0.3rem;
+      vertical-align: middle;
+    }
+
+    .cover-date-text {
+      font-size: 0.82rem;
+      letter-spacing: 0.2em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 1.4rem;
+      font-family: var(--lux-font-cinzel);
+      font-weight: 500;
+    }
+
+    .cover-guest-box {
+      background: color-mix(in srgb, #ffffff 6%, transparent);
+      border: 1px solid color-mix(in srgb, #ffffff 15%, transparent);
+      border-radius: var(--radius-md);
+      padding: 1rem 0.8rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .cover-guest-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 0.3rem;
+      font-family: var(--lux-font-plus-jakarta-sans-2);
+    }
+
+    .cover-guest-name {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #ffffff;
+      font-family: var(--lux-font-caudex);
+    }
+
+    .btn-open-envelope {
+      width: 100%;
+      padding: 1rem 1.5rem;
+      background: linear-gradient(
+        135deg,
+        var(--secondary) 0%,
+        var(--primary) 100%
+      );
+      color: #ffffff;
+      border: 1px solid var(--accent);
+      border-radius: var(--radius-full);
+      font-size: 0.85rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-weight: 600;
+      font-family: var(--lux-font-aboreto);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 8px 24px color-mix(in srgb, var(--primary) 60%, transparent);
+    }
+
+    .btn-open-envelope:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px color-mix(in srgb, var(--primary) 80%, transparent);
+    }
+
+    /* =================================================================== */
+    /* 6. GENERAL SECTION ARCHITECTURE                                     */
+    /* =================================================================== */
+    .sec-flow {
+      position: relative;
+      z-index: 10;
+      padding: 4rem 1.8rem;
+      margin: 1.5rem 1rem;
+      background: var(--glass-bg);
+      background-image: url("/assets/ornaments/vintage-forest/paper-bg-rissa.jpg");
+      background-blend-mode: overlay;
+      background-size: cover;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+
+    .sec-flow-hero {
+      padding: 3rem 1.5rem 3.5rem;
+      margin: 0;
+      border-radius: 0;
+      border: none;
+      background: transparent;
+      box-shadow: none;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .sec-eyebrow {
+      display: inline-block;
+      font-size: 0.72rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--secondary);
+      font-weight: 600;
+      font-family: var(--lux-font-cinzel);
+      margin-bottom: 0.6rem;
+    }
+
+    .sec-main-title {
+      font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important;
+      line-height: 1.25;
+      color: var(--primary);
+      margin-bottom: 1rem;
+      overflow-wrap: break-word !important;
+      word-break: break-word !important;
+      text-align: center;
+    }
+
+    .sec-sub {
+      font-size: 0.92rem;
+      line-height: 1.7;
+      color: color-mix(in srgb, var(--text-dark) 85%, transparent);
+      text-align: center;
+      max-width: 380px;
+      margin: 0 auto 2rem;
+    }
+
+    .ornament-botanical-corner {
+      position: absolute;
+      width: 65px;
+      max-width: 18vw;
+      height: auto;
+      pointer-events: none;
+      opacity: 0.8;
+      z-index: 1;
+      animation: goyang1 8s ease-in-out infinite alternate;
+      transform-origin: top right;
+    }
+
+    .ob-top-right {
+      top: -10px;
+      right: -10px;
+    }
+
+    .ob-bottom-left {
+      bottom: -10px;
+      left: -10px;
+      transform: rotate(180deg);
+    }
+
+    /* 3D Flying Butterfly Animation */
+    .vintage-butterfly-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 99;
+      overflow: hidden;
+    }
+
+    .v-butterfly {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .bf-body {
+      width: 3px;
+      height: 14px;
+      background: color-mix(in srgb, var(--primary) 70%, #000000);
+      border-radius: 2px;
+      box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .bf-wing {
+      position: absolute;
+      width: 16px;
+      height: 20px;
+      top: 4px;
+    }
+
+    .bf-wing-left {
+      right: 50%;
+      transform-origin: right center;
+      animation: flapLeft 0.16s ease-in-out infinite alternate;
+    }
+
+    .bf-wing-right {
+      left: 50%;
+      transform-origin: left center;
+      animation: flapRight 0.16s ease-in-out infinite alternate;
+    }
+
+    .bf-wing svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    @keyframes flapLeft {
+      0% { transform: perspective(300px) rotateY(0deg); }
+      100% { transform: perspective(300px) rotateY(65deg); }
+    }
+
+    @keyframes flapRight {
+      0% { transform: perspective(300px) rotateY(0deg); }
+      100% { transform: perspective(300px) rotateY(-65deg); }
+    }
+
+    .butterfly-1 {
+      animation: butterflyFlight1 18s ease-in-out infinite;
+    }
+
+    .butterfly-2 {
+      animation: butterflyFlight2 24s ease-in-out infinite 6s;
+    }
+
+    @keyframes butterflyFlight1 {
+      0% { transform: translate(-10vw, 85vh) scale(0.65) rotate(25deg); opacity: 0; }
+      10% { opacity: 0.9; }
+      40% { transform: translate(45vw, 45vh) scale(0.85) rotate(-15deg); opacity: 0.9; }
+      75% { transform: translate(80vw, 20vh) scale(0.75) rotate(10deg); opacity: 0.9; }
+      95% { opacity: 0.9; }
+      100% { transform: translate(110vw, 5vh) scale(0.65) rotate(25deg); opacity: 0; }
+    }
+
+    @keyframes butterflyFlight2 {
+      0% { transform: translate(110vw, 70vh) scale(0.55) rotate(-35deg); opacity: 0; }
+      15% { opacity: 0.85; }
+      50% { transform: translate(50vw, 55vh) scale(0.75) rotate(20deg); opacity: 0.85; }
+      80% { transform: translate(15vw, 30vh) scale(0.65) rotate(-10deg); opacity: 0.85; }
+      95% { opacity: 0.85; }
+      100% { transform: translate(-15vw, 15vh) scale(0.55) rotate(-25deg); opacity: 0; }
+    }
+
+    /* =================================================================== */
+    /* 7. HERO / OPENING SECTION (#home)                                   */
+    /* =================================================================== */
+    .hero-card-arch {
+      position: relative;
+      width: 100%;
+      max-width: 380px;
+      background: color-mix(in srgb, var(--bg-light) 95%, transparent);
+      background-image: url("/assets/ornaments/vintage-forest/paper-bg-rissa.jpg");
+      background-blend-mode: overlay;
+      background-size: cover;
+      border-radius: var(--radius-arch);
+      border: 1px solid var(--glass-border);
+      padding: 1.8rem 1.4rem 2.4rem;
+      box-shadow: var(--shadow-elevated);
+      text-align: center;
+    }
+
+    .hero-arch-photo-container {
+      position: relative;
+      width: 100%;
+      height: 380px;
+      border-radius: var(--radius-arch);
+      overflow: hidden;
+      margin-bottom: 1.8rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      border: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+    }
+
+    .hero-arch-photo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .hero-tagline {
+      font-size: 0.75rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--secondary);
+      font-family: var(--lux-font-cinzel);
+      margin-bottom: 0.4rem;
+    }
+
+    .hero-couple-names {
+      font-family: var(--lux-font-mea-culpa);
+      font-size: clamp(2.8rem, 3.6rem, 4.2rem);
+      line-height: 1.1;
+      color: var(--primary);
+      margin-bottom: 0.6rem;
+    }
+
+    .hero-couple-names span {
+      font-family: var(--lux-font-caudex-2);
+      color: var(--accent);
+      font-size: 0.55em;
+      margin: 0 0.4rem;
+      vertical-align: middle;
+    }
+
+    .hero-date-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.8rem;
+      padding: 0.45rem 1.2rem;
+      background: color-mix(in srgb, var(--primary) 10%, transparent);
+      border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+      border-radius: var(--radius-full);
+      font-family: var(--lux-font-cinzel);
+      font-size: 0.82rem;
+      letter-spacing: 0.18em;
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    /* =================================================================== */
+    /* 8. QUOTE & GREETING SECTION (#quote)                                */
+    /* =================================================================== */
+    .quote-card {
+      text-align: center;
+      position: relative;
+    }
+
+    .quote-arabic {
+      font-size: 1.35rem;
+      line-height: 2;
+      color: var(--primary);
+      margin-bottom: 1.4rem;
+      font-family: var(--lux-font-amiri);
+    }
+
+    .quote-text {
+      font-size: 0.95rem;
+      line-height: 1.8;
+      font-style: italic;
+      color: var(--text-dark);
+      margin-bottom: 1rem;
+      font-family: var(--lux-font-caudex);
+    }
+
+    .quote-ref {
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--secondary);
+      font-weight: 600;
+      font-family: var(--lux-font-cinzel);
+    }
+
+    .botanical-divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.8rem;
+      margin: 1.5rem auto;
+    }
+
+    .botanical-divider::before,
+    .botanical-divider::after {
+      content: "";
+      height: 1px;
+      width: 45px;
+      background: color-mix(in srgb, var(--accent) 60%, transparent);
+    }
+
+    .botanical-divider svg {
+      width: 22px;
+      height: 22px;
+      color: var(--primary);
+    }
+
+    /* =================================================================== */
+    /* 9. THE COUPLE SECTION (#couple)                                     */
+    /* =================================================================== */
+    .couple-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .person-card {
+      background: color-mix(in srgb, #ffffff 75%, transparent);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-arch);
+      padding: 1.5rem 1.2rem 1.8rem;
+      text-align: center;
+      box-shadow: var(--shadow-soft);
+      position: relative;
+    }
+
+    .person-photo-arch {
+      width: 180px;
+      height: 240px;
+      margin: 0 auto 1.4rem;
+      border-radius: var(--radius-arch);
+      overflow: hidden;
+      border: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .person-photo-arch img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .person-nickname {
+      font-family: var(--lux-font-mea-culpa);
+      font-size: 2.8rem;
+      line-height: 1;
+      color: var(--primary);
+      margin-bottom: 0.3rem;
+    }
+
+    .person-fullname {
+      font-family: var(--lux-font-caudex);
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 0.6rem;
+    }
+
+    .person-parents {
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: color-mix(in srgb, var(--text-dark) 85%, transparent);
+      margin-bottom: 1.2rem;
+    }
+
+    .person-parents strong {
+      color: var(--text-dark);
+      font-weight: 600;
+    }
+
+    /* =================================================================== */
+    /* 10. COUNTDOWN SECTION (#countdown)                                  */
+    /* =================================================================== */
+    .countdown-timer-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.6rem;
+      margin: 1.5rem 0 2rem;
+    }
+
+    .time-unit-box {
+      background: color-mix(in srgb, var(--primary) 8%, transparent);
+      border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+      border-radius: var(--radius-md);
+      padding: 0.8rem 0.4rem;
+      text-align: center;
+    }
+
+    .time-number {
+      display: block;
+      font-family: var(--lux-font-caudex);
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--primary);
+      line-height: 1.1;
+    }
+
+    .time-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--secondary);
+      font-weight: 600;
+      font-family: var(--lux-font-cinzel);
+    }
+
+    /* =================================================================== */
+    /* 11. EVENTS TIMELINE SECTION (#events)                               */
+    /* =================================================================== */
+    .events-unified-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      width: 100%;
+      max-width: 440px;
+      margin: 0 auto;
+    }
+
+    .events-sessions-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      width: 100%;
+    }
+
+    .event-block-item {
+      background: color-mix(in srgb, #ffffff 88%, transparent);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 1.8rem 1.4rem;
+      text-align: center;
+      box-shadow: var(--shadow-soft);
+      position: relative;
+    }
+
+    .ev-cat {
+      display: inline-block;
+      font-size: 0.68rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--secondary);
+      padding: 0.25rem 0.8rem;
+      border-radius: var(--radius-full);
+      background: color-mix(in srgb, var(--primary) 10%, transparent);
+      border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+      margin-bottom: 0.8rem;
+      font-family: var(--lux-font-cinzel);
+      font-weight: 600;
+    }
+
+    .ev-name {
+      font-family: var(--lux-font-caudex);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 0.4rem;
+    }
+
+    .ev-time {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--secondary);
+      margin-bottom: 0.6rem;
+    }
+
+    .ev-notes {
+      font-size: 0.78rem;
+      font-style: italic;
+      color: color-mix(in srgb, var(--text-dark) 70%, transparent);
+    }
+
+    .event-unified-venue-card {
+      background: color-mix(in srgb, #ffffff 88%, transparent);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 1.8rem 1.4rem;
+      text-align: center;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .venue-card-lbl {
+      display: inline-block;
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--secondary);
+      font-weight: 600;
+      font-family: var(--lux-font-cinzel);
+      margin-bottom: 0.5rem;
+    }
+
+    .ev-venue {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 0.3rem;
+      font-family: var(--lux-font-caudex);
+    }
+
+    .ev-addr {
+      font-size: 0.84rem;
+      line-height: 1.6;
+      color: color-mix(in srgb, var(--text-dark) 80%, transparent);
+      margin-bottom: 1.2rem;
+    }
+
+    .btn-map-outline {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.7rem 1.8rem;
+      border-radius: var(--radius-full);
+      background: color-mix(in srgb, var(--primary) 12%, transparent);
+      border: 1px solid var(--accent);
+      color: var(--primary);
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      font-family: var(--lux-font-cinzel);
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-map-outline:hover {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    /* =================================================================== */
+    /* 13. GALLERY MOMENTS (#gallery)                                      */
+    /* =================================================================== */
+    .gallery-grid-clean {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.8rem;
+      margin-top: 1.5rem;
+    }
+
+    .moment-photo-item {
+      position: relative;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      aspect-ratio: 1;
+      cursor: pointer;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--glass-border);
+    }
+
+    .moment-photo-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.4s ease;
+    }
+
+    .moment-photo-item:hover img {
+      transform: scale(1.06);
+    }
+
+    /* =================================================================== */
+    /* 17. OUTRO / CLOSING SECTION (.site-footer)                          */
+    /* =================================================================== */
+    .site-footer {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 4rem 1.8rem 5rem;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      overflow: hidden;
+    }
+
+    .site-footer.no-closing-photo {
+      background-color: transparent;
+      justify-content: center;
+      gap: 1.5rem;
+    }
+
+    .site-footer.has-closing-photo {
+      justify-content: space-between;
+    }
+
+    .site-footer.has-closing-photo::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--bg-dark) 40%, transparent) 0%,
+        color-mix(in srgb, var(--bg-dark) 75%, transparent) 60%,
+        color-mix(in srgb, var(--bg-dark) 95%, transparent) 100%
+      );
+      z-index: 1;
+    }
+
+    .closing-top-ornament {
+      position: relative;
+      z-index: 5;
+      width: 110px;
+      height: auto;
+      filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.45));
+    }
+
+    .site-footer.has-closing-photo .closing-top-ornament {
+      width: 85px;
+    }
+
+    .closing-content-box {
+      position: relative;
+      z-index: 5;
+      max-width: 380px;
+    }
+
+    .site-footer.has-closing-photo .closing-content-box {
+      color: #ffffff;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+    }
+
+    .closing-quote-text {
+      font-size: 0.92rem;
+      line-height: 1.7;
+      margin-bottom: 1.2rem;
+      font-family: var(--lux-font-caudex);
+    }
+
+    .closing-sub-text {
+      font-size: 0.78rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--secondary);
+      font-family: var(--lux-font-cinzel);
+      margin-bottom: 0.8rem;
+    }
+
+    .site-footer.has-closing-photo .closing-sub-text {
+      color: var(--accent);
+    }
+
+    .closing-couples-sig {
+      font-family: var(--lux-font-mea-culpa);
+      font-size: 3.2rem;
+      line-height: 1.1;
+      color: var(--primary);
+    }
+
+    .site-footer.has-closing-photo .closing-couples-sig {
+      color: #ffffff;
+    }
+
+    .closing-couples-sig span {
+      font-family: var(--lux-font-caudex-2);
+      color: var(--accent);
+      font-size: 0.55em;
+      margin: 0 0.4rem;
+      vertical-align: middle;
+    }
+
+    .lux-watermark-footer {
+      position: relative;
+      z-index: 5;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: color-mix(in srgb, var(--text-dark) 55%, transparent);
+      margin-top: 2rem;
+      font-family: var(--lux-font-plus-jakarta-sans-2);
+    }
+
+    .site-footer.has-closing-photo .lux-watermark-footer {
+      color: rgba(255, 255, 255, 0.65);
+    }
+
+    /* =================================================================== */
+    /* 18. FLOATING CONTROLS & BOTTOM DOCK                                 */
+    /* =================================================================== */
+    /* Tombol musik satu nama disuntikkan mesin (#musicFab, gaya inline); gaya Vintage Forest dipasang dengan !important. */
+    #musicFab {
+      position: fixed !important;
+      top: auto !important;
+      left: auto !important;
+      bottom: 5.5rem !important;
+      right: 1.5rem !important;
+      width: 44px !important;
+      height: 44px !important;
+      border-radius: 50% !important;
+      background: color-mix(in srgb, var(--primary) 85%, transparent) !important;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid var(--accent) !important;
+      color: #ffffff !important;
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 900 !important;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25) !important;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @media (min-width: 900px) {
+      #musicFab {
+        right: calc(460px - 3.5rem) !important;
+      }
+    }
+
+    #musicFab.fab-hidden {
+      transform: translateY(120px) scale(0.6);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #musicFab svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    #musicFab.playing svg {
+      animation: rotateSpin 6s linear infinite;
+    }
+
+    @keyframes rotateSpin {
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .bottom-dock {
+      position: fixed;
+      bottom: 1.2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      width: max-content;
+      max-width: 90%;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.4rem 0.6rem;
+      background: color-mix(in srgb, var(--bg-dark) 85%, transparent);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+      border-radius: var(--radius-full);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      z-index: 900;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @media (min-width: 900px) {
+      .bottom-dock {
+        left: calc(100% - 230px) !important;
+      }
+    }
+
+    .bottom-dock.dock-hidden {
+      transform: translate(-50%, 100px);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    @media (min-width: 900px) {
+      .bottom-dock.dock-hidden {
+        transform: translate(-50%, 100px) !important;
+      }
+    }
+
+    .dock-btn {
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.75);
+      padding: 0.45rem 0.7rem;
+      border-radius: var(--radius-full);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+      font-size: 0.62rem;
+      font-family: var(--lux-font-plus-jakarta-sans-2);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .dock-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .dock-btn:hover,
+    .dock-btn.active {
+      color: var(--accent);
+      background: color-mix(in srgb, #ffffff 10%, transparent);
+    }
+
+    /* Jembatan kontrak satu nama: seksi mesin (QR, galeri, kado, seksi tambahan, kenangan) memakai .sec-block,
+       .sec-lbl, dan .sec-h2; gayanya disamakan dengan kartu kertas .sec-flow, .sec-eyebrow, dan .sec-main-title. */
+    .sec-block {
+      position: relative;
+      z-index: 10;
+      padding: 4rem 1.8rem;
+      margin: 1.5rem 1rem;
+      background: var(--glass-bg);
+      background-image: url("/assets/ornaments/vintage-forest/paper-bg-rissa.jpg");
+      background-blend-mode: overlay;
+      background-size: cover;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+      text-align: center;
+    }
+
+    .sec-lbl {
+      display: inline-block;
+      font-size: 0.72rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--secondary);
+      font-weight: 600;
+      font-family: var(--lux-font-cinzel);
+      margin-bottom: 0.6rem;
+    }
+
+    .sec-h2 {
+      font-family: var(--lux-font-caudex);
+      font-size: clamp(1.6rem, 6.5vw, 2.1rem);
+      line-height: 1.25;
+      color: var(--primary);
+      margin-bottom: 1rem;
+      font-weight: 400;
+      overflow-wrap: break-word;
+      word-break: break-word;
+    }
+
+    #rsvp .rsvp-card-box > .sec-lbl { display: none !important; }
+    #rsvp, #event, #profile { text-align: center; }
+
+    .cover-couple-title, .hero-couple-names, .sidebar-desktop-names, .closing-couples-sig, .person-nickname, .ev-name, #event h3 {
+      overflow-wrap: break-word;
+      word-break: break-word;
+    }
+
+    /* Nama acara bisa panjang (judul acara umum): ukuran huruf naskah dibatasi lebar layar, dan kartu sampul
+       ditaruh di bawah dengan margin auto agar bagian atasnya tetap bisa digulir bila lebih tinggi dari layar. */
+    .cover-screen { justify-content: flex-start; overflow-y: auto; overscroll-behavior: contain; }
+    .cover-content-card { margin-top: auto; }
+    .cover-couple-title { font-size: min(3.8rem, 11vw); }
+    .hero-couple-names { font-size: min(3.6rem, 11vw); }
+    .closing-couples-sig { font-size: min(3.2rem, 10.5vw); }
+    .person-nickname { font-size: min(2.8rem, 9.5vw); line-height: 1.1; }
+    #event .btn-map-outline { text-decoration: none !important; text-align: center; line-height: 1.5; }
+
+    .person-parents p { margin: 0; }
+
+    .hero-info-line {
+      font-family: var(--lux-font-caudex);
+      font-size: 0.95rem;
+      font-style: italic;
+      color: var(--secondary);
+      margin-bottom: 0.8rem;
+    }
+
+    .closing-date-text {
+      font-family: var(--lux-font-cinzel);
+      font-size: 0.78rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--secondary);
+      margin-top: 0.6rem;
+    }
+
+    .site-footer.has-closing-photo .closing-date-text {
+      color: var(--accent);
+    }
+
+    a.dock-btn {
+      text-decoration: none;
+    }
+
+    #universalRsvpBtn {
+      background: var(--primary) !important;
+      color: var(--bg-light) !important;
+      border: 1px solid var(--accent) !important;
+      font-family: var(--lux-font-aboreto) !important;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      box-shadow: 0 8px 24px color-mix(in srgb, var(--primary) 40%, transparent);
+    }
+
+    #universalRsvpBtn:hover {
+      background: var(--secondary) !important;
+    }
+
+    #memories a[href$="/sharemoment"] {
+      background: var(--primary) !important;
+      color: var(--bg-light) !important;
+      border: 1px solid var(--accent);
+      font-family: var(--lux-font-aboreto);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- =================================================================== -->
+  <!-- 3D FLYING BUTTERFLIES (VINTAGE BOTANICAL ANIMATION)                 -->
+  <!-- =================================================================== -->
+  <div class="vintage-butterfly-container" aria-hidden="true">
+    <div class="v-butterfly butterfly-1">
+      <div class="bf-wing bf-wing-left">
+        <svg viewBox="0 0 50 60"><path d="M48,50 C40,40 10,40 5,20 C0,0 35,0 48,25 Z" fill="color-mix(in srgb, var(--accent) 80%, #ffffff)" stroke="color-mix(in srgb, var(--primary) 70%, #000000)" stroke-width="2"/></svg>
+      </div>
+      <div class="bf-body"></div>
+      <div class="bf-wing bf-wing-right">
+        <svg viewBox="0 0 50 60"><path d="M2,50 C10,40 40,40 45,20 C50,0 15,0 2,25 Z" fill="color-mix(in srgb, var(--accent) 80%, #ffffff)" stroke="color-mix(in srgb, var(--primary) 70%, #000000)" stroke-width="2"/></svg>
+      </div>
+    </div>
+    <div class="v-butterfly butterfly-2">
+      <div class="bf-wing bf-wing-left">
+        <svg viewBox="0 0 50 60"><path d="M48,50 C40,40 10,40 5,20 C0,0 35,0 48,25 Z" fill="color-mix(in srgb, var(--accent) 80%, #ffffff)" stroke="color-mix(in srgb, var(--primary) 70%, #000000)" stroke-width="2"/></svg>
+      </div>
+      <div class="bf-body"></div>
+      <div class="bf-wing bf-wing-right">
+        <svg viewBox="0 0 50 60"><path d="M2,50 C10,40 40,40 45,20 C50,0 15,0 2,25 Z" fill="color-mix(in srgb, var(--accent) 80%, #ffffff)" stroke="color-mix(in srgb, var(--primary) 70%, #000000)" stroke-width="2"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- COVER SCREEN (PINTU GERBANG UTAMA)                                  -->
+  <!-- =================================================================== -->
+  <div class="cover-screen" id="coverScreen">
+    <div class="cover-backdrop-img"></div>
+    <div class="cover-overlay-gradient"></div>
+
+    <!-- Ornamen Daun Botani di Sudut Cover -->
+    <img src="/assets/ornaments/vintage-forest/bunga-botani2.webp" alt="Botanical Leaf" class="cover-botanical-corner cover-botanical-top-left" />
+    <img src="/assets/ornaments/vintage-forest/bunga-botani2.webp" alt="Botanical Leaf" class="cover-botanical-corner cover-botanical-top-right" />
+
+    <div class="cover-content-card">
+      <span class="cover-badge-pill" data-lux-field="customLabels.coverBadge">{{eventLabel}}</span>
+      <h1 class="cover-couple-title">{{mainNickname}}</h1>
+      <p class="cover-date-text">{{eventDateFormatted}}</p>
+      <p class="cover-tagline-text" data-lux-field="customLabels.coverSubtitle">{{eventIntro}}</p>
+
+      <div class="cover-guest-box">
+        <p class="cover-guest-label">Kepada Yth. Bapak/Ibu/Saudara/i:</p>
+        <p class="cover-guest-name" id="coverGuestName">{{guestName}}</p>
+      </div>
+
+      <button class="btn-open-envelope btn-buka" onclick="luxOpenInvitation()" aria-label="Buka Undangan">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+          <polyline points="22,6 12,13 2,6" />
+        </svg>
+        <span data-lux-field="customLabels.openBtn">Buka Undangan</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- MAIN LAYOUT WRAPPER (DESKTOP SPLIT & MOBILE)                        -->
+  <!-- =================================================================== -->
+  <div class="layout-wrapper">
+    <!-- SIDEBAR DESKTOP SPLIT -->
+    <aside class="sidebar-desktop">
+      <div class="sidebar-desktop-content">
+        <p class="sidebar-desktop-tagline">{{eventLabel}}</p>
+        <h2 class="sidebar-desktop-names">{{mainNickname}}</h2>
+        <p class="sidebar-desktop-date">{{eventDateFormatted}}</p>
+        <p class="sidebar-desktop-quote">{{eventIntro}}</p>
+      </div>
+    </aside>
+
+    <!-- MAIN SCROLLABLE APP CONTAINER -->
+    <main class="app-container main-scroll-panel" id="mainAppContainer">
+      <!-- TIGA LAPISAN KANVAS LATAR -->
+      <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
+      <div class="scrim-canvas" aria-hidden="true"></div>
+
+      <!-- =============================================================== -->
+      <!-- 1. HERO / OPENING SECTION (#home)                               -->
+      <!-- =============================================================== -->
+      <section class="sec-flow sec-flow-hero" id="home">
+        <div class="hero-card-arch">
+          <!-- Ornamen Daun Botani di Sudut Hero -->
+          <img src="/assets/ornaments/vintage-forest/bunga-botani2.webp" alt="Botanical Leaf" class="ornament-botanical-corner ob-top-right" />
+
+          <div class="hero-arch-photo-container">
+            {{#if hasCustomHomePhoto}}<img src="{{homePhotoUrl}}" alt="{{mainNickname}}" class="hero-arch-photo" />{{/if}}
+            {{#unless hasCustomHomePhoto}}<img src="{{mainPhotoUrl}}" alt="{{mainNickname}}" class="hero-arch-photo" />{{/unless}}
+          </div>
+
+          <p class="hero-tagline" data-lux-field="customLabels.quoteEyebrow">Anda Diundang</p>
+          <h2 class="hero-couple-names">{{mainNickname}}</h2>
+          {{#if mainInfoLine}}<p class="hero-info-line">{{mainInfoLine}}</p>{{/if}}
+          <div class="hero-date-badge">
+            <span>{{eventDateFormatted}}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- =============================================================== -->
+      <!-- 2. QUOTE SECTION (#quote)                                       -->
+      <!-- =============================================================== -->
+      {{#if openingQuote}}
+      <section class="sec-flow" id="quote">
+        <div class="quote-card">
+          <div class="botanical-divider">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M12 2L15 8L21 9L17 14L18 20L12 17L6 20L7 14L3 9L9 8L12 2Z" />
+            </svg>
+          </div>
+
+          <p class="quote-text" data-lux-field="narrative.openingQuote">"{{openingQuote}}"</p>
+          <p class="quote-ref" data-lux-field="narrative.openingQuoteRef">{{openingQuoteRef}}</p>
+        </div>
+      </section>
+      {{/if}}
+
+      <!-- =============================================================== -->
+      <!-- 3. PROFIL TOKOH (#profile)                                      -->
+      <!-- =============================================================== -->
+      <section class="sec-flow" id="profile">
+        <span class="sec-eyebrow" data-lux-field="customLabels.coupleEyebrow">{{profileEyebrow}}</span>
+        <h2 class="sec-main-title" data-lux-field="customLabels.coupleTitle">{{profileTitle}}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.coupleSub">{{profileSub}}</p>
+
+        <div class="couple-stack">
+          <div class="person-card">
+            <img src="/assets/ornaments/vintage-forest/bunga-botani2.webp" alt="Botanical Leaf" class="ornament-botanical-corner ob-top-right" />
+            <div class="person-photo-arch">
+              <img src="{{mainPhotoUrl}}" alt="{{mainName}}" loading="lazy" />
+            </div>
+            <h3 class="person-nickname">{{mainName}}</h3>
+            {{#if mainInfoLine}}<p class="person-fullname">{{mainInfoLine}}</p>{{/if}}
+            {{#if mainDetailLine}}<p class="person-parents">{{mainDetailLine}}</p>{{/if}}
+            <div class="person-parents">{{parentsHtml}}</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =============================================================== -->
+      <!-- 4. WAKTU & TEMPAT (#event)                                      -->
+      <!-- =============================================================== -->
+      <section class="sec-flow" id="event">
+        <h2 class="sec-main-title" data-lux-field="customLabels.eventsTitle">{{agendaTitle}}</h2>
+        <p class="sec-sub">{{eventDateFormatted}}</p>
+
+        <div class="countdown-timer-grid" id="timerGrid">
+          <div class="time-unit-box">
+            <span class="time-number" id="cdDays">00</span>
+            <span class="time-label">Hari</span>
+          </div>
+          <div class="time-unit-box">
+            <span class="time-number" id="cdHours">00</span>
+            <span class="time-label">Jam</span>
+          </div>
+          <div class="time-unit-box">
+            <span class="time-number" id="cdMins">00</span>
+            <span class="time-label">Menit</span>
+          </div>
+          <div class="time-unit-box">
+            <span class="time-number" id="cdSecs">00</span>
+            <span class="time-label">Detik</span>
+          </div>
+        </div>
+
+        {{eventSectionHtml}}
+      </section>
+
+      {{qrPassHtml}}
+
+      {{gallerySectionHtml}}
+
+      {{giftSectionHtml}}
+
+      {{extraSectionsHtml}}
+
+      <!-- =============================================================== -->
+      <!-- 5. KONFIRMASI KEHADIRAN & UCAPAN (#rsvp, form dari mesin)       -->
+      <!-- =============================================================== -->
+      <section class="sec-flow" id="rsvp">
+        <span class="sec-eyebrow" data-lux-field="customLabels.wishesEyebrow">Konfirmasi</span>
+        {{rsvpSectionHtml}}
+        {{wishesSectionHtml}}
+      </section>
+
+      {{memoriesSectionHtml}}
+
+      <!-- =============================================================== -->
+      <!-- 6. OUTRO / CLOSING SECTION (.site-footer)                       -->
+      <!-- =============================================================== -->
+      <footer class="site-footer {{closingPhotoClass}}" id="footer" style="{{closingBgStyle}}">
+        <!-- Ornamen Daun Botani di Bagian Atas Outro -->
+        <img src="/assets/ornaments/vintage-forest/bunga-botani2.webp" alt="Botanical Leaf" class="closing-top-ornament" />
+
+        <div class="closing-content-box">
+          <p class="closing-quote-text" data-lux-field="customLabels.closingText">{{closingText}}</p>
+          <p class="closing-sub-text" data-lux-field="customLabels.closingTitle">Terima Kasih</p>
+          <h2 class="closing-couples-sig">{{mainNickname}}</h2>
+          <p class="closing-date-text">{{eventDateFormatted}}</p>
+          <div class="lux-watermark-footer">{{brandWatermarkHtml}}</div>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- SMART BOTTOM DOCK                                                   -->
+  <!-- =================================================================== -->
+  <nav class="bottom-dock dock-hidden" id="bottomDock">
+    <a href="#home" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
+      <span>Home</span>
+    </a>
+    <a href="#profile" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+      <span>Profil</span>
+    </a>
+    <a href="#event" class="dock-btn">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+      <span>Acara</span>
+    </a>
+    <a href="#gallery" class="dock-btn">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+      <span>Galeri</span>
+    </a>
+    <a href="#rsvp" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+      <span>RSVP</span>
+    </a>
+  </nav>
+
+  <!-- =================================================================== -->
+  <!-- JAVASCRIPT INTERACTIVE ENGINE                                       -->
+  <!-- =================================================================== -->
+  <script>
+    /* 1. Request Smart Fullscreen */
+    function requestSmartFullscreen() {
+      const docEl = document.documentElement;
+      const req = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+      if (req) {
+        const res = req.call(docEl);
+        if (res && res.catch) res.catch(() => {});
+      } else {
+        window.scrollTo(0, 1);
+      }
+    }
+
+    /* 2. Open Invitation: audio dan tombol musik disuntikkan mesin di akhir body, jadi dicari saat dipakai. */
+    let isInvitationOpen = false;
+    function luxOpenInvitation() {
+      requestSmartFullscreen();
+      const cover = document.getElementById("coverScreen");
+      if (cover) cover.classList.add("unlocked", "opened");
+
+      isInvitationOpen = true;
+
+      if (window.__DISABLE_AUDIO__ || window !== window.top) return;
+      const audio = document.getElementById("luxAudioPlayer");
+      if (audio) {
+        audio.play().then(() => {
+          const fab = document.getElementById("musicFab");
+          if (fab) fab.classList.add("playing");
+        }).catch(() => {});
+      }
+    }
+    window.openInvitation = luxOpenInvitation;
+
+    /* 3. Countdown Timer */
+    function initCountdown() {
+      const targetStr = "{{countdownTarget}}";
+      const target = new Date(targetStr).getTime();
+      if (!targetStr || isNaN(target)) return;
+
+      function setAll(d, h, m, s) {
+        const ids = { cdDays: d, cdHours: h, cdMins: m, cdSecs: s };
+        Object.keys(ids).forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.innerText = String(ids[id]).padStart(2, "0");
+        });
+      }
+
+      function update() {
+        const diff = target - Date.now();
+        if (diff <= 0) {
+          setAll(0, 0, 0, 0);
+          return;
+        }
+        setAll(
+          Math.floor(diff / 86400000),
+          Math.floor((diff % 86400000) / 3600000),
+          Math.floor((diff % 3600000) / 60000),
+          Math.floor((diff % 60000) / 1000)
+        );
+      }
+
+      update();
+      setInterval(update, 1000);
+    }
+
+    /* 4. Smart Auto-Hide Controls & Home-Safe Audio FAB */
+    let lastScrollY = window.scrollY;
+    function initSmartControls() {
+      const dock = document.getElementById("bottomDock");
+      const homeSec = document.getElementById("home");
+
+      window.addEventListener("scroll", () => {
+        if (!isInvitationOpen) return;
+        const fab = document.getElementById("musicFab");
+        const currentY = window.scrollY;
+        const homeBottom = homeSec ? (homeSec.offsetTop + homeSec.offsetHeight - 100) : 400;
+
+        if (currentY <= homeBottom) {
+          if (fab) fab.classList.add("fab-hidden");
+          if (dock) dock.classList.add("dock-hidden");
+        } else {
+          if (currentY > lastScrollY + 12) {
+            if (dock) dock.classList.add("dock-hidden");
+            if (fab) fab.classList.add("fab-hidden");
+          } else if (currentY < lastScrollY - 12) {
+            if (dock) dock.classList.remove("dock-hidden");
+            if (fab) fab.classList.remove("fab-hidden");
+          }
+        }
+        lastScrollY = currentY;
+      }, { passive: true });
+    }
+
+    /* 5. Nama tamu dari ?to= (atau ?u=); tanpa parameter, sapaan bawaan mesin dibiarkan. */
+    function initGuestName() {
+      const params = new URLSearchParams(window.location.search);
+      const to = params.get("to") || params.get("u");
+      if (!to) return;
+      const name = to.replace(/\+/g, " ");
+      const el = document.getElementById("coverGuestName");
+      if (el) el.innerText = name;
+      const rsvpName = document.getElementById("universalRsvpName");
+      if (rsvpName) rsvpName.value = name;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      initCountdown();
+      initSmartControls();
+      initGuestName();
+    });
+  </script>
+  {{musicPlayerHtml}}
+</body>
+
+</html>
+

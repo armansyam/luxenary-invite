@@ -1,0 +1,944 @@
+<!--
+  TEMA HABLUR — Wedding / Liquid Glass
+  Kategori: Modern | EventType: WEDDING
+  Kaca cair di atas aurora malam: panel kaca dengan tepi bercahaya, kilau yang mengikuti kemiringan HP atau kursor,
+  tombol berpegas saat ditekan, dock kaca dengan penanda tetesan yang meluncur, dan pembiasan tepi kaca (hanya Chromium).
+  Tanpa foto, sampul dan hero kiri memakai aurora yang digambar dari token palet; foto klien menggantikannya ({{#if}}).
+  Desktop >= 900px: sampul layar penuh (data-lux-desktop-cover="full") sampai klien mengunggah foto sampul; setelah dibuka
+  .sidebar-desktop di kiri, kolom undangan 460px di kanan.
+-->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>{{firstName}} &amp; {{secondName}}</title>
+  <link rel="stylesheet" href="/fonts/fonts.css" />
+  <style>
+    :root {
+      --primary: #e9d8b0;
+      --secondary: #9fd6cc;
+      --accent: #f2b49a;
+      --bg-dark: #061113;
+      --bg-canvas: #08171a;
+      --overlay: #030809;
+      --glass: #eaf5f3;
+      --aura-1: #1d9e8e;
+      --aura-2: #e3896a;
+      --aura-3: #cfb37a;
+      --aura-4: #2c6ea6;
+      --text-main: #f2f6f5;
+      --text-muted: #b6c6c3;
+      --on-primary: #142321;
+      --on-dark: #f2f6f5;
+      --card-bg: color-mix(in srgb, var(--glass) 9%, transparent);
+      --shadow-color: color-mix(in srgb, var(--overlay) 70%, transparent);
+      --radius-sm: 12px;
+      --radius-md: 18px;
+      --radius-lg: 28px;
+      --radius-full: 9999px;
+      --font-heading: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-script: 'Great Vibes', cursive;
+      --lq-spring: linear(0, 0.013 0.6%, 0.05 1.2%, 0.2 2.6%, 0.567 5.6%, 0.832 8.4%, 1.006 11.3%, 1.096 14%, 1.128 16.6%, 1.122 19.1%, 1.09 22.1%, 1.034 26.7%, 1.002 31%, 0.988 35.7%, 0.991 42.8%, 1.001 53.4%, 1);
+      --lx: 0.3;
+      --ly: 0.15;
+      color-scheme: dark;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    ::selection { background: color-mix(in srgb, var(--primary) 38%, transparent); color: var(--on-dark); }
+    html { scroll-behavior: smooth; scrollbar-width: none; background: var(--bg-dark); }
+    html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+    body { font-family: var(--font-body); background: var(--bg-dark); color: var(--text-main); line-height: 1.65; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+    img { max-width: 100%; display: block; }
+    a { color: inherit; }
+    .serif, .font-serif { font-family: var(--font-heading); font-weight: 600; }
+    .font-script { font-family: var(--font-script); font-weight: 400; }
+    :focus-visible { outline: 2px solid color-mix(in srgb, var(--primary) 80%, transparent); outline-offset: 3px; }
+
+    /* ── Aurora: bercak gradien lembut yang bergeser pelan; hanya transform yang dianimasikan agar ringan saat digulir. ── */
+    .lq-aurora { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; background: linear-gradient(160deg, var(--bg-canvas), var(--bg-dark)); }
+    .cover-screen .lq-aurora { position: absolute; }
+    .lq-aurora span { position: absolute; width: 78vmax; height: 78vmax; border-radius: 50%; will-change: transform; animation: lq-drift 34s ease-in-out infinite alternate; }
+    .lq-aurora .a1 { left: -30vmax; top: -34vmax; background: radial-gradient(circle, color-mix(in srgb, var(--aura-1) 62%, transparent), transparent 64%); }
+    .lq-aurora .a2 { right: -34vmax; top: 6vmax; background: radial-gradient(circle, color-mix(in srgb, var(--aura-2) 46%, transparent), transparent 62%); animation-duration: 41s; animation-delay: -12s; }
+    .lq-aurora .a3 { left: -18vmax; bottom: -42vmax; background: radial-gradient(circle, color-mix(in srgb, var(--aura-3) 40%, transparent), transparent 62%); animation-duration: 38s; animation-delay: -20s; }
+    .lq-aurora .a4 { right: -24vmax; bottom: -30vmax; background: radial-gradient(circle, color-mix(in srgb, var(--aura-4) 50%, transparent), transparent 64%); animation-duration: 46s; animation-delay: -6s; }
+    @keyframes lq-drift {
+      0% { transform: translate3d(0, 0, 0) scale(1); }
+      50% { transform: translate3d(9vmax, 6vmax, 0) scale(1.12); }
+      100% { transform: translate3d(-6vmax, 10vmax, 0) scale(0.94); }
+    }
+
+    /* ── Material kaca ──
+       Latar tembus pandang + blur latar belakang; tepi bercahaya dari box-shadow inset yang offsetnya mengikuti arah
+       cahaya (--lx, --ly), dan kilau (::after) yang posisinya mengikuti kemiringan HP atau kursor. Tepi sengaja bukan
+       pseudo-elemen bermask: audit kontras (variantReadability) menghitung pseudo selebar panel sebagai latar penuh. */
+    .lq {
+      position: relative; isolation: isolate;
+      background: linear-gradient(150deg, color-mix(in srgb, var(--glass) 13%, transparent), color-mix(in srgb, var(--glass) 4%, transparent));
+      -webkit-backdrop-filter: blur(20px) saturate(165%);
+      backdrop-filter: blur(20px) saturate(165%);
+      border-radius: var(--radius-lg);
+      box-shadow:
+        inset calc((0.5 - var(--lx)) * 3px) calc((0.5 - var(--ly)) * 3px) 0 0 color-mix(in srgb, var(--glass) 50%, transparent),
+        inset 0 0 0 1px color-mix(in srgb, var(--glass) 14%, transparent),
+        inset 0 -12px 24px -20px color-mix(in srgb, var(--glass) 30%, transparent),
+        0 24px 48px -24px var(--shadow-color);
+    }
+    .lq::after {
+      content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+      background: radial-gradient(90% 70% at calc(var(--lx) * 100%) calc(var(--ly) * 100%), color-mix(in srgb, var(--glass) 16%, transparent), transparent 62%);
+    }
+    .lq-press { transition: transform 0.55s var(--lq-spring), box-shadow 0.3s ease; }
+    .lq-press:active { transform: scale(0.955); transition-duration: 0.12s; transition-timing-function: ease-out; }
+
+    /* Pembiasan tepi kaca: hanya Chromium yang menerapkan filter SVG pada backdrop-filter. Kelas dipasang skrip setelah
+       memeriksa peramban, sehingga Safari dan Firefox tetap memakai blur biasa di atas. */
+    html.lq-lens .lq-lens-target { -webkit-backdrop-filter: url(#lqLens) blur(14px) saturate(170%); backdrop-filter: url(#lqLens) blur(14px) saturate(170%); }
+
+    /* ── Sampul ── */
+    .cover-screen {
+      position: fixed; inset: 0; z-index: 9999; height: 100vh; height: 100dvh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: calc(28px + env(safe-area-inset-top, 0px)) 20px calc(28px + env(safe-area-inset-bottom, 0px));
+      text-align: center; color: var(--on-dark); overflow: hidden;
+      /* Gradien, bukan warna polos: mesin memaksa background-color sampul gelap (!important) agar tidak berkedip saat memuat. */
+      background: linear-gradient(var(--bg-dark), var(--bg-dark));
+      transition: opacity 0.7s ease 0.25s, visibility 0s linear 0.95s;
+    }
+    .cover-screen.has-photo { background: var(--bg-dark) center / cover no-repeat; }
+    .cover-screen.has-photo .lq-aurora { display: none; }
+    .cover-screen.has-photo::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--overlay) 18%, transparent), color-mix(in srgb, var(--overlay) 72%, transparent)); }
+    .cover-screen.opened { opacity: 0; visibility: hidden; pointer-events: none; }
+    .cover-card {
+      position: relative; z-index: 2; width: 100%; max-width: 360px; padding: 34px 26px 28px;
+      transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.6s ease;
+    }
+    .cover-screen.opened .cover-card { transform: translateY(-18px) scale(1.06); opacity: 0; }
+    .cover-tagline { font-size: 10.5px; font-weight: 600; letter-spacing: 0.34em; text-transform: uppercase; color: var(--secondary); }
+    .cover-names { font-family: var(--font-heading); font-weight: 500; font-size: clamp(40px, 12vw, 54px); line-height: 1.02; margin: 14px 0 6px; color: var(--on-dark); overflow-wrap: break-word; }
+    .cover-names .amp { display: block; font-family: var(--font-script); font-size: 0.62em; color: var(--primary); margin: 2px 0; }
+    .cover-date { font-size: 12px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--primary); }
+    .cover-subtitle { font-size: 13px; line-height: 1.6; color: var(--text-muted); margin: 12px auto 0; max-width: 290px; }
+    .cover-guest-card { margin: 22px auto 0; padding: 12px 18px; border-radius: var(--radius-md); }
+    .cover-guest-lbl { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-muted); }
+    .cover-guest-val { font-family: var(--font-heading); font-size: 22px; font-weight: 600; color: var(--on-dark); margin-top: 2px; overflow-wrap: break-word; }
+    .cover-btn-open {
+      display: inline-flex; align-items: center; justify-content: center; gap: 9px; margin-top: 20px; padding: 14px 28px; border: 0; cursor: pointer;
+      border-radius: var(--radius-full); font-family: inherit; font-size: 12.5px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--on-primary); background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 96%, var(--glass)), var(--primary));
+      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--glass) 70%, transparent), 0 12px 28px -12px color-mix(in srgb, var(--primary) 70%, transparent);
+    }
+    .cover-btn-open svg { flex-shrink: 0; }
+    .cover-wide { display: none; }
+
+    /* ── Hero kiri desktop ── */
+    .sidebar-desktop { display: none; position: fixed; left: 0; top: 0; width: calc(100% - 460px); height: 100vh; z-index: 12; overflow: hidden; background: transparent; }
+    .sidebar-desktop.has-photo { background: var(--bg-dark) center / cover no-repeat; }
+    .sidebar-desktop.has-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, color-mix(in srgb, var(--overlay) 82%, transparent), color-mix(in srgb, var(--overlay) 10%, transparent) 60%, transparent); }
+    .sidebar-desktop-content { position: absolute; left: 3.5rem; bottom: 3.5rem; z-index: 2; max-width: 30rem; padding: 2.4rem 2.6rem; }
+    .sidebar-desktop-tagline { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.32em; text-transform: uppercase; color: var(--secondary); }
+    .sidebar-desktop-names { font-family: var(--font-heading); font-weight: 500; font-size: clamp(3rem, 4.6vw, 4.6rem); line-height: 1; margin: 0.6rem 0; color: var(--on-dark); overflow-wrap: break-word; }
+    .sidebar-desktop-names span { font-family: var(--font-script); color: var(--primary); font-size: 0.7em; }
+    .sidebar-desktop-date { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; color: var(--primary); }
+    .sidebar-desktop-quote { font-size: 1.05rem; line-height: 1.6; color: var(--text-muted); margin-top: 1rem; font-style: italic; font-weight: 500; }
+
+    /* ── Kolom undangan ── */
+    .layout-wrapper { position: relative; z-index: 1; min-height: 100vh; }
+    .fixed-bg-layer { position: fixed; top: 0; right: 0; bottom: 0; width: 100%; z-index: 0; pointer-events: none; background: transparent; }
+    .fixed-bg-layer.has-custom-bg { background: linear-gradient(180deg, color-mix(in srgb, var(--bg-dark) 55%, transparent), color-mix(in srgb, var(--bg-dark) 80%, transparent)), var(--custom-bg) center / cover no-repeat; }
+    .main-scroll-panel { position: relative; z-index: 10; width: 100%; min-height: 100vh; }
+
+    .sec-flow { position: relative; max-width: 480px; margin: 0 auto; padding: 72px 20px; text-align: center; }
+    .sec-eyebrow { display: inline-block; font-size: 10.5px; font-weight: 600; letter-spacing: 0.32em; text-transform: uppercase; color: var(--secondary); margin-bottom: 10px; }
+    .sec-main-title { font-family: var(--font-heading); font-weight: 500; font-size: 38px; line-height: 1.08; color: var(--text-main); margin-bottom: 12px; }
+    .sec-sub { font-size: 13.5px; color: var(--text-muted); max-width: 340px; margin: 0 auto 26px; }
+    .sec-divider { width: 64px; height: 1px; margin: 16px auto; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--primary) 80%, transparent), transparent); }
+
+    /* ── Pembuka ── */
+    .slide-opening { position: relative; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 72px 20px 56px; text-align: center; }
+    .opening-top { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .opening-bismillah { font-family: var(--font-heading); font-size: 22px; color: var(--primary); }
+    .opening-bismillah:empty { display: none; }
+    .opening-date-pill { display: inline-flex; gap: 6px; padding: 8px 16px; border-radius: var(--radius-full); font-size: 12px; font-weight: 600; letter-spacing: 0.18em; color: var(--primary); }
+    .opening-photo { width: 220px; aspect-ratio: 4 / 5; margin: 0 auto 18px; border-radius: 120px 120px var(--radius-lg) var(--radius-lg); overflow: hidden; padding: 6px; }
+    .opening-photo img { width: 100%; height: 100%; object-fit: cover; border-radius: 114px 114px 22px 22px; }
+    .opening-sub-title { font-size: 10.5px; font-weight: 600; letter-spacing: 0.32em; text-transform: uppercase; color: var(--secondary); }
+    .opening-names { font-family: var(--font-heading); font-weight: 500; font-size: clamp(44px, 13vw, 58px); line-height: 1; margin-top: 8px; color: var(--text-main); overflow-wrap: break-word; }
+    .opening-names em { display: block; font-style: normal; font-family: var(--font-script); font-size: 0.6em; color: var(--primary); }
+    .opening-quote-card { max-width: 360px; margin: 0 auto; padding: 26px 24px; }
+    .opening-quote-title { font-size: 22px; color: var(--text-main); margin-bottom: 10px; font-weight: 600; }
+    .opening-quote-text { font-family: var(--font-heading); font-size: 18px; line-height: 1.55; font-style: italic; color: var(--text-main); }
+    .opening-quote-ref { font-size: 10.5px; font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; color: var(--primary); margin-top: 12px; }
+    .scroll-indicator { margin-top: 18px; color: var(--primary); animation: lq-cue 1.8s ease-in-out infinite; }
+    @keyframes lq-cue { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(7px); } }
+
+    /* ── Mempelai ── */
+    .couple-grid { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+    .couple-card { width: 100%; max-width: 360px; padding: 18px 18px 24px; }
+    .couple-photo-wrap { width: 100%; aspect-ratio: 4 / 5; border-radius: var(--radius-md); overflow: hidden; margin-bottom: 16px; background: color-mix(in srgb, var(--glass) 6%, transparent); }
+    .couple-photo-wrap img { width: 100%; height: 100%; object-fit: cover; }
+    .couple-role { display: block; font-size: 10.5px; font-weight: 600; letter-spacing: 0.28em; text-transform: uppercase; color: var(--secondary); }
+    .couple-name { font-family: var(--font-heading); font-weight: 600; font-size: 28px; line-height: 1.15; color: var(--text-main); margin: 6px 0 8px; overflow-wrap: break-word; }
+    .couple-parents { font-size: 13px; color: var(--text-muted); }
+    .couple-parents strong { color: var(--text-main); font-weight: 600; }
+    .couple-ig { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; padding: 7px 14px; border-radius: var(--radius-full); font-size: 12px; font-weight: 600; text-decoration: none; color: var(--primary); background: color-mix(in srgb, var(--glass) 8%, transparent); border: 1px solid color-mix(in srgb, var(--glass) 18%, transparent); }
+    .couple-amp { font-size: 46px; line-height: 1; color: var(--primary); }
+
+    /* ── Hitung mundur ── */
+    .countdown-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; max-width: 360px; margin: 0 auto; padding: 14px; border-radius: var(--radius-lg); }
+    .countdown-box { display: flex; flex-direction: column; align-items: center; padding: 10px 0; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--glass) 6%, transparent); }
+    .countdown-num { font-family: var(--font-heading); font-size: 34px; font-weight: 600; line-height: 1.05; color: var(--text-main); font-variant-numeric: tabular-nums; }
+    .countdown-lbl { font-size: 10px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); }
+    .btn-cal {
+      display: inline-flex; align-items: center; gap: 8px; margin-top: 20px; padding: 12px 22px; border-radius: var(--radius-full);
+      font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none; color: var(--text-main);
+    }
+
+    /* ── Kisah ── */
+    .journey-timeline { text-align: left; }
+
+    /* ── Seksi buatan mesin (acara, kisah, kado, kartu QR, siaran, kenangan) memakai class mesin; di sini dijadikan kaca. ──
+       Judul seksi mesin juga .sec-main-title: mesin menyisipkan letter-spacing 0.12em sesudah gaya tema, jadi
+       spesifisitas dinaikkan lewat .main-scroll-panel. */
+    .main-scroll-panel .sec-main-title { letter-spacing: 0.005em; }
+    .event-block-item, .story-chapter-block, .bank-card, .access-pass-card {
+      position: relative; max-width: 380px; margin: 0 auto 14px; padding: 22px 20px; border-radius: var(--radius-lg);
+      background: linear-gradient(150deg, color-mix(in srgb, var(--glass) 13%, transparent), color-mix(in srgb, var(--glass) 4%, transparent));
+      -webkit-backdrop-filter: blur(18px) saturate(160%);
+      backdrop-filter: blur(18px) saturate(160%);
+      border: 1px solid color-mix(in srgb, var(--glass) 16%, transparent);
+      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--glass) 32%, transparent), 0 20px 40px -26px var(--shadow-color);
+    }
+    .event-block-item { text-align: center; }
+    .ev-cat { display: inline-block; padding: 4px 12px; border-radius: var(--radius-full); font-size: 10px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; color: var(--secondary); background: color-mix(in srgb, var(--secondary) 12%, transparent); }
+    .ev-name { font-family: var(--font-heading); font-size: 27px; font-weight: 600; line-height: 1.15; text-transform: none; letter-spacing: 0; margin: 12px 0 4px; color: var(--text-main); }
+    .ev-time { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; color: var(--primary); }
+    .ev-venue { font-size: 15px; font-weight: 700; margin-top: 14px; color: var(--text-main); }
+    .ev-addr { font-size: 13px; color: var(--text-muted); margin: 2px 0 0; }
+    .btn-map-outline, .btn-outline-box, .btn-copy {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-top: 16px; padding: 10px 20px;
+      border-radius: var(--radius-full) !important; font-family: inherit; font-size: 11.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; text-decoration: none; cursor: pointer;
+      color: var(--text-main) !important; background: color-mix(in srgb, var(--glass) 10%, transparent) !important;
+      border: 1px solid color-mix(in srgb, var(--glass) 24%, transparent) !important;
+      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--glass) 34%, transparent);
+      transition: transform 0.55s var(--lq-spring), background 0.25s ease;
+    }
+    .btn-map-outline:active, .btn-outline-box:active, .btn-copy:active { transform: scale(0.95); transition-duration: 0.1s; }
+    .journey-timeline .story-chapter-block { text-align: left; }
+    .sc-label { font-size: 10px; font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; color: var(--primary); }
+    .journey-timeline .story-chapter-block .sc-title { font-family: var(--font-heading); font-weight: 600; line-height: 1.2; margin: 6px 0; color: var(--text-main); }
+    .sc-desc { font-size: 13.5px; color: var(--text-muted); }
+    .bank-card { text-align: left; }
+    .bank-label { font-size: 10.5px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--secondary); }
+    .bank-owner { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
+    .bank-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
+    .bank-number { font-family: var(--font-heading); font-size: clamp(19px, 6vw, 24px); font-weight: 600; letter-spacing: 0.04em; color: var(--text-main); overflow-wrap: anywhere; }
+    .bank-row .btn-copy { margin-top: 0; flex-shrink: 0; padding: 8px 14px; }
+    .access-pass-card { text-align: center; }
+    .pass-qr-wrapper { background: white; }
+    .btn-qr-ghost { display: inline-block; margin-top: 14px; padding: 4px 6px; border: 0; background: none; cursor: pointer; font-family: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); text-decoration: underline; text-underline-offset: 4px; }
+
+    /* ── RSVP ── */
+    .rsvp-form-box { max-width: 380px; margin: 0 auto; padding: 26px 22px; text-align: left; }
+    .rsvp-form-title { font-size: 24px; text-align: center; margin-bottom: 18px; color: var(--text-main); font-weight: 600; }
+    .form-group { margin-bottom: 14px; }
+    .form-label { display: block; font-size: 10.5px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+    .form-input, .form-select, .form-textarea {
+      width: 100%; padding: 12px 14px; border-radius: var(--radius-sm); font-family: inherit; font-size: 14px; color: var(--text-main);
+      background: color-mix(in srgb, var(--glass) 7%, transparent); border: 1px solid color-mix(in srgb, var(--glass) 18%, transparent);
+      transition: border-color 0.25s ease, background 0.25s ease; -webkit-appearance: none; appearance: none;
+    }
+    .form-select { background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%), linear-gradient(135deg, var(--text-muted) 50%, transparent 50%); background-position: calc(100% - 18px) 52%, calc(100% - 13px) 52%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 34px; }
+    .form-select option { color: var(--on-primary); background: var(--primary); }
+    .form-input::placeholder, .form-textarea::placeholder { color: color-mix(in srgb, var(--text-muted) 70%, transparent); }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: color-mix(in srgb, var(--primary) 70%, transparent); background: color-mix(in srgb, var(--glass) 11%, transparent); }
+    .form-textarea { resize: vertical; min-height: 92px; }
+    .btn-submit-rsvp {
+      width: 100%; margin-top: 4px; padding: 14px; border: 0; cursor: pointer; border-radius: var(--radius-full);
+      font-family: inherit; font-size: 12.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--on-primary); background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 96%, var(--glass)), var(--primary));
+      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--glass) 70%, transparent), 0 12px 26px -14px color-mix(in srgb, var(--primary) 70%, transparent);
+    }
+    .btn-submit-rsvp:disabled { opacity: 0.7; cursor: progress; }
+    .wishes-feed-list { display: flex; flex-direction: column; gap: 10px; max-width: 380px; max-height: 440px; margin: 18px auto 0; overflow-y: auto; scrollbar-width: none; text-align: left; }
+    .wishes-feed-list::-webkit-scrollbar { display: none; }
+    .wish-item { padding: 14px 16px; border-radius: var(--radius-md); background: color-mix(in srgb, var(--glass) 7%, transparent); border: 1px solid color-mix(in srgb, var(--glass) 12%, transparent); }
+    .wish-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .wish-name { font-weight: 700; font-size: 13.5px; color: var(--text-main); overflow-wrap: anywhere; }
+    .wish-badge { flex-shrink: 0; font-size: 10px; font-weight: 600; padding: 3px 9px; border-radius: var(--radius-full); color: var(--primary); background: color-mix(in srgb, var(--primary) 14%, transparent); }
+    .wish-badge.is-absent { color: var(--text-muted); background: color-mix(in srgb, var(--glass) 8%, transparent); }
+    .wish-msg { font-size: 13px; color: var(--text-muted); margin-top: 6px; overflow-wrap: anywhere; }
+
+    /* ── Penutup ── */
+    .closing-sec { position: relative; display: flex; align-items: flex-end; justify-content: center; min-height: 80vh; padding: 96px 20px 132px; text-align: center; color: var(--on-dark); background-size: cover; background-position: center; }
+    .closing-sec.has-closing-photo { min-height: 100vh; min-height: 100svh; }
+    .closing-sec.has-closing-photo::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--overlay) 25%, transparent), color-mix(in srgb, var(--overlay) 88%, transparent)); }
+    .closing-content { position: relative; z-index: 1; max-width: 380px; padding: 30px 24px; }
+    .closing-quote { font-family: var(--font-heading); font-size: 18px; font-style: italic; line-height: 1.55; color: var(--text-main); }
+    .closing-sub { font-size: 10.5px; font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; color: var(--secondary); margin-top: 16px; }
+    .closing-names { font-family: var(--font-heading); font-weight: 500; font-size: 42px; line-height: 1.05; margin: 8px 0 6px; color: var(--primary); }
+    .closing-family { font-size: 12.5px; color: var(--text-muted); }
+
+    /* ── Dock kaca ──
+       Penanda aktif berupa tetesan kaca (::before) yang meluncur dengan pegas. Posisinya dari variabel --ind-x/--ind-w
+       yang diisi skrip; pseudo-elemen dipakai karena fitBottomDock (renderTemplate) menghitung setiap anak dock. */
+    .bottom-dock {
+      position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); z-index: 900;
+      display: flex; gap: 2px; padding: 6px; border-radius: var(--radius-full);
+      transform: translate3d(-50%, 0, 0); transition: transform 0.6s var(--lq-spring), opacity 0.3s ease, padding 0.4s ease;
+      --ind-x: 0px; --ind-w: 0px;
+    }
+    .bottom-dock::before {
+      content: ""; position: absolute; top: 6px; bottom: 6px; left: 0; width: var(--ind-w); border-radius: var(--radius-full); z-index: 0; pointer-events: none;
+      transform: translateX(var(--ind-x)); opacity: 0;
+      background: linear-gradient(180deg, color-mix(in srgb, var(--glass) 26%, transparent), color-mix(in srgb, var(--glass) 10%, transparent));
+      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--glass) 55%, transparent), inset 0 -1px 0 color-mix(in srgb, var(--glass) 14%, transparent);
+      transition: transform 0.65s var(--lq-spring), width 0.65s var(--lq-spring), opacity 0.3s ease;
+    }
+    .bottom-dock.has-indicator::before { opacity: 1; }
+    .bottom-dock.dock-hidden { transform: translate3d(-50%, calc(100% + 40px), 0); opacity: 0; pointer-events: none; }
+    .bottom-dock .dock-btn { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 54px; padding: 7px 10px; border-radius: var(--radius-full); text-decoration: none; color: var(--text-muted); transition: color 0.25s ease, transform 0.55s var(--lq-spring); }
+    .bottom-dock > button.dock-a { position: relative; z-index: 1; min-width: 54px; padding: 7px 10px !important; gap: 2px !important; border-radius: var(--radius-full); color: var(--text-muted); transition: transform 0.55s var(--lq-spring); }
+    .bottom-dock > button.dock-a:active { transform: scale(0.9); transition-duration: 0.1s; }
+    .bottom-dock .dock-btn svg { width: 19px; height: 19px; fill: currentColor; }
+    .bottom-dock > button.dock-a > span,
+    .bottom-dock .dock-btn span { font-size: 9.5px; font-weight: 600; letter-spacing: 0.04em; white-space: nowrap; max-height: 14px; overflow: hidden; transition: max-height 0.35s ease, opacity 0.25s ease; }
+    .bottom-dock .dock-btn.active { color: var(--text-main); }
+    .bottom-dock .dock-btn:active { transform: scale(0.9); transition-duration: 0.1s; }
+    .bottom-dock.dock-mini { padding: 4px; }
+    .bottom-dock.dock-mini .dock-btn span, .bottom-dock.dock-mini > button.dock-a > span { max-height: 0; opacity: 0; }
+    .bottom-dock.dock-mini::before { top: 4px; bottom: 4px; }
+
+    /* ── Tombol musik ── */
+    .audio-fab { position: fixed; right: 16px; bottom: calc(max(14px, env(safe-area-inset-bottom)) + 74px); z-index: 901; width: 46px; height: 46px; display: flex; align-items: center; justify-content: center; border: 0; cursor: pointer; border-radius: 50%; color: var(--text-main); transition: transform 0.55s var(--lq-spring), opacity 0.3s ease; }
+    .audio-fab.fab-hidden { transform: scale(0.6); opacity: 0; pointer-events: none; }
+    .audio-fab.playing svg { animation: lq-spin 5s linear infinite; }
+    @keyframes lq-spin { to { transform: rotate(360deg); } }
+
+    /* ── Modal QR ── */
+    .modal-bg { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; background: color-mix(in srgb, var(--overlay) 60%, transparent); opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0s linear 0.3s; }
+    .modal-bg.open { opacity: 1; visibility: visible; transition: opacity 0.3s ease; }
+    .modal-card { width: 100%; max-width: 360px; max-height: 90vh; overflow-y: auto; padding: 24px 20px; text-align: center; transform: scale(0.94); transition: transform 0.5s var(--lq-spring); }
+    .modal-bg.open .modal-card { transform: scale(1); }
+    .modal-close { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border: 0; cursor: pointer; border-radius: 50%; font-size: 14px; color: var(--text-main); background: color-mix(in srgb, var(--glass) 12%, transparent); }
+    .modal-souvenir { margin-top: 16px; padding-top: 14px; border-top: 1px solid color-mix(in srgb, var(--glass) 14%, transparent); }
+    .modal-souvenir-lbl { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-muted); }
+    .modal-souvenir-code { font-weight: 700; font-size: 13px; color: var(--primary); margin-top: 4px; overflow-wrap: anywhere; }
+
+    /* ── Muncul saat digulir. Disembunyikan hanya bila skrip berjalan (html.lq-js), jadi tanpa skrip isi tetap terlihat. ── */
+    html.lq-js .lq-reveal { opacity: 0; transform: translateY(22px) scale(0.985); transition: opacity 0.8s ease, transform 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
+    html.lq-js .lq-reveal.is-visible { opacity: 1; transform: none; }
+
+    @media (max-width: 340px) {
+      .sec-main-title { font-size: 33px; }
+      .countdown-num { font-size: 28px; }
+      .bottom-dock .dock-btn { min-width: 46px; padding: 7px 6px; }
+    }
+
+    /* Pengguna yang meminta transparansi dikurangi mendapat permukaan pekat. */
+    @media (prefers-reduced-transparency: reduce) {
+      .lq, .event-block-item, .event-unified-venue-card, .bank-card, .story-chapter-block { -webkit-backdrop-filter: none; backdrop-filter: none; background: color-mix(in srgb, var(--bg-canvas) 92%, var(--glass)); }
+      .lq::after { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .lq-aurora span, .scroll-indicator, .audio-fab.playing svg { animation: none; }
+      html.lq-js .lq-reveal { opacity: 1; transform: none; transition: none; }
+      .cover-card, .cover-screen, .bottom-dock, .bottom-dock::before, .lq-press { transition: none; }
+    }
+
+    @media (min-width: 900px) {
+      .cover-screen:not(.has-photo) .cover-card { max-width: 440px; padding: 44px 40px 36px; }
+      .sidebar-desktop { display: block; }
+      .main-scroll-panel { width: 460px; max-width: 460px; margin-left: calc(100% - 460px); overflow-x: hidden; overflow-x: clip; border-left: 1px solid color-mix(in srgb, var(--glass) 10%, transparent); box-shadow: -24px 0 48px -24px var(--shadow-color); }
+      .fixed-bg-layer { left: calc(100% - 460px); width: 460px; }
+      .bottom-dock { left: calc(100% - 230px); }
+      .modal-bg { left: calc(100% - 460px); width: 460px; }
+      #luxCopyToast { left: calc(100% - 230px) !important; }
+      .sec-main-title { font-size: 36px; }
+    }
+  </style>
+  <script>
+    document.documentElement.classList.add('lq-js');
+  </script>
+</head>
+
+<body>
+  <!-- Peta pembiasan: kanal merah/hijau menggeser latar ke arah dalam di tepi panel, tengah netral (abu 50%). -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <filter id="lqLens" x="0" y="0" width="1" height="1" primitiveUnits="objectBoundingBox" color-interpolation-filters="sRGB">
+      <feImage x="0" y="0" width="1" height="1" preserveAspectRatio="none" result="map" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='r'%3E%3Cstop offset='0' stop-color='rgb(255,0,0)'/%3E%3Cstop offset='1' stop-color='rgb(0,0,0)'/%3E%3C/linearGradient%3E%3ClinearGradient id='g' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='rgb(0,255,0)'/%3E%3Cstop offset='1' stop-color='rgb(0,0,0)'/%3E%3C/linearGradient%3E%3Cfilter id='b'%3E%3CfeGaussianBlur stdDeviation='5'/%3E%3C/filter%3E%3C/defs%3E%3Crect width='100' height='100' fill='url(%23r)'/%3E%3Crect width='100' height='100' fill='url(%23g)' style='mix-blend-mode:screen'/%3E%3Crect x='14' y='14' width='72' height='72' rx='16' fill='rgb(128,128,128)' filter='url(%23b)'/%3E%3C/svg%3E"/>
+      <feDisplacementMap in="SourceGraphic" in2="map" scale="0.06" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </svg>
+
+  <div class="lq-aurora" aria-hidden="true"><span class="a1"></span><span class="a2"></span><span class="a3"></span><span class="a4"></span></div>
+
+  <!-- 1. SAMPUL -->
+  <div id="coverScreen" class="cover-screen cover-overlay{{#if landingCoverUrl}} has-photo{{/if}}" data-lux-desktop-cover="full"{{#if landingCoverUrl}} style="background-image: url('{{landingCoverUrl}}');"{{/if}}>
+    <div class="lq-aurora" aria-hidden="true"><span class="a1"></span><span class="a2"></span><span class="a3"></span><span class="a4"></span></div>
+    <div class="cover-card lq lq-lens-target">
+      <p class="cover-tagline" data-lux-field="customLabels.coverBadge">{{coverBadge}}</p>
+      <h1 class="cover-names">{{firstName}} <span class="amp">&amp;</span> {{secondName}}</h1>
+      <p class="cover-date">{{weddingDate}}</p>
+      <p class="cover-subtitle" data-lux-field="customLabels.coverSubtitle">{{coverSubtitle}}</p>
+      <div class="cover-guest-card lq">
+        <p class="cover-guest-lbl" data-lux-field="customLabels.coverGuestLabel">{{coverGuestLabel}}</p>
+        <p class="cover-guest-val" id="coverGuestName" data-lux-field="guestName">Tamu Undangan</p>
+      </div>
+      <button type="button" class="cover-btn-open btn-buka lq-press" data-lux-field="customLabels.openBtn" onclick="openInvitation()">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+        {{openBtn}}
+      </button>
+      {{qrCoverButtonHtml}}
+    </div>
+  </div>
+
+  <!-- 2. KONTEN UTAMA -->
+  <div class="layout-wrapper">
+    <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
+
+    <aside class="sidebar-desktop{{#if sidebarPhotoUrl}} has-photo{{/if}}" aria-label="Desktop Hero"{{#if sidebarPhotoUrl}} style="background-image: url('{{sidebarPhotoUrl}}');"{{/if}}>
+      <div class="sidebar-desktop-content lq">
+        <p class="sidebar-desktop-tagline" data-lux-field="weddingTagline">{{weddingTagline}}</p>
+        <h1 class="sidebar-desktop-names">{{firstName}} <span>&amp;</span> {{secondName}}</h1>
+        <p class="sidebar-desktop-date">{{weddingDate}}</p>
+        <p class="sidebar-desktop-quote" data-lux-field="openingQuote">{{openingQuote}}</p>
+      </div>
+    </aside>
+
+    <main class="main-scroll-panel app-container">
+
+      <section class="slide-opening" id="home">
+        <div class="opening-top lq-reveal">
+          <span class="opening-bismillah" data-lux-field="customLabels.openingGreeting">{{openingGreeting}}</span>
+          <span class="sec-eyebrow" data-lux-field="weddingTagline">{{weddingTagline}}</span>
+          <div class="opening-date-pill lq">
+            <span>{{weddingDateDay}}</span>/<span>{{weddingDateMonth}}</span>•<span>{{weddingDateYear}}</span>
+          </div>
+        </div>
+
+        <div class="opening-center lq-reveal">
+          {{#if hasCustomHomePhoto}}
+          <div class="opening-photo lq">
+            <img src="{{homePhotoUrl}}" alt="{{firstName}} &amp; {{secondName}}" loading="lazy" />
+          </div>
+          {{/if}}
+          <span class="opening-sub-title" data-lux-field="customLabels.quoteEyebrow">{{quoteSectionEyebrow}}</span>
+          <h2 class="opening-names">{{firstName}} <em>&amp;</em> {{secondName}}</h2>
+          <div class="sec-divider"></div>
+        </div>
+
+        <div class="opening-bottom lq-reveal">
+          <div class="opening-quote-card lq">
+            <h3 class="opening-quote-title serif" data-lux-field="customLabels.quoteTitle">{{quoteSectionTitle}}</h3>
+            <p class="opening-quote-text" data-lux-field="openingQuote">"{{openingQuote}}"</p>
+            <p class="opening-quote-ref" data-lux-field="openingQuoteRef">{{openingQuoteRef}}</p>
+          </div>
+          <div class="scroll-indicator" aria-hidden="true">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7" /></svg>
+          </div>
+        </div>
+      </section>
+
+      <section class="sec-flow" id="couple">
+        <span class="sec-eyebrow lq-reveal" data-lux-field="customLabels.coupleEyebrow">{{coupleSectionEyebrow}}</span>
+        <h2 class="sec-main-title lq-reveal" data-lux-field="customLabels.coupleTitle">{{coupleSectionTitle}}</h2>
+        <p class="sec-sub lq-reveal" data-lux-field="customLabels.coupleSub">{{coupleSectionSub}}</p>
+
+        <div class="couple-grid">
+          <div class="couple-card couple-{{firstGender}} lq lq-reveal">
+            <div class="couple-photo-wrap">
+              <img src="{{firstPhotoUrl}}" alt="{{firstFullName}}" loading="lazy" />
+            </div>
+            <span class="couple-role" data-lux-field="customLabels.groomRole">{{firstRoleLabel}}</span>
+            <h3 class="couple-name" data-lux-field="groomName">{{firstDisplayName}}</h3>
+            <p class="couple-parents" data-lux-field="groomParents">
+              {{firstParentPrefix}}<br>
+              <strong>{{firstFather}}</strong> &amp; <strong>{{firstMother}}</strong>
+            </p>
+            <a href="https://instagram.com/{{firstInstagram}}" target="_blank" rel="noopener" class="couple-ig lq-press">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor"/></svg>
+              @{{firstInstagram}}
+            </a>
+          </div>
+
+          <div class="couple-amp font-script lq-reveal" aria-hidden="true">&amp;</div>
+
+          <div class="couple-card couple-{{secondGender}} lq lq-reveal">
+            <div class="couple-photo-wrap">
+              <img src="{{secondPhotoUrl}}" alt="{{secondFullName}}" loading="lazy" />
+            </div>
+            <span class="couple-role" data-lux-field="customLabels.brideRole">{{secondRoleLabel}}</span>
+            <h3 class="couple-name" data-lux-field="brideName">{{secondDisplayName}}</h3>
+            <p class="couple-parents" data-lux-field="brideParents">
+              {{secondParentPrefix}}<br>
+              <strong>{{secondFather}}</strong> &amp; <strong>{{secondMother}}</strong>
+            </p>
+            <a href="https://instagram.com/{{secondInstagram}}" target="_blank" rel="noopener" class="couple-ig lq-press">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor"/></svg>
+              @{{secondInstagram}}
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section class="sec-flow" id="countdown">
+        <span class="sec-eyebrow lq-reveal" data-lux-field="customLabels.countdownEyebrow">Save The Date</span>
+        <h2 class="sec-main-title lq-reveal" data-lux-field="customLabels.countdownTitle">Menghitung Hari</h2>
+        <p class="sec-sub lq-reveal" data-lux-field="customLabels.countdownSub">Kami menantikan kehadiran Bapak/Ibu/Saudara/i pada hari bahagia kami.</p>
+        <div class="countdown-grid lq lq-reveal" id="countdownTimer">
+          <div class="countdown-box"><span class="countdown-num" id="cdDays">00</span><span class="countdown-lbl" data-lux-field="customLabels.cdDays">Hari</span></div>
+          <div class="countdown-box"><span class="countdown-num" id="cdHours">00</span><span class="countdown-lbl" data-lux-field="customLabels.cdHours">Jam</span></div>
+          <div class="countdown-box"><span class="countdown-num" id="cdMins">00</span><span class="countdown-lbl" data-lux-field="customLabels.cdMins">Menit</span></div>
+          <div class="countdown-box"><span class="countdown-num" id="cdSecs">00</span><span class="countdown-lbl" data-lux-field="customLabels.cdSecs">Detik</span></div>
+        </div>
+        <a href="{{googleCalendarUrl}}" target="_blank" rel="noopener" class="btn-cal lq lq-press lq-reveal" data-lux-field="customLabels.saveDateBtn">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+          Simpan ke Kalender
+        </a>
+      </section>
+
+      <section class="sec-flow" id="events">
+        <span class="sec-eyebrow lq-reveal" data-lux-field="customLabels.eventsEyebrow">Waktu &amp; Tempat</span>
+        <h2 class="sec-main-title lq-reveal" data-lux-field="customLabels.eventsTitle">{{eventsSectionTitle}}</h2>
+        <div class="lq-reveal">
+          {{eventDataHtml}}
+        </div>
+      </section>
+
+      {{#if showStory}}
+      <section class="sec-flow" id="story">
+        <span class="sec-eyebrow lq-reveal" data-lux-field="customLabels.storyEyebrow">{{storySectionEyebrow}}</span>
+        <h2 class="sec-main-title lq-reveal" data-lux-field="customLabels.storyTitle">{{storySectionTitle}}</h2>
+        <div class="journey-timeline lq-reveal">
+          {{storyItemsHtml}}
+        </div>
+      </section>
+      {{/if}}
+
+      {{gallerySectionHtml}}
+      {{dressCodeHtml}}
+      {{liveStreamingHtml}}
+      {{weddingFilterHtml}}
+      {{giftSectionHtml}}
+      {{turutMengundangHtml}}
+      {{memoriesSectionHtml}}
+      {{qrAccessSectionHtml}}
+
+      <section class="sec-flow" id="rsvp">
+        <span class="sec-eyebrow lq-reveal" data-lux-field="customLabels.wishesEyebrow">Ucapan &amp; Kehadiran</span>
+        <h2 class="sec-main-title lq-reveal" data-lux-field="customLabels.wishesTitle">{{wishesSectionTitle}}</h2>
+        <p class="sec-sub lq-reveal" data-lux-field="customLabels.wishesSub">{{wishesSectionSub}}</p>
+
+        <div class="rsvp-form-box lq lq-reveal">
+          <h3 class="rsvp-form-title serif" data-lux-field="customLabels.rsvpTitle">{{rsvpTitle}}</h3>
+          <form onsubmit="luxSubmitRsvp(event)">
+            <div class="form-group">
+              <label class="form-label" for="rsvpName" data-lux-field="customLabels.rsvpNameLabel">Nama Lengkap</label>
+              <input type="text" id="rsvpName" name="guestName" class="form-input" placeholder="Masukkan nama Anda" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="rsvpStatus" data-lux-field="customLabels.rsvpStatusLabel">Konfirmasi Kehadiran</label>
+              <select id="rsvpStatus" name="status" class="form-select" required>
+                <option value="HADIR">Hadir dengan Senang Hati</option>
+                <option value="TIDAK_HADIR">Mohon Maaf, Berhalangan Hadir</option>
+                <option value="RAGU">Masih Ragu</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="rsvpGuests" data-lux-field="customLabels.rsvpCountLabel">Jumlah Tamu</label>
+              <select id="rsvpGuests" name="guestCount" class="form-select">
+                <option value="1">1 Orang</option>
+                <option value="2">2 Orang</option>
+                <option value="3">3 Orang</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="rsvpMessage" data-lux-field="customLabels.rsvpMessageLabel">Ucapan &amp; Doa Restu</label>
+              <textarea id="rsvpMessage" name="message" class="form-textarea" rows="3" placeholder="Tuliskan ucapan dan doa terbaik Anda..." required></textarea>
+            </div>
+            <button type="submit" class="btn-submit-rsvp lq-press" data-lux-field="customLabels.rsvpBtnText">{{rsvpBtnText}}</button>
+          </form>
+        </div>
+
+        <div class="wishes-feed-list" id="wishesFeed">
+          {{wishesHtml}}
+        </div>
+      </section>
+
+      {{vendorsSectionHtml}}
+
+      <footer class="closing-sec {{closingPhotoClass}}" style="{{closingBgStyle}}">
+        <div class="closing-content lq lq-reveal">
+          <p class="closing-quote" data-lux-field="customLabels.closingQuote">{{closingQuote}}</p>
+          <p class="closing-sub" data-lux-field="customLabels.closingSub">{{closingSub}}</p>
+          <h3 class="closing-names">{{firstName}} &amp; {{secondName}}</h3>
+          <p class="closing-family" data-lux-field="customLabels.closingFamily">Beserta Keluarga Besar Kedua Mempelai</p>
+        </div>
+      </footer>
+
+    </main>
+  </div>
+
+  <!-- 3. DOCK, MODAL, MUSIK -->
+  <nav class="bottom-dock lq lq-lens-target dock-hidden" aria-label="Navigasi undangan">
+    <a href="#home" class="dock-btn">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <span data-lux-field="customLabels.navHome">Home</span>
+    </a>
+    <a href="#couple" class="dock-btn">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      <span data-lux-field="customLabels.navCouple">Mempelai</span>
+    </a>
+    <a href="#events" class="dock-btn">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+      <span data-lux-field="customLabels.navEvents">Acara</span>
+    </a>
+    <a href="#gallery" class="dock-btn">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+      <span data-lux-field="customLabels.navGallery">Galeri</span>
+    </a>
+    <a href="#rsvp" class="dock-btn">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+      <span data-lux-field="customLabels.navWishes">Ucapan</span>
+    </a>
+    {{qrDockButtonHtml}}
+  </nav>
+
+  <div class="modal-bg" id="modalBg" onclick="closeModal(event)">
+    <div class="modal-card lq" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeModal()" aria-label="Tutup">✕</button>
+      {{qrAccessCardHtml}}
+      <div class="modal-souvenir">
+        <span class="modal-souvenir-lbl" data-lux-field="customLabels.souvenirTitle">Voucher Souvenir</span>
+        <div class="modal-souvenir-code">SOUVENIR-{{invitationId}}</div>
+      </div>
+    </div>
+  </div>
+
+  <button id="musicToggle" class="audio-fab lq lq-press fab-hidden" onclick="luxToggleAudio()" aria-label="Putar atau jeda musik">
+    <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" /></svg>
+  </button>
+
+  <script>
+    function requestSmartFullscreen() {
+      var isMobile = window.innerWidth <= 1024 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+      if (!isMobile) return;
+      var docEl = document.documentElement;
+      var req = docEl.requestFullscreen || docEl.webkitRequestFullscreen;
+      if (!req) return;
+      var res = req.call(docEl);
+      if (res && res.catch) res.catch(function () {});
+    }
+
+    // Cahaya kaca: posisi kilau dan sudut tepi mengikuti kursor (desktop) atau kemiringan HP. Nilai ditulis sekali per
+    // frame, hanya saat ada masukan, sehingga tidak ada animasi terus-menerus yang menguras baterai.
+    var lqLight = (function () {
+      var root = document.documentElement;
+      var target = { x: 0.3, y: 0.15 };
+      var current = { x: 0.3, y: 0.15 };
+      var frame = 0;
+      var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      function step() {
+        current.x += (target.x - current.x) * 0.18;
+        current.y += (target.y - current.y) * 0.18;
+        root.style.setProperty('--lx', current.x.toFixed(3));
+        root.style.setProperty('--ly', current.y.toFixed(3));
+        if (Math.abs(target.x - current.x) > 0.002 || Math.abs(target.y - current.y) > 0.002) frame = requestAnimationFrame(step);
+        else frame = 0;
+      }
+      function set(x, y) {
+        if (reduced) return;
+        target.x = Math.min(1, Math.max(0, x));
+        target.y = Math.min(1, Math.max(0, y));
+        if (!frame) frame = requestAnimationFrame(step);
+      }
+      window.addEventListener('pointermove', function (e) {
+        if (e.pointerType === 'mouse') set(e.clientX / window.innerWidth, e.clientY / window.innerHeight);
+      }, { passive: true });
+      function onTilt(e) {
+        if (e.gamma == null || e.beta == null) return;
+        set(0.5 + e.gamma / 70, 0.5 + (e.beta - 45) / 90);
+      }
+      function listenTilt() { window.addEventListener('deviceorientation', onTilt, { passive: true }); }
+      return {
+        // iOS meminta izin sensor gerak dari sebuah sentuhan; tombol Buka Undangan adalah sentuhan itu. Ditolak = kilau diam.
+        enableTilt: function () {
+          var DOE = window.DeviceOrientationEvent;
+          if (DOE && typeof DOE.requestPermission === 'function') {
+            DOE.requestPermission().then(function (state) { if (state === 'granted') listenTilt(); }).catch(function () {});
+          } else if (DOE) {
+            listenTilt();
+          }
+        }
+      };
+    })();
+
+    (function enableLens() {
+      var brands = navigator.userAgentData && navigator.userAgentData.brands;
+      var chromium = Array.isArray(brands) && brands.some(function (b) { return /Chromium/.test(b.brand); });
+      var lessGlass = window.matchMedia && window.matchMedia('(prefers-reduced-transparency: reduce)').matches;
+      if (chromium && !lessGlass) document.documentElement.classList.add('lq-lens');
+    })();
+
+    function openInvitation() {
+      requestSmartFullscreen();
+      lqLight.enableTilt();
+      var cover = document.getElementById('coverScreen');
+      if (cover) cover.classList.add('opened');
+      var audio = document.getElementById('luxAudioPlayer') || document.querySelector('audio');
+      var fab = document.getElementById('musicToggle');
+      if (audio && typeof audio.play === 'function') {
+        audio.play().then(function () { if (fab) fab.classList.add('playing'); }).catch(function () {});
+      }
+    }
+
+    function resolveGuestName() {
+      var p = new URLSearchParams(window.location.search);
+      var gn = p.get('to') || p.get('v') || p.get('u') || '';
+      if (!gn) return;
+      ['#coverGuestName', '#passGuestName', '#modalGuestName'].forEach(function (sel) {
+        document.querySelectorAll(sel).forEach(function (el) { el.textContent = gn; });
+      });
+      var rsvpInput = document.getElementById('rsvpName');
+      if (rsvpInput && !rsvpInput.value) rsvpInput.value = gn;
+    }
+    resolveGuestName();
+    document.addEventListener('DOMContentLoaded', resolveGuestName);
+
+    function luxToggleAudio() {
+      var audio = document.getElementById('luxAudioPlayer') || document.getElementById('bgAudio') || window.bgAudio;
+      var fab = document.getElementById('musicToggle');
+      if (!audio) return;
+      if (audio.paused) {
+        audio.play().then(function () { if (fab) fab.classList.add('playing'); }).catch(function () {});
+      } else {
+        audio.pause();
+        if (fab) fab.classList.remove('playing');
+      }
+    }
+    window.luxToggleAudio = luxToggleAudio;
+    window.toggleAudio = luxToggleAudio;
+
+    function copyText(text) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text);
+      } else {
+        var input = document.createElement('input');
+        input.value = text;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+      }
+      showCopyToast('Berhasil disalin: ' + text);
+    }
+
+    function showCopyToast(msg) {
+      var toast = document.getElementById('luxCopyToast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'luxCopyToast';
+        toast.style.cssText = 'position:fixed; bottom:96px; left:50%; transform:translateX(-50%); background:color-mix(in srgb, var(--bg-dark) 80%, transparent); -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px); color:var(--on-dark); padding:10px 20px; border-radius:999px; font-size:13px; font-weight:600; border:1px solid color-mix(in srgb, var(--glass) 18%, transparent); z-index:99999; transition:opacity 0.3s ease; opacity:0; pointer-events:none;';
+        document.body.appendChild(toast);
+      }
+      toast.textContent = msg;
+      toast.style.opacity = '1';
+      clearTimeout(window._luxCopyToastTimer);
+      window._luxCopyToastTimer = setTimeout(function () { toast.style.opacity = '0'; }, 2000);
+    }
+
+    function switchGiftTab(tab, btn) {
+      var tabAmplop = document.getElementById('giftTabAmplop');
+      var tabKado = document.getElementById('giftTabKado');
+      document.querySelectorAll('.gift-tab-btn').forEach(function (b) { b.classList.remove('active'); });
+      if (btn) btn.classList.add('active');
+      if (tabAmplop) tabAmplop.style.display = tab === 'amplop' ? 'block' : 'none';
+      if (tabKado) tabKado.style.display = tab === 'amplop' ? 'none' : 'block';
+    }
+
+    function openModal() {
+      var modal = document.getElementById('modalBg');
+      if (modal) modal.classList.add('open');
+    }
+
+    function closeModal(e) {
+      var modal = document.getElementById('modalBg');
+      if (!modal) return;
+      if (!e || e.target === modal || (e.target && e.target.classList && e.target.classList.contains('modal-close'))) modal.classList.remove('open');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
+    async function luxSubmitRsvp(e) {
+      e.preventDefault();
+      var form = e.target;
+      var btn = form.querySelector('button[type="submit"]');
+      var oldBtnText = btn ? btn.textContent : '';
+      if (btn) { btn.disabled = true; btn.textContent = 'MENGIRIM...'; }
+      var name = form.guestName.value;
+      var msg = form.message.value;
+      try {
+        var res = await fetch('/api/public/rsvp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            invitationId: '{{invitationId}}',
+            guestName: name,
+            status: form.status.value,
+            guestCount: parseInt(form.guestCount.value) || 1,
+            message: msg
+          })
+        });
+        var data = await res.json().catch(function () { return {}; });
+        if (!res.ok) throw new Error(data.error || 'Gagal mengirim RSVP');
+        var stream = document.getElementById('wishesFeed');
+        if (stream && msg) {
+          var emptyNote = stream.querySelector(':scope > p');
+          if (emptyNote) emptyNote.remove();
+          var item = document.createElement('div');
+          item.className = 'wish-item';
+          item.innerHTML = '<div class="wish-head"><span class="wish-name">' + escapeHtml(name) + '</span><span class="wish-badge">Baru saja</span></div><p class="wish-msg">' + escapeHtml(msg) + '</p>';
+          stream.prepend(item);
+        }
+        form.reset();
+        if (btn) btn.textContent = 'TERKIRIM';
+        setTimeout(function () { if (btn) { btn.disabled = false; btn.textContent = oldBtnText; } }, 2500);
+      } catch (err) {
+        alert(err.message || 'Terjadi kesalahan saat mengirim RSVP. Silakan coba kembali.');
+        if (btn) { btn.disabled = false; btn.textContent = oldBtnText; }
+      }
+    }
+
+    (function initDynamicWishes() {
+      var invId = window.__LUX_INVITATION_ID__ || '{{invitationId}}';
+      if (!invId || invId.indexOf('{{') === 0) return;
+      fetch('/api/public/rsvp?invitationId=' + encodeURIComponent(invId))
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          if (!data || !data.success || !Array.isArray(data.rsvps) || !data.rsvps.length) return;
+          var stream = document.getElementById('wishesFeed');
+          if (!stream) return;
+          stream.innerHTML = data.rsvps.map(function (r) {
+            var isHadir = String(r.status).toLowerCase() === 'hadir';
+            var badgeText = isHadir ? 'Hadir (' + (r.guestCount || 1) + ' Orang)' : 'Berhalangan';
+            return '<div class="wish-item"><div class="wish-head"><span class="wish-name">' + escapeHtml(r.guestName) + '</span>' +
+              '<span class="wish-badge ' + (isHadir ? 'is-hadir' : 'is-absent') + '">' + escapeHtml(badgeText) + '</span></div>' +
+              (r.message ? '<p class="wish-msg">“' + escapeHtml(r.message) + '”</p>' : '') + '</div>';
+          }).join('');
+        })
+        .catch(function () {});
+    })();
+
+    // Draf tanpa tanggal tetap menampilkan 00, bukan tanggal contoh.
+    (function initCountdown() {
+      var rawTarget = "{{targetDate}}" || "";
+      var targetTime = rawTarget ? new Date(rawTarget).getTime() : NaN;
+      if (isNaN(targetTime)) return;
+      var ids = ['cdDays', 'cdHours', 'cdMins', 'cdSecs'];
+      function update() {
+        var diff = Math.max(0, targetTime - Date.now());
+        var values = [
+          Math.floor(diff / 86400000),
+          Math.floor((diff % 86400000) / 3600000),
+          Math.floor((diff % 3600000) / 60000),
+          Math.floor((diff % 60000) / 1000)
+        ];
+        ids.forEach(function (id, i) {
+          var el = document.getElementById(id);
+          if (el) el.textContent = String(values[i]).padStart(2, '0');
+        });
+      }
+      update();
+      setInterval(update, 1000);
+    })();
+
+    // Dock: tersembunyi di beranda, mengecil (ikon saja) saat digulir ke bawah, melebar lagi saat digulir ke atas.
+    // Penanda tetesan mengikuti tautan aktif (scrollspy) lewat variabel CSS.
+    (function initDock() {
+      var dock = document.querySelector('.bottom-dock');
+      var fab = document.getElementById('musicToggle');
+      if (!dock) return;
+      var links = Array.prototype.slice.call(dock.querySelectorAll('a.dock-btn'));
+      var lastY = window.pageYOffset || 0;
+      var ticking = false;
+
+      function placeIndicator() {
+        var active = dock.querySelector('a.dock-btn.active');
+        if (!active) { dock.classList.remove('has-indicator'); return; }
+        dock.style.setProperty('--ind-x', active.offsetLeft + 'px');
+        dock.style.setProperty('--ind-w', active.offsetWidth + 'px');
+        dock.classList.add('has-indicator');
+      }
+      function setActive(id) {
+        links.forEach(function (l) { l.classList.toggle('active', l.getAttribute('href') === '#' + id); });
+        placeIndicator();
+      }
+      function homeBottom() {
+        var home = document.getElementById('home');
+        return home ? Math.max(home.offsetTop + home.offsetHeight - 140, 100) : window.innerHeight * 0.75;
+      }
+      function update() {
+        var y = window.pageYOffset || 0;
+        var delta = y - lastY;
+        var nearEnd = y + window.innerHeight >= document.documentElement.scrollHeight - 80;
+        // Di ujung halaman kartu penutup tidak tertutup dock; menggulir ke atas memunculkannya lagi.
+        var hide = y <= homeBottom() || (nearEnd && delta >= 0);
+        dock.classList.toggle('dock-hidden', hide);
+        if (fab) fab.classList.toggle('fab-hidden', hide);
+        if (Math.abs(delta) > 10) {
+          dock.classList.toggle('dock-mini', delta > 0);
+          lastY = y;
+        }
+        ticking = false;
+      }
+      window.addEventListener('scroll', function () {
+        if (!ticking) { ticking = true; requestAnimationFrame(update); }
+      }, { passive: true });
+
+      links.forEach(function (link) {
+        link.addEventListener('click', function () {
+          dock.classList.remove('dock-mini');
+          setActive(link.getAttribute('href').slice(1));
+        });
+      });
+      // Lebar tombol berubah saat label menyusut/melebar dan saat fitBottomDock memasang kelas ringkas.
+      dock.addEventListener('transitionend', function (e) { if (e.target !== dock) placeIndicator(); });
+      if ('ResizeObserver' in window) new ResizeObserver(placeIndicator).observe(dock);
+
+      if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) { if (entry.isIntersecting) setActive(entry.target.id); });
+        }, { rootMargin: '-35% 0px -55% 0px', threshold: 0 });
+        links.forEach(function (link) {
+          var target = document.getElementById(link.getAttribute('href').slice(1));
+          if (target) io.observe(target);
+        });
+      }
+    })();
+
+    (function initReveal() {
+      var items = document.querySelectorAll('.lq-reveal');
+      if (!('IntersectionObserver' in window)) {
+        items.forEach(function (el) { el.classList.add('is-visible'); });
+        return;
+      }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('is-visible');
+          io.unobserve(entry.target);
+        });
+      }, { rootMargin: '0px 0px -8% 0px', threshold: 0.06 });
+      items.forEach(function (el) { io.observe(el); });
+    })();
+  </script>
+  {{musicPlayerHtml}}
+</body>
+</html>
