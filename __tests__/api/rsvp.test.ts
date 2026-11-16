@@ -13,6 +13,9 @@ vi.mock("@/lib/prisma", () => ({
     invitation: {
       findUnique: vi.fn(),
     },
+    theme: {
+      findUnique: vi.fn(),
+    },
     rsvp: {
       findFirst: vi.fn(),
       create: vi.fn(),
@@ -36,7 +39,10 @@ vi.mock("@/lib/rateLimit", () => ({
 import { GET, POST } from "@/app/api/public/rsvp/route";
 import { prisma } from "@/lib/prisma";
 
+import { SAMPLE_WISHES } from "@/lib/demoInvitation";
+
 const mockInvFindUnique = prisma.invitation.findUnique as ReturnType<typeof vi.fn>;
+const mockThemeFindUnique = prisma.theme.findUnique as ReturnType<typeof vi.fn>;
 const mockTransaction = prisma.$transaction as ReturnType<typeof vi.fn>;
 
 // Helper: buat NextRequest dengan body JSON
@@ -63,13 +69,23 @@ describe("GET /api/public/rsvp — validasi invitationId", () => {
     expect(body.error).toMatch(/invitationId/i);
   });
 
-  it("invitationId 'demo-*' → 200 dengan data demo (tidak hit DB)", async () => {
+  it("invitationId 'demo-*' → 200 dengan data demo, tanpa membaca undangan", async () => {
+    mockThemeFindUnique.mockResolvedValueOnce({ eventType: "WEDDING" });
     const req = makeGetRequest({ invitationId: "demo-papercut" });
     const res = await GET(req);
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.isDemo).toBe(true);
-    expect(Array.isArray(body.rsvps)).toBe(true);
+    expect(body.rsvps.map((r: any) => r.message)).toEqual(SAMPLE_WISHES.WEDDING.map((w) => w.message));
+    expect(mockInvFindUnique).not.toHaveBeenCalled();
+  });
+
+  it("demo tema acara memakai ucapan jenis acaranya, bukan ucapan pernikahan", async () => {
+    mockThemeFindUnique.mockResolvedValueOnce({ eventType: "GATHERING" });
+    const res = await GET(makeGetRequest({ invitationId: "demo-kalandra-acara" }));
+    const body = await res.json();
+    expect(mockThemeFindUnique).toHaveBeenCalledWith(expect.objectContaining({ where: { id: "kalandra-acara" } }));
+    expect(body.rsvps.map((r: any) => r.message)).toEqual(SAMPLE_WISHES.GATHERING.map((w) => w.message));
   });
 });
 

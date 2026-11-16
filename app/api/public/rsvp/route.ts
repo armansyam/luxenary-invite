@@ -5,6 +5,7 @@ import { rateLimitDb } from "@/lib/rateLimit";
 import { BoundedMemoryCache } from "@/lib/cache";
 import { normalizeRsvpStatus, RSVP_NAME_MAX, RSVP_MESSAGE_MAX } from "@/lib/rsvpStatus";
 import { exceedsDeclaredBodySize } from "@/lib/requestLimits";
+import { SAMPLE_WISHES } from "@/lib/demoInvitation";
 import {
   RSVP_COOKIE_MAX_AGE_SECONDS,
   RSVP_COOKIE_PATH,
@@ -29,24 +30,21 @@ export async function GET(req: NextRequest) {
     }
 
     if (invitationId.startsWith("demo-") || invitationId === "demo") {
-      const sampleDemos = [
-        {
-          id: "demo-rsvp-1",
-          guestName: "Budi Santoso",
-          status: "hadir",
-          guestCount: 2,
-          message: "Selamat menempuh hidup baru! Semoga rukun dan bahagia selalu.",
-          respondedAt: new Date(Date.now() - 3600000).toISOString(),
-        },
-        {
-          id: "demo-rsvp-2",
-          guestName: "Sahabat SMA (Dimas)",
-          status: "hadir",
-          guestCount: 2,
-          message: "Happy wedding brother! Lancar dan berkah acaranya sampai selesai 🎉",
-          respondedAt: new Date(Date.now() - 7200000).toISOString(),
-        },
-      ];
+      const cachedDemo = rsvpListCache.get(invitationId);
+      if (cachedDemo) return NextResponse.json({ ...cachedDemo, isDemo: true });
+      // Skrip tema menimpa ucapan yang dirender server dengan jawaban ini, jadi jenis acaranya harus sama dengan demo
+      // (demo-<themeId>); tanpa itu demo tema acara menampilkan ucapan pernikahan.
+      const theme = await prisma.theme.findUnique({ where: { id: invitationId.slice(5) }, select: { eventType: true } });
+      const wishes = SAMPLE_WISHES[theme?.eventType || "WEDDING"] || SAMPLE_WISHES.WEDDING;
+      const sampleDemos = wishes.map((w, i) => ({
+        id: `demo-rsvp-${i + 1}`,
+        guestName: w.guestName,
+        status: "hadir",
+        guestCount: w.guestCount,
+        message: w.message,
+        respondedAt: new Date(Date.now() - (i + 1) * 3600000).toISOString(),
+      }));
+      rsvpListCache.set(invitationId, { success: true, rsvps: sampleDemos });
       return NextResponse.json({ success: true, rsvps: sampleDemos, isDemo: true });
     }
 

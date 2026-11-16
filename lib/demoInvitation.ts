@@ -33,7 +33,7 @@ function splitParents(value: unknown): { father: string; mother: string } {
   return { father: father.trim(), mother: mother.trim() };
 }
 
-const SAMPLE_WISHES: Record<string, Array<{ guestName: string; guestCount: number; message: string }>> = {
+export const SAMPLE_WISHES: Record<string, Array<{ guestName: string; guestCount: number; message: string }>> = {
   WEDDING: [
     { guestName: "Budi Santoso & Rekan Kerja", guestCount: 2, message: "Selamat berbahagia! Semoga menjadi keluarga yang senantiasa dipenuhi rahmat dan cinta." },
     { guestName: "Sahabat Terbaik", guestCount: 1, message: "Lancar sampai hari H, tidak sabar merayakan hari istimewa kalian!" },

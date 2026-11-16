@@ -665,14 +665,14 @@
       }
       function listenTilt() { window.addEventListener('deviceorientation', onTilt, { passive: true }); }
       return {
-        // iOS meminta izin sensor gerak dari sebuah sentuhan; tombol Buka Undangan adalah sentuhan itu. Ditolak = kilau diam.
+        // iOS meminta izin sensor gerak dari sebuah sentuhan; tombol Buka Undangan adalah sentuhan itu. Pendengar dipasang apa
+        // pun jawabannya: Chromium yang juga punya requestPermission bisa menjawab "denied", sedangkan iOS yang ditolak memang
+        // tidak mengirim event sehingga kilau diam.
         enableTilt: function () {
           var DOE = window.DeviceOrientationEvent;
-          if (DOE && typeof DOE.requestPermission === 'function') {
-            DOE.requestPermission().then(function (state) { if (state === 'granted') listenTilt(); }).catch(function () {});
-          } else if (DOE) {
-            listenTilt();
-          }
+          if (!DOE) return;
+          if (typeof DOE.requestPermission === 'function') DOE.requestPermission().catch(function () {});
+          listenTilt();
         }
       };
     })();
