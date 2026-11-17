@@ -11,6 +11,7 @@ import { FEATURE_SETTING_LIVE_FIELDS, isLiveEditField } from "@/lib/liveEditFiel
 import { resolveInvitationDisplayName, getMediaSlotLabel, eventNoun, isThemeCompatible, sortThemesForEvent } from "@/lib/invitationUtils";
 import { useFeedback } from "@/components/ui/Feedback";
 import { getApexRootDomain } from "@/lib/domainUtils";
+import { BG_PHOTO_TONE_LIMIT, parseBgPhotoTone } from "@/lib/bgPhotoTone";
 import { EDITABLE_TEXT_KEYS, MAX_DECORATIVE_LABEL_LENGTH, sectionLabelFor, type BuilderEventType } from "@/lib/themeBuilder/spec";
 import type { EditableText, FreeSectionText } from "@/lib/themeBuilder/texts";
 
@@ -897,7 +898,8 @@ export default function EditInvitation() {
     const dirty2 = (
       JSON.stringify(media) !== JSON.stringify(savedSnapshot.media || {}) ||
       (invitation.musicUrl || "") !== (savedSnapshot.invitation?.musicUrl || "") ||
-      Boolean(getFeatureSetting("showMusic", true)) !== Boolean(getSavedFeatureSetting("showMusic", true))
+      Boolean(getFeatureSetting("showMusic", true)) !== Boolean(getSavedFeatureSetting("showMusic", true)) ||
+      parseBgPhotoTone(getFeatureSetting("bgPhotoTone", 0)) !== parseBgPhotoTone(getSavedFeatureSetting("bgPhotoTone", 0))
     );
 
     // Sec 3: Profil Mempelai / Persona Acara
@@ -1253,6 +1255,7 @@ export default function EditInvitation() {
   const showQrCheckin = hasCap("qr_checkin") && getFeatureSetting("showQrCheckin", true);
   const showLiveStream = getFeatureSetting("showLiveStream", false);
   const showFilter = getFeatureSetting("showFilter", false);
+  const bgPhotoTone = parseBgPhotoTone(getFeatureSetting("bgPhotoTone", 0));
   const showTurutMengundang = getFeatureSetting("showTurutMengundang", true);
   if (invitation.isLocked && !invitation.isEmergencyUnlocked) {
     const isPublishedLock = invitation.lockReason === "PUBLISHED" || (!invitation.lockReason && (invitation.status === "PUBLISHED" || invitation.status === "EVENT_FINISHED"));
@@ -2670,6 +2673,39 @@ export default function EditInvitation() {
                 onUploadStart={handleUploadStart}
                 onUploadEnd={handleUploadEnd}
               />
+
+              {(media["GLOBAL_FIXED_BG"] || themeDefaultOf(invitation, "GLOBAL_FIXED_BG")) && (
+                <div className="md:col-span-3 p-4 rounded-xl border border-stone-200/90 bg-white">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <label htmlFor="bgPhotoTone" className="text-sm font-semibold text-stone-900">Kecerahan Foto Latar</label>
+                    <span className="text-xs font-medium text-stone-600 tabular-nums">
+                      {bgPhotoTone === 0 ? "Normal" : bgPhotoTone < 0 ? `Gelap ${-bgPhotoTone}%` : `Terang ${bgPhotoTone}%`}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-stone-600">
+                    Geser ke kiri bila teks undangan sulit dibaca karena foto latar terlalu terang, ke kanan bila foto terlalu gelap. Warna teks tema tidak berubah.
+                  </p>
+                  <input
+                    id="bgPhotoTone"
+                    type="range"
+                    min={-BG_PHOTO_TONE_LIMIT}
+                    max={BG_PHOTO_TONE_LIMIT}
+                    step={5}
+                    value={bgPhotoTone}
+                    onChange={(e) => updateFeatureSetting("bgPhotoTone", parseBgPhotoTone(e.target.value))}
+                    className="mt-3 w-full accent-amber-700"
+                  />
+                  <div className="mt-1 flex items-center justify-between text-[11px] text-stone-500">
+                    <span>Gelapkan</span>
+                    {bgPhotoTone !== 0 && (
+                      <button type="button" onClick={() => updateFeatureSetting("bgPhotoTone", 0)} className="font-semibold text-amber-800 hover:text-amber-900">
+                        Kembali ke normal
+                      </button>
+                    )}
+                    <span>Terangkan</span>
+                  </div>
+                </div>
+              )}
 
               {/* Panduan Orientasi & Format Media Visual */}
               <div className="md:col-span-3 p-4 rounded-xl border border-stone-200/90 bg-stone-50/80 text-stone-700 text-xs space-y-2">

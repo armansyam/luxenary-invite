@@ -9,6 +9,7 @@ import { masterFilePath } from "@/lib/themePaths";
 import { applyMasterOverrides, resolveMasterEdits, resolveVariant } from "@/lib/themeVariants";
 import { logger } from "@/lib/logger";
 import { stripEmptyMediaRefs } from "@/lib/emptyMediaRefs";
+import { BG_PHOTO_TONE_SELECTOR, BG_PHOTO_TONE_STYLE_ID, bgPhotoToneCss, bgPhotoToneFilter } from "@/lib/bgPhotoTone";
 
 // /css/* disajikan dengan Cache-Control 7 hari dan /fonts/* dengan `immutable` 1 tahun (next.config.ts): tanpa versi di
 // URL, perubahan modules.css atau fonts.css tidak sampai ke tamu dan Cloudflare sampai cache-nya kedaluwarsa. Versi = hash
@@ -968,6 +969,15 @@ const INLINE_LIVE_EDITOR_SCRIPT = `
     }
   };
 
+  var luxBgPhotoToneFilter = ${bgPhotoToneFilter.toString()};
+  function luxSetBgPhotoTone(tone) {
+    var filter = luxBgPhotoToneFilter(tone);
+    var style = document.getElementById('${BG_PHOTO_TONE_STYLE_ID}');
+    if (!filter) { if (style) style.remove(); return; }
+    if (!style) { style = document.createElement('style'); style.id = '${BG_PHOTO_TONE_STYLE_ID}'; document.head.appendChild(style); }
+    style.textContent = '${BG_PHOTO_TONE_SELECTOR} { filter: ' + filter + ' !important; }';
+  }
+
   // Remote Dual-View Synchronization Listener
   window.addEventListener('message', function(e) {
     if (!e.data || typeof e.data !== 'object') return;
@@ -990,6 +1000,8 @@ const INLINE_LIVE_EDITOR_SCRIPT = `
       const fieldKey = e.data.field;
       const val = e.data.value;
       if (!fieldKey) return;
+      // Kecerahan foto latar disimpan lewat Studio, bukan lewat simpan sunting langsung di pratinjau.
+      if (fieldKey === 'bgPhotoTone') { luxSetBgPhotoTone(val); return; }
       pendingChanges[fieldKey] = val;
       const matching = document.querySelectorAll('[data-lux-field="' + fieldKey + '"]');
       matching.forEach(function(el) {
@@ -2210,6 +2222,11 @@ export async function renderTemplateFile(
   }
   if (fixedBgVideoHtml) {
     tpl = tpl.replace(/(<body[^>]*>)/i, `$1\n  ${fixedBgVideoHtml}`);
+  }
+  // Disisipkan saat render (bukan ke piring), agar pengaturan kecerahan dari Studio langsung berlaku.
+  const bgPhotoToneRule = data.globalBgUrl ? bgPhotoToneCss(data.featureSettings?.bgPhotoTone) : "";
+  if (bgPhotoToneRule) {
+    tpl = tpl.replace(/(<\/head>)/i, `<style id="${BG_PHOTO_TONE_STYLE_ID}">${bgPhotoToneRule}</style>\n$1`);
   }
   if (homeVideoHtml) {
     tpl = tpl.replace(/(<section[^>]*id="home"[^>]*>|<div[^>]*class="[^"]*\bslide-opening\b[^"]*"[^>]*>)/i, `$1\n    ${homeVideoHtml}`);

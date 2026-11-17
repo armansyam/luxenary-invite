@@ -1,5 +1,6 @@
 import { logger } from "@/lib/logger";
 import { normalizeFeatureUrls, safeMediaUrl } from "@/lib/safeUrl";
+import { parseBgPhotoTone } from "@/lib/bgPhotoTone";
 import { EDITABLE_TEXT_KEYS, MAX_DECORATIVE_LABEL_LENGTH } from "@/lib/themeBuilder/spec";
 
 type FeatureSettings = Record<string, any>;
@@ -114,6 +115,11 @@ export async function mergeFeatureSettingsInput(
   // Aturan yang sama dengan PATCH rute Momen; modal layar pembuka menyimpan sampul lewat rute ini.
   for (const key of ["memoriesCoverPhoto", "openingCoverPhoto"]) {
     if (typeof merged[key] === "string") merged[key] = safeMediaUrl(merged[key]);
+  }
+  if ("bgPhotoTone" in merged) {
+    const tone = parseBgPhotoTone(merged.bgPhotoTone);
+    if (tone === 0) delete merged.bgPhotoTone;
+    else merged.bgPhotoTone = tone;
   }
   const labels = validateCustomLabels(merged, existing);
   if (!labels.ok) return labels;
