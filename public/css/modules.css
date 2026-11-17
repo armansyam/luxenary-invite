@@ -391,13 +391,9 @@
 .delay-1 { transition-delay: 0.1s; }
 .delay-2 { transition-delay: 0.2s; }
 
-/* 9. CONTAINER FLUSH ALIGNMENT & FOOTER SNAP */
+/* 9. CONTAINER FLUSH ALIGNMENT */
 .right-panel, .main-scroll-panel {
   padding-bottom: 0 !important;
-}
-footer.site-footer, .site-footer, .closing-sec {
-  scroll-snap-align: start !important;
-  scroll-snap-stop: always !important;
 }
 
 /* 10. DESKTOP SPLIT 460PX RESPONSIVE TYPOGRAPHY (BULLETPROOF SCALING) */

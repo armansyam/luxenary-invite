@@ -10,19 +10,22 @@ import { applyMasterOverrides, resolveMasterEdits, resolveVariant } from "@/lib/
 import { logger } from "@/lib/logger";
 import { stripEmptyMediaRefs } from "@/lib/emptyMediaRefs";
 
-// /css/* disajikan dengan Cache-Control 7 hari (next.config.ts): tanpa versi di URL, perbaikan modules.css tidak sampai ke
-// tamu dan Cloudflare sampai cache-nya kedaluwarsa. Versi = hash isi berkas, dihitung sekali per proses.
-let modulesCssHref: string | null = null;
-function getModulesCssHref(): string {
-  if (modulesCssHref) return modulesCssHref;
+// /css/* disajikan dengan Cache-Control 7 hari dan /fonts/* dengan `immutable` 1 tahun (next.config.ts): tanpa versi di
+// URL, perubahan modules.css atau fonts.css tidak sampai ke tamu dan Cloudflare sampai cache-nya kedaluwarsa. Versi = hash
+// isi berkas, dihitung sekali per proses.
+const versionedCssHrefs = new Map<string, string>();
+function getVersionedCssHref(href: "/css/modules.css" | "/fonts/fonts.css"): string {
+  const cached = versionedCssHrefs.get(href);
+  if (cached) return cached;
+  let versioned: string = href;
   try {
-    const css = fs.readFileSync(path.join(process.cwd(), "public", "css", "modules.css"));
-    modulesCssHref = `/css/modules.css?v=${createHash("sha1").update(css).digest("hex").slice(0, 10)}`;
+    const css = fs.readFileSync(path.join(process.cwd(), "public", href));
+    versioned = `${href}?v=${createHash("sha1").update(css).digest("hex").slice(0, 10)}`;
   } catch (err) {
-    logger.warn("RenderTemplate", "modules.css tidak terbaca; tautan dipasang tanpa versi", { error: err instanceof Error ? err.message : String(err) });
-    modulesCssHref = "/css/modules.css";
+    logger.warn("RenderTemplate", `${href} tidak terbaca; tautan dipasang tanpa versi`, { error: err instanceof Error ? err.message : String(err) });
   }
-  return modulesCssHref;
+  versionedCssHrefs.set(href, versioned);
+  return versioned;
 }
 
 /** Helper pembacaan master template dengan memory cache untuk meminimalkan I/O disk */
@@ -1743,9 +1746,11 @@ export async function renderTemplateFile(
   }
 
   // Injections: Meta Tags, Head Audio Blocker, Global Modules CSS, Unified Runtime, Autoplay Script & Inline Live Editor Script
-  // Master yang menautkan modules.css sendiri ikut memakai URL berversi, agar salinan lama dari cache tidak menimpa yang baru.
-  const modulesHref = getModulesCssHref();
+  // Master yang menautkan modules.css atau fonts.css sendiri ikut memakai URL berversi, agar salinan lama dari cache tidak
+  // menimpa yang baru.
+  const modulesHref = getVersionedCssHref("/css/modules.css");
   tpl = tpl.replace(/href="\/css\/modules\.css"/g, `href="${modulesHref}"`);
+  tpl = tpl.replace(/href="\/fonts\/fonts\.css"/g, `href="${getVersionedCssHref("/fonts/fonts.css")}"`);
   const GLOBAL_MODULES_CSS = `<link rel="stylesheet" href="${modulesHref}">
   <style id="luxScrollbarHide">
     /* Keputusan pemilik (15 Nov 2026): scrollbar halaman dan daftar ucapan tidak ditampilkan di tema mana pun. Menang atas

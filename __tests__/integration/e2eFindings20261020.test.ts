@@ -226,6 +226,10 @@ describe.skipIf(!IS_TEST_DB)("runtime dock sempit dan video slot", () => {
     expect(html).not.toContain('href="/css/modules.css"');
     const bone = await renderTemplateFile("bone", (await composeTemplateData(inv.id)) as any, { editMode: false });
     expect(bone, "master yang menautkan modules.css sendiri").not.toContain('href="/css/modules.css"');
+    // fonts.css disajikan `immutable` 1 tahun: tanpa versi, browser tamu terus memakai salinan lama (mis. scroll snap).
+    expect(html).toMatch(/href="\/fonts\/fonts\.css\?v=[0-9a-f]{10}"/);
+    expect(html).not.toContain('href="/fonts/fonts.css"');
+    expect(fs.readFileSync(path.join(process.cwd(), "public", "fonts", "fonts.css"), "utf-8")).not.toMatch(/scroll-snap/);
     expect(html).toContain("function fitBottomDock()");
     expect(html).toContain(".bottom-dock.lux-dock-compact");
     expect(html).toContain("function initSlotVideoVisibility()");
