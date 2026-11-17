@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import crypto from "crypto";
 import { runLifecycleCleanup, runStaleDataCleanup } from "@/lib/lifecycleCleanup";
+import { recompileStaleStaticDemos } from "@/lib/demoPublisher";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
@@ -42,6 +43,7 @@ export async function POST(req: NextRequest) {
     const dryRun = req.nextUrl.searchParams.get("dryRun") === "true";
     const lifecycle = await runLifecycleCleanup({ dryRun });
     const stale = await runStaleDataCleanup({ dryRun });
+    const demos = dryRun ? { recompiled: 0, failed: [] as string[] } : await recompileStaleStaticDemos();
     const failedCount = lifecycle.archiveFailures.length;
 
     return NextResponse.json({
@@ -57,6 +59,8 @@ export async function POST(req: NextRequest) {
       refulfilledOrders: stale.refulfilledOrders,
       purgedRateLimitRows: stale.purgedRateLimitRows,
       purgedWebhookLogs: stale.purgedWebhookLogs,
+      recompiledDemos: demos.recompiled,
+      demoRecompileFailures: demos.failed,
       message:
         `${dryRun ? "Simulasi pembersihan" : "Pembersihan selesai"}: ${lifecycle.transitionedInvitations} undangan ditransisikan ke selesai, ` +
         `${lifecycle.retentionWarningsSent} peringatan retensi terkirim, ${lifecycle.recycledSubdomains} subdomain dikembalikan ke pool, ` +

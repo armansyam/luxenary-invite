@@ -121,7 +121,11 @@ export async function compileAndSaveStaticDemo(themeId: string, customDemoData?:
   }
 
   const targetFilePath = path.join(targetDir, "index.html");
-  await fs.promises.writeFile(targetFilePath, html, "utf-8");
+  // Tulis lalu ganti nama: cron harian mengompilasi ulang demo saat situs melayani pengunjung, dan /demo/[theme]
+  // tidak boleh membaca berkas yang baru setengah tertulis.
+  const tempFilePath = `${targetFilePath}.${process.pid}.tmp`;
+  await fs.promises.writeFile(tempFilePath, html, "utf-8");
+  await fs.promises.rename(tempFilePath, targetFilePath);
 
   return `/demo/${cleanId}/index.html`;
 }
@@ -161,4 +165,31 @@ export async function compileAllStaticDemos(): Promise<number> {
   }
 
   return count;
+}
+
+const STALE_DEMO_MAX_AGE_MS = 7 * 86_400_000;
+
+/**
+ * Tanggal acara demo dihitung saat kompilasi (`demoEventDate`), jadi demo statis yang tidak dikompilasi ulang
+ * lama-lama kembali menampilkan hitung mundur 00. Dipanggil cron harian: hanya demo yang berkasnya hilang atau
+ * berumur lebih dari 7 hari yang dikompilasi ulang.
+ */
+export async function recompileStaleStaticDemos(now = Date.now()): Promise<{ recompiled: number; failed: string[] }> {
+  const themes = await prisma.theme.findMany({ where: { isActive: true }, select: { id: true } });
+  let recompiled = 0;
+  const failed: string[] = [];
+  for (const t of themes) {
+    const themeId = t.id.toLowerCase().trim();
+    const filePath = path.join(process.cwd(), "public", "demo", themeId, "index.html");
+    const mtime = await fs.promises.stat(filePath).then((s) => s.mtimeMs, () => 0);
+    if (now - mtime < STALE_DEMO_MAX_AGE_MS) continue;
+    try {
+      await compileAndSaveStaticDemo(themeId);
+      recompiled++;
+    } catch (err) {
+      failed.push(themeId);
+      logger.error("DemoPublisher", "Gagal mengompilasi ulang demo statis yang basi", err, { theme: themeId });
+    }
+  }
+  return { recompiled, failed };
 }

@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { getDemoThemeData, type DemoThemeData } from "@/lib/demoRegistry";
+import { DAY_MS } from "@/lib/lifecycleDates";
 
 /**
  * Undangan virtual untuk demo tema: data demo (DEMO_REGISTRY + isian Studio Demo admin) diubah ke bentuk baris
@@ -18,6 +19,25 @@ function toIsoDate(value: unknown): string {
   if (!m) return "";
   const month = MONTHS_ID.indexOf(m[2]) + 1;
   return month ? `${m[3]}-${String(month).padStart(2, "0")}-${m[1].padStart(2, "0")}` : "";
+}
+
+const DEMO_DATE_MIN_LEAD_DAYS = 21;
+const DEMO_DATE_ROLL_LEAD_DAYS = 60;
+
+/**
+ * Tanggal acara demo. Data demo menyimpan tanggal tetap, padahal demo statis dibaca calon klien kapan saja; tanpa ini
+ * hitung mundur demo menjadi 00 begitu tanggalnya lewat. Tanggal yang masih cukup jauh dipakai apa adanya (pilihan admin
+ * di Studio Demo); selain itu digeser ke hari yang sama dalam pekan, sekitar 60 hari setelah `now`.
+ */
+export function demoEventDate(storedIso: string, now: Date): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(storedIso);
+  if (!m) return storedIso;
+  const stored = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  if (stored >= today + DEMO_DATE_MIN_LEAD_DAYS * DAY_MS) return storedIso;
+  const start = today + DEMO_DATE_ROLL_LEAD_DAYS * DAY_MS;
+  const shift = (new Date(stored).getUTCDay() - new Date(start).getUTCDay() + 7) % 7;
+  return new Date(start + shift * DAY_MS).toISOString().slice(0, 10);
 }
 
 /** "08.00 – 10.00 WIB" -> jam mulai/selesai berformat HH:MM dan zona waktu, sama dengan isian Studio klien. */
@@ -96,7 +116,7 @@ export function buildDemoInvitation(themeId: string, customData?: Record<string,
   const custom = customData || {};
   const demo = { ...base, ...custom } as DemoThemeData & Record<string, any>;
   const eventType = demo.eventType || "WEDDING";
-  const date = toIsoDate(demo.targetDate);
+  const date = demoEventDate(toIsoDate(demo.targetDate), new Date());
 
   const events = (demo.events || []).map((ev, idx, list) => ({
     title: ev.title,
