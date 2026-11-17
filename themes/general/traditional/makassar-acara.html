@@ -37,6 +37,9 @@
       --primary: #6b0c14;
       --secondary: #8e141e;
       --accent: #dfb76c;
+      /* --primary gelap: label di kartu dan tautan di kanvas buatan mesin memakai aksen emas. */
+      --card-accent: var(--accent);
+      --canvas-accent: var(--accent);
       --bg-light: #fdf8f4;
       --bg-dark: #140204;
       --text-dark: #230808;
@@ -105,10 +108,10 @@
       width: 100%;
       height: 100vh;
       background-image: linear-gradient(180deg,
-          color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 20%, transparent) 0%,
-          color-mix(in srgb, var(--primary, var(--lux-c-6b0c14)) 22%, transparent) 35%,
-          color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 42%, transparent) 75%,
-          color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 62%, transparent) 100%), url('/assets/ornaments/background/background-cream.webp');
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 82%, transparent) 0%,
+          color-mix(in srgb, var(--primary, var(--lux-c-6b0c14)) 65%, transparent) 35%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 88%, transparent) 75%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 96%, transparent) 100%), url('/assets/ornaments/background/background-cream.webp');
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -118,10 +121,10 @@
 
     .fixed-bg-layer.has-custom-bg {
       background-image: linear-gradient(180deg,
-          color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 20%, transparent) 0%,
-          color-mix(in srgb, var(--primary, var(--lux-c-6b0c14)) 22%, transparent) 35%,
-          color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 42%, transparent) 75%,
-          color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 62%, transparent) 100%), var(--custom-bg);
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 82%, transparent) 0%,
+          color-mix(in srgb, var(--primary, var(--lux-c-6b0c14)) 65%, transparent) 35%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 88%, transparent) 75%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 96%, transparent) 100%), var(--custom-bg);
     }
 
     /* TYPOGRAPHY CLASSES */

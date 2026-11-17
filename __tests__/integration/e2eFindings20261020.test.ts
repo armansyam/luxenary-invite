@@ -210,7 +210,8 @@ describe("master tema: RSVP terkirim dan token tidak di dalam komentar", () => {
     const block = src.slice(start, src.indexOf("\n}\n", start));
     expect(start).toBeGreaterThan(-1);
     expect(block).not.toMatch(/[;"]\s*color:\s*var\(--primary\)/);
-    expect(block.match(/color: color-mix\(in srgb, var\(--primary\) 30%, var\(--text-main\)\)/g)).toHaveLength(2);
+    // Token kartu (18 Nov 2026) jatuh ke --primary/--text-main bila master tidak mendefinisikannya.
+    expect(block.match(/color: color-mix\(in srgb, var\(--card-accent, var\(--primary\)\) 30%, var\(--card-text, var\(--text-main\)\)\)/g)).toHaveLength(2);
   });
 });
 

@@ -1213,7 +1213,7 @@ export async function composeWeddingData(inv: any) {
         <h2 class="sec-main-title serif" data-lux-field="customLabels.dressCodeTitle">${escapeHtml(dressCodeTitle)}</h2>
         <p class="sec-sub" data-lux-field="customLabels.dressCodeSubtitle">${escapeHtml(dressCodeSubtitle)}</p>
         ${colorBadges ? `<div style="display:flex; justify-content:center; gap:12px; margin: 1.5rem 0;">${colorBadges}</div>` : ""}
-        ${dressCodeNote ? `<p style="margin:0; font-size:0.8rem; color:rgba(255,255,255,0.75); line-height:1.5;">${escapeHtml(dressCodeNote)}</p>` : ""}
+        ${dressCodeNote ? `<p style="margin:0; font-size:0.8rem; color:var(--dresscode-note, rgba(255,255,255,0.75)); line-height:1.5;">${escapeHtml(dressCodeNote)}</p>` : ""}
       </section>
     `;
   }
@@ -2392,11 +2392,11 @@ function buildUniversalEventCards(events: any[], fallbackName: string): string {
     return `
     <div class="event-block-item" style="background: color-mix(in srgb, var(--card-bg) 60%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); border-radius: var(--radius-md, 14px); padding: 18px; margin-bottom: 12px; text-align: left;">
       <span style="font-size: 11px; font-weight: 700; color: var(--event-accent, var(--primary)); text-transform: uppercase; letter-spacing: 1px;">${escapeHtml(ev.title || "Acara")}</span>
-      <h3 class="serif" style="font-size: 18px; color: var(--text-main); margin: 6px 0 4px;">${escapeHtml(ev.name || ev.title || fallbackName)}</h3>
-      ${dateLabel ? `<p style="font-size: 13px; color: var(--text-main);">${escapeHtml(dateLabel)}</p>` : ""}
-      ${ev.time ? `<p style="font-size: 13px; color: var(--text-muted);">${escapeHtml(ev.time)}</p>` : ""}
-      ${ev.location ? `<p style="font-size: 13px; color: var(--text-main); margin-top: 6px;"><b>${escapeHtml(ev.location)}</b></p>` : ""}
-      ${ev.address ? `<p style="font-size: 12px; color: var(--text-muted);">${escapeHtml(ev.address)}</p>` : ""}
+      <h3 class="serif" style="font-size: 18px; color: var(--card-text, var(--text-main)); margin: 6px 0 4px;">${escapeHtml(ev.name || ev.title || fallbackName)}</h3>
+      ${dateLabel ? `<p style="font-size: 13px; color: var(--card-text, var(--text-main));">${escapeHtml(dateLabel)}</p>` : ""}
+      ${ev.time ? `<p style="font-size: 13px; color: var(--card-muted, var(--text-muted));">${escapeHtml(ev.time)}</p>` : ""}
+      ${ev.location ? `<p style="font-size: 13px; color: var(--card-text, var(--text-main)); margin-top: 6px;"><b>${escapeHtml(ev.location)}</b></p>` : ""}
+      ${ev.address ? `<p style="font-size: 12px; color: var(--card-muted, var(--text-muted));">${escapeHtml(ev.address)}</p>` : ""}
       ${mapsHref ? `<a href="${mapsHref}" target="_blank" rel="noopener noreferrer" class="btn-map-outline" style="display: inline-block; margin-top: 10px; font-size: 12px; color: var(--event-accent, var(--primary)); text-decoration: underline; font-weight: 600;">Petunjuk Lokasi Google Maps</a>` : ""}
     </div>
   `;
@@ -2457,10 +2457,10 @@ function buildUniversalGiftSection(
   if (!showGift || !bankAccounts || bankAccounts.length === 0) return "";
   const bankCardsHtml = bankAccounts.map((b: any) => `
     <div class="bank-card" style="background: var(--card-bg); border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent); border-radius: var(--radius-md, 14px); padding: 18px; text-align: center;">
-      <span style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--primary) 30%, var(--text-main)); letter-spacing: 1px;">${escapeHtml(b.bank || "Bank")}</span>
-      <div style="font-family: monospace; font-size: 18px; font-weight: 700; color: var(--text-main); margin: 8px 0; letter-spacing: 1px;">${escapeHtml(b.number || b.accountNumber || "")}</div>
-      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">a.n ${escapeHtml(b.name || b.accountName || fallbackOwnerName)}</p>
-      <button type="button" data-copy="${escapeHtml(b.number || b.accountNumber || "")}" onclick="navigator.clipboard.writeText(this.dataset.copy).then(function(){alert('Nomor rekening berhasil disalin!');})" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 20px; border-radius: var(--radius-full, 9999px); background: color-mix(in srgb, var(--primary) 15%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent); color: color-mix(in srgb, var(--primary) 30%, var(--text-main)); font-size: 12px; font-weight: 700; cursor: pointer;">Salin No. Rekening</button>
+      <span style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: color-mix(in srgb, var(--card-accent, var(--primary)) 30%, var(--card-text, var(--text-main))); letter-spacing: 1px;">${escapeHtml(b.bank || "Bank")}</span>
+      <div style="font-family: monospace; font-size: 18px; font-weight: 700; color: var(--card-text, var(--text-main)); margin: 8px 0; letter-spacing: 1px;">${escapeHtml(b.number || b.accountNumber || "")}</div>
+      <p style="font-size: 12px; color: var(--card-muted, var(--text-muted)); margin-bottom: 12px;">a.n ${escapeHtml(b.name || b.accountName || fallbackOwnerName)}</p>
+      <button type="button" data-copy="${escapeHtml(b.number || b.accountNumber || "")}" onclick="navigator.clipboard.writeText(this.dataset.copy).then(function(){alert('Nomor rekening berhasil disalin!');})" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 20px; border-radius: var(--radius-full, 9999px); background: color-mix(in srgb, var(--primary) 15%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent); color: color-mix(in srgb, var(--card-accent, var(--primary)) 30%, var(--card-text, var(--text-main))); font-size: 12px; font-weight: 700; cursor: pointer;">Salin No. Rekening</button>
     </div>
   `).join("");
 
@@ -2484,26 +2484,26 @@ function buildUniversalRsvpSection(invitationId: string): string {
       <h2 class="sec-h2 serif" style="text-align: center; font-size: 22px; margin-bottom: 16px;" data-lux-field="customLabels.rsvpTitle">RSVP &amp; Kehadiran</h2>
       <form onsubmit="handleUniversalRsvpSubmit(event, '${escapeHtml(invitationId || "")}')" style="display: flex; flex-direction: column; gap: 12px; background: var(--card-bg); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); padding: 20px; border-radius: var(--radius-md, 14px);">
         <div>
-          <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;" data-lux-field="customLabels.rsvpNameLabel">Nama Lengkap</label>
+          <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--card-muted, var(--text-muted)); margin-bottom: 4px;" data-lux-field="customLabels.rsvpNameLabel">Nama Lengkap</label>
           <input type="text" id="universalRsvpName" required placeholder="Nama Anda" style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: var(--radius-sm, 8px); background: color-mix(in srgb, var(--bg-canvas, var(--card-bg)) 80%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); color: var(--text-main); font-size: 13px;" />
         </div>
         <div>
-          <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;" data-lux-field="customLabels.rsvpStatusLabel">Konfirmasi Kehadiran</label>
+          <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--card-muted, var(--text-muted)); margin-bottom: 4px;" data-lux-field="customLabels.rsvpStatusLabel">Konfirmasi Kehadiran</label>
           <select id="universalRsvpStatus" style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: var(--radius-sm, 8px); background: color-mix(in srgb, var(--bg-canvas, var(--card-bg)) 80%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); color: var(--text-main); font-size: 13px;">
             <option value="hadir">Hadir</option>
             <option value="tidak_hadir">Berhalangan Hadir</option>
           </select>
         </div>
         <div>
-          <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;" data-lux-field="customLabels.rsvpCountLabel">Jumlah Tamu</label>
+          <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--card-muted, var(--text-muted)); margin-bottom: 4px;" data-lux-field="customLabels.rsvpCountLabel">Jumlah Tamu</label>
           <input type="number" id="universalRsvpCount" min="1" max="10" value="1" style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: var(--radius-sm, 8px); background: color-mix(in srgb, var(--bg-canvas, var(--card-bg)) 80%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); color: var(--text-main); font-size: 13px;" />
         </div>
         <div>
-          <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;" data-lux-field="customLabels.rsvpMessageLabel">Ucapan &amp; Doa</label>
+          <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--card-muted, var(--text-muted)); margin-bottom: 4px;" data-lux-field="customLabels.rsvpMessageLabel">Ucapan &amp; Doa</label>
           <textarea id="universalRsvpMessage" rows="3" placeholder="Tuliskan ucapan dan doa terbaik Anda..." style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: var(--radius-sm, 8px); background: color-mix(in srgb, var(--bg-canvas, var(--card-bg)) 80%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); color: var(--text-main); font-size: 13px; resize: vertical;"></textarea>
         </div>
         <button type="submit" id="universalRsvpBtn" style="padding: 12px; border-radius: var(--radius-full, 9999px); background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #ffffff; font-size: 13px; font-weight: 700; border: none; cursor: pointer; margin-top: 4px;" data-lux-field="customLabels.rsvpBtnText">Kirim Konfirmasi</button>
-        <div id="universalRsvpAlert" style="display: none; text-align: center; font-size: 12px; font-weight: 600; color: var(--primary); margin-top: 6px;"></div>
+        <div id="universalRsvpAlert" style="display: none; text-align: center; font-size: 12px; font-weight: 600; color: var(--card-accent, var(--primary)); margin-top: 6px;"></div>
       </form>
     </div>
     <script>
@@ -2533,7 +2533,7 @@ function buildUniversalRsvpSection(invitationId: string): string {
               var esc = function(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); };
               var item = document.createElement("div");
               item.style = "background: color-mix(in srgb, var(--card-bg) 70%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent); border-radius: var(--radius-md, 14px); padding: 14px; margin-bottom: 10px;";
-              item.innerHTML = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;"><strong style="font-size: 13px; color: var(--text-main);">' + esc(name) + '</strong><span style="font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-full, 9999px); background: color-mix(in srgb, var(--primary) 25%, transparent); color: var(--primary);">' + (status === "hadir" ? "Hadir (" + esc(count) + ")" : "Berhalangan") + '</span></div><p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 0;">“' + esc(msg) + '”</p>';
+              item.innerHTML = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;"><strong style="font-size: 13px; color: var(--card-text, var(--text-main));">' + esc(name) + '</strong><span style="font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-full, 9999px); background: color-mix(in srgb, var(--primary) 25%, transparent); color: var(--card-accent, var(--primary));">' + (status === "hadir" ? "Hadir (" + esc(count) + ")" : "Berhalangan") + '</span></div><p style="font-size: 12px; color: var(--card-muted, var(--text-muted)); line-height: 1.5; margin: 0;">“' + esc(msg) + '”</p>';
               list.insertBefore(item, list.firstChild);
             }
             var msgBox = document.getElementById("universalRsvpMessage");
@@ -2555,10 +2555,10 @@ function buildUniversalWishesSection(rsvps: any[] = [], invitationId = ""): stri
   const wishesList = (rsvps || []).map((r: any) => `
     <div style="background: color-mix(in srgb, var(--card-bg) 70%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent); border-radius: var(--radius-md, 14px); padding: 14px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-        <strong style="font-size: 13px; color: var(--text-main);">${escapeHtml(r.guestName || r.name || "Tamu")}</strong>
-        <span style="font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-full, 9999px); background: ${r.status === "hadir" || r.attendance === "HADIR" ? "color-mix(in srgb, var(--primary) 25%, transparent)" : "color-mix(in srgb, var(--text-muted) 20%, transparent)"}; color: ${r.status === "hadir" || r.attendance === "HADIR" ? "var(--primary)" : "var(--text-muted)"};">${r.status === "hadir" || r.attendance === "HADIR" ? `Hadir (${r.guestCount || 1})` : "Berhalangan"}</span>
+        <strong style="font-size: 13px; color: var(--card-text, var(--text-main));">${escapeHtml(r.guestName || r.name || "Tamu")}</strong>
+        <span style="font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-full, 9999px); background: ${r.status === "hadir" || r.attendance === "HADIR" ? "color-mix(in srgb, var(--primary) 25%, transparent)" : "color-mix(in srgb, var(--text-muted) 20%, transparent)"}; color: ${r.status === "hadir" || r.attendance === "HADIR" ? "var(--card-accent, var(--primary))" : "var(--card-muted, var(--text-muted))"};">${r.status === "hadir" || r.attendance === "HADIR" ? `Hadir (${r.guestCount || 1})` : "Berhalangan"}</span>
       </div>
-      ${r.message ? `<p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 0;">“${escapeHtml(r.message)}”</p>` : ""}
+      ${r.message ? `<p style="font-size: 12px; color: var(--card-muted, var(--text-muted)); line-height: 1.5; margin: 0;">“${escapeHtml(r.message)}”</p>` : ""}
     </div>
   `).join("");
 
@@ -2583,9 +2583,9 @@ function buildUniversalWishesSection(rsvps: any[] = [], invitationId = ""): stri
             list.innerHTML = data.rsvps.map(function (r) {
               var hadir = String(r.status).toLowerCase() === "hadir";
               return '<div style="background: color-mix(in srgb, var(--card-bg) 70%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent); border-radius: var(--radius-md, 14px); padding: 14px;">' +
-                '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;"><strong style="font-size: 13px; color: var(--text-main);">' + esc(r.guestName || "Tamu") + '</strong>' +
-                '<span style="font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-full, 9999px); background: ' + (hadir ? 'color-mix(in srgb, var(--primary) 25%, transparent)' : 'color-mix(in srgb, var(--text-muted) 20%, transparent)') + '; color: ' + (hadir ? 'var(--primary)' : 'var(--text-muted)') + ';">' + (hadir ? 'Hadir (' + esc(r.guestCount || 1) + ')' : 'Berhalangan') + '</span></div>' +
-                (r.message ? '<p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 0;">“' + esc(r.message) + '”</p>' : '') +
+                '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;"><strong style="font-size: 13px; color: var(--card-text, var(--text-main));">' + esc(r.guestName || "Tamu") + '</strong>' +
+                '<span style="font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-full, 9999px); background: ' + (hadir ? 'color-mix(in srgb, var(--primary) 25%, transparent)' : 'color-mix(in srgb, var(--text-muted) 20%, transparent)') + '; color: ' + (hadir ? 'var(--card-accent, var(--primary))' : 'var(--card-muted, var(--text-muted))') + ';">' + (hadir ? 'Hadir (' + esc(r.guestCount || 1) + ')' : 'Berhalangan') + '</span></div>' +
+                (r.message ? '<p style="font-size: 12px; color: var(--card-muted, var(--text-muted)); line-height: 1.5; margin: 0;">“' + esc(r.message) + '”</p>' : '') +
                 '</div>';
             }).join("");
           })
@@ -2614,8 +2614,8 @@ function buildUniversalCountdown(primary: any): string {
   if (!target) return "";
   const cell = (id: string, label: string) => `
       <div style="min-width: 64px; padding: 12px 8px; border-radius: var(--radius-md, 14px); background: color-mix(in srgb, var(--card-bg) 70%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);">
-        <span id="${id}" style="display: block; font-size: 22px; font-weight: 800; color: var(--text-main);">00</span>
-        <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">${label}</span>
+        <span id="${id}" style="display: block; font-size: 22px; font-weight: 800; color: var(--card-text, var(--text-main));">00</span>
+        <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--card-muted, var(--text-muted));">${label}</span>
       </div>`;
   return `
     <div class="countdown-timer" data-target="${escapeHtml(target)}" style="display: flex; justify-content: center; gap: 8px; margin: 16px 0;">
@@ -2649,7 +2649,7 @@ function buildUniversalMusicPlayer(audioUrl: string): string {
   if (!audioUrl) return "";
   return `
     <audio id="luxAudioPlayer" loop preload="none"><source src="${escapeHtml(audioUrl)}" /></audio>
-    <button type="button" id="musicFab" aria-label="Putar atau jeda musik" onclick="window.luxToggleAudio && window.luxToggleAudio()" style="position: fixed; right: 16px; bottom: 88px; z-index: 900; width: 44px; height: 44px; border-radius: var(--radius-full, 9999px); border: 1px solid color-mix(in srgb, var(--primary) 50%, transparent); background: color-mix(in srgb, var(--card-bg) 85%, transparent); color: var(--primary); display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(6px);">
+    <button type="button" id="musicFab" aria-label="Putar atau jeda musik" onclick="window.luxToggleAudio && window.luxToggleAudio()" style="position: fixed; right: 16px; bottom: 88px; z-index: 900; width: 44px; height: 44px; border-radius: var(--radius-full, 9999px); border: 1px solid color-mix(in srgb, var(--primary) 50%, transparent); background: color-mix(in srgb, var(--card-bg) 85%, transparent); color: var(--card-accent, var(--primary)); display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(6px);">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
     </button>
     <style>#musicFab.playing svg { animation: luxMusicSpin 4s linear infinite; } @keyframes luxMusicSpin { to { transform: rotate(360deg); } }</style>
@@ -2665,15 +2665,15 @@ function buildUniversalQrPass(inv: any, eventLabel: string, mainName: string, da
       <h2 class="sec-h2 serif">QR Check-In Tamu</h2>
       <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Tunjukkan kode QR ini kepada penerima tamu di lokasi acara.</p>
       <div style="background: var(--card-bg); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); border-radius: var(--radius-lg, 20px); padding: 20px; text-align: center;">
-        <span style="font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--primary);">${escapeHtml(eventLabel)}</span>
-        <h3 class="serif" style="font-size: 20px; color: var(--text-main); margin: 6px 0 2px;">${escapeHtml(mainName)}</h3>
-        ${dateLabel ? `<p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">${escapeHtml(dateLabel)}</p>` : ""}
+        <span style="font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--card-accent, var(--primary));">${escapeHtml(eventLabel)}</span>
+        <h3 class="serif" style="font-size: 20px; color: var(--card-text, var(--text-main)); margin: 6px 0 2px;">${escapeHtml(mainName)}</h3>
+        ${dateLabel ? `<p style="font-size: 12px; color: var(--card-muted, var(--text-muted)); margin-bottom: 14px;">${escapeHtml(dateLabel)}</p>` : ""}
         <!-- Latar putih wajib: pemindai QR membutuhkan kontras gelap di atas terang, apa pun palet temanya. -->
         <div style="display: inline-block; padding: 12px; border-radius: var(--radius-md, 14px); background: #ffffff;">
           <img class="pass-qr-img" id="passQrImg" src="${qrSrc}" alt="QR Check-In" style="width: 160px; height: 160px; display: block;" />
         </div>
-        <p style="font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin-top: 14px;">Kepada Yth.</p>
-        <h4 class="serif" id="passGuestName" style="font-size: 17px; color: var(--text-main);">Tamu Undangan</h4>
+        <p style="font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--card-muted, var(--text-muted)); margin-top: 14px;">Kepada Yth.</p>
+        <h4 class="serif" id="passGuestName" style="font-size: 17px; color: var(--card-text, var(--text-main));">Tamu Undangan</h4>
       </div>
     </section>
   `;
@@ -2687,8 +2687,8 @@ function buildUniversalMemoriesCta(inv: any, customLabels: Record<string, string
       <span class="sec-lbl">${escapeHtml(customLabels.memoriesEyebrow || "Momen Tamu")}</span>
       <h2 class="sec-h2 serif">${escapeHtml(customLabels.memoriesTitle || "Abadikan Momen Bersama")}</h2>
       <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 18px;">${escapeHtml(customLabels.memoriesSubtitle || "Buka kamera dan bagikan momen Anda selama acara ke album kenangan bersama.")}</p>
-      <a href="${base}/sharemoment" style="display: inline-block; padding: 12px 28px; border-radius: var(--radius-full, 9999px); background: linear-gradient(135deg, var(--primary), var(--secondary, var(--primary))); color: var(--text-main); font-size: 13px; font-weight: 700; text-decoration: none;">Buka Kamera Momen</a>
-      <div style="margin-top: 12px;"><a href="${base}/memories" style="font-size: 12px; color: var(--primary); text-decoration: underline;">Lihat galeri foto tamu</a></div>
+      <a href="${base}/sharemoment" style="display: inline-block; padding: 12px 28px; border-radius: var(--radius-full, 9999px); background: linear-gradient(135deg, var(--primary), var(--secondary, var(--primary))); color: var(--on-primary, var(--text-main)); font-size: 13px; font-weight: 700; text-decoration: none;">Buka Kamera Momen</a>
+      <div style="margin-top: 12px;"><a href="${base}/memories" style="font-size: 12px; color: var(--canvas-accent, var(--primary)); text-decoration: underline;">Lihat galeri foto tamu</a></div>
     </section>
   `;
 }
@@ -2716,13 +2716,13 @@ function buildUniversalExtraSections(inv: any, featureSettings: Record<string, a
     ["Zoom", safeHref(featureSettings.liveStreamZoomUrl)],
   ].filter(([, href]) => href);
   if (featureSettings.showLiveStream !== false && liveLinks.length > 0) {
-    const buttons = liveLinks.map(([name, href]) => `<a href="${href}" target="_blank" rel="noopener noreferrer" style="padding: 10px 18px; border-radius: var(--radius-full, 9999px); border: 1px solid color-mix(in srgb, var(--primary) 50%, transparent); color: var(--primary); font-size: 12px; font-weight: 700; text-decoration: none;">${name} Live</a>`).join("");
+    const buttons = liveLinks.map(([name, href]) => `<a href="${href}" target="_blank" rel="noopener noreferrer" style="padding: 10px 18px; border-radius: var(--radius-full, 9999px); border: 1px solid color-mix(in srgb, var(--primary) 50%, transparent); color: var(--canvas-accent, var(--primary)); font-size: 12px; font-weight: 700; text-decoration: none;">${name} Live</a>`).join("");
     sections.push(block("live", "Siaran Langsung", "Saksikan Secara Daring", `<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 12px;">${buttons}</div>`));
   }
 
   const filterUrl = safeHref(featureSettings.instagramFilterUrl);
   if (featureSettings.showFilter && filterUrl) {
-    sections.push(block("frame", "Filter Instagram", "Abadikan dengan Bingkai Resmi", `<a href="${filterUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 12px; padding: 10px 22px; border-radius: var(--radius-full, 9999px); border: 1px solid color-mix(in srgb, var(--primary) 50%, transparent); color: var(--primary); font-size: 12px; font-weight: 700; text-decoration: none;">Buka Filter Instagram</a>`));
+    sections.push(block("frame", "Filter Instagram", "Abadikan dengan Bingkai Resmi", `<a href="${filterUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 12px; padding: 10px 22px; border-radius: var(--radius-full, 9999px); border: 1px solid color-mix(in srgb, var(--primary) 50%, transparent); color: var(--canvas-accent, var(--primary)); font-size: 12px; font-weight: 700; text-decoration: none;">Buka Filter Instagram</a>`));
   }
 
   const invitedBy = String(featureSettings.turutMengundang || "").split("\n").map((l) => l.trim()).filter(Boolean);
@@ -2806,7 +2806,7 @@ async function applySingleNameContract(eventType: string, data: Record<string, a
   const parentNames = [fatherName, motherName].filter(Boolean).map(escapeHtml).join(" &amp; ");
   const parentsHtml = data.parentsHtml !== undefined
     ? data.parentsHtml
-    : parentNames ? `<p>Putra/Putri tercinta dari:</p><h4 class="serif" style="color: var(--text-main); font-size: 16px; margin: 4px 0;">${parentNames}</h4>` : "";
+    : parentNames ? `<p>Putra/Putri tercinta dari:</p><h4 class="serif" style="color: var(--card-text, var(--text-main)); font-size: 16px; margin: 4px 0;">${parentNames}</h4>` : "";
 
   // Teks bawaan tema yang dipilih (blueprint + isian Studio Demo admin) menjadi bawaan undangan; isian klien tetap menang.
   // Teks itu khas jenis acara temanya, jadi hanya dipakai bila jenis acaranya sama (tema satu nama dapat dipakai lintas
@@ -2892,7 +2892,7 @@ async function applySingleNameContract(eventType: string, data: Record<string, a
     venueAddress: primary.address || "",
     mapsUrl: safeHref(primary.mapsUrl),
     eventSectionHtml: data.eventSectionHtml || buildUniversalEventCards(events, labels.eventLabel),
-    brandWatermarkHtml: data.brandWatermarkHtml || `<span style="font-size: 10px; color: var(--primary);">Powered by ${escapeHtml(platformName)}</span>`,
+    brandWatermarkHtml: data.brandWatermarkHtml || `<span style="font-size: 10px; color: var(--canvas-accent, var(--primary));">Powered by ${escapeHtml(platformName)}</span>`,
     countdownHtml: buildUniversalCountdown(primary),
     // Master dengan hitung mundur sendiri (blueprint satu nama Theme Builder) membaca target yang sama dengan countdownHtml.
     countdownTarget: countdownTargetOf(primary),
@@ -2954,7 +2954,7 @@ export async function composeKhitanData(inv: any) {
   const guestName = inv.recipientName || "Tamu Undangan";
 
   const parentNames = [fatherName, motherName].filter(Boolean).map(escapeHtml).join(" &amp; ");
-  const parentsHtml = parentNames ? `<p>Putra tercinta dari:</p><h4 class="serif" style="color: var(--text-main); font-size: 16px; margin: 4px 0;">${parentNames}</h4>` : "";
+  const parentsHtml = parentNames ? `<p>Putra tercinta dari:</p><h4 class="serif" style="color: var(--card-text, var(--text-main)); font-size: 16px; margin: 4px 0;">${parentNames}</h4>` : "";
 
   const eventSectionHtml = buildUniversalEventCards(events, "Walimatul Khitan");
   const galleryVariant = storedVariant(inv.builderSpec ?? dbThemeBuilderSpec, "gallery");
@@ -2986,7 +2986,7 @@ export async function composeKhitanData(inv: any) {
     giftSectionHtml,
     rsvpSectionHtml,
     wishesSectionHtml,
-    brandWatermarkHtml: `<span style="font-size: 10px; color: var(--primary);">Powered by ${escapeHtml(platformName)}</span>`,
+    brandWatermarkHtml: `<span style="font-size: 10px; color: var(--canvas-accent, var(--primary));">Powered by ${escapeHtml(platformName)}</span>`,
     metaTagsHtml: `
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <title>Walimatul Khitan ${escapeHtml(childName)} — Undangan Digital</title>
@@ -3048,7 +3048,7 @@ export async function composeAqiqahData(inv: any) {
   const guestName = inv.recipientName || "Tamu Undangan";
 
   const parentNames = [fatherName, motherName].filter(Boolean).map(escapeHtml).join(" &amp; ");
-  const parentsHtml = parentNames ? `<p>Putra/Putri tercinta dari:</p><h4 class="serif" style="color: var(--text-main); font-size: 16px; margin: 4px 0;">${parentNames}</h4>` : "";
+  const parentsHtml = parentNames ? `<p>Putra/Putri tercinta dari:</p><h4 class="serif" style="color: var(--card-text, var(--text-main)); font-size: 16px; margin: 4px 0;">${parentNames}</h4>` : "";
 
   const eventSectionHtml = buildUniversalEventCards(events, "Tasyakuran Aqiqah");
   const galleryVariant = storedVariant(inv.builderSpec ?? dbThemeBuilderSpec, "gallery");
@@ -3079,7 +3079,7 @@ export async function composeAqiqahData(inv: any) {
     giftSectionHtml,
     rsvpSectionHtml,
     wishesSectionHtml,
-    brandWatermarkHtml: `<span style="font-size: 10px; color: var(--primary);">Powered by ${escapeHtml(platformName)}</span>`,
+    brandWatermarkHtml: `<span style="font-size: 10px; color: var(--canvas-accent, var(--primary));">Powered by ${escapeHtml(platformName)}</span>`,
     metaTagsHtml: `
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <title>Tasyakuran Aqiqah ${escapeHtml(babyName)} — Undangan Digital</title>
@@ -3145,7 +3145,7 @@ export async function composeWisudaData(inv: any) {
   const guestName = inv.recipientName || "Rekan & Sahabat";
 
   const parentNames = [fatherName, motherName].filter(Boolean).map(escapeHtml).join(" &amp; ");
-  const parentsHtml = parentNames ? `<p>Putra/Putri tercinta dari:</p><h4 class="serif" style="color: var(--text-main); font-size: 15px; margin: 4px 0;">${parentNames}</h4>` : "";
+  const parentsHtml = parentNames ? `<p>Putra/Putri tercinta dari:</p><h4 class="serif" style="color: var(--card-text, var(--text-main)); font-size: 15px; margin: 4px 0;">${parentNames}</h4>` : "";
   const graduateHonorsBadgeHtml = honors ? `<span style="display: inline-block; padding: 4px 12px; border-radius: var(--radius-full, 9999px); background: color-mix(in srgb, var(--accent) 20%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); color: var(--accent); font-size: 11px; font-weight: 700; margin-top: 8px;">Predikat: ${escapeHtml(honors)}</span>` : "";
 
   const eventSectionHtml = buildUniversalEventCards(events, "Syukuran Kelulusan");
@@ -3182,7 +3182,7 @@ export async function composeWisudaData(inv: any) {
     giftSectionHtml,
     rsvpSectionHtml,
     wishesSectionHtml,
-    brandWatermarkHtml: `<span style="font-size: 10px; color: var(--primary);">Powered by ${escapeHtml(platformName)}</span>`,
+    brandWatermarkHtml: `<span style="font-size: 10px; color: var(--canvas-accent, var(--primary));">Powered by ${escapeHtml(platformName)}</span>`,
     metaTagsHtml: `
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <title>Wisuda ${escapeHtml(graduateName)} — Undangan Digital</title>
@@ -3269,7 +3269,7 @@ export async function composeGatheringData(inv: any) {
     giftSectionHtml,
     rsvpSectionHtml,
     wishesSectionHtml,
-    brandWatermarkHtml: `<span style="font-size: 10px; color: var(--primary);">Powered by ${escapeHtml(platformName)}</span>`,
+    brandWatermarkHtml: `<span style="font-size: 10px; color: var(--canvas-accent, var(--primary));">Powered by ${escapeHtml(platformName)}</span>`,
     metaTagsHtml: `
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <title>${escapeHtml(eventTitle)} — Undangan Resmi</title>

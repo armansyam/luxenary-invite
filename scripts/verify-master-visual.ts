@@ -63,7 +63,12 @@ function sameValue(a: string, b: string): boolean {
   const skeleton = (s: string) => s.replace(NUM, "#");
   if (skeleton(na) !== skeleton(nb)) return false;
   const xa = na.match(NUM) ?? [], xb = nb.match(NUM) ?? [];
-  return xa.every((x, i) => Math.abs(parseFloat(x) - parseFloat(xb[i])) <= 1.5);
+  // Angka 0–1 adalah alfa atau pecahan (mis. lapisan gelap `color-mix(... 20%, transparent)` → alfa 0.2); dengan toleransi
+  // 1.5 perubahan 0.2 → 0.82 tidak pernah terdeteksi.
+  return xa.every((x, i) => {
+    const a = parseFloat(x), b = parseFloat(xb[i]);
+    return Math.abs(a - b) <= (Math.abs(a) <= 1 && Math.abs(b) <= 1 ? 0.01 : 1.5);
+  });
 }
 
 function compare(before: Array<[string, string[]]>, after: Array<[string, string[]]>): string[] {

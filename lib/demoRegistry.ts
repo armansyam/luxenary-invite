@@ -4061,6 +4061,9 @@ export function getDemoThemeData(themeId: string, eventType?: string | null): De
   if (!DEMO_REGISTRY[normalized]) {
     demo.themeId = normalized;
     demo.themeName = normalized ? normalized.charAt(0).toUpperCase() + normalized.slice(1) : "Demo Theme";
+    // Foto latar halaman persona dibuat untuk tema persona itu; di tema lain warna teksnya tidak cocok (gradasi toska
+    // Sinergi membuat teks 33 tema -acara tidak terbaca). Latar bawaan tema yang dipakai.
+    demo.globalBgUrl = "";
   }
 
   const publicThemeDir = path.join(process.cwd(), "public", "demo", normalized);

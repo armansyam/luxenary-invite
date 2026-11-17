@@ -132,6 +132,13 @@ menimpa variabel `:root` ini; warna atau huruf yang tertulis langsung tidak ikut
   (versi working tree dibandingkan dengan `HEAD`; `--ref=<commit>` untuk pembanding lain; butuh `DATABASE_URL` ke
   `luxenary_test` dan Chrome lewat `CHROME_PATH`). Keluaran "SAMA" di 375 dan 1440 px berarti CSS terhitung setiap elemen
   identik.
+- Buktikan semua teks terbaca di atas latar yang benar-benar tampil (foto, tekstur, lapisan gelap):
+  `npm run audit:master-contrast-pixels -- --theme=<id> --strict` (gagal bila ada teks dengan rasio di bawah 2).
+- Tema satu nama: blok buatan mesin (kartu acara, rekening, form RSVP, ucapan, hitung mundur, kartu QR, nama orang tua)
+  memakai `--text-main`/`--text-muted`/`--primary`. Bila kartu master berlatar terang sedangkan `--text-main` untuk kanvas
+  gelap (atau sebaliknya), definisikan `--card-text`, `--card-muted`, dan `--card-accent`; bila `--primary` gelap di atas
+  kanvas gelap, definisikan `--canvas-accent` (tautan galeri tamu, tombol siaran langsung, "Powered by") dan `--on-primary`
+  (teks tombol berlatar `--primary`). Label "CHAPTER" kisah memakai `--timeline-gold` (bawaan `--accent`).
 
 ---
 

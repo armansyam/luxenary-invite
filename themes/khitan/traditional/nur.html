@@ -27,6 +27,12 @@
       --ink: #123d31;
       --on-primary: #0b3b2e;
       --on-dark: #f7f2e6;
+      /* Kartu Nur terang (--card-bg krem) sedangkan --text-main krem untuk kanvas hijau; blok buatan mesin di dalam
+         kartu (rekening, kartu QR, ucapan, nama orang tua) memakai token kartu ini. */
+      --card-text: var(--ink);
+      --card-muted: color-mix(in srgb, var(--ink) 78%, transparent);
+      --card-accent: color-mix(in srgb, var(--secondary) 55%, var(--ink));
+      --event-accent: color-mix(in srgb, var(--secondary) 55%, var(--ink));
       --radius-sm: 6px;
       --radius-md: 14px;
       --radius-lg: 22px;

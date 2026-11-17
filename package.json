@@ -18,6 +18,7 @@
     "test:themes": "npx tsx scripts/test-theme-matrix.ts",
     "test:master-visual": "npx tsx scripts/verify-master-visual.ts",
     "audit:master-contrast": "npx tsx scripts/audit-master-contrast.ts",
+    "audit:master-contrast-pixels": "npx tsx scripts/audit-master-contrast-pixels.ts",
     "test:nas": "npx tsx scripts/test-nas-archive-lifecycle.ts",
     "test:clean": "npx tsx scripts/clean-test-artifacts.ts",
     "test:hygiene": "npx tsx scripts/audit-code-hygiene.ts",

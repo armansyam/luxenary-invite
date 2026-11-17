@@ -36,6 +36,8 @@
       --secondary: var(--gold-dim);
       --accent: var(--gold);
       --gold-pale: #faf7f2;
+      /* Label kisah memakai emas yang lebih terang agar terbaca di atas foto latar. */
+      --timeline-gold: color-mix(in srgb, var(--gold) 50%, var(--gold-pale));
       --bg-dark: #070709;
       --text-main: #f5f5f7;
       --text-muted: rgba(245, 245, 247, 0.65);
@@ -336,8 +338,8 @@
       background-image: 
         linear-gradient(
           to bottom,
-          color-mix(in srgb, var(--bg-dark, var(--lux-c-070709)) 55%, transparent) 0%,
-          color-mix(in srgb, var(--bg-dark, var(--lux-c-070709)) 40%, transparent) 35%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-070709)) 62%, transparent) 0%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-070709)) 62%, transparent) 35%,
           color-mix(in srgb, var(--bg-dark, var(--lux-c-070709)) 82%, transparent) 70%,
           color-mix(in srgb, var(--bg-dark, var(--lux-c-070709)) 94%, transparent) 100%
         ),
@@ -349,8 +351,8 @@
       background-image: 
         linear-gradient(
           to bottom,
-          color-mix(in srgb, var(--bg-dark, var(--lux-c-070709)) 55%, transparent) 0%,
-          color-mix(in srgb, var(--bg-dark, var(--lux-c-070709)) 40%, transparent) 35%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-070709)) 62%, transparent) 0%,
+          color-mix(in srgb, var(--bg-dark, var(--lux-c-070709)) 62%, transparent) 35%,
           color-mix(in srgb, var(--bg-dark, var(--lux-c-070709)) 82%, transparent) 70%,
           color-mix(in srgb, var(--bg-dark, var(--lux-c-070709)) 94%, transparent) 100%
         ),

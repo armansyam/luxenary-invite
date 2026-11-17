@@ -49,6 +49,9 @@
       --primary: #54192b;
       --secondary: #7a253f;
       --accent: #d4a373;
+      /* Latar krem: label kisah memakai merah anggur, bukan emas --accent; tombol berlatar --primary memakai teks krem. */
+      --timeline-gold: var(--secondary);
+      --on-primary: var(--bg-light);
       --bg-light: #faf2f4;
       --bg-dark: #1c070e;
       --text-main: #2c0e17;
@@ -286,7 +289,13 @@
       right: 0;
       width: 100%;
       height: 100vh;
-      background: transparent;
+      /* Lapisan krem ini bagian dari desain: teks master (var(--primary), var(--text-main)) gelap. Tanpanya teks
+         tenggelam di tekstur merah (dicopot b118527a, 30 Sep 2026; dikembalikan 18 Nov 2026). */
+      background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--bg-light) 95%, transparent) 0%,
+        color-mix(in srgb, var(--bg-light) 98%, transparent) 100%
+      );
       pointer-events: none;
       z-index: 2;
     }
