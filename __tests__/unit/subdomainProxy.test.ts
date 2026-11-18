@@ -84,3 +84,18 @@ describe("proxy: tautan tamu bentuk /Nama di host subdomain", () => {
     expect(broken.searchParams.get("to")).toBe("Diskon%50%");
   });
 });
+
+describe("proxy: panel admin di server replika", () => {
+  it("replika menolak /admin dan /api/admin dengan 503; server utama tidak", async () => {
+    process.env.LUX_SERVER_ROLE = "replica";
+    try {
+      for (const p of ["/admin", "/admin/theme-builder", "/api/admin/themes"]) {
+        expect((await run("localhost:3000", p)).status).toBe(503);
+      }
+      expect((await run("localhost:3000", "/demo")).status).not.toBe(503);
+    } finally {
+      delete process.env.LUX_SERVER_ROLE;
+    }
+    expect((await run("localhost:3000", "/api/admin/themes")).status).not.toBe(503);
+  });
+});

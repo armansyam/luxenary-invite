@@ -67,8 +67,6 @@ export async function POST(req: NextRequest) {
     if (inv.userId !== session.user.id && !isAdmin) {
       return NextResponse.json({ error: "Forbidden. Anda tidak memiliki akses ke undangan ini." }, { status: 403 });
     }
-    const invStatus = inv.status;
-
     const slotKey = rawSlot.toUpperCase();
     // Kunci Studio yang sama dengan PUT undangan: nama berkas per slot tetap, jadi unggahan saat terkunci menimpa media
     // yang sedang tampil walau penyimpanannya ditolak. Sampul Momen disimpan lewat PATCH yang memang boleh setelah terbit.
@@ -219,11 +217,9 @@ export async function POST(req: NextRequest) {
     const relativePath = `${relativePathBase}/${finalFileName}`;
     let contentType = isAudio ? "audio/mpeg" : isVideo ? "video/mp4" : "image/webp";
 
-    // Force local storage if invitation is still a DRAFT (even if R2 is active)
-    const forceLocal = invStatus === "DRAFT";
-
-    // Clean up any old files with different extensions for this slot (Local ONLY)
-    if (forceLocal || (process.env.STORAGE_PROVIDER !== "r2" && process.env.STORAGE_PROVIDER !== "s3")) {
+    // Unggahan undangan DRAFT juga langsung ke R2: disk satu server tidak terlihat oleh server aplikasi lain.
+    // Berkas format lain milik slot ini hanya dibersihkan pada penyimpanan lokal; di R2 terhapus bersama undangannya.
+    if (process.env.STORAGE_PROVIDER !== "r2" && process.env.STORAGE_PROVIDER !== "s3") {
       const uploadsDir = path.join(process.cwd(), "public", "uploads", "invitations", safeInvitationId);
       try {
         const fs = await import("fs");
@@ -241,7 +237,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const uploadedUrl = await uploadFile(finalBuffer, relativePath, contentType, forceLocal);
+    const uploadedUrl = await uploadFile(finalBuffer, relativePath, contentType);
     
     // Add cache buster timestamp
     const publicUrl = `${uploadedUrl}?t=${Date.now()}`;

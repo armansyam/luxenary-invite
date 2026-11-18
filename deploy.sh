@@ -52,7 +52,7 @@ restore_previous_release() {
 
 # 2. Setup Direktori Runtime
 echo "📁 Menyiapkan direktori runtime..."
-mkdir -p logs public/uploads data/drafts
+mkdir -p logs public/uploads data
 
 # 3. Setup Environment Variables
 echo "⚙️ Memeriksa konfigurasi Environment Variables (.env)..."
@@ -88,6 +88,16 @@ if [ -z "$NEXTAUTH_SECRET" ] || [ "$NEXTAUTH_SECRET" == '""' ]; then
   else
     sed -i "s|^NEXTAUTH_SECRET=.*|NEXTAUTH_SECRET=\"$NEW_NEXT_SECRET\"|" .env
   fi
+fi
+
+# Kunci enkripsi Server Actions wajib sama di semua server aplikasi (docs Next: self-hosting, Multi-Server Deployments);
+# tanpa ini Next membuat kunci acak per build dan aksi dari server lain gagal "Failed to find Server Action".
+# Server utama membuatnya sekali; salin nilainya ke .env replika.
+if [ "$(grep -E "^LUX_SERVER_ROLE=" .env | cut -d '=' -f2- | tr -d '"' | tr -d "'")" != "replica" ] && [ -z "$(grep -E "^NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=" .env | cut -d '=' -f2- | tr -d '"' | tr -d "'")" ]; then
+  echo "🔐 Men-generate NEXT_SERVER_ACTIONS_ENCRYPTION_KEY..."
+  grep -v -E "^NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=" .env > .env.tmp && mv .env.tmp .env
+  echo "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=\"$(openssl rand -base64 32)\"" >> .env
+  chmod 600 .env
 fi
 
 # Generate CRON_SECRET jika masih kosong
@@ -126,9 +136,28 @@ if [ -n "$NODE_BIN_DIR" ]; then
   fi
   export PATH="$NODE_BIN_DIR:$PATH"
 fi
+# 3b. Peran server (LUX_SERVER_ROLE di .env). Server utama (bawaan) menjalankan migrasi, seed, kompilasi demo, cron
+# pemeliharaan, dan backup. Server replika memakai database dan bucket yang sama: tidak menyentuh skema atau data, membangun
+# HTML terbit/demo sendiri saat diminta, dan menarik berkas buatan server utama (lib/sharedFiles.ts). Deploy server utama
+# lebih dulu; replika menolak berjalan bila masih ada migrasi yang belum diterapkan.
+SERVER_ROLE=$(grep -E "^LUX_SERVER_ROLE=" .env | cut -d '=' -f2- | tr -d '"' | tr -d "'")
+IS_REPLICA=false
+if [ "$SERVER_ROLE" = "replica" ]; then
+  IS_REPLICA=true
+  echo "🛰️ Server replika: migrasi, seed, kompilasi demo, cron pemeliharaan, dan backup dilewati."
+  for KEY in S3_BACKUP_BUCKET_NAME NEXT_SERVER_ACTIONS_ENCRYPTION_KEY; do
+    if [ -z "$(grep -E "^$KEY=" .env | cut -d '=' -f2- | tr -d '"' | tr -d "'")" ]; then
+      echo "❌ $KEY wajib diisi di .env replika (harus sama dengan server utama). Deployment dihentikan."
+      exit 1
+    fi
+  done
+fi
+
 # Server baru yang belum lengkap: tanpa pemeriksaan ini npm ci gagal dengan pesan menyesatkan, dan pg_dump baru
 # ketahuan hilang setelah build selesai.
-for BIN in node npm npx pg_dump openssl curl; do
+REQUIRED_BINS="node npm npx openssl curl"
+[ "$IS_REPLICA" = false ] && REQUIRED_BINS="$REQUIRED_BINS pg_dump"
+for BIN in $REQUIRED_BINS; do
   if ! command -v "$BIN" &> /dev/null; then
     echo "❌ '$BIN' tidak ditemukan di PATH. Pasang dulu (lihat docs/admin/DEPLOYMENT_VPS_CADDY.md Tahap 1-2). Deployment dihentikan."
     exit 1
@@ -167,6 +196,9 @@ ACTIVE_DIST=$(cat data/.dist-dir 2>/dev/null || echo ".next")
 case "$ACTIVE_DIST" in .next|.next-a|.next-b) ;; *) ACTIVE_DIST=".next" ;; esac
 if [ "$ACTIVE_DIST" = ".next-a" ]; then NEW_DIST=".next-b"; else NEW_DIST=".next-a"; fi
 export NEXT_DIST_DIR="$NEW_DIST"
+export DEPLOYMENT_VERSION="$(git rev-parse HEAD)"
+NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$(grep -E "^NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=" .env | cut -d '=' -f2- | tr -d '"' | tr -d "'")
+export NEXT_SERVER_ACTIONS_ENCRYPTION_KEY
 rm -rf "$NEW_DIST"
 echo "🏗️ Membangun (Build) aplikasi Next.js ke $NEW_DIST... (aplikasi aktif tetap melayani dari $ACTIVE_DIST)"
 if ! npx prisma generate; then
@@ -193,6 +225,23 @@ if ! eval "$(DB_URL="$DB_URL" node scripts/pg-env.cjs)"; then
   echo "❌ DATABASE_URL di .env tidak dapat dibaca. Deployment dihentikan sebelum migrasi."
   exit 1
 fi
+if [ "$IS_REPLICA" = true ]; then
+  # Replika tidak memigrasi: kode baru hanya boleh jalan bila skema sudah diterapkan server utama.
+  if ! npx prisma migrate status > /dev/null 2>&1; then
+    echo "❌ Skema database belum sesuai rilis ini (migrasi tertunda). Deploy server utama lebih dulu, lalu ulangi."
+    restore_previous_release
+    exit 1
+  fi
+  replica_refresh_caches() {
+    # HTML terbit dan demo di disk replika dibangun ulang saat diminta dengan kode rilis ini (lib/renderVersion.ts).
+    rm -f public/published/ids/*.html public/demo/*/index.html
+    LUX_SERVER_ROLE=replica npx tsx scripts/sync-shared-files.ts || echo "⚠️ Tarik berkas bersama gagal — rute dan render akan menarik sendiri saat diminta."
+  }
+  echo "🧹 Menyiapkan cache replika untuk rilis ini..."
+  replica_refresh_caches
+fi
+
+if [ "$IS_REPLICA" = false ]; then
 PRE_BACKUP="data/backups/pre-deploy_$(date +%Y-%m-%d_%H%M%S).dump"
 mkdir -p data/backups
 echo "💾 Membuat backup database pra-migrasi: $PRE_BACKUP"
@@ -221,6 +270,10 @@ echo "🌱 Menyinkronisasi data master (Admin Settings, Music Presets, Themes)..
 npx prisma db seed || echo "⚠️ Seed gagal — lanjut deployment."
 npm run themes:sync || echo "⚠️ Themes sync gagal — lanjut deployment."
 
+# Berkas buatan aplikasi yang belum ada di penyimpanan bersama (unggahan sebelum fitur ini, berkas yang ditaruh manual)
+# disalin agar server replika dapat menariknya. Tanpa S3_BACKUP_BUCKET_NAME langkah ini dilewati.
+$LOW_PRIORITY npx tsx scripts/share-existing-files.ts --apply || echo "⚠️ Penyalinan berkas ke penyimpanan bersama gagal sebagian — replika belum melihat berkas itu."
+
 # 7b. Kompilasi Cache Demo Tema Statis
 echo "🎨 Memastikan cache demo tema statis terkompilasi segar..."
 $LOW_PRIORITY npx -y tsx -r dotenv/config -e "import('./lib/demoPublisher.ts').then(m => (m.compileAllStaticDemos || m.default.compileAllStaticDemos)()).then(n => console.log('✅ ' + n + ' demo tema berhasil dikompilasi.')).catch(e => console.warn('⚠️ Gagal pra-kompilasi demo (akan dikompilasi on-demand saat diakses):', e.message));" || true
@@ -234,6 +287,7 @@ refresh_published_html() {
 }
 echo "🧱 Membangun ulang HTML undangan terbit dengan mesin tema rilis ini..."
 refresh_published_html
+fi
 
 # 8. Restart Server & Persist PM2
 # Migrasi sudah berhasil: dari sini aplikasi dijalankan dari direktori build baru (dibaca ecosystem.config.js, dan
@@ -290,9 +344,13 @@ if command -v pm2 &> /dev/null; then
   fi
   echo "✅ Health check berhasil! Aplikasi merespons HTTP 200 di port 3001."
   export PATH="${NODE_BIN_DIR:+$NODE_BIN_DIR:}$SYSTEM_PATH"
-  npx tsx scripts/migrate-drafts-to-db.ts || echo "⚠️ Impor ulang piring disk ke DB gagal."
-  echo "🧱 Purge ulang cache undangan terbit setelah server baru aktif..."
-  refresh_published_html
+  if [ "$IS_REPLICA" = true ]; then
+    replica_refresh_caches
+  else
+    npx tsx scripts/migrate-drafts-to-db.ts || echo "⚠️ Impor ulang piring disk ke DB gagal."
+    echo "🧱 Purge ulang cache undangan terbit setelah server baru aktif..."
+    refresh_published_html
+  fi
   export PATH="$SYSTEM_PATH"
   # Direktori build lama sebelum skema .next-a/.next-b tidak dipakai lagi; direktori aktif sebelumnya dibiarkan untuk rollback cepat.
   if [ "$ACTIVE_DIST" = ".next" ]; then rm -rf .next; fi
@@ -311,7 +369,7 @@ if command -v crontab &> /dev/null; then
   ACTUAL_CRON_SECRET=$(grep -E "^CRON_SECRET=" .env | cut -d '=' -f2- | tr -d '"' | tr -d "'")
   if [ -n "$ACTUAL_CRON_SECRET" ] && [ "$ACTUAL_CRON_SECRET" != '""' ]; then
     CURRENT_CRON=$(crontab -l 2>/dev/null || true)
-    FILTERED_CRON=$(echo "$CURRENT_CRON" | grep -v "api/cron/cleanup" | grep -v "api/cron/backup" | grep -v "scripts/cron-backup.sh" | grep -v "scripts/health-watch.sh" || true)
+    FILTERED_CRON=$(echo "$CURRENT_CRON" | grep -v "api/cron/cleanup" | grep -v "api/cron/backup" | grep -v "scripts/cron-backup.sh" | grep -v "scripts/health-watch.sh" | grep -v "scripts/sync-shared-files.ts" || true)
     
     # Secret disimpan di berkas ber-izin 600 dan dibaca curl lewat -H @berkas, agar tidak tampil di 'crontab -l' maupun daftar proses.
     CRON_AUTH_FILE="$(pwd)/data/.cron-auth"
@@ -323,9 +381,17 @@ if command -v crontab &> /dev/null; then
     
     WATCH_LINE="* * * * * PATH=/usr/local/bin:/usr/bin:/bin bash $(pwd)/scripts/health-watch.sh"
 
-    NEW_CRON=$(printf "%s\n%s\n%s\n%s\n" "$FILTERED_CRON" "$CLEANUP_LINE" "$BACKUP_LINE" "$WATCH_LINE" | sed '/^[[:space:]]*$/d')
-    echo "$NEW_CRON" | crontab - 2>/dev/null || true
-    echo "✅ Crontab OS disinkronkan: Cleanup (02:00), Backup (03:00), dan pemantau health (tiap menit) dengan token aktif."
+    if [ "$IS_REPLICA" = true ]; then
+      # Cleanup dan backup hanya di server utama; di replika keduanya akan berjalan ganda atas database yang sama.
+      SYNC_LINE="* * * * * cd $(pwd) && PATH=${NODE_BIN_DIR:+$NODE_BIN_DIR:}/usr/local/bin:/usr/bin:/bin LUX_SERVER_ROLE=replica npx tsx scripts/sync-shared-files.ts >> $(pwd)/logs/shared-sync.log 2>&1"
+      NEW_CRON=$(printf "%s\n%s\n%s\n" "$FILTERED_CRON" "$WATCH_LINE" "$SYNC_LINE" | sed '/^[[:space:]]*$/d')
+      echo "$NEW_CRON" | crontab - 2>/dev/null || true
+      echo "✅ Crontab replika disinkronkan: pemantau health dan tarik berkas bersama (tiap menit)."
+    else
+      NEW_CRON=$(printf "%s\n%s\n%s\n%s\n" "$FILTERED_CRON" "$CLEANUP_LINE" "$BACKUP_LINE" "$WATCH_LINE" | sed '/^[[:space:]]*$/d')
+      echo "$NEW_CRON" | crontab - 2>/dev/null || true
+      echo "✅ Crontab OS disinkronkan: Cleanup (02:00), Backup (03:00), dan pemantau health (tiap menit) dengan token aktif."
+    fi
   else
     echo "⚠️ CRON_SECRET tidak ditemukan di .env — sinkronisasi crontab dilewati."
   fi

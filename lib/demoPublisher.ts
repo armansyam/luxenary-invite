@@ -11,6 +11,7 @@ import { logger } from "./logger";
 import { isSafePathSegment } from "./fsSafe";
 import { resolveVariant } from "./themeVariants";
 import { bumpRenderVersion, currentRenderVersion, demoVersionKey, splitVersionMarker, withVersionMarker, writeFileAtomic } from "./renderVersion";
+import { syncSharedFiles } from "./sharedFiles";
 
 function cleanDemoId(themeId: string): string {
   const cleanId = themeId.toLowerCase().trim();
@@ -50,6 +51,8 @@ export async function serveStaticDemo(themeId: string): Promise<string> {
 }
 
 async function buildStaticDemo(cleanId: string, customDemoData: any, version: number): Promise<string> {
+  // Hasil kompilasi disimpan dengan versi ini, jadi aset demo yang baru dibuat server lain wajib sudah tertarik.
+  await syncSharedFiles({ force: true });
   masterTemplateCache.clear();
   let resolvedData = customDemoData;
   // Varian Tema memakai data dan foto demo master induknya (varian tidak punya folder demo sendiri); hanya HTML-nya

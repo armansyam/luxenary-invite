@@ -4,6 +4,7 @@ import { requireAdminModule } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
 import { isSafePathSegment, removeIfExists } from "@/lib/fsSafe";
+import { shareFile, unshareFiles } from "@/lib/sharedFiles";
 import { readFormBody } from "@/lib/requestBody";
 import { fileTypeFromBuffer } from "file-type";
 import fs from "fs";
@@ -82,10 +83,13 @@ export async function POST(
 
     // Satu slot satu berkas: format lain milik slot ini (termasuk SVG unggahan lama) dihapus.
     for (const ext of SLOT_FILE_EXTENSIONS) {
-      if (ext !== extension) await removeIfExists(path.join(targetDir, `${slot}.${ext}`));
+      if (ext === extension) continue;
+      await removeIfExists(path.join(targetDir, `${slot}.${ext}`));
+      await unshareFiles(path.join(targetDir, `${slot}.${ext}`));
     }
 
     fs.writeFileSync(targetFilePath, buffer);
+    await shareFile(targetFilePath);
 
     const rawUrl = `/uploads/demo/${themeId}/${fileName}`;
     const publicUrl = `${rawUrl}?t=${Date.now()}`;
@@ -212,7 +216,10 @@ export async function DELETE(
 
     const targetDir = demoUploadDir(themeId);
 
-    for (const ext of SLOT_FILE_EXTENSIONS) await removeIfExists(path.join(targetDir, `${slot}.${ext}`));
+    for (const ext of SLOT_FILE_EXTENSIONS) {
+      await removeIfExists(path.join(targetDir, `${slot}.${ext}`));
+      await unshareFiles(path.join(targetDir, `${slot}.${ext}`));
+    }
 
     // Update database adminSetting theme_demo_${themeId}
     try {

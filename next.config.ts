@@ -25,6 +25,9 @@ const nextConfig: NextConfig = {
   // deploy.sh membangun ke direktori cadangan (.next-a atau .next-b) selagi aplikasi lama tetap melayani dari direktori
   // aktifnya, lalu pindah saat restart. Tanpa ini build menimpa .next yang sedang dipakai dan permintaan gagal selama build.
   distDir: process.env.NEXT_DIST_DIR || ".next",
+  // deploy.sh mengisi DEPLOYMENT_VERSION dengan commit git. Server utama dan replika yang dibangun dari commit yang sama
+  // memakai build ID yang sama; peramban yang berpindah server antar rilis dimuat ulang penuh, bukan memuat aset yang tidak ada.
+  deploymentId: process.env.DEPLOYMENT_VERSION || undefined,
   // Typecheck build hanya boleh membaca tipe rute dari direktori build-nya sendiri. Bila tipe direktori aktif ikut
   // terbaca, rute yang dihapus di rilis baru masih dirujuk build lama dan build gagal (TS2307, deploy 10 Okt 2026).
   // deploy.sh menyetel SKIP_BUILD_TYPECHECK=1 di host berRAM kecil: tsc membutuhkan ±700 MB di samping next build dan

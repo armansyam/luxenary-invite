@@ -4,6 +4,7 @@ import path from "path";
 import { getNasArchivePath, isNasArchiveEnabled } from "@/lib/nasArchive";
 import { logger } from "@/lib/logger";
 import { parseByteRange } from "@/lib/httpRange";
+import { ensureSharedFile } from "@/lib/sharedFiles";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +55,7 @@ export async function GET(
       return new NextResponse("Forbidden", { status: 403 });
     }
 
+    await ensureSharedFile(fullPath);
     if (!fs.existsSync(fullPath)) {
       return new NextResponse("Asset Not Found", { status: 404 });
     }

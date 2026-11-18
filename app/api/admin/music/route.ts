@@ -8,6 +8,7 @@ import fs from "fs";
 import path from "path";
 import { optimizeWebAudio } from "@/lib/videoOptimizer";
 import { syncPhysicalMusicPresets } from "@/lib/musicPresetSync";
+import { shareFile } from "@/lib/sharedFiles";
 
 export const dynamic = "force-dynamic";
 
@@ -84,6 +85,7 @@ export async function POST(req: NextRequest) {
     // Auto-compress to web-optimized 128kbps stereo MP3
     const optimizedBuffer = await optimizeWebAudio(rawBuffer, slug);
     await fs.promises.writeFile(targetFilePath, optimizedBuffer);
+    await shareFile(targetFilePath);
 
     const publicUrl = `/uploads/music/${finalFileName}`;
 

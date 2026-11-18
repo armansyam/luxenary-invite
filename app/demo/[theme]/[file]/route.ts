@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { isSafePathSegment } from "@/lib/fsSafe";
 import { logger } from "@/lib/logger";
+import { ensureSharedFile } from "@/lib/sharedFiles";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,11 @@ export async function GET(
       return new NextResponse("Not Found", { status: 404 });
     }
 
+    // index.html adalah cache yang dicek versinya oleh rute /demo/<tema> (lib/demoPublisher.ts serveStaticDemo).
+    if (cleanFile === "index.html") {
+      return NextResponse.redirect(new URL(`/demo/${cleanTheme}`, req.url), 307);
+    }
+
     const ext = path.extname(cleanFile).toLowerCase();
     const contentType = MIME_TYPES[ext];
 
@@ -48,6 +54,7 @@ export async function GET(
     }
 
     const filePath = path.join(process.cwd(), "public", "demo", cleanTheme, cleanFile);
+    await ensureSharedFile(filePath);
 
     if (!fs.existsSync(filePath)) {
       return new NextResponse("Not Found", {

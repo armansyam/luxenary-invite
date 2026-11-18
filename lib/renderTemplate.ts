@@ -9,6 +9,7 @@ import { masterFilePath } from "@/lib/themePaths";
 import { applyMasterOverrides, resolveMasterEdits, resolveVariant } from "@/lib/themeVariants";
 import { logger } from "@/lib/logger";
 import { createInvitationDraft, deleteStaleInvitationDraft, readInvitationDraft } from "@/lib/invitationDraft";
+import { syncSharedFiles } from "@/lib/sharedFiles";
 import { stripEmptyMediaRefs } from "@/lib/emptyMediaRefs";
 import { BG_PHOTO_TONE_SELECTOR, BG_PHOTO_TONE_STYLE_ID, bgPhotoToneCss, bgPhotoToneFilter } from "@/lib/bgPhotoTone";
 
@@ -1651,6 +1652,8 @@ export async function renderTemplateFile(
   data: Record<string, any>,
   options?: { editMode?: boolean; invitationId?: string; eventType?: string; templateSource?: string }
 ): Promise<string> {
+  // Server replika menarik master Theme Builder dan aset yang dibuat di server lain sebelum mencari berkas master.
+  await syncSharedFiles();
 
   // Pratinjau Theme Builder mengirim master hasil kompilasi yang belum ditulis ke disk: tanpa berkas master maupun piring.
   const templateSource = options?.templateSource;

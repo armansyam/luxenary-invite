@@ -88,11 +88,10 @@ export function isInvitationOwnedUpload(url: string | null | undefined, invitati
  * @param buffer - File Buffer
  * @param relativePath - e.g. "invitations/klien/cover.webp"
  * @param mimeType - e.g. "image/webp"
- * @param forceLocal - If true, bypasses R2 and forces save to local disk
  * @returns Public URL string
  */
-export async function uploadFile(buffer: Buffer, relativePath: string, mimeType: string, forceLocal: boolean = false): Promise<string> {
-  if (!forceLocal && (STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3")) {
+export async function uploadFile(buffer: Buffer, relativePath: string, mimeType: string): Promise<string> {
+  if (STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3") {
     const bucketName = process.env.S3_BUCKET_NAME;
     if (!bucketName || !s3Client) {
       throw new Error("S3 Credentials not configured properly in .env");
@@ -134,7 +133,7 @@ export async function uploadFile(buffer: Buffer, relativePath: string, mimeType:
 const PRIVATE_BUCKET_SCHEME = "private-bucket:";
 const PRIVATE_DISK_SCHEME = "private-disk:";
 
-function privateBucketName(): string | null {
+export function privateBucketName(): string | null {
   if (STORAGE_PROVIDER !== "r2" && STORAGE_PROVIDER !== "s3") return null;
   const bucket = process.env.S3_BACKUP_BUCKET_NAME?.trim();
   if (!bucket || bucket === process.env.S3_BUCKET_NAME?.trim()) return null;

@@ -6,6 +6,7 @@ import { requireAdminModule } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
 import { readFormBody } from "@/lib/requestBody";
+import { shareFile } from "@/lib/sharedFiles";
 
 export const dynamic = "force-dynamic";
 
@@ -83,6 +84,7 @@ export async function POST(req: NextRequest) {
         .resize({ width: 800, withoutEnlargement: true })
         .webp({ quality: 85 })
         .toFile(outputPath);
+      await shareFile(outputPath);
 
       return NextResponse.json({
         success: true,
@@ -109,6 +111,7 @@ export async function POST(req: NextRequest) {
             .resize(t.size, t.size, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
             .png({ compressionLevel: 9 })
             .toFile(t.dest);
+          await shareFile(t.dest);
         } catch (genErr) {
           logger.error("UploadBrand", "Varian favicon gagal dibuat", genErr, { dest: t.dest });
         }

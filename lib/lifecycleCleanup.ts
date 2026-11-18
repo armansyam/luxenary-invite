@@ -13,6 +13,7 @@ import { applyUpgradePlan } from "./upgradeHelper";
 import { participantNames } from "./participantUtils";
 import { releaseInvitationSubdomain } from "./subdomainRelease";
 import { deleteInvitationDraft } from "./invitationDraft";
+import { unshareFiles } from "./sharedFiles";
 import { SIM_MEDIA_MAX_AGE_DAYS } from "./themeBuilder/simSlots";
 
 const CONTEXT = "LifecycleCleanup";
@@ -376,7 +377,10 @@ async function purgeSimMedia(now: Date, dryRun: boolean): Promise<number> {
     if (!/^[a-f0-9]{24}\.webp$/.test(file)) continue;
     const full = path.join(dir, file);
     if ((await fs.promises.stat(full)).mtimeMs >= cutoff) continue;
-    if (!dryRun) await fs.promises.rm(full, { force: true });
+    if (!dryRun) {
+      await fs.promises.rm(full, { force: true });
+      await unshareFiles(full);
+    }
     purged++;
   }
   return purged;

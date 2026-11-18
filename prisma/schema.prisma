@@ -618,6 +618,19 @@ model RenderVersion {
   @@map("render_versions")
 }
 
+/// Berkas yang dibuat aplikasi di disk server (master Theme Builder, aset tema, font, aset demo, musik, logo, arsip)
+/// dan disalin ke bucket privat `shared/<path>` (lib/sharedFiles.ts). Server replika menarik baris yang berubah;
+/// `deletedAt` menandai berkas yang sudah dihapus agar salinan replika ikut dihapus.
+model SharedFile {
+  path      String    @id
+  size      Int
+  updatedAt DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz
+
+  @@index([updatedAt])
+  @@map("shared_files")
+}
+
 /// Tabel rate limiting cross-process berbasis PostgreSQL.
 /// Digunakan oleh rateLimitDb() di lib/rateLimit.ts untuk endpoint publik sensitif
 /// (RSVP, memories upload, scan resepsionis) di lingkungan PM2 multi-worker.

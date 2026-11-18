@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { logger } from "@/lib/logger";
+import { syncSharedFiles } from "@/lib/sharedFiles";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ file: st
   if (!contentType) return new NextResponse("Not Found", { status: 404 });
 
   const uploaded = path.join(process.cwd(), "public", "uploads", "brand", file);
+  await syncSharedFiles();
   const bundled = path.join(process.cwd(), "public", "assets", "brand", file);
   const filePath = fs.existsSync(uploaded) ? uploaded : bundled;
 

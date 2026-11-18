@@ -14,6 +14,7 @@ import { compileAndSaveStaticDemo } from "../lib/demoPublisher";
 import { purgeCloudflareCache } from "../lib/cloudflare";
 import { prisma, pool } from "../lib/prisma";
 import { THUMBNAIL_JOB_DIR } from "../lib/themeThumbnailJob";
+import { shareFile } from "../lib/sharedFiles";
 
 const LOCK_KEY = 74_110_401;
 const CAPTURE_TIMEOUT_MS = 3 * 60 * 1000;
@@ -47,6 +48,7 @@ async function capture(themeId: string) {
     return !fs.existsSync(target) || fs.statSync(target).size < 1024 || fs.statSync(target).mtimeMs < startedAt;
   });
   if (missing.length) throw new Error(`Thumbnail tidak terbentuk: ${missing.join(", ")}`);
+  for (const file of THUMBNAIL_FILES) await shareFile(path.join(process.cwd(), "public", "demo", themeId, file));
 
   // /demo/* disimpan Cloudflare 7 hari (next.config.ts); tanpa purge katalog tetap menampilkan gambar lama.
   const origin = (process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");

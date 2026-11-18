@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { logger } from "@/lib/logger";
 import { parseByteRange } from "@/lib/httpRange";
+import { ensureSharedFile } from "@/lib/sharedFiles";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +51,7 @@ export async function GET(
       return new NextResponse("Forbidden", { status: 403 });
     }
 
+    await ensureSharedFile(fullPath);
     if (!fs.existsSync(fullPath)) {
       return new NextResponse("File Not Found", { status: 404 });
     }

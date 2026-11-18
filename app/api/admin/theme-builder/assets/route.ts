@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
 import { readFormBody } from "@/lib/requestBody";
+import { shareFile, unshareFiles } from "@/lib/sharedFiles";
 import {
   THEME_ASSET_DIR,
   THEME_ASSET_URL_PREFIX,
@@ -71,7 +72,10 @@ export async function POST(req: NextRequest) {
 
     await fs.promises.mkdir(THEME_ASSET_DIR, { recursive: true });
     const target = path.join(/*turbopackIgnore: true*/ THEME_ASSET_DIR, name);
-    if (!fs.existsSync(target)) await fs.promises.writeFile(target, output);
+    if (!fs.existsSync(target)) {
+      await fs.promises.writeFile(target, output);
+      await shareFile(target);
+    }
 
     const opaque = !(await sharp(output).metadata()).hasAlpha;
     await recordBuilderAudit(req, guard.session, "THEME_ASSET_UPLOAD", `Mengunggah gambar pustaka builder ${name} (${output.length} byte)`);
@@ -95,7 +99,9 @@ export async function DELETE(req: NextRequest) {
     if (usage.length) {
       return NextResponse.json({ error: "Ornamen masih dipakai dan tidak dapat dihapus.", usage }, { status: 409 });
     }
-    await fs.promises.rm(path.join(/*turbopackIgnore: true*/ THEME_ASSET_DIR, match[1]), { force: true });
+    const assetPath = path.join(/*turbopackIgnore: true*/ THEME_ASSET_DIR, match[1]);
+    await fs.promises.rm(assetPath, { force: true });
+    await unshareFiles(assetPath);
     await recordBuilderAudit(req, guard.session, "THEME_ASSET_DELETE", `Menghapus gambar pustaka builder ${match[1]}`);
     return NextResponse.json({ success: true });
   } catch (error) {

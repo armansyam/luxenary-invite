@@ -5,6 +5,7 @@ import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
 import { readFormBody, readJsonBody } from "@/lib/requestBody";
 import { removeIfExists } from "@/lib/fsSafe";
+import { shareFile, unshareFiles } from "@/lib/sharedFiles";
 import { themeThumbnails } from "@/lib/publicAsset";
 import { EventType, Prisma } from "@prisma/client";
 import { validateThemeDefaultMedia, type ThemeDefaultMedia } from "@/lib/themeDefaultMedia";
@@ -145,6 +146,7 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     await fs.writeFile(targetFilePath, buffer, "utf-8");
+    await shareFile(targetFilePath);
 
     // 2. Simpan record tema ke database
     const newTheme = await prisma.theme.create({
@@ -270,6 +272,7 @@ export async function PUT(req: NextRequest) {
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
       await fs.writeFile(targetFilePath, buffer, "utf-8");
+      await shareFile(targetFilePath);
 
       // Kompilasi ulang demo statis dengan master HTML baru
       try {
@@ -351,11 +354,16 @@ export async function DELETE(req: NextRequest) {
       masterPathOf(existingTheme.eventType || "WEDDING", categoryDir, id),
       masterPathOf("WEDDING", categoryDir, id),
     ];
-    for (const p of possiblePaths) await removeIfExists(p);
+    for (const p of possiblePaths) {
+      await removeIfExists(p);
+      await unshareFiles(p);
+    }
 
     // 4. Also remove the compiled static demo directory so it no longer appears in catalog
-    await removeIfExists(path.join(process.cwd(), "public", "demo", id.toLowerCase()), { recursive: true });
-    await removeIfExists(path.join(process.cwd(), "public", "uploads", "demo", id.toLowerCase()), { recursive: true });
+    for (const dir of [path.join(process.cwd(), "public", "demo", id.toLowerCase()), path.join(process.cwd(), "public", "uploads", "demo", id.toLowerCase())]) {
+      await removeIfExists(dir, { recursive: true });
+      await unshareFiles(dir);
+    }
 
     const { revalidatePath } = await import("next/cache");
     revalidatePath("/demo");

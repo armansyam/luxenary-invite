@@ -11,6 +11,7 @@ import { readJsonBody } from "@/lib/requestBody";
 import { logger } from "@/lib/logger";
 import { masterTemplateCache } from "@/lib/cache";
 import { removeIfExists } from "@/lib/fsSafe";
+import { shareFile, unshareFiles } from "@/lib/sharedFiles";
 import { requestThemeThumbnails } from "@/lib/themeThumbnailJob";
 import { BUILDER_EVENT_TYPES, parseBuilderSpec } from "@/lib/themeBuilder/spec";
 import { ensureSpecFonts } from "@/lib/themeBuilder/fonts";
@@ -224,6 +225,7 @@ export async function POST(req: NextRequest) {
     const file = builderMasterPath(category, themeId, spec.eventType);
     await fs.promises.mkdir(path.dirname(file), { recursive: true });
     await fs.promises.writeFile(file, html, "utf-8");
+    await shareFile(file);
 
     try {
       const maxOrder = await prisma.theme.aggregate({ _max: { sortOrder: true } });
@@ -250,6 +252,7 @@ export async function POST(req: NextRequest) {
     } catch (err) {
       // Baris DB gagal dibuat (mis. ID direbut permintaan lain): berkas master yang baru ditulis tidak boleh tertinggal.
       await removeIfExists(file);
+      await unshareFiles(file);
       throw err;
     }
   } catch (error) {
@@ -304,7 +307,12 @@ export async function PUT(req: NextRequest) {
     const file = builderMasterPath(category, themeId, spec.eventType);
     await fs.promises.mkdir(path.dirname(file), { recursive: true });
     await fs.promises.writeFile(file, html, "utf-8");
-    if (existing.category !== category) await removeIfExists(builderMasterPath(existing.category as BuilderCategory, themeId, spec.eventType));
+    await shareFile(file);
+    if (existing.category !== category) {
+      const previous = builderMasterPath(existing.category as BuilderCategory, themeId, spec.eventType);
+      await removeIfExists(previous);
+      await unshareFiles(previous);
+    }
 
     // Tema yang dibuat sebelum ada riwayat: simpan keadaan sebelum penyimpanan ini agar masih bisa dikembalikan.
     if (!(await prisma.themeBuilderRevision.count({ where: { themeId } }))) {

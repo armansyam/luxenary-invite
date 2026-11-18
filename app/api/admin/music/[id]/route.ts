@@ -6,6 +6,7 @@ import { readJsonBody } from "@/lib/requestBody";
 import { prisma } from "@/lib/prisma";
 import fs from "fs";
 import path from "path";
+import { unshareFiles } from "@/lib/sharedFiles";
 
 export const dynamic = "force-dynamic";
 
@@ -89,6 +90,7 @@ export async function DELETE(
           logger.warn("AdminMusic", "Berkas lagu gagal dihapus; baris DB tetap dihapus", { filePath, error: unlinkErr instanceof Error ? unlinkErr.message : String(unlinkErr) });
         }
       }
+      await unshareFiles(filePath);
     }
 
     return NextResponse.json({

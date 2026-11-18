@@ -6,6 +6,7 @@ import { composeTemplateData } from "./themeEngine";
 import { renderTemplateFile } from "./renderTemplate";
 import { logger } from "./logger";
 import { resolveLocalUploadPath } from "./storage";
+import { ensureSharedFile, shareDirectory, sharedRelativePath, unshareFiles } from "./sharedFiles";
 
 /**
  * Memeriksa apakah fitur Cold Storage NAS diaktifkan (via DB Admin Setting atau .env)
@@ -180,6 +181,8 @@ export async function syncInvitationToNasArchive(invitationId: string): Promise<
     // 4. Simpan index.html mandiri di folder NAS
     const targetHtmlPath = path.join(clientArchiveDir, "index.html");
     await fs.promises.writeFile(targetHtmlPath, standaloneHtml, "utf-8");
+    // Arsip di bawah data/archives disalin ke penyimpanan bersama; jalur NAS lain dikelola di luar aplikasi.
+    if (sharedRelativePath(clientArchiveDir)) await shareDirectory(clientArchiveDir);
 
     logger.info("NasArchive", "Undangan diarsipkan", { slug, dir: clientArchiveDir });
     return { success: true, slug };
@@ -200,6 +203,7 @@ export async function readNasArchiveHtml(slug: string): Promise<string | null> {
     const nasRoot = await getNasArchivePath();
     const safeSlug = path.basename(slug);
     const htmlPath = path.join(nasRoot, safeSlug, "index.html");
+    await ensureSharedFile(htmlPath);
 
     if (await fileExists(htmlPath)) {
       return await fs.promises.readFile(htmlPath, "utf-8");
@@ -222,6 +226,7 @@ export async function getNasArchiveAssetPath(slug: string, fileName: string): Pr
     const safeSlug = path.basename(slug);
     const safeFile = path.basename(fileName);
     const assetPath = path.join(nasRoot, safeSlug, "assets", safeFile);
+    await ensureSharedFile(assetPath);
 
     if (await fileExists(assetPath)) {
       return assetPath;
@@ -300,6 +305,7 @@ export async function purgeNasArchive(slug: string): Promise<boolean> {
 
     if (await fileExists(archiveDir)) {
       await fs.promises.rm(archiveDir, { recursive: true, force: true });
+      if (sharedRelativePath(archiveDir)) await unshareFiles(archiveDir);
       return true;
     }
   } catch (err) {

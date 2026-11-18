@@ -8,6 +8,7 @@ import { requireAdminModule } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
 import { readFormBody } from "@/lib/requestBody";
 import { SIM_MEDIA_URL_PREFIX } from "@/lib/themeBuilder/simSlots";
+import { shareFile } from "@/lib/sharedFiles";
 
 export const dynamic = "force-dynamic";
 
@@ -54,7 +55,10 @@ export async function POST(req: NextRequest) {
     const target = path.join(/*turbopackIgnore: true*/ SIM_MEDIA_DIR, name);
     // Unggah ulang foto yang sama memperbarui umurnya sehingga tidak terhapus cron saat masih dipakai.
     if (fs.existsSync(target)) await fs.promises.utimes(target, new Date(), new Date());
-    else await fs.promises.writeFile(target, output);
+    else {
+      await fs.promises.writeFile(target, output);
+      await shareFile(target);
+    }
     const meta = await sharp(output).metadata();
     return NextResponse.json({ success: true, url: `${SIM_MEDIA_URL_PREFIX}${name}`, width: meta.width, height: meta.height });
   } catch (error) {

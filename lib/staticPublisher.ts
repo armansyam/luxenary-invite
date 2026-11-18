@@ -9,6 +9,7 @@ import { publishedHtmlCache } from "@/lib/cache";
 import { escapeHtml } from "@/lib/escapeHtml";
 import { logger } from "@/lib/logger";
 import { bumpRenderVersion, currentRenderVersion, publishedVersionKey, splitVersionMarker, withVersionMarker, writeFileAtomic } from "@/lib/renderVersion";
+import { syncSharedFiles } from "@/lib/sharedFiles";
 
 const PUBLISHED_DIR = path.join(process.cwd(), "public", "published");
 const publishedPath = (invitationId: string) => path.join(PUBLISHED_DIR, "ids", `${invitationId}.html`);
@@ -120,6 +121,7 @@ export async function renderPublishedHtml(
 }
 
 async function savePublishedHtml(invitationId: string, version: number): Promise<string | null> {
+  await syncSharedFiles({ force: true });
   const standaloneHtml = await renderPublishedHtml(invitationId);
   if (standaloneHtml === null) return null;
 

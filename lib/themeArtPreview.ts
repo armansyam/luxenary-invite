@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { resolveThemeEntry } from "@/lib/renderTemplate";
 import { masterPathOf } from "@/lib/themePaths";
 import { storedOverrides } from "@/lib/themeVariants";
+import { syncSharedFiles } from "@/lib/sharedFiles";
 
 /**
  * Gambar bawaan master untuk thumbnail "Bawaan tema" di Studio klien dan Studio Demo admin, agar terlihat gambar apa
@@ -73,6 +74,7 @@ export function themeArtPreviews(themeId: string | null | undefined): Partial<Re
 export async function loadThemeArtPreview(themeId: string | null | undefined): Promise<Partial<Record<BuiltinMediaSlot, string>>> {
   const id = String(themeId || "").toLowerCase();
   if (!THEME_ID_RE.test(id)) return {};
+  await syncSharedFiles();
   const row = await prisma.theme.findUnique({ where: { id }, select: { parentTheme: true, masterOverrides: true } });
   const masterId = row?.parentTheme || id;
   const masterRow = row?.parentTheme ? await prisma.theme.findUnique({ where: { id: masterId }, select: { masterOverrides: true } }) : row;

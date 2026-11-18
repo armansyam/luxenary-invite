@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { HttpError } from "@/lib/routeError";
+import { shareDirectory } from "@/lib/sharedFiles";
 import {
   googleFontFamilyName,
   googleFontIds,
@@ -178,6 +179,7 @@ async function downloadFont(entry: GoogleFontEntry, dir: string, fetchImpl: Fetc
     fs.rmSync(tmp, { recursive: true, force: true });
     throw error;
   }
+  await shareDirectory(finalDir);
 }
 
 /**

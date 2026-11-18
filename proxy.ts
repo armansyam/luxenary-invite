@@ -97,6 +97,12 @@ export const proxy = auth(async (req) => {
     return new NextResponse("Not Found", { status: 404 });
   }
 
+  // Unggahan dan suntingan admin ditulis ke disk server yang melayaninya dan hanya server utama yang menyalinnya ke
+  // replika (lib/sharedFiles.ts); load balancer wajib mengarahkan panel admin ke server utama.
+  if (process.env.LUX_SERVER_ROLE === "replica" && (pathname.startsWith("/admin") || pathname.startsWith("/api/admin"))) {
+    return new NextResponse("Panel admin hanya dilayani server utama.", { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
+
   // ── Guard Brute-Force Login: 5 percobaan GAGAL per IP per 15 menit ──
   // Hitungan ditambah di authorize (auth.ts) hanya saat login gagal; dulu setiap POST dihitung, sehingga login sukses
   // ke-6 dalam 15 menit (beberapa admin di balik satu IP kantor) ditolak. Hitungan di PostgreSQL, berlaku lintas worker.

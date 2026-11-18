@@ -12,6 +12,7 @@ import path from "path";
 import sharp from "sharp";
 import { parseBuilderSpec, type BuilderSpec } from "@/lib/themeBuilder/spec";
 import { BUILDER_CATEGORIES, THEME_ASSET_DIR, THEME_ASSET_URL_PREFIX, type BuilderCategory } from "@/lib/themeBuilder/server";
+import { shareFile } from "@/lib/sharedFiles";
 
 export const BUNDLE_FORMAT = "luxenary-builder-theme";
 export const BUNDLE_VERSION = 1;
@@ -138,6 +139,7 @@ export async function writeBundleAssets(assets: Map<string, Buffer>): Promise<{ 
       continue;
     }
     await fs.promises.writeFile(target, bytes);
+    await shareFile(target);
     written++;
   }
   return { written, existing };
