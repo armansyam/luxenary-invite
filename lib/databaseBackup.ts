@@ -412,6 +412,9 @@ export async function deleteDatabaseSnapshot(filename: string): Promise<{ succes
 }
 
 // Rotasi snapshot lama
+const PRE_DEPLOY_PREFIX = "pre-deploy_";
+const PRE_DEPLOY_KEEP = 5;
+
 export async function pruneOldSnapshots(keepCount: number, backupDir: string, protectFilenames: string[] = []) {
   try {
     await fs.promises.access(backupDir);
@@ -436,8 +439,14 @@ export async function pruneOldSnapshots(keepCount: number, backupDir: string, pr
 
   snapshots.sort((a, b) => b.time - a.time);
 
-  if (snapshots.length > keepCount) {
-    const toDelete = snapshots.slice(keepCount);
+  // Backup pra-deploy (deploy.sh) hanya ada di disk dan dirotasi sendiri. Dulu ikut dihitung dalam batas ini, sehingga
+  // beberapa deploy dalam sehari menggeser snapshot harian lama, yang ikut dihapus dari R2 (19 Nov 2026: tinggal 1).
+  const preDeploy = snapshots.filter((s) => s.name.startsWith(PRE_DEPLOY_PREFIX));
+  for (const item of preDeploy.slice(PRE_DEPLOY_KEEP)) await removeIfExists(item.path);
+  const regular = snapshots.filter((s) => !s.name.startsWith(PRE_DEPLOY_PREFIX));
+
+  if (regular.length > keepCount) {
+    const toDelete = regular.slice(keepCount);
     const offsiteBucket = backupBucketName();
     for (const item of toDelete) {
       await removeIfExists(item.path);

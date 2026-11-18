@@ -71,6 +71,7 @@ describe.skipIf(!IS_TEST_DB)("render master dengan bingkai berslot", () => {
     expect(html).not.toContain("{{firstPhotoUrl}}");
     const photos = [...html.matchAll(/<img class="lux-mo-photo" src="([^"]*)"/g)].map((m) => m[1]);
     expect(photos).toHaveLength(20);
-    expect(new Set(photos)).toEqual(new Set([data.firstPhotoUrl]));
+    // Atribut src menyandikan tanda petik (%27); placeholder SVG yang sama dibandingkan setelah didekode.
+    expect(new Set(photos.map(decodeURIComponent))).toEqual(new Set([decodeURIComponent(data.firstPhotoUrl)]));
   });
 });

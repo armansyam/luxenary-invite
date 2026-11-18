@@ -68,11 +68,12 @@ describe.skipIf(!IS_TEST_DB)("render demo Wajo", () => {
     return renderTemplateFile("wajo", data, { editMode: false, invitationId: "demo-wajo" });
   }
 
-  // Slot demo hanya terbaca bila berkasnya ada di public/ (publicFileExists), jadi uji memakai berkas demo bawaan repo.
+  // Slot demo hanya terbaca bila berkasnya ada di public/ (publicFileExists). public/demo/ tidak ada di git, jadi uji
+  // memakai foto yang dilacak git (public/uploads/dummy) agar CI yang bersih memberi hasil yang sama.
   it("slot terisi: foto di atas tekstur dan rumah adat disembunyikan", async () => {
-    const html = await render({ landingCoverUrl: "/demo/wajo/cover.webp" });
+    const html = await render({ landingCoverUrl: "/uploads/dummy/AMS06328.webp" });
     expect(html).toContain(`<div id="coverScreen" class="cover-screen has-cover-photo">`);
-    expect(html).toMatch(/url\('\/demo\/wajo\/cover\.webp'\), url\('\/assets\/ornaments\/background\/bg-maroon\.webp'\)/);
+    expect(html).toMatch(/url\('\/uploads\/dummy\/AMS06328\.webp'\), url\('\/assets\/ornaments\/background\/bg-maroon\.webp'\)/);
     expect(html).toContain(".cover-screen.has-cover-photo .cover-emblem-wrap { display: none; }");
   });
 
@@ -83,7 +84,7 @@ describe.skipIf(!IS_TEST_DB)("render demo Wajo", () => {
   });
 
   it("kecerahan foto latar dari Studio Demo ikut dirender", async () => {
-    const html = await render({ globalBgUrl: "/demo/wajo/background.webp", featureSettings: { bgPhotoTone: -40 } });
+    const html = await render({ globalBgUrl: "/uploads/dummy/AMS06353.webp", featureSettings: { bgPhotoTone: -40 } });
     expect(html).toContain(`<style id="luxBgPhotoTone">.fixed-bg-layer.has-custom-bg, video.lux-fixed-bg-video { filter: brightness(0.60) !important; }</style>`);
   });
 });
