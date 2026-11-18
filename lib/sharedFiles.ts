@@ -9,8 +9,9 @@ import { masterTemplateCache } from "./cache";
 /**
  * Berkas yang dibuat aplikasi di disk server (master Theme Builder, aset tema, font, aset demo, musik, logo, foto uji,
  * arsip undangan) tidak ada di git, jadi server aplikasi lain tidak memilikinya. Setelah ditulis ke disk, berkas disalin
- * ke bucket privat `shared/<path>` dan dicatat di tabel shared_files. Server replika (`LUX_SERVER_ROLE=replica`)
- * menarik baris yang berubah sebelum merender, saat berkas tidak ditemukan, dan lewat cron.
+ * ke bucket privat `shared/<path>` dan dicatat di tabel shared_files beserta server asalnya. Setiap server menarik baris
+ * yang ditulis server lain sebelum merender dan saat berkas tidak ditemukan; replika juga lewat cron. Sinkron dua arah
+ * karena server mana pun dapat menulis (mis. arsip undangan dibuat saat klien menerbitkan ulang dari replika).
  *
  * Penyimpanan bersama: bucket privat R2 (S3_BACKUP_BUCKET_NAME), atau folder `SHARED_STORE_DIR` (uji lokal tanpa R2).
  * Tanpa keduanya penyalinan dilewati: satu server saja tidak membutuhkannya.
@@ -71,7 +72,8 @@ export function sharedStore(): SharedStore | null {
   };
 }
 
-export const isReplicaServer = () => process.env.LUX_SERVER_ROLE === "replica";
+/** Nama server ini (shared_files.origin, header X-Lux-Server); wajib diisi dan unik di setiap replika (deploy.sh). */
+export const serverName = () => process.env.LUX_SERVER_NAME?.trim() || "utama";
 
 const objectKey = (relPath: string) => `shared/${relPath}`;
 
@@ -108,8 +110,8 @@ export async function shareFile(absPath: string): Promise<void> {
   const body = await fs.promises.readFile(absPath);
   await store.put(objectKey(rel), body);
   await prisma.$executeRaw`
-    INSERT INTO shared_files (path, size, updated_at, deleted_at) VALUES (${rel}, ${body.length}, now(), NULL)
-    ON CONFLICT (path) DO UPDATE SET size = EXCLUDED.size, updated_at = now(), deleted_at = NULL`;
+    INSERT INTO shared_files (path, size, origin, updated_at, deleted_at) VALUES (${rel}, ${body.length}, ${serverName()}, now(), NULL)
+    ON CONFLICT (path) DO UPDATE SET size = EXCLUDED.size, origin = EXCLUDED.origin, updated_at = now(), deleted_at = NULL`;
 }
 
 export async function shareDirectory(absDir: string): Promise<void> {
@@ -131,10 +133,10 @@ export async function unshareFiles(absPath: string): Promise<void> {
   // Waktu ditulis dengan now() di SQL: parameter DateTime lewat adapter pg dikirim tanpa zona dan bergeser sebesar
   // selisih zona waktu sesi (sama seperti rateLimitDb di lib/rateLimit.ts), sehingga replika melewatkan baris ini.
   const paths = rows.map((r) => r.path);
-  if (paths.length) await prisma.$executeRaw`UPDATE shared_files SET updated_at = now(), deleted_at = now() WHERE path = ANY(${paths})`;
+  if (paths.length) await prisma.$executeRaw`UPDATE shared_files SET origin = ${serverName()}, updated_at = now(), deleted_at = now() WHERE path = ANY(${paths})`;
 }
 
-// --- Replika ---
+// --- Sinkron antar server ---
 
 const STATE_FILE = path.join(process.cwd(), "data", "shared-files-state.json");
 // Baris dengan updated_at lebih awal bisa ter-commit setelah sinkron membaca baris yang lebih baru; jendela ini
@@ -196,13 +198,13 @@ async function saveState(s: SyncState): Promise<void> {
 
 async function pullChanges(): Promise<number> {
   const store = sharedStore();
-  if (!store) throw new Error("Server replika butuh penyimpanan bersama (S3_BACKUP_BUCKET_NAME atau SHARED_STORE_DIR).");
+  if (!store) return 0;
   const s = loadState();
   const since = s.watermark ? (BigInt(s.watermark) - OVERLAP_MICROS).toString() : "0";
   const rows = await prisma.$queryRaw<SharedRow[]>`
     SELECT path, (extract(epoch FROM updated_at) * 1000000)::bigint::text AS stamp, deleted_at IS NOT NULL AS deleted
     FROM shared_files
-    WHERE updated_at > to_timestamp(${since}::numeric / 1000000)
+    WHERE updated_at > to_timestamp(${since}::numeric / 1000000) AND origin <> ${serverName()}
     ORDER BY updated_at`;
   let changed = 0;
   let failed = false;
@@ -226,11 +228,11 @@ async function pullChanges(): Promise<number> {
 }
 
 /**
- * Di server replika: menarik berkas bersama yang berubah sejak sinkron terakhir. Panggilan bersamaan berbagi satu proses
- * sinkron, dan panggilan dalam 2 detik setelah sinkron selesai dilewati kecuali `force`. Di server utama tidak berbuat apa-apa.
+ * Menarik berkas bersama yang ditulis server lain sejak sinkron terakhir. Panggilan bersamaan berbagi satu proses sinkron,
+ * dan panggilan dalam 2 detik setelah sinkron selesai dilewati kecuali `force`. Tanpa penyimpanan bersama tidak berbuat apa-apa.
  */
 export async function syncSharedFiles(options: { force?: boolean } = {}): Promise<number> {
-  if (!isReplicaServer()) return 0;
+  if (!sharedStore()) return 0;
   if (inFlight) return inFlight;
   if (!options.force && Date.now() - lastSyncAt < MIN_INTERVAL_MS) return 0;
   inFlight = pullChanges().finally(() => {
@@ -241,11 +243,11 @@ export async function syncSharedFiles(options: { force?: boolean } = {}): Promis
 }
 
 /**
- * Di replika: tarik perubahan terbaru; bila berkas yang diminta tetap tidak ada di disk (mis. terhapus setelah pernah
- * ditarik), berkas itu sendiri diambil dari penyimpanan bila tercatat.
+ * Tarik perubahan terbaru; bila berkas yang diminta tetap tidak ada di disk (mis. terhapus setelah pernah ditarik),
+ * berkas itu sendiri diambil dari penyimpanan bila tercatat.
  */
 export async function ensureSharedFile(absPath: string): Promise<void> {
-  if (!isReplicaServer()) return;
+  if (!sharedStore()) return;
   await syncSharedFiles();
   if (fs.existsSync(absPath)) return;
   const rel = sharedRelativePath(absPath);

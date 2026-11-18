@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
+import fs from "fs";
+import path from "path";
 import { prisma } from "@/lib/prisma";
 import { masterTemplateCache, publishedHtmlCache, invitationLookupCache } from "@/lib/cache";
 import { getActiveRateLimitDriver } from "@/lib/rateLimit";
@@ -26,9 +28,16 @@ function hasDetailAccess(req: Request): boolean {
   return given.length === expected.length && crypto.timingSafeEqual(given, expected);
 }
 
+// deploy.sh membuat penanda ini sesaat sebelum reload PM2: pembagi beban mengeluarkan server ini dari pembagian.
+const DRAIN_FLAG = path.join(process.cwd(), "data", ".lb-drain");
+
 export async function GET(req: Request) {
   const startTime = Date.now();
   const detailed = hasDetailAccess(req);
+
+  if (fs.existsSync(DRAIN_FLAG)) {
+    return NextResponse.json({ status: "draining", timestamp: new Date().toISOString() }, { status: 503, headers: NO_STORE });
+  }
 
   try {
     // 1. Verifikasi konektivitas nyata PostgreSQL via raw ping query

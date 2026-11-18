@@ -1,6 +1,7 @@
 /**
  * Berkas bersama antar server aplikasi (lib/sharedFiles.ts), database luxenary_test. SHARED_STORE_DIR menggantikan
- * bucket R2; replika ditiru dengan LUX_SERVER_ROLE=replica dan menghapus/mengubah berkas lokal seolah server lain.
+ * bucket R2; dua server ditiru dengan LUX_SERVER_NAME ("utama"/"replika") dan menghapus/mengubah berkas lokal seolah
+ * server lain.
  */
 import fs from "fs";
 import os from "os";
@@ -8,7 +9,7 @@ import path from "path";
 import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 import { prisma, pool } from "@/lib/prisma";
-import { ensureSharedFile, shareFile, sharedRelativePath, syncSharedFiles, unshareFiles } from "@/lib/sharedFiles";
+import { ensureSharedFile, shareDirectory, shareFile, sharedRelativePath, syncSharedFiles, unshareFiles } from "@/lib/sharedFiles";
 import { GET as serveUpload } from "@/app/uploads/[...path]/route";
 import { serveStaticDemo } from "@/lib/demoPublisher";
 import { masterTemplateCache } from "@/lib/cache";
@@ -25,16 +26,18 @@ const stateExisted = fs.existsSync(STATE_FILE);
 let store = "";
 
 beforeAll(() => {
+  process.env.LUX_SERVER_NAME = "utama";
   store = fs.mkdtempSync(path.join(os.tmpdir(), "lux-shared-"));
   process.env.SHARED_STORE_DIR = store;
 });
 
 afterEach(() => {
-  delete process.env.LUX_SERVER_ROLE;
+  process.env.LUX_SERVER_NAME = "utama";
 });
 
 afterAll(async () => {
   delete process.env.SHARED_STORE_DIR;
+  delete process.env.LUX_SERVER_NAME;
   fs.rmSync(asset, { force: true });
   fs.rmSync(themeFile, { force: true });
   fs.rmSync(path.join(process.cwd(), "public", "demo", THEME_ID), { recursive: true, force: true });
@@ -67,30 +70,30 @@ describe.skipIf(!IS_TEST_DB)("utama menyalin, replika menarik", () => {
     expect(fs.readFileSync(path.join(store, "shared", assetRel), "utf-8")).toBe("VERSI_1");
     expect(await prisma.sharedFile.findUniqueOrThrow({ where: { path: assetRel } })).toMatchObject({ size: 7, deletedAt: null });
 
-    // Server utama tidak menarik apa pun.
+    // Server penulis tidak menarik berkasnya sendiri.
     expect(await syncSharedFiles({ force: true })).toBe(0);
 
     // Replika belum punya berkasnya.
-    process.env.LUX_SERVER_ROLE = "replica";
+    process.env.LUX_SERVER_NAME = "replika";
     fs.rmSync(asset);
     await syncSharedFiles({ force: true });
     expect(fs.readFileSync(asset, "utf-8")).toBe("VERSI_1");
 
     // Utama menimpa berkas di path yang sama; replika yang masih menyimpan versi lama memperbarui salinannya.
-    delete process.env.LUX_SERVER_ROLE;
+    process.env.LUX_SERVER_NAME = "utama";
     fs.writeFileSync(asset, "VERSI_DUA");
     await shareFile(asset);
-    process.env.LUX_SERVER_ROLE = "replica";
+    process.env.LUX_SERVER_NAME = "replika";
     fs.writeFileSync(asset, "VERSI_1");
     await syncSharedFiles({ force: true });
     expect(fs.readFileSync(asset, "utf-8")).toBe("VERSI_DUA");
 
     // Utama menghapus berkas: salinan di penyimpanan hilang dan replika ikut menghapus.
-    delete process.env.LUX_SERVER_ROLE;
+    process.env.LUX_SERVER_NAME = "utama";
     await unshareFiles(asset);
     expect(fs.existsSync(path.join(store, "shared", assetRel))).toBe(false);
     expect((await prisma.sharedFile.findUniqueOrThrow({ where: { path: assetRel } })).deletedAt).not.toBeNull();
-    process.env.LUX_SERVER_ROLE = "replica";
+    process.env.LUX_SERVER_NAME = "replika";
     await syncSharedFiles({ force: true });
     expect(fs.existsSync(asset)).toBe(false);
   });
@@ -100,7 +103,7 @@ describe.skipIf(!IS_TEST_DB)("utama menyalin, replika menarik", () => {
     await shareFile(asset);
     fs.rmSync(asset);
 
-    process.env.LUX_SERVER_ROLE = "replica";
+    process.env.LUX_SERVER_NAME = "replika";
     const res = await serveUpload(new NextRequest(`http://localhost/uploads/theme-assets/${TAG}.webp`), { params: Promise.resolve({ path: ["theme-assets", `${TAG}.webp`] }) });
     expect(res.status).toBe(200);
     expect(await res.text()).toBe("ISI_ASET_BARU");
@@ -116,7 +119,7 @@ describe.skipIf(!IS_TEST_DB)("utama menyalin, replika menarik", () => {
     await prisma.theme.create({ data: { id: THEME_ID, name: "Uji Berkas Bersama", category: "modern", eventType: "WEDDING", isActive: false } });
     await shareFile(themeFile);
 
-    process.env.LUX_SERVER_ROLE = "replica";
+    process.env.LUX_SERVER_NAME = "replika";
     fs.rmSync(themeFile);
     masterTemplateCache.clear();
     const html = await serveStaticDemo(THEME_ID);
@@ -134,10 +137,24 @@ describe.skipIf(!IS_TEST_DB)("utama menyalin, replika menarik", () => {
     await shareFile(asset);
     fs.rmSync(asset);
 
-    process.env.LUX_SERVER_ROLE = "replica";
+    process.env.LUX_SERVER_NAME = "replika";
     await syncSharedFiles({ force: true });
     expect(fs.readFileSync(asset, "utf-8")).toBe("SETELAH_BERKAS_RUSAK");
     expect(fs.existsSync(broken)).toBe(false);
+  });
+
+  it("arsip yang ditulis replika sampai ke server utama", async () => {
+    const archive = path.join(process.cwd(), "data", "archives", TAG, "index.html");
+    process.env.LUX_SERVER_NAME = "replika";
+    fs.mkdirSync(path.dirname(archive), { recursive: true });
+    fs.writeFileSync(archive, "<html>ARSIP_DARI_REPLIKA</html>");
+    await shareDirectory(path.dirname(archive));
+
+    process.env.LUX_SERVER_NAME = "utama";
+    fs.rmSync(path.dirname(archive), { recursive: true });
+    await ensureSharedFile(archive);
+    expect(fs.readFileSync(archive, "utf-8")).toBe("<html>ARSIP_DARI_REPLIKA</html>");
+    fs.rmSync(path.dirname(archive), { recursive: true, force: true });
   });
 
   it("menyalin berkas di luar folder bersama ditolak", async () => {

@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { prisma, pool } from "@/lib/prisma";
 import { GET } from "@/app/api/health/route";
@@ -39,5 +41,19 @@ describe.skipIf(!IS_TEST_DB)("GET /api/health", () => {
     expect(body.database.status).toBe("connected");
     expect(typeof body.memory.rssMb).toBe("number");
     expect(body.environment).toBeDefined();
+  });
+
+  it("selama penanda drain deploy ada, menjawab 503 agar pembagi beban mengeluarkan server ini", async () => {
+    const flag = path.join(process.cwd(), "data", ".lb-drain");
+    fs.mkdirSync(path.dirname(flag), { recursive: true });
+    fs.writeFileSync(flag, "");
+    try {
+      const res = await call();
+      expect(res.status).toBe(503);
+      expect((await res.json()).status).toBe("draining");
+    } finally {
+      fs.rmSync(flag, { force: true });
+    }
+    expect((await call()).status).toBe(200);
   });
 });

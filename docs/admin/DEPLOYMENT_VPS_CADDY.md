@@ -419,7 +419,7 @@ symlink tidak dipakai.
 | Akun, pesanan, undangan, RSVP | PostgreSQL | Semua server memakai `DATABASE_URL` yang sama. |
 | Piring undangan (salinan master beku) | PostgreSQL `invitation_drafts` | Sebelumnya `data/drafts/` di disk. |
 | Unggahan klien (termasuk undangan DRAFT), foto kenangan | R2 publik | `STORAGE_PROVIDER=r2`. |
-| Master Theme Builder, aset ornamen, font Google, aset demo, musik, logo/favicon, foto uji, arsip | Disk server utama + R2 privat `shared/<path>` + tabel `shared_files` | Replika menarik baris yang berubah (`lib/sharedFiles.ts`). |
+| Master Theme Builder, aset ornamen, font Google, aset demo, musik, logo/favicon, foto uji, arsip undangan | Disk server penulis + R2 privat `shared/<path>` + tabel `shared_files` | Setiap server menarik berkas yang ditulis server lain (`lib/sharedFiles.ts`); arsip dapat ditulis replika. |
 | HTML terbit (`public/published/`) dan HTML demo (`public/demo/<id>/index.html`) | Cache di disk tiap server | Dibangun ulang bila versinya di `render_versions` berbeda. |
 
 ### 10.2 Aturan wajib
@@ -429,13 +429,19 @@ symlink tidak dipakai.
    `prisma migrate status` masih menunjukkan migrasi tertunda.
 3. **Cron pemeliharaan dan backup hanya di server utama.** `deploy.sh` replika hanya memasang pemantau health dan
    `scripts/sync-shared-files.ts` tiap menit.
-4. **Database tidak boleh terbuka ke internet.** Replika di luar jaringan server utama tersambung lewat jaringan privat
+4. **Migrasi hanya boleh menambah** (tabel, kolom nullable, kolom ber-`DEFAULT`). Menghapus, mengganti nama, mengubah tipe,
+   atau menambah nilai enum dipecah menjadi beberapa rilis (expand/contract), karena kode lama tetap berjalan di server lain
+   selama deploy. `scripts/check-migrations.ts` menolak deploy bila aturan ini dilanggar; migrasi tahap penghapusan yang
+   kodenya sudah tidak memakai objek itu sejak rilis sebelumnya ditandai baris `-- lux:contract <alasan>`.
+5. **Database tidak boleh terbuka ke internet.** Replika di luar jaringan server utama tersambung lewat jaringan privat
    terenkripsi (WireGuard/Tailscale), bukan port 5432 publik.
 
 ### 10.3 `.env` replika
 Salin `.env` server utama, lalu ubah:
 ```bash
 LUX_SERVER_ROLE="replica"
+LUX_SERVER_NAME="homelab"          # unik per replika; tampil di header X-Lux-Server
+LB_DRAIN_SECONDS="10"              # >= jeda cek kesehatan Caddy; isi juga di .env server utama
 DATABASE_URL="postgresql://lux_user:...@<alamat privat server utama>:5432/luxenary_db"
 ```
 Nilai berikut **wajib sama** dengan server utama: `AUTH_SECRET`/`NEXTAUTH_SECRET`, `PIN_ENCRYPTION_KEY`, `CRON_SECRET`,

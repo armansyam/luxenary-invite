@@ -620,10 +620,12 @@ model RenderVersion {
 
 /// Berkas yang dibuat aplikasi di disk server (master Theme Builder, aset tema, font, aset demo, musik, logo, arsip)
 /// dan disalin ke bucket privat `shared/<path>` (lib/sharedFiles.ts). Server replika menarik baris yang berubah;
-/// `deletedAt` menandai berkas yang sudah dihapus agar salinan replika ikut dihapus.
+/// `deletedAt` menandai berkas yang sudah dihapus agar salinan di server lain ikut dihapus.
 model SharedFile {
   path      String    @id
   size      Int
+  /// Server yang terakhir menulis atau menghapus berkas (lib/sharedFiles.ts serverName); server itu tidak menariknya.
+  origin    String    @default("")
   updatedAt DateTime  @default(now()) @map("updated_at") @db.Timestamptz
   deletedAt DateTime? @map("deleted_at") @db.Timestamptz
 

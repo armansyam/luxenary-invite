@@ -1,15 +1,15 @@
 /**
- * Server replika (`LUX_SERVER_ROLE=replica`): menarik berkas bersama yang berubah sejak sinkron terakhir
- * (lib/sharedFiles.ts). Dijalankan cron replika tiap menit dan deploy-replica.sh; rute dan render juga menarik sendiri.
+ * Menarik berkas bersama yang ditulis server lain sejak sinkron terakhir (lib/sharedFiles.ts). Dijalankan cron dan
+ * deploy.sh di replika; rute dan render di semua server juga menarik sendiri.
  *
- *   LUX_SERVER_ROLE=replica npx tsx scripts/sync-shared-files.ts
+ *   npx tsx scripts/sync-shared-files.ts
  */
 import "dotenv/config";
 import { prisma, pool } from "../lib/prisma";
-import { isReplicaServer, syncSharedFiles } from "../lib/sharedFiles";
+import { sharedStore, syncSharedFiles } from "../lib/sharedFiles";
 
 async function main() {
-  if (!isReplicaServer()) throw new Error("Hanya untuk server replika (LUX_SERVER_ROLE=replica).");
+  if (!sharedStore()) throw new Error("Penyimpanan bersama tidak dikonfigurasi (S3_BACKUP_BUCKET_NAME atau SHARED_STORE_DIR).");
   const changed = await syncSharedFiles({ force: true });
   console.log(`Berkas bersama diperbarui: ${changed}`);
 }

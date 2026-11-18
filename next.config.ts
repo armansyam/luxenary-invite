@@ -70,6 +70,9 @@ const nextConfig: NextConfig = {
           // microphone & geolocation tidak digunakan — diblokir untuk keamanan.
           { key: "Permissions-Policy", value: "microphone=(), geolocation=(), payment=()" },
           { key: "Content-Security-Policy-Report-Only", value: cspReportOnly },
+          // Server yang melayani permintaan ini (utama atau nama replika), untuk menelusuri keluhan di belakang pembagi beban.
+          // Sama dengan serverName() di lib/sharedFiles.ts; setiap server membangun aplikasinya sendiri dari .env-nya.
+          { key: "X-Lux-Server", value: process.env.LUX_SERVER_NAME?.trim() || "utama" },
           // Paksa HTTPS untuk browser yang sudah pernah mengunjungi (HSTS — aktif hanya jika production)
           ...(process.env.NODE_ENV === "production"
             ? [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" }]

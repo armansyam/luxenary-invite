@@ -34,7 +34,7 @@ fi
 DEPLOY_LOCK="data/.deploy-running"
 mkdir -p data
 echo $$ > "$DEPLOY_LOCK"
-trap 'rm -f "$DEPLOY_LOCK"' EXIT
+trap 'rm -f "$DEPLOY_LOCK" data/.lb-drain' EXIT
 LOW_PRIORITY="nice -n 19"
 command -v ionice > /dev/null && LOW_PRIORITY="ionice -c2 -n7 $LOW_PRIORITY"
 
@@ -138,16 +138,16 @@ if [ -n "$NODE_BIN_DIR" ]; then
 fi
 # 3b. Peran server (LUX_SERVER_ROLE di .env). Server utama (bawaan) menjalankan migrasi, seed, kompilasi demo, cron
 # pemeliharaan, dan backup. Server replika memakai database dan bucket yang sama: tidak menyentuh skema atau data, membangun
-# HTML terbit/demo sendiri saat diminta, dan menarik berkas buatan server utama (lib/sharedFiles.ts). Deploy server utama
+# HTML terbit/demo sendiri saat diminta, dan menarik berkas buatan server lain (lib/sharedFiles.ts). Deploy server utama
 # lebih dulu; replika menolak berjalan bila masih ada migrasi yang belum diterapkan.
 SERVER_ROLE=$(grep -E "^LUX_SERVER_ROLE=" .env | cut -d '=' -f2- | tr -d '"' | tr -d "'")
 IS_REPLICA=false
 if [ "$SERVER_ROLE" = "replica" ]; then
   IS_REPLICA=true
   echo "🛰️ Server replika: migrasi, seed, kompilasi demo, cron pemeliharaan, dan backup dilewati."
-  for KEY in S3_BACKUP_BUCKET_NAME NEXT_SERVER_ACTIONS_ENCRYPTION_KEY; do
+  for KEY in S3_BACKUP_BUCKET_NAME NEXT_SERVER_ACTIONS_ENCRYPTION_KEY LUX_SERVER_NAME; do
     if [ -z "$(grep -E "^$KEY=" .env | cut -d '=' -f2- | tr -d '"' | tr -d "'")" ]; then
-      echo "❌ $KEY wajib diisi di .env replika (harus sama dengan server utama). Deployment dihentikan."
+      echo "❌ $KEY wajib diisi di .env replika (LUX_SERVER_NAME: nama unik replika ini; lainnya sama dengan server utama). Deployment dihentikan."
       exit 1
     fi
   done
@@ -252,6 +252,12 @@ fi
 
 # 7. Migrasi database. Kegagalan menghentikan deploy; tidak ada fallback ke 'prisma db push'
 # karena db push melewati riwayat migrasi dan dapat membuat skema menyimpang.
+# Migrasi harus cocok dengan kode rilis sebelumnya yang masih berjalan sampai reload (dan di server replika).
+if ! npx tsx scripts/check-migrations.ts; then
+  echo "❌ Deployment dihentikan sebelum migrasi; rilis yang berjalan tidak tersentuh."
+  restore_previous_release
+  exit 1
+fi
 echo "🗄️ Menerapkan migrasi database (Prisma)..."
 if ! npx prisma migrate deploy; then
   echo "❌ Migrasi database gagal! PM2 tidak di-restart (rilis lama tetap berjalan)."
@@ -295,6 +301,14 @@ fi
 echo "$NEW_DIST" > data/.dist-dir
 echo "🔄 Merestart aplikasi..."
 if command -v pm2 &> /dev/null; then
+  # Di belakang pembagi beban (Caddy), /api/health menjawab 503 selama penanda ini ada, sehingga server ini dikeluarkan
+  # dari pembagian sebelum PM2 di-reload. LB_DRAIN_SECONDS (.env) = jeda cek kesehatan pembagi beban; kosong = 0 (satu server).
+  LB_DRAIN_SECONDS=$(grep -E "^LB_DRAIN_SECONDS=" .env | cut -d '=' -f2- | tr -d '"' | tr -d "'")
+  touch data/.lb-drain
+  if [ -n "$LB_DRAIN_SECONDS" ] && [ "$LB_DRAIN_SECONDS" -gt 0 ] 2>/dev/null; then
+    echo "⏳ Menunggu ${LB_DRAIN_SECONDS} detik agar pembagi beban berhenti mengirim permintaan ke server ini..."
+    sleep "$LB_DRAIN_SECONDS"
+  fi
   # Daemon PM2 dipakai bersama aplikasi lain dan modul pm2-logrotate mewarisi PATH perintah ini; kembalikan ke Node sistem.
   export PATH="$SYSTEM_PATH"
   echo "🪵 Memastikan rotasi log PM2 (anti-disk leak) aktif..."
@@ -323,7 +337,8 @@ if command -v pm2 &> /dev/null; then
     pm2 reload luxenary-invite --update-env || pm2 restart luxenary-invite || pm2 start ecosystem.config.js
   fi
   pm2 save
-  
+  rm -f data/.lb-drain
+
   # Verifikasi port lokal 3001
   echo "🩺 Melakukan health-check aplikasi lokal (port 3001)..."
   HEALTH_OK=0
