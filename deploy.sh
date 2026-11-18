@@ -28,6 +28,16 @@ if [ -z "$DEPLOY_REEXEC" ] && [ "$(git rev-parse HEAD)" != "$PREVIOUS_COMMIT" ];
   exec bash "$0" "$@"
 fi
 
+# Server 2 inti: npm ci, build, dan kompilasi demo menghabiskan CPU sehingga aplikasi yang sedang melayani tidak menjawab
+# /api/health dalam 10 detik, dan scripts/health-watch.sh me-restart-nya di tengah deploy (18 Nov 2026, 12:42–12:45).
+# Tahap berat dijalankan dengan prioritas rendah, dan berkas kunci memberi tahu health-watch bahwa deploy sedang berjalan.
+DEPLOY_LOCK="data/.deploy-running"
+mkdir -p data
+echo $$ > "$DEPLOY_LOCK"
+trap 'rm -f "$DEPLOY_LOCK"' EXIT
+LOW_PRIORITY="nice -n 19"
+command -v ionice > /dev/null && LOW_PRIORITY="ionice -c2 -n7 $LOW_PRIORITY"
+
 # Setelah git pull, npm ci menghapus lalu memasang ulang node_modules dan prisma generate menimpa klien Prisma, sedangkan
 # PM2 masih menjalankan build lama. Bila tahap itu atau build gagal, kode dan dependensi dikembalikan ke rilis yang
 # berjalan agar restart PM2 berikutnya (mis. setelah crash) tidak memuat dependensi baru dengan build lama.
@@ -142,7 +152,7 @@ fi
 
 # 4. Install Dependencies (persis sesuai package-lock.json)
 echo "📦 Menginstal dependensi (npm ci)..."
-if ! npm ci; then
+if ! $LOW_PRIORITY npm ci; then
   echo "❌ npm ci gagal! Deployment dihentikan sebelum menyentuh database."
   restore_previous_release
   exit 1
@@ -169,7 +179,7 @@ if [ -n "$TOTAL_MB" ] && [ "$TOTAL_MB" -lt 3072 ]; then
   export SKIP_BUILD_TYPECHECK=1
   echo "ℹ️ RAM host ${TOTAL_MB} MB: typecheck dilewati di server (gerbang tsc --noEmit dijalankan CI untuk commit ini)."
 fi
-if ! NODE_OPTIONS="--max-old-space-size=1536" npm run build; then
+if ! NODE_OPTIONS="--max-old-space-size=1536" $LOW_PRIORITY npm run build; then
   echo "❌ Build Next.js gagal! Database tidak disentuh dan PM2 tidak di-restart."
   restore_previous_release
   exit 1
@@ -209,7 +219,7 @@ npm run themes:sync || echo "⚠️ Themes sync gagal — lanjut deployment."
 
 # 7b. Kompilasi Cache Demo Tema Statis
 echo "🎨 Memastikan cache demo tema statis terkompilasi segar..."
-npx -y tsx -r dotenv/config -e "import('./lib/demoPublisher.ts').then(m => (m.compileAllStaticDemos || m.default.compileAllStaticDemos)()).then(n => console.log('✅ ' + n + ' demo tema berhasil dikompilasi.')).catch(e => console.warn('⚠️ Gagal pra-kompilasi demo (akan dikompilasi on-demand saat diakses):', e.message));" || true
+$LOW_PRIORITY npx -y tsx -r dotenv/config -e "import('./lib/demoPublisher.ts').then(m => (m.compileAllStaticDemos || m.default.compileAllStaticDemos)()).then(n => console.log('✅ ' + n + ' demo tema berhasil dikompilasi.')).catch(e => console.warn('⚠️ Gagal pra-kompilasi demo (akan dikompilasi on-demand saat diakses):', e.message));" || true
 
 # 7c. Undangan terbit disajikan dari snapshot public/published/ids/<id>.html, jadi perbaikan mesin tema (lib/themeEngine.ts)
 # tidak sampai ke undangan lama tanpa dibangun ulang. --keep-drafts: piring template klien tetap beku, hanya mesin tema baru.

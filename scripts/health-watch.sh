@@ -23,6 +23,14 @@ if [ "$code" = "200" ]; then
   exit 0
 fi
 
+# deploy.sh menulis PID-nya ke berkas ini; selama proses itu hidup, lambatnya respons berasal dari build dan deploy sendiri
+# yang me-reload aplikasi, jadi restart di sini hanya memutus deploy. Berkas basi (PID mati) tidak menahan pemeriksaan.
+DEPLOY_LOCK="data/.deploy-running"
+if [ -f "$DEPLOY_LOCK" ] && kill -0 "$(cat "$DEPLOY_LOCK" 2>/dev/null)" 2>/dev/null; then
+  echo "$(ts) health HTTP $code saat deploy berjalan (PID $(cat "$DEPLOY_LOCK")): tidak dihitung, restart dilewati" >> "$LOG"
+  exit 0
+fi
+
 fails=$(( $(cat "$FAILS_FILE" 2>/dev/null || echo 0) + 1 ))
 echo "$fails" > "$FAILS_FILE"
 echo "$(ts) health HTTP $code (gagal berturut-turut: $fails)" >> "$LOG"
