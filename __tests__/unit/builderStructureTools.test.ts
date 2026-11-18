@@ -130,6 +130,14 @@ describe("template awal", () => {
     expect(next.defaultMedia).toEqual(current.defaultMedia);
   });
 
+  it("Botani Sage: doa pengantin hanya untuk pernikahan, tidak untuk tema satu nama", () => {
+    const botani = BUILDER_TEMPLATES.find((t) => t.id === "botani-sage")!;
+    expect(botani.build("WEDDING").freeSections?.[0]?.quote?.source).toBe("Doa untuk pengantin");
+    for (const ev of ["BIRTHDAY", "KHITAN", "AQIQAH", "WISUDA", "GATHERING"] as const) {
+      expect(JSON.stringify(botani.build(ev).freeSections ?? []), ev).not.toContain("pengantin");
+    }
+  });
+
   it("snapshot CSS desain template (perubahan tampilan yang tidak disengaja terlihat di sini)", () => {
     const css = Object.fromEntries(BUILDER_TEMPLATES.map((t) => [t.id, designCss(t.build("WEDDING"))]));
     expect(css).toMatchSnapshot();

@@ -36,7 +36,8 @@ describe("pemetaan folder acara", () => {
 
 describe("isi themes/", () => {
   it("hanya berisi folder acara yang dikenal, _blueprints, dan README", () => {
-    const entries = fs.readdirSync(ROOT);
+    // .DS_Store dibuat Finder di Mac dan sudah di .gitignore; bukan isi repo.
+    const entries = fs.readdirSync(ROOT).filter((e) => e !== ".DS_Store");
     const unknown = entries.filter((e) => ![...eventFolders, "_blueprints", "README.md"].includes(e));
     expect(unknown).toEqual([]);
   });

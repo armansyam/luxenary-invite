@@ -99,7 +99,10 @@ export const BUILDER_TEMPLATES: BuilderTemplate[] = [
         radius: "round",
         variants: { ...base.variants, couple: "polaroid", gallery: "polaroid", countdown: "circles", headings: "script", buttons: "glass", cards: "glass" },
         sectionStyles: { events: { bg: "light", gradient: "fade-up", tone: "auto" } },
-        freeSections: [{ id: "free1", after: "couple", eyebrow: "Doa Kami", title: "", body: "", align: "center", quote: { text: "Semoga Allah menghimpun yang terserak dari keduanya, memberkahi mereka berdua, dan kiranya Allah meningkatkan kualitas keturunan mereka.", source: "Doa untuk pengantin" } }],
+        // Doa untuk pengantin hanya untuk keluarga pernikahan; tema satu nama (ulang tahun, khitan, dst.) tidak mendapatkannya.
+        freeSections: builderFamilyOf(eventType) === "wedding"
+          ? [{ id: "free1", after: "couple", eyebrow: "Doa Kami", title: "", body: "", align: "center", quote: { text: "Semoga Allah menghimpun yang terserak dari keduanya, memberkahi mereka berdua, dan kiranya Allah meningkatkan kualitas keturunan mereka.", source: "Doa untuk pengantin" } }]
+          : base.freeSections,
         animation: "grow",
       };
     },
