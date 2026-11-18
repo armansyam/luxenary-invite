@@ -39,6 +39,7 @@ import { recordBuilderAudit, slugifyThemeId, themeIdTaken } from "@/lib/themeBui
 import { applyMasterOverrides, clearVariantCache, masterColorGroups, masterTokens, parseMasterOverrides, storedOverrides, type MasterOverrides } from "@/lib/themeVariants";
 import { masterColorUsage, masterImageRefs, masterSections, overrideCount } from "@/lib/themeVariantCss";
 import { masterAnchors, masterReorderable } from "@/lib/masterLayout";
+import { fitMasterOrnaments } from "@/lib/themeBuilder/frameWindow";
 
 export const dynamic = "force-dynamic";
 
@@ -165,6 +166,7 @@ export async function POST(req: NextRequest) {
     if ("error" in parent) return NextResponse.json({ error: parent.error }, { status: parent.status });
     const parsed = parseMasterOverrides(input.overrides, parent.html);
     if (!parsed.ok) return NextResponse.json({ error: "Override tidak valid.", details: parsed.errors }, { status: 400 });
+    if (parsed.value.ornaments) parsed.value.ornaments = await fitMasterOrnaments(parsed.value.ornaments);
     const masterMode = input.mode === "master";
     const variantError = masterMode ? null : variantOnlyColorsFonts(parsed.value);
     if (variantError) return NextResponse.json({ error: variantError }, { status: 400 });
@@ -223,6 +225,7 @@ export async function PUT(req: NextRequest) {
       if ("error" in master) return NextResponse.json({ error: master.error }, { status: master.status });
       const parsed = parseMasterOverrides(input.overrides, master.html);
       if (!parsed.ok) return NextResponse.json({ error: "Suntingan tidak valid.", details: parsed.errors }, { status: 400 });
+      if (parsed.value.ornaments) parsed.value.ornaments = await fitMasterOrnaments(parsed.value.ornaments);
       try {
         await ensureOverrideFonts(parsed.value);
       } catch (err) {

@@ -2461,7 +2461,9 @@ export async function renderTemplateFile(
   // Conditional Template Blocks: recursively process innermost {{#if ...}} ... {{/if}} first
   const ifRegex = /\{[\s\n]*\{[\s\n]*#if\s+([\w.]+)[\s\n]*\}[\s\n]*\}((?:(?!\{[\s\n]*\{[\s\n]*#if\b)[\s\S])*?)\{[\s\n]*\{[\s\n]*\/if[\s\n]*\}[\s\n]*\}/i;
   let ifMatch;
-  let maxIfDepth = 25;
+  // Setiap putaran membuang satu blok, jadi batas ini hanya pengaman. Batas 25 (sampai 18 Nov 2026) adalah jumlah blok per
+  // halaman, bukan kedalaman: master + suntingan Editor Master yang melewatinya meninggalkan `{{#if ...}}` mentah di halaman.
+  let maxIfDepth = 2000;
   while ((ifMatch = ifRegex.exec(tpl)) !== null && maxIfDepth-- > 0) {
     const key = ifMatch[1];
     const innerContent = ifMatch[2];
@@ -2486,7 +2488,7 @@ export async function renderTemplateFile(
   // Conditional Template Blocks: recursively process innermost {{#unless ...}} ... {{/unless}} first
   const unlessRegex = /\{[\s\n]*\{[\s\n]*#unless\s+([\w.]+)[\s\n]*\}[\s\n]*\}((?:(?!\{[\s\n]*\{[\s\n]*#unless\b)[\s\S])*?)\{[\s\n]*\{[\s\n]*\/unless[\s\n]*\}[\s\n]*\}/i;
   let unlessMatch;
-  let maxUnlessDepth = 25;
+  let maxUnlessDepth = 2000;
   while ((unlessMatch = unlessRegex.exec(tpl)) !== null && maxUnlessDepth-- > 0) {
     const key = unlessMatch[1];
     const innerContent = unlessMatch[2];

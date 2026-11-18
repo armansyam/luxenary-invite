@@ -3,7 +3,7 @@
  * tulisan tangan, disimpan di `masterOverrides` dan diterapkan ke HTML master saat render. Berkas master tidak ditulis.
  * Isi admin masuk ke halaman tamu, jadi setiap nilai divalidasi saat disimpan dan lagi saat diterapkan.
  */
-import { isAllowedBackdropSrc, isAllowedOrnamentSrc } from "@/lib/themeBuilder/spec";
+import { isAllowedBackdropSrc, isAllowedOrnamentSrc, ORNAMENT_MEDIA_SLOTS, type FrameFit, type OrnamentMediaSlot } from "@/lib/themeBuilder/spec";
 
 export interface MasterOrnament {
   id: string;
@@ -22,6 +22,10 @@ export interface MasterOrnament {
   /** "back": di belakang isi seksi (di atas latar seksi); "front": di depan isi. */
   layer: "front" | "back";
   hideOn?: "mobile" | "desktop";
+  /** Bingkai berlubang yang diisi foto slot klien, seperti ornamen berslot Theme Builder. */
+  slot?: OrnamentMediaSlot;
+  /** Jendela transparan bingkai; selalu dihitung server (`fitMasterOrnaments`), tidak diterima dari masukan admin. */
+  fit?: FrameFit | null;
 }
 
 export interface MasterFreeSection {
@@ -140,6 +144,7 @@ export function parseMasterLayout(input: Record<string, unknown>, parentHtml: st
         ...(raw.flipX === true ? { flipX: true } : {}), ...(raw.flipY === true ? { flipY: true } : {}),
         layer: raw.layer === "front" ? "front" : "back",
         ...(raw.hideOn === "mobile" || raw.hideOn === "desktop" ? { hideOn: raw.hideOn } : {}),
+        ...(ORNAMENT_MEDIA_SLOTS.some((s) => s.id === raw.slot) ? { slot: raw.slot as OrnamentMediaSlot } : {}),
       });
     }
     if (list.length > MAX_MASTER_ORNAMENTS) errors.push(`Ornamen paling banyak ${MAX_MASTER_ORNAMENTS}.`);
@@ -206,9 +211,31 @@ export function ornamentStyle(o: MasterOrnament): string {
   return `left:${o.x}%;top:${o.y}%;width:${o.width}%;opacity:${o.opacity};transform:translate(-50%,-50%) rotate(${o.rotate}deg)${flip};z-index:${o.layer === "front" ? 6 : -1};`;
 }
 
+/**
+ * Token engine per slot. Master tidak tahu jenis acaranya, jadi slot profil memuat token pernikahan dan token satu nama
+ * sekaligus; engine hanya mengisi salah satunya, dan `{{#if}}` membuang yang kosong. Token sama dengan ornamen berslot
+ * Theme Builder (`ORNAMENT_SLOT_TOKEN` di compile.ts).
+ */
+const SLOT_PHOTO_TOKENS: Record<OrnamentMediaSlot, Array<{ token: string; cond: string }>> = {
+  HOME_PHOTO: [{ token: "homePhotoUrl", cond: "hasCustomHomePhoto" }],
+  GROOM_PHOTO: [{ token: "firstPhotoUrl", cond: "firstPhotoUrl" }, { token: "mainPhotoUrl", cond: "mainPhotoUrl" }],
+  BRIDE_PHOTO: [{ token: "secondPhotoUrl", cond: "secondPhotoUrl" }, { token: "mainPhotoUrl", cond: "mainPhotoUrl" }],
+  LANDING_COVER: [{ token: "landingCoverUrl", cond: "landingCoverUrl" }],
+  CLOSING_COVER: [{ token: "closingPhotoUrl", cond: "closingPhotoUrl" }],
+};
+
 function ornamentTag(o: MasterOrnament): string {
   const hide = o.hideOn ? ` lux-mo-hide-${o.hideOn}` : "";
-  return `<img class="lux-mo${hide}" data-lux-mo="${o.id}" src="${escapeHtml(o.src)}" alt="" aria-hidden="true" style="${ornamentStyle(o)}">`;
+  if (!o.slot || !SLOT_PHOTO_TOKENS[o.slot]) {
+    return `<img class="lux-mo${hide}" data-lux-mo="${o.id}" src="${escapeHtml(o.src)}" alt="" aria-hidden="true" style="${ornamentStyle(o)}">`;
+  }
+  // Tanpa jendela terukur (gambar tidak berlubang atau belum diukur) foto mengisi tengah bingkai, sama dengan builder.
+  const win: Pick<FrameFit, "l" | "t" | "r" | "b" | "clip"> = o.fit ?? { l: 0.12, t: 0.12, r: 0.88, b: 0.88 };
+  const pct = (v: number) => Math.round(v * 100000) / 1000;
+  const clip = win.clip && /^[\w\s%.,()-]+$/.test(win.clip) ? `clip-path:${win.clip};-webkit-clip-path:${win.clip};` : "";
+  const photoStyle = `left:${pct(win.l)}%;top:${pct(win.t)}%;width:${pct(win.r - win.l)}%;height:${pct(win.b - win.t)}%;${clip}`;
+  const photos = SLOT_PHOTO_TOKENS[o.slot].map(({ token, cond }) => `{{#if ${cond}}}<img class="lux-mo-photo" src="{{${token}}}" alt="" style="${photoStyle}">{{/if}}`).join("");
+  return `<div class="lux-mo lux-mo-slot${hide}" data-lux-mo="${o.id}" aria-hidden="true" style="${ornamentStyle(o)}">${photos}<img class="lux-mo-frame" src="${escapeHtml(o.src)}" alt=""></div>`;
 }
 
 function freeSectionHtml(f: MasterFreeSection): string {
@@ -262,6 +289,10 @@ export function masterLayoutCss(layout: MasterLayout): string {
     // (z-index -1) berada di atas latar seksi tetapi di bawah isinya.
     parts.push(`:where(${anchorsWithOrnaments.map((a) => `#${a}`).join(", ")}) { position: relative; isolation: isolate; }`);
     parts.push(".lux-mo { position: absolute; pointer-events: none; height: auto; max-width: none; }");
+    if ((layout.ornaments ?? []).some((o) => o.slot)) {
+      parts.push(".lux-mo-slot .lux-mo-frame { position: relative; z-index: 1; display: block; width: 100%; height: auto; }");
+      parts.push(".lux-mo-slot .lux-mo-photo { position: absolute; z-index: 0; object-fit: cover; max-width: none; }");
+    }
     parts.push("@media (max-width: 899.98px) { .lux-mo-hide-mobile { display: none !important; } }");
     parts.push("@media (min-width: 900px) { .lux-mo-hide-desktop { display: none !important; } }");
   }

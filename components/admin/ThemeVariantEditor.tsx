@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useFeedback } from "@/components/ui/Feedback";
 import { GoogleFontPicker } from "@/components/admin/themeBuilder/GoogleFontPicker";
-import { FONT_OPTIONS, PALETTE_PRESETS, customCssError, fontLabel, isGoogleFontId } from "@/lib/themeBuilder/spec";
+import { FONT_OPTIONS, PALETTE_PRESETS, customCssError, familyOrnamentMediaSlots, fontLabel, isGoogleFontId, type BuilderEventType, type OrnamentMediaSlot } from "@/lib/themeBuilder/spec";
 import { ELEMENT_LIMITS, isElementSelector, masterExtraCss, overrideCount, overrideCssFromTokens, recolorWithPalette, type ColorUsage, type ColorUsageKind, type ElementEdit, type ElementView, type MasterFontToken, type MasterOverrides } from "@/lib/themeVariantCss";
 import { measureText, newlyUnreadable, type TextSample } from "@/components/admin/variantReadability";
 import { MASTER_BG_TOKENS, ornamentStyle, type MasterFreeSection, type MasterOrnament, type MasterSectionBg } from "@/lib/masterLayout";
@@ -73,7 +73,8 @@ function cloneOverrides(o: Partial<MasterOverrides> | null | undefined): MasterO
 function structuralKey(o: MasterOverrides): string {
   return JSON.stringify({
     images: o.images ?? {},
-    ornaments: (o.ornaments ?? []).map((x) => [x.id, x.anchor, x.src, x.hideOn ?? ""]),
+    // Slot mengubah HTML ornamen (foto di dalam bingkai) dan jendelanya diukur server, jadi ikut memicu render ulang.
+    ornaments: (o.ornaments ?? []).map((x) => [x.id, x.anchor, x.src, x.hideOn ?? "", x.slot ?? ""]),
     freeSections: o.freeSections ?? [],
     sectionOrder: o.sectionOrder ?? [],
     coverDesktop: o.coverDesktop ?? "",
@@ -125,7 +126,7 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
   const router = useRouter();
   const { notify, confirm } = useFeedback();
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [parent, setParent] = useState<{ id: string; name: string } | null>(null);
+  const [parent, setParent] = useState<{ id: string; name: string; eventType?: string } | null>(null);
   const [groups, setGroups] = useState<ColorGroup[]>([]);
   const [fontTokens, setFontTokens] = useState<MasterFontToken[]>([]);
   const [variant, setVariant] = useState<LoadedVariant | null>(null);
@@ -1002,6 +1003,24 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
                           </select>
                         </label>
                       </div>
+                      <label className="block text-[11px] font-semibold text-stone-600">
+                        Isi bingkai dengan slot media
+                        <select
+                          value={orn.slot ?? ""}
+                          onChange={(e) => updateOrnament(orn.id, { slot: (e.target.value || undefined) as OrnamentMediaSlot | undefined })}
+                          className={selectCls}
+                        >
+                          <option value="">Tanpa foto (murni ornamen)</option>
+                          {familyOrnamentMediaSlots((parent?.eventType ?? "WEDDING") as BuilderEventType).map((s) => (
+                            <option key={s.id} value={s.id}>{s.label}</option>
+                          ))}
+                        </select>
+                        <span className="mt-1 block font-normal text-stone-500">
+                          {orn.slot
+                            ? "Foto dari slot ini dipaskan ke lubang transparan bingkai. Slot kosong: bingkai tampil tanpa foto."
+                            : "Untuk bingkai berlubang transparan yang ingin diisi foto klien."}
+                        </span>
+                      </label>
                       <button type="button" onClick={() => { updateOrnament(orn.id, null); setSelectedOrn(null); }} className="rounded-lg border border-red-200 px-2.5 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-50 cursor-pointer">Hapus ornamen</button>
                     </div>
                   )}

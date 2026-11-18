@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import sharp from "sharp";
 import { isAllowedOrnamentSrc, type BuilderSpec, type FrameFit } from "@/lib/themeBuilder/spec";
+import type { MasterOrnament } from "@/lib/masterLayout";
 
 const PUBLIC_DIR = path.join(/*turbopackIgnore: true*/ process.cwd(), "public");
 const SAMPLE = 256;
@@ -206,4 +207,14 @@ export async function fitSpecFrames(spec: BuilderSpec, publicDir = PUBLIC_DIR): 
     }),
   );
   return { ...spec, frames, ornaments };
+}
+
+/** Sama dengan `fitSpecFrames` untuk ornamen Editor Master: hanya ornamen berslot yang membawa jendela terukur. */
+export async function fitMasterOrnaments(ornaments: MasterOrnament[], publicDir = PUBLIC_DIR): Promise<MasterOrnament[]> {
+  return Promise.all(
+    ornaments.map(async (o) => {
+      const { fit: _fit, ...rest } = o;
+      return o.slot ? { ...rest, fit: await measureFrameWindow(o.src, publicDir) } : rest;
+    }),
+  );
 }
