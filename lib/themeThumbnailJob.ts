@@ -31,7 +31,9 @@ export function requestThemeThumbnails(themeId: string): void {
 function startWorker(): void {
   const cwd = /*turbopackIgnore: true*/ process.cwd();
   const log = fs.openSync(path.join(/*turbopackIgnore: true*/ THUMBNAIL_JOB_DIR, "worker.log"), "a");
-  const child = spawn(path.join(cwd, "node_modules", ".bin", "tsx"), [path.join("scripts", "theme-thumbnail-worker.ts")], {
+  // Prioritas terendah: Chrome pemotret (±20 detik per tema) mewarisinya, sehingga tidak merebut CPU server 2 inti dari
+  // admin yang masih menyunting setelah menyimpan.
+  const child = spawn("nice", ["-n", "19", path.join(cwd, "node_modules", ".bin", "tsx"), path.join("scripts", "theme-thumbnail-worker.ts")], {
     cwd,
     detached: true,
     stdio: ["ignore", log, log],

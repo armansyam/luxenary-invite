@@ -34,6 +34,9 @@ export async function POST(
     const formData = await readFormBody(req);
     const slot = formData.get("slot") as string; // cover, hero, background, groom, bride, gallery_01..08, music
     const file = formData.get("file") as File | null;
+    // Studio Demo mengunggah slot satu per satu lalu menyimpan demo-data sekali; demo-data yang mengompilasi demo dan
+    // membersihkan katalog/halaman demo, jadi tiap unggahan cukup menyimpan berkas dan membersihkan URL berkas itu.
+    const deferPublish = formData.get("deferPublish") === "1";
 
     if (!slot || !file) {
       return NextResponse.json({ error: "Slot dan file harus disertakan" }, { status: 400 });
@@ -150,16 +153,19 @@ export async function POST(
         },
       });
 
-      const { compileAndSaveStaticDemo } = await import("@/lib/demoPublisher");
-      await compileAndSaveStaticDemo(themeId, customData);
+      if (!deferPublish) {
+        const { compileAndSaveStaticDemo } = await import("@/lib/demoPublisher");
+        await compileAndSaveStaticDemo(themeId, customData);
+      }
 
       try {
         revalidatePath("/");
         revalidatePath("/demo");
         revalidatePath(`/demo/${themeId}`);
         revalidatePath("/api/public/themes");
-        const { purgeCloudflareCache } = await import("@/lib/cloudflare");
-        await purgeCloudflareCache({ purgeEverything: true });
+        const { purgeThemeEdgeCache } = await import("@/lib/cloudflare");
+        const purge = await purgeThemeEdgeCache(themeId, [rawUrl], { pages: !deferPublish });
+        if (!purge.success && !purge.skipped) logger.warn("DemoAsset", "Purge cache Cloudflare gagal setelah unggah aset", { themeId, error: purge.error ?? purge.errors });
       } catch (err) {
         logger.warn("DemoAsset", "Revalidasi atau purge cache Cloudflare gagal setelah unggah aset", { themeId, error: err instanceof Error ? err.message : String(err) });
       }
@@ -195,6 +201,7 @@ export async function DELETE(
 
     const { searchParams } = new URL(req.url);
     const slot = searchParams.get("slot");
+    const deferPublish = searchParams.get("deferPublish") === "1";
 
     if (!slot) {
       return NextResponse.json({ error: "Slot harus disertakan" }, { status: 400 });
@@ -265,16 +272,21 @@ export async function DELETE(
         },
       });
 
-      const { compileAndSaveStaticDemo } = await import("@/lib/demoPublisher");
-      await compileAndSaveStaticDemo(themeId, customData);
+      if (!deferPublish) {
+        const { compileAndSaveStaticDemo } = await import("@/lib/demoPublisher");
+        await compileAndSaveStaticDemo(themeId, customData);
+      }
 
       try {
         revalidatePath("/");
         revalidatePath("/demo");
         revalidatePath(`/demo/${themeId}`);
         revalidatePath("/api/public/themes");
-        const { purgeCloudflareCache } = await import("@/lib/cloudflare");
-        await purgeCloudflareCache({ purgeEverything: true });
+        if (!deferPublish) {
+          const { purgeThemeEdgeCache } = await import("@/lib/cloudflare");
+          const purge = await purgeThemeEdgeCache(themeId);
+          if (!purge.success && !purge.skipped) logger.warn("DemoAsset", "Purge cache Cloudflare gagal setelah hapus aset", { themeId, error: purge.error ?? purge.errors });
+        }
       } catch (err) {
         logger.warn("DemoAsset", "Revalidasi atau purge cache Cloudflare gagal setelah hapus aset", { themeId, error: err instanceof Error ? err.message : String(err) });
       }

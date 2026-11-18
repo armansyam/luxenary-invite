@@ -9,7 +9,7 @@ import { NextRequest } from "next/server";
 
 const authState: { user: Record<string, unknown> | null } = { user: { id: "vitest-admin", role: "SUPER_ADMIN", isAdmin: true, permissions: [] } };
 vi.mock("@/auth", () => ({ auth: vi.fn(async () => (authState.user ? { user: authState.user } : null)) }));
-vi.mock("@/lib/cloudflare", () => ({ purgeCloudflareCache: vi.fn(async () => ({ success: false, skipped: true })) }));
+vi.mock("@/lib/cloudflare", () => ({ purgeCloudflareCache: vi.fn(async () => ({ success: false, skipped: true })), purgeThemeEdgeCache: vi.fn(async () => ({ success: false, skipped: true })) }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/themeThumbnailJob", () => ({ requestThemeThumbnails: vi.fn() }));
 

@@ -15,7 +15,7 @@ import sharp from "sharp";
 vi.mock("@/auth", () => ({
   auth: vi.fn(async () => ({ user: { id: "vitest-admin", role: "SUPER_ADMIN", isAdmin: true, permissions: [] } })),
 }));
-vi.mock("@/lib/cloudflare", () => ({ purgeCloudflareCache: vi.fn(async () => ({ success: false, skipped: true })), purgeInvitationEdgeCache: vi.fn(async () => null) }));
+vi.mock("@/lib/cloudflare", () => ({ purgeCloudflareCache: vi.fn(async () => ({ success: false, skipped: true })), purgeThemeEdgeCache: vi.fn(async () => ({ success: false, skipped: true })), purgeInvitationEdgeCache: vi.fn(async () => null) }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/videoOptimizer", () => ({ optimizeWebAudio: vi.fn(async (b: Buffer) => b), optimizeWebVideo: vi.fn(async (b: Buffer) => b) }));
 

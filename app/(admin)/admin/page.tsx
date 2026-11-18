@@ -1469,7 +1469,7 @@ export default function AdminPage() {
       if (delSlots.length > 0) {
         for (const slot of delSlots) {
           setUploadingSlot(slot);
-          const delRes = await fetch(`/api/admin/themes/${demoStudioTheme.id}/demo-asset?slot=${slot}`, {
+          const delRes = await fetch(`/api/admin/themes/${demoStudioTheme.id}/demo-asset?slot=${slot}&deferPublish=1`, {
             method: "DELETE",
           });
           const delData = await delRes.json();
@@ -1513,6 +1513,8 @@ export default function AdminPage() {
           const fd = new FormData();
           fd.append("slot", slot);
           fd.append("file", file);
+          // Langkah 3 (demo-data) selalu menyusul dan mengompilasi demo sekali untuk seluruh perubahan.
+          fd.append("deferPublish", "1");
 
           const res = await fetch(`/api/admin/themes/${demoStudioTheme.id}/demo-asset`, {
             method: "POST",

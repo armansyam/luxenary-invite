@@ -14,7 +14,7 @@ import sharp from "sharp";
 vi.mock("@/auth", () => ({
   auth: vi.fn(async () => ({ user: { id: "vitest-admin", role: "SUPER_ADMIN", isAdmin: true, permissions: [] } })),
 }));
-vi.mock("@/lib/cloudflare", () => ({ purgeCloudflareCache: vi.fn(async () => ({ success: false, skipped: true })) }));
+vi.mock("@/lib/cloudflare", () => ({ purgeCloudflareCache: vi.fn(async () => ({ success: false, skipped: true })), purgeThemeEdgeCache: vi.fn(async () => ({ success: false, skipped: true })) }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
 import { prisma, pool } from "@/lib/prisma";

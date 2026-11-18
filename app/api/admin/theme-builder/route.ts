@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import { createHash } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { purgeCloudflareCache } from "@/lib/cloudflare";
+import { purgeThemeEdgeCache } from "@/lib/cloudflare";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdminModule } from "@/lib/adminAuth";
@@ -66,7 +66,7 @@ async function refreshPublicTheme(themeId: string, isActive: boolean) {
   revalidatePath("/demo");
   revalidatePath("/api/public/themes");
   // Katalog publik berumur s-maxage 24 jam di edge; tanpa purge tema yang baru terbit/ditarik baru terlihat keesokan harinya.
-  const purge = await purgeCloudflareCache({ purgeEverything: true });
+  const purge = await purgeThemeEdgeCache(themeId);
   if (!purge.success && !purge.skipped) logger.error("ThemeBuilder", "Purge cache Cloudflare gagal setelah perubahan tema", purge.error ?? purge.errors, { themeId });
 }
 

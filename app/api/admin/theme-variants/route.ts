@@ -27,7 +27,7 @@ import { routeError } from "@/lib/routeError";
 import { readJsonBody } from "@/lib/requestBody";
 import { logger } from "@/lib/logger";
 import { masterTemplateCache } from "@/lib/cache";
-import { purgeCloudflareCache } from "@/lib/cloudflare";
+import { purgeThemeEdgeCache } from "@/lib/cloudflare";
 import { requestThemeThumbnails } from "@/lib/themeThumbnailJob";
 import { resolveThemeEntry, renderTemplateFile } from "@/lib/renderTemplate";
 import { masterFilePath } from "@/lib/themePaths";
@@ -98,7 +98,7 @@ async function refreshPublicTheme(themeId: string, isActive: boolean) {
   revalidatePath("/");
   revalidatePath("/demo");
   revalidatePath("/api/public/themes");
-  const purge = await purgeCloudflareCache({ purgeEverything: true });
+  const purge = await purgeThemeEdgeCache(themeId);
   if (!purge.success && !purge.skipped) logger.error("ThemeVariants", "Purge cache Cloudflare gagal setelah perubahan varian", purge.error ?? purge.errors, { themeId });
 }
 

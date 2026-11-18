@@ -9,6 +9,9 @@ import { HttpError } from "@/lib/routeError";
 import { fileTypeFromBuffer } from "file-type";
 
 const execFileAsync = promisify(execFile);
+// ffmpeg/lame berjalan di dalam permintaan unggah; nice 10 menjaga permintaan lain di server 2 inti tetap terlayani,
+// dan saat server senggang ffmpeg tetap memakai seluruh CPU.
+const niceExec = (file: string, args: string[], opts: { timeout: number }) => execFileAsync("nice", ["-n", "10", file, ...args], opts);
 
 async function fileExists(filePath: string): Promise<boolean> {
   try {
@@ -137,7 +140,7 @@ export async function optimizeWebVideo(inputBuffer: Buffer, baseName: string): P
       ];
     }
 
-    await execFileAsync(ffmpegPath, args, { timeout: 45000 });
+    await niceExec(ffmpegPath, args, { timeout: 45000 });
     return await fs.promises.readFile(outputTempPath);
   } catch (err) {
     // Berkas mentah tidak disimpan: pemanggil menamainya .mp4/video/mp4, jadi MOV/WebM atau video rusak akan tampil
@@ -186,7 +189,7 @@ export async function optimizeWebAudio(inputBuffer: Buffer, baseName: string): P
         "-map_metadata", "-1",
         outputTempPath,
       ];
-      await execFileAsync(ffmpegPath, args, { timeout: 30000 });
+      await niceExec(ffmpegPath, args, { timeout: 30000 });
       if (await fileExists(outputTempPath)) {
         compressionSuccess = true;
       }
@@ -200,7 +203,7 @@ export async function optimizeWebAudio(inputBuffer: Buffer, baseName: string): P
           : (await fileExists("/usr/bin/lame"))
           ? "/usr/bin/lame"
           : "lame";
-        await execFileAsync(lamePath, ["--mp3input", "-b", "96", inputTempPath, outputTempPath], { timeout: 30000 });
+        await niceExec(lamePath, ["--mp3input", "-b", "96", inputTempPath, outputTempPath], { timeout: 30000 });
         if (await fileExists(outputTempPath)) {
           compressionSuccess = true;
         }

@@ -21,6 +21,32 @@ export async function purgeInvitationEdgeCache(inv: {
 }
 
 /**
+ * Yang basi di edge setelah data, aset, atau master demo satu tema berubah: katalog publik, halaman demo tema itu, dan
+ * berkas aset yang ditimpa dengan nama sama. Purge seluruh zona (dipakai sampai 18 Nov 2026) memaksa gambar, CSS, dan
+ * font semua undangan diambil ulang dari server setiap admin menyimpan. Host apex dan www di-cache terpisah; Cloudflare
+ * menerima paling banyak 30 URL per permintaan.
+ */
+export async function purgeThemeEdgeCache(
+  themeId: string,
+  assetPaths: string[] = [],
+  opts: { pages?: boolean } = {},
+): Promise<Awaited<ReturnType<typeof purgeCloudflareCache>>> {
+  const origin = process.env.NEXT_PUBLIC_APP_URL || "";
+  if (!origin.startsWith("https://")) return { success: false, skipped: true, reason: "NEXT_PUBLIC_APP_URL bukan URL https" };
+  const apex = new URL(origin).host.replace(/^www\./, "");
+  const paths = [
+    ...(opts.pages === false ? [] : ["/api/public/themes", `/demo/${themeId}`]),
+    ...assetPaths.map((p) => p.split("?")[0]).filter((p) => p.startsWith("/")),
+  ];
+  const files = [...new Set([`https://${apex}`, `https://www.${apex}`].flatMap((host) => paths.map((p) => host + p)))];
+  if (files.length === 0) return { success: true, skipped: true, reason: "tidak ada URL" };
+  const results = [];
+  for (let i = 0; i < files.length; i += 30) results.push(await purgeCloudflareCache({ files: files.slice(i, i + 30) }));
+  const failed = results.find((r) => !r.success && !r.skipped);
+  return failed ?? results[0];
+}
+
+/**
  * Cloudflare Cache Purge Utility
  * Digunakan untuk membersihkan edge cache Cloudflare secara terprogram.
  */

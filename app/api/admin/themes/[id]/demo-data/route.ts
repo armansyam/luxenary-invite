@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { prisma } from "@/lib/prisma";
 import { DEMO_REGISTRY } from "@/lib/demoRegistry";
-import { purgeCloudflareCache } from "@/lib/cloudflare";
+import { purgeThemeEdgeCache } from "@/lib/cloudflare";
 import { logger } from "@/lib/logger";
 import { isSafePathSegment } from "@/lib/fsSafe";
 import { routeError } from "@/lib/routeError";
@@ -167,7 +167,8 @@ export async function POST(
       revalidatePath("/demo");
       revalidatePath(`/demo/${themeId}`);
       revalidatePath("/api/public/themes");
-      await purgeCloudflareCache({ purgeEverything: true });
+      const purge = await purgeThemeEdgeCache(themeId);
+      if (!purge.success && !purge.skipped) logger.warn("ThemeDemoData", "Purge cache Cloudflare gagal setelah menyimpan data demo", { themeId, error: purge.error ?? purge.errors });
     } catch (err) {
       logger.warn("ThemeDemoData", "Revalidasi atau purge cache Cloudflare gagal setelah menyimpan data demo", { themeId, error: err instanceof Error ? err.message : String(err) });
     }
