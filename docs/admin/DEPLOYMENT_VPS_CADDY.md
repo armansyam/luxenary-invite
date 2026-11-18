@@ -20,7 +20,7 @@ Dokumen ini adalah buku panduan operasional (*runbook*) langkah demi langkah unt
 8. [Tahap 8: Setup Cron Job Pemeliharaan Otomatis](#tahap-8-setup-cron-job-pemeliharaan-otomatis)
 9. [Tahap 9: Checklist Verifikasi Pasca-Deploy](#tahap-9-checklist-verifikasi-pasca-deploy)
 10. [Panduan Pembaruan Kode Selanjutnya (Update/Maintenance)](#panduan-pembaruan-kode-selanjutnya-updatemaintenance)
-11. [Tahap 10: Panduan Skalabilitas Multi-Server (Shared Storage NFS & Symlink Blueprint)](#tahap-10-panduan-skalabilitas-multi-server-shared-storage-nfs--symlink-blueprint)
+11. [Tahap 10: Server Aplikasi Tambahan (Replika)](#tahap-10-server-aplikasi-tambahan-replika)
 
 ---
 
@@ -394,106 +394,66 @@ cd ~/luxenary-invite
 
 ---
 
-## Tahap 10: Panduan Skalabilitas Multi-Server (Shared Storage NFS & Symlink Blueprint)
+## Tahap 10: Server Aplikasi Tambahan (Replika)
 
-Ketika lalu lintas platform melonjak tinggi dan Anda memutuskan menambah node komputasi menjadi **2 Server VPS atau lebih (Multi-Server Cluster)** di belakang Load Balancer (misal Cloudflare Load Balancing, HAProxy, atau Caddy Load Balancer), ada aturan fundamental terkait persistensi berkas (*stateful assets*):
+Sejak 18 Nov 2026 aplikasi dapat dijalankan di lebih dari satu server di belakang satu pembagi beban. Satu server tetap
+**utama**; server lain berperan **replika** (`LUX_SERVER_ROLE=replica`). Rancangan lama dengan folder bersama NFS dan
+symlink tidak dipakai.
 
 ```
-                       [ Pengunjung / Calon Pengantin / Tamu ]
-                                        │
-                                        ▼
-                   [ Cloudflare DNS / Load Balancer (HTTPS) ]
-                                   ┌────┴────┐
-                                   ▼         ▼
-                            [ Node VPS 1 ] [ Node VPS 2 ]
-                                   │         │
-                   ┌───────────────┼─────────┴───────────────┐
-                   ▼               ▼                         ▼
-         [ Central PostgreSQL ]  [ Cloudflare R2 ]   [ Shared Storage (NFS) ]
-         (Tabel, Order, Relasi)  (Foto, Musik, WebP) (Mounted ke /mnt/shared_luxenary)
-                                                             │
-                                         ┌───────────────────┴───────────────────┐
-                                         ▼                                       ▼
-                                [ themes/ & demo/ ]                    [ drafts/ & published/ ]
-                                (Master HTML & Showroom)               (Preview & Undangan Live)
+                [ Pengunjung ]
+                      │
+       [ Pembagi beban (Cloudflare LB / Caddy) ]
+          │ /admin, /api/admin           │ sisanya
+          ▼                              ▼
+   [ Server utama ] ◄──── sama ────► [ Replika ]
+          │                              │
+          ├──── PostgreSQL (satu, di server utama atau terkelola) ────┤
+          ├──── R2 publik: unggahan klien, foto kenangan, portofolio ─┤
+          └──── R2 privat shared/: berkas buatan aplikasi ───────────┘
 ```
 
-### 10.1 Prinsip Desain: Portabilitas Kode vs Abstraksi OS
-> [!IMPORTANT]
-> **DILARANG MENGUBAH KODE APLIKASI NEXT.JS MENJADI PATH `/mnt/...`!**  
-> Di dalam kode TypeScript/Node.js, semua pembacaan file tetap wajib menggunakan standar portabel:
-> `path.join(process.cwd(), "themes")`, `path.join(process.cwd(), "public/demo")`, `path.join(process.cwd(), "data/drafts")`, dan `path.join(process.cwd(), "public/published")`.  
-> Tujuannya: Kode tetap 100% konsisten dan dapat dijalankan di laptop developer (macOS/Windows) tanpa butuh konfigurasi path aneh, sedangkan di server produksi Linux kita menggunakan abstraksi filesystem kernel via **Symbolic Links (`ln -s`)**.
+### 10.1 Apa yang dibagi dan bagaimana
+| Data | Tempat | Keterangan |
+|---|---|---|
+| Akun, pesanan, undangan, RSVP | PostgreSQL | Semua server memakai `DATABASE_URL` yang sama. |
+| Piring undangan (salinan master beku) | PostgreSQL `invitation_drafts` | Sebelumnya `data/drafts/` di disk. |
+| Unggahan klien (termasuk undangan DRAFT), foto kenangan | R2 publik | `STORAGE_PROVIDER=r2`. |
+| Master Theme Builder, aset ornamen, font Google, aset demo, musik, logo/favicon, foto uji, arsip | Disk server utama + R2 privat `shared/<path>` + tabel `shared_files` | Replika menarik baris yang berubah (`lib/sharedFiles.ts`). |
+| HTML terbit (`public/published/`) dan HTML demo (`public/demo/<id>/index.html`) | Cache di disk tiap server | Dibangun ulang bila versinya di `render_versions` berbeda. |
 
-### 10.2 Identifikasi Folder Stateful yang Wajib Disinkronkan
-Di arsitektur Luxenary Invite, aset terbagi 3 jenis:
-1. **Stateless / Build-time:** Kode Next.js (`app/`, `lib/`, `components/`, `.next/`). Cukup disinkronkan via `git pull` & `npm run build` di tiap server.
-2. **Centralized Object Storage:** Foto mempelai, cover, galeri kenangan, audio musik latar (`public/uploads/` saat di cloud dialihkan ke Cloudflare R2 via `STORAGE_PROVIDER=r2`). Ini otomatis tersimpan di cloud R2, jadi tidak membutuhkan harddisk lokal bersama.
-3. **Stateful Filesystem yang Wajib Disinkronkan (Shared Directory):**
-   - `themes/`: Tempat Admin mengunggah template master `.html` baru via UI (`themes/{eventType}/{style}/`, contoh: `themes/wedding/`, `themes/birthday/`, dll.).
-   - `public/demo/`: Berkas demo statis hasil kompilasi master tema.
-   - `data/drafts/`: Piring draft mandiri HTML klien yang sedang diedit di Studio Editor.
-   - `public/published/`: Berkas HTML undangan final yang telah diterbitkan (*baked standalone HTML*).
+### 10.2 Aturan wajib
+1. **Panel admin hanya di server utama.** Unggahan admin ditulis ke disk server yang melayaninya; hanya server utama yang
+   menyalinnya ke replika. Replika menjawab `/admin` dan `/api/admin` dengan 503 agar salah arah ketahuan.
+2. **Deploy server utama lebih dulu.** Migrasi dijalankan server utama; `deploy.sh` di replika berhenti bila
+   `prisma migrate status` masih menunjukkan migrasi tertunda.
+3. **Cron pemeliharaan dan backup hanya di server utama.** `deploy.sh` replika hanya memasang pemantau health dan
+   `scripts/sync-shared-files.ts` tiap menit.
+4. **Database tidak boleh terbuka ke internet.** Replika di luar jaringan server utama tersambung lewat jaringan privat
+   terenkripsi (WireGuard/Tailscale), bukan port 5432 publik.
 
-### 10.3 Langkah Pemasangan Shared Storage (NFS) & Symlink di Server
+### 10.3 `.env` replika
+Salin `.env` server utama, lalu ubah:
+```bash
+LUX_SERVER_ROLE="replica"
+DATABASE_URL="postgresql://lux_user:...@<alamat privat server utama>:5432/luxenary_db"
+```
+Nilai berikut **wajib sama** dengan server utama: `AUTH_SECRET`/`NEXTAUTH_SECRET`, `PIN_ENCRYPTION_KEY`, `CRON_SECRET`,
+`NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` (dibuat otomatis oleh `deploy.sh` server utama), seluruh `S3_*` termasuk
+`S3_BACKUP_BUCKET_NAME`, dan `NEXT_PUBLIC_*`.
 
-Misalkan Anda menyiapkan 1 dedicated Shared Volume / NFS Server dengan alamat IP internal: `10.0.0.100` (atau private IP antar-VPS Anda).
+### 10.4 Langkah pemasangan replika
+1. Tahap 1–2 (Node 22, PM2, ffmpeg, Chrome). PostgreSQL dan Caddy publik tidak diperlukan bila pembagi beban berada di depan.
+2. Clone repo ke `~/luxenary-invite`, isi `.env` seperti 10.3.
+3. Jalankan `./deploy.sh`. Di replika skrip ini: build, menolak jalan bila ada migrasi tertunda, mengosongkan cache HTML
+   terbit/demo, menarik berkas bersama, reload PM2, smoke test, lalu memasang cron replika.
+4. Arahkan pembagi beban: `/admin*` dan `/api/admin*` ke server utama, sisanya ke kedua server.
+5. Uji: buka `/demo/<tema builder>` dan satu undangan terbit lewat replika; ubah demo di admin (server utama), lalu muat
+   ulang lewat replika dan pastikan perubahannya tampil.
 
-#### A. Di Server Penyimpan Data (NFS Host / Storage Server):
-1. Install NFS Server:
-   ```bash
-   sudo apt install -y nfs-kernel-server
-   sudo mkdir -p /mnt/shared_luxenary/{themes,demo,drafts,published}
-   sudo chown -R www-data:www-data /mnt/shared_luxenary
-   sudo chmod -R 775 /mnt/shared_luxenary
-   ```
-2. Ekspor direktori ke subnet private VPS Anda di `/etc/exports`:
-   ```bash
-   echo '/mnt/shared_luxenary 10.0.0.0/24(rw,sync,no_subtree_check,no_root_squash)' | sudo tee -a /etc/exports
-   sudo exportfs -a
-   sudo systemctl restart nfs-kernel-server
-   ```
-
-#### B. Di Setiap Node Aplikasi (VPS 1, VPS 2, dst):
-1. Install NFS Client:
-   ```bash
-   sudo apt install -y nfs-common
-   sudo mkdir -p /mnt/shared_luxenary
-   ```
-2. Pasang mounting otomatis di `/etc/fstab`:
-   ```bash
-   echo '10.0.0.100:/mnt/shared_luxenary /mnt/shared_luxenary nfs auto,nofail,noatime,nolock,intr,tcp,actimeo=1800 0 0' | sudo tee -a /etc/fstab
-   sudo mount -a
-   ```
-3. Hubungkan ke folder project menggunakan **Symlink Linux**:
-   ```bash
-   cd ~/luxenary-invite
-
-   # 1. Pastikan folder data dan public sudah ada
-   mkdir -p data public
-
-   # 2. Pindahkan aset awal (jika belum ada di storage bersama)
-   cp -rn themes/* /mnt/shared_luxenary/themes/ 2>/dev/null || true
-   cp -rn public/demo/* /mnt/shared_luxenary/demo/ 2>/dev/null || true
-
-   # 3. Hapus folder lokal lama dan gantikan dengan Symlink transparan
-   rm -rf themes public/demo data/drafts public/published
-   ln -s /mnt/shared_luxenary/themes ~/luxenary-invite/themes
-   ln -s /mnt/shared_luxenary/demo ~/luxenary-invite/public/demo
-   ln -s /mnt/shared_luxenary/drafts ~/luxenary-invite/data/drafts
-   ln -s /mnt/shared_luxenary/published ~/luxenary-invite/public/published
-   ```
-4. Verifikasi symlink:
-   ```bash
-   ls -la ~/luxenary-invite/themes
-   ls -la ~/luxenary-invite/public/demo
-   # Hasilnya harus menampilkan pointer panah: themes -> /mnt/shared_luxenary/themes
-   ```
-
-### 10.4 Mengapa Pola Symlink Ini Jauh Lebih Aman?
-1. **Zero Code Changes:** Anda tidak perlu menambahkan variabel lingkungan `THEMES_DIR=/mnt/...` atau mengubah puluhan file TypeScript.
-2. **Kinerja Maksimal:** Node.js dan kernel Linux membaca symlink secara native di level filesystem tanpa latensi overhead library pihak ketiga.
-3. **Konsistensi Dua Arah:** Saat Admin mengunggah tema baru di VPS 1, file langsung tersimpan di `/mnt/shared_luxenary/themes/`. Detik itu juga, VPS 2 langsung dapat membaca dan menyajikan tema tersebut ke pengunjung tanpa proses replikasi manual!
-4. **Sentralisasi Database & R2:** Seluruh order, user, dan token login tersimpan di database PostgreSQL terpusat, dan semua gambar tersimpan di Cloudflare R2. Sistem menjadi murni *stateless compute with shared asset volume*.
-
-
+### 10.5 Batas yang diketahui
+- Replika bergantung pada server utama untuk database: bila server utama mati, replika ikut tidak dapat melayani.
+- Setiap query dari replika ke database menempuh jaringan antar server; ukur jedanya sebelum memakai server di lokasi jauh.
+- Cache memori per proses (pengaturan 30–60 detik, resolusi slug/subdomain 60 detik) dapat basi sebentar di server lain.
+- Berkas yang diletakkan manual di disk server utama (mis. scp foto demo) baru sampai ke replika setelah
+  `npx tsx scripts/share-existing-files.ts --apply` (dijalankan otomatis setiap deploy server utama).

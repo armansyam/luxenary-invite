@@ -376,7 +376,7 @@ Saat client menekan tombol "Publish", sistem memanggil `buildAndSavePublishedHtm
 7. Return HTML string
 ```
 
-**Saat Unpublish/Hapus**, `deletePublishedHtml(invitationId)` menghapus file HTML publikasi canonical (`public/published/ids/{invitationId}.html`) sekaligus menginvaliasi L1 memory cache. Saat penghapusan akun/undangan permanen (misal via `DELETE /api/admin/users`), sistem juga secara otomatis menghapus file draft lokal (`data/drafts/{invitationId}.html`) serta membersihkan direktori media fisik (`public/uploads/invitations/{invitationId}/`) secara rekursif tanpa mengganggu klon portofolio statis yang tersimpan mandiri.
+**Saat Unpublish/Hapus**, `deletePublishedHtml(invitationId)` menghapus file HTML publikasi canonical (`public/published/ids/{invitationId}.html`) sekaligus menginvaliasi L1 memory cache. Saat penghapusan akun/undangan permanen (misal via `DELETE /api/admin/users`), piring undangan (tabel `invitation_drafts`) ikut terhapus lewat FK cascade, dan sistem membersihkan direktori media fisik (`public/uploads/invitations/{invitationId}/`) secara rekursif tanpa mengganggu klon portofolio statis yang tersimpan mandiri.
 
 **KRITIS:** File HTML ini adalah satu-satunya yang disajikan ke tamu. Tidak ada SSR/API aktif untuk tamu saat undangan sudah published.
 
@@ -409,7 +409,7 @@ Storage provider ditentukan oleh environment variable:
   (Mendukung juga STORAGE_PROVIDER=s3 untuk AWS S3 standar)
 
 Fungsi utama di lib/storage.ts:
-  uploadFile(buffer, relativePath, mimeType, forceLocal?) → URL publik (R2 URL atau /uploads/...)
+  uploadFile(buffer, relativePath, mimeType) → URL publik (R2 URL atau /uploads/...); undangan DRAFT juga langsung ke R2 sejak 18 Nov 2026
   deleteFile(publicUrl)                                   → Hapus file: R2 hanya di bawah base URL publik tanpa segmen `..`; lokal hanya di dalam public/uploads (resolveLocalUploadPath)
   isInvitationOwnedUpload(url, invitationId)              → true hanya untuk berkas di folder undangan itu; syarat sebelum media slot dihapus
   streamMemoriesToZip(archive, invitationId)              → Stream ZIP foto tamu langsung dari R2 (zero disk RAM)
@@ -750,7 +750,7 @@ Backward Compatibility Alias Mapping (di lib/renderTemplate.ts):
 ```
 themes/{eventType}/{category}/{themeId}.html   ← File template mentah
         ↓
-renderTemplateFile(themeId, data, options)     ← Prioritas: options.templateSource (pratinjau builder) > data/drafts/{id}.html > master theme file
+renderTemplateFile(themeId, data, options)     ← Prioritas: options.templateSource (pratinjau builder) > piring invitation_drafts > master theme file
         ↓
 themeEngine.composeTemplateData(invitationId)   ← Router per eventType:
         ├── WEDDING   → composeWeddingData() (Data pengantin, akad, resepsi, love story)
@@ -851,7 +851,7 @@ Admin membuat master tema pernikahan dan multi-event tanpa menulis kode. Builder
     - **`lib/themeTokenize.ts` (`tokenizeMaster`, `masterTokenNames`)** mengganti warna berwarna di konteks CSS (isi `<style>` dan atribut `style=""`, hanya badan deklarasi, bukan selektor) dengan variabel baru `--lux-c-<hex>` (alfa menjadi `color-mix(in srgb, var(--lux-c-…) N%, transparent)`) dan setiap tumpukan `font-family` dengan `--lux-font-<keluarga>[-n]`, lalu menambahkannya ke blok `:root`. Warna selalu dijadikan variabel baru per nilai, bukan dipetakan ke variabel lama bernilai sama: variabel lama bisa didefinisikan ulang di cakupan lain atau ditimpa saat render (percobaan pertama memetakan ke variabel lama mengubah warna di 8 master dan ditolak harness). Tidak disentuh: hitam/putih netral, isi `url(...)`, token engine `{{...}}`, nilai di dalam `:root`, `font-family` yang sudah `var()`/`inherit`/`initial`/`monospace`, warna di `<script>` (102 kemunculan berwarna di skrip dan atribut SVG `fill`/`stroke`, yang tidak mendukung `var()`).
     - **Hasil (`scripts/tokenize-masters.ts --write`):** 54 master, 1.071 warna dan 860 deklarasi huruf menjadi variabel; jalankan ulang menghasilkan 0 perubahan (idempoten, dijaga `__tests__/unit/themeTokenize.test.ts`).
     - **Bukti tampilan tidak berubah:** setiap master dirender dengan data demo sebelum dan sesudah tokenisasi, lalu `getComputedStyle` seluruh elemen beserta `::before`/`::after` dibandingkan di peramban pada lebar 375 dan 1440 px (16 properti warna dan huruf, toleransi pembulatan warna ±1,5 kanal / ±0,011 alfa): 108 run, 41.560 elemen, 0 selisih. Kontrol negatif (mengubah satu variabel warna atau huruf) terdeteksi.
-    - **Piring undangan klien (`data/drafts`) tidak disentuh**; undangan yang sudah ada tetap memakai salinan bekunya. Demo dan undangan baru memakai master yang sudah ditokenisasi.
+    - **Piring undangan klien (tabel `invitation_drafts`, sebelum 18 Nov 2026 `data/drafts`) tidak disentuh**; undangan yang sudah ada tetap memakai salinan bekunya. Demo dan undangan baru memakai master yang sudah ditokenisasi.
     - **`legacyFonts`** (Clone to Builder) membaca `var(--lux-font-*)` dari `:root`, sehingga hasil clone ke-54 master identik dengan sebelum tokenisasi.
 18. **Varian Tema — Fase 1–3: Model Data, Render, Editor Admin (10 Nov 2026):**
     - **Data:** kolom `Theme.masterOverrides` (JSONB `master_overrides`, migrasi `20261110100000_theme_master_overrides`) bersama `Theme.parentTheme` yang sudah ada. Varian adalah baris `Theme` biasa (katalog, aktif/nonaktif, demo, thumbnail) tanpa berkas master sendiri.
@@ -984,11 +984,11 @@ PATCH → terbit hanya bila audit lolos → compileAndSaveStaticDemo
 
 **Arsitektur Piring Mandiri & Mekanisme Penghapusan Tema:**
 * **Batas pembekuan:** piring hanya membekukan HTML master (struktur, CSS, ornamen, label). Data dihitung langsung setiap render dari DB (mis. `Theme.defaultMusicUrl`, setelan `theme_demo_<id>`), sedangkan HTML terbit di `public/published` adalah snapshot statis sampai diterbitkan ulang. Draf yang hilang atau korup disalin ulang dari master saat ini.
-* **Forking ke Piring Mandiri:** Saat klien membuka studio undangan, sistem menyalin template master ke piring draft lokal di `data/drafts/{invitationId}.html`.
+* **Forking ke Piring Mandiri:** Saat klien membuka studio undangan, sistem menyalin template master ke piring undangan di tabel `invitation_drafts` (sebelum 18 Nov 2026: `data/drafts/{invitationId}.html`).
 * **Prioritas Piring:** `renderTemplateFile` selalu memprioritaskan piring draft fisik klien sebelum mencari file master.
 * **Resiliensi Penghapusan Tema oleh Admin:**
   1. Penghapusan tema di Admin menghapus row database, master `themes/`, dan folder `public/demo/` (*Hard Delete Steril*).
-  2. Undangan klien yang sudah memiliki piring draft (`data/drafts/`) tetap **100% aman dan utuh** tanpa terpengaruh penghapusan master.
+  2. Undangan klien yang sudah memiliki piring (`invitation_drafts`) tetap **100% aman dan utuh** tanpa terpengaruh penghapusan master.
   3. Klien yang belum memiliki piring draft akan melihat layar panduan transparan *"Tema Tidak Tersedia"* (bebas dari fallback siluman/hardcode) untuk memilih tema aktif lain.
   4. Penggantian tema oleh klien di Dashboard otomatis me-unlink piring draft lama dan menyalin template master baru.
 * **Standar Kontrak Placeholder Nama Mempelai (Cover vs Profil):**
@@ -1321,7 +1321,7 @@ PATCH → terbit hanya bila audit lolos → compileAndSaveStaticDemo
   - `LUX_SCROLL_TO_SECTION`: Menghubungkan selektor seksi di panel kontrol dengan iframe pratinjau, menggulir layar secara otomatis dan halus (*smooth scroll*) ke seksi yang sedang diedit (Cover, Pasangan, Acara, Galeri, Hadiah, Penutup).
 
 #### 4. Single Draft & Single Output Invariant
-- Seluruh perubahan data formulir mengalir ke satu file draft (`data/drafts/<id>.html`) dan saat diterbitkan menghasilkan satu file HTML statis publik (`public/published/ids/<id>.html`) yang 100% identik dengan hasil pratinjau.
+- Seluruh perubahan data formulir dirender dari satu piring undangan (`invitation_drafts`) dan saat diterbitkan menghasilkan satu file HTML statis publik (`public/published/ids/<id>.html`) yang 100% identik dengan hasil pratinjau.
 
 #### 5. Two-Way Dual-View Synchronization (Real-time Cross-Iframe Relay)
 - Dalam mode Dual-View (`previewDevice === "dual"`), Tampilan Ponsel (`liveMobileIframeRef`) dan Tampilan Komputer (`liveDesktopIframeRef`) tersinkronisasi dua arah secara instan melalui Parent Window Dispatcher:
@@ -2535,24 +2535,33 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
    - Notifikasi / kartu check-in tamu otomatis ditutup kembali ke status *"Siaga Menerima Tamu"* setelah 15 detik jika tidak ada aktivitas baru.
    - Selama kartu notifikasi sedang aktif di sisi kiri, decoding kamera di sisi kanan dijeda (*paused*) dan animasi visual laser beam dimatikan sementara. Ini secara efektif mencegah pemindaian berulang (*re-scan looping*) pada barcode yang masih berada di depan lensa kamera.
 
-### 17.13 — Arsitektur Skalabilitas Multi-Server: Shared Storage & Symlink Mounting Pattern
-1. **Model Horisontal Multi-Node Stateless Compute:**
-   - Platform mendukung deployment kluster horizontal di mana 2 atau lebih server VPS Next.js berada di belakang satu Layer-7 Load Balancer (Cloudflare Load Balancing atau Reverse Proxy Caddy).
-   - Seluruh state data relasional terpusat pada PostgreSQL (RDS atau Dedicated Managed Database), dan seluruh aset gambar, avatar, serta audio tersimpan pada Object Storage Cloudflare R2 (`STORAGE_PROVIDER=r2`).
-2. **Penanganan Berkas Stateful Filesystem (Master Tema & Piring Draft):**
-   - Berkas dinamis lokal terbagi ke dalam 4 direktori kritis:
-     - `themes/`: Master template fisik `.html` yang dapat diunggah/diperbarui Admin via UI.
-     - `public/demo/`: HTML demo statis katalog yang di-compile otomatis dari master tema.
-     - `data/drafts/`: Piring draft mandiri HTML klien yang sedang diedit di Studio Editor.
-     - `public/published/`: Berkas HTML final undangan pernikahan hasil kompilasi publikasi.
-3. **Prinsip Portabilitas Kode vs Abstraksi OS Linux (Zero Hardcode `/mnt/...`):**
-   - **Kode Next.js Tetap Portabel:** Di dalam kode aplikasi, semua modul pemanggil filesystem tetap menggunakan `path.join(process.cwd(), "...")`. Dilarang keras menanam path absolut Linux seperti `/mnt/...` ke dalam kode TypeScript agar proyek tetap dapat berjalan di lingkungan lokal developer (macOS/Windows).
-   - **Abstraksi OS via Symlink Kernel:** Di lingkungan produksi VPS Linux, direktori bersama (NFS / Shared Block Storage) di-mount ke `/mnt/shared_luxenary/`, lalu dihubungkan ke dalam root project menggunakan Symbolic Link (`ln -s`):
-     - `luxenary-invite/themes` $\rightarrow$ `/mnt/shared_luxenary/themes`
-     - `luxenary-invite/public/demo` $\rightarrow$ `/mnt/shared_luxenary/demo`
-     - `luxenary-invite/data/drafts` $\rightarrow$ `/mnt/shared_luxenary/drafts`
-     - `luxenary-invite/public/published` $\rightarrow$ `/mnt/shared_luxenary/published`
-   - Pola ini menjamin konsistensi instan antar-node: unggahan tema atau kompilasi undangan di Node 1 seketika terbaca oleh Node 2 tanpa perlu proses rsync berkala atau webhook replikasi yang rawan *race condition*.
+### 17.13 — Arsitektur Multi-Server: Server Utama dan Replika
+Diterapkan 18 Nov 2026, menggantikan rancangan folder bersama NFS/symlink yang tidak pernah dipasang.
+1. **Peran:** `LUX_SERVER_ROLE=replica` di `.env` menandai replika; tanpa itu server adalah server utama. Server utama
+   menjalankan migrasi, seed, kompilasi demo saat deploy, cron cleanup/backup, dan panel admin (`proxy.ts` menjawab 503
+   untuk `/admin` dan `/api/admin` di replika). Semua server memakai `DATABASE_URL`, bucket R2, dan rahasia yang sama;
+   `next.config.ts` memakai `deploymentId` = commit git dan `deploy.sh` menjaga satu `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`.
+2. **Piring undangan di DB** (`invitation_drafts`, `lib/invitationDraft.ts`): dibekukan saat render pertama dengan
+   `createMany skipDuplicates` lalu dibaca ulang, sehingga dua server yang merender bersamaan memakai piring yang sama;
+   piring tema/jenis acara lama dihapus bersyarat (`deleteStaleInvitationDraft`). FK cascade ke `invitations`.
+   `scripts/migrate-drafts-to-db.ts` mengimpor berkas `data/drafts/` lama (dijalankan `deploy.sh`).
+3. **Cache HTML berversi** (`render_versions`, `lib/renderVersion.ts`): kunci `published:<id>` dan `demo:<tema>`.
+   Perubahan data memanggil `buildAndSavePublishedHtml` / `compileAndSaveStaticDemo` yang menaikkan versi; berkas di disk
+   diakhiri `<!-- lux-build:N -->`. Rute publik memanggil `servePublishedHtml` / `serveStaticDemo`, yang membangun ulang
+   tanpa menaikkan versi bila versi berkas berbeda. Penanda tidak dikirim ke pengunjung.
+4. **Berkas bersama** (`shared_files`, `lib/sharedFiles.ts`): berkas di `themes/`, `public/demo/` (kecuali
+   `index.html`), `public/uploads/{theme-assets,fonts,demo,music,brand,builder-sim}`, dan `data/archives` disalin ke
+   bucket privat `shared/<path>` oleh `shareFile`/`shareDirectory` setelah ditulis, dan ditandai `deleted_at` oleh
+   `unshareFiles`. Replika menarik baris yang berubah (`syncSharedFiles`) sebelum render (`renderTemplateFile`,
+   `buildStaticDemo` dan `savePublishedHtml` dengan `force`), saat rute `/uploads`, `/brand`, `/demo/<tema>/<berkas>`,
+   `/archives` tidak menemukan berkas (`ensureSharedFile`), dan lewat cron tiap menit. Penanda waktu dibandingkan sebagai
+   epoch mikrodetik di SQL karena adapter pg menggeser `timestamptz` sebesar selisih zona waktu. Satu berkas yang gagal
+   dicatat dan dicoba lagi tanpa menahan berkas lain. `scripts/share-existing-files.ts --apply` menyalin berkas lama atau
+   yang diletakkan manual (dijalankan deploy server utama). Uji lokal tanpa R2: `SHARED_STORE_DIR=<folder>`.
+5. **Unggahan klien DRAFT langsung ke R2** (`app/api/client/upload/route.ts`): `forceLocal` dihapus.
+6. **Batas:** replika bergantung pada database server utama; cache memori per proses (pengaturan, varian, resolusi
+   slug/subdomain) dapat basi hingga 60 detik di server lain; berkas yang dihapus dari disk replika di luar sinkron
+   ditarik ulang saat diminta. Rincian pemasangan: `docs/admin/DEPLOYMENT_VPS_CADDY.md` Tahap 10.
 
 ---
 
@@ -2604,7 +2613,7 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
 │       - Sistem peringatan ambang batas beban memori (>70% amber, >85% rose)      │
 │    b. Disk Penyimpanan VPS Server (Partisi /):                                   │
 │       - Pengukuran kapasitas partisi root Linux (/), terpakai & sisa bebas       │
-│       - Audit ukuran folder lokal /public/uploads dan /data/drafts               │
+│       - Audit ukuran folder /public/uploads dan piring di DB (invitation_drafts) │
 │    c. Cloudflare R2 Media Storage:                                               │
 │       - Metrik ukuran terpakai faktual (bytes, KB, MB) via S3 ListObjectsV2 API  │
 │       - Sisa kuota bebas biaya (Free Tier 10 GB / bulan)                         │
@@ -2911,7 +2920,7 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
 3. **Pencegahan Kebocoran Disk VPS pada Siklus Cron Cleanup (`/api/cron/cleanup`):**
    - Saat masa retensi undangan klien berakhir (H+14 pasca acara) dan status beralih menjadi `ARCHIVED`:
      * Server mengeksekusi `deletePublishedHtml(inv.id)` untuk membuang berkas publikasi statis `public/published/ids/<id>.html`.
-     * Server memverifikasi dan menghapus berkas draft lokal jika tersisa di `data/drafts/<id>.html`.
+     * Piring undangan di tabel `invitation_drafts` dihapus (`deleteInvitationDraft`).
      * Mencegah penumpukan file HTML lama di filesystem VPS pada penggunaan jangka panjang.
 
 4. **Kalkulasi Kuota Momen Foto Tamu & Add-On Top-Up Terintegrasi:**
@@ -3085,7 +3094,7 @@ Untuk menjamin kesiapan industri (*enterprise-grade / production-ready*), sistem
 4. **Domain 4 — Lifecycle Undangan & Invarian Penyimpanan:**
    - Anti-collision unik subdomain mencegah pendaftaran URL ganda.
    - Single Source of Truth publikasi kanonikal HTML di `public/published/ids/[id].html`.
-   - Invarian pembersihan 3 lapis saat penghapusan undangan: Published HTML, Draft HTML (`data/drafts/`), dan folder fisik `public/uploads/invitations/[id]/` terhapus 100% tanpa menyisakan disk leak.
+   - Invarian pembersihan 3 lapis saat penghapusan undangan: Published HTML, piring undangan (tabel `invitation_drafts`, FK cascade), dan folder fisik `public/uploads/invitations/[id]/` terhapus 100% tanpa menyisakan disk leak.
 
 5. **Domain 5 — Theme Matrix, Token Dinamis & Sanitasi XSS:**
    - Pengujian render matriks pada tema aktif menggunakan data ekstrem (string 250+ karakter) dan payload XSS (`<script>`, `onerror`, tanda kutip tunggal/ganda).
@@ -3490,3 +3499,4 @@ Diuji dengan `__tests__/unit/auditFixes20261014.test.ts` dan `__tests__/integrat
 66. **Editor Master: Foto uji dan pemeriksa slot (18 Nov 2026, permintaan pemilik).** Sebelumnya pratinjau Editor Master selalu memakai foto demo, sehingga slot yang tidak tampil (sampul Wajo tertutup tekstur, 59 kasus audit) baru ketahuan setelah klien mengunggah. (a) `POST /api/admin/theme-variants?preview` mode master menerima `previewMode`: `demo` (foto contoh), `client` (klien baru: `media` kosong + `themeDefaultMedia` dari panel Media bawaan yang belum disimpan), `sim` (itu ditambah foto uji `parseSimMedia`, hanya URL `/uploads/builder-sim/`), sama dengan `renderBuilderPreview`. (b) Header editor punya pilihan Contoh demo / Klien baru / Foto uji; panel "Foto uji & pemeriksa slot" mengunggah foto per slot lewat `/api/admin/theme-builder/sim-media` (kunci penyimpanan peramban sama dengan Theme Builder; ditulis saat diubah, bukan lewat efek, agar data lama tidak tertimpa state awal). (c) `components/admin/slotVisibility.ts` (`checkSlots`) membaca dokumen pratinjau mode Foto uji: elemen yang merujuk URL foto (img/source/video, `background-image` termasuk `::before`/`::after`), lalu status *Tidak dipakai master*, *Tersembunyi* (display/visibility/ukuran; opasitas tidak dihitung karena elemen menunggu animasi muncul), *Tertutup* (gambar lain di lapisan atas `background-image` elemen yang sama, atau elemen berlatar padat/gambar di atas ≥ 7 dari 9 titik sampel lewat `elementsFromPoint`), *Sangat gelap* (lapisan semi-transparan di atas, memakai alfa titik gradasi tertipis, ≥ 80%), *Terlihat*, atau *Cek di Desktop*. Sampul dan preloader tidak dihitung sebagai penutup isi; latar `fixed` diperiksa di setiap layar sepanjang halaman dengan `pointer-events` target dan kunci gulir master dilepas sementara lalu dikembalikan. Slot yang dipakai di beberapa tempat menyebut lokasinya ("Di seksi home: terlihat. Di latar halaman: tertutup …"). Validasi browser lokal terhadap audit piksel: Wajo semua terlihat (sampul gelap ±50%, latar ±58%); Candani sampul sangat gelap ±98% dan latar tertutup di 15 layar; Chronicle sampul ±99%; Valente latar tertutup di halaman isi tetapi terlihat di slideshow seksi home. Tes: `__tests__/integration/masterPreviewModes.test.ts`.
 67. **Perbaikan slot sampul dari audit (18 Nov 2026).** Dengan pemeriksa slot (butir 66), tiga pola ditemukan dan diperbaiki: (a) foto Sampul HP di bawah gradasi praktis padat (Candani, Mayang: `color-mix(primary 28%, bg-dark 90%)` dari dua warna padat; Chronicle, Lumina, Solaria: 90–98%; Starlit Dreams: `.cover-scrim` 78–92%; masing-masing + `-acara`). `#coverScreen` diberi `{{#if landingCoverUrl}} has-cover-photo{{/if}}` dan `.cover-screen.has-cover-photo` / `.cover-overlay.has-cover-photo` (Starlit: `... .cover-scrim`) memakai gradasi tembus 60/40/85% (Starlit 45→70%) dari token warna gelap master yang sama; tanpa foto tampilan tidak berubah. (b) Festivo dan Kalandra Birthday memakai `{{mainPhotoUrl}}` (foto profil) sebagai latar sampul sehingga slot Sampul HP tidak terpakai; kini `{{#if landingCoverUrl}}…{{/if}}{{#unless landingCoverUrl}}{{mainPhotoUrl}}{{/unless}}`. (c) Vintage Forest (+ `-acara`): `.cover-backdrop-img` (anak sampul seukuran layar, foto Sampul HP) menutupi latar sampul desktop yang dipasang mesin; di `min-width: 900px` backdrop memakai `{{landingCoverDesktopUrl}}` (mesin mengisinya dengan foto sampul HP bila tidak ada sampul desktop). Bukti: pemeriksa slot di browser lokal — 8 master "Terlihat" (sebelumnya sangat gelap ±96–99% atau tidak dipakai), Vintage Forest desktop "Terlihat"; tangkapan sampul Chronicle, Candani, Starlit dengan foto demo: teks tetap terbaca; pembanding visual 16 master × 375/1440 px hanya `background-image` berubah. Pemeriksa juga disetel: alfa gradasi memakai titik tertipis, titik sampel memakai titik paling terang, dan sampul HP di tampilan desktop berstatus "Cek di tampilan lain" bila Sampul desktop terisi. Belum diperbaiki: foto Home tidak dirujuk di al-fariz, al-khalid, cendekia, sinergi, badrika (perlu keputusan desain), dan Latar Belakang Global tertutup seksi padat di 45 master.
 68. **Antrean enkode ffmpeg (18 Nov 2026, audit kesiapan multi-server).** Sebelumnya setiap unggahan video/audio langsung menjalankan ffmpeg di dalam request tanpa batas, sehingga N enkode bersamaan berbagi CPU server 2 inti dan masing-masing melewati timeout (video 45 detik, audio 30 detik); semuanya gagal 422. Pengukuran lokal: video 1080p 20 detik 16 Mbps butuh ±20 detik CPU M1 per enkode. Kini `withEncodeSlot` di `lib/videoOptimizer.ts` mengizinkan satu enkode per proses (PM2 cluster = satu worker per inti) dan mengantrekan sisanya berurutan; timeout ffmpeg dihitung sejak enkode mulai. Tunggu antrean dibatasi `ENCODE_QUEUE_WAIT_MS` (40 detik) agar tunggu + enkode tetap di bawah batas 100 detik proxy Cloudflare; yang melewatinya mendapat HTTP 503 "Server sedang memproses unggahan media lain", dan 503 tidak lagi tertelan menjadi 422 atau jatuh ke fallback LAME. Berlaku untuk unggahan Studio (`/api/client/upload`), musik sistem, dan aset demo. Bukti: tiga enkode video nyata bersamaan selesai berurutan (7,5 / 13,8 / 19,4 detik), semuanya sukses. Tes: `__tests__/unit/encodeQueue.test.ts`.
+69. **Penyimpanan multi-server (18 Nov 2026, permintaan pemilik: server tambahan di homelab).** Piring undangan pindah ke tabel `invitation_drafts` (migrasi `20261118100000_invitation_drafts`), HTML terbit dan demo memakai penanda versi `render_versions` (`20261118110000_render_versions`), berkas buatan aplikasi disalin ke bucket privat dan diindeks `shared_files` (`20261118120000_shared_files`), unggahan klien DRAFT langsung ke R2, dan `deploy.sh` membedakan server utama dan replika. Rincian bagian 17.13. Tes: `themeEngineFixes.test.ts` (piring bersamaan dan hapus bersyarat), `renderVersion.test.ts`, `sharedFiles.test.ts` (utama/replika lewat `SHARED_STORE_DIR`, berkas ditimpa/dihapus, rute `/uploads`, demo tema yang masternya hanya ada di penyimpanan, objek hilang), `subdomainProxy.test.ts` (503 admin di replika). Bukti runtime di server uji: `/demo/valente` dibangun ulang setelah versi dinaikkan dari luar (berkas v0 → v1), undangan terbit membuat piring di DB dan menampilkan data baru setelah versi naik, piring terhapus bersama undangan; `next build` dengan `deploymentId` exit 0. Belum diuji: replika sungguhan di mesin lain dan R2 privat sebagai penyimpanan bersama (diuji dengan folder lokal).

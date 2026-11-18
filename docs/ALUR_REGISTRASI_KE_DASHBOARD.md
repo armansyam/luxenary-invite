@@ -286,7 +286,7 @@ Klien kini memiliki akses ke 4 modul utama:
 1.  **Ringkasan Undangan (`/dashboard`):** Menampilkan status undangan (`DRAFT` / `PUBLISHED`), total kuota tamu, daftar konfirmasi RSVP masuk, dan pintasan cepat.
 2.  **Studio Editor Undangan ([`app/(client)/dashboard/invitation/[id]/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/%28client%29/dashboard/invitation/%5Bid%5D/page.tsx)):**
     *   Split-screen visual: Form kontrol di sebelah kiri dan Live Preview iframe di sebelah kanan.
-    *   Arsitektur Piring (*Draft Plate*): File draft fisik berada di `data/drafts/${id}.html`.
+    *   Arsitektur Piring (*Draft Plate*): piring undangan disimpan di tabel `invitation_drafts` (sebelum 18 Nov 2026 berkas `data/drafts/${id}.html`).
     *   Sinkronisasi realtime menggunakan event bus `BroadcastChannel("lux_preview_sync")`.
 3.  **Buku Tamu & Pengiriman Undangan WhatsApp ([`app/(client)/dashboard/guests/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/%28client%29/dashboard/guests/page.tsx)):**
     *   Kelola daftar tamu, kategori undangan, dan sesi acara.
