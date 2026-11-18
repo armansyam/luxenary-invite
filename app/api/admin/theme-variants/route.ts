@@ -40,6 +40,8 @@ import { applyMasterOverrides, clearVariantCache, masterColorGroups, masterToken
 import { masterColorUsage, masterImageRefs, masterSections, overrideCount } from "@/lib/themeVariantCss";
 import { masterAnchors, masterReorderable } from "@/lib/masterLayout";
 import { fitMasterOrnaments } from "@/lib/themeBuilder/frameWindow";
+import { parseThemeDefaultMedia, validateThemeDefaultMedia } from "@/lib/themeDefaultMedia";
+import { themeArtPreviews } from "@/lib/themeArtPreview";
 
 export const dynamic = "force-dynamic";
 
@@ -143,7 +145,11 @@ export async function GET(req: NextRequest) {
       if ("error" in master) return NextResponse.json({ error: master.error }, { status: master.status });
       return NextResponse.json({
         success: true,
-        master: { id: master.theme.id, name: master.theme.name, eventType: master.theme.eventType, isActive: master.theme.isActive, overrides: master.edits ?? { colors: {}, fonts: {} } },
+        master: {
+          id: master.theme.id, name: master.theme.name, eventType: master.theme.eventType, isActive: master.theme.isActive, overrides: master.edits ?? { colors: {}, fonts: {} },
+          defaultMedia: parseThemeDefaultMedia(master.theme.defaultMedia),
+          builtinMedia: themeArtPreviews(master.theme.id),
+        },
         parent: { id: master.theme.id, name: master.theme.name, eventType: master.theme.eventType },
         variantCount: await prisma.theme.count({ where: { parentTheme: master.theme.id } }),
         ...tokenPayload(master.html),
@@ -232,8 +238,18 @@ export async function PUT(req: NextRequest) {
         if (err instanceof FontError) return NextResponse.json({ error: err.message }, { status: 400 });
         throw err;
       }
+      // Media bawaan per slot ikut tombol Simpan Editor Master; undangan menyalinnya saat tema dipilih (themeDefaultMedia).
+      let defaultMedia: Prisma.ThemeUpdateInput["defaultMedia"];
+      if (input.defaultMedia !== undefined) {
+        const checked = validateThemeDefaultMedia(input.defaultMedia);
+        if (!checked.ok) return NextResponse.json({ error: checked.error }, { status: 400 });
+        defaultMedia = Object.keys(checked.value).length ? (checked.value as Prisma.InputJsonValue) : Prisma.DbNull;
+      }
       const count = overrideCount(parsed.value);
-      await prisma.theme.update({ where: { id: master.theme.id }, data: { masterOverrides: count ? (parsed.value as unknown as Prisma.InputJsonValue) : Prisma.DbNull } });
+      await prisma.theme.update({
+        where: { id: master.theme.id },
+        data: { masterOverrides: count ? (parsed.value as unknown as Prisma.InputJsonValue) : Prisma.DbNull, ...(defaultMedia !== undefined && { defaultMedia }) },
+      });
       await recordBuilderAudit(req, guard.session, "THEME_MASTER_EDIT", `Menyunting master ${master.theme.id} (${count} perubahan)`);
       // Varian mewarisi suntingan master induknya, jadi demo varian yang tayang ikut dibuat ulang.
       clearVariantCache();

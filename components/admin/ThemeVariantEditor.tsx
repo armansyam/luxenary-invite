@@ -145,6 +145,10 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
   const [imageRefs, setImageRefs] = useState<Array<{ path: string; count: number }>>([]);
   const [sections, setSections] = useState<string[]>([]);
   const [uploadingFor, setUploadingFor] = useState<string | null>(null);
+  // Media bawaan per slot (Theme.defaultMedia) hanya di mode master; disimpan bersama suntingan master.
+  const [defaultMedia, setDefaultMedia] = useState<Record<string, string>>({});
+  const [savedMedia, setSavedMedia] = useState("{}");
+  const [builtinMedia, setBuiltinMedia] = useState<Record<string, string>>({});
   const previewImagesRef = useRef<string>("");
   const restoreScrollRef = useRef(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -186,7 +190,7 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
   }, [masterId, notify]);
 
   const snapshot = useCallback((n: string, d: string, o: MasterOverrides) => JSON.stringify({ n: n.trim(), d: d.trim(), o }), []);
-  const dirty = snapshot(name, description, overrides) !== savedSnapshot;
+  const dirty = snapshot(name, description, overrides) !== savedSnapshot || JSON.stringify(defaultMedia) !== savedMedia;
 
   /** Render server (master mentah + override pada mode master; suntingan master induk + override pada mode varian). */
   const fetchPreview = useCallback(async (themeParentId: string, o: MasterOverrides): Promise<{ html?: string; error?: string }> => {
@@ -226,6 +230,11 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
       setDescription(d);
       setOverrides(o);
       setSavedSnapshot(loaded || data.master ? snapshot(n, d, o) : "");
+      if (data.master) {
+        setDefaultMedia(data.master.defaultMedia ?? {});
+        setSavedMedia(JSON.stringify(data.master.defaultMedia ?? {}));
+        setBuiltinMedia(data.master.builtinMedia ?? {});
+      }
       previewImagesRef.current = structuralKey(o);
       setAnchors(data.anchors ?? []);
       setReorderable(data.reorderable ?? []);
@@ -686,14 +695,15 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
     if (!ok) return false;
     setBusy(true);
     try {
-      const res = await fetch("/api/admin/theme-variants", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ masterId: master.id, overrides }) });
+      const res = await fetch("/api/admin/theme-variants", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ masterId: master.id, overrides, defaultMedia }) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         notify([data.error, ...(data.details ?? [])].filter(Boolean).join(" ") || "Suntingan gagal disimpan.", "error");
         return false;
       }
       setSavedSnapshot(snapshot(name, description, overrides));
-      notify(data.count ? "Suntingan master disimpan. Demo dan thumbnail sedang dibuat ulang." : "Master kembali ke tampilan aslinya.", "success");
+      setSavedMedia(JSON.stringify(defaultMedia));
+      notify(data.count || Object.keys(defaultMedia).length ? "Suntingan master disimpan. Demo dan thumbnail sedang dibuat ulang." : "Master kembali ke tampilan aslinya.", "success");
       return true;
     } finally {
       setBusy(false);
@@ -1237,6 +1247,58 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
 
           {masterMode && (
             <>
+              <section className="border-t border-stone-200/80 px-5 py-4">
+                <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-stone-500">Media bawaan slot</h3>
+                <p className="mt-1 text-[11px] text-stone-500">Dipakai bila klien belum mengunggah foto ke slot itu, dan tampil sebagai thumbnail &quot;Bawaan tema&quot; di Studio klien. Berlaku untuk undangan yang dibuat atau berganti ke tema ini sesudah disimpan. Latar Belakang Global diatur lewat Gambar bawaan di bawah; foto Home, mempelai, dan galeri tidak boleh punya bawaan.</p>
+                <ul className="mt-3 space-y-2">
+                  {([
+                    ["LANDING_COVER", "Sampul HP"],
+                    ["LANDING_COVER_DESKTOP", "Sampul desktop (landscape)"],
+                    ["DESKTOP_SIDEBAR", "Panel kiri desktop"],
+                    ["CLOSING_COVER", "Foto penutup"],
+                  ] as const).map(([slot, label]) => {
+                    const set = defaultMedia[slot];
+                    const builtin = builtinMedia[slot];
+                    const key = `media:${slot}`;
+                    return (
+                      <li key={slot} className="flex items-center gap-2.5 rounded-xl px-1 py-1 hover:bg-stone-50">
+                        <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-stone-100 ring-1 ring-stone-900/10">
+                          {set || builtin ? <img src={set ?? builtin} alt="" className="h-full w-full object-cover" /> : <span className="text-[9px] text-stone-400">Kosong</span>}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[12px] font-semibold text-stone-800">{label}</span>
+                          <span className="block text-[10.5px] text-stone-500">{set ? "Media bawaan tema" : builtin ? "Bawaan desain master" : "Belum ada bawaan"}</span>
+                        </span>
+                        <label className={`shrink-0 rounded-lg border border-stone-200 px-2 py-1 text-[11px] font-semibold text-stone-700 hover:border-stone-400 ${uploadingFor ? "opacity-50" : "cursor-pointer"}`}>
+                          {uploadingFor === key ? "Mengunggah…" : set ? "Ganti" : "Unggah"}
+                          <input
+                            type="file"
+                            accept="image/png,image/webp,image/jpeg"
+                            className="hidden"
+                            disabled={Boolean(uploadingFor)}
+                            onChange={async (e) => {
+                              const f = e.target.files?.[0];
+                              e.target.value = "";
+                              if (!f) return;
+                              setUploadingFor(key);
+                              try {
+                                const url = await uploadAsset(f);
+                                if (url) setDefaultMedia((prev) => ({ ...prev, [slot]: url }));
+                              } finally {
+                                setUploadingFor(null);
+                              }
+                            }}
+                          />
+                        </label>
+                        {set && (
+                          <button type="button" onClick={() => setDefaultMedia((prev) => { const next = { ...prev }; delete next[slot]; return next; })} className="text-[10.5px] font-semibold text-stone-500 hover:text-stone-800 cursor-pointer">Hapus</button>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+
               <section className="border-t border-stone-200/80 px-5 py-4">
                 <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-stone-500">Gambar bawaan</h3>
                 <p className="mt-1 text-[11px] text-stone-500">Latar, ornamen, dan bingkai yang dipakai master. Gambar pengganti diunggah ke pustaka builder (PNG, WebP, atau JPEG) dan mengganti setiap tempat gambar asli dipakai.</p>
