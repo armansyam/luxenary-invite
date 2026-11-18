@@ -20,6 +20,7 @@ import ThemeThumbnailAutoCard from "@/components/admin/ThemeThumbnailAutoCard";
 import AdminDatabaseTab from "@/components/admin/AdminDatabaseTab";
 import { compressImageToWebP } from "@/lib/clientImageCompressor";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
+import { BG_PHOTO_TONE_LIMIT, parseBgPhotoTone } from "@/lib/bgPhotoTone";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { useFeedback } from "@/components/ui/Feedback";
@@ -4067,6 +4068,47 @@ export default function AdminPage() {
                             );
                           })}
                         </div>
+                        {(() => {
+                          const tone = parseBgPhotoTone(demoStudioData.featureSettings?.bgPhotoTone);
+                          const setTone = (value: number) => setDemoStudioData((prev: any) => {
+                            const { bgPhotoTone: _drop, ...rest } = prev.featureSettings || {};
+                            const featureSettings = value === 0 ? rest : { ...rest, bgPhotoTone: value };
+                            return { ...prev, featureSettings };
+                          });
+                          return (
+                            <div className="mt-4 border border-gray-200 rounded-2xl p-4 bg-white">
+                              <div className="flex items-baseline justify-between gap-3">
+                                <label htmlFor="demoBgPhotoTone" className="text-sm font-bold text-gray-900">Kecerahan Foto Latar</label>
+                                <span className="text-xs font-medium text-gray-600 tabular-nums">
+                                  {tone === 0 ? "Normal" : tone < 0 ? `Gelap ${-tone}%` : `Terang ${tone}%`}
+                                </span>
+                              </div>
+                              <p className="mt-1 text-xs text-gray-600">
+                                Mengatur foto Background Global demo, sama dengan slider di studio klien. Geser ke kiri bila teks sulit dibaca, ke kanan bila foto terlalu gelap. Berlaku setelah Simpan Perubahan Demo.
+                              </p>
+                              <input
+                                id="demoBgPhotoTone"
+                                type="range"
+                                min={-BG_PHOTO_TONE_LIMIT}
+                                max={BG_PHOTO_TONE_LIMIT}
+                                step={5}
+                                value={tone}
+                                onChange={(e) => setTone(parseBgPhotoTone(e.target.value))}
+                                disabled={demoStudioSaving}
+                                className="mt-3 w-full accent-amber-700"
+                              />
+                              <div className="mt-1 flex items-center justify-between text-[11px] text-gray-500">
+                                <span>Gelapkan</span>
+                                {tone !== 0 && (
+                                  <button type="button" onClick={() => setTone(0)} className="font-semibold text-amber-800 hover:text-amber-900">
+                                    Kembali ke normal
+                                  </button>
+                                )}
+                                <span>Terangkan</span>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       {/* 8 Gallery Photos Grid */}

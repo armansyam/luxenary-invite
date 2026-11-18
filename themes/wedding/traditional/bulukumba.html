@@ -184,7 +184,7 @@
         color-mix(in srgb, var(--bg-dark, var(--lux-c-030914)) 75%, transparent) 0%,
         color-mix(in srgb, var(--primary, var(--lux-c-0a192f)) 55%, transparent) 40%,
         color-mix(in srgb, var(--bg-dark, var(--lux-c-030914)) 92%, transparent) 100%
-      ), url('/assets/ornaments/background/bg-makassar.webp'), url('{{landingCoverUrl}}');
+      ), url('{{landingCoverUrl}}'), url('/assets/ornaments/background/bg-makassar.webp');
       background-size: cover;
       background-position: center;
       display: flex;
@@ -201,6 +201,8 @@
       pointer-events: none;
       visibility: hidden;
     }
+    /* Emblem di tengah sampul menimpa wajah pada foto Sampul HP; tampil hanya sebagai bawaan saat slot kosong. */
+    .cover-screen.has-cover-photo .cover-emblem-wrap { display: none; }
 
     .cover-emblem-wrap {
       width: 130px;
@@ -1068,7 +1070,7 @@
   <audio id="bgAudio" src="{{audioUrl}}" loop preload="auto"></audio>
 
   <!-- COVER SCREEN POP-UP (PORTAL GATE) -->
-  <div id="coverScreen" class="cover-screen">
+  <div id="coverScreen" class="cover-screen{{#if landingCoverUrl}} has-cover-photo{{/if}}">
     <!-- 4 Corner Floral Ornaments -->
     <img src="/assets/ornaments/flowers/flower-tl.webp" alt="Ornament" class="corner-floral corner-tl">
     <img src="/assets/ornaments/flowers/flower-tr.webp" alt="Ornament" class="corner-floral corner-tr">

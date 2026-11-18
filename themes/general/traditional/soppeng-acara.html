@@ -195,7 +195,7 @@
         color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 75%, transparent) 0%,
         color-mix(in srgb, var(--primary, var(--lux-c-5a0b10)) 50%, transparent) 40%,
         color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 90%, transparent) 100%
-      ), url('/assets/ornaments/background/bg-maroon.webp'), url('{{landingCoverUrl}}');
+      ), url('{{landingCoverUrl}}'), url('/assets/ornaments/background/bg-maroon.webp');
       background-size: cover;
       background-position: center;
       display: flex;
@@ -212,6 +212,8 @@
       pointer-events: none;
       visibility: hidden;
     }
+    /* Rumah adat di tengah sampul menimpa wajah pada foto Sampul HP; tampil hanya sebagai bawaan saat slot kosong. */
+    .cover-screen.has-cover-photo .cover-emblem-wrap { display: none; }
 
     .cover-emblem-wrap {
       width: 120px;
@@ -1176,7 +1178,7 @@
   <div class="fixed-bg-layer{{#if globalBgUrl}} has-custom-bg{{/if}}" aria-hidden="true"{{#if globalBgUrl}} style="--custom-bg: url('{{globalBgUrl}}');"{{/if}}></div>
 
   <!-- COVER SCREEN POP-UP (PORTAL GATE) -->
-  <div id="coverScreen" class="cover-screen">
+  <div id="coverScreen" class="cover-screen{{#if landingCoverUrl}} has-cover-photo{{/if}}">
     <img src="/assets/ornaments/flowers/flower-tl.webp" alt="Ornament" class="corner-floral corner-tl">
     <img src="/assets/ornaments/flowers/flower-tr.webp" alt="Ornament" class="corner-floral corner-tr">
     <img src="/assets/ornaments/flowers/flower-bl.webp" alt="Ornament" class="corner-floral corner-bl">

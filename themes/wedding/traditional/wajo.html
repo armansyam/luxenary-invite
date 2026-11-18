@@ -73,39 +73,27 @@
       width: 100%;
     }
 
-    /* FIXED BACKGROUND LAYER — WITH SILK WEAVE TEXTURE */
+    /* FIXED BACKGROUND LAYER */
     .fixed-bg-layer {
       position: fixed;
       inset: 0;
       width: 100%;
       height: 100vh;
-      background-image: repeating-linear-gradient(
-        45deg,
-        transparent,
-        transparent 5px,
-        color-mix(in srgb, var(--accent, var(--lux-c-e6c67a)) 3%, transparent) 5px,
-        color-mix(in srgb, var(--accent, var(--lux-c-e6c67a)) 3%, transparent) 10px
-      ), linear-gradient(
+      background-image: linear-gradient(
         180deg,
         color-mix(in srgb, var(--bg-dark, var(--lux-c-180309)) 84%, transparent) 0%,
         color-mix(in srgb, var(--primary, var(--lux-c-5e091e)) 58%, transparent) 35%,
         color-mix(in srgb, var(--bg-dark, var(--lux-c-180309)) 86%, transparent) 75%,
         color-mix(in srgb, var(--bg-dark, var(--lux-c-180309)) 96%, transparent) 100%
       ), url('/assets/ornaments/background/bg-maroon.webp');
-      background-size: auto, cover, cover;
+      background-size: cover;
       background-position: center;
-      background-repeat: repeat, no-repeat, no-repeat;
+      background-repeat: no-repeat;
       z-index: 1;
       pointer-events: none;
     }
     .fixed-bg-layer.has-custom-bg {
-      background-image: repeating-linear-gradient(
-        45deg,
-        transparent,
-        transparent 5px,
-        color-mix(in srgb, var(--accent, var(--lux-c-e6c67a)) 3%, transparent) 5px,
-        color-mix(in srgb, var(--accent, var(--lux-c-e6c67a)) 3%, transparent) 10px
-      ), linear-gradient(
+      background-image: linear-gradient(
         180deg,
         color-mix(in srgb, var(--bg-dark, var(--lux-c-180309)) 84%, transparent) 0%,
         color-mix(in srgb, var(--primary, var(--lux-c-5e091e)) 58%, transparent) 35%,
@@ -201,7 +189,7 @@
         color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 75%, transparent) 0%,
         color-mix(in srgb, var(--primary, var(--lux-c-5a0b10)) 50%, transparent) 40%,
         color-mix(in srgb, var(--bg-dark, var(--lux-c-140204)) 90%, transparent) 100%
-      ), url('/assets/ornaments/background/bg-maroon.webp'), url('{{landingCoverUrl}}');
+      ), url('{{landingCoverUrl}}'), url('/assets/ornaments/background/bg-maroon.webp');
       background-size: cover;
       background-position: center;
       display: flex;
@@ -218,6 +206,8 @@
       pointer-events: none;
       visibility: hidden;
     }
+    /* Rumah adat di tengah sampul menimpa wajah pada foto Sampul HP; tampil hanya sebagai bawaan saat slot kosong. */
+    .cover-screen.has-cover-photo .cover-emblem-wrap { display: none; }
 
     .cover-emblem-wrap {
       width: 120px;
@@ -1077,7 +1067,7 @@
   <audio id="bgAudio" src="{{audioUrl}}" loop preload="auto"></audio>
 
   <!-- COVER SCREEN POP-UP (PORTAL GATE) -->
-  <div id="coverScreen" class="cover-screen">
+  <div id="coverScreen" class="cover-screen{{#if landingCoverUrl}} has-cover-photo{{/if}}">
     <!-- 4 Corner Floral Ornaments -->
     <img src="/assets/ornaments/flowers/flower-tl.webp" alt="Ornament" class="corner-floral corner-tl">
     <img src="/assets/ornaments/flowers/flower-tr.webp" alt="Ornament" class="corner-floral corner-tr">
