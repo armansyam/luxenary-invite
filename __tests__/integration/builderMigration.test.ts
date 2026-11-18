@@ -32,7 +32,7 @@ const request = (url: string, method: string, body?: unknown) =>
   new NextRequest(`http://localhost${url}`, { method, headers: { "content-type": "application/json" }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
 
 describe.skipIf(!IS_TEST_DB)("migrasi master lama ke draf builder", () => {
-  const created = { users: [] as string[], admins: [] as string[], themes: [] as Array<{ id: string; category: string }>, drafts: [] as string[] };
+  const created = { users: [] as string[], admins: [] as string[], themes: [] as Array<{ id: string; category: string }> };
 
   afterAll(async () => {
     sessionUser = null;
@@ -45,7 +45,6 @@ describe.skipIf(!IS_TEST_DB)("migrasi master lama ke draf builder", () => {
       // Menerbitkan tema membangun demo statis; route DELETE tema menghapusnya, tes yang menghapus lewat Prisma wajib juga.
       fs.rmSync(path.join(process.cwd(), "public", "demo", t.id.toLowerCase()), { recursive: true, force: true });
     }
-    for (const f of created.drafts) fs.rmSync(f, { force: true });
     await prisma.adminAuditLog.deleteMany({ where: { adminId: { in: created.admins } } });
     await prisma.admin.deleteMany({ where: { id: { in: created.admins } } });
     await prisma.$disconnect();
@@ -81,7 +80,6 @@ describe.skipIf(!IS_TEST_DB)("migrasi master lama ke draf builder", () => {
       }));
       expect(res.status, `${legacyId} undangan`).toBe(200);
       const inv = await prisma.invitation.findFirstOrThrow({ where: { userId: user.id, themeId } });
-      created.drafts.push(path.join(process.cwd(), "data", "drafts", `${inv.id}.html`));
 
       const preview = await previewGet(request(`/api/client/invitations/${inv.id}/preview`, "GET"), { params: Promise.resolve({ id: inv.id }) });
       expect(preview.status, `${legacyId} pratinjau`).toBe(200);

@@ -12,6 +12,7 @@ import { getLifecycleSettings } from "./lifecycleSettings";
 import { applyUpgradePlan } from "./upgradeHelper";
 import { participantNames } from "./participantUtils";
 import { releaseInvitationSubdomain } from "./subdomainRelease";
+import { deleteInvitationDraft } from "./invitationDraft";
 import { SIM_MEDIA_MAX_AGE_DAYS } from "./themeBuilder/simSlots";
 
 const CONTEXT = "LifecycleCleanup";
@@ -180,7 +181,7 @@ async function archiveExpiredInvitation(inv: ExpiredInvitation, nasEnabled: bool
   }
 
   await deletePublishedHtml(inv.id);
-  await fs.promises.rm(path.join(process.cwd(), "data", "drafts", `${inv.id}.html`), { force: true });
+  await deleteInvitationDraft(inv.id);
 
   if (nasEnabled) {
     const media = await prisma.invitationMedia.findMany({ where: { invitationId: inv.id }, select: { localPath: true } });
@@ -286,7 +287,6 @@ export async function runLifecycleCleanup(options: LifecycleCleanupOptions = {})
 }
 
 export interface StaleDataCleanupResult {
-  orphanedDrafts: number;
   deletedOrders: number;
   refulfilledOrders: number;
   purgedRateLimitRows: number;
@@ -332,24 +332,10 @@ async function purgeExpiredRateLimitRows(dryRun: boolean): Promise<number> {
   return deleted.rowCount ?? 0;
 }
 
-/** Piring draft tanpa undangan dan order EXPIRED/PENDING yang melewati `retention_order_days`. */
+/** Order EXPIRED/PENDING yang melewati `retention_order_days`. Piring undangan ikut terhapus bersama undangannya (FK cascade). */
 export async function runStaleDataCleanup(options: LifecycleCleanupOptions = {}): Promise<StaleDataCleanupResult> {
   const now = options.now ?? new Date();
   const dryRun = options.dryRun ?? false;
-
-  let orphanedDrafts = 0;
-  const draftsDir = path.join(process.cwd(), "data", "drafts");
-  const draftFiles = await fs.promises.readdir(draftsDir).catch((err: NodeJS.ErrnoException) => {
-    if (err.code === "ENOENT") return [] as string[];
-    throw err;
-  });
-  for (const file of draftFiles) {
-    if (!file.endsWith(".html")) continue;
-    const owner = await prisma.invitation.findUnique({ where: { id: file.replace(".html", "") }, select: { id: true } });
-    if (owner) continue;
-    if (!dryRun) await fs.promises.rm(path.join(draftsDir, file), { force: true });
-    orphanedDrafts++;
-  }
 
   const parsedDays = Number.parseInt(await getAdminSetting("retention_order_days", ""), 10);
   const retentionOrderDays = Number.isFinite(parsedDays) && parsedDays >= 1 ? parsedDays : 90;
@@ -368,13 +354,13 @@ export async function runStaleDataCleanup(options: LifecycleCleanupOptions = {})
   const staleOrders = await prisma.order.findMany({ where: staleWhere, select: { proofImageUrl: true } });
   if (dryRun) {
     const purgedWebhookLogs = await prisma.webhookLog.count({ where: staleWebhookWhere });
-    return { orphanedDrafts, deletedOrders: staleOrders.length, refulfilledOrders, purgedRateLimitRows, purgedWebhookLogs, purgedSimMedia };
+    return { deletedOrders: staleOrders.length, refulfilledOrders, purgedRateLimitRows, purgedWebhookLogs, purgedSimMedia };
   }
 
   await Promise.all(staleOrders.map((order) => deleteFile(order.proofImageUrl)));
   const deleted = await prisma.order.deleteMany({ where: staleWhere });
   const purgedWebhookLogs = (await prisma.webhookLog.deleteMany({ where: staleWebhookWhere })).count;
-  return { orphanedDrafts, deletedOrders: deleted.count, refulfilledOrders, purgedRateLimitRows, purgedWebhookLogs, purgedSimMedia };
+  return { deletedOrders: deleted.count, refulfilledOrders, purgedRateLimitRows, purgedWebhookLogs, purgedSimMedia };
 }
 
 /** Foto simulasi pratinjau builder (public/uploads/builder-sim) yang lebih tua dari SIM_MEDIA_MAX_AGE_DAYS. */

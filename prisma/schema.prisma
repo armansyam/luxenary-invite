@@ -158,11 +158,25 @@ model Invitation {
   media                InvitationMedia[]
   rsvps                Rsvp[]
   visits               InvitationVisit[]
+  draft                InvitationDraft?
 
   @@index([userId])
   @@index([status])
   @@index([themeId])
   @@map("invitations")
+}
+
+/// Piring undangan: salinan master yang dibekukan saat undangan pertama dirender dengan tema dan jenis acaranya
+/// (lib/invitationDraft.ts). Disimpan di DB, bukan disk server, agar semua server aplikasi memakai piring yang sama.
+model InvitationDraft {
+  invitationId String     @id @map("invitation_id")
+  themeId      String     @map("theme_id")
+  eventType    String     @map("event_type")
+  html         String
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  @@map("invitation_drafts")
 }
 
 model InvitationMedia {

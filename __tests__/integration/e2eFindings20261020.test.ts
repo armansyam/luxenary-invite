@@ -36,7 +36,6 @@ async function makeInvitation(eventType: string, themeId: string, status: "PUBLI
 }
 
 afterAll(async () => {
-  for (const id of ids.invitations) fs.rmSync(path.join(process.cwd(), "data", "drafts", `${id}.html`), { force: true });
   await prisma.rsvp.deleteMany({ where: { invitationId: { in: ids.invitations } } });
   await prisma.invitation.deleteMany({ where: { id: { in: ids.invitations } } });
   await prisma.order.deleteMany({ where: { userId: { in: ids.users } } });

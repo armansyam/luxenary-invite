@@ -259,7 +259,7 @@ export async function POST(req: NextRequest) {
 
 /**
  * Menyimpan perubahan rancangan. Master di disk ditulis ulang; undangan klien yang sudah memakai tema ini tetap memakai
- * salinan master miliknya (data/drafts), sehingga tampilannya tidak berubah.
+ * salinan master miliknya (piring di tabel invitation_drafts), sehingga tampilannya tidak berubah.
  */
 export async function PUT(req: NextRequest) {
   try {

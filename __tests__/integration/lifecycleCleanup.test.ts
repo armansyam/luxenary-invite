@@ -89,10 +89,6 @@ describe.skipIf(!IS_TEST_DB)("Siklus hidup undangan (DB luxenary_test)", () => {
   });
 
   afterAll(async () => {
-    for (const id of created.invitations) {
-      // Proses publikasi dapat menulis data/drafts/<id>.html; hapus agar tidak menjadi berkas yatim.
-      await fs.promises.rm(path.join(process.cwd(), "data", "drafts", `${id}.html`), { force: true });
-    }
     await prisma.rsvp.deleteMany({ where: { invitationId: { in: created.invitations } } });
     await prisma.guestMemory.deleteMany({ where: { invitationId: { in: created.invitations } } });
     await prisma.invitationMedia.deleteMany({ where: { invitationId: { in: created.invitations } } });

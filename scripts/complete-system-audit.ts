@@ -5,6 +5,8 @@ import { buildAndSavePublishedHtml, deletePublishedHtml } from "../lib/staticPub
 import { hasPlanCapability } from "../lib/settings";
 import { generateReceptionistToken, verifyReceptionistToken } from "../lib/receptionistAuth";
 import { encryptPin, verifyPin } from "../lib/pinEncryption";
+import { copyMasterToDraft } from "../lib/renderedLabels";
+import { deleteInvitationDraft, readInvitationDraft } from "../lib/invitationDraft";
 import fs from "fs";
 import path from "path";
 
@@ -154,26 +156,21 @@ async function runCompleteSystemAudit() {
     console.log(`  ${isCase3Passed ? "✅" : "❌"} ${results[results.length - 1].detail}`);
 
     // ---------------------------------------------------------------------------
-    // KASUS 4: Studio Editor & Autosave Draft Lokal (data/drafts/[id].html)
+    // KASUS 4: Piring undangan dibekukan dari master saat tema dipilih (tabel invitation_drafts)
     // ---------------------------------------------------------------------------
-    console.log("\n▶ [KASUS 4] Studio Editor & Penulisan Draft Lokal (data/drafts/)...");
-    const draftsDir = path.join(process.cwd(), "data", "drafts");
-    if (!fs.existsSync(draftsDir)) {
-      fs.mkdirSync(draftsDir, { recursive: true });
-    }
-    const draftFile = path.join(draftsDir, `${testInvitationId}.html`);
-    fs.writeFileSync(draftFile, `<!-- Draft Autosave Santoso & Dewi --><div>Draft Content ${testRunId}</div>`, "utf-8");
-
-    const draftExists = fs.existsSync(draftFile);
-    const draftContent = draftExists ? fs.readFileSync(draftFile, "utf-8") : "";
-    const isCase4Passed = draftExists && draftContent.includes(String(testRunId));
+    console.log("\n▶ [KASUS 4] Pembekuan piring undangan (invitation_drafts)...");
+    await copyMasterToDraft(testInvitationId);
+    const storedDraft = await readInvitationDraft(testInvitationId);
+    const draftExists = storedDraft !== null;
+    const draftContent = storedDraft?.html ?? "";
+    const isCase4Passed = draftExists && draftContent.includes("</html>");
 
     results.push({
       step: 4,
       name: "STUDIO_DRAFT_AUTOSAVE",
       pass: isCase4Passed,
-      metrics: { draftFileExists: draftExists, draftSizeBytes: draftContent.length },
-      detail: isCase4Passed ? `Berkas draft lokal tersimpan di data/drafts/${testInvitationId}.html (${draftContent.length} bytes).` : "Gagal menyimpan draft lokal.",
+      metrics: { draftStored: draftExists, draftSizeBytes: draftContent.length },
+      detail: isCase4Passed ? `Piring undangan ${testInvitationId} tersimpan di DB (${draftContent.length} bytes, tema ${storedDraft?.themeId}).` : "Piring undangan tidak tersimpan di DB.",
     });
     console.log(`  ${isCase4Passed ? "✅" : "❌"} ${results[results.length - 1].detail}`);
 
@@ -460,10 +457,8 @@ async function runCompleteSystemAudit() {
     // Invarian 1: deletePublishedHtml(inv.id) -> hapus public/published/ids/[id].html
     await deletePublishedHtml(testInvitationId);
 
-    // Invarian 2: Hapus data/drafts/[id].html
-    if (fs.existsSync(draftFile)) {
-      fs.unlinkSync(draftFile);
-    }
+    // Invarian 2: Hapus piring undangan dari DB
+    await deleteInvitationDraft(testInvitationId);
 
     // Invarian 3: Hapus public/uploads/invitations/[id]/ secara rekursif
     if (fs.existsSync(uploadsDir)) {
@@ -480,7 +475,7 @@ async function runCompleteSystemAudit() {
     });
 
     const isPublishedHtmlGone = !fs.existsSync(publishedFile);
-    const isDraftGone = !fs.existsSync(draftFile);
+    const isDraftGone = (await readInvitationDraft(testInvitationId)) === null;
     const isUploadsGone = !fs.existsSync(uploadsDir);
 
     const archivedInv = await prisma.invitation.findUnique({
@@ -504,7 +499,7 @@ async function runCompleteSystemAudit() {
         ? "Ketiga invarian pembersihan berkas fisik (Published HTML, Draft, Uploads) sukses dibersihkan tanpa disk leak. Subdomain dilepas kembali ke pool."
         : `Pembersihan tidak tuntas: ${[
             !isPublishedHtmlGone && `berkas ${publishedFile}`,
-            !isDraftGone && `berkas ${draftFile}`,
+            !isDraftGone && `piring ${testInvitationId}`,
             !isUploadsGone && `direktori ${uploadsDir}`,
             archivedInv?.status !== "ARCHIVED" && `status=${archivedInv?.status}`,
             archivedInv?.subdomain !== null && `subdomain=${archivedInv?.subdomain}`,

@@ -15,8 +15,7 @@ const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
 const VARIANT_ID = `vitest_variant_${Date.now()}`;
 const PARENT = "valente";
 const parentHtml = fs.readFileSync(path.join(process.cwd(), "themes/wedding/minimalist/valente.html"), "utf-8");
-const draftId = `vitest-variant-draft-${Date.now()}`;
-const draftPath = path.join(process.cwd(), "data", "drafts", `${draftId}.html`);
+const OWNER_EMAIL = `vitest_variant_${Date.now()}@t.local`;
 
 describe("validasi dan penyisipan override", () => {
   const color = masterTokens(parentHtml).colors.find((t) => t.name.startsWith("--lux-c-"))!;
@@ -57,7 +56,7 @@ describe.skipIf(!IS_TEST_DB)("render varian dari DB", () => {
   const color = masterTokens(parentHtml).colors.find((t) => t.name.startsWith("--lux-c-"))!;
 
   afterAll(async () => {
-    fs.rmSync(draftPath, { force: true });
+    await prisma.user.deleteMany({ where: { email: OWNER_EMAIL } });
     await prisma.theme.deleteMany({ where: { id: VARIANT_ID } });
     clearVariantCache();
     await prisma.$disconnect();
@@ -70,14 +69,16 @@ describe.skipIf(!IS_TEST_DB)("render varian dari DB", () => {
     expect(await resolveVariant(VARIANT_ID)).toEqual({ parentId: PARENT, overrides: { colors: { [color.name]: "#00aa55" }, fonts: {} } });
     expect(await resolveVariant(PARENT)).toBeNull();
 
+    const owner = await prisma.user.create({ data: { email: OWNER_EMAIL, name: "Uji Varian" } });
+    const { id: draftId } = await prisma.invitation.create({ data: { userId: owner.id, themeId: VARIANT_ID, invitationSlug: `vitest-variant-${Date.now()}` } });
     const data = await composeInvitationData({ ...buildDemoInvitation(PARENT), id: draftId, themeId: VARIANT_ID });
     const html = await renderTemplateFile(VARIANT_ID, data as Record<string, any>, { invitationId: draftId, eventType: "WEDDING" });
     expect(html).toContain(`${color.name}: #00aa55;`);
     // Teks bawaan master induk tetap dipakai (komposer memakai id induk).
     expect(html).toContain("Julian");
-    const draft = fs.readFileSync(draftPath, "utf-8");
-    expect(draft).toContain(`<!-- lux-theme:${VARIANT_ID} -->`);
-    expect(draft).toContain(`${color.name}: #00aa55;`);
+    const draft = await prisma.invitationDraft.findUniqueOrThrow({ where: { invitationId: draftId } });
+    expect(draft.themeId).toBe(VARIANT_ID);
+    expect(draft.html).toContain(`${color.name}: #00aa55;`);
 
     // Mengubah varian sesudahnya tidak mengubah undangan yang sudah dibekukan.
     await prisma.theme.update({ where: { id: VARIANT_ID }, data: { masterOverrides: { colors: { [color.name]: "#112233" }, fonts: {} } } });

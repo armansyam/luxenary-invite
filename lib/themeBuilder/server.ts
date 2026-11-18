@@ -170,7 +170,6 @@ export async function builderPublishIssues(themeId: string): Promise<MasterIssue
 
 const REFERENCE_DIRS = [
   path.join(/*turbopackIgnore: true*/ process.cwd(), "themes"),
-  path.join(/*turbopackIgnore: true*/ process.cwd(), "data", "drafts"),
   path.join(/*turbopackIgnore: true*/ process.cwd(), "public", "published"),
   path.join(/*turbopackIgnore: true*/ process.cwd(), "public", "demo"),
 ];
@@ -187,7 +186,7 @@ function htmlFilesUnder(dir: string): string[] {
 }
 
 /**
- * Tempat aset ornamen masih dipakai. Undangan klien membekukan salinan master (data/drafts) dan HTML terbit
+ * Tempat aset ornamen masih dipakai. Undangan klien membekukan salinan master (tabel invitation_drafts) dan HTML terbit
  * (public/published) yang menautkan URL ornamen, jadi menghapus berkas yang masih ditaut merusak undangan yang sudah jalan.
  */
 export async function assetUsage(url: string): Promise<string[]> {
@@ -200,6 +199,8 @@ export async function assetUsage(url: string): Promise<string[]> {
   for (const t of themes) {
     if (JSON.stringify([t.builderSpec, t.masterOverrides]).includes(url)) usage.push(`tema ${t.id}`);
   }
+  const drafts = await prisma.invitationDraft.findMany({ where: { html: { contains: url } }, select: { invitationId: true }, take: 20 });
+  for (const d of drafts) usage.push(`piring undangan ${d.invitationId}`);
   for (const dir of REFERENCE_DIRS) {
     for (const file of htmlFilesUnder(dir)) {
       if (fs.readFileSync(file, "utf-8").includes(url)) usage.push(path.relative(process.cwd(), file));

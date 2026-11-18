@@ -212,6 +212,10 @@ if ! npx prisma migrate deploy; then
   exit 1
 fi
 
+# Piring undangan pindah dari data/drafts ke tabel invitation_drafts (idempoten). Diulang setelah reload untuk piring yang
+# sempat ditulis proses lama selama deploy.
+npx tsx scripts/migrate-drafts-to-db.ts || echo "⚠️ Impor piring disk ke DB gagal — undangan tanpa piring dirender dari master."
+
 # 7a. Data master (idempoten: seed tidak menghapus atau menimpa data yang dikelola admin)
 echo "🌱 Menyinkronisasi data master (Admin Settings, Music Presets, Themes)..."
 npx prisma db seed || echo "⚠️ Seed gagal — lanjut deployment."
@@ -286,6 +290,7 @@ if command -v pm2 &> /dev/null; then
   fi
   echo "✅ Health check berhasil! Aplikasi merespons HTTP 200 di port 3001."
   export PATH="${NODE_BIN_DIR:+$NODE_BIN_DIR:}$SYSTEM_PATH"
+  npx tsx scripts/migrate-drafts-to-db.ts || echo "⚠️ Impor ulang piring disk ke DB gagal."
   echo "🧱 Purge ulang cache undangan terbit setelah server baru aktif..."
   refresh_published_html
   export PATH="$SYSTEM_PATH"

@@ -759,7 +759,7 @@ export default function AdminMonitoringTab() {
                   <span className="font-mono font-semibold text-gray-800">{healthData?.localFolders?.uploadsMb || 0} MB</span>
                 </div>
                 <div className="p-2.5 bg-gray-50 rounded-lg">
-                  <span className="text-[10px] text-gray-400 block font-medium">Piring Draft /data/drafts:</span>
+                  <span className="text-[10px] text-gray-400 block font-medium">Piring Draft (database):</span>
                   <span className="font-mono font-semibold text-gray-800">{healthData?.localFolders?.draftsMb || 0} MB</span>
                 </div>
               </div>

@@ -5,8 +5,6 @@
  * luxenary_test; hanya sesi (`@/auth`) yang di-mock.
  */
 import { describe, it, expect, afterAll, vi } from "vitest";
-import fs from "fs";
-import path from "path";
 import { NextRequest } from "next/server";
 import { prisma, pool } from "@/lib/prisma";
 import { sortThemesForEvent } from "@/lib/invitationUtils";
@@ -21,7 +19,6 @@ import { renderTemplateFile } from "@/lib/renderTemplate";
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
 const TAG = `snl${Date.now()}`;
 const userIds: string[] = [];
-const draftIds: string[] = [];
 
 const PARTICIPANTS: Record<string, unknown> = {
   WEDDING: { groom: { name: "Raka Aditya", nickname: "Raka" }, bride: { name: "Dewi Lestari", nickname: "Dewi" } },
@@ -48,7 +45,6 @@ async function create(eventType: string, themeId: string) {
 }
 
 afterAll(async () => {
-  for (const id of draftIds) fs.rmSync(path.join(process.cwd(), "data", "drafts", `${id}.html`), { force: true });
   if (userIds.length) {
     await prisma.invitation.deleteMany({ where: { userId: { in: userIds } } });
     await prisma.order.deleteMany({ where: { userId: { in: userIds } } });
@@ -67,14 +63,13 @@ describe.skipIf(!IS_TEST_DB)("label undangan non-pernikahan", () => {
 
   it.each(CASES)("%s dengan tema %s: label lengkap dari master sesuai jenis acara, piring tersalin, tanggal tidak dibekukan", async (eventType, themeId) => {
     const inv = await create(eventType, themeId);
-    draftIds.push(inv.id);
     const labels: Record<string, string> = (inv.featureSettings as any)?.customLabels ?? {};
     const isNewMaster = ["riang", "fajar", "buaian", "toga", "prakarsa"].includes(themeId);
 
     expect(Object.keys(labels).length, "label tersalin").toBeGreaterThan(5);
     expect(Object.values(labels)).not.toContain("THE COUPLE");
     expect(Object.values(labels)).not.toContain("WISHES & RSVP");
-    expect(fs.existsSync(path.join(process.cwd(), "data", "drafts", `${inv.id}.html`)), "piring").toBe(true);
+    expect(await prisma.invitationDraft.count({ where: { invitationId: inv.id } }), "piring").toBe(1);
 
     const data = (await composeTemplateData(inv.id)) as any;
     if (isNewMaster) {
@@ -99,7 +94,6 @@ describe.skipIf(!IS_TEST_DB)("label undangan non-pernikahan", () => {
 
   it("suntingan label klien menang atas label bawaan", async () => {
     const inv = await create("WISUDA", "toga");
-    draftIds.push(inv.id);
     const fsSettings = inv.featureSettings as any;
     await prisma.invitation.update({ where: { id: inv.id }, data: { featureSettings: { ...fsSettings, customLabels: { ...fsSettings.customLabels, coupleTitle: "LABEL_KLIEN_UJI" } } } });
     const html = await renderTemplateFile("toga", (await composeTemplateData(inv.id)) as any, { editMode: false, invitationId: inv.id });
@@ -108,8 +102,7 @@ describe.skipIf(!IS_TEST_DB)("label undangan non-pernikahan", () => {
 
   it("pernikahan tetap mendapat label bawaan tema", async () => {
     const inv = await create("WEDDING", "kalandra");
-    draftIds.push(inv.id);
-    expect(fs.existsSync(path.join(process.cwd(), "data", "drafts", `${inv.id}.html`)), "piring").toBe(true);
+    expect(await prisma.invitationDraft.count({ where: { invitationId: inv.id } }), "piring").toBe(1);
     const labels = (inv.featureSettings as any)?.customLabels || {};
     expect(labels.coupleEyebrow).toBeTruthy();
     expect(labels.rsvpTitle).toBeTruthy();

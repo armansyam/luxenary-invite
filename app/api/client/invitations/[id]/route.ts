@@ -8,7 +8,7 @@ import { participantNames } from "@/lib/participantUtils";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
 import { readJsonBody } from "@/lib/requestBody";
-import { removeIfExists } from "@/lib/fsSafe";
+import { deleteInvitationDraft } from "@/lib/invitationDraft";
 import { encryptPin, decryptPin } from "@/lib/pinEncryption";
 import { STAFF_PIN_PATTERN, isThemeCompatible } from "@/lib/invitationUtils";
 import { isReservedSubdomain, isSubdomainExpired } from "@/lib/domainUtils";
@@ -142,7 +142,7 @@ export async function GET(
       ...invitation,
       staffPin: displayPin, // Tampilkan PIN plain-text (sudah di-decrypt) ke owner yang login
       previewToken: createPreviewToken(invitation.id),
-      themeMainColor: themeMainColor(invitation.id),
+      themeMainColor: await themeMainColor(invitation.id),
       themeArtPreview: await loadThemeArtPreview(invitation.themeId),
       mediaMap,
       ...lockStatus,
@@ -517,8 +517,7 @@ export async function PUT(
 
     // --- ARSITEKTUR PIRING: Hapus piring draft lama jika tema berubah ---
     if (body.themeId !== undefined && body.themeId !== currentInv.themeId) {
-      const path = await import("path");
-      await removeIfExists(path.join(process.cwd(), "data", "drafts", `${id}.html`));
+      await deleteInvitationDraft(id);
       // Undangan non-pernikahan membekukan label dari master yang dirender; tema baru membekukan ulang label yang tidak diedit klien.
       if (updated.eventType !== "WEDDING") await seedRenderedLabels(id);
     }

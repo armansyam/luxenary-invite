@@ -8,6 +8,7 @@ import { isSafePathSegment } from "@/lib/fsSafe";
 import { masterFilePath } from "@/lib/themePaths";
 import { applyMasterOverrides, resolveMasterEdits, resolveVariant } from "@/lib/themeVariants";
 import { logger } from "@/lib/logger";
+import { createInvitationDraft, deleteStaleInvitationDraft, readInvitationDraft } from "@/lib/invitationDraft";
 import { stripEmptyMediaRefs } from "@/lib/emptyMediaRefs";
 import { BG_PHOTO_TONE_SELECTOR, BG_PHOTO_TONE_STYLE_ID, bgPhotoToneCss, bgPhotoToneFilter } from "@/lib/bgPhotoTone";
 
@@ -1663,7 +1664,7 @@ export async function renderTemplateFile(
     throw new Error(`[renderTemplate] Tema "${templateName}" tidak terdaftar di THEME_MAP dan berkas masternya tidak ditemukan.`);
   }
 
-  let tplPath = masterFilePath(info.eventType, info.style, info.file);
+  const tplPath = masterFilePath(info.eventType, info.style, info.file);
 
   async function fileExists(p: string): Promise<boolean> {
     try {
@@ -1674,30 +1675,23 @@ export async function renderTemplateFile(
     }
   }
 
-  // --- ARSITEKTUR PIRING: undangan klien memakai salinan master miliknya sendiri (data/drafts/<id>.html) ---
+  // --- ARSITEKTUR PIRING: undangan klien memakai salinan master miliknya sendiri (tabel invitation_drafts) ---
   // Salinan dibuat saat undangan pertama kali dirender dengan tema itu dan dipakai seterusnya, sehingga desain undangan
   // klien tidak berubah ketika admin mendesain ulang atau mengganti master. Ganti tema atau jenis acara menyalin ulang.
   // Demo dan portofolio (ID "demo-...") selalu dari master. Perbaikan mesin tema masuk lewat scripts/refresh-theme-drafts.ts.
   const draftId = templateSource === undefined && options?.invitationId && !options.invitationId.startsWith("demo-") && isSafePathSegment(options.invitationId) ? options.invitationId : null;
-  const draftsDir = path.join(process.cwd(), "data", "drafts");
-  const draftPath = draftId ? path.join(draftsDir, `${draftId}.html`) : null;
   const currentEvent = (options?.eventType || data?.eventType || info.eventType || "WEDDING").toUpperCase();
-  let draftFound = false;
-  if (draftPath && (await fileExists(draftPath))) {
-    const head = (await fs.promises.readFile(draftPath, "utf-8")).slice(0, 300);
-    const themeMatch = head.match(/<!--\s*lux-theme:\s*([a-zA-Z0-9_-]+)\s*-->/);
-    const eventMatch = head.match(/<!--\s*lux-event:\s*([a-zA-Z0-9_-]+)\s*-->/);
-    const isThemeMismatched = themeMatch && themeMatch[1].toLowerCase() !== templateName.toLowerCase();
-    const isEventMismatched = eventMatch && eventMatch[1].toUpperCase() !== currentEvent;
-    if (isThemeMismatched || isEventMismatched) {
-      await fs.promises.unlink(draftPath).catch(() => {});
-    } else {
-      tplPath = draftPath;
-      draftFound = true;
+  let draftHtml: string | null = null;
+  if (draftId) {
+    const stored = await readInvitationDraft(draftId);
+    if (stored && (stored.themeId.toLowerCase() !== templateName.toLowerCase() || stored.eventType.toUpperCase() !== currentEvent)) {
+      await deleteStaleInvitationDraft(draftId, stored);
+    } else if (stored) {
+      draftHtml = stored.html;
     }
   }
 
-  if (templateSource === undefined && !draftFound && !(await fileExists(tplPath))) {
+  if (templateSource === undefined && draftHtml === null && !(await fileExists(tplPath))) {
     // Tidak menggunakan fallback (Sesuai instruksi: Wajib memilih tema)
     return `
         <div style="padding:40px; text-align:center; font-family:sans-serif; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #fff;">
@@ -1709,8 +1703,8 @@ export async function renderTemplateFile(
   }
 
   let tpl: string;
-  if (draftFound) {
-    tpl = (await fs.promises.readFile(tplPath, "utf-8")).replace(/^<!--\s*lux-theme:[^>]*-->\n?<!--\s*lux-event:[^>]*-->\n?/, "");
+  if (draftHtml !== null) {
+    tpl = draftHtml;
   } else if (templateSource !== undefined) {
     tpl = templateSource;
   } else {
@@ -1720,11 +1714,10 @@ export async function renderTemplateFile(
     const masterEdits = await resolveMasterEdits(variant ? variant.parentId : templateName);
     if (masterEdits) tpl = applyMasterOverrides(tpl, masterEdits, "lux-master-edits");
     if (variant) tpl = applyMasterOverrides(tpl, variant.overrides);
-    if (draftPath) {
-      const cleaned = tpl.replace(/<!--\s*lux-theme:[^>]*-->\n?/g, "").replace(/<!--\s*lux-event:[^>]*-->\n?/g, "");
+    if (draftId) {
       try {
-        await fs.promises.mkdir(draftsDir, { recursive: true });
-        await fs.promises.writeFile(draftPath, `<!-- lux-theme:${templateName} -->\n<!-- lux-event:${currentEvent} -->\n${cleaned}`, "utf-8");
+        // Bila server lain lebih dulu membekukan piring, piring itulah yang dipakai agar semua server menyajikan hal sama.
+        tpl = (await createInvitationDraft(draftId, { themeId: templateName, eventType: currentEvent, html: tpl })).html;
       } catch (err) {
         // Render tetap memakai master; salinan dicoba lagi pada render berikutnya.
         logger.warn("RenderTemplate", "Gagal menyalin master ke piring undangan", { invitationId: draftId, theme: templateName, error: err instanceof Error ? err.message : String(err) });

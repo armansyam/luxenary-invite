@@ -154,11 +154,7 @@ async function runTest() {
     await purgeNasArchive(testSlug);
     await prisma.invitation.delete({ where: { id: testInv.id } });
 
-    // Hapus draft dan published HTML uji jika ada (Zero Disk Leak)
-    const draftPath = path.join(process.cwd(), "data", "drafts", `${testInv.id}.html`);
-    if (fs.existsSync(draftPath)) {
-      try { await fs.promises.unlink(draftPath); } catch {}
-    }
+    // Hapus published HTML uji jika ada (Zero Disk Leak); piring ikut terhapus bersama undangan uji
     const pubPath = path.join(process.cwd(), "public", "published", "ids", `${testInv.id}.html`);
     if (fs.existsSync(pubPath)) {
       try { await fs.promises.unlink(pubPath); } catch {}

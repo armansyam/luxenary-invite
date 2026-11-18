@@ -53,7 +53,7 @@ function designedSpec(): BuilderSpec {
 }
 
 describe.skipIf(!IS_TEST_DB)("tema builder sampai klien", () => {
-  const created = { users: [] as string[], admins: [] as string[], themeId: "", drafts: [] as string[] };
+  const created = { users: [] as string[], admins: [] as string[], themeId: "" };
 
   afterAll(async () => {
     sessionUser = null;
@@ -66,7 +66,6 @@ describe.skipIf(!IS_TEST_DB)("tema builder sampai klien", () => {
       if (theme) fs.rmSync(builderMasterPath(theme.category as "modern", created.themeId), { force: true });
       fs.rmSync(path.join(process.cwd(), "public", "demo", created.themeId.toLowerCase()), { recursive: true, force: true });
     }
-    for (const f of created.drafts) fs.rmSync(f, { force: true });
     await prisma.adminAuditLog.deleteMany({ where: { adminId: { in: created.admins } } });
     await prisma.admin.deleteMany({ where: { id: { in: created.admins } } });
     await prisma.$disconnect();
@@ -104,7 +103,6 @@ describe.skipIf(!IS_TEST_DB)("tema builder sampai klien", () => {
     }));
     expect(res.status).toBe(200);
     const inv = await prisma.invitation.findFirstOrThrow({ where: { userId: user.id } });
-    created.drafts.push(path.join(process.cwd(), "data", "drafts", `${inv.id}.html`));
     expect(inv.themeId).toBe(created.themeId);
 
     const studio = await studioGet(request(`/api/client/invitations/${inv.id}`, "GET") as never, { params: Promise.resolve({ id: inv.id }) });

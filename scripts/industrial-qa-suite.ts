@@ -790,9 +790,7 @@ export class IndustrialQASuite {
         // Jalankan static publisher
         const html = await buildAndSavePublishedHtml(inv.id);
         const publishedPath = path.join(process.cwd(), "public", "published", "ids", `${inv.id}.html`);
-        const draftPath = path.join(process.cwd(), "data", "drafts", `${inv.id}.html`);
         this.trackedCreatedFiles.push(publishedPath);
-        this.trackedCreatedFiles.push(draftPath);
 
         const fileExists = fs.existsSync(publishedPath);
         const fileContent = fileExists ? fs.readFileSync(publishedPath, "utf-8") : "";
@@ -817,42 +815,31 @@ export class IndustrialQASuite {
       try {
         const invId = `inv_clean_${this.runId}`;
         const publishedPath = path.join(process.cwd(), "public", "published", "ids", `${invId}.html`);
-        const draftPath = path.join(process.cwd(), "data", "drafts", `${invId}.html`);
         const uploadsDir = path.join(process.cwd(), "public", "uploads", "invitations", invId);
 
-        // Buat dummy files di 3 layer
+        // Buat dummy files di 2 layer disk (piring undangan ada di DB dan terhapus bersama undangannya)
         fs.mkdirSync(path.dirname(publishedPath), { recursive: true });
         fs.writeFileSync(publishedPath, "published dummy content", "utf-8");
-
-        fs.mkdirSync(path.dirname(draftPath), { recursive: true });
-        fs.writeFileSync(draftPath, "draft dummy content", "utf-8");
 
         fs.mkdirSync(uploadsDir, { recursive: true });
         fs.writeFileSync(path.join(uploadsDir, "photo1.webp"), "sample image", "utf-8");
 
-        // Eksekusi Invarian Pembersihan 3 Lapis:
-        // Lapis 1: Published HTML
         await deletePublishedHtml(invId);
 
-        // Lapis 2: Draft HTML
-        if (fs.existsSync(draftPath)) fs.unlinkSync(draftPath);
-
-        // Lapis 3: Uploads Directory
         if (fs.existsSync(uploadsDir)) fs.rmSync(uploadsDir, { recursive: true, force: true });
 
         const isPublishedGone = !fs.existsSync(publishedPath);
-        const isDraftGone = !fs.existsSync(draftPath);
         const isUploadsGone = !fs.existsSync(uploadsDir);
 
-        passed = isPublishedGone && isDraftGone && isUploadsGone;
+        passed = isPublishedGone && isUploadsGone;
         detail = passed
-          ? "Invarian 3 Lapis Penyimpanan Terbukti: Published HTML, Draft HTML, dan Folder Uploads terhapus 100% tanpa kebocoran disk."
-          : `Disk Leak Terdeteksi: Published=${!isPublishedGone}, Draft=${!isDraftGone}, Uploads=${!isUploadsGone}`;
+          ? "Invarian penyimpanan disk terbukti: Published HTML dan Folder Uploads terhapus tanpa kebocoran disk."
+          : `Disk Leak Terdeteksi: Published=${!isPublishedGone}, Uploads=${!isUploadsGone}`;
       } catch (err: any) {
         detail = `Exception: ${err?.message}`;
       }
 
-      this.recordResult("LIFECYCLE", "LIFE-03", "Three-Layer Storage Cleanup Invariant (Zero Disk Leak)", passed, start, detail);
+      this.recordResult("LIFECYCLE", "LIFE-03", "Disk Storage Cleanup Invariant (Zero Disk Leak)", passed, start, detail);
     }
 
     // TEST 4.4: Cold Storage NAS Archive Vault (Tiered Storage Lifecycle)
@@ -1201,10 +1188,8 @@ export class IndustrialQASuite {
       // 5. Bersihkan invitations & file fisik terkaitnya
       if (this.trackedInvitationIds.length > 0) {
         for (const invId of this.trackedInvitationIds) {
-          const draftPath = path.join(process.cwd(), "data", "drafts", `${invId}.html`);
           const publishedPath = path.join(process.cwd(), "public", "published", "ids", `${invId}.html`);
           const uploadsDir = path.join(process.cwd(), "public", "uploads", "invitations", invId);
-          try { if (fs.existsSync(draftPath)) fs.unlinkSync(draftPath); } catch {}
           try { if (fs.existsSync(publishedPath)) fs.unlinkSync(publishedPath); } catch {}
           try { if (fs.existsSync(uploadsDir)) fs.rmSync(uploadsDir, { recursive: true, force: true }); } catch {}
         }

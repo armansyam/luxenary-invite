@@ -11,6 +11,7 @@ import {
   hasAdminPermission,
 } from "../lib/adminPermissions";
 import { isReservedSubdomain } from "../lib/domainUtils";
+import { createInvitationDraft, deleteInvitationDraft, readInvitationDraft } from "../lib/invitationDraft";
 import { releaseOrderPromoHold, processOrderPaidMarketing } from "../lib/marketing";
 import { PlanType, EventType, OrderStatus, DiscountType } from "@prisma/client";
 
@@ -365,18 +366,15 @@ async function runComprehensiveAudit() {
     }
 
     // TEST-U1-9: Siklus Fisik Draft & Published HTML
-    const testDraftDir = path.join(process.cwd(), "data", "drafts");
     const testPublishDir = path.join(process.cwd(), "public", "published", "ids");
-    const draftFilePath = path.join(testDraftDir, `${invitation1?.id}.html`);
     const publishedFilePath = path.join(testPublishDir, `${invitation1?.id}.html`);
 
     try {
-      fs.mkdirSync(testDraftDir, { recursive: true });
       fs.mkdirSync(testPublishDir, { recursive: true });
 
-      // Simpan draft fisik
-      fs.writeFileSync(draftFilePath, "<!-- DRAFT TEST HTML LUXENARY --><h1>Draft Undangan</h1>", "utf8");
-      const isDraftSaved = fs.existsSync(draftFilePath);
+      // Piring undangan disimpan di DB (invitation_drafts)
+      await createInvitationDraft(invitation1!.id, { themeId: invitation1!.themeId, eventType: invitation1!.eventType, html: "<!-- DRAFT TEST HTML LUXENARY --><h1>Draft Undangan</h1>" });
+      const isDraftSaved = (await readInvitationDraft(invitation1!.id))?.html.includes("Draft Undangan") === true;
 
       // Simpan published fisik
       fs.writeFileSync(publishedFilePath, "<!-- PUBLISHED TEST HTML LUXENARY --><h1>Undangan Resmi</h1>", "utf8");
@@ -387,7 +385,7 @@ async function runComprehensiveAudit() {
         "TEST-U1-9",
         "Static Draft & Published HTML Physical Persistence",
         isDraftSaved && isPublishedSaved,
-        `Draft file: ${isDraftSaved} | Published file: ${isPublishedSaved}`
+        `Draft DB: ${isDraftSaved} | Published file: ${isPublishedSaved}`
       );
     } catch (err: any) {
       recordTest("User", "TEST-U1-9", "Static Draft & Published HTML Physical Persistence", false, err.message);
@@ -622,16 +620,16 @@ async function runComprehensiveAudit() {
       fs.writeFileSync(path.join(uploadDir, "sample.jpg"), "dummy binary data", "utf8");
 
       // Verifikasi file ada sebelum cleanup
-      const hasDraftBefore = fs.existsSync(draftFilePath);
+      const hasDraftBefore = (await readInvitationDraft(invitation1.id)) !== null;
       const hasPublishedBefore = fs.existsSync(publishedFilePath);
       const hasUploadsBefore = fs.existsSync(uploadDir);
 
       // Jalankan 3-step cleanup invariant
       if (fs.existsSync(publishedFilePath)) fs.unlinkSync(publishedFilePath);
-      if (fs.existsSync(draftFilePath)) fs.unlinkSync(draftFilePath);
+      await deleteInvitationDraft(invitation1.id);
       if (fs.existsSync(uploadDir)) fs.rmSync(uploadDir, { recursive: true, force: true });
 
-      const hasDraftAfter = fs.existsSync(draftFilePath);
+      const hasDraftAfter = (await readInvitationDraft(invitation1.id)) !== null;
       const hasPublishedAfter = fs.existsSync(publishedFilePath);
       const hasUploadsAfter = fs.existsSync(uploadDir);
 

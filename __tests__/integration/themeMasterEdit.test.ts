@@ -26,7 +26,7 @@ const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
 const TAG = Date.now();
 const MASTER = "badrika";
 const VARIANT_ID = `vitest-master-edit-varian-${TAG}`;
-const DRAFT_ID = `vitest-master-edit-${TAG}`;
+const OWNER_EMAIL = `vitest_master_edit_${TAG}@t.local`;
 const masterPath = path.join(process.cwd(), "themes/wedding/modern/badrika.html");
 const masterBefore = fs.readFileSync(masterPath, "utf-8");
 const image = masterImageRefs(masterBefore)[0]?.path;
@@ -46,7 +46,7 @@ describe.skipIf(!IS_TEST_DB)("Editor Master", () => {
   afterAll(async () => {
     await prisma.theme.update({ where: { id: MASTER }, data: { masterOverrides: Prisma.DbNull } });
     await prisma.theme.deleteMany({ where: { id: VARIANT_ID } });
-    fs.rmSync(path.join(process.cwd(), "data", "drafts", `${DRAFT_ID}.html`), { force: true });
+    await prisma.user.deleteMany({ where: { email: OWNER_EMAIL } });
     clearVariantCache();
     await prisma.$disconnect();
     await pool.end();
@@ -80,6 +80,8 @@ describe.skipIf(!IS_TEST_DB)("Editor Master", () => {
   });
 
   it("simpan suntingan: render memakai gambar pengganti, seksi tersembunyi, CSS, dan warna; berkas master tidak berubah", async () => {
+    const owner = await prisma.user.create({ data: { email: OWNER_EMAIL, name: "Uji Editor Master" } });
+    const { id: DRAFT_ID } = await prisma.invitation.create({ data: { userId: owner.id, themeId: MASTER, invitationSlug: `vitest-master-edit-${TAG}` } });
     const before = await renderMaster(MASTER, DRAFT_ID);
     expect(before).not.toContain(REPLACEMENT);
 

@@ -1,14 +1,13 @@
 /**
- * Regresi theme engine 20 Okt 2026 (DB luxenary_test): render selalu dari master (tanpa salinan data/drafts), label
+ * Regresi theme engine 20 Okt 2026 (DB luxenary_test): piring per undangan (tabel invitation_drafts), label
  * kustom berlaku di seksi buatan engine untuk semua tema non-pernikahan, dan editor pratinjau hanya menyunting kunci
  * yang punya tempat simpan.
  */
-import fs from "fs";
-import path from "path";
 import { describe, it, expect, afterAll } from "vitest";
 import { prisma, pool } from "@/lib/prisma";
 import { composeTemplateData } from "@/lib/themeEngine";
 import { renderTemplateFile } from "@/lib/renderTemplate";
+import { createInvitationDraft, deleteStaleInvitationDraft } from "@/lib/invitationDraft";
 import { isLiveEditField, LIVE_EDIT_FIELD_PATTERN } from "@/lib/liveEditFields";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
@@ -52,28 +51,42 @@ afterAll(async () => {
 describe.skipIf(!IS_TEST_DB)("piring draft per undangan", () => {
   it("render pertama menyalin master; render berikutnya memakai salinan itu; demo tidak menulis salinan", async () => {
     const inv = await makeInvitation("kalandra", "WEDDING");
-    const draft = path.join(process.cwd(), "data", "drafts", `${inv.id}.html`);
-    try {
-      const data = await composeTemplateData(inv.id);
-      await renderTemplateFile("kalandra", data!, { editMode: false, invitationId: inv.id });
-      const copy = fs.readFileSync(draft, "utf-8");
-      expect(copy.startsWith("<!-- lux-theme:kalandra -->\n<!-- lux-event:WEDDING -->")).toBe(true);
+    const data = await composeTemplateData(inv.id);
+    await renderTemplateFile("kalandra", data!, { editMode: false, invitationId: inv.id });
+    const copy = await prisma.invitationDraft.findUniqueOrThrow({ where: { invitationId: inv.id } });
+    expect([copy.themeId, copy.eventType]).toEqual(["kalandra", "WEDDING"]);
+    expect(copy.html).toContain("</body>");
 
-      // Perubahan master sesudah salinan dibuat tidak sampai ke undangan ini.
-      fs.writeFileSync(draft, copy.replace("</body>", "<p>PENANDA_PIRING_UJI</p></body>"));
-      const html = await renderTemplateFile("kalandra", data!, { editMode: false, invitationId: inv.id });
-      expect(html).toContain("PENANDA_PIRING_UJI");
-      expect(html).not.toContain("lux-theme:");
+    // Perubahan master sesudah salinan dibuat tidak sampai ke undangan ini.
+    await prisma.invitationDraft.update({ where: { invitationId: inv.id }, data: { html: copy.html.replace("</body>", "<p>PENANDA_PIRING_UJI</p></body>") } });
+    const html = await renderTemplateFile("kalandra", data!, { editMode: false, invitationId: inv.id });
+    expect(html).toContain("PENANDA_PIRING_UJI");
 
-      // Ganti tema: salinan lama dibuang dan master tema baru disalin.
-      await renderTemplateFile("valente", data!, { editMode: false, invitationId: inv.id });
-      expect(fs.readFileSync(draft, "utf-8").startsWith("<!-- lux-theme:valente -->")).toBe(true);
+    // Ganti tema: salinan lama dibuang dan master tema baru disalin.
+    await renderTemplateFile("valente", data!, { editMode: false, invitationId: inv.id });
+    expect((await prisma.invitationDraft.findUniqueOrThrow({ where: { invitationId: inv.id } })).themeId).toBe("valente");
 
-      await renderTemplateFile("kalandra", data!, { editMode: false, invitationId: `demo-${inv.id}` });
-      expect(fs.existsSync(path.join(process.cwd(), "data", "drafts", `demo-${inv.id}.html`))).toBe(false);
-    } finally {
-      fs.rmSync(draft, { force: true });
-    }
+    await renderTemplateFile("kalandra", data!, { editMode: false, invitationId: `demo-${inv.id}` });
+    expect(await prisma.invitationDraft.count({ where: { invitationId: `demo-${inv.id}` } })).toBe(0);
+  });
+
+  it("dua server yang merender bersamaan memakai piring yang sama; piring basi tidak menghapus piring baru", async () => {
+    const inv = await makeInvitation("kalandra", "WEDDING");
+    const [a, b] = await Promise.all([
+      createInvitationDraft(inv.id, { themeId: "kalandra", eventType: "WEDDING", html: "<p>SERVER_A</p>" }),
+      createInvitationDraft(inv.id, { themeId: "kalandra", eventType: "WEDDING", html: "<p>SERVER_B</p>" }),
+    ]);
+    expect(a.html).toBe(b.html);
+    expect(await prisma.invitationDraft.count({ where: { invitationId: inv.id } })).toBe(1);
+
+    // Server lain sudah mengganti piring ke tema baru; penghapusan piring tema lama tidak menyentuhnya.
+    await prisma.invitationDraft.update({ where: { invitationId: inv.id }, data: { themeId: "valente", html: "<p>BARU</p>" } });
+    await deleteStaleInvitationDraft(inv.id, { themeId: "kalandra", eventType: "WEDDING" });
+    expect((await prisma.invitationDraft.findUniqueOrThrow({ where: { invitationId: inv.id } })).html).toBe("<p>BARU</p>");
+
+    await prisma.invitation.delete({ where: { id: inv.id } });
+    expect(await prisma.invitationDraft.count({ where: { invitationId: inv.id } })).toBe(0);
+    ids.invitations.splice(ids.invitations.indexOf(inv.id), 1);
   });
 });
 

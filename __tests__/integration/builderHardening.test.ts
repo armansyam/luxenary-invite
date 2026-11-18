@@ -64,7 +64,7 @@ describe("reconcileLabelsOnThemeChange", () => {
 });
 
 describe.skipIf(!IS_TEST_DB)("alur admin dan ganti tema klien", () => {
-  const created = { users: [] as string[], admins: [] as string[], themes: [] as string[], drafts: [] as string[], files: [] as string[] };
+  const created = { users: [] as string[], admins: [] as string[], themes: [] as string[], files: [] as string[] };
 
   afterAll(async () => {
     sessionUser = null;
@@ -77,7 +77,6 @@ describe.skipIf(!IS_TEST_DB)("alur admin dan ganti tema klien", () => {
       if (theme) fs.rmSync(builderMasterPath(theme.category as "modern", id), { force: true });
       fs.rmSync(path.join(process.cwd(), "public", "demo", id.toLowerCase()), { recursive: true, force: true });
     }
-    for (const f of created.drafts) fs.rmSync(f, { force: true });
     for (const f of created.files) fs.rmSync(path.join(THEME_ASSET_DIR, f), { force: true });
     await prisma.adminAuditLog.deleteMany({ where: { adminId: { in: created.admins } } });
     await prisma.admin.deleteMany({ where: { id: { in: created.admins } } });
@@ -156,7 +155,6 @@ describe.skipIf(!IS_TEST_DB)("alur admin dan ganti tema klien", () => {
     }));
     expect(res.status).toBe(200);
     const inv = await prisma.invitation.findFirstOrThrow({ where: { userId: user.id } });
-    created.drafts.push(path.join(process.cwd(), "data", "drafts", `${inv.id}.html`));
 
     const labelsOf = async () => {
       const row = await prisma.invitation.findUniqueOrThrow({ where: { id: inv.id }, select: { featureSettings: true, themeId: true } });

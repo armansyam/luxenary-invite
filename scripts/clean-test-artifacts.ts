@@ -15,7 +15,6 @@ export interface CleanReport {
     promoHoldsDeleted: number;
   };
   filesystem: {
-    orphanedDraftsDeleted: number;
     orphanedPublishedHtmlDeleted: number;
     orphanedUploadDirsDeleted: number;
     deletedFilesList: string[];
@@ -47,7 +46,6 @@ export async function runTestCleanup(): Promise<CleanReport> {
       promoHoldsDeleted: 0,
     },
     filesystem: {
-      orphanedDraftsDeleted: 0,
       orphanedPublishedHtmlDeleted: 0,
       orphanedUploadDirsDeleted: 0,
       deletedFilesList: [],
@@ -150,34 +148,13 @@ export async function runTestCleanup(): Promise<CleanReport> {
     // -------------------------------------------------------------------------
     // 3. PEMBERSIHAN BERKAS FISIK YATIM (ORPHANED FILES PURGE)
     // -------------------------------------------------------------------------
-    console.log("\n▶ [3/4] Memindai berkas fisik yatim (Drafts, Published HTML, Uploads)...");
+    console.log("\n▶ [3/4] Memindai berkas fisik yatim (Published HTML, Uploads)...");
 
     // Ambil seluruh ID undangan aktif yang sah di PostgreSQL
     const allActiveInvitations = await prisma.invitation.findMany({
       select: { id: true },
     });
     const validInvitationIds = new Set(allActiveInvitations.map((inv) => inv.id));
-
-    // 3A. Scan data/drafts/
-    const draftsDir = path.join(process.cwd(), "data", "drafts");
-    if (fs.existsSync(draftsDir)) {
-      const draftFiles = fs.readdirSync(draftsDir);
-      for (const file of draftFiles) {
-        if (!file.endsWith(".html")) continue;
-        const invId = file.replace(/\.html$/, "");
-        if (!validInvitationIds.has(invId)) {
-          const filePath = path.join(draftsDir, file);
-          try {
-            fs.unlinkSync(filePath);
-            report.filesystem.orphanedDraftsDeleted++;
-            report.filesystem.deletedFilesList.push(`data/drafts/${file}`);
-            console.log(`  🗑️ Menghapus draft yatim: data/drafts/${file}`);
-          } catch (e: any) {
-            console.warn(`  ⚠️ Gagal menghapus draft: ${file} (${e.message})`);
-          }
-        }
-      }
-    }
 
     // 3B. Scan public/published/ids/
     const publishedDir = path.join(process.cwd(), "public", "published", "ids");
@@ -247,7 +224,6 @@ export async function runTestCleanup(): Promise<CleanReport> {
   console.log(`• Pesanan/Order Uji Dihapus : ${report.database.ordersDeleted} row`);
   console.log(`• Undangan Uji Dihapus      : ${report.database.invitationsDeleted} row`);
   console.log(`• Kupon & Hold Uji Dihapus  : ${report.database.promoCouponsDeleted} kupon / ${report.database.promoHoldsDeleted} hold`);
-  console.log(`• Draft HTML Yatim Dihapus  : ${report.filesystem.orphanedDraftsDeleted} file`);
   console.log(`• Published Yatim Dihapus   : ${report.filesystem.orphanedPublishedHtmlDeleted} file`);
   console.log(`• Folder Upload Yatim Dihapus: ${report.filesystem.orphanedUploadDirsDeleted} dir`);
   console.log(`• Total Durasi Pembersihan  : ${report.durationMs} ms`);

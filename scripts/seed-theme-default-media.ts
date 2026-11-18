@@ -65,8 +65,8 @@ async function main() {
   const pending = await prisma.invitation.findMany({ where: { themeDefaultMedia: { equals: Prisma.DbNull } }, select: { id: true, themeId: true } });
   let backfilled = 0;
   for (const inv of pending) {
-    const draft = path.join(process.cwd(), "data", "drafts", `${inv.id}.html`);
-    const fromDraft = fs.existsSync(draft) ? staticBackgroundOf(fs.readFileSync(draft, "utf-8")) : null;
+    const draft = await prisma.invitationDraft.findUnique({ where: { invitationId: inv.id }, select: { html: true } });
+    const fromDraft = draft ? staticBackgroundOf(draft.html) : null;
     const next: ThemeDefaultMedia = { ...(themeDefaults.get(inv.themeId) ?? {}), ...parseThemeDefaultMedia(fromDraft ? { GLOBAL_FIXED_BG: fromDraft } : {}) };
     backfilled += 1;
     if (apply) await prisma.invitation.update({ where: { id: inv.id }, data: { themeDefaultMedia: next } });

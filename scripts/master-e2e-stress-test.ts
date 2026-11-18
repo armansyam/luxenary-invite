@@ -2,6 +2,7 @@ import "dotenv/config";
 import { prisma, pool } from "../lib/prisma";
 import { applyUpgradePlan } from "../lib/upgradeHelper";
 import { buildAndSavePublishedHtml, deletePublishedHtml } from "../lib/staticPublisher";
+import { deleteInvitationDraft, readInvitationDraft } from "../lib/invitationDraft";
 import fs from "fs";
 import path from "path";
 
@@ -269,12 +270,9 @@ async function main() {
     await deletePublishedHtml(testInvitation.id);
     const isHtmlDeleted = !fs.existsSync(publishedFilePath);
 
-    // Invarian 2: Hapus Draft HTML lokal jika ada
-    const draftFilePath = path.join(process.cwd(), "data", "drafts", `${testInvitation.id}.html`);
-    if (fs.existsSync(draftFilePath)) {
-      try { fs.unlinkSync(draftFilePath); } catch {}
-    }
-    const isDraftDeleted = !fs.existsSync(draftFilePath);
+    // Invarian 2: Hapus piring undangan dari DB
+    await deleteInvitationDraft(testInvitation.id);
+    const isDraftDeleted = (await readInvitationDraft(testInvitation.id)) === null;
 
     // Invarian 3: Hapus folder uploads fisik jika ada
     const uploadsDir = path.join(process.cwd(), "public", "uploads", "invitations", testInvitation.id);

@@ -1,7 +1,7 @@
 /**
  * Menyalin ulang template master ke piring draft dan membangun ulang HTML terbit.
  *
- * Piring `data/drafts/<id>.html` sengaja dibekukan agar undangan klien tidak berubah saat tema master dihapus atau
+ * Piring undangan (tabel invitation_drafts) sengaja dibekukan agar undangan klien tidak berubah saat tema master dihapus atau
  * didesain ulang. Akibatnya perbaikan bug di template master maupun di mesin tema (lib/themeEngine.ts) tidak sampai ke
  * undangan yang sudah ada sampai piringnya disalin ulang dan HTML terbitnya dibangun ulang. Jalankan setelah deploy
  * yang mengubah template atau mesin tema, lalu restart proses agar cache HTML di memori ikut segar.
@@ -12,8 +12,6 @@
  *   npx tsx scripts/refresh-theme-drafts.ts --apply --keep-drafts    # piring dibiarkan; hanya perbaikan mesin tema
  */
 import "dotenv/config";
-import fs from "fs";
-import path from "path";
 import { prisma, pool } from "../lib/prisma";
 import { buildAndSavePublishedHtml, waitForPendingArchiveSyncs } from "../lib/staticPublisher";
 import { purgeCloudflareCache } from "../lib/cloudflare";
@@ -28,8 +26,7 @@ async function main() {
     where: themeFilter ? { themeId: { in: themeFilter } } : {},
     select: { id: true, themeId: true, status: true, invitationSlug: true, subdomain: true, customDomain: true },
   });
-  const draftsDir = path.join(process.cwd(), "data", "drafts");
-  const withDraft = invitations.filter((inv) => fs.existsSync(path.join(draftsDir, `${inv.id}.html`)));
+  const withDraft = await prisma.invitationDraft.findMany({ where: { invitationId: { in: invitations.map((inv) => inv.id) } }, select: { invitationId: true } });
   // EVENT_FINISHED tetap disajikan ke tamu (mode galeri pasca-acara), jadi HTML-nya ikut dibangun ulang.
   const published = invitations.filter((inv) => inv.status === "PUBLISHED" || inv.status === "EVENT_FINISHED");
 
@@ -42,7 +39,7 @@ async function main() {
   }
 
   if (!keepDrafts) {
-    for (const inv of withDraft) fs.rmSync(path.join(draftsDir, `${inv.id}.html`), { force: true });
+    await prisma.invitationDraft.deleteMany({ where: { invitationId: { in: withDraft.map((d) => d.invitationId) } } });
   }
 
   const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || "").split(":")[0].toLowerCase();

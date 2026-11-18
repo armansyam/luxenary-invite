@@ -1,5 +1,3 @@
-import fs from "fs";
-import path from "path";
 import { describe, it, expect, afterAll } from "vitest";
 import { prisma, pool } from "@/lib/prisma";
 import { composeTemplateData } from "@/lib/themeEngine";
@@ -65,7 +63,6 @@ async function makeInvitation(featureSettings: object, withBackground: boolean) 
 const render = async (invId: string) => renderTemplateFile("bugis", (await composeTemplateData(invId)) as any, { editMode: false, invitationId: invId });
 
 afterAll(async () => {
-  for (const id of ids.invitations) fs.rmSync(path.join(process.cwd(), "data", "drafts", `${id}.html`), { force: true });
   await prisma.invitationMedia.deleteMany({ where: { invitationId: { in: ids.invitations } } });
   await prisma.invitation.deleteMany({ where: { id: { in: ids.invitations } } });
   await prisma.order.deleteMany({ where: { userId: { in: ids.users } } });

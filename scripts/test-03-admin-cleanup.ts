@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { prisma, pool } from '../lib/prisma';
 import { deletePublishedHtml } from '../lib/staticPublisher';
+import { deleteInvitationDraft } from '../lib/invitationDraft';
 import { purgeNasArchive } from '../lib/nasArchive';
 import { deleteFile } from '../lib/storage';
 import fs from 'fs';
@@ -46,11 +47,8 @@ async function runTest03() {
       // Invarian 1: Hapus Published HTML
       await deletePublishedHtml(inv.id);
 
-      // Invarian 2: Hapus Draft HTML lokal jika ada
-      const draftPath = path.join(process.cwd(), "data", "drafts", `${inv.id}.html`);
-      if (fs.existsSync(draftPath)) {
-        try { fs.unlinkSync(draftPath); } catch {}
-      }
+      // Invarian 2: Hapus piring undangan
+      await deleteInvitationDraft(inv.id);
 
       // Invarian 3: Hapus folder uploads fisik & R2 storage
       const uploadsDir = path.join(process.cwd(), "public", "uploads", "invitations", inv.id);

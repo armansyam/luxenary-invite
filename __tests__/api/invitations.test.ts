@@ -24,6 +24,9 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: vi.fn(),
       updateMany: vi.fn(),
     },
+    invitationDraft: {
+      findUnique: vi.fn().mockResolvedValue(null),
+    },
     $disconnect: vi.fn(),
   },
   pool: { end: vi.fn() },
