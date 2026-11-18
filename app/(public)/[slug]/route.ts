@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getPublishedHtml, buildAndSavePublishedHtml } from "@/lib/staticPublisher";
+import { servePublishedHtml } from "@/lib/staticPublisher";
 import { composeTemplateData } from "@/lib/themeEngine";
 import { renderTemplateFile } from "@/lib/renderTemplate";
 
@@ -203,10 +203,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
     }
   } else {
     // Mode PUBLISHED: Gunakan file statis yang telah dibake (Zero Overhead)
-    html = await getPublishedHtml(invitation.id);
-    if (!html) {
-      html = await buildAndSavePublishedHtml(invitation.id);
-    }
+    html = await servePublishedHtml(invitation.id);
   }
 
   if (!html) {

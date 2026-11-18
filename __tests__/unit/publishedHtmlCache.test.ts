@@ -5,25 +5,25 @@
 import { describe, it, expect, afterAll } from "vitest";
 import fs from "fs";
 import path from "path";
-import { getPublishedHtml } from "@/lib/staticPublisher";
+import { readPublishedHtml } from "@/lib/staticPublisher";
 
 const ID = `vitest-published-cache-${Date.now()}`;
 const FILE = path.join(process.cwd(), "public", "published", "ids", `${ID}.html`);
 
-describe("getPublishedHtml mengikuti berkas di disk", () => {
+describe("readPublishedHtml mengikuti berkas di disk", () => {
   afterAll(() => fs.rmSync(FILE, { force: true }));
 
   it("berkas yang ditulis ulang worker lain langsung tersaji, berkas yang dihapus tidak", async () => {
     fs.mkdirSync(path.dirname(FILE), { recursive: true });
     fs.writeFileSync(FILE, "<html>lama /uploads/qris.webp</html>");
     fs.utimesSync(FILE, new Date(Date.now() - 60_000), new Date(Date.now() - 60_000));
-    expect(await getPublishedHtml(ID)).toContain("/uploads/qris.webp");
+    expect((await readPublishedHtml(ID))?.html).toContain("/uploads/qris.webp");
 
     // Worker lain: tulis langsung ke disk tanpa menyentuh cache memori proses ini.
-    fs.writeFileSync(FILE, "<html>baru https://cdn.contoh/qris.webp</html>");
-    expect(await getPublishedHtml(ID)).toContain("https://cdn.contoh/qris.webp");
+    fs.writeFileSync(FILE, "<html>baru https://cdn.contoh/qris.webp</html>\n<!-- lux-build:7 -->");
+    expect(await readPublishedHtml(ID)).toEqual({ html: "<html>baru https://cdn.contoh/qris.webp</html>", version: 7 });
 
     fs.rmSync(FILE);
-    expect(await getPublishedHtml(ID)).toBeNull();
+    expect(await readPublishedHtml(ID)).toBeNull();
   });
 });

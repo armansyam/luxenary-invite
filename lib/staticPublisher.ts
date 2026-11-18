@@ -8,33 +8,16 @@ import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 import { publishedHtmlCache } from "@/lib/cache";
 import { escapeHtml } from "@/lib/escapeHtml";
 import { logger } from "@/lib/logger";
+import { bumpRenderVersion, currentRenderVersion, publishedVersionKey, splitVersionMarker, withVersionMarker, writeFileAtomic } from "@/lib/renderVersion";
 
 const PUBLISHED_DIR = path.join(process.cwd(), "public", "published");
+const publishedPath = (invitationId: string) => path.join(PUBLISHED_DIR, "ids", `${invitationId}.html`);
 
-
-
-/**
- * Ensures the target published storage directory and its category subfolders exist.
- */
-async function ensurePublishedDir() {
-  try {
-    await fs.promises.access(PUBLISHED_DIR);
-  } catch {
-    await fs.promises.mkdir(PUBLISHED_DIR, { recursive: true });
-  }
-  
-  const idsDir = path.join(PUBLISHED_DIR, "ids");
-  try { await fs.promises.access(idsDir); } catch { await fs.promises.mkdir(idsDir, { recursive: true }); }
-}
-
-/**
- * Reads the standalone published HTML file content.
- */
-export async function getPublishedHtml(invitationId: string): Promise<string | null> {
-  const p = path.join(PUBLISHED_DIR, "ids", `${invitationId}.html`);
+/** Berkas HTML terbit di disk server ini beserta versi saat dibangun (null untuk berkas sebelum penanda versi ada). */
+export async function readPublishedHtml(invitationId: string): Promise<{ html: string; version: number | null } | null> {
+  const p = publishedPath(invitationId);
   // Cache memori hanya menghemat pembacaan berkas. Berkas di disk adalah sumber kebenaran: worker PM2 lain yang
-  // membangun ulang (mis. sesudah sinkronisasi R2) hanya memperbarui cache-nya sendiri, sehingga tanpa cek mtime
-  // worker ini menyajikan HTML lama berisi URL /uploads/ yang berkasnya sudah dihapus, sampai TTL habis.
+  // membangun ulang hanya memperbarui cache-nya sendiri, jadi tanpa cek mtime worker ini menyajikan HTML lama.
   let mtimeMs: number;
   try {
     mtimeMs = (await fs.promises.stat(p)).mtimeMs;
@@ -43,15 +26,26 @@ export async function getPublishedHtml(invitationId: string): Promise<string | n
     return null;
   }
   const cached = publishedHtmlCache.get(invitationId);
-  if (cached && cached.mtimeMs === mtimeMs) return cached.html;
+  if (cached && cached.mtimeMs === mtimeMs) return { html: cached.html, version: cached.version };
 
   try {
-    const html = await fs.promises.readFile(p, "utf-8");
-    publishedHtmlCache.set(invitationId, { html, mtimeMs });
-    return html;
+    const { html, version } = splitVersionMarker(await fs.promises.readFile(p, "utf-8"));
+    publishedHtmlCache.set(invitationId, { html, version, mtimeMs });
+    return { html, version };
   } catch {
     return null;
   }
+}
+
+/**
+ * HTML terbit untuk tamu. Server lain mungkin sudah menerbitkan ulang undangan ini (versi di DB naik); berkas di disk
+ * server ini yang bertanda versi lain dibangun ulang dari DB tanpa menaikkan versi lagi.
+ */
+export async function servePublishedHtml(invitationId: string): Promise<string | null> {
+  const version = await currentRenderVersion(publishedVersionKey(invitationId));
+  const file = await readPublishedHtml(invitationId);
+  if (file && file.version === version) return file.html;
+  return savePublishedHtml(invitationId, version);
 }
 
 /** HTML terbit tanpa menyimpannya; `includeRsvps: false` dan `includeGift: false` untuk salinan portofolio. */
@@ -125,18 +119,23 @@ export async function renderPublishedHtml(
   return renderTemplateFile(invitation.themeId, data, { editMode: false, invitationId: invitation.id });
 }
 
-export async function buildAndSavePublishedHtml(invitationId: string): Promise<string | null> {
+async function savePublishedHtml(invitationId: string, version: number): Promise<string | null> {
   const standaloneHtml = await renderPublishedHtml(invitationId);
   if (standaloneHtml === null) return null;
 
-  await ensurePublishedDir();
+  const masterPath = publishedPath(invitationId);
+  await writeFileAtomic(masterPath, withVersionMarker(standaloneHtml, version));
+  publishedHtmlCache.set(invitationId, { html: standaloneHtml, version, mtimeMs: (await fs.promises.stat(masterPath)).mtimeMs });
 
-  // Hanya simpan 1 file sumber kebenaran (Single Source of Truth) berdasarkan ID
-  const masterPath = path.join(PUBLISHED_DIR, "ids", `${invitationId}.html`);
-  await fs.promises.writeFile(masterPath, standaloneHtml, "utf-8");
-  publishedHtmlCache.set(invitationId, { html: standaloneHtml, mtimeMs: (await fs.promises.stat(masterPath)).mtimeMs });
+  logger.info("StaticPublisher", "HTML undangan dibangun", { path: masterPath, version, sizeKB: Number((standaloneHtml.length / 1024).toFixed(1)) });
+  return standaloneHtml;
+}
 
-  logger.info("StaticPublisher", "HTML undangan dibangun", { path: masterPath, sizeKB: Number((standaloneHtml.length / 1024).toFixed(1)) });
+/** Dipanggil setelah data undangan berubah: menaikkan versi agar server lain membangun ulang salinannya. */
+export async function buildAndSavePublishedHtml(invitationId: string): Promise<string | null> {
+  const version = await bumpRenderVersion(publishedVersionKey(invitationId));
+  const standaloneHtml = await savePublishedHtml(invitationId, version);
+  if (standaloneHtml === null) return null;
 
   // Sinkronisasi non-blocking ke arsip NAS jika fitur diaktifkan
   const archiveSync = import("./nasArchive").then(({ syncInvitationToNasArchive }) =>
@@ -163,11 +162,11 @@ export async function waitForPendingArchiveSyncs(): Promise<void> {
 export async function deletePublishedHtml(invitationId: string): Promise<boolean> {
   let deleted = false;
 
-  // Invalidate dari L1 Memory Cache
   publishedHtmlCache.delete(invitationId);
+  // Salinan di server lain ikut basi; rute publik juga memeriksa status undangan sebelum menyajikannya.
+  await bumpRenderVersion(publishedVersionKey(invitationId));
 
-  // Hapus file ID master (Single Source of Truth)
-  const idPath = path.join(PUBLISHED_DIR, "ids", `${invitationId}.html`);
+  const idPath = publishedPath(invitationId);
   try {
     await fs.promises.unlink(idPath);
     deleted = true;

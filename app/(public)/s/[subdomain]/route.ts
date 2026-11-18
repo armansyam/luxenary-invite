@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getApexRootDomain, isSubdomainExpired } from "@/lib/domainUtils";
-import { getPublishedHtml, buildAndSavePublishedHtml } from "@/lib/staticPublisher";
+import { servePublishedHtml } from "@/lib/staticPublisher";
 import { composeTemplateData } from "@/lib/themeEngine";
 import { renderTemplateFile } from "@/lib/renderTemplate";
 import { invitationLookupCache } from "@/lib/cache";
@@ -155,10 +155,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
     }
   } else {
     // Mode PUBLISHED: Gunakan file statis yang telah dibake (Zero Overhead)
-    html = await getPublishedHtml(invitation.id);
-    if (!html) {
-      html = await buildAndSavePublishedHtml(invitation.id);
-    }
+    html = await servePublishedHtml(invitation.id);
   }
 
   if (!html) {

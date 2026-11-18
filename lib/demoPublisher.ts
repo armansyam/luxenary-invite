@@ -10,16 +10,47 @@ import { escapeHtml } from "./escapeHtml";
 import { logger } from "./logger";
 import { isSafePathSegment } from "./fsSafe";
 import { resolveVariant } from "./themeVariants";
+import { bumpRenderVersion, currentRenderVersion, demoVersionKey, splitVersionMarker, withVersionMarker, writeFileAtomic } from "./renderVersion";
 
-/**
- * Compiles a single theme demo into a standalone static HTML file in public/demo/[themeId]/index.html
- */
-export async function compileAndSaveStaticDemo(themeId: string, customDemoData?: any): Promise<string> {
-  masterTemplateCache.clear();
+function cleanDemoId(themeId: string): string {
   const cleanId = themeId.toLowerCase().trim();
   if (!isSafePathSegment(cleanId)) {
     throw new Error(`ID tema tidak valid untuk demo statis: ${JSON.stringify(themeId)}`);
   }
+  return cleanId;
+}
+
+const demoFilePath = (cleanId: string) => path.join(process.cwd(), "public", "demo", cleanId, "index.html");
+
+/**
+ * Dipanggil setelah data demo atau master tema berubah: mengompilasi demo ke public/demo/<id>/index.html dan menaikkan
+ * versinya agar server aplikasi lain membangun ulang salinan mereka.
+ */
+export async function compileAndSaveStaticDemo(themeId: string, customDemoData?: any): Promise<string> {
+  const cleanId = cleanDemoId(themeId);
+  const version = await bumpRenderVersion(demoVersionKey(cleanId));
+  await buildStaticDemo(cleanId, customDemoData, version);
+  return `/demo/${cleanId}/index.html`;
+}
+
+/** HTML demo untuk pengunjung; berkas yang belum ada atau bertanda versi lain dibangun ulang tanpa menaikkan versi. */
+export async function serveStaticDemo(themeId: string): Promise<string> {
+  const cleanId = cleanDemoId(themeId);
+  const version = await currentRenderVersion(demoVersionKey(cleanId));
+  try {
+    const file = splitVersionMarker(await fs.promises.readFile(demoFilePath(cleanId), "utf-8"));
+    if (file.version === version) return file.html;
+  } catch (err) {
+    // Belum ada demo statis (ENOENT) adalah jalur normal menuju kompilasi di bawah; galat lain dicatat.
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+      logger.warn("DemoPublisher", "Demo statis tidak terbaca; dikompilasi ulang", { theme: cleanId, error: err instanceof Error ? err.message : String(err) });
+    }
+  }
+  return buildStaticDemo(cleanId, undefined, version);
+}
+
+async function buildStaticDemo(cleanId: string, customDemoData: any, version: number): Promise<string> {
+  masterTemplateCache.clear();
   let resolvedData = customDemoData;
   // Varian Tema memakai data dan foto demo master induknya (varian tidak punya folder demo sendiri); hanya HTML-nya
   // yang ditulis ke /demo/<id-varian>/.
@@ -113,21 +144,9 @@ export async function compileAndSaveStaticDemo(themeId: string, customDemoData?:
   `;
   html = html.replace('</head>', coverModeInjection);
 
-  const targetDir = path.join(process.cwd(), "public", "demo", cleanId);
-  try {
-    await fs.promises.access(targetDir);
-  } catch {
-    await fs.promises.mkdir(targetDir, { recursive: true });
-  }
-
-  const targetFilePath = path.join(targetDir, "index.html");
-  // Tulis lalu ganti nama: cron harian mengompilasi ulang demo saat situs melayani pengunjung, dan /demo/[theme]
-  // tidak boleh membaca berkas yang baru setengah tertulis.
-  const tempFilePath = `${targetFilePath}.${process.pid}.tmp`;
-  await fs.promises.writeFile(tempFilePath, html, "utf-8");
-  await fs.promises.rename(tempFilePath, targetFilePath);
-
-  return `/demo/${cleanId}/index.html`;
+  // Cron harian mengompilasi ulang demo saat situs melayani pengunjung; /demo/[theme] tidak boleh membaca berkas setengah tertulis.
+  await writeFileAtomic(demoFilePath(cleanId), withVersionMarker(html, version));
+  return html;
 }
 
 /**
@@ -180,7 +199,7 @@ export async function recompileStaleStaticDemos(now = Date.now()): Promise<{ rec
   const failed: string[] = [];
   for (const t of themes) {
     const themeId = t.id.toLowerCase().trim();
-    const filePath = path.join(process.cwd(), "public", "demo", themeId, "index.html");
+    const filePath = demoFilePath(themeId);
     const mtime = await fs.promises.stat(filePath).then((s) => s.mtimeMs, () => 0);
     if (now - mtime < STALE_DEMO_MAX_AGE_MS) continue;
     try {

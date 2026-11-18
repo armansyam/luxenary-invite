@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
-import { compileAndSaveStaticDemo } from "@/lib/demoPublisher";
+import { serveStaticDemo } from "@/lib/demoPublisher";
 import { isSafePathSegment } from "@/lib/fsSafe";
 import { logger } from "@/lib/logger";
 
@@ -13,7 +11,7 @@ export async function GET(
 ) {
   const { theme } = await params;
   const cleanTheme = theme.toLowerCase().trim();
-  // ID tema dipakai sebagai nama direktori untuk dibaca dan ditulis (compileAndSaveStaticDemo).
+  // ID tema dipakai sebagai nama direktori untuk dibaca dan ditulis (serveStaticDemo).
   if (!isSafePathSegment(cleanTheme)) {
     return new NextResponse("Not Found", { status: 404 });
   }
@@ -49,52 +47,20 @@ export async function GET(
       );
     }
   } catch (dbErr) {
-    // Demo statis tetap disajikan bila database tidak terjangkau; status aktif tema tidak dapat diperiksa.
+    // Galat pemeriksaan status dicatat; serveStaticDemo membaca versi demo dari DB dan menolak dengan 500 bila DB tidak terjangkau.
     logger.warn("DemoTheme", "Status tema tidak dapat diperiksa", { themeId: cleanTheme, error: dbErr instanceof Error ? dbErr.message : String(dbErr) });
   }
 
-  const staticFilePath = path.join(process.cwd(), "public", "demo", cleanTheme, "index.html");
-
-  // 2. If static compiled demo exists, serve it directly (Instant < 2ms response)
   try {
-    await fs.promises.access(staticFilePath);
-    const staticHtml = await fs.promises.readFile(staticFilePath, "utf-8");
-    return new NextResponse(staticHtml, {
-      headers: {
-        "Content-Type": "text/html; charset=utf-8",
-        "Cache-Control": "no-store, max-age=0, must-revalidate",
-      },
-    });
-  } catch (err) {
-    // Belum ada demo statis (ENOENT) adalah jalur normal menuju kompilasi di bawah; galat lain dicatat.
-    if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
-      logger.warn("DemoTheme", "Demo statis tidak terbaca; dikompilasi ulang", { themeId: cleanTheme, error: err instanceof Error ? err.message : String(err) });
-    }
-  }
-
-  // 3. Fallback: Compile on the fly if active
-  try {
-    const { prisma } = await import("@/lib/prisma");
-    let customDemoData = undefined;
-    const setting = await prisma.adminSetting.findUnique({
-      where: { key: `theme_demo_${cleanTheme}` },
-    });
-    if (setting && setting.value) {
-      customDemoData = JSON.parse(setting.value);
-    }
-
-    await compileAndSaveStaticDemo(cleanTheme, customDemoData);
-
-    // Read the newly compiled file
-    const compiledHtml = await fs.promises.readFile(staticFilePath, "utf-8");
-    return new NextResponse(compiledHtml, {
+    const html = await serveStaticDemo(cleanTheme);
+    return new NextResponse(html, {
       headers: {
         "Content-Type": "text/html; charset=utf-8",
         "Cache-Control": "no-store, max-age=0, must-revalidate",
       },
     });
   } catch (error) {
-    logger.error("DemoTheme", "Gagal mengompilasi demo statis", error, { themeId: cleanTheme });
+    logger.error("DemoTheme", "Gagal menyajikan demo statis", error, { themeId: cleanTheme });
     return new NextResponse("Gagal memuat demo tema", { status: 500 });
   }
 }

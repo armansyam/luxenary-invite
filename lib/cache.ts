@@ -78,7 +78,7 @@ export const masterTemplateCache =
   global.masterTemplateCache ?? new BoundedMemoryCache<string>(100, 3600_000); // 1 jam TTL untuk master template
 
 /** `mtimeMs` berkas saat dibaca: PM2 menjalankan beberapa worker, dan worker lain dapat membangun ulang berkasnya. */
-export type PublishedHtmlEntry = { html: string; mtimeMs: number };
+export type PublishedHtmlEntry = { html: string; version: number | null; mtimeMs: number };
 
 export const publishedHtmlCache =
   global.publishedHtmlCache ?? new BoundedMemoryCache<PublishedHtmlEntry>(500, 300_000); // 5 menit TTL untuk published HTML

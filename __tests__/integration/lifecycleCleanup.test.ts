@@ -10,7 +10,6 @@ import path from "path";
 vi.mock("@/lib/staticPublisher", () => ({
   buildAndSavePublishedHtml: vi.fn(async () => "<html></html>"),
   deletePublishedHtml: vi.fn(async () => true),
-  getPublishedHtml: vi.fn(async () => null),
 }));
 vi.mock("@/lib/storage", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/storage")>()),

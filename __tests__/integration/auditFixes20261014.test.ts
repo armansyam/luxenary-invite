@@ -21,7 +21,7 @@ import { composeTemplateData } from "@/lib/themeEngine";
 import { POST as uploadMedia } from "@/app/api/client/upload/route";
 import { releaseInvitationSubdomain } from "@/lib/subdomainRelease";
 import { purgeObsoleteUserOrders } from "@/lib/upgradeHelper";
-import { buildAndSavePublishedHtml, deletePublishedHtml, getPublishedHtml } from "@/lib/staticPublisher";
+import { buildAndSavePublishedHtml, deletePublishedHtml, readPublishedHtml } from "@/lib/staticPublisher";
 import { DAY_MS } from "@/lib/lifecycleDates";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
@@ -184,7 +184,7 @@ describe.skipIf(!IS_TEST_DB)("pelepasan subdomain", () => {
     expect(before).toContain(`/s/${sub}/`);
 
     await releaseInvitationSubdomain(inv);
-    const after = await getPublishedHtml(invitationId);
+    const after = (await readPublishedHtml(invitationId))?.html;
     expect(after).not.toContain(`/s/${sub}/`);
     expect((await prisma.invitation.findUniqueOrThrow({ where: { id: invitationId } })).subdomain).toBeNull();
     await deletePublishedHtml(invitationId);

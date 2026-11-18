@@ -608,6 +608,16 @@ model AffiliateCommission {
   @@map("affiliate_commissions")
 }
 
+/// Versi HTML turunan yang di-cache di disk tiap server (lib/renderVersion.ts): `published:<invitationId>` dan
+/// `demo:<themeId>`. Server yang berkasnya bertanda versi lain membangun ulang dari DB sebelum menyajikannya.
+model RenderVersion {
+  key       String   @id
+  version   Int      @default(1)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@map("render_versions")
+}
+
 /// Tabel rate limiting cross-process berbasis PostgreSQL.
 /// Digunakan oleh rateLimitDb() di lib/rateLimit.ts untuk endpoint publik sensitif
 /// (RSVP, memories upload, scan resepsionis) di lingkungan PM2 multi-worker.
