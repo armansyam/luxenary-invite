@@ -171,6 +171,11 @@
       transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s ease, visibility 0s linear 0.85s;
     }
 
+    /* Gradasi di atas dirancang untuk sampul tanpa foto dan menutup foto Sampul HP klien; saat slot terisi dibuat tembus. */
+    .cover-overlay.has-cover-photo {
+      background: linear-gradient(180deg, color-mix(in srgb, var(--lux-c-190e0a) 60%, transparent) 0%, color-mix(in srgb, var(--lux-c-190e0a) 40%, transparent) 45%, color-mix(in srgb, var(--lux-c-190e0a) 85%, transparent) 100%), url('{{landingCoverUrl}}') center/cover no-repeat;
+    }
+
     .cover-overlay.opened,
     .cover-screen.opened {
       transform: translateY(-100%);
@@ -1084,7 +1089,7 @@
 <body>
 
   <!-- 1. COVER OVERLAY -->
-  <div id="coverScreen" class="cover-screen cover-overlay">
+  <div id="coverScreen" class="cover-screen cover-overlay{{#if landingCoverUrl}} has-cover-photo{{/if}}">
     <!-- SUNSET ARCH VECTOR -->
     <svg class="sunset-arch-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M12 56V28C12 16.9543 20.9543 8 32 8C43.0457 8 52 16.9543 52 28V56" stroke="#e59866" stroke-width="2.5"

@@ -151,6 +151,10 @@
       ), url('{{landingCoverUrl}}') center/cover no-repeat;
       transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s ease, visibility 0s linear 0.85s;
     }
+    /* Gradasi di atas dirancang untuk sampul tanpa foto dan menutup foto Sampul HP klien; saat slot terisi dibuat tembus. */
+    .cover-screen.has-cover-photo {
+      background: linear-gradient(180deg, color-mix(in srgb, var(--bg-dark, var(--lux-c-120c06)) 60%, transparent) 0%, color-mix(in srgb, var(--bg-dark, var(--lux-c-120c06)) 40%, transparent) 45%, color-mix(in srgb, var(--bg-dark, var(--lux-c-120c06)) 85%, transparent) 100%), url('{{landingCoverUrl}}') center/cover no-repeat;
+    }
     .cover-screen::-webkit-scrollbar, .cover-overlay::-webkit-scrollbar { display: none; }
     .cover-screen.opened, .cover-screen.slide-up-hidden, .cover-overlay.opened {
       transform: translateY(-100%); pointer-events: none; opacity: 0; visibility: hidden;
@@ -690,7 +694,7 @@
 <body>
 
   <!-- 1. COVER SCREEN -->
-  <div id="coverScreen" class="cover-screen cover-overlay">
+  <div id="coverScreen" class="cover-screen cover-overlay{{#if landingCoverUrl}} has-cover-photo{{/if}}">
     <div class="cover-monogram-circle">{{monogramInitial}}</div>
 
     <p class="cover-badge" data-lux-field="customLabels.coverBadge">{{coverBadge}}</p>

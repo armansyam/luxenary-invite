@@ -432,7 +432,7 @@
     </div>
   </div>
   <!-- COVER -->
-  <div id="coverScreen" class="cover-screen" style="background-image: url('{{mainPhotoUrl}}');">
+  <div id="coverScreen" class="cover-screen" style="background-image: url('{{#if landingCoverUrl}}{{landingCoverUrl}}{{/if}}{{#unless landingCoverUrl}}{{mainPhotoUrl}}{{/unless}}');">
     <div class="cover-overlay"></div>
     <div class="cover-content">
       <div class="badge-festivo">

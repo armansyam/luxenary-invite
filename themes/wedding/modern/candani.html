@@ -145,6 +145,10 @@
       background: radial-gradient(circle at center, color-mix(in srgb, var(--primary, var(--lux-c-ab5e44)) 28%, var(--bg-dark, var(--lux-c-140c08)) 90%) 0%, color-mix(in srgb, var(--bg-dark, var(--lux-c-140c08)) 98%, transparent) 100%), url('{{landingCoverUrl}}') center/cover no-repeat;
       transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s ease, visibility 0s linear 0.85s;
     }
+    /* Gradasi di atas dirancang untuk sampul tanpa foto dan menutup foto Sampul HP klien; saat slot terisi dibuat tembus. */
+    .cover-screen.has-cover-photo {
+      background: linear-gradient(180deg, color-mix(in srgb, var(--bg-dark, var(--lux-c-140c08)) 60%, transparent) 0%, color-mix(in srgb, var(--bg-dark, var(--lux-c-140c08)) 40%, transparent) 45%, color-mix(in srgb, var(--bg-dark, var(--lux-c-140c08)) 85%, transparent) 100%), url('{{landingCoverUrl}}') center/cover no-repeat;
+    }
     .cover-screen::-webkit-scrollbar, .cover-overlay::-webkit-scrollbar { display: none; }
     .cover-screen.opened, .cover-screen.slide-up-hidden, .cover-overlay.opened {
       transform: translateY(-100%); pointer-events: none; opacity: 0; visibility: hidden;
@@ -721,7 +725,7 @@
 <body>
 
   <!-- 1. COVER SCREEN -->
-  <div id="coverScreen" class="cover-screen cover-overlay">
+  <div id="coverScreen" class="cover-screen cover-overlay{{#if landingCoverUrl}} has-cover-photo{{/if}}">
     <!-- FLORAL VECTOR ICON -->
     <svg class="floral-hero-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M32 6C32 6 22 18 22 30C22 38 27 44 32 46C37 44 42 38 42 30C42 18 32 6 32 6Z" stroke="var(--floral-terracotta-light)" stroke-width="2.5" stroke-linejoin="round"/>

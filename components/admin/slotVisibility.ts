@@ -98,15 +98,16 @@ function isFixed(el: Element, win: Window): boolean {
 
 /**
  * Tumpukan elemen di 9 titik bagian foto yang terlihat di layar: titik terhitung "terlihat" bila tidak ada elemen di
- * atasnya yang berlatar padat, bergambar, atau berupa gambar/video. `dark` = lapisan semi-transparan tergelap di atas
- * titik yang terlihat. Null bila foto tidak berada di layar.
+ * atasnya yang berlatar padat, bergambar, atau berupa gambar/video. `dark` = lapisan semi-transparan di atas titik
+ * terlihat yang paling terang (kotak teks semi-gelap di satu titik tidak membuat seluruh foto dianggap gelap). Null bila
+ * foto tidak berada di layar.
  */
 function sampleStack(doc: Document, el: Element, url: string, rect: DOMRect): { seen: number; dark: number } | null {
   const win = doc.defaultView!;
   const x0 = Math.max(0, rect.left), x1 = Math.min(win.innerWidth, rect.right), y0 = Math.max(0, rect.top), y1 = Math.min(win.innerHeight, rect.bottom);
   if (x1 - x0 <= 4 || y1 - y0 <= 4) return null;
   let seen = 0;
-  let darkest = 0;
+  let lightest = 1;
   for (const fx of [0.2, 0.5, 0.8]) for (const fy of [0.2, 0.5, 0.8]) {
     let blocked = false;
     let dark = 0;
@@ -126,9 +127,9 @@ function sampleStack(doc: Document, el: Element, url: string, rect: DOMRect): { 
       const a = Math.max(colorAlpha(s.backgroundColor), ...splitLayers(s.backgroundImage).filter((l) => l.includes("gradient")).map(gradientAlpha), 0) * Number(s.opacity || 1);
       dark = 1 - (1 - dark) * (1 - a);
     }
-    if (!blocked) { seen++; darkest = Math.max(darkest, dark); }
+    if (!blocked) { seen++; lightest = Math.min(lightest, dark); }
   }
-  return { seen, dark: darkest };
+  return { seen, dark: seen ? lightest : 0 };
 }
 
 function checkTarget(doc: Document, t: Target, url: string): { status: SlotStatus; note: string } {
@@ -209,9 +210,12 @@ export function checkSlots(doc: Document, slots: Record<string, string>, view: "
     if (!url) continue;
     const targets = findTargets(doc, url);
     if (!targets.length) {
+      // Di desktop, sampul HP wajar tidak dirujuk bila Sampul desktop terisi (mesin memakai foto mendatar itu).
       results.push(DESKTOP_ONLY.has(slot) && view === "mobile"
         ? { slot, status: "other-view", note: "Slot ini untuk desktop; periksa di tampilan Desktop." }
-        : { slot, status: "absent", note: "Master tidak memakai slot ini: foto klien tidak akan tampil." });
+        : slot === "LANDING_COVER" && view === "desktop" && slots.LANDING_COVER_DESKTOP
+          ? { slot, status: "other-view", note: "Di desktop sampul memakai foto Sampul desktop; periksa slot ini di tampilan HP." }
+          : { slot, status: "absent", note: "Master tidak memakai slot ini: foto klien tidak akan tampil." });
       continue;
     }
     // Satu slot bisa dipakai di beberapa tempat (mis. latar halaman sekaligus slideshow sampul): status terbaik dipakai,

@@ -331,6 +331,11 @@
       visibility: hidden;
     }
 
+    /* Lapisan 78–92% di bawah dirancang untuk sampul tanpa foto dan menutup foto Sampul HP klien; saat slot terisi dibuat tembus. */
+    .cover-overlay.has-cover-photo .cover-scrim {
+      background: linear-gradient(to bottom, color-mix(in srgb, var(--bg-dark) 45%, transparent) 0%, color-mix(in srgb, var(--bg-dark) 70%, transparent) 100%);
+    }
+
     .cover-scrim {
       position: absolute;
       inset: 0;
@@ -1651,7 +1656,7 @@
   <!-- =================================================================== -->
   <!-- SAMPUL UNDANGAN (COVER OVERLAY)                                     -->
   <!-- =================================================================== -->
-  <div id="coverScreen" class="cover-screen cover-overlay">
+  <div id="coverScreen" class="cover-screen cover-overlay{{#if landingCoverUrl}} has-cover-photo{{/if}}">
     <div class="cover-scrim"></div>
     <div id="birdsLottieCover" class="starlit-birds-layer"></div>
     <div class="stars-sparkle-container" id="starsCover"></div>

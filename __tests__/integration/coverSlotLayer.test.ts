@@ -87,3 +87,36 @@ describe.skipIf(!IS_TEST_DB)("render demo Wajo", () => {
     expect(html).toContain(`<style id="luxBgPhotoTone">.fixed-bg-layer.has-custom-bg, video.lux-fixed-bg-video { filter: brightness(0.60) !important; }</style>`);
   });
 });
+
+/**
+ * Audit slot 18 Nov 2026: master lain yang foto Sampul HP-nya tertutup gradasi padat (Candani, Mayang, Chronicle,
+ * Lumina, Solaria, Starlit Dreams, + versi acara) memasang penanda `has-cover-photo` dan lapisan tembus, Festivo dan
+ * Kalandra Birthday memakai slot sampul (sebelumnya foto profil), dan Vintage Forest memakai Sampul desktop di desktop.
+ */
+describe("master dengan perbaikan sampul", () => {
+  const read = (id: string) => {
+    const entry = THEME_MAP[id];
+    return fs.readFileSync(masterPathOf(entry.eventType, entry.style, id), "utf8");
+  };
+  const LIGHTENED = ["candani", "candani-acara", "mayang", "mayang-acara", "chronicle", "chronicle-acara", "lumina", "lumina-acara", "solaria", "solaria-acara", "starlit-dreams", "starlit-dreams-acara"];
+
+  it("sampul bergradasi padat dibuat tembus saat slot Sampul HP terisi", () => {
+    for (const id of LIGHTENED) {
+      const html = read(id);
+      expect(html, id).toContain('<div id="coverScreen" class="cover-screen cover-overlay{{#if landingCoverUrl}} has-cover-photo{{/if}}">');
+      expect(html, id).toMatch(/\.cover-(?:screen|overlay)\.has-cover-photo(?: \.cover-scrim)? \{/);
+    }
+  });
+
+  it("Festivo dan Kalandra Birthday memakai foto sampul, foto profil hanya cadangan", () => {
+    for (const id of ["festivo", "kalandra-birthday"]) {
+      expect(read(id), id).toContain("url('{{#if landingCoverUrl}}{{landingCoverUrl}}{{/if}}{{#unless landingCoverUrl}}{{mainPhotoUrl}}{{/unless}}')");
+    }
+  });
+
+  it("backdrop sampul Vintage Forest memakai Sampul desktop di layar lebar", () => {
+    for (const id of ["vintage-forest", "vintage-forest-acara"]) {
+      expect(read(id), id).toMatch(/@media \(min-width: 900px\) \{\s*\.cover-backdrop-img \{\s*background-image: url\("\{\{landingCoverDesktopUrl\}\}"\);/);
+    }
+  });
+});

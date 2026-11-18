@@ -45,7 +45,7 @@ const SLOT_STATUS_STYLE: Record<SlotCheck["status"], { dot: string; label: strin
   covered: { dot: "bg-red-500", label: "Tertutup" },
   hidden: { dot: "bg-red-500", label: "Tersembunyi" },
   absent: { dot: "bg-red-500", label: "Tidak dipakai master" },
-  "other-view": { dot: "bg-stone-400", label: "Cek di Desktop" },
+  "other-view": { dot: "bg-stone-400", label: "Cek di tampilan lain" },
 };
 
 /** Nama kelompok warna yang mudah dibaca: variabel semantik master lebih dulu, lalu jumlah variabel lain bernilai sama. */

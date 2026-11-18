@@ -341,6 +341,14 @@
       transform: scale(1);
     }
 
+    /* Backdrop ini menutupi latar sampul desktop yang dipasang mesin; di desktop ia memakai foto Sampul desktop
+       (mesin mengisinya dengan foto Sampul HP bila klien tidak mengunggah sampul desktop). */
+    @media (min-width: 900px) {
+      .cover-backdrop-img {
+        background-image: url("{{landingCoverDesktopUrl}}");
+      }
+    }
+
     .cover-overlay-gradient {
       position: absolute;
       inset: 0;
