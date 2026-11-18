@@ -42,6 +42,7 @@ import { masterAnchors, masterReorderable } from "@/lib/masterLayout";
 import { fitMasterOrnaments } from "@/lib/themeBuilder/frameWindow";
 import { parseThemeDefaultMedia, validateThemeDefaultMedia } from "@/lib/themeDefaultMedia";
 import { themeArtPreviews } from "@/lib/themeArtPreview";
+import { parseSimMedia } from "@/lib/themeBuilder/simSlots";
 
 export const dynamic = "force-dynamic";
 
@@ -185,7 +186,16 @@ export async function POST(req: NextRequest) {
     }
 
     if (new URL(req.url).searchParams.has("preview")) {
-      const data = (await composeInvitationData(buildDemoInvitation(parent.theme.id, undefined, parent.theme.eventType))) as Record<string, any>;
+      // Sama dengan pratinjau Theme Builder: "client" = klien baru tanpa unggahan (hanya media bawaan tema), "sim" = itu
+      // ditambah foto uji admin yang menempati slot persis seperti unggahan klien. Media bawaan dari editor (belum disimpan).
+      const mode = input.previewMode === "client" || input.previewMode === "sim" ? input.previewMode : "demo";
+      const demo = buildDemoInvitation(parent.theme.id, mode === "demo" ? undefined : { galleryPhotos: [] }, parent.theme.eventType);
+      const sim = parseSimMedia(input.sim);
+      const simMedia = mode === "sim"
+        ? [...Object.entries(sim.slots).map(([mediaSlot, localPath]) => ({ mediaSlot, localPath: localPath as string })), ...sim.gallery.map((localPath) => ({ mediaSlot: "GALLERY", localPath }))]
+        : [];
+      const inv = mode === "demo" ? demo : { ...demo, media: simMedia, themeDefaultMedia: parseThemeDefaultMedia(input.defaultMedia ?? parent.theme.defaultMedia) };
+      const data = (await composeInvitationData(inv)) as Record<string, any>;
       const base = !masterMode && parent.edits ? applyMasterOverrides(parent.html, parent.edits, "lux-master-edits") : parent.html;
       const html = await renderTemplateFile(parent.theme.id, data, { eventType: parent.theme.eventType, templateSource: applyMasterOverrides(base, parsed.value) });
       return NextResponse.json({ success: true, html });

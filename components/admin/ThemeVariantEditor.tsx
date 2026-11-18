@@ -7,6 +7,8 @@ import { GoogleFontPicker } from "@/components/admin/themeBuilder/GoogleFontPick
 import { FONT_OPTIONS, PALETTE_PRESETS, customCssError, familyOrnamentMediaSlots, fontLabel, isGoogleFontId, type BuilderEventType, type OrnamentMediaSlot } from "@/lib/themeBuilder/spec";
 import { ELEMENT_LIMITS, isElementSelector, masterExtraCss, overrideCount, overrideCssFromTokens, recolorWithPalette, type ColorUsage, type ColorUsageKind, type ElementEdit, type ElementView, type MasterFontToken, type MasterOverrides } from "@/lib/themeVariantCss";
 import { measureText, newlyUnreadable, type TextSample } from "@/components/admin/variantReadability";
+import { checkSlots, type SlotCheck } from "@/components/admin/slotVisibility";
+import { parseSimMedia, simSlotsFor, type SimMedia } from "@/lib/themeBuilder/simSlots";
 import { MASTER_BG_TOKENS, ornamentStyle, type MasterFreeSection, type MasterOrnament, type MasterSectionBg } from "@/lib/masterLayout";
 
 interface ColorGroup {
@@ -26,6 +28,25 @@ const DEVICES = [
   { id: "mobile", label: "HP", width: 390 },
   { id: "desktop", label: "Desktop", width: 1280 },
 ] as const;
+
+const PREVIEW_MODES = [
+  { id: "demo", label: "Contoh demo" },
+  { id: "client", label: "Klien baru" },
+  { id: "sim", label: "Foto uji" },
+] as const;
+type PreviewMode = (typeof PREVIEW_MODES)[number]["id"];
+
+/** Kunci yang sama dengan Theme Builder: foto uji yang diunggah di salah satu alat ikut tersedia di alat lain. */
+const SIM_STORAGE_KEY = "lux-builder-sim-media";
+
+const SLOT_STATUS_STYLE: Record<SlotCheck["status"], { dot: string; label: string }> = {
+  visible: { dot: "bg-emerald-500", label: "Terlihat" },
+  dim: { dot: "bg-amber-500", label: "Sangat gelap" },
+  covered: { dot: "bg-red-500", label: "Tertutup" },
+  hidden: { dot: "bg-red-500", label: "Tersembunyi" },
+  absent: { dot: "bg-red-500", label: "Tidak dipakai master" },
+  "other-view": { dot: "bg-stone-400", label: "Cek di Desktop" },
+};
 
 /** Nama kelompok warna yang mudah dibaca: variabel semantik master lebih dulu, lalu jumlah variabel lain bernilai sama. */
 function groupLabel(names: string[]): string {
@@ -149,6 +170,22 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
   const [defaultMedia, setDefaultMedia] = useState<Record<string, string>>({});
   const [savedMedia, setSavedMedia] = useState("{}");
   const [builtinMedia, setBuiltinMedia] = useState<Record<string, string>>({});
+  const [previewMode, setPreviewMode] = useState<PreviewMode>("demo");
+  const [sim, setSim] = useState<SimMedia>({ slots: {}, gallery: [] });
+  const [uploadingSim, setUploadingSim] = useState<string | null>(null);
+  const [slotChecks, setSlotChecks] = useState<SlotCheck[]>([]);
+  // Dibaca fetchPreview tanpa mengubah identitasnya (efek muat awal bergantung padanya).
+  const previewOptsRef = useRef({ previewMode, sim, defaultMedia });
+  useEffect(() => {
+    previewOptsRef.current = { previewMode, sim, defaultMedia };
+  }, [previewMode, sim, defaultMedia]);
+  useEffect(() => {
+    try {
+      setSim(parseSimMedia(JSON.parse(window.localStorage.getItem(SIM_STORAGE_KEY) || "{}")));
+    } catch {
+      // Penyimpanan peramban tidak tersedia (mode privat): foto uji hanya bertahan selama halaman terbuka.
+    }
+  }, []);
   const previewImagesRef = useRef<string>("");
   const restoreScrollRef = useRef(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -197,7 +234,7 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
     const res = await fetch("/api/admin/theme-variants?preview", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ parentId: themeParentId, overrides: o, ...(masterMode ? { mode: "master" } : {}) }),
+      body: JSON.stringify({ parentId: themeParentId, overrides: o, ...(masterMode ? { mode: "master", ...previewOptsRef.current } : {}) }),
     });
     const data = await res.json().catch(() => ({}));
     return res.ok ? { html: data.html } : { error: [data.error, ...(data.details ?? [])].filter(Boolean).join(" ") || "Pratinjau gagal dibuat." };
@@ -263,6 +300,60 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
     }, 400);
     return () => clearTimeout(t);
   }, [overrides, parent, previewHtml, fetchPreview, notify]);
+
+  // Mode pratinjau, foto uji, dan media bawaan (selain mode demo) mengubah data render, jadi pratinjau dirender ulang.
+  const previewOptsKeyRef = useRef("");
+  useEffect(() => {
+    if (!masterMode || !parent || !previewHtml) return;
+    const key = JSON.stringify([previewMode, previewMode === "sim" ? sim : null, previewMode === "demo" ? null : defaultMedia]);
+    if (!previewOptsKeyRef.current) { previewOptsKeyRef.current = key; return; }
+    if (key === previewOptsKeyRef.current) return;
+    const t = setTimeout(async () => {
+      previewOptsKeyRef.current = key;
+      const preview = await fetchPreview(parent.id, overrides);
+      if (preview.html) setPreviewHtml(preview.html);
+      else notify(preview.error ?? "Pratinjau gagal dibuat.", "error");
+    }, 300);
+    return () => clearTimeout(t);
+  }, [masterMode, parent, previewHtml, previewMode, sim, defaultMedia, overrides, fetchPreview, notify]);
+
+  /** Foto uji ditulis ke penyimpanan saat diubah admin, bukan lewat efek: efek akan menimpa data lama dengan state awal kosong. */
+  const updateSim = (fn: (prev: SimMedia) => SimMedia) => {
+    setSim((prev) => {
+      const next = fn(prev);
+      try {
+        window.localStorage.setItem(SIM_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // Lihat pemuatan foto uji di atas.
+      }
+      return next;
+    });
+  };
+
+  // Pemeriksa slot berjalan di dokumen pratinjau mode Foto uji, setelah gambar sempat dimuat.
+  useEffect(() => {
+    if (!masterMode || previewMode !== "sim") { setSlotChecks([]); return; }
+    const t = setTimeout(() => {
+      const doc = iframeRef.current?.contentDocument;
+      if (doc?.body) setSlotChecks(checkSlots(doc, sim.slots as Record<string, string>, device));
+    }, 900);
+    return () => clearTimeout(t);
+  }, [masterMode, previewMode, sim, device, docVersion]);
+
+  const uploadSim = async (slot: string, file: File) => {
+    setUploadingSim(slot);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/admin/theme-builder/sim-media", { method: "POST", body: form });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { notify(data.error || "Foto uji gagal diunggah.", "error"); return; }
+      updateSim((prev) => ({ ...prev, slots: { ...prev.slots, [slot]: data.url } }));
+      setPreviewMode("sim");
+    } finally {
+      setUploadingSim(null);
+    }
+  };
 
   useEffect(() => {
     const el = stageRef.current;
@@ -815,6 +906,13 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
               <button key={d.id} type="button" onClick={() => setDevice(d.id)} aria-pressed={device === d.id} className={`rounded-md px-2.5 py-1 text-[11px] font-semibold cursor-pointer ${device === d.id ? "bg-white text-stone-900 shadow-sm" : "text-stone-500"}`}>{d.label}</button>
             ))}
           </div>
+          {masterMode && (
+            <div className="flex rounded-lg bg-stone-100 p-0.5" role="group" aria-label="Data pratinjau">
+              {PREVIEW_MODES.map((m) => (
+                <button key={m.id} type="button" onClick={() => setPreviewMode(m.id)} aria-pressed={previewMode === m.id} className={`rounded-md px-2.5 py-1 text-[11px] font-semibold cursor-pointer ${previewMode === m.id ? "bg-white text-stone-900 shadow-sm" : "text-stone-500"}`}>{m.label}</button>
+              ))}
+            </div>
+          )}
           {variant && <button type="button" onClick={remove} disabled={busy} className="rounded-xl px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50 cursor-pointer">Hapus</button>}
           {variant && (
             <button type="button" onClick={togglePublish} disabled={busy} className="rounded-xl border border-stone-300 px-3 py-1.5 text-xs font-semibold text-stone-800 hover:bg-stone-50 disabled:opacity-50 cursor-pointer">
@@ -1247,6 +1345,46 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
 
           {masterMode && (
             <>
+              <section className="border-t border-stone-200/80 px-5 py-4">
+                <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-stone-500">Foto uji &amp; pemeriksa slot</h3>
+                <p className="mt-1 text-[11px] text-stone-500">Unggah foto contoh per slot untuk melihat master dengan foto seperti unggahan klien (mode Foto uji). Pemeriksa membaca pratinjau dan menandai slot yang fotonya tidak tampil, tertutup, atau terlalu gelap; pakai foto berbeda per slot. Foto uji tidak tersimpan ke tema dan dihapus otomatis setelah 3 hari.</p>
+                {(() => {
+                  const urls = Object.values(sim.slots).filter(Boolean);
+                  return new Set(urls).size < urls.length ? <p className="mt-2 text-[11px] font-medium text-amber-700">Ada slot dengan foto yang sama; pemeriksa tidak bisa membedakan slot itu.</p> : null;
+                })()}
+                <ul className="mt-3 space-y-2">
+                  {simSlotsFor((parent?.eventType ?? "WEDDING") as BuilderEventType).map((s) => {
+                    const url = sim.slots[s.slot];
+                    const check = previewMode === "sim" ? slotChecks.find((c) => c.slot === s.slot) : undefined;
+                    return (
+                      <li key={s.slot} className="flex items-start gap-2.5 rounded-xl px-1 py-1 hover:bg-stone-50">
+                        <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-stone-100 ring-1 ring-stone-900/10">
+                          {url ? <img src={url} alt="" className="h-full w-full object-cover" /> : <span className="text-[9px] text-stone-400">Kosong</span>}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[12px] font-semibold text-stone-800">{s.label}</span>
+                          {check ? (
+                            <span className="mt-0.5 block text-[10.5px] text-stone-600">
+                              <span className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle ${SLOT_STATUS_STYLE[check.status].dot}`} />
+                              <span className="font-semibold">{SLOT_STATUS_STYLE[check.status].label}</span> · {check.note}
+                            </span>
+                          ) : (
+                            <span className="block text-[10.5px] text-stone-500">{url ? (previewMode === "sim" ? "Memeriksa…" : "Pilih mode Foto uji untuk memeriksa") : s.hint}</span>
+                          )}
+                        </span>
+                        <label className={`shrink-0 rounded-lg border border-stone-200 px-2 py-1 text-[11px] font-semibold text-stone-700 hover:border-stone-400 ${uploadingSim ? "opacity-50" : "cursor-pointer"}`}>
+                          {uploadingSim === s.slot ? "Mengunggah…" : url ? "Ganti" : "Unggah"}
+                          <input type="file" accept="image/png,image/webp,image/jpeg" className="hidden" disabled={Boolean(uploadingSim)} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void uploadSim(s.slot, f); }} />
+                        </label>
+                        {url && (
+                          <button type="button" onClick={() => updateSim((prev) => { const slots = { ...prev.slots }; delete slots[s.slot]; return { ...prev, slots }; })} className="pt-1 text-[10.5px] font-semibold text-stone-500 hover:text-stone-800 cursor-pointer">Hapus</button>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+
               <section className="border-t border-stone-200/80 px-5 py-4">
                 <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-stone-500">Media bawaan slot</h3>
                 <p className="mt-1 text-[11px] text-stone-500">Dipakai bila klien belum mengunggah foto ke slot itu, dan tampil sebagai thumbnail &quot;Bawaan tema&quot; di Studio klien. Berlaku untuk undangan yang dibuat atau berganti ke tema ini sesudah disimpan. Latar Belakang Global diatur lewat Gambar bawaan di bawah; foto Home, mempelai, dan galeri tidak boleh punya bawaan.</p>
