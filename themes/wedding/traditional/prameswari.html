@@ -928,7 +928,9 @@
       font-size: 0.58rem;
       letter-spacing: 0.22em;
       text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.55);
+      /* modules.css menambah opacity 0.6 di atas warna yang sudah pudar; label ini kontras 1,9 di atas latar abu. */
+      color: color-mix(in srgb, var(--text-main) 88%, transparent);
+      opacity: 1;
       display: block;
       margin-bottom: 0.2rem;
     }
