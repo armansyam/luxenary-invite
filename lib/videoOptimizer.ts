@@ -9,9 +9,44 @@ import { HttpError } from "@/lib/routeError";
 import { fileTypeFromBuffer } from "file-type";
 
 const execFileAsync = promisify(execFile);
-// ffmpeg/lame berjalan di dalam permintaan unggah; nice 10 menjaga permintaan lain di server 2 inti tetap terlayani,
-// dan saat server senggang ffmpeg tetap memakai seluruh CPU.
-const niceExec = (file: string, args: string[], opts: { timeout: number }) => execFileAsync("nice", ["-n", "10", file, ...args], opts);
+
+// Satu enkode per proses: PM2 cluster menjalankan satu worker per inti, jadi server 2 inti mengenkode paling banyak dua
+// berkas sekaligus. Tanpa antrean, N unggahan video bersamaan berbagi CPU dan semuanya melewati timeout 45 detik (diukur
+// 18 Nov 2026: video 1080p 20 detik 16 Mbps butuh ±20 detik CPU M1 per enkode). Tunggu antrean dibatasi agar tunggu +
+// enkode tetap di bawah batas 100 detik proxy Cloudflare.
+export const ENCODE_QUEUE_WAIT_MS = 40_000;
+let encodeBusy = false;
+const encodeWaiters: Array<() => void> = [];
+
+export async function withEncodeSlot<T>(run: () => Promise<T>): Promise<T> {
+  if (encodeBusy) {
+    await new Promise<void>((resolve, reject) => {
+      const grant = () => {
+        clearTimeout(timer);
+        resolve();
+      };
+      const timer = setTimeout(() => {
+        encodeWaiters.splice(encodeWaiters.indexOf(grant), 1);
+        reject(new HttpError(503, "Server sedang memproses unggahan media lain. Coba unggah lagi dalam satu menit."));
+      }, ENCODE_QUEUE_WAIT_MS);
+      encodeWaiters.push(grant);
+    });
+  } else {
+    encodeBusy = true;
+  }
+  try {
+    return await run();
+  } finally {
+    const next = encodeWaiters.shift();
+    if (next) next();
+    else encodeBusy = false;
+  }
+}
+
+// nice 10 menjaga permintaan lain tetap terlayani selama enkode; saat server senggang ffmpeg tetap memakai seluruh CPU.
+// Timeout dihitung sejak proses enkode mulai, bukan sejak masuk antrean.
+const niceExec = (file: string, args: string[], opts: { timeout: number }) =>
+  withEncodeSlot(() => execFileAsync("nice", ["-n", "10", file, ...args], opts));
 
 async function fileExists(filePath: string): Promise<boolean> {
   try {
@@ -143,6 +178,7 @@ export async function optimizeWebVideo(inputBuffer: Buffer, baseName: string): P
     await niceExec(ffmpegPath, args, { timeout: 45000 });
     return await fs.promises.readFile(outputTempPath);
   } catch (err) {
+    if (err instanceof HttpError) throw err;
     // Berkas mentah tidak disimpan: pemanggil menamainya .mp4/video/mp4, jadi MOV/WebM atau video rusak akan tampil
     // sebagai sampul yang tidak bisa diputar sementara unggahan dilaporkan berhasil.
     logger.warn("VideoOptimizer", "Optimasi FFmpeg gagal; unggahan ditolak", { error: err instanceof Error ? err.message : String(err) });
@@ -193,7 +229,8 @@ export async function optimizeWebAudio(inputBuffer: Buffer, baseName: string): P
       if (await fileExists(outputTempPath)) {
         compressionSuccess = true;
       }
-    } catch {
+    } catch (err) {
+      if (err instanceof HttpError) throw err;
       // 2. Fallback: LAME standalone encoder jika FFmpeg gagal/missing
       try {
         const lamePath = (await fileExists("/opt/homebrew/bin/lame"))
@@ -208,6 +245,7 @@ export async function optimizeWebAudio(inputBuffer: Buffer, baseName: string): P
           compressionSuccess = true;
         }
       } catch (err) {
+        if (err instanceof HttpError) throw err;
         logger.warn("AudioOptimizer", "FFmpeg dan LAME gagal mengonversi audio", { error: err instanceof Error ? err.message : String(err) });
       }
     }
