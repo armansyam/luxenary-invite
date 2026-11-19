@@ -14,6 +14,8 @@ export interface SlotCheck {
   slot: string;
   status: SlotStatus;
   note: string;
+  /** Status per tempat foto dipakai (mis. sampul dan latar halaman); `status` adalah yang terbaik di antaranya. */
+  places?: Array<{ where: string; status: SlotStatus }>;
 }
 
 const DESKTOP_ONLY = new Set(["LANDING_COVER_DESKTOP", "DESKTOP_SIDEBAR"]);
@@ -166,7 +168,9 @@ function checkTarget(doc: Document, t: Target, url: string): { status: SlotStatu
     restore.push(() => (prev ? node.style.setProperty(prop, prev, prio) : node.style.removeProperty(prop)));
   };
   force(el, "pointer-events", "auto");
-  if (fixed) for (const node of [doc.documentElement, doc.body]) force(node, "overflow-y", "auto");
+  // Master memakai scroll-behavior: smooth; tanpa ini scrollTop berpindah beranimasi dan setiap "layar" yang disampel
+  // sebenarnya layar pertama (19 Nov 2026: latar tetap tercatat tertutup di semua layar karena slideshow Home).
+  if (fixed) for (const node of [doc.documentElement, doc.body]) { force(node, "overflow-y", "auto"); force(node, "scroll-behavior", "auto"); }
   const positions = fixed ? Array.from({ length: Math.min(20, Math.ceil(scroller.scrollHeight / win.innerHeight)) }, (_, i) => i * win.innerHeight) : [startY];
   let screens = 0;
   let screensSeen = 0;
@@ -225,7 +229,7 @@ export function checkSlots(doc: Document, slots: Record<string, string>, view: "
     const others = checked.filter((c) => c !== best && RANK[c.status] < RANK.dim && c.where !== best.where);
     const multi = new Set(checked.map((c) => c.where)).size > 1;
     const note = `${multi ? `Di ${best.where}: ` : ""}${best.note}${others.length ? ` Di ${others[0].where}: ${others[0].note.charAt(0).toLowerCase()}${others[0].note.slice(1)}` : ""}`;
-    results.push({ slot, status: best.status, note });
+    results.push({ slot, status: best.status, note, places: checked.map((c) => ({ where: c.where, status: c.status })) });
   }
   return results;
 }

@@ -9,12 +9,14 @@
  *
  *   --theme=a,b   batasi ke id master tertentu.   --out=<berkas.json>   simpan laporan lengkap.
  *   --strict      exit 1 bila ada teks bukan hiasan dengan rasio di bawah 2 (praktis tidak terbaca).
+ *   --global-bg=<url>  isi slot Latar Belakang Global seperti unggahan klien (mis. /uploads/dummy/AMS06328.webp).
  */
 import "dotenv/config";
 import fs from "fs";
 import sharp from "sharp";
 import { prisma } from "../lib/prisma";
 import { FREEZE, arg, listMasters, requireTestDatabase, sleep, startChrome, startRenderServer } from "./masterHarness";
+import { buildDemoInvitation } from "../lib/demoInvitation";
 
 const VW = 390;
 const VH = 844;
@@ -78,7 +80,9 @@ async function main() {
     await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: "Element.prototype.requestFullscreen = function () { return Promise.resolve(); };" });
     await cdp.send("Emulation.setDeviceMetricsOverride", { width: VW, height: VH, deviceScaleFactor: 1, mobile: true });
     for (const m of masters) {
-      const url = await server.render(m, fs.readFileSync(m.rel, "utf8"), "pixel", FREEZE);
+      const globalBg = arg("global-bg");
+      const inv = globalBg ? { ...buildDemoInvitation(m.id, undefined, m.eventType), media: [{ mediaSlot: "GLOBAL_FIXED_BG", localPath: globalBg }] } : undefined;
+      const url = await server.render(m, fs.readFileSync(m.rel, "utf8"), "pixel", FREEZE, inv as never);
       await cdp.goto(url, 800);
       await cdp.eval("document.fonts.ready.then(() => true)");
       const docHeight = await cdp.eval<number>(PREPARE);

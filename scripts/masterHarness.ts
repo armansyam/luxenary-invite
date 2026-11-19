@@ -49,7 +49,8 @@ const CONTENT_TYPES: Record<string, string> = {
  * bersama master (`/css/modules.css`, `/fonts/fonts.css`) dan asetnya termuat seperti di server sungguhan. Render ke
  * `file://` kehilangan semua path berawalan `/`.
  */
-export async function startRenderServer(): Promise<{ render: (m: MasterFile, source: string, tag: string, extraHead?: string) => Promise<string>; close: () => Promise<void> }> {
+/** `invitation` mengganti undangan demo bawaan (mis. dengan media uji per slot, scripts/audit-slot-visibility.ts). */
+export async function startRenderServer(): Promise<{ render: (m: MasterFile, source: string, tag: string, extraHead?: string, invitation?: Parameters<typeof composeInvitationData>[0]) => Promise<string>; close: () => Promise<void> }> {
   const work = fs.mkdtempSync(path.join(os.tmpdir(), "lux-render-"));
   const publicDir = path.join(process.cwd(), "public");
   const server = http.createServer((req, res) => {
@@ -63,8 +64,8 @@ export async function startRenderServer(): Promise<{ render: (m: MasterFile, sou
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", () => r()));
   const origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   return {
-    async render(m, source, tag, extraHead = "") {
-      const data = await composeInvitationData(buildDemoInvitation(m.id, undefined, m.eventType));
+    async render(m, source, tag, extraHead = "", invitation) {
+      const data = await composeInvitationData(invitation ?? buildDemoInvitation(m.id, undefined, m.eventType));
       const html = (await renderTemplateFile(m.id, data as Record<string, any>, { eventType: m.eventType, templateSource: source })).replace(/<\/head>/i, `${extraHead}</head>`);
       const name = `${m.id}-${tag}.html`;
       fs.writeFileSync(path.join(work, name), html);
