@@ -6,7 +6,11 @@
 // akan mengalahkan .env milik Next (rahasia tertulis di dump.pm2, rotasi kredensial tidak berlaku setelah restart).
 const fs = require('fs');
 const envPath = `${__dirname}/.env`;
-const nodeBinDir = fs.existsSync(envPath) ? require('dotenv').parse(fs.readFileSync(envPath)).NODE_BIN_DIR : undefined;
+const dotenvValues = fs.existsSync(envPath) ? require('dotenv').parse(fs.readFileSync(envPath)) : {};
+const nodeBinDir = dotenvValues.NODE_BIN_DIR;
+// Server replika mendengarkan di alamat Tailscale-nya agar Caddy server utama dapat menjangkaunya; deploy.sh hanya
+// menerima 127.0.0.1 atau alamat Tailscale (100.64.0.0/10), jadi port aplikasi tidak pernah terbuka ke internet.
+const bindHost = dotenvValues.LUX_BIND_HOST || '127.0.0.1';
 // Direktori build aktif (.next-a atau .next-b) ditulis deploy.sh setelah migrasi berhasil; tanpa berkas ini Next memakai .next.
 const distFile = `${__dirname}/data/.dist-dir`;
 const distDir = fs.existsSync(distFile) ? fs.readFileSync(distFile, 'utf8').trim() : '';
@@ -19,7 +23,7 @@ module.exports = {
       // Hanya Caddy (localhost) yang boleh menjangkau aplikasi. Tanpa --hostname Next mendengarkan di semua antarmuka,
       // sehingga port 3001 bisa dipanggil langsung dari internet dan header X-Real-IP (dipercaya TRUSTED_PROXY=nginx)
       // dapat dipalsukan untuk melewati pembatas laju login dan RSVP.
-      args: 'start --hostname 127.0.0.1',
+      args: `start --hostname ${bindHost}`,
       ...(nodeBinDir
         ? { interpreter: `${nodeBinDir}/node`, instances: 1, exec_mode: 'fork' }
         : { instances: 'max', exec_mode: 'cluster' }),

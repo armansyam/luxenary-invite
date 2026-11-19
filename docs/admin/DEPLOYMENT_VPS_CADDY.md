@@ -442,6 +442,7 @@ Salin `.env` server utama, lalu ubah:
 LUX_SERVER_ROLE="replica"
 LUX_SERVER_NAME="homelab"          # unik per replika; tampil di header X-Lux-Server
 LB_DRAIN_SECONDS="10"              # >= jeda cek kesehatan Caddy; isi juga di .env server utama
+LUX_BIND_HOST="100.x.y.z"          # alamat Tailscale replika ini (tailscale ip -4); hanya 127.0.0.1 atau 100.64.0.0/10
 DATABASE_URL="postgresql://lux_user:...@<alamat privat server utama>:5432/luxenary_db"
 ```
 Nilai berikut **wajib sama** dengan server utama: `AUTH_SECRET`/`NEXTAUTH_SECRET`, `PIN_ENCRYPTION_KEY`, `CRON_SECRET`,
@@ -453,8 +454,37 @@ Nilai berikut **wajib sama** dengan server utama: `AUTH_SECRET`/`NEXTAUTH_SECRET
 2. Clone repo ke `~/luxenary-invite`, isi `.env` seperti 10.3.
 3. Jalankan `./deploy.sh`. Di replika skrip ini: build, menolak jalan bila ada migrasi tertunda, mengosongkan cache HTML
    terbit/demo, menarik berkas bersama, reload PM2, smoke test, lalu memasang cron replika.
-4. Arahkan pembagi beban: `/admin*` dan `/api/admin*` ke server utama, sisanya ke kedua server.
-5. Uji: buka `/demo/<tema builder>` dan satu undangan terbit lewat replika; ubah demo di admin (server utama), lalu muat
+4. Firewall replika: port aplikasi hanya untuk server utama lewat Tailscale.
+   ```bash
+   sudo ufw allow in on tailscale0 from 100.100.104.38 to any port 3001 proto tcp
+   ```
+5. Pembagi beban di Caddyfile server utama (blok `luxvite.id, *.luxvite.id` yang sudah ada; arahan lain di blok itu tetap):
+   ```
+   luxvite.id, *.luxvite.id {
+       @admin path /admin* /api/admin*
+       handle @admin {
+           reverse_proxy 127.0.0.1:3001 {
+               header_up X-Real-IP {client_ip}
+           }
+       }
+       handle {
+           reverse_proxy 127.0.0.1:3001 100.x.y.z:3001 {
+               header_up X-Real-IP {client_ip}
+               lb_policy least_conn
+               lb_try_duration 5s
+               health_uri /api/health
+               health_interval 5s
+               health_timeout 3s
+               fail_duration 30s
+           }
+       }
+   }
+   ```
+   Uji dengan `sudo caddy validate --config /etc/caddy/Caddyfile`, lalu `sudo systemctl reload caddy`. Header `X-Lux-Server`
+   pada respons menunjukkan server yang melayani.
+6. Deploy otomatis: isi `REPLICA_HOSTS="luxenary@100.x.y.z"` di `.env` server utama dan pasang kunci SSH server utama di
+   replika; `deploy.sh` server utama men-deploy replika setelah dirinya berhasil (log `logs/deploy-replica-<ip>.log`).
+7. Uji: buka `/demo/<tema builder>` dan satu undangan terbit lewat replika; ubah demo di admin (server utama), lalu muat
    ulang lewat replika dan pastikan perubahannya tampil.
 
 ### 10.5 Batas yang diketahui

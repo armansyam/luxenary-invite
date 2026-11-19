@@ -19,7 +19,7 @@ const CACHE_TTL_MS = 5 * 60 * 1000; // 5 menit
 
 // Resolusi selalu ke proses ini sendiri. Basis URL dari header Host akan membuat server melakukan fetch ke host
 // pilihan penyerang (SSRF) bila origin dijangkau langsung.
-const INTERNAL_BASE_URL = `http://127.0.0.1:${process.env.PORT || "3000"}`;
+const INTERNAL_BASE_URL = `http://${process.env.LUX_BIND_HOST || "127.0.0.1"}:${process.env.PORT || "3000"}`;
 const CACHE_MAX_ENTRIES = 2000;
 
 /**

@@ -155,6 +155,15 @@ fi
 
 # Server baru yang belum lengkap: tanpa pemeriksaan ini npm ci gagal dengan pesan menyesatkan, dan pg_dump baru
 # ketahuan hilang setelah build selesai.
+# Alamat yang didengar aplikasi (ecosystem.config.js). Hanya loopback atau alamat Tailscale (100.64.0.0/10) yang diterima:
+# di luar itu port 3001 bisa dipanggil langsung dari internet dengan X-Real-IP palsu.
+LUX_BIND_HOST=$(grep -E "^LUX_BIND_HOST=" .env | cut -d '=' -f2- | tr -d '"' | tr -d "'")
+LUX_BIND_HOST=${LUX_BIND_HOST:-127.0.0.1}
+if [ "$LUX_BIND_HOST" != "127.0.0.1" ] && ! echo "$LUX_BIND_HOST" | grep -Eq '^100\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\.[0-9]{1,3}\.[0-9]{1,3}$'; then
+  echo "❌ LUX_BIND_HOST=$LUX_BIND_HOST ditolak: hanya 127.0.0.1 atau alamat Tailscale 100.64.0.0/10. Deployment dihentikan."
+  exit 1
+fi
+
 REQUIRED_BINS="node npm npx openssl curl"
 [ "$IS_REPLICA" = false ] && REQUIRED_BINS="$REQUIRED_BINS pg_dump"
 for BIN in $REQUIRED_BINS; do
@@ -326,7 +335,7 @@ if command -v pm2 &> /dev/null; then
   CURRENT_INTERPRETER=$(pm2 jlist 2>/dev/null | node -e 'try{const s=require("fs").readFileSync(0,"utf8");const j=JSON.parse(s.slice(s.indexOf("[")));const p=j.find(x=>x.name==="luxenary-invite");process.stdout.write(p?String(p.pm2_env.exec_interpreter||""):"-")}catch{process.stdout.write("?")}')
   # 'pm2 reload' juga tidak membaca ulang argumen proses. Bila port aplikasi masih mendengarkan di semua antarmuka
   # (bukan 127.0.0.1/::1), proses dibuat ulang dari ecosystem.config.js yang mengikatnya ke loopback.
-  EXPOSED_LISTENER=$(ss -ltn 2>/dev/null | awk '$4 ~ /(^|:|\])3001$/ && $4 !~ /^127\.0\.0\.1:/ && $4 !~ /^\[::1\]:/ {print $4}' | head -1)
+  EXPOSED_LISTENER=$(ss -ltn 2>/dev/null | awk -v bind="$LUX_BIND_HOST:" '$4 ~ /(^|:|\])3001$/ && $4 !~ /^127\.0\.0\.1:/ && $4 !~ /^\[::1\]:/ && index($4, bind) != 1 {print $4}' | head -1)
   if [ -n "$NODE_BIN_DIR" ] && [ "$CURRENT_INTERPRETER" != "?" ] && [ "$CURRENT_INTERPRETER" != "-" ] && [ "$CURRENT_INTERPRETER" != "$NODE_BIN_DIR/node" ]; then
     echo "↻ Interpreter PM2 berubah ($CURRENT_INTERPRETER -> $NODE_BIN_DIR/node): menjalankan ulang luxenary-invite dari ecosystem.config.js"
     pm2 delete luxenary-invite && pm2 start ecosystem.config.js
@@ -410,6 +419,21 @@ if command -v crontab &> /dev/null; then
   else
     echo "⚠️ CRON_SECRET tidak ditemukan di .env — sinkronisasi crontab dilewati."
   fi
+fi
+
+# 10. Server utama: deploy setiap replika (REPLICA_HOSTS di .env, mis. "luxenary@100.x.y.z", dipisah spasi) lewat SSH
+# Tailscale setelah server utama berhasil, karena replika menolak berjalan sebelum migrasi diterapkan. Kegagalan replika
+# tidak menggagalkan server utama; pembagi beban mengeluarkan replika yang /api/health-nya tidak sehat.
+REPLICA_HOSTS=$(grep -E "^REPLICA_HOSTS=" .env | cut -d '=' -f2- | tr -d '"' | tr -d "'")
+if [ "$IS_REPLICA" = false ] && [ -n "$REPLICA_HOSTS" ]; then
+  for HOST in $REPLICA_HOSTS; do
+    echo "🛰️ Deploy replika $HOST..."
+    if ssh -o BatchMode=yes -o ConnectTimeout=15 "$HOST" 'cd ~/luxenary-invite && ./deploy.sh' > "logs/deploy-replica-${HOST##*@}.log" 2>&1; then
+      echo "✅ Replika $HOST selesai (log: logs/deploy-replica-${HOST##*@}.log)."
+    else
+      echo "⚠️ Deploy replika $HOST GAGAL; server utama tetap berjalan. Periksa logs/deploy-replica-${HOST##*@}.log."
+    fi
+  done
 fi
 
 echo "✨ Deployment selesai dengan sukses! Aplikasi Anda sudah yang paling mutakhir dan terproteksi."
