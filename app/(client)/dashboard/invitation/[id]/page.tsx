@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, createContext, useContext } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { compressImageToWebP } from "@/lib/clientImageCompressor";
@@ -14,6 +14,7 @@ import { getApexRootDomain } from "@/lib/domainUtils";
 import { BG_PHOTO_TONE_LIMIT, BG_SCRIM_MAX, parseBgPhotoTone, parseBgScrim } from "@/lib/bgPhotoTone";
 import { EDITABLE_TEXT_KEYS, MAX_DECORATIVE_LABEL_LENGTH, sectionLabelFor, type BuilderEventType } from "@/lib/themeBuilder/spec";
 import type { EditableText, FreeSectionText } from "@/lib/themeBuilder/texts";
+import { DECLARABLE_MEDIA_SLOTS, isSlotUsed, parseThemeMediaSlots, type ThemeMediaSlots } from "@/lib/themeMediaSlots";
 
 // Pilihan tema dimuat secara dinamis dari API /api/public/themes untuk menjamin sinkronisasi status aktif
 
@@ -652,6 +653,17 @@ export default function EditInvitation() {
         throw new Error(errData?.error || errData?.message || "Gagal menyimpan data ke server");
       }
 
+      // Ganti tema: media bawaan dan slot foto tema baru disalin server saat menyimpan, jadi Studio membacanya ulang.
+      if (invToSave.themeId !== savedSnapshot?.invitation?.themeId) {
+        const freshRes = await fetch(`/api/client/invitations/${invitationId}`);
+        if (freshRes.ok) {
+          const fresh = await freshRes.json();
+          setInvitation((prev: any) => ({ ...prev, themeDefaultMedia: fresh.themeDefaultMedia, themeMediaSlots: fresh.themeMediaSlots, themeArtPreview: fresh.themeArtPreview }));
+        } else {
+          setStudioNotification({ type: "error", message: "Tema tersimpan, tetapi daftar foto tema baru gagal dimuat. Muat ulang halaman." });
+        }
+      }
+
       // Update saved snapshot to current state
       setSavedSnapshot({
         invitation: JSON.parse(JSON.stringify(invToSave)),
@@ -734,6 +746,10 @@ export default function EditInvitation() {
   const updateMedia = (slot: string, url: string) => {
     setMedia((prev) => ({ ...prev, [slot]: url }));
   };
+
+  // Slot media yang dipakai tema (salinan saat tema dipilih); null = tema belum mendeklarasikan, semua slot tampil.
+  const declaredSlots = parseThemeMediaSlots(invitation?.themeMediaSlots);
+  const slotUsed = (slot: string) => isSlotUsed(declaredSlots, slot);
 
   const updateFeatureSetting = (key: string, value: any) => {
     setInvitation((prev: any) => {
@@ -1354,6 +1370,16 @@ export default function EditInvitation() {
 
   const isWeddingEvent = !invitation?.eventType || invitation.eventType === "WEDDING";
   const eventNounLabel = eventNoun(invitation?.eventType);
+  // Foto wajib hanya untuk slot yang dipakai tema: tema tanpa foto mempelai tidak menagih foto mempelai.
+  const needsCoverPhoto = slotUsed("LANDING_COVER") && !media["LANDING_COVER"];
+  const needsPortraitPhoto = (slotUsed("GROOM_PHOTO") && !media["GROOM_PHOTO"]) || (isWeddingEvent && slotUsed("BRIDE_PHOTO") && !media["BRIDE_PHOTO"]);
+  // Foto klien di slot yang tidak dipakai tema terpilih (sisa tema sebelumnya); tidak dirender, baris tetap tersimpan.
+  const unusedSlotPhotos = declaredSlots
+    ? DECLARABLE_MEDIA_SLOTS.filter((slot) => !slotUsed(slot) && media[slot])
+    : [];
+  const unfilledSlots = declaredSlots
+    ? DECLARABLE_MEDIA_SLOTS.filter((slot) => slotUsed(slot) && !media[slot] && !themeDefaultOf(invitation, slot))
+    : [];
 
   const FORM_SECTIONS = [
     {
@@ -1395,9 +1421,7 @@ export default function EditInvitation() {
         ? "Profil Wisuda"
         : "Profil Acara",
       summary: resolveInvitationDisplayName(invitation),
-      isUrgent: (!invitation?.eventType || invitation?.eventType === "WEDDING")
-        ? (!media["GROOM_PHOTO"] || !media["BRIDE_PHOTO"])
-        : !media["GROOM_PHOTO"],
+      isUrgent: needsPortraitPhoto,
     },
     {
       id: "sec4",
@@ -1537,6 +1561,7 @@ export default function EditInvitation() {
   };
 
   return (
+    <ThemeSlotsContext.Provider value={declaredSlots}>
     <div className="w-full space-y-2.5 sm:space-y-3 pb-24 font-sans">
       
       {/* Emergency Unlock Banner with Atomic Single Deploy */}
@@ -1703,12 +1728,7 @@ export default function EditInvitation() {
           </div>
 
           {/* Dynamic Action Chips (Pengingat Foto Ringkas & Terpadu) — Hanya di Tab Form Data */}
-          {activeStudioTab === "form" && Boolean(invitation.themeId) && (
-            (!media["LANDING_COVER"]) ||
-            ((!invitation?.eventType || invitation?.eventType === "WEDDING")
-              ? (!media["GROOM_PHOTO"] || !media["BRIDE_PHOTO"])
-              : (!media["GROOM_PHOTO"]))
-          ) && (
+          {activeStudioTab === "form" && Boolean(invitation.themeId) && (needsCoverPhoto || needsPortraitPhoto) && (
             <div className="flex items-center justify-between sm:justify-end gap-2 border-t border-stone-200/60 sm:border-t-0 pt-2 sm:pt-0 w-full sm:w-auto px-1 sm:px-0">
               <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800 bg-amber-50/90 border border-amber-200/70 px-2 py-1 rounded-lg shrink-0">
                 <svg className="w-3 h-3 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1717,7 +1737,7 @@ export default function EditInvitation() {
                 Perlu:
               </span>
               <div className="flex items-center gap-1.5 shrink-0">
-                {!media["LANDING_COVER"] && (
+                {needsCoverPhoto && (
                   <button
                     type="button"
                     onClick={() => {
@@ -1729,9 +1749,7 @@ export default function EditInvitation() {
                     + Sampul
                   </button>
                 )}
-                {((!invitation?.eventType || invitation?.eventType === "WEDDING")
-                  ? (!media["GROOM_PHOTO"] || !media["BRIDE_PHOTO"])
-                  : (!media["GROOM_PHOTO"])) && (
+                {needsPortraitPhoto && (
                   <button
                     type="button"
                     onClick={() => {
@@ -2591,6 +2609,12 @@ export default function EditInvitation() {
         {!collapsed.sec2 && (
           <div className="p-3.5 sm:p-7 space-y-5 sm:space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {unfilledSlots.length > 0 && (
+                <div className="md:col-span-3 p-3.5 rounded-xl border border-amber-200/80 bg-amber-50/60 text-xs text-amber-950">
+                  <span className="font-semibold">Belum diisi untuk tema ini:</span>{" "}
+                  {unfilledSlots.map((slot) => studioSlotLabel(slot, invitation?.eventType)).join(", ")}.
+                </div>
+              )}
               <PhotoInput
                 label="Cover Pembuka Mobile — Portrait 9:16"
                 desc="Foto/Video PORTRAIT (9:16) — Cover pop-up saat tamu buka undangan di HP. Idealnya foto kepala-kaki 9:16 atau 4:5."
@@ -2677,7 +2701,7 @@ export default function EditInvitation() {
                 onUploadEnd={handleUploadEnd}
               />
 
-              {(media["GLOBAL_FIXED_BG"] || themeDefaultOf(invitation, "GLOBAL_FIXED_BG")) && (
+              {slotUsed("GLOBAL_FIXED_BG") && (media["GLOBAL_FIXED_BG"] || themeDefaultOf(invitation, "GLOBAL_FIXED_BG")) && (
                 <div className="md:col-span-3 p-4 rounded-xl border border-stone-200/90 bg-white">
                   <div className="flex items-baseline justify-between gap-3">
                     <label htmlFor="bgPhotoTone" className="text-sm font-semibold text-stone-900">Kecerahan Foto Latar</label>
@@ -2710,7 +2734,7 @@ export default function EditInvitation() {
                 </div>
               )}
 
-              {media["GLOBAL_FIXED_BG"] && (
+              {slotUsed("GLOBAL_FIXED_BG") && media["GLOBAL_FIXED_BG"] && (
                 <div className="md:col-span-3 p-4 rounded-xl border border-stone-200/90 bg-white">
                   <div className="flex items-baseline justify-between gap-3">
                     <label htmlFor="bgScrim" className="text-sm font-semibold text-stone-900">Kepekatan Lapisan Latar</label>
@@ -2739,6 +2763,38 @@ export default function EditInvitation() {
                     <span>Teks lebih terbaca</span>
                   </div>
                 </div>
+              )}
+
+              {unusedSlotPhotos.length > 0 && (
+                <details className="md:col-span-3 rounded-xl border border-stone-200/90 bg-white">
+                  <summary className="cursor-pointer select-none px-4 py-3 text-sm font-semibold text-stone-900">
+                    Foto yang tidak dipakai tema ini ({unusedSlotPhotos.length})
+                  </summary>
+                  <div className="px-4 pb-4 space-y-3">
+                    <p className="text-xs text-stone-600">
+                      Foto ini tersimpan dari tema sebelumnya dan tidak tampil di tema yang dipilih. Foto tampil lagi bila Anda kembali ke tema yang memakainya. Hapus bila tidak diperlukan, lalu simpan.
+                    </p>
+                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {unusedSlotPhotos.map((slot) => (
+                        <li key={slot} className="flex items-center gap-3 p-2 rounded-lg border border-stone-200/80">
+                          {/\.(mp4|webm|mov)(\?|$)/i.test(media[slot]) ? (
+                            <span className="w-12 h-12 shrink-0 rounded-md bg-stone-100 text-[10px] font-semibold text-stone-500 flex items-center justify-center">Video</span>
+                          ) : (
+                            <img src={media[slot]} alt={studioSlotLabel(slot, invitation?.eventType)} className="w-12 h-12 shrink-0 rounded-md object-cover" />
+                          )}
+                          <span className="flex-1 min-w-0 text-xs font-medium text-stone-800 truncate">{studioSlotLabel(slot, invitation?.eventType)}</span>
+                          <button
+                            type="button"
+                            onClick={() => updateMedia(slot, "")}
+                            className="shrink-0 px-2.5 py-1 rounded-lg border border-stone-300 text-[11px] font-semibold text-stone-700 hover:bg-stone-50"
+                          >
+                            Hapus
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </details>
               )}
 
               {/* Panduan Orientasi & Format Media Visual */}
@@ -5803,6 +5859,7 @@ export default function EditInvitation() {
       )}
 
     </div>
+    </ThemeSlotsContext.Provider>
   );
 }
 
@@ -5848,12 +5905,29 @@ function Input({
  * (`themeArtPreview`, hanya tampilan); kosong bila tema tidak menyediakan keduanya.
  */
 function themeDefaultOf(invitation: any, slot: string): string {
-  for (const source of [invitation?.themeDefaultMedia, invitation?.themeArtPreview]) {
+  const declared = parseThemeMediaSlots(invitation?.themeMediaSlots) as Record<string, { preview?: string }> | null;
+  for (const source of [invitation?.themeDefaultMedia, declared && { [slot]: declared[slot]?.preview }, invitation?.themeArtPreview]) {
     const url = source && typeof source === "object" ? source[slot] : "";
     if (typeof url === "string" && url) return url;
   }
   return "";
 }
+
+const STUDIO_SLOT_LABELS: Record<string, string> = {
+  LANDING_COVER: "Cover Pembuka Mobile",
+  LANDING_COVER_DESKTOP: "Cover Pembuka Desktop",
+  HOME_PHOTO: "Latar Home",
+  DESKTOP_SIDEBAR: "Hero Kiri Desktop",
+  GLOBAL_FIXED_BG: "Latar Belakang Global",
+  CLOSING_COVER: "Penutup / Footer",
+};
+
+function studioSlotLabel(slot: string, eventType?: string | null): string {
+  return STUDIO_SLOT_LABELS[slot] ?? getMediaSlotLabel(slot, eventType);
+}
+
+/** Slot yang dipakai tema terpilih; PhotoInput untuk slot lain tidak ditampilkan. */
+const ThemeSlotsContext = createContext<ThemeMediaSlots | null>(null);
 
 /** Ukuran asli foto/video di peramban; null bila format tidak bisa dibaca peramban (peringatan orientasi dilewati). */
 async function readMediaSize(file: File, isVideo: boolean): Promise<{ width: number; height: number } | null> {
@@ -5880,7 +5954,14 @@ async function readMediaSize(file: File, isVideo: boolean): Promise<{ width: num
   }
 }
 
-function PhotoInput({
+function PhotoInput(props: Parameters<typeof PhotoInputField>[0]) {
+  const declared = useContext(ThemeSlotsContext);
+  if (!isSlotUsed(declared, props.slot ?? "")) return null;
+  const places = (declared as Record<string, { places: string[] }> | null)?.[props.slot ?? ""]?.places ?? [];
+  return <PhotoInputField {...props} desc={places.length ? `${props.desc} Dipakai di: ${places.join(", ")}.` : props.desc} />;
+}
+
+function PhotoInputField({
   label,
   desc,
   value,

@@ -13,6 +13,7 @@ import { buildCheckinQrBaseUrl, buildCheckinQrUrl, qrInitials } from "@/lib/chec
 import { getEventTimezoneOffset, getPrimaryEvent, resolveEventTimezone } from "@/lib/lifecycleDates";
 import { logger } from "@/lib/logger";
 import { applyThemeDefaultMedia, parseThemeDefaultMedia } from "@/lib/themeDefaultMedia";
+import { filterDeclaredMedia, parseThemeMediaSlots } from "@/lib/themeMediaSlots";
 import { applyBuilderTexts, builderTextLabels, builderTextsOf } from "@/lib/themeBuilder/texts";
 import { storedVariant } from "@/lib/themeBuilder/spec";
 import { resolveVariant } from "@/lib/themeVariants";
@@ -165,8 +166,10 @@ export async function composeTemplateData(
  * dengan undangan virtual (`lib/demoInvitation.ts`), sehingga demo dirender oleh engine yang sama dengan undangan klien.
  */
 export async function composeInvitationData(inv: any) {
-  // Media bawaan tema (salinan di undangan) mengisi slot yang belum diisi klien; foto klien selalu menang.
-  inv = { ...inv, media: applyThemeDefaultMedia(inv.media || [], parseThemeDefaultMedia(inv.themeDefaultMedia)) };
+  // Foto di slot yang tidak dipakai tema (sisa tema sebelumnya) dibuang dulu agar tidak menutup gambar tema atau
+  // membatalkan cover bawaan; barisnya di database tetap. Lalu media bawaan tema mengisi slot yang belum diisi klien.
+  const declaredMedia = filterDeclaredMedia<{ mediaSlot: string; localPath?: string | null }>(inv.media || [], parseThemeMediaSlots(inv.themeMediaSlots));
+  inv = { ...inv, media: applyThemeDefaultMedia(declaredMedia, parseThemeDefaultMedia(inv.themeDefaultMedia)) };
   // Varian Tema memakai teks bawaan, data demo, dan musik master induknya; hanya warna dan huruf yang berbeda (renderTemplate).
   const variant = await resolveVariant(inv.themeId);
   if (variant) inv = { ...inv, themeId: variant.parentId };

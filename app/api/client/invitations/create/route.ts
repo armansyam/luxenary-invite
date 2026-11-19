@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { EventType } from "@prisma/client";
+import { EventType, Prisma } from "@prisma/client";
 
 import { getMonthYearSlug, isSubdomainExpired, isReservedSubdomain, isReservedSlug } from "@/lib/domainUtils";
 import { normalizeEventDateInput } from "@/lib/lifecycleDates";
@@ -15,7 +15,7 @@ import { parseFeatureSettings } from "@/lib/featureSettings";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
 import { copyMasterToDraft, seedRenderedLabels } from "@/lib/renderedLabels";
-import { parseThemeDefaultMedia } from "@/lib/themeDefaultMedia";
+import { loadThemeMediaSnapshot, parseThemeDefaultMedia } from "@/lib/themeDefaultMedia";
 import { getEnabledEventTypes } from "@/lib/settings";
 
 function slugify(text: string): string {
@@ -316,6 +316,8 @@ export async function POST(req: Request) {
     const initialMusicUrl = customDemoData?.audioUrl || customDemoData?.defaultMusicUrl || themeMeta?.defaultMusicUrl || blueprint.defaultMusicUrl || "";
     // Media bawaan tema disalin ke undangan saat tema dipilih, sehingga perubahan tema oleh admin tidak menyentuh undangan ini.
     const themeDefaultMedia = parseThemeDefaultMedia(themeMeta?.defaultMedia);
+    const declaredSlots = (await loadThemeMediaSnapshot(chosenTheme)).themeMediaSlots;
+    const themeMediaSlots = declaredSlots ? (declaredSlots as Prisma.InputJsonValue) : Prisma.DbNull;
 
     invitation = await prisma.$transaction(async (tx) => {
       if (existingDraft) {
@@ -357,7 +359,7 @@ export async function POST(req: Request) {
             openingQuoteRef: blueprint.openingQuoteRef || existingDraft.openingQuoteRef,
             eventData: initialEvents.length > 0 ? initialEvents : undefined,
             featureSettings: mergedFs,
-            ...(isThemeChanged ? { themeDefaultMedia } : {}),
+            ...(isThemeChanged ? { themeDefaultMedia, themeMediaSlots } : {}),
             status: "DRAFT",
           },
         });
@@ -387,6 +389,7 @@ export async function POST(req: Request) {
               labelDefaults: initialCustomLabels,
             },
             themeDefaultMedia,
+            themeMediaSlots,
             status: invitationStatus,
           },
         });

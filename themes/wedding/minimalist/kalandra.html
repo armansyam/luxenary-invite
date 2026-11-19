@@ -485,14 +485,14 @@
 
     /* SECTIONS COMMON FLOW */
     .sec-flow { padding: 4.8rem 2rem; max-width: 480px; margin: 0 auto; text-align: center; position: relative; }
-    .sec-eyebrow { font-size: 0.65rem; letter-spacing: 0.35em; text-transform: uppercase; color: rgba(255,255,255,0.6); display: block; margin-bottom: 0.5rem; }
+    .sec-eyebrow { font-size: 0.65rem; letter-spacing: 0.35em; text-transform: uppercase; color: color-mix(in srgb, var(--gold-pale) 90%, transparent); display: block; margin-bottom: 0.5rem; }
     .sec-main-title { font-size: clamp(2.2rem, 7vw, 3.2rem); color: #ffffff; line-height: 1.1; margin-bottom: 0.6rem; font-weight: 400; letter-spacing: 0.12em; }
     .sec-sub { font-size: 0.8rem; color: rgba(255,255,255,0.68); line-height: 1.55; max-width: 380px; margin: 0 auto 1.5rem; }
     .event-full-date { font-size: 0.95rem; letter-spacing: 0.08em; color: rgba(255,255,255,0.85); margin-bottom: 2rem; font-weight: 400; }
     .countdown-clean { display: flex; justify-content: center; gap: 2rem; margin: 1.5rem 0 2.2rem; }
     .cd-item { text-align: center; }
     .cd-val { display: block; font-size: clamp(2.4rem, 6.5vw, 3.2rem); font-weight: 300; color: #ffffff; line-height: 1; font-family: var(--lux-font-cormorant-garamond); }
-    .cd-txt { display: block; font-size: 0.52rem; text-transform: uppercase; letter-spacing: 0.25em; color: rgba(255,255,255,0.55); margin-top: 0.45rem; font-weight: 600; }
+    .cd-txt { display: block; font-size: 0.52rem; text-transform: uppercase; letter-spacing: 0.25em; color: color-mix(in srgb, var(--gold-pale) 90%, transparent); margin-top: 0.45rem; font-weight: 600; }
     .btn-outline-box {
       display: inline-block; padding: 0.8rem 2.4rem; border: 1px solid rgba(255,255,255,0.7);
       border-radius: 0; color: #ffffff; font-size: 0.68rem; letter-spacing: 0.22em; text-transform: uppercase;
@@ -540,7 +540,7 @@
     .pass-qr-wrapper { background: #ffffff; padding: 14px; display: inline-block; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 1.4rem; }
     .pass-qr-img { width: 160px; height: 160px; display: block; }
     .pass-guest-box { margin-bottom: 1.2rem; }
-    .pass-guest-lbl { font-size: 0.58rem; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(255,255,255,0.55); display: block; margin-bottom: 0.2rem; }
+    .pass-guest-lbl { font-size: 0.58rem; letter-spacing: 0.22em; text-transform: uppercase; color: color-mix(in srgb, var(--gold-pale) 90%, transparent); display: block; margin-bottom: 0.2rem; }
     .pass-guest-name { font-size: 1.4rem; color: #ffffff; font-style: italic; }
     .pass-meta-grid {
       display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: rgba(0,0,0,0.3);
@@ -700,6 +700,8 @@
       max-width: 520px;
       margin: 0 auto;
     }
+    /* Seksi vendor dari engine memakai --accent (emas gelap); di atas foto latar dipakai emas terang tema ini. */
+    #section-vendors .sec-eyebrow, #section-vendors .sec-main-title { color: var(--gold-light) !important; }
     .footer-name { font-size: 1.8rem; color: #ffffff; margin-bottom: 0.4rem; }
     .footer-sub { font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: rgba(255,255,255,0.5); }
 
@@ -1029,7 +1031,7 @@
         <p style="font-size:0.85rem; color:rgba(255,255,255,0.75); line-height:1.7; margin-bottom:1.5rem;">
           Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.
         </p>
-        <p style="font-size:0.75rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--accent); font-weight:600; margin-bottom:0.5rem;">Kami Yang Berbahagia,</p>
+        <p style="font-size:0.75rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--gold-light); font-weight:600; margin-bottom:0.5rem;">Kami Yang Berbahagia,</p>
         <h2 class="footer-name serif" style="font-size:2.4rem; margin-bottom:0.4rem;">{{firstName}} <em>&amp;</em> {{secondName}}</h2>
         <p class="footer-sub" style="font-size:0.85rem; opacity:0.8;">{{weddingDate}}</p>
       </div>

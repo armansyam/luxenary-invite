@@ -66,6 +66,63 @@ function groupUsage(names: string[], usage: Record<string, ColorUsage>): { total
   return { total: parts.reduce((a, [, n]) => a + n, 0), parts };
 }
 
+/** Deklarasi slot foto klien saat disunting: tempat ditulis bebas dipisah koma, dirapikan saat disimpan. */
+type SlotDecl = Record<string, { places: string; preview?: string }>;
+
+function slotDeclFromApi(raw: unknown): SlotDecl | null {
+  if (!raw || typeof raw !== "object") return null;
+  const out: SlotDecl = {};
+  for (const [slot, d] of Object.entries(raw as Record<string, { places?: string[]; preview?: string }>)) {
+    out[slot] = { places: (d.places ?? []).join(", "), ...(d.preview ? { preview: d.preview } : {}) };
+  }
+  return out;
+}
+
+function slotDeclToApi(decl: SlotDecl | null) {
+  if (!decl) return null;
+  return Object.fromEntries(Object.entries(decl).map(([slot, d]) => [slot, {
+    places: d.places.split(",").map((p) => p.trim()).filter(Boolean),
+    ...(d.preview ? { preview: d.preview } : {}),
+  }]));
+}
+
+/** Status pemeriksa yang berarti foto slot terlihat tamu (di tampilan ini atau tampilan lain). */
+const SLOT_SEEN: ReadonlySet<SlotCheck["status"]> = new Set(["visible", "dim", "other-view"]);
+
+/** Nama tempat dari pemeriksa ("seksi host1") menjadi teks "Dipakai di" untuk klien; id seksi lain tidak ditulis. */
+const PLACE_LABELS: Record<string, string> = {
+  sampul: "Sampul",
+  "latar halaman": "Latar halaman",
+  penutup: "Penutup",
+  "seksi closing": "Penutup",
+  "seksi home": "Seksi pembuka",
+  "seksi quote": "Kutipan",
+  "seksi section-quote": "Kutipan",
+  "seksi profile": "Profil",
+  "seksi couple": "Profil mempelai",
+  "seksi section-couple": "Profil mempelai",
+  "seksi host1": "Profil mempelai",
+  "seksi host2": "Profil mempelai",
+  "seksi story": "Kisah",
+  "seksi event": "Acara",
+  "seksi events": "Acara",
+  "seksi section-events": "Acara",
+  "seksi countdown": "Hitung mundur",
+  "seksi rsvp": "RSVP",
+};
+
+/** Slot yang terlihat menurut pemeriksa ditambahkan ke deklarasi; slot yang sudah dideklarasikan tidak dihapus. */
+function mergeCheckedSlots(prev: SlotDecl | null, checks: SlotCheck[]): SlotDecl {
+  const next: SlotDecl = { ...(prev ?? {}) };
+  for (const c of checks) {
+    if (!SLOT_SEEN.has(c.status)) continue;
+    const found = (c.places ?? []).filter((p) => SLOT_SEEN.has(p.status)).map((p) => PLACE_LABELS[p.where]).filter((p): p is string => Boolean(p));
+    const current = next[c.slot]?.places.split(",").map((p) => p.trim()).filter(Boolean) ?? [];
+    next[c.slot] = { ...next[c.slot], places: [...new Set([...current, ...found])].join(", ") };
+  }
+  return next;
+}
+
 interface LoadedMaster {
   id: string;
   name: string;
@@ -170,6 +227,9 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
   const [defaultMedia, setDefaultMedia] = useState<Record<string, string>>({});
   const [savedMedia, setSavedMedia] = useState("{}");
   const [builtinMedia, setBuiltinMedia] = useState<Record<string, string>>({});
+  // Slot foto klien yang dipakai master (Theme.mediaSlots); null = belum dideklarasikan, Studio menampilkan semua slot.
+  const [slotDecl, setSlotDecl] = useState<SlotDecl | null>(null);
+  const [savedSlotDecl, setSavedSlotDecl] = useState("null");
   const [previewMode, setPreviewMode] = useState<PreviewMode>("demo");
   const [sim, setSim] = useState<SimMedia>({ slots: {}, gallery: [] });
   const [uploadingSim, setUploadingSim] = useState<string | null>(null);
@@ -227,7 +287,7 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
   }, [masterId, notify]);
 
   const snapshot = useCallback((n: string, d: string, o: MasterOverrides) => JSON.stringify({ n: n.trim(), d: d.trim(), o }), []);
-  const dirty = snapshot(name, description, overrides) !== savedSnapshot || JSON.stringify(defaultMedia) !== savedMedia;
+  const dirty = snapshot(name, description, overrides) !== savedSnapshot || JSON.stringify(defaultMedia) !== savedMedia || JSON.stringify(slotDeclToApi(slotDecl)) !== savedSlotDecl;
 
   /** Render server (master mentah + override pada mode master; suntingan master induk + override pada mode varian). */
   const fetchPreview = useCallback(async (themeParentId: string, o: MasterOverrides): Promise<{ html?: string; error?: string }> => {
@@ -271,6 +331,9 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
         setDefaultMedia(data.master.defaultMedia ?? {});
         setSavedMedia(JSON.stringify(data.master.defaultMedia ?? {}));
         setBuiltinMedia(data.master.builtinMedia ?? {});
+        const decl = slotDeclFromApi(data.master.mediaSlots);
+        setSlotDecl(decl);
+        setSavedSlotDecl(JSON.stringify(slotDeclToApi(decl)));
       }
       previewImagesRef.current = structuralKey(o);
       setAnchors(data.anchors ?? []);
@@ -786,7 +849,7 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
     if (!ok) return false;
     setBusy(true);
     try {
-      const res = await fetch("/api/admin/theme-variants", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ masterId: master.id, overrides, defaultMedia }) });
+      const res = await fetch("/api/admin/theme-variants", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ masterId: master.id, overrides, defaultMedia, mediaSlots: slotDeclToApi(slotDecl) }) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         notify([data.error, ...(data.details ?? [])].filter(Boolean).join(" ") || "Suntingan gagal disimpan.", "error");
@@ -794,7 +857,8 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
       }
       setSavedSnapshot(snapshot(name, description, overrides));
       setSavedMedia(JSON.stringify(defaultMedia));
-      notify(data.count || Object.keys(defaultMedia).length ? "Suntingan master disimpan. Demo dan thumbnail sedang dibuat ulang." : "Master kembali ke tampilan aslinya.", "success");
+      setSavedSlotDecl(JSON.stringify(slotDeclToApi(slotDecl)));
+      notify(data.count || Object.keys(defaultMedia).length || slotDecl ? "Suntingan master disimpan. Demo dan thumbnail sedang dibuat ulang." : "Master kembali ke tampilan aslinya.", "success");
       return true;
     } finally {
       setBusy(false);
@@ -1383,6 +1447,104 @@ export default function ThemeVariantEditor({ parentId, variantId, masterId = nul
                     );
                   })}
                 </ul>
+              </section>
+
+              <section className="border-t border-stone-200/80 px-5 py-4">
+                <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-stone-500">Slot foto klien</h3>
+                <p className="mt-1 text-[11px] text-stone-500">Slot yang fotonya benar-benar tampil di master ini. Studio klien hanya menampilkan slot yang dicentang, dan foto di slot lain tidak dirender. Berlaku untuk undangan yang dibuat atau berganti ke tema ini sesudah disimpan.</p>
+                {slotDecl === null ? (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-[11px] font-medium text-stone-700">Belum dideklarasikan: Studio menampilkan semua slot.</p>
+                    <div className="flex flex-wrap gap-2">
+                      <button type="button" onClick={() => setSlotDecl({})} className="rounded-lg border border-stone-200 px-2.5 py-1 text-[11px] font-semibold text-stone-700 hover:border-stone-400 cursor-pointer">Mulai deklarasi</button>
+                      {slotChecks.length > 0 && (
+                        <button type="button" onClick={() => setSlotDecl((prev) => mergeCheckedSlots(prev, slotChecks))} className="rounded-lg border border-amber-300 px-2.5 py-1 text-[11px] font-semibold text-amber-800 hover:border-amber-500 cursor-pointer">
+                          Isi dari pemeriksa slot
+                        </button>
+                      )}
+                    </div>
+                    {slotChecks.length === 0 && <p className="text-[10.5px] text-stone-500">Unggah foto uji per slot dan pilih mode Foto uji agar deklarasi bisa diisi dari hasil pemeriksa.</p>}
+                  </div>
+                ) : (
+                  <>
+                    <ul className="mt-3 space-y-2.5">
+                      {simSlotsFor((parent?.eventType ?? "WEDDING") as BuilderEventType).map((s) => {
+                        const decl = slotDecl[s.slot];
+                        const check = slotChecks.find((c) => c.slot === s.slot);
+                        const key = `slot:${s.slot}`;
+                        return (
+                          <li key={s.slot} className="rounded-xl px-1 py-1 hover:bg-stone-50">
+                            <label className="flex items-center gap-2 text-[12px] font-semibold text-stone-800 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(decl)}
+                                onChange={(e) => setSlotDecl((prev) => {
+                                  const next = { ...(prev ?? {}) };
+                                  if (e.target.checked) next[s.slot] = { places: "" };
+                                  else delete next[s.slot];
+                                  return next;
+                                })}
+                                className="accent-amber-700"
+                              />
+                              {s.label}
+                              {check && (
+                                <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-medium text-stone-500">
+                                  <span className={`inline-block h-1.5 w-1.5 rounded-full ${SLOT_STATUS_STYLE[check.status].dot}`} />
+                                  {SLOT_STATUS_STYLE[check.status].label}
+                                </span>
+                              )}
+                            </label>
+                            {decl && (
+                              <div className="mt-1.5 ml-6 flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  value={decl.places}
+                                  maxLength={240}
+                                  onChange={(e) => setSlotDecl((prev) => ({ ...(prev ?? {}), [s.slot]: { ...decl, places: e.target.value } }))}
+                                  placeholder="Dipakai di, mis. Sampul, Latar Home"
+                                  className="min-w-0 flex-1 rounded-lg border border-stone-200 bg-white px-2 py-1 text-[11.5px] text-stone-800 outline-none focus:border-amber-500"
+                                />
+                                <label className={`shrink-0 flex items-center gap-1.5 rounded-lg border border-stone-200 px-1.5 py-1 text-[10.5px] font-semibold text-stone-700 hover:border-stone-400 ${uploadingFor ? "opacity-50" : "cursor-pointer"}`} title="Thumbnail ilustrasi tema untuk Studio selama klien belum mengunggah. Tidak dirender di undangan.">
+                                  {decl.preview && <img src={decl.preview} alt="" className="h-5 w-5 rounded object-cover" />}
+                                  {uploadingFor === key ? "Mengunggah…" : decl.preview ? "Ganti" : "Thumbnail"}
+                                  <input
+                                    type="file"
+                                    accept="image/png,image/webp,image/jpeg"
+                                    className="hidden"
+                                    disabled={Boolean(uploadingFor)}
+                                    onChange={async (e) => {
+                                      const f = e.target.files?.[0];
+                                      e.target.value = "";
+                                      if (!f) return;
+                                      setUploadingFor(key);
+                                      try {
+                                        const url = await uploadAsset(f);
+                                        if (url) setSlotDecl((prev) => ({ ...(prev ?? {}), [s.slot]: { ...(prev?.[s.slot] ?? { places: "" }), preview: url } }));
+                                      } finally {
+                                        setUploadingFor(null);
+                                      }
+                                    }}
+                                  />
+                                </label>
+                                {decl.preview && (
+                                  <button type="button" onClick={() => setSlotDecl((prev) => ({ ...(prev ?? {}), [s.slot]: { places: decl.places } }))} className="shrink-0 text-[10.5px] font-semibold text-stone-500 hover:text-stone-800 cursor-pointer">Hapus</button>
+                                )}
+                              </div>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                      {slotChecks.length > 0 && (
+                        <button type="button" onClick={() => setSlotDecl((prev) => mergeCheckedSlots(prev, slotChecks))} className="text-[11px] font-semibold text-amber-800 hover:underline cursor-pointer" title="Menambahkan slot yang terlihat di tampilan pratinjau sekarang; jalankan di HP dan Desktop.">
+                          Tambah dari pemeriksa ({device === "desktop" ? "Desktop" : "HP"})
+                        </button>
+                      )}
+                      <button type="button" onClick={() => setSlotDecl(null)} className="text-[11px] font-semibold text-stone-500 hover:text-stone-800 cursor-pointer">Hapus deklarasi (Studio menampilkan semua slot)</button>
+                    </div>
+                  </>
+                )}
               </section>
 
               <section className="border-t border-stone-200/80 px-5 py-4">

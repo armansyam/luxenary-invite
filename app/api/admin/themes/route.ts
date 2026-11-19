@@ -9,6 +9,7 @@ import { shareFile, unshareFiles } from "@/lib/sharedFiles";
 import { themeThumbnails } from "@/lib/publicAsset";
 import { EventType, Prisma } from "@prisma/client";
 import { validateThemeDefaultMedia, type ThemeDefaultMedia } from "@/lib/themeDefaultMedia";
+import { validateThemeMediaSlots, type ThemeMediaSlots } from "@/lib/themeMediaSlots";
 import { masterDir, masterPathOf } from "@/lib/themePaths";
 
 export const dynamic = "force-dynamic";
@@ -202,6 +203,7 @@ export async function PUT(req: NextRequest) {
     let sortOrder: number | undefined;
     let defaultMusicUrl: string | undefined;
     let defaultMedia: ThemeDefaultMedia | undefined;
+    let mediaSlots: ThemeMediaSlots | null | undefined;
     let file: File | null = null;
 
     const contentType = req.headers.get("content-type") || "";
@@ -233,6 +235,11 @@ export async function PUT(req: NextRequest) {
         const checked = validateThemeDefaultMedia(body.defaultMedia);
         if (!checked.ok) return NextResponse.json({ error: checked.error }, { status: 400 });
         defaultMedia = checked.value;
+      }
+      if (body.mediaSlots !== undefined) {
+        const checked = validateThemeMediaSlots(body.mediaSlots);
+        if (!checked.ok) return NextResponse.json({ error: checked.error }, { status: 400 });
+        mediaSlots = checked.value;
       }
     }
 
@@ -294,6 +301,7 @@ export async function PUT(req: NextRequest) {
         ...(sortOrder !== undefined && { sortOrder: Number(sortOrder) }),
         ...(defaultMusicUrl !== undefined && { defaultMusicUrl: defaultMusicUrl || null }),
         ...(defaultMedia !== undefined && { defaultMedia }),
+        ...(mediaSlots !== undefined && { mediaSlots: mediaSlots ? (mediaSlots as Prisma.InputJsonValue) : Prisma.DbNull }),
         // Master yang diganti unggahan manual bukan lagi hasil builder; spesifikasi lama akan menimpanya bila dibuka di builder.
         ...(file && { builderSpec: Prisma.DbNull }),
       },

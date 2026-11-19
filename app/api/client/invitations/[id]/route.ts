@@ -25,7 +25,7 @@ import { createPreviewToken } from "@/lib/previewAccess";
 import { mergeFeatureSettingsInput, parseFeatureSettings } from "@/lib/featureSettings";
 import { featureSettingsForThemeChange } from "@/lib/themeLabels";
 import { seedRenderedLabels } from "@/lib/renderedLabels";
-import { loadThemeDefaultMedia } from "@/lib/themeDefaultMedia";
+import { loadThemeMediaSnapshot } from "@/lib/themeDefaultMedia";
 import { loadThemeArtPreview } from "@/lib/themeArtPreview";
 import { themeMainColor } from "@/lib/themePalette";
 
@@ -488,6 +488,7 @@ export async function PUT(
       const base = mergedFeatureSettings === undefined || mergedFeatureSettings === Prisma.DbNull ? currentInv.featureSettings : mergedFeatureSettings;
       mergedFeatureSettings = (await featureSettingsForThemeChange(parseFeatureSettings(base), currentInv.themeId, String(body.themeId), currentInv.eventType)) as Prisma.InputJsonValue;
     }
+    const themeSnapshot = themeChanged ? await loadThemeMediaSnapshot(String(body.themeId)) : null;
 
     const updated = await prisma.invitation.update({
       where: { id },
@@ -495,7 +496,10 @@ export async function PUT(
         openingQuote: body.openingQuote !== undefined ? body.openingQuote : undefined,
         openingQuoteRef: body.openingQuoteRef !== undefined ? body.openingQuoteRef : undefined,
         themeId: body.themeId !== undefined ? body.themeId : undefined,
-        ...(body.themeId !== undefined && body.themeId !== currentInv.themeId ? { themeDefaultMedia: await loadThemeDefaultMedia(String(body.themeId)) } : {}),
+        ...(themeSnapshot ? {
+          themeDefaultMedia: themeSnapshot.themeDefaultMedia,
+          themeMediaSlots: themeSnapshot.themeMediaSlots ? (themeSnapshot.themeMediaSlots as Prisma.InputJsonValue) : Prisma.DbNull,
+        } : {}),
         subdomain: newSubdomain,
         musicUrl: body.musicUrl !== undefined ? safeExternalUrl(body.musicUrl) : undefined,
         status: body.status !== undefined ? body.status : undefined,

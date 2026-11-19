@@ -42,6 +42,11 @@ export function safeMediaUrl(input: unknown): string {
   return url;
 }
 
+/** Aset milik tema/platform. `/demo/` (foto model etalase) dan unggahan klien sengaja tidak termasuk. */
+export const THEME_OWNED_PREFIXES = ["/theme-assets/", "/assets/ornaments/", "/uploads/theme-assets/"] as const;
+
+export const isThemeOwnedPath = (url: string) => THEME_OWNED_PREFIXES.some((prefix) => url.startsWith(prefix));
+
 const FEATURE_URL_KEYS = [
   "liveStreamYoutubeUrl",
   "liveStreamInstagramUrl",

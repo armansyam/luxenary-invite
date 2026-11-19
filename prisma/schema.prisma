@@ -130,6 +130,8 @@ model Invitation {
   featureSettings      Json?
   /// Salinan Theme.defaultMedia saat tema dipilih; media bawaan tema tidak berubah walau admin mengubah tema.
   themeDefaultMedia    Json?             @map("theme_default_media")
+  /// Salinan Theme.mediaSlots saat tema dipilih (lib/themeMediaSlots.ts); null = tema belum mendeklarasikan slotnya.
+  themeMediaSlots      Json?             @map("theme_media_slots")
   staffPin             String?
   openingQuote         String?
   openingQuoteRef      String?
@@ -307,6 +309,8 @@ model Theme {
   builderSpec     Json?         @map("builder_spec")
   /// Media bawaan tema per slot ({ SLOT: "/path" }); lib/themeDefaultMedia.ts. Disalin ke undangan saat tema dipilih.
   defaultMedia    Json?         @map("default_media")
+  /// Slot media klien yang dipakai tema ({ SLOT: { places } }); lib/themeMediaSlots.ts. Null = belum dideklarasikan.
+  mediaSlots      Json?         @map("media_slots")
   /// Varian Tema (lib/themeVariants.ts): override variabel :root master induk `parentTheme`; null untuk tema biasa.
   masterOverrides Json?         @map("master_overrides")
   createdAt       DateTime      @default(now())

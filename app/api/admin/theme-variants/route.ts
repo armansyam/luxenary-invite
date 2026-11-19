@@ -14,7 +14,7 @@
  *                                                            merender master mentah + overrides, mode varian menumpuk
  *                                                            overrides di atas suntingan master induk
  *   PUT    { id, name?, description?, overrides?, isActive? } ubah atau terbitkan varian
- *   PUT    { masterId, overrides }                           simpan suntingan Editor Master
+ *   PUT    { masterId, overrides, defaultMedia?, mediaSlots? } simpan suntingan Editor Master
  *   DELETE ?id=<idVarian>      hapus varian yang belum dipakai undangan mana pun
  */
 import fs from "fs";
@@ -41,6 +41,7 @@ import { masterColorUsage, masterImageRefs, masterSections, overrideCount } from
 import { masterAnchors, masterReorderable } from "@/lib/masterLayout";
 import { fitMasterOrnaments } from "@/lib/themeBuilder/frameWindow";
 import { parseThemeDefaultMedia, validateThemeDefaultMedia } from "@/lib/themeDefaultMedia";
+import { parseThemeMediaSlots, validateThemeMediaSlots } from "@/lib/themeMediaSlots";
 import { themeArtPreviews } from "@/lib/themeArtPreview";
 import { parseSimMedia } from "@/lib/themeBuilder/simSlots";
 
@@ -53,7 +54,7 @@ export const dynamic = "force-dynamic";
 async function loadParent(parentId: string) {
   const theme = await prisma.theme.findUnique({
     where: { id: parentId },
-    select: { id: true, name: true, description: true, isActive: true, category: true, eventType: true, series: true, defaultMusicUrl: true, defaultMedia: true, builderSpec: true, parentTheme: true, masterOverrides: true },
+    select: { id: true, name: true, description: true, isActive: true, category: true, eventType: true, series: true, defaultMusicUrl: true, defaultMedia: true, mediaSlots: true, builderSpec: true, parentTheme: true, masterOverrides: true },
   });
   if (!theme) return { error: "Tema induk tidak ditemukan.", status: 404 } as const;
   if (theme.builderSpec !== null || theme.parentTheme !== null) return { error: "Hanya tema master bawaan (tulisan tangan) yang bisa disunting di sini atau dibuatkan varian.", status: 409 } as const;
@@ -149,6 +150,7 @@ export async function GET(req: NextRequest) {
         master: {
           id: master.theme.id, name: master.theme.name, eventType: master.theme.eventType, isActive: master.theme.isActive, overrides: master.edits ?? { colors: {}, fonts: {} },
           defaultMedia: parseThemeDefaultMedia(master.theme.defaultMedia),
+          mediaSlots: parseThemeMediaSlots(master.theme.mediaSlots),
           builtinMedia: themeArtPreviews(master.theme.id),
         },
         parent: { id: master.theme.id, name: master.theme.name, eventType: master.theme.eventType },
@@ -255,10 +257,21 @@ export async function PUT(req: NextRequest) {
         if (!checked.ok) return NextResponse.json({ error: checked.error }, { status: 400 });
         defaultMedia = Object.keys(checked.value).length ? (checked.value as Prisma.InputJsonValue) : Prisma.DbNull;
       }
+      // Slot foto klien yang dipakai master; disalin ke undangan saat tema dipilih (undangan lama tidak berubah).
+      let mediaSlots: Prisma.ThemeUpdateInput["mediaSlots"];
+      if (input.mediaSlots !== undefined) {
+        const checked = validateThemeMediaSlots(input.mediaSlots);
+        if (!checked.ok) return NextResponse.json({ error: checked.error }, { status: 400 });
+        mediaSlots = checked.value ? (checked.value as Prisma.InputJsonValue) : Prisma.DbNull;
+      }
       const count = overrideCount(parsed.value);
       await prisma.theme.update({
         where: { id: master.theme.id },
-        data: { masterOverrides: count ? (parsed.value as unknown as Prisma.InputJsonValue) : Prisma.DbNull, ...(defaultMedia !== undefined && { defaultMedia }) },
+        data: {
+          masterOverrides: count ? (parsed.value as unknown as Prisma.InputJsonValue) : Prisma.DbNull,
+          ...(defaultMedia !== undefined && { defaultMedia }),
+          ...(mediaSlots !== undefined && { mediaSlots }),
+        },
       });
       await recordBuilderAudit(req, guard.session, "THEME_MASTER_EDIT", `Menyunting master ${master.theme.id} (${count} perubahan)`);
       // Varian mewarisi suntingan master induknya, jadi demo varian yang tayang ikut dibuat ulang.

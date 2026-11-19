@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { safeMediaUrl } from "@/lib/safeUrl";
+import { isThemeOwnedPath, safeMediaUrl, THEME_OWNED_PREFIXES as ALLOWED_PREFIXES } from "@/lib/safeUrl";
+import { parseThemeMediaSlots } from "@/lib/themeMediaSlots";
 
 /**
  * Slot milik tema yang boleh punya media bawaan. Foto personal (HOME_PHOTO, GROOM_PHOTO, BRIDE_PHOTO, GALLERY) tidak
@@ -11,12 +12,7 @@ export const DEFAULT_MEDIA_SLOTS = ["LANDING_COVER", "LANDING_COVER_DESKTOP", "D
 export type DefaultMediaSlot = (typeof DEFAULT_MEDIA_SLOTS)[number];
 export type ThemeDefaultMedia = Partial<Record<DefaultMediaSlot, string>>;
 
-/** Aset milik tema/platform. `/demo/` (foto model etalase) dan unggahan klien sengaja tidak termasuk. */
-const ALLOWED_PREFIXES = ["/theme-assets/", "/assets/ornaments/", "/uploads/theme-assets/"] as const;
-
 const isSlot = (value: string): value is DefaultMediaSlot => (DEFAULT_MEDIA_SLOTS as readonly string[]).includes(value);
-
-const isThemeOwnedPath = (url: string) => ALLOWED_PREFIXES.some((prefix) => url.startsWith(prefix));
 
 /** Pembacaan longgar dari kolom JSON: entri tidak sah dibuang tanpa melempar. */
 export function parseThemeDefaultMedia(raw: unknown): ThemeDefaultMedia {
@@ -47,9 +43,16 @@ export function validateThemeDefaultMedia(input: unknown): { ok: true; value: Th
   return { ok: true, value: out };
 }
 
-export async function loadThemeDefaultMedia(themeId: string): Promise<ThemeDefaultMedia> {
-  const theme = await prisma.theme.findUnique({ where: { id: themeId.toLowerCase() }, select: { defaultMedia: true } });
-  return parseThemeDefaultMedia(theme?.defaultMedia);
+/** Salinan tema yang disimpan di undangan saat tema dipilih: media bawaan dan slot media yang dipakai tema. */
+export async function loadThemeMediaSnapshot(themeId: string) {
+  const theme = await prisma.theme.findUnique({ where: { id: themeId.toLowerCase() }, select: { defaultMedia: true, mediaSlots: true, parentTheme: true } });
+  let slots = parseThemeMediaSlots(theme?.mediaSlots);
+  // Varian Tema merender master induknya, jadi slot yang dipakai juga milik induk.
+  if (!slots && theme?.parentTheme) {
+    const parent = await prisma.theme.findUnique({ where: { id: theme.parentTheme }, select: { mediaSlots: true } });
+    slots = parseThemeMediaSlots(parent?.mediaSlots);
+  }
+  return { themeDefaultMedia: parseThemeDefaultMedia(theme?.defaultMedia), themeMediaSlots: slots };
 }
 
 interface MediaRow {
