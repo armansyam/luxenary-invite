@@ -11,7 +11,7 @@ import { FEATURE_SETTING_LIVE_FIELDS, isLiveEditField } from "@/lib/liveEditFiel
 import { resolveInvitationDisplayName, getMediaSlotLabel, eventNoun, isThemeCompatible, sortThemesForEvent } from "@/lib/invitationUtils";
 import { useFeedback } from "@/components/ui/Feedback";
 import { getApexRootDomain } from "@/lib/domainUtils";
-import { BG_PHOTO_TONE_LIMIT, parseBgPhotoTone } from "@/lib/bgPhotoTone";
+import { BG_PHOTO_TONE_LIMIT, BG_SCRIM_MAX, parseBgPhotoTone, parseBgScrim } from "@/lib/bgPhotoTone";
 import { EDITABLE_TEXT_KEYS, MAX_DECORATIVE_LABEL_LENGTH, sectionLabelFor, type BuilderEventType } from "@/lib/themeBuilder/spec";
 import type { EditableText, FreeSectionText } from "@/lib/themeBuilder/texts";
 
@@ -899,7 +899,8 @@ export default function EditInvitation() {
       JSON.stringify(media) !== JSON.stringify(savedSnapshot.media || {}) ||
       (invitation.musicUrl || "") !== (savedSnapshot.invitation?.musicUrl || "") ||
       Boolean(getFeatureSetting("showMusic", true)) !== Boolean(getSavedFeatureSetting("showMusic", true)) ||
-      parseBgPhotoTone(getFeatureSetting("bgPhotoTone", 0)) !== parseBgPhotoTone(getSavedFeatureSetting("bgPhotoTone", 0))
+      parseBgPhotoTone(getFeatureSetting("bgPhotoTone", 0)) !== parseBgPhotoTone(getSavedFeatureSetting("bgPhotoTone", 0)) ||
+      parseBgScrim(getFeatureSetting("bgScrim", null)) !== parseBgScrim(getSavedFeatureSetting("bgScrim", null))
     );
 
     // Sec 3: Profil Mempelai / Persona Acara
@@ -1256,6 +1257,7 @@ export default function EditInvitation() {
   const showLiveStream = getFeatureSetting("showLiveStream", false);
   const showFilter = getFeatureSetting("showFilter", false);
   const bgPhotoTone = parseBgPhotoTone(getFeatureSetting("bgPhotoTone", 0));
+  const bgScrim = parseBgScrim(getFeatureSetting("bgScrim", null));
   const showTurutMengundang = getFeatureSetting("showTurutMengundang", true);
   if (invitation.isLocked && !invitation.isEmergencyUnlocked) {
     const isPublishedLock = invitation.lockReason === "PUBLISHED" || (!invitation.lockReason && (invitation.status === "PUBLISHED" || invitation.status === "EVENT_FINISHED"));
@@ -2664,6 +2666,7 @@ export default function EditInvitation() {
                 desc="Foto/Video PORTRAIT atau bebas — Fixed canvas di balik seluruh kartu undangan. Bila dikosongkan, tampilan memakai bawaan tema."
                 value={media["GLOBAL_FIXED_BG"] || ""}
                 onChange={(url) => updateMedia("GLOBAL_FIXED_BG", url)}
+                onUploaded={(res) => { if (typeof res.suggestedBgScrim === "number") updateFeatureSetting("bgScrim", res.suggestedBgScrim); }}
                 placeholder="https://.../fixed-bg.jpg atau .mp4"
                 allowVideo={true}
                 invitationId={invitationId}
@@ -2703,6 +2706,37 @@ export default function EditInvitation() {
                       </button>
                     )}
                     <span>Terangkan</span>
+                  </div>
+                </div>
+              )}
+
+              {media["GLOBAL_FIXED_BG"] && (
+                <div className="md:col-span-3 p-4 rounded-xl border border-stone-200/90 bg-white">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <label htmlFor="bgScrim" className="text-sm font-semibold text-stone-900">Kepekatan Lapisan Latar</label>
+                    <span className="text-xs font-medium text-stone-600 tabular-nums">{bgScrim === null ? "Bawaan tema" : `${bgScrim}%`}</span>
+                  </div>
+                  <p className="mt-1 text-xs text-stone-600">
+                    Lapisan warna tema di atas foto latar agar teks terbaca. Nilai awal dihitung dari terang-gelap foto yang Anda unggah; geser ke kanan bila teks masih sulit dibaca, ke kiri agar foto lebih terlihat.
+                  </p>
+                  <input
+                    id="bgScrim"
+                    type="range"
+                    min={0}
+                    max={BG_SCRIM_MAX}
+                    step={5}
+                    value={bgScrim ?? BG_SCRIM_MAX}
+                    onChange={(e) => updateFeatureSetting("bgScrim", parseBgScrim(e.target.value))}
+                    className="mt-3 w-full accent-amber-700"
+                  />
+                  <div className="mt-1 flex items-center justify-between text-[11px] text-stone-500">
+                    <span>Foto lebih terlihat</span>
+                    {bgScrim !== null && (
+                      <button type="button" onClick={() => updateFeatureSetting("bgScrim", null)} className="font-semibold text-amber-800 hover:text-amber-900">
+                        Kembali ke bawaan tema
+                      </button>
+                    )}
+                    <span>Teks lebih terbaca</span>
                   </div>
                 </div>
               )}
@@ -5859,6 +5893,7 @@ function PhotoInput({
   fallbackColor = "",
   onUploadStart,
   onUploadEnd,
+  onUploaded,
   maxVideoMb,
   maxPhotoMb,
   expectOrientation,
@@ -5875,6 +5910,8 @@ function PhotoInput({
   slot?: string;
   onUploadStart?: () => void;
   onUploadEnd?: () => void;
+  /** Jawaban penuh /api/client/upload setelah unggahan berhasil (mis. saran kepekatan scrim foto latar). */
+  onUploaded?: (res: { suggestedBgScrim?: number }) => void;
   maxVideoMb?: number;
   maxPhotoMb?: number;
   /** Orientasi yang dibutuhkan slot ini; unggahan yang berlawanan tetap disimpan tetapi diberi peringatan terpotong. */
@@ -5981,6 +6018,7 @@ function PhotoInput({
       if (data.success && data.url) {
         setUploadError(null);
         onChange(data.url);
+        onUploaded?.(data);
         if (size) {
           const kind = isVideoFile ? "Video" : "Foto";
           const dims = `${size.width}×${size.height}`;

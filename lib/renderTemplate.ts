@@ -11,7 +11,7 @@ import { logger } from "@/lib/logger";
 import { createInvitationDraft, deleteStaleInvitationDraft, readInvitationDraft } from "@/lib/invitationDraft";
 import { syncSharedFiles } from "@/lib/sharedFiles";
 import { stripEmptyMediaRefs } from "@/lib/emptyMediaRefs";
-import { BG_PHOTO_TONE_SELECTOR, BG_PHOTO_TONE_STYLE_ID, bgPhotoToneCss, bgPhotoToneFilter } from "@/lib/bgPhotoTone";
+import { BG_PHOTO_TONE_SELECTOR, BG_PHOTO_TONE_STYLE_ID, BG_SCRIM_APPLY_JS, bgPhotoToneCss, bgPhotoToneFilter, bgScrimScript, parseBgScrim, rescaleScrimLayers } from "@/lib/bgPhotoTone";
 
 // /css/* disajikan dengan Cache-Control 7 hari dan /fonts/* dengan `immutable` 1 tahun (next.config.ts): tanpa versi di
 // URL, perubahan modules.css atau fonts.css tidak sampai ke tamu dan Cloudflare sampai cache-nya kedaluwarsa. Versi = hash
@@ -979,6 +979,8 @@ const INLINE_LIVE_EDITOR_SCRIPT = `
     if (!style) { style = document.createElement('style'); style.id = '${BG_PHOTO_TONE_STYLE_ID}'; document.head.appendChild(style); }
     style.textContent = '${BG_PHOTO_TONE_SELECTOR} { filter: ' + filter + ' !important; }';
   }
+  var luxRescaleScrim = ${rescaleScrimLayers.toString()};
+  ${BG_SCRIM_APPLY_JS}
 
   // Remote Dual-View Synchronization Listener
   window.addEventListener('message', function(e) {
@@ -1004,6 +1006,7 @@ const INLINE_LIVE_EDITOR_SCRIPT = `
       if (!fieldKey) return;
       // Kecerahan foto latar disimpan lewat Studio, bukan lewat simpan sunting langsung di pratinjau.
       if (fieldKey === 'bgPhotoTone') { luxSetBgPhotoTone(val); return; }
+      if (fieldKey === 'bgScrim') { luxApplyBgScrim(val); return; }
       pendingChanges[fieldKey] = val;
       const matching = document.querySelectorAll('[data-lux-field="' + fieldKey + '"]');
       matching.forEach(function(el) {
@@ -2223,6 +2226,11 @@ export async function renderTemplateFile(
   const bgPhotoToneRule = data.globalBgUrl ? bgPhotoToneCss(data.featureSettings?.bgPhotoTone) : "";
   if (bgPhotoToneRule) {
     tpl = tpl.replace(/(<\/head>)/i, `<style id="${BG_PHOTO_TONE_STYLE_ID}">${bgPhotoToneRule}</style>\n$1`);
+  }
+  const bgScrim = data.globalBgUrl ? parseBgScrim(data.featureSettings?.bgScrim) : null;
+  if (bgScrim !== null) {
+    const script = bgScrimScript(bgScrim);
+    tpl = /<\/body>/i.test(tpl) ? tpl.replace(/(<\/body>)(?![\s\S]*<\/body>)/i, `${script}\n$1`) : tpl + script;
   }
   if (homeVideoHtml) {
     tpl = tpl.replace(/(<section[^>]*id="home"[^>]*>|<div[^>]*class="[^"]*\bslide-opening\b[^"]*"[^>]*>)/i, `$1\n    ${homeVideoHtml}`);

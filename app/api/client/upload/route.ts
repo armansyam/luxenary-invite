@@ -13,6 +13,7 @@ import { removeIfExists } from "@/lib/fsSafe";
 import { prisma } from "@/lib/prisma";
 import { getClientIp, rateLimitDb } from "@/lib/rateLimit";
 import { MEDIA_SLOT_FILE_NAMES } from "@/lib/mediaSlots";
+import { suggestBgScrim } from "@/lib/bgPhotoTone";
 import { getInvitationLockStatus } from "@/app/api/client/invitations/[id]/route";
 
 // SLOT_FILE_NAMES = 9 slot resmi DB (dari lib/mediaSlots.ts) + slot upload tambahan non-DB
@@ -242,7 +243,16 @@ export async function POST(req: NextRequest) {
     // Add cache buster timestamp
     const publicUrl = `${uploadedUrl}?t=${Date.now()}`;
 
+    // Foto latar: kepekatan scrim awal dihitung dari kecerahan foto ini sendiri (lib/bgPhotoTone.ts suggestBgScrim).
+    let suggestedBgScrim: number | undefined;
+    if (slotKey === "GLOBAL_FIXED_BG" && !isAudio && !isVideo) {
+      const { channels } = await sharp(finalBuffer).stats();
+      const [r, g, b] = [channels[0], channels[1] ?? channels[0], channels[2] ?? channels[0]].map((c) => c.mean / 255);
+      suggestedBgScrim = suggestBgScrim(0.2126 * r + 0.7152 * g + 0.0722 * b);
+    }
+
     return NextResponse.json({
+      suggestedBgScrim,
       success: true,
       url: publicUrl,
       fileName: finalFileName,

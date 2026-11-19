@@ -91,5 +91,20 @@ describe.skipIf(!IS_TEST_DB)("render undangan dengan kecerahan foto latar", () =
     const html = await renderTemplateFile("bugis", (await composeTemplateData(inv.id)) as any, { editMode: true, invitationId: inv.id });
     expect(html).toContain("fieldKey === 'bgPhotoTone'");
     expect(html).toContain("var luxBgPhotoToneFilter = function bgPhotoToneFilter(");
+    expect(html).toContain("fieldKey === 'bgScrim'");
+    expect(html).toContain("function luxApplyBgScrim(");
+  });
+
+  it("kepekatan scrim: disisipkan hanya saat ada foto latar klien dan nilai diatur; kosong = scrim master", async () => {
+    const set = await makeInvitation({ bgScrim: 55 }, true);
+    const html = await render(set.id);
+    expect(html).toContain('<script id="luxBgScrim">');
+    expect(html).toContain("luxApplyBgScrim(55)");
+    expect(await render((await makeInvitation({ bgScrim: 55 }, false)).id)).not.toContain('id="luxBgScrim"');
+    expect(await render((await makeInvitation({}, true)).id)).not.toContain('id="luxBgScrim"');
+    const saved = await mergeFeatureSettingsInput({ showMusic: true }, { bgScrim: "200" }, "TIER_3", true);
+    expect(saved.ok && saved.value.bgScrim).toBe(90);
+    const reset = await mergeFeatureSettingsInput({ bgScrim: 40 }, { bgScrim: null }, "TIER_3", true);
+    expect(reset.ok && "bgScrim" in reset.value).toBe(false);
   });
 });

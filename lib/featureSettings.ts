@@ -1,6 +1,6 @@
 import { logger } from "@/lib/logger";
 import { normalizeFeatureUrls, safeMediaUrl } from "@/lib/safeUrl";
-import { parseBgPhotoTone } from "@/lib/bgPhotoTone";
+import { parseBgPhotoTone, parseBgScrim } from "@/lib/bgPhotoTone";
 import { EDITABLE_TEXT_KEYS, MAX_DECORATIVE_LABEL_LENGTH } from "@/lib/themeBuilder/spec";
 
 type FeatureSettings = Record<string, any>;
@@ -120,6 +120,11 @@ export async function mergeFeatureSettingsInput(
     const tone = parseBgPhotoTone(merged.bgPhotoTone);
     if (tone === 0) delete merged.bgPhotoTone;
     else merged.bgPhotoTone = tone;
+  }
+  if ("bgScrim" in merged) {
+    const scrim = parseBgScrim(merged.bgScrim);
+    if (scrim === null) delete merged.bgScrim;
+    else merged.bgScrim = scrim;
   }
   const labels = validateCustomLabels(merged, existing);
   if (!labels.ok) return labels;
