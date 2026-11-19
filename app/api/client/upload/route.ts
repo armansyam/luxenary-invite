@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     const inv = safeInvitationId
       ? await prisma.invitation.findUnique({
           where: { id: safeInvitationId },
-          select: { userId: true, status: true, adminUnlockedUntil: true, isLockedPermanently: true, eventData: true },
+          select: { userId: true, status: true, adminUnlockedUntil: true, isLockedPermanently: true, eventData: true, isFreeDraft: true },
         })
       : null;
     if (!inv) {
@@ -86,6 +86,58 @@ export async function POST(req: NextRequest) {
     const relativePathBase = `invitations/${safeInvitationId}`;
     const isAudio = file.type.startsWith("audio/") || file.name.endsWith(".mp3") || file.name.endsWith(".wav") || file.name.endsWith(".m4a") || slotKey === "MUSIC";
     const isVideo = !isAudio && (file.type.startsWith("video/") || file.name.endsWith(".mp4") || file.name.endsWith(".webm") || file.name.endsWith(".mov"));
+
+    if (inv.isFreeDraft && !isAdmin) {
+      if (isAudio || isVideo) {
+        return NextResponse.json(
+          {
+            error: "Unggah audio dan video hanya tersedia setelah paket diaktifkan. Aktifkan paket untuk membuka seluruh fitur media.",
+            code: "FREE_DRAFT_MEDIA_BLOCKED",
+          },
+          { status: 403 }
+        );
+      }
+
+      const existingMedia = await prisma.invitationMedia.findMany({
+        where: { invitationId: safeInvitationId },
+        select: { mediaSlot: true },
+      });
+
+      const occupiedBases = new Set<string>();
+      existingMedia.forEach((m, idx) => {
+        if (m.mediaSlot === "GALLERY") {
+          occupiedBases.add(`gallery-db-${idx}`);
+        } else {
+          occupiedBases.add(MEDIA_SLOT_FILE_NAMES[m.mediaSlot as keyof typeof MEDIA_SLOT_FILE_NAMES] || m.mediaSlot.toLowerCase());
+        }
+      });
+
+      if (process.env.STORAGE_PROVIDER !== "r2" && process.env.STORAGE_PROVIDER !== "s3") {
+        const fs = await import("fs");
+        const uploadsDir = path.join(process.cwd(), "public", "uploads", "invitations", safeInvitationId);
+        const files = await fs.promises.readdir(uploadsDir).catch(() => [] as string[]);
+        for (const f of files) {
+          if (/\.(webp|jpe?g|png|heic)$/i.test(f)) {
+            occupiedBases.add(path.parse(f).name);
+          }
+        }
+      }
+
+      const isGallerySlot = slotKey === "GALLERY" || slotKey.startsWith("GALLERY");
+      const isReplacingSingleSlot =
+        !isGallerySlot &&
+        (existingMedia.some((m) => m.mediaSlot === slotKey) || occupiedBases.has(baseSlug));
+
+      if (!isReplacingSingleSlot && occupiedBases.size >= 3) {
+        return NextResponse.json(
+          {
+            error: "Draf gratis dibatasi maksimal 3 foto. Aktifkan paket untuk mengunggah lebih banyak foto.",
+            code: "FREE_DRAFT_PHOTO_LIMIT",
+          },
+          { status: 403 }
+        );
+      }
+    }
 
     // ── Magic Bytes Validation (F-06) ──
     // Verifikasi konten aktual file, bukan hanya header Content-Type dari browser.

@@ -1,26 +1,5 @@
 import type { NextConfig } from "next";
 
-// Kebijakan CSP dipasang sebagai Report-Only: pelanggaran hanya dilaporkan ke /api/security/csp-report.
-// 'unsafe-inline' tetap dibutuhkan karena tema undangan memuat skrip dan gaya inline; setelah laporan bersih,
-// naikkan ke Content-Security-Policy penuh (idealnya dengan nonce).
-const cspReportOnly = [
-  "default-src 'self'",
-  // static.cloudflareinsights.com: beacon Web Analytics yang disisipkan Cloudflare ke halaman yang melewati proxy-nya.
-  "script-src 'self' 'unsafe-inline' https://app.midtrans.com https://app.sandbox.midtrans.com https://static.cloudflareinsights.com",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "img-src 'self' data: blob: https:",
-  "media-src 'self' blob: https:",
-  "font-src 'self' data: https://fonts.gstatic.com",
-  "connect-src 'self' https:",
-  // 'self': Studio Editor membingkai pratinjau undangan dari origin sendiri (/api/client/invitations/[id]/preview).
-  "frame-src 'self' https://app.midtrans.com https://app.sandbox.midtrans.com https://www.youtube.com https://player.vimeo.com https://www.google.com",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'self'",
-  "report-uri /api/security/csp-report",
-].join("; ");
-
 const nextConfig: NextConfig = {
   // deploy.sh membangun ke direktori cadangan (.next-a atau .next-b) selagi aplikasi lama tetap melayani dari direktori
   // aktifnya, lalu pindah saat restart. Tanpa ini build menimpa .next yang sedang dipakai dan permintaan gagal selama build.
@@ -69,7 +48,7 @@ const nextConfig: NextConfig = {
           //   2. /receptionist (ReceptionistScannerClient — QR code check-in via getUserMedia)
           // microphone & geolocation tidak digunakan — diblokir untuk keamanan.
           { key: "Permissions-Policy", value: "microphone=(), geolocation=(), payment=()" },
-          { key: "Content-Security-Policy-Report-Only", value: cspReportOnly },
+          // CSP (Content-Security-Policy + Report-Only strict nonce) disuntikkan secara dinamis oleh proxy.ts.
           // Server yang melayani permintaan ini (utama atau nama replika), untuk menelusuri keluhan di belakang pembagi beban.
           // Sama dengan serverName() di lib/sharedFiles.ts; setiap server membangun aplikasinya sendiri dari .env-nya.
           { key: "X-Lux-Server", value: process.env.LUX_SERVER_NAME?.trim() || "utama" },

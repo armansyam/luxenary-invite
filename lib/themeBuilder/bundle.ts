@@ -43,7 +43,7 @@ export interface BuilderBundle {
 export function uploadedAssetFiles(spec: BuilderSpec): string[] {
   const sectionImages = [
     ...[...Object.values(spec.sectionStyles ?? {}), ...(spec.freeSections ?? []).map((f) => f.style)].map((s) => s?.image),
-    ...(spec.freeSections ?? []).map((f) => (f.photo?.source === "asset" ? f.photo.src : undefined)),
+    ...(spec.freeSections ?? []).map((f) => (f.photo?.source === "asset" || f.photo?.source === "replaceable" ? f.photo.src : undefined)),
   ];
   const urls = [spec.texture, ...Object.values(spec.defaultMedia), ...spec.ornaments.map((o) => o.src), ...Object.values(spec.frames).map((f) => f.ornament), ...sectionImages];
   const files = new Set<string>();

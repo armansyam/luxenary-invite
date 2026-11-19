@@ -1171,25 +1171,30 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
       });
       var data = await res.json();
       if (data.success) {
-        window.showToast('Konfirmasi kehadiran & doa restu berhasil dikirim!');
+        var isEn = (document.documentElement.lang || '').toLowerCase() === 'en';
+        window.showToast(isEn ? 'Thank you, your RSVP & wishes have been received!' : 'Konfirmasi kehadiran & doa restu berhasil dikirim!');
         if (message) {
           var wishesList = document.getElementById('wishesList');
           if (wishesList) {
             var newWishItem = document.createElement('div');
             newWishItem.className = 'wish-item';
             var esc = function(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; };
-            newWishItem.innerHTML = '<div class="wish-name">' + esc(name) + ' <span style="font-size:0.68rem;opacity:0.7;font-weight:normal;">• ' + (status === 'hadir' ? 'Hadir' : 'Berhalangan') + '</span></div><div class="wish-msg">“' + esc(message) + '”</div>';
+            var statusLbl = status === 'hadir' ? (isEn ? 'Attending' : 'Hadir') : (isEn ? 'Unable to Attend' : 'Berhalangan');
+            newWishItem.innerHTML = '<div class="wish-name">' + esc(name) + ' <span style="font-size:0.68rem;opacity:0.7;font-weight:normal;">• ' + statusLbl + '</span></div><div class="wish-msg">“' + esc(message) + '”</div>';
             wishesList.insertBefore(newWishItem, wishesList.firstChild);
           }
         }
         if (msgEl) msgEl.value = '';
       } else {
-        window.showToast(data.error || 'Gagal mengirim RSVP', 'error');
+        var isEnErr = (document.documentElement.lang || '').toLowerCase() === 'en';
+        window.showToast(data.error || (isEnErr ? 'Failed to submit RSVP' : 'Gagal mengirim RSVP'), 'error');
       }
     } catch (err) {
-      window.showToast('Terjadi kendala koneksi.', 'error');
+      var isEnNet = (document.documentElement.lang || '').toLowerCase() === 'en';
+      window.showToast(isEnNet ? 'Network error. Please try again.' : 'Terjadi kendala koneksi.', 'error');
     } finally {
-      if (btn) { btn.disabled = false; btn.textContent = 'Kirim Konfirmasi & Doa'; }
+      var isEnBtn = (document.documentElement.lang || '').toLowerCase() === 'en';
+      if (btn) { btn.disabled = false; btn.textContent = isEnBtn ? 'Send RSVP & Wishes' : 'Kirim Konfirmasi & Doa'; }
     }
   };
 
@@ -2569,6 +2574,9 @@ export async function renderTemplateFile(
   // dan seluruh seksi tema satu nama) ikut memakai label klien, bukan hanya elemen yang tertulis di master.
   const customLabels = data.featureSettings?.customLabels || data.customLabels || {};
   tpl = stripEmptyMediaRefs(tpl);
+  if (data.invitationLocale === "en") {
+    tpl = tpl.replace(/<html\b([^>]*)\blang=(["'])id\2/i, "<html$1lang=$2en$2");
+  }
   return tpl.replace(
     /<([a-zA-Z0-9]+)\b([^>]*data-lux-field="customLabels\.([^"]+)"[^>]*)>([\s\S]*?)<\/\1>/gi,
     (match, tagName, attrs, labelKey, innerContent) => {

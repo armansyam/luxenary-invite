@@ -4,6 +4,7 @@ import { requireAdminModule } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
 import { STORAGE_PROVIDER, s3Client } from "@/lib/storage";
+import { getCspViolationSummary } from "@/lib/cspReports";
 import { PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import fs from "fs";
 import path from "path";
@@ -318,6 +319,7 @@ export async function GET(req: NextRequest) {
         host: smtpMap["smtp_host"] || null,
         port: smtpMap["smtp_port"] || "587",
       },
+      cspViolations: getCspViolationSummary(),
     });
   } catch (err) {
     return routeError("MonitoringHealth", err, "Gagal memuat status sistem");

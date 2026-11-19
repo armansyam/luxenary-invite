@@ -6,11 +6,12 @@ import { renderTemplateFile } from "@/lib/renderTemplate";
 
 import { STORAGE_PROVIDER, s3Client } from "@/lib/storage";
 import { HeadObjectCommand } from "@aws-sdk/client-s3";
-import { invitationLookupCache } from "@/lib/cache";
+import { invitationLookupCache, portfolioExistsCache } from "@/lib/cache";
 import { hasPlanCapability } from "@/lib/settings";
 import { computeLifecycleDates } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { canPreviewInvitation } from "@/lib/previewAccess";
+import { injectFreeDraftWatermark } from "@/lib/freeDraftWatermark";
 import { isCustomDomainHost } from "@/lib/domainUtils";
 import { eventNoun } from "@/lib/invitationUtils";
 import { logger } from "@/lib/logger";
@@ -28,14 +29,21 @@ async function hasPortfolio(slug: string): Promise<boolean> {
   }
 
   if ((STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3") && s3Client && process.env.S3_BUCKET_NAME) {
+    const cachedExists = portfolioExistsCache.get(slug);
+    if (cachedExists !== null) return cachedExists;
     try {
       await s3Client.send(new HeadObjectCommand({
         Bucket: process.env.S3_BUCKET_NAME,
         Key: `portfolio/${slug}.html`,
       }));
+      portfolioExistsCache.set(slug, true);
       return true;
-    } catch {
-      // HeadObject melempar bila objek tidak ada; portofolio dianggap tidak tersedia.
+    } catch (err: unknown) {
+      const errName = (err as { name?: string })?.name;
+      if (errName === "NotFound" || errName === "NoSuchKey") {
+        portfolioExistsCache.set(slug, false);
+      }
+      // HeadObject melempar bila objek tidak ada atau R2 gagal; portofolio dianggap tidak tersedia.
     }
   }
 
@@ -200,6 +208,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
     const data = await composeTemplateData(invitation.id);
     if (data && invitation.themeId) {
       html = await renderTemplateFile(invitation.themeId, data, { editMode: false, invitationId: invitation.id });
+      if (invitation.isFreeDraft && html) {
+        html = injectFreeDraftWatermark(html);
+      }
     }
   } else {
     // Mode PUBLISHED: Gunakan file statis yang telah dibake (Zero Overhead)

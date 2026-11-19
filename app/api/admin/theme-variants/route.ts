@@ -44,6 +44,7 @@ import { parseThemeDefaultMedia, validateThemeDefaultMedia } from "@/lib/themeDe
 import { parseThemeMediaSlots, validateThemeMediaSlots } from "@/lib/themeMediaSlots";
 import { themeArtPreviews } from "@/lib/themeArtPreview";
 import { parseSimMedia } from "@/lib/themeBuilder/simSlots";
+import { syncWeddingMasterToAcara } from "@/lib/themeVariantSync";
 
 export const dynamic = "force-dynamic";
 
@@ -279,7 +280,17 @@ export async function PUT(req: NextRequest) {
       await refreshPublicTheme(master.theme.id, master.theme.isActive);
       const variants = await prisma.theme.findMany({ where: { parentTheme: master.theme.id, isActive: true }, select: { id: true } });
       for (const v of variants) await refreshPublicTheme(v.id, true);
-      return NextResponse.json({ success: true, count });
+
+      let syncedAcaraId: string | null = null;
+      if (master.theme.eventType === "WEDDING" && input.syncAcara !== false) {
+        const acaraSync = await syncWeddingMasterToAcara(master.theme.id, count ? parsed.value : null);
+        if (acaraSync.synced && acaraSync.acaraId) {
+          syncedAcaraId = acaraSync.acaraId;
+          await refreshPublicTheme(acaraSync.acaraId, Boolean(acaraSync.isActive));
+        }
+      }
+
+      return NextResponse.json({ success: true, count, syncedAcaraId });
     }
 
     const id = typeof input.id === "string" ? input.id : "";

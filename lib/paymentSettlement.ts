@@ -50,7 +50,13 @@ export async function settlementSourceStatuses(order: {
   if (order.status !== "EXPIRED") return null;
   if (order.orderType === "NEW") {
     const otherPaid = await prisma.order.count({
-      where: { userId: order.userId, orderType: "NEW", status: "PAID", id: { not: order.id } },
+      where: {
+        userId: order.userId,
+        orderType: "NEW",
+        status: "PAID",
+        id: { not: order.id },
+        invitation: { is: null },
+      },
     });
     if (otherPaid > 0) return null;
   }
@@ -85,8 +91,16 @@ export async function settleOrderAsPaid(
     if (!target) return false;
     if (target.orderType === "NEW") {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`order_settle:${target.userId}`}))`;
+      // Hanya cegah pelunasan ganda terhadap order NEW lunas lain yang belum tertaut ke undangan:
+      // akun tetap dapat membeli undangan tambahan setelah undangan sebelumnya terbentuk.
       const otherPaid = await tx.order.count({
-        where: { userId: target.userId, orderType: "NEW", status: "PAID", id: { not: orderId } },
+        where: {
+          userId: target.userId,
+          orderType: "NEW",
+          status: "PAID",
+          id: { not: orderId },
+          invitation: { is: null },
+        },
       });
       if (otherPaid > 0) return false;
     }

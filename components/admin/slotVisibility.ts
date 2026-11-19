@@ -152,7 +152,7 @@ function sampleStack(doc: Document, el: Element, url: string, rect: DOMRect): { 
       const s = win.getComputedStyle(above);
       const isMedia = above.tagName === "IMG" || above.tagName === "VIDEO";
       if (isMedia || /url\(/.test(s.backgroundImage) || colorAlpha(s.backgroundColor) >= 0.95) {
-        if (isMedia && (above.getAttribute("src") ?? "").includes(url)) continue;
+        if (isMedia && ((above.getAttribute("src") ?? "").includes(url) || above.hasAttribute("data-lux-cutout"))) continue;
         blocked = true;
         break;
       }

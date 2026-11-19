@@ -16,6 +16,8 @@ interface Guest {
   tableNumber: string | null;
   qrToken: string | null;
   isTokenRedeemed: boolean;
+  souvenirClaimed?: boolean;
+  souvenirClaimedAt?: string | null;
 }
 
 function getCleanCameraLabel(label: string, index: number): string {
@@ -59,6 +61,8 @@ export default function ReceptionistScannerClient({
   const [scannerMode, setScannerMode] = useState<"PHYSICAL" | "CAMERA">("PHYSICAL");
   const [showManualList, setShowManualList] = useState(false);
   const [listFilter, setListFilter] = useState<"ALL" | "WALKIN">("ALL");
+  const [souvenirUpdatingId, setSouvenirUpdatingId] = useState<string | null>(null);
+  const [souvenirError, setSouvenirError] = useState<string | null>(null);
 
   // Ambient Screensaver State (Standby Mode)
   const [isScreensaverActive, setIsScreensaverActive] = useState(false);
@@ -435,9 +439,58 @@ export default function ReceptionistScannerClient({
     if (!queueRef.current.includes(current.id)) persistQueue([...queueRef.current, current.id]);
 
     setScanResult({ type: "success", message: `Berhasil Check-in!`, guest: checkedIn });
+    setSouvenirError(null);
     setSearchInput("");
     if (inputRef.current) inputRef.current.focus();
   }, [persistGuests, persistQueue]);
+
+  const handleToggleSouvenir = useCallback(async (guest: Guest) => {
+    setSouvenirError(null);
+    if (guest.id.startsWith("local-")) {
+      setSouvenirError("Tamu umum baru masih dalam antrean sinkronisasi server. Coba lagi sebentar.");
+      return;
+    }
+    const token = localStorage.getItem(`staff_auth_token_${invitationId}`) || "";
+    const nextClaimed = !guest.souvenirClaimed;
+    setSouvenirUpdatingId(guest.id);
+    try {
+      const res = await fetch("/api/receptionist/souvenir", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-receptionist-token": token,
+        },
+        body: JSON.stringify({
+          invitationId,
+          guestId: guest.id,
+          claimed: nextClaimed,
+          token,
+        }),
+      });
+      if (res.status === 401) {
+        onLockRef.current?.();
+        return;
+      }
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setSouvenirError(data.error || "Gagal memperbarui status souvenir.");
+        return;
+      }
+      const updatedGuest: Guest = {
+        ...guest,
+        souvenirClaimed: Boolean(data.guest?.souvenirClaimed),
+        souvenirClaimedAt: data.guest?.souvenirClaimedAt || null,
+      };
+      persistGuests(guestsRef.current.map((g) => (g.id === guest.id ? updatedGuest : g)));
+      setScanResult((prev) =>
+        prev && prev.guest?.id === guest.id ? { ...prev, guest: updatedGuest } : prev
+      );
+    } catch {
+      setSouvenirError("Koneksi terputus saat memperbarui status souvenir.");
+    } finally {
+      setSouvenirUpdatingId(null);
+    }
+  }, [invitationId, persistGuests]);
 
   // Tamu di luar daftar klien dicatat sebagai tamu umum (kategori UMUM) dan langsung hadir. Tersimpan di perangkat
   // dulu, lalu dikirim ke server pada sinkronisasi lewat payload LUX|<id undangan>|<nama>.
@@ -450,7 +503,8 @@ export default function ReceptionistScannerClient({
       guestQuota: 1,
       tableNumber: null,
       qrToken: buildCheckinPayload(invitationId, name),
-      isTokenRedeemed: true
+      isTokenRedeemed: true,
+      souvenirClaimed: false,
     };
     persistGuests([walkIn, ...guestsRef.current]);
     persistQueue([...queueRef.current, walkIn.id]);
@@ -725,6 +779,23 @@ export default function ReceptionistScannerClient({
             </div>
           )}
 
+          {/* Welcome Screen TV Button */}
+          <button
+            type="button"
+            onClick={() => {
+              const target = window.location.pathname.replace(/\/receptionist\/?$/, "/welcome");
+              window.open(target, "_blank", "noopener,noreferrer");
+            }}
+            title="Buka Layar Sapa TV (/welcome)"
+            aria-label="Buka Layar Sapa TV"
+            className="h-9 px-2.5 rounded-xl flex items-center gap-1.5 transition duration-150 shadow-sm cursor-pointer border bg-stone-800/90 hover:bg-stone-700 active:bg-stone-600 text-stone-200 hover:text-white border-stone-700/80 text-xs font-semibold"
+          >
+            <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            <span className="hidden sm:inline">Layar TV</span>
+          </button>
+
           {/* Standby Screensaver Button */}
           <button
             type="button"
@@ -831,6 +902,35 @@ export default function ReceptionistScannerClient({
                       </div>
 
                       <p className="text-green-700 font-bold mt-2 text-base">{scanResult.message}</p>
+
+                      {scanResult.guest && (
+                        <div className="mt-4 pt-3 border-t border-green-200/80 flex flex-col items-center gap-2">
+                          <button
+                            type="button"
+                            disabled={souvenirUpdatingId === scanResult.guest.id}
+                            onClick={() => handleToggleSouvenir(scanResult.guest!)}
+                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border transition cursor-pointer disabled:opacity-60 ${
+                              scanResult.guest.souvenirClaimed
+                                ? "bg-amber-600 text-white border-amber-700 hover:bg-amber-700"
+                                : "bg-white text-stone-800 border-stone-300 hover:bg-stone-100"
+                            }`}
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                            </svg>
+                            <span>
+                              {souvenirUpdatingId === scanResult.guest.id
+                                ? "Menyimpan..."
+                                : scanResult.guest.souvenirClaimed
+                                  ? "Souvenir Diambil (Batalkan)"
+                                  : "Tandai Ambil Souvenir"}
+                            </span>
+                          </button>
+                          {souvenirError && (
+                            <p className="text-xs text-rose-700 font-medium">{souvenirError}</p>
+                          )}
+                        </div>
+                      )}
                     </>
                   ) : (
                      <>
@@ -993,29 +1093,50 @@ export default function ReceptionistScannerClient({
 
                   {showManualList && (
                     <div className="w-full mt-3 border border-stone-200 rounded-xl overflow-y-auto p-2 max-h-[260px] bg-stone-50/50">
-                      <div className="flex items-center gap-1.5 pb-2 mb-1 border-b border-stone-200/70">
-                        {([["ALL", "Semua"], ["WALKIN", "Tamu Umum"]] as const).map(([id, label]) => (
-                          <button
-                            key={id}
-                            type="button"
-                            onClick={() => setListFilter(id)}
-                            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer ${
-                              listFilter === id ? "bg-stone-900 text-white" : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
-                            }`}
-                          >
-                            {label}
-                          </button>
-                        ))}
+                      <div className="flex flex-wrap items-center justify-between gap-2 pb-2 mb-1 border-b border-stone-200/70">
+                        <div className="flex items-center gap-1.5">
+                          {([["ALL", "Semua"], ["WALKIN", "Tamu Umum"]] as const).map(([id, label]) => (
+                            <button
+                              key={id}
+                              type="button"
+                              onClick={() => setListFilter(id)}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer ${
+                                listFilter === id ? "bg-stone-900 text-white" : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
+                              }`}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="text-[11px] font-semibold text-stone-500 px-1">
+                          Hadir: <span className="text-stone-800">{guests.filter((g) => g.isTokenRedeemed).length}</span>
+                          {" \u2022 "}
+                          Souvenir: <span className="text-amber-700">{guests.filter((g) => g.souvenirClaimed).length}</span>
+                        </div>
                       </div>
                       {guests.filter(g => (listFilter === "WALKIN" ? isWalkInGuest(g) : true) && (searchInput ? g.name.toLowerCase().includes(searchInput.toLowerCase()) : true)).map((g) => (
-                        <div key={g.id} className="flex justify-between items-center p-2.5 hover:bg-white border-b border-stone-100 last:border-0 rounded-lg transition">
+                        <div key={g.id} className="flex justify-between items-center p-2.5 hover:bg-white border-b border-stone-100 last:border-0 rounded-lg transition gap-2">
                           <div>
                             <p className="font-bold text-stone-900 text-sm">{g.name}</p>
                             <p className="text-xs text-stone-500">{g.category || "Umum"} &bull; Meja {g.tableNumber || "-"}</p>
                           </div>
-                          <div>
+                          <div className="flex items-center gap-1.5 shrink-0">
                             {g.isTokenRedeemed ? (
-                              <span className="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded uppercase tracking-wider">Hadir</span>
+                              <>
+                                <button
+                                  type="button"
+                                  disabled={souvenirUpdatingId === g.id}
+                                  onClick={() => handleToggleSouvenir(g)}
+                                  className={`px-2.5 py-1 text-[10px] font-bold rounded uppercase tracking-wider border transition cursor-pointer disabled:opacity-60 ${
+                                    g.souvenirClaimed
+                                      ? "bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200"
+                                      : "bg-white text-stone-600 border-stone-200 hover:bg-stone-100"
+                                  }`}
+                                >
+                                  {g.souvenirClaimed ? "Souvenir OK" : "Souvenir"}
+                                </button>
+                                <span className="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded uppercase tracking-wider">Hadir</span>
+                              </>
                             ) : (
                               <button onClick={() => handleCheckIn(g)} className="px-3 py-1.5 bg-stone-200/70 hover:bg-stone-300 text-stone-800 text-[10px] font-bold rounded uppercase tracking-wider transition">
                                 Check-in

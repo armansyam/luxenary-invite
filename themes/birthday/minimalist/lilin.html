@@ -84,7 +84,8 @@
       transition: transform 0.9s cubic-bezier(0.65, 0, 0.35, 1), opacity 0.8s ease, visibility 0s linear 0.9s;
     }
     .cover-screen.has-photo { background: var(--bg-dark) center / cover no-repeat; }
-    .cover-screen.has-photo::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--bg-light) 30%, transparent), color-mix(in srgb, var(--bg-light) 94%, transparent) 62%); }
+    .cover-screen.has-photo::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--bg-light) 22%, transparent), color-mix(in srgb, var(--bg-light) 76%, transparent) 72%); }
+    .cover-screen.has-photo .cover-label { background: color-mix(in srgb, var(--card-bg) 82%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
     .cover-screen.opened { transform: translate3d(0, -100%, 0); opacity: 0; visibility: hidden; pointer-events: none; }
     .sprinkles { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
     .cover-inner { position: relative; z-index: 2; width: 100%; max-width: 340px; }

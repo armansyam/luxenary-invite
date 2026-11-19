@@ -12,6 +12,7 @@ import GuestOpeningSetupModal from "@/components/client/GuestOpeningSetupModal";
 import { MomentCoverImage } from "@/app/components/features/GuestMomentOpening";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 import { useFeedback } from "@/components/ui/Feedback";
+import { useClientInvitation } from "@/components/client/ClientInvitationContext";
 
 const FILTER_PRESETS_LIST = [
   {
@@ -85,6 +86,12 @@ const OPENING_LAYOUTS = [
 export default function MomentsSetupPage() {
   const feedback = useFeedback();
   const router = useRouter();
+  const {
+    invitations,
+    activeInvitation,
+    activeInvitationId,
+    loading: ctxLoading,
+  } = useClientInvitation();
 
   const [invitation, setInvitation] = useState<any>(null);
   const [platformSettings, setPlatformSettings] = useState<any>(null);
@@ -137,30 +144,29 @@ export default function MomentsSetupPage() {
   }, [invitation?.id]);
 
   useEffect(() => {
-    fetch("/api/client/invitations", { cache: "no-store" })
-      .then((res) => res.json())
-      .then(async (invitations) => {
-        if (Array.isArray(invitations) && invitations.length > 0) {
-          const inv = invitations[0];
-          setInvitation(inv);
+    fetch("/api/public/settings")
+      .then((r) => r.json())
+      .then((data) => setPlatformSettings(data))
+      .catch(() => null);
+  }, []);
 
-          if (Array.isArray(inv.featureSettings?.memoriesSessions)) {
-            setSessions(inv.featureSettings.memoriesSessions);
-          }
+  useEffect(() => {
+    if (ctxLoading) return;
+    if (invitations.length === 0 || !activeInvitation) {
+      router.replace("/dashboard/setup");
+      return;
+    }
 
-          fetch("/api/public/settings")
-            .then((r) => r.json())
-            .then((data) => setPlatformSettings(data))
-            .catch(() => null);
+    setLoading(true);
+    setInvitation(activeInvitation);
+    setSessions(
+      Array.isArray(activeInvitation.featureSettings?.memoriesSessions)
+        ? activeInvitation.featureSettings.memoriesSessions
+        : [],
+    );
 
-          await fetchGuestMemories(inv.id);
-          setLoading(false);
-        } else {
-          router.replace("/dashboard/setup");
-        }
-      })
-      .catch(() => setLoading(false));
-  }, [router, fetchGuestMemories]);
+    void fetchGuestMemories(activeInvitation.id).finally(() => setLoading(false));
+  }, [ctxLoading, invitations.length, activeInvitationId, activeInvitation, router, fetchGuestMemories]);
 
   // Helper Feature Settings
   const getFeatureSetting = (key: string, defaultVal: any) => invitation?.featureSettings?.[key] ?? defaultVal;

@@ -4,18 +4,20 @@ import { logger } from "./logger";
 import { getPlanDisplayName } from "./planUtils";
 import {
   InvoiceEmailOptions,
+  LoginOtpEmailOptions,
   MemoriesQuotaAlertOptions,
   RetentionExpiryAlertOptions,
   TestSmtpOptions,
   buildInvoiceEmailHtml,
+  buildLoginOtpHtml,
   buildMemoriesQuotaHtml,
   buildProofUploadedAdminHtml,
   buildRetentionExpiryHtml,
   buildTestSmtpHtml,
 } from "./email-templates";
 
-export type { InvoiceEmailOptions, MemoriesQuotaAlertOptions, RetentionExpiryAlertOptions, TestSmtpOptions };
-export { buildInvoiceEmailHtml, buildMemoriesQuotaHtml, buildRetentionExpiryHtml, buildTestSmtpHtml };
+export type { InvoiceEmailOptions, LoginOtpEmailOptions, MemoriesQuotaAlertOptions, RetentionExpiryAlertOptions, TestSmtpOptions };
+export { buildInvoiceEmailHtml, buildLoginOtpHtml, buildMemoriesQuotaHtml, buildRetentionExpiryHtml, buildTestSmtpHtml };
 
 export interface ProofUploadedAdminAlertInput {
   invoiceNumber: string;
@@ -243,6 +245,61 @@ export async function sendRetentionExpiryAlertEmail(opts: RetentionExpiryAlertOp
     return { success: true };
   } catch (error: any) {
     logger.error("Mailer", "Gagal mengirim email peringatan retensi", error, { recipient: opts.recipientEmail });
+    return { success: false, error: error.message };
+  }
+}
+
+export async function sendLoginOtpEmail(input: {
+  to: string;
+  code: string;
+  purpose: "CLIENT_LOGIN" | "PARTNER_LOGIN";
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    const settings = { ...(await getPublicPlatformSettings()), ...(await getSmtpSettings()) };
+
+    if (!settings.smtpHost || !settings.smtpUser) {
+      logger.warn("Mailer", "SMTP belum dikonfigurasi; email kode OTP tidak dapat dikirim", { purpose: input.purpose });
+      return { success: false, error: "SMTP_NOT_CONFIGURED" };
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: settings.smtpHost,
+      port: settings.smtpPort || 587,
+      secure: settings.smtpPort === 465,
+      auth: {
+        user: settings.smtpUser,
+        pass: settings.smtpPassword || "",
+      },
+      tls: {
+        rejectUnauthorized: process.env.NODE_ENV === "production",
+      },
+    });
+
+    const { subject, html: htmlContent, text: textContent } = buildLoginOtpHtml(
+      {
+        recipientEmail: input.to,
+        code: input.code,
+        purpose: input.purpose,
+        expiresMinutes: 10,
+      },
+      { platformName: settings.platformName },
+    );
+
+    const fromAddress = settings.smtpFromEmail || settings.smtpUser;
+    const fromName = settings.smtpFromName || settings.platformName || "Platform Undangan";
+
+    await transporter.sendMail({
+      from: `"${fromName}" <${fromAddress}>`,
+      to: input.to,
+      subject,
+      text: textContent,
+      html: htmlContent,
+    });
+
+    logger.info("Mailer", "Email kode OTP terkirim", { recipient: input.to, purpose: input.purpose });
+    return { success: true };
+  } catch (error: any) {
+    logger.error("Mailer", "Gagal mengirim email kode OTP", error, { recipient: input.to, purpose: input.purpose });
     return { success: false, error: error.message };
   }
 }

@@ -17,6 +17,12 @@ interface ServiceStatus {
 
 function LoginForm({ platformName, serviceStatus }: { platformName: string; serviceStatus: ServiceStatus | null }) {
   const [loading, setLoading] = useState(false);
+  const [otpEmail, setOtpEmail] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpStep, setOtpStep] = useState<"email" | "code">("email");
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const [otpNotice, setOtpNotice] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/onboarding";
   const authError = searchParams.get("error");
@@ -25,6 +31,60 @@ function LoginForm({ platformName, serviceStatus }: { platformName: string; serv
   const handleGoogleLogin = () => {
     setLoading(true);
     signIn("google", { callbackUrl });
+  };
+
+  const handleRequestOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otpEmail.trim() || otpLoading) return;
+    setOtpLoading(true);
+    setOtpError(null);
+    setOtpNotice(null);
+    try {
+      const res = await fetch("/api/auth/otp/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: otpEmail.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setOtpError(data?.error || "Gagal mengirim kode OTP ke email Anda.");
+      } else {
+        setOtpStep("code");
+        setOtpNotice("Kode verifikasi 6 digit telah dikirim. Periksa kotak masuk atau folder spam Anda.");
+      }
+    } catch {
+      setOtpError("Kesalahan jaringan saat mengirim kode verifikasi.");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanCode = otpCode.replace(/\D/g, "");
+    if (cleanCode.length !== 6 || otpLoading) {
+      setOtpError("Masukkan 6 digit kode OTP dari email.");
+      return;
+    }
+    setOtpLoading(true);
+    setOtpError(null);
+    try {
+      const res = await signIn("credentials", {
+        email: otpEmail.trim().toLowerCase(),
+        password: cleanCode,
+        portal: "CLIENT_OTP",
+        redirect: false,
+      });
+      if (res?.error) {
+        setOtpError("Kode OTP salah, sudah terpakai, atau kedaluwarsa.");
+        setOtpLoading(false);
+        return;
+      }
+      window.location.assign(callbackUrl);
+    } catch {
+      setOtpError("Gagal memverifikasi kode OTP.");
+      setOtpLoading(false);
+    }
   };
 
   const isClosed = serviceStatus && !serviceStatus.isOpen;
@@ -110,13 +170,13 @@ function LoginForm({ platformName, serviceStatus }: { platformName: string; serv
           </div>
         )}
 
-        {/* Google OAuth — Primary & Only Method */}
-        <div className="space-y-3">
+        {/* Google OAuth + Alternatif Email OTP */}
+        <div className="space-y-4">
           <button
             id="btn-google-login"
             type="button"
             onClick={handleGoogleLogin}
-            disabled={loading}
+            disabled={loading || otpLoading}
             className="w-full py-4 bg-stone-900 hover:bg-stone-800 text-white rounded-2xl flex items-center justify-center gap-3 text-sm font-bold transition shadow-lg shadow-stone-950/20 cursor-pointer disabled:opacity-60"
           >
             {loading ? (
@@ -132,15 +192,86 @@ function LoginForm({ platformName, serviceStatus }: { platformName: string; serv
             <span>{loading ? "Menghubungkan..." : "Masuk dengan Akun Google"}</span>
           </button>
 
-          <p className="text-center text-[11px] text-stone-400">
-            Akun Anda otomatis terhubung ke undangan digital Anda.
-          </p>
-        </div>
+          <div className="relative flex items-center py-1">
+            <div className="flex-grow border-t border-stone-200" />
+            <span className="shrink-0 px-3 text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+              atau masuk lewat email
+            </span>
+            <div className="flex-grow border-t border-stone-200" />
+          </div>
 
-        {/* Divider */}
-        <div className="border-t border-stone-100 pt-4 space-y-2">
-          <p className="text-center text-xs text-stone-500">
-            Akses aman dan mudah, cukup gunakan akun Google Anda.
+          {otpError && (
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs">
+              {otpError}
+            </div>
+          )}
+          {otpNotice && (
+            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs">
+              {otpNotice}
+            </div>
+          )}
+
+          {otpStep === "email" ? (
+            <form onSubmit={handleRequestOtp} className="space-y-2.5">
+              <label htmlFor="otp-email-input" className="sr-only">Alamat Email</label>
+              <input
+                id="otp-email-input"
+                type="email"
+                required
+                value={otpEmail}
+                onChange={(e) => setOtpEmail(e.target.value)}
+                placeholder="nama@email.com"
+                className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-stone-50/60 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-700 focus:bg-white transition"
+              />
+              <button
+                id="btn-request-otp"
+                type="submit"
+                disabled={otpLoading || !otpEmail.trim()}
+                className="w-full py-3 rounded-xl border border-stone-300 bg-white hover:bg-stone-50 text-stone-800 text-xs font-bold transition cursor-pointer disabled:opacity-50"
+              >
+                {otpLoading ? "Mengirim Kode OTP..." : "Kirim Kode OTP 6 Digit"}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyOtp} className="space-y-2.5">
+              <div className="flex items-center justify-between text-[11px] text-stone-500">
+                <span>Email: <strong className="text-stone-800">{otpEmail}</strong></span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOtpStep("email");
+                    setOtpCode("");
+                    setOtpError(null);
+                  }}
+                  className="text-amber-800 font-semibold hover:underline cursor-pointer"
+                >
+                  Ganti email
+                </button>
+              </div>
+              <input
+                id="otp-code-input"
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                required
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+                placeholder="Masukkan 6 digit kode"
+                className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-stone-50/60 text-center font-mono text-lg tracking-[0.4em] text-stone-900 placeholder:text-stone-400 placeholder:tracking-normal placeholder:text-sm focus:outline-none focus:border-amber-700 focus:bg-white"
+              />
+              <button
+                id="btn-verify-otp"
+                type="submit"
+                disabled={otpLoading || otpCode.length !== 6}
+                className="w-full py-3 rounded-xl bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold transition cursor-pointer disabled:opacity-50"
+              >
+                {otpLoading ? "Memverifikasi..." : "Verifikasi & Masuk"}
+              </button>
+            </form>
+          )}
+
+          <p className="text-center text-[11px] text-stone-400 leading-relaxed">
+            Membuka tautan dari browser Instagram atau TikTok? Gunakan opsi kode OTP email di atas agar masuk akun tetap lancar.
           </p>
         </div>
 
@@ -151,6 +282,9 @@ function LoginForm({ platformName, serviceStatus }: { platformName: string; serv
           </Link>
           <Link href="/demo" className="hover:text-stone-700 transition">
             Lihat Demo Tema
+          </Link>
+          <Link href="/partner" className="hover:text-stone-700 transition">
+            Portal Mitra
           </Link>
         </div>
       </div>

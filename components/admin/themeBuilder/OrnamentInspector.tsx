@@ -301,7 +301,8 @@ export default function OrnamentInspector({
                 value={o.slot ?? ""}
                 onChange={(e) => {
                   const val = e.target.value as OrnamentMediaSlot | "";
-                  set({ slot: val || undefined });
+                  // Bingkai berslot dan ilustrasi pengganti tidak bisa bersamaan (parseBuilderSpec menolaknya).
+                  set({ slot: val || undefined, ...(val ? { replaceSlot: undefined } : {}) });
                 }}
                 aria-label="Isi bingkai dengan slot media"
                 className="mt-1.5 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-[12.5px] outline-none focus:border-amber-500 cursor-pointer"
@@ -317,6 +318,29 @@ export default function OrnamentInspector({
                 ? "Foto dari slot media ini otomatis dipaskan ke lubang transparan di tengah bingkai. Saat memilih Foto Pembuka (Home), kotak foto bawaan Home otomatis disembunyikan agar tidak ganda."
                 : "Pilih slot media bila gambar ornamen ini adalah bingkai berlubang transparan yang ingin diisi foto klien (mis. Foto Pembuka Home)."}
             </p>
+            {!o.slot && (
+              <>
+                <label className="mt-3 block">
+                  <span className="text-[11.5px] font-semibold text-stone-700">Diganti foto klien</span>
+                  <select
+                    value={o.replaceSlot ?? ""}
+                    onChange={(e) => set({ replaceSlot: (e.target.value as OrnamentMediaSlot | "") || undefined })}
+                    aria-label="Diganti foto klien"
+                    className="mt-1.5 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-[12.5px] outline-none focus:border-amber-500 cursor-pointer"
+                  >
+                    <option value="">Tidak (gambar tetap milik tema)</option>
+                    {familyOrnamentMediaSlots(eventType).map((s) => (
+                      <option key={s.id} value={s.id}>{s.label}</option>
+                    ))}
+                  </select>
+                </label>
+                <p className="mt-1.5 text-[10.5px] leading-snug text-stone-500">
+                  {o.replaceSlot
+                    ? "Gambar ini tampil sampai klien mengunggah foto ke slot itu; setelahnya foto klien mengisi kotak yang sama (dipotong rapi, tidak tercermin)."
+                    : "Untuk ilustrasi di tempat foto personal: gambar tema tampil selama klien belum mengunggah foto."}
+                </p>
+              </>
+            )}
           </div>
         )}
 

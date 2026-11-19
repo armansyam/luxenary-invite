@@ -51,6 +51,9 @@ export async function GET(
         requestedDomain: true,
         itemsJson: true,
         linkedInvitationId: true,
+        invitation: {
+          select: { id: true },
+        },
         user: {
           select: {
             name: true,
@@ -150,8 +153,8 @@ export async function GET(
 
     const isAuthorizedOwner = isAdmin || order.userId === currentUserId;
 
-    // Cek apakah pemilik order ini sudah memiliki order PAID (HANYA untuk order tipe NEW / pendaftaran awal)
-    // Add-on (GALLERY_EXTENSION, MEMORIES_TOPUP) atau UPGRADE TIDAK BOLEH memicu isUserPaid
+    // Cek apakah pemilik order ini sudah memiliki order NEW PAID lain yang BELUM dibuatkan undangan.
+    // Order NEW yang sudah tertaut ke undangan lama tidak boleh memblokir checkout undangan tambahan (?new=1).
     let isUserPaid = false;
     let paidOrderId: string | null = null;
     let paidPlanType: string | null = null;
@@ -161,7 +164,8 @@ export async function GET(
         where: {
           userId: order.userId,
           status: "PAID",
-          orderType: { in: ["NEW", "UPGRADE"] },
+          orderType: "NEW",
+          invitation: { is: null },
         },
         orderBy: { paidAt: "desc" },
         select: { id: true, planType: true, orderType: true },
@@ -172,6 +176,15 @@ export async function GET(
         paidOrderId = activePaidOrder.id;
         paidPlanType = activePaidOrder.planType;
       }
+    }
+
+    let activatedInvitationId: string | null = order.invitation?.id ?? null;
+    if (finalStatus === "PAID" && order.orderType === "NEW" && !activatedInvitationId) {
+      const linkedInv = await prisma.invitation.findUnique({
+        where: { orderId: order.id },
+        select: { id: true },
+      });
+      activatedInvitationId = linkedInv?.id ?? null;
     }
 
     // Cek apakah order ini sudah digantikan oleh order yang lebih baru (superseded) dengan orderType dan scope yang sama
@@ -216,6 +229,7 @@ export async function GET(
       paymentMethod: order.paymentMethod,
       requestedDomain: order.requestedDomain,
       linkedInvitationId: order.linkedInvitationId,
+      activatedInvitationId,
       buyerName: order.user?.name || null,
       buyerEmail: order.user?.email || null,
       buyerPhone: order.user?.phoneNumber || null,

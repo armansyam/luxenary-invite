@@ -3,7 +3,14 @@ import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 import { prisma } from "@/lib/prisma";
-import { masterTemplateCache, publishedHtmlCache, invitationLookupCache } from "@/lib/cache";
+import {
+  masterTemplateCache,
+  publishedHtmlCache,
+  invitationLookupCache,
+  renderVersionCache,
+  portfolioHtmlCache,
+  portfolioListCache,
+} from "@/lib/cache";
 import { getActiveRateLimitDriver } from "@/lib/rateLimit";
 import { isErrorTrackingConfigured } from "@/lib/errorTracker";
 
@@ -71,6 +78,9 @@ export async function GET(req: Request) {
           masterTemplates: masterTemplateCache.size(),
           publishedHtml: publishedHtmlCache.size(),
           invitationLookups: invitationLookupCache.size(),
+          renderVersions: renderVersionCache.size(),
+          portfolioHtml: portfolioHtmlCache.size(),
+          portfolioList: portfolioListCache.size(),
         },
         services: {
           rateLimiter: { driver: getActiveRateLimitDriver() },

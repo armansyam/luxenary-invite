@@ -1,0 +1,4125 @@
+{
+  "aeterna": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "aeterna-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "akademia": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "al-fariz": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": []
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "al-khalid": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": []
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "ameera": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "ameera-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "antariksa": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "artisan": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "artisan-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "aurelia": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "aurelia-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "badrika": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "badrika-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "balonku": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "barakah": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "biasan": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "bone": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    }
+  },
+  "bone-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    }
+  },
+  "buaian": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "bugis": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    }
+  },
+  "bugis-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    }
+  },
+  "bulukumba": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    }
+  },
+  "bulukumba-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    }
+  },
+  "burgundy-royale": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "burgundy-royale-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "cakrawala": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "candani": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "candani-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "cendekia": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": []
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "chronicle": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "chronicle-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "dillalucky": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "dillalucky-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "domba": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "embun": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "fajar": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "festivo": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "firdaus": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "forum": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "gala": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "girih": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "gowa": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    }
+  },
+  "gowa-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    }
+  },
+  "hablur": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "ijazah": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "jamuan": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "kalandra": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "kalandra-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "kalandra-birthday": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "karnaval": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "kelopak": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "konfeti": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "kubah": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "lagaligo": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "lagaligo-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "lapang": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "laurel": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "lelap": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "lilin": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "lumina": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "lumina-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "makale": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "makale-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "makassar": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    }
+  },
+  "makassar-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    }
+  },
+  "maros": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    }
+  },
+  "maros-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    }
+  },
+  "mayang": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "mayang-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "medali": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "mungil": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "nur": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "panggung": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "papercut": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "papercut-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "pelangi": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "pena": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "prakarsa": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "prameswari": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "prameswari-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "prisma": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "pustaka": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "rantepao": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "rantepao-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "riang": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "rimba": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "sajadah": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "sakinah": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "serambi": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "sinergi": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": []
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "solaria": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "solaria-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "soppeng": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    }
+  },
+  "soppeng-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    }
+  },
+  "sorak": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "starlit-dreams": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "starlit-dreams-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "takalar": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    }
+  },
+  "takalar-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    }
+  },
+  "temu": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "toga": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "toraja": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "toraja-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "valente": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman",
+        "Seksi pembuka"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    }
+  },
+  "valente-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman",
+        "Seksi pembuka"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    }
+  },
+  "verona": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "verona-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "vintage-forest": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "vintage-forest-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "wajo": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    }
+  },
+  "wajo-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    }
+  },
+  "wave": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "BRIDE_PHOTO": {
+      "places": [
+        "Profil mempelai"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  },
+  "wave-acara": {
+    "LANDING_COVER": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "LANDING_COVER_DESKTOP": {
+      "places": [
+        "Sampul"
+      ]
+    },
+    "GLOBAL_FIXED_BG": {
+      "places": [
+        "Latar halaman"
+      ]
+    },
+    "HOME_PHOTO": {
+      "places": [
+        "Seksi pembuka"
+      ]
+    },
+    "GROOM_PHOTO": {
+      "places": [
+        "Profil"
+      ]
+    },
+    "CLOSING_COVER": {
+      "places": [
+        "Penutup"
+      ]
+    },
+    "DESKTOP_SIDEBAR": {
+      "places": []
+    }
+  }
+}

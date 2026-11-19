@@ -1,27 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { useClientInvitation } from "@/components/client/ClientInvitationContext";
 
 export default function InvitationIndexPage() {
   const { status } = useSession();
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const { activeInvitationId, loading } = useClientInvitation();
 
   useEffect(() => {
-    fetch("/api/client/invitations")
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          router.replace(`/dashboard/invitation/${data[0].id}`);
-        } else {
-          setLoading(false);
-        }
-      })
-      .catch(() => setLoading(false));
-  }, [router]);
+    if (!loading && activeInvitationId) {
+      router.replace(`/dashboard/invitation/${activeInvitationId}`);
+    }
+  }, [loading, activeInvitationId, router]);
 
   if (status === "loading" || loading) {
     return (

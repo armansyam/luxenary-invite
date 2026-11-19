@@ -18,6 +18,7 @@ import { ensureSpecFonts } from "@/lib/themeBuilder/fonts";
 import { fitSpecFrames } from "@/lib/themeBuilder/frameWindow";
 import { legacyDefaultMedia, seedSpecFromMaster } from "@/lib/themeBuilder/legacySeed";
 import { exportBundle } from "@/lib/themeBuilder/bundle";
+import { builderMediaSlots } from "@/lib/themeBuilder/mediaSlots";
 import { masterPathOf } from "@/lib/themePaths";
 import {
   BUILDER_CATEGORIES,
@@ -241,6 +242,8 @@ export async function POST(req: NextRequest) {
           sortOrder: (maxOrder._max.sortOrder ?? 0) + 1,
           builderSpec: spec as unknown as Prisma.InputJsonObject,
           defaultMedia: builderDefaultMedia(spec),
+          // Slot foto klien yang benar-benar tampil di tema ini; undangan menyalinnya saat tema dipilih (lib/themeMediaSlots.ts).
+          mediaSlots: builderMediaSlots(spec) as Prisma.InputJsonValue,
           defaultMusicUrl: music.url,
         },
         select: { id: true, name: true, category: true, description: true, isActive: true, defaultMusicUrl: true, builderSpec: true },
@@ -328,6 +331,7 @@ export async function PUT(req: NextRequest) {
         series: SERIES[category],
         builderSpec: spec as unknown as Prisma.InputJsonObject,
         defaultMedia: builderDefaultMedia(spec),
+        mediaSlots: builderMediaSlots(spec) as Prisma.InputJsonValue,
         ...(music && music.ok && { defaultMusicUrl: music.url }),
       },
       select: { id: true, name: true, category: true, description: true, isActive: true, defaultMusicUrl: true, builderSpec: true },

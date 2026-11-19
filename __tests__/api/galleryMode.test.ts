@@ -179,8 +179,8 @@ describe("POST /api/client/invitations/[id]/gallery-mode", () => {
       where: { id: INV_ID },
       data: { status: "EVENT_FINISHED" },
     });
-    // Tanda tangan invalidateInvitationLookup(slug, subdomain); dulu argumen tertukar sehingga cache tidak terhapus.
-    expect(mockInvalidateCache).toHaveBeenCalledWith("didan-nasha-wedding", "didan-nasha");
+    // Tanda tangan invalidateInvitationLookup(slug, subdomain, id); dulu argumen tertukar sehingga cache tidak terhapus.
+    expect(mockInvalidateCache).toHaveBeenCalledWith("didan-nasha-wedding", "didan-nasha", INV_ID);
   });
 
   it("7. Sukses mengembalikan status dari EVENT_FINISHED ke PUBLISHED (Mode Undangan)", async () => {
@@ -206,6 +206,6 @@ describe("POST /api/client/invitations/[id]/gallery-mode", () => {
       where: { id: INV_ID },
       data: { status: "PUBLISHED" },
     });
-    expect(mockInvalidateCache).toHaveBeenCalledWith("didan-nasha-wedding", "didan-nasha");
+    expect(mockInvalidateCache).toHaveBeenCalledWith("didan-nasha-wedding", "didan-nasha", INV_ID);
   });
 });

@@ -10,6 +10,7 @@ import { hasPlanCapability } from "@/lib/settings";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { getDynamicServerApexUrl } from "@/lib/serverDomainUtils";
 import { canPreviewInvitation } from "@/lib/previewAccess";
+import { injectFreeDraftWatermark } from "@/lib/freeDraftWatermark";
 import { eventNoun } from "@/lib/invitationUtils";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ subdomain: string }> }) {
@@ -152,6 +153,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
     const data = await composeTemplateData(invitation.id);
     if (data && invitation.themeId) {
       html = await renderTemplateFile(invitation.themeId, data, { editMode: false, invitationId: invitation.id });
+      if (invitation.isFreeDraft && html) {
+        html = injectFreeDraftWatermark(html);
+      }
     }
   } else {
     // Mode PUBLISHED: Gunakan file statis yang telah dibake (Zero Overhead)

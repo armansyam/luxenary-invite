@@ -69,7 +69,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: "Undangan berubah saat diproses (mungkin baru saja diterbitkan). Muat ulang daftar." }, { status: 409 });
     }
 
-    invalidateInvitationLookup(invitation.invitationSlug, invitation.subdomain);
+    invalidateInvitationLookup(invitation.invitationSlug, invitation.subdomain, invitation.id);
     await removeInvitationFiles(invitation, "AdminResetEventType");
 
     return NextResponse.json({

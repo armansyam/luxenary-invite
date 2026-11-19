@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { prisma } from "./prisma";
+import { renderVersionCache } from "./cache";
 
 /**
  * HTML terbit dan demo disimpan sebagai cache di disk tiap server aplikasi. Setiap perubahan data menaikkan versi di DB;
@@ -14,13 +15,22 @@ export async function bumpRenderVersion(key: string): Promise<number> {
     INSERT INTO render_versions (key, version, updated_at) VALUES (${key}, 1, now())
     ON CONFLICT (key) DO UPDATE SET version = render_versions.version + 1, updated_at = now()
     RETURNING version`;
+  renderVersionCache.set(key, row.version);
   return row.version;
 }
 
-/** 0 bila belum pernah dinaikkan (cache yang dibangun sebelum penanda versi ada juga dianggap basi sekali). */
+/**
+ * 0 bila belum pernah dinaikkan (cache yang dibangun sebelum penanda versi ada juga dianggap basi sekali).
+ * Di-cache di RAM 10 detik per proses agar lonjakan cache-miss tautan tamu (?to=Nama) tidak membanjiri PostgreSQL
+ * dengan query SELECT berulang; perubahan di proses ini langsung terlihat lewat write-through di bumpRenderVersion.
+ */
 export async function currentRenderVersion(key: string): Promise<number> {
+  const cached = renderVersionCache.get(key);
+  if (cached !== null) return cached;
   const row = await prisma.renderVersion.findUnique({ where: { key }, select: { version: true } });
-  return row?.version ?? 0;
+  const version = row?.version ?? 0;
+  renderVersionCache.set(key, version);
+  return version;
 }
 
 const MARKER = /\n<!-- lux-build:(\d+) -->$/;

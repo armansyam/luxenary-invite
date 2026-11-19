@@ -17,10 +17,12 @@ import { getPlanDisplayName } from "@/lib/planUtils";
 import { resolveInvitationDisplayName, STAFF_PIN_PATTERN, eventNoun } from "@/lib/invitationUtils";
 import { participantNames, safeParseParticipants } from "@/lib/participantUtils";
 import { useFeedback } from "@/components/ui/Feedback";
+import { useClientInvitation } from "@/components/client/ClientInvitationContext";
 
 export default function SettingsPage() {
   const feedback = useFeedback();
   const router = useRouter();
+  const { activeInvitation, activeInvitationId, loading: ctxLoading } = useClientInvitation();
   const [invitation, setInvitation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [savingSec, setSavingSec] = useState<string | null>(null);
@@ -322,42 +324,50 @@ export default function SettingsPage() {
   ].filter((rule) => rule.id !== "story" || isWeddingEvent);
 
   useEffect(() => {
-    fetch("/api/client/invitations", { cache: "no-store" })
-      .then((res) => res.json())
-      .then(async (invs) => {
-        if (Array.isArray(invs) && invs.length > 0) {
-          const invBasic = invs[0];
-          setInvitation(invBasic);
-          setCustomDomain(invBasic.customDomain || "");
+    if (ctxLoading) return;
+    if (!activeInvitation) {
+      setInvitation(null);
+      setLoading(false);
+      return;
+    }
 
-          // Ambil staffPin dari endpoint individual yang mendekripsi PIN (ownership check di server)
-          let currentPin = invBasic.staffPin || "";
-          if (invBasic.id) {
-            try {
-              const detailRes = await fetch(`/api/client/invitations/${invBasic.id}`);
-              if (detailRes.ok) {
-                const detail = await detailRes.json();
-                currentPin = detail.staffPin || currentPin;
-                setInvitation(detail);
-              }
-            } catch {
-              // Detail gagal dimuat: halaman tetap memakai data dasar dari daftar undangan di atas.
-            }
+    let cancelled = false;
+    setLoading(true);
+    setInvitation(activeInvitation);
+    setCustomDomain(activeInvitation.customDomain || "");
+    setLaunchStage("IDLE");
+
+    const loadDetail = async () => {
+      let currentPin = activeInvitation.staffPin || "";
+      let detailLoaded = activeInvitation;
+      if (activeInvitation.id) {
+        try {
+          const detailRes = await fetch(`/api/client/invitations/${activeInvitation.id}`);
+          if (detailRes.ok) {
+            const detail = await detailRes.json();
+            currentPin = detail.staffPin || currentPin;
+            detailLoaded = detail;
           }
-
-          setFormData({
-            subdomain: invBasic.subdomain || "",
-            status: invBasic.status || "DRAFT",
-            staffPin: currentPin,
-          });
+        } catch {
+          // Detail gagal dimuat: halaman tetap memakai data dasar dari daftar undangan.
         }
-        setLoading(false);
-      })
-      .catch(() => {
-        setErrorMsg("Gagal memuat pengaturan undangan");
-        setLoading(false);
+      }
+      if (cancelled) return;
+      setInvitation(detailLoaded);
+      setCustomDomain(detailLoaded.customDomain || "");
+      setFormData({
+        subdomain: detailLoaded.subdomain || "",
+        status: detailLoaded.status || "DRAFT",
+        staffPin: currentPin,
       });
-  }, []);
+      setLoading(false);
+    };
+
+    void loadDetail();
+    return () => {
+      cancelled = true;
+    };
+  }, [ctxLoading, activeInvitationId, activeInvitation]);
 
   useEffect(() => {
     fetch("/api/public/settings")
@@ -431,6 +441,11 @@ export default function SettingsPage() {
 
   const executePublish = async () => {
     if (!invitation?.id || savingSec) return;
+    if (invitation.isFreeDraft) {
+      setLaunchStage("IDLE");
+      setErrorMsg("Draf gratis tidak dapat dipublikasikan sebelum paket diaktifkan. Silakan pilih paket terlebih dahulu.");
+      return;
+    }
     setLaunchStage("PUBLISHING");
     setSavingSec("status");
     setErrorMsg(null);
@@ -562,6 +577,7 @@ export default function SettingsPage() {
   const subdomainUrl = getInvitationPublicUrl(currentSub);
   const guestSampleUrl = getInvitationPublicUrl(currentSub, "Nama Tamu");
   const receptionistUrl = subdomainUrl ? `${subdomainUrl.replace(/\/$/, "")}/receptionist` : "";
+  const welcomeUrl = subdomainUrl ? `${subdomainUrl.replace(/\/$/, "")}/welcome` : "";
   const memoriesUrl = subdomainUrl ? `${subdomainUrl.replace(/\/$/, "")}/memories` : "";
   const shareMomentUrl = subdomainUrl ? `${subdomainUrl.replace(/\/$/, "")}/sharemoment` : "";
   const planType = (invitation?.order?.planType || invitation?.planType || "TIER_1").toUpperCase();
@@ -600,14 +616,24 @@ export default function SettingsPage() {
   ];
 
   if (hasQrCheckin) {
-    reviewItems.push({
-      id: "receptionist",
-      badge: "Sistem Resepsionis & QR",
-      title: "Portal Scanner Petugas Resepsi",
-      desc: `Portal check-in kehadiran tamu hari-H dengan autentikasi PIN Panitia (${formData.staffPin || invitation?.staffPin ? "PIN Telah Diatur" : "Memerlukan PIN"}).`,
-      url: receptionistUrl,
-      checkLabel: "Saya mengonfirmasi portal resepsionis ini siap diserahkan ke panitia hari-H beserta PIN Keamanan.",
-    });
+    reviewItems.push(
+      {
+        id: "receptionist",
+        badge: "Sistem Resepsionis & QR",
+        title: "Portal Scanner Petugas Resepsi",
+        desc: `Portal check-in kehadiran tamu hari-H dengan autentikasi PIN Panitia (${formData.staffPin || invitation?.staffPin ? "PIN Telah Diatur" : "Memerlukan PIN"}).`,
+        url: receptionistUrl,
+        checkLabel: "Saya mengonfirmasi portal resepsionis ini siap diserahkan ke panitia hari-H beserta PIN Keamanan.",
+      },
+      {
+        id: "welcome",
+        badge: "Layar Sapa TV",
+        title: "Tampilan Layar Sapa Tamu Realtime (/welcome)",
+        desc: `Tampilan layar proyektor/TV ruang penerima tamu yang menyapa nama tamu dan nomor meja otomatis saat check-in menggunakan PIN Panitia (${formData.staffPin || invitation?.staffPin ? "PIN Telah Diatur" : "Memerlukan PIN"}).`,
+        url: welcomeUrl,
+        checkLabel: "Saya memahami layar sapa TV ini menggunakan PIN Keamanan Panitia yang sama untuk menampilkan sambutan tamu secara langsung.",
+      }
+    );
   }
 
   if (hasGuestMemories) {
@@ -1409,30 +1435,39 @@ export default function SettingsPage() {
                     {isReturningToIdle ? "Memulihkan..." : "Kembali ke Pengaturan"}
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={executePublish}
-                    disabled={!allUrlsReviewed || savingSec === "status"}
-                    className={`w-full sm:w-auto px-6 py-3 font-bold rounded-xl text-xs transition-all duration-300 shadow-md flex items-center justify-center gap-2 ${
-                      allUrlsReviewed && savingSec !== "status"
-                        ? "bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-stone-950 shadow-amber-500/25 cursor-pointer"
-                        : "bg-stone-800 text-stone-500 border border-stone-700/60 cursor-not-allowed opacity-75"
-                    }`}
-                  >
-                    {savingSec === "status" ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-stone-950 border-t-transparent rounded-full animate-spin"></div>
-                        <span>Memproses Rilis...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Rilis Undangan Resmi</span>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </>
-                    )}
-                  </button>
+                  {invitation?.isFreeDraft ? (
+                    <Link
+                      href="/packages"
+                      className="w-full sm:w-auto px-6 py-3 font-bold rounded-xl text-xs transition-all duration-300 shadow-md flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-stone-950"
+                    >
+                      <span>Aktifkan Paket untuk Publikasi</span>
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={executePublish}
+                      disabled={!allUrlsReviewed || savingSec === "status"}
+                      className={`w-full sm:w-auto px-6 py-3 font-bold rounded-xl text-xs transition-all duration-300 shadow-md flex items-center justify-center gap-2 ${
+                        allUrlsReviewed && savingSec !== "status"
+                          ? "bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-stone-950 shadow-amber-500/25 cursor-pointer"
+                          : "bg-stone-800 text-stone-500 border border-stone-700/60 cursor-not-allowed opacity-75"
+                      }`}
+                    >
+                      {savingSec === "status" ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-stone-950 border-t-transparent rounded-full animate-spin"></div>
+                          <span>Memproses Rilis...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Rilis Undangan Resmi</span>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
 
                 {/* Helper & Catatan Penguncian */}

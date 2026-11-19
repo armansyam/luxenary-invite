@@ -15,6 +15,12 @@ import { BG_PHOTO_TONE_LIMIT, BG_SCRIM_MAX, parseBgPhotoTone, parseBgScrim } fro
 import { EDITABLE_TEXT_KEYS, MAX_DECORATIVE_LABEL_LENGTH, sectionLabelFor, type BuilderEventType } from "@/lib/themeBuilder/spec";
 import type { EditableText, FreeSectionText } from "@/lib/themeBuilder/texts";
 import { DECLARABLE_MEDIA_SLOTS, isSlotUsed, parseThemeMediaSlots, type ThemeMediaSlots } from "@/lib/themeMediaSlots";
+import { LanguageSelector } from "@/components/client/studio/LanguageSelector";
+import { GiftRegistryEditor } from "@/components/client/studio/GiftRegistryEditor";
+import { QuotesSectionEditor } from "@/components/client/studio/QuotesSectionEditor";
+import { LoveStorySectionEditor } from "@/components/client/studio/LoveStorySectionEditor";
+import { FreeDraftBanner } from "@/components/client/FreeDraftBanner";
+import type { GiftRegistryItem } from "@/lib/giftRegistry";
 
 // Pilihan tema dimuat secara dinamis dari API /api/public/themes untuk menjamin sinkronisasi status aktif
 
@@ -967,7 +973,8 @@ export default function EditInvitation() {
       JSON.stringify(bankList) !== JSON.stringify(savedSnapshot.bankList || []) ||
       (invitation.shippingAddress || "") !== (savedSnapshot.invitation?.shippingAddress || "") ||
       getFeatureSetting("qrisImageUrl", "") !== getSavedFeatureSetting("qrisImageUrl", "") ||
-      Boolean(getFeatureSetting("showGift", true)) !== Boolean(getSavedFeatureSetting("showGift", true))
+      Boolean(getFeatureSetting("showGift", true)) !== Boolean(getSavedFeatureSetting("showGift", true)) ||
+      JSON.stringify(getFeatureSetting("giftRegistry", [])) !== JSON.stringify(getSavedFeatureSetting("giftRegistry", []))
     );
 
     // Sec 10: Dresscode
@@ -1001,7 +1008,9 @@ export default function EditInvitation() {
     );
 
     // Sec 14: Galeri Kenangan Tamu (After-Event)
-    const dirty15 = JSON.stringify(invitation.featureSettings?.customLabels || {}) !== JSON.stringify(savedSnapshot.invitation?.featureSettings?.customLabels || {});
+    const dirty15 =
+      JSON.stringify(invitation.featureSettings?.customLabels || {}) !== JSON.stringify(savedSnapshot.invitation?.featureSettings?.customLabels || {}) ||
+      getFeatureSetting("language", "id") !== getSavedFeatureSetting("language", "id");
 
     const dirty14 = (
       Boolean(getFeatureSetting("showGuestMemories", true)) !== Boolean(getSavedFeatureSetting("showGuestMemories", true)) ||
@@ -1607,6 +1616,11 @@ export default function EditInvitation() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Free Draft Banner */}
+      {invitation?.isFreeDraft && (
+        <FreeDraftBanner compact createdAt={invitation.createdAt} />
       )}
 
       {/* Unified Studio Control & Header Card */}
@@ -3618,185 +3632,17 @@ export default function EditInvitation() {
 
         {!collapsed.sec4 && (
           <div className="p-3.5 sm:p-7 space-y-4">
-            {/* Quick Presets for Multi-Religious / Universal / Literary Quotes */}
-            <div>
-              <label className="block text-xs font-bold text-stone-700 mb-2">Pilih Preset Cepat (Ayat Suci, Puisi, atau Kata Mutiara):</label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                {[
-                  {
-                    label: "Islam — QS. Ar-Rum : 21",
-                    quote: "Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya, dan Dia menjadikan di antaramu rasa kasih dan sayang.",
-                    ref: "QS. AR-RUM : 21",
-                    title: "Pappaseng & Doa",
-                  },
-                  {
-                    label: "Kristen — 1 Korintus 13:4-7",
-                    quote: "Kasih itu sabar; kasih itu murah hati; ia tidak cemburu. Ia tidak memegahkan diri dan tidak sombong. Ia menutupi segala sesuatu, percaya segala sesuatu, mengharapkan segala sesuatu, sabar menanggung segala sesuatu.",
-                    ref: "1 KORINTUS 13 : 4-7",
-                    title: "Ayat Suci & Doa",
-                  },
-                  {
-                    label: "Kristen — Kejadian 2:24",
-                    quote: "Sebab itu seorang laki-laki akan meninggalkan ayahnya dan ibunya dan bersatu dengan isterinya, sehingga keduanya menjadi satu daging.",
-                    ref: "KEJADIAN 2 : 24",
-                    title: "Pemberkatan & Doa",
-                  },
-                  {
-                    label: "Hindu — Rgveda X.85.42",
-                    quote: "Semoga kedua mempelai ini tetap bersatu, semoga panjang umur dan menikmati kebahagiaan bersama anak cucu, bersukacita dalam rumah tangga mereka sendiri.",
-                    ref: "RGVEDA X.85.42",
-                    title: "Doa & Sloka",
-                  },
-                  {
-                    label: "Buddha — Mangala Sutta",
-                    quote: "Saling menghormati dan hidup dalam keselarasan, saling mendukung dalam kebajikan dan kebijaksanaan, itulah berkah utama dalam hidup berumah tangga.",
-                    ref: "MANGALA SUTTA",
-                    title: "Berkah & Doa",
-                  },
-                  {
-                    label: "Sastra — Sapardi Djoko Damono",
-                    quote: "Aku ingin mencintaimu dengan sederhana: dengan kata yang tak sempat diucapkan kayu kepada api yang menjadikannya abu. Aku ingin mencintaimu dengan sederhana: dengan isyarat yang tak sempat disampaikan awan kepada hujan yang menjadikannya tiada.",
-                    ref: "SAPARDI DJOKO DAMONO",
-                    title: "Kutipan Puisi",
-                  },
-                  {
-                    label: "Sastra — Kahlil Gibran",
-                    quote: "Kalian diciptakan bersama, dan kalian akan selamanya bersama. Berdirilah bersama, namun jangan terlampau rapat; sebab pilar-pilar kuil tegak terpisah, dan pohon tarbantin maupun pohon fir tidak tumbuh dalam naungan satu sama lain.",
-                    ref: "KAHLIL GIBRAN — SANG NABI",
-                    title: "Kutipan Cinta",
-                  },
-                  {
-                    label: "Universal — Janji Suci",
-                    quote: "Dan jika aku harus memilih kembali dalam seratus kehidupan, dalam seratus dunia, dalam versi realitas apa pun, aku akan tetap mencari dan memilih dirimu.",
-                    ref: "OUR SACRED PROMISE",
-                    title: "Janji Suci & Harapan",
-                  },
-                ].map((p, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => {
-                      updateField("openingQuote", p.quote);
-                      updateField("openingQuoteRef", p.ref);
-                      updateCustomLabel("quoteTitle", p.title);
-                    }}
-                    className="text-left p-2.5 bg-stone-50 hover:bg-amber-50 border border-stone-200 hover:border-amber-300 rounded-xl text-[11px] font-semibold text-stone-800 hover:text-amber-950 transition"
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Salam Pembuka / Doa Awal (Dinamis / Netral Agama) */}
-            <div className="pt-3 border-t border-stone-100 space-y-2">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                <div>
-                  <label className="block text-xs font-bold text-stone-700">Salam Pembuka / Doa Awal (Greeting)</label>
-                  <p className="text-[11px] text-stone-500">Tampil di atas kutipan doa. Bebas dipilih sesuai agama/adat atau dikosongkan.</p>
-                </div>
-                <span className="text-[11px] text-amber-800 font-medium bg-amber-50 px-2 py-0.5 rounded border border-amber-200/60 self-start sm:self-auto">
-                  Opsional
-                </span>
-              </div>
-              
-              <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                <button
-                  type="button"
-                  onClick={() => updateCustomLabel("openingGreeting", "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ")}
-                  className="px-2.5 py-1 text-[11px] font-semibold bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg transition cursor-pointer"
-                >
-                  بِسْمِ اللَّهِ (Arab)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => updateCustomLabel("openingGreeting", "Bismillahir Rahmanir Rahim")}
-                  className="px-2.5 py-1 text-[11px] font-semibold bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg transition cursor-pointer"
-                >
-                  Bismillah (Latin)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => updateCustomLabel("openingGreeting", "Salam Sejahtera & Penuh Berkat")}
-                  className="px-2.5 py-1 text-[11px] font-semibold bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg transition cursor-pointer"
-                >
-                  Salam Sejahtera
-                </button>
-                <button
-                  type="button"
-                  onClick={() => updateCustomLabel("openingGreeting", "Om Swastiastu")}
-                  className="px-2.5 py-1 text-[11px] font-semibold bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg transition cursor-pointer"
-                >
-                  Om Swastiastu
-                </button>
-                <button
-                  type="button"
-                  onClick={() => updateCustomLabel("openingGreeting", "")}
-                  className="px-2.5 py-1 text-[11px] font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg transition cursor-pointer"
-                  title="Kosongkan salam pembuka (tidak menampilkan tulisan Arab atau salam apapun)"
-                >
-                  Hapus / Tanpa Salam
-                </button>
-              </div>
-
-              <Input
-                label="Teks Salam Pembuka Kustom"
-                value={getCustomLabel("openingGreeting", activeBlueprint?.openingGreeting || "")}
-                onChange={(v) => updateCustomLabel("openingGreeting", v)}
-                placeholder="بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ / Salam Sejahtera / Kosongkan jika tidak diinginkan"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-stone-100">
-              <Input
-                label="Subjudul / Eyebrow Seksi"
-                value={getCustomLabel("quoteEyebrow", activeBlueprint?.quoteSectionEyebrow || "")}
-                onChange={(v) => updateCustomLabel("quoteEyebrow", v)}
-                placeholder={activeBlueprint?.quoteSectionEyebrow || "WALIMATUL 'URSY / THE SACRED UNION"}
-              />
-              <Input
-                label="Judul Seksi (Bebas Kustom)"
-                value={getCustomLabel("quoteTitle", activeBlueprint?.quoteSectionTitle || "Kutipan & Doa")}
-                onChange={(v) => updateCustomLabel("quoteTitle", v)}
-                placeholder={activeBlueprint?.quoteSectionTitle || "Kutipan Cinta / Kata Mutiara / Pappaseng / Ayat Suci"}
-              />
-            </div>
-
-            <div className="pt-2">
-              <Input
-                label="Referensi Sumber Kutipan"
-                value={invitation.openingQuoteRef || ""}
-                onChange={(v) => updateField("openingQuoteRef", v)}
-                placeholder={activeBlueprint?.openingQuoteRef || "QS. AR-RUM : 21 / SAPARDI DJOKO DAMONO / OUR SACRED PROMISE"}
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-stone-700 mb-1">Teks Kutipan / Puisi / Doa</label>
-              <textarea
-                rows={3}
-                value={invitation.openingQuote || ""}
-                onChange={(e) => updateField("openingQuote", e.target.value)}
-                className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30 leading-relaxed"
-                placeholder="Tuliskan teks kutipan indah, puisi cinta, ayat, atau doa pembuka di sini..."
-              />
-            </div>
-
-            <div className="pt-4 border-t border-stone-100 flex justify-end">
-              <button
-                type="button"
-                onClick={() => saveSection("sec4")}
-                disabled={saving || !isDirty.sec4}
-                className={`px-5 py-2.5 font-bold rounded-xl text-xs transition flex items-center gap-2 shadow-xs ${
-                  !isDirty.sec4
-                    ? "bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed"
-                    : "bg-amber-800 hover:bg-amber-900 text-white cursor-pointer"
-                }`}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                <span>{!isDirty.sec4 ? "Tersimpan" : "Simpan Kutipan"}</span>
-              </button>
-            </div>
+            <QuotesSectionEditor
+              openingQuote={invitation.openingQuote || ""}
+              openingQuoteRef={invitation.openingQuoteRef || ""}
+              activeBlueprint={activeBlueprint}
+              getCustomLabel={getCustomLabel}
+              updateField={updateField}
+              updateCustomLabel={updateCustomLabel}
+              isDirty={Boolean(isDirty.sec4)}
+              saving={saving}
+              onSave={() => saveSection("sec4")}
+            />
             {renderSectionNavFooter("sec4")}
           </div>
         )}
@@ -4197,74 +4043,19 @@ export default function EditInvitation() {
 
         {!collapsed.sec7 && (
           <div className="p-3.5 sm:p-7 space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-stone-700">Tampilkan Seksi Kisah Cinta:</span>
-              <div className="flex items-center gap-3">
-                <SectionHeaderToggle
-                  label=""
-                  checked={showStory}
-                  onChange={(v) => updateFeatureSetting("showStory", v)}
-                />
-                {showStory && (
-                  <button
-                    type="button"
-                    onClick={addStory}
-                    className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/80 rounded-lg text-xs font-bold transition cursor-pointer"
-                  >
-                    + Tambah Babak
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {showStory && (
-              <div className="space-y-3 mt-2">
-                <Input
-                  label="Judul Seksi Kisah Cinta (Bebas Kustom)"
-                  value={getCustomLabel("storyTitle", "Kisah Cinta")}
-                  onChange={(v) => updateCustomLabel("storyTitle", v)}
-                  placeholder="Kisah Cinta / Our Love Story / Perjalanan Kami"
-                />
-                {stories.map((st, idx) => (
-                  <div key={idx} className="p-4 rounded-2xl border border-stone-200 bg-stone-50/50 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-amber-800">Chapter 0{idx + 1}</span>
-                      <button type="button" onClick={() => removeStory(idx)} className="text-xs text-rose-600 hover:text-rose-800 font-semibold cursor-pointer">Hapus</button>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <Input label="Judul Momen" value={st.title || ""} onChange={(v) => updateStoryItem(idx, "title", v)} placeholder="Masukkan judul momen kisah cinta Anda" />
-                      <Input label="Tahun / Tanggal" value={st.date || ""} onChange={(v) => updateStoryItem(idx, "date", v)} placeholder="2020" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-stone-700 mb-1">Cerita Singkat</label>
-                      <textarea
-                        rows={2}
-                        value={st.content || ""}
-                        onChange={(e) => updateStoryItem(idx, "content", e.target.value)}
-                        placeholder="Tuliskan cerita singkat momen ini..."
-                        className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="pt-4 border-t border-stone-100 flex justify-end">
-              <button
-                type="button"
-                onClick={() => saveSection("sec7")}
-                disabled={saving || !isDirty.sec7}
-                className={`px-5 py-2.5 font-bold rounded-xl text-xs transition flex items-center gap-2 shadow-xs ${
-                  !isDirty.sec7
-                    ? "bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed"
-                    : "bg-amber-800 hover:bg-amber-900 text-white cursor-pointer"
-                }`}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                <span>{!isDirty.sec7 ? "Tersimpan" : "Simpan Kisah Cinta"}</span>
-              </button>
-            </div>
+            <LoveStorySectionEditor
+              showStory={showStory}
+              stories={stories}
+              storyTitle={getCustomLabel("storyTitle", "Kisah Cinta")}
+              onToggleShowStory={(v) => updateFeatureSetting("showStory", v)}
+              onAddStory={addStory}
+              onRemoveStory={removeStory}
+              onUpdateStoryItem={updateStoryItem}
+              onUpdateStoryTitle={(v) => updateCustomLabel("storyTitle", v)}
+              isDirty={Boolean(isDirty.sec7)}
+              saving={saving}
+              onSave={() => saveSection("sec7")}
+            />
             {renderSectionNavFooter("sec7")}
           </div>
         )}
@@ -4532,6 +4323,12 @@ export default function EditInvitation() {
                     />
                   </div>
                 </div>
+
+                <GiftRegistryEditor
+                  invitationId={invitationId}
+                  items={(Array.isArray(getFeatureSetting("giftRegistry", [])) ? getFeatureSetting("giftRegistry", []) : []) as GiftRegistryItem[]}
+                  onChange={(nextItems) => updateFeatureSetting("giftRegistry", nextItems)}
+                />
               </div>
             )}
 
@@ -5177,6 +4974,11 @@ export default function EditInvitation() {
 
         {!collapsed.sec15 && (
           <div className="p-3.5 sm:p-7 space-y-4 sm:space-y-5">
+            <LanguageSelector
+              value={getFeatureSetting("language", "id") === "en" ? "en" : "id"}
+              onChange={(nextLang) => updateFeatureSetting("language", nextLang)}
+            />
+
             {/* Group 1: Formulir & Tombol RSVP */}
             <div className="space-y-3">
               <h4 className="text-xs font-bold text-stone-900 uppercase tracking-wider text-amber-950 flex items-center gap-1.5">

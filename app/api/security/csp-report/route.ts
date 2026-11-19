@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { getClientIp, rateLimitDb } from "@/lib/rateLimit";
+import { recordCspViolation } from "@/lib/cspReports";
 
 const MAX_BODY_BYTES = 8 * 1024;
 const clip = (value: unknown) => String(value ?? "").slice(0, 200);
@@ -25,10 +26,11 @@ export async function POST(req: NextRequest) {
     return new NextResponse(null, { status: 400 });
   }
 
-  logger.warn("CSP", "Pelanggaran CSP (Report-Only)", {
-    directive: clip(report["violated-directive"] ?? report.effectiveDirective),
-    blocked: clip(report["blocked-uri"] ?? report.blockedURL),
-    document: clip(report["document-uri"] ?? report.documentURL),
-  });
+  const directive = clip(report["violated-directive"] ?? report.effectiveDirective);
+  const blocked = clip(report["blocked-uri"] ?? report.blockedURL);
+  const document = clip(report["document-uri"] ?? report.documentURL);
+
+  recordCspViolation({ directive, blocked, document });
+  logger.warn("CSP", "Pelanggaran CSP (Report-Only)", { directive, blocked, document });
   return new NextResponse(null, { status: 204 });
 }

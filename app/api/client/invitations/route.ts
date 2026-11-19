@@ -25,6 +25,7 @@ export async function GET() {
       participantsJson: true,
       themeId: true,
       status: true,
+      isFreeDraft: true,
       subdomain: true,
       eventData: true,
       staffPin: true,

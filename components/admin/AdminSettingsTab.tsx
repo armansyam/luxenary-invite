@@ -126,9 +126,10 @@ export default function AdminSettingsTab(props: Props) {
     handleTestSmtp, handleDetectServerIp, handleManualRecycleSubdomains,
   } = props;
 
-  // Local state for purge cache (only needed within this component)
+  // Local state for purge cache & analytics saving
   const [purgingCache, setPurgingCache] = useState(false);
   const [purgeResult, setPurgeResult] = useState<{ success: boolean; msg: string } | null>(null);
+  const [savingAnalytics, setSavingAnalytics] = useState(false);
 
 
   return (
@@ -2085,6 +2086,72 @@ export default function AdminSettingsTab(props: Props) {
       </div>
     )}
   </div>
+
+  {/* Analitik & Pixel Konversi */}
+  <SettingsCard
+    title="Analitik &amp; Pixel Konversi"
+    description="Pasang Meta Pixel, TikTok Pixel, dan Google Analytics 4 untuk melacak corong konversi (ViewContent, InitiateCheckout, dan Purchase)."
+    isEditing={Boolean(editSection["analytics"])}
+    onEdit={() => toggleEditSection("analytics")}
+    onCancel={() => cancelEdit("analytics", ["meta_pixel_id", "tiktok_pixel_id", "ga4_measurement_id"])}
+    onSave={() => saveSettings(["meta_pixel_id", "tiktok_pixel_id", "ga4_measurement_id"], setSavingAnalytics, "analytics")}
+    saving={savingAnalytics}
+    isDirty={isSectionDirty(["meta_pixel_id", "tiktok_pixel_id", "ga4_measurement_id"])}
+    saveSuccess={settingsSaved["analytics"]}
+    saveSuccessMessage="Konfigurasi pixel konversi tersimpan"
+    viewContent={
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200">
+          <span className="text-xs text-gray-500 font-medium block">Meta Pixel ID</span>
+          <span className="text-sm font-mono font-bold text-gray-900 mt-1 block truncate">
+            {settingsMap["meta_pixel_id"] || "Belum dipasang"}
+          </span>
+        </div>
+        <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200">
+          <span className="text-xs text-gray-500 font-medium block">TikTok Pixel ID</span>
+          <span className="text-sm font-mono font-bold text-gray-900 mt-1 block truncate">
+            {settingsMap["tiktok_pixel_id"] || "Belum dipasang"}
+          </span>
+        </div>
+        <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200">
+          <span className="text-xs text-gray-500 font-medium block">GA4 Measurement ID</span>
+          <span className="text-sm font-mono font-bold text-gray-900 mt-1 block truncate">
+            {settingsMap["ga4_measurement_id"] || "Belum dipasang"}
+          </span>
+        </div>
+      </div>
+    }
+  >
+    <div className="space-y-4">
+      <FieldRow label="Meta Pixel ID (Angka 8–20 Digit)">
+        <input
+          type="text"
+          value={settingsMap["meta_pixel_id"] || ""}
+          onChange={(e) => setSetting("meta_pixel_id", e.target.value)}
+          placeholder="Contoh: 123456789012345"
+          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+        />
+      </FieldRow>
+      <FieldRow label="TikTok Pixel ID (Alfanumerik 10–30 Karakter)">
+        <input
+          type="text"
+          value={settingsMap["tiktok_pixel_id"] || ""}
+          onChange={(e) => setSetting("tiktok_pixel_id", e.target.value)}
+          placeholder="Contoh: C9ABCDE1234567890"
+          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+        />
+      </FieldRow>
+      <FieldRow label="GA4 Measurement ID (G-XXXXXXXX)">
+        <input
+          type="text"
+          value={settingsMap["ga4_measurement_id"] || ""}
+          onChange={(e) => setSetting("ga4_measurement_id", e.target.value)}
+          placeholder="Contoh: G-ABC123DEF4"
+          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+        />
+      </FieldRow>
+    </div>
+  </SettingsCard>
   </>
   )}
 

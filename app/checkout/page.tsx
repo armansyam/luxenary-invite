@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getPlanDisplayName } from "@/lib/planUtils";
 import { DEFAULT_LIFECYCLE_SETTINGS, formatRetentionLabel } from "@/lib/lifecycleDates";
+import { trackEventOnce } from "@/lib/analytics";
 
 function formatWhatsAppNumber(val: string): string {
   const digits = val.replace(/\D/g, "").slice(0, 15);
@@ -43,6 +44,7 @@ function CheckoutContent() {
   const orderIdParam = searchParams.get("order");
   const msgParam = searchParams.get("msg");
   const editParam = searchParams.get("edit");
+  const isNewAdditional = searchParams.get("new") === "1";
   const initializedRef = useRef<string | null>(null);
 
   const [planData, setPlanData] = useState<{ name: string; price: number; desc: string } | null>(null);
@@ -93,7 +95,7 @@ function CheckoutContent() {
   const [buyerPhone, setBuyerPhone] = useState<string>("");
 
   // Helper routing setelah pembayaran lunas (PAID) untuk 3 kondisi sistem
-  const getPostPaymentRedirect = useCallback((type: string, id: string, plan: string) => {
+  const getPostPaymentRedirect = useCallback((type: string, id: string, plan: string, activatedInvitationId?: string | null) => {
     if (type === "GALLERY_EXTENSION") {
       return "/dashboard?msg=gallery_extended";
     }
@@ -102,6 +104,9 @@ function CheckoutContent() {
     }
     if (type === "UPGRADE") {
       return "/dashboard?msg=plan_upgraded";
+    }
+    if (activatedInvitationId) {
+      return `/dashboard/invitation/${activatedInvitationId}`;
     }
     return `/dashboard/setup?order=${id}&plan=${plan}`;
   }, []);
@@ -196,7 +201,7 @@ function CheckoutContent() {
           }
 
           if (orderStatusData.status === "PAID") {
-            router.replace(getPostPaymentRedirect(orderStatusData.orderType, orderStatusData.id, orderStatusData.planType));
+            router.replace(getPostPaymentRedirect(orderStatusData.orderType, orderStatusData.id, orderStatusData.planType, orderStatusData.activatedInvitationId));
             return;
           }
 
@@ -312,7 +317,10 @@ function CheckoutContent() {
       const onboardingRes = await fetch("/api/client/onboarding-state", { cache: "no-store" });
       if (onboardingRes.ok) {
         const onboardingData = await onboardingRes.json();
-        if (onboardingData.step === "COMPLETED" || onboardingData.step === "PAID_NEED_SETUP") {
+        if (
+          onboardingData.step === "PAID_NEED_SETUP" ||
+          (onboardingData.step === "COMPLETED" && !isNewAdditional)
+        ) {
           router.replace(onboardingData.redirectUrl || "/dashboard");
           return;
         }
@@ -338,6 +346,7 @@ function CheckoutContent() {
           buyerEmail: buyerEmail || session.user?.email || "",
           buyerPhone: buyerPhone.replace(/\D/g, ""),
           regenerate: msgParam === "qris_expired",
+          allowAdditional: isNewAdditional,
         }),
       });
 
@@ -370,6 +379,17 @@ function CheckoutContent() {
       }
     }
   }, [status, sessionUserId, isAdmin, planParam, orderIdParam, reloadKey, initializeCheckout]);
+
+  useEffect(() => {
+    if (orderId && planData?.price !== undefined) {
+      trackEventOnce(`ic_${orderId}`, "InitiateCheckout", {
+        value: Number(planData.price || 0),
+        currency: "IDR",
+        plan: currentPlanType,
+        orderId,
+      });
+    }
+  }, [orderId, planData?.price, currentPlanType]);
 
   // Countdown Timer untuk Masa Berlaku Kupon Promo (Sinkron dengan Server Time Offset)
   useEffect(() => {

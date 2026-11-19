@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { compressImageToWebP } from "@/lib/clientImageCompressor";
 import { getPlanDisplayName } from "@/lib/planUtils";
+import { trackPurchaseOnce } from "@/lib/analytics";
 
 function PaymentContent() {
   const router = useRouter();
@@ -64,10 +65,11 @@ function PaymentContent() {
   const platformPaymentModeRef = useRef<"GATEWAY" | "MANUAL">("GATEWAY");
 
   // Routing helper
-  const getPostPaymentRedirect = useCallback((type: string, id: string, plan: string) => {
+  const getPostPaymentRedirect = useCallback((type: string, id: string, plan: string, activatedInvitationId?: string | null) => {
     if (type === "GALLERY_EXTENSION") return "/dashboard?msg=gallery_extended";
     if (type === "MEMORIES_TOPUP") return "/dashboard/moments?msg=quota_added";
     if (type === "UPGRADE") return "/dashboard?msg=plan_upgraded";
+    if (activatedInvitationId) return `/dashboard/invitation/${activatedInvitationId}`;
     return `/dashboard/setup?order=${id}&plan=${plan}`;
   }, []);
 
@@ -136,7 +138,12 @@ function PaymentContent() {
 
       // 1. Jika order sudah PAID, langsung alihkan ke halaman setup
       if (data.status === "PAID") {
-        const dest = getPostPaymentRedirect(data.orderType || "NEW", orderId, data.planType);
+        trackPurchaseOnce(orderId, {
+          value: Number(data.chargedAmount ?? data.amount ?? 0),
+          currency: "IDR",
+          plan: data.planType,
+        });
+        const dest = getPostPaymentRedirect(data.orderType || "NEW", orderId, data.planType, data.activatedInvitationId);
         router.replace(dest);
         return;
       }
@@ -260,7 +267,19 @@ function PaymentContent() {
         try {
           const payload = JSON.parse(e.data);
           if (payload.status === "PAID") {
-            finishPaid(getPostPaymentRedirect(payload.orderType || order?.orderType || "NEW", orderId, payload.planType || order?.planType));
+            trackPurchaseOnce(orderId, {
+              value: Number(order?.chargedAmount ?? order?.amount ?? 0),
+              currency: "IDR",
+              plan: payload.planType || order?.planType,
+            });
+            finishPaid(
+              getPostPaymentRedirect(
+                payload.orderType || order?.orderType || "NEW",
+                orderId,
+                payload.planType || order?.planType,
+                payload.activatedInvitationId,
+              ),
+            );
           } else if (payload.status === "REJECTED") {
             setUploadedProofUrl(null);
             setUploadSuccessMsg(null);
@@ -333,7 +352,12 @@ function PaymentContent() {
       setIsCheckingStatus(false);
 
       if (data.status === "PAID") {
-        finishPaid(getPostPaymentRedirect(data.orderType || "NEW", orderId, data.planType));
+        trackPurchaseOnce(orderId, {
+          value: Number(data.chargedAmount ?? data.amount ?? 0),
+          currency: "IDR",
+          plan: data.planType,
+        });
+        finishPaid(getPostPaymentRedirect(data.orderType || "NEW", orderId, data.planType, data.activatedInvitationId));
       } else {
         setPaymentNotice({ type: "info", message: "Status pembayaran masih PENDING. Jika sudah transfer, silakan tunggu beberapa saat." });
       }

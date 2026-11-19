@@ -19,6 +19,7 @@ import { masterPathOf } from "../lib/themePaths";
 import { ensureSpecFonts } from "../lib/themeBuilder/fonts";
 import { fitSpecFrames } from "../lib/themeBuilder/frameWindow";
 import { legacyDraftSpec } from "../lib/themeBuilder/legacyMigration";
+import { builderMediaSlots } from "../lib/themeBuilder/mediaSlots";
 import { BUILDER_CATEGORIES, builderDefaultMedia, builderMasterPath, compileAndAudit, isSafeThemeId, recordBuilderRevision, resolveThemeMusic, themeIdTaken, type BuilderCategory } from "../lib/themeBuilder/server";
 
 const SERIES: Record<BuilderCategory, string> = { minimalist: "Minimalist", modern: "Modern", traditional: "Traditional" };
@@ -78,6 +79,7 @@ async function main() {
           sortOrder: (maxOrder._max.sortOrder ?? 0) + 1,
           builderSpec: spec as unknown as Prisma.InputJsonObject,
           defaultMedia: builderDefaultMedia(spec),
+          mediaSlots: builderMediaSlots(spec) as Prisma.InputJsonValue,
           defaultMusicUrl: musicUrl,
         },
         select: { id: true, name: true, category: true, description: true },

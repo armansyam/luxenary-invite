@@ -97,7 +97,9 @@ function structuralKey(spec: BuilderSpec): string {
     blockGoogleFonts: googleFontIds(spec.fonts, spec.blocks),
     frames: {},
     freeSections: spec.freeSections?.map(({ style: _style, animation: _animation, ...f }) => f),
-    ornaments: spec.ornaments.map((o) => [o.id, o.src, o.section, o.layer, o.attach ?? "", o.before ?? "", o.slot ?? "", o.text ? 1 : 0, o.text?.labelKey ?? ""]),
+    ornaments: spec.ornaments.map((o) => [o.id, o.src, o.section, o.layer, o.attach ?? "", o.before ?? "", o.slot ?? "", o.text ? 1 : 0, o.text?.labelKey ?? "",
+      // Foto klien pengganti dibalik ulang di server (compile.ts), jadi cermin ornamen pengganti butuh render ulang.
+      o.replaceSlot ? `${o.replaceSlot}:${o.flipX ? 1 : 0}${o.flipY ? 1 : 0}` : ""]),
   });
 }
 

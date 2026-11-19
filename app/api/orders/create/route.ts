@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { planType: rawPlanType, regenerate, buyerName, buyerPhone, phoneNumber } = body;
+    const { planType: rawPlanType, regenerate, allowAdditional, buyerName, buyerPhone, phoneNumber } = body;
 
     if (!rawPlanType) {
       return NextResponse.json({ error: "Missing planType" }, { status: 400 });
@@ -87,26 +87,33 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // KONSISTENSI GUARD: Cegah klien yang sudah memiliki undangan / order PAID membuat order baru 
-    // dari tab usang. (Tipe order NEW_INVITATION implicitly)
-    const existingInvitation = await prisma.invitation.findFirst({
-      where: { userId: validUserId },
+    // KONSISTENSI GUARD:
+    // 1. Jika masih ada order paket baru (NEW) lunas yang belum dibuatkan undangan, arahkan ke setup terlebih dahulu.
+    const existingPaidUnlinked = await prisma.order.findFirst({
+      where: { userId: validUserId, status: "PAID", orderType: "NEW", invitation: { is: null } },
+      orderBy: { paidAt: "desc" },
     });
-    
-    if (existingInvitation) {
+
+    if (existingPaidUnlinked) {
       return NextResponse.json(
-        { error: "Anda sudah memiliki undangan aktif. Tidak dapat membuat pesanan baru.", redirectUrl: "/dashboard" },
+        {
+          error: "Anda memiliki paket aktif yang belum disiapkan undangannya. Lanjutkan setup terlebih dahulu.",
+          redirectUrl: `/dashboard/setup?order=${existingPaidUnlinked.id}&plan=${existingPaidUnlinked.planType}`,
+        },
         { status: 400 }
       );
     }
 
-    const existingPaid = await prisma.order.findFirst({
-      where: { userId: validUserId, status: "PAID", orderType: "NEW" },
+    // 2. Draf gratis (isFreeDraft: true) BOLEH lanjut membuat order untuk aktivasi paket.
+    //    Klien yang sudah memiliki undangan berbayar hanya diizinkan memesan undangan tambahan bila eksplisit meminta (allowAdditional).
+    const existingPaidInvitation = await prisma.invitation.findFirst({
+      where: { userId: validUserId, isFreeDraft: false },
+      select: { id: true },
     });
 
-    if (existingPaid) {
+    if (existingPaidInvitation && allowAdditional !== true) {
       return NextResponse.json(
-        { error: "Anda sudah memiliki paket aktif. Tidak dapat membuat pesanan baru.", redirectUrl: `/dashboard/setup?order=${existingPaid.id}` },
+        { error: "Anda sudah memiliki undangan aktif. Gunakan menu Buat Undangan Baru untuk menambah undangan lain.", redirectUrl: "/dashboard" },
         { status: 400 }
       );
     }

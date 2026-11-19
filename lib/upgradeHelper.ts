@@ -3,6 +3,7 @@ import { sendInvoiceEmail } from "@/lib/mailer";
 import { getPlanMemoriesQuota } from "./settings";
 import { extendGalleryExpiry } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
+import { activateFreeDraftForOrder } from "@/lib/freeDraftActivation";
 import type { PlanType, Prisma } from "@prisma/client";
 import { logger } from "@/lib/logger";
 
@@ -198,6 +199,9 @@ async function runPaidOrderFulfillment(paidOrderId: string): Promise<void> {
   // Single State Enforcement: Bersihkan order usang non-PAID milik user ini
   if (order.userId) {
     await purgeObsoleteUserOrders(order.userId, paidOrderId);
+    if (order.orderType === "NEW") {
+      await activateFreeDraftForOrder(paidOrderId, order.userId);
+    }
   }
 
   // Add-on dan upgrade dari checkout terpadu selalu membawa itemsJson; upgrade lama (/api/payments/upgrade) tidak.

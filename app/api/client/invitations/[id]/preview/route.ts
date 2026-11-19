@@ -6,6 +6,7 @@ import { logger } from "@/lib/logger";
 import { composeTemplateData } from "@/lib/themeEngine";
 import { renderTemplateFile } from "@/lib/renderTemplate";
 import { getAdminSetting } from "@/lib/settings";
+import { injectFreeDraftWatermark } from "@/lib/freeDraftWatermark";
 
 export const dynamic = "force-dynamic";
 
@@ -83,7 +84,11 @@ export async function GET(
       );
     }
 
-    const html = await renderTemplateFile(invitation.themeId, data, { editMode: isEditMode, invitationId: id });
+    let html = await renderTemplateFile(invitation.themeId, data, { editMode: isEditMode, invitationId: id });
+
+    if (invitation.isFreeDraft) {
+      html = injectFreeDraftWatermark(html);
+    }
 
     return new NextResponse(html, {
       headers: {

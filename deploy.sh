@@ -28,13 +28,27 @@ if [ -z "$DEPLOY_REEXEC" ] && [ "$(git rev-parse HEAD)" != "$PREVIOUS_COMMIT" ];
   exec bash "$0" "$@"
 fi
 
+if [ "${REQUIRE_CI_PASS:-0}" = "1" ]; then
+  if ! command -v gh > /dev/null 2>&1; then
+    echo "❌ REQUIRE_CI_PASS=1 tetapi GitHub CLI (gh) tidak terpasang. Deployment dihentikan."
+    exit 1
+  fi
+  HEAD_SHA=$(git rev-parse HEAD)
+  CI_STATUS=$(gh run list --commit "$HEAD_SHA" --workflow ci.yml --limit 1 --json status,conclusion --jq '.[0] | "\(.status):\(.conclusion)"' 2>/dev/null || echo "")
+  if [ "$CI_STATUS" != "completed:success" ]; then
+    echo "❌ CI belum lulus untuk commit $HEAD_SHA ($CI_STATUS). Deployment dibatalkan."
+    exit 1
+  fi
+  echo "✅ Verifikasi CI lulus untuk commit $HEAD_SHA."
+fi
+
 # Server 2 inti: npm ci, build, dan kompilasi demo menghabiskan CPU sehingga aplikasi yang sedang melayani tidak menjawab
 # /api/health dalam 10 detik, dan scripts/health-watch.sh me-restart-nya di tengah deploy (18 Nov 2026, 12:42–12:45).
 # Tahap berat dijalankan dengan prioritas rendah, dan berkas kunci memberi tahu health-watch bahwa deploy sedang berjalan.
 DEPLOY_LOCK="data/.deploy-running"
 mkdir -p data
 echo $$ > "$DEPLOY_LOCK"
-trap 'rm -f "$DEPLOY_LOCK" data/.lb-drain' EXIT
+trap 'rm -rf "$DEPLOY_LOCK" data/.lb-drain .deps-stage .deps-old' EXIT
 LOW_PRIORITY="nice -n 19"
 command -v ionice > /dev/null && LOW_PRIORITY="ionice -c2 -n7 $LOW_PRIORITY"
 
@@ -62,31 +76,33 @@ if [ ! -f .env ]; then
 fi
 
 # Generate Secrets jika masih kosong di .env
-AUTH_SECRET=$(grep -E "^AUTH_SECRET=" .env | cut -d '=' -f2 | tr -d '"' | tr -d "'")
-NEXTAUTH_SECRET=$(grep -E "^NEXTAUTH_SECRET=" .env | cut -d '=' -f2 | tr -d '"' | tr -d "'")
+AUTH_SECRET=$(grep -E "^AUTH_SECRET=" .env | cut -d '=' -f2- | tr -d '"' | tr -d "'")
 
 if [ -z "$AUTH_SECRET" ] || [ "$AUTH_SECRET" == '""' ]; then
   echo "🔐 Men-generate AUTH_SECRET baru yang aman..."
   NEW_SECRET=$(openssl rand -base64 32)
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s|^AUTH_SECRET=.*|AUTH_SECRET=\"$NEW_SECRET\"|" .env
+  if grep -q -E "^AUTH_SECRET=" .env; then
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      sed -i '' "s|^AUTH_SECRET=.*|AUTH_SECRET=\"$NEW_SECRET\"|" .env
+    else
+      sed -i "s|^AUTH_SECRET=.*|AUTH_SECRET=\"$NEW_SECRET\"|" .env
+    fi
   else
-    sed -i "s|^AUTH_SECRET=.*|AUTH_SECRET=\"$NEW_SECRET\"|" .env
+    echo "AUTH_SECRET=\"$NEW_SECRET\"" >> .env
   fi
 fi
 
-if [ -z "$NEXTAUTH_SECRET" ] || [ "$NEXTAUTH_SECRET" == '""' ]; then
-  echo "🔐 Men-generate NEXTAUTH_SECRET baru yang aman..."
-  if [ -n "$NEW_SECRET" ]; then
-    NEW_NEXT_SECRET=$NEW_SECRET
-  else
-    NEW_NEXT_SECRET=$(openssl rand -base64 32)
-  fi
-  
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s|^NEXTAUTH_SECRET=.*|NEXTAUTH_SECRET=\"$NEW_NEXT_SECRET\"|" .env
-  else
-    sed -i "s|^NEXTAUTH_SECRET=.*|NEXTAUTH_SECRET=\"$NEW_NEXT_SECRET\"|" .env
+# Hanya perbarui NEXTAUTH_SECRET jika memang tercantum kosong di .env (NextAuth v5 memakai AUTH_SECRET).
+if grep -q -E "^NEXTAUTH_SECRET=" .env; then
+  NEXTAUTH_SECRET=$(grep -E "^NEXTAUTH_SECRET=" .env | cut -d '=' -f2- | tr -d '"' | tr -d "'")
+  if [ -z "$NEXTAUTH_SECRET" ] || [ "$NEXTAUTH_SECRET" == '""' ]; then
+    echo "🔐 Men-generate NEXTAUTH_SECRET baru yang aman..."
+    NEW_NEXT_SECRET=${NEW_SECRET:-$(openssl rand -base64 32)}
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+      sed -i '' "s|^NEXTAUTH_SECRET=.*|NEXTAUTH_SECRET=\"$NEW_NEXT_SECRET\"|" .env
+    else
+      sed -i "s|^NEXTAUTH_SECRET=.*|NEXTAUTH_SECRET=\"$NEW_NEXT_SECRET\"|" .env
+    fi
   fi
 fi
 
@@ -188,12 +204,34 @@ if ! { [ -n "${CHROME_PATH:-}" ] && [ -x "$CHROME_PATH" ]; } && ! command -v goo
   echo "   Pasang: wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && sudo apt install -y ./google-chrome-stable_current_amd64.deb"
 fi
 
-# 4. Install Dependencies (persis sesuai package-lock.json)
-echo "📦 Menginstal dependensi (npm ci)..."
-if ! $LOW_PRIORITY npm ci; then
-  echo "❌ npm ci gagal! Deployment dihentikan sebelum menyentuh database."
-  restore_previous_release
-  exit 1
+# 4. Install Dependencies (persis sesuai package-lock.json lewat staging terisolasi + hash check)
+LOCK_HASH_FILE="data/.deps-lock.sha256"
+if command -v sha256sum > /dev/null 2>&1; then
+  LOCK_SHA=$(sha256sum package-lock.json | awk '{print $1}')
+else
+  LOCK_SHA=$(shasum -a 256 package-lock.json | awk '{print $1}')
+fi
+PREV_LOCK_SHA=$(cat "$LOCK_HASH_FILE" 2>/dev/null || echo "")
+
+if [ "${FORCE_NPM_CI:-0}" != "1" ] && [ -n "$LOCK_SHA" ] && [ "$LOCK_SHA" = "$PREV_LOCK_SHA" ] && [ -d node_modules ]; then
+  echo "📦 package-lock.json tidak berubah ($LOCK_SHA); melewati npm ci."
+else
+  echo "📦 Menginstal dependensi ke direktori staging (.deps-stage)..."
+  rm -rf .deps-stage .deps-old
+  mkdir -p .deps-stage
+  cp package.json package-lock.json .deps-stage/
+  if ! (cd .deps-stage && $LOW_PRIORITY npm ci); then
+    rm -rf .deps-stage
+    echo "❌ npm ci gagal! Deployment dihentikan di staging sebelum menyentuh node_modules & database."
+    restore_previous_release
+    exit 1
+  fi
+  if [ -d node_modules ]; then
+    mv node_modules .deps-old
+  fi
+  mv .deps-stage/node_modules node_modules
+  rm -rf .deps-old .deps-stage
+  echo "$LOCK_SHA" > "$LOCK_HASH_FILE"
 fi
 
 # 5. Prisma Client & Build — dijalankan SEBELUM database disentuh.

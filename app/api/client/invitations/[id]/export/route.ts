@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { routeError } from "@/lib/routeError";
 import { csvCell } from "@/lib/csv";
+import { parseGiftRegistryFromSettings } from "@/lib/giftRegistry";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +36,7 @@ export async function GET(
       select: {
         id: true,
         invitationSlug: true,
+        featureSettings: true,
       },
     });
 
@@ -50,12 +52,15 @@ export async function GET(
         orderBy: { respondedAt: "desc" },
       });
 
-      let csv = "No,Nama Tamu,Konfirmasi Kehadiran,Jumlah Pax,Ucapan & Doa Restu,Waktu Kirim\n";
+      let csv = "No,Nama Tamu,Konfirmasi Kehadiran,Jumlah Pax,Ucapan & Doa Restu,Status Tampil,Balasan Tuan Rumah,Waktu Balas,Waktu Kirim\n";
       rsvps.forEach((r, idx) => {
         const pax = r.guestCount || 1;
         const message = (r.message || "").replace(/\r?\n/g, " ");
+        const visibility = r.isHidden ? "Disembunyikan" : "Tampil";
+        const reply = (r.replyMessage || "").replace(/\r?\n/g, " ");
+        const replyDate = r.repliedAt ? new Date(r.repliedAt).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" }) : "-";
         const dateStr = new Date(r.respondedAt).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" });
-        csv += `${idx + 1},${csvCell(r.guestName)},${csvCell(r.status)},${pax},${csvCell(message)},${csvCell(dateStr)}\n`;
+        csv += `${idx + 1},${csvCell(r.guestName)},${csvCell(r.status)},${pax},${csvCell(message)},${csvCell(visibility)},${csvCell(reply || "-")},${csvCell(replyDate)},${csvCell(dateStr)}\n`;
       });
 
       return new NextResponse(csv, {
@@ -67,22 +72,60 @@ export async function GET(
     }
 
     if (type === "guests") {
-      const guests = await prisma.guest.findMany({
-        where: { invitationId },
-        orderBy: { name: "asc" },
-      });
+      const [guests, openedRows] = await Promise.all([
+        prisma.guest.findMany({
+          where: { invitationId },
+          orderBy: { name: "asc" },
+        }),
+        prisma.$queryRaw<{ name: string; opened_at: Date }[]>`
+          SELECT lower(trim(guest_name)) AS name, MIN(first_seen_at) AS opened_at FROM invitation_visits
+          WHERE invitation_id = ${invitationId} AND guest_name IS NOT NULL GROUP BY 1`,
+      ]);
+      const openedAtMap = new Map(openedRows.map((r) => [r.name, r.opened_at]));
 
-      let csv = "No,Nama Tamu,Kategori,Nomor WhatsApp,Meja,Status Check-in,Jumlah Kuota\n";
+      let csv = "No,Nama Tamu,Kategori,Nomor WhatsApp,Meja,Status Dibuka,Status Check-in,Status Souvenir,Waktu Ambil Souvenir,Jumlah Kuota\n";
       guests.forEach((g, idx) => {
+        const openedAt = openedAtMap.get(g.name.trim().toLowerCase());
+        const openedStatus = openedAt
+          ? `Dibuka (${new Date(openedAt).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })})`
+          : "Belum Dibuka";
         const checkinStatus = g.isTokenRedeemed ? "Hadir (Checked-In)" : "Belum Check-in";
+        const souvenirStatus = g.souvenirClaimed ? "Sudah Diambil" : "Belum";
+        const souvenirAt = g.souvenirClaimedAt
+          ? new Date(g.souvenirClaimedAt).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })
+          : "-";
         const quota = g.guestQuota || 1;
-        csv += `${idx + 1},${csvCell(g.name)},${csvCell(g.category || "-")},${csvCell(g.phone || "-")},${csvCell(g.tableNumber || "-")},${csvCell(checkinStatus)},${quota}\n`;
+        csv += `${idx + 1},${csvCell(g.name)},${csvCell(g.category || "-")},${csvCell(g.phone || "-")},${csvCell(g.tableNumber || "-")},${csvCell(openedStatus)},${csvCell(checkinStatus)},${csvCell(souvenirStatus)},${csvCell(souvenirAt)},${quota}\n`;
       });
 
       return new NextResponse(csv, {
         headers: {
           "Content-Type": "text/csv; charset=utf-8",
           "Content-Disposition": `attachment; filename="Rekap-Kehadiran-Tamu-${couplePrefix}.csv"`,
+        },
+      });
+    }
+
+    if (type === "gifts") {
+      const items = parseGiftRegistryFromSettings(invitation.featureSettings);
+      const itemNameMap = new Map(items.map((item) => [item.id, item.name]));
+      const claims = await prisma.giftClaim.findMany({
+        where: { invitationId },
+        orderBy: { claimedAt: "desc" },
+      });
+
+      let csv = "No,Nama Kado,Nama Pengirim,Jumlah,Catatan,Waktu Klaim\n";
+      claims.forEach((c, idx) => {
+        const itemName = itemNameMap.get(c.itemId) || c.itemId;
+        const note = (c.note || "").replace(/\r?\n/g, " ");
+        const claimedAt = new Date(c.claimedAt).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" });
+        csv += `${idx + 1},${csvCell(itemName)},${csvCell(c.guestName)},${c.quantity || 1},${csvCell(note || "-")},${csvCell(claimedAt)}\n`;
+      });
+
+      return new NextResponse(csv, {
+        headers: {
+          "Content-Type": "text/csv; charset=utf-8",
+          "Content-Disposition": `attachment; filename="Rekap-Klaim-Kado-${couplePrefix}.csv"`,
         },
       });
     }

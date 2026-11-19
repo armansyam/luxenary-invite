@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
       if (!ownInvitation) {
         return NextResponse.json({
           success: true,
-          stats: { totalResponses: 0, attending: 0, declined: 0, uncertain: 0, totalWishes: 0 },
+          stats: { totalResponses: 0, attending: 0, declined: 0, uncertain: 0, totalWishes: 0, hiddenCount: 0 },
           rsvps: [],
           wishes: [],
         });
@@ -52,6 +52,7 @@ export async function GET(req: NextRequest) {
     const rsvps = await prisma.rsvp.findMany({
       where: { invitationId },
       orderBy: { respondedAt: "desc" },
+      omit: { editTokenHash: true },
       include: { guest: { select: { name: true, category: true, phone: true } } },
     });
 
@@ -61,6 +62,7 @@ export async function GET(req: NextRequest) {
       declined: rsvps.filter((r) => normalizeRsvpStatus(r.status) === "tidak").length,
       uncertain: rsvps.filter((r) => normalizeRsvpStatus(r.status) === "ragu").length,
       totalWishes: rsvps.filter((r) => r.message && r.message.trim().length > 0).length,
+      hiddenCount: rsvps.filter((r) => r.isHidden).length,
     };
 
     return NextResponse.json({

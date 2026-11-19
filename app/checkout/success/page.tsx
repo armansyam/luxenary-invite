@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { trackPurchaseOnce } from "@/lib/analytics";
 
 type OrderStatus = "PENDING" | "PAID" | "EXPIRED" | null;
 
@@ -55,7 +56,17 @@ function SuccessContent() {
         const invitationHref = data.linkedInvitationId ? `/dashboard/invitation/${data.linkedInvitationId}` : "/dashboard";
 
         if (status === "PAID") {
-          const target = data.orderType === "NEW" ? `/dashboard/setup?order=${orderId}` : invitationHref;
+          trackPurchaseOnce(orderId, {
+            value: Number(data.chargedAmount ?? data.amount ?? 0),
+            currency: "IDR",
+            plan: data.planType,
+          });
+          const target =
+            data.orderType === "NEW"
+              ? data.activatedInvitationId
+                ? `/dashboard/invitation/${data.activatedInvitationId}`
+                : `/dashboard/setup?order=${orderId}`
+              : invitationHref;
           timer = setTimeout(() => router.replace(target), 1800);
           return;
         }

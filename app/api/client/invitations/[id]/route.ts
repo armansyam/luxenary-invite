@@ -184,6 +184,15 @@ export async function PUT(
 
     // ACTION: DEPLOY_AND_LOCK (Atomic Single Bake & Auto-Lock on Complete)
     if (body.action === "DEPLOY_AND_LOCK") {
+      if (currentInv.isFreeDraft && !isAdmin) {
+        return NextResponse.json(
+          {
+            error: "Draf gratis tidak dapat dipublikasikan sebelum paket diaktifkan. Silakan pilih paket terlebih dahulu.",
+            code: "FREE_DRAFT_PAYMENT_REQUIRED",
+          },
+          { status: 402 }
+        );
+      }
       if (lockStatus.isLocked && !lockStatus.isEmergencyUnlocked && !isAdmin) {
         return NextResponse.json(
           { error: "Akses darurat tidak aktif. Hubungi Administrator untuk membuka kunci terlebih dahulu." },
@@ -243,6 +252,21 @@ export async function PUT(
     let newSubdomain = body.subdomain !== undefined
       ? String(body.subdomain ?? "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "").replace(/^-+|-+$/g, "").slice(0, 63) || null
       : undefined;
+
+    // Draf gratis tidak boleh mengklaim/menyandera subdomain unik sebelum paket diaktifkan.
+    if (currentInv.isFreeDraft && !isAdmin) {
+      if (newSubdomain) {
+        return NextResponse.json(
+          {
+            error: "Subdomain eksklusif hanya dapat diklaim setelah paket diaktifkan.",
+            code: "FREE_DRAFT_SUBDOMAIN_BLOCKED",
+          },
+          { status: 403 }
+        );
+      }
+      newSubdomain = undefined;
+    }
+
     // Batas yang sama dengan /api/client/subdomain/check.
     if (newSubdomain && newSubdomain.length < 3) {
       return NextResponse.json({ error: "Subdomain minimal terdiri dari 3 karakter." }, { status: 400 });
@@ -251,7 +275,7 @@ export async function PUT(
     // Undangan pernikahan tanpa subdomain mendapat subdomain dari nama panggilan mempelai saat studio menyimpan peserta.
     // Subdomain turunan ini tidak diminta klien, jadi bentrok atau nama sistem tidak boleh menggagalkan penyimpanan nama:
     // nama sistem dilewati, nama yang sudah dipakai diberi akhiran seperti pada wizard pembuatan undangan.
-    if (newSubdomain === undefined && !currentInv.subdomain && currentInv.eventType === "WEDDING" && body.participantsJson !== undefined) {
+    if (!currentInv.isFreeDraft && newSubdomain === undefined && !currentInv.subdomain && currentInv.eventType === "WEDDING" && body.participantsJson !== undefined) {
       const { first, second } = participantNames("WEDDING", body.participantsJson);
       const groomPart = first.toLowerCase().replace(/[^a-z0-9]/g, "");
       const bridePart = second.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -343,6 +367,15 @@ export async function PUT(
             { status: 403 }
           );
         }
+      }
+      if (!isAdmin && body.status === "PUBLISHED" && currentInv.isFreeDraft) {
+        return NextResponse.json(
+          {
+            error: "Draf gratis tidak dapat dipublikasikan sebelum paket diaktifkan. Silakan pilih paket terlebih dahulu.",
+            code: "FREE_DRAFT_PAYMENT_REQUIRED",
+          },
+          { status: 402 }
+        );
       }
       if (!isAdmin && body.status === "PUBLISHED" && currentInv.status !== "PUBLISHED") {
         const nextEventDay = getPrimaryEventDate(body.eventData !== undefined ? body.eventData : currentInv.eventData);
@@ -474,6 +507,41 @@ export async function PUT(
         if (typeof url === "string" && url.trim() && !safeMediaUrl(url)) {
           return NextResponse.json({ error: `URL media ${slot} tidak valid.` }, { status: 400 });
         }
+      }
+
+      if (currentInv.isFreeDraft && !isAdmin) {
+        const existingMedia = await prisma.invitationMedia.findMany({
+          where: { invitationId: id },
+          select: { mediaSlot: true },
+        });
+        const projectedSlots = new Set<string>(existingMedia.map((m) => m.mediaSlot));
+        for (const [slot, url] of Object.entries(body.media)) {
+          if (!(VALID_MEDIA_SLOTS as readonly string[]).includes(slot)) continue;
+          if (safeMediaUrl(url)) projectedSlots.add(slot);
+          else projectedSlots.delete(slot);
+        }
+        if (projectedSlots.size > 3) {
+          return NextResponse.json(
+            {
+              error: "Draf gratis dibatasi maksimal 3 foto. Aktifkan paket untuk mengunggah lebih banyak foto.",
+              code: "FREE_DRAFT_PHOTO_LIMIT",
+            },
+            { status: 403 }
+          );
+        }
+      }
+    }
+
+    if (currentInv.isFreeDraft && !isAdmin && mergedFeatureSettings && typeof mergedFeatureSettings === "object") {
+      const fsObj = mergedFeatureSettings as Record<string, unknown>;
+      if (typeof fsObj.galleryDriveFolderUrl === "string" && fsObj.galleryDriveFolderUrl.trim()) {
+        return NextResponse.json(
+          {
+            error: "Galeri Google Drive hanya tersedia setelah paket diaktifkan.",
+            code: "FREE_DRAFT_MEDIA_BLOCKED",
+          },
+          { status: 403 }
+        );
       }
     }
 
@@ -631,6 +699,19 @@ export async function PATCH(
     if (body.featureSettings !== undefined) {
       const merged = await mergeFeatureSettingsInput(currentInv.featureSettings, body.featureSettings, currentInv.order?.planType, isAdmin);
       if (!merged.ok) return NextResponse.json({ error: merged.error }, { status: 400 });
+      if (
+        currentInv.isFreeDraft &&
+        !isAdmin &&
+        merged.value &&
+        typeof merged.value === "object" &&
+        typeof (merged.value as Record<string, unknown>).galleryDriveFolderUrl === "string" &&
+        String((merged.value as Record<string, unknown>).galleryDriveFolderUrl).trim()
+      ) {
+        return NextResponse.json(
+          { error: "Galeri Google Drive hanya tersedia setelah paket diaktifkan.", code: "FREE_DRAFT_MEDIA_BLOCKED" },
+          { status: 403 },
+        );
+      }
       updateData.featureSettings = merged.value;
     }
 
@@ -656,7 +737,7 @@ export async function PATCH(
     });
 
     // Invalidate L1 memory lookup cache
-    invalidateInvitationLookup(updated.invitationSlug, updated.subdomain);
+    invalidateInvitationLookup(updated.invitationSlug, updated.subdomain, updated.id);
 
     return NextResponse.json({
       success: true,

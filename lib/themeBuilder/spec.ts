@@ -262,6 +262,11 @@ export interface BuilderOrnament {
   slot?: OrnamentMediaSlot;
   /** Jendela transparan ornamen bingkai (0..1); diukur otomatis oleh server bila `slot` dipilih. */
   fit?: FrameFit | null;
+  /**
+   * Gambar ornamen ini milik tema sampai klien mengunggah foto ke slot ini, lalu foto klien menggantikannya di kotak
+   * yang sama (khusus ornamen gambar tanpa `slot`). Dipakai untuk ilustrasi tema di tempat foto personal.
+   */
+  replaceSlot?: OrnamentMediaSlot;
   /** Animasi berulang (loop) halus pada ornamen. */
   loop?: LoopAnimation;
 }
@@ -1087,10 +1092,14 @@ export const FREE_PHOTO_SHAPES = [
 ] as const;
 export type FreePhotoShape = (typeof FREE_PHOTO_SHAPES)[number]["id"];
 
-/** Foto seksi bebas: gambar pustaka/unggahan admin, atau slot foto klien (berganti saat klien mengunggah). */
+/**
+ * Foto seksi bebas: gambar pustaka/unggahan admin, slot foto klien (tersembunyi sampai klien mengunggah), atau gambar
+ * tema yang diganti foto klien setelah klien mengunggah ke slot itu (`replaceable`).
+ */
 export type FreeSectionPhoto =
   | { source: "asset"; src: string; shape: FreePhotoShape; position: "top" | "bottom" }
-  | { source: "slot"; slot: OrnamentMediaSlot; shape: FreePhotoShape; position: "top" | "bottom" };
+  | { source: "slot"; slot: OrnamentMediaSlot; shape: FreePhotoShape; position: "top" | "bottom" }
+  | { source: "replaceable"; src: string; slot: OrnamentMediaSlot; shape: FreePhotoShape; position: "top" | "bottom" };
 
 export interface FreeSectionCard {
   title: string;
@@ -1990,6 +1999,12 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
         if (!fit) { errors.push(`${label}: jendela bingkai tidak valid.`); continue; }
       }
     }
+    let replaceSlot: OrnamentMediaSlot | undefined;
+    if (o.replaceSlot !== undefined && o.replaceSlot !== null && o.replaceSlot !== "") {
+      if (text || slot) { errors.push(`${label}: hanya ornamen gambar tanpa slot bingkai yang bisa diganti foto klien.`); continue; }
+      replaceSlot = pickEnum<OrnamentMediaSlot>(o.replaceSlot, familyOrnamentMediaSlots(family).map((s) => s.id), `${label}: slot pengganti`, errors);
+      if (!replaceSlot) continue;
+    }
     let loop: LoopAnimation | undefined;
     if (o.loop !== undefined && o.loop !== null && o.loop !== "none") {
       const parsedLoop = pickEnum<LoopAnimation>(o.loop, loopIds, `${label}: animasi loop`, errors);
@@ -2016,6 +2031,7 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
       ...(before ? { before, gap: clamp(o.gap, ORNAMENT_GAP_LIMITS[0], ORNAMENT_GAP_LIMITS[1], DEFAULT_ORNAMENT_GAP) } : {}),
       ...(text ? { text } : {}),
       ...(slot ? { slot, ...(fit ? { fit } : {}) } : {}),
+      ...(replaceSlot ? { replaceSlot } : {}),
       ...(loop ? { loop } : {}),
     });
   }
@@ -2132,9 +2148,14 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
             const slot = pickEnum<OrnamentMediaSlot>(p.slot, familyOrnamentMediaSlots(family).map((s) => s.id), `${label}: slot foto`, errors);
             if (!slot) continue;
             photo = { source: "slot", slot, shape, position };
-          } else if (p.source === "asset") {
+          } else if (p.source === "asset" || p.source === "replaceable") {
             if (!(isAllowedOrnamentSrc(p.src) || (isAllowedBackdropSrc(p.src) && p.src !== ""))) { errors.push(`${label}: foto harus dari pustaka gambar.`); continue; }
-            photo = { source: "asset", src: p.src as string, shape, position };
+            if (p.source === "asset") photo = { source: "asset", src: p.src as string, shape, position };
+            else {
+              const slot = pickEnum<OrnamentMediaSlot>(p.slot, familyOrnamentMediaSlots(family).map((s) => s.id), `${label}: slot pengganti`, errors);
+              if (!slot) continue;
+              photo = { source: "replaceable", src: p.src as string, slot, shape, position };
+            }
           } else { errors.push(`${label}: sumber foto tidak dikenali.`); continue; }
         }
 
@@ -2314,13 +2335,13 @@ export function googleFontIds(fonts: BuilderFonts, blocks?: BuilderBlocks): stri
  * huruf, ukuran, dan warna; `line-height` ditulis di sini karena kelas `.lux-orn` di blueprint memakai 0 untuk gambar.
  * `scaleX(-1)` pada teks membalik tulisan, jadi cermin hanya berlaku untuk gambar.
  */
-export function ornamentStyle(o: Pick<BuilderOrnament, "x" | "y" | "anchor" | "width" | "rotate" | "opacity" | "flipX" | "flipY" | "text" | "before" | "gap" | "slot">): string {
+export function ornamentStyle(o: Pick<BuilderOrnament, "x" | "y" | "anchor" | "width" | "rotate" | "opacity" | "flipX" | "flipY" | "text" | "before" | "gap" | "slot" | "replaceSlot">): string {
   const flip = o.text ? 1 : o.flipX ? -1 : 1;
   const flipY = !o.text && o.flipY ? " scaleY(-1)" : "";
   let base: string;
   if (o.before) {
     // Elemen alur: di tengah kolom, ikut menambah tinggi halaman, tanpa posisi absolut.
-    base = `display:block;width:${o.width}%;margin:${o.gap ?? DEFAULT_ORNAMENT_GAP}px auto;opacity:${o.opacity};transform:rotate(${o.rotate}deg) scaleX(${flip})${flipY};${o.slot ? "position:relative;" : ""}`;
+    base = `display:block;width:${o.width}%;margin:${o.gap ?? DEFAULT_ORNAMENT_GAP}px auto;opacity:${o.opacity};transform:rotate(${o.rotate}deg) scaleX(${flip})${flipY};${o.slot || o.replaceSlot ? "position:relative;" : ""}`;
   } else {
     const vertical = o.anchor === "bottom" ? `bottom:${o.y}%` : `top:${o.y}%`;
     const shiftY = o.anchor === "bottom" ? "50%" : "-50%";

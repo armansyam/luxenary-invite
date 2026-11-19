@@ -7,6 +7,7 @@ import { logger } from "@/lib/logger";
 import { invalidateSettingsCache } from "@/lib/settings";
 import { EVENT_TYPES } from "@/lib/invitationUtils";
 import { defaultAdminSettings } from "@/prisma/defaultSettings";
+import { sanitizeGa4MeasurementId, sanitizeMetaPixelId, sanitizeTikTokPixelId } from "@/lib/pixelValidation";
 
 export const dynamic = "force-dynamic";
 
@@ -70,6 +71,25 @@ export async function POST(req: NextRequest) {
 
     // Nilai tanpa jenis acara yang dikenal akan dibaca sebagai "semua jenis acara"; tolak alih-alih membuka semuanya diam-diam.
     for (const u of updates) {
+      if (u?.key === "meta_pixel_id") {
+        const raw = String(u.value ?? "").trim();
+        if (raw && !sanitizeMetaPixelId(raw)) {
+          return NextResponse.json({ error: "Meta Pixel ID harus berupa 8–20 digit angka." }, { status: 400 });
+        }
+        u.value = raw;
+      } else if (u?.key === "tiktok_pixel_id") {
+        const raw = String(u.value ?? "").trim();
+        if (raw && !sanitizeTikTokPixelId(raw)) {
+          return NextResponse.json({ error: "TikTok Pixel ID harus berupa 10–30 karakter huruf/angka." }, { status: 400 });
+        }
+        u.value = raw;
+      } else if (u?.key === "ga4_measurement_id") {
+        const raw = String(u.value ?? "").trim().toUpperCase();
+        if (raw && !sanitizeGa4MeasurementId(raw)) {
+          return NextResponse.json({ error: "Google Analytics 4 Measurement ID harus berformat G-XXXXXXXX." }, { status: 400 });
+        }
+        u.value = raw;
+      }
       if (u?.key !== "enabled_event_types") continue;
       const picked = String(u.value ?? "").split(",").map((s) => s.trim().toUpperCase()).filter((s) => (EVENT_TYPES as readonly string[]).includes(s));
       if (!picked.length) {

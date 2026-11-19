@@ -5,6 +5,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useEffect, useState, useRef } from "react";
 import { BrandLogo } from "@/components/BrandLogo";
+import { ClientInvitationProvider, useClientInvitation } from "@/components/client/ClientInvitationContext";
+import { FreeDraftBanner } from "@/components/client/FreeDraftBanner";
+import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 const navItems = [
   {
     href: "/dashboard",
@@ -169,8 +172,8 @@ export default function ClientDashboardLayout({
       fetch("/api/client/onboarding-state", { cache: "no-store" })
         .then((res) => res.json())
         .then((data) => {
-          if (!data || !data.hasPaidOrder) {
-            // User belum bayar / belum aktif: Lempar seketika tanpa membuka izin render
+          if (!data || (!data.hasPaidOrder && !data.hasFreeDraft)) {
+            // User belum bayar / belum aktif dan tidak punya draf gratis: Lempar seketika tanpa membuka izin render
             router.replace(data?.redirectUrl || "/onboarding");
           } else {
             setIsAuthorized(true);
@@ -227,33 +230,110 @@ export default function ClientDashboardLayout({
   // Khusus rute /dashboard/setup (wizard inisiasi): render anak tanpa menimpa header dasbor klien
   if (pathname === "/dashboard/setup") {
     return (
-      <div className="dash-shell min-h-screen bg-[#faf8f5] text-stone-900 font-sans flex flex-col selection:bg-amber-100 selection:text-amber-900">
-        {remoteBanner}
-        {children}
-      </div>
+      <ClientInvitationProvider enabled={isAuthorized}>
+        <div className="dash-shell min-h-screen bg-[#faf8f5] text-stone-900 font-sans flex flex-col selection:bg-amber-100 selection:text-amber-900">
+          {remoteBanner}
+          {children}
+        </div>
+      </ClientInvitationProvider>
     );
   }
+
+  return (
+    <ClientInvitationProvider enabled={isAuthorized}>
+      <DashboardShellInner
+        pathname={pathname}
+        navItems={navItems}
+        session={session}
+        waContact={waContact}
+        platformName={platformName}
+        remoteBanner={remoteBanner}
+        isDockVisible={isDockVisible}
+      >
+        {children}
+      </DashboardShellInner>
+    </ClientInvitationProvider>
+  );
+}
+
+function DashboardShellInner({
+  pathname,
+  navItems: items,
+  session,
+  waContact,
+  platformName,
+  remoteBanner,
+  isDockVisible,
+  children,
+}: {
+  pathname: string;
+  navItems: typeof navItems;
+  session: any;
+  waContact: string;
+  platformName: string;
+  remoteBanner: React.ReactNode;
+  isDockVisible: boolean;
+  children: React.ReactNode;
+}) {
+  const { invitations, activeInvitation, activeInvitationId, setActiveInvitationId } = useClientInvitation();
+  const resolveHref = (href: string) =>
+    href === "/dashboard/invitation" && activeInvitationId
+      ? `/dashboard/invitation/${activeInvitationId}`
+      : href;
 
   return (
     <div className="dash-shell min-h-screen bg-[#faf8f5] text-stone-900 font-sans flex flex-col selection:bg-amber-100 selection:text-amber-900">
 
       {/* Top Header (Desktop & Mobile) */}
       <header className="bg-white border-b border-stone-200/80 sticky top-0 z-40 backdrop-blur-md bg-white/95">
-        <div className="w-full px-4 sm:px-6 py-2.5 flex items-center justify-between relative">
+        <div className="w-full px-4 sm:px-6 py-2.5 flex items-center justify-between gap-2 relative">
           
-          {/* Brand */}
-          <Link href="/dashboard" className="flex items-center gap-2.5 group shrink-0">
-            <BrandLogo size="sm" lightBg showName brandName="Dasbor Klien" />
-          </Link>
+          <div className="flex items-center gap-2.5 min-w-0 shrink-0">
+            {/* Brand */}
+            <Link href="/dashboard" className="flex items-center gap-2.5 group shrink-0">
+              <BrandLogo size="sm" lightBg showName brandName="Dasbor Klien" />
+            </Link>
+
+            {invitations.length > 1 && (
+              <div className="flex items-center">
+                <label htmlFor="client-inv-switcher" className="sr-only">Pilih Undangan Aktif</label>
+                <select
+                  id="client-inv-switcher"
+                  value={activeInvitationId}
+                  onChange={(e) => setActiveInvitationId(e.target.value)}
+                  className="max-w-[150px] sm:max-w-[200px] px-2.5 py-1.5 text-[11px] font-semibold text-stone-800 bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:border-amber-700 cursor-pointer truncate"
+                >
+                  {invitations.map((inv) => (
+                    <option key={inv.id} value={inv.id}>
+                      {resolveInvitationDisplayName(inv)} ({inv.isFreeDraft ? "Draf Gratis" : inv.status})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {invitations.some((inv) => !inv.isFreeDraft) && (
+              <Link
+                href="/packages?new=1"
+                title="Pesan undangan baru tambahan"
+                className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-semibold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 rounded-lg transition shrink-0"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Undangan Baru</span>
+              </Link>
+            )}
+          </div>
 
           {/* Desktop Center Navigation Bar (Visible only on md: and above) */}
           <nav aria-label="Navigasi Utama Desktop" className="hidden md:flex items-center gap-1 bg-stone-100/90 p-1 rounded-full border border-stone-200/80 shadow-2xs absolute left-1/2 -translate-x-1/2">
-            {navItems.map((item) => {
+            {items.map((item) => {
               const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
               return (
                 <Link
                   key={item.href}
-                  href={item.href}
+                  href={resolveHref(item.href)}
                   className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
                     isActive
                       ? "bg-white text-stone-900 shadow-xs border border-stone-200/60"
@@ -304,6 +384,11 @@ export default function ClientDashboardLayout({
           ? "max-w-[1600px] px-0 sm:px-6 pt-0 sm:pt-4 pb-20 md:pb-12"
           : "max-w-6xl px-4 sm:px-6 pt-3 sm:pt-4 pb-28 md:pb-12"
       }`}>
+        {activeInvitation?.isFreeDraft && !pathname.startsWith("/dashboard/invitation") && (
+          <div className="mb-4">
+            <FreeDraftBanner createdAt={activeInvitation.createdAt} />
+          </div>
+        )}
         {children}
       </main>
 
@@ -318,12 +403,12 @@ export default function ClientDashboardLayout({
           }`}
         >
           <div className="bg-white/90 backdrop-blur-2xl border border-stone-200/80 shadow-xl shadow-stone-900/10 rounded-2xl p-1 flex items-center gap-0.5">
-          {navItems.map((item) => {
+          {items.map((item) => {
             const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={resolveHref(item.href)}
                 aria-label={item.label}
                 aria-current={isActive ? "page" : undefined}
                 className={`flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 h-14 rounded-xl transition-colors duration-200 active:scale-95 ${

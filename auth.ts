@@ -42,6 +42,42 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         };
 
+        // PORTAL KLIEN OTP EMAIL (6 digit OTP via SMTP untuk peramban tanpa Google OAuth seperti WebView IG/TikTok)
+        if (portal === "CLIENT_OTP") {
+          if (!emailOrUser || !password) return failed();
+          const { verifyAndConsumeOtp } = await import("@/lib/emailOtp");
+          const otpCheck = await verifyAndConsumeOtp(emailOrUser, "CLIENT_LOGIN", password);
+          if (!otpCheck.ok) {
+            return failed();
+          }
+
+          let client = await prisma.user.findUnique({ where: { email: emailOrUser } });
+          if (!client) {
+            const { getServiceAvailability } = await import("@/lib/settings");
+            const availability = await getServiceAvailability();
+            if (!availability.isOpen) {
+              return failed();
+            }
+            const defaultName = emailOrUser.split("@")[0] || "Tamu";
+            client = await prisma.user.create({
+              data: {
+                email: emailOrUser,
+                name: defaultName,
+                role: "CLIENT",
+              },
+            });
+          }
+
+          return {
+            id: client.id,
+            name: client.name,
+            email: client.email,
+            role: client.role || "CLIENT",
+            permissions: [],
+            isAdmin: false,
+          };
+        }
+
         // PORTAL ADMIN (Verifikasi username/email & bcrypt hash)
         if (portal !== "ADMIN") {
           return failed();

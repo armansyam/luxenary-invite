@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { routeError } from "@/lib/routeError";
 import { rateLimitDb } from "@/lib/rateLimit";
-import { BoundedMemoryCache } from "@/lib/cache";
+import { rsvpListCache, invalidateRsvpListCache } from "@/lib/rsvpCache";
 import { normalizeRsvpStatus, RSVP_NAME_MAX, RSVP_MESSAGE_MAX } from "@/lib/rsvpStatus";
 import { exceedsDeclaredBodySize } from "@/lib/requestLimits";
 import { SAMPLE_WISHES } from "@/lib/demoInvitation";
@@ -16,9 +16,7 @@ import {
 
 // Batas RSVP tidak memakai IP: tamu yang memakai operator seluler yang sama berbagi IP publik (CGNAT), sehingga batas per IP
 // menolak tamu sah saat link disebar ke ratusan tamu sekaligus. Daftar ucapan dibaca setiap kali undangan dibuka, jadi
-// tidak dibatasi sama sekali; database dilindungi cache singkat per undangan yang dihapus begitu ada RSVP baru.
-const RSVP_LIST_TTL_MS = 15_000;
-const rsvpListCache = new BoundedMemoryCache<{ success: true; rsvps: unknown[] }>(2000, RSVP_LIST_TTL_MS);
+// tidak dibatasi sama sekali; database dilindungi cache singkat per undangan (`lib/rsvpCache.ts`) yang dihapus saat ada perubahan.
 
 export async function GET(req: NextRequest) {
   try {
@@ -60,7 +58,7 @@ export async function GET(req: NextRequest) {
     }
 
     const rsvps = await prisma.rsvp.findMany({
-      where: { invitationId },
+      where: { invitationId, isHidden: false },
       orderBy: { respondedAt: "desc" },
       take: 50,
       select: {
@@ -69,6 +67,8 @@ export async function GET(req: NextRequest) {
         status: true,
         guestCount: true,
         message: true,
+        replyMessage: true,
+        repliedAt: true,
         respondedAt: true,
       },
     });
@@ -255,7 +255,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    rsvpListCache.delete(invitationId);
+    invalidateRsvpListCache(invitationId);
     const response = NextResponse.json({
       success: true,
       message: "RSVP berhasil dikirim. Terima kasih atas konfirmasinya!",

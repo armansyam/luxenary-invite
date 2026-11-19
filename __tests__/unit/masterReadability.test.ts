@@ -16,8 +16,8 @@ describe("keterbacaan teks master (18 Nov 2026)", () => {
   });
 
   it("blok kartu buatan mesin memakai token kartu dengan cadangan token lama", () => {
-    const engine = read("lib/themeEngine.ts");
-    for (const fn of ["function buildUniversalGiftSection(", "function buildUniversalQrPass(", "function buildUniversalCountdown(", "function buildUniversalWishesSection("]) {
+    const engine = read("lib/themeEngine.ts") + "\n" + read("lib/themeEngine/wishes.ts");
+    for (const fn of ["function buildUniversalGiftSection(", "function buildUniversalQrPass(", "function buildUniversalCountdown(", "function buildUniversalWishesSectionHtml("]) {
       const body = block(engine, fn);
       expect(body, fn).not.toBe("");
       expect(body, fn).toContain("var(--card-text, var(--text-main))");

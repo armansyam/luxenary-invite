@@ -231,8 +231,18 @@ export async function POST(req: NextRequest) {
       // If this is an UPGRADE order, update planType on the linked original order
       await applyUpgradePlan(orderId);
 
+      const activatedInv =
+        order.orderType === "NEW"
+          ? await prisma.invitation.findUnique({ where: { orderId }, select: { id: true } })
+          : null;
+
       // Push notifikasi real-time ke browser klien via SSE
-      paymentEmitter.emit(orderId, { status: "PAID", planType: order.planType });
+      paymentEmitter.emit(orderId, {
+        status: "PAID",
+        planType: order.planType,
+        orderType: order.orderType,
+        activatedInvitationId: activatedInv?.id ?? null,
+      });
 
       logger.info("MidtransWebhook", `Order ${orderId} settlement processed.`, {
         orderId,

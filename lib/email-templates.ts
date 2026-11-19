@@ -66,6 +66,13 @@ export interface TestSmtpOptions {
   timestamp: string;
 }
 
+export interface LoginOtpEmailOptions {
+  recipientEmail: string;
+  code: string;
+  purpose: "CLIENT_LOGIN" | "PARTNER_LOGIN";
+  expiresMinutes?: number;
+}
+
 export interface EmailTemplateMeta {
   key: string;
   name: string;
@@ -644,6 +651,44 @@ export function buildProofUploadedAdminHtml(
 }
 
 /**
+ * 6. Kode OTP Masuk Akun (Klien & Mitra)
+ */
+export function buildLoginOtpHtml(
+  opts: LoginOtpEmailOptions,
+  settings?: { platformName?: string },
+): { subject: string; html: string; text: string } {
+  const platformName = settings?.platformName || "LUXVITE";
+  const isPartner = opts.purpose === "PARTNER_LOGIN";
+  const portalLabel = isPartner ? "Portal Mitra & Affiliate" : "Dasbor Undangan";
+  const expiresMinutes = opts.expiresMinutes ?? 10;
+  const safeCode = escapeHtml(opts.code);
+
+  const subject = `[${platformName}] Kode Verifikasi Masuk: ${opts.code}`;
+  const text = `Kode verifikasi masuk ${portalLabel} ${platformName}: ${opts.code}. Berlaku ${expiresMinutes} menit. Jangan bagikan kode ini kepada siapa pun.`;
+
+  const html = `<!DOCTYPE html>
+<html lang="id">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${escapeHtml(subject)}</title></head>
+<body style="margin:0;padding:24px;background:#faf8f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1c1917;">
+  <div style="max-width:480px;margin:0 auto;background:#ffffff;border:1px solid #e7e5e4;border-radius:20px;padding:32px;">
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#92400e;">${escapeHtml(platformName)}</div>
+      <h1 style="font-size:20px;margin:8px 0 4px;color:#1c1917;">Kode Verifikasi Masuk</h1>
+      <p style="font-size:13px;color:#78716c;margin:0;">${escapeHtml(portalLabel)}</p>
+    </div>
+    <p style="font-size:13px;line-height:1.6;color:#44403c;">Gunakan kode OTP 6 digit di bawah ini untuk masuk ke akun <strong>${escapeHtml(opts.recipientEmail)}</strong>:</p>
+    <div style="margin:24px 0;padding:18px;background:#faf8f5;border:1px dashed #d97706;border-radius:14px;text-align:center;">
+      <span style="font-family:monospace;font-size:32px;font-weight:800;letter-spacing:8px;color:#1c1917;">${safeCode}</span>
+    </div>
+    <p style="font-size:12px;color:#78716c;line-height:1.5;margin:0;">Kode ini berlaku selama <strong>${expiresMinutes} menit</strong> dan hanya dapat dipakai satu kali. Bila Anda tidak merasa meminta kode ini, abaikan email ini.</p>
+  </div>
+</body>
+</html>`;
+
+  return { subject, html, text };
+}
+
+/**
  * ─────────────────────────────────────────────────────────────────────────────
  * EMAIL TEMPLATES CATALOGUE
  * Definisi seluruh varian untuk pratinjau dan pengujian di /admin/emails
@@ -905,5 +950,31 @@ export const EMAIL_TEMPLATE_CATALOG: EmailTemplateMeta[] = [
       };
       return buildProofUploadedAdminHtml(merged, settings);
     },
+  },
+  {
+    key: "CLIENT_LOGIN_OTP",
+    name: "Kode Verifikasi OTP Masuk Akun",
+    category: "SISTEM",
+    badgeText: "Autentikasi",
+    description: "Kode OTP 6 digit untuk masuk akun klien atau portal mitra tanpa password.",
+    triggerEvent: "Pengguna meminta kode OTP pada halaman login",
+    recipientTarget: "Klien / Mitra Affiliate",
+    samplePayload: {
+      recipientEmail: "pengguna@example.com",
+      code: "482910",
+      purpose: "CLIENT_LOGIN",
+      expiresMinutes: 10,
+    },
+    render: (overrides = {}, settings = {}) =>
+      buildLoginOtpHtml(
+        {
+          recipientEmail: "pengguna@example.com",
+          code: "482910",
+          purpose: "CLIENT_LOGIN",
+          expiresMinutes: 10,
+          ...overrides,
+        },
+        settings,
+      ),
   },
 ];

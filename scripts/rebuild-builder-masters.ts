@@ -14,10 +14,12 @@
 import "dotenv/config";
 import fs from "fs";
 import path from "path";
+import { Prisma } from "@prisma/client";
 import { prisma, pool } from "../lib/prisma";
 import { builderMasterPath, compileAndAudit, storedBuilderSpec, THEME_ASSET_DIR, type BuilderCategory } from "../lib/themeBuilder/server";
-import { readBundle, writeBundleAssets } from "../lib/themeBuilder/bundle";
+import { readBundle, uploadedAssetFiles, writeBundleAssets } from "../lib/themeBuilder/bundle";
 import { ensureSpecFonts } from "../lib/themeBuilder/fonts";
+import { builderMediaSlots } from "../lib/themeBuilder/mediaSlots";
 
 const APPLY = process.argv.includes("--apply");
 const assetsFromIdx = process.argv.indexOf("--assets-from");
@@ -47,9 +49,13 @@ async function main() {
     if (!ASSETS_FROM || !fs.existsSync(ASSETS_FROM)) throw new Error("--assets-from membutuhkan folder berkas ekspor yang ada.");
     await restoreAssets(ASSETS_FROM);
   }
-  const themes = await prisma.theme.findMany({ where: { builderSpec: { not: null as never } }, select: { id: true, category: true, builderSpec: true } });
+  const themes = await prisma.theme.findMany({
+    where: { builderSpec: { not: null as never } },
+    select: { id: true, category: true, builderSpec: true, mediaSlots: true },
+  });
   let missing = 0;
   let differs = 0;
+  let slotsDiffer = 0;
   let broken = 0;
   let lostAssets = 0;
   for (const theme of themes) {
@@ -65,12 +71,24 @@ async function main() {
       broken++;
       continue;
     }
-    const assets = [spec.texture, ...Object.values(spec.defaultMedia), ...spec.ornaments.map((o) => o.src), ...Object.values(spec.frames).map((f) => f.ornament)]
-      .filter((src): src is string => typeof src === "string" && src.startsWith("/uploads/theme-assets/"));
-    for (const src of new Set(assets)) {
+    for (const fileName of uploadedAssetFiles(spec)) {
+      const src = `/uploads/theme-assets/${fileName}`;
       if (!fs.existsSync(path.join(process.cwd(), "public", src))) {
         console.error(`ASET    ${theme.id}: ${src} tidak ada di disk`);
         lostAssets++;
+      }
+    }
+
+    const nextSlots = builderMediaSlots(spec);
+    const slotNeedsSync = JSON.stringify(theme.mediaSlots ?? null) !== JSON.stringify(nextSlots);
+    if (slotNeedsSync) {
+      slotsDiffer++;
+      console.log(`SLOT    ${theme.id} -> mediaSlots diperbarui`);
+      if (APPLY) {
+        await prisma.theme.update({
+          where: { id: theme.id },
+          data: { mediaSlots: nextSlots as Prisma.InputJsonValue },
+        });
       }
     }
 
@@ -87,7 +105,7 @@ async function main() {
       await fs.promises.writeFile(file, compiled.html, "utf-8");
     }
   }
-  console.log(`\nTema builder: ${themes.length}; master hilang: ${missing}; berbeda dari hasil kompilasi: ${differs}; gagal: ${broken}; aset unggahan hilang: ${lostAssets}`);
+  console.log(`\nTema builder: ${themes.length}; master hilang: ${missing}; berbeda dari hasil kompilasi: ${differs}; slot berbeda: ${slotsDiffer}; gagal: ${broken}; aset unggahan hilang: ${lostAssets}`);
   console.log(APPLY ? "Master ditulis." : "Rencana saja. Jalankan dengan --apply untuk menulis.");
   if (broken || lostAssets) process.exitCode = 1;
 }

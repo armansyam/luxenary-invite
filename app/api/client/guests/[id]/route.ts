@@ -45,24 +45,37 @@ export async function GET(
 
     // Ringkasan untuk dasbor: hitungan saja, tanpa memuat seluruh tamu beserta RSVP-nya.
     if (new URL(req.url).searchParams.get("summary") === "1") {
-      const [guestCount, waSentCount, checkedInCount, visits, opened] = await Promise.all([
+      const [guestCount, waSentCount, checkedInCount, souvenirCount, visits, opened, unopenedVipRows] = await Promise.all([
         prisma.guest.count({ where: { invitationId: id } }),
         prisma.guest.count({ where: { invitationId: id, waStatus: "SENT" } }),
         prisma.guest.count({ where: { invitationId: id, isTokenRedeemed: true } }),
+        prisma.guest.count({ where: { invitationId: id, souvenirClaimed: true } }),
         prisma.invitationVisit.aggregate({ where: { invitationId: id }, _sum: { visitCount: true }, _count: true }),
         prisma.$queryRaw<{ total: bigint }[]>`
           SELECT COUNT(*) AS total FROM guests g
           WHERE g."invitationId" = ${id} AND EXISTS (
             SELECT 1 FROM invitation_visits v
             WHERE v.invitation_id = g."invitationId" AND lower(trim(v.guest_name)) = lower(trim(g.name)))`,
+        prisma.$queryRaw<{ id: string; name: string }[]>`
+          SELECT g.id, g.name FROM guests g
+          WHERE g."invitationId" = ${id}
+            AND upper(coalesce(g.category, '')) = 'VIP'
+            AND NOT EXISTS (
+              SELECT 1 FROM invitation_visits v
+              WHERE v.invitation_id = g."invitationId" AND lower(trim(v.guest_name)) = lower(trim(g.name))
+            )
+          ORDER BY g."createdAt" DESC
+          LIMIT 5`,
       ]);
       return NextResponse.json({
         guestCount,
         waSentCount,
         checkedInCount,
+        souvenirCount,
         openCount: visits._sum.visitCount ?? 0,
         visitorCount: visits._count,
         openedGuestCount: Number(opened[0].total),
+        unopenedVipGuests: unopenedVipRows,
       });
     }
 

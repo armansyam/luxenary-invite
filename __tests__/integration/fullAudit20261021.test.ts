@@ -76,9 +76,9 @@ afterAll(async () => {
     await prisma.musicPreset.deleteMany({ where: { title: { startsWith: TAG } } });
     fs.rmSync(UPLOAD_DIR, { recursive: true, force: true });
     fs.rmSync(path.join(ROOT, "public", "demo", DEMO_THEME), { recursive: true, force: true });
-    fs.rmSync(THEME_FILE, { force: true });
     for (const f of fs.readdirSync(path.join(ROOT, "public", "uploads", "music")).filter((f) => f.startsWith(TAG.replace(/_/g, "-")))) fs.rmSync(path.join(ROOT, "public", "uploads", "music", f));
   }
+  fs.rmSync(THEME_FILE, { force: true });
   await prisma.$disconnect();
   await pool.end();
 });
@@ -149,12 +149,16 @@ describe.skipIf(!IS_TEST_DB)("musik admin dinilai dari isi berkas", () => {
 describe("tema unggahan admin dapat dirender", () => {
   it("entri dibaca dari letak berkas master; nama tidak sah atau tidak ada -> undefined", async () => {
     fs.writeFileSync(THEME_FILE, "<!DOCTYPE html><html><body><p id=\"uji\">{{groomName}}</p></body></html>");
-    expect(resolveThemeEntry(THEME_ID)).toEqual({ file: `${THEME_ID}.html`, eventType: "wedding", style: "modern" });
-    expect(resolveThemeEntry("kalandra")?.style).toBe("minimalist");
-    expect(resolveThemeEntry("../../package")).toBeUndefined();
-    expect(resolveThemeEntry("tidak-ada-tema-uji")).toBeUndefined();
-    const html = await renderTemplateFile(THEME_ID, { groomName: "Raka Uji" });
-    expect(html).toContain("Raka Uji");
+    try {
+      expect(resolveThemeEntry(THEME_ID)).toEqual({ file: `${THEME_ID}.html`, eventType: "wedding", style: "modern" });
+      expect(resolveThemeEntry("kalandra")?.style).toBe("minimalist");
+      expect(resolveThemeEntry("../../package")).toBeUndefined();
+      expect(resolveThemeEntry("tidak-ada-tema-uji")).toBeUndefined();
+      const html = await renderTemplateFile(THEME_ID, { groomName: "Raka Uji" });
+      expect(html).toContain("Raka Uji");
+    } finally {
+      fs.rmSync(THEME_FILE, { force: true });
+    }
   });
 });
 

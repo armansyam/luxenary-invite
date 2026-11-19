@@ -4,6 +4,7 @@ import { getDynamicServerRootDomain } from "./serverDomainUtils";
 import { normalizePlanType } from "./planUtils";
 import { formatRetentionLabel, parseLifecycleSettings } from "./lifecycleDates";
 import { parseEnabledEventTypes } from "./invitationUtils";
+import { sanitizeGa4MeasurementId, sanitizeMetaPixelId, sanitizeTikTokPixelId } from "./pixelValidation";
 
 export interface PricingPackageItem {
   id: "TIER_1" | "TIER_2" | "TIER_3";
@@ -68,6 +69,9 @@ export interface PublicPlatformSettings {
   landingFeature2Desc: string;
   landingFeature3Title: string;
   landingFeature3Desc: string;
+  metaPixelId: string;
+  tiktokPixelId: string;
+  ga4MeasurementId: string;
   serviceStatus: ServiceStatusSettings;
 }
 
@@ -329,6 +333,9 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     landingFeature2Desc: map["landing_feature_2_desc"] || "Generator link pintar per tamu, form RSVP dengan QR Code terintegrasi, dan auto-redirect kirim undangan via WhatsApp.",
     landingFeature3Title: map["landing_feature_3_title"] || "Buku Tamu Digital (QR Code)",
     landingFeature3Desc: map["landing_feature_3_desc"] || "Manajemen check-in tamu VIP secara real-time di resepsionis menggunakan scanner QR Code pintar.",
+    metaPixelId: sanitizeMetaPixelId(map["meta_pixel_id"]),
+    tiktokPixelId: sanitizeTikTokPixelId(map["tiktok_pixel_id"]),
+    ga4MeasurementId: sanitizeGa4MeasurementId(map["ga4_measurement_id"]),
     packages: [
       {
         id: "TIER_1",

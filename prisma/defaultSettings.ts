@@ -29,6 +29,24 @@ export const defaultSettings: DefaultSettingItem[] = [
     "group": "platform"
   },
   {
+    "key": "meta_pixel_id",
+    "value": "",
+    "label": "Meta Pixel ID (Facebook / Instagram Ads)",
+    "group": "analytics"
+  },
+  {
+    "key": "tiktok_pixel_id",
+    "value": "",
+    "label": "TikTok Pixel ID",
+    "group": "analytics"
+  },
+  {
+    "key": "ga4_measurement_id",
+    "value": "",
+    "label": "Google Analytics 4 Measurement ID (G-XXXXXXXX)",
+    "group": "analytics"
+  },
+  {
     "id": "53249c2c-8d5e-452d-b7b3-b7f0210f212c",
     "key": "addon_memories_topup_enabled",
     "value": "true",

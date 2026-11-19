@@ -28,42 +28,58 @@ export async function GET() {
 
     const targetUserId = dbUser?.id || currentUserId;
 
-    // 1. Cek apakah user sudah memiliki undangan yang terbuat
-    const existingInvitation = await prisma.invitation.findFirst({
+    // 1. Cek order paket baru (NEW) lunas yang belum punya undangan terlebih dahulu
+    //    (mendukung pembelian undangan ke-2/multi-undangan agar langsung masuk ke setup wizard undangan baru).
+    const unlinkedPaidOrder = await prisma.order.findFirst({
+      where: { userId: targetUserId, status: "PAID", orderType: "NEW", invitation: { is: null } },
+      orderBy: { paidAt: "desc" },
+    });
+
+    if (unlinkedPaidOrder) {
+      return NextResponse.json({
+        step: "PAID_NEED_SETUP",
+        orderId: unlinkedPaidOrder.id,
+        planType: unlinkedPaidOrder.planType,
+        redirectUrl: `/dashboard/setup?order=${unlinkedPaidOrder.id}&plan=${unlinkedPaidOrder.planType}`,
+        hasPaidOrder: true,
+      });
+    }
+
+    // 2. Cek apakah user sudah memiliki undangan berbayar (non-free-draft)
+    const invitations = await prisma.invitation.findMany({
       where: { userId: targetUserId },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ isFreeDraft: "asc" }, { createdAt: "desc" }],
       select: {
         id: true,
         status: true,
         subdomain: true,
         invitationSlug: true,
         orderId: true,
+        isFreeDraft: true,
       },
     });
 
-    if (existingInvitation) {
+    const paidInvitation = invitations.find((inv) => !inv.isFreeDraft);
+    const freeDraft = invitations.find((inv) => inv.isFreeDraft);
+
+    if (paidInvitation) {
       return NextResponse.json({
         step: "COMPLETED",
-        invitation: existingInvitation,
+        invitation: paidInvitation,
         redirectUrl: "/dashboard",
         hasPaidOrder: true,
       });
     }
 
-    // 2. Cek apakah user sudah bayar lunas (PAID) tapi belum setup undangan
-    // Sesuai aturan: Yang sudah bayar langsung masuk ke dashboard setup studio
-    const paidOrder = await prisma.order.findFirst({
-      where: { userId: targetUserId, status: "PAID" },
-      orderBy: { createdAt: "desc" },
-    });
-
-    if (paidOrder) {
+    // 2b. Jika user hanya memiliki draf gratis, arahkan ke studio draf tetapi pertahankan hasPaidOrder: false
+    if (freeDraft) {
       return NextResponse.json({
-        step: "PAID_NEED_SETUP",
-        orderId: paidOrder.id,
-        planType: paidOrder.planType,
-        redirectUrl: `/dashboard/setup?order=${paidOrder.id}&plan=${paidOrder.planType}`,
-        hasPaidOrder: true,
+        step: "FREE_DRAFT",
+        invitation: freeDraft,
+        freeDraftId: freeDraft.id,
+        redirectUrl: `/dashboard/invitation/${freeDraft.id}`,
+        hasPaidOrder: false,
+        hasFreeDraft: true,
       });
     }
 

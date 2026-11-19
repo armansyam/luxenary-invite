@@ -203,7 +203,7 @@ export class CodeHygieneAuditor {
       "fade-in", "zoom-in", "rotate-disc", "revealed",
       "event-unified-venue-card", "event-block-item", "events-unified-container", "events-sessions-stack",
       "ev-venue-unified", "ev-addr-unified", "venue-card-lbl", "couple-groom", "couple-bride", "couple-gender-ornament",
-      "serif"
+      "wishes-stream-box", "serif"
     ]);
 
     for (const file of themeFiles) {

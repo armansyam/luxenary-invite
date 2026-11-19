@@ -7,17 +7,28 @@ import { getDynamicServerRootDomain } from "./serverDomainUtils";
  * domain akar lalu diambil dari NEXT_PUBLIC_ROOT_DOMAIN.
  */
 export async function purgeInvitationEdgeCache(inv: {
+  id?: string | null;
   invitationSlug: string | null;
   subdomain: string | null;
   customDomain?: string | null;
 }): Promise<Awaited<ReturnType<typeof purgeCloudflareCache>> | null> {
-  invalidateInvitationLookup(inv.invitationSlug, inv.subdomain);
+  invalidateInvitationLookup(inv.invitationSlug, inv.subdomain, inv.id);
   const rootDomain = (await getDynamicServerRootDomain("")).split(":")[0].toLowerCase();
   const urls: string[] = [];
   if (rootDomain && inv.subdomain) urls.push(`https://${inv.subdomain}.${rootDomain}/`);
   if (rootDomain && inv.invitationSlug) urls.push(`https://${rootDomain}/${inv.invitationSlug}`);
   if (inv.customDomain) urls.push(`https://${inv.customDomain}/`);
   return urls.length > 0 ? purgeCloudflareCache({ files: urls }) : null;
+}
+
+/** Membersihkan edge cache Cloudflare untuk halaman daftar dan detail portofolio saat admin menambah/menghapus. */
+export async function purgePortfolioEdgeCache(slug: string): Promise<Awaited<ReturnType<typeof purgeCloudflareCache>>> {
+  const origin = process.env.NEXT_PUBLIC_APP_URL || "";
+  if (!origin.startsWith("https://")) return { success: false, skipped: true, reason: "NEXT_PUBLIC_APP_URL bukan URL https" };
+  const apex = new URL(origin).host.replace(/^www\./, "");
+  const paths = ["/portfolio", `/portfolio/${slug}`];
+  const files = [...new Set([`https://${apex}`, `https://www.${apex}`].flatMap((host) => paths.map((p) => host + p)))];
+  return purgeCloudflareCache({ files });
 }
 
 /**

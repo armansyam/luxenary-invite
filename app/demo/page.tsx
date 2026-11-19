@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { BrandLogo } from "@/components/BrandLogo";
 import { isThemeCompatible, sortThemesForEvent } from "@/lib/invitationUtils";
+import { trackEvent } from "@/lib/analytics";
 import "./demo.css";
 
 interface ThemeItem {
@@ -51,6 +52,7 @@ export default function CatalogGridShowcase() {
   }, []);
 
   useEffect(() => {
+    trackEvent("ViewContent", { content_type: "demo_catalog" });
     fetch("/api/public/settings").then(r => r.json()).then(d => {
       if (d?.platformName) setPlatformName(d.platformName);
       if (Array.isArray(d?.enabledEventTypes)) setEnabledEventTypes(d.enabledEventTypes);

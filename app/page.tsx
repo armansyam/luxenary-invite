@@ -1205,9 +1205,18 @@ export default async function Home() {
     <p className="cta-desc reveal reveal-delay-2">
       Buat undangan digital Anda sekarang dan mulai bercerita dengan cara yang paling indah.
     </p>
-    <Link href="/login" className="btn-cta reveal reveal-delay-3" id="cta-main-btn">
-      Mulai Kisahmu
-    </Link>
+    <div className="flex flex-wrap items-center justify-center gap-3 reveal reveal-delay-3">
+      <Link href="/login" className="btn-cta" id="cta-main-btn">
+        Mulai Kisahmu
+      </Link>
+      <Link
+        href="/login"
+        className="btn-cta"
+        style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.45)" }}
+      >
+        Coba Draf Gratis
+      </Link>
+    </div>
   </div>
 </section>
 

@@ -544,6 +544,11 @@
       box-shadow: var(--shadow-soft);
       overflow: hidden;
     }
+    .fixed-bg-layer.has-custom-bg ~ .sec-flow:not(.sec-flow-hero),
+    .fixed-bg-layer.has-custom-bg ~ .sec-flow .hero-card-arch {
+      background-image: none;
+      background: color-mix(in srgb, var(--bg-light) 74%, transparent);
+    }
 
     .sec-flow-hero {
       padding: 3rem 1.5rem 3.5rem;

@@ -62,25 +62,38 @@ export async function POST(req: Request) {
   }
 
   // ── Guard: User must have a PAID order to create an invitation ──────────────
-  const paidOrder = await prisma.order.findFirst({
+  // Prioritaskan order NEW lunas yang belum punya undangan agar pembelian undangan ke-2 membuat baris baru,
+  // tidak menimpa draf undangan pertama.
+  const unlinkedPaidOrder = await prisma.order.findFirst({
     where: {
       userId: userId,
       status: "PAID",
-      // Hanya order paket dasar: order upgrade/add-on tidak punya undangan sendiri dan tidak boleh membuka hak undangan baru
       orderType: "NEW",
-      // No invitation linked yet — or linked invitation still DRAFT
-      OR: [
-        { invitation: null },
-        { invitation: { status: "DRAFT" } },
-      ],
+      invitation: { is: null },
     },
     orderBy: { paidAt: "desc" },
     include: { invitation: true },
   });
 
-  const existingDraft = paidOrder?.invitation || (await prisma.invitation.findFirst({
-    where: { userId: userId, status: "DRAFT" },
-  }));
+  const paidOrder =
+    unlinkedPaidOrder ||
+    (await prisma.order.findFirst({
+      where: {
+        userId: userId,
+        status: "PAID",
+        orderType: "NEW",
+        invitation: { status: "DRAFT" },
+      },
+      orderBy: { paidAt: "desc" },
+      include: { invitation: true },
+    }));
+
+  const existingDraft = unlinkedPaidOrder
+    ? null
+    : paidOrder?.invitation ||
+      (await prisma.invitation.findFirst({
+        where: { userId: userId, status: "DRAFT" },
+      }));
 
   if (!paidOrder && !existingDraft) {
     return NextResponse.json(

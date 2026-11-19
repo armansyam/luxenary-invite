@@ -47,8 +47,14 @@ const withOrnaments = (): BuilderSpec => ({
 });
 
 function studioLabelKeys(): string[] {
-  const studio = fs.readFileSync(path.join(ROOT, "app", "(client)", "dashboard", "invitation", "[id]", "page.tsx"), "utf8");
-  return [...new Set([...studio.matchAll(/updateCustomLabel\("([A-Za-z0-9_]+)"/g)].map((m) => m[1]))];
+  const studioDir = path.join(ROOT, "components", "client", "studio");
+  const sources = [
+    fs.readFileSync(path.join(ROOT, "app", "(client)", "dashboard", "invitation", "[id]", "page.tsx"), "utf8"),
+    ...(fs.existsSync(studioDir)
+      ? fs.readdirSync(studioDir).filter((f) => f.endsWith(".tsx")).map((f) => fs.readFileSync(path.join(studioDir, f), "utf8"))
+      : []),
+  ].join("\n");
+  return [...new Set([...sources.matchAll(/(?:updateCustomLabel|onUpdateLabel)\("([A-Za-z0-9_]+)"/g)].map((m) => m[1]))];
 }
 
 afterAll(async () => {
@@ -423,6 +429,8 @@ describe.skipIf(!IS_TEST_DB)("rute admin Theme Builder", () => {
     expect(fs.existsSync(path.join(ROOT, "themes", "wedding", "modern", `${themeId}.html`))).toBe(false);
     const row = await prisma.theme.findUniqueOrThrow({ where: { id: themeId } });
     expect(row).toMatchObject({ category: "traditional", series: "Traditional", name: "Vitest Builder 2" });
+    // Slot foto klien dihitung dari spesifikasi saat simpan; tema bawaan blueprint memakai ke-8 slot.
+    expect(Object.keys(row.mediaSlots as object).sort()).toEqual(["BRIDE_PHOTO", "CLOSING_COVER", "DESKTOP_SIDEBAR", "GLOBAL_FIXED_BG", "GROOM_PHOTO", "HOME_PHOTO", "LANDING_COVER", "LANDING_COVER_DESKTOP"]);
   });
 
   it("terbit hanya bila master lolos audit, lewat rute builder maupun daftar tema", async () => {

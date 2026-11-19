@@ -1,4 +1,5 @@
 import fs from "fs";
+import { autoHiddenOpeningPhoto } from "@/lib/themeBuilder/mediaSlots";
 import path from "path";
 import { animationPlan, designCss } from "@/lib/themeBuilder/designCss";
 import {
@@ -400,20 +401,24 @@ const VARIANT_CSS: Record<keyof BuilderVariants, Record<string, string>> = {
 
 const EAGER_SECTIONS = new Set(["cover", "sidebar", "opening"]);
 
-const ORNAMENT_SLOT_TOKEN: Record<BuilderFamily, Record<OrnamentMediaSlot, { token: string; cond?: string }>> = {
+/**
+ * `cond`: slot berisi gambar (boleh bawaan tema). `client`: gambar itu unggahan klien (lib/themeEngine.ts
+ * `clientPhotoFlags`), dipakai gambar tema yang diganti foto klien (`replaceSlot`, foto bebas `replaceable`).
+ */
+const ORNAMENT_SLOT_TOKEN: Record<BuilderFamily, Record<OrnamentMediaSlot, { token: string; cond?: string; client: string }>> = {
   wedding: {
-    HOME_PHOTO: { token: "homePhotoUrl", cond: "hasCustomHomePhoto" },
-    GROOM_PHOTO: { token: "firstPhotoUrl" },
-    BRIDE_PHOTO: { token: "secondPhotoUrl" },
-    LANDING_COVER: { token: "landingCoverUrl" },
-    CLOSING_COVER: { token: "closingPhotoUrl", cond: "closingPhotoUrl" },
+    HOME_PHOTO: { token: "homePhotoUrl", cond: "hasCustomHomePhoto", client: "clientHomePhoto" },
+    GROOM_PHOTO: { token: "firstPhotoUrl", client: "clientFirstPhoto" },
+    BRIDE_PHOTO: { token: "secondPhotoUrl", client: "clientSecondPhoto" },
+    LANDING_COVER: { token: "landingCoverUrl", client: "clientCoverPhoto" },
+    CLOSING_COVER: { token: "closingPhotoUrl", cond: "closingPhotoUrl", client: "clientClosingPhoto" },
   },
   single: {
-    HOME_PHOTO: { token: "homePhotoUrl", cond: "hasCustomHomePhoto" },
-    GROOM_PHOTO: { token: "mainPhotoUrl", cond: "mainPhotoUrl" },
-    BRIDE_PHOTO: { token: "mainPhotoUrl", cond: "mainPhotoUrl" },
-    LANDING_COVER: { token: "landingCoverUrl" },
-    CLOSING_COVER: { token: "closingPhotoUrl", cond: "closingPhotoUrl" },
+    HOME_PHOTO: { token: "homePhotoUrl", cond: "hasCustomHomePhoto", client: "clientHomePhoto" },
+    GROOM_PHOTO: { token: "mainPhotoUrl", cond: "mainPhotoUrl", client: "clientMainPhoto" },
+    BRIDE_PHOTO: { token: "mainPhotoUrl", cond: "mainPhotoUrl", client: "clientMainPhoto" },
+    LANDING_COVER: { token: "landingCoverUrl", client: "clientCoverPhoto" },
+    CLOSING_COVER: { token: "closingPhotoUrl", cond: "closingPhotoUrl", client: "clientClosingPhoto" },
   },
 };
 
@@ -464,6 +469,14 @@ function ornamentHtml(o: BuilderOrnament, family: BuilderFamily = "wedding", blo
     const frameStyle = o.before ? ' style="position:relative;z-index:1;display:block;width:100%;height:auto;"' : imgStyle;
     const frameImg = `<img class="lux-orn-frame" src="${o.src}" alt="" loading="${loading}" decoding="async" draggable="false"${frameStyle} />`;
     inner = `${wrappedPhoto}${frameImg}`;
+  } else if (o.replaceSlot) {
+    // Gambar tema tetap dirender (tak terlihat) agar ukuran kotak ornamen sama dengan ilustrasinya; foto klien menutup kotak itu.
+    const slotInfo = ORNAMENT_SLOT_TOKEN[family][o.replaceSlot];
+    const box = "position:relative;display:block;width:100%;height:auto;";
+    // Cermin ornamen dipasang di pembungkus; foto klien dibalik lagi agar tidak tampil tercermin.
+    const unflip = o.flipX || o.flipY ? `transform:${o.flipX ? "scaleX(-1)" : ""}${o.flipY ? " scaleY(-1)" : ""};` : "";
+    const clientImg = `<img class="lux-orn-photo" src="{{${slotInfo.token}}}" alt="" loading="${loading}" decoding="async" draggable="false" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;${unflip}" />`;
+    inner = `{{#if ${slotInfo.client}}}${clientImg}{{/if}}<img class="lux-orn-art" src="${o.src}" alt="" loading="${loading}" decoding="async" draggable="false" style="${box}{{#if ${slotInfo.client}}}visibility:hidden;{{/if}}" />`;
   } else {
     inner = `<img src="${o.src}" alt="" loading="${loading}" decoding="async" draggable="false"${imgStyle} />`;
   }
@@ -522,6 +535,9 @@ function freePhotoHtml(photo: FreeSectionPhoto, family: BuilderFamily): string {
   const cls = `lux-free-photo is-${photo.shape}${photo.position === "bottom" ? " is-bottom" : ""}`;
   if (photo.source === "asset") return `<figure class="${cls}" data-lux-anim="2"><img src="${photo.src}" alt="" loading="lazy" decoding="async" /></figure>`;
   const info = ORNAMENT_SLOT_TOKEN[family][photo.slot];
+  if (photo.source === "replaceable") {
+    return `<figure class="${cls}" data-lux-anim="2">{{#if ${info.client}}}<img src="{{${info.token}}}" alt="" loading="lazy" decoding="async" />{{/if}}{{#unless ${info.client}}}<img src="${photo.src}" alt="" loading="lazy" decoding="async" />{{/unless}}</figure>`;
+  }
   const figure = `<figure class="${cls}" data-lux-anim="2"><img src="{{${info.token}}}" alt="" loading="lazy" decoding="async" /></figure>`;
   return info.cond ? `{{#if ${info.cond}}}${figure}{{/if}}` : figure;
 }
@@ -771,9 +787,9 @@ export function compileBuilderMaster(spec: BuilderSpec, blueprint = readBuilderB
   }
 
   const family = builderFamilyOf(spec.eventType);
-  // Bila ornamen bingkai di seksi yang sama sudah mengisi slot foto pembuka, sembunyikan kotak foto pembuka bawaan
+  // Bila ornamen bingkai (atau ilustrasi pengganti) di seksi yang sama sudah mengisi slot foto pembuka, sembunyikan kotak foto pembuka bawaan
   // agar foto tidak tampil ganda (kecuali admin sudah mengatur blok opening-photo secara eksplisit).
-  const autoHideHomePhoto = spec.ornaments.some((o) => o.section === "opening" && o.slot === "HOME_PHOTO") && !spec.blocks["opening-photo"];
+  const autoHideHomePhoto = autoHiddenOpeningPhoto(spec);
   const blockEntries = Object.entries(spec.blocks) as Array<[BuilderBlockId, BlockProps]>;
   const blockRules = [
     ...blockEntries.map(([id, props]) => {

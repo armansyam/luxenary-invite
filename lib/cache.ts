@@ -72,6 +72,10 @@ declare global {
   var masterTemplateCache: BoundedMemoryCache<string> | undefined;
   var publishedHtmlCache: BoundedMemoryCache<PublishedHtmlEntry> | undefined;
   var invitationLookupCache: BoundedMemoryCache<any> | undefined;
+  var renderVersionCache: BoundedMemoryCache<number> | undefined;
+  var portfolioHtmlCache: BoundedMemoryCache<string> | undefined;
+  var portfolioListCache: BoundedMemoryCache<any[]> | undefined;
+  var portfolioExistsCache: BoundedMemoryCache<boolean> | undefined;
 }
 
 export const masterTemplateCache =
@@ -84,23 +88,60 @@ export const publishedHtmlCache =
   global.publishedHtmlCache ?? new BoundedMemoryCache<PublishedHtmlEntry>(500, 300_000); // 5 menit TTL untuk published HTML
 
 export const invitationLookupCache =
-  global.invitationLookupCache ?? new BoundedMemoryCache<any>(1000, 60_000); // 60 detik TTL untuk resolusi slug/subdomain
+  global.invitationLookupCache ?? new BoundedMemoryCache<any>(1000, 60_000); // 60 detik TTL untuk resolusi slug/subdomain/visit
+
+export const renderVersionCache =
+  global.renderVersionCache ?? new BoundedMemoryCache<number>(1000, 10_000); // 10 detik TTL untuk versi render DB
+
+export const portfolioHtmlCache =
+  global.portfolioHtmlCache ?? new BoundedMemoryCache<string>(100, 300_000); // 5 menit TTL untuk HTML portofolio R2
+
+export const portfolioListCache =
+  global.portfolioListCache ?? new BoundedMemoryCache<any[]>(5, 300_000); // 5 menit TTL untuk daftar galeri portofolio R2
+
+export const portfolioExistsCache =
+  global.portfolioExistsCache ?? new BoundedMemoryCache<boolean>(500, 300_000); // 5 menit TTL untuk HeadObject portofolio R2
 
 if (process.env.NODE_ENV !== "production") {
   global.masterTemplateCache = masterTemplateCache;
   global.publishedHtmlCache = publishedHtmlCache;
   global.invitationLookupCache = invitationLookupCache;
+  global.renderVersionCache = renderVersionCache;
+  global.portfolioHtmlCache = portfolioHtmlCache;
+  global.portfolioListCache = portfolioListCache;
+  global.portfolioExistsCache = portfolioExistsCache;
 }
 
 /**
  * Invalidate cache pencarian publik ketika undangan di-update atau di-publish
  */
-export function invalidateInvitationLookup(invitationSlug?: string | null, subdomain?: string | null): void {
+export function invalidateInvitationLookup(
+  invitationSlug?: string | null,
+  subdomain?: string | null,
+  invitationId?: string | null,
+): void {
   if (invitationSlug) {
     invitationLookupCache.delete(`slug:${invitationSlug}`);
   }
   if (subdomain) {
     invitationLookupCache.delete(`subdomain:${subdomain}`);
+  }
+  if (invitationId) {
+    invitationLookupCache.delete(`visit-inv:${invitationId}`);
+  }
+}
+
+/**
+ * Invalidate cache portofolio L1 saat admin menambah atau menghapus portofolio.
+ */
+export function invalidatePortfolioCache(slug?: string | null): void {
+  portfolioListCache.clear();
+  if (slug) {
+    portfolioHtmlCache.delete(slug);
+    portfolioExistsCache.delete(slug);
+  } else {
+    portfolioHtmlCache.clear();
+    portfolioExistsCache.clear();
   }
 }
 

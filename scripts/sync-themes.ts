@@ -1,9 +1,10 @@
 import "dotenv/config";
 import { prisma, pool } from "../lib/prisma";
-import type { ThemeCategory } from "@prisma/client";
+import { Prisma, type ThemeCategory } from "@prisma/client";
 import fs from "fs";
 import path from "path";
 import { THEME_EVENT_FOLDERS } from "../lib/themePaths";
+import { getCatalogMediaSlots } from "../lib/themeMediaSlotsCatalog";
 
 async function main() {
   const themesDir = path.join(process.cwd(), "themes");
@@ -50,8 +51,11 @@ async function main() {
   for (let i = 0; i < discovered.length; i++) {
     const d = discovered[i];
     const existing = await prisma.theme.findUnique({ where: { id: d.id } });
+    const catalogMediaSlots = getCatalogMediaSlots(d.id);
+    const shouldSeedMediaSlots = Boolean(catalogMediaSlots && (!existing || existing.mediaSlots === null));
 
     // Nama, urutan, dan status aktif yang diubah admin lewat panel dipertahankan; skrip ini berjalan di setiap deploy.
+    // mediaSlots hanya diisi otomatis bila kolomnya masih null (belum dikustomisasi admin di Editor Master).
     await prisma.theme.upsert({
       where: { id: d.id },
       update: {
@@ -59,6 +63,9 @@ async function main() {
         series: d.series,
         eventType: d.eventType,
         ...(existing ? {} : { isActive: true }),
+        ...(shouldSeedMediaSlots && catalogMediaSlots
+          ? { mediaSlots: catalogMediaSlots as unknown as Prisma.InputJsonValue }
+          : {}),
       },
       create: {
         id: d.id,
@@ -68,6 +75,9 @@ async function main() {
         eventType: d.eventType,
         sortOrder: i + 1,
         isActive: true,
+        ...(catalogMediaSlots
+          ? { mediaSlots: catalogMediaSlots as unknown as Prisma.InputJsonValue }
+          : {}),
       },
     });
 

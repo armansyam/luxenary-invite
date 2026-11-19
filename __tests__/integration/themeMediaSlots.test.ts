@@ -89,6 +89,7 @@ describe.skipIf(!IS_TEST_DB)("API: deklarasi slot dan salinannya di undangan", (
     expect((await prisma.theme.findUniqueOrThrow({ where: { id: THEME_A } })).mediaSlots).toEqual({ LANDING_COVER: { places: ["Sampul"] }, GROOM_PHOTO: { places: ["Mempelai"] }, BRIDE_PHOTO: { places: ["Mempelai"] } });
 
     // Editor Master: GET mengirim deklarasi, PUT menyimpannya bersama suntingan (overrides kosong = master asli).
+    await prisma.$executeRaw`UPDATE themes SET media_slots = NULL WHERE id = ${THEME_B}`;
     const loaded = await variantsGet(request(`/api/admin/theme-variants?master=${THEME_B}`, "GET", undefined));
     expect(loaded.status).toBe(200);
     expect((await loaded.json()).master.mediaSlots).toBeNull();

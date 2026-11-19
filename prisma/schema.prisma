@@ -148,11 +148,13 @@ model Invitation {
   memoriesNotifiedMilestones Int[] @default([])
   /// Email peringatan berakhirnya masa galeri sudah terkirim (sekali per undangan).
   retentionWarningSentAt     DateTime?
+  isFreeDraft                Boolean           @default(false) @map("is_free_draft")
   createdAt            DateTime          @default(now())
   updatedAt            DateTime          @updatedAt
   galleryExpiresAt     DateTime?
   guestMemories        GuestMemory[]
   guests               Guest[]
+  giftClaims           GiftClaim[]
   order                Order?            @relation("InvitationOrder", fields: [orderId], references: [id])
   linkedOrders         Order[]           @relation("OrderLinkedInvitation")
   user                 User              @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -165,6 +167,7 @@ model Invitation {
   @@index([userId])
   @@index([status])
   @@index([themeId])
+  @@index([isFreeDraft, createdAt])
   @@map("invitations")
 }
 
@@ -205,8 +208,10 @@ model Guest {
   guestQuota      Int      @default(1)
   tableNumber     String?
   waStatus        WaStatus @default(PENDING)
-  qrToken         String?  @unique
-  isTokenRedeemed Boolean  @default(false)
+  qrToken           String?   @unique
+  isTokenRedeemed   Boolean   @default(false)
+  souvenirClaimed   Boolean   @default(false) @map("souvenir_claimed")
+  souvenirClaimedAt DateTime? @map("souvenir_claimed_at")
 
   sessionInfo String?
   createdAt   DateTime   @default(now())
@@ -226,6 +231,9 @@ model Rsvp {
   status        RsvpStatus
   guestCount    Int        @default(1)
   message       String?
+  isHidden      Boolean    @default(false) @map("is_hidden")
+  replyMessage  String?    @map("reply_message")
+  repliedAt     DateTime?  @map("replied_at")
   respondedAt   DateTime   @default(now())
   editTokenHash String?
   guest         Guest?     @relation(fields: [guestId], references: [id])
@@ -648,4 +656,32 @@ model RateLimitCounter {
 
   @@index([expiresAt], name: "idx_rate_limit_expires")
   @@map("rate_limit_counters")
+}
+
+model EmailOtpToken {
+  id         String    @id @default(uuid())
+  email      String
+  purpose    String    @default("CLIENT_LOGIN")
+  codeHash   String    @map("code_hash")
+  attempts   Int       @default(0)
+  expiresAt  DateTime  @map("expires_at")
+  consumedAt DateTime? @map("consumed_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([email, purpose, expiresAt])
+  @@map("email_otp_tokens")
+}
+
+model GiftClaim {
+  id           String     @id @default(uuid())
+  invitationId String     @map("invitation_id")
+  itemId       String     @map("item_id")
+  guestName    String     @map("guest_name")
+  quantity     Int        @default(1)
+  note         String?
+  claimedAt    DateTime   @default(now()) @map("claimed_at")
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  @@index([invitationId, itemId])
+  @@map("gift_claims")
 }

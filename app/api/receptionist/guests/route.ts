@@ -33,11 +33,18 @@ export async function GET(req: NextRequest) {
         tableNumber: true,
         qrToken: true,
         isTokenRedeemed: true,
+        souvenirClaimed: true,
+        souvenirClaimedAt: true,
       },
       orderBy: { name: "asc" },
     });
 
-    return NextResponse.json({ success: true, guests }, { headers: { "Cache-Control": "no-store" } });
+    const souvenirCount = guests.filter((g) => g.souvenirClaimed).length;
+
+    return NextResponse.json(
+      { success: true, guests, souvenirCount },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   } catch (error) {
     return routeError("ReceptionistGuests", error, "Gagal memuat daftar tamu");
   }

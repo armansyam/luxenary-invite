@@ -2,6 +2,8 @@ import { logger } from "@/lib/logger";
 import { normalizeFeatureUrls, safeMediaUrl } from "@/lib/safeUrl";
 import { parseBgPhotoTone, parseBgScrim } from "@/lib/bgPhotoTone";
 import { EDITABLE_TEXT_KEYS, MAX_DECORATIVE_LABEL_LENGTH } from "@/lib/themeBuilder/spec";
+import { sanitizeGiftRegistryItems } from "@/lib/giftRegistry";
+import { normalizeInvitationLocale } from "@/lib/themeEngine/locale";
 
 type FeatureSettings = Record<string, any>;
 
@@ -125,6 +127,12 @@ export async function mergeFeatureSettingsInput(
     const scrim = parseBgScrim(merged.bgScrim);
     if (scrim === null) delete merged.bgScrim;
     else merged.bgScrim = scrim;
+  }
+  if ("language" in merged) {
+    merged.language = normalizeInvitationLocale(merged.language);
+  }
+  if ("giftRegistry" in merged) {
+    merged.giftRegistry = sanitizeGiftRegistryItems(merged.giftRegistry);
   }
   const labels = validateCustomLabels(merged, existing);
   if (!labels.ok) return labels;

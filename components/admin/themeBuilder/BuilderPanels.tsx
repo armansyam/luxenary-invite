@@ -68,6 +68,7 @@ import type { BuilderEventType } from "@/lib/themeBuilder/spec";
 import { SIM_GALLERY_MAX, SIM_MEDIA_MAX_AGE_DAYS, simSlotsFor, type SimMedia, type SimSlot } from "@/lib/themeBuilder/simSlots";
 import { GoogleFontPicker } from "@/components/admin/themeBuilder/GoogleFontPicker";
 import { BUILDER_TEMPLATES, type BuilderTemplate } from "@/lib/themeBuilder/templates";
+import { builderMediaSlots, builderSlotReuse } from "@/lib/themeBuilder/mediaSlots";
 
 export type PanelId = "colors" | "type" | "texts" | "layout" | "ornaments" | "motion" | "simulate" | "publish";
 
@@ -1633,13 +1634,15 @@ function FreeSectionsEditor({
             <div className="mt-3 rounded-lg border border-stone-100 bg-stone-50/60 p-2.5">
               <p className="text-[11.5px] font-semibold text-stone-700">Foto</p>
               <select
-                value={f.photo ? (f.photo.source === "slot" ? `slot:${f.photo.slot}` : "asset") : ""}
+                value={f.photo ? (f.photo.source === "asset" ? "asset" : `${f.photo.source === "slot" ? "slot" : "replace"}:${f.photo.slot}`) : ""}
                 onChange={(e) => {
                   const v = e.target.value;
                   const shape = f.photo?.shape ?? "rect";
                   const position = f.photo?.position ?? "top";
+                  const src = f.photo && f.photo.source !== "slot" ? f.photo.src : (backdrops.find((b) => b.id)?.id ?? "");
                   if (!v) update(f.id, { photo: undefined });
-                  else if (v === "asset") update(f.id, { photo: { source: "asset", src: backdrops.find((b) => b.id)?.id ?? "", shape, position } });
+                  else if (v === "asset") update(f.id, { photo: { source: "asset", src, shape, position } });
+                  else if (v.startsWith("replace:")) update(f.id, { photo: { source: "replaceable", src, slot: v.slice(8) as OrnamentMediaSlot, shape, position } });
                   else update(f.id, { photo: { source: "slot", slot: v.slice(5) as OrnamentMediaSlot, shape, position } });
                 }}
                 className={inputClass}
@@ -1647,20 +1650,24 @@ function FreeSectionsEditor({
                 <option value="">Tanpa foto</option>
                 <option value="asset">Gambar dari pustaka</option>
                 {slots.map((s) => <option key={s.id} value={`slot:${s.id}`}>Foto klien: {s.label}</option>)}
+                {slots.map((s) => <option key={`r-${s.id}`} value={`replace:${s.id}`}>Gambar tema, diganti foto klien: {s.label}</option>)}
               </select>
               {f.photo?.source === "slot" && (f.photo.slot === "HOME_PHOTO" || f.photo.slot === "CLOSING_COVER") && (
                 <p className="mt-1 text-[10.5px] leading-snug text-stone-500">Foto ini hanya tampil setelah klien mengunggahnya; tanpa unggahan, foto disembunyikan.</p>
               )}
-              {f.photo?.source === "asset" && (
+              {f.photo?.source === "replaceable" && (
+                <p className="mt-1 text-[10.5px] leading-snug text-stone-500">Gambar pilihan di bawah tampil sampai klien mengunggah foto ke slot ini, lalu foto klien menggantikannya.</p>
+              )}
+              {(f.photo?.source === "asset" || f.photo?.source === "replaceable") && (
                 <div className="mt-2 grid grid-cols-6 gap-1.5">
                   {backdrops.filter((b) => b.id).map((b) => (
                     <button
                       key={b.id}
                       type="button"
                       title={b.label}
-                      aria-pressed={f.photo?.source === "asset" && f.photo.src === b.id}
-                      onClick={() => f.photo && update(f.id, { photo: { ...f.photo, source: "asset", src: b.id } as FreeSectionPhoto })}
-                      className={`aspect-[3/4] rounded-md border bg-cover bg-center cursor-pointer ${f.photo?.source === "asset" && f.photo.src === b.id ? "border-amber-500 ring-2 ring-amber-300" : "border-stone-200"}`}
+                      aria-pressed={f.photo?.source !== "slot" && f.photo?.src === b.id}
+                      onClick={() => f.photo && f.photo.source !== "slot" && update(f.id, { photo: { ...f.photo, src: b.id } as FreeSectionPhoto })}
+                      className={`aspect-[3/4] rounded-md border bg-cover bg-center cursor-pointer ${f.photo?.source !== "slot" && f.photo?.src === b.id ? "border-amber-500 ring-2 ring-amber-300" : "border-stone-200"}`}
                       style={{ backgroundImage: `url('${b.id}')` }}
                     />
                   ))}
@@ -2082,6 +2089,22 @@ export function MotionPanel({ spec, onChange, onReplay }: { spec: BuilderSpec; o
   );
 }
 
+const SLOT_LABELS: Record<string, string> = {
+  LANDING_COVER: "Sampul",
+  LANDING_COVER_DESKTOP: "Sampul desktop",
+  HOME_PHOTO: "Foto pembuka (Home)",
+  DESKTOP_SIDEBAR: "Panel foto desktop",
+  GLOBAL_FIXED_BG: "Latar belakang",
+  GROOM_PHOTO: "Foto mempelai pertama",
+  BRIDE_PHOTO: "Foto mempelai kedua",
+  CLOSING_COVER: "Penutup",
+};
+
+function slotLabelFor(slot: string, eventType: BuilderEventType): string {
+  if (slot === "GROOM_PHOTO" && eventType !== "WEDDING") return "Foto profil utama";
+  return SLOT_LABELS[slot] ?? slot;
+}
+
 export function PublishPanel({
   spec,
   meta,
@@ -2160,6 +2183,25 @@ export function PublishPanel({
             <span className="mt-1 block text-[11px] text-stone-500">Dimainkan di undangan klien sampai klien memilih lagu sendiri.</span>
           </label>
         </div>
+      </Section>
+
+      <Section title="Slot foto klien" hint="Studio klien hanya menampilkan slot ini; dihitung otomatis dari tata letak saat disimpan.">
+        <ul className="space-y-1.5 text-[11.5px] text-stone-700">
+          {Object.entries(builderMediaSlots(spec)).map(([slot, d]) => (
+            <li key={slot}>
+              <span className="font-semibold">{slotLabelFor(slot, spec.eventType)}</span>
+              <span className="text-stone-500"> · {d?.places.join(", ")}</span>
+            </li>
+          ))}
+        </ul>
+        {builderSlotReuse(spec).length > 0 && (
+          <div className="mt-3 rounded-xl bg-amber-50 p-3 text-[11.5px] text-amber-900">
+            <p className="font-semibold">Foto klien yang sama tampil di beberapa tempat:</p>
+            <ul className="mt-1 space-y-0.5">
+              {builderSlotReuse(spec).map((r) => <li key={r.slot}>{slotLabelFor(r.slot, spec.eventType)}: {r.places.join(", ")}</li>)}
+            </ul>
+          </div>
+        )}
       </Section>
 
       <Section title="Sebelum terbit">

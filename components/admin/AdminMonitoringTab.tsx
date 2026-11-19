@@ -105,6 +105,12 @@ interface SystemHealthData {
     host: string | null;
     port: string;
   };
+  cspViolations?: {
+    totalSinceBoot: number;
+    recentCount: number;
+    byDirective: Array<{ directive: string; count: number }>;
+    recent: Array<{ at: string; directive: string; blocked: string; document: string }>;
+  };
 }
 
 // Nilai harus sama persis dengan `action` yang ditulis rute admin ke admin_audit_logs; filter memakai kecocokan tepat.
@@ -850,6 +856,84 @@ export default function AdminMonitoringTab() {
                 </p>
               </div>
             </div>
+          </div>
+
+          {/* KEAMANAN CONTENT SECURITY POLICY (CSP) */}
+          <div className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200 p-6 space-y-4 shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-gray-100">
+              <div className="flex items-center gap-2.5">
+                <span
+                  className={`w-2 h-2 rounded-full shrink-0 ${
+                    (healthData?.cspViolations?.totalSinceBoot ?? 0) > 0 ? "bg-amber-500" : "bg-emerald-500"
+                  }`}
+                />
+                <h3 className="text-base font-bold text-gray-900">Telemetri Content Security Policy (CSP)</h3>
+              </div>
+              <span className="text-xs font-mono text-gray-500">
+                Total sejak boot: {healthData?.cspViolations?.totalSinceBoot ?? 0} laporan
+              </span>
+            </div>
+
+            {(healthData?.cspViolations?.totalSinceBoot ?? 0) === 0 ? (
+              <p className="text-xs text-gray-500">
+                0 pelanggaran CSP tercatat sejak proses server berjalan. Endpoint <code className="font-mono text-gray-700">/api/security/csp-report</code> aktif menerima laporan browser.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {Array.isArray(healthData?.cspViolations?.byDirective) &&
+                  healthData.cspViolations.byDirective.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {healthData.cspViolations.byDirective.map(
+                        (item: { directive: string; count: number }) => (
+                          <span
+                            key={item.directive}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-xs font-mono text-amber-900"
+                          >
+                            <span>{item.directive}</span>
+                            <span className="font-bold">{item.count}</span>
+                          </span>
+                        )
+                      )}
+                    </div>
+                  )}
+
+                {Array.isArray(healthData?.cspViolations?.recent) &&
+                  healthData.cspViolations.recent.length > 0 && (
+                    <div className="overflow-x-auto border border-gray-100 rounded-xl">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-gray-50 text-gray-500 uppercase text-[10px]">
+                          <tr>
+                            <th className="px-3 py-2 font-semibold">Waktu</th>
+                            <th className="px-3 py-2 font-semibold">Direktif</th>
+                            <th className="px-3 py-2 font-semibold">Sumber Diblokir</th>
+                            <th className="px-3 py-2 font-semibold">Halaman</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 font-mono text-[11px] text-gray-700">
+                          {healthData.cspViolations.recent
+                            .slice(0, 6)
+                            .map((row: { at: string; directive: string; blocked: string; document: string }, idx: number) => (
+                              <tr key={`${row.at}-${idx}`}>
+                                <td className="px-3 py-2 whitespace-nowrap text-gray-500">
+                                  {new Date(row.at).toLocaleTimeString("id-ID")}
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap font-semibold text-amber-900">
+                                  {row.directive}
+                                </td>
+                                <td className="px-3 py-2 max-w-[260px] truncate" title={row.blocked}>
+                                  {row.blocked}
+                                </td>
+                                <td className="px-3 py-2 max-w-[220px] truncate text-gray-500" title={row.document}>
+                                  {row.document}
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+              </div>
+            )}
           </div>
 
           {/* RINGKASAN AKTIVITAS PLATFORM & INFORMASI HOST */}

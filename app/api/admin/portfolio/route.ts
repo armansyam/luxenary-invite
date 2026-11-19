@@ -11,6 +11,8 @@ import { readJsonBody } from "@/lib/requestBody";
 import { participantNames } from "@/lib/participantUtils";
 import { renderPublishedHtml } from "@/lib/staticPublisher";
 import { anonymizePortfolioHtml } from "@/lib/portfolioHtml";
+import { invalidatePortfolioCache } from "@/lib/cache";
+import { purgePortfolioEdgeCache } from "@/lib/cloudflare";
 
 const errorMessage = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
@@ -237,6 +239,9 @@ export async function POST(req: NextRequest) {
     const metadataBuffer = Buffer.from(JSON.stringify(metadata, null, 2), "utf-8");
     await uploadPortfolioFile(metadataBuffer, `assets/${clientName}/metadata.json`, "application/json");
 
+    invalidatePortfolioCache(clientName);
+    void purgePortfolioEdgeCache(clientName);
+
     return NextResponse.json({ success: true, clientName });
 
   } catch (error) {
@@ -262,6 +267,8 @@ export async function DELETE(req: NextRequest) {
     }
 
     await deletePortfolio(clientName);
+    invalidatePortfolioCache(clientName);
+    void purgePortfolioEdgeCache(clientName);
 
     return NextResponse.json({ success: true });
   } catch (error) {

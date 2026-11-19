@@ -6,6 +6,8 @@ import { rateLimitDb, getClientIp } from "@/lib/rateLimit";
 import { isReceptionistAuthorized } from "@/lib/receptionistGuard";
 import { parseCheckinPayload } from "@/lib/checkinQr";
 import { findOrCreateWalkInGuest, guestWithInvitation } from "@/lib/walkInGuest";
+import { publishGuestCheckin } from "@/lib/sseEmitter";
+import { logger } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
   try {
@@ -63,6 +65,8 @@ export async function POST(req: NextRequest) {
           name: guest.name,
           category: guest.category,
           sessionInfo: guest.sessionInfo,
+          tableNumber: guest.tableNumber,
+          souvenirClaimed: guest.souvenirClaimed,
         },
         alreadyRedeemed: true,
       }, { status: 400 });
@@ -78,6 +82,25 @@ export async function POST(req: NextRequest) {
       const isFirstCheckIn = updateResult.count === 1;
       const wasAlreadyRedeemed = !isFirstCheckIn;
 
+      if (isFirstCheckIn) {
+        publishGuestCheckin({
+          guestId: guest.id,
+          invitationId: guest.invitationId,
+          name: guest.name,
+          category: guest.category || "UMUM",
+          tableNumber: guest.tableNumber,
+          sessionInfo: guest.sessionInfo,
+          souvenirClaimed: guest.souvenirClaimed,
+          checkedInAt: new Date().toISOString(),
+          alreadyRedeemed: false,
+        }).catch((err) => {
+          logger.warn("ReceptionistScan", "Notifikasi SSE check-in gagal dipublikasikan", {
+            guestId: guest.id,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        });
+      }
+
       return NextResponse.json({
         success: true,
         alreadyRedeemed: wasAlreadyRedeemed,
@@ -87,6 +110,8 @@ export async function POST(req: NextRequest) {
           name: guest.name,
           category: guest.category,
           sessionInfo: guest.sessionInfo,
+          tableNumber: guest.tableNumber,
+          souvenirClaimed: guest.souvenirClaimed,
           invitation: guest.invitation,
         },
       });

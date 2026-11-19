@@ -16,6 +16,7 @@ import { adminActorId } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
 import type { Session } from "next-auth";
 import type { ThemeDefaultMedia } from "@/lib/themeDefaultMedia";
+import { builderMediaSlots } from "@/lib/themeBuilder/mediaSlots";
 import { masterPathOf } from "@/lib/themePaths";
 
 export const THEME_ASSET_DIR = path.join(/*turbopackIgnore: true*/ process.cwd(), "public", "uploads", "theme-assets");
@@ -142,8 +143,8 @@ export async function renderBuilderPreview(spec: BuilderSpec, demoThemeId = DEFA
     ? [...Object.entries(sim.slots).map(([mediaSlot, localPath]) => ({ mediaSlot, localPath: localPath as string })), ...sim.gallery.map((localPath) => ({ mediaSlot: "GALLERY", localPath }))]
     : [];
   const base = mode === "demo" ? demo : { ...demo, media: simMedia, themeDefaultMedia: builderDefaultMedia(spec) };
-  // Rancangan belum tersimpan, jadi teks bawaan dan spesifikasi dibawa langsung (undangan nyata membacanya dari Theme.builderSpec).
-  const data = (await composeInvitationData({ ...base, builderTexts: spec.texts, builderSpec: spec })) as Record<string, any>;
+  // Rancangan belum tersimpan, jadi teks bawaan, spesifikasi, dan deklarasi slot dibawa langsung (undangan nyata membacanya dari baris Theme).
+  const data = (await composeInvitationData({ ...base, themeMediaSlots: builderMediaSlots(spec), builderTexts: spec.texts, builderSpec: spec })) as Record<string, any>;
   const html = await renderTemplateFile("builder-preview", data, { eventType: spec.eventType, templateSource: compiled.html });
   return { html, issues: compiled.issues, labels: extractRenderedLabels(html) };
 }

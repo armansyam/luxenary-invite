@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { invitationLookupCache } from "@/lib/cache";
 import { rateLimitDb } from "@/lib/rateLimit";
 import { routeError } from "@/lib/routeError";
 import { exceedsDeclaredBodySize } from "@/lib/requestLimits";
@@ -39,7 +40,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Terlalu banyak permintaan." }, { status: 429 });
     }
 
-    const invitation = await prisma.invitation.findUnique({ where: { id: invitationId }, select: { status: true, userId: true } });
+    const visitCacheKey = `visit-inv:${invitationId}`;
+    let invitation = invitationLookupCache.get(visitCacheKey) as { status: string; userId: string } | null;
+    if (!invitation) {
+      invitation = await prisma.invitation.findUnique({ where: { id: invitationId }, select: { status: true, userId: true } });
+      if (invitation && COUNTED_STATUSES.has(invitation.status)) {
+        invitationLookupCache.set(visitCacheKey, invitation, 60_000);
+      }
+    }
     if (!invitation || !COUNTED_STATUSES.has(invitation.status)) {
       return NextResponse.json({ counted: false });
     }

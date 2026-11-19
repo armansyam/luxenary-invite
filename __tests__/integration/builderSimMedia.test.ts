@@ -34,9 +34,12 @@ describe("parseSimMedia & simSlotsFor", () => {
     expect(parseSimMedia(null)).toEqual({ slots: {}, gallery: [] });
   });
 
-  it("slot mempelai hanya untuk pernikahan", () => {
+  it("slot mempelai kedua hanya untuk pernikahan; profil utama tampil untuk acara satu nama", () => {
     expect(simSlotsFor("WEDDING").some((s) => s.slot === "GROOM_PHOTO")).toBe(true);
-    expect(simSlotsFor("BIRTHDAY").some((s) => s.slot === "GROOM_PHOTO")).toBe(false);
+    expect(simSlotsFor("WEDDING").some((s) => s.slot === "BRIDE_PHOTO")).toBe(true);
+    const bday = simSlotsFor("BIRTHDAY");
+    expect(bday.find((s) => s.slot === "GROOM_PHOTO")?.label).toBe("Foto profil utama");
+    expect(bday.some((s) => s.slot === "BRIDE_PHOTO")).toBe(false);
   });
 });
 

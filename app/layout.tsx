@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 
 export const viewport: Viewport = {
   themeColor: "#faf8f5",
@@ -6,6 +7,7 @@ export const viewport: Viewport = {
 };
 import { Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "@/lib/session";
+import { AnalyticsPixels } from "@/components/AnalyticsPixels";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -91,7 +93,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
   };
 }
-const LUXENARY_WATERMARK = `
+const LUXENARY_WATERMARK_COMMENT = `
 <!--
   ==============================================================
   STOP! PERHATIAN!
@@ -103,24 +105,17 @@ const LUXENARY_WATERMARK = `
   Hak cipta dilindungi undang-undang.
   ==============================================================
 -->
-<script>
-  (function() {
-    try {
-      if (window.console && console.log) {
-        console.log("%cSTOP!", "color: #ef4444; font-size: 50px; font-weight: 900; text-shadow: 2px 2px 0 #000; font-family: sans-serif;");
-        console.log("%cIni adalah properti sistem berlisensi resmi.", "color: #b5833c; font-size: 20px; font-weight: bold;");
-        console.log("%cSegala bentuk pencurian kode, scraping, atau modifikasi ilegal dilarang keras.\\nDomain saat ini: " + window.location.hostname, "font-size: 14px; color: #a8a29e;");
-      }
-    } catch(e) {}
-  })();
-</script>
 `;
 
+const LUXENARY_WATERMARK_SCRIPT = `(function(){try{if(window.console&&console.log){console.log("%cSTOP!","color: #ef4444; font-size: 50px; font-weight: 900; text-shadow: 2px 2px 0 #000; font-family: sans-serif;");console.log("%cIni adalah properti sistem berlisensi resmi.","color: #b5833c; font-size: 20px; font-weight: bold;");console.log("%cSegala bentuk pencurian kode, scraping, atau modifikasi ilegal dilarang keras.\\nDomain saat ini: "+window.location.hostname,"font-size: 14px; color: #a8a29e;");}}catch(e){}})();`;
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const [settings, siteUrl] = await Promise.all([
+  const [settings, siteUrl, reqHeaders] = await Promise.all([
     getPublicPlatformSettings(),
     getDynamicServerAppUrl(),
+    headers(),
   ]);
+  const nonce = reqHeaders.get("x-nonce") || undefined;
   const brandName = settings.platformName || "Sistem Undangan";
   const tagline = settings.heroTagline || "Undangan Digital Elegan, Hangat & Berkelas";
 
@@ -135,6 +130,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <meta name="supported-color-schemes" content="only light" />
         <script
           type="application/ld+json"
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: jsonForInlineScript({
               "@context": "https://schema.org",
@@ -156,7 +152,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         className="min-h-full flex flex-col bg-[#faf8f5] text-[#2d2c2a]"
         style={{ colorScheme: "only light" as any, backgroundColor: "#faf8f5", color: "#2d2c2a" }}
       >
-        <div dangerouslySetInnerHTML={{ __html: LUXENARY_WATERMARK }} />
+        <div dangerouslySetInnerHTML={{ __html: LUXENARY_WATERMARK_COMMENT }} />
+        <script
+          nonce={nonce}
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: LUXENARY_WATERMARK_SCRIPT }}
+        />
+        <AnalyticsPixels
+          metaPixelId={settings.metaPixelId}
+          tiktokPixelId={settings.tiktokPixelId}
+          ga4MeasurementId={settings.ga4MeasurementId}
+          nonce={nonce}
+        />
         <Providers>
           {children}
         </Providers>

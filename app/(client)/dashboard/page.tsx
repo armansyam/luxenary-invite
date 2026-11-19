@@ -11,22 +11,41 @@ import UnifiedAddonModal from "@/components/client/UnifiedAddonModal";
 import { getPlanDisplayName, getPlanDisplayDescription, normalizePlanType } from "@/lib/planUtils";
 import { eventNoun, resolveInvitationDisplayName } from "@/lib/invitationUtils";
 import { useFeedback } from "@/components/ui/Feedback";
+import { useClientInvitation } from "@/components/client/ClientInvitationContext";
 
 function DashboardHomeContent() {
   const feedback = useFeedback();
   const router = useRouter();
   const searchParams = useSearchParams();
   const msgParam = searchParams?.get("msg");
+  const {
+    invitations,
+    activeInvitation,
+    activeInvitationId,
+    loading: ctxLoading,
+  } = useClientInvitation();
   const [invitation, setInvitation] = useState<any>(null);
   const [platformSettings, setPlatformSettings] = useState<any>(null);
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<{
+    guestCount: number;
+    waSentCount: number;
+    attendingCount: number;
+    checkedInCount: number;
+    souvenirCount: number;
+    wishesCount: number;
+    openCount: number;
+    openedGuestCount: number;
+    unopenedVipGuests: Array<{ id: string; name: string }>;
+  }>({
     guestCount: 0,
     waSentCount: 0,
     attendingCount: 0,
     checkedInCount: 0,
+    souvenirCount: 0,
     wishesCount: 0,
     openCount: 0,
     openedGuestCount: 0,
+    unopenedVipGuests: [],
   });
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -49,68 +68,71 @@ function DashboardHomeContent() {
   }, [invitation?.id]);
 
   useEffect(() => {
-    fetch("/api/client/invitations", { cache: "no-store" })
-      .then((res) => res.json())
-      .then(async (invitations) => {
-        if (Array.isArray(invitations) && invitations.length > 0) {
-          const inv = invitations[0];
-          setInvitation(inv);
+    fetch("/api/public/settings")
+      .then((r) => r.json())
+      .then((data) => setPlatformSettings(data))
+      .catch(() => null);
+  }, []);
 
-          // Fetch platform settings & memories
-          fetch("/api/public/settings")
-            .then((r) => r.json())
-            .then((data) => setPlatformSettings(data))
-            .catch(() => null);
+  useEffect(() => {
+    if (ctxLoading) return;
+    let cancelled = false;
 
-          fetchGuestMemories(inv.id);
+    const loadActive = async () => {
+      if (invitations.length > 0 && activeInvitation) {
+        setLoading(true);
+        setInvitation(activeInvitation);
+        fetchGuestMemories(activeInvitation.id);
 
-          // Fetch guests & rsvp stats
-          try {
-            const [guestRes, rsvpRes] = await Promise.all([
-              fetch(`/api/client/guests/${inv.id}?summary=1`).catch(() => null),
-              fetch(`/api/client/rsvps?invitationId=${inv.id}`).catch(() => null),
-            ]);
+        try {
+          const [guestRes, rsvpRes] = await Promise.all([
+            fetch(`/api/client/guests/${activeInvitation.id}?summary=1`).catch(() => null),
+            fetch(`/api/client/rsvps?invitationId=${activeInvitation.id}`).catch(() => null),
+          ]);
 
-            const guestSummary = guestRes?.ok ? await guestRes.json().catch(() => null) : null;
-            const rsvpData = rsvpRes?.ok ? await rsvpRes.json().catch(() => null) : null;
+          if (cancelled) return;
+          const guestSummary = guestRes?.ok ? await guestRes.json().catch(() => null) : null;
+          const rsvpData = rsvpRes?.ok ? await rsvpRes.json().catch(() => null) : null;
 
-            const guestCount = guestSummary?.guestCount ?? 0;
-            const waSent = guestSummary?.waSentCount ?? 0;
-            const checkedIn = guestSummary?.checkedInCount ?? 0;
-            const attending = rsvpData?.stats?.attending || 0;
-            const wishes = rsvpData?.stats?.totalWishes || 0;
-
-            setStats({
-              guestCount,
-              waSentCount: waSent,
-              attendingCount: attending,
-              checkedInCount: checkedIn,
-              wishesCount: wishes,
-              openCount: guestSummary?.openCount ?? 0,
-              openedGuestCount: guestSummary?.openedGuestCount ?? 0,
-            });
-          } catch (e) {
-            console.error("Stats fetch error:", e);
-          }
-          setLoading(false);
-        } else {
-          // User belum memiliki undangan -> Cek tahapan onboarding terakhir (Resume State Machine)
-          try {
-            const stateRes = await fetch("/api/client/onboarding-state", { cache: "no-store" });
-            const stateData = await stateRes.json();
-            if (stateData.redirectUrl) {
-              router.replace(stateData.redirectUrl);
-              return;
-            }
-          } catch {
-            // Tanpa status onboarding, pengguna diarahkan ke awal setup di bawah (aman untuk akun baru).
-          }
-
-          router.replace("/dashboard/setup");
+          setStats({
+            guestCount: guestSummary?.guestCount ?? 0,
+            waSentCount: guestSummary?.waSentCount ?? 0,
+            attendingCount: rsvpData?.stats?.attending || 0,
+            checkedInCount: guestSummary?.checkedInCount ?? 0,
+            souvenirCount: guestSummary?.souvenirCount ?? 0,
+            wishesCount: rsvpData?.stats?.totalWishes || 0,
+            openCount: guestSummary?.openCount ?? 0,
+            openedGuestCount: guestSummary?.openedGuestCount ?? 0,
+            unopenedVipGuests: Array.isArray(guestSummary?.unopenedVipGuests)
+              ? guestSummary.unopenedVipGuests
+              : [],
+          });
+        } catch (e) {
+          console.error("Stats fetch error:", e);
+        } finally {
+          if (!cancelled) setLoading(false);
         }
-      })
-      .catch(() => setLoading(false));
-  }, [router, fetchGuestMemories]);
+        return;
+      }
+
+      try {
+        const stateRes = await fetch("/api/client/onboarding-state", { cache: "no-store" });
+        const stateData = await stateRes.json();
+        if (stateData.redirectUrl) {
+          router.replace(stateData.redirectUrl);
+          return;
+        }
+      } catch {
+        // Tanpa status onboarding, pengguna diarahkan ke awal setup di bawah.
+      }
+      router.replace("/dashboard/setup");
+    };
+
+    void loadActive();
+    return () => {
+      cancelled = true;
+    };
+  }, [ctxLoading, invitations.length, activeInvitationId, activeInvitation, router, fetchGuestMemories]);
 
   const resolvedDomain = resolveEffectiveInvitationUrl({
     customDomain: invitation?.customDomain,
@@ -793,6 +815,87 @@ function DashboardHomeContent() {
             {packageConfig?.desc || getPlanDisplayDescription(invitation?.order?.planType, platformSettings?.packages) || "Belum ada paket aktif"}
           </span>
         </div>
+      </div>
+
+      {/* 2.5. Client Guest Distribution & Attendance Funnel */}
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/80 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3 className="text-sm font-bold text-stone-900">Funnel Distribusi &amp; Kehadiran Tamu</h3>
+            <p className="text-xs text-stone-500">
+              Progres tamu dari pengiriman undangan hingga check-in &amp; pengambilan souvenir.
+            </p>
+          </div>
+          <Link
+            href="/dashboard/guests"
+            className="text-xs font-semibold text-amber-800 hover:text-amber-900 hover:underline self-start sm:self-auto"
+          >
+            Kelola Daftar Tamu
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+          {[
+            { label: "Total Tamu", value: stats.guestCount, barClass: "bg-stone-700" },
+            { label: "WA Terkirim", value: stats.waSentCount, barClass: "bg-emerald-600" },
+            { label: "Tamu Membuka", value: stats.openedGuestCount, barClass: "bg-sky-600" },
+            { label: "Konfirmasi Hadir", value: stats.attendingCount, barClass: "bg-amber-700" },
+            { label: "Check-in Acara", value: stats.checkedInCount, barClass: "bg-indigo-600" },
+            { label: "Souvenir Diambil", value: stats.souvenirCount, barClass: "bg-violet-600" },
+          ].map((stage) => {
+            const denom = Math.max(1, stats.guestCount);
+            const pct = stats.guestCount > 0 ? Math.min(100, Math.round((stage.value / denom) * 100)) : 0;
+            return (
+              <div
+                key={stage.label}
+                className="p-3 rounded-xl bg-stone-50/80 border border-stone-200/70 space-y-1.5"
+              >
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-stone-500 block truncate">
+                  {stage.label}
+                </span>
+                <div className="flex items-baseline justify-between gap-1">
+                  <span className="text-lg font-bold text-stone-900">{stage.value}</span>
+                  <span className="text-[10px] font-mono text-stone-500">{pct}%</span>
+                </div>
+                <div className="w-full h-1.5 bg-stone-200/80 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-300 ${stage.barClass}`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {stats.unopenedVipGuests.length > 0 && (
+          <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div className="space-y-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-700 shrink-0" />
+                <span className="text-xs font-bold text-amber-950">
+                  {stats.unopenedVipGuests.length} Tamu VIP Belum Membuka Undangan
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {stats.unopenedVipGuests.map((vip) => (
+                  <span
+                    key={vip.id}
+                    className="inline-flex items-center px-2 py-0.5 rounded-md bg-white border border-amber-200 text-[11px] font-medium text-amber-900"
+                  >
+                    {vip.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <Link
+              href="/dashboard/guests"
+              className="px-3 py-1.5 rounded-lg bg-amber-800 hover:bg-amber-900 text-white text-xs font-semibold shrink-0 text-center transition"
+            >
+              Kirim Pengingat
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* 3. Core Quick Action Cards */}

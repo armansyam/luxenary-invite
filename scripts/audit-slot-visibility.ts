@@ -13,7 +13,7 @@
 import fs from "fs";
 import path from "path";
 import { buildSync } from "esbuild";
-import { arg, listMasters, requireTestDatabase, startChrome, startRenderServer } from "./masterHarness";
+import { arg, listMasters, requireTestDatabase, sleep, startChrome, startRenderServer } from "./masterHarness";
 import { buildDemoInvitation } from "../lib/demoInvitation";
 import { pool } from "../lib/prisma";
 import { seenPlaceLabels, SLOT_SEEN, type SlotCheck } from "../components/admin/slotVisibility";
@@ -47,45 +47,80 @@ async function main() {
   const only = arg("theme")?.split(",");
   const masters = listMasters().filter((m) => !only || only.includes(m.id));
   const server = await startRenderServer();
-  const { cdp, close } = await startChrome();
-  await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: "Element.prototype.requestFullscreen = function () { return Promise.resolve(); };" });
+  let browser = await startChrome();
+  let currentTargetId: string | null = null;
+  const configureBrowser = async (view: "mobile" | "desktop") => {
+    await browser.cdp.send("Page.enable");
+    await browser.cdp.send("Network.enable");
+    await browser.cdp.send("Network.setBlockedURLs", { urls: ["https://*/*"] });
+    await browser.cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: "Element.prototype.requestFullscreen = function () { return Promise.resolve(); };" });
+    await browser.cdp.send("Emulation.setDeviceMetricsOverride", view === "desktop" ? { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false } : { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  };
+  const openFreshTab = async (view: "mobile" | "desktop") => {
+    const prevTarget = currentTargetId;
+    const { targetId } = await browser.cdp.send("Target.createTarget", { url: "about:blank" }, false);
+    const { sessionId } = await browser.cdp.send("Target.attachToTarget", { targetId, flatten: true }, false);
+    currentTargetId = targetId;
+    browser.cdp.sessionId = sessionId;
+    if (prevTarget) {
+      await browser.cdp.send("Target.closeTarget", { targetId: prevTarget }, false).catch(() => { });
+    }
+    await configureBrowser(view);
+  };
+  const recycleBrowser = async (view: "mobile" | "desktop") => {
+    await browser.close().catch(() => { });
+    currentTargetId = null;
+    browser = await startChrome();
+    await openFreshTab(view);
+  };
 
   const report: Record<string, Record<string, SlotCheck[]>> = {};
   const proposal: Record<string, Record<string, { places: string[] }>> = {};
   let bad = 0;
   // Preloader hilang setelah halaman dimuat di peramban tamu; di sini dibuang agar tidak dihitung sebagai penutup.
-  const runChecker = (view: string) => cdp.eval<SlotCheck[]>(`(() => {
+  const runChecker = (view: string) => browser.cdp.eval<SlotCheck[]>(`(() => {
     ${CHECKER};
     document.querySelectorAll(".lux-universal-preloader, #preloader, .preloader").forEach((e) => e.remove());
     return LuxSlots.checkSlots(document, ${JSON.stringify(SLOTS)}, ${JSON.stringify(view)});
   })()`);
+  const auditOne = async (url: string, view: "mobile" | "desktop"): Promise<SlotCheck[]> => {
+    await openFreshTab(view);
+    await browser.cdp.goto(url, 900);
+    // Foto sampul hanya terlihat sebelum sampul dibuka, jadi slot sampul diperiksa sebelum tombol Buka ditekan.
+    const beforeOpen = (await runChecker(view)).filter((c) => COVER_SLOTS.has(c.slot));
+    // Tamu membuka sampul sebelum melihat isi; master mengunci gulir selama sampul tampil.
+    await browser.cdp.eval(`(() => { document.querySelector(".lux-universal-preloader")?.remove(); document.querySelector(".cover-btn-open, .btn-buka, #openBtn, .btn-open, [onclick*='open']")?.click(); return true; })()`);
+    await sleep(1500);
+    return [...beforeOpen, ...(await runChecker(view)).filter((c) => !COVER_SLOTS.has(c.slot))];
+  };
   try {
     for (const view of views) {
-    await cdp.send("Emulation.setDeviceMetricsOverride", view === "desktop" ? { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false } : { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
-    for (const m of masters) {
-      const demo = buildDemoInvitation(m.id, { galleryPhotos: [] }, m.eventType);
-      const inv = { ...demo, media: Object.entries(SLOTS).map(([mediaSlot, localPath]) => ({ mediaSlot, localPath })), themeDefaultMedia: {} };
-      const source = fs.readFileSync(path.resolve(process.cwd(), m.rel), "utf-8");
-      const url = await server.render(m, source, `slots-${view}`, "", inv as never);
-      await cdp.goto(url, 900);
-      // Foto sampul hanya terlihat sebelum sampul dibuka, jadi slot sampul diperiksa sebelum tombol Buka ditekan.
-      const beforeOpen = (await runChecker(view)).filter((c) => COVER_SLOTS.has(c.slot));
-      // Tamu membuka sampul sebelum melihat isi; master mengunci gulir selama sampul tampil.
-      await cdp.eval(`(() => { document.querySelector(".lux-universal-preloader")?.remove(); document.querySelector(".cover-btn-open, .btn-buka, #openBtn, .btn-open, [onclick*='open']")?.click(); return new Promise((r) => setTimeout(() => r(true), 1500)); })()`);
-      const checks = [...beforeOpen, ...(await runChecker(view)).filter((c) => !COVER_SLOTS.has(c.slot))];
-      (report[m.id] ??= {})[view] = checks;
-      const declared = (proposal[m.id] ??= {});
-      for (const c of checks) {
-        if (!SLOT_SEEN.has(c.status)) continue;
-        declared[c.slot] = { places: [...new Set([...(declared[c.slot]?.places ?? []), ...seenPlaceLabels(c)])] };
+      for (let idx = 0; idx < masters.length; idx++) {
+        const m = masters[idx];
+        const demo = buildDemoInvitation(m.id, { galleryPhotos: [] }, m.eventType);
+        const inv = { ...demo, media: Object.entries(SLOTS).map(([mediaSlot, localPath]) => ({ mediaSlot, localPath })), themeDefaultMedia: {} };
+        const source = fs.readFileSync(path.resolve(process.cwd(), m.rel), "utf-8");
+        const url = await server.render(m, source, `slots-${view}`, "", inv as never);
+        let checks: SlotCheck[];
+        try {
+          checks = await auditOne(url, view);
+        } catch {
+          await recycleBrowser(view);
+          checks = await auditOne(url, view);
+        }
+        (report[m.id] ??= {})[view] = checks;
+        const declared = (proposal[m.id] ??= {});
+        for (const c of checks) {
+          if (!SLOT_SEEN.has(c.status)) continue;
+          declared[c.slot] = { places: [...new Set([...(declared[c.slot]?.places ?? []), ...seenPlaceLabels(c)])] };
+        }
+        // Slot yang terlihat di satu tempat (mis. sampul) tetap bermasalah bila tertutup di tempat lain (latar halaman).
+        // Setelah sampul dibuka, foto slot di sampul memang tersembunyi; elemen khusus desktop tersembunyi di tampilan HP.
+        const lost = (c: SlotCheck) => (c.places ?? [{ where: "", status: c.status }]).filter((p) => p.status === "covered" || p.status === "dim" || (p.status === "hidden" && p.where !== "sampul" && p.where !== "halaman"));
+        const problems = checks.filter((c) => lost(c).length || c.status === "dim");
+        if (problems.length) bad++;
+        console.log(`${problems.length ? "MASALAH" : "BAIK   "} ${view.padEnd(7)} ${m.id.padEnd(24)} ${checks.map((c) => `${c.slot}=${c.status}${lost(c).length ? ` (${lost(c).map((p) => `${p.where}: ${p.status}`).join(", ")})` : ""}`).join("  ")}`);
       }
-      // Slot yang terlihat di satu tempat (mis. sampul) tetap bermasalah bila tertutup di tempat lain (latar halaman).
-      // Setelah sampul dibuka, foto slot di sampul memang tersembunyi; elemen khusus desktop tersembunyi di tampilan HP.
-      const lost = (c: SlotCheck) => (c.places ?? [{ where: "", status: c.status }]).filter((p) => p.status === "covered" || p.status === "dim" || (p.status === "hidden" && p.where !== "sampul" && p.where !== "halaman"));
-      const problems = checks.filter((c) => lost(c).length || c.status === "dim");
-      if (problems.length) bad++;
-      console.log(`${problems.length ? "MASALAH" : "BAIK   "} ${view.padEnd(7)} ${m.id.padEnd(24)} ${checks.map((c) => `${c.slot}=${c.status}${lost(c).length ? ` (${lost(c).map((p) => `${p.where}: ${p.status}`).join(", ")})` : ""}`).join("  ")}`);
-    }
     }
     // Ditulis sebelum Chrome ditutup: penghapusan profil sementara bisa gagal (ENOTEMPTY) setelah audit panjang.
     const out = arg("out");
@@ -93,7 +128,7 @@ async function main() {
     const proposalOut = arg("proposal");
     if (proposalOut) fs.writeFileSync(proposalOut, JSON.stringify(proposal, null, 2));
   } finally {
-    await close();
+    await browser.close().catch(() => { });
     await server.close();
     await pool.end();
   }

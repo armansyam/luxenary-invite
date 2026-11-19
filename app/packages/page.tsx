@@ -1,20 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { BUILDER_EVENT_LABELS, type BuilderEventType } from "@/lib/themeBuilder/spec";
 
-export default function PackageSelectionPage() {
+function PackageSelectionContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isNewAdditional = searchParams?.get("new") === "1";
   const { data: session, status } = useSession();
   const [packages, setPackages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [platformName, setPlatformName] = useState("");
   const [serviceStatus, setServiceStatus] = useState<any>(null);
   const [enabledEventTypes, setEnabledEventTypes] = useState<string[]>([]);
+  const [creatingDraft, setCreatingDraft] = useState(false);
+  const [draftError, setDraftError] = useState("");
 
   useEffect(() => {
     // 1. Cek status: HANYA redirect jika user SUDAH MEMILIKI UNDANGAN atau SUDAH BAYAR LUNAS (PAID)
@@ -23,7 +27,11 @@ export default function PackageSelectionPage() {
       fetch("/api/client/onboarding-state", { cache: "no-store" })
         .then((res) => res.json())
         .then((data) => {
-          if (data && (data.step === "COMPLETED" || data.step === "PAID_NEED_SETUP")) {
+          if (data?.step === "PAID_NEED_SETUP") {
+            router.replace(data.redirectUrl || "/dashboard/setup");
+            return;
+          }
+          if (data?.step === "COMPLETED" && !isNewAdditional) {
             router.replace(data.redirectUrl || "/dashboard");
           }
         })
@@ -51,7 +59,7 @@ export default function PackageSelectionPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [status, router]);
+  }, [status, router, isNewAdditional]);
 
   if (loading) {
     return (
@@ -65,6 +73,29 @@ export default function PackageSelectionPage() {
   }
 
   const isClosed = serviceStatus && !serviceStatus.isOpen;
+
+  const handleStartFreeDraft = async () => {
+    if (creatingDraft || isClosed) return;
+    setDraftError("");
+    setCreatingDraft(true);
+    try {
+      const res = await fetch("/api/client/invitations/free-draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.invitation?.id) {
+        setDraftError(data.error || "Gagal membuat draf gratis.");
+        return;
+      }
+      router.push(`/dashboard/invitation/${data.invitation.id}`);
+    } catch {
+      setDraftError("Koneksi terganggu saat menyiapkan draf gratis.");
+    } finally {
+      setCreatingDraft(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#faf8f5] font-sans flex flex-col">
@@ -182,7 +213,7 @@ export default function PackageSelectionPage() {
                 </button>
               ) : (
                 <Link
-                  href={`/checkout?plan=${pkg.id}`}
+                  href={`/checkout?plan=${pkg.id}${isNewAdditional ? "&new=1" : ""}`}
                   className={`w-full py-3 font-bold rounded-full text-center transition text-sm shadow-xs ${
                     pkg.isFeatured
                       ? "bg-amber-800 hover:bg-amber-900 text-white"
@@ -195,6 +226,34 @@ export default function PackageSelectionPage() {
             </div>
           ))}
         </div>
+
+        {!isClosed && !isNewAdditional && status === "authenticated" && (
+          <div className="mt-8 bg-white border border-amber-300/80 rounded-2xl sm:rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-amber-800">
+                <span className="w-2 h-2 rounded-full bg-amber-600" />
+                <span>Coba Sebelum Membayar</span>
+              </div>
+              <h2 className="text-base sm:text-lg font-serif font-bold text-[#1e1c1a]">
+                Coba Buat Draf Gratis Terlebih Dahulu
+              </h2>
+              <p className="text-xs text-stone-600 leading-relaxed max-w-2xl">
+                Uji coba studio editor, pilih tema, unggah hingga 3 foto, dan lihat pratinjau undangan secara langsung selama 14 hari sebelum mengaktifkan paket.
+              </p>
+              {draftError && (
+                <p className="text-xs font-semibold text-rose-700 pt-1">{draftError}</p>
+              )}
+            </div>
+            <button
+              type="button"
+              disabled={creatingDraft}
+              onClick={handleStartFreeDraft}
+              className="shrink-0 px-5 py-3 rounded-full bg-amber-900 hover:bg-amber-950 text-white text-xs sm:text-sm font-bold transition cursor-pointer disabled:opacity-60 shadow-xs"
+            >
+              {creatingDraft ? "Menyiapkan Draf..." : "Coba Buat Draf Gratis"}
+            </button>
+          </div>
+        )}
 
         <div className="mt-12 text-center max-w-2xl mx-auto px-4">
           <p className="text-xs text-stone-500 mb-6 leading-relaxed">
@@ -213,5 +272,19 @@ export default function PackageSelectionPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function PackageSelectionPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center font-sans">
+          <div className="w-8 h-8 border-2 border-amber-800 border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <PackageSelectionContent />
+    </Suspense>
   );
 }

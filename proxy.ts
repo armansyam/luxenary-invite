@@ -3,6 +3,25 @@ import NextAuth from "next-auth";
 import { authConfig } from "@/auth.config";
 import { isReservedSubdomain } from "@/lib/domainUtils";
 import { LOGIN_FAILURE_LIMIT, getClientIp, isRateLimitExhausted, loginRateLimitKey } from "@/lib/rateLimit";
+import {
+  buildEnforcedCsp,
+  buildStrictAppCspReportOnly,
+  generateCspNonce,
+  isStrictNonceAppRoute,
+} from "@/lib/csp";
+
+function shouldApplyCsp(pathname: string): boolean {
+  const isPreviewHtml = /^\/api\/client\/invitations\/[^/]+\/preview/.test(pathname);
+  return !((pathname.startsWith("/api/") && !isPreviewHtml) || pathname.startsWith("/_next/") || pathname.startsWith("/static/"));
+}
+
+function applyCspHeaders(res: NextResponse, pathname: string, strictNonceCsp: string | null): NextResponse {
+  if (!shouldApplyCsp(pathname)) {
+    return res;
+  }
+  res.headers.set("Content-Security-Policy", strictNonceCsp || buildEnforcedCsp());
+  return res;
+}
 
 const { auth } = NextAuth(authConfig);
 
@@ -90,6 +109,23 @@ async function resolveCustomDomain(host: string): Promise<CustomDomainResolution
 
 export const proxy = auth(async (req) => {
   const { pathname } = req.nextUrl;
+  const nonce = generateCspNonce();
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set("x-nonce", nonce);
+  const strictNonceCsp =
+    shouldApplyCsp(pathname) && isStrictNonceAppRoute(pathname)
+      ? buildStrictAppCspReportOnly(nonce)
+      : null;
+  if (strictNonceCsp) {
+    // Next.js 16 membaca nonce dari header Content-Security-Policy pada requestHeaders untuk
+    // menyematkan atribut nonce otomatis pada seluruh skrip hidrasi RSC & chunk Turbopack.
+    requestHeaders.set("Content-Security-Policy", strictNonceCsp);
+  }
+
+  const passNext = () =>
+    applyCspHeaders(NextResponse.next({ request: { headers: requestHeaders } }), pathname, strictNonceCsp);
+  const passRewrite = (url: URL | string) =>
+    applyCspHeaders(NextResponse.rewrite(url, { request: { headers: requestHeaders } }), pathname, strictNonceCsp);
 
   // HTML terbit tersimpan di public/published hanya untuk dibaca rute slug/subdomain, yang memeriksa status undangan.
   // Next melayani isi public/ yang ada saat build apa adanya, sehingga undangan yang diturunkan tetap terbuka di sini.
@@ -121,7 +157,7 @@ export const proxy = auth(async (req) => {
   const host = req.headers.get("host") || "";
   const cleanHost = host.split(":")[0].toLowerCase(); // remove port & normalize
   const envRootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost:3000").split(":")[0].toLowerCase();
-  
+
   const rootDomains = [envRootDomain, "localhost", "127.0.0.1"].filter(Boolean);
 
   const isRootDomain = rootDomains.some((d) => cleanHost === d || cleanHost === `www.${d}`);
@@ -162,7 +198,7 @@ export const proxy = auth(async (req) => {
 
     // 4. Seluruh halaman platform resmi DILARANG dibuka dari subdomain klien apapun
     const PLATFORM_PATHS = [
-      "/admin", "/login", "/packages", "/checkout", "/onboarding",
+      "/admin", "/login", "/partner", "/packages", "/checkout", "/onboarding",
       "/dashboard", "/contact", "/how-it-works", "/privacy", "/terms",
       "/refund", "/portfolio", "/demo"
     ];
@@ -178,7 +214,7 @@ export const proxy = auth(async (req) => {
     if (isLoggedIn && isAdmin) {
       return NextResponse.redirect(new URL("/admin", req.url));
     }
-    return NextResponse.next();
+    return passNext();
   }
 
   // 2. Client login page
@@ -186,7 +222,7 @@ export const proxy = auth(async (req) => {
     if (isLoggedIn && !isAdmin) {
       return NextResponse.redirect(new URL("/onboarding", req.url));
     }
-    return NextResponse.next();
+    return passNext();
   }
 
   // 3. Admin routes protection -> HANYA Admin yang diizinkan
@@ -194,7 +230,7 @@ export const proxy = auth(async (req) => {
     if (!isLoggedIn || !isAdmin) {
       return NextResponse.redirect(new URL("/admin/login", req.url));
     }
-    return NextResponse.next();
+    return passNext();
   }
 
   // 4. Client dashboard, packages, and checkout routes protection -> HANYA Client murni yang diizinkan (Admin diblokir)
@@ -202,13 +238,13 @@ export const proxy = auth(async (req) => {
     // PENGECUALIAN: Admin dengan cookie remote yang valid diizinkan masuk ke /dashboard
     const remoteClientId = req.cookies.get("lux_remote_client_id")?.value;
     if (isAdmin && remoteClientId) {
-      return NextResponse.next();
+      return passNext();
     }
 
     if (!isLoggedIn || isAdmin) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
-    return NextResponse.next();
+    return passNext();
   }
 
   // 5. Wildcard Subdomain Routing (e.g. didan-nasha.luxenary.id or didan-nasha.localhost:3000)
@@ -223,22 +259,27 @@ export const proxy = auth(async (req) => {
       if (pathname === "/" || pathname === "") {
         const rewriteUrl = new URL(`/s/${subdomain}`, req.url);
         rewriteUrl.search = req.nextUrl.search;
-        return NextResponse.rewrite(rewriteUrl);
+        return passRewrite(rewriteUrl);
       }
       if (pathname === "/memories" || pathname === "/galery" || pathname === "/gallery") {
         const rewriteUrl = new URL(`/s/${subdomain}/memories`, req.url);
         rewriteUrl.search = req.nextUrl.search;
-        return NextResponse.rewrite(rewriteUrl);
+        return passRewrite(rewriteUrl);
       }
       if (pathname === "/receptionist") {
         const rewriteUrl = new URL(`/s/${subdomain}/receptionist`, req.url);
         rewriteUrl.search = req.nextUrl.search;
-        return NextResponse.rewrite(rewriteUrl);
+        return passRewrite(rewriteUrl);
+      }
+      if (pathname === "/welcome") {
+        const rewriteUrl = new URL(`/s/${subdomain}/welcome`, req.url);
+        rewriteUrl.search = req.nextUrl.search;
+        return passRewrite(rewriteUrl);
       }
       if (pathname === "/sharemoment") {
         const rewriteUrl = new URL(`/s/${subdomain}/sharemoment`, req.url);
         rewriteUrl.search = req.nextUrl.search;
-        return NextResponse.rewrite(rewriteUrl);
+        return passRewrite(rewriteUrl);
       }
       // Dynamic Path Routing for Guest Invitation (e.g. /v=Budi or /Sutejo)
       const segments = pathname.split('/').filter(Boolean);
@@ -251,7 +292,7 @@ export const proxy = auth(async (req) => {
       // Host: req.url sudah diganti Auth.js dengan NEXTAUTH_URL (apex).
       if (segments[0] === "s" && segments[1]?.toLowerCase() === subdomain) {
         const rest = segments.slice(2).join("/");
-        if (rest === "" || ["memories", "sharemoment", "receptionist", "galery", "gallery"].includes(rest)) {
+        if (rest === "" || ["memories", "sharemoment", "receptionist", "welcome", "galery", "gallery"].includes(rest)) {
           const shortUrl = new URL(`/${rest}`, `${req.nextUrl.protocol}//${host}`);
           shortUrl.search = req.nextUrl.search;
           return NextResponse.redirect(shortUrl, 307);
@@ -283,29 +324,32 @@ export const proxy = auth(async (req) => {
 
         if (pathname === "/" || pathname === "") {
           if (isFinished && !viewInvitation) {
-            return NextResponse.rewrite(new URL(`/${slug}/memories${req.nextUrl.search}`, req.url));
+            return passRewrite(new URL(`/${slug}/memories${req.nextUrl.search}`, req.url));
           }
           const rewriteUrl = new URL(`/${slug}`, req.url);
           rewriteUrl.search = req.nextUrl.search;
-          return NextResponse.rewrite(rewriteUrl);
+          return passRewrite(rewriteUrl);
         }
         if (pathname === "/memories" || pathname === "/galery" || pathname === "/gallery") {
           if (isArchived) {
-            return NextResponse.rewrite(new URL(`/${slug}${req.nextUrl.search}`, req.url));
+            return passRewrite(new URL(`/${slug}${req.nextUrl.search}`, req.url));
           }
-          return NextResponse.rewrite(new URL(`/${slug}/memories${req.nextUrl.search}`, req.url));
+          return passRewrite(new URL(`/${slug}/memories${req.nextUrl.search}`, req.url));
         }
         if (pathname === "/receptionist") {
-          return NextResponse.rewrite(new URL(`/${slug}/receptionist${req.nextUrl.search}`, req.url));
+          return passRewrite(new URL(`/${slug}/receptionist${req.nextUrl.search}`, req.url));
+        }
+        if (pathname === "/welcome") {
+          return passRewrite(new URL(`/${slug}/welcome${req.nextUrl.search}`, req.url));
         }
         if (pathname === "/sharemoment") {
-          return NextResponse.rewrite(new URL(`/${slug}/sharemoment${req.nextUrl.search}`, req.url));
+          return passRewrite(new URL(`/${slug}/sharemoment${req.nextUrl.search}`, req.url));
         }
         // Guest param routing
         const segments = pathname.split('/').filter(Boolean);
         if (segments.length === 1) {
           if (isFinished && !viewInvitation) {
-            return NextResponse.rewrite(new URL(`/${slug}/memories${req.nextUrl.search}`, req.url));
+            return passRewrite(new URL(`/${slug}/memories${req.nextUrl.search}`, req.url));
           }
           return guestPathRedirect(req, host, segments[0]);
         }
@@ -324,6 +368,7 @@ export const proxy = auth(async (req) => {
     "/admin",
     "/dashboard",
     "/login",
+    "/partner",
     "/onboarding",
     "/packages",
     "/checkout",
@@ -353,28 +398,28 @@ export const proxy = auth(async (req) => {
       // Sub-routes di bawah slug (memories, sharemoment, galery) ATAU SEO URL (couple-slug/invitation-slug)
       if (segments.length >= 2) {
         const subRoute = segments[1];
-        const allowedSubRoutes = ["memories", "sharemoment", "galery", "gallery", "receptionist"];
+        const allowedSubRoutes = ["memories", "sharemoment", "galery", "gallery", "receptionist", "welcome"];
         if (allowedSubRoutes.includes(subRoute)) {
           // Normalisasi rute /gallery (2 'l') ke /galery jika diakses pada kanonikal
           if (subRoute === "gallery") {
             const rewriteUrl = new URL(`/${slug}/galery`, req.url);
             rewriteUrl.search = req.nextUrl.search;
-            return NextResponse.rewrite(rewriteUrl);
+            return passRewrite(rewriteUrl);
           }
           // Biarkan Next.js routing menangani → app/(public)/[slug]/[subRoute]/page.tsx
-          return NextResponse.next();
+          return passNext();
         } else {
           // Jika segment kedua BUKAN subRoute, berarti ini format SEO URL Portofolio: /groom-bride/invitation-slug
           // Maka slug aslinya adalah segment kedua
           slug = segments[1];
           const rewriteUrl = new URL(`/${slug}`, req.url);
           rewriteUrl.search = req.nextUrl.search;
-          return NextResponse.rewrite(rewriteUrl);
+          return passRewrite(rewriteUrl);
         }
       }
 
       // Root slug — jika URL sudah persis /${slug}, biarkan Next.js route handler app/(public)/[slug]/route.ts menangani langsung tanpa rewrite loop
-      return NextResponse.next();
+      return passNext();
     }
   }
 
@@ -384,11 +429,11 @@ export const proxy = auth(async (req) => {
     if (clientName && !clientName.includes("/")) {
       const rewriteUrl = new URL(`/portfolio/${clientName}.html`, req.url);
       rewriteUrl.search = req.nextUrl.search;
-      return NextResponse.rewrite(rewriteUrl);
+      return passRewrite(rewriteUrl);
     }
   }
 
-  return NextResponse.next();
+  return passNext();
 });
 
 export default proxy;

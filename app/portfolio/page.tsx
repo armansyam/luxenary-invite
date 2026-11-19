@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Metadata } from "next";
 import { listPortfolioSlugs, STORAGE_PROVIDER, getPortfolioMetadata, storagePublicBaseUrl } from "@/lib/storage";
+import { portfolioListCache } from "@/lib/cache";
 import { BrandLogo } from "@/components/BrandLogo";
 import { getPublicPlatformSettings } from "@/lib/settings";
 import { PortfolioGallery, PortfolioGalleryItem } from "./PortfolioGallery";
@@ -15,12 +16,53 @@ export const metadata: Metadata = {
 
 export default async function PortfolioPage() {
   const { platformName } = await getPublicPlatformSettings();
+  const isRemoteStorage = STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3";
 
-  // Fetch daftar portfolio slug (bisa dari R2 atau Lokal). Galat sudah dicatat di listPortfolioSlugs; halaman publik
-  // menampilkan keadaan kosong alih-alih halaman galat selama storage tidak terjangkau.
-  const clonedSlugs = await listPortfolioSlugs().catch(() => [] as string[]);
+  let portfolioItems: PortfolioGalleryItem[] | null = isRemoteStorage
+    ? (portfolioListCache.get("all") as PortfolioGalleryItem[] | null)
+    : null;
 
-  if (clonedSlugs.length === 0) {
+  if (!portfolioItems) {
+    // Fetch daftar portfolio slug (bisa dari R2 atau Lokal). Galat sudah dicatat di listPortfolioSlugs; halaman publik
+    // menampilkan keadaan kosong alih-alih halaman galat selama storage tidak terjangkau.
+    const fetchedSlugs = await listPortfolioSlugs().catch(() => null);
+    const readFailed = fetchedSlugs === null;
+    const clonedSlugs = fetchedSlugs ?? [];
+
+    const built: PortfolioGalleryItem[] = [];
+    if (clonedSlugs.length > 0) {
+      // Metadata tiap portofolio dibaca paralel: satu permintaan R2 berurutan per slug membuat halaman lambat seiring bertambahnya portofolio.
+      const metadataList = await Promise.all(clonedSlugs.map((slug) => getPortfolioMetadata(slug)));
+
+      for (const [index, slug] of clonedSlugs.entries()) {
+        const metadata = metadataList[index];
+        if (!metadata) continue;
+
+        let coverImage = `/portfolio/assets/${slug}/cover.webp`;
+        if (isRemoteStorage) {
+          const publicUrl = storagePublicBaseUrl();
+          if (publicUrl) coverImage = `${publicUrl}/portfolio/assets/${slug}/cover.webp`;
+        }
+
+        built.push({
+          id: slug,
+          coupleName: metadata.coupleName,
+          themeId: metadata.themeId,
+          category: metadata.category,
+          coverImage,
+          publicUrl: `/portfolio/${slug}`,
+        });
+      }
+    }
+
+    portfolioItems = built;
+    // Hanya cache hasil yang sukses dibaca agar kegagalan sementara R2 tidak membekukan halaman kosong 5 menit.
+    if (isRemoteStorage && !readFailed) {
+      portfolioListCache.set("all", portfolioItems);
+    }
+  }
+
+  if (portfolioItems.length === 0) {
     return (
       <div className="min-h-screen bg-[#faf8f5] text-stone-900 font-sans flex flex-col" style={{ colorScheme: "only light", backgroundColor: "#faf8f5", color: "#1c1917" }}>
         <header className="border-b border-[#eadecf]/70 bg-[#faf8f5]/85 backdrop-blur-md sticky top-0 z-40">
@@ -38,36 +80,6 @@ export default async function PortfolioPage() {
         </main>
       </div>
     );
-  }
-
-  // Fetch data klien dari metadata statis (tanpa query DB agar kebal pembersihan)
-  const portfolioItems: PortfolioGalleryItem[] = [];
-
-  // Metadata tiap portofolio dibaca paralel: satu permintaan R2 berurutan per slug membuat halaman lambat seiring bertambahnya portofolio.
-  const metadataList = await Promise.all(clonedSlugs.map((slug) => getPortfolioMetadata(slug)));
-
-  for (const [index, slug] of clonedSlugs.entries()) {
-    const metadata = metadataList[index];
-    if (!metadata) continue;
-
-    // Asumsi cover.webp selalu di-generate oleh admin portfolio POST endpoint
-    let coverImage = `/portfolio/assets/${slug}/cover.webp`;
-    
-    // Jika R2, prefix dengan public CDN URL
-    if (STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3") {
-      // Tanpa basis URL publik, jalur lokal tetap dipakai alih-alih "undefined/portfolio/...".
-      const publicUrl = storagePublicBaseUrl();
-      if (publicUrl) coverImage = `${publicUrl}/portfolio/assets/${slug}/cover.webp`;
-    }
-
-    portfolioItems.push({
-      id: slug, // Gunakan slug sebagai ID karena kita tidak punya ID unik database lagi
-      coupleName: metadata.coupleName,
-      themeId: metadata.themeId,
-      category: metadata.category,
-      coverImage,
-      publicUrl: `/portfolio/${slug}`,
-    });
   }
 
   return (

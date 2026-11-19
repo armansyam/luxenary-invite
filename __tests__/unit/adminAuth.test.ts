@@ -109,8 +109,14 @@ describe("pemindai statis — rute tidak boleh terlupa guard", () => {
     // Daftar ini sengaja eksplisit: menambah rute publik baru harus menjadi keputusan sadar.
     const PUBLIC_ALLOWLIST = new Set([
       "auth/[...nextauth]",
+      "auth/otp/request",
       "client/subdomain/check",
       "health",
+      "partner/auth/logout",
+      "partner/auth/request-otp",
+      "partner/auth/verify",
+      "public/gift-claim",
+      "public/invitations/[slug]/calendar.ics",
       "public/memories/[invitationId]",
       "public/memories/upload",
       "public/music",
@@ -136,7 +142,8 @@ describe("pemindai statis — rute tidak boleh terlupa guard", () => {
       .filter((f) => {
         const src = fs.readFileSync(f, "utf8");
         // verifyProofLink: tautan bertanda tangan (HMAC AUTH_SECRET) yang hanya diterbitkan rute admin.
-        return !/\bauth\(\)|requireAdminModule|requireAnyAdmin|requireSuperAdmin|isReceptionistAuthorized|CRON_SECRET|verifyWebhookSignature|verifyProofLink|x-callback-token/.test(src);
+        // getPartnerSession: cookie sesi mitra bertanda tangan HMAC (lib/partnerAuth.ts).
+        return !/\bauth\(\)|requireAdminModule|requireAnyAdmin|requireSuperAdmin|isReceptionistAuthorized|getPartnerSession|CRON_SECRET|verifyWebhookSignature|verifyProofLink|x-callback-token/.test(src);
       })
       .map((f) => path.relative(apiRoot, path.dirname(f)));
     const unexpected = unauthenticated.filter((r) => !PUBLIC_ALLOWLIST.has(r));

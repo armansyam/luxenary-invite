@@ -22,14 +22,18 @@ export const SIM_SLOTS: SimSlot[] = [
   { slot: "LANDING_COVER_DESKTOP", label: "Sampul desktop", hint: "Foto mendatar: sampul desktop tampil layar penuh." },
   { slot: "HOME_PHOTO", label: "Foto utama", hint: "Foto di seksi pembuka setelah sampul." },
   { slot: "DESKTOP_SIDEBAR", label: "Panel kiri desktop", hint: "Foto panel kiri tampilan desktop terbelah." },
-  { slot: "GROOM_PHOTO", label: "Mempelai pria", hint: "Foto di kartu mempelai.", weddingOnly: true },
+  { slot: "GROOM_PHOTO", label: "Mempelai pria", hint: "Foto di kartu mempelai." },
   { slot: "BRIDE_PHOTO", label: "Mempelai wanita", hint: "Foto di kartu mempelai.", weddingOnly: true },
   { slot: "CLOSING_COVER", label: "Penutup", hint: "Foto latar seksi penutup." },
   { slot: "GLOBAL_FIXED_BG", label: "Latar tetap", hint: "Latar seluruh halaman, menggantikan tekstur tema." },
 ];
 
 export function simSlotsFor(eventType: BuilderEventType): SimSlot[] {
-  return SIM_SLOTS.filter((s) => !s.weddingOnly || eventType === "WEDDING");
+  return SIM_SLOTS.filter((s) => !s.weddingOnly || eventType === "WEDDING").map((s) =>
+    eventType !== "WEDDING" && s.slot === "GROOM_PHOTO"
+      ? { ...s, label: "Foto profil utama", hint: "Foto utama tokoh atau acara." }
+      : s,
+  );
 }
 
 export interface SimMedia {

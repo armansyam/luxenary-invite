@@ -18,6 +18,18 @@ export interface NewMemoryEvent {
   invitationId: string;
 }
 
+export interface GuestCheckinEvent {
+  guestId: string;
+  invitationId: string;
+  name: string;
+  category: string;
+  tableNumber: string | null;
+  sessionInfo: string | null;
+  souvenirClaimed: boolean;
+  checkedInAt: string;
+  alreadyRedeemed?: boolean;
+}
+
 const PG_CHANNEL = "sse_events";
 const INSTANCE_ID = randomUUID();
 
@@ -60,8 +72,12 @@ export function startSseBridge(): void {
         if (msg.channel !== PG_CHANNEL || !msg.payload) return;
         try {
           const { origin, event, data } = JSON.parse(msg.payload);
-          if (origin === INSTANCE_ID || event !== "new_memory") return;
-          sseEmitter.emit("new_memory", data as NewMemoryEvent);
+          if (origin === INSTANCE_ID) return;
+          if (event === "new_memory") {
+            sseEmitter.emit("new_memory", data as NewMemoryEvent);
+          } else if (event === "guest_checkin") {
+            sseEmitter.emit("guest_checkin", data as GuestCheckinEvent);
+          }
         } catch (err) {
           logger.error("SseEmitter", "Payload notifikasi tidak valid", err);
         }
@@ -86,5 +102,14 @@ export async function publishNewMemory(event: NewMemoryEvent): Promise<void> {
   await pool.query("SELECT pg_notify($1, $2)", [
     PG_CHANNEL,
     JSON.stringify({ origin: INSTANCE_ID, event: "new_memory", data: event }),
+  ]);
+}
+
+/** Publikasikan event check-in tamu ke Layar Sapa TV & resepsionis di seluruh proses. */
+export async function publishGuestCheckin(event: GuestCheckinEvent): Promise<void> {
+  sseEmitter.emit("guest_checkin", event);
+  await pool.query("SELECT pg_notify($1, $2)", [
+    PG_CHANNEL,
+    JSON.stringify({ origin: INSTANCE_ID, event: "guest_checkin", data: event }),
   ]);
 }

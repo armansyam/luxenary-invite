@@ -293,10 +293,59 @@ export interface StaleDataCleanupResult {
   purgedRateLimitRows: number;
   purgedWebhookLogs: number;
   purgedSimMedia: number;
+  purgedFreeDrafts: number;
 }
 
 const FULFILLMENT_GRACE_MS = 5 * 60 * 1000;
 const WEBHOOK_LOG_RETENTION_DAYS = 365;
+export const FREE_DRAFT_RETENTION_DAYS = 14;
+
+/**
+ * Menghapus draf gratis kedaluwarsa (> 14 hari sejak dibuat tanpa order terhubung).
+ * Menjalankan File Cleanup Invariant 3-langkah sebelum menghapus baris undangan di DB.
+ */
+export async function purgeExpiredFreeDrafts(
+  now: Date = new Date(),
+  dryRun: boolean = false,
+): Promise<number> {
+  const cutoff = new Date(now.getTime() - FREE_DRAFT_RETENTION_DAYS * DAY_MS);
+  const expired = await prisma.invitation.findMany({
+    where: {
+      isFreeDraft: true,
+      status: "DRAFT",
+      orderId: null,
+      createdAt: { lt: cutoff },
+    },
+    select: { id: true },
+  });
+
+  if (dryRun || expired.length === 0) return expired.length;
+
+  let purged = 0;
+  for (const inv of expired) {
+    try {
+      await deletePublishedHtml(inv.id).catch(() => {});
+      await deleteInvitationDraft(inv.id).catch(() => {});
+      await fs.promises
+        .rm(path.join(process.cwd(), "data", "drafts", `${inv.id}.html`), { force: true })
+        .catch(() => {});
+      await fs.promises
+        .rm(path.join(process.cwd(), "public", "uploads", "invitations", inv.id), {
+          recursive: true,
+          force: true,
+        })
+        .catch(() => {});
+      if (process.env.STORAGE_PROVIDER === "r2" || process.env.STORAGE_PROVIDER === "s3") {
+        await deleteInvitationBucketObjects(inv.id).catch(() => {});
+      }
+      await prisma.invitation.delete({ where: { id: inv.id } });
+      purged++;
+    } catch (err) {
+      logger.error("LifecycleCleanup", `Gagal membersihkan draf gratis kedaluwarsa ${inv.id}`, err);
+    }
+  }
+  return purged;
+}
 
 /** Order PAID yang pemenuhan layanannya tidak pernah selesai (kegagalan setelah webhook) dijalankan ulang. */
 async function refulfillStuckOrders(now: Date, dryRun: boolean): Promise<number> {
@@ -348,6 +397,7 @@ export async function runStaleDataCleanup(options: LifecycleCleanupOptions = {})
   const refulfilledOrders = await refulfillStuckOrders(now, dryRun);
   const purgedRateLimitRows = await purgeExpiredRateLimitRows(dryRun);
   const purgedSimMedia = await purgeSimMedia(now, dryRun);
+  const purgedFreeDrafts = await purgeExpiredFreeDrafts(now, dryRun);
 
   // Muatan webhook lengkap adalah bukti sengketa pembayaran, jadi disimpan jauh lebih lama daripada order usang.
   const staleWebhookWhere = { createdAt: { lt: new Date(now.getTime() - WEBHOOK_LOG_RETENTION_DAYS * DAY_MS) } };
@@ -355,13 +405,13 @@ export async function runStaleDataCleanup(options: LifecycleCleanupOptions = {})
   const staleOrders = await prisma.order.findMany({ where: staleWhere, select: { proofImageUrl: true } });
   if (dryRun) {
     const purgedWebhookLogs = await prisma.webhookLog.count({ where: staleWebhookWhere });
-    return { deletedOrders: staleOrders.length, refulfilledOrders, purgedRateLimitRows, purgedWebhookLogs, purgedSimMedia };
+    return { deletedOrders: staleOrders.length, refulfilledOrders, purgedRateLimitRows, purgedWebhookLogs, purgedSimMedia, purgedFreeDrafts };
   }
 
   await Promise.all(staleOrders.map((order) => deleteFile(order.proofImageUrl)));
   const deleted = await prisma.order.deleteMany({ where: staleWhere });
   const purgedWebhookLogs = (await prisma.webhookLog.deleteMany({ where: staleWebhookWhere })).count;
-  return { deletedOrders: deleted.count, refulfilledOrders, purgedRateLimitRows, purgedWebhookLogs, purgedSimMedia };
+  return { deletedOrders: deleted.count, refulfilledOrders, purgedRateLimitRows, purgedWebhookLogs, purgedSimMedia, purgedFreeDrafts };
 }
 
 /** Foto simulasi pratinjau builder (public/uploads/builder-sim) yang lebih tua dari SIM_MEDIA_MAX_AGE_DAYS. */

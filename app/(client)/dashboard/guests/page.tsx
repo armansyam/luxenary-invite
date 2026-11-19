@@ -8,6 +8,7 @@ import { participantNames } from "@/lib/participantUtils";
 import { useFeedback } from "@/components/ui/Feedback";
 import { normalizeRsvpStatus, type RsvpStatus } from "@/lib/rsvpStatus";
 import { getPrimaryEvent } from "@/lib/lifecycleDates";
+import { useClientInvitation } from "@/components/client/ClientInvitationContext";
 
 interface Guest {
   id: string;
@@ -48,6 +49,7 @@ function rsvpOf(guest: Guest): { state: RsvpStatus; label: string } | null {
 
 export default function GuestsPage() {
   const feedback = useFeedback();
+  const { activeInvitation, activeInvitationId, loading: ctxLoading } = useClientInvitation();
   const [invitationId, setInvitationId] = useState<string>("");
   const [invitationData, setInvitationData] = useState<any>(null);
   const [platformPackages, setPlatformPackages] = useState<any[]>([]);
@@ -121,50 +123,27 @@ export default function GuestsPage() {
     URL.revokeObjectURL(url);
   };
 
-  const parseCsvText = (text: string) => {
-    const lines = text
-      .split(/\r\n|\n|\r/)
-      .map((l) => l.trim())
-      .filter(Boolean);
-
-    if (lines.length < 2) {
-      setBulkError("Berkas CSV kosong atau hanya berisi baris judul.");
+  const applyParsedRows = (rows: string[][], sourceExt: string) => {
+    if (rows.length < 2) {
+      setBulkError(`Berkas ${sourceExt} kosong atau hanya berisi baris judul.`);
       setParsedGuests([]);
       return;
     }
 
-    const firstLine = lines[0];
-    const delimiter = firstLine.includes(";") && !firstLine.includes(",") ? ";" : ",";
-
-    const splitRow = (row: string) => {
-      const regex = new RegExp(`(?:^|${delimiter})(?:"([^"]*(?:""[^"]*)*)"|([^"${delimiter}]*))`, "g");
-      const result: string[] = [];
-      let match;
-      while ((match = regex.exec(row)) !== null) {
-        const val = match[1] !== undefined ? match[1].replace(/""/g, '"') : match[2];
-        result.push((val || "").trim());
-        if (regex.lastIndex === row.length && row.endsWith(delimiter)) {
-          result.push("");
-          break;
-        }
-      }
-      return result;
-    };
-
-    const rawHeaders = splitRow(lines[0]).map((h) => h.toLowerCase());
+    const rawHeaders = rows[0].map((h) => (h || "").toLowerCase());
 
     let nameIdx = rawHeaders.findIndex((h) => h.includes("nama") || h.includes("name") || h.includes("tamu") || h.includes("guest"));
-    let phoneIdx = rawHeaders.findIndex((h) => h.includes("hp") || h.includes("wa") || h.includes("telepon") || h.includes("phone") || h.includes("kontak"));
-    let catIdx = rawHeaders.findIndex((h) => h.includes("kategori") || h.includes("category") || h.includes("tipe"));
-    let sessionIdx = rawHeaders.findIndex((h) => h.includes("sesi") || h.includes("session") || h.includes("waktu"));
-    let quotaIdx = rawHeaders.findIndex((h) => h.includes("kuota") || h.includes("quota") || h.includes("limit") || h.includes("pax") || h.includes("jumlah"));
-    let tableIdx = rawHeaders.findIndex((h) => h.includes("meja") || h.includes("table"));
+    const phoneIdx = rawHeaders.findIndex((h) => h.includes("hp") || h.includes("wa") || h.includes("telepon") || h.includes("phone") || h.includes("kontak"));
+    const catIdx = rawHeaders.findIndex((h) => h.includes("kategori") || h.includes("category") || h.includes("tipe"));
+    const sessionIdx = rawHeaders.findIndex((h) => h.includes("sesi") || h.includes("session") || h.includes("waktu"));
+    const quotaIdx = rawHeaders.findIndex((h) => h.includes("kuota") || h.includes("quota") || h.includes("limit") || h.includes("pax") || h.includes("jumlah"));
+    const tableIdx = rawHeaders.findIndex((h) => h.includes("meja") || h.includes("table"));
 
     if (nameIdx === -1) nameIdx = 0;
 
     const parsed: any[] = [];
-    for (let i = 1; i < lines.length; i++) {
-      const cols = splitRow(lines[i]);
+    for (let i = 1; i < rows.length; i++) {
+      const cols = rows[i];
       const name = cols[nameIdx]?.trim();
       if (!name) continue;
 
@@ -194,7 +173,7 @@ export default function GuestsPage() {
     }
 
     if (parsed.length === 0) {
-      setBulkError("Tidak ditemukan data nama tamu yang valid dalam berkas CSV ini.");
+      setBulkError(`Tidak ditemukan data nama tamu yang valid dalam berkas ${sourceExt} ini.`);
       setParsedGuests([]);
       return;
     }
@@ -209,14 +188,72 @@ export default function GuestsPage() {
     setBulkError(null);
   };
 
-  const handleFileSelect = (file: File) => {
-    if (!file) return;
-    if (!file.name.toLowerCase().endsWith(".csv") && file.type !== "text/csv" && file.type !== "application/vnd.ms-excel") {
-      setBulkError("Format berkas harus berekstensi .csv. Silakan simpan Excel Anda dalam format CSV (Comma Delimited).");
+  const parseCsvText = (text: string) => {
+    const lines = text
+      .split(/\r\n|\n|\r/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+
+    if (lines.length === 0) {
+      applyParsedRows([], "CSV");
       return;
     }
+
+    const firstLine = lines[0];
+    const delimiter = firstLine.includes(";") && !firstLine.includes(",") ? ";" : ",";
+
+    const splitRow = (row: string) => {
+      const regex = new RegExp(`(?:^|${delimiter})(?:"([^"]*(?:""[^"]*)*)"|([^"${delimiter}]*))`, "g");
+      const result: string[] = [];
+      let match;
+      while ((match = regex.exec(row)) !== null) {
+        const val = match[1] !== undefined ? match[1].replace(/""/g, '"') : match[2];
+        result.push((val || "").trim());
+        if (regex.lastIndex === row.length && row.endsWith(delimiter)) {
+          result.push("");
+          break;
+        }
+      }
+      return result;
+    };
+
+    applyParsedRows(lines.map(splitRow), "CSV");
+  };
+
+  const handleFileSelect = async (file: File) => {
+    if (!file) return;
+    const lowerName = file.name.toLowerCase();
+    const isXlsx =
+      lowerName.endsWith(".xlsx") ||
+      file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    const isCsv =
+      lowerName.endsWith(".csv") ||
+      file.type === "text/csv" ||
+      file.type === "application/vnd.ms-excel";
+
+    if (!isXlsx && !isCsv) {
+      setBulkError("Format berkas harus .xlsx (Excel) atau .csv.");
+      return;
+    }
+
     setBulkFileName(file.name);
     setBulkError(null);
+
+    if (isXlsx) {
+      try {
+        const [{ parseXlsxRows }, buffer] = await Promise.all([
+          import("@/lib/xlsxParser"),
+          file.arrayBuffer(),
+        ]);
+        const rows = await parseXlsxRows(buffer);
+        applyParsedRows(rows, "XLSX");
+      } catch (err) {
+        setParsedGuests([]);
+        setBulkError(err instanceof Error ? err.message : "Gagal membaca berkas Excel (.xlsx).");
+      }
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (e) => {
       const content = e.target?.result as string;
@@ -367,29 +404,22 @@ export default function GuestsPage() {
   }, []);
 
   useEffect(() => {
-    fetch(`/api/client/invitations`, { cache: "no-store" })
-      .then((res) => res.json())
-      .then((invs: any[]) => {
-        if (Array.isArray(invs) && invs.length > 0) {
-          const inv = invs[0];
-          setInvitationId(inv.id);
-          setInvitationData(inv);
+    if (ctxLoading) return;
+    if (!activeInvitation) {
+      setInvitationId("");
+      setInvitationData(null);
+      setGuests([]);
+      setLoading(false);
+      return;
+    }
 
-          // Extract existing saved WA template if any
-          const feat: Record<string, any> = inv.featureSettings ?? {};
-
-          if (feat.waTemplate) setWaTemplate(feat.waTemplate);
-
-          loadGuests(inv.id);
-        } else {
-          setLoading(false);
-        }
-      })
-      .catch(() => {
-        setError("Gagal memuat data undangan");
-        setLoading(false);
-      });
-  }, []);
+    setError(null);
+    setInvitationId(activeInvitation.id);
+    setInvitationData(activeInvitation);
+    const feat: Record<string, any> = activeInvitation.featureSettings ?? {};
+    setWaTemplate(feat.waTemplate || null);
+    loadGuests(activeInvitation.id);
+  }, [ctxLoading, activeInvitationId, activeInvitation]);
 
   const presets = waPresets(invitationData?.eventType);
   const defaultTemplate = adminWaTemplate || presets[0].text;
@@ -684,7 +714,7 @@ export default function GuestsPage() {
             <svg className="w-4 h-4 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
             </svg>
-            <span>Import CSV</span>
+            <span>Impor CSV / Excel</span>
           </button>
 
           {/* Native Android Contact Picker Button (Progressive Enhancement) */}
@@ -1498,10 +1528,10 @@ export default function GuestsPage() {
               >
                 <input
                   type="file"
-                  accept=".csv,text/csv,application/vnd.ms-excel"
+                  accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
                   onChange={(e) => {
                     if (e.target.files && e.target.files[0]) {
-                      handleFileSelect(e.target.files[0]);
+                      void handleFileSelect(e.target.files[0]);
                     }
                   }}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -1518,11 +1548,11 @@ export default function GuestsPage() {
                     ) : (
                       <>
                         <span className="font-bold text-amber-800">Klik untuk memilih</span>
-                        <span className="text-stone-500"> atau seret berkas .csv ke sini</span>
+                        <span className="text-stone-500"> atau seret berkas Excel (.xlsx) / .csv ke sini</span>
                       </>
                     )}
                   </div>
-                  <span className="text-[10px] text-stone-400">Maksimal 500 baris tamu per import</span>
+                  <span className="text-[10px] text-stone-400">Mendukung berkas Excel .xlsx &amp; .csv (maksimal 500 tamu)</span>
                 </div>
               </div>
             </div>
