@@ -7,7 +7,7 @@ import { GoogleFontPicker } from "@/components/admin/themeBuilder/GoogleFontPick
 import { FONT_OPTIONS, PALETTE_PRESETS, customCssError, familyOrnamentMediaSlots, fontLabel, isGoogleFontId, type BuilderEventType, type OrnamentMediaSlot } from "@/lib/themeBuilder/spec";
 import { ELEMENT_LIMITS, isElementSelector, masterExtraCss, overrideCount, overrideCssFromTokens, recolorWithPalette, type ColorUsage, type ColorUsageKind, type ElementEdit, type ElementView, type MasterFontToken, type MasterOverrides } from "@/lib/themeVariantCss";
 import { measureText, newlyUnreadable, type TextSample } from "@/components/admin/variantReadability";
-import { checkSlots, type SlotCheck } from "@/components/admin/slotVisibility";
+import { checkSlots, seenPlaceLabels, SLOT_SEEN, type SlotCheck } from "@/components/admin/slotVisibility";
 import { parseSimMedia, simSlotsFor, type SimMedia } from "@/lib/themeBuilder/simSlots";
 import { MASTER_BG_TOKENS, ornamentStyle, type MasterFreeSection, type MasterOrnament, type MasterSectionBg } from "@/lib/masterLayout";
 
@@ -86,37 +86,12 @@ function slotDeclToApi(decl: SlotDecl | null) {
   }]));
 }
 
-/** Status pemeriksa yang berarti foto slot terlihat tamu (di tampilan ini atau tampilan lain). */
-const SLOT_SEEN: ReadonlySet<SlotCheck["status"]> = new Set(["visible", "dim", "other-view"]);
-
-/** Nama tempat dari pemeriksa ("seksi host1") menjadi teks "Dipakai di" untuk klien; id seksi lain tidak ditulis. */
-const PLACE_LABELS: Record<string, string> = {
-  sampul: "Sampul",
-  "latar halaman": "Latar halaman",
-  penutup: "Penutup",
-  "seksi closing": "Penutup",
-  "seksi home": "Seksi pembuka",
-  "seksi quote": "Kutipan",
-  "seksi section-quote": "Kutipan",
-  "seksi profile": "Profil",
-  "seksi couple": "Profil mempelai",
-  "seksi section-couple": "Profil mempelai",
-  "seksi host1": "Profil mempelai",
-  "seksi host2": "Profil mempelai",
-  "seksi story": "Kisah",
-  "seksi event": "Acara",
-  "seksi events": "Acara",
-  "seksi section-events": "Acara",
-  "seksi countdown": "Hitung mundur",
-  "seksi rsvp": "RSVP",
-};
-
 /** Slot yang terlihat menurut pemeriksa ditambahkan ke deklarasi; slot yang sudah dideklarasikan tidak dihapus. */
 function mergeCheckedSlots(prev: SlotDecl | null, checks: SlotCheck[]): SlotDecl {
   const next: SlotDecl = { ...(prev ?? {}) };
   for (const c of checks) {
     if (!SLOT_SEEN.has(c.status)) continue;
-    const found = (c.places ?? []).filter((p) => SLOT_SEEN.has(p.status)).map((p) => PLACE_LABELS[p.where]).filter((p): p is string => Boolean(p));
+    const found = seenPlaceLabels(c);
     const current = next[c.slot]?.places.split(",").map((p) => p.trim()).filter(Boolean) ?? [];
     next[c.slot] = { ...next[c.slot], places: [...new Set([...current, ...found])].join(", ") };
   }

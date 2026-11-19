@@ -19,6 +19,36 @@ export interface SlotCheck {
 }
 
 const DESKTOP_ONLY = new Set(["LANDING_COVER_DESKTOP", "DESKTOP_SIDEBAR"]);
+
+/** Status yang berarti foto slot terlihat tamu (di tampilan ini atau tampilan lain); dasar usulan deklarasi slot. */
+export const SLOT_SEEN: ReadonlySet<SlotStatus> = new Set(["visible", "dim", "other-view"]);
+
+/** Nama tempat pemeriksa ("seksi host1") menjadi teks "Dipakai di" untuk klien; id seksi lain tidak ditulis. */
+const PLACE_LABELS: Record<string, string> = {
+  sampul: "Sampul",
+  "latar halaman": "Latar halaman",
+  penutup: "Penutup",
+  "seksi closing": "Penutup",
+  "seksi home": "Seksi pembuka",
+  "seksi quote": "Kutipan",
+  "seksi section-quote": "Kutipan",
+  "seksi profile": "Profil",
+  "seksi couple": "Profil mempelai",
+  "seksi section-couple": "Profil mempelai",
+  "seksi host1": "Profil mempelai",
+  "seksi host2": "Profil mempelai",
+  "seksi story": "Kisah",
+  "seksi event": "Acara",
+  "seksi events": "Acara",
+  "seksi section-events": "Acara",
+  "seksi countdown": "Hitung mundur",
+  "seksi rsvp": "RSVP",
+};
+
+/** Tempat yang terlihat dari satu hasil pemeriksa, dalam bahasa klien. */
+export function seenPlaceLabels(check: SlotCheck): string[] {
+  return [...new Set((check.places ?? []).filter((p) => SLOT_SEEN.has(p.status)).map((p) => PLACE_LABELS[p.where]).filter((p): p is string => Boolean(p)))];
+}
 const RANK: Record<SlotStatus, number> = { visible: 5, dim: 4, covered: 3, hidden: 2, "other-view": 1, absent: 0 };
 
 /** Lapisan `background-image` tingkat atas (koma di dalam fungsi tidak memisah). */
