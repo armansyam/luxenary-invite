@@ -5,7 +5,7 @@ export const viewport: Viewport = {
   themeColor: "#faf8f5",
   colorScheme: "only light" as any,
 };
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Cormorant_Garamond, DM_Sans } from "next/font/google";
 import { Providers } from "@/lib/session";
 import { AnalyticsPixels } from "@/components/AnalyticsPixels";
 import "./globals.css";
@@ -18,6 +18,21 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const cormorantGaramond = Cormorant_Garamond({
+  variable: "--font-cormorant",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  display: "swap",
+});
+
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
 });
 
 import { getPublicPlatformSettings } from "@/lib/settings";
@@ -122,7 +137,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html
       lang="id"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${cormorantGaramond.variable} ${dmSans.variable} h-full antialiased`}
       style={{ colorScheme: "only light" as any }}
     >
       <head>

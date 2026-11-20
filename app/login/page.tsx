@@ -31,6 +31,17 @@ function EyeToggleIcon({ shown }: { shown: boolean }) {
   );
 }
 
+function GoogleIcon() {
+  return (
+    <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+    </svg>
+  );
+}
+
 function LoginForm({ platformName, serviceStatus }: { platformName: string; serviceStatus: ServiceStatus | null }) {
   const [view, setView] = useState<AuthView>("login");
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -65,6 +76,7 @@ function LoginForm({ platformName, serviceStatus }: { platformName: string; serv
   const callbackUrl = safeInternalCallbackUrl(searchParams.get("callbackUrl"), "/onboarding");
   const authError = searchParams.get("error");
   const isRegistrationClosedError = authError === "RegistrationClosed";
+  const isEmailNotVerifiedError = authError === "EmailNotVerified";
 
   const switchView = (next: AuthView) => {
     setView(next);
@@ -144,7 +156,10 @@ function LoginForm({ platformName, serviceStatus }: { platformName: string; serv
         setErrorMsg(data?.error || "Gagal mengirim kode verifikasi ke email Anda.");
       } else {
         setRegStep("otp");
-        setNoticeMsg("Kode OTP 6 digit telah dikirim ke email Anda. Periksa kotak masuk atau folder spam.");
+        setNoticeMsg(
+          data.message ||
+            "Kode OTP 6 digit telah dikirim ke email Anda. Periksa kotak masuk (Inbox) atau folder Spam/Junk.",
+        );
       }
     } catch {
       setErrorMsg("Kesalahan jaringan saat mengirim kode verifikasi.");
@@ -217,7 +232,10 @@ function LoginForm({ platformName, serviceStatus }: { platformName: string; serv
         setErrorMsg(data?.error || "Gagal mengirim kode reset kata sandi.");
       } else {
         setResetStep("verify");
-        setNoticeMsg(data.message || "Jika email terdaftar, kode verifikasi 6 digit telah dikirim.");
+        setNoticeMsg(
+          data.message ||
+            "Jika email terdaftar, kode verifikasi 6 digit telah dikirim. Periksa kotak masuk (Inbox) atau folder Spam/Junk.",
+        );
       }
     } catch {
       setErrorMsg("Kesalahan jaringan saat mengirim kode reset.");
@@ -389,6 +407,20 @@ function LoginForm({ platformName, serviceStatus }: { platformName: string; serv
           </div>
         )}
 
+        {isEmailNotVerifiedError && (
+          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs space-y-1.5">
+            <div className="flex items-center gap-1.5 font-bold">
+              <svg className="w-4 h-4 shrink-0 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span>Email Akun Google Belum Terverifikasi</span>
+            </div>
+            <p className="text-rose-800 leading-relaxed text-[11px]">
+              Akun Google yang dipilih belum memiliki alamat email terverifikasi. Gunakan akun Google lain atau daftar menggunakan email.
+            </p>
+          </div>
+        )}
+
         {errorMsg && (
           <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs leading-relaxed">
             {errorMsg}
@@ -413,12 +445,7 @@ function LoginForm({ platformName, serviceStatus }: { platformName: string; serv
               {googleLoading ? (
                 <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
-                <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                </svg>
+                <GoogleIcon />
               )}
               <span>{googleLoading ? "Menghubungkan..." : "Masuk dengan Akun Google"}</span>
             </button>
@@ -495,99 +522,124 @@ function LoginForm({ platformName, serviceStatus }: { platformName: string; serv
           </div>
         )}
 
-        {/* TAB 2: DAFTAR AKUN (Verifikasi OTP Email saat Registrasi) */}
+        {/* TAB 2: DAFTAR AKUN (Google OAuth Langsung atau Email + Verifikasi OTP) */}
         {view === "register" && (
           <div className="space-y-4">
             {regStep === "form" ? (
-              <form onSubmit={handleRequestRegisterOtp} className="space-y-3">
-                <div>
-                  <label htmlFor="reg-name-input" className="block text-xs font-semibold text-stone-700 mb-1">
-                    Nama Lengkap
-                  </label>
-                  <input
-                    id="reg-name-input"
-                    type="text"
-                    autoComplete="name"
-                    required
-                    minLength={2}
-                    maxLength={100}
-                    value={regName}
-                    onChange={(e) => setRegName(e.target.value)}
-                    placeholder="Nama Anda"
-                    className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-stone-50/60 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-700 focus:bg-white transition"
-                  />
+              <div className="space-y-4">
+                <button
+                  id="btn-google-register"
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={googleLoading || submitting || Boolean(isClosed)}
+                  className="w-full py-3.5 bg-stone-900 hover:bg-stone-800 text-white rounded-2xl flex items-center justify-center gap-3 text-sm font-bold transition shadow-lg shadow-stone-950/15 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {googleLoading ? (
+                    <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <GoogleIcon />
+                  )}
+                  <span>{googleLoading ? "Menghubungkan..." : "Daftar dengan Akun Google"}</span>
+                </button>
+
+                <div className="relative flex items-center py-0.5">
+                  <div className="flex-grow border-t border-stone-200" />
+                  <span className="shrink-0 px-3 text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+                    atau daftar dengan email
+                  </span>
+                  <div className="flex-grow border-t border-stone-200" />
                 </div>
-                <div>
-                  <label htmlFor="reg-email-input" className="block text-xs font-semibold text-stone-700 mb-1">
-                    Alamat Email
-                  </label>
-                  <input
-                    id="reg-email-input"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={regEmail}
-                    onChange={(e) => setRegEmail(e.target.value)}
-                    placeholder="nama@email.com"
-                    className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-stone-50/60 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-700 focus:bg-white transition"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="reg-password-input" className="block text-xs font-semibold text-stone-700 mb-1">
-                    Kata Sandi <span className="font-normal text-stone-400">(minimal 8 karakter)</span>
-                  </label>
-                  <div className="relative">
+
+                <form onSubmit={handleRequestRegisterOtp} className="space-y-3">
+                  <div>
+                    <label htmlFor="reg-name-input" className="block text-xs font-semibold text-stone-700 mb-1">
+                      Nama Lengkap
+                    </label>
                     <input
-                      id="reg-password-input"
+                      id="reg-name-input"
+                      type="text"
+                      autoComplete="name"
+                      required
+                      minLength={2}
+                      maxLength={100}
+                      value={regName}
+                      onChange={(e) => setRegName(e.target.value)}
+                      placeholder="Nama Anda"
+                      className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-stone-50/60 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-700 focus:bg-white transition"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="reg-email-input" className="block text-xs font-semibold text-stone-700 mb-1">
+                      Alamat Email
+                    </label>
+                    <input
+                      id="reg-email-input"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      value={regEmail}
+                      onChange={(e) => setRegEmail(e.target.value)}
+                      placeholder="nama@email.com"
+                      className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-stone-50/60 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-700 focus:bg-white transition"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="reg-password-input" className="block text-xs font-semibold text-stone-700 mb-1">
+                      Kata Sandi <span className="font-normal text-stone-400">(minimal 8 karakter)</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="reg-password-input"
+                        type={showRegPw ? "text" : "password"}
+                        autoComplete="new-password"
+                        required
+                        minLength={8}
+                        maxLength={72}
+                        value={regPassword}
+                        onChange={(e) => setRegPassword(e.target.value)}
+                        placeholder="Buat kata sandi"
+                        className="w-full pl-4 pr-11 py-2.5 rounded-xl border border-stone-200 bg-stone-50/60 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-700 focus:bg-white transition"
+                      />
+                      <button
+                        type="button"
+                        aria-label={showRegPw ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+                        onClick={() => setShowRegPw((v) => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 cursor-pointer"
+                      >
+                        <EyeToggleIcon shown={showRegPw} />
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="reg-confirm-input" className="block text-xs font-semibold text-stone-700 mb-1">
+                      Konfirmasi Kata Sandi
+                    </label>
+                    <input
+                      id="reg-confirm-input"
                       type={showRegPw ? "text" : "password"}
                       autoComplete="new-password"
                       required
                       minLength={8}
                       maxLength={72}
-                      value={regPassword}
-                      onChange={(e) => setRegPassword(e.target.value)}
-                      placeholder="Buat kata sandi"
-                      className="w-full pl-4 pr-11 py-2.5 rounded-xl border border-stone-200 bg-stone-50/60 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-700 focus:bg-white transition"
+                      value={regConfirm}
+                      onChange={(e) => setRegConfirm(e.target.value)}
+                      placeholder="Ulangi kata sandi"
+                      className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-stone-50/60 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-700 focus:bg-white transition"
                     />
-                    <button
-                      type="button"
-                      aria-label={showRegPw ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
-                      onClick={() => setShowRegPw((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 cursor-pointer"
-                    >
-                      <EyeToggleIcon shown={showRegPw} />
-                    </button>
                   </div>
-                </div>
-                <div>
-                  <label htmlFor="reg-confirm-input" className="block text-xs font-semibold text-stone-700 mb-1">
-                    Konfirmasi Kata Sandi
-                  </label>
-                  <input
-                    id="reg-confirm-input"
-                    type={showRegPw ? "text" : "password"}
-                    autoComplete="new-password"
-                    required
-                    minLength={8}
-                    maxLength={72}
-                    value={regConfirm}
-                    onChange={(e) => setRegConfirm(e.target.value)}
-                    placeholder="Ulangi kata sandi"
-                    className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-stone-50/60 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-700 focus:bg-white transition"
-                  />
-                </div>
-                <button
-                  id="btn-register-otp"
-                  type="submit"
-                  disabled={submitting || !regName.trim() || !regEmail.trim() || !regPassword || !regConfirm}
-                  className="w-full py-3 rounded-xl bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold transition cursor-pointer disabled:opacity-50"
-                >
-                  {submitting ? "Mengirim Kode Verifikasi..." : "Daftar & Kirim Kode OTP"}
-                </button>
-                <p className="text-center text-[11px] text-stone-400 leading-relaxed">
-                  Kode OTP 6 digit hanya dikirim sekali saat pendaftaran untuk memverifikasi kepemilikan email Anda.
-                </p>
-              </form>
+                  <button
+                    id="btn-register-otp"
+                    type="submit"
+                    disabled={submitting || Boolean(isClosed) || !regName.trim() || !regEmail.trim() || !regPassword || !regConfirm}
+                    className="w-full py-3 rounded-xl bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {submitting ? "Mengirim Kode Verifikasi..." : "Daftar & Kirim Kode OTP"}
+                  </button>
+                  <p className="text-center text-[11px] text-stone-400 leading-relaxed">
+                    Kode OTP 6 digit dikirim sekali saat pendaftaran untuk memverifikasi kepemilikan email Anda. Periksa kotak masuk (Inbox) atau folder Spam/Junk.
+                  </p>
+                </form>
+              </div>
             ) : (
               <form onSubmit={handleCompleteRegister} className="space-y-3">
                 <div className="flex items-center justify-between text-[11px] text-stone-500">
@@ -615,6 +667,9 @@ function LoginForm({ platformName, serviceStatus }: { platformName: string; serv
                   placeholder="Masukkan 6 digit kode OTP"
                   className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-stone-50/60 text-center font-mono text-lg tracking-[0.4em] text-stone-900 placeholder:text-stone-400 placeholder:tracking-normal placeholder:text-sm focus:outline-none focus:border-amber-700 focus:bg-white"
                 />
+                <p className="text-[11px] text-stone-500 leading-relaxed text-center">
+                  Belum menemukan email kode OTP di kotak masuk? Periksa folder <strong className="text-stone-700">Spam / Junk</strong> atau tab <strong className="text-stone-700">Promosi</strong>.
+                </p>
                 <button
                   id="btn-verify-register"
                   type="submit"
@@ -689,6 +744,9 @@ function LoginForm({ platformName, serviceStatus }: { platformName: string; serv
                   placeholder="Masukkan 6 digit kode OTP"
                   className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-stone-50/60 text-center font-mono text-lg tracking-[0.4em] text-stone-900 placeholder:text-stone-400 placeholder:tracking-normal placeholder:text-sm focus:outline-none focus:border-amber-700 focus:bg-white"
                 />
+                <p className="text-[11px] text-stone-500 leading-relaxed text-center">
+                  Belum menemukan email kode OTP di kotak masuk? Periksa folder <strong className="text-stone-700">Spam / Junk</strong> atau tab <strong className="text-stone-700">Promosi</strong>.
+                </p>
                 <div className="relative">
                   <input
                     id="reset-password-input"

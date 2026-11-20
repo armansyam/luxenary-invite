@@ -207,7 +207,10 @@ export default function PartnerPortalPage() {
         setAuthError(data.error || "Gagal mengirim kode OTP.");
         return;
       }
-      setAuthMessage(data.message || "Kode OTP 6 digit telah dikirim ke email Anda.");
+      setAuthMessage(
+        data.message ||
+          "Kode OTP 6 digit telah dikirim ke email Anda. Periksa kotak masuk (Inbox) atau folder Spam/Junk.",
+      );
       setOtpStep("VERIFY");
     } catch {
       setAuthError("Terjadi gangguan koneksi saat mengirim kode OTP.");
@@ -493,6 +496,9 @@ export default function PartnerPortalPage() {
                   placeholder="123456"
                   className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-stone-50 text-center text-lg font-mono font-bold tracking-[0.4em] text-stone-900 focus:outline-none focus:border-amber-700 focus:ring-2 focus:ring-amber-700/15"
                 />
+                <p className="mt-1.5 text-[11px] text-stone-500 leading-relaxed text-center">
+                  Belum menerima email kode OTP? Periksa folder <strong className="text-stone-700">Spam / Junk</strong> atau tab <strong className="text-stone-700">Promosi</strong>.
+                </p>
               </div>
 
               <div>

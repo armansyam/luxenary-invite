@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         expiresInSeconds: 600,
-        message: "Jika email terdaftar, kode verifikasi 6 digit telah dikirim.",
+        message: "Jika email terdaftar, kode verifikasi 6 digit telah dikirim. Periksa kotak masuk (Inbox) atau folder Spam/Junk.",
       });
     }
 
@@ -95,8 +95,8 @@ export async function POST(req: NextRequest) {
       expiresInSeconds: 600,
       message:
         purpose === "CLIENT_REGISTER"
-          ? "Kode verifikasi 6 digit telah dikirim ke email Anda."
-          : "Jika email terdaftar, kode verifikasi 6 digit telah dikirim.",
+          ? "Kode verifikasi 6 digit telah dikirim ke email Anda. Periksa kotak masuk (Inbox) atau folder Spam/Junk."
+          : "Jika email terdaftar, kode verifikasi 6 digit telah dikirim. Periksa kotak masuk (Inbox) atau folder Spam/Junk.",
     });
   } catch (error) {
     return routeError("AuthOtpRequest", error, "Gagal mengirim kode OTP");

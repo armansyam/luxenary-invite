@@ -138,18 +138,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async signIn({ account, profile }) {
       if (account?.provider === "google" && profile) {
         try {
+          const cleanEmail = typeof profile.email === "string" ? profile.email.toLowerCase().trim() : "";
+          const emailVerified = (profile as { email_verified?: boolean }).email_verified === true;
+          if (!cleanEmail || !profile.sub || !emailVerified) {
+            return "/login?error=EmailNotVerified";
+          }
+
           // Verifikasi ketersediaan layanan (Buka Normal / Tutup Order / Maintenance / Coming Soon)
           const { getServiceAvailability } = await import("@/lib/settings");
           const availability = await getServiceAvailability();
 
           if (!availability.isOpen) {
             const { prisma } = await import("@/lib/prisma");
-            const cleanEmail = profile.email ? profile.email.toLowerCase().trim() : "";
             const existingUser = await prisma.user.findFirst({
               where: {
                 OR: [
-                  ...(profile.sub ? [{ googleId: profile.sub }] : []),
-                  ...(cleanEmail ? [{ email: cleanEmail }] : []),
+                  { googleId: profile.sub },
+                  { email: { equals: cleanEmail, mode: "insensitive" } },
                 ],
               },
               select: { id: true },
@@ -163,10 +168,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
           const { upsertGoogleUser } = await import("@/lib/auth");
           await upsertGoogleUser({
-            sub: profile.sub!,
-            email: profile.email!,
-            name: profile.name!,
-            picture: (profile as any).picture,
+            sub: profile.sub,
+            email: cleanEmail,
+            name: (profile.name || "").trim() || cleanEmail.split("@")[0] || "Pengguna",
+            picture: (profile as { picture?: string }).picture,
           });
         } catch (err) {
           console.error("Error upserting Google user:", err);

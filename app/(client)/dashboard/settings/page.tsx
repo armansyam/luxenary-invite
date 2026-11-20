@@ -18,6 +18,7 @@ import { resolveInvitationDisplayName, STAFF_PIN_PATTERN, eventNoun } from "@/li
 import { participantNames, safeParseParticipants } from "@/lib/participantUtils";
 import { useFeedback } from "@/components/ui/Feedback";
 import { useClientInvitation } from "@/components/client/ClientInvitationContext";
+import { AccountPasswordCard } from "@/components/client/AccountPasswordCard";
 
 export default function SettingsPage() {
   const feedback = useFeedback();
@@ -2125,6 +2126,8 @@ export default function SettingsPage() {
   </div>
       )}
       </div>
+
+      <AccountPasswordCard />
 
     </div>
   );

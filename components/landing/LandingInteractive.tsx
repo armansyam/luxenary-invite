@@ -188,15 +188,14 @@ export function LandingInteractive({ collections }: { collections: ShowcaseTheme
     renderShowcase();
 
     // ----------------------------
-    // 6. PENGALAMAN (3D IPAD & DOCK)
+    // 6. PENGALAMAN (2.5D DEVICE MORPHING & DOCK)
     // ----------------------------
     const expBtns = document.querySelectorAll<HTMLElement>(".exp-icon-btn");
     const expScreens = document.querySelectorAll<HTMLElement>(".exp-screen-layer");
-    const expDockItems = document.querySelectorAll<HTMLElement>(".exp-dock-item");
     const expPhone = document.getElementById("exp-phone");
     const expSection = document.getElementById("pengalaman");
 
-    let activeExp = 1; // Default to Guest Moment Camera (Screen 1)
+    let activeExp = 1; // Default to Guest Camera (Screen 1 — Portrait Phone)
     const totalExp = expBtns.length;
 
     const setExp = (idx: number) => {
@@ -210,9 +209,9 @@ export function LandingInteractive({ collections }: { collections: ShowcaseTheme
       expScreens.forEach((screen, i) => {
         screen.classList.toggle("active", i === activeExp);
       });
-      expDockItems.forEach((item, i) => {
-        item.classList.toggle("active", i === activeExp);
-      });
+      if (expPhone) {
+        expPhone.dataset.device = activeExp <= 1 ? "phone" : "tablet";
+      }
     };
 
     const expBtnHandlers: Array<{ el: HTMLElement; fn: () => void }> = [];
@@ -225,53 +224,35 @@ export function LandingInteractive({ collections }: { collections: ShowcaseTheme
       expBtnHandlers.push({ el: btn, fn });
     });
 
-    const expDockHandlers: Array<{ el: HTMLElement; fn: () => void }> = [];
-    expDockItems.forEach((item) => {
-      const fn = () => {
-        const idx = parseInt(item.dataset.dock || "", 10);
-        if (!isNaN(idx)) setExp(idx);
-      };
-      item.addEventListener("click", fn);
-      expDockHandlers.push({ el: item, fn });
-    });
-
-    let expAutoplay = setInterval(() => setExp(activeExp + 1), 5000);
+    let expAutoplay = setInterval(() => setExp(activeExp + 1), 5500);
     const pauseExp = () => clearInterval(expAutoplay);
     const resumeExp = () => {
       clearInterval(expAutoplay);
-      expAutoplay = setInterval(() => setExp(activeExp + 1), 5000);
+      expAutoplay = setInterval(() => setExp(activeExp + 1), 5500);
     };
 
     expSection?.addEventListener("mouseenter", pauseExp);
     expSection?.addEventListener("mouseleave", resumeExp);
 
-    // 3D Parallax on iPad (Desktop Only >= 1024px)
+    // Subtle 2.5D micro-tilt on Desktop (>= 1024px) — stays razor-sharp and readable
     const onExpMove = (e: MouseEvent) => {
       if (!expSection || !expPhone || window.innerWidth < 1024) return;
       const rect = expSection.getBoundingClientRect();
       const x = (e.clientX - rect.left) / rect.width - 0.5;
       const y = (e.clientY - rect.top) / rect.height - 0.5;
-      const rx = 8 - y * 10;
-      const ry = -14 + x * 12;
-      expPhone.style.transform = `rotateY(${ry.toFixed(2)}deg) rotateX(${rx.toFixed(2)}deg) rotateZ(-1deg)`;
+      const rx = 2 - y * 4.5;
+      const ry = -3 + x * 5.5;
+      expPhone.style.transform = `rotateY(${ry.toFixed(2)}deg) rotateX(${rx.toFixed(2)}deg)`;
     };
 
     const onExpLeave = () => {
       if (!expPhone) return;
-      if (window.innerWidth < 1024) {
-        expPhone.style.transform = "";
-      } else {
-        expPhone.style.transform = "rotateY(-14deg) rotateX(8deg) rotateZ(-1deg)";
-      }
+      expPhone.style.transform = window.innerWidth < 1024 ? "" : "rotateY(-3deg) rotateX(2deg)";
     };
 
     const onExpResize = () => {
       if (!expPhone) return;
-      if (window.innerWidth < 1024) {
-        expPhone.style.transform = "";
-      } else {
-        expPhone.style.transform = "rotateY(-14deg) rotateX(8deg) rotateZ(-1deg)";
-      }
+      expPhone.style.transform = window.innerWidth < 1024 ? "" : "rotateY(-3deg) rotateX(2deg)";
     };
 
     if (expSection && expPhone && window.matchMedia("(hover: hover)").matches) {
@@ -279,85 +260,7 @@ export function LandingInteractive({ collections }: { collections: ShowcaseTheme
       expSection.addEventListener("mouseleave", onExpLeave);
       window.addEventListener("resize", onExpResize, { passive: true });
     }
-
-    // Interactive RSVP buttons inside iPad mockup
-    const rsvpMockupBtns = document.querySelectorAll<HTMLElement>(".exp-rsvp-btn");
-    rsvpMockupBtns.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        rsvpMockupBtns.forEach((b) => {
-          b.classList.remove("active");
-          b.style.background = "rgba(255,255,255,0.04)";
-          b.style.color = "rgba(245,240,232,0.7)";
-          b.style.borderColor = "rgba(255,255,255,0.1)";
-        });
-        btn.classList.add("active");
-        btn.style.background = "var(--lux-gold)";
-        btn.style.color = "#0b0c0d";
-        btn.style.borderColor = "var(--lux-gold)";
-      });
-    });
-
-    // Interactive Guest Moment Camera inside iPad mockup
-    const camPreviewImg = document.getElementById("exp-cam-preview-img") as HTMLImageElement | null;
-    const camPresetBadge = document.querySelector<HTMLElement>(".exp-cam-preset-badge");
-    const camFilterBtns = document.querySelectorAll<HTMLElement>(".exp-cam-filter-item");
-    const camShutterBtn = document.getElementById("exp-cam-shutter");
-    const camFlashOverlay = document.getElementById("exp-cam-flash");
-    const camRollCount = document.getElementById("exp-cam-count");
-
-    const filterPresets: Record<string, { filter: string; label: string }> = {
-      aura_90s: {
-        filter: "contrast(1.15) saturate(1.2) sepia(0.18) brightness(0.96)",
-        label: "AURA '90S • VINTAGE WARM",
-      },
-      heritage: {
-        filter: "sepia(0.42) contrast(1.1) brightness(0.95) saturate(0.85)",
-        label: "HERITAGE • SEPIA NOSTALGIC",
-      },
-      botanical: {
-        filter: "saturate(1.28) hue-rotate(-12deg) contrast(1.12) brightness(0.98)",
-        label: "BOTANICAL • MOODY GREEN",
-      },
-      cinema_noir: {
-        filter: "grayscale(1) contrast(1.35) brightness(0.92)",
-        label: "NOIR • CLASSIC MONOCHROME",
-      },
-      daylight: {
-        filter: "brightness(1.08) contrast(1.06) saturate(1.18)",
-        label: "DAYLIGHT • CRISP & CLEAN",
-      },
-    };
-
-    const camFilterHandlers: Array<{ el: HTMLElement; fn: () => void }> = [];
-    camFilterBtns.forEach((btn) => {
-      const fn = () => {
-        const filterKey = btn.dataset.filter || "aura_90s";
-        camFilterBtns.forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
-        const preset = filterPresets[filterKey];
-        if (preset) {
-          if (camPreviewImg) camPreviewImg.style.filter = preset.filter;
-          if (camPresetBadge) camPresetBadge.textContent = preset.label;
-        }
-      };
-      btn.addEventListener("click", fn);
-      camFilterHandlers.push({ el: btn, fn });
-    });
-
-    let currentRoll = 8;
-    const onCamShutter = () => {
-      if (!camFlashOverlay) return;
-      camFlashOverlay.classList.add("active");
-      setTimeout(() => {
-        camFlashOverlay.classList.remove("active");
-      }, 120);
-
-      if (camRollCount && currentRoll > 1) {
-        currentRoll -= 1;
-        camRollCount.textContent = currentRoll < 10 ? `0${currentRoll}` : String(currentRoll);
-      }
-    };
-    camShutterBtn?.addEventListener("click", onCamShutter);
+    setExp(activeExp);
 
     // ----------------------------
     // 6B. STUDIO MANDIRI (DUAL DEVICE LIVE SYNC)
@@ -512,15 +415,12 @@ export function LandingInteractive({ collections }: { collections: ShowcaseTheme
       clearInterval(autoplay);
 
       expBtnHandlers.forEach(({ el, fn }) => el.removeEventListener("click", fn));
-      expDockHandlers.forEach(({ el, fn }) => el.removeEventListener("click", fn));
       expSection?.removeEventListener("mouseenter", pauseExp);
       expSection?.removeEventListener("mouseleave", resumeExp);
       clearInterval(expAutoplay);
       expSection?.removeEventListener("mousemove", onExpMove as any);
       expSection?.removeEventListener("mouseleave", onExpLeave);
       window.removeEventListener("resize", onExpResize);
-      camFilterHandlers.forEach(({ el, fn }) => el.removeEventListener("click", fn));
-      camShutterBtn?.removeEventListener("click", onCamShutter);
 
       studioBtnHandlers.forEach(({ el, fn }) => el.removeEventListener("click", fn));
       studioSection?.removeEventListener("mouseenter", pauseStudio);

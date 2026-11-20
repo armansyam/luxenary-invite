@@ -204,6 +204,8 @@ describe.skipIf(!IS_TEST_DB)("Wave 2 Features Integration (#2, #8, #10A/B, #10C,
     // Request registration OTP
     const reqRes = await clientOtpRequestPost(makeJsonReq("/api/auth/otp/request", "POST", { email, purpose: "CLIENT_REGISTER" }));
     expect(reqRes.status).toBe(200);
+    const reqJson = await reqRes.json();
+    expect(reqJson.message).toMatch(/Spam/i);
     const sent = sentOtps.find((item) => item.to === email && item.purpose === "CLIENT_REGISTER");
     expect(sent?.code).toMatch(/^\d{6}$/);
 
@@ -508,6 +510,8 @@ describe.skipIf(!IS_TEST_DB)("Wave 2 Features Integration (#2, #8, #10A/B, #10C,
       makeJsonReq("/api/partner/auth/request-otp", "POST", { email: partnerEmail, purpose: "PARTNER_ACTIVATE" }),
     );
     expect(otpReq.status).toBe(200);
+    const otpReqJson = await otpReq.json();
+    expect(otpReqJson.message).toMatch(/Spam/i);
     const partnerMail = sentOtps.find((m) => m.to === partnerEmail && m.purpose === "PARTNER_ACTIVATE");
     expect(partnerMail?.code).toMatch(/^\d{6}$/);
 

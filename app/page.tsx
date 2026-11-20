@@ -4,6 +4,7 @@ import { getPublicPlatformSettings } from "@/lib/settings";
 import { getDynamicServerRootDomain } from "@/lib/serverDomainUtils";
 import { LandingInteractive } from "@/components/landing/LandingInteractive";
 import { getShowcaseThemes } from "@/lib/landingShowcase";
+import { getLandingPortfolioPreview } from "@/lib/landingPortfolio";
 import "./landing.css";
 
 export default async function Home() {
@@ -24,7 +25,10 @@ export default async function Home() {
 
   const activeDomain = await getDynamicServerRootDomain();
   const brand = platformName || "Platform Undangan";
-  const showcaseThemes = await getShowcaseThemes();
+  const [showcaseThemes, featuredPortfolios] = await Promise.all([
+    getShowcaseThemes(),
+    getLandingPortfolioPreview(3),
+  ]);
 
   return (
     <div className="lux-landing-root min-h-screen selection:bg-[#C9A227]/30 selection:text-[#FBF8F2]">
@@ -253,64 +257,70 @@ export default async function Home() {
 </section>
 
 {/* ===========================
-     STUDIO MANDIRI (LIVE EDITING & LIVE PREVIEW SHOWCASE)
+     STUDIO MANDIRI (LIVE EDITING & LIVE PREVIEW SHOWCASE — 1:1 LIGHT EDITORIAL)
 =========================== */}
 <section id="studio" aria-labelledby="studio-heading">
   <div className="studio-container">
-    {/* KIRI: Panggung Visual Dual-Device (Laptop Editor + Mobile Phone Preview Bersanding) */}
+    {/* KIRI: Panggung Visual Dual-Device (Laptop Studio Terang Asli + Mobile Live Preview) */}
     <div className="studio-stage reveal">
       <div className="studio-stage-wrap">
         {/* Laptop / Desktop Frame di Belakang */}
-        <div className="studio-laptop-frame">
-          <div className="laptop-topbar">
+        <div className="studio-laptop-frame studio-light-frame">
+          <div className="laptop-topbar studio-light-topbar">
             <div className="laptop-traffic">
               <span></span>
               <span></span>
               <span></span>
             </div>
-            <div className="laptop-url-bar">
+            <div className="laptop-url-bar studio-light-url">
               <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-              studio.{activeDomain}/dashboard/invitation
+              {activeDomain}/dashboard/invitation
             </div>
-            <div className="laptop-status-chip">
+            <div className="laptop-status-chip studio-light-status">
               <span className="laptop-status-dot"></span>
               <span>LIVE SYNC</span>
             </div>
           </div>
 
-          <div className="laptop-screen">
-            {/* Screen Layer 0: Pilihan Tema & Palet Warna (Screenshot Asli Dasbor Klien) */}
+          <div className="laptop-screen studio-light-screen">
+            {/* Screen Layer 0: Pilihan Tema & Palet Warna (Tampilan Terang Studio Asli) */}
             <div className="studio-screen-layer active" id="studio-screen-0">
               <div className="studio-theme-selector-ui">
-                {/* Mini Sidebar Seksi Form */}
                 <div className="studio-mini-sidebar">
-                  <div className="mini-sidebar-header">DAFTAR SEKSI (1/13)</div>
+                  <div className="mini-sidebar-header">SEKSI STUDIO</div>
                   <div className="mini-sidebar-item active">
                     <span className="mini-num">1</span>
                     <div className="mini-info">
                       <span className="mini-title">Tema &amp; Warna</span>
-                      <span className="mini-sub">Dillalucky (Gold)</span>
+                      <span className="mini-sub">Dillalucky · Gold</span>
                     </div>
                   </div>
                   <div className="mini-sidebar-item">
                     <span className="mini-num">2</span>
                     <div className="mini-info">
                       <span className="mini-title">Sampul &amp; Musik</span>
+                      <span className="mini-sub">Foto &amp; Audio</span>
                     </div>
                   </div>
                   <div className="mini-sidebar-item">
                     <span className="mini-num">3</span>
                     <div className="mini-info">
                       <span className="mini-title">Profil Mempelai</span>
-                      <span className="mini-sub">Eka &amp; Putri</span>
+                      <span className="mini-sub">Syahril &amp; Elyana</span>
+                    </div>
+                  </div>
+                  <div className="mini-sidebar-item">
+                    <span className="mini-num">4</span>
+                    <div className="mini-info">
+                      <span className="mini-title">Jadwal &amp; Lokasi</span>
+                      <span className="mini-sub">Akad &amp; Resepsi</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Main Theme Grid Area */}
                 <div className="studio-theme-grid-area">
                   <div className="studio-grid-header">
-                    <span className="grid-header-title">1. Pilihan Seri Desain &amp; Palet Warna</span>
+                    <span className="grid-header-title">Pilih Seri Desain &amp; Palet</span>
                     <div className="mini-cat-pills">
                       <span className="mini-cat">Modern</span>
                       <span className="mini-cat active">Traditional</span>
@@ -318,18 +328,16 @@ export default async function Home() {
                   </div>
 
                   <div className="studio-cards-row">
-                    {/* Card 1: Dillalucky (Terpilih dengan Centang) */}
                     <div className="studio-theme-card selected">
                       <div className="theme-card-badge">TRADITIONAL</div>
                       <div className="theme-card-check">✓</div>
                       <img src="/assets/homepage/studio_theme_dillalucky.webp" alt="Tema Dillalucky" />
                       <div className="theme-card-body">
                         <span className="theme-card-name">Dillalucky</span>
-                        <span className="theme-card-tag">Terpilih</span>
+                        <span className="theme-card-tag">Aktif</span>
                       </div>
                     </div>
 
-                    {/* Card 2: Candani */}
                     <div className="studio-theme-card">
                       <div className="theme-card-badge">MODERN</div>
                       <img src="/assets/homepage/studio_theme_candani.webp" alt="Tema Candani" />
@@ -339,7 +347,6 @@ export default async function Home() {
                       </div>
                     </div>
 
-                    {/* Card 3: Badrika */}
                     <div className="studio-theme-card">
                       <div className="theme-card-badge">MODERN</div>
                       <img src="/assets/homepage/studio_theme_badrika.webp" alt="Tema Badrika" />
@@ -349,32 +356,34 @@ export default async function Home() {
                       </div>
                     </div>
                   </div>
-
-
                 </div>
               </div>
             </div>
 
-            {/* Screen Layer 1: Mode Visual Click-to-Edit (Screenshot Asli Live Editor Canvas) */}
+            {/* Screen Layer 1: Mode Visual Click-to-Edit */}
             <div className="studio-screen-layer" id="studio-screen-1">
               <div className="studio-live-canvas-ui">
-                {/* Instruction Banner Hijau Asli */}
                 <div className="live-canvas-instruction">
                   <span className="inst-dot"></span>
-                  <span>Mode Visual Click-to-Edit: Klik langsung teks/sampul di atas kanvas untuk mengubah</span>
+                  <span>Live Preview Aktif · Setiap perubahan langsung tersimpan otomatis</span>
                 </div>
-
-                {/* Canvas Area with Phone Simulator inside */}
-                <div className="live-canvas-viewport">
-                  <div className="canvas-simulated-phone">
-                    <div className="sim-inv-date">20 / 10 · 2026</div>
-                    <div className="sim-inv-eyebrow">THE WEDDING OF</div>
-                    <h4 className="sim-inv-title">Eka &amp; Putri</h4>
-                    <div className="sim-inv-quote">
-                      Dengan penuh rasa syukur dan sukacita kami mengundang Anda
+                <div className="studio-live-split">
+                  <div className="studio-live-form">
+                    <div className="studio-field-mock">
+                      <span className="studio-field-lbl">Nama Mempelai</span>
+                      <div className="studio-field-val">Syahril &amp; Elyana</div>
                     </div>
-                    <div className="sim-inv-btn">BUKA</div>
-                    <div className="sim-inv-qr">QR CHECK-IN</div>
+                    <div className="studio-field-mock">
+                      <span className="studio-field-lbl">Tanggal &amp; Kota</span>
+                      <div className="studio-field-val">20 Oktober 2026 · Makassar</div>
+                    </div>
+                    <div className="studio-field-mock">
+                      <span className="studio-field-lbl">Musik Latar</span>
+                      <div className="studio-field-val">Orchestral Romantic (Aktif)</div>
+                    </div>
+                  </div>
+                  <div className="studio-live-mini-preview">
+                    <img src="/assets/homepage/hero_mockup_2.webp" alt="Pratinjau langsung undangan" />
                   </div>
                 </div>
               </div>
@@ -384,8 +393,8 @@ export default async function Home() {
             <div className="studio-screen-layer" id="studio-screen-2">
               <div className="studio-editor-mockup">
                 <div className="editor-header">
-                  <span className="editor-tab-badge">DAFTAR TAMU &amp; WHATSAPP</span>
-                  <span className="editor-save-state">300 Tamu Terdaftar</span>
+                  <span className="editor-tab-badge">BUKU TAMU &amp; KIRIM WHATSAPP</span>
+                  <span className="editor-save-state">300 Tamu · Siap Kirim</span>
                 </div>
                 <div className="editor-guest-table">
                   <div className="guest-row-mockup">
@@ -394,7 +403,7 @@ export default async function Home() {
                       <span className="guest-name">Bpk. Ahmad Fauzan &amp; Istri</span>
                       <span className="guest-tag">VIP · Meja 04 · Kuota 2 Tamu</span>
                     </div>
-                    <button className="guest-btn-wa">Kirim WA</button>
+                    <span className="guest-btn-wa">Kirim WA</span>
                   </div>
                   <div className="guest-row-mockup">
                     <div className="guest-avatar">RP</div>
@@ -402,7 +411,15 @@ export default async function Home() {
                       <span className="guest-name">dr. Rina Puspita</span>
                       <span className="guest-tag">Sahabat · Kuota 1 Tamu</span>
                     </div>
-                    <button className="guest-btn-wa">Kirim WA</button>
+                    <span className="guest-btn-wa">Kirim WA</span>
+                  </div>
+                  <div className="guest-row-mockup">
+                    <div className="guest-avatar">BS</div>
+                    <div className="guest-meta">
+                      <span className="guest-name">Bpk. Bambang Sutrisno</span>
+                      <span className="guest-tag">Keluarga · Meja 01 · 2 Tamu</span>
+                    </div>
+                    <span className="guest-btn-wa">Kirim WA</span>
                   </div>
                 </div>
               </div>
@@ -412,106 +429,27 @@ export default async function Home() {
           </div>
         </div>
 
-        {/* Mobile Phone Frame di Depan (Dasbor Klien Versi Mobile Faktual) */}
+        {/* Mobile Phone Frame di Depan: Live Preview Undangan Sungguhan */}
         <div className="studio-phone-frame">
           <div className="phone-notch-bar"></div>
-          
-          {/* Mini Header Dasbor Klien di Mobile */}
-          <div className="phone-dashboard-header">
-            <div className="phone-db-brand">
-              <span className="phone-db-logo">LK</span>
-              <span className="phone-db-title">Dasbor Klien</span>
-            </div>
-            <span className="phone-db-user">Nama Akun</span>
-          </div>
-
           <div className="phone-screen">
-            {/* Mobile Dashboard Layer 0: Tema & Warna */}
             <div className="studio-phone-layer active" id="studio-phone-0">
-              <div className="phone-db-content">
-                <div className="phone-section-chip">1. Pilihan Tema (1/13)</div>
-                <div className="phone-theme-preview">
-                  <span className="phone-theme-badge">TRADITIONAL</span>
-                  <span className="phone-theme-check">✓</span>
-                  <img src="/assets/homepage/studio_theme_dillalucky.webp" alt="Tema Dillalucky" />
-                  <div className="phone-theme-info">
-                    <span className="phone-theme-title">Dillalucky</span>
-                    <span className="phone-theme-status">Terpilih</span>
-                  </div>
-                </div>
-
-              </div>
+              <img className="studio-phone-real-img" src="/assets/homepage/hero_mockup_2.webp" alt="Pratinjau undangan di ponsel" />
             </div>
-
-            {/* Mobile Dashboard Layer 1: Live Click-to-Edit Canvas */}
             <div className="studio-phone-layer" id="studio-phone-1">
-              <div className="phone-db-content">
-                <div className="phone-edit-instruction">
-                  <span className="phone-edit-dot"></span>
-                  <span>Sentuh teks untuk ubah</span>
-                </div>
-                <div className="phone-canvas-box">
-                  <span className="phone-canvas-date">20 / 10 · 2026</span>
-                  <span className="phone-canvas-eyebrow">THE WEDDING OF</span>
-                  <h4 className="phone-canvas-title">Eka &amp; Putri</h4>
-                  <div className="phone-canvas-btn">BUKA UNDANGAN</div>
-                </div>
-                <div className="phone-save-chip">✓ Tersimpan Otomatis</div>
-              </div>
+              <img className="studio-phone-real-img" src="/assets/homepage/real_exp_rsvp.webp" alt="Pratinjau RSVP di ponsel" />
             </div>
-
-            {/* Mobile Dashboard Layer 2: Buku Tamu & WhatsApp */}
             <div className="studio-phone-layer" id="studio-phone-2">
-              <div className="phone-db-content">
-                <div className="phone-section-chip">Buku Tamu (300 Tamu)</div>
-                <div className="phone-guest-card">
-                  <div className="phone-guest-top">
-                    <span className="phone-guest-avatar">AF</span>
-                    <div className="phone-guest-details">
-                      <span className="phone-guest-name">Bpk. Ahmad Fauzan</span>
-                      <span className="phone-guest-badge">VIP · Meja 04</span>
-                    </div>
-                  </div>
-                  <button className="phone-guest-btn">Kirim WA</button>
-                </div>
-                <div className="phone-guest-card">
-                  <div className="phone-guest-top">
-                    <span className="phone-guest-avatar">RP</span>
-                    <div className="phone-guest-details">
-                      <span className="phone-guest-name">dr. Rina Puspita</span>
-                      <span className="phone-guest-badge">Sahabat</span>
-                    </div>
-                  </div>
-                  <button className="phone-guest-btn">Kirim WA</button>
-                </div>
-              </div>
+              <img className="studio-phone-real-img" src="/assets/homepage/real_exp_sharemoment.webp" alt="Pratinjau kamera tamu di ponsel" />
             </div>
-
-            {/* Mini Floating Dock di Bagian Bawah Layar HP */}
-            <div className="phone-mini-dock">
-              <span className="phone-dock-icon">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-              </span>
-              <span className="phone-dock-icon active">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-              </span>
-              <span className="phone-dock-icon">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-              </span>
-              <span className="phone-dock-icon">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-              </span>
-            </div>
-
             <div className="screen-glare"></div>
           </div>
         </div>
       </div>
 
-      {/* Apple-Style Floating Liquid Glass Dock Pengontrol Interaktif */}
+      {/* Floating Dock Pengontrol Interaktif */}
       <div className="studio-floating-dock-wrap">
         <div className="studio-liquid-dock" role="tablist" aria-label="Navigasi Fitur Studio">
-          {/* Dock 0: Tema */}
           <button className="studio-dock-btn active" role="tab" id="studio-tab-0" aria-selected="true" data-studio="0" title="Pilihan Tema & Palet">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -520,7 +458,6 @@ export default async function Home() {
             <span className="dock-tooltip">Pilihan Tema</span>
           </button>
 
-          {/* Dock 1: Live Studio Editor */}
           <button className="studio-dock-btn" role="tab" id="studio-tab-1" aria-selected="false" data-studio="1" title="Studio Live Editor">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -529,7 +466,6 @@ export default async function Home() {
             <span className="dock-tooltip">Live Editor</span>
           </button>
 
-          {/* Dock 2: Buku Tamu & WhatsApp */}
           <button className="studio-dock-btn" role="tab" id="studio-tab-2" aria-selected="false" data-studio="2" title="Buku Tamu & WhatsApp">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -541,9 +477,9 @@ export default async function Home() {
       </div>
     </div>
 
-    {/* KANAN: Text Narrative Bersih & Lapang (Tanpa Kotak-Kotak Bertumpuk) */}
+    {/* KANAN: Text Narrative Bersih & Lapang */}
     <div className="studio-content reveal reveal-delay-1">
-      <p className="section-label" style={{ color: "var(--lux-muted-gold)" }}>STUDIO MANDIRI</p>
+      <p className="section-label">STUDIO MANDIRI</p>
       <h2 className="studio-heading" id="studio-heading">
         Rancang Sendiri Undangan Anda,<br />Langsung Jadi Tanpa Nunggu Admin
       </h2>
@@ -551,11 +487,10 @@ export default async function Home() {
         Ubah foto prewedding, susunan acara, hingga alunan musik orkestra semudah mengetik pesan di ponsel. Setiap sentuhan langsung tampak nyata detik itu juga di layar smartphone tamu Anda.
       </p>
 
-      {/* Ramping Inline Badges (Bebas dari Kotak Hitam Ramai) */}
       <div className="studio-pill-row">
-        <span className="studio-badge-pill">✦ Live Editing Seketika</span>
-        <span className="studio-badge-pill">✦ Bebas Ubah Kapan Saja</span>
-        <span className="studio-badge-pill">✦ Nama Tamu Otomatis</span>
+        <span className="studio-badge-pill">Live Editing Seketika</span>
+        <span className="studio-badge-pill">Bebas Ubah Kapan Saja</span>
+        <span className="studio-badge-pill">Nama Tamu Otomatis</span>
       </div>
 
       <div className="studio-cta-wrap">
@@ -568,447 +503,63 @@ export default async function Home() {
 </section>
 
 {/* ===========================
-     PENGALAMAN / FEATURE SECTION
+     PENGALAMAN / FEATURE SECTION (1:1 REAL PRODUCT SCREENS + DEVICE MORPHING)
 =========================== */}
 <section id="pengalaman" aria-labelledby="pengalaman-heading">
-  {/* Scroll Indicator on left edge (identik dengan gambar referensi) */}
-  <div className="exp-scroll-indicator" aria-hidden="true">
-    <span>Scroll</span>
-    <svg width="10" height="14" viewBox="0 0 10 14" fill="none">
-      <path d="M5 1v12M1 9l4 4 4-4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  </div>
-
   <div className="exp-container">
-    {/* KIRI: 3D Isometric iPad Stage */}
+    {/* KANAN (Desktop) / BAWAH (Mobile): Authentic 2.5D Device Stage (Phone <-> Tablet) */}
     <div className="exp-stage reveal">
       <div className="exp-ipad-wrapper" id="exp-phone-wrapper">
-        <div className="exp-ipad-3d" id="exp-phone">
+        <div className="exp-ipad-3d" id="exp-phone" data-device="phone">
           <div className="exp-ipad-camera"></div>
-          
-          {/* Screen Container dengan 4 layered feature screens */}
+
+          {/* 4 Tangkapan Layar Asli Produk (1:1) */}
           <div className="exp-screen">
-            {/* Screen 0: RSVP Landscape Split */}
             <div className="exp-screen-layer" id="exp-screen-0">
-              <div className="exp-rsvp-split">
-                <div className="exp-rsvp-cover">
-                  <img src="/assets/homepage/exp_rsvp_cover.webp" alt="Wedding Couple" />
-                  <div className="exp-rsvp-cover-overlay"></div>
-                  <div className="exp-rsvp-cover-text">
-                    <span className="exp-rsvp-tag">THE WEDDING OF</span>
-                    <h3 className="exp-rsvp-names">Syahril &amp; Elyana</h3>
-                    <span className="exp-rsvp-date">12 . 08 . 2025 · MAKASSAR</span>
-                  </div>
-                </div>
-                <div className="exp-rsvp-form-side">
-                  <span className="exp-form-eyebrow">RSVP DIGITAL</span>
-                  <h4 className="exp-form-title">Konfirmasi Kehadiran</h4>
-                  <div className="exp-form-guest">Ahmad Fauzan · Kuota 2 Tamu</div>
-                  <div className="exp-rsvp-toggle">
-                    <div className="exp-rsvp-btn active">Hadir (2 Tamu)</div>
-                    <div className="exp-rsvp-btn">Tidak Hadir</div>
-                  </div>
-                  <div className="exp-rsvp-input-box">
-                    Selamat untuk Syahril &amp; Elyana! Insya Allah kami hadir merayakan momen bahagia.
-                  </div>
-                  <button className="exp-rsvp-submit-btn">Kirim Konfirmasi Kehadiran</button>
-                </div>
-              </div>
+              <img
+                src="/assets/homepage/real_exp_rsvp.webp"
+                alt="Tampilan asli formulir RSVP dan ucapan doa di ponsel tamu"
+                className="exp-real-shot"
+                loading="lazy"
+              />
             </div>
 
-            {/* Screen 1: Guest Moment Camera (Virtual Disposable Camera UI) */}
             <div className="exp-screen-layer active" id="exp-screen-1">
-              <div className="exp-cam-kiosk">
-                {/* Topbar Kamera Virtual */}
-                <div className="exp-cam-topbar">
-                  <div className="exp-cam-brand">
-                    <div className="exp-cam-lens-icon">
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <circle cx="12" cy="12" r="10" />
-                        <circle cx="12" cy="12" r="4" />
-                      </svg>
-                    </div>
-                    <div>
-                      <span className="exp-cam-title">GUEST CAMERA</span>
-                      <span className="exp-cam-sub">Virtual Disposable Camera · Syahril &amp; Elyana</span>
-                    </div>
-                  </div>
-                  <div className="exp-cam-status">
-                    <div className="exp-cam-live">
-                      <span className="exp-cam-pulse-dot"></span>
-                      <span>LIVE · SESI RESEPSI</span>
-                    </div>
-                    <div className="exp-cam-roll-pill">
-                      <span>ROLL 08/10</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 2-Column Camera Grid */}
-                <div className="exp-cam-grid">
-                  {/* Kolom Kiri: Kamera Viewfinder Chassis */}
-                  <div className="exp-cam-view-card">
-                    <div className="exp-cam-view-header">
-                      <span className="exp-cam-preset-badge">AURA &apos;90S • VINTAGE WARM</span>
-                      <div className="exp-cam-hud-pills">
-                        <span className="exp-cam-flash-tag">
-                          <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><path d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                          FLASH AUTO
-                        </span>
-                        <span className="exp-cam-zoom-tag">1x</span>
-                      </div>
-                    </div>
-
-                    <div className="exp-cam-view-frame" id="exp-cam-viewport">
-                      {/* 4 Corner Brackets */}
-                      <div className="cam-bracket cam-tl"></div>
-                      <div className="cam-bracket cam-tr"></div>
-                      <div className="cam-bracket cam-bl"></div>
-                      <div className="cam-bracket cam-br"></div>
-
-                      {/* Center Focus Crosshair */}
-                      <div className="exp-cam-crosshair">+</div>
-
-                      {/* Live Candid Photo */}
-                      <img
-                        src="/assets/homepage/exp_rsvp_cover.webp"
-                        alt="Candid Wedding Moment"
-                        className="exp-cam-view-img"
-                        id="exp-cam-preview-img"
-                      />
-
-                      {/* Vignette Overlay */}
-                      <div className="exp-cam-vignette"></div>
-
-                      {/* Retro LED Date Stamp */}
-                      <div className="exp-cam-led-stamp">12  08  &apos;25</div>
-
-                      {/* Flash Burst Overlay */}
-                      <div className="exp-cam-flash-overlay" id="exp-cam-flash"></div>
-                    </div>
-
-                    <div className="exp-cam-view-footer">
-                      <span>ISO 400 · 35MM F/2.8</span>
-                      <span style={{ color: "var(--lux-gold)" }}>• Kamera Siaga</span>
-                    </div>
-                  </div>
-
-                  {/* Kolom Kanan: Film Roll Deck & Controls */}
-                  <div className="exp-cam-controls-col">
-                    {/* Panel Sisa Roll & Tamu */}
-                    <div className="exp-cam-roll-card">
-                      <div className="exp-cam-guest-row">
-                        <span className="exp-cam-guest-title">Ahmad Fauzan &amp; Istri</span>
-                        <div className="exp-cam-roll-badge">
-                          <span className="exp-cam-roll-num" id="exp-cam-count">08</span>
-                          <span className="exp-cam-roll-total">/ 10 Sisa Roll</span>
-                        </div>
-                      </div>
-                      <div className="exp-cam-guest-msg">
-                        &ldquo;Momen haru saat sungkeman, bahagia selalu sahabatku!&rdquo;
-                      </div>
-                    </div>
-
-                    {/* Filter Selector */}
-                    <div className="exp-cam-filter-card">
-                      <span className="exp-cam-filter-header">Preset Filter Analog</span>
-                      <div className="exp-cam-filter-list">
-                        <button type="button" className="exp-cam-filter-item active" data-filter="aura_90s">Aura &apos;90s</button>
-                        <button type="button" className="exp-cam-filter-item" data-filter="heritage">Heritage</button>
-                        <button type="button" className="exp-cam-filter-item" data-filter="botanical">Botanical</button>
-                        <button type="button" className="exp-cam-filter-item" data-filter="cinema_noir">Noir</button>
-                        <button type="button" className="exp-cam-filter-item" data-filter="daylight">Daylight</button>
-                      </div>
-                    </div>
-
-                    {/* Shutter Action Panel */}
-                    <div className="exp-cam-action-card">
-                      <div className="exp-cam-shutter-wrap">
-                        <div className="exp-cam-shutter-circle" id="exp-cam-shutter" title="Tekan untuk simulasi jepret">
-                          <div className="exp-cam-shutter-inner"></div>
-                        </div>
-                        <div className="exp-cam-shutter-info">
-                          <span className="exp-cam-shutter-label">Tekan Shutter</span>
-                          <span className="exp-cam-shutter-sub">Auto-upload ke R2</span>
-                        </div>
-                      </div>
-                      <div className="exp-cam-winder">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                        <span>Putar Roll</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <img
+                src="/assets/homepage/real_exp_sharemoment.webp"
+                alt="Tampilan asli Guest Camera di ponsel tamu"
+                className="exp-real-shot"
+                loading="lazy"
+              />
             </div>
 
-            {/* Screen 2: QR Check-in & Authentic Receptionist Kiosk */}
             <div className="exp-screen-layer" id="exp-screen-2">
-              <div className="exp-rec-kiosk">
-                {/* Topbar Resepsionis persis /demo/receptionist */}
-                <div className="exp-rec-topbar">
-                  <div className="exp-rec-brand">
-                    <div className="exp-rec-logo-dot">L</div>
-                    <span className="exp-rec-title">RECEPTIONIST SYSTEM</span>
-                  </div>
-                  <div className="exp-rec-status">
-                    <div className="exp-rec-live">
-                      <span className="exp-rec-pulse-dot"></span>
-                      <span>LIVE ONLINE</span>
-                    </div>
-                    <span className="exp-rec-clock">19:15 WIB</span>
-                  </div>
-                </div>
-
-                {/* 2-Column Receptionist Body */}
-                <div className="exp-rec-grid">
-                  {/* Kolom Kiri: Kamera Viewport Scanner */}
-                  <div className="exp-rec-cam-card">
-                    <div className="exp-rec-card-header">
-                      <span className="exp-rec-cam-title">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                        KAMERA LIVE
-                      </span>
-                      <span className="exp-rec-cam-mode">AUTO-DETECT</span>
-                    </div>
-                    <div className="exp-rec-cam-view">
-                      {/* 4 Corner Brackets */}
-                      <div className="cam-bracket cam-tl"></div>
-                      <div className="cam-bracket cam-tr"></div>
-                      <div className="cam-bracket cam-bl"></div>
-                      <div className="cam-bracket cam-br"></div>
-                      
-                      {/* Animated Amber Laser Scanline */}
-                      <div className="exp-rec-laser"></div>
-                      
-                      {/* Crisp QR Code SVG */}
-                      <svg width="100" height="100" viewBox="0 0 100 100" fill="none">
-                        <rect x="5" y="5" width="26" height="26" stroke="#fbbf24" strokeWidth="2.5" rx="3"/>
-                        <rect x="11" y="11" width="14" height="14" fill="#fbbf24"/>
-                        <rect x="69" y="5" width="26" height="26" stroke="#fbbf24" strokeWidth="2.5" rx="3"/>
-                        <rect x="75" y="11" width="14" height="14" fill="#fbbf24"/>
-                        <rect x="5" y="69" width="26" height="26" stroke="#fbbf24" strokeWidth="2.5" rx="3"/>
-                        <rect x="11" y="75" width="14" height="14" fill="#fbbf24"/>
-                        <rect x="36" y="8" width="8" height="8" fill="#fbbf24" opacity="0.85"/>
-                        <rect x="50" y="14" width="8" height="8" fill="#fbbf24" opacity="0.85"/>
-                        <rect x="36" y="24" width="8" height="8" fill="#fbbf24" opacity="0.85"/>
-                        <rect x="42" y="38" width="8" height="8" fill="#fbbf24" opacity="0.95"/>
-                        <rect x="14" y="42" width="8" height="8" fill="#fbbf24" opacity="0.85"/>
-                        <rect x="56" y="48" width="8" height="8" fill="#fbbf24" opacity="0.85"/>
-                        <rect x="74" y="42" width="8" height="8" fill="#fbbf24" opacity="0.85"/>
-                        <rect x="42" y="58" width="8" height="8" fill="#fbbf24" opacity="0.85"/>
-                        <rect x="62" y="66" width="8" height="8" fill="#fbbf24" opacity="0.85"/>
-                        <rect x="80" y="74" width="8" height="8" fill="#fbbf24" opacity="0.95"/>
-                        <rect x="42" y="78" width="8" height="8" fill="#fbbf24" opacity="0.85"/>
-                      </svg>
-                    </div>
-                    <div className="exp-rec-cam-hint">Arahkan QR Tamu ke Kotak Kamera</div>
-                  </div>
-
-                  {/* Kolom Kanan: Hasil Check-in & Counter */}
-                  <div className="exp-rec-result-card">
-                    <div className="exp-rec-guest-panel">
-                      <div className="exp-rec-success-badge">
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
-                        CHECK-IN BERHASIL
-                      </div>
-                      <div className="exp-rec-guest-name">Bpk. Ahmad Fauzan &amp; Istri</div>
-                      <div className="exp-rec-pills-row">
-                        <span className="exp-rec-pill-vip">VIP</span>
-                        <span className="exp-rec-pill-meta">MEJA 04</span>
-                        <span className="exp-rec-pill-meta">2 PAX</span>
-                      </div>
-                    </div>
-
-                    <div className="exp-rec-stats-panel">
-                      <div className="exp-rec-stats-header">
-                        <span>Tamu Hadir</span>
-                        <strong>248 / 300 (82%)</strong>
-                      </div>
-                      <div className="exp-rec-progress">
-                        <div className="exp-rec-progress-fill" style={{ width: "82%" }}></div>
-                      </div>
-                      <div className="exp-rec-stats-sub">
-                        <span>24 / 30 Meja Terisi</span>
-                        <span>• Siaga Scan</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <img
+                src="/assets/homepage/real_exp_receptionist.webp"
+                alt="Tampilan asli sistem resepsionis dan QR Check-in"
+                className="exp-real-shot"
+                loading="lazy"
+              />
             </div>
 
-            {/* Screen 3: Galeri Kenangan Tamu (/memories) */}
             <div className="exp-screen-layer" id="exp-screen-3">
-              <div className="exp-memories-pure">
-                {/* Top Navbar: Brand + Title + Badge */}
-                <div className="exp-mem-navbar">
-                  <div className="exp-mem-nav-left">
-                    <div className="exp-mem-nav-logo">L</div>
-                    <div>
-                      <div className="exp-mem-nav-title">GALERI KENANGAN TAMU</div>
-                      <div className="exp-mem-nav-sub">Photo Stream &amp; Guestbook · Syahril &amp; Elyana</div>
-                    </div>
-                  </div>
-                  <div className="exp-mem-counter-badge">
-                    <span className="exp-mem-pulse"></span>
-                    <span>48 Momen Terkumpul</span>
-                  </div>
-                </div>
-
-                {/* Story Circles Highlights (Instagram Style) */}
-                <div className="exp-mem-story-section">
-                  <div className="exp-mem-story-header">
-                    <span className="exp-mem-story-header-dot"></span>
-                    <span>Sorotan Cerita Tamu</span>
-                  </div>
-                  <div className="exp-mem-story-rail">
-                    <div className="exp-mem-story-unit">
-                      <div className="exp-mem-story-circle">
-                        <img src="/assets/homepage/exp_memory_01.webp" alt="Dimas" />
-                      </div>
-                      <span className="exp-mem-story-name">Dimas</span>
-                    </div>
-                    <div className="exp-mem-story-unit">
-                      <div className="exp-mem-story-circle">
-                        <img src="/assets/homepage/exp_memory_02.webp" alt="Rina" />
-                      </div>
-                      <span className="exp-mem-story-name">Rina</span>
-                    </div>
-                    <div className="exp-mem-story-unit">
-                      <div className="exp-mem-story-circle">
-                        <img src="/assets/homepage/exp_memory_03.webp" alt="Maryam" />
-                      </div>
-                      <span className="exp-mem-story-name">Maryam</span>
-                    </div>
-                    <div className="exp-mem-story-unit">
-                      <div className="exp-mem-story-circle">
-                        <img src="/assets/homepage/exp_memory_04.webp" alt="Bridesmaids" />
-                      </div>
-                      <span className="exp-mem-story-name">Brides</span>
-                    </div>
-                    <div className="exp-mem-story-unit">
-                      <div className="exp-mem-story-circle">
-                        <img src="/assets/homepage/exp_memory_01.webp" alt="Teknik" />
-                      </div>
-                      <span className="exp-mem-story-name">Teknik</span>
-                    </div>
-                    <div className="exp-mem-story-unit">
-                      <div className="exp-mem-story-circle">
-                        <img src="/assets/homepage/exp_memory_02.webp" alt="Keluarga" />
-                      </div>
-                      <span className="exp-mem-story-name">Keluarga</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 4-Column Photo Grid: Pure Guest Photos & Messages */}
-                <div className="exp-mem-grid-4">
-                  <div className="exp-mem-card-pure">
-                    <div className="exp-mem-card-thumb">
-                      <img src="/assets/homepage/exp_memory_01.webp" alt="Momen Dimas" />
-                    </div>
-                    <div className="exp-mem-card-body">
-                      <div className="exp-mem-card-author">Dimas Pratama &amp; Keluarga</div>
-                      <div className="exp-mem-card-msg">&ldquo;Selamat berbahagia Syahril &amp; Elyana! Sakinah mawaddah warahmah selamanya.&rdquo;</div>
-                      <div className="exp-mem-card-footer">
-                        <span>19:30 WIB</span>
-                        <span className="exp-mem-like-chip">
-                          <svg width="7" height="7" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> 14
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="exp-mem-card-pure">
-                    <div className="exp-mem-card-thumb">
-                      <img src="/assets/homepage/exp_memory_02.webp" alt="Momen Rina" />
-                    </div>
-                    <div className="exp-mem-card-body">
-                      <div className="exp-mem-card-author">Rina &amp; Sahabat SMA</div>
-                      <div className="exp-mem-card-msg">&ldquo;Cantik dan ganteng banget berdua malam ini! Terharu liat akad tadi.&rdquo;</div>
-                      <div className="exp-mem-card-footer">
-                        <span>19:42 WIB</span>
-                        <span className="exp-mem-like-chip">
-                          <svg width="7" height="7" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> 21
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="exp-mem-card-pure">
-                    <div className="exp-mem-card-thumb">
-                      <img src="/assets/homepage/exp_memory_03.webp" alt="Momen Maryam" />
-                    </div>
-                    <div className="exp-mem-card-body">
-                      <div className="exp-mem-card-author">Keluarga Tante Maryam</div>
-                      <div className="exp-mem-card-msg">&ldquo;Barakallahu lakuma wa baraka alaikuma. Doa terbaik untuk kalian berdua.&rdquo;</div>
-                      <div className="exp-mem-card-footer">
-                        <span>20:05 WIB</span>
-                        <span className="exp-mem-like-chip">
-                          <svg width="7" height="7" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> 9
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="exp-mem-card-pure">
-                    <div className="exp-mem-card-thumb">
-                      <img src="/assets/homepage/exp_memory_04.webp" alt="Momen Bpk Bambang" />
-                    </div>
-                    <div className="exp-mem-card-body">
-                      <div className="exp-mem-card-author">Geng Teknik (Rekan Kerja)</div>
-                      <div className="exp-mem-card-msg">&ldquo;Happy wedding brother! Akhirnya berlabuh di pelabuhan terakhir.&rdquo;</div>
-                      <div className="exp-mem-card-footer">
-                        <span>20:20 WIB</span>
-                        <span className="exp-mem-like-chip">
-                          <svg width="7" height="7" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> 18
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <img
+                src="/assets/homepage/real_exp_memories.webp"
+                alt="Tampilan asli Galeri Kenangan Tamu Roll Stack"
+                className="exp-real-shot"
+                loading="lazy"
+              />
             </div>
 
-            {/* Mini Dock inside iPad Bottom */}
-            <div className="exp-ipad-dock" aria-hidden="true">
-              <div className="exp-dock-item" data-dock="0">
-                <div className="exp-dock-icon">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="16" rx="2"/><polyline points="7 10 12 14 17 10"/></svg>
-                </div>
-                <span>RSVP</span>
-              </div>
-              <div className="exp-dock-item active" data-dock="1">
-                <div className="exp-dock-icon">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                </div>
-                <span>Guest Camera</span>
-              </div>
-              <div className="exp-dock-item" data-dock="2">
-                <div className="exp-dock-icon">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3z"/></svg>
-                </div>
-                <span>QR Resepsionis</span>
-              </div>
-              <div className="exp-dock-item" data-dock="3">
-                <div className="exp-dock-icon">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                </div>
-                <span>Memories</span>
-              </div>
-            </div>
-
-            {/* Specular Glare */}
             <div className="screen-glare"></div>
           </div>
         </div>
       </div>
     </div>
 
-    {/* KANAN: Text Narrative & Interactive Icon Dock */}
+    {/* KIRI (Desktop) / ATAS (Mobile): Text Narrative & Interactive Icon Dock */}
     <div className="exp-content reveal reveal-delay-1">
-      <p className="section-label" style={{ color: "var(--lux-muted-gold)" }}>PENGALAMAN</p>
+      <p className="section-label">PENGALAMAN</p>
       <h2 className="exp-heading" id="pengalaman-heading">
         Lebih dari Sekadar<br />Undangan
       </h2>
@@ -1016,7 +567,7 @@ export default async function Home() {
         Kami menghadirkan pengalaman lengkap untuk Anda dan para tamu, dari undangan pertama hingga hari istimewa tiba.
       </p>
 
-      {/* 4 Feature Icon Buttons (Guest Moment Camera Aktif Pertama) */}
+      {/* 4 Feature Icon Buttons */}
       <div className="exp-icon-dock" role="tablist" aria-label="Pilih Fitur Pengalaman">
         <button className="exp-icon-btn" role="tab" id="exp-tab-0" aria-selected="false" data-exp="0">
           <div className="exp-icon-circle">
@@ -1062,8 +613,9 @@ export default async function Home() {
         <button className="exp-icon-btn" role="tab" id="exp-tab-3" aria-selected="false" data-exp="3">
           <div className="exp-icon-circle">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-              <circle cx="12" cy="13" r="4"/>
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
             </svg>
           </div>
           <div className="exp-icon-info">
@@ -1073,7 +625,6 @@ export default async function Home() {
         </button>
       </div>
 
-      {/* Tombol CTA Direct ke Ekosistem Fitur Hari-H */}
       <div className="exp-cta-wrap">
         <Link
           href="/demo?tab=features"
@@ -1105,28 +656,59 @@ export default async function Home() {
     </p>
   </div>
   <div className="budaya-grid">
-    <div className="budaya-card reveal">
+    <Link href="/demo?style=traditional" className="budaya-card reveal">
       <img src="/assets/homepage/showcase_cultural.webp" alt="Koleksi budaya — undangan adat Bugis, Jawa, Minang, Bali" loading="lazy" />
       <div className="budaya-card-overlay">
         <div className="budaya-card-name">Cultural</div>
         <div className="budaya-card-sub">Bugis · Jawa · Minang · Bali</div>
       </div>
-    </div>
-    <div className="budaya-card reveal reveal-delay-1">
+    </Link>
+    <Link href="/demo?style=modern" className="budaya-card reveal reveal-delay-1">
       <img src="/assets/homepage/showcase_modern.webp" alt="Koleksi modern — minimal, editorial, kontemporer" loading="lazy" />
       <div className="budaya-card-overlay">
         <div className="budaya-card-name">Modern</div>
         <div className="budaya-card-sub">Minimal · Editorial · Contemporary</div>
       </div>
-    </div>
-    <div className="budaya-card reveal reveal-delay-2">
+    </Link>
+    <Link href="/demo?style=minimalist" className="budaya-card reveal reveal-delay-2">
       <img src="/assets/homepage/showcase_romantic.webp" alt="Koleksi romantis — lembut, intim, floral" loading="lazy" />
       <div className="budaya-card-overlay">
         <div className="budaya-card-name">Romantic</div>
         <div className="budaya-card-sub">Soft · Intimate · Floral</div>
       </div>
-    </div>
+    </Link>
   </div>
+
+  {featuredPortfolios.length > 0 && (
+    <div className="landing-portfolio-strip reveal">
+      <div className="landing-portfolio-head">
+        <div>
+          <p className="section-label landing-portfolio-label">Karya Nyata Klien</p>
+          <h3 className="landing-portfolio-title">Portofolio Undangan Terpilih</h3>
+        </div>
+        <Link href="/portfolio" className="landing-portfolio-all">
+          Lihat Semua Portofolio
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <line x1="5" y1="12" x2="19" y2="12" />
+            <polyline points="12 5 19 12 12 19" />
+          </svg>
+        </Link>
+      </div>
+      <div className="landing-portfolio-grid">
+        {featuredPortfolios.map((item) => (
+          <Link key={item.id} href={item.publicUrl} className="landing-portfolio-card">
+            <div className="landing-portfolio-thumb">
+              <img src={item.coverImage} alt={`Portofolio ${item.coupleName}`} loading="lazy" />
+            </div>
+            <div className="landing-portfolio-meta">
+              <span className="landing-portfolio-couple">{item.coupleName}</span>
+              <span className="landing-portfolio-theme">Tema {item.themeName}</span>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  )}
 </section>
 
 
@@ -1171,6 +753,12 @@ export default async function Home() {
                         <li key={fIdx}>{f}</li>
                       ))}
                     </ul>
+                    <Link
+                      href={`/login?callbackUrl=${encodeURIComponent("/packages")}`}
+                      className={`pricing-card-cta ${pkg.isFeatured ? "featured" : ""}`}
+                    >
+                      Pilih {pkg.name}
+                    </Link>
                   </div>
                 );
               })
@@ -1205,14 +793,13 @@ export default async function Home() {
     <p className="cta-desc reveal reveal-delay-2">
       Buat undangan digital Anda sekarang dan mulai bercerita dengan cara yang paling indah.
     </p>
-    <div className="flex flex-wrap items-center justify-center gap-3 reveal reveal-delay-3">
+    <div className="cta-btn-group reveal reveal-delay-3">
       <Link href="/login" className="btn-cta" id="cta-main-btn">
         Mulai Kisahmu
       </Link>
       <Link
-        href="/login"
-        className="btn-cta"
-        style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.45)" }}
+        href={`/login?callbackUrl=${encodeURIComponent("/packages")}`}
+        className="btn-cta btn-cta-outline"
       >
         Coba Draf Gratis
       </Link>

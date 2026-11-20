@@ -43,9 +43,19 @@ export default function CatalogGridShowcase() {
       if (eventParam) {
         setSelectedEvent(eventParam.toLowerCase());
       }
-      const styleParam = params.get("style") || params.get("category");
+      const styleParam = (params.get("style") || params.get("category") || "").trim().toLowerCase();
       if (styleParam) {
-        setSelectedCategory(styleParam.toLowerCase());
+        const styleAlias: Record<string, string> = {
+          all: "all",
+          minimalist: "minimalist",
+          minimalis: "minimalist",
+          romantic: "minimalist",
+          modern: "modern",
+          traditional: "traditional",
+          tradisional: "traditional",
+          cultural: "traditional",
+        };
+        setSelectedCategory(styleAlias[styleParam] || "all");
       }
       setSiteHost(window.location.hostname);
     }

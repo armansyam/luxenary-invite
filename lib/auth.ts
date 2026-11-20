@@ -6,32 +6,53 @@ export async function upsertGoogleUser(profile: {
   name: string;
   picture?: string;
 }) {
-  const { sub, email, name, picture } = profile;
+  const cleanSub = profile.sub.trim();
+  const cleanEmail = profile.email.trim().toLowerCase();
+  const cleanName = (profile.name || "").trim() || cleanEmail.split("@")[0] || "Pengguna";
+  const { picture } = profile;
 
   // 1. Cek apakah user sudah terdaftar berdasarkan googleId
-  let user = await prisma.user.findUnique({ where: { googleId: sub } });
+  let user = await prisma.user.findUnique({ where: { googleId: cleanSub } });
   if (user) {
+    const emailChanged = user.email.toLowerCase() !== cleanEmail;
+    const emailTaken = emailChanged
+      ? await prisma.user.findFirst({
+          where: { email: { equals: cleanEmail, mode: "insensitive" }, NOT: { id: user.id } },
+          select: { id: true },
+        })
+      : null;
     return await prisma.user.update({
       where: { id: user.id },
-      data: { email, name, avatarUrl: picture },
+      data: {
+        ...(emailTaken ? {} : { email: cleanEmail }),
+        name: user.name || cleanName,
+        avatarUrl: picture ?? user.avatarUrl,
+      },
     });
   }
 
-  // 2. Cek apakah user sudah dibuat saat checkout awal berdasarkan email
-  user = await prisma.user.findUnique({ where: { email } });
+  // 2. Cek apakah user sudah terdaftar berdasarkan email (case-insensitive untuk akun lama)
+  user = await prisma.user.findFirst({
+    where: { email: { equals: cleanEmail, mode: "insensitive" } },
+  });
   if (user) {
     return await prisma.user.update({
       where: { id: user.id },
-      data: { googleId: sub, name: name || user.name, avatarUrl: picture },
+      data: {
+        googleId: cleanSub,
+        email: cleanEmail,
+        name: user.name || cleanName,
+        avatarUrl: picture ?? user.avatarUrl,
+      },
     });
   }
 
   // 3. Buat akun Klien baru jika belum ada sama sekali
   return await prisma.user.create({
     data: {
-      googleId: sub,
-      email,
-      name,
+      googleId: cleanSub,
+      email: cleanEmail,
+      name: cleanName,
       avatarUrl: picture,
       role: "CLIENT",
     },

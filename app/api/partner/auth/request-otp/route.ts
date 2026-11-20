@@ -86,8 +86,8 @@ export async function POST(req: NextRequest) {
       expiresInSeconds: 600,
       message:
         purpose === "PARTNER_ACTIVATE"
-          ? "Jika email terdaftar sebagai mitra aktif, kode aktivasi 6 digit telah dikirim."
-          : "Jika email terdaftar sebagai mitra aktif, kode reset kata sandi 6 digit telah dikirim.",
+          ? "Jika email terdaftar sebagai mitra aktif, kode aktivasi 6 digit telah dikirim. Periksa kotak masuk (Inbox) atau folder Spam/Junk."
+          : "Jika email terdaftar sebagai mitra aktif, kode reset kata sandi 6 digit telah dikirim. Periksa kotak masuk (Inbox) atau folder Spam/Junk.",
     });
   } catch (error) {
     return routeError("PartnerOtpRequest", error, "Gagal mengirim kode OTP mitra.");
