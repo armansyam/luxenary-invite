@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { routeError } from "@/lib/routeError";
-import { getPartnerSessionFromRequest } from "@/lib/partnerAuth";
+import { PARTNER_COOKIE_NAME, getPartnerSessionFromRequest } from "@/lib/partnerAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
         pendingBalance: true,
         totalPaidOut: true,
         isActive: true,
+        sessionVersion: true,
         coupons: {
           orderBy: { createdAt: "desc" },
           select: {
@@ -69,6 +70,19 @@ export async function GET(req: NextRequest) {
             },
           },
         },
+        payoutExpenses: {
+          orderBy: { expenseDate: "desc" },
+          take: 50,
+          select: {
+            id: true,
+            amount: true,
+            expenseDate: true,
+            paymentSource: true,
+            referenceNumber: true,
+            notes: true,
+            receiptUrl: true,
+          },
+        },
       },
     });
 
@@ -77,6 +91,15 @@ export async function GET(req: NextRequest) {
         { error: "Akun mitra tidak ditemukan atau sudah dinonaktifkan." },
         { status: 403 },
       );
+    }
+
+    if (session.sv !== partner.sessionVersion) {
+      const expired = NextResponse.json(
+        { error: "Sesi telah berakhir karena perubahan keamanan akun. Silakan masuk kembali." },
+        { status: 401 },
+      );
+      expired.cookies.set(PARTNER_COOKIE_NAME, "", { httpOnly: true, sameSite: "lax", path: "/", maxAge: 0 });
+      return expired;
     }
 
     const pendingBalance = Number(partner.pendingBalance);
@@ -124,6 +147,15 @@ export async function GET(req: NextRequest) {
                 paidAt: item.order.paidAt,
               }
             : null,
+        })),
+        payouts: partner.payoutExpenses.map((p) => ({
+          id: p.id,
+          amount: Number(p.amount),
+          expenseDate: p.expenseDate,
+          paymentSource: p.paymentSource || "TRANSFER_BANK",
+          referenceNumber: p.referenceNumber,
+          notes: p.notes,
+          hasReceipt: Boolean(p.receiptUrl),
         })),
       },
       { headers: { "Cache-Control": "no-store" } },

@@ -5,8 +5,12 @@
 import { describe, it, expect } from "vitest";
 import { auditBuilderMaster } from "@/lib/themeBuilder/audit";
 import { compileBuilderMaster, readBuilderBlueprint } from "@/lib/themeBuilder/compile";
+import { sectionStyleCss } from "@/lib/themeBuilder/designCss";
 import {
+  BLOCK_PX_LIMITS,
   BUILDER_BLOCKS,
+  SCRIM_STYLES,
+  blockStyle,
   defaultBuilderSpec,
   frameCss,
   moveOrnament,
@@ -202,5 +206,174 @@ describe("tempat jadwal acara", () => {
   it("blok jadwal di Home terdaftar dan ada di blueprint", () => {
     expect(BUILDER_BLOCKS.some((b) => b.id === "home-schedule" && b.section === "opening")).toBe(true);
     expect(blueprint).toContain('data-lux-block="home-schedule"');
+  });
+});
+
+describe("posisi blok satuan px proporsional dan responsif mobile", () => {
+  const parse = (blocks: unknown) => parseBuilderSpec({ ...defaultBuilderSpec(), blocks });
+
+  it("parseBuilderSpec menjaga unit px dan menjepit ke BLOCK_PX_LIMITS sambil mempertahankan blok lama (%)", () => {
+    const parsed = parse({
+      "cover-names": { x: -12, y: -1200, unit: "px" },
+      "cover-subtitle": { x: 1400, y: 168, unit: "px", scale: 0.8 },
+      "cover-date": { x: 0, y: -330 },
+      "opening-names": { x: 20, y: 10, unit: "rem" },
+      "opening-quote": { x: 0, y: 0, unit: "px" },
+    });
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.spec.blocks["cover-names"]).toMatchObject({ x: -12, y: BLOCK_PX_LIMITS.y[0], unit: "px" });
+    expect(parsed.spec.blocks["cover-subtitle"]).toMatchObject({ x: BLOCK_PX_LIMITS.x[1], y: 168, unit: "px", scale: 0.8 });
+    expect(parsed.spec.blocks["cover-date"]).toMatchObject({ x: 0, y: -330 });
+    expect(parsed.spec.blocks["cover-date"]?.unit).toBeUndefined();
+    expect(parsed.spec.blocks["opening-names"]?.unit).toBeUndefined();
+    expect(parsed.spec.blocks["opening-quote"]).toBeUndefined();
+  });
+
+  it("blockStyle memakai calc(* var(--lux-ux/uy)) untuk unit px dan % untuk spesifikasi lama", () => {
+    expect(blockStyle({ x: -15, y: 168, unit: "px", scale: 0.8, rotate: 0, hidden: false })).toContain(
+      "translate:calc(-15 * var(--lux-ux, 1px)) calc(168 * var(--lux-uy, 1px));rotate:0deg;scale:0.8;",
+    );
+    expect(blockStyle({ x: 0, y: 507.9, scale: 0.8, rotate: 0, hidden: false })).toContain(
+      "translate:0% 507.9%;rotate:0deg;scale:0.8;",
+    );
+  });
+
+  it("kompilasi menyisipkan gaya responsif mobile sesudah varian (tanpa warna mati) dan lolos audit di pernikahan maupun satu nama", () => {
+    const baseSpec: BuilderSpec = {
+      ...defaultBuilderSpec("WEDDING"),
+      variants: { ...defaultBuilderSpec("WEDDING").variants, cover: "editorial", headings: "script" },
+      blocks: {
+        "cover-names": { x: 0, y: -60, unit: "px", scale: 1, rotate: 0, hidden: false },
+        "cover-subtitle": { x: 0, y: 120, unit: "px", scale: 0.85, rotate: 0, hidden: false },
+      },
+    };
+    const html = compileBuilderMaster(baseSpec, blueprint);
+    const varIdx = html.indexOf('<style id="lux-builder-variants">');
+    const respIdx = html.indexOf('<style id="lux-builder-responsive">');
+    const blkIdx = html.indexOf('<style id="lux-builder-blocks">');
+    expect(varIdx).toBeGreaterThan(-1);
+    expect(respIdx).toBeGreaterThan(varIdx);
+    expect(blkIdx).toBeGreaterThan(respIdx);
+    const respBlock = html.slice(respIdx, html.indexOf("</style>", respIdx));
+    expect(respBlock).toContain("--lux-ux: min(1px, calc(100vw / 375))");
+    expect(respBlock).toContain("--lux-uy: min(1px, calc(100vw / 375), calc(100svh / 760))");
+    expect(respBlock).toContain("clamp(32px, 11.7333vw, 44px)");
+    expect(respBlock).toContain("clamp(30px, 10.6667vw, 40px)");
+    expect(respBlock).toContain("max-width: min(300px, 80vw)");
+    expect(respBlock).not.toMatch(/#[0-9a-f]{3,8}|rgb\(/i);
+    expect(html).toContain('translate:calc(0 * var(--lux-ux, 1px)) calc(-60 * var(--lux-uy, 1px));');
+    expect(auditBuilderMaster(html, blueprint)).toEqual([]);
+
+    const singleBp = readBuilderBlueprint("BIRTHDAY");
+    const singleSpec: BuilderSpec = {
+      ...defaultBuilderSpec("BIRTHDAY"),
+      blocks: { "cover-names": { x: 0, y: -40, unit: "px", scale: 1, rotate: 0, hidden: false } },
+    };
+    const singleHtml = compileBuilderMaster(singleSpec, singleBp);
+    expect(singleHtml).toContain('<style id="lux-builder-responsive">');
+    expect(singleHtml).toContain('translate:calc(0 * var(--lux-ux, 1px)) calc(-40 * var(--lux-uy, 1px));');
+    expect(auditBuilderMaster(singleHtml, singleBp)).toEqual([]);
+  });
+
+  it("komposisi vertikal sampul (coverAlign) dan penempatan kalimat sapaan (coverSubtitlePos) lolos audit di pernikahan maupun satu nama", () => {
+    const parsed = parseBuilderSpec({
+      ...defaultBuilderSpec("WEDDING"),
+      variants: { ...defaultBuilderSpec("WEDDING").variants, coverAlign: "top", coverSubtitlePos: "bottom" },
+      ornaments: [{ ...orn("lck00001", "cover", "back"), locked: true }],
+    });
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.spec.variants.coverAlign).toBe("top");
+    expect(parsed.spec.variants.coverSubtitlePos).toBe("bottom");
+    expect(parsed.spec.ornaments[0]?.locked).toBe(true);
+
+    const html = compileBuilderMaster(parsed.spec, blueprint);
+    const bottomIdx = html.indexOf('class="cover-bottom"');
+    const subIdx = html.indexOf('data-lux-block="cover-subtitle"');
+    const guestIdx = html.indexOf('class="cover-guest-card');
+    expect(bottomIdx).toBeGreaterThan(-1);
+    expect(subIdx).toBeGreaterThan(bottomIdx);
+    expect(subIdx).toBeLessThan(guestIdx);
+    expect(html).toContain(".cover-bottom { margin-top: auto; }");
+    expect(auditBuilderMaster(html, blueprint)).toEqual([]);
+
+    const singleBp = readBuilderBlueprint("BIRTHDAY");
+    const singleSpec: BuilderSpec = {
+      ...defaultBuilderSpec("BIRTHDAY"),
+      variants: { ...defaultBuilderSpec("BIRTHDAY").variants, coverAlign: "bottom", coverSubtitlePos: "bottom" },
+    };
+    const singleHtml = compileBuilderMaster(singleSpec, singleBp);
+    expect(singleHtml.indexOf('data-lux-block="cover-subtitle"')).toBeGreaterThan(singleHtml.indexOf('class="cover-bottom"'));
+    expect(singleHtml).toContain(".cover-top { margin-top: auto; }");
+    expect(auditBuilderMaster(singleHtml, singleBp)).toEqual([]);
+  });
+
+  it("komposisi vertikal pembuka (openingAlign) meniadakan margin auto tengah dan lolos audit di kedua blueprint", () => {
+    const topParsed = parseBuilderSpec({
+      ...defaultBuilderSpec("WEDDING"),
+      variants: { ...defaultBuilderSpec("WEDDING").variants, opening: "backdrop", openingAlign: "top" },
+    });
+    expect(topParsed.ok && topParsed.spec.variants.openingAlign).toBe("top");
+    if (!topParsed.ok) return;
+    const topHtml = compileBuilderMaster(topParsed.spec, blueprint);
+    expect(topHtml).toContain(".opening-center { margin: 0; padding: 0.5rem 0; }");
+    expect(topHtml).toContain(".opening-bottom { margin-top: auto; }");
+    expect(auditBuilderMaster(topHtml, blueprint)).toEqual([]);
+
+    const singleBp = readBuilderBlueprint("WISUDA");
+    const botParsed = parseBuilderSpec({
+      ...defaultBuilderSpec("WISUDA"),
+      variants: { ...defaultBuilderSpec("WISUDA").variants, opening: "backdrop", openingAlign: "bottom" },
+    });
+    expect(botParsed.ok && botParsed.spec.variants.openingAlign).toBe("bottom");
+    if (!botParsed.ok) return;
+    const botHtml = compileBuilderMaster(botParsed.spec, singleBp);
+    expect(botHtml).toContain(".slide-opening::before { content: ''; margin-top: auto; }");
+    expect(botHtml).toContain(".opening-center { margin: 0; padding: 0.5rem 0; }");
+    expect(auditBuilderMaster(botHtml, singleBp)).toEqual([]);
+  });
+
+  it("gaya gradasi foto (scrimStyle), vignet tepi (vignette), dan gradasi seksi vignette bebas warna mati dan lolos audit", () => {
+    const defParsed = parseBuilderSpec({ ...defaultBuilderSpec("WEDDING"), scrimStyle: "balanced", vignette: 0 });
+    expect(defParsed.ok).toBe(true);
+    if (!defParsed.ok) return;
+    expect(defParsed.spec.scrimStyle).toBeUndefined();
+    expect(defParsed.spec.vignette).toBeUndefined();
+
+    expect(parseBuilderSpec({ ...defaultBuilderSpec("WEDDING"), scrimStyle: "invalid" }).ok).toBe(false);
+
+    for (const style of SCRIM_STYLES) {
+      const parsed = parseBuilderSpec({
+        ...defaultBuilderSpec("WEDDING"),
+        variants: { ...defaultBuilderSpec("WEDDING").variants, opening: "backdrop", couple: "backdrop" },
+        scrimOpacity: 60,
+        scrimStyle: style.id,
+        vignette: 120,
+      });
+      expect(parsed.ok, style.id).toBe(true);
+      if (!parsed.ok) continue;
+      expect(parsed.spec.vignette).toBe(85);
+      const html = compileBuilderMaster(parsed.spec, blueprint);
+      const varIdx = html.indexOf('<style id="lux-builder-variants">');
+      const varBlock = html.slice(varIdx, html.indexOf("</style>", varIdx));
+      expect(varBlock).toContain("radial-gradient(ellipse at center, transparent 36%");
+      expect(varBlock).toContain(".opening-photo::after");
+      expect(varBlock).toContain(".couple-photo-wrap::after");
+      expect(varBlock).not.toMatch(/#[0-9a-f]{3,8}|rgb\(/i);
+      expect(auditBuilderMaster(html, blueprint)).toEqual([]);
+    }
+
+    const secCss = sectionStyleCss('[data-lux-section="couple"]', { bg: "dark", gradient: "vignette", tone: "light" });
+    expect(secCss).toContain("radial-gradient(ellipse at center, transparent 36%, var(--bg-dark) 100%)");
+    expect(secCss).not.toMatch(/#[0-9a-f]{3,8}|rgb\(/i);
+  });
+
+  it("blueprint starter menjaga skala tipografi kolom split desktop setara mobile (tanpa 9.5vw atau lonjakan !important)", () => {
+    for (const bp of [blueprint, readBuilderBlueprint("BIRTHDAY")]) {
+      expect(bp).not.toContain("clamp(2.6rem, 9.5vw, 3.8rem)");
+      expect(bp).not.toContain("font-size: 2.8rem !important;");
+      expect(bp).not.toContain("font-size: 2.1rem !important;");
+    }
   });
 });

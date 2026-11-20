@@ -12,7 +12,7 @@ import { resolveInvitationDisplayName, getMediaSlotLabel, eventNoun, isThemeComp
 import { useFeedback } from "@/components/ui/Feedback";
 import { getApexRootDomain } from "@/lib/domainUtils";
 import { BG_PHOTO_TONE_LIMIT, BG_SCRIM_MAX, parseBgPhotoTone, parseBgScrim } from "@/lib/bgPhotoTone";
-import { EDITABLE_TEXT_KEYS, MAX_DECORATIVE_LABEL_LENGTH, sectionLabelFor, type BuilderEventType } from "@/lib/themeBuilder/spec";
+import { BUILDER_EVENT_LABELS, EDITABLE_TEXT_KEYS, MAX_DECORATIVE_LABEL_LENGTH, sectionLabelFor, type BuilderEventType } from "@/lib/themeBuilder/spec";
 import type { EditableText, FreeSectionText } from "@/lib/themeBuilder/texts";
 import { DECLARABLE_MEDIA_SLOTS, isSlotUsed, parseThemeMediaSlots, type ThemeMediaSlots } from "@/lib/themeMediaSlots";
 import { LanguageSelector } from "@/components/client/studio/LanguageSelector";
@@ -188,6 +188,11 @@ export default function EditInvitation() {
   const [upgradeTarget, setUpgradeTarget] = useState<"TIER_2" | "TIER_3" | null>(null);
   const [upgrading, setUpgrading] = useState(false);
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
+  // Ganti Jenis Acara (khusus Draf Gratis)
+  const [eventTypeModalOpen, setEventTypeModalOpen] = useState(false);
+  const [selectedEventType, setSelectedEventType] = useState<string>("");
+  const [changingEventType, setChangingEventType] = useState(false);
+  const [eventTypeError, setEventTypeError] = useState<string | null>(null);
   const [isDeploying, setIsDeploying] = useState(false);
   const [studioNotification, setStudioNotification] = useState<{ type: "error" | "success"; message: string } | null>(null);
 
@@ -211,6 +216,37 @@ export default function EditInvitation() {
     TIER_1: "bg-amber-50 text-amber-800 border-amber-200",
     TIER_2: "bg-stone-100 text-stone-800 border-stone-200",
     TIER_3: "bg-amber-100/70 text-amber-950 border-amber-300",
+  };
+
+  const handleChangeFreeDraftEventType = async () => {
+    if (!invitationId || !selectedEventType || changingEventType) return;
+    if (selectedEventType === invitation?.eventType) {
+      setEventTypeModalOpen(false);
+      return;
+    }
+    setChangingEventType(true);
+    setEventTypeError(null);
+    try {
+      const res = await fetch(`/api/client/invitations/${invitationId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "CHANGE_FREE_DRAFT_EVENT_TYPE",
+          eventType: selectedEventType,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setEventTypeError(data.error || "Gagal mengganti jenis acara.");
+        return;
+      }
+      setEventTypeModalOpen(false);
+      window.location.reload();
+    } catch {
+      setEventTypeError("Koneksi terganggu saat mengganti jenis acara.");
+    } finally {
+      setChangingEventType(false);
+    }
   };
 
   const handleUpgrade = async () => {
@@ -659,20 +695,50 @@ export default function EditInvitation() {
         throw new Error(errData?.error || errData?.message || "Gagal menyimpan data ke server");
       }
 
-      // Ganti tema: media bawaan dan slot foto tema baru disalin server saat menyimpan, jadi Studio membacanya ulang.
+      // Ganti tema: media bawaan, slot foto, dan label bawaan tema baru disalin server saat menyimpan, jadi Studio membacanya ulang.
+      let syncedInv = invToSave;
       if (invToSave.themeId !== savedSnapshot?.invitation?.themeId) {
         const freshRes = await fetch(`/api/client/invitations/${invitationId}`);
         if (freshRes.ok) {
           const fresh = await freshRes.json();
-          setInvitation((prev: any) => ({ ...prev, themeDefaultMedia: fresh.themeDefaultMedia, themeMediaSlots: fresh.themeMediaSlots, themeArtPreview: fresh.themeArtPreview }));
+          syncedInv = {
+            ...invToSave,
+            featureSettings: fresh.featureSettings ?? invToSave.featureSettings,
+            themeDefaultMedia: fresh.themeDefaultMedia,
+            themeMediaSlots: fresh.themeMediaSlots,
+            themeArtPreview: fresh.themeArtPreview,
+            subdomain: fresh.subdomain ?? invToSave.subdomain,
+            invitationSlug: fresh.invitationSlug ?? invToSave.invitationSlug,
+          };
+          setInvitation((prev: any) => ({
+            ...prev,
+            featureSettings: fresh.featureSettings ?? prev?.featureSettings,
+            themeDefaultMedia: fresh.themeDefaultMedia,
+            themeMediaSlots: fresh.themeMediaSlots,
+            themeArtPreview: fresh.themeArtPreview,
+            subdomain: fresh.subdomain ?? prev?.subdomain,
+            invitationSlug: fresh.invitationSlug ?? prev?.invitationSlug,
+          }));
         } else {
           setStudioNotification({ type: "error", message: "Tema tersimpan, tetapi daftar foto tema baru gagal dimuat. Muat ulang halaman." });
+        }
+      } else {
+        const savedData = await res.json().catch(() => null);
+        if (savedData && typeof savedData === "object") {
+          if (savedData.invitationSlug && savedData.invitationSlug !== invToSave.invitationSlug) {
+            syncedInv = { ...syncedInv, invitationSlug: savedData.invitationSlug };
+            setInvitation((prev: any) => (prev ? { ...prev, invitationSlug: savedData.invitationSlug } : prev));
+          }
+          if (savedData.subdomain !== undefined && savedData.subdomain !== invToSave.subdomain) {
+            syncedInv = { ...syncedInv, subdomain: savedData.subdomain };
+            setInvitation((prev: any) => (prev ? { ...prev, subdomain: savedData.subdomain } : prev));
+          }
         }
       }
 
       // Update saved snapshot to current state
       setSavedSnapshot({
-        invitation: JSON.parse(JSON.stringify(invToSave)),
+        invitation: JSON.parse(JSON.stringify(syncedInv)),
         media: JSON.parse(JSON.stringify(media)),
         events: JSON.parse(JSON.stringify(events)),
         stories: JSON.parse(JSON.stringify(stories)),
@@ -1640,7 +1706,36 @@ export default function EditInvitation() {
                   <strong className="text-rose-700 font-bold bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">Belum Memilih Tema</strong>
                 )}
               </span>
-              {planType && (
+              {invitation?.isFreeDraft ? (
+                <>
+                  <span className="text-stone-300">•</span>
+                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border bg-amber-50 text-amber-900 border-amber-300">
+                    Draf Gratis
+                  </span>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-stone-50 text-stone-700 border-stone-200">
+                    {BUILDER_EVENT_LABELS[(invitation.eventType || "WEDDING") as BuilderEventType] ?? invitation.eventType}
+                  </span>
+                  {Array.isArray(platformSettings?.enabledEventTypes) && platformSettings.enabledEventTypes.length > 1 && invitation.status === "DRAFT" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedEventType(invitation.eventType || "WEDDING");
+                        setEventTypeError(null);
+                        setEventTypeModalOpen(true);
+                      }}
+                      className="text-[10px] font-bold text-stone-700 hover:text-stone-950 border border-stone-300 hover:border-stone-400 bg-white hover:bg-stone-50 px-2 py-0.5 rounded-full transition cursor-pointer"
+                    >
+                      Ganti Jenis Acara
+                    </button>
+                  )}
+                  <Link
+                    href="/packages"
+                    className="text-[10px] font-bold text-amber-950 hover:text-stone-900 border border-amber-300 hover:border-amber-400 bg-amber-100/80 hover:bg-amber-200/70 px-2.5 py-0.5 rounded-full transition"
+                  >
+                    Aktifkan Paket
+                  </Link>
+                </>
+              ) : planType && (
                 <>
                   <span className="text-stone-300">•</span>
                   <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${PLAN_COLOR[planType] || "bg-stone-50 text-stone-700 border-stone-200"}`}>
@@ -5538,8 +5633,94 @@ export default function EditInvitation() {
 
 
 
+      {/* ── GANTI JENIS ACARA MODAL (KHUSUS DRAF GRATIS) ────────── */}
+      {eventTypeModalOpen && invitation?.isFreeDraft && invitation?.status === "DRAFT" && (
+        <div
+          className="fixed inset-0 z-[999] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={(e) => { if (e.target === e.currentTarget && !changingEventType) setEventTypeModalOpen(false); }}
+        >
+          <div className="w-full sm:max-w-lg max-h-[90vh] flex flex-col bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden text-stone-900">
+            <div className="shrink-0 px-6 py-4 bg-stone-900 text-white flex items-center justify-between gap-3">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400 block">Mode Draf Gratis</span>
+                <h2 className="text-base sm:text-lg font-serif font-bold text-stone-100 mt-0.5">Ganti Jenis Acara Undangan</h2>
+              </div>
+              <button
+                type="button"
+                disabled={changingEventType}
+                onClick={() => setEventTypeModalOpen(false)}
+                aria-label="Tutup"
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-stone-300 hover:text-white flex items-center justify-center transition cursor-pointer"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <div className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
+              <p className="text-xs text-stone-600 leading-relaxed">
+                Mengganti jenis acara akan menyesuaikan tema bawaan, label teks, dan mengosongkan data nama peserta agar sesuai struktur acara baru. Foto yang sudah diunggah tetap tersimpan.
+              </p>
+              <div className="grid grid-cols-2 gap-2.5">
+                {(platformSettings?.enabledEventTypes || []).map((ev: string) => {
+                  const isSel = selectedEventType === ev;
+                  const isCurrent = invitation.eventType === ev;
+                  return (
+                    <button
+                      key={ev}
+                      type="button"
+                      onClick={() => setSelectedEventType(ev)}
+                      className={`p-3 rounded-2xl border text-left transition cursor-pointer ${
+                        isSel
+                          ? "border-2 border-amber-800 bg-amber-50/70"
+                          : "border-stone-200 bg-white hover:border-stone-300 hover:bg-stone-50"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-xs font-bold text-stone-900">
+                          {BUILDER_EVENT_LABELS[ev as BuilderEventType] ?? ev}
+                        </span>
+                        {isCurrent && (
+                          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-600 border border-stone-200">
+                            Aktif
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-stone-500 block mt-0.5">
+                        {ev === "WEDDING" ? "Format 2 mempelai" : "Format non-wedding"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              {eventTypeError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-medium">
+                  {eventTypeError}
+                </div>
+              )}
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-100">
+                <button
+                  type="button"
+                  disabled={changingEventType}
+                  onClick={() => setEventTypeModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  disabled={changingEventType || !selectedEventType || selectedEventType === invitation.eventType}
+                  onClick={handleChangeFreeDraftEventType}
+                  className="px-5 py-2.5 rounded-xl bg-amber-900 hover:bg-amber-950 text-white text-xs font-bold transition cursor-pointer disabled:opacity-50"
+                >
+                  {changingEventType ? "Mengubah..." : "Terapkan Jenis Acara"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── UPGRADE PAKET MODAL ────────────────────────────────────── */}
-      {upgradeModal && (
+      {upgradeModal && !invitation?.isFreeDraft && (
         <div
           className="fixed inset-0 z-[999] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
           onClick={(e) => { if (e.target === e.currentTarget) setUpgradeModal(false); }}

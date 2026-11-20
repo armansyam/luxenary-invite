@@ -8,6 +8,7 @@ import {
   BLOCK_FONT_ROLES,
   BLOCK_FONT_WEIGHTS,
   BLOCK_LIMITS,
+  BLOCK_PX_LIMITS,
   BLOCK_TEXT_TRANSFORMS,
   BUILDER_BLOCKS,
   DEFAULT_PHOTO_FRAME,
@@ -345,6 +346,86 @@ export default function BlockInspector({
           </div>
         )}
 
+        {blockId === "cover-subtitle" && variants && onVariantChange && (
+          <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-3">
+            <span className="text-[11.5px] font-semibold text-stone-700">Letak Kalimat Sapaan Sampul</span>
+            <div className="mt-1.5 grid grid-cols-2 gap-1 rounded-xl bg-stone-100 p-1">
+              {[
+                { id: "center", label: "Di bawah tanggal" },
+                { id: "bottom", label: "Di atas kartu tamu" },
+              ].map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => onVariantChange({ coverSubtitlePos: opt.id })}
+                  className={`rounded-lg px-1.5 py-1.5 text-[10.5px] font-semibold transition cursor-pointer ${
+                    (variants.coverSubtitlePos ?? "center") === opt.id ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-[10.5px] leading-snug text-stone-500">
+              Menempelkan sapaan tepat di atas kartu tamu menjaganya tetap aman walau nama klien 2–3 baris.
+            </p>
+          </div>
+        )}
+
+        {block.section === "cover" && variants && onVariantChange && (
+          <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-3">
+            <span className="text-[11.5px] font-semibold text-stone-700">Tata Vertikal Sampul</span>
+            <div className="mt-1.5 grid grid-cols-3 gap-1 rounded-xl bg-stone-100 p-1">
+              {[
+                { id: "spread", label: "Sebar" },
+                { id: "top", label: "Kumpul atas" },
+                { id: "bottom", label: "Kumpul bawah" },
+              ].map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => onVariantChange({ coverAlign: opt.id })}
+                  className={`rounded-lg px-1.5 py-1.5 text-[10.5px] font-semibold transition cursor-pointer ${
+                    (variants.coverAlign ?? "spread") === opt.id ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-[10.5px] leading-snug text-stone-500">
+              Atur pengelompokan elemen sampul tanpa perlu menyeret teks lintas area foto.
+            </p>
+          </div>
+        )}
+
+        {block.section === "opening" && variants && onVariantChange && (
+          <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-3">
+            <span className="text-[11.5px] font-semibold text-stone-700">Tata Vertikal Pembuka</span>
+            <div className="mt-1.5 grid grid-cols-3 gap-1 rounded-xl bg-stone-100 p-1">
+              {[
+                { id: "spread", label: "Sebar" },
+                { id: "top", label: "Kumpul atas" },
+                { id: "bottom", label: "Kumpul bawah" },
+              ].map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => onVariantChange({ openingAlign: opt.id })}
+                  className={`rounded-lg px-1.5 py-1.5 text-[10.5px] font-semibold transition cursor-pointer ${
+                    (variants.openingAlign ?? "spread") === opt.id ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-[10.5px] leading-snug text-stone-500">
+              Kelompokkan judul dan nama di atas atau bawah foto pembuka agar tetap identik di Mobile dan Desktop tanpa seret ekstrem.
+            </p>
+          </div>
+        )}
+
         {(blockId === "cover-open-btn" || blockId === "countdown-btn") && variants && onVariantChange && (
           <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-3">
             <span className="text-[11.5px] font-semibold text-stone-700">Gaya Tombol Undangan</span>
@@ -462,8 +543,21 @@ export default function BlockInspector({
           <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" d="M12 3v18M7 8l-3 4 3 4M17 8l3 4-3 4" /></svg>
           Tengahkan di seksi
         </button>
-        <Slider label="Geser mendatar" value={props.x} min={BLOCK_LIMITS.x[0]} max={BLOCK_LIMITS.x[1]} step={0.5} suffix="%" numeric resetTo={0} onChange={(x, final) => onChange({ x }, final)} />
-        <Slider label="Geser tegak" value={props.y} min={BLOCK_LIMITS.y[0]} max={BLOCK_LIMITS.y[1]} step={0.5} suffix="%" numeric resetTo={0} onChange={(y, final) => onChange({ y }, final)} />
+        {(() => {
+          const usePx = props.unit === "px" || (props.x === 0 && props.y === 0);
+          const xMin = usePx ? BLOCK_PX_LIMITS.x[0] : BLOCK_LIMITS.x[0];
+          const xMax = usePx ? BLOCK_PX_LIMITS.x[1] : BLOCK_LIMITS.x[1];
+          const yMin = usePx ? BLOCK_PX_LIMITS.y[0] : BLOCK_LIMITS.y[0];
+          const yMax = usePx ? BLOCK_PX_LIMITS.y[1] : BLOCK_LIMITS.y[1];
+          const step = usePx ? 1 : 0.5;
+          const suffix = usePx ? "px" : "%";
+          return (
+            <>
+              <Slider label="Geser mendatar" value={props.x} min={xMin} max={xMax} step={step} suffix={suffix} numeric resetTo={0} onChange={(x, final) => onChange(usePx ? { x, unit: "px" } : { x }, final)} />
+              <Slider label="Geser tegak" value={props.y} min={yMin} max={yMax} step={step} suffix={suffix} numeric resetTo={0} onChange={(y, final) => onChange(usePx ? { y, unit: "px" } : { y }, final)} />
+            </>
+          );
+        })()}
         <Slider label="Ukuran" value={props.scale} min={BLOCK_LIMITS.scale[0]} max={BLOCK_LIMITS.scale[1]} step={0.05} suffix="x" resetTo={1} onChange={(scale, final) => onChange({ scale }, final)} />
         <Slider label="Putar" value={props.rotate} min={-45} max={45} step={1} suffix="°" resetTo={0} onChange={(rotate, final) => onChange({ rotate }, final)} />
 

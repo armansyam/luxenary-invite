@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { safeExternalUrl, safeHref } from "@/lib/safeUrl";
+import { safeExternalUrl, safeHref, safeInternalCallbackUrl } from "@/lib/safeUrl";
 import { jsonForInlineScript } from "@/lib/safeJson";
 
 describe("safeExternalUrl", () => {
@@ -61,5 +61,28 @@ describe("jsonForInlineScript", () => {
     expect(out).not.toContain(String.fromCharCode(0x2028));
     expect(out).not.toContain(String.fromCharCode(0x2029));
     expect(JSON.parse(out)).toEqual(value);
+  });
+});
+
+describe("safeInternalCallbackUrl", () => {
+  it("menerima path internal relatif beserta query string", () => {
+    expect(safeInternalCallbackUrl("/packages?theme=kalandra&event=WEDDING")).toBe("/packages?theme=kalandra&event=WEDDING");
+    expect(safeInternalCallbackUrl("/dashboard/setup?order=123&plan=TIER_1")).toBe("/dashboard/setup?order=123&plan=TIER_1");
+  });
+
+  it.each([
+    "//evil.com",
+    "/\\evil.com",
+    "/\\/evil.com",
+    "/%5Cevil.com",
+    "/%5cevil.com",
+    "https://evil.com/packages",
+    "http://evil.com",
+    "javascript:alert(1)",
+    "/\t/evil.com",
+    "",
+    "   ",
+  ])("menolak vektor open-redirect dan mengembalikan fallback: %s", (malicious) => {
+    expect(safeInternalCallbackUrl(malicious, "/onboarding")).toBe("/onboarding");
   });
 });

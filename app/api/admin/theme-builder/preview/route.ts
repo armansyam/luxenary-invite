@@ -23,7 +23,8 @@ export async function POST(req: NextRequest) {
     await ensureSpecFonts(parsed.spec);
     const spec = await fitSpecFrames(parsed.spec);
     const mode = body.mode === "client" || body.mode === "sim" ? body.mode : "demo";
-    const { html, issues, labels } = await renderBuilderPreview(spec, undefined, mode, mode === "sim" ? parseSimMedia(body.sim) : undefined);
+    const longText = body.longText === true;
+    const { html, issues, labels } = await renderBuilderPreview(spec, undefined, mode, mode === "sim" ? parseSimMedia(body.sim) : undefined, longText);
     return NextResponse.json({ success: true, html, issues, labels });
   } catch (error) {
     return routeError("ThemeBuilderPreview", error);

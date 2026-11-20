@@ -99,3 +99,69 @@ describe("proxy: panel admin di server replika", () => {
     expect((await run("localhost:3000", "/api/admin/themes")).status).not.toBe(503);
   });
 });
+
+describe("proxy: crawler, /payment, reserved partner, CSP, dan isolasi custom domain", () => {
+  it("subdomain menjawab /robots.txt (200 Disallow: /) dan /sitemap.xml (404), bukan redirect /?to=", async () => {
+    const robots = await run("bagas-laras.localhost:3000", "/robots.txt");
+    expect(robots.status).toBe(200);
+    expect(robots.headers.get("content-type")).toContain("text/plain");
+    expect(await robots.text()).toContain("Disallow: /");
+
+    const sitemap = await run("bagas-laras.localhost:3000", "/sitemap.xml");
+    expect(sitemap.status).toBe(404);
+  });
+
+  it("subdomain mengalihkan /payment, /archives, dan host partner.* ke apex domain", async () => {
+    const pay = await run("bagas-laras.localhost:3000", "/payment?order=123");
+    expect(pay.status).toBe(307);
+    expect(pay.headers.get("location")).toBe("http://localhost:3000/payment?order=123");
+
+    const arch = await run("bagas-laras.localhost:3000", "/archives");
+    expect(arch.status).toBe(307);
+    expect(arch.headers.get("location")).toBe("http://localhost:3000/archives");
+
+    const partnerSub = await run("partner.localhost:3000", "/");
+    expect(partnerSub.status).toBe(307);
+    expect(partnerSub.headers.get("location")).toBe("http://localhost:3000/");
+  });
+
+  it("subdomain / memakai CSP undangan (bukan strict-dynamic nonce) sedangkan apex / memakai strict nonce CSP", async () => {
+    const subRes = await run("bagas-laras.localhost:3000", "/");
+    const subCsp = subRes.headers.get("content-security-policy") || "";
+    expect(subCsp).toContain("'unsafe-inline'");
+    expect(subCsp).not.toContain("'strict-dynamic'");
+
+    const apexRes = await run("localhost:3000", "/");
+    const apexCsp = apexRes.headers.get("content-security-policy") || "";
+    expect(apexCsp).toContain("nonce-");
+  });
+
+  it("custom domain menolak seluruh rute platform dengan 404 dan melayani /robots.txt secara langsung", async () => {
+    for (const p of ["/admin", "/admin/login", "/login", "/dashboard", "/packages", "/checkout", "/payment", "/partner", "/sitemap.xml"]) {
+      const res = await run("undangan-klien.example", p);
+      expect(res.status, p).toBe(404);
+    }
+
+    const robots = await run("undangan-klien.example", "/robots.txt");
+    expect(robots.status).toBe(200);
+    expect(await robots.text()).toContain("Disallow: /");
+  });
+
+  it("pengunjung belum login yang mengakses /packages?theme=...&event=... diarahkan ke /login dengan callbackUrl utuh", async () => {
+    const res = await run("localhost:3000", "/packages?theme=kalandra&event=WEDDING");
+    expect(res.status).toBe(307);
+    const loc = new URL(res.headers.get("location")!);
+    expect(loc.pathname).toBe("/login");
+    expect(loc.searchParams.get("callbackUrl")).toBe("/packages?theme=kalandra&event=WEDDING");
+  });
+
+  it("klien sudah login di /login menolak callbackUrl backslash open-redirect (/\\evil.com) dan jatuh ke /onboarding", async () => {
+    const req = new NextRequest("http://localhost:3000/login?callbackUrl=/%5Cevil.com", {
+      headers: { host: "localhost:3000" },
+    });
+    (req as unknown as { auth: unknown }).auth = { user: { id: "u1", role: "CLIENT", isAdmin: false } };
+    const res = (await (proxy as unknown as (r: NextRequest) => Promise<Response>)(req)) as Response;
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toBe("http://localhost:3000/onboarding");
+  });
+});

@@ -12,8 +12,19 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await readJsonBody<{ email?: string }>(req);
+    const body = await readJsonBody<{ email?: string; purpose?: string }>(req);
     const cleanEmail = normalizeOtpEmail(body?.email || "");
+    const rawPurpose = typeof body?.purpose === "string" ? body.purpose.trim().toUpperCase() : "PARTNER_ACTIVATE";
+    const purpose =
+      rawPurpose === "PARTNER_RESET_PASSWORD"
+        ? ("PARTNER_RESET_PASSWORD" as const)
+        : rawPurpose === "PARTNER_ACTIVATE"
+          ? ("PARTNER_ACTIVATE" as const)
+          : null;
+
+    if (!purpose) {
+      return NextResponse.json({ error: "Tujuan verifikasi OTP mitra tidak dikenali." }, { status: 400 });
+    }
 
     if (!cleanEmail || cleanEmail.length > 254 || !EMAIL_RE.test(cleanEmail)) {
       return NextResponse.json({ error: "Alamat email tidak valid." }, { status: 400 });
@@ -26,7 +37,7 @@ export async function POST(req: NextRequest) {
         { status: 429 },
       );
     }
-    if (!(await rateLimitDb(`partner_otp_email:${cleanEmail}`, 5, 15 * 60_000))) {
+    if (!(await rateLimitDb(`partner_otp_email:${purpose}:${cleanEmail}`, 5, 15 * 60_000))) {
       return NextResponse.json(
         { error: "Kode OTP baru saja dikirim ke email ini. Tunggu beberapa menit sebelum meminta ulang." },
         { status: 429 },
@@ -38,15 +49,25 @@ export async function POST(req: NextRequest) {
         email: { equals: cleanEmail, mode: "insensitive" },
         isActive: true,
       },
-      select: { id: true, name: true, email: true },
+      select: { id: true, name: true, email: true, passwordHash: true },
     });
 
+    if (purpose === "PARTNER_ACTIVATE" && partner?.passwordHash) {
+      return NextResponse.json(
+        {
+          error: "Akun mitra ini sudah aktif. Silakan masuk dengan kata sandi atau gunakan Lupa kata sandi.",
+          code: "ALREADY_ACTIVATED",
+        },
+        { status: 409 },
+      );
+    }
+
     if (partner?.email) {
-      const { id, code } = await createAndStoreOtp(cleanEmail, "PARTNER_LOGIN");
+      const { id, code } = await createAndStoreOtp(cleanEmail, purpose);
       const mailRes = await sendLoginOtpEmail({
         to: cleanEmail,
         code,
-        purpose: "PARTNER_LOGIN",
+        purpose,
       });
 
       if (!mailRes.success) {
@@ -63,7 +84,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       expiresInSeconds: 600,
-      message: "Jika email terdaftar sebagai mitra aktif, kode OTP 6 digit telah dikirim.",
+      message:
+        purpose === "PARTNER_ACTIVATE"
+          ? "Jika email terdaftar sebagai mitra aktif, kode aktivasi 6 digit telah dikirim."
+          : "Jika email terdaftar sebagai mitra aktif, kode reset kata sandi 6 digit telah dikirim.",
     });
   } catch (error) {
     return routeError("PartnerOtpRequest", error, "Gagal mengirim kode OTP mitra.");

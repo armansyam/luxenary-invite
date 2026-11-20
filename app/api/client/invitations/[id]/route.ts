@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { InvitationStatus, Prisma } from "@prisma/client";
+import { EventType, InvitationStatus, Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
@@ -10,11 +10,11 @@ import { routeError } from "@/lib/routeError";
 import { readJsonBody } from "@/lib/requestBody";
 import { deleteInvitationDraft } from "@/lib/invitationDraft";
 import { encryptPin, decryptPin } from "@/lib/pinEncryption";
-import { STAFF_PIN_PATTERN, isThemeCompatible } from "@/lib/invitationUtils";
+import { DEFAULT_THEME_BY_EVENT, EVENT_TYPES, STAFF_PIN_PATTERN, isThemeCompatible, selectableEventTypes } from "@/lib/invitationUtils";
 import { isReservedSubdomain, isSubdomainExpired } from "@/lib/domainUtils";
 import { DAY_MS, getPrimaryEventDate, getPrimaryEventDateString, isClockTimeInput, normalizeEventDateInput } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
-import { getPlanMemoriesQuota } from "@/lib/settings";
+import { getEnabledEventTypes, getPlanMemoriesQuota } from "@/lib/settings";
 import { VALID_MEDIA_SLOTS } from "@/lib/mediaSlots";
 import { invalidateInvitationLookup } from "@/lib/cache";
 import { safeExternalUrl, safeMediaUrl } from "@/lib/safeUrl";
@@ -23,11 +23,12 @@ import { purgeInvitationEdgeCache } from "@/lib/cloudflare";
 import { releaseInvitationSubdomain } from "@/lib/subdomainRelease";
 import { createPreviewToken } from "@/lib/previewAccess";
 import { mergeFeatureSettingsInput, parseFeatureSettings } from "@/lib/featureSettings";
-import { featureSettingsForThemeChange } from "@/lib/themeLabels";
-import { seedRenderedLabels } from "@/lib/renderedLabels";
+import { featureSettingsForThemeChange, loadThemeLabelContext } from "@/lib/themeLabels";
+import { copyMasterToDraft, seedRenderedLabels } from "@/lib/renderedLabels";
 import { loadThemeMediaSnapshot } from "@/lib/themeDefaultMedia";
 import { loadThemeArtPreview } from "@/lib/themeArtPreview";
 import { themeMainColor } from "@/lib/themePalette";
+import { buildCanonicalSlugForActivatedDraft, isPlaceholderFreeDraftSlug } from "@/lib/freeDraftActivation";
 
 
 export function getInvitationLockStatus(inv: any) {
@@ -235,6 +236,140 @@ export async function PUT(
       } catch (deployErr) {
         return routeError("DeployAndLock", deployErr, "Gagal memperbarui undangan online.");
       }
+    }
+
+    // ACTION: CHANGE_FREE_DRAFT_EVENT_TYPE — khusus mode Draf Gratis (belum mengaktifkan paket)
+    if (body.action === "CHANGE_FREE_DRAFT_EVENT_TYPE") {
+      if (!currentInv.isFreeDraft || currentInv.status !== "DRAFT") {
+        return NextResponse.json(
+          {
+            error: "Jenis acara hanya dapat diganti langsung saat masih dalam mode Draf Gratis.",
+            code: "EVENT_TYPE_LOCKED",
+          },
+          { status: 403 }
+        );
+      }
+
+      const rawEvent = typeof body.eventType === "string" ? body.eventType.trim().toUpperCase() : "";
+      if (!(EVENT_TYPES as readonly string[]).includes(rawEvent)) {
+        return NextResponse.json({ error: "Jenis acara tidak valid." }, { status: 400 });
+      }
+      const nextEventType = rawEvent as EventType;
+
+      const [enabledTypes, activeThemes] = await Promise.all([
+        getEnabledEventTypes(),
+        prisma.theme.findMany({
+          where: { isActive: true },
+          select: { id: true, eventType: true, parentTheme: true },
+          orderBy: { sortOrder: "asc" },
+        }),
+      ]);
+      const masterThemes = activeThemes.filter((t) => !t.parentTheme);
+      const selectableTypes = selectableEventTypes(
+        enabledTypes,
+        masterThemes.map((t) => t.eventType),
+      );
+      if (!enabledTypes.includes(nextEventType) || !selectableTypes.includes(nextEventType)) {
+        return NextResponse.json({ error: "Jenis acara ini belum tersedia." }, { status: 400 });
+      }
+
+      const requestedThemeId = typeof body.themeId === "string" && body.themeId.trim()
+        ? body.themeId.trim().toLowerCase()
+        : null;
+      if (requestedThemeId) {
+        const reqTheme = activeThemes.find((t) => t.id.toLowerCase() === requestedThemeId);
+        if (!reqTheme || !isThemeCompatible(reqTheme.eventType, nextEventType)) {
+          return NextResponse.json(
+            { error: "Tema pilihan tidak aktif atau tidak sesuai jenis acara." },
+            { status: 400 },
+          );
+        }
+      }
+
+      const isEventChanged = nextEventType !== currentInv.eventType;
+      if (!isEventChanged && (!requestedThemeId || requestedThemeId === currentInv.themeId?.toLowerCase())) {
+        return NextResponse.json({ success: true, unchanged: true, invitation: currentInv });
+      }
+
+      // Pertahankan tema draf saat ini bila masih aktif dan kompatibel (mis. pindah antar jenis acara non-wedding).
+      const currentActiveTheme = activeThemes.find((t) => t.id.toLowerCase() === (currentInv.themeId || "").toLowerCase());
+      const preserveCurrentTheme =
+        !requestedThemeId &&
+        currentActiveTheme &&
+        isThemeCompatible(currentActiveTheme.eventType, nextEventType)
+          ? currentActiveTheme.id
+          : null;
+
+      const preferredId = DEFAULT_THEME_BY_EVENT[nextEventType];
+      const chosenTheme =
+        requestedThemeId ||
+        preserveCurrentTheme ||
+        activeThemes.find((t) => t.id === preferredId)?.id ||
+        masterThemes.find((t) => t.eventType === nextEventType)?.id ||
+        activeThemes.find((t) => isThemeCompatible(t.eventType, nextEventType))?.id;
+
+      if (!chosenTheme) {
+        return NextResponse.json({ error: "Belum ada tema aktif untuk jenis acara ini." }, { status: 503 });
+      }
+
+      const currentFs = parseFeatureSettings(currentInv.featureSettings);
+      const snapshot = await loadThemeMediaSnapshot(chosenTheme);
+
+      let nextFs: Record<string, unknown>;
+      let nextOpeningQuote: string | undefined;
+      let nextOpeningQuoteRef: string | undefined;
+
+      if (isEventChanged) {
+        const { defaultCoverBadge, blueprint, initialCustomLabels } = await loadThemeLabelContext(chosenTheme, nextEventType);
+        nextFs = {
+          ...currentFs,
+          weddingTagline: defaultCoverBadge,
+          showStory: nextEventType === "WEDDING",
+          customLabels: initialCustomLabels,
+          labelDefaults: initialCustomLabels,
+        };
+        nextOpeningQuote = blueprint.openingQuote;
+        nextOpeningQuoteRef = blueprint.openingQuoteRef;
+      } else {
+        // Jenis acara tetap, hanya ganti tema pada Draf Gratis: pertahankan label dan kutipan yang sudah diedit klien.
+        nextFs = (await featureSettingsForThemeChange(
+          currentFs,
+          currentInv.themeId,
+          chosenTheme,
+          nextEventType,
+        )) as Record<string, unknown>;
+      }
+
+      const updated = await prisma.invitation.update({
+        where: { id },
+        data: {
+          eventType: nextEventType,
+          themeId: chosenTheme,
+          ...(isEventChanged
+            ? {
+                participantsJson: {},
+                openingQuote: nextOpeningQuote,
+                openingQuoteRef: nextOpeningQuoteRef,
+              }
+            : {}),
+          featureSettings: nextFs as Prisma.InputJsonValue,
+          themeDefaultMedia: snapshot.themeDefaultMedia,
+          themeMediaSlots: snapshot.themeMediaSlots
+            ? (snapshot.themeMediaSlots as Prisma.InputJsonValue)
+            : Prisma.DbNull,
+        },
+      });
+
+      await deleteInvitationDraft(id);
+      invalidateInvitationLookup(updated.invitationSlug, updated.subdomain, updated.id);
+      if (nextEventType === "WEDDING") await copyMasterToDraft(id);
+      else await seedRenderedLabels(id);
+
+      return NextResponse.json({
+        success: true,
+        message: "Jenis acara draf gratis berhasil diubah.",
+        invitation: updated,
+      });
     }
 
     // If completely locked, reject edit
@@ -512,15 +647,24 @@ export async function PUT(
       if (currentInv.isFreeDraft && !isAdmin) {
         const existingMedia = await prisma.invitationMedia.findMany({
           where: { invitationId: id },
-          select: { mediaSlot: true },
+          select: { id: true, mediaSlot: true },
         });
-        const projectedSlots = new Set<string>(existingMedia.map((m) => m.mediaSlot));
+        const nonGallerySlots = new Set<string>(
+          existingMedia.filter((m) => m.mediaSlot !== "GALLERY").map((m) => m.mediaSlot),
+        );
+        let projectedGalleryCount = existingMedia.filter((m) => m.mediaSlot === "GALLERY").length;
         for (const [slot, url] of Object.entries(body.media)) {
           if (!(VALID_MEDIA_SLOTS as readonly string[]).includes(slot)) continue;
-          if (safeMediaUrl(url)) projectedSlots.add(slot);
-          else projectedSlots.delete(slot);
+          if (slot === "GALLERY") {
+            if (safeMediaUrl(url) && projectedGalleryCount === 0) projectedGalleryCount = 1;
+            else if (!safeMediaUrl(url) && projectedGalleryCount > 0) projectedGalleryCount = Math.max(0, projectedGalleryCount - 1);
+          } else if (safeMediaUrl(url)) {
+            nonGallerySlots.add(slot);
+          } else {
+            nonGallerySlots.delete(slot);
+          }
         }
-        if (projectedSlots.size > 3) {
+        if (nonGallerySlots.size + projectedGalleryCount > 3) {
           return NextResponse.json(
             {
               error: "Draf gratis dibatasi maksimal 3 foto. Aktifkan paket untuk mengunggah lebih banyak foto.",
@@ -558,9 +702,30 @@ export async function PUT(
     }
     const themeSnapshot = themeChanged ? await loadThemeMediaSnapshot(String(body.themeId)) : null;
 
+    // Draf yang berasal dari Free Draft tetapi baru diisi nama pesertanya sesudah paket lunas: perbarui slug sementara
+    // `draf-xxxxxxxx` menjadi slug kanonikal permanen berbasis nama peserta dan tanggal acara utama.
+    let upgradedCanonicalSlug: string | undefined = undefined;
+    if (
+      !currentInv.isFreeDraft &&
+      currentInv.status === "DRAFT" &&
+      isPlaceholderFreeDraftSlug(currentInv.invitationSlug) &&
+      (body.participantsJson !== undefined || body.eventData !== undefined)
+    ) {
+      const candidateSlug = await buildCanonicalSlugForActivatedDraft({
+        invitationId: currentInv.id,
+        eventType: currentInv.eventType,
+        participantsJson: body.participantsJson !== undefined ? body.participantsJson : currentInv.participantsJson,
+        eventData: eventDataToSave !== undefined ? eventDataToSave : currentInv.eventData,
+      });
+      if (candidateSlug) {
+        upgradedCanonicalSlug = candidateSlug;
+      }
+    }
+
     const updated = await prisma.invitation.update({
       where: { id },
       data: {
+        ...(upgradedCanonicalSlug ? { invitationSlug: upgradedCanonicalSlug } : {}),
         openingQuote: body.openingQuote !== undefined ? body.openingQuote : undefined,
         openingQuoteRef: body.openingQuoteRef !== undefined ? body.openingQuoteRef : undefined,
         themeId: body.themeId !== undefined ? body.themeId : undefined,

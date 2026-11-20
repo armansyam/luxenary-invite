@@ -339,6 +339,14 @@ export default function CatalogGridShowcase() {
                         <path d="M5 12h14M12 5l7 7-7 7"/>
                       </svg>
                     </Link>
+                    <Link
+                      href={`/packages?theme=${encodeURIComponent(theme.id)}&event=${encodeURIComponent(
+                        effectiveEvent !== "all" ? effectiveEvent.toUpperCase() : (theme.eventType || "WEDDING").toUpperCase()
+                      )}`}
+                      className="px-3 py-1.5 rounded-full bg-stone-900 hover:bg-amber-900 text-white text-[10px] font-extrabold uppercase tracking-wider transition shadow-2xs whitespace-nowrap"
+                    >
+                      Gunakan Tema Ini
+                    </Link>
                   </div>
 
                 </div>

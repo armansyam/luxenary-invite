@@ -434,7 +434,7 @@ export class MidtransGateway implements PaymentGateway {
     }
   }
 
-  async verify(reference: string): Promise<{ status: "PAID" | "FAILED" | "PENDING" }> {
+  async verify(reference: string): Promise<{ status: "PAID" | "FAILED" | "PENDING"; grossAmount?: number }> {
     const { serverKey, apiUrl } = await this.getConfig();
     const basicAuth = Buffer.from(`${serverKey}:`).toString("base64");
 
@@ -445,10 +445,22 @@ export class MidtransGateway implements PaymentGateway {
 
     const data = await response.json();
     const trxStatus = data?.transaction_status;
+    const fraudStatus = typeof data?.fraud_status === "string" ? data.fraud_status.toLowerCase() : "";
+    const parsedGross = data?.gross_amount !== undefined && data?.gross_amount !== null ? Number(data.gross_amount) : NaN;
+    const grossAmount = Number.isFinite(parsedGross) && parsedGross > 0 ? parsedGross : undefined;
 
-    if (trxStatus === "settlement" || trxStatus === "capture") return { status: "PAID" };
-    if (trxStatus === "expire" || trxStatus === "cancel" || trxStatus === "deny") return { status: "FAILED" };
-    return { status: "PENDING" };
+    if (trxStatus === "settlement") {
+      return { status: "PAID", grossAmount };
+    }
+    if (trxStatus === "capture") {
+      if (fraudStatus === "deny") return { status: "FAILED", grossAmount };
+      if (!fraudStatus || fraudStatus === "accept") return { status: "PAID", grossAmount };
+      return { status: "PENDING", grossAmount };
+    }
+    if (trxStatus === "expire" || trxStatus === "cancel" || trxStatus === "deny") {
+      return { status: "FAILED", grossAmount };
+    }
+    return { status: "PENDING", grossAmount };
   }
 
   /** Verifikasi signature Midtrans webhook */

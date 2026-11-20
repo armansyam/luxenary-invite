@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { routeError } from "@/lib/routeError";
 import { getEnabledEventTypes, getServiceAvailability } from "@/lib/settings";
-import { DEFAULT_THEME_BY_EVENT, isThemeCompatible } from "@/lib/invitationUtils";
+import { DEFAULT_THEME_BY_EVENT, isThemeCompatible, selectableEventTypes } from "@/lib/invitationUtils";
 import { loadThemeLabelContext } from "@/lib/themeLabels";
 import { loadThemeMediaSnapshot, parseThemeDefaultMedia } from "@/lib/themeDefaultMedia";
 import { copyMasterToDraft, seedRenderedLabels } from "@/lib/renderedLabels";
@@ -83,18 +83,40 @@ export async function POST(req: Request) {
     }
 
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-    const rawEvent =
-      typeof body.eventType === "string" && body.eventType.trim()
-        ? body.eventType.trim().toUpperCase()
-        : "WEDDING";
+    const [enabledTypes, activeThemes] = await Promise.all([
+      getEnabledEventTypes(),
+      prisma.theme.findMany({
+        where: { isActive: true, parentTheme: null },
+        select: { eventType: true },
+      }),
+    ]);
+    const selectableTypes = selectableEventTypes(
+      enabledTypes,
+      activeThemes.map((t) => t.eventType),
+    );
+
+    const hasExplicitEventType = typeof body.eventType === "string" && body.eventType.trim().length > 0;
+    let rawEvent: string;
+    if (hasExplicitEventType) {
+      rawEvent = String(body.eventType).trim().toUpperCase();
+    } else if (selectableTypes.length === 1) {
+      rawEvent = selectableTypes[0];
+    } else {
+      return NextResponse.json(
+        {
+          error: "Pilih jenis acara terlebih dahulu sebelum membuat draf gratis.",
+          code: "EVENT_TYPE_REQUIRED",
+        },
+        { status: 400 },
+      );
+    }
 
     if (!VALID_EVENT_TYPES.includes(rawEvent as EventType)) {
       return NextResponse.json({ error: "Jenis acara tidak valid." }, { status: 400 });
     }
     const eventType = rawEvent as EventType;
 
-    const enabledTypes = await getEnabledEventTypes();
-    if (!enabledTypes.includes(eventType)) {
+    if (!enabledTypes.includes(eventType) || !selectableTypes.includes(eventType)) {
       return NextResponse.json(
         { error: "Jenis acara ini belum menerima undangan baru." },
         { status: 400 },
@@ -127,11 +149,21 @@ export async function POST(req: Request) {
       if (preferredTheme) {
         chosenTheme = preferredTheme.id;
       } else {
-        const firstActive = await prisma.theme.findFirst({
-          where: { isActive: true, eventType, parentTheme: null },
-          orderBy: { sortOrder: "asc" },
-          select: { id: true },
-        });
+        const firstActive =
+          (await prisma.theme.findFirst({
+            where: { isActive: true, eventType, parentTheme: null },
+            orderBy: { sortOrder: "asc" },
+            select: { id: true },
+          })) ||
+          (await prisma.theme.findFirst({
+            where: {
+              isActive: true,
+              eventType: eventType === "WEDDING" ? "WEDDING" : { not: "WEDDING" },
+              parentTheme: null,
+            },
+            orderBy: { sortOrder: "asc" },
+            select: { id: true },
+          }));
         if (!firstActive) {
           return NextResponse.json(
             { error: "Belum ada tema aktif untuk jenis acara ini." },

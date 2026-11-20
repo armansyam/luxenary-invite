@@ -50,6 +50,7 @@ export const RESERVED_SUBDOMAINS = new Set([
   "wa",
   "whatsapp",
   "help",
+  "partner",
 ]);
 
 export function isReservedSubdomain(subdomain: string): boolean {
@@ -62,9 +63,9 @@ export function isReservedSubdomain(subdomain: string): boolean {
  * satunya tidak akan pernah terbuka karena rute statis menang, jadi slug seperti itu diberi akhiran.
  */
 export const RESERVED_SLUGS = new Set([
-  "admin", "api", "archives", "assets", "checkout", "contact", "css", "dashboard", "demo", "downloads", "fonts",
-  "how-it-works", "login", "memories", "music", "onboarding", "packages", "payment", "portfolio", "privacy", "published",
-  "refund", "sharemoment", "terms", "uploads",
+  "admin", "api", "archives", "assets", "brand", "checkout", "contact", "css", "dashboard", "demo", "downloads", "fonts",
+  "how-it-works", "login", "memories", "music", "onboarding", "packages", "partner", "payment", "portfolio", "privacy", "published",
+  "refund", "s", "sharemoment", "terms", "uploads",
 ]);
 
 export function isReservedSlug(slug: string): boolean {

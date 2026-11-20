@@ -49,11 +49,13 @@ export async function GET(req: NextRequest) {
     const cached = rsvpListCache.get(invitationId);
     if (cached) return NextResponse.json(cached);
 
-    // Undangan yang diturunkan tidak boleh lagi menampilkan nama dan ucapan tamunya; id yang tidak dikenal dijawab kosong.
+    // Undangan yang diturunkan atau masih DRAFT tidak boleh menampilkan nama/ucapan tamu; id tak dikenal dijawab kosong.
     const invitation = await prisma.invitation.findUnique({ where: { id: invitationId }, select: { status: true } });
-    if (!invitation || invitation.status === "TAKEN_DOWN") {
+    if (!invitation || invitation.status === "TAKEN_DOWN" || invitation.status === "DRAFT") {
       const empty = { success: true as const, rsvps: [] };
-      rsvpListCache.set(invitationId, empty);
+      if (invitation?.status !== "DRAFT") {
+        rsvpListCache.set(invitationId, empty);
+      }
       return NextResponse.json(empty);
     }
 
@@ -175,6 +177,10 @@ export async function POST(req: NextRequest) {
 
     if (!invitation) {
       return NextResponse.json({ error: "Invitation not found" }, { status: 404 });
+    }
+
+    if (invitation.status === "DRAFT") {
+      return NextResponse.json({ error: "Undangan masih berupa draf dan belum dipublikasikan." }, { status: 403 });
     }
 
     if (invitation.status === "EVENT_FINISHED" || invitation.status === "ARCHIVED" || invitation.status === "TAKEN_DOWN") {

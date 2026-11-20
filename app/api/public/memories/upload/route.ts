@@ -134,6 +134,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Undangan tidak ditemukan." }, { status: 404 });
     }
 
+    if (invitation.status === "DRAFT") {
+      return NextResponse.json(
+        { error: "Undangan masih berupa draf dan belum dipublikasikan." },
+        { status: 403 }
+      );
+    }
+
     const canUploadMemories = await hasPlanCapability(invitation.order?.planType, "guest_memories");
     if (!canUploadMemories) {
       return NextResponse.json(

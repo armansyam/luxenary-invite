@@ -1,11 +1,49 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import path from "path";
+import { fileTypeFromBuffer } from "file-type";
 import { CommissionType, DiscountType } from "@prisma/client";
 import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
 import { HttpError, routeError } from "@/lib/routeError";
-import { readJsonBody } from "@/lib/requestBody";
+import { readFormBody, readJsonBody } from "@/lib/requestBody";
+import { optionalText, receiptUrlInput } from "@/lib/financeInput";
+import { deleteFile, readPrivateFile, uploadPrivateFile } from "@/lib/storage";
+import { sendPartnerPayoutEmail } from "@/lib/mailer";
+import { getTrustedAppUrl } from "@/lib/serverDomainUtils";
 
 export const dynamic = "force-dynamic";
+
+const ALLOWED_PAYOUT_SOURCES = new Set(["TRANSFER_BANK", "E_WALLET", "TUNAI"]);
+const ALLOWED_RECEIPT_TYPES: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "application/pdf": "pdf",
+};
+const EXT_TO_MIME: Record<string, string> = {
+  ".jpg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
+  ".pdf": "application/pdf",
+};
+const MAX_RECEIPT_BYTES = 5 * 1024 * 1024;
+
+function maskAccountNumber(accountNumber: string | null): string | null {
+  if (!accountNumber) return null;
+  const clean = accountNumber.trim();
+  if (clean.length <= 4) return clean;
+  return `${"*".repeat(Math.max(4, clean.length - 4))}${clean.slice(-4)}`;
+}
+
+function safeSlugSegment(value: string): string {
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 32) || "mitra"
+  );
+}
 
 /**
  * GET & POST /api/admin/marketing
@@ -42,12 +80,17 @@ function partnerCommissionError(commissionType: unknown, commissionValue: unknow
   return null;
 }
 
+function sanitizePartner<T extends { passwordHash?: string | null }>(partner: T): Omit<T, "passwordHash"> & { hasPassword: boolean } {
+  const { passwordHash, ...rest } = partner;
+  return { ...rest, hasPassword: Boolean(passwordHash) };
+}
+
 export async function GET() {
   const guard = await requireAdminModule("marketing");
   if (!guard.ok) return guard.response;
 
   try {
-    const [promoSetting, coupons, partners, commissions] = await Promise.all([
+    const [promoSetting, coupons, partners, commissions, payouts] = await Promise.all([
       prisma.adminSetting.findUnique({ where: { key: "promo_enabled" } }),
       prisma.promoCoupon.findMany({
         orderBy: { createdAt: "desc" },
@@ -82,13 +125,42 @@ export async function GET() {
           order: { select: { id: true, invoiceNumber: true, planType: true, status: true, paidAt: true } },
         },
       }),
+      prisma.expense.findMany({
+        where: { partnerAffiliateId: { not: null } },
+        take: 100,
+        orderBy: { expenseDate: "desc" },
+        select: {
+          id: true,
+          amount: true,
+          expenseDate: true,
+          paymentSource: true,
+          referenceNumber: true,
+          notes: true,
+          receiptUrl: true,
+          partnerAffiliateId: true,
+          partnerAffiliate: {
+            select: { id: true, name: true, email: true, bankName: true, accountNumber: true },
+          },
+        },
+      }),
     ]);
 
     return NextResponse.json({
       promoEnabled: promoSetting?.value === "true",
       coupons,
-      partners,
+      partners: partners.map(sanitizePartner),
       commissions,
+      payouts: payouts.map((p) => ({
+        id: p.id,
+        amount: Number(p.amount),
+        expenseDate: p.expenseDate,
+        paymentSource: p.paymentSource,
+        referenceNumber: p.referenceNumber,
+        notes: p.notes,
+        hasReceipt: Boolean(p.receiptUrl),
+        partnerAffiliateId: p.partnerAffiliateId,
+        partner: p.partnerAffiliate,
+      })),
     });
   } catch (error) {
     return routeError("AdminMarketing", error, "Gagal memuat data pemasaran");
@@ -101,7 +173,22 @@ export async function POST(req: NextRequest) {
   const { session } = guard;
 
   try {
-    const body = (await readJsonBody(req)) ?? {};
+    const contentType = req.headers.get("content-type") || "";
+    let body: Record<string, any> = {};
+    let uploadedReceiptFile: File | null = null;
+
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await readFormBody(req);
+      for (const [key, val] of formData.entries()) {
+        if (typeof val === "string") {
+          body[key] = val;
+        } else if (key === "receiptFile" && val instanceof File && val.size > 0) {
+          uploadedReceiptFile = val;
+        }
+      }
+    } else {
+      body = (await readJsonBody(req)) ?? {};
+    }
     const { action } = body;
 
     if (!action) {
@@ -265,11 +352,25 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: commissionError }, { status: 400 });
       }
 
+      const cleanEmail = typeof email === "string" && email.trim() ? email.trim().toLowerCase() : null;
+      if (cleanEmail) {
+        const dupEmail = await prisma.partnerAffiliate.findFirst({
+          where: { email: { equals: cleanEmail, mode: "insensitive" } },
+          select: { id: true, name: true },
+        });
+        if (dupEmail) {
+          return NextResponse.json(
+            { error: `Email "${cleanEmail}" sudah terdaftar pada mitra "${dupEmail.name}". Gunakan email yang berbeda.` },
+            { status: 409 },
+          );
+        }
+      }
+
       const partner = await prisma.partnerAffiliate.create({
         data: {
           name: name.trim(),
           phoneNumber: phoneNumber?.trim() || null,
-          email: email?.trim() || null,
+          email: cleanEmail,
           bankName: bankName?.trim() || null,
           accountNumber: accountNumber?.trim() || null,
           accountName: accountName?.trim() || null,
@@ -280,7 +381,7 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      return NextResponse.json({ success: true, partner });
+      return NextResponse.json({ success: true, partner: sanitizePartner(partner) });
     }
 
     if (action === "UPDATE_PARTNER") {
@@ -305,12 +406,40 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: commissionError }, { status: 400 });
       }
 
+      const existingPartner = await prisma.partnerAffiliate.findUnique({
+        where: { id },
+        select: { id: true, email: true, isActive: true },
+      });
+      if (!existingPartner) {
+        return NextResponse.json({ error: "Mitra tidak ditemukan" }, { status: 404 });
+      }
+
+      const cleanEmail = typeof email === "string" && email.trim() ? email.trim().toLowerCase() : null;
+      if (cleanEmail) {
+        const dupEmail = await prisma.partnerAffiliate.findFirst({
+          where: {
+            email: { equals: cleanEmail, mode: "insensitive" },
+            id: { not: id },
+          },
+          select: { id: true, name: true },
+        });
+        if (dupEmail) {
+          return NextResponse.json(
+            { error: `Email "${cleanEmail}" sudah terdaftar pada mitra "${dupEmail.name}". Gunakan email yang berbeda.` },
+            { status: 409 },
+          );
+        }
+      }
+
+      const emailChanged = (existingPartner.email || "").trim().toLowerCase() !== (cleanEmail || "");
+      const deactivated = existingPartner.isActive && !Boolean(isActive);
+
       const updated = await prisma.partnerAffiliate.update({
         where: { id },
         data: {
           name: name?.trim(),
           phoneNumber: phoneNumber?.trim() || null,
-          email: email?.trim() || null,
+          email: cleanEmail,
           bankName: bankName?.trim() || null,
           accountNumber: accountNumber?.trim() || null,
           accountName: accountName?.trim() || null,
@@ -318,10 +447,11 @@ export async function POST(req: NextRequest) {
           commissionValue: Number(commissionValue),
           isActive: Boolean(isActive),
           notes: notes?.trim() || null,
+          ...(emailChanged || deactivated ? { sessionVersion: { increment: 1 } } : {}),
         },
       });
 
-      return NextResponse.json({ success: true, partner: updated });
+      return NextResponse.json({ success: true, partner: sanitizePartner(updated) });
     }
 
     if (action === "DELETE_PARTNER") {
@@ -350,11 +480,11 @@ export async function POST(req: NextRequest) {
     }
 
     // ─────────────────────────────────────────────────────────────
-    // 4. PAYOUT KOMISI MITRA (Otomatis Catat ke Expense Kategori MARKETING)
+    // 4. PAYOUT KOMISI MITRA (Catat Expense MARKETING + Bukti Transfer + Email Mitra)
     // ─────────────────────────────────────────────────────────────
     if (action === "PAYOUT_PARTNER") {
-      const { partnerId, amount, paymentSource, referenceNumber, notes } = body;
-      if (!partnerId) {
+      const { partnerId, amount, paymentSource, referenceNumber, notes, receiptUrl } = body;
+      if (!partnerId || typeof partnerId !== "string") {
         return NextResponse.json({ error: "partnerId wajib disertakan" }, { status: 400 });
       }
 
@@ -368,74 +498,213 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Mitra tidak memiliki saldo komisi yang perlu dibayar (Rp 0)." }, { status: 400 });
       }
 
-      const payoutAmount = amount ? Number(amount) : currentPending;
-      if (payoutAmount <= 0 || payoutAmount > currentPending) {
+      const payoutAmount = amount !== undefined && amount !== null && String(amount).trim() !== ""
+        ? Number(amount)
+        : currentPending;
+      if (!Number.isFinite(payoutAmount) || payoutAmount <= 0 || payoutAmount > currentPending) {
         return NextResponse.json({
           error: `Nominal pencairan tidak valid. Maksimal pencairan: Rp ${currentPending.toLocaleString("id-ID")}.`,
         }, { status: 400 });
       }
 
+      const cleanPaymentSource =
+        typeof paymentSource === "string" && ALLOWED_PAYOUT_SOURCES.has(paymentSource)
+          ? paymentSource
+          : "TRANSFER_BANK";
+      const cleanReferenceNumber = optionalText(referenceNumber, 100);
+      const cleanNotes = optionalText(notes, 500);
+
+      let storedReceiptRef: string | null = null;
+      let uploadedFreshRef = false;
+      let attachmentBuffer: Buffer | null = null;
+      let attachmentMime: string | null = null;
+      let attachmentExt: string | null = null;
+
+      if (uploadedReceiptFile) {
+        if (uploadedReceiptFile.size > MAX_RECEIPT_BYTES) {
+          return NextResponse.json({ error: "Ukuran bukti transfer maksimal 5MB." }, { status: 400 });
+        }
+        const buffer = Buffer.from(await uploadedReceiptFile.arrayBuffer());
+        const detected = await fileTypeFromBuffer(buffer);
+        const ext = detected ? ALLOWED_RECEIPT_TYPES[detected.mime] : undefined;
+        if (!ext || !detected) {
+          return NextResponse.json(
+            { error: "Format bukti transfer tidak didukung. Gunakan JPG, PNG, WEBP, atau PDF." },
+            { status: 400 },
+          );
+        }
+        const uniqueFileName = `receipt-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
+        storedReceiptRef = await uploadPrivateFile(buffer, `receipts/${uniqueFileName}`, detected.mime);
+        uploadedFreshRef = true;
+        attachmentBuffer = buffer;
+        attachmentMime = detected.mime;
+        attachmentExt = ext;
+      } else if (receiptUrl !== undefined && receiptUrl !== null && receiptUrl !== "") {
+        const parsedReceipt = receiptUrlInput(receiptUrl);
+        if (!parsedReceipt.ok) {
+          return NextResponse.json({ error: "Referensi bukti transfer tidak valid." }, { status: 400 });
+        }
+        storedReceiptRef = parsedReceipt.value;
+        if (storedReceiptRef) {
+          attachmentBuffer = await readPrivateFile(storedReceiptRef);
+          const extWithDot = path.extname(storedReceiptRef).toLowerCase();
+          attachmentExt = extWithDot.replace(/^\./, "") || "bin";
+          attachmentMime = EXT_TO_MIME[extWithDot] || "application/octet-stream";
+        }
+      }
+
       // Eksekusi payout atomik dalam transaksi. Saldo dipotong bersyarat (saldo saat ini masih mencukupi): klik ganda atau
       // dua admin bersamaan tidak boleh mencairkan saldo yang sama dua kali.
       const actorId = adminActorId(session);
-      const payoutResult = await prisma.$transaction(async (tx) => {
-        const debited = await tx.partnerAffiliate.updateMany({
-          where: { id: partner.id, pendingBalance: { gte: payoutAmount } },
-          data: {
-            pendingBalance: { decrement: payoutAmount },
-            totalPaidOut: { increment: payoutAmount },
-          },
-        });
-        if (debited.count === 0) {
-          throw new HttpError(409, "Saldo komisi mitra baru saja berubah (mungkin sudah dicairkan). Muat ulang lalu coba lagi.");
-        }
-
-        // 1. Buat catatan pengeluaran di tabel expenses
-        const expense = await tx.expense.create({
-          data: {
-            title: `Payout Komisi Mitra: ${partner.name}`,
-            category: "MARKETING",
-            amount: payoutAmount,
-            expenseDate: new Date(),
-            paymentSource: paymentSource || "TRANSFER_BANK",
-            referenceNumber: referenceNumber || null,
-            notes: notes || `Transfer pencairan komisi mitra ke ${partner.bankName || "Bank"} ${partner.accountNumber || ""} a.n. ${partner.accountName || partner.name}`,
-            createdById: actorId,
-          },
-        });
-
-        // 2. Komisi PENDING ditandai PAID hanya bila saldo habis; pencairan sebagian menyisakan komisi yang belum lunas.
-        const updatedPartner = await tx.partnerAffiliate.findUniqueOrThrow({ where: { id: partner.id } });
-        if (Number(updatedPartner.pendingBalance) <= 0) {
-          await tx.affiliateCommission.updateMany({
-            where: {
-              partnerId: partner.id,
-              status: "PENDING",
-            },
+      const paidAt = new Date();
+      let payoutResult: { expenseId: string; remainingBalance: number };
+      try {
+        payoutResult = await prisma.$transaction(async (tx) => {
+          const debited = await tx.partnerAffiliate.updateMany({
+            where: { id: partner.id, pendingBalance: { gte: payoutAmount } },
             data: {
-              status: "PAID",
-              paidAt: new Date(),
-              payoutExpenseId: expense.id,
+              pendingBalance: { decrement: payoutAmount },
+              totalPaidOut: { increment: payoutAmount },
             },
           });
-        }
+          if (debited.count === 0) {
+            throw new HttpError(409, "Saldo komisi mitra baru saja berubah (mungkin sudah dicairkan). Muat ulang lalu coba lagi.");
+          }
 
-        await tx.adminAuditLog.create({
-          data: {
-            adminId: actorId,
-            action: "PAYOUT_PARTNER",
-            details: `Pencairan komisi mitra ${partner.name} sebesar Rp ${payoutAmount.toLocaleString("id-ID")}; sisa saldo Rp ${Number(updatedPartner.pendingBalance).toLocaleString("id-ID")}`,
-          },
+          // 1. Buat catatan pengeluaran di tabel expenses (terhubung langsung ke mitra + struk privat)
+          const expense = await tx.expense.create({
+            data: {
+              title: `Payout Komisi Mitra: ${partner.name}`,
+              category: "MARKETING",
+              amount: payoutAmount,
+              expenseDate: paidAt,
+              paymentSource: cleanPaymentSource,
+              referenceNumber: cleanReferenceNumber,
+              receiptUrl: storedReceiptRef,
+              partnerAffiliateId: partner.id,
+              notes:
+                cleanNotes ||
+                `Transfer pencairan komisi mitra ke ${partner.bankName || "Bank"} ${partner.accountNumber || ""} a.n. ${partner.accountName || partner.name}`,
+              createdById: actorId,
+            },
+          });
+
+          // 2. Tandai komisi PENDING menjadi PAID secara FIFO (createdAt ASC) sepanjang nominalnya tercukupi oleh
+          // pencairan ini, atau seluruhnya apabila sisa saldo pending sudah 0.
+          const updatedPartner = await tx.partnerAffiliate.findUniqueOrThrow({ where: { id: partner.id } });
+          if (Number(updatedPartner.pendingBalance) <= 0) {
+            await tx.affiliateCommission.updateMany({
+              where: {
+                partnerId: partner.id,
+                status: "PENDING",
+              },
+              data: {
+                status: "PAID",
+                paidAt,
+                payoutExpenseId: expense.id,
+              },
+            });
+          } else {
+            const pendingCommissions = await tx.affiliateCommission.findMany({
+              where: { partnerId: partner.id, status: "PENDING" },
+              orderBy: { createdAt: "asc" },
+              select: { id: true, commissionAmount: true },
+            });
+            let budget = payoutAmount;
+            const settledIds: string[] = [];
+            for (const comm of pendingCommissions) {
+              const commAmt = Number(comm.commissionAmount);
+              if (commAmt <= budget + 1e-6) {
+                settledIds.push(comm.id);
+                budget -= commAmt;
+              } else {
+                break;
+              }
+            }
+            if (settledIds.length > 0) {
+              await tx.affiliateCommission.updateMany({
+                where: { id: { in: settledIds }, status: "PENDING" },
+                data: {
+                  status: "PAID",
+                  paidAt,
+                  payoutExpenseId: expense.id,
+                },
+              });
+            }
+          }
+
+          await tx.adminAuditLog.create({
+            data: {
+              adminId: actorId,
+              action: "PAYOUT_PARTNER",
+              details: `Pencairan komisi mitra ${partner.name} sebesar Rp ${payoutAmount.toLocaleString("id-ID")}; sisa saldo Rp ${Number(updatedPartner.pendingBalance).toLocaleString("id-ID")}${storedReceiptRef ? " (dengan bukti transfer)" : ""}`,
+            },
+          });
+
+          return {
+            expenseId: expense.id,
+            remainingBalance: Number(updatedPartner.pendingBalance),
+          };
         });
+      } catch (txError) {
+        if (uploadedFreshRef && storedReceiptRef) {
+          await deleteFile(storedReceiptRef).catch(() => {});
+        }
+        throw txError;
+      }
 
-        return { expense, partner: updatedPartner };
-      });
+      const { expenseId, remainingBalance } = payoutResult;
+      let emailSent = false;
+      let emailError: string | null = null;
+
+      if (partner.email?.trim()) {
+        const recipientEmail = partner.email.trim();
+        const paidAtFormatted = `${paidAt.toLocaleString("id-ID", {
+          timeZone: "Asia/Jakarta",
+          dateStyle: "long",
+          timeStyle: "short",
+        })} WIB`;
+        const dateYmd = paidAt.toISOString().slice(0, 10);
+        const appUrl = await getTrustedAppUrl();
+
+        const emailRes = await sendPartnerPayoutEmail({
+          partnerName: partner.name,
+          recipientEmail,
+          amount: payoutAmount,
+          remainingBalance,
+          paidAtFormatted,
+          bankName: partner.bankName,
+          accountNumberMasked: maskAccountNumber(partner.accountNumber),
+          accountName: partner.accountName,
+          paymentSource: cleanPaymentSource,
+          referenceNumber: cleanReferenceNumber,
+          notes: cleanNotes,
+          hasAttachment: Boolean(attachmentBuffer && attachmentMime && attachmentExt),
+          appUrl,
+          attachment:
+            attachmentBuffer && attachmentMime && attachmentExt
+              ? {
+                  filename: `bukti-transfer-komisi-${safeSlugSegment(partner.name)}-${dateYmd}.${attachmentExt}`,
+                  content: attachmentBuffer,
+                  contentType: attachmentMime,
+                }
+              : null,
+        });
+        emailSent = emailRes.success;
+        emailError = emailRes.success ? null : emailRes.error || "EMAIL_SEND_FAILED";
+      } else {
+        emailError = "PARTNER_EMAIL_MISSING";
+      }
 
       return NextResponse.json({
         success: true,
         message: `Payout berhasil dicatat sebesar Rp ${payoutAmount.toLocaleString("id-ID")}`,
-        expenseId: payoutResult.expense.id,
-        remainingBalance: Number(payoutResult.partner.pendingBalance),
+        expenseId,
+        remainingBalance,
+        hasReceipt: Boolean(storedReceiptRef),
+        emailSent,
+        emailRecipient: partner.email?.trim() || null,
+        emailError,
       });
     }
 

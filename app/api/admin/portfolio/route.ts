@@ -234,6 +234,7 @@ export async function POST(req: NextRequest) {
       coupleName: participantNames(inv.eventType, inv.participantsJson).short,
       themeId: inv.themeId,
       category: inv.theme.category,
+      eventType: inv.eventType,
     };
 
     const metadataBuffer = Buffer.from(JSON.stringify(metadata, null, 2), "utf-8");

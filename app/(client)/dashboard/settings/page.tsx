@@ -1650,28 +1650,44 @@ export default function SettingsPage() {
                 )}
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-100">
-                {saveSuccess.subdomain && (
-                  <span className="text-xs text-emerald-700 font-semibold flex items-center gap-1">
-                    Tersimpan
-                  </span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-2 pt-2 border-t border-stone-100">
+                {invitation?.isFreeDraft ? (
+                  <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <span className="text-[11px] text-amber-900">
+                      Anda dapat mengecek ketersediaan nama subdomain di atas. Klaim subdomain aktif setelah paket diaktifkan.
+                    </span>
+                    <Link
+                      href="/packages"
+                      className="shrink-0 px-4 py-2 font-bold rounded-xl text-xs bg-amber-900 hover:bg-amber-950 text-white transition text-center"
+                    >
+                      Aktifkan Paket untuk Klaim
+                    </Link>
+                  </div>
+                ) : (
+                  <>
+                    {saveSuccess.subdomain && (
+                      <span className="text-xs text-emerald-700 font-semibold flex items-center gap-1">
+                        Tersimpan
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleSaveSection("subdomain")}
+                      disabled={
+                        savingSec === "subdomain" ||
+                        subdomainStatus.state === "unavailable" ||
+                        subdomainStatus.state === "checking"
+                      }
+                      className={`px-5 py-2 font-bold rounded-xl text-xs transition flex items-center gap-1.5 ${
+                        subdomainStatus.state === "unavailable" || subdomainStatus.state === "checking"
+                          ? "bg-stone-200 text-stone-400 border border-stone-300 cursor-not-allowed"
+                          : "bg-stone-900 hover:bg-stone-800 text-white cursor-pointer"
+                      }`}
+                    >
+                      {savingSec === "subdomain" ? "Menyimpan..." : "Simpan Subdomain"}
+                    </button>
+                  </>
                 )}
-                <button
-                  type="button"
-                  onClick={() => handleSaveSection("subdomain")}
-                  disabled={
-                    savingSec === "subdomain" ||
-                    subdomainStatus.state === "unavailable" ||
-                    subdomainStatus.state === "checking"
-                  }
-                  className={`px-5 py-2 font-bold rounded-xl text-xs transition flex items-center gap-1.5 ${
-                    subdomainStatus.state === "unavailable" || subdomainStatus.state === "checking"
-                      ? "bg-stone-200 text-stone-400 border border-stone-300 cursor-not-allowed"
-                      : "bg-stone-900 hover:bg-stone-800 text-white cursor-pointer"
-                  }`}
-                >
-                  {savingSec === "subdomain" ? "Menyimpan..." : "Simpan Subdomain"}
-                </button>
               </div>
             </div>
           )}
@@ -1783,13 +1799,13 @@ export default function SettingsPage() {
               </div>
             </div>
             <div className="shrink-0">
-              <a
-                href="/dashboard?upgrade=true"
+              <Link
+                href={invitation?.isFreeDraft ? "/packages" : "/dashboard?upgrade=true"}
                 className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
-                <span>Upgrade ke Paket {tier3Name}</span>
-              </a>
+                <span>{invitation?.isFreeDraft ? `Aktifkan Paket ${tier3Name}` : `Upgrade ke Paket ${tier3Name}`}</span>
+              </Link>
             </div>
           </div>
         ) : !invitation?.customDomain && !isCustomDomainEnabled ? (
@@ -2083,10 +2099,10 @@ export default function SettingsPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => router.push("/dashboard?upgrade=true")}
-                  className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white font-bold rounded-xl text-xs transition whitespace-nowrap shadow-xs cursor-pointer"
+                  onClick={() => router.push(invitation?.isFreeDraft ? "/packages" : "/dashboard?upgrade=true")}
+                  className="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl text-xs transition whitespace-nowrap shadow-xs cursor-pointer"
                 >
-                  Upgrade ke Paket {tier3Name}
+                  {invitation?.isFreeDraft ? `Aktifkan Paket ${tier3Name}` : `Upgrade ke Paket ${tier3Name}`}
                 </button>
               </div>
             )}

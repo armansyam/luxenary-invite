@@ -60,4 +60,42 @@ describe("coverDesktopCss dan master hasil kompilasi", () => {
     expect(full).toContain(':root:not(:has(#lux-cover-desktop-split)) [data-lux-block="cover-names"]');
     expect(compileBuilderMaster(defaultBuilderSpec())).not.toContain("data-lux-desktop-cover");
   });
+
+  it("sampul desktop dengan unit px memakai translate px dan tetap kompatibel dengan persen lama", () => {
+    const parsed = parseBuilderSpec({
+      ...defaultBuilderSpec(),
+      coverDesktop: {
+        mode: "full",
+        full: { "cover-names": { x: -120, y: 1200, unit: "px", scale: 1.1, rotate: 0 } },
+        split: { "cover-subtitle": { x: 0, y: 80, unit: "px", scale: 0.9, rotate: 0 } },
+      },
+    });
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.spec.coverDesktop?.full?.["cover-names"]).toMatchObject({ x: -120, y: 900, unit: "px" });
+    const css = coverDesktopCss(parsed.spec.coverDesktop);
+    expect(css).toContain(':root:not(:has(#lux-cover-desktop-split)) [data-lux-block="cover-names"]{translate:-120px 900px;rotate:0deg;scale:1.1;}');
+    expect(css).toContain(':root:has(#lux-cover-desktop-split) [data-lux-block="cover-subtitle"]{translate:0px 80px;rotate:0deg;scale:0.9;}');
+  });
+
+  it("reset posisi sampul desktop ke 0,0 tetap dipertahankan bila mobile punya pergeseran (tidak jatuh balik ke posisi mobile)", () => {
+    const parsed = parseBuilderSpec({
+      ...defaultBuilderSpec(),
+      blocks: {
+        "cover-names": { x: 0, y: -85, unit: "px", scale: 1, rotate: 0, hidden: false },
+      },
+      coverDesktop: {
+        split: {
+          "cover-names": { x: 0, y: 0, unit: "px", scale: 1, rotate: 0 },
+          "cover-badge": { x: 0, y: 0, unit: "px", scale: 1, rotate: 0 },
+        },
+      },
+    });
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.spec.coverDesktop?.split?.["cover-names"]).toEqual({ x: 0, y: 0, unit: "px", scale: 1, rotate: 0 });
+    expect(parsed.spec.coverDesktop?.split?.["cover-badge"]).toBeUndefined();
+    const css = coverDesktopCss(parsed.spec.coverDesktop);
+    expect(css).toContain(':root:has(#lux-cover-desktop-split) [data-lux-block="cover-names"]{translate:0px 0px;rotate:0deg;scale:1;}');
+  });
 });

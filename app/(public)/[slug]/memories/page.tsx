@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const invitation = await prisma.invitation.findUnique({ where: { invitationSlug: slug } });
 
-  if (!invitation) return {};
+  if (!invitation || (invitation.status !== "PUBLISHED" && invitation.status !== "EVENT_FINISHED")) return {};
 
   const displayName = resolveInvitationDisplayName(invitation);
   const isWedding = !invitation.eventType || invitation.eventType === "WEDDING";

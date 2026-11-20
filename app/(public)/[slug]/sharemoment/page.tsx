@@ -7,19 +7,20 @@ import { invitationHomePath } from "@/lib/serverDomainUtils";
 import { getMemoriesActiveSchedule } from "@/lib/domainUtils";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 import { parseFeatureSettings } from "@/lib/featureSettings";
+import { canPreviewInvitation } from "@/lib/previewAccess";
 
 export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
-  searchParams?: Promise<{ test?: string; to?: string }>;
+  searchParams?: Promise<{ test?: string; to?: string; preview?: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const invitation = await prisma.invitation.findUnique({ where: { invitationSlug: slug } });
 
-  if (!invitation) return {};
+  if (!invitation || invitation.status === "TAKEN_DOWN" || invitation.status === "DRAFT") return {};
 
   const displayName = resolveInvitationDisplayName(invitation);
   const isWedding = !invitation.eventType || invitation.eventType === "WEDDING";
@@ -48,9 +49,14 @@ export default async function FreeGuestMemoriesStandalonePage({ params, searchPa
     },
   });
 
-  // DRAFT tetap dibuka: studio memakai halaman ini (?test=true) untuk pratinjau sebelum terbit.
   if (!invitation || invitation.status === "TAKEN_DOWN") {
     notFound();
+  }
+
+  // DRAFT hanya dapat dibuka oleh pemilik undangan/admin (mis. pratinjau studio ?test=true atau token ?preview=).
+  if (invitation.status === "DRAFT") {
+    const canPreview = await canPreviewInvitation(invitation, sParams.preview || "true");
+    if (!canPreview) notFound();
   }
 
   // Cek kapabilitas guest_memories secara dinamis berdasarkan konfigurasi admin

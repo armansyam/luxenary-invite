@@ -122,6 +122,18 @@ const VARIANT_CSS: Record<keyof BuilderVariants, Record<string, string>> = {
       .cover-names { font-size: clamp(2.8rem, 4.5vw, 4.8rem); }
     }`,
   },
+  coverAlign: {
+    top: `
+    .cover-overlay { justify-content: flex-start; gap: 14px; }
+    .cover-bottom { margin-top: auto; }`,
+    bottom: `
+    .cover-overlay { justify-content: flex-start; gap: 16px; }
+    .cover-top { margin-top: auto; }`,
+  },
+  coverSubtitlePos: {
+    bottom: `
+    .cover-bottom > .cover-subtitle { margin-top: 0; margin-bottom: 14px; }`,
+  },
   opening: {
     card: `
     .opening-center { width: 100%; max-width: 380px; padding: 28px 22px; background: color-mix(in srgb, var(--card-bg) 92%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 18%, transparent); border-radius: var(--radius-lg); box-shadow: var(--shadow-elevated); }`,
@@ -137,6 +149,16 @@ const VARIANT_CSS: Record<keyof BuilderVariants, Record<string, string>> = {
     .opening-photo::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--overlay) 55%, transparent) 0%, color-mix(in srgb, var(--overlay) 35%, transparent) 45%, color-mix(in srgb, var(--overlay) 80%, transparent) 100%); }
     .slide-opening:has(.opening-photo) .opening-bismillah, .slide-opening:has(.opening-photo) .sec-eyebrow, .slide-opening:has(.opening-photo) .opening-sub-title, .slide-opening:has(.opening-photo) .opening-names, .slide-opening:has(.opening-photo) .opening-names em, .slide-opening:has(.opening-photo) .opening-info, .slide-opening:has(.opening-photo) .scroll-indicator { color: var(--on-dark); text-shadow: 0 2px 12px color-mix(in srgb, var(--overlay) 45%, transparent); }
     .slide-opening:has(.opening-photo) .sec-divider { background: var(--accent); }`,
+  },
+  openingAlign: {
+    top: `
+    .slide-opening { justify-content: flex-start; gap: 14px; }
+    .opening-center { margin: 0; padding: 0.5rem 0; }
+    .opening-bottom { margin-top: auto; }`,
+    bottom: `
+    .slide-opening { justify-content: flex-start; gap: 16px; }
+    .slide-opening::before { content: ''; margin-top: auto; }
+    .opening-center { margin: 0; padding: 0.5rem 0; }`,
   },
   couple: {
     side: `
@@ -763,28 +785,105 @@ export function compileBuilderMaster(spec: BuilderSpec, blueprint = readBuilderB
     spec.textureOpacity !== undefined && spec.textureOpacity < 100
       ? `\n    .fixed-bg-layer:not(.has-custom-bg) { opacity: ${Math.round(spec.textureOpacity) / 100}; }`
       : "";
-  const scrimOpacityCss = (() => {
-    if (spec.scrimOpacity === undefined || spec.scrimOpacity === 55) return "";
-    const s = Math.max(10, Math.min(90, Math.round(spec.scrimOpacity)));
+  const scrimOverlayCss = (() => {
+    const hasOpacity = spec.scrimOpacity !== undefined && spec.scrimOpacity !== 55;
+    const style = spec.scrimStyle ?? "balanced";
+    const v = Math.max(0, Math.min(85, Math.round(spec.vignette ?? 0)));
+    if (!hasOpacity && style === "balanced" && v === 0) return "";
+    const s = Math.max(10, Math.min(90, Math.round(spec.scrimOpacity ?? 55)));
+    const mix = (token: string, pct: number) => `color-mix(in srgb, ${token} ${pct}%, transparent)`;
     const topPct = Math.max(5, Math.round(s * 0.6));
+    const midPct = Math.max(5, Math.round(s * 0.35));
     const botPct = Math.min(96, Math.round(s * 1.25));
+    const strongPct = Math.min(98, Math.round(s * 1.4));
     const closeTop = Math.max(5, Math.round(s * 0.3));
     const closeBot = Math.min(98, Math.round(s * 1.35));
-    return `\n    .cover-overlay { background-image: linear-gradient(180deg, color-mix(in srgb, var(--overlay) ${topPct}%, transparent) 0%, color-mix(in srgb, var(--overlay) ${botPct}%, transparent) 100%), url('{{landingCoverUrl}}') !important; }
-    @media (min-width: 900px) { .cover-overlay { background-image: linear-gradient(180deg, color-mix(in srgb, var(--overlay) ${topPct}%, transparent) 0%, color-mix(in srgb, var(--overlay) ${botPct}%, transparent) 100%), url('{{landingCoverDesktopUrl}}') !important; } }
-    .sidebar-desktop::after { background: linear-gradient(to top, color-mix(in srgb, var(--overlay) ${botPct}%, transparent) 0%, color-mix(in srgb, var(--overlay) ${topPct}%, transparent) 50%, transparent 100%) !important; }
-    .closing-sec.has-closing-photo::before { background: linear-gradient(to bottom, color-mix(in srgb, var(--overlay) ${closeTop}%, transparent) 0%, color-mix(in srgb, var(--overlay) ${s}%, transparent) 45%, color-mix(in srgb, var(--overlay) ${closeBot}%, transparent) 100%) !important; }`;
+    const mainGrad = (() => {
+      switch (style) {
+        case "bottom":
+          return `linear-gradient(180deg, transparent 0%, ${mix("var(--overlay)", Math.max(8, Math.round(s * 0.35)))} 48%, ${mix("var(--overlay)", strongPct)} 100%)`;
+        case "top":
+          return `linear-gradient(180deg, ${mix("var(--overlay)", Math.min(92, Math.round(s * 1.15)))} 0%, ${mix("var(--overlay)", Math.max(5, Math.round(s * 0.2)))} 45%, ${mix("var(--overlay)", strongPct)} 100%)`;
+        case "radial":
+          return `radial-gradient(ellipse at center, ${mix("var(--overlay)", Math.max(5, Math.round(s * 0.25)))} 0%, ${mix("var(--overlay)", Math.min(96, Math.round(s * 1.3)))} 100%)`;
+        case "duotone":
+          return `linear-gradient(180deg, ${mix("var(--primary)", Math.min(85, Math.round(s * 0.85)))} 0%, ${mix("var(--overlay)", Math.min(96, Math.round(s * 1.25)))} 100%)`;
+        default:
+          return `linear-gradient(180deg, ${mix("var(--overlay)", topPct)} 0%, ${mix("var(--overlay)", botPct)} 100%)`;
+      }
+    })();
+    const vigLayer = v > 0
+      ? `radial-gradient(ellipse at center, transparent 36%, ${mix("var(--overlay)", Math.max(5, Math.round(v * 0.35)))} 70%, ${mix("var(--overlay)", v)} 100%)`
+      : "";
+    const layers = (...items: string[]) => items.filter(Boolean).join(", ");
+    const sidebarGrad = style === "balanced"
+      ? `linear-gradient(to top, ${mix("var(--overlay)", botPct)} 0%, ${mix("var(--overlay)", topPct)} 50%, transparent 100%)`
+      : mainGrad;
+    const closingGrad = style === "balanced"
+      ? `linear-gradient(to bottom, ${mix("var(--overlay)", closeTop)} 0%, ${mix("var(--overlay)", s)} 45%, ${mix("var(--overlay)", closeBot)} 100%)`
+      : mainGrad;
+    const openingGrad = style === "balanced"
+      ? `linear-gradient(180deg, ${mix("var(--overlay)", s)} 0%, ${mix("var(--overlay)", midPct)} 45%, ${mix("var(--overlay)", strongPct)} 100%)`
+      : mainGrad;
+    const rules = [
+      `.cover-overlay { background-image: ${layers(vigLayer, mainGrad, "url('{{landingCoverUrl}}')")} !important; }`,
+      `@media (min-width: 900px) { .cover-overlay { background-image: ${layers(vigLayer, mainGrad, "url('{{landingCoverDesktopUrl}}')")} !important; } }`,
+      `.sidebar-desktop::after { background: ${layers(vigLayer, sidebarGrad)} !important; }`,
+      `.closing-sec.has-closing-photo::before { background: ${layers(vigLayer, closingGrad)} !important; }`,
+    ];
+    if (spec.variants.opening === "backdrop") {
+      rules.push(`.opening-photo::after { background: ${layers(vigLayer, openingGrad)} !important; }`);
+    }
+    if (spec.variants.couple === "backdrop") {
+      rules.push(`.couple-photo-wrap::after { background: ${layers(vigLayer, mainGrad)} !important; }`);
+    }
+    return `\n    ${rules.join("\n    ")}`;
   })();
   const variantCss = [
     ...(Object.keys(VARIANT_CSS) as Array<keyof BuilderVariants>).map((key) => VARIANT_CSS[key][spec.variants[key]]),
     textureOpacityCss,
-    scrimOpacityCss,
+    scrimOverlayCss,
   ]
     .filter(Boolean)
     .join("\n");
   if (variantCss) {
     html = html.replace("</head>", `  <style id="lux-builder-variants">${variantCss}\n  </style>\n</head>`);
   }
+
+  // Skala responsif kanvas mobile (<375px & layar pendek) dipasang sesudah varian agar tipografi varian (mis. editorial
+  // 44px, judul script 40px) ikut menyusut kontinu seiring lebar layar, dan satuan `px` proporsional (`--lux-ux`/`--lux-uy`)
+  // tetap stabil tanpa meledak saat teks turun baris.
+  const coverNamesSmall = spec.variants.cover === "editorial" ? "clamp(32px, 11.7333vw, 44px)" : "clamp(24px, 9.0667vw, 34px)";
+  const secTitleSmall = spec.variants.headings === "script" ? "clamp(30px, 10.6667vw, 40px)" : "clamp(21px, 6.9333vw, 26px)";
+  const archSmall = spec.variants.cover === "arch" ? "\n      .cover-center { padding: 38px 18px 26px; max-width: min(300px, 86vw); }" : "";
+  const responsiveCss = `
+    :root { --lux-ux: 1px; --lux-uy: 1px; }
+    #coverScreen { --lux-ux: min(1px, calc(100vw / 375)); --lux-uy: min(1px, calc(100vw / 375), calc(100svh / 760)); }
+    @media (min-width: 900px) { #coverScreen { --lux-ux: 1px; --lux-uy: 1px; } }
+    @media (max-width: 374px) {
+      :root { --lux-ux: calc(100vw / 375); --lux-uy: calc(100vw / 375); }
+      html { font-size: clamp(13.6px, 4.2667vw, 16px); }
+      .cover-overlay { padding: calc(1.9rem + env(safe-area-inset-top, 0px)) 16px calc(1.5rem + env(safe-area-inset-bottom, 0px)); }${archSmall}
+      .cover-monogram { width: 48px; height: 48px; font-size: 14px; margin-bottom: 8px; }
+      .cover-names { font-size: ${coverNamesSmall}; margin: 8px 0 6px; }
+      .cover-tagline { font-size: clamp(9.5px, 2.9333vw, 11px); }
+      .cover-date { font-size: clamp(11px, 3.4667vw, 13px); margin-top: 6px; }
+      .cover-subtitle { font-size: clamp(10px, 3.2vw, 12px); max-width: min(300px, 80vw); margin-top: 8px; }
+      .cover-guest-card { padding: 12px 16px; margin-bottom: 16px; }
+      .cover-btn-open { padding: 11px 24px; font-size: clamp(11px, 3.4667vw, 13px); }
+      .btn-qr-ghost { margin-top: 10px; font-size: 10px; }
+      .sec-flow { padding: 44px 16px; }
+      .sec-main-title { font-size: ${secTitleSmall}; }
+      .sec-sub { font-size: clamp(11.5px, 3.4667vw, 13px); }
+    }
+    @media (max-width: 899px) and (max-height: 670px) {
+      .cover-overlay { padding-top: calc(1.6rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px)); gap: 10px; }
+      .cover-bottom > .cover-subtitle { margin-bottom: 10px; }
+      .cover-guest-card { padding: 12px 18px; margin-bottom: 14px; }
+      .cover-btn-open { padding: 11px 24px; }
+    }
+  `;
+  html = html.replace("</head>", `  <style id="lux-builder-responsive">${responsiveCss}</style>\n</head>`);
 
   const family = builderFamilyOf(spec.eventType);
   // Bila ornamen bingkai (atau ilustrasi pengganti) di seksi yang sama sudah mengisi slot foto pembuka, sembunyikan kotak foto pembuka bawaan
@@ -862,6 +961,16 @@ export function compileBuilderMaster(spec: BuilderSpec, blueprint = readBuilderB
       /<p class="cover-date" data-lux-block="cover-date">\{\{weddingDate\}\}<\/p>/,
       `<p class="cover-date" data-lux-block="cover-date"><span class="cover-date-split">{{#if weddingDateDay}}<span class="cover-date-part cover-date-dd">{{weddingDateDay}}</span><span class="cover-date-sep">/</span><span class="cover-date-part cover-date-mm">{{weddingDateMonth}}</span><span class="cover-date-sep">•</span><span class="cover-date-part cover-date-yy">{{weddingDateYear}}</span>{{/if}}</span><span class="cover-date-full">{{weddingDate}}</span></p>`
     );
+  }
+
+  if (spec.variants.coverSubtitlePos === "bottom") {
+    const subMatch = html.match(/<p\b[^>]*data-lux-block="cover-subtitle"[^>]*>[\s\S]*?<\/p>/);
+    if (subMatch) {
+      html = html.replace(subMatch[0], "").replace(
+        /<div class="cover-guest-card/,
+        `${subMatch[0]}\n      <div class="cover-guest-card`,
+      );
+    }
   }
 
   html = html.replace(/<!-- lux-ornaments:([a-z]+) -->/g, (marker, section: string) => {

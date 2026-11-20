@@ -23,6 +23,10 @@ const googleCreds = {
   clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
 };
 
+function clientPasswordTag(passwordHash: string | null | undefined): string {
+  return passwordHash ? passwordHash.slice(-12) : "";
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   providers: [
@@ -42,30 +46,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         };
 
-        // PORTAL KLIEN OTP EMAIL (6 digit OTP via SMTP untuk peramban tanpa Google OAuth seperti WebView IG/TikTok)
-        if (portal === "CLIENT_OTP") {
+        // PORTAL KLIEN EMAIL & KATA SANDI (Verifikasi bcrypt hash; OTP hanya dipakai untuk pendaftaran & reset kata sandi)
+        if (portal === "CLIENT_PASSWORD") {
           if (!emailOrUser || !password) return failed();
-          const { verifyAndConsumeOtp } = await import("@/lib/emailOtp");
-          const otpCheck = await verifyAndConsumeOtp(emailOrUser, "CLIENT_LOGIN", password);
-          if (!otpCheck.ok) {
+
+          const client = await prisma.user.findUnique({ where: { email: emailOrUser } });
+          if (!client || !client.passwordHash) {
             return failed();
           }
 
-          let client = await prisma.user.findUnique({ where: { email: emailOrUser } });
-          if (!client) {
-            const { getServiceAvailability } = await import("@/lib/settings");
-            const availability = await getServiceAvailability();
-            if (!availability.isOpen) {
-              return failed();
-            }
-            const defaultName = emailOrUser.split("@")[0] || "Tamu";
-            client = await prisma.user.create({
-              data: {
-                email: emailOrUser,
-                name: defaultName,
-                role: "CLIENT",
-              },
-            });
+          const isValid = await bcrypt.compare(password, client.passwordHash);
+          if (!isValid) {
+            return failed();
           }
 
           return {
@@ -75,6 +67,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             role: client.role || "CLIENT",
             permissions: [],
             isAdmin: false,
+            pwdTag: clientPasswordTag(client.passwordHash),
           };
         }
 
@@ -190,7 +183,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const admin = await prisma.admin.findUnique({ where: { id: token.id as string }, select: { id: true, sessionVersion: true } });
         if (!admin || admin.sessionVersion !== token.sv) return null;
       }
-      // Klien yang dihapus admin juga diakhiri sesinya, bukan dibuatkan akun baru diam-diam pada permintaan berikutnya.
+      // Klien yang dihapus admin atau yang kata sandinya telah diatur ulang diakhiri sesinya pada perangkat lama.
       if (!user && !(token as any).isAdmin && (token.id || token.email)) {
         const client = await prisma.user.findFirst({
           where: {
@@ -199,9 +192,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               ...(token.email ? [{ email: token.email.toLowerCase().trim() }] : []),
             ],
           },
-          select: { id: true },
+          select: { id: true, passwordHash: true },
         });
         if (!client) return null;
+        const currentPwdTag = clientPasswordTag(client.passwordHash);
+        if ((token as any).pwdTag !== undefined && (token as any).pwdTag !== currentPwdTag) {
+          return null;
+        }
+        (token as any).pwdTag = currentPwdTag;
       }
       if (user) {
         token.id = user.id;
@@ -209,6 +207,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         (token as any).isAdmin = (user as any).isAdmin || false;
         (token as any).permissions = (user as any).permissions || [];
         if ((user as any).isAdmin) token.sv = (user as any).sessionVersion ?? 0;
+        else if ((user as any).pwdTag !== undefined) (token as any).pwdTag = (user as any).pwdTag;
       }
       if (account?.provider === "google" && profile?.sub) {
         // Kegagalan DB di sini sengaja tidak ditelan: token dengan id/role bawaan Google akan tidak cocok dengan data pengguna.
@@ -218,6 +217,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.id = dbUser.id;
           (token as any).role = dbUser.role;
           (token as any).isAdmin = false;
+          (token as any).pwdTag = clientPasswordTag(dbUser.passwordHash);
         }
       }
       return token;

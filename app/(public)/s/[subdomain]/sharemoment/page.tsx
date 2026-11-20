@@ -6,19 +6,21 @@ import { getPlanMemoriesQuota, hasPlanCapability } from "@/lib/settings";
 import { getMemoriesActiveSchedule } from "@/lib/domainUtils";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 import { parseFeatureSettings } from "@/lib/featureSettings";
+import { canPreviewInvitation } from "@/lib/previewAccess";
 
 export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ subdomain: string }>;
-  searchParams?: Promise<{ test?: string; to?: string }>;
+  searchParams?: Promise<{ test?: string; to?: string; preview?: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { subdomain } = await params;
+  const { subdomain: rawSubdomain } = await params;
+  const subdomain = rawSubdomain.trim().toLowerCase();
   const invitation = await prisma.invitation.findUnique({ where: { subdomain } });
 
-  if (!invitation) return {};
+  if (!invitation || invitation.status === "TAKEN_DOWN" || invitation.status === "DRAFT") return {};
 
   const displayName = resolveInvitationDisplayName(invitation);
   const isWedding = !invitation.eventType || invitation.eventType === "WEDDING";
@@ -32,7 +34,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function GuestMemoriesStandalonePage({ params, searchParams }: PageProps) {
-  const { subdomain } = await params;
+  const { subdomain: rawSubdomain } = await params;
+  const subdomain = rawSubdomain.trim().toLowerCase();
   const sParams = searchParams ? await searchParams : {};
   const isTestMode = sParams.test === "true";
 
@@ -49,6 +52,11 @@ export default async function GuestMemoriesStandalonePage({ params, searchParams
 
   if (!invitation || invitation.status === "TAKEN_DOWN") {
     notFound();
+  }
+
+  if (invitation.status === "DRAFT") {
+    const canPreview = await canPreviewInvitation(invitation, sParams.preview || "true");
+    if (!canPreview) notFound();
   }
 
   // Cek kapabilitas guest_memories secara dinamis berdasarkan konfigurasi admin

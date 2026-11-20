@@ -86,6 +86,7 @@ export async function GET(req: NextRequest) {
           invitationSlug: true,
           themeId: true,
           status: true,
+          isFreeDraft: true,
           subdomain: true,
           customDomain: true,
           eventData: true,
@@ -93,6 +94,11 @@ export async function GET(req: NextRequest) {
           adminUnlockedUntil: true,
           isLockedPermanently: true,
           createdAt: true,
+          order: {
+            select: {
+              planType: true,
+            },
+          },
           user: {
             select: {
               id: true,

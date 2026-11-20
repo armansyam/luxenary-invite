@@ -18,8 +18,11 @@ export async function GET(
     }
 
     const session = await auth();
-    const isAdmin = hasAdminPermission(session?.user, "orders");
-    const currentUserId = session?.user?.id;
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized. Silakan login terlebih dahulu." }, { status: 401 });
+    }
+    const isAdmin = hasAdminPermission(session.user, "orders");
+    const currentUserId = session.user.id;
 
     const order = await prisma.order.findUnique({
       where: { id },
@@ -66,10 +69,6 @@ export async function GET(
 
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    }
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized. Silakan login terlebih dahulu." }, { status: 401 });
     }
 
     // Jika bukan admin dan bukan pemilik pesanan: Tolak akses (IDOR protection)
@@ -130,19 +129,36 @@ export async function GET(
             // Referensi sisi gateway (transaction_id Midtrans), bukan ID order kita.
             const checkRes = await gw.verify(order.gatewayTxId || order.id);
             if (checkRes.status === "PAID") {
-              // Transisi atomik PENDING -> PAID + marketing; false jika webhook sudah lebih dulu memprosesnya
-              const { settleOrderAsPaid, isOrderPaid } = await import("@/lib/paymentSettlement");
-              const settled = await settleOrderAsPaid(order.id);
+              const { isGatewayAmountValid, settleOrderAsPaid, isOrderPaid } = await import("@/lib/paymentSettlement");
+              if (checkRes.grossAmount !== undefined && !isGatewayAmountValid(order, checkRes.grossAmount)) {
+                logger.error("OrderStatus", "Rekonsiliasi gateway ditolak: nominal tidak cocok dengan tagihan", null, {
+                  orderId: order.id,
+                  expected: Number(order.chargedAmount ?? order.amount),
+                  received: checkRes.grossAmount,
+                });
+              } else {
+                // Transisi atomik PENDING -> PAID + marketing; false jika webhook sudah lebih dulu memprosesnya
+                const settled = await settleOrderAsPaid(order.id);
 
-              if (settled) {
-                const { applyUpgradePlan } = await import("@/lib/upgradeHelper");
-                await applyUpgradePlan(order.id);
+                if (settled) {
+                  const { applyUpgradePlan } = await import("@/lib/upgradeHelper");
+                  await applyUpgradePlan(order.id);
 
-                const { paymentEmitter } = await import("@/lib/paymentEvents");
-                paymentEmitter.emit(order.id, { status: "PAID", planType: order.planType });
+                  const activatedInv = order.orderType === "NEW"
+                    ? await prisma.invitation.findUnique({ where: { orderId: order.id }, select: { id: true } })
+                    : null;
+
+                  const { paymentEmitter } = await import("@/lib/paymentEvents");
+                  paymentEmitter.emit(order.id, {
+                    status: "PAID",
+                    planType: order.planType,
+                    orderType: order.orderType,
+                    activatedInvitationId: activatedInv?.id ?? null,
+                  });
+                }
+                // Pelunasan ditolak (pengguna sudah punya paket lunas lain) tidak boleh ditampilkan sebagai PAID.
+                if (settled || (await isOrderPaid(order.id))) finalStatus = "PAID";
               }
-              // Pelunasan ditolak (pengguna sudah punya paket lunas lain) tidak boleh ditampilkan sebagai PAID.
-              if (settled || (await isOrderPaid(order.id))) finalStatus = "PAID";
             }
           }
         } catch (reconcileErr) {

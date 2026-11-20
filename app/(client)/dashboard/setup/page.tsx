@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -70,6 +70,8 @@ function SetupWizardContent() {
 
   const queryPlan = searchParams.get("plan");
   const queryOrder = searchParams.get("order");
+  const queryTheme = searchParams.get("theme")?.trim().toLowerCase() || "";
+  const queryEvent = searchParams.get("event")?.trim().toUpperCase() || "";
 
   const [currentPlan, setCurrentPlan] = useState<string>(queryPlan?.toUpperCase() || "");
   const [planNames, setPlanNames] = useState<Record<string, string>>({
@@ -121,6 +123,7 @@ function SetupWizardContent() {
   const [activeCategory, setActiveCategory] = useState<"all" | "minimalist" | "modern" | "traditional">("all");
 
   const [isDraftLoaded, setIsDraftLoaded] = useState(false);
+  const queryThemeAppliedRef = useRef(false);
 
   // Draf disimpan per akun: peramban bersama (warnet, perangkat keluarga) tidak boleh menampilkan draf akun lain.
   const draftKey = `app_setup_draft:${session?.user?.id ?? ""}`;
@@ -285,9 +288,44 @@ function SetupWizardContent() {
       setStep(0);
       return;
     }
+    if (!queryThemeAppliedRef.current) {
+      let effectiveQueryTheme = queryTheme;
+      let effectiveQueryEvent = queryEvent;
+      if (!effectiveQueryTheme) {
+        try {
+          const pendingRaw = sessionStorage.getItem("lux_pending_setup_theme");
+          if (pendingRaw) {
+            const pending = JSON.parse(pendingRaw);
+            if (typeof pending?.themeId === "string") effectiveQueryTheme = pending.themeId.trim().toLowerCase();
+            if (typeof pending?.eventType === "string") effectiveQueryEvent = pending.eventType.trim().toUpperCase();
+            sessionStorage.removeItem("lux_pending_setup_theme");
+          }
+        } catch {}
+      }
+      if (effectiveQueryTheme) {
+        queryThemeAppliedRef.current = true;
+        const matchedTheme = themesList.find((t: any) => String(t.id || "").toLowerCase() === effectiveQueryTheme);
+        if (matchedTheme) {
+          const compatibleEvents = selectableEvents.filter((ev) => isThemeCompatible(matchedTheme.eventType, ev));
+          if (compatibleEvents.length > 0) {
+            const targetEv =
+              effectiveQueryEvent && compatibleEvents.includes(effectiveQueryEvent)
+                ? effectiveQueryEvent
+                : eventType && compatibleEvents.includes(eventType)
+                ? eventType
+                : compatibleEvents.includes(String(matchedTheme.eventType || "").toUpperCase())
+                ? String(matchedTheme.eventType).toUpperCase()
+                : compatibleEvents[0];
+            setEventType(targetEv);
+            setThemeId(matchedTheme.id);
+            return;
+          }
+        }
+      }
+    }
     if (!eventType && selectableEvents.length === 1) setEventType(selectableEvents[0]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eventOptionsReady, isDraftLoaded, eventType, selectableKey]);
+  }, [eventOptionsReady, isDraftLoaded, eventType, selectableKey, queryTheme, queryEvent]);
 
 
 

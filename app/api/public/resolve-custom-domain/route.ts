@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { computeLifecycleDates } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
+import { hasPlanCapability } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,9 @@ export async function GET(req: NextRequest) {
       status: true,
       invitationSlug: true,
       eventData: true,
+      order: {
+        select: { planType: true },
+      },
     },
   });
 
@@ -53,15 +57,21 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Masa aktif custom domain telah berakhir." }, { status: 404 });
   }
 
+  const canAccessMemories =
+    invitation.status === "EVENT_FINISHED"
+      ? await hasPlanCapability(invitation.order?.planType, "guest_memories")
+      : true;
+
   return NextResponse.json(
     {
       subdomain: invitation.subdomain, // Masih dikirim untuk backward compatibility jika diperlukan
       status: invitation.status,
       slug: invitation.invitationSlug,
+      canAccessMemories,
     },
     {
       headers: {
-        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60",
+        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=30",
       },
     }
   );

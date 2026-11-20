@@ -81,3 +81,25 @@ export function normalizeFeatureUrls<T extends Record<string, any>>(features: T)
 export function safeHref(input: unknown): string {
   return escapeHtml(safeExternalUrl(input));
 }
+
+/**
+ * Memvalidasi parameter callbackUrl agar hanya mengizinkan path internal pada origin yang sama.
+ * Menolak skema eksternal, protocol-relative (`//`), backslash (`/\\` atau `%5C`), dan karakter kontrol.
+ */
+export function safeInternalCallbackUrl(input: unknown, fallback = "/onboarding"): string {
+  if (typeof input !== "string") return fallback;
+  const trimmed = input.trim();
+  if (!trimmed || CONTROL_CHARS.test(trimmed)) return fallback;
+  if (!trimmed.startsWith("/") || trimmed.startsWith("//") || trimmed.includes("\\") || /%5c/i.test(trimmed)) {
+    return fallback;
+  }
+  try {
+    const parsed = new URL(trimmed, "http://localhost");
+    if (parsed.origin !== "http://localhost" || !parsed.pathname.startsWith("/") || parsed.pathname.startsWith("//")) {
+      return fallback;
+    }
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return fallback;
+  }
+}

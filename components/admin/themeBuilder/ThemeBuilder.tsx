@@ -6,12 +6,15 @@ import { useFeedback } from "@/components/ui/Feedback";
 import { animationPlan, designCss } from "@/lib/themeBuilder/designCss";
 import { applyBuilderTemplate, type BuilderTemplate } from "@/lib/themeBuilder/templates";
 import { SIM_GALLERY_MAX, parseSimMedia, type SimMedia, type SimSlot } from "@/lib/themeBuilder/simSlots";
+import type { DeclarableMediaSlot } from "@/lib/themeMediaSlots";
+import type { SlotCheck } from "@/components/admin/slotVisibility";
 import {
   MAX_ORNAMENTS,
   MAX_ORNAMENTS_PER_SECTION,
   BUILDER_EVENT_LABELS,
   BUILDER_EVENT_TYPES,
   BLOCK_LIMITS,
+  BLOCK_PX_LIMITS,
   BUILDER_BLOCKS,
   familyBlocks,
   familySections,
@@ -39,6 +42,7 @@ import {
   type PhotoFrame,
   type BuilderOrnament,
   type BuilderSpec,
+  type BuilderVariants,
   type OrnamentSection,
 } from "@/lib/themeBuilder/spec";
 import BuilderPreview, { DEVICE_SIZES, type PreviewActions, type PreviewDevice, type PreviewDropTarget } from "@/components/admin/themeBuilder/BuilderPreview";
@@ -98,8 +102,8 @@ function structuralKey(spec: BuilderSpec): string {
     frames: {},
     freeSections: spec.freeSections?.map(({ style: _style, animation: _animation, ...f }) => f),
     ornaments: spec.ornaments.map((o) => [o.id, o.src, o.section, o.layer, o.attach ?? "", o.before ?? "", o.slot ?? "", o.text ? 1 : 0, o.text?.labelKey ?? "",
-      // Foto klien pengganti dibalik ulang di server (compile.ts), jadi cermin ornamen pengganti butuh render ulang.
-      o.replaceSlot ? `${o.replaceSlot}:${o.flipX ? 1 : 0}${o.flipY ? 1 : 0}` : ""]),
+    // Foto klien pengganti dibalik ulang di server (compile.ts), jadi cermin ornamen pengganti butuh render ulang.
+    o.replaceSlot ? `${o.replaceSlot}:${o.flipX ? 1 : 0}${o.flipY ? 1 : 0}` : ""]),
   });
 }
 
@@ -142,8 +146,10 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
   const [panel, setPanel] = useState<PanelId>("colors");
   const [device, setDevice] = useState<PreviewDevice>("mobile");
   const [previewMode, setPreviewMode] = useState<PreviewMode>("demo");
+  const [longText, setLongText] = useState(false);
   const [sim, setSim] = useState<SimMedia>({ slots: {}, gallery: [] });
   const [simUploading, setSimUploading] = useState<string | null>(null);
+  const [slotChecksState, setSlotChecksState] = useState<{ key: string; results: SlotCheck[] } | null>(null);
   const [viewSection, setViewSection] = useState<OrnamentSection>("cover");
   const [jump, setJump] = useState<{ section: OrnamentSection; nonce: number }>({ section: "cover", nonce: 0 });
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -401,6 +407,13 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
 
   const simKey = previewMode === "sim" ? JSON.stringify(sim) : "";
   const structure = useMemo(() => structuralKey(spec), [spec]);
+  const slotCheckKey = `${device}|${previewMode}|${simKey}|${structure}`;
+  const slotChecks = slotChecksState?.key === slotCheckKey ? slotChecksState.results : null;
+  const runSlotCheck = useCallback(() => {
+    const results = actionsRef.current?.checkSlots(sim.slots);
+    if (!results) return notify("Pratinjau belum siap diperiksa.", "info");
+    setSlotChecksState({ key: slotCheckKey, results });
+  }, [notify, sim.slots, slotCheckKey]);
   const liveDesign = useMemo(() => ({ css: designCss(spec), custom: spec.customCss ?? "", preset: animationPlan(spec).htmlPreset }), [spec]);
   useEffect(() => {
     if (!loaded) return;
@@ -411,7 +424,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
         const res = await fetch("/api/admin/theme-builder/preview", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ spec: specRef.current, mode: previewMode, ...(previewMode === "sim" ? { sim: JSON.parse(simKey) } : {}) }),
+          body: JSON.stringify({ spec: specRef.current, mode: previewMode, ...(longText ? { longText: true } : {}), ...(previewMode === "sim" ? { sim: JSON.parse(simKey) } : {}) }),
           signal: controller.signal,
         });
         const data = await res.json().catch(() => ({}));
@@ -429,7 +442,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
       }
     }, PREVIEW_DEBOUNCE_MS);
     return () => { controller.abort(); window.clearTimeout(timer); };
-  }, [structure, loaded, notify, previewMode, simKey]);
+  }, [structure, loaded, longText, notify, previewMode, simKey]);
 
   /** "live" mengubah tampilan tanpa riwayat (saat menyeret); "commit" mencatat satu langkah undo. */
   const apply = useCallback((next: BuilderSpec, mode: "live" | "commit") => {
@@ -450,6 +463,19 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
   }, [syncHistory]);
 
   const patchSpec = useCallback((patch: Partial<BuilderSpec>) => apply({ ...specRef.current, ...patch }, "commit"), [apply]);
+  const patchVariants = useCallback((patch: Partial<BuilderVariants>) => {
+    apply({ ...specRef.current, variants: { ...specRef.current.variants, ...patch } }, "commit");
+  }, [apply]);
+
+  const toggleMediaSlot = useCallback((slot: DeclarableMediaSlot) => {
+    const current = specRef.current;
+    const list = current.disabledMediaSlots ?? [];
+    const nextList = list.includes(slot) ? list.filter((s) => s !== slot) : [...list, slot];
+    const next: BuilderSpec = { ...current };
+    if (nextList.length) next.disabledMediaSlots = nextList;
+    else delete next.disabledMediaSlots;
+    apply(next, "commit");
+  }, [apply]);
 
   // Template mengganti hampir seluruh rancangan; dicatat sebagai satu langkah sehingga bisa diurungkan dengan Ctrl+Z.
   const applyTemplate = useCallback(async (template: BuilderTemplate) => {
@@ -553,11 +579,11 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
   const updateBlock = useCallback((id: BuilderBlockId, patch: Partial<BlockProps>, final: boolean) => {
     const current = specRef.current;
     if (isDesktopCoverBlock(id)) {
-      const { x, y, scale, rotate, hidden, align, maxWidth, ...shared } = patch;
-      const positional = Object.fromEntries(Object.entries({ x, y, scale, rotate, hidden, align, maxWidth }).filter(([, v]) => v !== undefined)) as Partial<CoverDesktopProps>;
+      const { x, y, unit, scale, rotate, hidden, align, maxWidth, ...shared } = patch;
+      const positional = Object.fromEntries(Object.entries({ x, y, unit, scale, rotate, hidden, align, maxWidth }).filter(([, v]) => v !== undefined)) as Partial<CoverDesktopProps>;
       const base = current.blocks[id] ?? DEFAULT_BLOCK_PROPS;
       const set = { ...(current.coverDesktop?.[coverView] ?? {}) };
-      const prev: CoverDesktopProps = set[id] ?? { x: base.x, y: base.y, scale: base.scale, rotate: base.rotate, hidden: base.hidden || undefined, align: base.align, maxWidth: base.maxWidth };
+      const prev: CoverDesktopProps = set[id] ?? { x: base.x, y: base.y, ...(base.unit ? { unit: base.unit } : {}), scale: base.scale, rotate: base.rotate, hidden: base.hidden || undefined, align: base.align, maxWidth: base.maxWidth };
       set[id] = { ...prev, ...positional };
       const blocks = { ...current.blocks };
       if (Object.keys(shared).length) {
@@ -599,7 +625,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
     if (!set) return spec.blocks;
     const out = { ...spec.blocks };
     for (const [id, p] of Object.entries(set) as Array<[BuilderBlockId, CoverDesktopProps]>) {
-      out[id] = { ...(spec.blocks[id] ?? DEFAULT_BLOCK_PROPS), x: p.x, y: p.y, scale: p.scale, rotate: p.rotate, hidden: Boolean(p.hidden), align: p.align, maxWidth: p.maxWidth };
+      out[id] = { ...(spec.blocks[id] ?? DEFAULT_BLOCK_PROPS), x: p.x, y: p.y, unit: p.unit, scale: p.scale, rotate: p.rotate, hidden: Boolean(p.hidden), align: p.align, maxWidth: p.maxWidth };
     }
     return out;
   }, [device, spec.blocks, spec.coverDesktop, coverView]);
@@ -659,9 +685,9 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
   }, [apply]);
 
   const centerBlock = useCallback((id: BuilderBlockId) => {
-    const x = actionsRef.current?.centerBlockX(id);
-    if (x === null || x === undefined) return notify("Blok belum tampil di pratinjau. Pilih seksinya dulu.", "info");
-    updateBlock(id, { x }, true);
+    const patch = actionsRef.current?.centerBlockX(id);
+    if (!patch) return notify("Blok belum tampil di pratinjau. Pilih seksinya dulu.", "info");
+    updateBlock(id, patch, true);
   }, [notify, updateBlock]);
 
   /** Memindah ornamen di antara ornamen sejenis (seksi dan lapisan sama); urutan larik adalah urutan tumpukan DOM. */
@@ -785,8 +811,9 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
     const source = specRef.current.ornaments.find((o) => o.id === id);
     if (!source) return;
     if (specRef.current.ornaments.length >= MAX_ORNAMENTS) return notify(`Paling banyak ${MAX_ORNAMENTS} ornamen per tema.`, "error");
-    // Salinan dicerminkan ke sisi seberang: pola paling umum untuk ornamen sudut dan bunga.
+    // Salinan dicerminkan ke sisi seberang: pola paling umum untuk ornamen sudut dan bunga; salinan selalu terbuka (tidak terkunci).
     const copy: BuilderOrnament = { ...source, id: newOrnamentId(), x: Math.round((100 - source.x) * 10) / 10, flipX: !source.flipX, rotate: -source.rotate };
+    delete copy.locked;
     // Kunci label hanya boleh dipakai satu teks hias; salinan menjadi teks statis sampai admin menandainya.
     if (copy.text?.labelKey) copy.text = { ...copy.text, labelKey: undefined };
     apply({ ...specRef.current, ornaments: [...specRef.current.ornaments, copy] }, "commit");
@@ -983,14 +1010,18 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
     if (selectedBlock && !selectedId) {
       if (e.key === "Escape") { setSelectedBlock(null); return true; }
       if (e.key === "Delete" || e.key === "Backspace") { resetBlock(selectedBlock); return true; }
-      const cur = specRef.current.blocks[selectedBlock] ?? DEFAULT_BLOCK_PROPS;
-      const nudge = e.shiftKey ? 2 : 0.5;
+      const cur = effectiveBlocks[selectedBlock] ?? DEFAULT_BLOCK_PROPS;
+      const usePx = cur.unit === "px" || (cur.x === 0 && cur.y === 0);
+      const nudge = usePx ? (e.shiftKey ? 10 : 1) : (e.shiftKey ? 2 : 0.5);
+      const xLim = usePx ? BLOCK_PX_LIMITS.x : BLOCK_LIMITS.x;
+      const yLim = usePx ? BLOCK_PX_LIMITS.y : BLOCK_LIMITS.y;
+      const unitPatch = usePx ? ({ unit: "px" as const }) : {};
       const clampTo = (v: number, [min, max]: readonly [number, number]) => Math.round(Math.max(min, Math.min(max, v)) * 10) / 10;
       const blockMoves: Record<string, Partial<BlockProps>> = {
-        ArrowLeft: { x: clampTo(cur.x - nudge, BLOCK_LIMITS.x) },
-        ArrowRight: { x: clampTo(cur.x + nudge, BLOCK_LIMITS.x) },
-        ArrowUp: { y: clampTo(cur.y - nudge, BLOCK_LIMITS.y) },
-        ArrowDown: { y: clampTo(cur.y + nudge, BLOCK_LIMITS.y) },
+        ArrowLeft: { x: clampTo(cur.x - nudge, xLim), ...unitPatch },
+        ArrowRight: { x: clampTo(cur.x + nudge, xLim), ...unitPatch },
+        ArrowUp: { y: clampTo(cur.y - nudge, yLim), ...unitPatch },
+        ArrowDown: { y: clampTo(cur.y + nudge, yLim), ...unitPatch },
       };
       if (blockMoves[e.key]) { updateBlock(selectedBlock, blockMoves[e.key], true); return true; }
       return false;
@@ -998,6 +1029,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
     const sel = specRef.current.ornaments.find((o) => o.id === selectedId);
     if (!sel) return false;
     if (e.key === "Escape") { setSelectedId(null); return true; }
+    if (sel.locked) return false;
     if (e.key === "Delete" || e.key === "Backspace") { removeOrnament(sel.id); return true; }
     if (mod && e.key.toLowerCase() === "d") { duplicateOrnament(sel.id); return true; }
     // Shift+] menghasilkan "}" dan Shift+[ menghasilkan "{" di papan ketik US.
@@ -1012,7 +1044,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
     };
     if (moves[e.key]) { updateOrnament(sel.id, moves[e.key], true); return true; }
     return false;
-  }, [duplicateOrnament, redo, removeOrnament, reorderOrnament, resetBlock, save, selectedBlock, selectedId, undo, updateBlock, updateOrnament]);
+  }, [duplicateOrnament, effectiveBlocks, redo, removeOrnament, reorderOrnament, resetBlock, save, selectedBlock, selectedId, undo, updateBlock, updateOrnament]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (handleKey(e)) e.preventDefault(); };
@@ -1085,6 +1117,13 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
   }
 
   const chips = familySections(spec.eventType).filter((s) => s !== "sidebar" || device === "desktop");
+  const chipLabel = (s: OrnamentSection) => {
+    if (s === "sidebar") return "Hero kiri";
+    if (s === "countdown") return "Countdown";
+    if (s === "gallery") return "Galeri";
+    if (s === "rsvp") return "RSVP";
+    return sectionLabelFor(s, spec.eventType);
+  };
 
   return (
     <div className="fixed inset-0 flex flex-col bg-stone-100 text-stone-900">
@@ -1096,21 +1135,21 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
           style={{ left: ghost.x, top: ghost.y }}
         />
       )}
-      <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-stone-200 bg-white px-3 py-2">
-        <button type="button" onClick={leave} className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-stone-600 hover:bg-stone-100 cursor-pointer">
+      <header className="flex h-13 shrink-0 items-center gap-2 border-b border-stone-200 bg-white px-3">
+        <button type="button" onClick={leave} className="flex shrink-0 items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-stone-600 hover:bg-stone-100 cursor-pointer">
           <Icon d="M15 18l-6-6 6-6" />
           Katalog
         </button>
-        <span className="h-6 w-px bg-stone-200" />
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <span className="h-5 w-px shrink-0 bg-stone-200" />
+        <div className="flex min-w-0 items-center gap-2">
           <input
             value={meta.name}
             onChange={(e) => setMeta((m) => ({ ...m, name: e.target.value }))}
             placeholder="Tema tanpa nama"
             maxLength={60}
-            className="w-36 truncate rounded-lg border xl:w-56 border-transparent bg-transparent px-2 py-1 text-sm font-bold text-stone-900 outline-none hover:border-stone-200 focus:border-amber-500"
+            className="w-36 truncate rounded-lg border lg:w-44 xl:w-52 border-transparent bg-transparent px-2 py-1 text-sm font-bold text-stone-900 outline-none hover:border-stone-200 focus:border-amber-500"
           />
-          <span className="flex items-center gap-1.5 rounded-full bg-stone-100 px-2.5 py-1 text-[10.5px] font-semibold text-stone-600">
+          <span className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-stone-100 px-2.5 py-1 text-[10.5px] font-semibold text-stone-600">
             <span className={`h-1.5 w-1.5 rounded-full ${isNew ? "bg-stone-400" : isActive ? "bg-emerald-500" : "bg-amber-500"}`} />
             {isNew ? "Belum disimpan" : isActive ? "Tayang di katalog" : "Draf"}
           </span>
@@ -1120,12 +1159,12 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
               title="Jenis acara tidak bisa diubah setelah tema disimpan"
               value={spec.eventType}
               onChange={(e) => changeEventType(e.target.value as BuilderEventType)}
-              className="rounded-lg border border-stone-200 bg-white px-2 py-1 text-[11.5px] font-semibold text-stone-700 outline-none hover:border-stone-300 cursor-pointer"
+              className="shrink-0 rounded-lg border border-stone-200 bg-white px-2 py-1 text-[11.5px] font-semibold text-stone-700 outline-none hover:border-stone-300 cursor-pointer"
             >
               {BUILDER_EVENT_TYPES.map((t) => <option key={t} value={t}>{BUILDER_EVENT_LABELS[t]}</option>)}
             </select>
           ) : (
-            <span className="rounded-full bg-stone-100 px-2.5 py-1 text-[10.5px] font-semibold text-stone-600" title="Jenis acara tidak bisa diubah setelah tema disimpan">
+            <span className="shrink-0 whitespace-nowrap rounded-full bg-stone-100 px-2.5 py-1 text-[10.5px] font-semibold text-stone-600" title="Jenis acara tidak bisa diubah setelah tema disimpan">
               {BUILDER_EVENT_LABELS[spec.eventType]}
             </span>
           )}
@@ -1134,7 +1173,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
               aria-label="Mulai dari tema lama"
               defaultValue=""
               onChange={(e) => { startFromLegacy(e.target.value); e.target.value = ""; }}
-              className="rounded-lg border border-stone-200 bg-white px-2 py-1 text-[11.5px] font-semibold text-stone-600 outline-none hover:border-stone-300 cursor-pointer"
+              className="max-w-[165px] shrink-0 truncate rounded-lg border border-stone-200 bg-white px-2 py-1 text-[11.5px] font-semibold text-stone-600 outline-none hover:border-stone-300 cursor-pointer"
             >
               <option value="">Mulai dari tema lama…</option>
               {(legacyThemes?.eventType === spec.eventType ? legacyThemes.themes : []).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -1153,79 +1192,37 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
                   if (file) void importTheme(file);
                 }}
               />
-              <button type="button" onClick={() => importInput.current?.click()} className="rounded-lg border border-stone-200 bg-white px-2 py-1 text-[11.5px] font-semibold text-stone-600 hover:border-stone-300 cursor-pointer">
+              <button type="button" onClick={() => importInput.current?.click()} className="shrink-0 whitespace-nowrap rounded-lg border border-stone-200 bg-white px-2 py-1 text-[11.5px] font-semibold text-stone-600 hover:border-stone-300 cursor-pointer">
                 Impor berkas
               </button>
             </>
           )}
-          {dirty && !isNew && <span className="text-[11px] text-stone-400">Ada perubahan</span>}
+          {dirty && !isNew && <span className="hidden xl:inline whitespace-nowrap text-[11px] text-stone-400">Ada perubahan</span>}
         </div>
 
-        <div className="mx-auto flex shrink-0 items-center gap-1.5">
-          <div className="flex items-center rounded-xl bg-stone-100 p-1">
-            {(Object.keys(DEVICE_SIZES) as PreviewDevice[]).map((d) => (
-              <button
-                key={d}
-                type="button"
-                onClick={() => { setDevice(d); if (d !== "desktop" && viewSection === "sidebar") focusSection("cover"); }}
-                title={DEVICE_SIZES[d].label}
-                aria-label={DEVICE_SIZES[d].label}
-                className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 2xl:px-3 text-[11.5px] font-semibold transition cursor-pointer ${device === d ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"}`}
-              >
-                <Icon d={d === "desktop" ? "M3 5h18v11H3zM8 20h8M12 16v4" : "M8 3h8a1 1 0 011 1v16a1 1 0 01-1 1H8a1 1 0 01-1-1V4a1 1 0 011-1zM11 18h2"} className="h-3.5 w-3.5" />
-                <span className="hidden 2xl:inline">{DEVICE_SIZES[d].label}</span>
-              </button>
-            ))}
-          </div>
-          {device === "desktop" && (
-            <button
-              type="button"
-              onClick={() => setDesktopCoverFull((v) => !v)}
-              title="Tampilan sampul desktop yang sedang ditata. Posisi elemen sampul disimpan terpisah untuk layar penuh dan split; mode yang dipakai tema diatur di panel Tata Letak."
-              className={`whitespace-nowrap rounded-xl px-2.5 py-1.5 text-[11px] font-semibold transition cursor-pointer border ${desktopCoverFull ? "bg-amber-600 text-white border-amber-600" : "bg-white text-stone-700 border-stone-200 hover:border-stone-300"}`}
-            >
-              {desktopCoverFull ? "Menata: sampul layar penuh" : "Menata: sampul split"}
-            </button>
-          )}
-        </div>
-
-        <div className="flex shrink-0 items-center rounded-xl bg-stone-100 p-1" title="Contoh demo memakai foto dan data contoh; Klien baru meniru undangan yang belum diunggah apa pun; Foto uji memakai foto simulasi dari tab Foto uji">
-          {([["demo", "Contoh demo"], ["client", "Klien baru"], ["sim", "Foto uji"]] as const).map(([mode, label]) => (
-            <button
-              key={mode}
-              type="button"
-              aria-pressed={previewMode === mode}
-              onClick={() => setPreviewMode(mode)}
-              className={`rounded-lg px-3 py-1.5 text-[11.5px] font-semibold transition cursor-pointer ${previewMode === mode ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"}`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="ml-auto flex shrink-0 items-center gap-1">
           {dirty && (
             <button
               type="button"
               onClick={resetAllChanges}
               title="Urungkan seluruh perubahan yang belum tersimpan dan kembalikan ke rancangan terakhir tersimpan"
-              className="rounded-lg border border-rose-200 bg-rose-50/60 px-2.5 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-100 hover:border-rose-300 transition cursor-pointer"
+              className="whitespace-nowrap rounded-lg border border-rose-200 bg-rose-50/60 px-2.5 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-100 hover:border-rose-300 transition cursor-pointer"
             >
               Urungkan Semua
             </button>
           )}
-          <button type="button" onClick={undo} disabled={!historySize.past} title="Urungkan (Ctrl+Z)" className="rounded-lg p-2 text-stone-600 hover:bg-stone-100 disabled:opacity-30 cursor-pointer disabled:cursor-default">
+          <button type="button" onClick={undo} disabled={!historySize.past} title="Urungkan (Ctrl+Z)" className="rounded-lg p-1.5 text-stone-600 hover:bg-stone-100 disabled:opacity-30 cursor-pointer disabled:cursor-default">
             <Icon d="M9 14L4 9l5-5M4 9h11a5 5 0 010 10h-3" />
           </button>
-          <button type="button" onClick={redo} disabled={!historySize.future} title="Ulangi (Ctrl+Shift+Z)" className="rounded-lg p-2 text-stone-600 hover:bg-stone-100 disabled:opacity-30 cursor-pointer disabled:cursor-default">
+          <button type="button" onClick={redo} disabled={!historySize.future} title="Ulangi (Ctrl+Shift+Z)" className="rounded-lg p-1.5 text-stone-600 hover:bg-stone-100 disabled:opacity-30 cursor-pointer disabled:cursor-default">
             <Icon d="M15 14l5-5-5-5M20 9H9a5 5 0 000 10h3" />
           </button>
-          <span className="mx-1 h-6 w-px bg-stone-200" />
-          <button type="button" onClick={save} disabled={saving || !loaded} className="rounded-xl bg-stone-900 px-4 py-2 text-xs font-semibold text-white hover:bg-stone-800 disabled:opacity-50 cursor-pointer">
+          <span className="mx-1 h-5 w-px bg-stone-200" />
+          <button type="button" onClick={save} disabled={saving || !loaded} className="whitespace-nowrap rounded-xl bg-stone-900 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-stone-800 disabled:opacity-50 cursor-pointer">
             {saving ? "Menyimpan…" : isNew ? "Simpan draf" : "Simpan"}
           </button>
           {!isNew && !isActive && (
-            <button type="button" onClick={() => setPanel("publish")} className="rounded-xl bg-amber-600 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-700 cursor-pointer">
+            <button type="button" onClick={() => setPanel("publish")} className="whitespace-nowrap rounded-xl bg-amber-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 cursor-pointer">
               Terbitkan
             </button>
           )}
@@ -1284,6 +1281,9 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
               sim={sim}
               active={previewMode === "sim"}
               uploading={simUploading}
+              disabledMediaSlots={spec.disabledMediaSlots}
+              slotChecks={slotChecks}
+              onCheckSlots={runSlotCheck}
               onUpload={uploadSim}
               onRemove={removeSim}
               onActivate={() => setPreviewMode("sim")}
@@ -1302,21 +1302,82 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
               onDuplicate={duplicateTheme}
               onExport={exportTheme}
               onRestoreRevision={restoreRevision}
+              onToggleMediaSlot={toggleMediaSlot}
             />
           )}
         </aside>
 
         <main className="flex min-w-0 flex-1 flex-col">
-          <div className="flex shrink-0 items-center gap-1.5 overflow-x-auto border-b border-stone-200 bg-white/70 px-3 py-2">
-            <span className="mr-1 shrink-0 whitespace-nowrap text-[10.5px] font-bold uppercase tracking-[0.1em] text-stone-400">Lompat ke</span>
+          <div
+            data-preview-toolbar
+            className="flex shrink-0 items-center justify-between gap-2 border-b border-stone-200 bg-white px-3 py-1.5"
+          >
+            <div className="flex shrink-0 items-center gap-1.5">
+              <div className="flex items-center rounded-lg bg-stone-100 p-0.5">
+                {(Object.keys(DEVICE_SIZES) as PreviewDevice[]).map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => { setDevice(d); if (d !== "desktop" && viewSection === "sidebar") focusSection("cover"); }}
+                    title={DEVICE_SIZES[d].label}
+                    aria-label={DEVICE_SIZES[d].label}
+                    className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer ${device === d ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"}`}
+                  >
+                    <Icon d={d === "desktop" ? "M3 5h18v11H3zM8 20h8M12 16v4" : "M8 3h8a1 1 0 011 1v16a1 1 0 01-1 1H8a1 1 0 01-1-1V4a1 1 0 011-1zM11 18h2"} className="h-3.5 w-3.5" />
+                    <span>{DEVICE_SIZES[d].label}</span>
+                  </button>
+                ))}
+              </div>
+              {device === "desktop" && (
+                <button
+                  type="button"
+                  onClick={() => setDesktopCoverFull((v) => !v)}
+                  title="Tampilan sampul desktop yang sedang ditata. Posisi elemen sampul disimpan terpisah untuk layar penuh dan split; mode yang dipakai tema diatur di panel Tata Letak."
+                  className={`whitespace-nowrap rounded-lg px-2 py-1 text-[10.5px] font-semibold transition cursor-pointer border ${desktopCoverFull ? "bg-amber-600 text-white border-amber-600" : "bg-white text-stone-700 border-stone-200 hover:border-stone-300"}`}
+                >
+                  {desktopCoverFull ? "Sampul: penuh" : "Sampul: split"}
+                </button>
+              )}
+            </div>
+
+            <div className="flex shrink-0 items-center gap-1.5">
+              <div className="flex shrink-0 items-center rounded-lg bg-stone-100 p-0.5" title="Contoh demo memakai foto dan data contoh; Klien baru meniru undangan yang belum diunggah apa pun; Foto uji memakai foto simulasi dari tab Foto uji">
+                {([["demo", "Contoh demo"], ["client", "Klien baru"], ["sim", "Foto uji"]] as const).map(([mode, label]) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    aria-pressed={previewMode === mode}
+                    onClick={() => setPreviewMode(mode)}
+                    className={`whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-semibold transition cursor-pointer ${previewMode === mode ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                aria-pressed={longText}
+                onClick={() => setLongText((v) => !v)}
+                title="Uji ketahanan tata letak dengan nama klien 2–3 baris dan nama tamu panjang"
+                className={`whitespace-nowrap rounded-lg border px-2 py-1 text-[11px] font-semibold transition cursor-pointer ${
+                  longText ? "border-amber-500 bg-amber-50 text-amber-900" : "border-stone-200 bg-white text-stone-600 hover:border-stone-300"
+                }`}
+              >
+                Teks panjang
+              </button>
+            </div>
+          </div>
+          <div className="relative flex shrink-0 items-center gap-1 overflow-x-auto border-b border-stone-200 bg-stone-50/70 px-3 py-1.5">
+            <span className="mr-1 shrink-0 whitespace-nowrap text-[10px] font-bold uppercase tracking-[0.1em] text-stone-400">Lompat</span>
             {chips.map((s) => (
               <button
                 key={s}
                 type="button"
+                title={sectionLabelFor(s, spec.eventType)}
                 onClick={() => focusSection(s)}
-                className={`shrink-0 rounded-full px-3 py-1 text-[11.5px] font-semibold transition cursor-pointer ${viewSection === s ? "bg-stone-900 text-white" : "bg-stone-100 text-stone-600 hover:bg-stone-200"}`}
+                className={`shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer ${viewSection === s ? "bg-stone-900 text-white" : "bg-white text-stone-600 ring-1 ring-stone-200/80 hover:bg-stone-100"}`}
               >
-                {sectionLabelFor(s, spec.eventType)}
+                {chipLabel(s)}
               </button>
             ))}
           </div>
@@ -1325,13 +1386,14 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
             actionsRef={actionsRef}
             eventType={spec.eventType}
             variants={spec.variants}
-            onVariantChange={(patch) => patchSpec({ variants: { ...spec.variants, ...patch } })}
+            onVariantChange={patchVariants}
             desktopCoverFull={desktopCoverFull}
             frames={spec.frames}
             design={liveDesign}
             html={html}
             loading={previewLoading}
             device={device}
+            longText={longText}
             editOrnaments={panel === "ornaments" || panel === "layout" || Boolean(selectedId) || Boolean(selectedBlock) || (device === "desktop" && viewSection === "cover")}
             playAnimations={panel === "motion"}
             replayNonce={replayNonce}
@@ -1391,7 +1453,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
               onUpload={uploadAssets}
               fonts={spec.fonts}
               variants={spec.variants}
-              onVariantChange={(patch) => patchSpec({ variants: { ...spec.variants, ...patch } })}
+              onVariantChange={patchVariants}
               copiedStyle={copiedBlockStyle}
               onCopyStyle={() => copyBlockStyle(selectedBlock)}
               onPasteStyle={() => pasteBlockStyle(selectedBlock)}

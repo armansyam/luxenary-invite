@@ -475,8 +475,15 @@ export default function AdminOrdersTab() {
                               </span>
                             );
                           }
+                          const isPaidOrder = ord.status === "PAID";
                           return (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            <span
+                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                                isPaidOrder
+                                  ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                  : "bg-stone-100 text-stone-600 border-stone-200"
+                              }`}
+                            >
                               <span>Paket {getPlanDisplayName(ord.planType, packages)}</span>
                             </span>
                           );

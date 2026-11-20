@@ -1,12 +1,15 @@
+import { prisma } from "@/lib/prisma";
 import { sseEmitter, startSseBridge, type NewMemoryEvent } from "@/lib/sseEmitter";
 
 export const dynamic = "force-dynamic";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// Batas koneksi per undangan pada proses ini — mencegah SSE connection flood
+// Batas koneksi per undangan & global pada proses ini — mencegah SSE connection flood
 const connectionCounts = new Map<string, number>();
+let totalConnections = 0;
 const MAX_SSE_CONNECTIONS_PER_INVITATION = 50;
+const MAX_TOTAL_SSE_CONNECTIONS = 1000;
 
 export async function GET(req: Request) {
   const invitationId = new URL(req.url).searchParams.get("invitationId");
@@ -15,13 +18,26 @@ export async function GET(req: Request) {
     return new Response("invitationId tidak valid", { status: 400 });
   }
 
+  if (totalConnections >= MAX_TOTAL_SSE_CONNECTIONS) {
+    return new Response("Server sedang sibuk. Silakan coba lagi sebentar.", { status: 429 });
+  }
+
   const currentCount = connectionCounts.get(invitationId) || 0;
   if (currentCount >= MAX_SSE_CONNECTIONS_PER_INVITATION) {
     return new Response("Terlalu banyak koneksi aktif untuk undangan ini.", { status: 429 });
   }
 
+  const invitation = await prisma.invitation.findUnique({
+    where: { id: invitationId },
+    select: { status: true },
+  });
+  if (!invitation || (invitation.status !== "PUBLISHED" && invitation.status !== "EVENT_FINISHED")) {
+    return new Response("Undangan tidak ditemukan atau tidak aktif.", { status: 404 });
+  }
+
   startSseBridge();
   connectionCounts.set(invitationId, currentCount + 1);
+  totalConnections += 1;
 
   let cleanup = () => {};
 
@@ -48,6 +64,7 @@ export async function GET(req: Request) {
         const count = connectionCounts.get(invitationId) || 1;
         if (count <= 1) connectionCounts.delete(invitationId);
         else connectionCounts.set(invitationId, count - 1);
+        totalConnections = Math.max(0, totalConnections - 1);
         try {
           controller.close();
         } catch {

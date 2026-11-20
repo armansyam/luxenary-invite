@@ -460,23 +460,26 @@ enum ExpenseCategory {
 }
 
 model Expense {
-  id              String                @id @default(uuid())
-  title           String
-  category        ExpenseCategory       @default(OTHER)
-  amount          Decimal               @db.Decimal(12, 2)
-  expenseDate     DateTime              @default(now())
-  paymentSource   String?               @default("TRANSFER_BANK")
-  referenceNumber String?
-  receiptUrl      String?
-  notes           String?
-  createdById     String?
-  isLocked        Boolean               @default(false)
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
-  commissions     AffiliateCommission[]
+  id                 String                @id @default(uuid())
+  title              String
+  category           ExpenseCategory       @default(OTHER)
+  amount             Decimal               @db.Decimal(12, 2)
+  expenseDate        DateTime              @default(now())
+  paymentSource      String?               @default("TRANSFER_BANK")
+  referenceNumber    String?
+  receiptUrl         String?
+  partnerAffiliateId String?
+  notes              String?
+  createdById        String?
+  isLocked           Boolean               @default(false)
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  commissions        AffiliateCommission[]
+  partnerAffiliate   PartnerAffiliate?     @relation(fields: [partnerAffiliateId], references: [id], onDelete: SetNull)
 
   @@index([category])
   @@index([expenseDate])
+  @@index([partnerAffiliateId])
   @@map("expenses")
 }
 
@@ -538,6 +541,8 @@ model PartnerAffiliate {
   name            String
   phoneNumber     String?
   email           String?
+  passwordHash    String?
+  sessionVersion  Int                   @default(0)
   bankName        String?
   accountNumber   String?
   accountName     String?
@@ -551,6 +556,7 @@ model PartnerAffiliate {
   updatedAt       DateTime              @updatedAt
   coupons         PromoCoupon[]
   commissions     AffiliateCommission[]
+  payoutExpenses  Expense[]
 
   @@map("partner_affiliates")
 }

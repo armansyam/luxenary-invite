@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterAll } from "vitest";
+import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
 import fs from "fs";
 import path from "path";
 import { NextRequest } from "next/server";
@@ -15,9 +15,12 @@ vi.mock("@/lib/mailer", () => ({
   sendInvoiceEmail: vi.fn(async () => ({ success: true })),
 }));
 
+import bcrypt from "bcryptjs";
 import { prisma, pool } from "@/lib/prisma";
 import { createAndStoreOtp, verifyAndConsumeOtp, OTP_MAX_ATTEMPTS } from "@/lib/emailOtp";
 import { POST as clientOtpRequestPost } from "@/app/api/auth/otp/request/route";
+import { POST as clientRegisterPost } from "@/app/api/auth/register/route";
+import { POST as clientResetPasswordPost } from "@/app/api/auth/reset-password/route";
 import { composeInvitationData } from "@/lib/themeEngine";
 import { renderTemplateFile } from "@/lib/renderTemplate";
 import { getLocaleDict } from "@/lib/themeEngine/locale";
@@ -30,7 +33,8 @@ import { POST as scanPost } from "@/app/api/receptionist/scan/route";
 import { GET as giftClaimGet, POST as giftClaimPost } from "@/app/api/public/gift-claim/route";
 import { PARTNER_COOKIE_NAME, signPartnerSession, verifyPartnerSession } from "@/lib/partnerAuth";
 import { POST as partnerOtpReqPost } from "@/app/api/partner/auth/request-otp/route";
-import { POST as partnerOtpVerifyPost } from "@/app/api/partner/auth/verify/route";
+import { POST as partnerSetPasswordPost } from "@/app/api/partner/auth/set-password/route";
+import { POST as partnerPasswordLoginPost } from "@/app/api/partner/auth/login/route";
 import { GET as partnerDashboardGet } from "@/app/api/partner/dashboard/route";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
@@ -58,6 +62,27 @@ function makeJsonReq(url: string, method: string, body?: unknown, headers?: Reco
 }
 
 describe.skipIf(!IS_TEST_DB)("Wave 2 Features Integration (#2, #8, #10A/B, #10C, #11)", () => {
+  const clearTestRateLimits = async () => {
+    await prisma.rateLimitCounter
+      .deleteMany({
+        where: {
+          OR: [
+            { key: { startsWith: "otp_req:" } },
+            { key: { startsWith: "client_reg_ip:" } },
+            { key: { startsWith: "client_reset_ip:" } },
+            { key: { startsWith: "partner_otp_" } },
+            { key: { startsWith: "partner_setpw_ip:" } },
+            { key: { startsWith: "partner_login_fail:" } },
+          ],
+        },
+      })
+      .catch(() => {});
+  };
+
+  beforeAll(async () => {
+    await clearTestRateLimits();
+  });
+
   afterAll(async () => {
     for (const invId of cleanup.invitations) {
       fs.rmSync(path.join(process.cwd(), "public", "published", "ids", `${invId}.html`), { force: true });
@@ -84,6 +109,7 @@ describe.skipIf(!IS_TEST_DB)("Wave 2 Features Integration (#2, #8, #10A/B, #10C,
     if (cleanup.otpEmails.length) {
       await prisma.emailOtpToken.deleteMany({ where: { email: { in: cleanup.otpEmails } } }).catch(() => {});
     }
+    await clearTestRateLimits();
     await pool.end().catch(() => {});
   });
 
@@ -167,44 +193,82 @@ describe.skipIf(!IS_TEST_DB)("Wave 2 Features Integration (#2, #8, #10A/B, #10C,
     return { user, order, inv, staffToken };
   }
 
-  it("#2 Email OTP: request endpoint, verify, replay prevention, expiry, and 5-attempt lockout", async () => {
+  it("#2 Client Registration OTP + Password Hash + Reset Password OTP + replay/expiry/lockout", async () => {
     const email = `${RUN}-otp@example.com`;
     cleanup.otpEmails.push(email);
 
-    // Request OTP via route
-    const badReq = await clientOtpRequestPost(makeJsonReq("/api/auth/otp/request", "POST", { email: "invalid-email" }));
+    // Invalid email rejected
+    const badReq = await clientOtpRequestPost(makeJsonReq("/api/auth/otp/request", "POST", { email: "invalid-email", purpose: "CLIENT_REGISTER" }));
     expect(badReq.status).toBe(400);
 
-    const reqRes = await clientOtpRequestPost(makeJsonReq("/api/auth/otp/request", "POST", { email }));
+    // Request registration OTP
+    const reqRes = await clientOtpRequestPost(makeJsonReq("/api/auth/otp/request", "POST", { email, purpose: "CLIENT_REGISTER" }));
     expect(reqRes.status).toBe(200);
-    const sent = sentOtps.find((item) => item.to === email && item.purpose === "CLIENT_LOGIN");
+    const sent = sentOtps.find((item) => item.to === email && item.purpose === "CLIENT_REGISTER");
     expect(sent?.code).toMatch(/^\d{6}$/);
 
-    // Verify valid OTP
-    const ok = await verifyAndConsumeOtp(email, "CLIENT_LOGIN", sent!.code);
-    expect(ok).toEqual({ ok: true });
+    // Complete registration -> creates User with bcrypt passwordHash
+    const regRes = await clientRegisterPost(
+      makeJsonReq("/api/auth/register", "POST", {
+        name: "Calon Pengantin Uji",
+        email,
+        password: "PasswordAman#2026",
+        code: sent!.code,
+      }),
+    );
+    expect(regRes.status).toBe(201);
+    const regJson = await regRes.json();
+    expect(regJson.success).toBe(true);
+    cleanup.users.push(regJson.user.id);
+
+    const createdUser = await prisma.user.findUnique({ where: { email }, select: { id: true, name: true, passwordHash: true } });
+    expect(createdUser?.name).toBe("Calon Pengantin Uji");
+    expect(createdUser?.passwordHash).toBeTruthy();
+    expect(await bcrypt.compare("PasswordAman#2026", createdUser!.passwordHash!)).toBe(true);
+
+    // Duplicate registration OTP rejected with 409
+    const dupOtp = await clientOtpRequestPost(makeJsonReq("/api/auth/otp/request", "POST", { email, purpose: "CLIENT_REGISTER" }));
+    expect(dupOtp.status).toBe(409);
+
+    // Reset password via OTP
+    const resetReq = await clientOtpRequestPost(makeJsonReq("/api/auth/otp/request", "POST", { email, purpose: "CLIENT_RESET_PASSWORD" }));
+    expect(resetReq.status).toBe(200);
+    const resetMail = sentOtps.find((item) => item.to === email && item.purpose === "CLIENT_RESET_PASSWORD");
+    expect(resetMail?.code).toMatch(/^\d{6}$/);
+
+    const resetDone = await clientResetPasswordPost(
+      makeJsonReq("/api/auth/reset-password", "POST", {
+        email,
+        code: resetMail!.code,
+        newPassword: "PasswordBaru#2026",
+      }),
+    );
+    expect(resetDone.status).toBe(200);
+    const updatedUser = await prisma.user.findUnique({ where: { email }, select: { passwordHash: true } });
+    expect(await bcrypt.compare("PasswordBaru#2026", updatedUser!.passwordHash!)).toBe(true);
+    expect(await bcrypt.compare("PasswordAman#2026", updatedUser!.passwordHash!)).toBe(false);
 
     // Replay must fail
-    const replay = await verifyAndConsumeOtp(email, "CLIENT_LOGIN", sent!.code);
+    const replay = await verifyAndConsumeOtp(email, "CLIENT_RESET_PASSWORD", resetMail!.code);
     expect(replay).toEqual({ ok: false, reason: "NOT_FOUND" });
 
     // Brute-force lockout after OTP_MAX_ATTEMPTS wrong guesses
-    const fresh = await createAndStoreOtp(email, "CLIENT_LOGIN");
+    const fresh = await createAndStoreOtp(email, "CLIENT_REGISTER");
     const wrongCode = fresh.code === "000000" ? "111111" : "000000";
     for (let i = 0; i < OTP_MAX_ATTEMPTS; i++) {
-      const attempt = await verifyAndConsumeOtp(email, "CLIENT_LOGIN", wrongCode);
+      const attempt = await verifyAndConsumeOtp(email, "CLIENT_REGISTER", wrongCode);
       expect(attempt).toEqual({ ok: false, reason: "INVALID_CODE" });
     }
-    const lockedAttempt = await verifyAndConsumeOtp(email, "CLIENT_LOGIN", fresh.code);
+    const lockedAttempt = await verifyAndConsumeOtp(email, "CLIENT_REGISTER", fresh.code);
     expect(lockedAttempt).toEqual({ ok: false, reason: "TOO_MANY_ATTEMPTS" });
 
     // Expired token rejection
-    const expOtp = await createAndStoreOtp(email, "CLIENT_LOGIN");
+    const expOtp = await createAndStoreOtp(email, "CLIENT_REGISTER");
     await prisma.emailOtpToken.update({
       where: { id: expOtp.id },
       data: { expiresAt: new Date(Date.now() - 60_000) },
     });
-    const expRes = await verifyAndConsumeOtp(email, "CLIENT_LOGIN", expOtp.code);
+    const expRes = await verifyAndConsumeOtp(email, "CLIENT_REGISTER", expOtp.code);
     expect(expRes).toEqual({ ok: false, reason: "EXPIRED" });
   });
 
@@ -431,24 +495,88 @@ describe.skipIf(!IS_TEST_DB)("Wave 2 Features Integration (#2, #8, #10A/B, #10C,
     const unauthDash = await partnerDashboardGet(new NextRequest("http://localhost/api/partner/dashboard"));
     expect(unauthDash.status).toBe(401);
 
-    // Partner OTP flow
+    // Unactivated partner trying password login receives 403 PASSWORD_NOT_SET
+    const preActLogin = await partnerPasswordLoginPost(
+      makeJsonReq("/api/partner/auth/login", "POST", { email: partnerEmail, password: "MitraPassword#2026" }),
+    );
+    expect(preActLogin.status).toBe(403);
+    const preActJson = await preActLogin.json();
+    expect(preActJson.code).toBe("PASSWORD_NOT_SET");
+
+    // Partner Opsi A: Activation OTP -> set password -> HttpOnly session cookie
     const otpReq = await partnerOtpReqPost(
-      makeJsonReq("/api/partner/auth/request-otp", "POST", { email: partnerEmail }),
+      makeJsonReq("/api/partner/auth/request-otp", "POST", { email: partnerEmail, purpose: "PARTNER_ACTIVATE" }),
     );
     expect(otpReq.status).toBe(200);
-    const partnerMail = sentOtps.find((m) => m.to === partnerEmail && m.purpose === "PARTNER_LOGIN");
+    const partnerMail = sentOtps.find((m) => m.to === partnerEmail && m.purpose === "PARTNER_ACTIVATE");
     expect(partnerMail?.code).toMatch(/^\d{6}$/);
 
-    const verifyRes = await partnerOtpVerifyPost(
-      makeJsonReq("/api/partner/auth/verify", "POST", { email: partnerEmail, code: partnerMail!.code }),
+    const activateRes = await partnerSetPasswordPost(
+      makeJsonReq("/api/partner/auth/set-password", "POST", {
+        email: partnerEmail,
+        code: partnerMail!.code,
+        password: "MitraPassword#2026",
+        purpose: "PARTNER_ACTIVATE",
+      }),
     );
-    expect(verifyRes.status).toBe(200);
-    const sessionCookie = verifyRes.cookies.get(PARTNER_COOKIE_NAME)?.value;
+    expect(activateRes.status).toBe(200);
+    expect(activateRes.cookies.get(PARTNER_COOKIE_NAME)?.value).toBeTruthy();
+
+    // Already-activated partner cannot re-run PARTNER_ACTIVATE (409)
+    const repeatActivate = await partnerOtpReqPost(
+      makeJsonReq("/api/partner/auth/request-otp", "POST", { email: partnerEmail, purpose: "PARTNER_ACTIVATE" }),
+    );
+    expect(repeatActivate.status).toBe(409);
+
+    // Wrong password rejected (401)
+    const wrongLogin = await partnerPasswordLoginPost(
+      makeJsonReq("/api/partner/auth/login", "POST", { email: partnerEmail, password: "SalahPassword123" }),
+    );
+    expect(wrongLogin.status).toBe(401);
+
+    // Password login succeeds and returns HttpOnly session cookie
+    const pwLoginRes = await partnerPasswordLoginPost(
+      makeJsonReq("/api/partner/auth/login", "POST", { email: partnerEmail, password: "MitraPassword#2026" }),
+    );
+    expect(pwLoginRes.status).toBe(200);
+    const sessionCookie = pwLoginRes.cookies.get(PARTNER_COOKIE_NAME)?.value;
     expect(sessionCookie).toBeTruthy();
 
-    // Authenticated dashboard with HttpOnly session cookie
+    // Partner password reset via OTP
+    const resetOtpReq = await partnerOtpReqPost(
+      makeJsonReq("/api/partner/auth/request-otp", "POST", { email: partnerEmail, purpose: "PARTNER_RESET_PASSWORD" }),
+    );
+    expect(resetOtpReq.status).toBe(200);
+    const resetPartnerMail = sentOtps.find((m) => m.to === partnerEmail && m.purpose === "PARTNER_RESET_PASSWORD");
+    expect(resetPartnerMail?.code).toMatch(/^\d{6}$/);
+
+    const resetPwRes = await partnerSetPasswordPost(
+      makeJsonReq("/api/partner/auth/set-password", "POST", {
+        email: partnerEmail,
+        code: resetPartnerMail!.code,
+        password: "MitraBaru#2026",
+        purpose: "PARTNER_RESET_PASSWORD",
+      }),
+    );
+    expect(resetPwRes.status).toBe(200);
+    const newLoginRes = await partnerPasswordLoginPost(
+      makeJsonReq("/api/partner/auth/login", "POST", { email: partnerEmail, password: "MitraBaru#2026" }),
+    );
+    expect(newLoginRes.status).toBe(200);
+    const newSessionCookie = newLoginRes.cookies.get(PARTNER_COOKIE_NAME)?.value;
+    expect(newSessionCookie).toBeTruthy();
+
+    // Old session cookie from before password reset is revoked (401)
+    const staleDashRes = await partnerDashboardGet(
+      new NextRequest("http://localhost/api/partner/dashboard", {
+        headers: { cookie: `${PARTNER_COOKIE_NAME}=${sessionCookie}` },
+      }),
+    );
+    expect(staleDashRes.status).toBe(401);
+
+    // Authenticated dashboard with fresh post-reset HttpOnly session cookie
     const dashReq = new NextRequest("http://localhost/api/partner/dashboard", {
-      headers: { cookie: `${PARTNER_COOKIE_NAME}=${sessionCookie}` },
+      headers: { cookie: `${PARTNER_COOKIE_NAME}=${newSessionCookie}` },
     });
     const dashRes = await partnerDashboardGet(dashReq);
     expect(dashRes.status).toBe(200);

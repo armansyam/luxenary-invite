@@ -51,7 +51,8 @@ function DashboardHomeContent() {
   const [copied, setCopied] = useState(false);
   const [memoriesQuota, setMemoriesQuota] = useState<any>(null);
   // Tombol upgrade di halaman lain (mis. Pengaturan) mengarah ke /dashboard?upgrade=true.
-  const [isAddonModalOpen, setIsAddonModalOpen] = useState(searchParams?.get("upgrade") === "true");
+  // Jangan buka modal upgrade pada Draf Gratis (belum punya paket berbayar); arahkan ke /packages.
+  const [isAddonModalOpen, setIsAddonModalOpen] = useState(false);
 
   const fetchGuestMemories = useCallback(async (invId?: string) => {
     const targetId = invId || invitation?.id;
@@ -141,11 +142,25 @@ function DashboardHomeContent() {
   });
   const invUrl = resolvedDomain.url;
 
-  const rawPlanType = invitation?.order?.planType || "TIER_1";
-  const planType = normalizePlanType(rawPlanType);
-  const packageConfig = platformSettings?.packages?.find((p: any) => p.id === planType || p.id === rawPlanType);
-  const allowedCaps: string[] = packageConfig?.capabilities || (planType === "TIER_3" ? ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"] : planType === "TIER_2" ? ["music", "gallery", "qr_checkin", "guest_memories"] : ["music", "gallery"]);
+  const isFreeDraft = Boolean(invitation?.isFreeDraft || !invitation?.order?.planType);
+  const rawPlanType = isFreeDraft ? null : invitation?.order?.planType || null;
+  const planType = rawPlanType ? normalizePlanType(rawPlanType) : null;
+  const packageConfig = planType
+    ? platformSettings?.packages?.find((p: any) => p.id === planType || p.id === rawPlanType)
+    : null;
+  const allowedCaps: string[] = isFreeDraft
+    ? ["music", "gallery"]
+    : packageConfig?.capabilities || (planType === "TIER_3" ? ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"] : planType === "TIER_2" ? ["music", "gallery", "qr_checkin", "guest_memories"] : ["music", "gallery"]);
   const hasCap = (cap: string) => allowedCaps.includes(cap);
+
+  useEffect(() => {
+    if (!invitation || searchParams?.get("upgrade") !== "true") return;
+    if (isFreeDraft) {
+      router.replace("/packages");
+      return;
+    }
+    setIsAddonModalOpen(true);
+  }, [invitation, isFreeDraft, searchParams, router]);
 
 
 
@@ -541,7 +556,7 @@ function DashboardHomeContent() {
               ) : (
                 <span className="px-2.5 py-0.5 bg-amber-50 border border-amber-200 text-amber-800 text-[10px] sm:text-[11px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
-                  DRAFT
+                  {isFreeDraft ? "DRAF GRATIS" : "DRAFT"}
                 </span>
               )}
 
@@ -560,6 +575,32 @@ function DashboardHomeContent() {
           </div>
 
           {/* Unified Retention & Service Active Card (Ditempatkan di Bagian Atas agar Sangat Jelas) */}
+          {isFreeDraft ? (
+            <div className="sm:p-4 sm:rounded-2xl sm:bg-amber-50/50 sm:border sm:border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                  <span className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
+                    <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Masa Uji Coba Draf Gratis</span>
+                  </span>
+                  <span className="px-2 sm:px-2.5 py-0.5 bg-amber-100/80 border border-amber-300/70 text-amber-950 rounded-lg text-[10px] sm:text-[11px] font-bold">
+                    Retensi Draf 14 Hari
+                  </span>
+                </div>
+                <p className="hidden sm:block text-[11px] text-stone-600 leading-relaxed">
+                  Undangan ini masih dalam mode uji coba tanpa paket aktif. Masa aktif undangan ({baseRetentionDays} hari pasca acara), klaim subdomain, dan publikasi akan aktif setelah Anda memilih paket.
+                </p>
+              </div>
+              <Link
+                href="/packages"
+                className="shrink-0 px-3.5 py-2 bg-amber-900 hover:bg-amber-950 text-white rounded-xl text-xs font-bold transition text-center shadow-2xs"
+              >
+                Pilih &amp; Aktifkan Paket
+              </Link>
+            </div>
+          ) : (
           <div className="sm:p-4 sm:rounded-2xl sm:bg-stone-50/90 sm:border sm:border-stone-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 sm:shadow-xs">
             <div className="space-y-1.5">
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
@@ -631,6 +672,7 @@ function DashboardHomeContent() {
               )}
             </div>
           </div>
+          )}
 
           <div className="space-y-1">
             <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-serif font-bold text-stone-900 leading-snug tracking-tight">
@@ -788,31 +830,45 @@ function DashboardHomeContent() {
 
         <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-stone-200/80 shadow-xs space-y-1">
           <div className="flex items-center justify-between text-stone-500">
-            <span className="text-[11px] font-bold uppercase tracking-wider">Paket</span>
-            <svg className="hidden sm:block w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <span className="text-[11px] font-bold uppercase tracking-wider">
+              {isFreeDraft ? "Status Layanan" : "Paket"}
+            </span>
+            <svg className="hidden sm:block w-4 h-4 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
             </svg>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
             <p className="text-sm font-bold text-stone-900 truncate">
-              {invitation?.order?.planType
-                ? `Paket ${getPlanDisplayName(invitation.order.planType, platformSettings?.packages)}`
-                : "—"}
+              {isFreeDraft
+                ? "Draf Gratis"
+                : `Paket ${getPlanDisplayName(invitation.order.planType, platformSettings?.packages)}`}
             </p>
             {invitation?.id && (
-              <button
-                type="button"
-                onClick={() => setIsAddonModalOpen(true)}
-                className="w-fit text-[10px] font-bold text-violet-700 hover:text-violet-900 border border-violet-200 hover:border-violet-300 bg-violet-50 hover:bg-violet-100 px-2.5 py-1 rounded-full transition flex items-center gap-1 cursor-pointer"
-                title="Buka Pusat Checkout Terpadu Layanan & Upgrade"
-              >
-                <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
-                <span>{normalizePlanType(invitation?.order?.planType) !== "TIER_3" ? "Upgrade & Add-On" : "Kelola Add-On"}</span>
-              </button>
+              isFreeDraft ? (
+                <Link
+                  href="/packages"
+                  className="w-fit text-[10px] font-bold text-amber-950 hover:text-amber-900 border border-amber-300 hover:border-amber-400 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-full transition flex items-center gap-1"
+                  title="Pilih paket untuk mengaktifkan undangan Anda"
+                >
+                  <span>Aktifkan Paket</span>
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsAddonModalOpen(true)}
+                  className="w-fit text-[10px] font-bold text-amber-900 hover:text-stone-900 border border-amber-300 hover:border-amber-400 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-full transition flex items-center gap-1 cursor-pointer"
+                  title="Buka Pusat Checkout Terpadu Layanan & Upgrade"
+                >
+                  <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                  <span>{planType !== "TIER_3" ? "Upgrade & Add-On" : "Kelola Add-On"}</span>
+                </button>
+              )
             )}
           </div>
           <span className="text-[10px] text-stone-400 hidden sm:block">
-            {packageConfig?.desc || getPlanDisplayDescription(invitation?.order?.planType, platformSettings?.packages) || "Belum ada paket aktif"}
+            {isFreeDraft
+              ? "Mode uji coba 14 hari — pilih paket untuk publikasi & subdomain"
+              : (packageConfig?.desc || getPlanDisplayDescription(invitation?.order?.planType, platformSettings?.packages) || "Belum ada paket aktif")}
           </span>
         </div>
       </div>
@@ -966,13 +1022,13 @@ function DashboardHomeContent() {
       </div>
 
 
-      {/* Pusat Layanan Tambahan & Upgrade Terpadu */}
-      {invitation && (
+      {/* Pusat Layanan Tambahan & Upgrade Terpadu — hanya untuk undangan berbayar */}
+      {invitation && !isFreeDraft && invitation.order?.planType && (
         <UnifiedAddonModal
           isOpen={isAddonModalOpen}
           onClose={() => setIsAddonModalOpen(false)}
           invitationId={invitation.id}
-          currentPlan={invitation.order?.planType || "TIER_1"}
+          currentPlan={invitation.order.planType}
           currentQuota={memoriesQuota?.maxTotalPhotos || 250}
           pricingSettings={platformSettings}
           hasExtended={hasExtended}

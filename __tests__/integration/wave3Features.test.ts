@@ -447,7 +447,7 @@ describe.skipIf(!IS_TEST_DB)("Wave 3 & Deep Audit Integration", () => {
     const inv = await prisma.invitation.create({
       data: {
         userId: owner.id,
-        status: "DRAFT",
+        status: "PUBLISHED",
         themeId: "kalandra",
         invitationSlug: `${RUN}-gift-export`,
         featureSettings: {

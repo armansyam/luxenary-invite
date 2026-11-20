@@ -192,6 +192,30 @@ export default function OrnamentInspector({
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={Boolean(o.locked)}
+          onClick={() => set({ locked: o.locked ? undefined : true })}
+          className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-[11.5px] font-semibold transition cursor-pointer ${o.locked ? "border-amber-300 bg-amber-50/70 text-amber-900" : "border-stone-200 text-stone-700 hover:bg-stone-50"}`}
+        >
+          <span className="flex items-center gap-2">
+            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" aria-hidden="true">
+              {o.locked ? (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7 11V7a5 5 0 0110 0v4M5 11h14v9H5z" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7 11V7a5 5 0 019.5-2M5 11h14v9H5z" />
+              )}
+            </svg>
+            {o.locked ? "Lapisan dikunci" : "Kunci lapisan di pratinjau"}
+          </span>
+          <span className={`h-1.5 w-1.5 rounded-full ${o.locked ? "bg-amber-600" : "bg-stone-300"}`} />
+        </button>
+        {o.locked && (
+          <p className="-mt-2 text-[10.5px] leading-snug text-stone-500">
+            Klik di pratinjau langsung menembus ke teks/blok di bawahnya. Buka kunci di sini untuk menggeser atau menghapus.
+          </p>
+        )}
         {o.text && (
           <div className="space-y-3 rounded-xl border border-stone-200 bg-stone-50/60 p-3">
             <div>
@@ -256,10 +280,11 @@ export default function OrnamentInspector({
                   <button
                     key={f.id}
                     type="button"
+                    title={f.label}
                     onClick={() => setText({ font: f.id }, true)}
-                    className={`rounded-lg px-1.5 py-1.5 text-[11px] font-semibold transition cursor-pointer ${o.text!.font === f.id ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"}`}
+                    className={`whitespace-nowrap rounded-lg px-1.5 py-1.5 text-[11px] font-semibold transition cursor-pointer ${o.text!.font === f.id ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-800"}`}
                   >
-                    {f.label}
+                    {f.id === "script" ? "Skrip" : f.label}
                   </button>
                 ))}
               </div>
@@ -555,7 +580,7 @@ export default function OrnamentInspector({
 
       <div className="grid grid-cols-2 gap-2 border-t border-stone-200 p-4">
         <button type="button" onClick={onDuplicate} className="rounded-xl border border-stone-200 px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50 cursor-pointer">Duplikat</button>
-        <button type="button" onClick={onRemove} className="rounded-xl border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 cursor-pointer">Hapus</button>
+        <button type="button" disabled={Boolean(o.locked)} onClick={onRemove} title={o.locked ? "Buka kunci lapisan dulu untuk menghapus" : undefined} className="rounded-xl border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed">Hapus</button>
         <p className="col-span-2 text-center text-[10.5px] text-stone-400">Panah: geser · Shift+panah: geser jauh · Del: hapus</p>
       </div>
     </div>

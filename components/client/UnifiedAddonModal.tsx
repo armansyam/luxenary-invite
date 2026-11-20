@@ -18,20 +18,22 @@ interface UnifiedAddonModalProps {
   > | null;
   hasExtended?: boolean;
   daysRemaining?: number | null;
+  isFreeDraft?: boolean;
 }
 
 export default function UnifiedAddonModal({
   isOpen,
   onClose,
   invitationId,
-  currentPlan: rawCurrentPlan = "TIER_1",
+  currentPlan: rawCurrentPlan,
   currentQuota = 250,
   pricingSettings,
   hasExtended = false,
   daysRemaining = null,
+  isFreeDraft = false,
 }: UnifiedAddonModalProps) {
   const router = useRouter();
-  const currentPlan = normalizePlanType(rawCurrentPlan);
+  const currentPlan = normalizePlanType(rawCurrentPlan || "TIER_1");
 
   const packages = pricingSettings?.packages;
   const pkg = (id: "TIER_1" | "TIER_2" | "TIER_3") => packages?.find((p) => p.id === id);
@@ -129,7 +131,7 @@ export default function UnifiedAddonModal({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || isFreeDraft || !rawCurrentPlan) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/45 backdrop-blur-xs animate-in fade-in duration-200">

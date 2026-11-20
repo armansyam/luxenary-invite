@@ -1,11 +1,29 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
+import { getClientIp, rateLimitDb } from "@/lib/rateLimit";
 import { isReservedSubdomain, isSubdomainExpired } from "@/lib/domainUtils";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 
 export async function GET(req: Request) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { available: false, message: "Unauthorized. Silakan login terlebih dahulu." },
+        { status: 401 }
+      );
+    }
+
+    const ip = getClientIp(req);
+    if (!(await rateLimitDb(`subdomain_check:${session.user.id}:${ip}`, 60, 60_000))) {
+      return NextResponse.json(
+        { available: false, message: "Terlalu banyak pengecekan subdomain. Tunggu sebentar." },
+        { status: 429 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const rawSubdomain = searchParams.get("subdomain") || "";
     const invitationId = searchParams.get("invitationId") || "";

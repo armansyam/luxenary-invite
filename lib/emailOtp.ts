@@ -3,6 +3,25 @@ import { prisma } from "@/lib/prisma";
 
 export const OTP_TTL_MS = 10 * 60 * 1000;
 export const OTP_MAX_ATTEMPTS = 5;
+export const MIN_ACCOUNT_PASSWORD_LENGTH = 8;
+export const MAX_ACCOUNT_PASSWORD_LENGTH = 72;
+
+export type OtpPurpose =
+  | "CLIENT_REGISTER"
+  | "CLIENT_RESET_PASSWORD"
+  | "PARTNER_ACTIVATE"
+  | "PARTNER_RESET_PASSWORD";
+
+export function validateAccountPassword(password: unknown): string | null {
+  if (typeof password !== "string") return "Kata sandi wajib diisi.";
+  if (password.length < MIN_ACCOUNT_PASSWORD_LENGTH) {
+    return `Kata sandi minimal ${MIN_ACCOUNT_PASSWORD_LENGTH} karakter.`;
+  }
+  if (password.length > MAX_ACCOUNT_PASSWORD_LENGTH) {
+    return `Kata sandi maksimal ${MAX_ACCOUNT_PASSWORD_LENGTH} karakter.`;
+  }
+  return null;
+}
 
 function otpSecret(): string {
   const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
@@ -22,7 +41,7 @@ export function generateOtpCode(): string {
 
 export function hashOtpCode(email: string, purpose: string, code: string): string {
   const cleanEmail = normalizeOtpEmail(email);
-  const cleanPurpose = String(purpose || "CLIENT_LOGIN").trim().toUpperCase();
+  const cleanPurpose = String(purpose || "CLIENT_REGISTER").trim().toUpperCase();
   const cleanCode = String(code || "").trim();
   return crypto
     .createHmac("sha256", otpSecret())
@@ -32,7 +51,7 @@ export function hashOtpCode(email: string, purpose: string, code: string): strin
 
 export async function createAndStoreOtp(
   email: string,
-  purpose: "CLIENT_LOGIN" | "PARTNER_LOGIN" = "CLIENT_LOGIN",
+  purpose: OtpPurpose = "CLIENT_REGISTER",
 ): Promise<{ id: string; code: string; expiresAt: Date }> {
   const cleanEmail = normalizeOtpEmail(email);
   const code = generateOtpCode();
@@ -72,7 +91,7 @@ export type VerifyOtpResult =
 
 export async function verifyAndConsumeOtp(
   email: string,
-  purpose: "CLIENT_LOGIN" | "PARTNER_LOGIN",
+  purpose: OtpPurpose,
   rawCode: string,
 ): Promise<VerifyOtpResult> {
   const cleanEmail = normalizeOtpEmail(email);

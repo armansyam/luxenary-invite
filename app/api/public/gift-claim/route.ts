@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
       where: { id: invitationId },
       select: { status: true },
     });
-    if (!inv || inv.status === "TAKEN_DOWN" || inv.status === "ARCHIVED") {
+    if (!inv || inv.status === "TAKEN_DOWN" || inv.status === "ARCHIVED" || inv.status === "DRAFT") {
       return NextResponse.json({ success: true, claims: [] });
     }
 
@@ -88,7 +88,10 @@ export async function POST(req: NextRequest) {
     if (!invitation) {
       return NextResponse.json({ error: "Undangan tidak ditemukan." }, { status: 404 });
     }
-    if (invitation.status !== "PUBLISHED" && invitation.status !== "DRAFT") {
+    if (invitation.status === "DRAFT") {
+      return NextResponse.json({ error: "Undangan masih berupa draf dan belum dipublikasikan." }, { status: 403 });
+    }
+    if (invitation.status !== "PUBLISHED") {
       return NextResponse.json({ error: "Daftar kado untuk acara ini tidak aktif." }, { status: 410 });
     }
 

@@ -4,6 +4,8 @@
  * dan pratinjau posisi ornamen) dan server (kompilasi, audit).
  */
 
+import { DECLARABLE_MEDIA_SLOTS, type DeclarableMediaSlot } from "@/lib/themeMediaSlots";
+
 export const BUILDER_SPEC_VERSION = 1;
 
 export type BuilderEventType = "WEDDING" | "BIRTHDAY" | "KHITAN" | "AQIQAH" | "WISUDA" | "GATHERING";
@@ -82,7 +84,10 @@ export interface BuilderFonts {
 
 export interface BuilderVariants {
   cover: string;
+  coverAlign: string;
+  coverSubtitlePos: string;
   opening: string;
+  openingAlign: string;
   couple: string;
   countdown: string;
   closing: string;
@@ -269,6 +274,8 @@ export interface BuilderOrnament {
   replaceSlot?: OrnamentMediaSlot;
   /** Animasi berulang (loop) halus pada ornamen. */
   loop?: LoopAnimation;
+  /** Kunci lapisan di editor: tidak terseret atau terpilih lewat klik pratinjau agar elemen di bawahnya mudah ditata. */
+  locked?: boolean;
 }
 
 /**
@@ -407,10 +414,14 @@ export const BLOCK_COLOR_TOKENS = [
 ] as const;
 export type BlockColorToken = (typeof BLOCK_COLOR_TOKENS)[number]["id"];
 
+export type BlockPositionUnit = "px";
+
 export interface BlockProps {
-  /** Geser mendatar dan tegak, dalam persen lebar dan tinggi elemen itu sendiri. */
+  /** Geser mendatar dan tegak: satuan `px` (proporsional kanvas acuan 375×760) atau bawaan lama `%` (ukuran elemen). */
   x: number;
   y: number;
+  /** Satuan posisi: `"px"` untuk blok baru (bebas lonjakan wrap teks); undefined untuk spesifikasi lama (`%`). */
+  unit?: BlockPositionUnit;
   scale: number;
   /** Derajat. */
   rotate: number;
@@ -543,6 +554,7 @@ export const DEFAULT_BLOCK_PROPS: BlockProps = { x: 0, y: 0, scale: 1, rotate: 0
 // Persen ukuran elemen itu sendiri: elemen pendek (judul sekitar 40 px) butuh jangkauan besar untuk pindah sejauh
 // ratusan piksel, dan elemen sempit (monogram, tanggal) untuk mencapai tengah layar.
 export const BLOCK_LIMITS = { x: [-1500, 1500], y: [-1500, 1500], scale: [0.5, 2], rotate: [-180, 180], z: [-9, 9] } as const;
+export const BLOCK_PX_LIMITS = { x: [-900, 900], y: [-900, 900] } as const;
 
 export const isDefaultBlock = (p: BlockProps) =>
   p.x === 0 &&
@@ -640,8 +652,12 @@ export function blockFontFamilyCss(font: string): string {
  */
 export function blockStyle(p: BlockProps): string {
   const z = blockZIndex(p);
+  const translateCss =
+    p.unit === "px"
+      ? `translate:calc(${p.x} * var(--lux-ux, 1px)) calc(${p.y} * var(--lux-uy, 1px));`
+      : `translate:${p.x}% ${p.y}%;`;
   const parts: string[] = [
-    `translate:${p.x}% ${p.y}%;rotate:${p.rotate}deg;scale:${p.scale};`,
+    `${translateCss}rotate:${p.rotate}deg;scale:${p.scale};`,
   ];
   if (z !== null) parts.push(`position:relative;z-index:${z};`);
   if (p.hidden) parts.push("display:none;");
@@ -1016,8 +1032,18 @@ export const SECTION_GRADIENTS = [
   { id: "fade-up", label: "Pudar ke atas" },
   { id: "radial", label: "Sorot tengah" },
   { id: "diagonal", label: "Diagonal ke aksen" },
+  { id: "vignette", label: "Vignet tepi" },
 ] as const;
 export type SectionGradient = (typeof SECTION_GRADIENTS)[number]["id"];
+
+export const SCRIM_STYLES = [
+  { id: "balanced", label: "Seimbang", hint: "Gradasi halus merata dari atas ke bawah" },
+  { id: "bottom", label: "Fokus bawah", hint: "Atas bening, bawah gelap pekat" },
+  { id: "top", label: "Atas & bawah", hint: "Atas dan bawah gelap, tengah jernih" },
+  { id: "radial", label: "Sorot tengah", hint: "Tengah cerah, tepi memudar gelap" },
+  { id: "duotone", label: "Gradasi aksen", hint: "Nuansa warna primary di atas, gelap di bawah" },
+] as const;
+export type ScrimStyle = (typeof SCRIM_STYLES)[number]["id"];
 
 export const SECTION_TONES = [
   { id: "auto", label: "Ikut kanvas" },
@@ -1131,10 +1157,11 @@ export type CoverDesktopMode = (typeof COVER_DESKTOP_MODES)[number]["id"];
 /** Blok sampul yang posisinya bisa diatur khusus desktop (≥900px), terpisah untuk sampul layar penuh dan split. */
 export const COVER_BLOCK_IDS = BUILDER_BLOCKS.filter((b) => b.section === "cover").map((b) => b.id) as BuilderBlockId[];
 
-/** Posisi blok sampul di desktop; geser dalam persen ukuran elemen itu sendiri, sama dengan `BlockProps`. */
+/** Posisi blok sampul di desktop; satuan `px` (baru) atau `%` (spesifikasi lama). */
 export interface CoverDesktopProps {
   x: number;
   y: number;
+  unit?: BlockPositionUnit;
   scale: number;
   rotate: number;
   hidden?: boolean;
@@ -1153,7 +1180,11 @@ export interface CoverDesktop {
 }
 
 export function coverDesktopStyle(p: CoverDesktopProps): string {
-  const parts = [`translate:${p.x}% ${p.y}%;rotate:${p.rotate}deg;scale:${p.scale};`];
+  const translateCss =
+    p.unit === "px"
+      ? `translate:${p.x}px ${p.y}px;`
+      : `translate:${p.x}% ${p.y}%;`;
+  const parts = [`${translateCss}rotate:${p.rotate}deg;scale:${p.scale};`];
   if (p.hidden) parts.push("display:none;");
   if (p.align) parts.push(`text-align:${p.align};`);
   if (p.maxWidth) parts.push(`max-width:${p.maxWidth}px;margin-left:auto;margin-right:auto;`);
@@ -1252,8 +1283,12 @@ export interface BuilderSpec {
   texture: string;
   /** Opasitas tekstur latar kanvas (10 - 100%, bawaan 100); hanya disimpan bila < 100. */
   textureOpacity?: number;
-  /** Kepekatan lapisan gelap (scrim) di atas foto Sampul, Sidebar, dan Penutup (10 - 90%, bawaan 55). */
+  /** Kepekatan lapisan gelap (scrim) di atas foto Sampul, Sidebar, Pembuka backdrop, dan Penutup (10 - 90%, bawaan 55). */
   scrimOpacity?: number;
+  /** Gaya arah gradasi lapisan foto; tidak disimpan bila "balanced" (bawaan). */
+  scrimStyle?: ScrimStyle;
+  /** Efek vignet gelap membingkai tepi foto (0 - 85%, bawaan 0); tidak disimpan bila 0. */
+  vignette?: number;
   /** Gambar bawaan per slot (dari pustaka latar); dipakai sampai klien mengunggah foto sendiri. */
   defaultMedia: BuilderDefaultMedia;
   /** Properti relatif blok konten; hanya blok yang diubah dari bawaan yang tersimpan. */
@@ -1287,6 +1322,8 @@ export interface BuilderSpec {
   sectionNesting?: Partial<Record<NestableGuest, NestingHost>>;
   /** Tidak disimpan bila "normal". */
   animationSpeed?: AnimationSpeed;
+  /** Slot media yang sengaja dikunci admin agar tidak ditawarkan untuk diganti klien di Studio (tidak disimpan bila kosong). */
+  disabledMediaSlots?: DeclarableMediaSlot[];
 }
 
 // Font yang tersedia lokal di public/fonts/fonts.css; font lain tidak dimuat oleh undangan.
@@ -1375,6 +1412,25 @@ export const VARIANT_GROUPS: Array<{ key: keyof BuilderVariants; label: string; 
     ],
   },
   {
+    key: "coverAlign",
+    label: "Tata vertikal sampul",
+    section: "cover",
+    options: [
+      { id: "spread", label: "Sebar (Standar)", hint: "Atas, tengah, dan bawah tersebar merata" },
+      { id: "top", label: "Kumpul atas", hint: "Nama dan tanggal rapat di atas, ruang foto lega di tengah" },
+      { id: "bottom", label: "Kumpul bawah", hint: "Nama dan kartu tamu berkumpul di bawah, wajah foto di atas tetap bersih" },
+    ],
+  },
+  {
+    key: "coverSubtitlePos",
+    label: "Letak kalimat sapaan sampul",
+    section: "cover",
+    options: [
+      { id: "center", label: "Di bawah tanggal", hint: "Mengikuti grup nama dan tanggal di tengah sampul" },
+      { id: "bottom", label: "Di atas kartu tamu", hint: "Berjangkar di atas kartu tamu, tetap aman walau nama klien 2–3 baris" },
+    ],
+  },
+  {
     key: "opening",
     label: "Pembuka",
     section: "opening",
@@ -1384,6 +1440,16 @@ export const VARIANT_GROUPS: Array<{ key: keyof BuilderVariants; label: string; 
       { id: "arch", label: "Foto lengkung", hint: "Foto pembuka berbentuk lengkung" },
       { id: "circle", label: "Foto bulat", hint: "Foto pembuka berbentuk lingkaran" },
       { id: "backdrop", label: "Latar foto Home", hint: "Slot foto Home menjadi background penuh seksi pembuka" },
+    ],
+  },
+  {
+    key: "openingAlign",
+    label: "Tata vertikal pembuka",
+    section: "opening",
+    options: [
+      { id: "spread", label: "Sebar (Standar)", hint: "Salam, nama, dan kutipan tersebar merata" },
+      { id: "top", label: "Kumpul atas", hint: "Judul dan nama rapat di atas, foto utama di tengah lega, kutipan di bawah" },
+      { id: "bottom", label: "Kumpul bawah", hint: "Seluruh teks berkumpul di bawah, wajah foto di bagian atas tetap bersih" },
     ],
   },
   {
@@ -1628,7 +1694,10 @@ export function defaultBuilderSpec(eventType: BuilderEventType = "WEDDING"): Bui
     radius: "soft",
     variants: {
       cover: "classic",
+      coverAlign: "spread",
+      coverSubtitlePos: "center",
       opening: "classic",
+      openingAlign: "spread",
       couple: "stacked",
       countdown: "boxes",
       closing: "classic",
@@ -1792,6 +1861,18 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
     if (sc !== 55) scrimOpacity = sc;
   }
 
+  let scrimStyle: ScrimStyle | undefined;
+  if (input.scrimStyle !== undefined && input.scrimStyle !== null) {
+    const st = pickEnum<ScrimStyle>(input.scrimStyle, SCRIM_STYLES.map((x) => x.id), "Gaya gradasi foto", errors);
+    if (st && st !== "balanced") scrimStyle = st;
+  }
+
+  let vignette: number | undefined;
+  if (input.vignette !== undefined && input.vignette !== null) {
+    const vg = Math.round(clamp(input.vignette, 0, 85, 0));
+    if (vg > 0) vignette = vg;
+  }
+
   // Spesifikasi lama tanpa defaultMedia tetap sah; gambar bawaan dari pustaka latar atau unggahan admin.
   const defaultMedia: BuilderDefaultMedia = {};
   for (const { slot, label } of BUILDER_DEFAULT_SLOTS) {
@@ -1811,9 +1892,13 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
       errors.push(`Blok ${label} tidak terbaca.`);
       continue;
     }
+    const isPx = raw.unit === "px";
+    const xBounds = isPx ? BLOCK_PX_LIMITS.x : BLOCK_LIMITS.x;
+    const yBounds = isPx ? BLOCK_PX_LIMITS.y : BLOCK_LIMITS.y;
     const props: BlockProps = {
-      x: clamp(raw.x, BLOCK_LIMITS.x[0], BLOCK_LIMITS.x[1], 0),
-      y: clamp(raw.y, BLOCK_LIMITS.y[0], BLOCK_LIMITS.y[1], 0),
+      x: clamp(raw.x, xBounds[0], xBounds[1], 0),
+      y: clamp(raw.y, yBounds[0], yBounds[1], 0),
+      ...(isPx ? { unit: "px" as const } : {}),
       scale: clamp(raw.scale, BLOCK_LIMITS.scale[0], BLOCK_LIMITS.scale[1], 1),
       rotate: clamp(raw.rotate, BLOCK_LIMITS.rotate[0], BLOCK_LIMITS.rotate[1], 0),
       hidden: raw.hidden === true && OPTIONAL_BLOCKS.includes(id),
@@ -2033,6 +2118,7 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
       ...(slot ? { slot, ...(fit ? { fit } : {}) } : {}),
       ...(replaceSlot ? { replaceSlot } : {}),
       ...(loop ? { loop } : {}),
+      ...(o.locked === true ? { locked: true } : {}),
     });
   }
 
@@ -2074,7 +2160,7 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
   // Saat jadwal pindah ke Home, seksi Acara disembunyikan; hitung mundur di dalamnya ikut hilang.
   if (countdownPlacement === "events" && eventsPlacement === "home") errors.push("Hitung mundur tidak bisa di dalam seksi Acara saat jadwal acara dipindah ke Home.");
   const desktopLayout = pickEnum<DesktopLayout>(input.desktopLayout ?? "split", DESKTOP_LAYOUTS.map((d) => d.id), "Tata letak desktop", errors);
-  const coverDesktop = parseCoverDesktop(input.coverDesktop, errors);
+  const coverDesktop = parseCoverDesktop(input.coverDesktop, blocks, errors);
   // Gambar landscape bawaan membuat mesin menampilkan sampul layar penuh, jadi hanya sah pada mode layar penuh. Pada mode
   // itu foto sampul bawaan (umumnya portrait) tidak boleh ditarik selebar layar, maka gambar landscape wajib ada.
   if (defaultMedia.LANDING_COVER_DESKTOP && coverDesktop?.mode !== "full") errors.push("Gambar Cover desktop (landscape) hanya dipakai pada sampul desktop Layar penuh.");
@@ -2229,6 +2315,24 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
     }
   }
 
+  let disabledMediaSlots: DeclarableMediaSlot[] | undefined;
+  if (input.disabledMediaSlots !== undefined && input.disabledMediaSlots !== null) {
+    if (!Array.isArray(input.disabledMediaSlots)) {
+      errors.push("Daftar slot media terkunci tidak terbaca.");
+    } else {
+      const unique: DeclarableMediaSlot[] = [];
+      for (const rawSlot of input.disabledMediaSlots) {
+        if (typeof rawSlot !== "string" || !(DECLARABLE_MEDIA_SLOTS as readonly string[]).includes(rawSlot)) {
+          errors.push(`Slot media terkunci ${String(rawSlot)} tidak dikenali.`);
+          continue;
+        }
+        const slot = rawSlot as DeclarableMediaSlot;
+        if (!unique.includes(slot)) unique.push(slot);
+      }
+      if (unique.length) disabledMediaSlots = unique;
+    }
+  }
+
   if (errors.length || !eventType || !canvasMode || !radius || !animation || !eventsPlacement || !countdownPlacement || !desktopLayout || !animationSpeed) return { ok: false, errors };
   return {
     ok: true,
@@ -2241,6 +2345,8 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
       texture,
       ...(textureOpacity !== undefined ? { textureOpacity } : {}),
       ...(scrimOpacity !== undefined ? { scrimOpacity } : {}),
+      ...(scrimStyle ? { scrimStyle } : {}),
+      ...(vignette !== undefined ? { vignette } : {}),
       defaultMedia,
       blocks,
       frames,
@@ -2262,12 +2368,16 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
       ...(Object.keys(sectionAnimations).length ? { sectionAnimations } : {}),
       ...(animationSpeed !== "normal" ? { animationSpeed } : {}),
       ...(Object.keys(sectionNesting).length ? { sectionNesting } : {}),
+      ...(disabledMediaSlots ? { disabledMediaSlots } : {}),
     },
   };
 }
 
-/** Mode dan posisi sampul desktop; posisi bawaan (geser 0, skala 1, putar 0, tanpa opsi lain) tidak disimpan. */
-function parseCoverDesktop(raw: unknown, errors: string[]): CoverDesktop | undefined {
+const hasMobileCoverPositionalOverride = (b: BlockProps | undefined): boolean =>
+  Boolean(b && (b.x !== 0 || b.y !== 0 || b.scale !== 1 || b.rotate !== 0 || b.hidden || b.align || b.maxWidth));
+
+/** Mode dan posisi sampul desktop; posisi bawaan dibuang kecuali mobile sudah mengatur posisi blok itu (agar reset desktop ke 0,0 tidak jatuh balik ke posisi mobile). */
+function parseCoverDesktop(raw: unknown, mobileBlocks: BuilderBlocks, errors: string[]): CoverDesktop | undefined {
   if (raw === undefined || raw === null) return undefined;
   if (typeof raw !== "object" || Array.isArray(raw)) {
     errors.push("Pengaturan sampul desktop tidak terbaca.");
@@ -2291,9 +2401,13 @@ function parseCoverDesktop(raw: unknown, errors: string[]): CoverDesktop | undef
         errors.push(`Posisi desktop ${id} tidak terbaca.`);
         continue;
       }
+      const isPx = p.unit === "px";
+      const xBounds = isPx ? BLOCK_PX_LIMITS.x : BLOCK_LIMITS.x;
+      const yBounds = isPx ? BLOCK_PX_LIMITS.y : BLOCK_LIMITS.y;
       const props: CoverDesktopProps = {
-        x: clamp(p.x, BLOCK_LIMITS.x[0], BLOCK_LIMITS.x[1], 0),
-        y: clamp(p.y, BLOCK_LIMITS.y[0], BLOCK_LIMITS.y[1], 0),
+        x: clamp(p.x, xBounds[0], xBounds[1], 0),
+        y: clamp(p.y, yBounds[0], yBounds[1], 0),
+        ...(isPx ? { unit: "px" as const } : {}),
         scale: clamp(p.scale, BLOCK_LIMITS.scale[0], BLOCK_LIMITS.scale[1], 1),
         rotate: clamp(p.rotate, BLOCK_LIMITS.rotate[0], BLOCK_LIMITS.rotate[1], 0),
       };
@@ -2304,7 +2418,7 @@ function parseCoverDesktop(raw: unknown, errors: string[]): CoverDesktop | undef
         if (mw >= 180) props.maxWidth = mw;
       }
       const isDefault = !props.x && !props.y && props.scale === 1 && !props.rotate && !props.hidden && !props.align && !props.maxWidth;
-      if (!isDefault) blocks[id] = props;
+      if (!isDefault || hasMobileCoverPositionalOverride(mobileBlocks[id])) blocks[id] = props;
     }
     if (Object.keys(blocks).length) out[set] = blocks;
   }

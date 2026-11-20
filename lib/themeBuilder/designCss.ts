@@ -36,6 +36,7 @@ function gradientLayer(color: string, gradient: SectionGradient): string {
     case "fade-up": return `linear-gradient(0deg, ${color} 0%, transparent 100%)`;
     case "radial": return `radial-gradient(ellipse at 50% 35%, ${color} 0%, color-mix(in srgb, ${color} 35%, transparent) 55%, transparent 100%)`;
     case "diagonal": return `linear-gradient(135deg, ${color} 0%, color-mix(in srgb, ${color} 55%, var(--accent)) 100%)`;
+    case "vignette": return `radial-gradient(ellipse at center, transparent 36%, ${color} 100%)`;
     default: return `linear-gradient(${color}, ${color})`;
   }
 }

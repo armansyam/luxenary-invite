@@ -137,11 +137,14 @@ describe("simpan dari Studio", () => {
 });
 
 describe("tombol upgrade dari halaman Pengaturan", () => {
-  it("dasbor membuka modal upgrade saat dibuka dengan ?upgrade=true, dan kedua tombol mengarah ke sana", () => {
+  it("dasbor membuka modal upgrade untuk paket berbayar atau mengarahkan Draf Gratis ke /packages saat ?upgrade=true", () => {
     const dashboard = fs.readFileSync(path.join(process.cwd(), "app/(client)/dashboard/page.tsx"), "utf-8");
-    expect(dashboard).toContain('useState(searchParams?.get("upgrade") === "true")');
+    expect(dashboard).toContain('searchParams?.get("upgrade") !== "true"');
+    expect(dashboard).toContain('router.replace("/packages")');
+    expect(dashboard).toContain("setIsAddonModalOpen(true)");
     const settings = fs.readFileSync(path.join(process.cwd(), "app/(client)/dashboard/settings/page.tsx"), "utf-8");
     expect(settings.match(/\/dashboard\?upgrade=true/g)?.length).toBe(2);
+    expect(settings).toContain('invitation?.isFreeDraft ? "/packages" : "/dashboard?upgrade=true"');
   });
 });
 

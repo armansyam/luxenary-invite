@@ -13,6 +13,7 @@ import {
   type LifecycleDaySettings,
 } from "@/lib/lifecycleDates";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
+import { getPlanDisplayName } from "@/lib/planUtils";
 
 interface InvitationItem {
   id: string;
@@ -22,6 +23,8 @@ interface InvitationItem {
   invitationSlug: string;
   themeId: string;
   status: "DRAFT" | "PUBLISHED" | "EVENT_FINISHED" | "ARCHIVED" | "TAKEN_DOWN" | string;
+  isFreeDraft?: boolean;
+  order?: { planType?: string | null } | null;
   subdomain?: string | null;
   customDomain?: string | null;
   eventData?: string | null;
@@ -58,11 +61,15 @@ export default function AdminInvitationsTab() {
   const [resetTarget, setResetTarget] = useState<InvitationItem | null>(null);
   const [resetReason, setResetReason] = useState("");
   const [lifecycleSettings, setLifecycleSettings] = useState<LifecycleDaySettings>(lifecycleSettingsFromPublic(null));
+  const [packages, setPackages] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {
     fetch("/api/public/settings")
       .then((res) => res.json())
-      .then((data) => setLifecycleSettings(lifecycleSettingsFromPublic(data)))
+      .then((data) => {
+        setLifecycleSettings(lifecycleSettingsFromPublic(data));
+        if (Array.isArray(data?.packages)) setPackages(data.packages);
+      })
       .catch((err) => console.error("Gagal memuat pengaturan retensi:", err));
   }, []);
 
@@ -444,8 +451,17 @@ export default function AdminInvitationsTab() {
                     <tr key={inv.id} className="group hover:bg-gray-50/80 transition">
                       {/* Pasangan & Klien */}
                       <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-semibold text-gray-900 text-sm">{coupleName}</span>
+                          {inv.isFreeDraft ? (
+                            <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-md">
+                              Draf Gratis
+                            </span>
+                          ) : inv.order?.planType ? (
+                            <span className="text-[10px] font-semibold bg-stone-100 text-stone-700 border border-stone-200 px-2 py-0.5 rounded-md">
+                              {getPlanDisplayName(inv.order.planType, packages)}
+                            </span>
+                          ) : null}
                           {inv.eventType && inv.eventType !== "WEDDING" && (
                             <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md">
                               {inv.eventType}
@@ -464,6 +480,8 @@ export default function AdminInvitationsTab() {
                             <span className="font-mono font-bold text-indigo-700">
                               {inv.subdomain}
                             </span>
+                          ) : inv.isFreeDraft ? (
+                            <span className="text-amber-700 italic text-[11px]">[Terkunci — Mode Trial]</span>
                           ) : (
                             <span className="text-gray-400 italic text-[11px]">[URL Belum Setup]</span>
                           )}
@@ -484,8 +502,12 @@ export default function AdminInvitationsTab() {
                           <div className="flex items-center gap-2">
                             <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
                             <div>
-                              <div className="font-semibold text-stone-800">Draft</div>
-                              <div className="text-[10px] text-stone-400">Penyusunan Klien</div>
+                              <div className="font-semibold text-stone-800">
+                                {inv.isFreeDraft ? "Draf Gratis (Trial)" : "Draft"}
+                              </div>
+                              <div className="text-[10px] text-stone-400">
+                                {inv.isFreeDraft ? "Uji Coba 14 Hari — Belum Bayar" : "Penyusunan Klien"}
+                              </div>
                             </div>
                           </div>
                         )}

@@ -7,7 +7,7 @@ import { describe, it, expect, afterAll } from "vitest";
 import { pool, prisma } from "@/lib/prisma";
 import { clientPhotoFlags } from "@/lib/themeEngine";
 import { compileBuilderMaster, readBuilderBlueprint } from "@/lib/themeBuilder/compile";
-import { builderMediaSlots, builderSlotReuse } from "@/lib/themeBuilder/mediaSlots";
+import { builderDetectedMediaSlots, builderMediaSlots, builderSlotReuse } from "@/lib/themeBuilder/mediaSlots";
 import { renderBuilderPreview } from "@/lib/themeBuilder/server";
 import { defaultBuilderSpec, parseBuilderSpec, type BuilderOrnament, type BuilderSpec, type FreeSection } from "@/lib/themeBuilder/spec";
 
@@ -158,6 +158,23 @@ describe("slot foto klien tema builder", () => {
     const reuse = builderSlotReuse(s);
     expect(reuse.find((r) => r.slot === "LANDING_COVER")?.places).toContain("Ilustrasi di Kisah (2×)");
   });
+
+  it("disabledMediaSlots mengunci slot pilihan admin agar tersembunyi di Studio dan ditolak jika tidak sah", () => {
+    const parsed = parseBuilderSpec({
+      ...defaultBuilderSpec(),
+      disabledMediaSlots: ["LANDING_COVER", "GLOBAL_FIXED_BG", "LANDING_COVER"],
+    });
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.spec.disabledMediaSlots).toEqual(["LANDING_COVER", "GLOBAL_FIXED_BG"]);
+    expect(builderDetectedMediaSlots(parsed.spec).LANDING_COVER).toBeDefined();
+    expect(builderMediaSlots(parsed.spec).LANDING_COVER).toBeUndefined();
+    expect(builderMediaSlots(parsed.spec).GLOBAL_FIXED_BG).toBeUndefined();
+    expect(builderMediaSlots(parsed.spec).GROOM_PHOTO).toBeDefined();
+
+    const invalid = parseBuilderSpec({ ...defaultBuilderSpec(), disabledMediaSlots: ["GALLERY"] });
+    expect(invalid.ok).toBe(false);
+  });
 });
 
 describe.skipIf(!IS_TEST_DB)("render pratinjau builder", () => {
@@ -172,6 +189,21 @@ describe.skipIf(!IS_TEST_DB)("render pratinjau builder", () => {
     const sim = await renderBuilderPreview(s, undefined, "sim", { slots: { HOME_PHOTO: SIM_HOME }, gallery: [] });
     expect(sim.html).toContain(`class="lux-orn-photo" src="${SIM_HOME}"`);
     expect(sim.html).toMatch(/lux-orn-art"[^>]*visibility:hidden/);
+    expect(sim.html.match(/\{\{[^}]*\}\}/g) ?? []).toEqual([]);
+  });
+
+  it("slot terkunci (disabledMediaSlots) menolak foto klien namun mempertahankan bawaan tema; mode longText merender nama panjang", async () => {
+    const BG = "/assets/ornaments/background/background-cream.webp";
+    const lockedSpec = spec({
+      defaultMedia: { LANDING_COVER: BG },
+      disabledMediaSlots: ["LANDING_COVER"],
+    });
+    const sim = await renderBuilderPreview(lockedSpec, undefined, "sim", { slots: { LANDING_COVER: SIM_HOME }, gallery: [] }, true);
+    expect(sim.html).not.toContain(SIM_HOME);
+    expect(sim.html).toContain(BG);
+    expect(sim.html).toContain("Muhammad Rizky");
+    expect(sim.html).toContain("Putri Rahmawati");
+    expect(sim.html).toContain("Bapak Dr. H. Hendra Wijaya");
     expect(sim.html.match(/\{\{[^}]*\}\}/g) ?? []).toEqual([]);
   });
 });

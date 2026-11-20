@@ -72,6 +72,7 @@ declare global {
   var masterTemplateCache: BoundedMemoryCache<string> | undefined;
   var publishedHtmlCache: BoundedMemoryCache<PublishedHtmlEntry> | undefined;
   var invitationLookupCache: BoundedMemoryCache<any> | undefined;
+  var customDomainResolutionCache: BoundedMemoryCache<any> | undefined;
   var renderVersionCache: BoundedMemoryCache<number> | undefined;
   var portfolioHtmlCache: BoundedMemoryCache<string> | undefined;
   var portfolioListCache: BoundedMemoryCache<any[]> | undefined;
@@ -90,6 +91,9 @@ export const publishedHtmlCache =
 export const invitationLookupCache =
   global.invitationLookupCache ?? new BoundedMemoryCache<any>(1000, 60_000); // 60 detik TTL untuk resolusi slug/subdomain/visit
 
+export const customDomainResolutionCache =
+  global.customDomainResolutionCache ?? new BoundedMemoryCache<any>(2000, 60_000); // 60 detik TTL untuk resolusi custom domain di proxy
+
 export const renderVersionCache =
   global.renderVersionCache ?? new BoundedMemoryCache<number>(1000, 10_000); // 10 detik TTL untuk versi render DB
 
@@ -106,6 +110,7 @@ if (process.env.NODE_ENV !== "production") {
   global.masterTemplateCache = masterTemplateCache;
   global.publishedHtmlCache = publishedHtmlCache;
   global.invitationLookupCache = invitationLookupCache;
+  global.customDomainResolutionCache = customDomainResolutionCache;
   global.renderVersionCache = renderVersionCache;
   global.portfolioHtmlCache = portfolioHtmlCache;
   global.portfolioListCache = portfolioListCache;
@@ -129,6 +134,7 @@ export function invalidateInvitationLookup(
   if (invitationId) {
     invitationLookupCache.delete(`visit-inv:${invitationId}`);
   }
+  customDomainResolutionCache.clear();
 }
 
 /**

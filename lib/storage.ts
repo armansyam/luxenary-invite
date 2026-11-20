@@ -270,6 +270,51 @@ export async function deleteFile(publicUrl: string | null): Promise<boolean> {
 }
 
 /**
+ * Daftar nama dasar berkas gambar yang sudah tersimpan di bawah `invitations/<id>/` (baik di lokal maupun R2/S3).
+ * Dipakai untuk menegakkan batas kuota foto draf gratis secara akurat di semua mode penyimpanan.
+ */
+export async function listInvitationImageBases(invitationId: string): Promise<string[]> {
+  if (!isSafePathSegment(invitationId)) return [];
+  const imageExtRe = /\.(webp|jpe?g|png|heic)$/i;
+  const bases = new Set<string>();
+
+  if (STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3") {
+    const bucketName = process.env.S3_BUCKET_NAME;
+    if (s3Client && bucketName) {
+      let continuationToken: string | undefined;
+      const prefix = `invitations/${invitationId}/`;
+      do {
+        const page = await s3Client.send(
+          new ListObjectsV2Command({
+            Bucket: bucketName,
+            Prefix: prefix,
+            ContinuationToken: continuationToken,
+          }),
+        );
+        for (const obj of page.Contents ?? []) {
+          if (!obj.Key) continue;
+          const fileName = path.basename(obj.Key);
+          if (imageExtRe.test(fileName)) {
+            bases.add(path.parse(fileName).name);
+          }
+        }
+        continuationToken = page.IsTruncated ? page.NextContinuationToken : undefined;
+      } while (continuationToken);
+    }
+    return Array.from(bases);
+  }
+
+  const uploadsDir = path.join(process.cwd(), "public", "uploads", "invitations", invitationId);
+  const files = await fs.promises.readdir(uploadsDir).catch(() => [] as string[]);
+  for (const f of files) {
+    if (imageExtRe.test(f)) {
+      bases.add(path.parse(f).name);
+    }
+  }
+  return Array.from(bases);
+}
+
+/**
  * Hapus semua objek bucket media di bawah `invitations/<id>/` (media, QRIS, logo vendor, musik unggahan). Dipakai saat
  * undangan dihapus: menghapus per URL dari tabel media saja meninggalkan unggahan yang URL-nya ada di featureSettings.
  * Mengembalikan jumlah objek yang dihapus; 0 bila penyimpanan bukan R2/S3.

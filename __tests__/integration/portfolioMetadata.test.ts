@@ -68,6 +68,8 @@ describe.skipIf(!IS_TEST_DB)("metadata portofolio", () => {
 
       const metadata = JSON.parse(uploads.get(`assets/${RUN}/metadata.json`)!.toString("utf-8"));
       expect(metadata.category).toBe(theme.category);
+      expect(metadata.eventType).toBe("WEDDING");
+      expect(metadata.themeId).toBe("kalandra");
       expect(["minimalist", "modern", "traditional"]).toContain(metadata.category);
     } finally {
       fs.rmSync(htmlPath, { force: true });

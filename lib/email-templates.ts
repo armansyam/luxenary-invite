@@ -66,11 +66,33 @@ export interface TestSmtpOptions {
   timestamp: string;
 }
 
+export type OtpEmailPurpose =
+  | "CLIENT_REGISTER"
+  | "CLIENT_RESET_PASSWORD"
+  | "PARTNER_ACTIVATE"
+  | "PARTNER_RESET_PASSWORD";
+
 export interface LoginOtpEmailOptions {
   recipientEmail: string;
   code: string;
-  purpose: "CLIENT_LOGIN" | "PARTNER_LOGIN";
+  purpose: OtpEmailPurpose;
   expiresMinutes?: number;
+}
+
+export interface PartnerPayoutEmailOptions {
+  partnerName: string;
+  recipientEmail: string;
+  amount: number;
+  remainingBalance: number;
+  paidAtFormatted: string;
+  bankName?: string | null;
+  accountNumberMasked?: string | null;
+  accountName?: string | null;
+  paymentSource?: string | null;
+  referenceNumber?: string | null;
+  notes?: string | null;
+  hasAttachment: boolean;
+  appUrl?: string;
 }
 
 export interface EmailTemplateMeta {
@@ -651,20 +673,46 @@ export function buildProofUploadedAdminHtml(
 }
 
 /**
- * 6. Kode OTP Masuk Akun (Klien & Mitra)
+ * 6. Kode Verifikasi OTP (Pendaftaran, Aktivasi Mitra, & Reset Kata Sandi)
  */
 export function buildLoginOtpHtml(
   opts: LoginOtpEmailOptions,
   settings?: { platformName?: string },
 ): { subject: string; html: string; text: string } {
   const platformName = settings?.platformName || "LUXVITE";
-  const isPartner = opts.purpose === "PARTNER_LOGIN";
-  const portalLabel = isPartner ? "Portal Mitra & Affiliate" : "Dasbor Undangan";
   const expiresMinutes = opts.expiresMinutes ?? 10;
   const safeCode = escapeHtml(opts.code);
 
-  const subject = `[${platformName}] Kode Verifikasi Masuk: ${opts.code}`;
-  const text = `Kode verifikasi masuk ${portalLabel} ${platformName}: ${opts.code}. Berlaku ${expiresMinutes} menit. Jangan bagikan kode ini kepada siapa pun.`;
+  const copyByPurpose: Record<OtpEmailPurpose, { portalLabel: string; heading: string; subjectLabel: string; intro: string }> = {
+    CLIENT_REGISTER: {
+      portalLabel: "Dasbor Undangan",
+      heading: "Verifikasi Pendaftaran Akun",
+      subjectLabel: "Kode Verifikasi Pendaftaran",
+      intro: "Gunakan kode OTP 6 digit di bawah ini untuk menyelesaikan pendaftaran akun",
+    },
+    CLIENT_RESET_PASSWORD: {
+      portalLabel: "Dasbor Undangan",
+      heading: "Reset Kata Sandi",
+      subjectLabel: "Kode Reset Kata Sandi",
+      intro: "Gunakan kode OTP 6 digit di bawah ini untuk mengatur ulang kata sandi akun",
+    },
+    PARTNER_ACTIVATE: {
+      portalLabel: "Portal Mitra & Affiliate",
+      heading: "Aktivasi Akun Mitra",
+      subjectLabel: "Kode Aktivasi Akun Mitra",
+      intro: "Gunakan kode OTP 6 digit di bawah ini untuk mengaktifkan akun mitra dan membuat kata sandi",
+    },
+    PARTNER_RESET_PASSWORD: {
+      portalLabel: "Portal Mitra & Affiliate",
+      heading: "Reset Kata Sandi Mitra",
+      subjectLabel: "Kode Reset Kata Sandi Mitra",
+      intro: "Gunakan kode OTP 6 digit di bawah ini untuk mengatur ulang kata sandi portal mitra",
+    },
+  };
+  const copy = copyByPurpose[opts.purpose] ?? copyByPurpose.CLIENT_REGISTER;
+
+  const subject = `[${platformName}] ${copy.subjectLabel}: ${opts.code}`;
+  const text = `${copy.heading} (${copy.portalLabel}) ${platformName}: ${opts.code}. Berlaku ${expiresMinutes} menit. Jangan bagikan kode ini kepada siapa pun.`;
 
   const html = `<!DOCTYPE html>
 <html lang="id">
@@ -673,14 +721,185 @@ export function buildLoginOtpHtml(
   <div style="max-width:480px;margin:0 auto;background:#ffffff;border:1px solid #e7e5e4;border-radius:20px;padding:32px;">
     <div style="text-align:center;margin-bottom:24px;">
       <div style="font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#92400e;">${escapeHtml(platformName)}</div>
-      <h1 style="font-size:20px;margin:8px 0 4px;color:#1c1917;">Kode Verifikasi Masuk</h1>
-      <p style="font-size:13px;color:#78716c;margin:0;">${escapeHtml(portalLabel)}</p>
+      <h1 style="font-size:20px;margin:8px 0 4px;color:#1c1917;">${escapeHtml(copy.heading)}</h1>
+      <p style="font-size:13px;color:#78716c;margin:0;">${escapeHtml(copy.portalLabel)}</p>
     </div>
-    <p style="font-size:13px;line-height:1.6;color:#44403c;">Gunakan kode OTP 6 digit di bawah ini untuk masuk ke akun <strong>${escapeHtml(opts.recipientEmail)}</strong>:</p>
+    <p style="font-size:13px;line-height:1.6;color:#44403c;">${escapeHtml(copy.intro)} <strong>${escapeHtml(opts.recipientEmail)}</strong>:</p>
     <div style="margin:24px 0;padding:18px;background:#faf8f5;border:1px dashed #d97706;border-radius:14px;text-align:center;">
       <span style="font-family:monospace;font-size:32px;font-weight:800;letter-spacing:8px;color:#1c1917;">${safeCode}</span>
     </div>
     <p style="font-size:12px;color:#78716c;line-height:1.5;margin:0;">Kode ini berlaku selama <strong>${expiresMinutes} menit</strong> dan hanya dapat dipakai satu kali. Bila Anda tidak merasa meminta kode ini, abaikan email ini.</p>
+  </div>
+</body>
+</html>`;
+
+  return { subject, html, text };
+}
+
+function formatPaymentSourceLabel(source?: string | null): string {
+  switch (source) {
+    case "E_WALLET":
+      return "E-Wallet";
+    case "TUNAI":
+      return "Tunai";
+    case "TRANSFER_BANK":
+    default:
+      return "Transfer Bank";
+  }
+}
+
+/**
+ * 7. Bukti Pencairan Komisi Mitra Afiliasi (beserta lampiran bukti transfer)
+ */
+export function buildPartnerPayoutHtml(
+  opts: PartnerPayoutEmailOptions,
+  settings?: {
+    platformName?: string;
+    appUrl?: string;
+  },
+): { subject: string; html: string; text: string } {
+  const platformName = settings?.platformName || "LUXVITE";
+  const baseUrl =
+    opts.appUrl ||
+    settings?.appUrl ||
+    (typeof window !== "undefined"
+      ? window.location.origin
+      : process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL) ||
+    "http://localhost:3000";
+  const partnerUrl = `${baseUrl.replace(/\/+$/, "")}/partner`;
+  const amountFormatted = `Rp ${Math.round(opts.amount || 0).toLocaleString("id-ID")}`;
+  const remainingFormatted = `Rp ${Math.round(opts.remainingBalance || 0).toLocaleString("id-ID")}`;
+  const methodLabel = formatPaymentSourceLabel(opts.paymentSource);
+  const destinationParts = [
+    opts.bankName || null,
+    opts.accountNumberMasked || null,
+    opts.accountName ? `(a.n. ${opts.accountName})` : null,
+  ].filter(Boolean);
+  const destinationText = destinationParts.length > 0 ? destinationParts.join(" ") : "Sesuai rekening terdaftar";
+
+  const subject = `Pencairan Komisi Mitra Berhasil: ${amountFormatted} — ${platformName}`;
+
+  const textLines = [
+    `${platformName} — PENCAIRAN KOMISI MITRA BERHASIL`,
+    "",
+    `Halo ${opts.partnerName},`,
+    `Pencairan saldo komisi afiliasi Anda telah diproses oleh tim ${platformName}.`,
+    "",
+    `Nominal Dicairkan : ${amountFormatted}`,
+    `Sisa Saldo Pending: ${remainingFormatted}`,
+    `Tanggal Pencairan : ${opts.paidAtFormatted}`,
+    `Metode Pembayaran : ${methodLabel}`,
+    `Rekening Tujuan   : ${destinationText}`,
+    ...(opts.referenceNumber ? [`Nomor Referensi   : ${opts.referenceNumber}`] : []),
+    ...(opts.notes ? [`Catatan Admin     : ${opts.notes}`] : []),
+    "",
+    opts.hasAttachment
+      ? "Bukti transfer terlampir pada email ini dan juga dapat diunduh ulang kapan saja melalui Portal Mitra."
+      : "Detail riwayat pencairan dapat dipantau kapan saja melalui Portal Mitra.",
+    `Portal Mitra: ${partnerUrl}`,
+  ];
+  const text = textLines.join("\n");
+
+  const refRow = opts.referenceNumber
+    ? `<tr>
+          <td style="color: #78716C;">Nomor Referensi</td>
+          <td style="font-weight: 700; color: #1C1917; text-align: right; font-family: monospace;">${escapeHtml(opts.referenceNumber)}</td>
+        </tr>`
+    : "";
+
+  const notesRow = opts.notes
+    ? `<tr>
+          <td style="color: #78716C; vertical-align: top;">Catatan Admin</td>
+          <td style="font-weight: 500; color: #44403C; text-align: right;">${escapeHtml(opts.notes)}</td>
+        </tr>`
+    : "";
+
+  const attachmentNotice = opts.hasAttachment
+    ? `<div class="attachment-box">
+        <strong>Bukti transfer terlampir pada email ini.</strong> Anda juga dapat membuka atau mengunduh ulang salinan bukti transfer melalui Portal Mitra setelah login.
+      </div>`
+    : `<div class="attachment-box">
+        Detail pencairan telah tercatat otomatis pada akun mitra Anda. Masuk ke Portal Mitra untuk melihat ringkasan saldo terbaru.
+      </div>`;
+
+  const html = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(subject)}</title>
+  <style>
+    body { margin: 0; padding: 0; background-color: #F7F5F0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #1C1917; -webkit-font-smoothing: antialiased; }
+    .container { max-width: 580px; margin: 0 auto; padding: 36px 16px; }
+    .card { background-color: #FFFFFF; border: 1px solid #EAE4D9; border-radius: 20px; padding: 34px 30px; box-shadow: 0 10px 30px rgba(44, 34, 20, 0.05); }
+    .header { text-align: center; border-bottom: 1px solid #EAE4D9; padding-bottom: 22px; margin-bottom: 24px; }
+    .brand { font-family: 'Cinzel', Georgia, serif; font-size: 16px; font-weight: 800; letter-spacing: 2.5px; text-transform: uppercase; color: #B45309; margin-bottom: 8px; }
+    .title { font-size: 18px; font-weight: 700; color: #1C1917; margin: 0 0 10px 0; letter-spacing: -0.2px; }
+    .badge { display: inline-block; padding: 5px 14px; border-radius: 9999px; font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; background-color: #D1FAE5; color: #065F46; border: 1px solid #A7F3D0; }
+    .amount-box { background-color: #FAF7F0; border: 1px solid #EAE4D9; border-radius: 14px; padding: 20px; text-align: center; margin: 20px 0; }
+    .amount-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #78716C; margin-bottom: 6px; }
+    .amount-value { font-size: 28px; font-weight: 800; color: #047857; font-family: monospace; margin: 0; }
+    .table-box { width: 100%; border-collapse: collapse; background-color: #FAF7F0; border: 1px solid #EAE4D9; border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+    .table-box td { padding: 13px 16px; font-size: 12px; border-bottom: 1px solid #F0ECE4; }
+    .table-box tr:last-child td { border-bottom: none; }
+    .attachment-box { background-color: #ECFDF5; border-left: 4px solid #059669; border-radius: 8px; padding: 14px 16px; margin: 20px 0; font-size: 12px; line-height: 1.6; color: #065F46; }
+    .cta-container { text-align: center; margin: 26px 0 16px 0; }
+    .btn-primary { display: inline-block; background: linear-gradient(135deg, #C9A227 0%, #A88218 100%); color: #FFFFFF !important; text-decoration: none; padding: 13px 28px; border-radius: 12px; font-weight: 700; font-size: 13px; letter-spacing: 0.3px; }
+    .footer { text-align: center; font-size: 11px; color: #8C827A; line-height: 1.6; border-top: 1px solid #EAE4D9; padding-top: 18px; margin-top: 22px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <div class="brand">${escapeHtml(platformName)}</div>
+        <h1 class="title">PENCAIRAN KOMISI MITRA</h1>
+        <span class="badge">DANA DICAIRKAN</span>
+      </div>
+
+      <p style="font-size: 13px; line-height: 1.6; color: #44403C; margin: 0 0 16px 0;">
+        Halo <strong>${escapeHtml(opts.partnerName)}</strong>,<br>
+        Pencairan komisi program kemitraan Anda telah berhasil diproses dan ditransfer. Berikut rincian transaksi Anda:
+      </p>
+
+      <div class="amount-box">
+        <div class="amount-label">Nominal Dicairkan</div>
+        <p class="amount-value">${amountFormatted}</p>
+      </div>
+
+      <table class="table-box">
+        <tr>
+          <td style="color: #78716C;">Tanggal Pencairan</td>
+          <td style="font-weight: 700; color: #1C1917; text-align: right;">${escapeHtml(opts.paidAtFormatted)}</td>
+        </tr>
+        <tr>
+          <td style="color: #78716C;">Metode Pembayaran</td>
+          <td style="font-weight: 700; color: #1C1917; text-align: right;">${escapeHtml(methodLabel)}</td>
+        </tr>
+        <tr>
+          <td style="color: #78716C;">Rekening Tujuan</td>
+          <td style="font-weight: 700; color: #1C1917; text-align: right;">${escapeHtml(destinationText)}</td>
+        </tr>
+        ${refRow}
+        <tr>
+          <td style="color: #78716C;">Sisa Saldo Pending</td>
+          <td style="font-weight: 700; color: #B45309; text-align: right; font-family: monospace;">${remainingFormatted}</td>
+        </tr>
+        ${notesRow}
+      </table>
+
+      ${attachmentNotice}
+
+      <div class="cta-container">
+        <a href="${escapeHtml(partnerUrl)}" class="btn-primary" target="_blank">
+          Buka Portal Mitra &rarr;
+        </a>
+      </div>
+
+      <div class="footer">
+        <p style="margin: 0;">Email ini dikirim otomatis oleh sistem <strong>${escapeHtml(platformName)}</strong> sebagai bukti pencairan komisi mitra afiliasi.</p>
+      </div>
+    </div>
   </div>
 </body>
 </html>`;
@@ -953,16 +1172,16 @@ export const EMAIL_TEMPLATE_CATALOG: EmailTemplateMeta[] = [
   },
   {
     key: "CLIENT_LOGIN_OTP",
-    name: "Kode Verifikasi OTP Masuk Akun",
+    name: "Kode Verifikasi OTP (Daftar & Reset Sandi)",
     category: "SISTEM",
     badgeText: "Autentikasi",
-    description: "Kode OTP 6 digit untuk masuk akun klien atau portal mitra tanpa password.",
-    triggerEvent: "Pengguna meminta kode OTP pada halaman login",
+    description: "Kode OTP 6 digit untuk verifikasi pendaftaran akun klien, aktivasi akun mitra, atau reset kata sandi.",
+    triggerEvent: "Pengguna mendaftar akun, mengaktifkan akun mitra, atau meminta reset kata sandi",
     recipientTarget: "Klien / Mitra Affiliate",
     samplePayload: {
       recipientEmail: "pengguna@example.com",
       code: "482910",
-      purpose: "CLIENT_LOGIN",
+      purpose: "CLIENT_REGISTER",
       expiresMinutes: 10,
     },
     render: (overrides = {}, settings = {}) =>
@@ -970,8 +1189,50 @@ export const EMAIL_TEMPLATE_CATALOG: EmailTemplateMeta[] = [
         {
           recipientEmail: "pengguna@example.com",
           code: "482910",
-          purpose: "CLIENT_LOGIN",
+          purpose: "CLIENT_REGISTER",
           expiresMinutes: 10,
+          ...overrides,
+        },
+        settings,
+      ),
+  },
+  {
+    key: "PARTNER_PAYOUT_RECEIPT",
+    name: "Notifikasi Pencairan Komisi Mitra & Bukti Transfer",
+    category: "TRANSAKSI",
+    badgeText: "Dana Dicairkan",
+    description: "Dikirim otomatis ke email mitra afiliasi saat admin menyelesaikan pencairan komisi, melampirkan bukti transfer yang diunggah admin.",
+    triggerEvent: "Admin menekan Konfirmasi Pencairan Komisi pada tab Pemasaran & Afiliasi",
+    recipientTarget: "Mitra Afiliasi (Email Terdaftar)",
+    samplePayload: {
+      partnerName: "WO Berkah Abadi",
+      recipientEmail: "mitra@woberkah.id",
+      amount: 350000,
+      remainingBalance: 0,
+      paidAtFormatted: "20 November 2026 pukul 09.15 WIB",
+      bankName: "BCA",
+      accountNumberMasked: "******7890",
+      accountName: "Berkah Abadi Event",
+      paymentSource: "TRANSFER_BANK",
+      referenceNumber: "TRF-20261120-001",
+      notes: "Pencairan komisi periode November 2026",
+      hasAttachment: true,
+    },
+    render: (overrides = {}, settings = {}) =>
+      buildPartnerPayoutHtml(
+        {
+          partnerName: "WO Berkah Abadi",
+          recipientEmail: "mitra@woberkah.id",
+          amount: 350000,
+          remainingBalance: 0,
+          paidAtFormatted: "20 November 2026 pukul 09.15 WIB",
+          bankName: "BCA",
+          accountNumberMasked: "******7890",
+          accountName: "Berkah Abadi Event",
+          paymentSource: "TRANSFER_BANK",
+          referenceNumber: "TRF-20261120-001",
+          notes: "Pencairan komisi periode November 2026",
+          hasAttachment: true,
           ...overrides,
         },
         settings,

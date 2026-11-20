@@ -4,6 +4,8 @@ import { listPortfolioSlugs, STORAGE_PROVIDER, getPortfolioMetadata, storagePubl
 import { portfolioListCache } from "@/lib/cache";
 import { BrandLogo } from "@/components/BrandLogo";
 import { getPublicPlatformSettings } from "@/lib/settings";
+import { prisma } from "@/lib/prisma";
+import { isThemeCompatible } from "@/lib/invitationUtils";
 import { PortfolioGallery, PortfolioGalleryItem } from "./PortfolioGallery";
 
 export const dynamic = "force-dynamic";
@@ -15,14 +17,32 @@ export const metadata: Metadata = {
 };
 
 export default async function PortfolioPage() {
-  const { platformName } = await getPublicPlatformSettings();
+  type ThemeLookupRow = { id: string; name: string; isActive: boolean; eventType: string };
+  const cachedThemes = portfolioListCache.get("themes_lookup") as ThemeLookupRow[] | null;
+
+  const [{ platformName, enabledEventTypes, serviceStatus }, dbThemes] = await Promise.all([
+    getPublicPlatformSettings(),
+    cachedThemes
+      ? Promise.resolve(cachedThemes)
+      : prisma.theme
+          .findMany({
+            select: { id: true, name: true, isActive: true, eventType: true },
+          })
+          .then((rows) => {
+            portfolioListCache.set("themes_lookup", rows, 60_000);
+            return rows;
+          })
+          .catch(() => [] as ThemeLookupRow[]),
+  ]);
+  const themeMap = new Map(dbThemes.map((t) => [t.id.toLowerCase(), t]));
+  const isServiceOpen = !serviceStatus || serviceStatus.isOpen !== false;
   const isRemoteStorage = STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3";
 
-  let portfolioItems: PortfolioGalleryItem[] | null = isRemoteStorage
+  let rawPortfolioItems: PortfolioGalleryItem[] | null = isRemoteStorage
     ? (portfolioListCache.get("all") as PortfolioGalleryItem[] | null)
     : null;
 
-  if (!portfolioItems) {
+  if (!rawPortfolioItems) {
     // Fetch daftar portfolio slug (bisa dari R2 atau Lokal). Galat sudah dicatat di listPortfolioSlugs; halaman publik
     // menampilkan keadaan kosong alih-alih halaman galat selama storage tidak terjangkau.
     const fetchedSlugs = await listPortfolioSlugs().catch(() => null);
@@ -48,6 +68,7 @@ export default async function PortfolioPage() {
           id: slug,
           coupleName: metadata.coupleName,
           themeId: metadata.themeId,
+          eventType: typeof metadata.eventType === "string" ? metadata.eventType : undefined,
           category: metadata.category,
           coverImage,
           publicUrl: `/portfolio/${slug}`,
@@ -55,12 +76,30 @@ export default async function PortfolioPage() {
       }
     }
 
-    portfolioItems = built;
+    rawPortfolioItems = built;
     // Hanya cache hasil yang sukses dibaca agar kegagalan sementara R2 tidak membekukan halaman kosong 5 menit.
     if (isRemoteStorage && !readFailed) {
-      portfolioListCache.set("all", portfolioItems);
+      portfolioListCache.set("all", rawPortfolioItems);
     }
   }
+
+  // Perkaya metadata dengan status tema terkini di DB (apakah tema masih aktif & kompatibel dengan jenis acara yang dibuka)
+  const portfolioItems: PortfolioGalleryItem[] = rawPortfolioItems.map((item) => {
+    const themeKey = (item.themeId || "").toLowerCase();
+    const themeObj = themeMap.get(themeKey);
+    const resolvedEventType = (item.eventType || themeObj?.eventType || "WEDDING").toUpperCase();
+    const canUseTheme = Boolean(
+      isServiceOpen &&
+        themeObj?.isActive &&
+        enabledEventTypes.some((ev) => isThemeCompatible(themeObj.eventType, ev)),
+    );
+    return {
+      ...item,
+      themeName: themeObj?.name || item.themeId || "",
+      eventType: resolvedEventType,
+      canUseTheme,
+    };
+  });
 
   if (portfolioItems.length === 0) {
     return (

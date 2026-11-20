@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
+import { checkSlots as inspectPreviewSlots, type SlotCheck } from "@/components/admin/slotVisibility";
 import {
   BLOCK_COLOR_TOKENS,
-  BLOCK_LIMITS,
+  BLOCK_PX_LIMITS,
   BUILDER_BLOCKS,
+  COVER_BLOCK_IDS,
   DEFAULT_BLOCK_PROPS,
   FRAMED_PHOTOS,
   OPTIONAL_BLOCKS,
@@ -27,14 +29,43 @@ import {
   type OrnamentSection,
 } from "@/lib/themeBuilder/spec";
 
-export type PreviewDevice = "mobile" | "small" | "desktop";
+export type PreviewDevice = "mobile" | "desktop";
 export type OrnamentAlign = "left" | "center-x" | "right" | "top" | "center-y" | "bottom" | "full-width";
 
 export const DEVICE_SIZES: Record<PreviewDevice, { width: number; height: number; label: string }> = {
-  mobile: { width: 375, height: 760, label: "HP 375" },
-  small: { width: 320, height: 640, label: "HP kecil 320" },
+  mobile: { width: 375, height: 760, label: "Mobile" },
   desktop: { width: 1440, height: 900, label: "Desktop" },
 };
+
+const FRAME_BOUNDS: Record<PreviewDevice, { minW: number; maxW: number; minH: number; maxH: number }> = {
+  mobile: { minW: 320, maxW: 480, minH: 568, maxH: 932 },
+  desktop: { minW: 900, maxW: 1920, minH: 640, maxH: 1080 },
+};
+
+const FRAME_PRESETS: Record<PreviewDevice, Array<{ label: string; width: number; height: number }>> = {
+  mobile: [
+    { label: "320", width: 320, height: 640 },
+    { label: "375", width: 375, height: 760 },
+    { label: "390", width: 390, height: 844 },
+    { label: "430", width: 430, height: 932 },
+  ],
+  desktop: [
+    { label: "1024", width: 1024, height: 768 },
+    { label: "1280", width: 1280, height: 800 },
+    { label: "1440", width: 1440, height: 900 },
+  ],
+};
+
+/** Skala piksel efektif (--lux-ux, --lux-uy) yang berlaku pada elemen blok di pratinjau. */
+function measureBlockUnitScale(doc: Document, blockEl: HTMLElement, device: PreviewDevice): { ux: number; uy: number } {
+  if (device === "desktop") return { ux: 1, uy: 1 };
+  const vw = doc.defaultView?.innerWidth || doc.documentElement.clientWidth || 375;
+  const vh = doc.defaultView?.innerHeight || doc.documentElement.clientHeight || 760;
+  const isCover = Boolean(blockEl.closest("#coverScreen"));
+  const ux = Math.min(1, vw / 375);
+  const uy = isCover ? Math.min(1, vw / 375, vh / 760) : ux;
+  return { ux: ux || 1, uy: uy || 1 };
+}
 
 /** Titik di layar admin dipetakan ke seksi pratinjau; dipakai saat ornamen diseret dari pustaka. */
 export interface PreviewDropTarget {
@@ -44,10 +75,12 @@ export interface PreviewDropTarget {
 
 /** Pengukuran di dalam iframe yang dibutuhkan inspektor; hanya bisa dihitung dari tata letak yang sedang tampil. */
 export interface PreviewActions {
-  /** Nilai geser mendatar (persen lebar blok) yang menaruh tengah blok tepat di tengah seksinya. */
-  centerBlockX: (id: BuilderBlockId) => number | null;
+  /** Patch posisi (`x`, `unit: "px"`) yang menaruh tengah blok tepat di tengah seksinya. */
+  centerBlockX: (id: BuilderBlockId) => Partial<BlockProps> | null;
   /** Menjajarkan ornamen rapat ke tepi kiri/kanan/atas/bawah atau tengah seksinya berdasarkan ukuran nyata di layar. */
   alignOrnament: (id: string, align: OrnamentAlign) => Partial<BuilderOrnament> | null;
+  /** Memeriksa keterlihatan foto uji per slot di dokumen pratinjau aktif. */
+  checkSlots: (slots: Record<string, string>) => SlotCheck[] | null;
 }
 
 interface Props {
@@ -63,6 +96,7 @@ interface Props {
   html: string | null;
   loading: boolean;
   device: PreviewDevice;
+  longText?: boolean;
   editOrnaments: boolean;
   playAnimations: boolean;
   replayNonce: number;
@@ -89,6 +123,7 @@ const BUILDER_CHROME_CSS = `
   html { scroll-behavior: auto !important; }
   html.lux-b-edit, html.lux-b-edit * { user-select: none !important; -webkit-user-select: none !important; }
   html.lux-b-edit .lux-orn { pointer-events: auto !important; cursor: grab; }
+  html.lux-b-edit .lux-orn.lux-b-locked, html.lux-b-edit .lux-flow.lux-b-locked { pointer-events: none !important; cursor: default !important; }
   html.lux-b-edit .lux-orn:hover { outline: 1px dashed #d97706; outline-offset: 2px; }
   html.lux-b-edit .lux-orn.lux-b-sel { outline: 2px solid #d97706; outline-offset: 2px; }
   html.lux-b-edit .lux-flow { cursor: pointer; outline: 1px dashed #d97706; outline-offset: 2px; }
@@ -108,7 +143,7 @@ const BUILDER_CHROME_CSS = `
 const SNAP_THRESHOLD = 1.4;
 
 type DragState =
-  | { kind: "block"; id: BuilderBlockId; startX: number; startY: number; baseX: number; baseY: number; w: number; h: number; section: HTMLElement | null; naturalCenter: number; naturalCenterY: number; rw: number; rh: number }
+  | { kind: "block"; id: BuilderBlockId; startX: number; startY: number; baseX: number; baseY: number; ux: number; uy: number; section: HTMLElement | null; naturalCenter: number; naturalCenterY: number; rw: number; rh: number; moved: boolean }
   | { kind: "move"; id: string; section: HTMLElement; frame: BlockFrame | null; el: HTMLElement; offsetX: number; offsetY: number; moved: boolean }
   | { kind: "resize"; id: string; section: HTMLElement; frame: BlockFrame | null; el: HTMLElement }
   | { kind: "rotate"; id: string; el: HTMLElement; startAngle: number; startRotate: number };
@@ -183,12 +218,18 @@ type ContextTarget =
   | { kind: "block"; id: BuilderBlockId; x: number; y: number };
 
 export default function BuilderPreview(props: Props) {
-  const { html, loading, device, editOrnaments, playAnimations, replayNonce, jump, ornaments, selectedId, blocks, selectedBlock, desktopCoverFull = false } = props;
+  const { html, loading, device, longText = false, editOrnaments, playAnimations, replayNonce, jump, ornaments, selectedId, blocks, selectedBlock, desktopCoverFull = false } = props;
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [docVersion, setDocVersion] = useState(0);
   const [menu, setMenu] = useState<ContextTarget | null>(null);
+  const [showTips, setShowTips] = useState(false);
+  const [framesByDevice, setFramesByDevice] = useState<Record<PreviewDevice, { width: number; height: number }>>({
+    mobile: { width: DEVICE_SIZES.mobile.width, height: DEVICE_SIZES.mobile.height },
+    desktop: { width: DEVICE_SIZES.desktop.width, height: DEVICE_SIZES.desktop.height },
+  });
+  const [resizing, setResizing] = useState<"w" | "h" | "wh" | null>(null);
 
   // Nilai terbaru untuk pendengar di dalam iframe yang dipasang sekali per muat.
   const latest = useRef({ props, ornaments });
@@ -198,14 +239,53 @@ export default function BuilderPreview(props: Props) {
   const restore = useRef<{ scrollY: number; coverOpen: boolean }>({ scrollY: 0, coverOpen: false });
   const drag = useRef<DragState | null>(null);
 
-  const size = DEVICE_SIZES[device];
+  const baseSize = DEVICE_SIZES[device];
+  const size = framesByDevice[device];
+  const isCustomSize = size.width !== baseSize.width || size.height !== baseSize.height;
+
+  const startResize = useCallback((axis: "w" | "h" | "wh", e: ReactPointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const target = e.currentTarget;
+    target.setPointerCapture(e.pointerId);
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startW = size.width;
+    const startH = size.height;
+    const startScale = scale || 1;
+    const bounds = FRAME_BOUNDS[device];
+    setResizing(axis);
+
+    const onMove = (ev: PointerEvent) => {
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+      // Jendela berada di tengah stage, sehingga menyeret tepi kanan/bawah sebesar d mengubah ukuran sebesar 2*d / scale.
+      const nextW = axis === "h" ? startW : Math.round(Math.min(bounds.maxW, Math.max(bounds.minW, startW + (dx * 2) / startScale)));
+      const nextH = axis === "w" ? startH : Math.round(Math.min(bounds.maxH, Math.max(bounds.minH, startH + (dy * 2) / startScale)));
+      setFramesByDevice((prev) => (
+        prev[device].width === nextW && prev[device].height === nextH
+          ? prev
+          : { ...prev, [device]: { width: nextW, height: nextH } }
+      ));
+    };
+    const onUp = () => {
+      setResizing(null);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+  }, [device, scale, size.height, size.width]);
 
   useLayoutEffect(() => {
     const stage = stageRef.current;
     if (!stage) return;
     const fit = () => {
-      const pad = 48;
-      const s = Math.min(1, (stage.clientWidth - pad) / size.width, (stage.clientHeight - pad) / size.height);
+      const padX = 72;
+      const padY = 120;
+      const s = Math.min(1, (stage.clientWidth - padX) / size.width, (stage.clientHeight - padY) / size.height);
       setScale(Math.max(0.2, Math.round(s * 1000) / 1000));
     };
     fit();
@@ -251,8 +331,9 @@ export default function BuilderPreview(props: Props) {
     const el = doc.querySelector(`[data-orn-id="${sel}"]`);
     if (!el) return;
     el.classList.add("lux-b-sel");
-    // Ornamen sebaris berada di alur: hanya disorot, tanpa pegangan ukuran dan putar.
-    if (el.classList.contains("lux-flow")) return;
+    // Ornamen sebaris atau terkunci hanya disorot tanpa pegangan ukuran dan putar.
+    const ornItem = latest.current.ornaments.find((item) => item.id === sel);
+    if (el.classList.contains("lux-flow") || ornItem?.locked) return;
     const handle = doc.createElement("div");
     handle.className = "lux-b-handle";
     handle.title = "Seret untuk mengubah ukuran";
@@ -289,10 +370,10 @@ export default function BuilderPreview(props: Props) {
       return { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
     };
 
-    // Tengah tampilan blok tanpa pergeseran miliknya sendiri: rect sekarang dikurangi translate yang sedang berlaku.
-    const naturalCenterOf = (blockEl: HTMLElement, x: number) => {
+    // Tengah tampilan blok tanpa pergeseran miliknya sendiri: rect sekarang dikurangi translate piksel yang berlaku.
+    const naturalCenterOf = (blockEl: HTMLElement, curPxX: number) => {
       const r = blockEl.getBoundingClientRect();
-      return r.left + r.width / 2 - (x / 100) * (blockEl.offsetWidth || 1);
+      return r.left + r.width / 2 - curPxX;
     };
     const sectionCenter = (section: HTMLElement) => {
       const r = section.getBoundingClientRect();
@@ -310,6 +391,10 @@ export default function BuilderPreview(props: Props) {
       for (const el of doc.elementsFromPoint(clientX, clientY) as HTMLElement[]) {
         if (coverShown && !cover!.contains(el)) continue;
         const hit = (el.closest(".lux-orn, .lux-flow") ?? el.closest("[data-lux-block]")) as HTMLElement | null;
+        if (hit && (hit.classList.contains("lux-orn") || hit.classList.contains("lux-flow"))) {
+          const ornId = hit.dataset.ornId;
+          if (ornId && latest.current.ornaments.some((item) => item.id === ornId && item.locked)) continue;
+        }
         if (hit && !found.includes(hit)) found.push(hit);
       }
       return found;
@@ -333,18 +418,24 @@ export default function BuilderPreview(props: Props) {
       if (!orn) {
         const blockEl = picked;
         if (blockEl) {
-          // Klik pada blok memilihnya; seret menggeser dalam persen ukuran blok itu sendiri.
+          // Klik pada blok memilihnya; seret menggeser dalam satuan px proporsional kanvas (bebas wrap baris teks).
           e.preventDefault();
           const id = blockEl.dataset.luxBlock as BuilderBlockId;
           const current = latest.current.props.blocks[id] ?? DEFAULT_BLOCK_PROPS;
           latest.current.props.onSelectBlock(id);
           doc.documentElement.classList.add("lux-b-dragging");
           const br = blockEl.getBoundingClientRect();
+          const bw = blockEl.offsetWidth || 1;
           const bh = blockEl.offsetHeight || 1;
+          const { ux, uy } = measureBlockUnitScale(doc, blockEl, latest.current.props.device);
+          const curPxX = current.unit === "px" ? current.x * ux : (current.x / 100) * bw;
+          const curPxY = current.unit === "px" ? current.y * uy : (current.y / 100) * bh;
+          const baseX = current.unit === "px" ? current.x : Math.round((curPxX / ux) * 10) / 10;
+          const baseY = current.unit === "px" ? current.y : Math.round((curPxY / uy) * 10) / 10;
           drag.current = {
-            kind: "block", id, startX: e.clientX, startY: e.clientY, baseX: current.x, baseY: current.y,
-            w: blockEl.offsetWidth || 1, h: bh, section: sectionOf(blockEl), naturalCenter: naturalCenterOf(blockEl, current.x),
-            naturalCenterY: br.top + br.height / 2 - (current.y / 100) * bh, rw: br.width, rh: br.height,
+            kind: "block", id, startX: e.clientX, startY: e.clientY, baseX, baseY, ux, uy,
+            section: sectionOf(blockEl), naturalCenter: naturalCenterOf(blockEl, curPxX),
+            naturalCenterY: br.top + br.height / 2 - curPxY, rw: br.width, rh: br.height, moved: false,
           };
           return;
         }
@@ -356,7 +447,7 @@ export default function BuilderPreview(props: Props) {
       const id = orn.dataset.ornId!;
       const o = latest.current.ornaments.find((item) => item.id === id);
       const section = sectionOf(orn);
-      if (!o || !section) return;
+      if (!o || !section || o.locked) return;
       latest.current.props.onSelect(id);
       doc.documentElement.classList.add("lux-b-dragging");
       // Ornamen yang menempel diukur terhadap kotak blok; kerangkanya diukur sekali karena blok tidak berubah saat ornamen diseret.
@@ -407,24 +498,25 @@ export default function BuilderPreview(props: Props) {
       if (d.kind === "block") {
         const clampTo = (v: number, [min, max]: readonly [number, number]) => Math.max(min, Math.min(max, v));
         // Menempel ke posisi bawaan (0) saat dekat, supaya blok mudah dikembalikan ke tengah alurnya.
-        const snap = (v: number) => (Math.abs(v) < 1 ? 0 : v);
-        let x = snap(clampTo(Math.round((d.baseX + ((e.clientX - d.startX) / d.w) * 100) * 10) / 10, BLOCK_LIMITS.x));
-        let y = snap(clampTo(Math.round((d.baseY + ((e.clientY - d.startY) / d.h) * 100) * 10) / 10, BLOCK_LIMITS.y));
+        const snap = (v: number) => (Math.abs(v) < 2 ? 0 : v);
+        let x = snap(clampTo(Math.round((d.baseX + (e.clientX - d.startX) / d.ux) * 10) / 10, BLOCK_PX_LIMITS.x));
+        let y = snap(clampTo(Math.round((d.baseY + (e.clientY - d.startY) / d.uy) * 10) / 10, BLOCK_PX_LIMITS.y));
         // Magnet ke tepi kiri, tengah, dan kanan seksi (serta atas, tengah, bawah) bila jaraknya kurang dari 6 px.
         if (d.section) {
           const s = d.section.getBoundingClientRect();
           const guides: Array<{ axis: GuideAxis; at: number }> = [];
-          const toX = (centerPx: number) => clampTo(Math.round((((centerPx - d.naturalCenter) / d.w) * 100) * 10) / 10, BLOCK_LIMITS.x);
-          const toY = (centerPx: number) => clampTo(Math.round((((centerPx - d.naturalCenterY) / d.h) * 100) * 10) / 10, BLOCK_LIMITS.y);
+          const toX = (centerPx: number) => clampTo(Math.round(((centerPx - d.naturalCenter) / d.ux) * 10) / 10, BLOCK_PX_LIMITS.x);
+          const toY = (centerPx: number) => clampTo(Math.round(((centerPx - d.naturalCenterY) / d.uy) * 10) / 10, BLOCK_PX_LIMITS.y);
           const xTargets: Array<[number, number]> = [[toX(s.left + d.rw / 2), 0], [toX(sectionCenter(d.section)), 50], [toX(s.right - d.rw / 2), 100]];
           const yTargets: Array<[number, number]> = [[toY(s.top + d.rh / 2), 0], [toY(s.top + s.height / 2), 50], [toY(s.bottom - d.rh / 2), 100]];
-          const hitX = xTargets.find(([v]) => (Math.abs(x - v) / 100) * d.w < 6);
+          const hitX = xTargets.find(([v]) => Math.abs(x - v) * d.ux < 6);
           if (hitX) { x = hitX[0]; guides.push({ axis: "x", at: hitX[1] }); }
-          const hitY = yTargets.find(([v]) => (Math.abs(y - v) / 100) * d.h < 6);
+          const hitY = yTargets.find(([v]) => Math.abs(y - v) * d.uy < 6);
           if (hitY) { y = hitY[0]; guides.push({ axis: "y", at: hitY[1] }); }
           setGuides(doc, d.section, guides);
         }
-        latest.current.props.onBlockChange(d.id, { x, y }, false);
+        d.moved = true;
+        latest.current.props.onBlockChange(d.id, { x, y, unit: "px" }, false);
         return;
       }
       const o = latest.current.ornaments.find((item) => item.id === d.id);
@@ -488,7 +580,7 @@ export default function BuilderPreview(props: Props) {
       doc.documentElement.classList.remove("lux-b-dragging");
       if (d.kind === "block") {
         setGuides(doc, null, []);
-        latest.current.props.onBlockChange(d.id, {}, true);
+        if (d.moved) latest.current.props.onBlockChange(d.id, {}, true);
         return;
       }
       setGuides(doc, null, []);
@@ -567,12 +659,18 @@ export default function BuilderPreview(props: Props) {
         const section = el?.closest("[data-lux-section]") as HTMLElement | null;
         if (!el || !section) return null;
         const current = latest.current.props.blocks[id] ?? DEFAULT_BLOCK_PROPS;
+        const { ux, uy } = measureBlockUnitScale(doc!, el, latest.current.props.device);
         const w = el.offsetWidth || 1;
+        const h = el.offsetHeight || 1;
+        const curPxX = current.unit === "px" ? current.x * ux : (current.x / 100) * w;
+        const curPxY = current.unit === "px" ? current.y * uy : (current.y / 100) * h;
         const r = el.getBoundingClientRect();
         const s = section.getBoundingClientRect();
-        const natural = r.left + r.width / 2 - (current.x / 100) * w;
-        const x = ((s.left + s.width / 2 - natural) / w) * 100;
-        return Math.max(BLOCK_LIMITS.x[0], Math.min(BLOCK_LIMITS.x[1], Math.round(x * 10) / 10));
+        const natural = r.left + r.width / 2 - curPxX;
+        const rawX = (s.left + s.width / 2 - natural) / ux;
+        const x = Math.max(BLOCK_PX_LIMITS.x[0], Math.min(BLOCK_PX_LIMITS.x[1], Math.round(rawX * 10) / 10));
+        const y = current.unit === "px" ? current.y : Math.max(BLOCK_PX_LIMITS.y[0], Math.min(BLOCK_PX_LIMITS.y[1], Math.round((curPxY / uy) * 10) / 10));
+        return { x, y, unit: "px" };
       },
       alignOrnament: (id, align) => {
         const doc = getDoc();
@@ -603,6 +701,11 @@ export default function BuilderPreview(props: Props) {
         if (patch.y !== undefined) patch.y = Math.max(limits.y[0], Math.min(limits.y[1], patch.y));
         return patch;
       },
+      checkSlots: (slots) => {
+        const doc = getDoc();
+        if (!doc) return null;
+        return inspectPreviewSlots(doc, slots, latest.current.props.device === "desktop" ? "desktop" : "mobile");
+      },
     };
     return () => {
       actionsRef.current = null;
@@ -616,7 +719,8 @@ export default function BuilderPreview(props: Props) {
     setMenu(null);
   };
   const centerBlock = (id: BuilderBlockId) => {
-    props.onBlockChange(id, { x: actionsRef.current?.centerBlockX(id) ?? 0 }, true);
+    const patch = actionsRef.current?.centerBlockX(id);
+    props.onBlockChange(id, patch ?? { x: 0, unit: "px" }, true);
     setMenu(null);
   };
 
@@ -704,6 +808,7 @@ export default function BuilderPreview(props: Props) {
       if (!el) continue;
       el.setAttribute("style", ornamentStyle(o));
       el.classList.toggle("is-front", o.layer === "front");
+      el.classList.toggle("lux-b-locked", Boolean(o.locked));
       if (o.text) {
         // Hanya simpul teksnya yang diganti: pegangan ukuran dan putar anak elemen yang sama harus tetap ada saat mengetik.
         const first = el.firstChild;
@@ -735,7 +840,17 @@ export default function BuilderPreview(props: Props) {
       const el = doc.querySelector(`[data-lux-block="${id}"]`) as HTMLElement | null;
       if (!el) continue;
       const p = blocks[id] ?? DEFAULT_BLOCK_PROPS;
-      el.style.setProperty("translate", `${p.x}% ${p.y}%`);
+      const isDesktopCover = device === "desktop" && COVER_BLOCK_IDS.includes(id);
+      if (p.unit === "px") {
+        el.style.setProperty(
+          "translate",
+          isDesktopCover
+            ? `${p.x}px ${p.y}px`
+            : `calc(${p.x} * var(--lux-ux, 1px)) calc(${p.y} * var(--lux-uy, 1px))`,
+        );
+      } else {
+        el.style.setProperty("translate", `${p.x}% ${p.y}%`);
+      }
       el.style.setProperty("rotate", `${p.rotate}deg`);
       el.style.setProperty("scale", String(p.scale));
       el.style.display = p.hidden ? "none" : "";
@@ -795,7 +910,7 @@ export default function BuilderPreview(props: Props) {
         el.style.filter = filterCss || "";
       }
     }
-  }, [blocks, docVersion]);
+  }, [blocks, device, docVersion]);
 
   useEffect(() => {
     const doc = getDoc();
@@ -807,7 +922,7 @@ export default function BuilderPreview(props: Props) {
   useEffect(() => {
     getDoc()?.documentElement.classList.toggle("lux-b-edit", editOrnaments);
     syncSelection();
-  }, [editOrnaments, selectedId, docVersion, syncSelection]);
+  }, [editOrnaments, selectedId, ornaments, docVersion, syncSelection]);
 
   useEffect(() => {
     const doc = getDoc();
@@ -841,7 +956,7 @@ export default function BuilderPreview(props: Props) {
       onPointerDown={() => setMenu(null)}
       className="relative flex-1 min-w-0 overflow-hidden bg-[radial-gradient(circle_at_1px_1px,#d6d3d1_1px,transparent_0)] [background-size:18px_18px] bg-stone-100"
     >
-      <div className="absolute inset-0 flex items-center justify-center">
+      <div className="absolute inset-0 flex items-center justify-center pb-14 pt-3">
         <div
           className="relative shrink-0 origin-center"
           style={{ width: size.width, height: size.height, transform: `scale(${scale})` }}
@@ -853,12 +968,49 @@ export default function BuilderPreview(props: Props) {
                 title="Pratinjau tema"
                 srcDoc={html}
                 onLoad={handleLoad}
-                className="h-full w-full border-0 bg-white"
+                className={`h-full w-full border-0 bg-white ${resizing ? "pointer-events-none" : ""}`}
               />
             ) : (
               <div className="flex h-full items-center justify-center text-sm text-stone-400">Menyiapkan pratinjau…</div>
             )}
           </div>
+          <div
+            data-resize-handle="w"
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Ubah lebar jendela pratinjau"
+            title="Seret untuk mengubah lebar layar pratinjau"
+            onPointerDown={(e) => startResize("w", e)}
+            className="group absolute -right-7 top-1/2 flex h-28 w-6 -translate-y-1/2 cursor-ew-resize items-center justify-center select-none touch-none"
+          >
+            <span className={`h-16 w-1.5 rounded-full transition ${resizing === "w" ? "bg-amber-500 scale-y-110" : "bg-stone-400/80 group-hover:bg-amber-500"}`} />
+          </div>
+          <div
+            data-resize-handle="h"
+            role="separator"
+            aria-orientation="horizontal"
+            aria-label="Ubah tinggi jendela pratinjau"
+            title="Seret untuk mengubah tinggi layar pratinjau"
+            onPointerDown={(e) => startResize("h", e)}
+            className="group absolute -bottom-7 left-1/2 flex h-6 w-28 -translate-x-1/2 cursor-ns-resize items-center justify-center select-none touch-none"
+          >
+            <span className={`h-1.5 w-16 rounded-full transition ${resizing === "h" ? "bg-amber-500 scale-x-110" : "bg-stone-400/80 group-hover:bg-amber-500"}`} />
+          </div>
+          <div
+            data-resize-handle="wh"
+            role="separator"
+            aria-label="Ubah lebar dan tinggi jendela pratinjau"
+            title="Seret sudut untuk mengubah lebar dan tinggi layar pratinjau"
+            onPointerDown={(e) => startResize("wh", e)}
+            className="group absolute -bottom-7 -right-7 flex h-7 w-7 cursor-nwse-resize items-center justify-center select-none touch-none"
+          >
+            <span className={`h-3.5 w-3.5 rounded-br-md border-b-2 border-r-2 transition ${resizing === "wh" ? "border-amber-500 scale-110" : "border-stone-400 group-hover:border-amber-500"}`} />
+          </div>
+          {resizing && (
+            <div className="pointer-events-none absolute -bottom-11 right-0 whitespace-nowrap rounded-md bg-amber-500 px-2 py-0.5 font-mono text-[11px] font-bold text-stone-950 shadow">
+              {size.width} × {size.height}px
+            </div>
+          )}
         </div>
       </div>
       {menu && (
@@ -1135,22 +1287,88 @@ export default function BuilderPreview(props: Props) {
           })()}
         </div>
       )}
+      {longText && (
+        <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50/95 px-2.5 py-1 text-[10.5px] font-semibold text-amber-900 shadow-sm">
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+          Uji teks panjang aktif
+        </div>
+      )}
       {loading && (
-        <div className="pointer-events-none absolute right-4 top-4 flex items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-semibold text-stone-600 shadow-sm ring-1 ring-stone-200">
+        <div className="pointer-events-none absolute right-3 top-3 flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold text-stone-600 shadow-sm ring-1 ring-stone-200">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" />
           Memperbarui pratinjau
         </div>
       )}
-      <div className="pointer-events-none absolute bottom-3 left-1/2 flex -translate-x-1/2 flex-col items-center gap-1 whitespace-nowrap">
-        {editOrnaments && (
-          <span className="rounded-full bg-white/90 px-3 py-1 text-[10px] font-medium text-stone-700 shadow-sm ring-1 ring-stone-200">
-            Seret elemen bertepi putus-putus · Klik kanan: menu cepat · Alt+klik: lapis bawah
+      <div className="pointer-events-none absolute bottom-2.5 left-1/2 flex -translate-x-1/2 items-center whitespace-nowrap">
+        <div
+          className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-stone-900/90 px-2.5 py-1 text-[10px] font-medium text-white shadow-md backdrop-blur-sm"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <span className="font-mono text-stone-200" data-preview-dimensions={`${size.width}x${size.height}`}>
+            {baseSize.label} · {size.width}×{size.height} · {Math.round(scale * 100)}%
           </span>
-        )}
-        <span className="rounded-full bg-stone-900/80 px-3 py-1 text-[10px] font-medium text-white">
-          {size.label} · {Math.round(scale * 100)}%
-        </span>
+          <span className="h-3 w-px bg-stone-700" aria-hidden="true" />
+          <div className="flex items-center gap-0.5">
+            {FRAME_PRESETS[device].map((p) => {
+              const active = size.width === p.width && size.height === p.height;
+              return (
+                <button
+                  key={p.label}
+                  type="button"
+                  aria-pressed={active}
+                  title={`Uji layar ${p.width}×${p.height}px`}
+                  onClick={() => setFramesByDevice((prev) => ({ ...prev, [device]: { width: p.width, height: p.height } }))}
+                  className={`rounded-full px-2 py-0.5 font-mono text-[10px] transition cursor-pointer ${
+                    active ? "bg-amber-500 text-stone-950 font-semibold" : "text-stone-300 hover:bg-stone-800 hover:text-white"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
+          {isCustomSize && (
+            <button
+              type="button"
+              title={`Kembalikan ke ukuran standar (${baseSize.width}×${baseSize.height})`}
+              onClick={() => setFramesByDevice((prev) => ({ ...prev, [device]: { width: baseSize.width, height: baseSize.height } }))}
+              className="ml-0.5 rounded-full bg-stone-800 px-2 py-0.5 text-[10px] text-amber-300 hover:bg-stone-700 cursor-pointer"
+            >
+              Reset
+            </button>
+          )}
+        </div>
       </div>
+      {editOrnaments && (
+        <div
+          className="absolute bottom-2.5 right-3 z-20"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          {showTips && (
+            <div className="mb-2 w-60 rounded-xl border border-stone-200 bg-white/95 p-2.5 text-[10.5px] leading-relaxed text-stone-600 shadow-lg backdrop-blur-sm">
+              <p className="font-semibold text-stone-800">Pintasan kanvas</p>
+              <ul className="mt-1 space-y-0.5">
+                <li>Seret elemen bertepi putus-putus untuk menggeser</li>
+                <li>Klik kanan elemen untuk menu cepat</li>
+                <li>Alt + klik untuk memilih lapis di bawah</li>
+                <li>Seret tepi kanan/bawah bingkai untuk uji responsif</li>
+              </ul>
+            </div>
+          )}
+          <button
+            type="button"
+            aria-label="Pintasan kanvas"
+            aria-expanded={showTips}
+            title="Pintasan kanvas"
+            onClick={() => setShowTips((v) => !v)}
+            className={`ml-auto flex h-7 w-7 items-center justify-center rounded-full border text-[11px] font-bold shadow-sm transition cursor-pointer ${
+              showTips ? "border-amber-500 bg-amber-50 text-amber-800" : "border-stone-200 bg-white/90 text-stone-600 hover:border-stone-300 hover:text-stone-900"
+            }`}
+          >
+            ?
+          </button>
+        </div>
+      )}
     </div>
   );
 }

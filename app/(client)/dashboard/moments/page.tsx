@@ -308,9 +308,12 @@ export default function MomentsSetupPage() {
     );
   }
 
-  const planType = (invitation?.order?.planType || invitation?.planType || "TIER_1").toUpperCase();
-  const pkgConfig = platformSettings?.packages?.find((p: any) => p.id === planType);
-  const hasAccess = pkgConfig
+  const isFreeDraft = Boolean(invitation?.isFreeDraft || !invitation?.order?.planType);
+  const planType = isFreeDraft ? "" : (invitation?.order?.planType || invitation?.planType || "TIER_1").toUpperCase();
+  const pkgConfig = planType ? platformSettings?.packages?.find((p: any) => p.id === planType) : null;
+  const hasAccess = isFreeDraft
+    ? false
+    : pkgConfig
     ? Boolean(pkgConfig.capabilities?.includes("guest_memories"))
     : (memoriesQuota?.hasAccess !== undefined ? Boolean(memoriesQuota.hasAccess) : (planType === "TIER_2" || planType === "TIER_3"));
 
@@ -322,15 +325,19 @@ export default function MomentsSetupPage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
           </svg>
         </div>
-        <h2 className="text-lg font-bold text-stone-900">Fitur Kamera Tamu Belum Aktif</h2>
+        <h2 className="text-lg font-bold text-stone-900">
+          {isFreeDraft ? "Fitur Kamera Tamu Tersedia di Paket Berbayar" : "Fitur Kamera Tamu Belum Aktif"}
+        </h2>
         <p className="text-xs text-stone-600 max-w-md mx-auto">
-          Fitur Virtual Disposable Camera &amp; Live Moments belum aktif pada paket undangan Anda. Hubungi administrator atau tingkatkan paket Anda untuk mengabadikan momen candid tamu pernikahan.
+          {isFreeDraft
+            ? "Fitur Virtual Disposable Camera & Live Moments dapat digunakan setelah Anda memilih paket yang mendukung fitur Kamera Tamu."
+            : "Fitur Virtual Disposable Camera & Live Moments belum aktif pada paket undangan Anda. Tingkatkan paket Anda untuk mengabadikan momen candid tamu acara."}
         </p>
         <Link
-          href={`/dashboard/invitation/${invitation?.id || ""}`}
+          href={isFreeDraft ? "/packages" : "/dashboard?upgrade=true"}
           className="inline-flex items-center gap-1.5 px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold transition"
         >
-          <span>Upgrade Paket di Studio</span>
+          <span>{isFreeDraft ? "Pilih & Aktifkan Paket" : "Upgrade Paket"}</span>
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
           </svg>

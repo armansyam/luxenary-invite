@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import sharp from "sharp";
 import { fileTypeFromBuffer } from "file-type";
-import { uploadFile } from "@/lib/storage";
+import { listInvitationImageBases, uploadFile } from "@/lib/storage";
 import { optimizeWebVideo, optimizeWebAudio } from "@/lib/videoOptimizer";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
@@ -98,28 +98,28 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const existingMedia = await prisma.invitationMedia.findMany({
-        where: { invitationId: safeInvitationId },
-        select: { mediaSlot: true },
-      });
+      const [existingMedia, storedBases] = await Promise.all([
+        prisma.invitationMedia.findMany({
+          where: { invitationId: safeInvitationId },
+          select: { mediaSlot: true, localPath: true },
+        }),
+        listInvitationImageBases(safeInvitationId),
+      ]);
 
-      const occupiedBases = new Set<string>();
-      existingMedia.forEach((m, idx) => {
+      const occupiedBases = new Set<string>(storedBases);
+      for (const m of existingMedia) {
+        const cleanUrl = (m.localPath || "").split("?")[0];
+        if (cleanUrl && cleanUrl.includes(`/invitations/${safeInvitationId}/`)) {
+          const baseName = path.parse(path.basename(cleanUrl)).name;
+          if (baseName) {
+            occupiedBases.add(baseName);
+            continue;
+          }
+        }
         if (m.mediaSlot === "GALLERY") {
-          occupiedBases.add(`gallery-db-${idx}`);
+          occupiedBases.add(`gallery-ext:${cleanUrl || m.mediaSlot}`);
         } else {
           occupiedBases.add(MEDIA_SLOT_FILE_NAMES[m.mediaSlot as keyof typeof MEDIA_SLOT_FILE_NAMES] || m.mediaSlot.toLowerCase());
-        }
-      });
-
-      if (process.env.STORAGE_PROVIDER !== "r2" && process.env.STORAGE_PROVIDER !== "s3") {
-        const fs = await import("fs");
-        const uploadsDir = path.join(process.cwd(), "public", "uploads", "invitations", safeInvitationId);
-        const files = await fs.promises.readdir(uploadsDir).catch(() => [] as string[]);
-        for (const f of files) {
-          if (/\.(webp|jpe?g|png|heic)$/i.test(f)) {
-            occupiedBases.add(path.parse(f).name);
-          }
         }
       }
 

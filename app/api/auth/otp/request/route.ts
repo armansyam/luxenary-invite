@@ -13,8 +13,19 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await readJsonBody(req);
-    const cleanEmail = normalizeOtpEmail(body?.email);
+    const body = await readJsonBody<{ email?: string; purpose?: string }>(req);
+    const cleanEmail = normalizeOtpEmail(body?.email || "");
+    const rawPurpose = typeof body?.purpose === "string" ? body.purpose.trim().toUpperCase() : "CLIENT_REGISTER";
+    const purpose =
+      rawPurpose === "CLIENT_RESET_PASSWORD"
+        ? ("CLIENT_RESET_PASSWORD" as const)
+        : rawPurpose === "CLIENT_REGISTER"
+          ? ("CLIENT_REGISTER" as const)
+          : null;
+
+    if (!purpose) {
+      return NextResponse.json({ error: "Tujuan verifikasi OTP tidak dikenali." }, { status: 400 });
+    }
 
     if (!cleanEmail || cleanEmail.length > 254 || !EMAIL_RE.test(cleanEmail)) {
       return NextResponse.json({ error: "Alamat email tidak valid." }, { status: 400 });
@@ -27,32 +38,46 @@ export async function POST(req: NextRequest) {
         { status: 429 },
       );
     }
-    if (!(await rateLimitDb(`otp_req:email:${cleanEmail}`, 3, 10 * 60_000))) {
+    if (!(await rateLimitDb(`otp_req:email:${purpose}:${cleanEmail}`, 3, 10 * 60_000))) {
       return NextResponse.json(
         { error: "Kode OTP baru saja dikirim ke email ini. Tunggu beberapa menit sebelum meminta ulang." },
         { status: 429 },
       );
     }
 
-    const availability = await getServiceAvailability();
-    if (!availability.isOpen) {
-      const existingUser = await prisma.user.findUnique({
-        where: { email: cleanEmail },
-        select: { id: true },
-      });
-      if (!existingUser) {
+    const existingUser = await prisma.user.findUnique({
+      where: { email: cleanEmail },
+      select: { id: true },
+    });
+
+    if (purpose === "CLIENT_REGISTER") {
+      const availability = await getServiceAvailability();
+      if (!availability.isOpen) {
         return NextResponse.json(
           { error: "Pendaftaran akun baru sedang ditutup sementara.", code: "RegistrationClosed" },
           { status: 403 },
         );
       }
+      if (existingUser) {
+        return NextResponse.json(
+          { error: "Email ini sudah terdaftar. Silakan masuk atau gunakan Lupa kata sandi.", code: "EMAIL_EXISTS" },
+          { status: 409 },
+        );
+      }
+    } else if (!existingUser) {
+      // Anti-enumeration pada reset kata sandi: jawab netral tanpa mengirim email bila akun tidak ada.
+      return NextResponse.json({
+        success: true,
+        expiresInSeconds: 600,
+        message: "Jika email terdaftar, kode verifikasi 6 digit telah dikirim.",
+      });
     }
 
-    const { id, code } = await createAndStoreOtp(cleanEmail, "CLIENT_LOGIN");
+    const { id, code } = await createAndStoreOtp(cleanEmail, purpose);
     const mailRes = await sendLoginOtpEmail({
       to: cleanEmail,
       code,
-      purpose: "CLIENT_LOGIN",
+      purpose,
     });
 
     if (!mailRes.success) {
@@ -68,6 +93,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       expiresInSeconds: 600,
+      message:
+        purpose === "CLIENT_REGISTER"
+          ? "Kode verifikasi 6 digit telah dikirim ke email Anda."
+          : "Jika email terdaftar, kode verifikasi 6 digit telah dikirim.",
     });
   } catch (error) {
     return routeError("AuthOtpRequest", error, "Gagal mengirim kode OTP");

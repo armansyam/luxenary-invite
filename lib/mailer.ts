@@ -6,18 +6,34 @@ import {
   InvoiceEmailOptions,
   LoginOtpEmailOptions,
   MemoriesQuotaAlertOptions,
+  PartnerPayoutEmailOptions,
   RetentionExpiryAlertOptions,
   TestSmtpOptions,
   buildInvoiceEmailHtml,
   buildLoginOtpHtml,
   buildMemoriesQuotaHtml,
+  buildPartnerPayoutHtml,
   buildProofUploadedAdminHtml,
   buildRetentionExpiryHtml,
   buildTestSmtpHtml,
 } from "./email-templates";
 
-export type { InvoiceEmailOptions, LoginOtpEmailOptions, MemoriesQuotaAlertOptions, RetentionExpiryAlertOptions, TestSmtpOptions };
-export { buildInvoiceEmailHtml, buildLoginOtpHtml, buildMemoriesQuotaHtml, buildRetentionExpiryHtml, buildTestSmtpHtml };
+export type {
+  InvoiceEmailOptions,
+  LoginOtpEmailOptions,
+  MemoriesQuotaAlertOptions,
+  PartnerPayoutEmailOptions,
+  RetentionExpiryAlertOptions,
+  TestSmtpOptions,
+};
+export {
+  buildInvoiceEmailHtml,
+  buildLoginOtpHtml,
+  buildMemoriesQuotaHtml,
+  buildPartnerPayoutHtml,
+  buildRetentionExpiryHtml,
+  buildTestSmtpHtml,
+};
 
 export interface ProofUploadedAdminAlertInput {
   invoiceNumber: string;
@@ -252,7 +268,7 @@ export async function sendRetentionExpiryAlertEmail(opts: RetentionExpiryAlertOp
 export async function sendLoginOtpEmail(input: {
   to: string;
   code: string;
-  purpose: "CLIENT_LOGIN" | "PARTNER_LOGIN";
+  purpose: "CLIENT_REGISTER" | "CLIENT_RESET_PASSWORD" | "PARTNER_ACTIVATE" | "PARTNER_RESET_PASSWORD";
 }): Promise<{ success: boolean; error?: string }> {
   try {
     const settings = { ...(await getPublicPlatformSettings()), ...(await getSmtpSettings()) };
@@ -300,6 +316,76 @@ export async function sendLoginOtpEmail(input: {
     return { success: true };
   } catch (error: any) {
     logger.error("Mailer", "Gagal mengirim email kode OTP", error, { recipient: input.to, purpose: input.purpose });
+    return { success: false, error: error.message };
+  }
+}
+
+export interface PartnerPayoutAttachment {
+  filename: string;
+  content: Buffer;
+  contentType: string;
+}
+
+export async function sendPartnerPayoutEmail(
+  opts: PartnerPayoutEmailOptions & { attachment?: PartnerPayoutAttachment | null },
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const settings = { ...(await getPublicPlatformSettings()), ...(await getSmtpSettings()) };
+
+    if (!settings.smtpHost || !settings.smtpUser) {
+      logger.warn("Mailer", "SMTP belum dikonfigurasi; email pencairan komisi mitra dilewati", {
+        recipient: opts.recipientEmail,
+      });
+      return { success: false, error: "SMTP_NOT_CONFIGURED" };
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: settings.smtpHost,
+      port: settings.smtpPort || 587,
+      secure: settings.smtpPort === 465,
+      auth: {
+        user: settings.smtpUser,
+        pass: settings.smtpPassword || "",
+      },
+      tls: {
+        rejectUnauthorized: process.env.NODE_ENV === "production",
+      },
+    });
+
+    const { subject, html: htmlContent, text: textContent } = buildPartnerPayoutHtml(opts, {
+      platformName: settings.platformName,
+      appUrl: opts.appUrl,
+    });
+
+    const fromAddress = settings.smtpFromEmail || settings.smtpUser;
+    const fromName = settings.smtpFromName || settings.platformName || "Platform Undangan";
+
+    await transporter.sendMail({
+      from: `"${fromName}" <${fromAddress}>`,
+      to: opts.recipientEmail,
+      subject,
+      text: textContent,
+      html: htmlContent,
+      attachments: opts.attachment
+        ? [
+            {
+              filename: opts.attachment.filename,
+              content: opts.attachment.content,
+              contentType: opts.attachment.contentType,
+            },
+          ]
+        : undefined,
+    });
+
+    logger.info("Mailer", "Email pencairan komisi mitra terkirim", {
+      recipient: opts.recipientEmail,
+      hasAttachment: Boolean(opts.attachment),
+    });
+    return { success: true };
+  } catch (error: any) {
+    logger.error("Mailer", "Gagal mengirim email pencairan komisi mitra", error, {
+      recipient: opts.recipientEmail,
+    });
     return { success: false, error: error.message };
   }
 }

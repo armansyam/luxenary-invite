@@ -68,11 +68,10 @@ function collectBuilderSlotUsage(spec: BuilderSpec) {
 }
 
 /**
- * Slot foto klien yang dipakai tema builder (Theme.mediaSlots), dihitung dari spesifikasi saat disimpan: slot bawaan
- * blueprint (sampul, latar, panel foto desktop, penutup), blok foto yang tidak disembunyikan, dan setiap ornamen atau
- * foto seksi bebas yang memakai slot klien. Hanya membaca spesifikasi; tidak menyentuh berkas atau database.
+ * Seluruh slot foto klien yang terdeteksi dari spesifikasi builder (sebelum penyaringan `disabledMediaSlots`).
+ * Dipakai panel Terbit di Theme Builder agar admin dapat memilih slot mana yang boleh/dikunci untuk klien.
  */
-export function builderMediaSlots(spec: BuilderSpec): ThemeMediaSlots {
+export function builderDetectedMediaSlots(spec: BuilderSpec): ThemeMediaSlots {
   const { places, previews } = collectBuilderSlotUsage(spec);
   const out: ThemeMediaSlots = {};
   for (const [slot, list] of places) {
@@ -81,6 +80,24 @@ export function builderMediaSlots(spec: BuilderSpec): ThemeMediaSlots {
       places: [...new Set(list)].slice(0, 6),
       ...(preview ? { preview } : {}),
     };
+  }
+  return out;
+}
+
+/**
+ * Slot foto klien yang dipakai tema builder (Theme.mediaSlots), dihitung dari spesifikasi saat disimpan: slot bawaan
+ * blueprint (sampul, latar, panel foto desktop, penutup), blok foto yang tidak disembunyikan, dan setiap ornamen atau
+ * foto seksi bebas yang memakai slot klien, dikurangi slot yang sengaja dikunci admin (`disabledMediaSlots`).
+ */
+export function builderMediaSlots(spec: BuilderSpec): ThemeMediaSlots {
+  const detected = builderDetectedMediaSlots(spec);
+  const disabled = new Set(spec.disabledMediaSlots ?? []);
+  if (!disabled.size) return detected;
+  const out: ThemeMediaSlots = {};
+  for (const [slot, decl] of Object.entries(detected)) {
+    if (!disabled.has(slot as keyof ThemeMediaSlots)) {
+      out[slot as keyof ThemeMediaSlots] = decl;
+    }
   }
   return out;
 }
@@ -104,8 +121,10 @@ export function autoHiddenOpeningPhoto(spec: Pick<BuilderSpec, "ornaments" | "bl
 /** Slot klien yang tampil di lebih dari satu tempat, untuk peringatan di builder (foto klien yang sama tampil berulang). */
 export function builderSlotReuse(spec: BuilderSpec): Array<{ slot: string; places: string[] }> {
   const { places } = collectBuilderSlotUsage(spec);
+  const disabled = new Set(spec.disabledMediaSlots ?? []);
   const out: Array<{ slot: string; places: string[] }> = [];
   for (const [slot, list] of places) {
+    if (disabled.has(slot as keyof ThemeMediaSlots)) continue;
     if (list.length <= 1) continue;
     const counts = new Map<string, number>();
     for (const p of list) counts.set(p, (counts.get(p) ?? 0) + 1);

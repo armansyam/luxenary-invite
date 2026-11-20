@@ -126,15 +126,55 @@ export function compileAndAudit(spec: BuilderSpec): CompiledBuilderTheme {
   return { html, issues: auditBuilderMaster(html, blueprint) };
 }
 
+const LONG_TEXT_GUEST = "Bapak Dr. H. Hendra Wijaya & Ibu Hj. Siti Aminah";
+
+const LONG_TEXT_DEMO_BY_EVENT: Record<BuilderSpec["eventType"], Record<string, string>> = {
+  WEDDING: {
+    groomName: "Muhammad Rizky",
+    brideName: "Putri Rahmawati",
+    groomDisplayName: "Muhammad Rizky Pratama, S.Kom.",
+    brideDisplayName: "Putri Rahmawati Kusuma, S.E.",
+  },
+  BIRTHDAY: {
+    personName: "Aisyah Nabila Ramadhani Kusuma",
+    personNickname: "Aisyah Nabila Ramadhani",
+  },
+  KHITAN: {
+    childName: "Muhammad Al-Fatih Ramadhan Pratama",
+    childNickname: "Muhammad Al-Fatih Ramadhan",
+  },
+  AQIQAH: {
+    babyName: "Khadijah Az-Zahra Humaira Putri",
+    babyNickname: "Khadijah Az-Zahra Humaira",
+  },
+  WISUDA: {
+    graduateName: "Dr. Muhammad Fadhil Rahman, M.T.",
+    graduateNickname: "Dr. Muhammad Fadhil Rahman",
+  },
+  GATHERING: {
+    eventTitle: "Malam Apresiasi & Silaturahmi Akbar Keluarga Besar Nusantara",
+  },
+};
+
 /**
  * Pratinjau dirender oleh engine undangan klien. Mode "demo" memakai foto dan data contoh; mode "client" meniru klien
  * baru yang belum mengunggah apa pun, sehingga yang tampil hanyalah bawaan tema, monogram, dan palet; mode "sim" seperti
  * "client" ditambah foto simulasi admin per slot (lib/themeBuilder/simSlots.ts), yang menempati slot itu persis seperti
  * unggahan klien (termasuk sampul desktop mendatar yang membuat sampul layar penuh).
  */
-export async function renderBuilderPreview(spec: BuilderSpec, demoThemeId = DEFAULT_THEME_BY_EVENT[spec.eventType] || "kalandra", mode: "demo" | "client" | "sim" = "demo", sim?: SimMedia): Promise<CompiledBuilderTheme & { labels: Record<string, string> }> {
+export async function renderBuilderPreview(
+  spec: BuilderSpec,
+  demoThemeId = DEFAULT_THEME_BY_EVENT[spec.eventType] || "kalandra",
+  mode: "demo" | "client" | "sim" = "demo",
+  sim?: SimMedia,
+  longText = false,
+): Promise<CompiledBuilderTheme & { labels: Record<string, string> }> {
   const compiled = compileAndAudit(spec);
-  const demo = buildDemoInvitation(demoThemeId, mode === "demo" ? undefined : { galleryPhotos: [] });
+  const customDemo = {
+    ...(mode === "demo" ? {} : { galleryPhotos: [] }),
+    ...(longText ? LONG_TEXT_DEMO_BY_EVENT[spec.eventType] : {}),
+  };
+  const demo = buildDemoInvitation(demoThemeId, Object.keys(customDemo).length ? customDemo : undefined);
   if (mode === "demo" && !demo.media.some((m) => m.mediaSlot === "HOME_PHOTO")) {
     const fallbackHome = demo.media.find((m) => m.mediaSlot === "DESKTOP_SIDEBAR" || m.mediaSlot === "LANDING_COVER")?.localPath;
     if (fallbackHome) demo.media.push({ mediaSlot: "HOME_PHOTO", localPath: fallbackHome });
@@ -145,7 +185,12 @@ export async function renderBuilderPreview(spec: BuilderSpec, demoThemeId = DEFA
   const base = mode === "demo" ? demo : { ...demo, media: simMedia, themeDefaultMedia: builderDefaultMedia(spec) };
   // Rancangan belum tersimpan, jadi teks bawaan, spesifikasi, dan deklarasi slot dibawa langsung (undangan nyata membacanya dari baris Theme).
   const data = (await composeInvitationData({ ...base, themeMediaSlots: builderMediaSlots(spec), builderTexts: spec.texts, builderSpec: spec })) as Record<string, any>;
-  const html = await renderTemplateFile("builder-preview", data, { eventType: spec.eventType, templateSource: compiled.html });
+  if (longText) data.guestName = LONG_TEXT_GUEST;
+  let html = await renderTemplateFile("builder-preview", data, { eventType: spec.eventType, templateSource: compiled.html });
+  if (longText) {
+    const escapedGuest = LONG_TEXT_GUEST.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    html = html.replace(/(<p\b[^>]*id="coverGuestName"[^>]*>)[\s\S]*?(<\/p>)/, `$1${escapedGuest}$2`);
+  }
   return { html, issues: compiled.issues, labels: extractRenderedLabels(html) };
 }
 

@@ -28,7 +28,10 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
     if (!guard.ok) return guard.response;
 
     const { id } = await context.params;
-    const existing = await prisma.expense.findUnique({ where: { id } });
+    const existing = await prisma.expense.findUnique({
+      where: { id },
+      include: { _count: { select: { commissions: true } } },
+    });
     if (!existing) {
       return NextResponse.json({ error: "Data pengeluaran tidak ditemukan." }, { status: 404 });
     }
@@ -52,6 +55,21 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
     }
     if (amount !== undefined && parseMoney(amount) === null) {
       return NextResponse.json({ error: "Nominal harus lebih dari 0 dan masih dalam batas." }, { status: 400 });
+    }
+
+    const isPartnerPayout = existing.partnerAffiliateId !== null || existing._count.commissions > 0;
+    if (isPartnerPayout) {
+      const nextAmount = amount !== undefined ? parseMoney(amount) : null;
+      const nextCategory = category !== undefined && category !== "" ? parseExpenseCategory(category) : null;
+      if (
+        (nextAmount !== null && nextAmount !== Number(existing.amount)) ||
+        (nextCategory !== null && nextCategory !== existing.category)
+      ) {
+        return NextResponse.json(
+          { error: "Nominal dan kategori pengeluaran pencairan komisi mitra tidak dapat diubah agar buku kas tetap sinkron dengan saldo mitra." },
+          { status: 409 }
+        );
+      }
     }
     const receipt = receiptUrl !== undefined ? receiptUrlInput(receiptUrl) : null;
     if (receipt && !receipt.ok) {
@@ -115,7 +133,10 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
     if (!guard.ok) return guard.response;
 
     const { id } = await context.params;
-    const existing = await prisma.expense.findUnique({ where: { id } });
+    const existing = await prisma.expense.findUnique({
+      where: { id },
+      include: { _count: { select: { commissions: true } } },
+    });
     if (!existing) {
       return NextResponse.json({ error: "Data pengeluaran tidak ditemukan." }, { status: 404 });
     }
@@ -124,6 +145,13 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
       return NextResponse.json(
         { error: "Pengeluaran pada periode yang telah ditutup buku tidak dapat dihapus." },
         { status: 400 }
+      );
+    }
+
+    if (existing.partnerAffiliateId !== null || existing._count.commissions > 0) {
+      return NextResponse.json(
+        { error: "Pengeluaran pencairan komisi mitra tidak dapat dihapus agar buku kas tetap sinkron dengan saldo komisi mitra." },
+        { status: 409 }
       );
     }
 

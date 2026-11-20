@@ -10,7 +10,8 @@ interface PageProps {
 }
 
 export default async function ReceptionistPage({ params }: PageProps) {
-  const { subdomain } = await params;
+  const { subdomain: rawSubdomain } = await params;
+  const subdomain = rawSubdomain?.trim().toLowerCase() || "";
   if (!subdomain) notFound();
 
   const [invitation, platformName] = await Promise.all([

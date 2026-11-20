@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { startRemoteSession } from "@/app/(admin)/admin/actions/remote";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
+import { getPlanDisplayName } from "@/lib/planUtils";
 
 interface ClientUser {
   id: string;
@@ -24,6 +25,8 @@ interface ClientUser {
     subdomain?: string | null;
     invitationSlug: string;
     status: string;
+    isFreeDraft?: boolean;
+    createdAt?: string;
     themeId: string;
     eventType?: string | null;
     participantsJson?: unknown;
@@ -55,6 +58,16 @@ export default function AdminClientsTab({ platformName }: { platformName?: strin
   const [deleting, setDeleting] = useState(false);
   const [actionMsg, setActionMsg] = useState<{ ok: boolean; msg: string } | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [packages, setPackages] = useState<Array<{ id: string; name: string }>>([]);
+
+  useEffect(() => {
+    fetch("/api/public/settings")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data?.packages)) setPackages(data.packages);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -278,7 +291,7 @@ export default function AdminClientsTab({ platformName }: { platformName?: strin
           <table className="min-w-full divide-y divide-gray-100 text-left">
             <thead className="bg-gray-50/80">
               <tr>
-                {["Klien", "Kontak WhatsApp", "Paket Terakhir", "Total Belanja", "Undangan", "Terdaftar", "Aksi"].map((h) => (
+                {["Klien", "Kontak WhatsApp", "Status Layanan", "Total Belanja", "Undangan", "Terdaftar", "Aksi"].map((h) => (
                   <th key={h} className={`px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider${h === "Aksi" ? " sticky right-0 border-l border-gray-100 bg-gray-50" : ""}`}>
                     {h}
                   </th>
@@ -343,11 +356,17 @@ export default function AdminClientsTab({ platformName }: { platformName?: strin
                         )}
                       </td>
 
-                      {/* Paket Terakhir */}
+                      {/* Status Layanan */}
                       <td className="px-5 py-3.5 whitespace-nowrap">
                         {usr.latestOrder ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-stone-100 text-stone-800 border border-stone-200">
-                            {usr.latestOrder.planType}
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            <span>Paket {getPlanDisplayName(usr.latestOrder.planType, packages)}</span>
+                          </span>
+                        ) : usr.invitations?.some((inv) => inv.isFreeDraft) ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-900 border border-amber-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                            <span>Draf Gratis (Trial)</span>
                           </span>
                         ) : (
                           <span className="text-gray-400 italic text-[11px]">Belum Order</span>
@@ -372,13 +391,21 @@ export default function AdminClientsTab({ platformName }: { platformName?: strin
                               </span>
                             </div>
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                              usr.invitations[0].status === "PUBLISHED"
+                              usr.invitations[0].isFreeDraft
+                                ? "bg-amber-50 text-amber-900 border-amber-300"
+                                : usr.invitations[0].status === "PUBLISHED"
                                 ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                                 : usr.invitations[0].status === "DRAFT"
-                                ? "bg-amber-50 text-amber-700 border-amber-200"
+                                ? "bg-stone-100 text-stone-700 border-stone-200"
                                 : "bg-gray-100 text-gray-600 border-gray-200"
                             }`}>
-                              {usr.invitations[0].status === "PUBLISHED" ? "Tayang" : usr.invitations[0].status === "DRAFT" ? "Draft" : usr.invitations[0].status}
+                              {usr.invitations[0].isFreeDraft
+                                ? "Draf Gratis"
+                                : usr.invitations[0].status === "PUBLISHED"
+                                ? "Tayang"
+                                : usr.invitations[0].status === "DRAFT"
+                                ? "Draft"
+                                : usr.invitations[0].status}
                             </span>
                           </div>
                         ) : (

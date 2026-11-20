@@ -9,6 +9,7 @@ import { purgeObsoleteUserOrders } from "@/lib/upgradeHelper";
 import { routeError } from "@/lib/routeError";
 import { logger } from "@/lib/logger";
 import { getTrustedAppUrl } from "@/lib/serverDomainUtils";
+import { exceedsDeclaredBodySize } from "@/lib/requestLimits";
 
 export const dynamic = "force-dynamic";
 
@@ -60,11 +61,13 @@ export async function POST(
       );
     }
 
-    // Tolak jika order ini sudah digantikan oleh invoice baru yang aktif (superseded)
+    // Tolak jika order ini sudah digantikan oleh invoice baru yang aktif pada orderType dan scope undangan yang sama
     const newerActiveOrder = await prisma.order.findFirst({
       where: {
         userId: order.userId,
         id: { not: order.id },
+        orderType: order.orderType,
+        linkedInvitationId: order.linkedInvitationId,
         createdAt: { gt: order.createdAt },
         status: { in: ["PENDING", "PAID"] },
       },
@@ -77,11 +80,19 @@ export async function POST(
       );
     }
 
+    if (exceedsDeclaredBodySize(req, MAX_PROOF_BYTES + 512 * 1024)) {
+      return NextResponse.json({ error: "Ukuran file bukti transfer maksimal 10 MB." }, { status: 413 });
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
 
     if (!file) {
       return NextResponse.json({ error: "File bukti pembayaran tidak ditemukan" }, { status: 400 });
+    }
+
+    if (file.size === 0 || file.size > MAX_PROOF_BYTES) {
+      return NextResponse.json({ error: "Ukuran file bukti transfer harus antara 1 byte dan 10 MB." }, { status: 400 });
     }
 
     // Generate clean chronological file name: YYYY-MM-DD-HHmmss-username.webp

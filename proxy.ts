@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import NextAuth from "next-auth";
 import { authConfig } from "@/auth.config";
 import { isReservedSubdomain } from "@/lib/domainUtils";
+import { safeInternalCallbackUrl } from "@/lib/safeUrl";
+import { customDomainResolutionCache } from "@/lib/cache";
 import { LOGIN_FAILURE_LIMIT, getClientIp, isRateLimitExhausted, loginRateLimitKey } from "@/lib/rateLimit";
 import {
   buildEnforcedCsp,
@@ -29,17 +31,14 @@ interface CustomDomainResolution {
   subdomain: string | null; // Masih ada jika belum direcycle
   slug: string | null;      // Endpoint url asli (wajib)
   status?: string;
-  expiry: number;
+  canAccessMemories?: boolean;
 }
 
-// Cache resolve custom domain (TTL 5 menit) — mengurangi amplifikasi self-fetch di middleware
-const customDomainCache = new Map<string, CustomDomainResolution>();
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 menit
+const CACHE_TTL_MS = 60 * 1000; // 60 detik, terhubung ke invalidateInvitationLookup() di lib/cache.ts
 
 // Resolusi selalu ke proses ini sendiri. Basis URL dari header Host akan membuat server melakukan fetch ke host
 // pilihan penyerang (SSRF) bila origin dijangkau langsung.
 const INTERNAL_BASE_URL = `http://${process.env.LUX_BIND_HOST || "127.0.0.1"}:${process.env.PORT || "3000"}`;
-const CACHE_MAX_ENTRIES = 2000;
 
 /**
  * Tautan tamu bentuk /Nama atau /v=Nama di subdomain atau custom domain: nama dipindah ke ?to= / ?v= di URL peramban.
@@ -61,24 +60,10 @@ function guestPathRedirect(req: { nextUrl: URL }, host: string, segment: string)
 }
 
 async function resolveCustomDomain(host: string): Promise<CustomDomainResolution | null> {
-  const now = Date.now();
-
-  // Cek cache terlebih dahulu
-  const cached = customDomainCache.get(host);
-  if (cached && cached.expiry > now) {
-    return cached;
-  }
-
-  // Cleanup cache yang expired (lazy cleanup), lalu batasi ukuran: Host acak tidak boleh menumbuhkan memori tanpa batas
-  if (customDomainCache.size > 500) {
-    for (const [key, val] of customDomainCache.entries()) {
-      if (val.expiry <= now) customDomainCache.delete(key);
-    }
-  }
-  while (customDomainCache.size >= CACHE_MAX_ENTRIES) {
-    const oldest = customDomainCache.keys().next().value;
-    if (oldest === undefined) break;
-    customDomainCache.delete(oldest);
+  // Cek cache L1 terlebih dahulu (terintegrasi dengan invalidateInvitationLookup)
+  const cached = customDomainResolutionCache.get(host) as CustomDomainResolution | null;
+  if (cached) {
+    return cached.slug ? cached : null;
   }
 
   // Fetch ke API internal
@@ -91,15 +76,15 @@ async function resolveCustomDomain(host: string): Promise<CustomDomainResolution
         subdomain: data.subdomain || null,
         status: data.status,
         slug: data.slug || null,
-        expiry: now + CACHE_TTL_MS,
+        canAccessMemories: data.canAccessMemories !== false,
       };
       // Simpan ke cache (termasuk hasil null agar tidak re-fetch domain yang tidak terdaftar)
-      customDomainCache.set(host, res);
+      customDomainResolutionCache.set(host, res, CACHE_TTL_MS);
       return res;
     }
     // Domain tidak terdaftar — cache null agar tidak terus di-fetch
-    const nullRes: CustomDomainResolution = { subdomain: null, slug: null, expiry: now + CACHE_TTL_MS };
-    customDomainCache.set(host, nullRes);
+    const nullRes: CustomDomainResolution = { subdomain: null, slug: null };
+    customDomainResolutionCache.set(host, nullRes, CACHE_TTL_MS);
     return null;
   } catch {
     return null;
@@ -107,13 +92,62 @@ async function resolveCustomDomain(host: string): Promise<CustomDomainResolution
 }
 
 
+const PLATFORM_PATHS = [
+  "/admin", "/login", "/partner", "/packages", "/checkout", "/payment", "/onboarding",
+  "/dashboard", "/contact", "/how-it-works", "/privacy", "/terms",
+  "/refund", "/portfolio", "/demo", "/archives",
+];
+
+/**
+ * Redirect lintas host (subdomain -> apex): Auth.js mengganti origin req.nextUrl dengan NEXTAUTH_URL (apex),
+ * sehingga NextResponse.redirect() menganggap target apex berada pada origin yang sama dan memotongnya menjadi
+ * Location relatif (memicu redirect loop di host subdomain). Header Location absolut mencegah pemotongan tersebut.
+ */
+function absoluteRedirect(url: URL | string, status: 301 | 307 = 307): NextResponse {
+  return new NextResponse(null, {
+    status,
+    headers: { Location: typeof url === "string" ? url : url.toString() },
+  });
+}
+
+function crawlerSpecialResponse(pathname: string): NextResponse | null {
+  if (pathname === "/robots.txt") {
+    return new NextResponse("User-agent: *\nDisallow: /\n", {
+      status: 200,
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "public, max-age=86400",
+      },
+    });
+  }
+  if (pathname === "/sitemap.xml") {
+    return new NextResponse("Not Found", {
+      status: 404,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
+  }
+  return null;
+}
+
 export const proxy = auth(async (req) => {
   const { pathname } = req.nextUrl;
+
+  const host = req.headers.get("host") || "";
+  const cleanHost = host.split(":")[0].toLowerCase(); // remove port & normalize
+  const envRootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost:3000").split(":")[0].toLowerCase();
+  const rootDomains = [envRootDomain, "localhost", "127.0.0.1"].filter(Boolean);
+
+  const isRootDomain = rootDomains.some((d) => cleanHost === d || cleanHost === `www.${d}`);
+  const isSubdomainOfOurs = rootDomains.some((d) => cleanHost.endsWith(`.${d}`) && cleanHost !== d && cleanHost !== `www.${d}`);
+  const isCustomDomain = !isSubdomainOfOurs && !isRootDomain;
+
   const nonce = generateCspNonce();
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set("x-nonce", nonce);
+  // Strict nonce CSP hanya untuk halaman aplikasi platform di domain utama (apex).
+  // Host subdomain/custom domain merender undangan terbit yang memerlukan inline script tema.
   const strictNonceCsp =
-    shouldApplyCsp(pathname) && isStrictNonceAppRoute(pathname)
+    isRootDomain && shouldApplyCsp(pathname) && isStrictNonceAppRoute(pathname)
       ? buildStrictAppCspReportOnly(nonce)
       : null;
   if (strictNonceCsp) {
@@ -154,16 +188,6 @@ export const proxy = auth(async (req) => {
   const isLoggedIn = !!req.auth?.user;
   const isAdmin = (req.auth?.user as any)?.isAdmin === true || (req.auth?.user as any)?.role === "ADMIN" || (req.auth?.user as any)?.role === "SUPER_ADMIN";
 
-  const host = req.headers.get("host") || "";
-  const cleanHost = host.split(":")[0].toLowerCase(); // remove port & normalize
-  const envRootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost:3000").split(":")[0].toLowerCase();
-
-  const rootDomains = [envRootDomain, "localhost", "127.0.0.1"].filter(Boolean);
-
-  const isRootDomain = rootDomains.some((d) => cleanHost === d || cleanHost === `www.${d}`);
-  const isSubdomainOfOurs = rootDomains.some((d) => cleanHost.endsWith(`.${d}`) && cleanHost !== d && cleanHost !== `www.${d}`);
-  const isCustomDomain = !isSubdomainOfOurs && !isRootDomain;
-
   // C. Isolasi Subdomain: Cegah Halaman Platform & Subdomain Sistem Dibuka di Bawah Subdomain
   if (isSubdomainOfOurs && !pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/static")) {
     const parts = cleanHost.split(".");
@@ -175,7 +199,7 @@ export const proxy = auth(async (req) => {
 
     // 1. Mencegah akses langsung ke CNAME Target (Anti Kloning)
     if (["cname", "host", "alias", "invite"].includes(subdomain)) {
-      return NextResponse.redirect(`${protocol}//${apexHost}/`, 301);
+      return absoluteRedirect(`${protocol}//${apexHost}/`, 301);
     }
 
     // 2. Subdomain 'demo' dialihkan ke katalog tema resmi di apex domain
@@ -186,27 +210,84 @@ export const proxy = auth(async (req) => {
       }
       const redirectUrl = new URL(targetPath, `${protocol}//${apexHost}`);
       redirectUrl.search = req.nextUrl.search;
-      return NextResponse.redirect(redirectUrl, 307);
+      return absoluteRedirect(redirectUrl, 307);
     }
 
-    // 3. Subdomain sistem umum (www, app, auth, login, dashboard, dll) dialihkan langsung ke apex
+    // 3. Subdomain sistem umum (www, app, auth, login, dashboard, partner, dll) dialihkan langsung ke apex
     if (isReservedSubdomain(subdomain)) {
       const redirectUrl = new URL(pathname, `${protocol}//${apexHost}`);
       redirectUrl.search = req.nextUrl.search;
-      return NextResponse.redirect(redirectUrl, 307);
+      return absoluteRedirect(redirectUrl, 307);
     }
 
     // 4. Seluruh halaman platform resmi DILARANG dibuka dari subdomain klien apapun
-    const PLATFORM_PATHS = [
-      "/admin", "/login", "/partner", "/packages", "/checkout", "/onboarding",
-      "/dashboard", "/contact", "/how-it-works", "/privacy", "/terms",
-      "/refund", "/portfolio", "/demo"
-    ];
     if (PLATFORM_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
       const redirectUrl = new URL(pathname, `${protocol}//${apexHost}`);
       redirectUrl.search = req.nextUrl.search;
-      return NextResponse.redirect(redirectUrl, 307);
+      return absoluteRedirect(redirectUrl, 307);
     }
+
+    // 5. File crawler standar (robots.txt / sitemap.xml) dijawab langsung agar tidak dianggap nama tamu
+    const crawlerRes = crawlerSpecialResponse(pathname);
+    if (crawlerRes) return crawlerRes;
+  }
+
+  // D. Isolasi & Routing Custom Domain Klien (e.g. namapasangan.com)
+  // Dijalankan SEBELUM guard rute platform agar domain klien tidak pernah menayangkan /admin, /login, /dashboard, atau landing platform.
+  if (isCustomDomain && !pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/static")) {
+    const crawlerRes = crawlerSpecialResponse(pathname);
+    if (crawlerRes) return crawlerRes;
+
+    if (PLATFORM_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+      return new NextResponse("Not Found", { status: 404 });
+    }
+
+    try {
+      const resolution = await resolveCustomDomain(cleanHost);
+      const slug = resolution?.slug;
+
+      if (slug) {
+        const isFinished = resolution.status === "EVENT_FINISHED" && resolution.canAccessMemories !== false;
+        const isArchived = resolution.status === "ARCHIVED";
+        const viewInvitation = req.nextUrl.searchParams.get("view") === "invitation";
+
+        if (pathname === "/" || pathname === "") {
+          if (isFinished && !viewInvitation) {
+            return passRewrite(new URL(`/${slug}/memories${req.nextUrl.search}`, req.url));
+          }
+          const rewriteUrl = new URL(`/${slug}`, req.url);
+          rewriteUrl.search = req.nextUrl.search;
+          return passRewrite(rewriteUrl);
+        }
+        if (pathname === "/memories" || pathname === "/galery" || pathname === "/gallery") {
+          if (isArchived) {
+            return passRewrite(new URL(`/${slug}${req.nextUrl.search}`, req.url));
+          }
+          return passRewrite(new URL(`/${slug}/memories${req.nextUrl.search}`, req.url));
+        }
+        if (pathname === "/receptionist") {
+          return passRewrite(new URL(`/${slug}/receptionist${req.nextUrl.search}`, req.url));
+        }
+        if (pathname === "/welcome") {
+          return passRewrite(new URL(`/${slug}/welcome${req.nextUrl.search}`, req.url));
+        }
+        if (pathname === "/sharemoment") {
+          return passRewrite(new URL(`/${slug}/sharemoment${req.nextUrl.search}`, req.url));
+        }
+        // Guest param routing
+        const segments = pathname.split("/").filter(Boolean);
+        if (segments.length === 1) {
+          if (isFinished && !viewInvitation) {
+            return passRewrite(new URL(`/${slug}/memories${req.nextUrl.search}`, req.url));
+          }
+          return guestPathRedirect(req, host, segments[0]);
+        }
+      }
+    } catch {
+      // Resolusi gagal — jawab 404 agar tidak jatuh ke rute platform
+    }
+
+    return new NextResponse("Not Found", { status: 404 });
   }
 
   // 1. Admin login page
@@ -220,7 +301,8 @@ export const proxy = auth(async (req) => {
   // 2. Client login page
   if (pathname === "/login") {
     if (isLoggedIn && !isAdmin) {
-      return NextResponse.redirect(new URL("/onboarding", req.url));
+      const safeCb = safeInternalCallbackUrl(req.nextUrl.searchParams.get("callbackUrl"), "/onboarding");
+      return NextResponse.redirect(new URL(safeCb, req.url));
     }
     return passNext();
   }
@@ -242,7 +324,11 @@ export const proxy = auth(async (req) => {
     }
 
     if (!isLoggedIn || isAdmin) {
-      return NextResponse.redirect(new URL("/login", req.url));
+      const loginUrl = new URL("/login", req.url);
+      if (!isLoggedIn && req.nextUrl.search) {
+        loginUrl.searchParams.set("callbackUrl", `${pathname}${req.nextUrl.search}`);
+      }
+      return NextResponse.redirect(loginUrl);
     }
     return passNext();
   }
@@ -306,56 +392,7 @@ export const proxy = auth(async (req) => {
       const apexHost = `${matchedRoot}${portSuffix}`;
       const redirectUrl = new URL(pathname, `${protocol}//${apexHost}`);
       redirectUrl.search = req.nextUrl.search;
-      return NextResponse.redirect(redirectUrl, 307);
-    }
-  }
-
-  // ── B. Custom Domain Klien (e.g. namapasangan.com) ──
-  // Gunakan cache in-memory (TTL 5 menit) untuk menghindari amplifikasi self-fetch
-  if (isCustomDomain && !pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/static")) {
-    try {
-      const resolution = await resolveCustomDomain(cleanHost);
-      const slug = resolution?.slug;
-
-      if (slug) {
-        const isFinished = resolution.status === "EVENT_FINISHED";
-        const isArchived = resolution.status === "ARCHIVED";
-        const viewInvitation = req.nextUrl.searchParams.get("view") === "invitation";
-
-        if (pathname === "/" || pathname === "") {
-          if (isFinished && !viewInvitation) {
-            return passRewrite(new URL(`/${slug}/memories${req.nextUrl.search}`, req.url));
-          }
-          const rewriteUrl = new URL(`/${slug}`, req.url);
-          rewriteUrl.search = req.nextUrl.search;
-          return passRewrite(rewriteUrl);
-        }
-        if (pathname === "/memories" || pathname === "/galery" || pathname === "/gallery") {
-          if (isArchived) {
-            return passRewrite(new URL(`/${slug}${req.nextUrl.search}`, req.url));
-          }
-          return passRewrite(new URL(`/${slug}/memories${req.nextUrl.search}`, req.url));
-        }
-        if (pathname === "/receptionist") {
-          return passRewrite(new URL(`/${slug}/receptionist${req.nextUrl.search}`, req.url));
-        }
-        if (pathname === "/welcome") {
-          return passRewrite(new URL(`/${slug}/welcome${req.nextUrl.search}`, req.url));
-        }
-        if (pathname === "/sharemoment") {
-          return passRewrite(new URL(`/${slug}/sharemoment${req.nextUrl.search}`, req.url));
-        }
-        // Guest param routing
-        const segments = pathname.split('/').filter(Boolean);
-        if (segments.length === 1) {
-          if (isFinished && !viewInvitation) {
-            return passRewrite(new URL(`/${slug}/memories${req.nextUrl.search}`, req.url));
-          }
-          return guestPathRedirect(req, host, segments[0]);
-        }
-      }
-    } catch {
-      // Resolusi gagal — biarkan Next.js handle (404)
+      return absoluteRedirect(redirectUrl, 307);
     }
   }
 

@@ -14,8 +14,9 @@ import { injectFreeDraftWatermark } from "@/lib/freeDraftWatermark";
 import { eventNoun } from "@/lib/invitationUtils";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ subdomain: string }> }) {
-  const { subdomain } = await params;
-  
+  const { subdomain: rawSubdomain } = await params;
+  const subdomain = rawSubdomain?.trim().toLowerCase() || "";
+
   if (!subdomain) {
     return new NextResponse("Not Found", { status: 404 });
   }
@@ -117,6 +118,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
     }
   }
 
+  // Setelah masa tenggang subdomain (subdomain_grace_days dari acara utama) atau saat ARCHIVED, subdomain
+  // tidak lagi melayani — harus diperiksa SEBELUM redirect EVENT_FINISHED agar subdomain kedaluwarsa benar-benar dilepas.
+  const lifecycleSettings = await getLifecycleSettings();
+  const isPastGrace = isSubdomainExpired(invitation.eventData, lifecycleSettings.subdomainGraceDays);
+
+  if (!isPreview && (invitation.status === "ARCHIVED" || (lifecycleSettings.autoRecycleSubdomain && isPastGrace))) {
+    if (lifecycleSettings.autoRecycleSubdomain && isPastGrace) {
+      await releaseInvitationSubdomain(invitation);
+    }
+    const rootUrl = await getDynamicServerApexUrl(subdomain);
+    return NextResponse.redirect(`${rootUrl}/${invitation.invitationSlug}`, 307);
+  }
+
   // Jika undangan berstatus EVENT_FINISHED (Mode Galeri Kenangan Pasca-Acara Aktif)
   if (invitation.status === "EVENT_FINISHED" && !isPreview) {
     const viewInvitation = req.nextUrl.searchParams.get("view") === "invitation";
@@ -127,24 +141,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
         // dari req.url membawa tamu di sub.domain ke /memories milik apex (halaman demo platform). Browser menyelesaikan
         // path relatif terhadap alamat yang sedang dibuka: host subdomain -> /memories, bentuk apex /s/<sub> -> /s/<sub>/memories.
         const host = (req.headers.get("host") || "").split(":")[0].toLowerCase();
-        const onInvitationHost = host === `${subdomain.toLowerCase()}.${getApexRootDomain().split(":")[0].toLowerCase()}`;
+        const onInvitationHost = host === `${subdomain}.${getApexRootDomain().split(":")[0].toLowerCase()}`;
         const target = `${onInvitationHost ? "" : `/s/${subdomain}`}/memories${req.nextUrl.search}`;
         return new NextResponse(null, { status: 307, headers: { Location: target } });
       }
     }
-  }
-
-  // Setelah masa tenggang subdomain (subdomain_grace_days dari acara utama) atau saat ARCHIVED, subdomain
-  // tidak lagi melayani; slug menjadi gerbang utama (portofolio/arsip/beranda diputuskan oleh rute slug).
-  const lifecycleSettings = await getLifecycleSettings();
-  const isPastGrace = isSubdomainExpired(invitation.eventData, lifecycleSettings.subdomainGraceDays);
-
-  if (!isPreview && (invitation.status === "ARCHIVED" || (lifecycleSettings.autoRecycleSubdomain && isPastGrace))) {
-    if (lifecycleSettings.autoRecycleSubdomain && isPastGrace) {
-      await releaseInvitationSubdomain(invitation);
-    }
-    const rootUrl = await getDynamicServerApexUrl(subdomain);
-    return NextResponse.redirect(`${rootUrl}/${invitation.invitationSlug}`, 307);
   }
 
   let html: string | null = null;

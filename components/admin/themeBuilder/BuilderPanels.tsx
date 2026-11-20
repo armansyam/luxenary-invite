@@ -44,6 +44,7 @@ import {
   FREE_SECTION_LIMITS,
   MAX_CUSTOM_CSS_LENGTH,
   PALETTE_EXTRA_FIELDS,
+  SCRIM_STYLES,
   SECTION_BG_TOKENS,
   SECTION_GRADIENTS,
   SECTION_IMAGE_OPACITY_LIMITS,
@@ -68,7 +69,9 @@ import type { BuilderEventType } from "@/lib/themeBuilder/spec";
 import { SIM_GALLERY_MAX, SIM_MEDIA_MAX_AGE_DAYS, simSlotsFor, type SimMedia, type SimSlot } from "@/lib/themeBuilder/simSlots";
 import { GoogleFontPicker } from "@/components/admin/themeBuilder/GoogleFontPicker";
 import { BUILDER_TEMPLATES, type BuilderTemplate } from "@/lib/themeBuilder/templates";
-import { builderMediaSlots, builderSlotReuse } from "@/lib/themeBuilder/mediaSlots";
+import { builderDetectedMediaSlots, builderMediaSlots, builderSlotReuse } from "@/lib/themeBuilder/mediaSlots";
+import type { DeclarableMediaSlot } from "@/lib/themeMediaSlots";
+import type { SlotCheck } from "@/components/admin/slotVisibility";
 
 export type PanelId = "colors" | "type" | "texts" | "layout" | "ornaments" | "motion" | "simulate" | "publish";
 
@@ -574,6 +577,107 @@ export function ColorsPanel({
         )}
       </Section>
 
+      <Section title="Efek lapisan foto" hint="Atur gelap scrim, arah gradasi, dan vignet tepi pada foto Sampul, Panel Kiri Desktop, Penutup, serta Pembuka/Mempelai mode Latar 100vh.">
+        <div className="space-y-3">
+          <div>
+            <div className="flex items-center justify-between text-[11.5px] font-semibold text-stone-700">
+              <span className="flex items-center gap-1.5">
+                Kepekatan Scrim
+                {spec.scrimOpacity !== undefined && spec.scrimOpacity !== 55 && (
+                  <button
+                    type="button"
+                    title="Kembalikan ke 55%"
+                    onClick={() => onChange({ scrimOpacity: undefined })}
+                    className="rounded px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 hover:bg-amber-50 cursor-pointer"
+                  >
+                    55%
+                  </button>
+                )}
+              </span>
+              <span className="font-mono text-[11px] text-stone-500">{spec.scrimOpacity ?? 55}%</span>
+            </div>
+            <input
+              type="range"
+              min={10}
+              max={90}
+              step={5}
+              value={spec.scrimOpacity ?? 55}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                onChange({ scrimOpacity: v === 55 ? undefined : v });
+              }}
+              className="mt-1.5 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-stone-200 accent-amber-600"
+            />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between text-[11.5px] font-semibold text-stone-700">
+              <span>Gaya Gradasi</span>
+              {spec.scrimStyle && spec.scrimStyle !== "balanced" && (
+                <button
+                  type="button"
+                  onClick={() => onChange({ scrimStyle: undefined })}
+                  className="rounded px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 hover:bg-amber-50 cursor-pointer"
+                >
+                  Standar
+                </button>
+              )}
+            </div>
+            <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+              {SCRIM_STYLES.map((opt) => {
+                const active = (spec.scrimStyle ?? "balanced") === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    aria-pressed={active}
+                    title={opt.hint}
+                    onClick={() => onChange({ scrimStyle: opt.id === "balanced" ? undefined : opt.id })}
+                    className={`rounded-lg border px-2 py-1.5 text-left transition cursor-pointer ${
+                      active ? "border-amber-500 bg-amber-50/70 text-stone-900" : "border-stone-200 bg-white text-stone-700 hover:border-stone-300"
+                    }`}
+                  >
+                    <p className="text-[11px] font-semibold leading-tight">{opt.label}</p>
+                    <p className="mt-0.5 text-[9.5px] leading-snug text-stone-500">{opt.hint}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between text-[11.5px] font-semibold text-stone-700">
+              <span className="flex items-center gap-1.5">
+                Efek Vignet Tepi
+                {(spec.vignette ?? 0) > 0 && (
+                  <button
+                    type="button"
+                    title="Matikan vignet"
+                    onClick={() => onChange({ vignette: undefined })}
+                    className="rounded px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 hover:bg-amber-50 cursor-pointer"
+                  >
+                    0%
+                  </button>
+                )}
+              </span>
+              <span className="font-mono text-[11px] text-stone-500">{spec.vignette ?? 0}%</span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={85}
+              step={5}
+              value={spec.vignette ?? 0}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                onChange({ vignette: v === 0 ? undefined : v });
+              }}
+              className="mt-1.5 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-stone-200 accent-amber-600"
+            />
+          </div>
+        </div>
+      </Section>
+
       <SectionBackgroundsEditor spec={spec} backdrops={backdrops} onChange={onChange} />
 
       <Section title="Media bawaan" hint="Dipakai sampai klien mengunggah foto sendiri. Slot yang tidak dipilih memakai warna palet. Foto orang tidak pernah punya bawaan.">
@@ -610,39 +714,6 @@ export function ColorsPanel({
               </div>
             </div>
           ))}
-        </div>
-        <div className="mt-3 border-t border-stone-100 pt-3">
-          <div className="flex items-center justify-between text-[11.5px] font-semibold text-stone-700">
-            <span className="flex items-center gap-1.5">
-              Gelap Lapisan Foto (Scrim Sampul & Penutup)
-              {spec.scrimOpacity !== undefined && spec.scrimOpacity !== 55 && (
-                <button
-                  type="button"
-                  title="Kembalikan ke 55%"
-                  onClick={() => onChange({ scrimOpacity: undefined })}
-                  className="rounded px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 hover:bg-amber-50 cursor-pointer"
-                >
-                  55%
-                </button>
-              )}
-            </span>
-            <span className="font-mono text-[11px] text-stone-500">{spec.scrimOpacity ?? 55}%</span>
-          </div>
-          <input
-            type="range"
-            min={10}
-            max={90}
-            step={5}
-            value={spec.scrimOpacity ?? 55}
-            onChange={(e) => {
-              const v = Number(e.target.value);
-              onChange({ scrimOpacity: v === 55 ? undefined : v });
-            }}
-            className="mt-1.5 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-stone-200 accent-amber-600"
-          />
-          <p className="mt-1 text-[10.5px] leading-snug text-stone-500">
-            Mengatur kegelapan selimut di atas foto Sampul, Panel Kiri Desktop, dan Penutup agar teks judul tetap terbaca jelas.
-          </p>
         </div>
       </Section>
 
@@ -1259,7 +1330,7 @@ export function LayoutPanel({
   const backdrops: ReadonlyArray<{ id: string; label: string }> = [...TEXTURE_OPTIONS, ...(library?.uploads ?? []).map((u) => ({ id: u.url, label: "Gambar unggahan" }))];
   return (
     <>
-      <Section title="Posisi elemen" hint="Klik elemen di pratinjau atau pilih di sini, lalu seret atau atur geser, ukuran, dan putar. Posisi relatif terhadap elemen itu sendiri, jadi tetap mengalir bersama isi klien dan mengikuti lebar layar.">
+      <Section title="Posisi elemen" hint="Tata posisi di Mobile (bawaan 375px) atau tarik tepi jendela pratinjau untuk menguji ukuran layar lain (320–480px maupun Desktop). Pergeseran memakai piksel proporsional kanvas sehingga tetap rapi saat teks berpindah baris.">
         <div className="grid grid-cols-1 gap-1.5">
           {familyBlocks(spec.eventType).map((block) => {
             const custom = Boolean(spec.blocks[block.id]);
@@ -1915,11 +1986,17 @@ export function OrnamentsPanel({
               >
                 {o.text ? <span className="line-clamp-2 break-all text-center text-[10px] font-semibold leading-tight text-stone-600">{o.text.value}</span> : <img src={o.src} alt="" className="max-h-full max-w-full object-contain" />}
                 {o.attach && <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-blue-600" />}
+                {o.locked && (
+                  <span className="absolute bottom-1 left-1 flex h-3.5 w-3.5 items-center justify-center rounded bg-amber-100 text-amber-800" title="Lapisan dikunci">
+                    <svg className="h-2.5 w-2.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M7 11V7a5 5 0 0110 0v4M5 11h14v9H5z" /></svg>
+                  </span>
+                )}
               </button>
             ))}
           </div>
         )}
         {inSection.some((o) => o.attach) && <p className="mt-2 text-[10.5px] text-stone-500">Titik biru: menempel ke blok dan ikut bergeser bersamanya.</p>}
+        {inSection.some((o) => o.locked) && <p className="mt-1 text-[10.5px] text-stone-500">Ikon gembok: lapisan terkunci di pratinjau; klik di daftar ini untuk membuka kuncinya.</p>}
         {inSection.some((o) => !o.attach && !o.before) && onCopySectionToAllFlow && (
           <button
             type="button"
@@ -1960,21 +2037,47 @@ export function OrnamentsPanel({
   );
 }
 
+const SLOT_CHECK_DOT: Record<SlotCheck["status"], { dot: string; label: string }> = {
+  visible: { dot: "bg-emerald-500", label: "Terlihat" },
+  dim: { dot: "bg-amber-500", label: "Sangat gelap" },
+  covered: { dot: "bg-rose-500", label: "Tertutup" },
+  hidden: { dot: "bg-rose-500", label: "Tersembunyi" },
+  absent: { dot: "bg-stone-400", label: "Tidak dipakai" },
+  "other-view": { dot: "bg-sky-500", label: "Tampilan lain" },
+};
+
 /**
  * Foto uji (simulasi): foto contoh per slot media klien untuk melihat rancangan dengan foto nyata sebelum terbit. Foto
  * tidak masuk ke tema; slot kosong tampil seperti klien yang belum mengunggah (bawaan tema).
  */
-export function SimulatePanel({ eventType, sim, active, uploading, onUpload, onRemove, onActivate, onClear }: {
+export function SimulatePanel({
+  eventType,
+  sim,
+  active,
+  uploading,
+  disabledMediaSlots,
+  slotChecks,
+  onCheckSlots,
+  onUpload,
+  onRemove,
+  onActivate,
+  onClear,
+}: {
   eventType: BuilderEventType;
   sim: SimMedia;
   active: boolean;
   uploading: string | null;
+  disabledMediaSlots?: DeclarableMediaSlot[];
+  slotChecks?: SlotCheck[] | null;
+  onCheckSlots?: () => void;
   onUpload: (target: SimSlot["slot"] | "GALLERY", files: FileList) => void;
   onRemove: (target: SimSlot["slot"] | "GALLERY", url?: string) => void;
   onActivate: () => void;
   onClear: () => void;
 }) {
   const filled = Object.keys(sim.slots).length + sim.gallery.length;
+  const filledSlotCount = Object.values(sim.slots).filter(Boolean).length;
+  const disabledSet = new Set(disabledMediaSlots ?? []);
   return (
     <div>
       <Section title="Simulasi foto klien" hint={`Foto uji hanya untuk pratinjau: tidak tersimpan di tema dan terhapus otomatis setelah ${SIM_MEDIA_MAX_AGE_DAYS} hari. Slot kosong tampil seperti klien yang belum mengunggah.`}>
@@ -1986,18 +2089,50 @@ export function SimulatePanel({ eventType, sim, active, uploading, onUpload, onR
           )}
           {filled > 0 && <button type="button" onClick={onClear} className="text-[11px] font-semibold text-stone-500 hover:text-stone-800 hover:underline cursor-pointer">Kosongkan semua</button>}
         </div>
+        {onCheckSlots && active && filledSlotCount > 0 && (
+          <div className="mt-3 border-t border-stone-100 pt-3">
+            <button
+              type="button"
+              onClick={onCheckSlots}
+              className="w-full rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-[11.5px] font-semibold text-stone-800 transition hover:bg-stone-100 cursor-pointer"
+            >
+              Periksa keterlihatan foto di pratinjau
+            </button>
+            {slotChecks && slotChecks.length > 0 && (
+              <ul className="mt-2.5 space-y-1.5 rounded-xl border border-stone-200 bg-white p-2.5 text-[11px]">
+                {slotChecks.map((c) => {
+                  const badge = SLOT_CHECK_DOT[c.status];
+                  return (
+                    <li key={c.slot} className="flex items-start gap-2">
+                      <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${badge.dot}`} />
+                      <span className="min-w-0 flex-1 text-stone-600">
+                        <span className="font-semibold text-stone-800">{slotLabelFor(c.slot, eventType)}</span>
+                        {" — "}
+                        {c.note}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        )}
       </Section>
       <Section title="Slot media">
         <ul className="space-y-2">
           {simSlotsFor(eventType).map((s) => {
             const url = sim.slots[s.slot];
+            const locked = disabledSet.has(s.slot as DeclarableMediaSlot);
             return (
-              <li key={s.slot} className="flex items-center gap-2.5">
+              <li key={s.slot} className={`flex items-center gap-2.5 ${locked ? "opacity-60" : ""}`}>
                 <span className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-stone-100 ring-1 ring-stone-900/10">
                   {url && <img src={url} alt="" className="h-full w-full object-cover" />}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[12px] font-semibold text-stone-800">{s.label}</span>
+                  <span className="flex items-center gap-1.5 text-[12px] font-semibold text-stone-800">
+                    {s.label}
+                    {locked && <span className="rounded bg-stone-200 px-1.5 py-0.5 text-[9.5px] font-semibold text-stone-600">Dikunci tema</span>}
+                  </span>
                   <span className="block text-[10.5px] leading-snug text-stone-500">{s.hint}</span>
                 </span>
                 <label className={`shrink-0 rounded-lg border border-stone-200 px-2 py-1 text-[11px] font-semibold text-stone-700 hover:border-stone-400 ${uploading ? "opacity-50" : "cursor-pointer"}`}>
@@ -2117,6 +2252,7 @@ export function PublishPanel({
   onDuplicate,
   onExport,
   onRestoreRevision,
+  onToggleMediaSlot,
 }: {
   spec: BuilderSpec;
   meta: ThemeMeta;
@@ -2129,6 +2265,7 @@ export function PublishPanel({
   onDuplicate: () => void;
   onExport: () => void;
   onRestoreRevision: (id: string) => void;
+  onToggleMediaSlot?: (slot: DeclarableMediaSlot) => void;
 }) {
   const contrastOk = paletteChecks(spec).every((c) => c.ok);
   const checklist: Array<{ label: string; ok: boolean; note?: string }> = [
@@ -2185,15 +2322,47 @@ export function PublishPanel({
         </div>
       </Section>
 
-      <Section title="Slot foto klien" hint="Studio klien hanya menampilkan slot ini; dihitung otomatis dari tata letak saat disimpan.">
-        <ul className="space-y-1.5 text-[11.5px] text-stone-700">
-          {Object.entries(builderMediaSlots(spec)).map(([slot, d]) => (
-            <li key={slot}>
-              <span className="font-semibold">{slotLabelFor(slot, spec.eventType)}</span>
-              <span className="text-stone-500"> · {d?.places.join(", ")}</span>
-            </li>
-          ))}
-        </ul>
+      <Section title="Slot foto klien" hint="Pilih slot mana saja yang boleh diganti klien di Studio. Slot yang dimatikan disembunyikan di Studio klien dan tetap memakai bawaan/desain tema.">
+        {(() => {
+          const detected = Object.entries(builderDetectedMediaSlots(spec)) as Array<[DeclarableMediaSlot, { places: string[] }]>;
+          const activeCount = Object.keys(builderMediaSlots(spec)).length;
+          const disabledSet = new Set(spec.disabledMediaSlots ?? []);
+          return (
+            <>
+              <p className="mb-2 text-[11px] font-medium text-stone-500">
+                {activeCount} dari {detected.length} slot aktif di Studio klien
+              </p>
+              <ul className="space-y-1.5 text-[11.5px] text-stone-700">
+                {detected.map(([slot, d]) => {
+                  const enabled = !disabledSet.has(slot);
+                  return (
+                    <li key={slot} className="flex items-center justify-between gap-2 rounded-lg border border-stone-100 bg-stone-50/70 px-2.5 py-1.5">
+                      <span className={`min-w-0 flex-1 ${enabled ? "" : "opacity-55"}`}>
+                        <span className="block font-semibold text-stone-800">{slotLabelFor(slot, spec.eventType)}</span>
+                        <span className="block truncate text-[10.5px] text-stone-500">{enabled ? d.places.join(", ") : "Dikunci tema (tidak tampil di Studio)"}</span>
+                      </span>
+                      {onToggleMediaSlot && (
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={enabled}
+                          aria-label={`${enabled ? "Kunci" : "Buka"} slot ${slotLabelFor(slot, spec.eventType)}`}
+                          onClick={() => onToggleMediaSlot(slot)}
+                          className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2 py-1 text-[10.5px] font-semibold transition cursor-pointer ${
+                            enabled ? "border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50" : "border-stone-200 bg-stone-100 text-stone-500 hover:bg-stone-200/70"
+                          }`}
+                        >
+                          <span className={`h-1.5 w-1.5 rounded-full ${enabled ? "bg-emerald-500" : "bg-stone-400"}`} />
+                          {enabled ? "Buka" : "Kunci"}
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          );
+        })()}
         {builderSlotReuse(spec).length > 0 && (
           <div className="mt-3 rounded-xl bg-amber-50 p-3 text-[11.5px] text-amber-900">
             <p className="font-semibold">Foto klien yang sama tampil di beberapa tempat:</p>

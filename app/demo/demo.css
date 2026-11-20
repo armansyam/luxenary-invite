@@ -262,7 +262,8 @@
 .demo-catalog-root .catalog-action {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: space-between;
+  gap: 0.75rem;
   margin-top: 0.75rem;
 }
 

@@ -9,6 +9,7 @@ export interface PartnerSessionPayload {
   partnerId: string;
   email: string;
   exp: number;
+  sv: number;
 }
 
 function getPartnerSecret(): string {
@@ -26,11 +27,12 @@ function signHmac(payloadB64: string): string {
     .digest("base64url");
 }
 
-export function signPartnerSession(partnerId: string, email: string): string {
+export function signPartnerSession(partnerId: string, email: string, sessionVersion = 0): string {
   const payload: PartnerSessionPayload = {
     partnerId,
     email: email.trim().toLowerCase(),
     exp: Math.floor(Date.now() / 1000) + PARTNER_SESSION_TTL_SECONDS,
+    sv: Number.isInteger(sessionVersion) && sessionVersion >= 0 ? sessionVersion : 0,
   };
   const payloadB64 = Buffer.from(JSON.stringify(payload), "utf-8").toString("base64url");
   const sig = signHmac(payloadB64);
@@ -76,6 +78,7 @@ export function verifyPartnerSession(token: string | undefined | null): PartnerS
       partnerId: decoded.partnerId,
       email: decoded.email,
       exp: decoded.exp,
+      sv: typeof decoded.sv === "number" && Number.isInteger(decoded.sv) && decoded.sv >= 0 ? decoded.sv : 0,
     };
   } catch {
     return null;

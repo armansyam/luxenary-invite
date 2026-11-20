@@ -56,6 +56,8 @@ export async function GET() {
         invitationSlug: true,
         orderId: true,
         isFreeDraft: true,
+        themeId: true,
+        eventType: true,
       },
     });
 

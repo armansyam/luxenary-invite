@@ -371,26 +371,24 @@
       }
 
       /* =================================================================== */
-      /* STANDAR TIPOGRAFI DESKTOP SPLIT (ANTI-OVERFLOW / MOBILE SCALE)       */
-      /* CATATAN PENTING THEME BUILDER:                                      */
-      /* Unit 'vw' mengevaluasi seluruh viewport monitor (1440-1920px),      */
-      /* BUKAN lebar panel 460px. Selalu batasi judul h1/h2 di desktop split  */
-      /* maksimal 2.1rem - 2.3rem agar teks tidak meluap keluar panel kanan.  */
+      /* STANDAR TIPOGRAFI DESKTOP SPLIT (SKALA 1:1 DENGAN MOBILE)            */
+      /* Kolom kanan desktop (460px) berbagi koordinat blok dengan mobile,   */
+      /* jadi tipografi dan padding seksi isi dijaga selaras dengan 375px    */
+      /* (tidak memakai vw monitor penuh) agar posisi blok identik.          */
       /* =================================================================== */
-      .cover-names {
-        font-size: clamp(2.2rem, 2.8rem, 3.2rem) !important;
-        overflow-wrap: break-word !important;
+      .cover-names,
+      .opening-names {
+        overflow-wrap: break-word;
       }
 
       .sec-main-title,
       .sec-heading {
-        font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important;
-        overflow-wrap: break-word !important;
-        word-break: break-word !important;
+        overflow-wrap: break-word;
+        word-break: break-word;
       }
 
       .sec-flow {
-        padding: 4.5rem 1.8rem;
+        padding: 56px 24px;
       }
     }
 
@@ -482,7 +480,7 @@
     }
 
     .opening-names {
-      font-size: clamp(2.6rem, 9.5vw, 3.8rem);
+      font-size: clamp(2.1rem, 11vw, 2.6rem);
       color: var(--text-main);
       line-height: 1.1;
       font-weight: 400;

@@ -44,13 +44,13 @@ export async function GET(req: NextRequest) {
       andConditions.push({
         OR: [
           { orders: { some: { status: "PAID" } } },
-          { invitations: { some: {} } },
+          { invitations: { some: { isFreeDraft: false } } },
         ],
       });
     } else if (filter === "leads") {
       andConditions.push({
         orders: { none: { status: "PAID" } },
-        invitations: { none: {} },
+        invitations: { none: { isFreeDraft: false } },
       });
     }
 
@@ -85,6 +85,8 @@ export async function GET(req: NextRequest) {
               subdomain: true,
               invitationSlug: true,
               status: true,
+              isFreeDraft: true,
+              createdAt: true,
               themeId: true,
               eventData: true,
               galleryExpiresAt: true,
@@ -105,14 +107,14 @@ export async function GET(req: NextRequest) {
       prisma.user.count({
         where: {
           role: "CLIENT",
-          OR: [{ orders: { some: { status: "PAID" } } }, { invitations: { some: {} } }],
+          OR: [{ orders: { some: { status: "PAID" } } }, { invitations: { some: { isFreeDraft: false } } }],
         },
       }),
       prisma.user.count({
         where: {
           role: "CLIENT",
           orders: { none: { status: "PAID" } },
-          invitations: { none: {} },
+          invitations: { none: { isFreeDraft: false } },
         },
       }),
     ]);

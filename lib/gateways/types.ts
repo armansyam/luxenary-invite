@@ -15,7 +15,7 @@ export interface PaymentGateway {
   }>;
 
   /** Verifikasi status pembayaran berdasarkan referenceId/orderId */
-  verify(reference: string): Promise<{ status: "PAID" | "FAILED" | "PENDING" }>;
+  verify(reference: string): Promise<{ status: "PAID" | "FAILED" | "PENDING"; grossAmount?: number }>;
 
   /**
    * Batalkan transaksi aktif di sisi gateway secara seketika (two-way cancellation).

@@ -76,6 +76,36 @@ interface AffiliateCommission {
   };
 }
 
+interface PartnerPayoutRecord {
+  id: string;
+  amount: number;
+  expenseDate: string;
+  paymentSource: string | null;
+  referenceNumber: string | null;
+  notes: string | null;
+  hasReceipt: boolean;
+  partnerAffiliateId: string | null;
+  partner: {
+    id: string;
+    name: string;
+    email: string | null;
+    bankName: string | null;
+    accountNumber: string | null;
+  } | null;
+}
+
+function formatPayoutMethod(source: string | null): string {
+  switch (source) {
+    case "E_WALLET":
+      return "E-Wallet";
+    case "TUNAI":
+      return "Tunai";
+    case "TRANSFER_BANK":
+    default:
+      return "Transfer Bank";
+  }
+}
+
 // <input type="datetime-local"> reads and writes wall-clock time in the browser's zone; toISOString() is UTC.
 export function toDateTimeLocalValue(iso: string): string {
   const d = new Date(iso);
@@ -83,11 +113,12 @@ export function toDateTimeLocalValue(iso: string): string {
 }
 
 export function AdminMarketingTab() {
-  const [activeSubTab, setActiveSubTab] = useState<"coupons" | "partners" | "commissions">("coupons");
+  const [activeSubTab, setActiveSubTab] = useState<"coupons" | "partners" | "commissions" | "payouts">("coupons");
   const [promoEnabled, setPromoEnabled] = useState<boolean>(false);
   const [coupons, setCoupons] = useState<PromoCoupon[]>([]);
   const [partners, setPartners] = useState<PartnerAffiliate[]>([]);
   const [commissions, setCommissions] = useState<AffiliateCommission[]>([]);
+  const [payouts, setPayouts] = useState<PartnerPayoutRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [togglingMaster, setTogglingMaster] = useState<boolean>(false);
@@ -115,7 +146,11 @@ export function AdminMarketingTab() {
   const [payoutModalOpen, setPayoutModalOpen] = useState<boolean>(false);
   const [payoutPartner, setPayoutPartner] = useState<PartnerAffiliate | null>(null);
   const [payoutAmount, setPayoutAmount] = useState<string>("");
+  const [payoutPaymentSource, setPayoutPaymentSource] = useState<"TRANSFER_BANK" | "E_WALLET" | "TUNAI">("TRANSFER_BANK");
+  const [payoutReferenceNumber, setPayoutReferenceNumber] = useState<string>("");
   const [payoutNotes, setPayoutNotes] = useState<string>("");
+  const [payoutReceiptFile, setPayoutReceiptFile] = useState<File | null>(null);
+  const [payoutReceiptPreviewUrl, setPayoutReceiptPreviewUrl] = useState<string | null>(null);
   const [payoutLoading, setPayoutLoading] = useState<boolean>(false);
 
   // Form states - Coupon
@@ -168,6 +203,7 @@ export function AdminMarketingTab() {
       setCoupons(data.coupons ?? []);
       setPartners(data.partners ?? []);
       setCommissions(data.commissions ?? []);
+      setPayouts(Array.isArray(data.payouts) ? data.payouts : []);
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan saat memuat data");
     } finally {
@@ -426,12 +462,55 @@ export function AdminMarketingTab() {
     });
   };
 
+  const clearPayoutReceipt = useCallback(() => {
+    setPayoutReceiptFile(null);
+    setPayoutReceiptPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (payoutReceiptPreviewUrl) URL.revokeObjectURL(payoutReceiptPreviewUrl);
+    };
+  }, [payoutReceiptPreviewUrl]);
+
+  const handleSelectPayoutReceipt = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setActionFeedback({ type: "error", message: "Ukuran file bukti transfer maksimal 5MB." });
+      e.target.value = "";
+      return;
+    }
+    const allowed = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
+    if (file.type && !allowed.has(file.type)) {
+      setActionFeedback({ type: "error", message: "Format bukti transfer harus JPG, PNG, WEBP, atau PDF." });
+      e.target.value = "";
+      return;
+    }
+    setPayoutReceiptFile(file);
+    setPayoutReceiptPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return file.type.startsWith("image/") ? URL.createObjectURL(file) : null;
+    });
+  };
+
   // Open Payout Modal
   const openPayoutDialog = (partner: PartnerAffiliate) => {
     setPayoutPartner(partner);
     setPayoutAmount(String(partner.pendingBalance));
+    setPayoutPaymentSource("TRANSFER_BANK");
+    setPayoutReferenceNumber("");
     setPayoutNotes(`Pencairan komisi mitra via transfer ke ${partner.bankName || "Bank"} ${partner.accountNumber || ""}`);
+    clearPayoutReceipt();
     setPayoutModalOpen(true);
+  };
+
+  const closePayoutDialog = () => {
+    setPayoutModalOpen(false);
+    clearPayoutReceipt();
   };
 
   // Execute Payout
@@ -447,22 +526,43 @@ export function AdminMarketingTab() {
 
     setPayoutLoading(true);
     try {
+      const formData = new FormData();
+      formData.append("action", "PAYOUT_PARTNER");
+      formData.append("partnerId", payoutPartner.id);
+      formData.append("amount", String(amountNum));
+      formData.append("paymentSource", payoutPaymentSource);
+      if (payoutReferenceNumber.trim()) {
+        formData.append("referenceNumber", payoutReferenceNumber.trim());
+      }
+      if (payoutNotes.trim()) {
+        formData.append("notes", payoutNotes.trim());
+      }
+      if (payoutReceiptFile) {
+        formData.append("receiptFile", payoutReceiptFile);
+      }
+
       const res = await fetch("/api/admin/marketing", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "PAYOUT_PARTNER",
-          partnerId: payoutPartner.id,
-          amount: amountNum,
-          notes: payoutNotes,
-        }),
+        body: formData,
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal mencatat payout komisi");
 
-      setActionFeedback({ type: "success", message: `Pencairan sebesar Rp ${amountNum.toLocaleString("id-ID")} berhasil dicatat ke Finance!` });
-      setPayoutModalOpen(false);
+      const amountLabel = `Rp ${amountNum.toLocaleString("id-ID")}`;
+      let feedbackMsg = `Pencairan sebesar ${amountLabel} berhasil dicatat ke Finance.`;
+      if (data.emailSent && data.emailRecipient) {
+        feedbackMsg = `Pencairan ${amountLabel} berhasil dicatat & email detail pencairan${data.hasReceipt ? " beserta bukti transfer" : ""} terkirim ke ${data.emailRecipient}.`;
+      } else if (data.emailError === "PARTNER_EMAIL_MISSING") {
+        feedbackMsg = `Pencairan ${amountLabel} berhasil dicatat ke Finance. Email tidak dikirim karena mitra belum memiliki alamat email.`;
+      } else if (data.emailError === "SMTP_NOT_CONFIGURED") {
+        feedbackMsg = `Pencairan ${amountLabel} berhasil dicatat ke Finance. Email tidak dikirim karena SMTP belum dikonfigurasi.`;
+      } else if (data.emailError) {
+        feedbackMsg = `Pencairan ${amountLabel} berhasil dicatat ke Finance, namun email ke ${data.emailRecipient || "mitra"} gagal dikirim (${data.emailError}).`;
+      }
+
+      setActionFeedback({ type: "success", message: feedbackMsg });
+      closePayoutDialog();
       fetchData();
     } catch (err: any) {
       setActionFeedback({ type: "error", message: err.message || "Gagal mencatat payout" });
@@ -492,6 +592,19 @@ export function AdminMarketingTab() {
       );
     });
   }, [partners, searchQuery]);
+
+  const filteredPayouts = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return payouts;
+    return payouts.filter((p) => {
+      return (
+        (p.partner?.name && p.partner.name.toLowerCase().includes(q)) ||
+        (p.partner?.email && p.partner.email.toLowerCase().includes(q)) ||
+        (p.referenceNumber && p.referenceNumber.toLowerCase().includes(q)) ||
+        (p.notes && p.notes.toLowerCase().includes(q))
+      );
+    });
+  }, [payouts, searchQuery]);
 
   // Aggregate stats
   const stats = useMemo(() => {
@@ -646,6 +759,17 @@ export function AdminMarketingTab() {
             }`}
           >
             Riwayat Komisi ({commissions.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => { setActiveSubTab("payouts"); setSearchQuery(""); }}
+            className={`px-4 py-2 text-xs font-bold rounded-lg transition ${
+              activeSubTab === "payouts"
+                ? "bg-white text-gray-900 shadow-xs"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            Riwayat Pencairan ({payouts.length})
           </button>
         </div>
 
@@ -1073,6 +1197,100 @@ export function AdminMarketingTab() {
               </div>
             </div>
           )}
+
+          {/* TAB 4: RIWAYAT PENCAIRAN KOMISI */}
+          {activeSubTab === "payouts" && (
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-gray-600">
+                  <thead className="bg-gray-50/80 border-b border-gray-200 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                    <tr>
+                      <th className="py-3 px-4">Tanggal Cair</th>
+                      <th className="py-3 px-4">Mitra Penerima</th>
+                      <th className="py-3 px-4">Metode &amp; Referensi</th>
+                      <th className="py-3 px-4 text-right">Nominal Dicairkan</th>
+                      <th className="py-3 px-4">Catatan</th>
+                      <th className="py-3 px-4 text-right">Bukti Transfer</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {filteredPayouts.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-8 text-center text-gray-400">
+                          Belum ada riwayat pencairan komisi mitra.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredPayouts.map((p) => (
+                        <tr key={p.id} className="hover:bg-gray-50/50 transition">
+                          <td className="py-3.5 px-4 text-[11px] text-gray-600 whitespace-nowrap">
+                            {new Date(p.expenseDate).toLocaleString("id-ID", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <span className="font-bold text-gray-900 block">
+                              {p.partner?.name || "Mitra"}
+                            </span>
+                            {p.partner?.email && (
+                              <span className="text-[10px] text-gray-400 block">{p.partner.email}</span>
+                            )}
+                            {p.partner?.bankName && (
+                              <span className="text-[10px] text-gray-400 block font-mono">
+                                {p.partner.bankName} - {p.partner.accountNumber}
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <span className="font-semibold text-gray-800 block">
+                              {formatPayoutMethod(p.paymentSource)}
+                            </span>
+                            {p.referenceNumber && (
+                              <span className="text-[10px] font-mono text-gray-500 block">
+                                Ref: {p.referenceNumber}
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 text-right font-mono font-bold text-emerald-700 whitespace-nowrap">
+                            Rp {Number(p.amount).toLocaleString("id-ID")}
+                          </td>
+                          <td className="py-3.5 px-4 text-[11px] text-gray-500 max-w-xs truncate" title={p.notes || ""}>
+                            {p.notes || "-"}
+                          </td>
+                          <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                            {p.hasReceipt ? (
+                              <div className="inline-flex items-center gap-1.5">
+                                <a
+                                  href={`/api/admin/marketing/payouts/${p.id}/receipt`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-[11px] font-semibold transition"
+                                >
+                                  Lihat Bukti
+                                </a>
+                                <a
+                                  href={`/api/admin/marketing/payouts/${p.id}/receipt?download=1`}
+                                  className="px-2 py-1 rounded-lg bg-white hover:bg-gray-100 text-gray-600 border border-gray-200 text-[11px] font-semibold transition"
+                                >
+                                  Unduh
+                                </a>
+                              </div>
+                            ) : (
+                              <span className="text-[11px] text-gray-400">Tanpa lampiran</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </>
       )}
 
@@ -1467,10 +1685,10 @@ export function AdminMarketingTab() {
         </div>
       )}
 
-      {/* ── MODAL PAYOUT MITRA (INTEGRASI FINANCE) ── */}
+      {/* ── MODAL PAYOUT MITRA (INTEGRASI FINANCE + BUKTI TRANSFER + EMAIL OTOMATIS) ── */}
       {payoutModalOpen && payoutPartner && (
         <div className="fixed inset-0 z-50 bg-gray-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
               <div>
                 <h3 className="text-base font-bold text-gray-900">Pencairan Komisi Mitra</h3>
@@ -1480,8 +1698,8 @@ export function AdminMarketingTab() {
               </div>
               <button
                 type="button"
-                onClick={() => setPayoutModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 p-1"
+                onClick={closePayoutDialog}
+                className="text-gray-400 hover:text-gray-600 p-1 cursor-pointer"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1490,15 +1708,36 @@ export function AdminMarketingTab() {
             </div>
 
             <form onSubmit={handleExecutePayout} className="space-y-4 text-xs">
-              <div className="p-3 bg-amber-50/80 rounded-xl border border-amber-200/80">
+              <div className="p-3.5 bg-amber-50/80 rounded-xl border border-amber-200/80">
                 <span className="text-[11px] text-amber-800 block">Total Saldo Belum Dibayar:</span>
                 <span className="text-xl font-bold font-mono text-amber-950 block mt-0.5">
                   Rp {Number(payoutPartner.pendingBalance).toLocaleString("id-ID")}
                 </span>
-                <span className="text-[10px] text-amber-900/70 block mt-1">
-                  Rekening Tujuan: {payoutPartner.bankName || "Bank"} {payoutPartner.accountNumber} (a.n. {payoutPartner.accountName || payoutPartner.name})
+                <span className="text-[10px] text-amber-900/75 block mt-1">
+                  Rekening Tujuan: {payoutPartner.bankName || "Bank"} {payoutPartner.accountNumber || "-"} (a.n. {payoutPartner.accountName || payoutPartner.name})
                 </span>
               </div>
+
+              {payoutPartner.email ? (
+                <div className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200/80 text-[11px] text-emerald-900 flex items-start gap-2">
+                  <svg className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <span>
+                    Detail pencairan &amp; lampiran bukti transfer akan dikirim otomatis ke{" "}
+                    <strong className="font-mono">{payoutPartner.email}</strong>.
+                  </span>
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-900 flex items-start gap-2">
+                  <svg className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                  </svg>
+                  <span>
+                    Mitra ini belum memiliki alamat email terdaftar. Pencairan tetap tercatat ke Finance, namun email otomatis tidak akan terkirim.
+                  </span>
+                </div>
+              )}
 
               <div>
                 <label className="font-bold text-gray-700 block mb-1">Nominal Dicairkan (Rp) *</label>
@@ -1513,33 +1752,114 @@ export function AdminMarketingTab() {
                 />
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-gray-700 block mb-1">Metode Pembayaran</label>
+                  <select
+                    value={payoutPaymentSource}
+                    onChange={(e) => setPayoutPaymentSource(e.target.value as "TRANSFER_BANK" | "E_WALLET" | "TUNAI")}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white focus:outline-none focus:border-amber-500"
+                  >
+                    <option value="TRANSFER_BANK">Transfer Bank</option>
+                    <option value="E_WALLET">E-Wallet</option>
+                    <option value="TUNAI">Tunai</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-bold text-gray-700 block mb-1">No. Referensi Transfer</label>
+                  <input
+                    type="text"
+                    maxLength={100}
+                    value={payoutReferenceNumber}
+                    onChange={(e) => setPayoutReferenceNumber(e.target.value)}
+                    placeholder="Opsional, mis. TRF-20261120"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-mono bg-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label className="font-bold text-gray-700 block mb-1">Catatan Payout / Bukti Transfer</label>
+                <label className="font-bold text-gray-700 block mb-1">
+                  Upload Bukti Transfer (JPG, PNG, WEBP, PDF — maks 5MB)
+                </label>
+                {!payoutReceiptFile ? (
+                  <label className="flex flex-col items-center justify-center gap-1.5 px-4 py-4 border-2 border-dashed border-gray-300 hover:border-amber-500 rounded-xl bg-gray-50/70 hover:bg-amber-50/30 transition cursor-pointer text-center">
+                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" strokeWidth={1.7} viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12" />
+                    </svg>
+                    <span className="font-semibold text-gray-700">Pilih file bukti transfer</span>
+                    <span className="text-[10px] text-gray-400">
+                      Otomatis tersimpan di Finance &amp; dilampirkan pada email pencairan mitra
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,application/pdf"
+                      onChange={handleSelectPayoutReceipt}
+                      className="hidden"
+                    />
+                  </label>
+                ) : (
+                  <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50/40 flex items-center gap-3">
+                    {payoutReceiptPreviewUrl ? (
+                      <img
+                        src={payoutReceiptPreviewUrl}
+                        alt="Pratinjau bukti transfer"
+                        className="w-12 h-12 rounded-lg object-cover border border-emerald-200 shrink-0 bg-white"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg bg-white border border-emerald-200 flex items-center justify-center text-[10px] font-bold text-emerald-800 shrink-0">
+                        PDF
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold text-gray-900 truncate">{payoutReceiptFile.name}</div>
+                      <div className="text-[10px] text-gray-500">
+                        {(payoutReceiptFile.size / 1024).toFixed(1)} KB • Siap dilampirkan
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={clearPayoutReceipt}
+                      className="px-2.5 py-1 rounded-lg bg-white border border-gray-200 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 text-[11px] font-semibold text-gray-600 transition cursor-pointer"
+                    >
+                      Hapus
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="font-bold text-gray-700 block mb-1">Catatan Payout</label>
                 <textarea
                   rows={2}
+                  maxLength={500}
                   value={payoutNotes}
                   onChange={(e) => setPayoutNotes(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white focus:outline-none focus:border-amber-500"
                 />
                 <span className="text-[10px] text-gray-400 block mt-1">
-                  Tindakan ini akan otomatis membuat pengeluaran kas (Expense) kategori MARKETING di Tab Finance.
+                  Otomatis mencatat pengeluaran kas (Expense) kategori MARKETING di Tab Finance beserta struknya.
                 </span>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
                 <button
                   type="button"
-                  onClick={() => setPayoutModalOpen(false)}
-                  className="px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition"
+                  onClick={closePayoutDialog}
+                  className="px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={payoutLoading}
-                  className="px-5 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs transition"
+                  className="px-5 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs transition cursor-pointer disabled:opacity-60"
                 >
-                  {payoutLoading ? "Memproses..." : "Konfirmasi & Catat Pengeluaran"}
+                  {payoutLoading
+                    ? "Memproses..."
+                    : payoutPartner.email
+                      ? "Konfirmasi & Kirim Email"
+                      : "Konfirmasi & Catat Pengeluaran"}
                 </button>
               </div>
             </form>
