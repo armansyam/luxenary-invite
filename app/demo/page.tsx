@@ -93,18 +93,127 @@ export default function CatalogGridShowcase() {
       .catch(() => setLoading(false));
   }, [platformName]);
 
+  const EVENT_LABELS: Record<string, string> = {
+    wedding: "Pernikahan",
+    birthday: "Ulang Tahun",
+    khitan: "Khitanan",
+    aqiqah: "Aqiqah",
+    wisuda: "Wisuda",
+    gathering: "Gathering & Acara",
+  };
+
   // Tema yang tidak bisa dipakai jenis acara aktif mana pun tidak ditawarkan; filter acara yang ditutup kembali ke "Semua".
   const offeredThemes = enabledEventTypes ? themes.filter((t) => enabledEventTypes.some((ev) => isThemeCompatible(t.eventType, ev))) : themes;
   const effectiveEvent = enabledEventTypes && selectedEvent !== "all" && !enabledEventTypes.includes(selectedEvent.toUpperCase()) ? "all" : selectedEvent;
   const catalogLoading = loading || !settingsLoaded;
+  const offeredIds = new Set(offeredThemes.map((t) => t.id.toLowerCase()));
 
-  // Sama dengan Setup klien: tema satu nama bisa dipakai semua jenis acara non-pernikahan; tema yang dibuat untuk acara itu di depan.
+  // Tab "Semua": sembunyikan varian konversi `*-acara` jika tema Wedding induknya sudah tampil agar tidak terlihat kembar.
+  // Tab acara spesifik: pisahkan tema khusus acara tersebut di atas, dan tema 1-profil serbaguna lainnya di bawah.
   const matchingThemes = offeredThemes.filter((t) => {
+    const idLower = t.id.toLowerCase();
+    if (effectiveEvent === "all" && idLower.endsWith("-acara") && offeredIds.has(idLower.slice(0, -6))) {
+      return false;
+    }
     const matchesEvent = effectiveEvent === "all" || isThemeCompatible(t.eventType, effectiveEvent.toUpperCase());
     const matchesCategory = selectedCategory === "all" || t.category.toLowerCase() === selectedCategory.toLowerCase();
     return matchesEvent && matchesCategory;
   });
   const filteredThemes = effectiveEvent === "all" ? matchingThemes : sortThemesForEvent(matchingThemes, effectiveEvent);
+
+  const isSpecificNonWedding = effectiveEvent !== "all" && effectiveEvent !== "wedding";
+  const primaryThemes = isSpecificNonWedding
+    ? filteredThemes.filter((t) => (t.eventType || "WEDDING").toUpperCase() === effectiveEvent.toUpperCase())
+    : filteredThemes;
+  const versatileThemes = isSpecificNonWedding
+    ? filteredThemes.filter((t) => (t.eventType || "WEDDING").toUpperCase() !== effectiveEvent.toUpperCase())
+    : [];
+
+  const renderThemeCard = (theme: ThemeItem) => {
+    const evLower = (theme.eventType || "WEDDING").toLowerCase();
+    const evBadgeLabel = evLower !== "wedding" ? (EVENT_LABELS[evLower] || "Acara") : null;
+    return (
+      <div key={theme.id} className="catalog-item">
+        {/* ── Device Pair Scene (Direct Interactive Link) ── */}
+        <Link
+          href={`/demo/${theme.id}`}
+          target="_blank"
+          className="device-pair-scene"
+          aria-label={`Lihat Demo ${theme.name}`}
+        >
+          {!theme.thumbnailDesktop && !theme.thumbnailMobile && (
+            <div className="flex min-h-[10rem] w-full items-center justify-center rounded-xl bg-stone-100 px-4 text-center">
+              <span className="font-serif text-xl font-bold leading-tight text-stone-700">{theme.name}</span>
+            </div>
+          )}
+          {theme.thumbnailDesktop && (
+            <div className="dm-tablet">
+              <div className="dm-tablet-topbar">
+                <div className="dm-tablet-traffic">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+                <div className="dm-tablet-url">
+                  {siteHost}/{theme.id}
+                </div>
+                <div style={{ width: "24px" }}></div>
+              </div>
+              <div className="dm-tablet-screen">
+                <img src={theme.thumbnailDesktop} alt={`${theme.name} Desktop`} />
+                <div className="dm-glare"></div>
+              </div>
+            </div>
+          )}
+
+          {theme.thumbnailMobile && (
+            <div className="dm-phone">
+              <div className="dm-phone-notch"></div>
+              <div className="dm-phone-screen">
+                <img src={theme.thumbnailMobile} alt={`${theme.name} Mobile`} />
+                <div className="dm-glare"></div>
+              </div>
+            </div>
+          )}
+        </Link>
+
+        {/* ── Theme Info ── */}
+        <div className="catalog-info">
+          <div className="catalog-info-meta">
+            <p className="catalog-series">{theme.series}</p>
+            <h3 className="catalog-name">{theme.name}</h3>
+            <p className="catalog-desc">{theme.desc}</p>
+          </div>
+          <div className="flex flex-col items-end gap-1 shrink-0">
+            <span className={`catalog-badge ${theme.category}`}>{theme.category}</span>
+            {evBadgeLabel && (
+              <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                {evBadgeLabel}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* ── CTA ── */}
+        <div className="catalog-action">
+          <Link href={`/demo/${theme.id}`} target="_blank" className="catalog-btn-demo">
+            Lihat Demo
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </Link>
+          <Link
+            href={`/packages?theme=${encodeURIComponent(theme.id)}&event=${encodeURIComponent(
+              effectiveEvent !== "all" ? effectiveEvent.toUpperCase() : (theme.eventType || "WEDDING").toUpperCase()
+            )}`}
+            className="px-3 py-1.5 rounded-full bg-stone-900 hover:bg-amber-900 text-white text-[10px] font-extrabold uppercase tracking-wider transition shadow-2xs whitespace-nowrap"
+          >
+            Gunakan Tema Ini
+          </Link>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="demo-catalog-root min-h-screen bg-[#faf8f5] text-stone-900 font-sans pb-24" style={{ colorScheme: "only light", backgroundColor: "#faf8f5", color: "#1c1917" }}>
@@ -265,102 +374,45 @@ export default function CatalogGridShowcase() {
               Tidak ada tema yang ditemukan pada kategori ini.
             </div>
           ) : (
-            <div className="catalog-grid">
-              {filteredThemes.map((theme) => (
-                <div key={theme.id} className="catalog-item">
-
-                  {/* ── Device Pair Scene (Direct Interactive Link) ── */}
-                  <Link
-                    href={`/demo/${theme.id}`}
-                    target="_blank"
-                    className="device-pair-scene"
-                    aria-label={`Lihat Demo ${theme.name}`}
-                  >
-                    {!theme.thumbnailDesktop && !theme.thumbnailMobile && (
-                      <div className="flex min-h-[10rem] w-full items-center justify-center rounded-xl bg-stone-100 px-4 text-center">
-                        <span className="font-serif text-xl font-bold leading-tight text-stone-700">{theme.name}</span>
+            <div className="space-y-12">
+              {primaryThemes.length > 0 && (
+                <div>
+                  {isSpecificNonWedding && versatileThemes.length > 0 && (
+                    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-1 mb-5">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-800">Koleksi Utama</p>
+                        <h3 className="text-lg sm:text-xl font-serif font-bold text-stone-900">
+                          Tema Khusus {EVENT_LABELS[effectiveEvent] || effectiveEvent}
+                        </h3>
                       </div>
-                    )}
-                    {theme.thumbnailDesktop && (
-                    <div className="dm-tablet">
-                      <div className="dm-tablet-topbar">
-                        <div className="dm-tablet-traffic">
-                          <span></span>
-                          <span></span>
-                          <span></span>
-                        </div>
-                        <div className="dm-tablet-url">
-                          {siteHost}/{theme.id}
-                        </div>
-                        <div style={{ width: "24px" }}></div>
-                      </div>
-                      <div className="dm-tablet-screen">
-                        <img
-                          src={theme.thumbnailDesktop}
-                          alt={`${theme.name} Desktop`}
-                        />
-                        <div className="dm-glare"></div>
-                      </div>
+                      <span className="text-xs text-stone-500 font-medium">{primaryThemes.length} desain</span>
                     </div>
-                    )}
-
-                    {theme.thumbnailMobile && (
-                    <div className="dm-phone">
-                      <div className="dm-phone-notch"></div>
-                      <div className="dm-phone-screen">
-                        <img
-                          src={theme.thumbnailMobile}
-                          alt={`${theme.name} Mobile`}
-                        />
-                        <div className="dm-glare"></div>
-                      </div>
-                    </div>
-                    )}
-                  </Link>
-
-                  {/* ── Theme Info ── */}
-                  <div className="catalog-info">
-                    <div className="catalog-info-meta">
-                      <p className="catalog-series">{theme.series}</p>
-                      <h3 className="catalog-name">{theme.name}</h3>
-                      <p className="catalog-desc">{theme.desc}</p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1 shrink-0">
-                      <span className={`catalog-badge ${theme.category}`}>
-                        {theme.category}
-                      </span>
-                      {theme.eventType && theme.eventType !== "WEDDING" && (
-                        <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
-                          Non-Pernikahan
-                        </span>
-                      )}
-                    </div>
+                  )}
+                  <div className="catalog-grid">
+                    {primaryThemes.map(renderThemeCard)}
                   </div>
-
-                  {/* ── CTA ── */}
-                  <div className="catalog-action">
-                    <Link
-                      href={`/demo/${theme.id}`}
-                      target="_blank"
-                      className="catalog-btn-demo"
-                    >
-                      Lihat Demo
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M5 12h14M12 5l7 7-7 7"/>
-                      </svg>
-                    </Link>
-                    <Link
-                      href={`/packages?theme=${encodeURIComponent(theme.id)}&event=${encodeURIComponent(
-                        effectiveEvent !== "all" ? effectiveEvent.toUpperCase() : (theme.eventType || "WEDDING").toUpperCase()
-                      )}`}
-                      className="px-3 py-1.5 rounded-full bg-stone-900 hover:bg-amber-900 text-white text-[10px] font-extrabold uppercase tracking-wider transition shadow-2xs whitespace-nowrap"
-                    >
-                      Gunakan Tema Ini
-                    </Link>
-                  </div>
-
                 </div>
-              ))}
+              )}
+
+              {versatileThemes.length > 0 && (
+                <div className={primaryThemes.length > 0 ? "pt-10 border-t border-stone-200/90" : ""}>
+                  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-1 mb-5">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500">Tema 1 Profil Serbaguna</p>
+                      <h3 className="text-lg sm:text-xl font-serif font-bold text-stone-900">
+                        Desain Lain yang Dapat Disesuaikan untuk {EVENT_LABELS[effectiveEvent] || effectiveEvent}
+                      </h3>
+                      <p className="text-xs text-stone-500 mt-0.5">
+                        Seluruh desain satu-profil berikut bebas disesuaikan judul, foto, dan detail acaranya di Studio.
+                      </p>
+                    </div>
+                    <span className="text-xs text-stone-500 font-medium shrink-0">{versatileThemes.length} desain</span>
+                  </div>
+                  <div className="catalog-grid">
+                    {versatileThemes.map(renderThemeCard)}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </section>
