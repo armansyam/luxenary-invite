@@ -45,16 +45,15 @@ async function paidClient() {
 
 describe("aturan jenis acara aktif", () => {
   it("kunci kosong, belum ada, atau tak dikenal berarti semua; urutan mengikuti daftar baku", () => {
-    expect(parseEnabledEventTypes(undefined)).toHaveLength(6);
-    expect(parseEnabledEventTypes(" ")).toHaveLength(6);
-    expect(parseEnabledEventTypes("foo")).toHaveLength(6);
-    expect(parseEnabledEventTypes("wisuda, WEDDING")).toEqual(["WEDDING", "WISUDA"]);
+    expect(parseEnabledEventTypes(undefined)).toHaveLength(3);
+    expect(parseEnabledEventTypes(" ")).toHaveLength(3);
+    expect(parseEnabledEventTypes("foo")).toHaveLength(3);
+    expect(parseEnabledEventTypes("personal, WEDDING")).toEqual(["WEDDING", "PERSONAL"]);
   });
 
   it("jenis acara tanpa tema aktif yang cocok tidak bisa dipilih", () => {
-    expect(selectableEventTypes(["WEDDING", "BIRTHDAY"], ["WEDDING"])).toEqual(["WEDDING"]);
-    // Tema satu nama mana pun cukup untuk acara non-pernikahan.
-    expect(selectableEventTypes(["WEDDING", "KHITAN"], ["BIRTHDAY"])).toEqual(["KHITAN"]);
+    expect(selectableEventTypes(["WEDDING", "PERSONAL"], ["WEDDING"])).toEqual(["WEDDING"]);
+    expect(selectableEventTypes(["WEDDING", "PERSONAL"], ["PERSONAL"])).toEqual(["PERSONAL"]);
   });
 });
 
@@ -84,7 +83,7 @@ describe.skipIf(!IS_TEST_DB)("jenis acara aktif di API", () => {
     expect((await getPublicPlatformSettings()).enabledEventTypes).toEqual(["WEDDING"]);
 
     const u = await paidClient();
-    const rejected = await createInvitation(json("/api/client/invitations/create", { eventType: "BIRTHDAY", participantsJson: { person: { name: "Nadia" } } }));
+    const rejected = await createInvitation(json("/api/client/invitations/create", { eventType: "PERSONAL", subEvent: "Ulang Tahun", participantsJson: { person: { name: "Nadia" } } }));
     expect(rejected.status).toBe(400);
     expect(await prisma.invitation.count({ where: { userId: u.id } })).toBe(0);
 
@@ -93,35 +92,35 @@ describe.skipIf(!IS_TEST_DB)("jenis acara aktif di API", () => {
   });
 
   it("draf yang sudah berjenis acara nonaktif tetap bisa disimpan", async () => {
-    await setEnabled("WEDDING,KHITAN");
+    await setEnabled("WEDDING,PERSONAL");
     const u = await paidClient();
-    const first = await createInvitation(json("/api/client/invitations/create", { eventType: "KHITAN", participantsJson: { person: { name: "Fariz" } } }));
+    const first = await createInvitation(json("/api/client/invitations/create", { eventType: "PERSONAL", subEvent: "Khitanan", participantsJson: { person: { name: "Fariz" } } }));
     expect(first.status).toBe(200);
 
     await setEnabled("WEDDING");
-    const again = await createInvitation(json("/api/client/invitations/create", { eventType: "KHITAN", participantsJson: { person: { name: "Fariz" } } }));
+    const again = await createInvitation(json("/api/client/invitations/create", { eventType: "PERSONAL", subEvent: "Khitanan", participantsJson: { person: { name: "Fariz" } } }));
     expect(again.status).toBe(200);
     expect(await prisma.invitation.count({ where: { userId: u.id } })).toBe(1);
   });
 
   it("tanpa pilihan tema, tema bawaan yang nonaktif diganti tema aktif yang cocok; tanpa tema cocok ditolak 400", async () => {
-    await setEnabled("WEDDING,BIRTHDAY,KHITAN,AQIQAH,WISUDA,GATHERING");
-    await prisma.theme.update({ where: { id: "al-fariz" }, data: { isActive: false } });
-    deactivated.push("al-fariz");
+    await setEnabled("WEDDING,PERSONAL,EVENT");
+    await prisma.theme.update({ where: { id: "festivo" }, data: { isActive: false } });
+    deactivated.push("festivo");
 
     const u = await paidClient();
-    const res = await createInvitation(json("/api/client/invitations/create", { eventType: "KHITAN", participantsJson: { person: { name: "Fariz" } } }));
+    const res = await createInvitation(json("/api/client/invitations/create", { eventType: "PERSONAL", subEvent: "Khitanan", participantsJson: { person: { name: "Fariz" } } }));
     expect(res.status).toBe(200);
     const inv = await prisma.invitation.findFirstOrThrow({ where: { userId: u.id } });
-    expect(inv.themeId).not.toBe("al-fariz");
+    expect(inv.themeId).not.toBe("festivo");
     const picked = await prisma.theme.findUniqueOrThrow({ where: { id: inv.themeId! } });
-    expect([picked.isActive, picked.eventType === "WEDDING"]).toEqual([true, false]);
+    expect([picked.isActive, picked.eventType === "PERSONAL"]).toEqual([true, true]);
 
-    const single = (await prisma.theme.findMany({ where: { isActive: true, NOT: { eventType: "WEDDING" } }, select: { id: true } })).map((t) => t.id);
-    await prisma.theme.updateMany({ where: { id: { in: single } }, data: { isActive: false } });
-    deactivated.push(...single);
+    const personalThemes = (await prisma.theme.findMany({ where: { isActive: true, eventType: "PERSONAL" }, select: { id: true } })).map((t) => t.id);
+    await prisma.theme.updateMany({ where: { id: { in: personalThemes } }, data: { isActive: false } });
+    deactivated.push(...personalThemes);
     const u2 = await paidClient();
-    const none = await createInvitation(json("/api/client/invitations/create", { eventType: "AQIQAH", participantsJson: { person: { name: "Aisyah" } } }));
+    const none = await createInvitation(json("/api/client/invitations/create", { eventType: "PERSONAL", subEvent: "Aqiqah", participantsJson: { person: { name: "Aisyah" } } }));
     expect(none.status).toBe(400);
     expect(await prisma.invitation.count({ where: { userId: u2.id } })).toBe(0);
   });
@@ -130,8 +129,8 @@ describe.skipIf(!IS_TEST_DB)("jenis acara aktif di API", () => {
     session.user = { id: adminId, role: "SUPER_ADMIN", isAdmin: true, permissions: [] };
     const empty = await saveSettings(json("/api/admin/settings", [{ key: KEY, value: "", group: "event_types" }]));
     expect(empty.status).toBe(400);
-    const saved = await saveSettings(json("/api/admin/settings", [{ key: KEY, value: "wisuda,wedding", group: "event_types" }]));
+    const saved = await saveSettings(json("/api/admin/settings", [{ key: KEY, value: "personal,wedding", group: "event_types" }]));
     expect(saved.status).toBe(200);
-    expect((await prisma.adminSetting.findUniqueOrThrow({ where: { key: KEY } })).value).toBe("WEDDING,WISUDA");
+    expect((await prisma.adminSetting.findUniqueOrThrow({ where: { key: KEY } })).value).toBe("WEDDING,PERSONAL");
   });
 });

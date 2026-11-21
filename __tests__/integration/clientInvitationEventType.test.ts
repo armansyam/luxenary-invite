@@ -25,9 +25,10 @@ describe.skipIf(!IS_TEST_DB)("GET /api/client/invitations: jenis acara", () => {
       data: {
         userId: user.id,
         orderId: order.id,
-        themeId: "kalandra",
+        themeId: "festivo",
         status: "DRAFT",
-        eventType: "BIRTHDAY",
+        eventType: "PERSONAL",
+        subEvent: "Ulang Tahun",
         invitationSlug: RUN,
         participantsJson: { person: { name: "Rani Kartika", nickname: "Rani", age: 7 } },
       },
@@ -44,14 +45,14 @@ describe.skipIf(!IS_TEST_DB)("GET /api/client/invitations: jenis acara", () => {
     await pool.end();
   });
 
-  it("mengembalikan eventType dan participantsJson, sehingga nama kartu mengikuti jenis acara", async () => {
+  it("mengembalikan eventType, subEvent, dan participantsJson, sehingga nama kartu mengikuti jenis acara", async () => {
     const res = await GET();
     expect(res.status).toBe(200);
     const body = await res.json();
     const list: any[] = body.invitations ?? body;
     const mine = list.find((i) => i.id === ids.invitation);
 
-    expect(mine.eventType).toBe("BIRTHDAY");
+    expect(mine.eventType).toBe("PERSONAL");
     expect(mine.participantsJson).toEqual({ person: { name: "Rani Kartika", nickname: "Rani", age: 7 } });
     expect(resolveInvitationDisplayName(mine)).toBe("Rani — Ulang Tahun ke-7");
     expect(resolveInvitationDisplayName(mine)).not.toMatch(/Mempelai/i);
@@ -59,9 +60,10 @@ describe.skipIf(!IS_TEST_DB)("GET /api/client/invitations: jenis acara", () => {
 });
 
 describe("resolveInvitationDisplayName", () => {
-  it("pernikahan memakai nama panggilan, acara lain memakai peserta", () => {
+  it("pernikahan memakai nama panggilan, acara lain memakai peserta dan subEvent", () => {
     expect(resolveInvitationDisplayName({ eventType: "WEDDING", participantsJson: { groom: { nickname: "Raka" }, bride: { nickname: "Dewi" } } })).toBe("Raka & Dewi");
-    expect(resolveInvitationDisplayName({ eventType: "KHITAN", participantsJson: JSON.stringify({ child: { nickname: "Fajar" } }) })).toBe("Fajar — Khitanan");
-    expect(resolveInvitationDisplayName({ eventType: "GATHERING", participantsJson: JSON.stringify({ event: { title: "Syukuran Kantor" } }) })).toBe("Syukuran Kantor");
+    expect(resolveInvitationDisplayName({ eventType: "PERSONAL", subEvent: "Khitanan", participantsJson: JSON.stringify({ person: { nickname: "Fajar" } }) })).toBe("Fajar — Khitanan");
+    expect(resolveInvitationDisplayName({ eventType: "PERSONAL", subEvent: "Tamatan Ngaji", participantsJson: JSON.stringify({ person: { nickname: "Bilal" } }) })).toBe("Bilal — Tamatan Ngaji");
+    expect(resolveInvitationDisplayName({ eventType: "EVENT", subEvent: "Syukuran", participantsJson: JSON.stringify({ event: { title: "Syukuran Kantor" } }) })).toBe("Syukuran Kantor");
   });
 });

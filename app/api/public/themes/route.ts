@@ -36,6 +36,7 @@ export async function GET(req: Request) {
         category: demo.category.toLowerCase() as ThemeCategory,
         series: demo.series,
         eventType: (demo as any).eventType || "WEDDING",
+        subEvent: (demo as any).subEvent || null,
         description: demo.tagline || `${demo.themeName} Series`,
         isActive: true,
         sortOrder: idx + 1,
@@ -99,31 +100,23 @@ export async function GET(req: Request) {
 
       const eventType = t.eventType || (source as any)?.eventType || "WEDDING";
       const evTypeUpper = eventType.toUpperCase();
+      const subEvent = t.subEvent ?? (source as any)?.subEvent ?? null;
 
       let primaryName = source?.groomDisplayName || source?.groomName || "Pengantin Pria";
       let secondaryName = source?.brideDisplayName || source?.brideName || "Pengantin Wanita";
       let eyebrow = source?.tagline || tagline || "Digital Invitation";
 
-      if (evTypeUpper === "BIRTHDAY") {
-        primaryName = (source as any)?.personName || (source as any)?.personNickname || "Birthday";
+      if (evTypeUpper === "PERSONAL") {
+        primaryName =
+          (source as any)?.personName ||
+          (source as any)?.personNickname ||
+          t.name;
         secondaryName = "";
-        eyebrow = (source as any)?.tagline || "Birthday Celebration";
-      } else if (evTypeUpper === "KHITAN") {
-        primaryName = (source as any)?.childName || (source as any)?.childNickname || "Walimatul Khitan";
-        secondaryName = "";
-        eyebrow = (source as any)?.tagline || "Walimatul Khitan";
-      } else if (evTypeUpper === "AQIQAH") {
-        primaryName = (source as any)?.babyName || (source as any)?.babyNickname || "Tasyakuran Aqiqah";
-        secondaryName = "";
-        eyebrow = (source as any)?.tagline || "Tasyakuran Aqiqah";
-      } else if (evTypeUpper === "WISUDA") {
-        primaryName = (source as any)?.graduateName || (source as any)?.graduateNickname || "Wisudawan";
-        secondaryName = "";
-        eyebrow = (source as any)?.tagline || "Graduation Celebration";
-      } else if (evTypeUpper === "GATHERING") {
+        eyebrow = (source as any)?.tagline || subEvent || "Personal & Keluarga";
+      } else if (evTypeUpper === "EVENT") {
         primaryName = (source as any)?.eventTitle || t.name;
         secondaryName = "";
-        eyebrow = (source as any)?.eventSubtitle || (source as any)?.tagline || "Undangan Resmi";
+        eyebrow = (source as any)?.eventSubtitle || (source as any)?.tagline || subEvent || "Undangan Resmi";
       }
 
       return {
@@ -132,7 +125,7 @@ export async function GET(req: Request) {
         series,
         category: t.category.toUpperCase(),
         eventType,
-        parentTheme: t.parentTheme || null,
+        subEvent,
         tagline,
         desc: tagline,
         defaultMusicUrl: t.defaultMusicUrl || null,
@@ -145,9 +138,6 @@ export async function GET(req: Request) {
         secondaryName,
         personName: (source as any)?.personName || "",
         personAge: (source as any)?.personAge || "",
-        childName: (source as any)?.childName || "",
-        babyName: (source as any)?.babyName || "",
-        graduateName: (source as any)?.graduateName || "",
         eventTitle: (source as any)?.eventTitle || "",
         eyebrow,
         weddingDay: source?.weddingDateDay || "--",

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
+import { invalidateInvitationLookup } from "@/lib/cache";
+import { purgeInvitationEdgeCache } from "@/lib/cloudflare";
+import { normalizeCustomDomain } from "@/lib/domainUtils";
 import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
@@ -27,9 +30,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Pesanan tidak ditemukan." }, { status: 404 });
     }
 
-    const domain = (order.requestedDomain || "").trim().toLowerCase();
+    if (order.status !== "PAID") {
+      return NextResponse.json(
+        { error: `Hanya pesanan yang sudah lunas (PAID) yang dapat mengaktifkan custom domain. Status saat ini: ${order.status}.` },
+        { status: 400 },
+      );
+    }
+
+    const domain = normalizeCustomDomain(order.requestedDomain || "");
     if (!domain) {
-      return NextResponse.json({ error: "Pesanan ini tidak memiliki nama domain yang diminta (requestedDomain kosong)." }, { status: 400 });
+      return NextResponse.json({ error: "Pesanan ini tidak memiliki nama domain yang valid (requestedDomain kosong atau tidak valid)." }, { status: 400 });
+    }
+
+    const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || "").trim().toLowerCase();
+    const reservedPlatformHosts = [rootDomain, "localhost", "127.0.0.1"].filter(Boolean);
+    if (reservedPlatformHosts.some((h) => domain === h || domain.endsWith(`.${h}`))) {
+      return NextResponse.json({ error: "Domain tersebut merupakan domain platform sistem dan tidak dapat digunakan." }, { status: 400 });
     }
 
     // requestedDomain hanya ditulis order UPGRADE, yang menunjuk undangannya lewat linkedInvitationId. Undangan terbaru
@@ -37,6 +53,17 @@ export async function POST(req: NextRequest) {
     const targetInvitation = order.linkedInvitation || order.invitation;
     if (!targetInvitation) {
       return NextResponse.json({ error: "Tidak ditemukan proyek undangan yang terhubung dengan klien ini." }, { status: 404 });
+    }
+
+    const conflict = await prisma.invitation.findFirst({
+      where: { customDomain: domain, id: { not: targetInvitation.id } },
+      select: { id: true, invitationSlug: true },
+    });
+    if (conflict) {
+      return NextResponse.json(
+        { error: `Domain ${domain} sudah digunakan oleh undangan lain (${conflict.invitationSlug}).` },
+        { status: 409 },
+      );
     }
 
     // Update custom domain pada undangan, satu transaksi dengan catatan auditnya.
@@ -54,6 +81,9 @@ export async function POST(req: NextRequest) {
         },
       }),
     ]);
+
+    invalidateInvitationLookup(targetInvitation.invitationSlug, targetInvitation.subdomain, targetInvitation.id);
+    await purgeInvitationEdgeCache({ ...targetInvitation, customDomain: domain });
 
     return NextResponse.json({
       success: true,

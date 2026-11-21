@@ -1,7 +1,7 @@
 /**
  * Audit keterbacaan master tulisan tangan: setiap master dirender dengan data demo, dibuka di Chrome headless pada 375
  * dan 1440 px (skrip halaman berjalan, animasi dibekukan, elemen reveal dipaksa tampil), lalu kontras setiap teks diukur
- * dengan alat ukur yang sama dengan editor Varian Tema (`components/admin/variantReadability.ts`) dalam mode `hitTest`:
+ * dengan alat ukur yang sama dengan Editor Master (`components/admin/masterReadability.ts`) dalam mode `hitTest`:
  * latar dibaca dari tumpukan elemen di bawah titik teks (termasuk lapisan latar tetap yang bukan leluhur), gradasi
  * dihitung rata-rata, teks di atas foto atau tekstur tanpa gradasi tidak dinilai.
  *
@@ -18,7 +18,7 @@ import { FREEZE, arg, listMasters, requireTestDatabase, startChrome, startRender
 
 interface Finding { selector: string; text: string; ratio: number; min: number; fg: string; bg: string; widths: number[] }
 
-const MEASURE = buildSync({ entryPoints: [path.join(process.cwd(), "components/admin/variantReadability.ts")], bundle: true, format: "iife", globalName: "LuxRead", write: false, platform: "browser", logLevel: "silent" }).outputFiles[0].text;
+const MEASURE = buildSync({ entryPoints: [path.join(process.cwd(), "components/admin/masterReadability.ts")], bundle: true, format: "iife", globalName: "LuxRead", write: false, platform: "browser", logLevel: "silent" }).outputFiles[0].text;
 
 const COLLECT = `(() => {
   document.querySelectorAll("[class*='reveal']").forEach((el) => el.classList.add("active", "visible", "show", "in-view", "revealed"));

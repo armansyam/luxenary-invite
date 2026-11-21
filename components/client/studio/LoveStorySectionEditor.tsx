@@ -10,6 +10,7 @@ export function LoveStorySectionEditor({
   showStory,
   stories,
   storyTitle,
+  eventType = "WEDDING",
   onToggleShowStory,
   onAddStory,
   onRemoveStory,
@@ -22,6 +23,7 @@ export function LoveStorySectionEditor({
   showStory: boolean;
   stories: StoryChapter[];
   storyTitle: string;
+  eventType?: string;
   onToggleShowStory: (val: boolean) => void;
   onAddStory: () => void;
   onRemoveStory: (idx: number) => void;
@@ -31,10 +33,30 @@ export function LoveStorySectionEditor({
   saving: boolean;
   onSave: () => void;
 }) {
+  const normEvent = (eventType || "WEDDING").toUpperCase();
+  const sectionNoun =
+    normEvent === "PERSONAL"
+      ? "Kisah & Perjalanan Hidup"
+      : normEvent === "EVENT"
+      ? "Tonggak Perjalanan Acara"
+      : "Kisah Cinta";
+  const titlePlaceholder =
+    normEvent === "PERSONAL"
+      ? "Kisah & Perjalanan / Perjalanan Hidup / Jejak Langkah"
+      : normEvent === "EVENT"
+      ? "Tonggak Perjalanan / Riwayat & Milestone / Sejarah Kami"
+      : "Kisah Cinta / Our Love Story / Perjalanan Kami";
+  const chapterTitlePlaceholder =
+    normEvent === "PERSONAL"
+      ? "Contoh: Awal Menempuh Pendidikan / Masa Perjuangan / Sidang Akhir"
+      : normEvent === "EVENT"
+      ? "Contoh: Pendirian Komunitas / Ekspansi Cabang / Puncak Acara"
+      : "Masukkan judul momen kisah cinta Anda";
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-bold text-stone-700">Tampilkan Seksi Kisah Cinta:</span>
+        <span className="text-xs font-bold text-stone-700">Tampilkan Seksi {sectionNoun}:</span>
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -67,13 +89,13 @@ export function LoveStorySectionEditor({
         <div className="space-y-3 mt-2">
           <div>
             <label className="block text-xs font-bold text-stone-700 mb-1">
-              Judul Seksi Kisah Cinta (Bebas Kustom)
+              Judul Seksi {sectionNoun} (Bebas Kustom)
             </label>
             <input
               type="text"
               value={storyTitle}
               onChange={(e) => onUpdateStoryTitle(e.target.value)}
-              placeholder="Kisah Cinta / Our Love Story / Perjalanan Kami"
+              placeholder={titlePlaceholder}
               className="w-full p-2.5 rounded-xl text-xs text-stone-900 border bg-stone-50 border-stone-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30 transition"
             />
           </div>
@@ -97,7 +119,7 @@ export function LoveStorySectionEditor({
                     type="text"
                     value={st.title || ""}
                     onChange={(e) => onUpdateStoryItem(idx, "title", e.target.value)}
-                    placeholder="Masukkan judul momen kisah cinta Anda"
+                    placeholder={chapterTitlePlaceholder}
                     className="w-full p-2.5 rounded-xl text-xs text-stone-900 border bg-white border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-700/30 transition"
                   />
                 </div>
@@ -141,7 +163,7 @@ export function LoveStorySectionEditor({
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
-          <span>{!isDirty ? "Tersimpan" : "Simpan Kisah Cinta"}</span>
+          <span>{!isDirty ? "Tersimpan" : `Simpan ${sectionNoun}`}</span>
         </button>
       </div>
     </div>

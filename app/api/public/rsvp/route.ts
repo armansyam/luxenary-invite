@@ -5,7 +5,7 @@ import { rateLimitDb } from "@/lib/rateLimit";
 import { rsvpListCache, invalidateRsvpListCache } from "@/lib/rsvpCache";
 import { normalizeRsvpStatus, RSVP_NAME_MAX, RSVP_MESSAGE_MAX } from "@/lib/rsvpStatus";
 import { exceedsDeclaredBodySize } from "@/lib/requestLimits";
-import { SAMPLE_WISHES } from "@/lib/demoInvitation";
+import { sampleWishesFor } from "@/lib/demoInvitation";
 import {
   RSVP_COOKIE_MAX_AGE_SECONDS,
   RSVP_COOKIE_PATH,
@@ -32,8 +32,8 @@ export async function GET(req: NextRequest) {
       if (cachedDemo) return NextResponse.json({ ...cachedDemo, isDemo: true });
       // Skrip tema menimpa ucapan yang dirender server dengan jawaban ini, jadi jenis acaranya harus sama dengan demo
       // (demo-<themeId>); tanpa itu demo tema acara menampilkan ucapan pernikahan.
-      const theme = await prisma.theme.findUnique({ where: { id: invitationId.slice(5) }, select: { eventType: true } });
-      const wishes = SAMPLE_WISHES[theme?.eventType || "WEDDING"] || SAMPLE_WISHES.WEDDING;
+      const theme = await prisma.theme.findUnique({ where: { id: invitationId.slice(5) }, select: { eventType: true, subEvent: true } });
+      const wishes = sampleWishesFor(theme?.eventType, theme?.subEvent);
       const sampleDemos = wishes.map((w, i) => ({
         id: `demo-rsvp-${i + 1}`,
         guestName: w.guestName,
@@ -255,8 +255,9 @@ export async function POST(req: NextRequest) {
     });
 
     if (result.conflict) {
+      const hostLabel = invitation.eventType === "WEDDING" ? "pengantin" : "penyelenggara acara";
       return NextResponse.json(
-        { error: "Konfirmasi atas nama ini sudah tercatat dari perangkat lain. Hubungi pengantin bila perlu mengubahnya." },
+        { error: `Konfirmasi atas nama ini sudah tercatat dari perangkat lain. Hubungi ${hostLabel} bila perlu mengubahnya.` },
         { status: 409 }
       );
     }

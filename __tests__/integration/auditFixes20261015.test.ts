@@ -136,6 +136,11 @@ describe.skipIf(!IS_TEST_DB)("aktivasi custom domain oleh admin", () => {
     const admin = await prisma.admin.create({ data: { username: RUN, email: `${RUN}@admin.local`, name: "Admin Uji", role: "SUPER_ADMIN", permissions: [] } });
     ids.admins.push(admin.id);
     sessionUser = { id: admin.id, email: admin.email, role: "SUPER_ADMIN", isAdmin: true, permissions: [] };
+    // Order upgrade masih PENDING wajib ditolak sebelum dilunasi.
+    const unpaidRes = await activateDomain(jsonRequest("http://localhost/api/admin/custom-domains/activate", "POST", { orderId: json.orderId }));
+    expect(unpaidRes.status).toBe(400);
+
+    await prisma.order.update({ where: { id: json.orderId }, data: { status: "PAID", paidAt: new Date() } });
     const res = await activateDomain(jsonRequest("http://localhost/api/admin/custom-domains/activate", "POST", { orderId: json.orderId }));
 
     expect(res.status).toBe(200);

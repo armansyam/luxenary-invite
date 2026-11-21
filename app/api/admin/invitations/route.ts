@@ -82,6 +82,7 @@ export async function GET(req: NextRequest) {
           id: true,
           userId: true,
           eventType: true,
+          subEvent: true,
           participantsJson: true,
           invitationSlug: true,
           themeId: true,

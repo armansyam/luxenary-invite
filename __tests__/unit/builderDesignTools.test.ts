@@ -32,7 +32,8 @@ describe("latar per seksi", () => {
     expect(spec.sectionStyles).toEqual({ couple: { bg: "dark", gradient: "radial", tone: "light" } });
     expect(parse({ sectionStyles: { cover: { bg: "dark" } } }).ok).toBe(false);
     expect(parse({ sectionStyles: { couple: { bg: "dark", image: "https://evil.example/x.png" } } }).ok).toBe(false);
-    expect(parse({ sectionStyles: { story: { bg: "dark" } } }, "BIRTHDAY").ok).toBe(false);
+    expect(parse({ sectionStyles: { story: { bg: "dark" } } }, "PERSONAL").ok).toBe(true);
+    expect(parse({ sectionStyles: { story: { bg: "dark" } } }, "EVENT").ok).toBe(true);
   });
 
   it("dikompilasi ke token palet dengan nada teks, tanpa warna mati di luar :root", () => {
@@ -100,7 +101,7 @@ describe("seksi teks bebas", () => {
   it("mengikuti urutan seksi kustom dan juga berlaku untuk tema satu nama", () => {
     const wedding = compiled(okSpec({ sectionOrder: ["events", "opening", "couple", "countdown", "story", "gallery", "rsvp", "closing"], freeSections: [free({ after: "events" })] }));
     expect(wedding.indexOf('id="free1"')).toBeLessThan(wedding.indexOf('data-lux-section="opening"'));
-    const single = compiled(okSpec({ freeSections: [free({ after: "rsvp" })] }, "BIRTHDAY"));
+    const single = compiled(okSpec({ freeSections: [free({ after: "rsvp" })] }, "PERSONAL"));
     expect(single.indexOf('data-lux-section="rsvp"')).toBeLessThan(single.indexOf('id="free1"'));
     expect(single.indexOf('id="free1"')).toBeLessThan(single.indexOf('data-lux-section="closing"'));
   });
@@ -148,7 +149,7 @@ describe("hitung mundur menumpang", () => {
   it.each([["events", 'data-lux-block="events-list"', 'data-lux-section="events"'], ["opening", 'class="home-schedule"', 'data-lux-section="opening"']] as const)(
     "%s: dipindah, bukan digandakan, dan tetap berpenanda seksi",
     (placement, anchor, host) => {
-      for (const eventType of ["WEDDING", "KHITAN"] as const) {
+      for (const eventType of ["WEDDING", "PERSONAL"] as const) {
         const html = compiled(okSpec({ countdownPlacement: placement }, eventType));
         expect(html.match(/id="countdownTimer"/g)).toHaveLength(1);
         const at = html.indexOf('data-lux-section="countdown"');
@@ -181,7 +182,7 @@ describe("seksi bebas dengan foto dan kartu", () => {
     expect(compiled(okSpec({ freeSections: [{ ...base, photo: { source: "asset", src: "/assets/ornaments/background/bg-maroon.webp", shape: "wide", position: "top" } }] }))).toContain('<img src="/assets/ornaments/background/bg-maroon.webp"');
     expect(parse({ freeSections: [{ ...base, photo: { source: "asset", src: "https://x.test/a.png" } }] }).ok).toBe(false);
     expect(parse({ freeSections: [{ ...base, title: "x", cards: Array.from({ length: 5 }, () => ({ title: "a", body: "" })) }] }).ok).toBe(false);
-    expect(parse({ freeSections: [{ ...base, photo: { source: "slot", slot: "BRIDE_PHOTO" } }] }, "AQIQAH").ok).toBe(false);
+    expect(parse({ freeSections: [{ ...base, photo: { source: "slot", slot: "BRIDE_PHOTO" } }] }, "PERSONAL").ok).toBe(false);
   });
 
   it("seksi bebas tidak boleh menumpang pada hitung mundur yang sudah menumpang", () => {

@@ -212,14 +212,15 @@ export function ornamentStyle(o: MasterOrnament): string {
 }
 
 /**
- * Token engine per slot. Master tidak tahu jenis acaranya, jadi slot profil memuat token pernikahan dan token satu nama
- * sekaligus; engine hanya mengisi salah satunya, dan `{{#if}}` membuang yang kosong. Token sama dengan ornamen berslot
- * Theme Builder (`ORNAMENT_SLOT_TOKEN` di compile.ts).
+ * Token engine per slot (terisolasi per mode: WEDDING = first/secondPhotoUrl, PERSONAL & EVENT = mainPhotoUrl).
+ * Setiap slot tepat 1 token agar bingkai ornamen tidak pernah merender dua <img> bertumpuk.
  */
 const SLOT_PHOTO_TOKENS: Record<OrnamentMediaSlot, Array<{ token: string; cond: string }>> = {
   HOME_PHOTO: [{ token: "homePhotoUrl", cond: "hasCustomHomePhoto" }],
-  GROOM_PHOTO: [{ token: "firstPhotoUrl", cond: "firstPhotoUrl" }, { token: "mainPhotoUrl", cond: "mainPhotoUrl" }],
-  BRIDE_PHOTO: [{ token: "secondPhotoUrl", cond: "secondPhotoUrl" }, { token: "mainPhotoUrl", cond: "mainPhotoUrl" }],
+  GROOM_PHOTO: [{ token: "firstPhotoUrl", cond: "firstPhotoUrl" }],
+  BRIDE_PHOTO: [{ token: "secondPhotoUrl", cond: "secondPhotoUrl" }],
+  PROFILE_PHOTO: [{ token: "mainPhotoUrl", cond: "mainPhotoUrl" }],
+  EVENT_PHOTO: [{ token: "mainPhotoUrl", cond: "mainPhotoUrl" }],
   LANDING_COVER: [{ token: "landingCoverUrl", cond: "landingCoverUrl" }],
   CLOSING_COVER: [{ token: "closingPhotoUrl", cond: "closingPhotoUrl" }],
 };

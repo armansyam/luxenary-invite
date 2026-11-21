@@ -210,10 +210,10 @@ describe.skipIf(!IS_TEST_DB)("audit 19 Okt (DB)", () => {
     await prisma.guestMemory.deleteMany({ where: { invitationId: owner.invitationId } });
   });
 
-  it("slug gathering yang sama dengan rute aplikasi diberi akhiran", async () => {
+  it("slug event yang sama dengan rute aplikasi diberi akhiran", async () => {
     const { user } = await makeClient({ withInvitation: false });
     const res = await createInvitation(
-      json("/api/client/invitations/create", "POST", { eventType: "GATHERING", participantsJson: { event: { title: "Demo" } } })
+      json("/api/client/invitations/create", "POST", { eventType: "EVENT", participantsJson: { event: { title: "Demo" } } })
     );
     const body = await res.json();
     expect(res.status, JSON.stringify(body)).toBe(200);

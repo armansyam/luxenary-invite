@@ -42,6 +42,8 @@ describe.skipIf(!IS_TEST_DB)("statistik kunjungan undangan (DB)", () => {
     await prisma.invitation.deleteMany({ where: { userId: { in: users } } });
     await prisma.user.deleteMany({ where: { id: { in: users } } });
     await pool.query("DELETE FROM rate_limit_counters WHERE key LIKE 'visit:inv:%'");
+    await prisma.$disconnect();
+    await pool.end();
   });
 
   it("mencatat per peramban, mengikat nama tamu, dan tampil di ringkasan serta daftar tamu", async () => {

@@ -6,7 +6,7 @@ import { SANITIZE_GUEST_LABEL_JS } from "@/lib/checkinQr";
 import { LIVE_EDIT_FIELD_PATTERN } from "@/lib/liveEditFields";
 import { isSafePathSegment } from "@/lib/fsSafe";
 import { masterFilePath } from "@/lib/themePaths";
-import { applyMasterOverrides, resolveMasterEdits, resolveVariant } from "@/lib/themeVariants";
+import { applyMasterOverrides, resolveMasterEdits } from "@/lib/masterEdits";
 import { logger } from "@/lib/logger";
 import { createInvitationDraft, deleteStaleInvitationDraft, readInvitationDraft } from "@/lib/invitationDraft";
 import { syncSharedFiles } from "@/lib/sharedFiles";
@@ -119,7 +119,8 @@ export function extractRenderedLabels(html: string): Record<string, string> {
 
 export interface ThemeEntry {
   file: string;
-  eventType: "wedding" | "birthday" | "khitan" | "aqiqah" | "wisuda" | "gathering";
+  eventType: "wedding" | "personal" | "event";
+  subEvent?: string;
   style: "minimalist" | "modern" | "traditional";
 }
 
@@ -164,102 +165,65 @@ export const THEME_MAP: Record<string, ThemeEntry> = {
   "vintage-forest": { file: "vintage-forest.html", eventType: "wedding", style: "modern" },
   "hablur": { file: "hablur.html", eventType: "wedding", style: "modern" },
 
-  // Birthday Series
-  "festivo": { file: "festivo.html", eventType: "birthday", style: "modern" },
-  "kalandra-birthday": { file: "kalandra-birthday.html", eventType: "birthday", style: "minimalist" },
-  "riang": { file: "riang.html", eventType: "birthday", style: "modern" },
-  "balonku": { file: "balonku.html", eventType: "birthday", style: "modern" },
-  "gala": { file: "gala.html", eventType: "birthday", style: "minimalist" },
-  "lilin": { file: "lilin.html", eventType: "birthday", style: "minimalist" },
-  "konfeti": { file: "konfeti.html", eventType: "birthday", style: "modern" },
-  "antariksa": { file: "antariksa.html", eventType: "birthday", style: "modern" },
-  "rimba": { file: "rimba.html", eventType: "birthday", style: "minimalist" },
-  "karnaval": { file: "karnaval.html", eventType: "birthday", style: "modern" },
+  // Personal & Keluarga Series (37)
+  "festivo": { file: "festivo.html", eventType: "personal", subEvent: "Ulang Tahun", style: "modern" },
+  "kalandra-birthday": { file: "kalandra-birthday.html", eventType: "personal", subEvent: "Ulang Tahun", style: "minimalist" },
+  "riang": { file: "riang.html", eventType: "personal", subEvent: "Ulang Tahun", style: "modern" },
+  "balonku": { file: "balonku.html", eventType: "personal", subEvent: "Ulang Tahun", style: "modern" },
+  "gala": { file: "gala.html", eventType: "personal", subEvent: "Ulang Tahun", style: "minimalist" },
+  "lilin": { file: "lilin.html", eventType: "personal", subEvent: "Ulang Tahun", style: "minimalist" },
+  "konfeti": { file: "konfeti.html", eventType: "personal", subEvent: "Ulang Tahun", style: "modern" },
+  "antariksa": { file: "antariksa.html", eventType: "personal", subEvent: "Ulang Tahun", style: "modern" },
+  "rimba": { file: "rimba.html", eventType: "personal", subEvent: "Ulang Tahun", style: "minimalist" },
+  "karnaval": { file: "karnaval.html", eventType: "personal", subEvent: "Ulang Tahun", style: "modern" },
 
-  // Khitan Series
-  "al-fariz": { file: "al-fariz.html", eventType: "khitan", style: "traditional" },
-  "fajar": { file: "fajar.html", eventType: "khitan", style: "traditional" },
-  "nur": { file: "nur.html", eventType: "khitan", style: "traditional" },
-  "sakinah": { file: "sakinah.html", eventType: "khitan", style: "minimalist" },
-  "kubah": { file: "kubah.html", eventType: "khitan", style: "traditional" },
-  "sajadah": { file: "sajadah.html", eventType: "khitan", style: "traditional" },
-  "girih": { file: "girih.html", eventType: "khitan", style: "modern" },
-  "serambi": { file: "serambi.html", eventType: "khitan", style: "minimalist" },
-  "firdaus": { file: "firdaus.html", eventType: "khitan", style: "traditional" },
+  "al-fariz": { file: "al-fariz.html", eventType: "personal", subEvent: "Khitanan", style: "traditional" },
+  "fajar": { file: "fajar.html", eventType: "personal", subEvent: "Khitanan", style: "traditional" },
+  "nur": { file: "nur.html", eventType: "personal", subEvent: "Khitanan", style: "traditional" },
+  "sakinah": { file: "sakinah.html", eventType: "personal", subEvent: "Khitanan", style: "minimalist" },
+  "kubah": { file: "kubah.html", eventType: "personal", subEvent: "Khitanan", style: "traditional" },
+  "sajadah": { file: "sajadah.html", eventType: "personal", subEvent: "Khitanan", style: "traditional" },
+  "girih": { file: "girih.html", eventType: "personal", subEvent: "Khitanan", style: "modern" },
+  "serambi": { file: "serambi.html", eventType: "personal", subEvent: "Khitanan", style: "minimalist" },
+  "firdaus": { file: "firdaus.html", eventType: "personal", subEvent: "Khitanan", style: "traditional" },
 
-  // Aqiqah Series
-  "al-khalid": { file: "al-khalid.html", eventType: "aqiqah", style: "minimalist" },
-  "buaian": { file: "buaian.html", eventType: "aqiqah", style: "minimalist" },
-  "mungil": { file: "mungil.html", eventType: "aqiqah", style: "minimalist" },
-  "barakah": { file: "barakah.html", eventType: "aqiqah", style: "traditional" },
-  "domba": { file: "domba.html", eventType: "aqiqah", style: "minimalist" },
-  "lelap": { file: "lelap.html", eventType: "aqiqah", style: "minimalist" },
-  "pelangi": { file: "pelangi.html", eventType: "aqiqah", style: "modern" },
-  "kelopak": { file: "kelopak.html", eventType: "aqiqah", style: "modern" },
-  "embun": { file: "embun.html", eventType: "aqiqah", style: "traditional" },
+  "al-khalid": { file: "al-khalid.html", eventType: "personal", subEvent: "Aqiqah", style: "minimalist" },
+  "buaian": { file: "buaian.html", eventType: "personal", subEvent: "Aqiqah", style: "minimalist" },
+  "mungil": { file: "mungil.html", eventType: "personal", subEvent: "Aqiqah", style: "minimalist" },
+  "barakah": { file: "barakah.html", eventType: "personal", subEvent: "Aqiqah", style: "traditional" },
+  "domba": { file: "domba.html", eventType: "personal", subEvent: "Aqiqah", style: "minimalist" },
+  "lelap": { file: "lelap.html", eventType: "personal", subEvent: "Aqiqah", style: "minimalist" },
+  "pelangi": { file: "pelangi.html", eventType: "personal", subEvent: "Aqiqah", style: "modern" },
+  "kelopak": { file: "kelopak.html", eventType: "personal", subEvent: "Aqiqah", style: "modern" },
+  "embun": { file: "embun.html", eventType: "personal", subEvent: "Aqiqah", style: "traditional" },
 
-  // Wisuda Series
-  "cendekia": { file: "cendekia.html", eventType: "wisuda", style: "modern" },
-  "toga": { file: "toga.html", eventType: "wisuda", style: "modern" },
-  "laurel": { file: "laurel.html", eventType: "wisuda", style: "modern" },
-  "akademia": { file: "akademia.html", eventType: "wisuda", style: "minimalist" },
-  "pena": { file: "pena.html", eventType: "wisuda", style: "minimalist" },
-  "medali": { file: "medali.html", eventType: "wisuda", style: "modern" },
-  "sorak": { file: "sorak.html", eventType: "wisuda", style: "modern" },
-  "ijazah": { file: "ijazah.html", eventType: "wisuda", style: "traditional" },
-  "pustaka": { file: "pustaka.html", eventType: "wisuda", style: "minimalist" },
+  "cendekia": { file: "cendekia.html", eventType: "personal", subEvent: "Wisuda", style: "modern" },
+  "toga": { file: "toga.html", eventType: "personal", subEvent: "Wisuda", style: "modern" },
+  "laurel": { file: "laurel.html", eventType: "personal", subEvent: "Wisuda", style: "modern" },
+  "akademia": { file: "akademia.html", eventType: "personal", subEvent: "Wisuda", style: "minimalist" },
+  "pena": { file: "pena.html", eventType: "personal", subEvent: "Wisuda", style: "minimalist" },
+  "medali": { file: "medali.html", eventType: "personal", subEvent: "Wisuda", style: "modern" },
+  "sorak": { file: "sorak.html", eventType: "personal", subEvent: "Wisuda", style: "modern" },
+  "ijazah": { file: "ijazah.html", eventType: "personal", subEvent: "Wisuda", style: "traditional" },
+  "pustaka": { file: "pustaka.html", eventType: "personal", subEvent: "Wisuda", style: "minimalist" },
 
-  // General / Gathering Series
-  "sinergi": { file: "sinergi.html", eventType: "gathering", style: "modern" },
-  "prakarsa": { file: "prakarsa.html", eventType: "gathering", style: "modern" },
-  "forum": { file: "forum.html", eventType: "gathering", style: "modern" },
-  "temu": { file: "temu.html", eventType: "gathering", style: "minimalist" },
-  "cakrawala": { file: "cakrawala.html", eventType: "gathering", style: "modern" },
-  "jamuan": { file: "jamuan.html", eventType: "gathering", style: "traditional" },
-  "panggung": { file: "panggung.html", eventType: "gathering", style: "modern" },
-  "lapang": { file: "lapang.html", eventType: "gathering", style: "minimalist" },
-  "prisma": { file: "prisma.html", eventType: "gathering", style: "minimalist" },
-  "biasan": { file: "biasan.html", eventType: "gathering", style: "modern" },
-
-  // Versi satu nama dari tema pernikahan (nama sama, id berakhiran -acara): dipakai semua jenis acara non-pernikahan.
-  "kalandra-acara": { file: "kalandra-acara.html", eventType: "gathering", style: "minimalist" },
-  "valente-acara": { file: "valente-acara.html", eventType: "gathering", style: "minimalist" },
-  "aurelia-acara": { file: "aurelia-acara.html", eventType: "gathering", style: "minimalist" },
-  "artisan-acara": { file: "artisan-acara.html", eventType: "gathering", style: "minimalist" },
-  "verona-acara": { file: "verona-acara.html", eventType: "gathering", style: "minimalist" },
-  "aeterna-acara": { file: "aeterna-acara.html", eventType: "gathering", style: "minimalist" },
-  "prameswari-acara": { file: "prameswari-acara.html", eventType: "gathering", style: "traditional" },
-  "dillalucky-acara": { file: "dillalucky-acara.html", eventType: "gathering", style: "traditional" },
-  "lagaligo-acara": { file: "lagaligo-acara.html", eventType: "gathering", style: "traditional" },
-  "toraja-acara": { file: "toraja-acara.html", eventType: "gathering", style: "traditional" },
-  "rantepao-acara": { file: "rantepao-acara.html", eventType: "gathering", style: "traditional" },
-  "makale-acara": { file: "makale-acara.html", eventType: "gathering", style: "traditional" },
-  "bugis-acara": { file: "bugis-acara.html", eventType: "gathering", style: "traditional" },
-  "bone-acara": { file: "bone-acara.html", eventType: "gathering", style: "traditional" },
-  "wajo-acara": { file: "wajo-acara.html", eventType: "gathering", style: "traditional" },
-  "soppeng-acara": { file: "soppeng-acara.html", eventType: "gathering", style: "traditional" },
-  "makassar-acara": { file: "makassar-acara.html", eventType: "gathering", style: "traditional" },
-  "gowa-acara": { file: "gowa-acara.html", eventType: "gathering", style: "traditional" },
-  "maros-acara": { file: "maros-acara.html", eventType: "gathering", style: "traditional" },
-  "takalar-acara": { file: "takalar-acara.html", eventType: "gathering", style: "traditional" },
-  "bulukumba-acara": { file: "bulukumba-acara.html", eventType: "gathering", style: "traditional" },
-  "badrika-acara": { file: "badrika-acara.html", eventType: "gathering", style: "modern" },
-  "mayang-acara": { file: "mayang-acara.html", eventType: "gathering", style: "modern" },
-  "candani-acara": { file: "candani-acara.html", eventType: "gathering", style: "modern" },
-  "wave-acara": { file: "wave-acara.html", eventType: "gathering", style: "modern" },
-  "papercut-acara": { file: "papercut-acara.html", eventType: "gathering", style: "modern" },
-  "ameera-acara": { file: "ameera-acara.html", eventType: "gathering", style: "modern" },
-  "chronicle-acara": { file: "chronicle-acara.html", eventType: "gathering", style: "modern" },
-  "lumina-acara": { file: "lumina-acara.html", eventType: "gathering", style: "modern" },
-  "solaria-acara": { file: "solaria-acara.html", eventType: "gathering", style: "modern" },
-  "burgundy-royale-acara": { file: "burgundy-royale-acara.html", eventType: "gathering", style: "modern" },
-  "starlit-dreams-acara": { file: "starlit-dreams-acara.html", eventType: "gathering", style: "modern" },
-  "vintage-forest-acara": { file: "vintage-forest-acara.html", eventType: "gathering", style: "modern" },
+  // Acara & Event Umum Series (10)
+  "sinergi": { file: "sinergi.html", eventType: "event", subEvent: "Corporate", style: "modern" },
+  "prakarsa": { file: "prakarsa.html", eventType: "event", subEvent: "Seminar & Workshop", style: "modern" },
+  "forum": { file: "forum.html", eventType: "event", subEvent: "Seminar & Workshop", style: "modern" },
+  "temu": { file: "temu.html", eventType: "event", subEvent: "Reuni", style: "minimalist" },
+  "cakrawala": { file: "cakrawala.html", eventType: "event", subEvent: "Corporate", style: "modern" },
+  "jamuan": { file: "jamuan.html", eventType: "event", subEvent: "Syukuran", style: "traditional" },
+  "panggung": { file: "panggung.html", eventType: "event", subEvent: "Grand Opening", style: "modern" },
+  "lapang": { file: "lapang.html", eventType: "event", subEvent: "Gathering", style: "minimalist" },
+  "prisma": { file: "prisma.html", eventType: "event", subEvent: "Product Launch", style: "minimalist" },
+  "biasan": { file: "biasan.html", eventType: "event", subEvent: "Gathering", style: "modern" },
 };
 
 const THEME_EVENT_FOLDERS: Array<[string, ThemeEntry["eventType"]]> = [
-  ["wedding", "wedding"], ["birthday", "birthday"], ["khitan", "khitan"], ["aqiqah", "aqiqah"],
-  ["wisuda", "wisuda"], ["general", "gathering"],
+  ["wedding", "wedding"],
+  ["personal", "personal"],
+  ["event", "event"],
 ];
 const THEME_STYLES: ThemeEntry["style"][] = ["minimalist", "modern", "traditional"];
 
@@ -1665,12 +1629,9 @@ export async function renderTemplateFile(
 
   // Pratinjau Theme Builder mengirim master hasil kompilasi yang belum ditulis ke disk: tanpa berkas master maupun piring.
   const templateSource = options?.templateSource;
-  let info: ThemeEntry | undefined = templateSource === undefined
+  const info: ThemeEntry | undefined = templateSource === undefined
     ? resolveThemeEntry(templateName)
     : { file: `${templateName}.html`, eventType: "wedding", style: "modern" };
-  // Varian Tema tidak punya berkas sendiri: master induknya dirender dengan override :root (lib/themeVariants.ts).
-  const variant = templateSource === undefined && !info ? await resolveVariant(templateName) : null;
-  if (variant) info = resolveThemeEntry(variant.parentId);
   if (!info) {
     throw new Error(`[renderTemplate] Tema "${templateName}" tidak terdaftar di THEME_MAP dan berkas masternya tidak ditemukan.`);
   }
@@ -1720,11 +1681,9 @@ export async function renderTemplateFile(
     tpl = templateSource;
   } else {
     tpl = await readMasterTemplate(tplPath);
-    // Suntingan Editor Master dan override varian disisipkan sebelum piring dibekukan: undangan yang sudah dibuat tetap
-    // sama walau admin menyunting master atau variannya nanti. Varian menumpuk di atas suntingan master induknya.
-    const masterEdits = await resolveMasterEdits(variant ? variant.parentId : templateName);
+    // Suntingan Editor Master disisipkan sebelum piring dibekukan: undangan yang sudah dibuat tetap sama walau admin menyunting master nanti.
+    const masterEdits = await resolveMasterEdits(templateName);
     if (masterEdits) tpl = applyMasterOverrides(tpl, masterEdits, "lux-master-edits");
-    if (variant) tpl = applyMasterOverrides(tpl, variant.overrides);
     if (draftId) {
       try {
         // Bila server lain lebih dulu membekukan piring, piring itulah yang dipakai agar semua server menyajikan hal sama.
@@ -2265,22 +2224,16 @@ export async function renderTemplateFile(
       options?.eventType ||
       data?.eventType ||
       info?.eventType ||
-      "wedding"
-    ).toLowerCase().trim();
+      "WEDDING"
+    ).toUpperCase().trim();
 
-    const isNonWedding = ["birthday", "khitan", "aqiqah", "wisuda", "gathering", "general", "umum"].includes(rawEventType);
+    const isNonWedding = rawEventType === "PERSONAL" || rawEventType === "EVENT";
 
     let defaultTagline = "THE WEDDING INVITATION";
-    if (rawEventType === "birthday") {
-      defaultTagline = "BIRTHDAY CELEBRATION";
-    } else if (rawEventType === "khitan") {
-      defaultTagline = "WALIMATUL KHITAN";
-    } else if (rawEventType === "aqiqah") {
-      defaultTagline = "SYUKURAN AQIQAH";
-    } else if (rawEventType === "wisuda") {
-      defaultTagline = "GRADUATION CELEBRATION";
-    } else if (rawEventType === "gathering" || rawEventType === "general" || rawEventType === "umum") {
-      defaultTagline = "EXCLUSIVE INVITATION";
+    if (rawEventType === "PERSONAL") {
+      defaultTagline = String(data?.weddingTagline || data?.eventLabel || "PERSONAL INVITATION").toUpperCase();
+    } else if (rawEventType === "EVENT") {
+      defaultTagline = String(data?.weddingTagline || data?.eventLabel || "EXCLUSIVE INVITATION").toUpperCase();
     }
 
     const preloaderTagline = escapeHtmlAttr(
@@ -2304,9 +2257,8 @@ export async function renderTemplateFile(
           (data.firstName ? String(data.firstName).trim().charAt(0).toUpperCase() : "") ||
           (data.personName ? String(data.personName).trim().charAt(0).toUpperCase() : "") ||
           (data.personNickname ? String(data.personNickname).trim().charAt(0).toUpperCase() : "") ||
-          (data.childName ? String(data.childName).trim().charAt(0).toUpperCase() : "") ||
-          (data.studentName ? String(data.studentName).trim().charAt(0).toUpperCase() : "") ||
-          (data.eventName ? String(data.eventName).trim().charAt(0).toUpperCase() : "") ||
+          (data.mainName ? String(data.mainName).trim().charAt(0).toUpperCase() : "") ||
+          (data.eventTitle ? String(data.eventTitle).trim().charAt(0).toUpperCase() : "") ||
           (data.groomName ? String(data.groomName).trim().charAt(0).toUpperCase() : "") ||
           "L"
         )
@@ -2524,9 +2476,15 @@ export async function renderTemplateFile(
   // Teks klien yang boleh berbaris banyak: di-escape di sini lalu baris barunya dijadikan <br />. Composer mengirim teks
   // polos; dulu composer mengirim hasil nl2br yang lalu di-escape ulang, sehingga "<br />" tercetak sebagai teks.
   const MULTILINE_TEXT_KEYS = new Set(["openingQuote", "closingQuote"]);
+  // Master yang sudah memiliki seksi #story native ({{storyItemsHtml}} / {{storySectionHtml}}) tidak boleh menggandakan
+  // blok #story yang dibangkitkan oleh buildUniversalExtraSections di dalam {{extraSectionsHtml}}.
+  const templateHasNativeStory = /\{\{\s*(?:storyItemsHtml|storySectionHtml)\s*\}\}/.test(tpl);
 
   tpl = tpl.replace(/\{[\s\n]*\{[\s\n]*([\w.]+)[\s\n]*\}[\s\n]*\}/g, (_, key: string) => {
     let val = data[key];
+    if (key === "extraSectionsHtml" && templateHasNativeStory && typeof val === "string") {
+      val = val.replace(/<section\b[^>]*\bid="story"[^>]*>[\s\S]*?<\/section>/gi, "");
+    }
     if (val === undefined && key.includes(".")) {
       const parts = key.split(".");
       let curr: any = data;

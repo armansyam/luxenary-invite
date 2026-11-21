@@ -49,7 +49,6 @@ import { applyUpgradePlan } from "@/lib/upgradeHelper";
 import { purgeExpiredFreeDrafts } from "@/lib/lifecycleCleanup";
 import { composeInvitationData } from "@/lib/themeEngine";
 import { renderTemplateFile } from "@/lib/renderTemplate";
-import { syncWeddingMasterToAcara } from "@/lib/themeVariantSync";
 import {
   buildEnforcedCsp,
   buildStrictAppCspReportOnly,
@@ -558,41 +557,8 @@ describe.skipIf(!IS_TEST_DB)("Wave 3 & Deep Audit Integration", () => {
     expect(await prisma.giftClaim.findUnique({ where: { id: claimId } })).toBeNull();
   });
 
-  it("Master->-acara sync, CSP helpers & report telemetry, and Media Slots catalog", async () => {
-    // 1. Master -> -acara sync on kalandra / kalandra-acara (restore original after test)
-    const originalAcara = await prisma.theme.findUnique({
-      where: { id: "kalandra-acara" },
-      select: { masterOverrides: true },
-    });
-    if (originalAcara) {
-      try {
-        const syncRes = await syncWeddingMasterToAcara("kalandra", {
-          colors: { "--gold": "#7c2d12" },
-          fonts: {},
-        });
-        expect(syncRes.synced).toBe(true);
-        expect(syncRes.acaraId).toBe("kalandra-acara");
-        const updatedAcara = await prisma.theme.findUnique({
-          where: { id: "kalandra-acara" },
-          select: { masterOverrides: true },
-        });
-        expect((updatedAcara?.masterOverrides as Record<string, unknown>)?.colors).toMatchObject({
-          "--gold": "#7c2d12",
-        });
-      } finally {
-        await prisma.theme.update({
-          where: { id: "kalandra-acara" },
-          data: {
-            masterOverrides:
-              originalAcara.masterOverrides === null
-                ? Prisma.DbNull
-                : (originalAcara.masterOverrides as Prisma.InputJsonValue),
-          },
-        });
-      }
-    }
-
-    // 2. CSP helpers & telemetry
+  it("CSP helpers & report telemetry, and Media Slots catalog (81 master unik)", async () => {
+    // 1. CSP helpers & telemetry
     const nonce = generateCspNonce();
     expect(nonce.length).toBeGreaterThanOrEqual(16);
     expect(buildEnforcedCsp()).toContain("report-uri /api/security/csp-report");

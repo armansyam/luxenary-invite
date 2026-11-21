@@ -1,7 +1,7 @@
 /**
  * Sampul HP mengikuti slot (18 Nov 2026): foto slot Landing Cover Mobile harus digambar di atas tekstur bawaan master,
  * tekstur hanya tampil saat slot kosong dan terlihat sebagai "Bawaan tema" di form slot. Sebelumnya tujuh master
- * Sulawesi (dan versi -acara) menulis tekstur padat sebelum `{{landingCoverUrl}}`, sehingga foto unggahan tertutup.
+ * Sulawesi menulis tekstur padat sebelum `{{landingCoverUrl}}`, sehingga foto unggahan tertutup.
  */
 import { describe, it, expect, afterAll } from "vitest";
 import fs from "fs";
@@ -50,11 +50,9 @@ describe("sampul HP mengikuti slot", () => {
   });
 
   it("Wajo tanpa motif garis tenun di latar", () => {
-    for (const id of ["wajo", "wajo-acara"]) {
-      const entry = THEME_MAP[id];
-      const html = fs.readFileSync(masterPathOf(entry.eventType, entry.style, id), "utf8");
-      expect(html.includes("repeating-linear-gradient"), id).toBe(false);
-    }
+    const entry = THEME_MAP["wajo"];
+    const html = fs.readFileSync(masterPathOf(entry.eventType, entry.style, "wajo"), "utf8");
+    expect(html.includes("repeating-linear-gradient"), "wajo").toBe(false);
   });
 });
 
@@ -91,7 +89,7 @@ describe.skipIf(!IS_TEST_DB)("render demo Wajo", () => {
 
 /**
  * Audit slot 18 Nov 2026: master lain yang foto Sampul HP-nya tertutup gradasi padat (Candani, Mayang, Chronicle,
- * Lumina, Solaria, Starlit Dreams, + versi acara) memasang penanda `has-cover-photo` dan lapisan tembus, Festivo dan
+ * Lumina, Solaria, Starlit Dreams) memasang penanda `has-cover-photo` dan lapisan tembus, Festivo dan
  * Kalandra Birthday memakai slot sampul (sebelumnya foto profil), dan Vintage Forest memakai Sampul desktop di desktop.
  */
 describe("master dengan perbaikan sampul", () => {
@@ -99,7 +97,7 @@ describe("master dengan perbaikan sampul", () => {
     const entry = THEME_MAP[id];
     return fs.readFileSync(masterPathOf(entry.eventType, entry.style, id), "utf8");
   };
-  const LIGHTENED = ["candani", "candani-acara", "mayang", "mayang-acara", "chronicle", "chronicle-acara", "lumina", "lumina-acara", "solaria", "solaria-acara", "starlit-dreams", "starlit-dreams-acara"];
+  const LIGHTENED = ["candani", "mayang", "chronicle", "lumina", "solaria", "starlit-dreams"];
 
   it("sampul bergradasi padat dibuat tembus saat slot Sampul HP terisi", () => {
     for (const id of LIGHTENED) {
@@ -116,8 +114,6 @@ describe("master dengan perbaikan sampul", () => {
   });
 
   it("backdrop sampul Vintage Forest memakai Sampul desktop di layar lebar", () => {
-    for (const id of ["vintage-forest", "vintage-forest-acara"]) {
-      expect(read(id), id).toMatch(/@media \(min-width: 900px\) \{\s*\.cover-backdrop-img \{\s*background-image: url\("\{\{landingCoverDesktopUrl\}\}"\);/);
-    }
+    expect(read("vintage-forest"), "vintage-forest").toMatch(/@media \(min-width: 900px\) \{\s*\.cover-backdrop-img \{\s*background-image: url\("\{\{landingCoverDesktopUrl\}\}"\);/);
   });
 });

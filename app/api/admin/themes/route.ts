@@ -11,6 +11,7 @@ import { EventType, Prisma } from "@prisma/client";
 import { validateThemeDefaultMedia, type ThemeDefaultMedia } from "@/lib/themeDefaultMedia";
 import { validateThemeMediaSlots, type ThemeMediaSlots } from "@/lib/themeMediaSlots";
 import { masterDir, masterPathOf } from "@/lib/themePaths";
+import { sanitizeSubEvent } from "@/lib/invitationUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -74,6 +75,7 @@ export async function POST(req: NextRequest) {
     let sortOrder = 99;
     let defaultMusicUrl = "";
     let eventType = "WEDDING";
+    let subEvent: string | null = null;
     let file: File | null = null;
 
     const contentType = req.headers.get("content-type") || "";
@@ -85,6 +87,7 @@ export async function POST(req: NextRequest) {
       description = (formData.get("description") as string) || "";
       series = (formData.get("series") as string) || "";
       if (formData.has("eventType")) eventType = (formData.get("eventType") as string) || "WEDDING";
+      if (formData.has("subEvent")) subEvent = sanitizeSubEvent(formData.get("subEvent"));
       isActive = formData.get("isActive") === null ? true : formData.get("isActive") === "true";
       sortOrder = Number(formData.get("sortOrder") || 99);
       if (formData.has("defaultMusicUrl")) defaultMusicUrl = (formData.get("defaultMusicUrl") as string) || "";
@@ -100,6 +103,7 @@ export async function POST(req: NextRequest) {
       description = body.description || "";
       series = body.series || "";
       if (body.eventType) eventType = body.eventType || "WEDDING";
+      if (body.subEvent !== undefined) subEvent = sanitizeSubEvent(body.subEvent);
       isActive = body.isActive !== false;
       sortOrder = Number(body.sortOrder || 99);
       if (body.defaultMusicUrl !== undefined) defaultMusicUrl = body.defaultMusicUrl || "";
@@ -156,6 +160,7 @@ export async function POST(req: NextRequest) {
         name: name.trim(),
         category: cat,
         eventType: eventType as EventType,
+        subEvent: eventType === "WEDDING" ? null : subEvent,
         description: description || "",
         series: series || (cat === "traditional" ? "Traditional" : cat === "minimalist" ? "Minimalist" : "Modern"),
         isActive: isActive !== false,
@@ -173,6 +178,9 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Invalidate Next.js cache
+    const { masterTemplateCache } = await import("@/lib/cache");
+    masterTemplateCache.clear();
+
     const { revalidatePath } = await import("next/cache");
     revalidatePath("/demo");
     revalidatePath("/demo/[theme]", "page");
@@ -199,6 +207,7 @@ export async function PUT(req: NextRequest) {
     let category: string | undefined;
     let description: string | undefined;
     let series: string | undefined;
+    let subEvent: string | null | undefined;
     let isActive: boolean | undefined;
     let sortOrder: number | undefined;
     let defaultMusicUrl: string | undefined;
@@ -214,6 +223,7 @@ export async function PUT(req: NextRequest) {
       if (formData.has("category")) category = (formData.get("category") as string) || "";
       if (formData.has("description")) description = (formData.get("description") as string) || "";
       if (formData.has("series")) series = (formData.get("series") as string) || "";
+      if (formData.has("subEvent")) subEvent = sanitizeSubEvent(formData.get("subEvent"));
       if (formData.has("isActive")) isActive = formData.get("isActive") === "true";
       if (formData.has("sortOrder")) sortOrder = Number(formData.get("sortOrder"));
       if (formData.has("defaultMusicUrl")) defaultMusicUrl = (formData.get("defaultMusicUrl") as string) || "";
@@ -228,6 +238,7 @@ export async function PUT(req: NextRequest) {
       category = body.category;
       description = body.description;
       series = body.series;
+      if (body.subEvent !== undefined) subEvent = sanitizeSubEvent(body.subEvent);
       if (body.isActive !== undefined) isActive = Boolean(body.isActive);
       if (body.sortOrder !== undefined) sortOrder = Number(body.sortOrder);
       if (body.defaultMusicUrl !== undefined) defaultMusicUrl = body.defaultMusicUrl || "";
@@ -265,6 +276,10 @@ export async function PUT(req: NextRequest) {
     const path = await import("path");
     const rawTargetCat = (category || existing.category).toLowerCase();
     const targetCat = (rawTargetCat === "premium" || rawTargetCat === "minimalist" ? "minimalist" : rawTargetCat === "traditional" ? "traditional" : "modern");
+    const oldMasterPath = masterPathOf(existing.eventType, existing.category, cleanId);
+    const newMasterPath = masterPathOf(existing.eventType, targetCat, cleanId);
+    const categoryChanged = targetCat !== existing.category;
+    let masterDiskChanged = false;
 
     // Jika ada file master baru yang diunggah
     if (file) {
@@ -280,6 +295,30 @@ export async function PUT(req: NextRequest) {
       const buffer = Buffer.from(arrayBuffer);
       await fs.writeFile(targetFilePath, buffer, "utf-8");
       await shareFile(targetFilePath);
+      if (categoryChanged) {
+        await removeIfExists(oldMasterPath);
+        await unshareFiles(oldMasterPath);
+      }
+      masterDiskChanged = true;
+    } else if (categoryChanged) {
+      // Ganti kategori tanpa unggah berkas: pindahkan berkas master fisik agar sinkron dengan folder kategori di DB.
+      try {
+        await fs.access(oldMasterPath);
+        await fs.mkdir(masterDir(existing.eventType, targetCat), { recursive: true });
+        await fs.rename(oldMasterPath, newMasterPath);
+        await shareFile(newMasterPath);
+        await unshareFiles(oldMasterPath);
+        masterDiskChanged = true;
+      } catch (moveErr) {
+        if ((moveErr as NodeJS.ErrnoException).code !== "ENOENT") {
+          throw moveErr;
+        }
+      }
+    }
+
+    if (masterDiskChanged) {
+      const { masterTemplateCache } = await import("@/lib/cache");
+      masterTemplateCache.clear();
 
       // Kompilasi ulang demo statis dengan master HTML baru
       try {
@@ -297,6 +336,7 @@ export async function PUT(req: NextRequest) {
         ...(category !== undefined && { category: targetCat }),
         ...(description !== undefined && { description }),
         ...(series !== undefined && { series }),
+        ...(subEvent !== undefined && { subEvent: existing.eventType === "WEDDING" ? null : subEvent }),
         ...(isActive !== undefined && { isActive: Boolean(isActive) }),
         ...(sortOrder !== undefined && { sortOrder: Number(sortOrder) }),
         ...(defaultMusicUrl !== undefined && { defaultMusicUrl: defaultMusicUrl || null }),
@@ -306,6 +346,9 @@ export async function PUT(req: NextRequest) {
         ...(file && { builderSpec: Prisma.DbNull }),
       },
     });
+
+    const { masterTemplateCache } = await import("@/lib/cache");
+    masterTemplateCache.clear();
 
     const { revalidatePath } = await import("next/cache");
     revalidatePath("/api/public/themes");
@@ -372,6 +415,9 @@ export async function DELETE(req: NextRequest) {
       await removeIfExists(dir, { recursive: true });
       await unshareFiles(dir);
     }
+
+    const { masterTemplateCache } = await import("@/lib/cache");
+    masterTemplateCache.clear();
 
     const { revalidatePath } = await import("next/cache");
     revalidatePath("/demo");

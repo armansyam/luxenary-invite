@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { routeError } from "@/lib/routeError";
 import { getEnabledEventTypes, getServiceAvailability } from "@/lib/settings";
-import { DEFAULT_THEME_BY_EVENT, isThemeCompatible, selectableEventTypes } from "@/lib/invitationUtils";
+import { DEFAULT_THEME_BY_EVENT, EVENT_TYPES, isThemeInMode, resolveSubEventMeta, sanitizeSubEvent, selectableEventTypes } from "@/lib/invitationUtils";
 import { loadThemeLabelContext } from "@/lib/themeLabels";
 import { loadThemeMediaSnapshot, parseThemeDefaultMedia } from "@/lib/themeDefaultMedia";
 import { copyMasterToDraft, seedRenderedLabels } from "@/lib/renderedLabels";
@@ -13,14 +13,7 @@ import { normalizeJsonInput } from "@/lib/jsonText";
 
 export const dynamic = "force-dynamic";
 
-const VALID_EVENT_TYPES: readonly EventType[] = [
-  "WEDDING",
-  "BIRTHDAY",
-  "KHITAN",
-  "AQIQAH",
-  "WISUDA",
-  "GATHERING",
-];
+const VALID_EVENT_TYPES: readonly EventType[] = [...EVENT_TYPES];
 
 export async function POST(req: Request) {
   try {
@@ -83,16 +76,17 @@ export async function POST(req: Request) {
     }
 
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-    const [enabledTypes, activeThemes] = await Promise.all([
+    const [enabledTypes, allActiveThemes] = await Promise.all([
       getEnabledEventTypes(),
       prisma.theme.findMany({
-        where: { isActive: true, parentTheme: null },
-        select: { eventType: true },
+        where: { isActive: true },
+        select: { id: true, eventType: true },
       }),
     ]);
+    const activeThemes = allActiveThemes;
     const selectableTypes = selectableEventTypes(
       enabledTypes,
-      activeThemes.map((t) => t.eventType),
+      allActiveThemes.map((t) => t.eventType),
     );
 
     const hasExplicitEventType = typeof body.eventType === "string" && body.eventType.trim().length > 0;
@@ -115,6 +109,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Jenis acara tidak valid." }, { status: 400 });
     }
     const eventType = rawEvent as EventType;
+    const subEvent = eventType === "WEDDING" ? null : sanitizeSubEvent(body.subEvent);
 
     if (!enabledTypes.includes(eventType) || !selectableTypes.includes(eventType)) {
       return NextResponse.json(
@@ -126,44 +121,34 @@ export async function POST(req: Request) {
     let chosenTheme = "";
     if (typeof body.themeId === "string" && body.themeId.trim()) {
       const candidate = body.themeId.trim().toLowerCase();
-      const theme = await prisma.theme.findUnique({
-        where: { id: candidate },
-        select: { id: true, isActive: true, eventType: true },
-      });
-      if (!theme || !theme.isActive || !isThemeCompatible(eventType, theme.eventType)) {
+      const requested = activeThemes.find((t) => t.id.toLowerCase() === candidate);
+      if (!requested || !isThemeInMode(requested.eventType, eventType)) {
         return NextResponse.json(
-          { error: "Tema pilihan tidak aktif atau tidak sesuai jenis acara." },
+          { error: "Tema pilihan tidak aktif atau berasal dari mode undangan yang berbeda." },
           { status: 400 },
         );
       }
-      chosenTheme = theme.id;
+      chosenTheme = requested.id;
     } else {
-      const preferred = DEFAULT_THEME_BY_EVENT[eventType];
+      const preferred =
+        eventType === "WEDDING"
+          ? DEFAULT_THEME_BY_EVENT.WEDDING
+          : (subEvent ? resolveSubEventMeta(eventType, subEvent).demoFallbackThemeId : DEFAULT_THEME_BY_EVENT[eventType]);
       const preferredTheme = preferred
         ? await prisma.theme.findFirst({
             where: { id: preferred, isActive: true },
-            select: { id: true },
+            select: { id: true, eventType: true },
           })
         : null;
 
-      if (preferredTheme) {
+      if (preferredTheme && isThemeInMode(preferredTheme.eventType, eventType)) {
         chosenTheme = preferredTheme.id;
       } else {
-        const firstActive =
-          (await prisma.theme.findFirst({
-            where: { isActive: true, eventType, parentTheme: null },
-            orderBy: { sortOrder: "asc" },
-            select: { id: true },
-          })) ||
-          (await prisma.theme.findFirst({
-            where: {
-              isActive: true,
-              eventType: eventType === "WEDDING" ? "WEDDING" : { not: "WEDDING" },
-              parentTheme: null,
-            },
-            orderBy: { sortOrder: "asc" },
-            select: { id: true },
-          }));
+        const firstActive = await prisma.theme.findFirst({
+          where: { isActive: true, eventType },
+          orderBy: { sortOrder: "asc" },
+          select: { id: true },
+        });
         if (!firstActive) {
           return NextResponse.json(
             { error: "Belum ada tema aktif untuk jenis acara ini." },
@@ -184,7 +169,7 @@ export async function POST(req: Request) {
 
     const [{ customDemoData, themeMeta, blueprint, defaultCoverBadge, initialCustomLabels }, snapshot] =
       await Promise.all([
-        loadThemeLabelContext(chosenTheme, eventType),
+        loadThemeLabelContext(chosenTheme, eventType, subEvent),
         loadThemeMediaSnapshot(chosenTheme),
       ]);
 
@@ -200,6 +185,7 @@ export async function POST(req: Request) {
       : Prisma.DbNull;
 
     const invitationSlug = `draf-${crypto.randomBytes(4).toString("hex")}`;
+    const subMeta = eventType === "WEDDING" ? null : resolveSubEventMeta(eventType, subEvent);
 
     const created = await prisma.invitation.create({
       data: {
@@ -208,18 +194,19 @@ export async function POST(req: Request) {
         isFreeDraft: true,
         status: "DRAFT",
         eventType,
+        subEvent,
         themeId: chosenTheme,
         invitationSlug,
         subdomain: null,
         participantsJson: participants.value,
         musicUrl: initialMusicUrl || undefined,
-        openingQuote: blueprint.openingQuote,
-        openingQuoteRef: blueprint.openingQuoteRef,
+        openingQuote: subMeta ? subMeta.defaultQuote : blueprint.openingQuote,
+        openingQuoteRef: subMeta ? subMeta.defaultQuoteRef : blueprint.openingQuoteRef,
         eventData: [],
         featureSettings: {
           weddingTagline: defaultCoverBadge,
           musicUrl: initialMusicUrl || undefined,
-          showStory: eventType === "WEDDING",
+          showStory: true,
           showGallery: true,
           showGift: true,
           showDresscode: true,
@@ -235,6 +222,7 @@ export async function POST(req: Request) {
         isFreeDraft: true,
         status: true,
         eventType: true,
+        subEvent: true,
         themeId: true,
         invitationSlug: true,
       },

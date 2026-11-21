@@ -33,7 +33,7 @@ import { builderMediaSlots } from "@/lib/themeBuilder/mediaSlots";
 import { simSlotsFor } from "@/lib/themeBuilder/simSlots";
 import { defaultBuilderSpec, type BuilderSpec } from "@/lib/themeBuilder/spec";
 import { POST as builderPost, PUT as builderPut, PATCH as builderPatch } from "@/app/api/admin/theme-builder/route";
-import { PUT as variantsPut } from "@/app/api/admin/theme-variants/route";
+import { PUT as masterEditorPut } from "@/app/api/admin/master-editor/route";
 import { POST as uploadPost } from "@/app/api/client/upload/route";
 import { POST as createInvitation } from "@/app/api/client/invitations/create/route";
 import { GET as getInvitation, PUT as updateInvitation } from "@/app/api/client/invitations/[id]/route";
@@ -289,7 +289,7 @@ describe.skipIf(!IS_TEST_DB)("E2E Theme Builder Fase 5 & Studio Klien", () => {
       (await prisma.theme.findUniqueOrThrow({ where: { id: secondThemeId }, select: { mediaSlots: true } })).mediaSlots,
     );
     authState.user = { id: admin.id, role: "SUPER_ADMIN", isAdmin: true, permissions: [] };
-    const declKalandra = await variantsPut(jsonReq("/api/admin/theme-variants", "PUT", {
+    const declKalandra = await masterEditorPut(jsonReq("/api/admin/master-editor", "PUT", {
       masterId: secondThemeId,
       overrides: { colors: {}, fonts: {} },
       mediaSlots: { LANDING_COVER: { places: ["Sampul"] }, GROOM_PHOTO: { places: ["Mempelai"] }, BRIDE_PHOTO: { places: ["Mempelai"] } },
@@ -321,7 +321,7 @@ describe.skipIf(!IS_TEST_DB)("E2E Theme Builder Fase 5 & Studio Klien", () => {
     expect(remainingMedia.some((m) => m.mediaSlot === "HOME_PHOTO")).toBe(false);
   });
 
-  it("alur Single-Name BIRTHDAY: simSlotsFor tampilkan Foto profil utama; cover tidak menimpa ilustrasi profil", async () => {
+  it("alur Single-Name PERSONAL: simSlotsFor tampilkan Foto profil utama; cover tidak menimpa ilustrasi profil", async () => {
     const admin = await prisma.admin.create({
       data: { username: `${RUN}-adm2`, email: `${RUN}-adm2@t.local`, name: "Admin Bday E2E", role: "SUPER_ADMIN", permissions: [] },
     });
@@ -330,9 +330,9 @@ describe.skipIf(!IS_TEST_DB)("E2E Theme Builder Fase 5 & Studio Klien", () => {
 
     const bdayThemeId = `${RUN}-bday`;
     const bdaySpec: BuilderSpec = {
-      ...defaultBuilderSpec("BIRTHDAY"),
+      ...defaultBuilderSpec("PERSONAL"),
       ornaments: [
-        { id: "e2ebday01", section: "opening", src: ART_FREE, x: 50, y: 30, anchor: "top", width: 35, rotate: 0, opacity: 1, flipX: false, layer: "front", replaceSlot: "GROOM_PHOTO" },
+        { id: "e2ebday01", section: "opening", src: ART_FREE, x: 50, y: 30, anchor: "top", width: 35, rotate: 0, opacity: 1, flipX: false, layer: "front", replaceSlot: "PROFILE_PHOTO" },
       ],
     };
 
@@ -341,20 +341,21 @@ describe.skipIf(!IS_TEST_DB)("E2E Theme Builder Fase 5 & Studio Klien", () => {
       name: "E2E Birthday Slot",
       category: "modern",
       description: "Tema Birthday E2E",
+      subEvent: "Ulang Tahun",
       spec: bdaySpec,
     }) as never);
     expect(res.status).toBe(200);
-    cleanup.themes.push({ id: bdayThemeId, eventFolder: "birthday", category: "modern" });
+    cleanup.themes.push({ id: bdayThemeId, eventFolder: "personal", category: "modern" });
 
-    const bdaySlots = simSlotsFor("BIRTHDAY");
-    expect(bdaySlots.find((s) => s.slot === "GROOM_PHOTO")?.label).toBe("Foto profil utama");
+    const bdaySlots = simSlotsFor("PERSONAL");
+    expect(bdaySlots.find((s) => s.slot === "PROFILE_PHOTO")?.label).toBe("Foto profil utama");
     expect(bdaySlots.some((s) => s.slot === "BRIDE_PHOTO")).toBe(false);
 
     const row = await prisma.theme.findUniqueOrThrow({ where: { id: bdayThemeId } });
-    expect((row.mediaSlots as Record<string, { preview?: string }>).GROOM_PHOTO?.preview).toBe(ART_FREE);
+    expect((row.mediaSlots as Record<string, { preview?: string }>).PROFILE_PHOTO?.preview).toBe(ART_FREE);
 
-    // Simulasi hanya LANDING_COVER terisi: composeBirthdayData mem-fallback personPhotoUrl ke cover, namun
-    // clientMainPhoto wajib tetap false sehingga ilustrasi GROOM_PHOTO tidak tergantikan oleh sampul.
+    // Simulasi hanya LANDING_COVER terisi: composePersonalData mem-fallback personPhotoUrl ke cover, namun
+    // clientMainPhoto wajib tetap false sehingga ilustrasi PROFILE_PHOTO tidak tergantikan oleh sampul.
     const simCoverOnly = await renderBuilderPreview(bdaySpec, undefined, "sim", {
       slots: { LANDING_COVER: SIM_COVER },
       gallery: [],
@@ -362,19 +363,20 @@ describe.skipIf(!IS_TEST_DB)("E2E Theme Builder Fase 5 & Studio Klien", () => {
     expect(simCoverOnly.html).toContain(`class="lux-orn-art" src="${ART_FREE}"`);
     expect(simCoverOnly.html).not.toMatch(/data-orn-id="e2ebday01"[\s\S]*?class="lux-orn-photo"/);
 
-    // Simulasi GROOM_PHOTO terisi: ilustrasi diganti foto profil uji.
+    // Simulasi PROFILE_PHOTO terisi: ilustrasi diganti foto profil uji.
     const simProfile = await renderBuilderPreview(bdaySpec, undefined, "sim", {
-      slots: { LANDING_COVER: SIM_COVER, GROOM_PHOTO: SIM_PROFILE },
+      slots: { LANDING_COVER: SIM_COVER, PROFILE_PHOTO: SIM_PROFILE },
       gallery: [],
     });
     expect(simProfile.html).toContain(`class="lux-orn-photo" src="${SIM_PROFILE}"`);
     expect(simProfile.html).toMatch(/lux-orn-art"[^>]*visibility:hidden/);
 
-    // Pastikan composeInvitationData langsung untuk BIRTHDAY juga menghormati deklarasi builderMediaSlots.
+    // Pastikan composeInvitationData langsung untuk PERSONAL juga menghormati deklarasi builderMediaSlots.
     const composed = (await composeInvitationData({
       id: "virtual-bday-e2e",
       themeId: bdayThemeId,
-      eventType: "BIRTHDAY",
+      eventType: "PERSONAL",
+      subEvent: "Ulang Tahun",
       participantsJson: { person: { name: "Nadia", nickname: "Nadia", age: "17" } },
       eventData: [{ title: "Sweet 17", date: "2099-08-10", time: "19:00 WIB", isPrimary: true }],
       media: [{ mediaSlot: "LANDING_COVER", localPath: SIM_COVER }],

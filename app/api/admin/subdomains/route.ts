@@ -35,6 +35,7 @@ export async function GET(req: Request) {
         id: true,
         subdomain: true,
         eventType: true,
+        subEvent: true,
         participantsJson: true,
         invitationSlug: true,
         status: true,

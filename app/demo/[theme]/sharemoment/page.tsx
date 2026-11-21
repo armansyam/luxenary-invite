@@ -15,7 +15,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const cleanId = (theme || "kalandra").toLowerCase().trim();
   const demo = getDemoThemeData(cleanId);
   const platformName = await getAdminSetting("platform_name", "Platform Undangan");
-  const coupleName = demo ? (demo.eventType === "BIRTHDAY" ? ((demo as any).personName || "Ulang Tahun") : `${demo.groomName} & ${demo.brideName}`) : "Demo";
+  const coupleName = demo
+    ? demo.eventType === "WEDDING"
+      ? `${demo.groomName} & ${demo.brideName}`
+      : (demo as any).personName || (demo as any).eventTitle || demo.themeName
+    : "Demo";
 
   return {
     title: `Upload Momen (${coupleName}) — ${platformName}`,
@@ -32,7 +36,10 @@ export default async function DemoGuestMemoriesStandalonePage({ params }: PagePr
     notFound();
   }
 
-  const coupleName = demo.eventType === "BIRTHDAY" ? ((demo as any).personName || "Ulang Tahun") : `${demo.groomName} & ${demo.brideName}`;
+  const coupleName =
+    demo.eventType === "WEDDING"
+      ? `${demo.groomName} & ${demo.brideName}`
+      : (demo as any).personName || (demo as any).eventTitle || demo.themeName;
   const invitationId = `demo-${demo.themeId}`;
   
   // Use theme cover photo for demo background

@@ -47,11 +47,11 @@ function instantCoverHides(html: string): string[] {
 
 const masters = [
   ...Object.entries(THEME_MAP).map(([id, info]) => {
-    const folder = info.eventType === "gathering" ? "general" : info.eventType;
-    return [id, path.join(process.cwd(), "themes", folder, info.style, info.file)] as const;
+    return [id, path.join(process.cwd(), "themes", info.eventType, info.style, info.file)] as const;
   }),
   ["blueprint pernikahan", path.join(process.cwd(), "themes", "_blueprints", "wedding", "starter-blueprint.html")] as const,
-  ["blueprint satu nama", path.join(process.cwd(), "themes", "_blueprints", "single-name", "starter-blueprint-single.html")] as const,
+  ["blueprint personal", path.join(process.cwd(), "themes", "_blueprints", "personal", "starter-blueprint-personal.html")] as const,
+  ["blueprint event", path.join(process.cwd(), "themes", "_blueprints", "event", "starter-blueprint-event.html")] as const,
 ].filter(([, file]) => fs.existsSync(file));
 
 describe("animasi buka sampul", () => {

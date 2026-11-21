@@ -5,7 +5,7 @@
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
-import { SHARED_BLUEPRINT_FOLDERS, THEME_EVENT_FOLDERS, THEME_STYLES, eventFolderOf, masterDir, masterFilePath, masterPathOf } from "@/lib/themePaths";
+import { THEME_EVENT_FOLDERS, THEME_STYLES, eventFolderOf, masterDir, masterFilePath, masterPathOf } from "@/lib/themePaths";
 import { resolveThemeEntry } from "@/lib/renderTemplate";
 
 const ROOT = path.join(process.cwd(), "themes");
@@ -20,17 +20,19 @@ const masters = eventFolders.flatMap((folder) =>
 );
 
 describe("pemetaan folder acara", () => {
-  it("GATHERING di general, jenis lain memakai nama huruf kecilnya", () => {
-    expect(eventFolderOf("GATHERING")).toBe("general");
-    expect(eventFolderOf("gathering")).toBe("general");
-    expect(eventFolders).toEqual(["wedding", "birthday", "khitan", "aqiqah", "wisuda", "general"]);
+  it("3 kategori abadi dipetakan langsung ke wedding, personal, dan event", () => {
+    expect(eventFolderOf("WEDDING")).toBe("wedding");
+    expect(eventFolderOf("PERSONAL")).toBe("personal");
+    expect(eventFolderOf("EVENT")).toBe("event");
+    expect(eventFolderOf("event")).toBe("event");
+    expect(eventFolders).toEqual(["wedding", "personal", "event"]);
   });
 
   it("path master dibentuk dari folder acara, gaya, dan ID huruf kecil", () => {
     expect(masterPathOf("WEDDING", "modern", "Candani")).toBe(path.join(ROOT, "wedding", "modern", "candani.html"));
-    expect(masterPathOf("GATHERING", "modern", "prakarsa")).toBe(path.join(ROOT, "general", "modern", "prakarsa.html"));
-    expect(masterDir("KHITAN", "traditional")).toBe(path.join(ROOT, "khitan", "traditional"));
-    expect(masterFilePath("wisuda", "modern", "toga.html")).toBe(path.join(ROOT, "wisuda", "modern", "toga.html"));
+    expect(masterPathOf("EVENT", "modern", "prakarsa")).toBe(path.join(ROOT, "event", "modern", "prakarsa.html"));
+    expect(masterDir("PERSONAL", "traditional")).toBe(path.join(ROOT, "personal", "traditional"));
+    expect(masterFilePath("personal", "modern", "toga.html")).toBe(path.join(ROOT, "personal", "modern", "toga.html"));
   });
 });
 
@@ -47,7 +49,7 @@ describe("isi themes/", () => {
       if (!fs.existsSync(path.join(ROOT, folder))) continue;
       expect(dirs(path.join(ROOT, folder)).filter((s) => !(THEME_STYLES as readonly string[]).includes(s))).toEqual([]);
     }
-    const blueprintFolders = [...eventFolders, ...SHARED_BLUEPRINT_FOLDERS];
+    const blueprintFolders = [...eventFolders];
     expect(dirs(path.join(ROOT, "_blueprints")).filter((d) => !blueprintFolders.includes(d))).toEqual([]);
   });
 

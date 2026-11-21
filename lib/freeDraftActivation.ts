@@ -3,17 +3,11 @@ import { deleteInvitationDraft } from "@/lib/invitationDraft";
 import { getMonthYearSlug, isReservedSlug, isReservedSubdomain } from "@/lib/domainUtils";
 import { getPrimaryEventDateString, normalizeEventDateInput } from "@/lib/lifecycleDates";
 import { participantNames } from "@/lib/participantUtils";
+import { resolveSubEventMeta } from "@/lib/invitationUtils";
 import { invalidateInvitationLookup } from "@/lib/cache";
 import { logger } from "@/lib/logger";
 
 const FREE_DRAFT_SLUG_RE = /^draf-[0-9a-f]{8}$/i;
-
-const SINGLE_NAME_SLUG_SUFFIX: Record<string, string> = {
-  BIRTHDAY: "birthday",
-  KHITAN: "khitan",
-  AQIQAH: "aqiqah",
-  WISUDA: "wisuda",
-};
 
 function slugifySegment(text: string): string {
   return text
@@ -34,6 +28,7 @@ export function isPlaceholderFreeDraftSlug(slug: string | null | undefined): boo
 export async function buildCanonicalSlugForActivatedDraft(input: {
   invitationId: string;
   eventType: string;
+  subEvent?: string | null;
   participantsJson: unknown;
   eventData: unknown;
 }): Promise<string | null> {
@@ -63,10 +58,10 @@ export async function buildCanonicalSlugForActivatedDraft(input: {
   let candidateBase = "";
   if (input.eventType === "WEDDING") {
     candidateBase = withDate(`${firstSlug || "mempelai"}-${secondSlug || "mempelai"}`);
-  } else if (input.eventType === "GATHERING") {
-    candidateBase = withDate(firstSlug || "gathering");
+  } else if (input.eventType === "EVENT") {
+    candidateBase = withDate(firstSlug || "acara");
   } else {
-    const suffix = SINGLE_NAME_SLUG_SUFFIX[input.eventType] || "acara";
+    const suffix = resolveSubEventMeta("PERSONAL", input.subEvent).slugSuffix || "acara";
     candidateBase = withDate(`${firstSlug}-${suffix}`);
   }
 
@@ -122,6 +117,7 @@ export async function activateFreeDraftForOrder(
     select: {
       id: true,
       eventType: true,
+      subEvent: true,
       participantsJson: true,
       eventData: true,
       invitationSlug: true,
@@ -135,6 +131,7 @@ export async function activateFreeDraftForOrder(
     ? await buildCanonicalSlugForActivatedDraft({
         invitationId: freeDraft.id,
         eventType: freeDraft.eventType,
+        subEvent: freeDraft.subEvent,
         participantsJson: freeDraft.participantsJson,
         eventData: freeDraft.eventData,
       })

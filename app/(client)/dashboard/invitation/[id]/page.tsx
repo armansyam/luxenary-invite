@@ -8,7 +8,19 @@ import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { getPlanDisplayName } from "@/lib/planUtils";
 import { isWeddingField, participantNames, safeParseParticipants, weddingFieldValue, withWeddingField } from "@/lib/participantUtils";
 import { FEATURE_SETTING_LIVE_FIELDS, isLiveEditField } from "@/lib/liveEditFields";
-import { resolveInvitationDisplayName, getMediaSlotLabel, eventNoun, isThemeCompatible, sortThemesForEvent } from "@/lib/invitationUtils";
+import {
+  EVENT_TYPE_LABELS,
+  PERSONAL_SUB_EVENT_PRESETS,
+  EVENT_SUB_EVENT_PRESETS,
+  eventNoun,
+  extractSubEventOptions,
+  getMediaSlotLabel,
+  isThemeInMode,
+  resolveInvitationDisplayName,
+  resolveSubEventMeta,
+  sanitizeSubEvent,
+  sortThemesForEvent,
+} from "@/lib/invitationUtils";
 import { useFeedback } from "@/components/ui/Feedback";
 import { getApexRootDomain } from "@/lib/domainUtils";
 import { BG_PHOTO_TONE_LIMIT, BG_SCRIM_MAX, parseBgPhotoTone, parseBgScrim } from "@/lib/bgPhotoTone";
@@ -100,34 +112,20 @@ const EVENT_PRESETS_BY_TYPE: Record<string, string[]> = {
     "Syukuran & Pengajian",
     "Custom Sesi Khusus",
   ],
-  BIRTHDAY: [
+  PERSONAL: [
     "Pesta Ulang Tahun",
     "Tiup Lilin & Potong Kue",
-    "Games & Hiburan",
-    "Ramah Tamah & Makan Bersama",
-    "After Party",
-  ],
-  KHITAN: [
     "Walimatul Khitan",
-    "Tasyakuran & Doa Bersama",
-    "Ramah Tamah",
-    "Hiburan",
-  ],
-  AQIQAH: [
     "Tasyakuran Aqiqah",
-    "Cukur Rambut & Tasmiyah",
-    "Tausiyah & Doa Bersama",
-    "Ramah Tamah",
+    "Syukuran Kelulusan / Wisuda",
+    "Khataman Al-Qur'an & Doa Bersama",
+    "Ramah Tamah & Makan Bersama",
   ],
-  WISUDA: [
-    "Prosesi Wisuda",
-    "Syukuran Kelulusan",
-    "Ramah Tamah & Foto Bersama",
-  ],
-  GATHERING: [
+  EVENT: [
     "Registrasi & Welcome Drink",
     "Opening Ceremony",
-    "Main Activity & Games",
+    "Seminar & Talkshow",
+    "Main Activity & Networking",
     "Gala Dinner & Hiburan",
   ],
 };
@@ -188,9 +186,11 @@ export default function EditInvitation() {
   const [upgradeTarget, setUpgradeTarget] = useState<"TIER_2" | "TIER_3" | null>(null);
   const [upgrading, setUpgrading] = useState(false);
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
-  // Ganti Jenis Acara (khusus Draf Gratis)
+  // Ganti Mode Acara (selama status DRAFT)
   const [eventTypeModalOpen, setEventTypeModalOpen] = useState(false);
   const [selectedEventType, setSelectedEventType] = useState<string>("");
+  const [selectedFreeSubEvent, setSelectedFreeSubEvent] = useState<string>("");
+  const [freeSubCustomMode, setFreeSubCustomMode] = useState<boolean>(false);
   const [changingEventType, setChangingEventType] = useState(false);
   const [eventTypeError, setEventTypeError] = useState<string | null>(null);
   const [isDeploying, setIsDeploying] = useState(false);
@@ -218,9 +218,13 @@ export default function EditInvitation() {
     TIER_3: "bg-amber-100/70 text-amber-950 border-amber-300",
   };
 
-  const handleChangeFreeDraftEventType = async () => {
+  const handleChangeInvitationMode = async () => {
     if (!invitationId || !selectedEventType || changingEventType) return;
-    if (selectedEventType === invitation?.eventType) {
+    const cleanSub = selectedEventType === "WEDDING" ? null : sanitizeSubEvent(selectedFreeSubEvent);
+    if (
+      selectedEventType === invitation?.eventType &&
+      (cleanSub || "") === (invitation?.subEvent || "")
+    ) {
       setEventTypeModalOpen(false);
       return;
     }
@@ -231,21 +235,69 @@ export default function EditInvitation() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "CHANGE_FREE_DRAFT_EVENT_TYPE",
+          action: "CHANGE_INVITATION_MODE",
           eventType: selectedEventType,
+          subEvent: cleanSub,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setEventTypeError(data.error || "Gagal mengganti jenis acara.");
+        setEventTypeError(data.error || "Gagal mengganti mode acara.");
         return;
       }
       setEventTypeModalOpen(false);
       window.location.reload();
     } catch {
-      setEventTypeError("Koneksi terganggu saat mengganti jenis acara.");
+      setEventTypeError("Koneksi terganggu saat mengganti mode acara.");
     } finally {
       setChangingEventType(false);
+    }
+  };
+
+  const [changingSubEvent, setChangingSubEvent] = useState(false);
+  const [customSubEventDraft, setCustomSubEventDraft] = useState<string>("");
+  const [subEventCustomOpen, setSubEventCustomOpen] = useState<boolean>(false);
+
+  const handleSwitchSubEvent = async (rawNextSubEvent: string) => {
+    const cleanNext = sanitizeSubEvent(rawNextSubEvent);
+    if (!invitationId || changingSubEvent || (cleanNext || "") === (invitation?.subEvent || "")) return;
+    setChangingSubEvent(true);
+    try {
+      const res = await fetch(`/api/client/invitations/${invitationId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "CHANGE_SUB_EVENT",
+          subEvent: cleanNext,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        feedback.notify(data.error || "Gagal mengganti sub-acara.", "error");
+        return;
+      }
+      const serverInv = data.invitation || {};
+      const nextSubVal = serverInv.subEvent ?? cleanNext;
+      const patch = {
+        subEvent: nextSubVal,
+        ...(serverInv.openingQuote !== undefined ? { openingQuote: serverInv.openingQuote } : {}),
+        ...(serverInv.openingQuoteRef !== undefined ? { openingQuoteRef: serverInv.openingQuoteRef } : {}),
+        ...(serverInv.featureSettings !== undefined ? { featureSettings: serverInv.featureSettings } : {}),
+      };
+      setInvitation((prev: any) => (prev ? { ...prev, ...patch } : prev));
+      setSavedSnapshot((prev: any) =>
+        prev?.invitation ? { ...prev, invitation: { ...prev.invitation, ...patch } } : prev,
+      );
+      setLiveIframeKey((k) => k + 1);
+      setSubEventCustomOpen(false);
+      feedback.notify(
+        nextSubVal ? `Sub-acara diperbarui menjadi "${nextSubVal}".` : "Sub-acara dikosongkan ke umum.",
+        "success",
+      );
+    } catch {
+      feedback.notify("Koneksi terganggu saat mengganti sub-acara.", "error");
+    } finally {
+      setChangingSubEvent(false);
     }
   };
 
@@ -277,6 +329,7 @@ export default function EditInvitation() {
   const [activeStudioTab, setActiveStudioTab] = useState<"form" | "live">("form");
   const [previewDevice, setPreviewDevice] = useState<"mobile" | "desktop" | "dual">("dual");
   const [selectedThemeCategory, setSelectedThemeCategory] = useState<string>("");
+  const [selectedPersonalThemeSub, setSelectedPersonalThemeSub] = useState<string>("all");
   const liveMobileIframeRef = useRef<HTMLIFrameElement>(null);
   const liveDesktopIframeRef = useRef<HTMLIFrameElement>(null);
   const liveFallbackIframeRef = useRef<HTMLIFrameElement>(null);
@@ -1444,10 +1497,14 @@ export default function EditInvitation() {
   }
 
   const isWeddingEvent = !invitation?.eventType || invitation.eventType === "WEDDING";
-  const eventNounLabel = eventNoun(invitation?.eventType);
-  // Foto wajib hanya untuk slot yang dipakai tema: tema tanpa foto mempelai tidak menagih foto mempelai.
+  const eventNounLabel = eventNoun(invitation?.eventType, invitation?.subEvent);
+  // Foto wajib hanya untuk slot yang dipakai tema: masing-masing mode memiliki slot fotonya sendiri.
   const needsCoverPhoto = slotUsed("LANDING_COVER") && !media["LANDING_COVER"];
-  const needsPortraitPhoto = (slotUsed("GROOM_PHOTO") && !media["GROOM_PHOTO"]) || (isWeddingEvent && slotUsed("BRIDE_PHOTO") && !media["BRIDE_PHOTO"]);
+  const needsPortraitPhoto = isWeddingEvent
+    ? (slotUsed("GROOM_PHOTO") && !media["GROOM_PHOTO"]) || (slotUsed("BRIDE_PHOTO") && !media["BRIDE_PHOTO"])
+    : invitation?.eventType === "EVENT"
+    ? slotUsed("EVENT_PHOTO") && !media["EVENT_PHOTO"]
+    : slotUsed("PROFILE_PHOTO") && !media["PROFILE_PHOTO"];
   // Foto klien di slot yang tidak dipakai tema terpilih (sisa tema sebelumnya); tidak dirender, baris tetap tersimpan.
   const unusedSlotPhotos = declaredSlots
     ? DECLARABLE_MEDIA_SLOTS.filter((slot) => !slotUsed(slot) && media[slot])
@@ -1475,25 +1532,13 @@ export default function EditInvitation() {
       id: "sec3",
       title: (!invitation?.eventType || invitation?.eventType === "WEDDING")
         ? "Profil Kedua Mempelai"
-        : invitation?.eventType === "BIRTHDAY"
-        ? "Profil Yang Berulang Tahun"
-        : invitation?.eventType === "KHITAN"
-        ? "Profil Anak & Keluarga"
-        : invitation?.eventType === "AQIQAH"
-        ? "Profil Bayi & Keluarga"
-        : invitation?.eventType === "WISUDA"
-        ? "Profil Wisudawan"
-        : "Profil Acara",
+        : invitation?.eventType === "PERSONAL"
+        ? `Profil Tokoh${invitation?.subEvent ? ` (${invitation.subEvent})` : " & Keluarga"}`
+        : `Profil Acara${invitation?.subEvent ? ` (${invitation.subEvent})` : ""}`,
       shortTitle: (!invitation?.eventType || invitation?.eventType === "WEDDING")
         ? "Profil Mempelai"
-        : invitation?.eventType === "BIRTHDAY"
-        ? "Profil Ultah"
-        : invitation?.eventType === "KHITAN"
-        ? "Profil Khitan"
-        : invitation?.eventType === "AQIQAH"
-        ? "Profil Aqiqah"
-        : invitation?.eventType === "WISUDA"
-        ? "Profil Wisuda"
+        : invitation?.eventType === "PERSONAL"
+        ? "Profil Tokoh"
         : "Profil Acara",
       summary: resolveInvitationDisplayName(invitation),
       isUrgent: needsPortraitPhoto,
@@ -1519,10 +1564,18 @@ export default function EditInvitation() {
     },
     {
       id: "sec7",
-      title: "Kisah Cinta (Journey of Love)",
-      shortTitle: "Kisah Cinta",
+      title: (!invitation?.eventType || invitation?.eventType === "WEDDING")
+        ? "Kisah Cinta (Journey of Love)"
+        : invitation?.eventType === "PERSONAL"
+        ? "Kisah & Perjalanan Hidup (Life Story)"
+        : "Tonggak Perjalanan & Riwayat (Milestone)",
+      shortTitle: (!invitation?.eventType || invitation?.eventType === "WEDDING")
+        ? "Kisah Cinta"
+        : invitation?.eventType === "PERSONAL"
+        ? "Kisah & Perjalanan"
+        : "Tonggak Perjalanan",
       summary: showStory ? `${stories.length} Babak Cerita` : "Nonaktif",
-      hide: Boolean(invitation?.eventType && invitation?.eventType !== "WEDDING"),
+      hide: false,
     },
     {
       id: "sec8",
@@ -1714,18 +1767,21 @@ export default function EditInvitation() {
                   </span>
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-stone-50 text-stone-700 border-stone-200">
                     {BUILDER_EVENT_LABELS[(invitation.eventType || "WEDDING") as BuilderEventType] ?? invitation.eventType}
+                    {invitation.subEvent ? ` · ${invitation.subEvent}` : ""}
                   </span>
                   {Array.isArray(platformSettings?.enabledEventTypes) && platformSettings.enabledEventTypes.length > 1 && invitation.status === "DRAFT" && (
                     <button
                       type="button"
                       onClick={() => {
                         setSelectedEventType(invitation.eventType || "WEDDING");
+                        setSelectedFreeSubEvent(invitation.subEvent || "");
+                        setFreeSubCustomMode(false);
                         setEventTypeError(null);
                         setEventTypeModalOpen(true);
                       }}
                       className="text-[10px] font-bold text-stone-700 hover:text-stone-950 border border-stone-300 hover:border-stone-400 bg-white hover:bg-stone-50 px-2 py-0.5 rounded-full transition cursor-pointer"
                     >
-                      Ganti Jenis Acara
+                      Ganti Mode Acara
                     </button>
                   )}
                   <Link
@@ -1741,6 +1797,25 @@ export default function EditInvitation() {
                   <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${PLAN_COLOR[planType] || "bg-stone-50 text-stone-700 border-stone-200"}`}>
                     {getPlanDisplayName(planType, platformSettings?.packages)}
                   </span>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-stone-50 text-stone-700 border-stone-200">
+                    {BUILDER_EVENT_LABELS[(invitation.eventType || "WEDDING") as BuilderEventType] ?? invitation.eventType}
+                    {invitation.subEvent ? ` · ${invitation.subEvent}` : ""}
+                  </span>
+                  {Array.isArray(platformSettings?.enabledEventTypes) && platformSettings.enabledEventTypes.length > 1 && invitation.status === "DRAFT" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedEventType(invitation.eventType || "WEDDING");
+                        setSelectedFreeSubEvent(invitation.subEvent || "");
+                        setFreeSubCustomMode(false);
+                        setEventTypeError(null);
+                        setEventTypeModalOpen(true);
+                      }}
+                      className="text-[10px] font-bold text-stone-700 hover:text-stone-950 border border-stone-300 hover:border-stone-400 bg-white hover:bg-stone-50 px-2 py-0.5 rounded-full transition cursor-pointer"
+                    >
+                      Ganti Mode Acara
+                    </button>
+                  )}
                   {planType !== "TIER_3" && (
                     <button
                       type="button"
@@ -2350,39 +2425,191 @@ export default function EditInvitation() {
 
         {!collapsed.sec1 && (
           <div className="p-3.5 sm:p-7 space-y-5 sm:space-y-6">
-            {/* Theme Mockups for this Category / Store */}
+            {/* Theme Mockups for this Mode (Isolasi Tegas 3 Mode — tanpa katalog lintas mode) */}
             {(() => {
-              // Seluruh tema bebas dipilih di semua paket; pernikahan memakai tema pernikahan, acara lain tema satu nama mana pun.
-              const availableThemes = sortThemesForEvent(themesList.filter((t) => isThemeCompatible(t.eventType, invitation?.eventType)), invitation?.eventType);
+              const invEvent = (invitation?.eventType || "WEDDING").toUpperCase();
+              const isThemeLocked = invitation?.status === "PUBLISHED" || invitation?.status === "EVENT_FINISHED";
+              const hasSubFilter = invEvent === "PERSONAL" || invEvent === "EVENT";
+              const modeThemes = sortThemesForEvent(
+                themesList.filter((t) => isThemeInMode(t.eventType, invEvent)),
+                invEvent,
+                invitation?.subEvent,
+              );
+              const dynamicSubOptions = hasSubFilter
+                ? extractSubEventOptions(modeThemes, invEvent)
+                : [];
+              const effectiveSubFilter =
+                selectedPersonalThemeSub !== "all" &&
+                !dynamicSubOptions.some((s) => s.toLowerCase() === selectedPersonalThemeSub.toLowerCase())
+                  ? "all"
+                  : selectedPersonalThemeSub;
+              const subFilteredThemes =
+                hasSubFilter && effectiveSubFilter !== "all"
+                  ? modeThemes.filter(
+                      (t) => (t.subEvent || "").toLowerCase() === effectiveSubFilter.toLowerCase(),
+                    )
+                  : modeThemes;
 
-              // Dapatkan daftar kategori unik sesuai paket klien
+              // Dapatkan daftar gaya unik pada tema yang ditampilkan
               const CATEGORY_ORDER = ["MINIMALIST", "MODERN", "TRADITIONAL"];
               const CATEGORY_LABELS: Record<string, string> = {
                 MINIMALIST: "Minimalis",
                 MODERN: "Modern",
                 TRADITIONAL: "Traditional",
               };
-              const rawCats = new Set(availableThemes.map((t) => (t.category || "").toUpperCase()));
+              const rawCats = new Set(subFilteredThemes.map((t) => (t.category || "").toUpperCase()));
               const availableCategories = CATEGORY_ORDER.filter((c) => rawCats.has(c));
 
-              // Tentukan kategori dari tema yang sedang aktif dipakai
+              // Tentukan gaya dari tema yang sedang aktif dipakai
               const currentTheme = themesList.find((t) => t.id === invitation?.themeId);
               const currentThemeCategory = (currentTheme?.category || "").toUpperCase();
 
-              // Tab aktif: jika sudah dipilih dan valid gunakan pilihan user,
-              // jika belum, default ke kategori tema yang sedang terpilih, atau kategori pertama
               const activeCategoryTab = (selectedThemeCategory && availableCategories.includes(selectedThemeCategory))
                 ? selectedThemeCategory
                 : (availableCategories.includes(currentThemeCategory) ? currentThemeCategory : (availableCategories[0] || ""));
 
-              // Jika lebih dari 1 kategori, filter tema sesuai tab aktif
-              const displayedThemes = availableCategories.length > 1
-                ? availableThemes.filter((t) => (t.category || "").toUpperCase() === activeCategoryTab)
-                : availableThemes;
+              const matchesActiveCat = (t: any) =>
+                availableCategories.length <= 1 || (t.category || "").toUpperCase() === activeCategoryTab;
+              const displayedThemes = subFilteredThemes.filter(matchesActiveCat);
+              const availableThemes = subFilteredThemes;
+
+              const renderStudioThemeCard = (th: any) => {
+                const isSelected = Boolean(invitation.themeId) && invitation.themeId === th.id;
+                const thumbMobile: string | null = th.thumbnailMobile || null;
+                const thumbDesktop: string | null = th.thumbnailDesktop || null;
+                const hasThumb = Boolean(thumbMobile || thumbDesktop);
+                const selectedTick = isSelected && (
+                  <span className="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-amber-800 text-white flex items-center justify-center text-xs font-bold shadow-md">
+                    ✓
+                  </span>
+                );
+                return (
+                  <div
+                    key={th.id}
+                    onClick={() => {
+                      if (isThemeLocked) return;
+                      setInvitation((prev: any) => ({
+                        ...prev,
+                        themeId: th.id,
+                      }));
+                      setLiveIframeKey((k) => k + 1);
+                    }}
+                    className={`stp-card rounded-2xl p-3 border transition-all ${
+                      isThemeLocked ? "cursor-default opacity-90" : "cursor-pointer"
+                    } ${
+                      isSelected
+                        ? "is-selected border-amber-800 bg-amber-50/20 ring-2 ring-amber-800/15"
+                        : "border-stone-200 hover:border-stone-300 bg-white"
+                    }`}
+                  >
+                    {/* Tema tanpa thumbnail tampil sebagai kartu nama */}
+                    {!hasThumb ? (
+                      <div className="relative flex min-h-[8rem] items-center justify-center rounded-xl bg-stone-100 px-4 text-center">
+                        <span className="font-serif text-lg font-bold leading-tight text-stone-700">{th.name}</span>
+                        {selectedTick}
+                      </div>
+                    ) : (
+                    <div className="stp-scene">
+                      {thumbDesktop && (
+                      <div className="stp-tablet">
+                        <div className="stp-tablet-bar">
+                          <div className="stp-tablet-dots">
+                            <span/><span/><span/>
+                          </div>
+                          <div className="stp-tablet-url">
+                            {getApexRootDomain()}/{th.id}
+                          </div>
+                          <div style={{ width: "18px" }}/>
+                        </div>
+                        <div className="stp-tablet-screen">
+                          <img
+                            src={thumbDesktop}
+                            alt={`${th.name} desktop`}
+                            loading="lazy"
+                          />
+                          <div className="stp-glare"/>
+                        </div>
+                      </div>
+                      )}
+
+                      {thumbMobile && (
+                      <div className="stp-phone">
+                        <div className="stp-phone-notch"/>
+                        <div className="stp-phone-screen">
+                          <img
+                            src={thumbMobile}
+                            alt={`${th.name} mobile`}
+                            loading="lazy"
+                          />
+                          <div className="stp-glare"/>
+                        </div>
+                      </div>
+                      )}
+
+                      {selectedTick}
+                    </div>
+                    )}
+
+                    {/* ── Theme Info ── */}
+                    <div className="space-y-1 mt-0.5">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-stone-400">
+                          {th.subEvent ? `${th.series} · ${th.subEvent}` : th.series}
+                        </p>
+                        <span className={`text-[9px] font-bold ${isSelected ? "text-amber-900" : "text-stone-400"}`}>
+                          {isSelected ? "Terpilih" : isThemeLocked ? "Terkunci" : ""}
+                        </span>
+                      </div>
+                      <h3 className="font-bold text-stone-900 text-xs leading-tight">{th.name}</h3>
+                      <p className="text-[10px] text-stone-500 line-clamp-2 leading-relaxed">{th.desc}</p>
+                      {hasThumb && (
+                        <a
+                          href={`/demo/${th.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-block text-[10px] font-bold text-amber-800 hover:underline pt-0.5"
+                        >
+                          Lihat Demo
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                );
+              };
 
               return (
                 <div className="space-y-4">
-                  {/* Tab Kategori (Hanya tampil jika klien memiliki hak akses > 1 kategori) */}
+                  {/* Sub-filter dinamis berdasarkan tag subEvent pada tema aktif (Personal maupun Acara & Event Umum) */}
+                  {hasSubFilter && dynamicSubOptions.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {[
+                        {
+                          id: "all",
+                          label: `${invEvent === "PERSONAL" ? "Semua Personal" : "Semua Acara"} (${modeThemes.length})`,
+                        },
+                        ...dynamicSubOptions.map((sub) => ({
+                          id: sub,
+                          label: `${sub} (${modeThemes.filter((t) => (t.subEvent || "").toLowerCase() === sub.toLowerCase()).length})`,
+                        })),
+                      ].map((sub) => (
+                        <button
+                          key={sub.id}
+                          type="button"
+                          onClick={() => setSelectedPersonalThemeSub(sub.id)}
+                          className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition cursor-pointer ${
+                            effectiveSubFilter.toLowerCase() === sub.id.toLowerCase()
+                              ? "bg-amber-900 text-white border-amber-900 shadow-2xs"
+                              : "bg-white text-stone-600 border-stone-200 hover:border-amber-400"
+                          }`}
+                        >
+                          {sub.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Tab Gaya (Hanya tampil jika tersedia > 1 gaya) */}
                   {availableCategories.length > 1 && (
                     <div className="flex items-center gap-1.5 p-1 bg-stone-100/90 rounded-xl w-fit border border-stone-200/80">
                       {availableCategories.map((catKey) => {
@@ -2437,112 +2664,19 @@ export default function EditInvitation() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-                    {displayedThemes.map((th) => {
-                      const isSelected = Boolean(invitation.themeId) && invitation.themeId === th.id;
-                      const isThemeLocked = invitation?.status === "PUBLISHED" || invitation?.status === "EVENT_FINISHED";
-                      const thumbMobile: string | null = th.thumbnailMobile || null;
-                      const thumbDesktop: string | null = th.thumbnailDesktop || null;
-                      const hasThumb = Boolean(thumbMobile || thumbDesktop);
-                      const selectedTick = isSelected && (
-                        <span className="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-amber-800 text-white flex items-center justify-center text-xs font-bold shadow-md">
-                          ✓
-                        </span>
-                      );
-                      return (
-                        <div
-                          key={th.id}
-                          onClick={() => {
-                            if (!isThemeLocked) {
-                              setInvitation((prev: any) => ({
-                                ...prev,
-                                themeId: th.id,
-                              }));
-                              setLiveIframeKey((k) => k + 1);
-                            }
-                          }}
-                          className={`stp-card rounded-2xl p-3 border transition-all ${
-                            isThemeLocked ? "cursor-default opacity-90" : "cursor-pointer"
-                          } ${
-                            isSelected
-                              ? "is-selected border-amber-800 bg-amber-50/20 ring-2 ring-amber-800/15"
-                              : "border-stone-200 hover:border-stone-300 bg-white"
-                          }`}
-                        >
-                          {/* Tema tanpa thumbnail tampil sebagai kartu nama */}
-                          {!hasThumb ? (
-                            <div className="relative flex min-h-[8rem] items-center justify-center rounded-xl bg-stone-100 px-4 text-center">
-                              <span className="font-serif text-lg font-bold leading-tight text-stone-700">{th.name}</span>
-                              {selectedTick}
-                            </div>
-                          ) : (
-                          <div className="stp-scene">
-                            {thumbDesktop && (
-                            <div className="stp-tablet">
-                              <div className="stp-tablet-bar">
-                                <div className="stp-tablet-dots">
-                                  <span/><span/><span/>
-                                </div>
-                                <div className="stp-tablet-url">
-                                  {getApexRootDomain()}/{th.id}
-                                </div>
-                                <div style={{ width: "18px" }}/>
-                              </div>
-                              <div className="stp-tablet-screen">
-                                <img
-                                  src={thumbDesktop}
-                                  alt={`${th.name} desktop`}
-                                  loading="lazy"
-                                />
-                                <div className="stp-glare"/>
-                              </div>
-                            </div>
-                            )}
+                      {displayedThemes.map(renderStudioThemeCard)}
+                    </div>
+                  )}
 
-                            {thumbMobile && (
-                            <div className="stp-phone">
-                              <div className="stp-phone-notch"/>
-                              <div className="stp-phone-screen">
-                                <img
-                                  src={thumbMobile}
-                                  alt={`${th.name} mobile`}
-                                  loading="lazy"
-                                />
-                                <div className="stp-glare"/>
-                              </div>
-                            </div>
-                            )}
-
-                            {selectedTick}
-                          </div>
-                          )}
-
-                          {/* ── Theme Info ── */}
-                          <div className="space-y-1 mt-0.5">
-                            <div className="flex items-center justify-between">
-                              <p className="text-[9px] font-bold uppercase tracking-wider text-stone-400">{th.series}</p>
-                              <span className={`text-[9px] font-bold ${isSelected ? "text-amber-900" : "text-stone-400"}`}>
-                                {isSelected ? "Terpilih" : isThemeLocked ? "Terkunci" : ""}
-                              </span>
-                            </div>
-                            <h3 className="font-bold text-stone-900 text-xs leading-tight">{th.name}</h3>
-                            <p className="text-[10px] text-stone-500 line-clamp-2 leading-relaxed">{th.desc}</p>
-                            {hasThumb && (
-                              <a
-                                href={`/demo/${th.id}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="inline-block text-[10px] font-bold text-amber-800 hover:underline pt-0.5"
-                              >
-                                Lihat Demo
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
+                  {/* Catatan Isolasi Mode & Permintaan Adaptasi Tema via CS */}
+                  {!isThemeLocked && (
+                    <div className="p-3 rounded-2xl bg-stone-50 border border-stone-200/80 text-[11px] text-stone-600 leading-relaxed">
+                      Katalog ini khusus menampilkan tema mode <strong className="text-stone-800">{EVENT_TYPE_LABELS[invEvent] || invEvent}</strong>. Ingin memakai desain dari mode acara lain?{" "}
+                      <Link href="/contact" className="font-bold text-amber-900 underline hover:text-stone-900">
+                        Hubungi CS
+                      </Link>{" "}
+                      untuk permintaan pembuatan versi mode ini oleh tim kami.
+                    </div>
                   )}
                 </div>
               );
@@ -2550,24 +2684,42 @@ export default function EditInvitation() {
 
             {/* Tagline / Judul Header Undangan */}
             {(() => {
-              const evType = invitation?.eventType || "WEDDING";
-              const defaultTagline = evType === "BIRTHDAY" ? "BIRTHDAY CELEBRATION"
-                : evType === "KHITAN" ? "WALIMATUL KHITAN"
-                : evType === "AQIQAH" ? "TASYAKURAN AQIQAH"
-                : evType === "WISUDA" ? "GRADUATION CELEBRATION"
-                : evType === "GATHERING" ? "GATHERING CELEBRATION"
-                : "THE WEDDING OF";
-              const tagOptions = evType === "BIRTHDAY"
-                ? ["BIRTHDAY CELEBRATION", "SWEET SEVENTEEN", "HAPPY BIRTHDAY", "MILAD MUBARAK", "UNDANGAN ULANG TAHUN"]
-                : evType === "KHITAN"
-                ? ["WALIMATUL KHITAN", "TASYAKURAN KHITAN", "UNDANGAN KHITANAN"]
-                : evType === "AQIQAH"
-                ? ["TASYAKURAN AQIQAH", "WALIMATUL AQIQAH", "UNDANGAN AQIQAH"]
-                : evType === "WISUDA"
-                ? ["GRADUATION CELEBRATION", "SYUKURAN KELULUSAN", "UNDANGAN WISUDA"]
-                : evType === "GATHERING"
-                ? ["ANNUAL GATHERING", "FAMILY GATHERING", "COMMUNITY MEETUP", "REUNI AKBAR"]
-                : ["THE WEDDING OF", "WALIMATUL 'URS", "THE WEDDING CELEBRATION", "HOLY MATRIMONY", "PAWIWAHAN", "UNDANGAN PERNIKAHAN"];
+              const evType = (invitation?.eventType || "WEDDING").toUpperCase();
+              const subMeta = resolveSubEventMeta(evType, invitation?.subEvent);
+              const defaultTagline = evType === "WEDDING" ? "THE WEDDING OF" : subMeta.coverBadge;
+              const baseTagOptions =
+                evType === "PERSONAL"
+                  ? [
+                      subMeta.coverBadge,
+                      "BIRTHDAY CELEBRATION",
+                      "WALIMATUL KHITAN",
+                      "TASYAKURAN AQIQAH",
+                      "GRADUATION CELEBRATION",
+                      "TASYAKURAN KHATAMAN AL-QUR'AN",
+                      "WALIMATUL SAFAR",
+                    ]
+                  : evType === "EVENT"
+                  ? [
+                      subMeta.coverBadge,
+                      "OFFICIAL INVITATION",
+                      "CORPORATE EVENT",
+                      "GRAND OPENING",
+                      "SEMINAR & WORKSHOP",
+                      "PRODUCT LAUNCH",
+                      "COMMUNITY GATHERING",
+                      "REUNI AKBAR",
+                      "HALAL BIHALAL",
+                      "SYUKURAN & PERESMIAN",
+                    ]
+                  : [
+                      "THE WEDDING OF",
+                      "WALIMATUL 'URS",
+                      "THE WEDDING CELEBRATION",
+                      "HOLY MATRIMONY",
+                      "PAWIWAHAN",
+                      "UNDANGAN PERNIKAHAN",
+                    ];
+              const tagOptions = Array.from(new Set(baseTagOptions));
               return (
                 <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-2.5">
                   <div>
@@ -3187,7 +3339,9 @@ export default function EditInvitation() {
               <p className="text-xs text-stone-500 mt-0.5">
                 {(!invitation?.eventType || invitation?.eventType === "WEDDING")
                   ? "Data lengkap, akun sosial media, dan foto portrait pengantin"
-                  : "Informasi profil penyelenggara acara, keluarga, dan foto utama"}
+                  : invitation?.eventType === "EVENT"
+                  ? "Judul acara, penyelenggara/instansi, dan foto atau banner utama"
+                  : "Informasi profil tokoh utama, keluarga, dan foto portrait"}
               </p>
             )}
           </div>
@@ -3371,52 +3525,199 @@ export default function EditInvitation() {
               </>
             ) : (() => {
               const p = safeParseParticipants(invitation?.participantsJson);
-              const evType = invitation.eventType;
+              const evType = (invitation.eventType || "PERSONAL").toUpperCase();
+              const curSubEvent = (invitation?.subEvent || "").trim();
+              const isSubEditable =
+                (evType === "PERSONAL" || evType === "EVENT") &&
+                (invitation?.status === "DRAFT" || Boolean(invitation?.isEmergencyUnlocked));
+              const activePresets =
+                evType === "PERSONAL" ? PERSONAL_SUB_EVENT_PRESETS : EVENT_SUB_EVENT_PRESETS;
+              const isCurrentCustom =
+                Boolean(curSubEvent) &&
+                !activePresets.some((pr) => pr.id.toLowerCase() === curSubEvent.toLowerCase());
 
-              if (evType === "BIRTHDAY") {
+              const subEventBar = (evType === "PERSONAL" || evType === "EVENT") ? (
+                <div className="p-3.5 sm:p-4 rounded-2xl bg-stone-50 border border-stone-200/90 space-y-2.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <p className="text-xs font-bold text-stone-900">
+                        {evType === "PERSONAL"
+                          ? "Sub-Acara Personal & Keluarga (Dinamis)"
+                          : "Sub-Acara Event Umum (Dinamis)"}
+                      </p>
+                      <p className="text-[11px] text-stone-500">
+                        {isSubEditable
+                          ? "Pilih preset atau tulis sendiri nama acara Anda (mis. Tamatan Ngaji / Corporate). Tema dan data yang sudah diisi tetap terjaga."
+                          : "Sub-acara dikunci setelah undangan diterbitkan."}
+                      </p>
+                    </div>
+                    {curSubEvent && (
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-amber-100 text-amber-950 border border-amber-300 w-fit">
+                        Aktif: {curSubEvent}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {activePresets.map((preset) => {
+                      const activeSub =
+                        !subEventCustomOpen && curSubEvent.toLowerCase() === preset.id.toLowerCase();
+                      return (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          disabled={!isSubEditable || changingSubEvent || activeSub}
+                          onClick={() => handleSwitchSubEvent(preset.id)}
+                          className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition ${
+                            activeSub
+                              ? "bg-amber-900 text-white shadow-2xs cursor-default"
+                              : isSubEditable
+                              ? "bg-white text-stone-700 border border-stone-200 hover:border-amber-400 cursor-pointer disabled:opacity-50"
+                              : "bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed"
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      );
+                    })}
+                    {isSubEditable && (
+                      <button
+                        type="button"
+                        disabled={changingSubEvent}
+                        onClick={() => {
+                          setCustomSubEventDraft(isCurrentCustom ? curSubEvent : "");
+                          setSubEventCustomOpen((v) => !v);
+                        }}
+                        className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition cursor-pointer ${
+                          subEventCustomOpen || isCurrentCustom
+                            ? "bg-amber-900 text-white shadow-2xs"
+                            : "bg-white text-amber-900 border border-dashed border-amber-400 hover:bg-amber-50"
+                        }`}
+                      >
+                        {isCurrentCustom ? `Kustom: ${curSubEvent}` : "+ Tulis Sendiri"}
+                      </button>
+                    )}
+                  </div>
+                  {isSubEditable && subEventCustomOpen && (
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
+                      <input
+                        type="text"
+                        value={customSubEventDraft}
+                        onChange={(e) => setCustomSubEventDraft(e.target.value)}
+                        maxLength={50}
+                        placeholder={
+                          evType === "PERSONAL"
+                            ? "Contoh: Tamatan Ngaji, Tedak Siten, Syukuran Rumah..."
+                            : "Contoh: Rapat Kerja Nasional, Malam Keakraban, Awarding Night..."
+                        }
+                        className="flex-1 px-3.5 py-2 bg-white border border-amber-300 rounded-xl text-xs font-semibold text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                      />
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          disabled={changingSubEvent || !customSubEventDraft.trim()}
+                          onClick={() => handleSwitchSubEvent(customSubEventDraft)}
+                          className="px-4 py-2 rounded-xl bg-amber-900 hover:bg-amber-950 text-white text-xs font-bold transition cursor-pointer disabled:opacity-50"
+                        >
+                          {changingSubEvent ? "Menyimpan..." : "Terapkan"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={changingSubEvent}
+                          onClick={() => setSubEventCustomOpen(false)}
+                          className="px-3 py-2 rounded-xl bg-white hover:bg-stone-100 text-stone-600 border border-stone-200 text-xs font-semibold transition cursor-pointer"
+                        >
+                          Batal
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : null;
+
+              if (evType === "PERSONAL") {
                 const person = p.person || {};
+                const parents = p.parents || {};
+                const personalMeta = resolveSubEventMeta("PERSONAL", curSubEvent);
+                const fatherVal = person.fatherName ?? parents.father ?? "";
+                const motherVal = person.motherName ?? parents.mother ?? "";
+                const detailVal =
+                  person.detail ??
+                  (person.degree || person.major || person.institution
+                    ? [person.degree, person.major, person.institution].filter(Boolean).join(" · ")
+                    : person.age !== undefined
+                    ? `${person.age} Tahun`
+                    : "");
+
+                const updatePersonalField = (patch: Record<string, any>) => {
+                  updateParticipantData((prev) => {
+                    const basePerson = prev.person || {};
+                    const nextPerson = { ...basePerson, ...patch };
+                    const nextParents = {
+                      ...(prev.parents || {}),
+                      ...(patch.fatherName !== undefined ? { father: patch.fatherName } : {}),
+                      ...(patch.motherName !== undefined ? { mother: patch.motherName } : {}),
+                    };
+                    return {
+                      ...prev,
+                      person: nextPerson,
+                      parents: nextParents,
+                    };
+                  });
+                };
+
                 return (
                   <div className="space-y-5">
+                    {subEventBar}
                     <div className="p-4 sm:p-5 rounded-2xl border border-amber-200/80 bg-amber-50/20 space-y-4">
                       <div className="flex items-center justify-between border-b border-amber-100 pb-2">
-                        <h3 className="text-xs font-bold text-amber-950 uppercase tracking-wider">Profil Yang Berulang Tahun</h3>
-                        <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full">Birthday Person</span>
+                        <h3 className="text-xs font-bold text-amber-950 uppercase tracking-wider">
+                          Profil Tokoh Utama {curSubEvent ? `· ${curSubEvent}` : ""}
+                        </h3>
+                        <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full">
+                          {personalMeta.roleLabel}
+                        </span>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Input
-                          label="Nama Lengkap *"
+                          label={`${personalMeta.personNameLabel} *`}
                           value={person.name || ""}
-                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, person: { ...prev.person, name: v } }))}
-                          placeholder="Masukkan nama lengkap"
+                          onChange={(v) => updatePersonalField({ name: v })}
+                          placeholder={personalMeta.personNamePlaceholder}
                         />
                         <Input
                           label="Nama Panggilan *"
                           value={person.nickname || ""}
-                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, person: { ...prev.person, nickname: v } }))}
-                          placeholder="Nama panggilan (cth: Sarah / Rian)"
+                          onChange={(v) => updatePersonalField({ nickname: v })}
+                          placeholder={personalMeta.personNicknamePlaceholder}
                         />
                         <Input
-                          label="Ulang Tahun Ke-"
-                          value={person.age !== undefined ? String(person.age) : ""}
-                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, person: { ...prev.person, age: v ? parseInt(v, 10) || undefined : undefined } }))}
-                          placeholder="Contoh: 17, 21, 25"
+                          label={`${personalMeta.detailLabel} (Opsional)`}
+                          value={detailVal}
+                          onChange={(v) => {
+                            const ageMatch = /^\d+$/.test(v.trim()) ? parseInt(v.trim(), 10) : undefined;
+                            updatePersonalField({
+                              detail: v,
+                              ...(ageMatch !== undefined ? { age: ageMatch } : {}),
+                            });
+                          }}
+                          placeholder={personalMeta.detailPlaceholder}
                         />
                         <Input
-                          label="Username Instagram"
+                          label="Username Instagram (Opsional)"
                           value={person.instagram || ""}
-                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, person: { ...prev.person, instagram: v } }))}
+                          onChange={(v) => updatePersonalField({ instagram: v })}
                           placeholder="usernameig (tanpa @)"
                         />
                         <Input
-                          label="Nama Ayah (Opsional)"
-                          value={person.fatherName || ""}
-                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, person: { ...prev.person, fatherName: v } }))}
+                          label="Nama Ayah / Wali (Opsional)"
+                          value={fatherVal}
+                          onChange={(v) => updatePersonalField({ fatherName: v })}
                           placeholder="Bpk. ..."
                         />
                         <Input
                           label="Nama Ibu (Opsional)"
-                          value={person.motherName || ""}
-                          onChange={(prevVal) => updateParticipantData((prev) => ({ ...prev, person: { ...prev.person, motherName: prevVal } }))}
+                          value={motherVal}
+                          onChange={(v) => updatePersonalField({ motherName: v })}
                           placeholder="Ibu ..."
                         />
                       </div>
@@ -3424,13 +3725,13 @@ export default function EditInvitation() {
 
                     <div className="pt-1 space-y-2.5">
                       <PhotoInput
-                        label={getMediaSlotLabel("GROOM_PHOTO", "BIRTHDAY")}
-                        desc="Foto portrait utama yang berulang tahun"
-                        value={media["GROOM_PHOTO"] || ""}
-                        onChange={(url) => updateMedia("GROOM_PHOTO", url)}
-                        placeholder="https://.../birthday-portrait.jpg"
+                        label={getMediaSlotLabel("PROFILE_PHOTO", "PERSONAL", curSubEvent)}
+                        desc={`Foto portrait utama (${curSubEvent || "Personal & Keluarga"})`}
+                        value={media["PROFILE_PHOTO"] || ""}
+                        onChange={(url) => updateMedia("PROFILE_PHOTO", url)}
+                        placeholder="https://.../personal-portrait.jpg"
                         invitationId={invitationId}
-                        slot="GROOM_PHOTO"
+                        slot="PROFILE_PHOTO"
                         onUploadStart={handleUploadStart}
                         onUploadEnd={handleUploadEnd}
                       />
@@ -3439,222 +3740,51 @@ export default function EditInvitation() {
                 );
               }
 
-              if (evType === "KHITAN") {
-                const child = p.child || {};
-                const parents = p.parents || {};
-                return (
-                  <div className="space-y-5">
-                    <div className="p-4 sm:p-5 rounded-2xl border border-emerald-200/80 bg-emerald-50/20 space-y-4">
-                      <div className="flex items-center justify-between border-b border-emerald-100 pb-2">
-                        <h3 className="text-xs font-bold text-emerald-950 uppercase tracking-wider">Profil Anak Yang Dikhitan</h3>
-                        <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">Khitan</span>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input
-                          label="Nama Lengkap Anak *"
-                          value={child.name || ""}
-                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, child: { ...prev.child, name: v } }))}
-                          placeholder="Masukkan nama lengkap anak"
-                        />
-                        <Input
-                          label="Nama Panggilan *"
-                          value={child.nickname || ""}
-                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, child: { ...prev.child, nickname: v } }))}
-                          placeholder="Nama panggilan anak"
-                        />
-                        <Input
-                          label="Usia Anak"
-                          value={child.age !== undefined ? String(child.age) : ""}
-                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, child: { ...prev.child, age: v ? parseInt(v, 10) || undefined : undefined } }))}
-                          placeholder="Contoh: 7, 10"
-                        />
-                        <Input
-                          label="Nama Ayah"
-                          value={parents.father || ""}
-                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, parents: { ...prev.parents, father: v } }))}
-                          placeholder="Bpk. ..."
-                        />
-                        <Input
-                          label="Nama Ibu"
-                          value={parents.mother || ""}
-                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, parents: { ...prev.parents, mother: v } }))}
-                          placeholder="Ibu ..."
-                        />
-                      </div>
-                    </div>
-
-                    <div className="pt-1 space-y-2.5">
-                      <PhotoInput
-                        label={getMediaSlotLabel("GROOM_PHOTO", "KHITAN")}
-                        desc="Foto portrait anak yang dikhitan"
-                        value={media["GROOM_PHOTO"] || ""}
-                        onChange={(url) => updateMedia("GROOM_PHOTO", url)}
-                        placeholder="https://.../khitan-portrait.jpg"
-                        invitationId={invitationId}
-                        slot="GROOM_PHOTO"
-                        onUploadStart={handleUploadStart}
-                        onUploadEnd={handleUploadEnd}
-                      />
-                    </div>
-                  </div>
-                );
-              }
-
-              if (evType === "AQIQAH") {
-                const baby = p.baby || {};
-                const parents = p.parents || {};
-                return (
-                  <div className="space-y-5">
-                    <div className="p-4 sm:p-5 rounded-2xl border border-teal-200/80 bg-teal-50/20 space-y-4">
-                      <div className="flex items-center justify-between border-b border-teal-100 pb-2">
-                        <h3 className="text-xs font-bold text-teal-950 uppercase tracking-wider">Profil Bayi &amp; Keluarga</h3>
-                        <span className="text-[10px] font-bold bg-teal-100 text-teal-800 px-2.5 py-0.5 rounded-full">Aqiqah</span>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input
-                          label="Nama Lengkap Bayi *"
-                          value={baby.name || ""}
-                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, baby: { ...prev.baby, name: v } }))}
-                          placeholder="Masukkan nama lengkap bayi"
-                        />
-                        <Input
-                          label="Nama Panggilan *"
-                          value={baby.nickname || ""}
-                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, baby: { ...prev.baby, nickname: v } }))}
-                          placeholder="Nama panggilan bayi"
-                        />
-                        <Input
-                          label="Nama Ayah"
-                          value={parents.father || ""}
-                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, parents: { ...prev.parents, father: v } }))}
-                          placeholder="Bpk. ..."
-                        />
-                        <Input
-                          label="Nama Ibu"
-                          value={parents.mother || ""}
-                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, parents: { ...prev.parents, mother: v } }))}
-                          placeholder="Ibu ..."
-                        />
-                      </div>
-                    </div>
-
-                    <div className="pt-1 space-y-2.5">
-                      <PhotoInput
-                        label={getMediaSlotLabel("GROOM_PHOTO", "AQIQAH")}
-                        desc="Foto portrait buah hati / bayi"
-                        value={media["GROOM_PHOTO"] || ""}
-                        onChange={(url) => updateMedia("GROOM_PHOTO", url)}
-                        placeholder="https://.../baby-portrait.jpg"
-                        invitationId={invitationId}
-                        slot="GROOM_PHOTO"
-                        onUploadStart={handleUploadStart}
-                        onUploadEnd={handleUploadEnd}
-                      />
-                    </div>
-                  </div>
-                );
-              }
-
-              if (evType === "WISUDA") {
-                const person = p.person || {};
-                return (
-                  <div className="space-y-5">
-                    <div className="p-4 sm:p-5 rounded-2xl border border-indigo-200/80 bg-indigo-50/20 space-y-4">
-                      <div className="flex items-center justify-between border-b border-indigo-100 pb-2">
-                        <h3 className="text-xs font-bold text-indigo-950 uppercase tracking-wider">Profil Wisudawan</h3>
-                        <span className="text-[10px] font-bold bg-indigo-100 text-indigo-800 px-2.5 py-0.5 rounded-full">Graduation</span>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input
-                          label="Nama Lengkap &amp; Gelar *"
-                          value={person.name || ""}
-                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, person: { ...prev.person, name: v } }))}
-                          placeholder="Contoh: Rian Pratama, S.Kom."
-                        />
-                        <Input
-                          label="Nama Panggilan *"
-                          value={person.nickname || ""}
-                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, person: { ...prev.person, nickname: v } }))}
-                          placeholder="Nama panggilan wisudawan"
-                        />
-                        <Input
-                          label="Gelar Akademik"
-                          value={person.degree || ""}
-                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, person: { ...prev.person, degree: v } }))}
-                          placeholder="Contoh: Sarjana Komputer (S.Kom.)"
-                        />
-                        <Input
-                          label="Program Studi / Jurusan"
-                          value={person.major || ""}
-                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, person: { ...prev.person, major: v } }))}
-                          placeholder="Contoh: Teknik Informatika"
-                        />
-                        <Input
-                          label="Universitas / Institusi"
-                          value={person.institution || ""}
-                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, person: { ...prev.person, institution: v } }))}
-                          placeholder="Contoh: Universitas Hasanuddin"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="pt-1 space-y-2.5">
-                      <PhotoInput
-                        label={getMediaSlotLabel("GROOM_PHOTO", "WISUDA")}
-                        desc="Foto portrait wisudawan dengan toga / jas"
-                        value={media["GROOM_PHOTO"] || ""}
-                        onChange={(url) => updateMedia("GROOM_PHOTO", url)}
-                        placeholder="https://.../wisuda-portrait.jpg"
-                        invitationId={invitationId}
-                        slot="GROOM_PHOTO"
-                        onUploadStart={handleUploadStart}
-                        onUploadEnd={handleUploadEnd}
-                      />
-                    </div>
-                  </div>
-                );
-              }
-
-              // GATHERING / Default
+              // EVENT (Acara & Event Umum — Non-Personal, Strictly Zero Parents)
               const eventInfo = p.event || {};
               return (
                 <div className="space-y-5">
+                  {subEventBar}
                   <div className="p-4 sm:p-5 rounded-2xl border border-stone-200 bg-stone-50/40 space-y-4">
                     <div className="flex items-center justify-between border-b border-stone-200 pb-2">
-                      <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Informasi Acara Gathering</h3>
-                      <span className="text-[10px] font-bold bg-stone-200 text-stone-800 px-2.5 py-0.5 rounded-full">Gathering</span>
+                      <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">
+                        Informasi Acara &amp; Event Umum {curSubEvent ? `· ${curSubEvent}` : ""}
+                      </h3>
+                      <span className="text-[10px] font-bold bg-stone-200 text-stone-800 px-2.5 py-0.5 rounded-full">
+                        {curSubEvent || "Event & Umum"}
+                      </span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <Input
                         label="Nama / Judul Acara *"
                         value={eventInfo.title || ""}
                         onChange={(v) => updateParticipantData((prev) => ({ ...prev, event: { ...prev.event, title: v } }))}
-                        placeholder="Contoh: Reuni Akbar Angkatan 2015"
+                        placeholder="Contoh: Grand Opening, Seminar Nasional, atau Reuni Akbar"
                       />
                       <Input
                         label="Sub-judul / Tema Acara"
                         value={eventInfo.subtitle || ""}
                         onChange={(v) => updateParticipantData((prev) => ({ ...prev, event: { ...prev.event, subtitle: v } }))}
-                        placeholder="Contoh: Menjalin Silaturahmi Tanpa Batas"
+                        placeholder="Contoh: Inovasi Bersama Menuju Masa Depan"
                       />
                       <Input
-                        label="Penyelenggara / Komunitas"
+                        label="Penyelenggara / Instansi / Komunitas"
                         value={eventInfo.organizer || ""}
                         onChange={(v) => updateParticipantData((prev) => ({ ...prev, event: { ...prev.event, organizer: v } }))}
-                        placeholder="Contoh: Ikatan Alumni SMAN 1"
+                        placeholder="Contoh: PT Nusantara Kreatif / Ikatan Alumni SMAN 1"
                       />
                     </div>
                   </div>
 
                   <div className="pt-1 space-y-2.5">
                     <PhotoInput
-                      label="Foto / Banner Acara"
+                      label={getMediaSlotLabel("EVENT_PHOTO", "EVENT", curSubEvent)}
                       desc="Banner atau foto visual identitas acara"
-                      value={media["GROOM_PHOTO"] || ""}
-                      onChange={(url) => updateMedia("GROOM_PHOTO", url)}
+                      value={media["EVENT_PHOTO"] || ""}
+                      onChange={(url) => updateMedia("EVENT_PHOTO", url)}
                       placeholder="https://.../event-banner.jpg"
                       invitationId={invitationId}
-                      slot="GROOM_PHOTO"
+                      slot="EVENT_PHOTO"
                       onUploadStart={handleUploadStart}
                       onUploadEnd={handleUploadEnd}
                     />
@@ -4097,8 +4227,8 @@ export default function EditInvitation() {
       </section>
       )}
 
-      {/* 7. SEKSI KISAH CINTA (SEC7) */}
-      {(activeSectionTab === "sec7") && (!invitation?.eventType || invitation?.eventType === "WEDDING") && (
+      {/* 7. SEKSI KISAH & PERJALANAN (SEC7 — Universal untuk WEDDING, PERSONAL, dan EVENT) */}
+      {(activeSectionTab === "sec7") && (
       <section id="section-sec7" className="bg-white rounded-none sm:rounded-3xl shadow-none sm:shadow-xs border-y sm:border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec7")}
@@ -4121,7 +4251,13 @@ export default function EditInvitation() {
               )}
             </div>
             {!collapsed.sec7 && (
-              <p className="text-xs text-stone-500 mt-0.5">Tuliskan babak perjalanan cinta dari awal bertemu hingga pernikahan</p>
+              <p className="text-xs text-stone-500 mt-0.5">
+                {(!invitation?.eventType || invitation?.eventType === "WEDDING")
+                  ? "Tuliskan babak perjalanan cinta dari awal bertemu hingga pernikahan (dapat disembunyikan bila tidak digunakan)"
+                  : invitation?.eventType === "PERSONAL"
+                  ? "Tuliskan kisah perjalanan hidup, pencapaian pendidikan (wisuda), atau momen tumbuh kembang (dapat disembunyikan bila tidak digunakan)"
+                  : "Tuliskan tonggak sejarah (milestone), perjalanan organisasi, atau latar belakang acara (dapat disembunyikan bila tidak digunakan)"}
+              </p>
             )}
           </div>
           <div onClick={(e) => e.stopPropagation()}>
@@ -4141,7 +4277,15 @@ export default function EditInvitation() {
             <LoveStorySectionEditor
               showStory={showStory}
               stories={stories}
-              storyTitle={getCustomLabel("storyTitle", "Kisah Cinta")}
+              eventType={invitation?.eventType || "WEDDING"}
+              storyTitle={getCustomLabel(
+                "storyTitle",
+                (!invitation?.eventType || invitation?.eventType === "WEDDING")
+                  ? "Kisah Cinta"
+                  : invitation?.eventType === "PERSONAL"
+                  ? "Kisah & Perjalanan"
+                  : "Tonggak Perjalanan",
+              )}
               onToggleShowStory={(v) => updateFeatureSetting("showStory", v)}
               onAddStory={addStory}
               onRemoveStory={removeStory}
@@ -5633,8 +5777,8 @@ export default function EditInvitation() {
 
 
 
-      {/* ── GANTI JENIS ACARA MODAL (KHUSUS DRAF GRATIS) ────────── */}
-      {eventTypeModalOpen && invitation?.isFreeDraft && invitation?.status === "DRAFT" && (
+      {/* ── GANTI JENIS / MODE ACARA MODAL (UNTUK SEMUA DRAF SEBELUM TERBIT) ────────── */}
+      {eventTypeModalOpen && invitation?.status === "DRAFT" && (
         <div
           className="fixed inset-0 z-[999] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
           onClick={(e) => { if (e.target === e.currentTarget && !changingEventType) setEventTypeModalOpen(false); }}
@@ -5642,8 +5786,10 @@ export default function EditInvitation() {
           <div className="w-full sm:max-w-lg max-h-[90vh] flex flex-col bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden text-stone-900">
             <div className="shrink-0 px-6 py-4 bg-stone-900 text-white flex items-center justify-between gap-3">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400 block">Mode Draf Gratis</span>
-                <h2 className="text-base sm:text-lg font-serif font-bold text-stone-100 mt-0.5">Ganti Jenis Acara Undangan</h2>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400 block">
+                  {invitation?.isFreeDraft ? "Mode Draf Gratis" : "Pengaturan Mode Undangan"}
+                </span>
+                <h2 className="text-base sm:text-lg font-serif font-bold text-stone-100 mt-0.5">Ganti Mode / Kategori Acara</h2>
               </div>
               <button
                 type="button"
@@ -5657,40 +5803,211 @@ export default function EditInvitation() {
             </div>
             <div className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
               <p className="text-xs text-stone-600 leading-relaxed">
-                Mengganti jenis acara akan menyesuaikan tema bawaan, label teks, dan mengosongkan data nama peserta agar sesuai struktur acara baru. Foto yang sudah diunggah tetap tersimpan.
+                Berpindah kategori akan menyesuaikan tema dan struktur form peserta. Berpindah sub-acara di dalam kategori yang sama tetap mempertahankan tema dan data Anda. Foto yang sudah diunggah tetap tersimpan.
               </p>
-              <div className="grid grid-cols-2 gap-2.5">
-                {(platformSettings?.enabledEventTypes || []).map((ev: string) => {
-                  const isSel = selectedEventType === ev;
-                  const isCurrent = invitation.eventType === ev;
-                  return (
-                    <button
-                      key={ev}
-                      type="button"
-                      onClick={() => setSelectedEventType(ev)}
-                      className={`p-3 rounded-2xl border text-left transition cursor-pointer ${
-                        isSel
-                          ? "border-2 border-amber-800 bg-amber-50/70"
-                          : "border-stone-200 bg-white hover:border-stone-300 hover:bg-stone-50"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="text-xs font-bold text-stone-900">
-                          {BUILDER_EVENT_LABELS[ev as BuilderEventType] ?? ev}
+              {(() => {
+                const enabledEvs: string[] = platformSettings?.enabledEventTypes || ["WEDDING", "PERSONAL", "EVENT"];
+                const allowWedding = enabledEvs.includes("WEDDING");
+                const allowPersonal = enabledEvs.includes("PERSONAL");
+                const allowEvent = enabledEvs.includes("EVENT");
+                const curCat = (invitation.eventType || "WEDDING").toUpperCase();
+                return (
+                  <div className="space-y-2.5">
+                    {allowWedding && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedEventType("WEDDING");
+                          setSelectedFreeSubEvent("");
+                          setFreeSubCustomMode(false);
+                        }}
+                        className={`w-full p-3.5 rounded-2xl border text-left transition cursor-pointer ${
+                          selectedEventType === "WEDDING"
+                            ? "border-2 border-amber-800 bg-amber-50/70"
+                            : "border-stone-200 bg-white hover:border-stone-300 hover:bg-stone-50"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-bold text-stone-900">Pernikahan</span>
+                          <div className="flex items-center gap-1.5">
+                            {curCat === "WEDDING" && (
+                              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-600 border border-stone-200">Aktif</span>
+                            )}
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100/80 text-amber-900 border border-amber-200">2 Profil</span>
+                          </div>
+                        </div>
+                        <span className="text-[11px] text-stone-500 block mt-1">Akad, pemberkatan, &amp; resepsi pernikahan</span>
+                      </button>
+                    )}
+
+                    {allowPersonal && (
+                      <div
+                        onClick={() => {
+                          if (selectedEventType !== "PERSONAL") {
+                            setSelectedEventType("PERSONAL");
+                            setSelectedFreeSubEvent(
+                              curCat === "PERSONAL" && invitation?.subEvent
+                                ? invitation.subEvent
+                                : PERSONAL_SUB_EVENT_PRESETS[0].id,
+                            );
+                            setFreeSubCustomMode(false);
+                          }
+                        }}
+                        className={`w-full p-3.5 rounded-2xl border text-left transition cursor-pointer ${
+                          selectedEventType === "PERSONAL"
+                            ? "border-2 border-amber-800 bg-amber-50/70"
+                            : "border-stone-200 bg-white hover:border-stone-300 hover:bg-stone-50"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-bold text-stone-900">Personal &amp; Keluarga</span>
+                          <div className="flex items-center gap-1.5">
+                            {curCat === "PERSONAL" && (
+                              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-600 border border-stone-200">Aktif</span>
+                            )}
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-stone-100 text-stone-700 border border-stone-200">1 Profil</span>
+                          </div>
+                        </div>
+                        <span className="text-[11px] text-stone-500 block mt-1">
+                          Ulang Tahun, Khitanan, Aqiqah, Wisuda, Tamatan Ngaji, &amp; acara personal lainnya
                         </span>
-                        {isCurrent && (
-                          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-600 border border-stone-200">
-                            Aktif
-                          </span>
+                        {selectedEventType === "PERSONAL" && (
+                          <div className="mt-2.5 pt-2.5 border-t border-amber-200/70 space-y-2" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex flex-wrap gap-1.5">
+                              {PERSONAL_SUB_EVENT_PRESETS.map((preset) => (
+                                <button
+                                  key={preset.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setFreeSubCustomMode(false);
+                                    setSelectedFreeSubEvent(preset.id);
+                                  }}
+                                  className={`px-3 py-1 rounded-full text-[11px] font-bold transition cursor-pointer ${
+                                    !freeSubCustomMode && selectedFreeSubEvent.toLowerCase() === preset.id.toLowerCase()
+                                      ? "bg-amber-900 text-white"
+                                      : "bg-white text-stone-700 border border-stone-200 hover:border-amber-400"
+                                  }`}
+                                >
+                                  {preset.label}
+                                </button>
+                              ))}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFreeSubCustomMode(true);
+                                  if (PERSONAL_SUB_EVENT_PRESETS.some((p) => p.id.toLowerCase() === selectedFreeSubEvent.toLowerCase())) {
+                                    setSelectedFreeSubEvent("");
+                                  }
+                                }}
+                                className={`px-3 py-1 rounded-full text-[11px] font-bold transition cursor-pointer ${
+                                  freeSubCustomMode
+                                    ? "bg-amber-900 text-white"
+                                    : "bg-white text-amber-900 border border-dashed border-amber-400 hover:bg-amber-50"
+                                }`}
+                              >
+                                + Tulis Sendiri
+                              </button>
+                            </div>
+                            {freeSubCustomMode && (
+                              <input
+                                type="text"
+                                value={selectedFreeSubEvent}
+                                onChange={(e) => setSelectedFreeSubEvent(e.target.value)}
+                                maxLength={50}
+                                placeholder="Contoh: Tamatan Ngaji, Tedak Siten..."
+                                className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-semibold text-stone-900 focus:outline-none"
+                              />
+                            )}
+                          </div>
                         )}
                       </div>
-                      <span className="text-[10px] text-stone-500 block mt-0.5">
-                        {ev === "WEDDING" ? "Format 2 mempelai" : "Format non-wedding"}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+                    )}
+
+                    {allowEvent && (
+                      <div
+                        onClick={() => {
+                          if (selectedEventType !== "EVENT") {
+                            setSelectedEventType("EVENT");
+                            setSelectedFreeSubEvent(
+                              curCat === "EVENT" && invitation?.subEvent
+                                ? invitation.subEvent
+                                : EVENT_SUB_EVENT_PRESETS[0].id,
+                            );
+                            setFreeSubCustomMode(false);
+                          }
+                        }}
+                        className={`w-full p-3.5 rounded-2xl border text-left transition cursor-pointer ${
+                          selectedEventType === "EVENT"
+                            ? "border-2 border-amber-800 bg-amber-50/70"
+                            : "border-stone-200 bg-white hover:border-stone-300 hover:bg-stone-50"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-bold text-stone-900">Acara &amp; Event Umum</span>
+                          <div className="flex items-center gap-1.5">
+                            {curCat === "EVENT" && (
+                              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-600 border border-stone-200">Aktif</span>
+                            )}
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-900 border border-emerald-200">Non-Personal</span>
+                          </div>
+                        </div>
+                        <span className="text-[11px] text-stone-500 block mt-1">
+                          Corporate, Grand Opening, seminar, workshop, gathering, reuni, &amp; syukuran
+                        </span>
+                        {selectedEventType === "EVENT" && (
+                          <div className="mt-2.5 pt-2.5 border-t border-amber-200/70 space-y-2" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex flex-wrap gap-1.5">
+                              {EVENT_SUB_EVENT_PRESETS.map((preset) => (
+                                <button
+                                  key={preset.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setFreeSubCustomMode(false);
+                                    setSelectedFreeSubEvent(preset.id);
+                                  }}
+                                  className={`px-3 py-1 rounded-full text-[11px] font-bold transition cursor-pointer ${
+                                    !freeSubCustomMode && selectedFreeSubEvent.toLowerCase() === preset.id.toLowerCase()
+                                      ? "bg-amber-900 text-white"
+                                      : "bg-white text-stone-700 border border-stone-200 hover:border-amber-400"
+                                  }`}
+                                >
+                                  {preset.label}
+                                </button>
+                              ))}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFreeSubCustomMode(true);
+                                  if (EVENT_SUB_EVENT_PRESETS.some((p) => p.id.toLowerCase() === selectedFreeSubEvent.toLowerCase())) {
+                                    setSelectedFreeSubEvent("");
+                                  }
+                                }}
+                                className={`px-3 py-1 rounded-full text-[11px] font-bold transition cursor-pointer ${
+                                  freeSubCustomMode
+                                    ? "bg-amber-900 text-white"
+                                    : "bg-white text-amber-900 border border-dashed border-amber-400 hover:bg-amber-50"
+                                }`}
+                              >
+                                + Tulis Sendiri
+                              </button>
+                            </div>
+                            {freeSubCustomMode && (
+                              <input
+                                type="text"
+                                value={selectedFreeSubEvent}
+                                onChange={(e) => setSelectedFreeSubEvent(e.target.value)}
+                                maxLength={50}
+                                placeholder="Contoh: Rapat Kerja Nasional, Malam Keakraban..."
+                                className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-semibold text-stone-900 focus:outline-none"
+                              />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
               {eventTypeError && (
                 <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-medium">
                   {eventTypeError}
@@ -5707,8 +6024,14 @@ export default function EditInvitation() {
                 </button>
                 <button
                   type="button"
-                  disabled={changingEventType || !selectedEventType || selectedEventType === invitation.eventType}
-                  onClick={handleChangeFreeDraftEventType}
+                  disabled={
+                    changingEventType ||
+                    !selectedEventType ||
+                    (selectedEventType === invitation.eventType &&
+                      ((selectedEventType === "WEDDING" ? "" : sanitizeSubEvent(selectedFreeSubEvent) || "") ===
+                        (invitation.subEvent || "")))
+                  }
+                  onClick={handleChangeInvitationMode}
                   className="px-5 py-2.5 rounded-xl bg-amber-900 hover:bg-amber-950 text-white text-xs font-bold transition cursor-pointer disabled:opacity-50"
                 >
                   {changingEventType ? "Mengubah..." : "Terapkan Jenis Acara"}

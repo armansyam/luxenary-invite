@@ -19,16 +19,19 @@ import { pool } from "../lib/prisma";
 import { seenPlaceLabels, SLOT_SEEN, type SlotCheck } from "../components/admin/slotVisibility";
 
 // Foto yang dilacak git agar audit sama di mesin mana pun; berkas berbeda per slot supaya pemeriksa bisa membedakannya.
-const SLOTS: Record<string, string> = {
+const COMMON_SLOTS: Record<string, string> = {
   GLOBAL_FIXED_BG: "/uploads/dummy/AMS06328.webp",
   HOME_PHOTO: "/uploads/dummy/AMS06353.webp",
   LANDING_COVER: "/uploads/dummy/AMS06364.webp",
   LANDING_COVER_DESKTOP: "/uploads/dummy/AMS06365.webp",
   DESKTOP_SIDEBAR: "/uploads/dummy/AMS06372.webp",
-  GROOM_PHOTO: "/uploads/dummy/AMS06381.webp",
-  BRIDE_PHOTO: "/uploads/dummy/AMS06388.webp",
   CLOSING_COVER: "/uploads/dummy/AMS06410.webp",
 };
+function slotsForEvent(eventType: string): Record<string, string> {
+  if (eventType === "PERSONAL") return { ...COMMON_SLOTS, PROFILE_PHOTO: "/uploads/dummy/AMS06381.webp" };
+  if (eventType === "EVENT") return { ...COMMON_SLOTS, EVENT_PHOTO: "/uploads/dummy/AMS06381.webp" };
+  return { ...COMMON_SLOTS, GROOM_PHOTO: "/uploads/dummy/AMS06381.webp", BRIDE_PHOTO: "/uploads/dummy/AMS06388.webp" };
+}
 const COVER_SLOTS = new Set(["LANDING_COVER", "LANDING_COVER_DESKTOP"]);
 
 const CHECKER = buildSync({
@@ -78,35 +81,36 @@ async function main() {
   const proposal: Record<string, Record<string, { places: string[] }>> = {};
   let bad = 0;
   // Preloader hilang setelah halaman dimuat di peramban tamu; di sini dibuang agar tidak dihitung sebagai penutup.
-  const runChecker = (view: string) => browser.cdp.eval<SlotCheck[]>(`(() => {
+  const runChecker = (view: string, slots: Record<string, string>) => browser.cdp.eval<SlotCheck[]>(`(() => {
     ${CHECKER};
     document.querySelectorAll(".lux-universal-preloader, #preloader, .preloader").forEach((e) => e.remove());
-    return LuxSlots.checkSlots(document, ${JSON.stringify(SLOTS)}, ${JSON.stringify(view)});
+    return LuxSlots.checkSlots(document, ${JSON.stringify(slots)}, ${JSON.stringify(view)});
   })()`);
-  const auditOne = async (url: string, view: "mobile" | "desktop"): Promise<SlotCheck[]> => {
+  const auditOne = async (url: string, view: "mobile" | "desktop", slots: Record<string, string>): Promise<SlotCheck[]> => {
     await openFreshTab(view);
     await browser.cdp.goto(url, 900);
     // Foto sampul hanya terlihat sebelum sampul dibuka, jadi slot sampul diperiksa sebelum tombol Buka ditekan.
-    const beforeOpen = (await runChecker(view)).filter((c) => COVER_SLOTS.has(c.slot));
+    const beforeOpen = (await runChecker(view, slots)).filter((c) => COVER_SLOTS.has(c.slot));
     // Tamu membuka sampul sebelum melihat isi; master mengunci gulir selama sampul tampil.
     await browser.cdp.eval(`(() => { document.querySelector(".lux-universal-preloader")?.remove(); document.querySelector(".cover-btn-open, .btn-buka, #openBtn, .btn-open, [onclick*='open']")?.click(); return true; })()`);
     await sleep(1500);
-    return [...beforeOpen, ...(await runChecker(view)).filter((c) => !COVER_SLOTS.has(c.slot))];
+    return [...beforeOpen, ...(await runChecker(view, slots)).filter((c) => !COVER_SLOTS.has(c.slot))];
   };
   try {
     for (const view of views) {
       for (let idx = 0; idx < masters.length; idx++) {
         const m = masters[idx];
+        const slots = slotsForEvent(m.eventType);
         const demo = buildDemoInvitation(m.id, { galleryPhotos: [] }, m.eventType);
-        const inv = { ...demo, media: Object.entries(SLOTS).map(([mediaSlot, localPath]) => ({ mediaSlot, localPath })), themeDefaultMedia: {} };
+        const inv = { ...demo, media: Object.entries(slots).map(([mediaSlot, localPath]) => ({ mediaSlot, localPath })), themeDefaultMedia: {} };
         const source = fs.readFileSync(path.resolve(process.cwd(), m.rel), "utf-8");
         const url = await server.render(m, source, `slots-${view}`, "", inv as never);
         let checks: SlotCheck[];
         try {
-          checks = await auditOne(url, view);
+          checks = await auditOne(url, view, slots);
         } catch {
           await recycleBrowser(view);
-          checks = await auditOne(url, view);
+          checks = await auditOne(url, view, slots);
         }
         (report[m.id] ??= {})[view] = checks;
         const declared = (proposal[m.id] ??= {});

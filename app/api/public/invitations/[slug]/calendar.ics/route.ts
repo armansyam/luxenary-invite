@@ -27,6 +27,7 @@ export async function GET(
         userId: true,
         status: true,
         eventType: true,
+        subEvent: true,
         invitationSlug: true,
         participantsJson: true,
         eventData: true,
@@ -68,10 +69,8 @@ export async function GET(
       groomName: names.first,
       brideName: names.second,
       personName: names.first,
-      childName: names.first,
-      babyName: names.first,
       eventTitle: names.full || "Acara",
-    });
+    }, inv.subEvent);
 
     const ics = buildIcsCalendar(title, targetEvents, "WIB", inv.invitationSlug || inv.id);
     if (!ics) {

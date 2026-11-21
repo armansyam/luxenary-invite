@@ -3,7 +3,11 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { BrandLogo } from "@/components/BrandLogo";
-import { isThemeCompatible, sortThemesForEvent } from "@/lib/invitationUtils";
+import {
+  EVENT_TYPE_LABELS,
+  extractSubEventOptions,
+  isThemeInMode,
+} from "@/lib/invitationUtils";
 import { trackEvent } from "@/lib/analytics";
 import "./demo.css";
 
@@ -13,7 +17,7 @@ interface ThemeItem {
   series: string;
   category: "minimalist" | "traditional" | "modern" | string;
   eventType: string;
-  parentTheme?: string | null;
+  subEvent?: string | null;
   desc: string;
   thumbnailMobile: string | null;
   thumbnailDesktop: string | null;
@@ -21,7 +25,10 @@ interface ThemeItem {
 
 export default function CatalogGridShowcase() {
   const [themes, setThemes] = useState<ThemeItem[]>([]);
-  const [selectedEvent, setSelectedEvent] = useState<string>("all");
+  // 3 kategori utama + "all": "all" | "WEDDING" | "PERSONAL" | "EVENT"
+  const [selectedEventGroup, setSelectedEventGroup] = useState<string>("all");
+  // Sub-filter dinamis di dalam kategori "PERSONAL" atau "EVENT": "all" | <subEvent>
+  const [selectedSubEvent, setSelectedSubEvent] = useState<string>("all");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
   const [loading, setLoading] = useState(true);
@@ -39,9 +46,31 @@ export default function CatalogGridShowcase() {
       if (params.get("tab") === "features") {
         setMainTab("features");
       }
-      const eventParam = params.get("event") || params.get("eventType");
+      const eventParam = (params.get("event") || params.get("eventType") || "").trim().toLowerCase();
+      const subParam = (params.get("subEvent") || params.get("sub") || "").trim();
       if (eventParam) {
-        setSelectedEvent(eventParam.toLowerCase());
+        if (eventParam === "wedding") {
+          setSelectedEventGroup("WEDDING");
+          setSelectedSubEvent("all");
+        } else if (eventParam === "personal") {
+          setSelectedEventGroup("PERSONAL");
+          setSelectedSubEvent(subParam || "all");
+        } else if (["birthday", "ulang-tahun", "ulang tahun"].includes(eventParam)) {
+          setSelectedEventGroup("PERSONAL");
+          setSelectedSubEvent("Ulang Tahun");
+        } else if (["khitan", "khitanan"].includes(eventParam)) {
+          setSelectedEventGroup("PERSONAL");
+          setSelectedSubEvent("Khitanan");
+        } else if (eventParam === "aqiqah") {
+          setSelectedEventGroup("PERSONAL");
+          setSelectedSubEvent("Aqiqah");
+        } else if (eventParam === "wisuda") {
+          setSelectedEventGroup("PERSONAL");
+          setSelectedSubEvent("Wisuda");
+        } else if (eventParam === "acara" || eventParam === "event" || eventParam === "gathering") {
+          setSelectedEventGroup("EVENT");
+          setSelectedSubEvent(subParam || "all");
+        }
       }
       const styleParam = (params.get("style") || params.get("category") || "").trim().toLowerCase();
       if (styleParam) {
@@ -80,8 +109,8 @@ export default function CatalogGridShowcase() {
               name: t.name,
               series: t.series || (t.category?.toUpperCase() === "MINIMALIST" ? "Minimalis" : t.category?.toUpperCase() === "TRADITIONAL" ? "Traditional" : "Modern"),
               category: (t.category || "modern").toLowerCase(),
-              eventType: t.eventType || "WEDDING",
-              parentTheme: t.parentTheme || null,
+              eventType: (t.eventType || "WEDDING").toUpperCase(),
+              subEvent: t.subEvent || null,
               desc: t.tagline || t.desc || `Desain eksklusif ${platformName}`,
               thumbnailMobile: t.thumbnailMobile || null,
               thumbnailDesktop: t.thumbnailDesktop || null,
@@ -93,45 +122,90 @@ export default function CatalogGridShowcase() {
       .catch(() => setLoading(false));
   }, [platformName]);
 
-  const EVENT_LABELS: Record<string, string> = {
-    wedding: "Pernikahan",
-    birthday: "Ulang Tahun",
-    khitan: "Khitanan",
-    aqiqah: "Aqiqah",
-    wisuda: "Wisuda",
-    gathering: "Gathering & Acara",
+  // Tema yang tidak bisa dipakai jenis acara aktif mana pun tidak ditawarkan; filter kategori yang ditutup kembali ke "Semua".
+  const offeredThemes = enabledEventTypes
+    ? themes.filter((t) => enabledEventTypes.some((ev) => isThemeInMode(t.eventType, ev)))
+    : themes;
+
+  const hasWeddingEnabled = !enabledEventTypes || enabledEventTypes.includes("WEDDING");
+  const hasPersonalEnabled = !enabledEventTypes || enabledEventTypes.includes("PERSONAL");
+  const hasEventEnabled = !enabledEventTypes || enabledEventTypes.includes("EVENT");
+
+  const activeCategoryGroups = [
+    ...(hasWeddingEnabled ? [{ id: "WEDDING", label: EVENT_TYPE_LABELS.WEDDING }] : []),
+    ...(hasPersonalEnabled ? [{ id: "PERSONAL", label: EVENT_TYPE_LABELS.PERSONAL }] : []),
+    ...(hasEventEnabled ? [{ id: "EVENT", label: EVENT_TYPE_LABELS.EVENT }] : []),
+  ];
+
+  const effectiveEventGroup =
+    selectedEventGroup !== "all" && !activeCategoryGroups.some((g) => g.id === selectedEventGroup)
+      ? "all"
+      : selectedEventGroup;
+
+  const dynamicSubOptions =
+    effectiveEventGroup === "PERSONAL" || effectiveEventGroup === "EVENT"
+      ? extractSubEventOptions(offeredThemes, effectiveEventGroup)
+      : [];
+
+  const effectiveSubEvent =
+    selectedSubEvent !== "all" &&
+    dynamicSubOptions.length > 0 &&
+    !dynamicSubOptions.some((s) => s.toLowerCase() === selectedSubEvent.toLowerCase())
+      ? "all"
+      : selectedSubEvent;
+
+  const catalogLoading = loading || !settingsLoaded;
+
+  const categoryFiltered = offeredThemes.filter(
+    (t) => selectedCategory === "all" || t.category.toLowerCase() === selectedCategory.toLowerCase(),
+  );
+
+  const visibleThemes = categoryFiltered.filter((t) => {
+    const ev = (t.eventType || "WEDDING").toUpperCase();
+    if (effectiveEventGroup === "WEDDING") return ev === "WEDDING";
+    if (effectiveEventGroup === "PERSONAL") {
+      if (ev !== "PERSONAL") return false;
+      if (effectiveSubEvent === "all") return true;
+      return (t.subEvent || "").toLowerCase() === effectiveSubEvent.toLowerCase();
+    }
+    if (effectiveEventGroup === "EVENT") {
+      if (ev !== "EVENT") return false;
+      if (effectiveSubEvent === "all") return true;
+      return (t.subEvent || "").toLowerCase() === effectiveSubEvent.toLowerCase();
+    }
+    return true;
+  });
+
+  const updateUrlFilter = (nextGroup: string | null, nextSub?: string | null) => {
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (!nextGroup || nextGroup === "all") {
+        url.searchParams.delete("event");
+        url.searchParams.delete("subEvent");
+      } else {
+        url.searchParams.set("event", nextGroup.toLowerCase());
+        if (nextSub && nextSub !== "all") url.searchParams.set("subEvent", nextSub);
+        else url.searchParams.delete("subEvent");
+      }
+      window.history.replaceState({}, "", url.toString());
+    }
   };
 
-  // Tema yang tidak bisa dipakai jenis acara aktif mana pun tidak ditawarkan; filter acara yang ditutup kembali ke "Semua".
-  const offeredThemes = enabledEventTypes ? themes.filter((t) => enabledEventTypes.some((ev) => isThemeCompatible(t.eventType, ev))) : themes;
-  const effectiveEvent = enabledEventTypes && selectedEvent !== "all" && !enabledEventTypes.includes(selectedEvent.toUpperCase()) ? "all" : selectedEvent;
-  const catalogLoading = loading || !settingsLoaded;
-  const offeredIds = new Set(offeredThemes.map((t) => t.id.toLowerCase()));
-
-  // Tab "Semua": sembunyikan varian konversi `*-acara` jika tema Wedding induknya sudah tampil agar tidak terlihat kembar.
-  // Tab acara spesifik: pisahkan tema khusus acara tersebut di atas, dan tema 1-profil serbaguna lainnya di bawah.
-  const matchingThemes = offeredThemes.filter((t) => {
-    const idLower = t.id.toLowerCase();
-    if (effectiveEvent === "all" && idLower.endsWith("-acara") && offeredIds.has(idLower.slice(0, -6))) {
-      return false;
-    }
-    const matchesEvent = effectiveEvent === "all" || isThemeCompatible(t.eventType, effectiveEvent.toUpperCase());
-    const matchesCategory = selectedCategory === "all" || t.category.toLowerCase() === selectedCategory.toLowerCase();
-    return matchesEvent && matchesCategory;
-  });
-  const filteredThemes = effectiveEvent === "all" ? matchingThemes : sortThemesForEvent(matchingThemes, effectiveEvent);
-
-  const isSpecificNonWedding = effectiveEvent !== "all" && effectiveEvent !== "wedding";
-  const primaryThemes = isSpecificNonWedding
-    ? filteredThemes.filter((t) => (t.eventType || "WEDDING").toUpperCase() === effectiveEvent.toUpperCase())
-    : filteredThemes;
-  const versatileThemes = isSpecificNonWedding
-    ? filteredThemes.filter((t) => (t.eventType || "WEDDING").toUpperCase() !== effectiveEvent.toUpperCase())
-    : [];
-
   const renderThemeCard = (theme: ThemeItem) => {
-    const evLower = (theme.eventType || "WEDDING").toLowerCase();
-    const evBadgeLabel = evLower !== "wedding" ? (EVENT_LABELS[evLower] || "Acara") : null;
+    const evUpper = (theme.eventType || "WEDDING").toUpperCase();
+    const evBadgeLabel =
+      evUpper !== "WEDDING"
+        ? theme.subEvent || EVENT_TYPE_LABELS[evUpper as keyof typeof EVENT_TYPE_LABELS] || "Acara & Event Umum"
+        : null;
+
+    const subEventForCta =
+      (effectiveEventGroup === "PERSONAL" || effectiveEventGroup === "EVENT") && effectiveSubEvent !== "all"
+        ? effectiveSubEvent
+        : theme.subEvent || "";
+    const useThemeHref = `/packages?theme=${encodeURIComponent(theme.id)}&event=${encodeURIComponent(evUpper)}${
+      subEventForCta ? `&subEvent=${encodeURIComponent(subEventForCta)}` : ""
+    }`;
+
     return (
       <div key={theme.id} className="catalog-item">
         {/* ── Device Pair Scene (Direct Interactive Link) ── */}
@@ -203,9 +277,7 @@ export default function CatalogGridShowcase() {
             </svg>
           </Link>
           <Link
-            href={`/packages?theme=${encodeURIComponent(theme.id)}&event=${encodeURIComponent(
-              effectiveEvent !== "all" ? effectiveEvent.toUpperCase() : (theme.eventType || "WEDDING").toUpperCase()
-            )}`}
+            href={useThemeHref}
             className="px-3 py-1.5 rounded-full bg-stone-900 hover:bg-amber-900 text-white text-[10px] font-extrabold uppercase tracking-wider transition shadow-2xs whitespace-nowrap"
           >
             Gunakan Tema Ini
@@ -284,39 +356,61 @@ export default function CatalogGridShowcase() {
               Setiap tema dibangun dengan struktur visual unik, tata letak premium, dan dapat disesuaikan penuh dengan foto dan konsep acara Anda.
             </p>
 
-            {/* Level 1: Event Type Selector (hanya jenis acara aktif; disembunyikan bila tinggal satu) */}
-            {(!enabledEventTypes || enabledEventTypes.length > 1) && (
-            <div className="flex items-center gap-1.5 sm:gap-2 mt-6 overflow-x-auto scrollbar-none px-4 -mx-4 sm:mx-0 sm:px-0 justify-start sm:justify-center-safe flex-nowrap py-1">
-              {[
-                { id: "all", label: "Semua Acara" },
-                { id: "wedding", label: "Pernikahan" },
-                { id: "birthday", label: "Ulang Tahun" },
-                { id: "khitan", label: "Khitanan" },
-                { id: "aqiqah", label: "Aqiqah" },
-                { id: "wisuda", label: "Wisuda" },
-                { id: "gathering", label: "Gathering" },
-              ].filter((ev) => ev.id === "all" || !enabledEventTypes || enabledEventTypes.includes(ev.id.toUpperCase())).map((ev) => (
-                <button
-                  key={ev.id}
-                  onClick={() => {
-                    setSelectedEvent(ev.id);
-                    if (typeof window !== "undefined") {
-                      const url = new URL(window.location.href);
-                      if (ev.id === "all") url.searchParams.delete("event");
-                      else url.searchParams.set("event", ev.id);
-                      window.history.replaceState({}, "", url.toString());
-                    }
-                  }}
-                  className={`px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs font-bold transition cursor-pointer whitespace-nowrap shrink-0 ${
-                    effectiveEvent === ev.id
-                      ? "bg-amber-900 text-white shadow-xs"
-                      : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
-                  }`}
-                >
-                  {ev.label}
-                </button>
-              ))}
-            </div>
+            {/* Level 1: 3 Kategori Utama Undangan */}
+            {activeCategoryGroups.length > 1 && (
+              <div className="flex items-center gap-1.5 sm:gap-2 mt-6 overflow-x-auto scrollbar-none px-4 -mx-4 sm:mx-0 sm:px-0 justify-start sm:justify-center-safe flex-nowrap py-1">
+                {[{ id: "all", label: "Semua" }, ...activeCategoryGroups].map((grp) => (
+                  <button
+                    key={grp.id}
+                    onClick={() => {
+                      setSelectedEventGroup(grp.id);
+                      setSelectedSubEvent("all");
+                      updateUrlFilter(grp.id === "all" ? null : grp.id, null);
+                    }}
+                    className={`px-4 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs font-bold transition cursor-pointer whitespace-nowrap shrink-0 ${
+                      effectiveEventGroup === grp.id
+                        ? "bg-amber-900 text-white shadow-xs"
+                        : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
+                    }`}
+                  >
+                    {grp.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Sub-filter dinamis untuk kategori Personal & Keluarga maupun Acara & Event Umum */}
+            {(effectiveEventGroup === "PERSONAL" || effectiveEventGroup === "EVENT") && dynamicSubOptions.length > 0 && (
+              <div className="flex items-center gap-1.5 mt-2.5 overflow-x-auto scrollbar-none px-4 -mx-4 sm:mx-0 sm:px-0 justify-start sm:justify-center-safe flex-nowrap py-1">
+                {[
+                  {
+                    id: "all",
+                    label: effectiveEventGroup === "PERSONAL" ? "Semua Personal" : "Semua Acara",
+                  },
+                  ...dynamicSubOptions.map((sub) => ({ id: sub, label: sub })),
+                ].map((sub) => {
+                  const isActive =
+                    sub.id === "all"
+                      ? effectiveSubEvent === "all"
+                      : effectiveSubEvent.toLowerCase() === sub.id.toLowerCase();
+                  return (
+                    <button
+                      key={sub.id}
+                      onClick={() => {
+                        setSelectedSubEvent(sub.id);
+                        updateUrlFilter(effectiveEventGroup, sub.id);
+                      }}
+                      className={`px-3.5 py-1.5 rounded-full text-[11px] font-bold transition cursor-pointer whitespace-nowrap shrink-0 ${
+                        isActive
+                          ? "bg-amber-100 text-amber-950 border border-amber-300 shadow-2xs"
+                          : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
+                      }`}
+                    >
+                      {sub.label}
+                    </button>
+                  );
+                })}
+              </div>
             )}
 
             {/* Level 2: Style Filter Tabs */}
@@ -369,50 +463,13 @@ export default function CatalogGridShowcase() {
             <div className="flex items-center justify-center py-20">
               <div className="w-8 h-8 border-2 border-amber-800 border-t-transparent rounded-full animate-spin"></div>
             </div>
-          ) : filteredThemes.length === 0 ? (
+          ) : visibleThemes.length === 0 ? (
             <div className="text-center py-20 text-stone-500 text-sm">
               Tidak ada tema yang ditemukan pada kategori ini.
             </div>
           ) : (
-            <div className="space-y-12">
-              {primaryThemes.length > 0 && (
-                <div>
-                  {isSpecificNonWedding && versatileThemes.length > 0 && (
-                    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-1 mb-5">
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-800">Koleksi Utama</p>
-                        <h3 className="text-lg sm:text-xl font-serif font-bold text-stone-900">
-                          Tema Khusus {EVENT_LABELS[effectiveEvent] || effectiveEvent}
-                        </h3>
-                      </div>
-                      <span className="text-xs text-stone-500 font-medium">{primaryThemes.length} desain</span>
-                    </div>
-                  )}
-                  <div className="catalog-grid">
-                    {primaryThemes.map(renderThemeCard)}
-                  </div>
-                </div>
-              )}
-
-              {versatileThemes.length > 0 && (
-                <div className={primaryThemes.length > 0 ? "pt-10 border-t border-stone-200/90" : ""}>
-                  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-1 mb-5">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500">Tema 1 Profil Serbaguna</p>
-                      <h3 className="text-lg sm:text-xl font-serif font-bold text-stone-900">
-                        Desain Lain yang Dapat Disesuaikan untuk {EVENT_LABELS[effectiveEvent] || effectiveEvent}
-                      </h3>
-                      <p className="text-xs text-stone-500 mt-0.5">
-                        Seluruh desain satu-profil berikut bebas disesuaikan judul, foto, dan detail acaranya di Studio.
-                      </p>
-                    </div>
-                    <span className="text-xs text-stone-500 font-medium shrink-0">{versatileThemes.length} desain</span>
-                  </div>
-                  <div className="catalog-grid">
-                    {versatileThemes.map(renderThemeCard)}
-                  </div>
-                </div>
-              )}
+            <div className="catalog-grid">
+              {visibleThemes.map(renderThemeCard)}
             </div>
           )}
         </section>

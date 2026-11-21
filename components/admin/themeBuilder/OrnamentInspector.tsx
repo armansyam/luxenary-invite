@@ -12,10 +12,10 @@ import {
   ORNAMENT_TEXT_FONTS,
   ORNAMENT_TEXT_LIMITS,
   contrastRatio,
-  familyBlocks,
-  familyOrnamentMediaSlots,
-  familyOrnamentTextTokens,
-  familySections,
+  blocksForMode,
+  ornamentMediaSlotsForMode,
+  ornamentTextTokensForMode,
+  sectionsForMode,
   ornamentLimits,
   sectionLabelFor,
   type AttachableBlockId,
@@ -156,7 +156,7 @@ export default function OrnamentInspector({
   const mode: OrnamentPlacement["mode"] = o.before ? "flow" : o.attach ? "attach" : "free";
   const container = o.attach ? "blok" : "seksi";
   const limits = ornamentLimits(o);
-  const blocks = familyBlocks(eventType);
+  const blocks = blocksForMode(eventType);
   const attachOptions = ATTACHABLE_BLOCKS.filter((id) => blocks.find((b) => b.id === id)?.section === o.section);
   const flowOptions = blocks.filter((b) => b.section === o.section && !FLOW_EXCLUDED_BLOCKS.includes(b.id)).map((b) => b.id);
   const swatch: Record<(typeof ORNAMENT_TEXT_COLORS)[number]["id"], string> = {
@@ -230,7 +230,7 @@ export default function OrnamentInspector({
                   className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-[12px] font-medium text-stone-700 outline-none focus:border-amber-500 cursor-pointer"
                 >
                   <option value="">Teks Kustom (Ketik Manual)</option>
-                  {familyOrnamentTextTokens(eventType).map((tok) => (
+                  {ornamentTextTokensForMode(eventType).map((tok) => (
                     <option key={tok.id} value={tok.id}>
                       {tok.label} ({tok.sample})
                     </option>
@@ -333,7 +333,7 @@ export default function OrnamentInspector({
                 className="mt-1.5 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-[12.5px] outline-none focus:border-amber-500 cursor-pointer"
               >
                 <option value="">Tanpa foto (murni ornamen)</option>
-                {familyOrnamentMediaSlots(eventType).map((s) => (
+                {ornamentMediaSlotsForMode(eventType).map((s) => (
                   <option key={s.id} value={s.id}>{s.label}</option>
                 ))}
               </select>
@@ -354,7 +354,7 @@ export default function OrnamentInspector({
                     className="mt-1.5 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-[12.5px] outline-none focus:border-amber-500 cursor-pointer"
                   >
                     <option value="">Tidak (gambar tetap milik tema)</option>
-                    {familyOrnamentMediaSlots(eventType).map((s) => (
+                    {ornamentMediaSlotsForMode(eventType).map((s) => (
                       <option key={s.id} value={s.id}>{s.label}</option>
                     ))}
                   </select>
@@ -421,7 +421,7 @@ export default function OrnamentInspector({
             onChange={(e) => set({ section: e.target.value as OrnamentSection })}
             className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-[12.5px] outline-none focus:border-amber-500 cursor-pointer disabled:cursor-not-allowed disabled:bg-stone-50 disabled:text-stone-400"
           >
-            {familySections(eventType).map((s) => <option key={s} value={s}>{sectionLabelFor(s, eventType)}</option>)}
+            {sectionsForMode(eventType).map((s) => <option key={s} value={s}>{sectionLabelFor(s, eventType)}</option>)}
           </select>
         </label>
 
@@ -566,7 +566,7 @@ export default function OrnamentInspector({
             >
               <option value="" disabled>Pilih seksi tujuan salinan…</option>
               <option value="all-flow">Semua seksi isi (Home s/d RSVP)</option>
-              {familySections(eventType)
+              {sectionsForMode(eventType)
                 .filter((s) => s !== o.section)
                 .map((s) => (
                   <option key={s} value={s}>

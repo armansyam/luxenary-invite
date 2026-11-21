@@ -13,13 +13,14 @@ import { masterTemplateCache } from "@/lib/cache";
 import { removeIfExists } from "@/lib/fsSafe";
 import { shareFile, unshareFiles } from "@/lib/sharedFiles";
 import { requestThemeThumbnails } from "@/lib/themeThumbnailJob";
-import { BUILDER_EVENT_TYPES, parseBuilderSpec } from "@/lib/themeBuilder/spec";
+import { BUILDER_EVENT_TYPES, convertBuilderSpecForEvent, parseBuilderSpec, type BuilderEventType } from "@/lib/themeBuilder/spec";
 import { ensureSpecFonts } from "@/lib/themeBuilder/fonts";
 import { fitSpecFrames } from "@/lib/themeBuilder/frameWindow";
 import { legacyDefaultMedia, seedSpecFromMaster } from "@/lib/themeBuilder/legacySeed";
 import { exportBundle } from "@/lib/themeBuilder/bundle";
 import { builderMediaSlots } from "@/lib/themeBuilder/mediaSlots";
 import { masterPathOf } from "@/lib/themePaths";
+import { sanitizeSubEvent } from "@/lib/invitationUtils";
 import {
   BUILDER_CATEGORIES,
   builderDefaultMedia,
@@ -44,7 +45,8 @@ function readMeta(body: Record<string, unknown>) {
   const name = typeof body.name === "string" ? body.name.trim() : "";
   const description = typeof body.description === "string" ? body.description.trim().slice(0, 300) : "";
   const category = (BUILDER_CATEGORIES as string[]).includes(String(body.category)) ? (body.category as BuilderCategory) : null;
-  return { name, description, category };
+  const subEvent = body.subEvent !== undefined ? sanitizeSubEvent(body.subEvent) : undefined;
+  return { name, description, category, subEvent };
 }
 
 async function refreshPublicTheme(themeId: string, isActive: boolean) {
@@ -84,13 +86,17 @@ export async function GET(req: NextRequest) {
 
     const params = new URL(req.url).searchParams;
 
-    // Tema tulisan tangan sejenis acara yang dapat dijadikan titik awal rancangan baru.
+    // Tema tulisan tangan yang dapat dijadikan titik awal rancangan baru (mendukung lintas jenis acara bila all=1).
     if (params.get("legacy")) {
+      const includeAll = params.get("all") === "1";
       const eventType = BUILDER_EVENT_TYPES.find((t) => t === params.get("eventType")) ?? "WEDDING";
       const themes = await prisma.theme.findMany({
-        where: { builderSpec: { equals: Prisma.DbNull }, eventType },
-        select: { id: true, name: true, category: true },
-        orderBy: { name: "asc" },
+        where: {
+          builderSpec: { equals: Prisma.DbNull },
+          ...(includeAll ? {} : { eventType }),
+        },
+        select: { id: true, name: true, category: true, eventType: true },
+        orderBy: [{ eventType: "asc" }, { name: "asc" }],
       });
       return NextResponse.json({ success: true, themes });
     }
@@ -159,7 +165,7 @@ export async function GET(req: NextRequest) {
 
     const theme = await prisma.theme.findUnique({
       where: { id },
-      select: { id: true, name: true, category: true, description: true, eventType: true, isActive: true, defaultMedia: true, defaultMusicUrl: true, builderSpec: true },
+      select: { id: true, name: true, category: true, description: true, eventType: true, subEvent: true, isActive: true, defaultMedia: true, defaultMusicUrl: true, builderSpec: true },
     });
     if (!theme) return NextResponse.json({ error: "Tema tidak ditemukan." }, { status: 404 });
     const spec = storedBuilderSpec(theme.builderSpec);
@@ -187,16 +193,132 @@ export async function POST(req: NextRequest) {
 
     const body = (await readJsonBody<Record<string, unknown>>(req)) ?? {};
 
+    // 1) Salin tema (baik hasil Theme Builder maupun master tulisan tangan) ke kategori/jenis acara lain dengan ID & nama baru
+    const cloneCrossCategoryFrom = typeof body.cloneCrossCategoryFrom === "string" ? body.cloneCrossCategoryFrom.trim().toLowerCase() : "";
+    if (cloneCrossCategoryFrom) {
+      const sourceTheme = await prisma.theme.findUnique({
+        where: { id: cloneCrossCategoryFrom },
+        select: { id: true, name: true, category: true, description: true, eventType: true, defaultMusicUrl: true, defaultMedia: true, builderSpec: true },
+      });
+      if (!sourceTheme) {
+        return NextResponse.json({ error: "Tema sumber tidak ditemukan." }, { status: 404 });
+      }
+      let sourceBuilderSpec = storedBuilderSpec(sourceTheme.builderSpec);
+      if (!sourceBuilderSpec) {
+        const sourceEventType = BUILDER_EVENT_TYPES.find((t) => t === sourceTheme.eventType);
+        const masterFile = sourceEventType ? masterPathOf(sourceEventType, sourceTheme.category, sourceTheme.id) : "";
+        if (!sourceEventType || !fs.existsSync(masterFile)) {
+          return NextResponse.json(
+            { error: "Berkas master tema sumber tidak ditemukan sehingga tidak dapat disalin ke kategori lain." },
+            { status: 400 },
+          );
+        }
+        const seeded = seedSpecFromMaster(fs.readFileSync(masterFile, "utf-8"), sourceEventType);
+        sourceBuilderSpec = await fitSpecFrames({
+          ...seeded.spec,
+          defaultMedia: legacyDefaultMedia(sourceTheme.defaultMedia),
+        });
+      }
+
+      const rawTargetEvent = typeof body.targetEventType === "string" ? body.targetEventType.trim().toUpperCase() : "";
+      if (!(BUILDER_EVENT_TYPES as readonly string[]).includes(rawTargetEvent)) {
+        return NextResponse.json({ error: "Jenis acara tujuan tidak valid." }, { status: 400 });
+      }
+      const targetEventType = rawTargetEvent as BuilderEventType;
+
+      const nextName = typeof body.name === "string" ? body.name.trim() : "";
+      if (nextName.length < 2 || nextName.length > 60) {
+        return NextResponse.json({ error: "Nama tema baru wajib 2–60 karakter." }, { status: 400 });
+      }
+      if (nextName.toLowerCase() === sourceTheme.name.trim().toLowerCase()) {
+        return NextResponse.json(
+          { error: "Nama tema salinan wajib berbeda dari tema asal agar tidak membingungkan katalog." },
+          { status: 400 },
+        );
+      }
+
+      const nextId = typeof body.id === "string" && body.id.trim()
+        ? body.id.trim().toLowerCase()
+        : slugifyThemeId(nextName);
+      if (!isSafeThemeId(nextId)) {
+        return NextResponse.json(
+          { error: "ID tema baru hanya boleh huruf kecil, angka, dan tanda hubung (2–40 karakter)." },
+          { status: 400 },
+        );
+      }
+      if (await themeIdTaken(nextId)) {
+        return NextResponse.json(
+          { error: `ID tema "${nextId}" sudah dipakai. Gunakan nama atau ID lain.` },
+          { status: 409 },
+        );
+      }
+
+      const rawCat = typeof body.category === "string" ? body.category.trim().toLowerCase() : sourceTheme.category;
+      const targetCategory: BuilderCategory = (BUILDER_CATEGORIES as string[]).includes(rawCat)
+        ? (rawCat as BuilderCategory)
+        : "modern";
+      const nextDesc = typeof body.description === "string" ? body.description.trim().slice(0, 240) : (sourceTheme.description ?? "");
+      const targetSubEvent = targetEventType === "WEDDING" ? null : sanitizeSubEvent(body.subEvent);
+
+      const convertedSpecRaw = convertBuilderSpecForEvent(sourceBuilderSpec, targetEventType);
+      await ensureSpecFonts(convertedSpecRaw);
+      const convertedSpec = await fitSpecFrames(convertedSpecRaw);
+      const { html: convertedHtml, issues: convertedIssues } = compileAndAudit(convertedSpec);
+      if (convertedIssues.length) {
+        return NextResponse.json({ error: "Master hasil salin kategori gagal diperiksa.", issues: convertedIssues }, { status: 422 });
+      }
+
+      const file = builderMasterPath(targetCategory, nextId, targetEventType);
+      await fs.promises.mkdir(path.dirname(file), { recursive: true });
+      await fs.promises.writeFile(file, convertedHtml, "utf-8");
+      await shareFile(file);
+
+      try {
+        const maxOrder = await prisma.theme.aggregate({ _max: { sortOrder: true } });
+        const clonedTheme = await prisma.theme.create({
+          data: {
+            id: nextId,
+            name: nextName,
+            description: nextDesc,
+            category: targetCategory,
+            eventType: targetEventType,
+            subEvent: targetSubEvent,
+            series: SERIES[targetCategory],
+            isActive: false,
+            sortOrder: (maxOrder._max.sortOrder ?? 0) + 1,
+            builderSpec: convertedSpec as unknown as Prisma.InputJsonObject,
+            defaultMedia: builderDefaultMedia(convertedSpec),
+            mediaSlots: builderMediaSlots(convertedSpec) as Prisma.InputJsonValue,
+            defaultMusicUrl: sourceTheme.defaultMusicUrl,
+          },
+          select: { id: true, name: true, category: true, description: true, subEvent: true, isActive: true, defaultMusicUrl: true, builderSpec: true },
+        });
+        const { builderSpec: storedClone, ...cloneMeta } = clonedTheme;
+        await recordBuilderRevision(guard.session, { ...cloneMeta, category: targetCategory }, convertedSpec, "CREATE");
+        await recordBuilderAudit(
+          req,
+          guard.session,
+          "THEME_BUILDER_CLONE_CATEGORY",
+          `Menyalin tema ${sourceTheme.id} (${sourceTheme.eventType}) menjadi ${cloneMeta.id} (${targetEventType}) bernama "${cloneMeta.name}"`,
+        );
+        return NextResponse.json({ success: true, theme: cloneMeta, etag: specEtag(storedClone) });
+      } catch (err) {
+        await removeIfExists(file);
+        await unshareFiles(file);
+        throw err;
+      }
+    }
+
     // Duplikat memakai spesifikasi yang tersimpan di server (bukan yang sedang terbuka di editor) dan menyalin musik bawaannya.
     const duplicateFrom = typeof body.duplicateFrom === "string" ? body.duplicateFrom : "";
     const source = duplicateFrom
-      ? await prisma.theme.findUnique({ where: { id: duplicateFrom }, select: { name: true, category: true, description: true, defaultMusicUrl: true, builderSpec: true } })
+      ? await prisma.theme.findUnique({ where: { id: duplicateFrom }, select: { name: true, category: true, description: true, subEvent: true, defaultMusicUrl: true, builderSpec: true } })
       : null;
     const sourceSpec = source ? storedBuilderSpec(source.builderSpec) : null;
     if (duplicateFrom && (!source || !sourceSpec)) return NextResponse.json({ error: "Hanya tema builder yang dapat diduplikat." }, { status: 404 });
 
-    const meta = readMeta(source ? { name: `${source.name} Salinan`.slice(0, 60), category: source.category, description: source.description ?? "", ...body } : body);
-    const { name, description, category } = meta;
+    const meta = readMeta(source ? { name: `${source.name} Salinan`.slice(0, 60), category: source.category, description: source.description ?? "", subEvent: source.subEvent ?? undefined, ...body } : body);
+    const { name, description, category, subEvent } = meta;
     if (name.length < 2 || name.length > 60) return NextResponse.json({ error: "Nama tema wajib 2–60 karakter." }, { status: 400 });
     if (!category) return NextResponse.json({ error: "Gaya tema tidak dikenali." }, { status: 400 });
 
@@ -237,6 +359,7 @@ export async function POST(req: NextRequest) {
           description,
           category,
           eventType: parsed.spec.eventType,
+          subEvent: parsed.spec.eventType === "WEDDING" ? null : (subEvent ?? null),
           series: SERIES[category],
           isActive: false,
           sortOrder: (maxOrder._max.sortOrder ?? 0) + 1,
@@ -246,7 +369,7 @@ export async function POST(req: NextRequest) {
           mediaSlots: builderMediaSlots(spec) as Prisma.InputJsonValue,
           defaultMusicUrl: music.url,
         },
-        select: { id: true, name: true, category: true, description: true, isActive: true, defaultMusicUrl: true, builderSpec: true },
+        select: { id: true, name: true, category: true, description: true, subEvent: true, isActive: true, defaultMusicUrl: true, builderSpec: true },
       });
       const { builderSpec: stored, ...themeMeta } = theme;
       await recordBuilderRevision(guard.session, { ...themeMeta, category }, spec, "CREATE");
@@ -288,7 +411,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Tema ini sudah diubah admin lain sejak Anda membukanya. Muat ulang halaman agar perubahannya tidak tertimpa.", code: "STALE" }, { status: 409 });
     }
 
-    const { name, description, category } = readMeta(body);
+    const { name, description, category, subEvent } = readMeta(body);
     if (name.length < 2 || name.length > 60) return NextResponse.json({ error: "Nama tema wajib 2–60 karakter." }, { status: 400 });
     if (!category) return NextResponse.json({ error: "Gaya tema tidak dikenali." }, { status: 400 });
 
@@ -329,12 +452,13 @@ export async function PUT(req: NextRequest) {
         description,
         category,
         series: SERIES[category],
+        ...(subEvent !== undefined ? { subEvent: existingEventType === "WEDDING" ? null : subEvent } : {}),
         builderSpec: spec as unknown as Prisma.InputJsonObject,
         defaultMedia: builderDefaultMedia(spec),
         mediaSlots: builderMediaSlots(spec) as Prisma.InputJsonValue,
         ...(music && music.ok && { defaultMusicUrl: music.url }),
       },
-      select: { id: true, name: true, category: true, description: true, isActive: true, defaultMusicUrl: true, builderSpec: true },
+      select: { id: true, name: true, category: true, description: true, subEvent: true, isActive: true, defaultMusicUrl: true, builderSpec: true },
     });
     await refreshPublicTheme(themeId, theme.isActive);
     const { builderSpec: stored, ...meta } = theme;

@@ -3,7 +3,7 @@ import path from "path";
 import { prisma } from "@/lib/prisma";
 import { resolveThemeEntry } from "@/lib/renderTemplate";
 import { masterPathOf } from "@/lib/themePaths";
-import { storedOverrides } from "@/lib/themeVariants";
+import { storedOverrides } from "@/lib/masterEdits";
 import { syncSharedFiles } from "@/lib/sharedFiles";
 
 /**
@@ -68,21 +68,16 @@ export function themeArtPreviews(themeId: string | null | undefined): Partial<Re
 }
 
 /**
- * Gambar bawaan untuk tema yang dipakai undangan atau demo, termasuk varian (master induknya) dan gambar yang diganti
- * lewat Editor Master atau varian (`masterOverrides.images`), supaya thumbnail sama dengan yang tampil di undangan.
+ * Gambar bawaan untuk tema yang dipakai undangan atau demo, termasuk gambar yang diganti lewat Editor Master
+ * (`masterOverrides.images`), supaya thumbnail sama dengan yang tampil di undangan.
  */
 export async function loadThemeArtPreview(themeId: string | null | undefined): Promise<Partial<Record<BuiltinMediaSlot, string>>> {
   const id = String(themeId || "").toLowerCase();
   if (!THEME_ID_RE.test(id)) return {};
   await syncSharedFiles();
-  const row = await prisma.theme.findUnique({ where: { id }, select: { parentTheme: true, masterOverrides: true } });
-  const masterId = row?.parentTheme || id;
-  const masterRow = row?.parentTheme ? await prisma.theme.findUnique({ where: { id: masterId }, select: { masterOverrides: true } }) : row;
-  const images = {
-    ...(storedOverrides(masterRow?.masterOverrides)?.images ?? {}),
-    ...(row?.parentTheme ? storedOverrides(row.masterOverrides)?.images ?? {} : {}),
-  };
-  const previews = themeArtPreviews(masterId);
+  const row = await prisma.theme.findUnique({ where: { id }, select: { masterOverrides: true } });
+  const images = storedOverrides(row?.masterOverrides)?.images ?? {};
+  const previews = themeArtPreviews(id);
   if (previews.GLOBAL_FIXED_BG && images[previews.GLOBAL_FIXED_BG]) previews.GLOBAL_FIXED_BG = images[previews.GLOBAL_FIXED_BG];
   if (previews.LANDING_COVER && images[previews.LANDING_COVER]) previews.LANDING_COVER = images[previews.LANDING_COVER];
   return previews;

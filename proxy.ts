@@ -461,14 +461,8 @@ export const proxy = auth(async (req) => {
   }
 
   // 7. Isolated Portfolio Routing
-  if (pathname.startsWith("/portfolio/") && !pathname.startsWith("/portfolio/assets/")) {
-    const clientName = pathname.replace("/portfolio/", "");
-    if (clientName && !clientName.includes("/")) {
-      const rewriteUrl = new URL(`/portfolio/${clientName}.html`, req.url);
-      rewriteUrl.search = req.nextUrl.search;
-      return passRewrite(rewriteUrl);
-    }
-  }
+  // /portfolio/{slug} langsung ditangani route handler app/portfolio/[slug]/route.ts (R2/S3 + L1 cache / disk lokal).
+  // Jangan rewrite ke .html karena isSafePathSegment menolak segmen bertitik dan memutus R2 maupun runtime lokal.
 
   return passNext();
 });

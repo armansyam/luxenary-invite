@@ -82,18 +82,18 @@ describe("inisial di tengah QR", () => {
     expect(qrInitials({ participantsJson: { groom: { name: "Raka" }, bride: { name: "Dewi" } } })).toBe("RD");
   });
 
-  it("acara tunggal: 1 huruf dari nama utama", () => {
+  it("acara tunggal: 1 huruf dari nama utama (kontrak murni 3 mode)", () => {
     const p = (obj: object) => JSON.stringify(obj);
-    expect(qrInitials({ eventType: "BIRTHDAY", participantsJson: p({ person: { nickname: "Rani", name: "Rani Kartika" } }) })).toBe("R");
-    expect(qrInitials({ eventType: "WISUDA", participantsJson: p({ person: { name: "Fajar" } }) })).toBe("F");
-    expect(qrInitials({ eventType: "KHITAN", participantsJson: p({ child: { nickname: "Umar" } }) })).toBe("U");
-    expect(qrInitials({ eventType: "AQIQAH", participantsJson: p({ baby: { nickname: "Zahra" } }) })).toBe("Z");
-    expect(qrInitials({ eventType: "GATHERING", participantsJson: p({ event: { title: "Syukuran Kantor" } }) })).toBe("S");
+    expect(qrInitials({ eventType: "PERSONAL", participantsJson: p({ person: { nickname: "Rani", name: "Rani Kartika" } }) })).toBe("R");
+    expect(qrInitials({ eventType: "PERSONAL", participantsJson: p({ person: { name: "Fajar" } }) })).toBe("F");
+    expect(qrInitials({ eventType: "PERSONAL", participantsJson: p({ person: { nickname: "Umar" } }) })).toBe("U");
+    expect(qrInitials({ eventType: "PERSONAL", participantsJson: p({ person: { nickname: "Zahra" } }) })).toBe("Z");
+    expect(qrInitials({ eventType: "EVENT", participantsJson: p({ event: { title: "Syukuran Kantor" } }) })).toBe("S");
   });
 
   it("acara tunggal tanpa data peserta tidak menghasilkan inisial", () => {
-    expect(qrInitials({ eventType: "BIRTHDAY", participantsJson: null })).toBe("");
-    expect(qrInitials({ eventType: "KHITAN", participantsJson: "bukan json" })).toBe("");
+    expect(qrInitials({ eventType: "PERSONAL", participantsJson: null })).toBe("");
+    expect(qrInitials({ eventType: "PERSONAL", participantsJson: "bukan json" })).toBe("");
   });
 });
 

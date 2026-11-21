@@ -9,7 +9,7 @@ import { masterTemplateCache } from "./cache";
 import { escapeHtml } from "./escapeHtml";
 import { logger } from "./logger";
 import { isSafePathSegment } from "./fsSafe";
-import { resolveVariant } from "./themeVariants";
+import { resolveSubEventMeta } from "./invitationUtils";
 import { bumpRenderVersion, currentRenderVersion, demoVersionKey, splitVersionMarker, withVersionMarker, writeFileAtomic } from "./renderVersion";
 import { syncSharedFiles } from "./sharedFiles";
 
@@ -55,15 +55,10 @@ async function buildStaticDemo(cleanId: string, customDemoData: any, version: nu
   await syncSharedFiles({ force: true });
   masterTemplateCache.clear();
   let resolvedData = customDemoData;
-  // Varian Tema memakai data dan foto demo master induknya (varian tidak punya folder demo sendiri); hanya HTML-nya
-  // yang ditulis ke /demo/<id-varian>/.
-  const variant = await resolveVariant(cleanId);
-  const demoSourceId = variant?.parentId ?? cleanId;
 
   try {
     if (resolvedData === undefined) {
-      const setting = await prisma.adminSetting.findUnique({ where: { key: `theme_demo_${cleanId}` }, select: { value: true } })
-        ?? (variant ? await prisma.adminSetting.findUnique({ where: { key: `theme_demo_${demoSourceId}` }, select: { value: true } }) : null);
+      const setting = await prisma.adminSetting.findUnique({ where: { key: `theme_demo_${cleanId}` }, select: { value: true } });
       if (setting?.value) resolvedData = JSON.parse(setting.value);
     }
   } catch (err) {
@@ -71,32 +66,26 @@ async function buildStaticDemo(cleanId: string, customDemoData: any, version: nu
   }
 
   // Demo dirender oleh engine undangan klien dari undangan virtual, sehingga hasilnya sama dengan undangan nyata.
-  const theme = await prisma.theme.findUnique({ where: { id: cleanId }, select: { eventType: true } });
-  const data = (await composeInvitationData(buildDemoInvitation(demoSourceId, resolvedData, theme?.eventType))) as Record<string, any>;
+  const theme = await prisma.theme.findUnique({ where: { id: cleanId }, select: { eventType: true, subEvent: true } });
+  const data = (await composeInvitationData(buildDemoInvitation(cleanId, resolvedData, theme?.eventType, theme?.subEvent))) as Record<string, any>;
 
   // Construct absolute OpenGraph meta tags for rich WhatsApp & social share previews
   const demoHost = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
   const rawCover = (data as any).landingCoverUrl || (data as any).sidebarPhotoUrl || `/demo/${cleanId}/cover.webp`;
   const absoluteCover = rawCover.startsWith("http") ? rawCover : `${demoHost}${rawCover.startsWith("/") ? "" : "/"}${rawCover}`;
   const evType = ((data as any).eventType || "WEDDING").toUpperCase();
+  const subEvent = (data as any).subEvent ?? theme?.subEvent ?? null;
   let demoTitle = `The Wedding of ${(data as any).groomNickname || "Groom"} & ${(data as any).brideNickname || "Bride"}`;
   let demoDesc = `Undangan pernikahan digital eksklusif. Desain elegan, split desktop view, RSVP real-time & galeri momen.`;
 
-  if (evType === "BIRTHDAY") {
-    demoTitle = `Birthday Celebration of ${(data as any).personName || (data as any).personNickname || "Special One"}`;
-    demoDesc = `Undangan ulang tahun digital eksklusif. Desain elegan, responsif, RSVP real-time & galeri momen.`;
-  } else if (evType === "KHITAN") {
-    demoTitle = `Walimatul Khitan ${(data as any).childName || "Ananda"}`;
-    demoDesc = `Undangan Walimatul Khitan digital eksklusif. Doa bersama, agenda acara, dan konfirmasi kehadiran.`;
-  } else if (evType === "AQIQAH") {
-    demoTitle = `Tasyakuran Aqiqah ${(data as any).babyName || "Buah Hati"}`;
-    demoDesc = `Undangan tasyakuran kelahiran dan aqiqah digital eksklusif.`;
-  } else if (evType === "WISUDA") {
-    demoTitle = `Wisuda & Kelulusan ${(data as any).graduateName || "Wisudawan"}`;
-    demoDesc = `Undangan syukuran kelulusan akademik digital eksklusif.`;
-  } else if (evType === "GATHERING") {
-    demoTitle = (data as any).eventTitle || "Undangan Resmi Acara";
-    demoDesc = (data as any).eventSubtitle || `Undangan resmi pertemuan dan silaturahmi.`;
+  if (evType === "PERSONAL") {
+    const meta = resolveSubEventMeta("PERSONAL", subEvent);
+    const displayName = (data as any).mainName || (data as any).personName || (data as any).personNickname || "Tuan Rumah";
+    demoTitle = `${meta.eventLabel} ${displayName}`;
+    demoDesc = `Undangan ${meta.label.toLowerCase()} digital eksklusif. Desain elegan, responsif, RSVP real-time & galeri momen.`;
+  } else if (evType === "EVENT") {
+    demoTitle = (data as any).eventTitle || subEvent || "Undangan Resmi Acara";
+    demoDesc = (data as any).eventSubtitle || `Undangan resmi acara dan silaturahmi digital eksklusif.`;
   }
   const platformName = await getAdminSetting("platform_name", "Platform Undangan");
 

@@ -54,8 +54,9 @@ export function applyBuilderTexts(blueprint: ThemeBlueprint, texts: BuilderTexts
 }
 
 /**
- * Tema satu nama: blueprint satu nama tidak membaca ThemeBlueprint (labelnya dari kontrak applySingleNameContract), jadi
- * teks "engine" builder dipasang sebagai label bawaan. Teks "static" sudah tertulis di master saat kompilasi.
+ * Tema mode Personal & Event: blueprint mandiri tidak membaca ThemeBlueprint pernikahan (labelnya dirangkai oleh
+ * finalizePersonalData / finalizeEventData di lib/themeEngine.ts), jadi teks "engine" builder dipasang sebagai label
+ * bawaan. Teks "static" sudah tertulis di master saat kompilasi.
  */
 export function builderTextLabels(texts: BuilderTexts): Record<string, string> {
   const labels: Record<string, string> = {};

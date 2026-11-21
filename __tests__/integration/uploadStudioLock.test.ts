@@ -12,7 +12,7 @@ import { NextRequest } from "next/server";
 let sessionUser: Record<string, unknown> | null = null;
 vi.mock("@/auth", () => ({ auth: vi.fn(async () => (sessionUser ? { user: sessionUser } : null)) }));
 
-import { prisma } from "@/lib/prisma";
+import { prisma, pool } from "@/lib/prisma";
 import { POST as uploadPost } from "@/app/api/client/upload/route";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
@@ -55,6 +55,8 @@ describe.skipIf(!IS_TEST_DB)("unggahan media mengikuti kunci Studio", () => {
     for (const id of invitations) fs.rmSync(path.join(process.cwd(), "public", "uploads", "invitations", id), { recursive: true, force: true });
     await prisma.invitation.deleteMany({ where: { id: { in: invitations } } });
     await prisma.user.deleteMany({ where: { id: { in: users } } });
+    await prisma.$disconnect();
+    await pool.end();
   });
 
   it("undangan terbit: media Studio ditolak 403 untuk klien, sampul Momen dan admin tetap boleh", async () => {

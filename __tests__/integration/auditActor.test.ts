@@ -173,11 +173,16 @@ describe.skipIf(!IS_TEST_DB)("pelaku catatan audit", () => {
   });
 
   it("aktivasi custom domain dan catatan auditnya satu transaksi atas nama admin asli", async () => {
-    const domain = `${TAG}.contoh.test`;
+    const domain = `${TAG.replace(/_/g, "-")}.contoh.test`;
     // requestedDomain hanya ditulis order UPGRADE (/api/payments/upgrade), yang menautkan undangannya.
-    const order = await createOrder({ requestedDomain: domain, orderType: "UPGRADE", linkedInvitationId: invitationId });
+    const pendingOrder = await createOrder({ requestedDomain: domain, orderType: "UPGRADE", linkedInvitationId: invitationId });
     sessionUser = remoteSession();
-    const res = await activateDomainPost(jsonPost("http://localhost/api/admin/custom-domains/activate", { orderId: order.id }));
+    // Order yang belum lunas (PENDING) wajib ditolak 400.
+    const unpaidRes = await activateDomainPost(jsonPost("http://localhost/api/admin/custom-domains/activate", { orderId: pendingOrder.id }));
+    expect(unpaidRes.status).toBe(400);
+
+    await prisma.order.update({ where: { id: pendingOrder.id }, data: { status: "PAID", paidAt: new Date() } });
+    const res = await activateDomainPost(jsonPost("http://localhost/api/admin/custom-domains/activate", { orderId: pendingOrder.id }));
     expect(res.status).toBe(200);
 
     expect((await prisma.invitation.findUniqueOrThrow({ where: { id: invitationId } })).customDomain).toBe(domain);

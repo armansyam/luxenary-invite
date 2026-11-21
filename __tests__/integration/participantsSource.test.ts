@@ -59,7 +59,7 @@ describe("participantUtils", () => {
   it("nama tampilan: panggilan didahulukan, nama lengkap untuk email dan audit", () => {
     const p = { groom: { name: "Raka Putra", nickname: "Raka" }, bride: { name: "Dewi Ayu" } };
     expect(participantNames("WEDDING", p)).toEqual({ full: "Raka Putra & Dewi Ayu", short: "Raka & Dewi Ayu", first: "Raka", second: "Dewi Ayu" });
-    expect(participantNames("GATHERING", { event: { title: "Reuni 2010" } }).full).toBe("Reuni 2010");
+    expect(participantNames("EVENT", { event: { title: "Reuni 2010" } }).full).toBe("Reuni 2010");
     expect(participantNames("WEDDING", null).full).toBe("");
   });
 });
@@ -104,8 +104,8 @@ describe.skipIf(!IS_TEST_DB)("participantsJson sebagai satu-satunya sumber nama"
   });
 
   it("acara satu nama tidak mendapat subdomain otomatis", async () => {
-    const inv = await makeInvitation({ eventType: "KHITAN", participantsJson: Prisma.DbNull });
-    expect((await put(inv.id, { participantsJson: { child: { name: "Fatih" } } })).status).toBe(200);
+    const inv = await makeInvitation({ eventType: "PERSONAL", participantsJson: Prisma.DbNull });
+    expect((await put(inv.id, { participantsJson: { person: { name: "Fatih" } } })).status).toBe(200);
     expect((await prisma.invitation.findUniqueOrThrow({ where: { id: inv.id } })).subdomain).toBeNull();
   });
 

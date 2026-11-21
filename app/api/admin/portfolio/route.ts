@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
       prisma.invitation.findMany({
         where: { status: "PUBLISHED" },
         orderBy: { createdAt: "desc" },
-        select: { id: true, status: true, invitationSlug: true, eventType: true, participantsJson: true },
+        select: { id: true, status: true, invitationSlug: true, eventType: true, subEvent: true, participantsJson: true },
       }),
     ]);
     return NextResponse.json({ portfolios, candidates });

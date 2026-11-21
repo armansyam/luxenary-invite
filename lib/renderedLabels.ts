@@ -29,6 +29,19 @@ export async function seedRenderedLabels(invitationId: string): Promise<Record<s
   if (!draft) throw new Error(`Piring undangan ${invitationId} tidak tersimpan setelah render`);
   for (const key of labelKeysWithClientData(draft.html)) delete rendered[key];
 
+  // Undangan baru non-pernikahan belum punya babak loveStory saat piring dibentuk sehingga #story belum dirender;
+  // label bawaan cerita tetap direkam ke labelDefaults agar siap saat klien mengaktifkan seksi cerita.
+  if (inv.eventType !== "WEDDING") {
+    const storyEyebrow = typeof (data as Record<string, unknown>).storyEyebrow === "string"
+      ? String((data as Record<string, unknown>).storyEyebrow)
+      : "";
+    const storyTitle = typeof (data as Record<string, unknown>).storyTitle === "string"
+      ? String((data as Record<string, unknown>).storyTitle)
+      : "";
+    if (storyEyebrow && !rendered.storyEyebrow) rendered.storyEyebrow = storyEyebrow;
+    if (storyTitle && !rendered.storyTitle) rendered.storyTitle = storyTitle;
+  }
+
   const current = await prisma.invitation.findUniqueOrThrow({ where: { id: invitationId }, select: { featureSettings: true } });
   const fs = parseFeatureSettings(current.featureSettings);
   const clientLabels = (fs.customLabels as Record<string, string>) || {};

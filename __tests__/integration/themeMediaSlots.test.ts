@@ -17,13 +17,12 @@ import { buildDemoInvitation } from "@/lib/demoInvitation";
 import { POST as createInvitation } from "@/app/api/client/invitations/create/route";
 import { GET as getInvitation, PUT as updateInvitation } from "@/app/api/client/invitations/[id]/route";
 import { PUT as themesPut } from "@/app/api/admin/themes/route";
-import { GET as variantsGet, PUT as variantsPut } from "@/app/api/admin/theme-variants/route";
+import { GET as masterEditorGet, PUT as masterEditorPut } from "@/app/api/admin/master-editor/route";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
 const TAG = `vitest_mediaslots_${Date.now()}`;
 const THEME_A = "kalandra";
 const THEME_B = "verona";
-const VARIANT = `${TAG}-varian`;
 const HOME = "/uploads/invitations/klien/home.webp";
 const COVER = "/uploads/invitations/klien/cover.webp";
 
@@ -69,7 +68,6 @@ describe.skipIf(!IS_TEST_DB)("API: deklarasi slot dan salinannya di undangan", (
       else await prisma.theme.update({ where: { id }, data: { mediaSlots: value as never } });
     }
     await prisma.invitation.deleteMany({ where: { userId: { in: created.users } } });
-    await prisma.theme.deleteMany({ where: { id: VARIANT } });
     await prisma.order.deleteMany({ where: { userId: { in: created.users } } });
     await prisma.user.deleteMany({ where: { id: { in: created.users } } });
     await prisma.adminAuditLog.deleteMany({ where: { adminId: { in: created.admins } } });
@@ -90,21 +88,21 @@ describe.skipIf(!IS_TEST_DB)("API: deklarasi slot dan salinannya di undangan", (
 
     // Editor Master: GET mengirim deklarasi, PUT menyimpannya bersama suntingan (overrides kosong = master asli).
     await prisma.$executeRaw`UPDATE themes SET media_slots = NULL WHERE id = ${THEME_B}`;
-    const loaded = await variantsGet(request(`/api/admin/theme-variants?master=${THEME_B}`, "GET", undefined));
+    const loaded = await masterEditorGet(request(`/api/admin/master-editor?id=${THEME_B}`, "GET", undefined));
     expect(loaded.status).toBe(200);
     expect((await loaded.json()).master.mediaSlots).toBeNull();
-    const bad = await variantsPut(request("/api/admin/theme-variants", "PUT", { masterId: THEME_B, overrides: { colors: {}, fonts: {} }, mediaSlots: { HOME_PHOTO: { places: [""] } } }));
+    const bad = await masterEditorPut(request("/api/admin/master-editor", "PUT", { masterId: THEME_B, overrides: { colors: {}, fonts: {} }, mediaSlots: { HOME_PHOTO: { places: [""] } } }));
     expect(bad.status).toBe(400);
-    const ok = await variantsPut(request("/api/admin/theme-variants", "PUT", { masterId: THEME_B, overrides: { colors: {}, fonts: {} }, mediaSlots: { HOME_PHOTO: { places: ["Latar Home"] } } }));
+    const ok = await masterEditorPut(request("/api/admin/master-editor", "PUT", { masterId: THEME_B, overrides: { colors: {}, fonts: {} }, mediaSlots: { HOME_PHOTO: { places: ["Latar Home"] } } }));
     expect(ok.status).toBe(200);
     expect((await prisma.theme.findUniqueOrThrow({ where: { id: THEME_B } })).mediaSlots).toEqual({ HOME_PHOTO: { places: ["Latar Home"] } });
-    const cleared = await variantsPut(request("/api/admin/theme-variants", "PUT", { masterId: THEME_B, overrides: { colors: {}, fonts: {} }, mediaSlots: null }));
+    const cleared = await masterEditorPut(request("/api/admin/master-editor", "PUT", { masterId: THEME_B, overrides: { colors: {}, fonts: {} }, mediaSlots: null }));
     expect(cleared.status).toBe(200);
     expect((await prisma.theme.findUniqueOrThrow({ where: { id: THEME_B } })).mediaSlots).toBeNull();
-    await variantsPut(request("/api/admin/theme-variants", "PUT", { masterId: THEME_B, overrides: { colors: {}, fonts: {} }, mediaSlots: { HOME_PHOTO: { places: ["Latar Home"] } } }));
+    await masterEditorPut(request("/api/admin/master-editor", "PUT", { masterId: THEME_B, overrides: { colors: {}, fonts: {} }, mediaSlots: { HOME_PHOTO: { places: ["Latar Home"] } } }));
   });
 
-  it("undangan menyalin deklarasi, menyalin ulang saat ganti tema tanpa menghapus foto, varian mewarisi induk", async () => {
+  it("undangan menyalin deklarasi, menyalin ulang saat ganti tema tanpa menghapus foto", async () => {
     const user = await prisma.user.create({ data: { email: `${TAG}@client.local`, name: "Klien Uji" } });
     created.users.push(user.id);
     await prisma.order.create({ data: { userId: user.id, invoiceNumber: `${TAG}-1`, planType: "TIER_2", amount: 150000, status: "PAID", orderType: "NEW", paidAt: new Date() } });
@@ -132,11 +130,5 @@ describe.skipIf(!IS_TEST_DB)("API: deklarasi slot dan salinannya di undangan", (
     const afterChange = await prisma.invitation.findUniqueOrThrow({ where: { id: inv.id }, include: { media: true } });
     expect(afterChange.themeMediaSlots).toEqual({ HOME_PHOTO: { places: ["Latar Home"] } });
     expect(afterChange.media.find((m) => m.mediaSlot === "HOME_PHOTO")?.localPath).toBe(HOME);
-
-    // Varian tanpa deklarasi sendiri memakai deklarasi master induknya.
-    await prisma.theme.create({ data: { id: VARIANT, name: "Varian Uji", category: "minimalist", eventType: "WEDDING", parentTheme: THEME_A, masterOverrides: { colors: {}, fonts: {} }, isActive: true } });
-    const toVariant = await updateInvitation(request(`/api/client/invitations/${inv.id}`, "PUT", { themeId: VARIANT }), params);
-    expect(toVariant.status).toBe(200);
-    expect((await prisma.invitation.findUniqueOrThrow({ where: { id: inv.id } })).themeMediaSlots).toEqual({ LANDING_COVER: { places: ["Sampul"] }, GROOM_PHOTO: { places: ["Mempelai"] }, BRIDE_PHOTO: { places: ["Mempelai"] } });
   });
 });

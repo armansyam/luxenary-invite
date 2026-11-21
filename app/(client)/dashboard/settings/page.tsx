@@ -15,6 +15,8 @@ import {
 } from "@/lib/lifecycleDates";
 import { getPlanDisplayName } from "@/lib/planUtils";
 import { resolveInvitationDisplayName, STAFF_PIN_PATTERN, eventNoun } from "@/lib/invitationUtils";
+import { primaryPhotoSlotForEvent } from "@/lib/mediaSlots";
+import { isSlotUsed, parseThemeMediaSlots } from "@/lib/themeMediaSlots";
 import { participantNames, safeParseParticipants } from "@/lib/participantUtils";
 import { useFeedback } from "@/components/ui/Feedback";
 import { useClientInvitation } from "@/components/client/ClientInvitationContext";
@@ -174,7 +176,10 @@ export default function SettingsPage() {
   };
 
   const isWeddingEvent = !invitation?.eventType || invitation.eventType === "WEDDING";
+  const isEventMode = invitation?.eventType === "EVENT";
   const eventNounLabel = eventNoun(invitation?.eventType);
+  const declaredSlotsOf = (inv: any) =>
+    parseThemeMediaSlots(inv?.themeMediaSlots ?? inv?.theme?.mediaSlots);
 
   const AUDIT_RULES = [
     {
@@ -200,8 +205,8 @@ export default function SettingsPage() {
       title: "Visual Sampul",
       // Sidebar desktop, latar global, dan foto penutup memakai bawaan tema bila kosong (Studio Seksi 2), jadi tidak wajib.
       desc: "Sampul pop-up undangan (Seksi 2)",
-      hasToggle: false,
-      isToggledOn: () => true,
+      hasToggle: true,
+      isToggledOn: (inv: any) => isSlotUsed(declaredSlotsOf(inv), "LANDING_COVER"),
       hasData: (inv: any) => checkMediaSlot(inv, "LANDING_COVER"),
       missingMessage: "Sampul pop-up / cover belum diunggah. Harap unggah di Edit Undangan (Seksi 2).",
     },
@@ -224,20 +229,34 @@ export default function SettingsPage() {
       id: "couplePhotos",
       title: "Foto Profil Utama",
       desc: "Foto portrait profil acara (Seksi 3)",
-      hasToggle: false,
-      isToggledOn: () => true,
-      hasData: (inv: any) => {
+      hasToggle: true,
+      isToggledOn: (inv: any) => {
+        const slots = declaredSlotsOf(inv);
         if (inv?.eventType && inv.eventType !== "WEDDING") {
-          return checkMediaSlot(inv, "GROOM_PHOTO");
+          return isSlotUsed(slots, primaryPhotoSlotForEvent(inv.eventType));
         }
-        return checkMediaSlot(inv, "GROOM_PHOTO") && checkMediaSlot(inv, "BRIDE_PHOTO");
+        return isSlotUsed(slots, "GROOM_PHOTO") || isSlotUsed(slots, "BRIDE_PHOTO");
+      },
+      hasData: (inv: any) => {
+        const slots = declaredSlotsOf(inv);
+        if (inv?.eventType && inv.eventType !== "WEDDING") {
+          const primarySlot = primaryPhotoSlotForEvent(inv.eventType);
+          if (!isSlotUsed(slots, primarySlot)) return true;
+          return checkMediaSlot(inv, primarySlot);
+        }
+        const needGroom = isSlotUsed(slots, "GROOM_PHOTO");
+        const needBride = isSlotUsed(slots, "BRIDE_PHOTO");
+        return (!needGroom || checkMediaSlot(inv, "GROOM_PHOTO")) && (!needBride || checkMediaSlot(inv, "BRIDE_PHOTO"));
       },
       getMissingMessage: (inv: any) => {
         if (inv?.eventType && inv.eventType !== "WEDDING") {
-          return "Foto profil utama belum diunggah. Harap unggah foto di Edit Undangan (Seksi 3).";
+          return inv.eventType === "EVENT"
+            ? "Foto / visual utama acara belum diunggah. Harap unggah di Edit Undangan (Seksi 3)."
+            : "Foto profil utama belum diunggah. Harap unggah foto di Edit Undangan (Seksi 3).";
         }
-        const groomMissing = !checkMediaSlot(inv, "GROOM_PHOTO");
-        const brideMissing = !checkMediaSlot(inv, "BRIDE_PHOTO");
+        const slots = declaredSlotsOf(inv);
+        const groomMissing = isSlotUsed(slots, "GROOM_PHOTO") && !checkMediaSlot(inv, "GROOM_PHOTO");
+        const brideMissing = isSlotUsed(slots, "BRIDE_PHOTO") && !checkMediaSlot(inv, "BRIDE_PHOTO");
         if (groomMissing && brideMissing) {
           return "Foto kedua mempelai (Pria & Wanita) belum diunggah. Harap unggah foto mempelai atau gambar pilihan di Edit Undangan (Seksi 3).";
         }
@@ -292,13 +311,23 @@ export default function SettingsPage() {
     },
     {
       id: "story",
-      title: "Cerita Kisah Kasih (Love Story)",
-      desc: "Perjalanan cinta kedua mempelai",
+      title: isWeddingEvent
+        ? "Cerita Kisah Kasih (Love Story)"
+        : isEventMode
+          ? "Riwayat & Tonggak Acara"
+          : "Kisah & Perjalanan",
+      desc: isWeddingEvent
+        ? "Perjalanan cinta kedua mempelai"
+        : isEventMode
+          ? "Rangkaian perjalanan & pencapaian acara"
+          : "Perjalanan hidup & momen berharga",
       hasToggle: true,
-      isToggledOn: (inv: any) => getFeatureToggle(inv, "showStory", true),
+      isToggledOn: (inv: any) => getFeatureToggle(inv, "showStory", !inv?.eventType || inv.eventType === "WEDDING"),
       hasData: (inv: any) =>
         Array.isArray(inv?.loveStory) && inv.loveStory.some((s: any) => s?.title?.trim() || s?.content?.trim()),
-      missingMessage: "Seksi Cerita Kisah Kasih dalam status aktif, namun belum ada cerita yang diisi. Silakan tulis kisah cinta di Edit Undangan, atau nonaktifkan sakelar seksi ini jika tidak digunakan.",
+      missingMessage: isWeddingEvent
+        ? "Seksi Cerita Kisah Kasih dalam status aktif, namun belum ada cerita yang diisi. Silakan tulis kisah cinta di Edit Undangan, atau nonaktifkan sakelar seksi ini jika tidak digunakan."
+        : "Seksi Cerita & Perjalanan dalam status aktif, namun belum ada babak cerita yang diisi. Silakan tulis di Edit Undangan, atau nonaktifkan sakelar seksi ini jika tidak digunakan.",
     },
     {
       id: "bank",
@@ -322,7 +351,7 @@ export default function SettingsPage() {
       hasData: (inv: any) => Boolean(inv?.musicUrl && inv.musicUrl.trim()),
       missingMessage: "Seksi Musik Latar Pengiring dalam status aktif, namun lagu belum dipilih. Silakan pasang musik di Edit Undangan, atau nonaktifkan sakelar seksi ini jika tidak digunakan.",
     },
-  ].filter((rule) => rule.id !== "story" || isWeddingEvent);
+  ];
 
   useEffect(() => {
     if (ctxLoading) return;

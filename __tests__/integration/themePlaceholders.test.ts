@@ -17,13 +17,10 @@ const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
 const RUN = `vitest_tpl_${Date.now()}`;
 const ids = { users: [] as string[], orders: [] as string[], invitations: [] as string[] };
 
-const EVENT_TYPE_OF: Record<string, "WEDDING" | "BIRTHDAY" | "KHITAN" | "AQIQAH" | "WISUDA" | "GATHERING"> = {
+const EVENT_TYPE_OF: Record<string, "WEDDING" | "PERSONAL" | "EVENT"> = {
   wedding: "WEDDING",
-  birthday: "BIRTHDAY",
-  khitan: "KHITAN",
-  aqiqah: "AQIQAH",
-  wisuda: "WISUDA",
-  gathering: "GATHERING",
+  personal: "PERSONAL",
+  event: "EVENT",
 };
 
 // Bentuk participantsJson persis seperti yang ditulis wizard (setup/page.tsx) dan editor studio, bukan bentuk karangan tes.
@@ -32,23 +29,26 @@ const PARTICIPANTS: Record<string, unknown> = {
     groom: { name: "Andi Mappatunru, S.T.", nickname: "Andi", father: "Bpk. H. Mappatunru", mother: "Ibu Hj. Nurhayati", instagram: "andi" },
     bride: { name: "Besse Tenri Ajeng, S.Psi.", nickname: "Besse", father: "Bpk. H. Tenri", mother: "Ibu Hj. Ajeng", instagram: "besse" },
   },
-  BIRTHDAY: { person: { name: "Nadia Putri", nickname: "Nadia", age: 17, fatherName: "Bpk. Rahman", motherName: "Ibu Sari", instagram: "nadia" } },
-  KHITAN: { child: { name: "Muhammad Fatih", nickname: "Fatih", age: 7 }, parents: { father: "Bpk. Hasan", mother: "Ibu Aminah" } },
-  AQIQAH: { baby: { name: "Aisyah Zahra", nickname: "Aisyah" }, parents: { father: "Bpk. Ilham", mother: "Ibu Rina" } },
-  WISUDA: { person: { name: "Rizky Pratama, S.T.", nickname: "Rizky", degree: "S.T.", major: "Teknik Informatika", institution: "Universitas Negeri Makassar" } },
-  GATHERING: { event: { title: "Reuni Akbar Angkatan 2010", subtitle: "Temu Kangen Alumni", organizer: "Panitia Reuni" } },
+  PERSONAL: {
+    person: {
+      name: "Muhammad Fatih",
+      nickname: "Fatih",
+      detail: "Putra Pertama • Usia 9 Tahun",
+      fatherName: "Bpk. Hasan",
+      motherName: "Ibu Aminah",
+      instagram: "fatih",
+    },
+  },
+  EVENT: { event: { title: "Reuni Akbar Angkatan 2010", subtitle: "Temu Kangen Alumni", organizer: "Panitia Reuni" } },
 };
 
 /** Data peserta yang wajib tampil di undangan terbit; dibaca dari participantsJson karena kolom groom* dikosongkan. */
 const PARTICIPANT_TEXT: Record<string, string[]> = {
-  BIRTHDAY: ["Nadia"],
-  KHITAN: ["Fatih", "Bpk. Hasan", "Ibu Aminah"],
-  AQIQAH: ["Aisyah", "Bpk. Ilham", "Ibu Rina"],
-  WISUDA: ["Rizky", "Teknik Informatika", "Universitas Negeri Makassar"],
-  GATHERING: ["Reuni Akbar Angkatan 2010", "Temu Kangen Alumni", "Panitia Reuni"],
+  PERSONAL: ["Fatih", "Bpk. Hasan", "Ibu Aminah"],
+  EVENT: ["Reuni Akbar Angkatan 2010", "Temu Kangen Alumni", "Panitia Reuni"],
 };
 
-const SLOTS = ["LANDING_COVER", "LANDING_COVER_DESKTOP", "HOME_PHOTO", "DESKTOP_SIDEBAR", "CLOSING_COVER", "GLOBAL_FIXED_BG", "GROOM_PHOTO", "BRIDE_PHOTO"] as const;
+const SLOTS = ["LANDING_COVER", "LANDING_COVER_DESKTOP", "HOME_PHOTO", "DESKTOP_SIDEBAR", "CLOSING_COVER", "GLOBAL_FIXED_BG", "GROOM_PHOTO", "BRIDE_PHOTO", "PROFILE_PHOTO", "EVENT_PHOTO"] as const;
 const slotUrl = (slot: string) => `/uploads/vitest/${slot.toLowerCase()}.webp`;
 const GALLERY_URLS = [1, 2, 3].map((n) => `https://example.test/galeri-${n}.jpg`);
 // Nilai contoh yang dulu tercetak sebagai fakta di undangan klien yang datanya kosong.
@@ -77,20 +77,19 @@ function featureSettings(): Prisma.InputJsonObject {
 /** Seluruh token {{kunci}} di template (tanpa #if/#unless/penutup), termasuk {{else}} yang tidak didukung renderer. */
 function templateTokens(themeId: string): Set<string> {
   const info = THEME_MAP[themeId];
-  const folder = info.eventType === "gathering" ? "general" : info.eventType;
-  let file = path.join(process.cwd(), "themes", folder, info.style, info.file);
-  if (!fs.existsSync(file)) file = path.join(process.cwd(), "themes", "gathering", info.style, info.file);
+  const file = path.join(process.cwd(), "themes", info.eventType, info.style, info.file);
   const html = fs.readFileSync(file, "utf8");
   const tokens = new Set<string>();
   for (const m of html.matchAll(/\{[\s\n]*\{[\s\n]*([\w.]+)[\s\n]*\}[\s\n]*\}/g)) tokens.add(m[1].split(".")[0]);
   return tokens;
 }
 
-async function makeInvitation(eventType: string) {
-  const user = await prisma.user.create({ data: { email: `${RUN}_${eventType}@test.local`, name: eventType } });
+async function makeInvitation(eventType: string, subEvent?: string | null) {
+  const suffix = `${eventType}_${subEvent || "default"}`.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const user = await prisma.user.create({ data: { email: `${RUN}_${suffix}@test.local`, name: eventType } });
   ids.users.push(user.id);
   const order = await prisma.order.create({
-    data: { userId: user.id, invoiceNumber: `${RUN}-${eventType}`, planType: "TIER_3", amount: 200000, status: "PAID", orderType: "NEW", paidAt: new Date() },
+    data: { userId: user.id, invoiceNumber: `${RUN}-${suffix}`, planType: "TIER_3", amount: 200000, status: "PAID", orderType: "NEW", paidAt: new Date() },
   });
   ids.orders.push(order.id);
   const inv = await prisma.invitation.create({
@@ -98,9 +97,10 @@ async function makeInvitation(eventType: string) {
       userId: user.id,
       orderId: order.id,
       eventType: eventType as never,
+      subEvent: subEvent ?? null,
       status: "PUBLISHED",
-      subdomain: `${RUN}-${eventType}`.toLowerCase().replace(/_/g, "-"),
-      invitationSlug: `${RUN}-${eventType}`,
+      subdomain: `${RUN}-${suffix}`.toLowerCase().replace(/_/g, "-"),
+      invitationSlug: `${RUN}-${suffix}`,
       openingQuote: "Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu pasangan.",
       openingQuoteRef: "QS. Ar-Rum: 21",
       musicUrl: "/music/canon-in-d.ogg",
@@ -178,8 +178,9 @@ describe.skipIf(!IS_TEST_DB)("token template tema terisi oleh mesin", () => {
       findings[themeId] = [...missing, ...leftover.map((l) => `sisa:${l}`)];
       expect(findings[themeId]).toEqual([]);
 
-      // Data klien benar-benar tampil: foto utama, galeri, dan tempat jadwal terima tamu.
-      expect(html).toContain(slotUrl("GROOM_PHOTO"));
+      // Data klien benar-benar tampil: foto utama sesuai mode, galeri, dan tempat jadwal terima tamu.
+      const primarySlot = eventType === "WEDDING" ? "GROOM_PHOTO" : eventType === "EVENT" ? "EVENT_PHOTO" : "PROFILE_PHOTO";
+      expect(html).toContain(slotUrl(primarySlot));
       expect(html).toContain(GALLERY_URLS[0]);
       expect(html).toContain("Gedung Mulo");
       expect((PARTICIPANT_TEXT[eventType] ?? []).filter((text) => !html.includes(text))).toEqual([]);
@@ -198,15 +199,21 @@ describe.skipIf(!IS_TEST_DB)("token template tema terisi oleh mesin", () => {
     });
   }
 
-  // Tema satu nama boleh dipakai jenis acara non-pernikahan mana pun (isThemeCompatible); setiap kombinasi harus
-  // menampilkan data jenis acaranya sendiri dan fitur paket (QR, Momen), tanpa teks jenis acara lain.
-  const SINGLE_NAME_THEMES = Object.entries(THEME_MAP).filter(([, info]) => info.eventType !== "wedding").map(([id]) => id);
-  const EVENT_LABELS: Record<string, string> = { BIRTHDAY: "Perayaan Ulang Tahun", KHITAN: "Walimatul Khitan", AQIQAH: "Tasyakuran Aqiqah", WISUDA: "Syukuran Kelulusan" };
-  for (const themeId of SINGLE_NAME_THEMES) {
-    for (const eventType of ["BIRTHDAY", "KHITAN", "AQIQAH", "WISUDA", "GATHERING"]) {
-      it(`tema satu nama ${themeId} × ${eventType}`, async () => {
-        const invitationId = invitationByType[eventType];
-        await prisma.invitation.update({ where: { id: invitationId }, data: { themeId } });
+  // Tema PERSONAL boleh dipakai lintas sub-acara Personal (Ulang Tahun, Khitanan, Aqiqah, Wisuda, maupun kustom "Tamatan Ngaji");
+  // setiap kombinasi harus menampilkan label sub-acaranya sendiri dan fitur paket (QR, Momen), tanpa teks sub-acara lain.
+  const PERSONAL_THEMES = Object.entries(THEME_MAP).filter(([, info]) => info.eventType === "personal").map(([id]) => id);
+  const PERSONAL_SUB_LABELS: Record<string, string> = {
+    "Ulang Tahun": "Perayaan Ulang Tahun",
+    Khitanan: "Walimatul Khitan",
+    Aqiqah: "Tasyakuran Aqiqah",
+    Wisuda: "Syukuran Kelulusan",
+    "Tamatan Ngaji": "Tamatan Ngaji",
+  };
+  for (const themeId of PERSONAL_THEMES) {
+    for (const [subEvent, expectedLabel] of Object.entries(PERSONAL_SUB_LABELS)) {
+      it(`tema personal ${themeId} × subEvent ${subEvent}`, async () => {
+        const invitationId = invitationByType.PERSONAL;
+        await prisma.invitation.update({ where: { id: invitationId }, data: { themeId, subEvent } });
         const data = (await composeTemplateData(invitationId)) as Record<string, unknown>;
         const missingReads = new Set<string>();
         const recorder = new Proxy(data, {
@@ -215,13 +222,47 @@ describe.skipIf(!IS_TEST_DB)("token template tema terisi oleh mesin", () => {
             return Reflect.get(target, key, receiver);
           },
         });
-        const html = await renderTemplateFile(themeId, recorder, { eventType });
+        const html = await renderTemplateFile(themeId, recorder, { eventType: "PERSONAL" });
 
         expect([...templateTokens(themeId)].filter((t) => missingReads.has(t))).toEqual([]);
         expect(html.match(/\{\{[^}]*\}\}/g) ?? []).toEqual([]);
-        expect((PARTICIPANT_TEXT[eventType] ?? []).filter((text) => !html.includes(text))).toEqual([]);
-        expect(Object.entries(EVENT_LABELS).filter(([type, label]) => type !== eventType && html.includes(label)).map(([, l]) => l)).toEqual([]);
-        if (EVENT_LABELS[eventType]) expect(html).toContain(EVENT_LABELS[eventType]);
+        expect((PARTICIPANT_TEXT.PERSONAL ?? []).filter((text) => !html.includes(text))).toEqual([]);
+        expect(
+          Object.entries(PERSONAL_SUB_LABELS)
+            .filter(([sub, label]) => sub !== subEvent && html.includes(label))
+            .map(([, l]) => l),
+        ).toEqual([]);
+        expect(html).toContain(expectedLabel);
+        expect(html).toContain('id="passQrImg"');
+        expect(html).toContain('id="luxAudioPlayer"');
+        expect(html).toContain('id="cdDays"');
+        expect(html).toContain("/sharemoment");
+        expect(html).toContain("Gedung Mulo");
+      });
+    }
+  }
+
+  // Tema EVENT terisolasi untuk kategori EVENT (non-personal tanpa orang tua) dan mendukung subEvent dinamis (Corporate, Gathering, Reuni).
+  const EVENT_THEMES = Object.entries(THEME_MAP).filter(([, info]) => info.eventType === "event").map(([id]) => id);
+  for (const themeId of EVENT_THEMES) {
+    for (const subEvent of ["Corporate", "Gathering", "Reuni"]) {
+      it(`tema event ${themeId} × subEvent ${subEvent}`, async () => {
+        const invitationId = invitationByType.EVENT;
+        await prisma.invitation.update({ where: { id: invitationId }, data: { themeId, subEvent } });
+        const data = (await composeTemplateData(invitationId)) as Record<string, unknown>;
+        expect(data.parentsHtml).toBe("");
+        const missingReads = new Set<string>();
+        const recorder = new Proxy(data, {
+          get(target, key, receiver) {
+            if (typeof key === "string" && !(key in target)) missingReads.add(key);
+            return Reflect.get(target, key, receiver);
+          },
+        });
+        const html = await renderTemplateFile(themeId, recorder, { eventType: "EVENT" });
+
+        expect([...templateTokens(themeId)].filter((t) => missingReads.has(t))).toEqual([]);
+        expect(html.match(/\{\{[^}]*\}\}/g) ?? []).toEqual([]);
+        expect((PARTICIPANT_TEXT.EVENT ?? []).filter((text) => !html.includes(text))).toEqual([]);
         expect(html).toContain('id="passQrImg"');
         expect(html).toContain('id="luxAudioPlayer"');
         expect(html).toContain('id="cdDays"');
@@ -232,12 +273,12 @@ describe.skipIf(!IS_TEST_DB)("token template tema terisi oleh mesin", () => {
   }
 
   it("tema satu nama: paket tanpa qr_checkin/guest_memories tidak menampilkan kartu QR maupun Momen; musik mati tidak memuat pemutar", async () => {
-    const invitationId = invitationByType.KHITAN;
+    const invitationId = invitationByType.PERSONAL;
     const inv = await prisma.invitation.findUniqueOrThrow({ where: { id: invitationId }, select: { orderId: true, featureSettings: true } });
     await prisma.order.update({ where: { id: inv.orderId! }, data: { planType: "TIER_1" } });
-    await prisma.invitation.update({ where: { id: invitationId }, data: { themeId: "al-fariz", featureSettings: { ...(inv.featureSettings as Prisma.JsonObject), showMusic: false } } });
+    await prisma.invitation.update({ where: { id: invitationId }, data: { themeId: "al-fariz", subEvent: "Khitanan", featureSettings: { ...(inv.featureSettings as Prisma.JsonObject), showMusic: false } } });
     try {
-      const html = await renderTemplateFile("al-fariz", (await composeTemplateData(invitationId)) as Record<string, unknown>, { eventType: "KHITAN" });
+      const html = await renderTemplateFile("al-fariz", (await composeTemplateData(invitationId)) as Record<string, unknown>, { eventType: "PERSONAL" });
       expect(html).not.toContain('id="passQrImg"');
       expect(html).not.toContain("/sharemoment");
       expect(html).not.toContain('id="luxAudioPlayer"');
@@ -249,17 +290,18 @@ describe.skipIf(!IS_TEST_DB)("token template tema terisi oleh mesin", () => {
   });
 
   // Blueprint starter adalah titik awal desainer tema baru; token di luar kontrak satu nama akan dirender kosong.
-  for (const folder of ["birthday", "khitan", "aqiqah", "wisuda", "general"]) {
+  for (const [folder, eventType] of [
+    ["personal", "PERSONAL"],
+    ["event", "EVENT"],
+  ] as const) {
     it(`blueprint ${folder} hanya memakai kunci kontrak satu nama`, async () => {
       const file = path.join(process.cwd(), "themes", "_blueprints", folder, `starter-blueprint-${folder}.html`);
       const html = fs.readFileSync(file, "utf8");
       expect(fs.readFileSync(path.join(process.cwd(), "public", "downloads", `starter-blueprint-${folder}.html`), "utf8")).toBe(html);
       const tokens = [...new Set([...html.matchAll(/\{\{\s*(?:#if\s+|#unless\s+)?([\w.]+)\s*\}\}/g)].map((m) => m[1]))];
-      for (const eventType of ["BIRTHDAY", "KHITAN", "AQIQAH", "WISUDA", "GATHERING"]) {
-        await prisma.invitation.update({ where: { id: invitationByType[eventType] }, data: { themeId: "al-fariz" } });
-        const data = (await composeTemplateData(invitationByType[eventType])) as Record<string, unknown>;
-        expect({ eventType, missing: tokens.filter((t) => !(t in data)) }).toEqual({ eventType, missing: [] });
-      }
+      await prisma.invitation.update({ where: { id: invitationByType[eventType] }, data: { themeId: eventType === "EVENT" ? "sinergi" : "al-fariz" } });
+      const data = (await composeTemplateData(invitationByType[eventType])) as Record<string, unknown>;
+      expect({ eventType, missing: tokens.filter((t) => !(t in data)) }).toEqual({ eventType, missing: [] });
     });
   }
 

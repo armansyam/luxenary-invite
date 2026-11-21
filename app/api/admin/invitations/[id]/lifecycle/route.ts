@@ -4,6 +4,7 @@ import { routeError } from "@/lib/routeError";
 import { extendGalleryExpiry, getEventDayStart, getPrimaryEventDate } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { purgeInvitationEdgeCache } from "@/lib/cloudflare";
+import { invalidateInvitationLookup } from "@/lib/cache";
 import { buildAndSavePublishedHtml } from "@/lib/staticPublisher";
 import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
 
@@ -53,18 +54,19 @@ export async function POST(
       if (invitation.status !== "PUBLISHED") {
         return NextResponse.json({ error: "Hanya undangan yang sedang tayang (PUBLISHED) yang dapat ditutup ke galeri." }, { status: 409 });
       }
-      const [updated] = await prisma.$transaction([
+      await prisma.$transaction([
         prisma.invitation.update({
           where: { id },
           data: { status: "EVENT_FINISHED" },
         }),
         auditLog("CLOSE_TO_GALLERY", `Menutup undangan ${label} ke Galeri Momen`),
       ]);
+      invalidateInvitationLookup(invitation.invitationSlug, invitation.subdomain, invitation.id);
       await purgeInvitationEdgeCache(invitation);
 
       return NextResponse.json({
         success: true,
-        status: updated.status,
+        status: "EVENT_FINISHED",
         message: "Undangan berhasil ditutup dan dialihkan ke Galeri Momen Acara.",
       });
     }
@@ -94,6 +96,7 @@ export async function POST(
         ),
       ]);
 
+      invalidateInvitationLookup(invitation.invitationSlug, invitation.subdomain, invitation.id);
       const cloudflare = await purgeInvitationEdgeCache(invitation);
 
       return NextResponse.json({
@@ -121,6 +124,7 @@ export async function POST(
           data: {
             galleryExpiresAt: newExpiry,
             memoriesUploadLocked: false,
+            retentionWarningSentAt: null,
           },
         }),
         auditLog("EXTEND_GALLERY", `Memperpanjang galeri ${label} +${extraDays} hari hingga ${newExpiry.toISOString()}`),
@@ -163,6 +167,7 @@ export async function POST(
       if (invitation.status === "PUBLISHED" || invitation.status === "EVENT_FINISHED") {
         await buildAndSavePublishedHtml(id);
       }
+      invalidateInvitationLookup(invitation.invitationSlug, invitation.subdomain, invitation.id);
       await purgeInvitationEdgeCache(invitation);
 
       return NextResponse.json({

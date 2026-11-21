@@ -14,8 +14,8 @@ vi.mock("@/lib/themeThumbnailJob", () => ({ requestThemeThumbnails: vi.fn() }));
 vi.mock("@/lib/demoPublisher", () => ({ compileAndSaveStaticDemo: vi.fn(async () => "") }));
 
 import { prisma, pool } from "@/lib/prisma";
-import { GET, PUT } from "@/app/api/admin/theme-variants/route";
-import { clearVariantCache } from "@/lib/themeVariants";
+import { GET, PUT } from "@/app/api/admin/master-editor/route";
+import { clearMasterEditsCache } from "@/lib/masterEdits";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
 const MASTER = "wajo";
@@ -23,7 +23,7 @@ const COVER = "/uploads/theme-assets/abcdefabcdefabcdefabcdef.webp";
 let before: { masterOverrides: unknown; defaultMedia: unknown } | null = null;
 
 const req = (method: string, query = "", body?: unknown) =>
-  new NextRequest(`http://localhost/api/admin/theme-variants${query}`, { method, headers: { "content-type": "application/json" }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+  new NextRequest(`http://localhost/api/admin/master-editor${query}`, { method, headers: { "content-type": "application/json" }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
 const save = (defaultMedia: unknown) => PUT(req("PUT", "", { masterId: MASTER, overrides: { colors: {}, fonts: {} }, defaultMedia }));
 
 describe.skipIf(!IS_TEST_DB)("media bawaan slot di Editor Master", () => {
@@ -37,13 +37,13 @@ describe.skipIf(!IS_TEST_DB)("media bawaan slot di Editor Master", () => {
         data: { masterOverrides: (before.masterOverrides ?? Prisma.DbNull) as Prisma.InputJsonValue, defaultMedia: (before.defaultMedia ?? Prisma.DbNull) as Prisma.InputJsonValue },
       });
     }
-    clearVariantCache();
+    clearMasterEditsCache();
     await prisma.$disconnect();
     await pool.end();
   });
 
-  it("GET ?master memuat media bawaan dan bawaan desain master (tekstur sampul Wajo)", async () => {
-    const res = await GET(req("GET", `?master=${MASTER}`));
+  it("GET ?id memuat media bawaan dan bawaan desain master (tekstur sampul Wajo)", async () => {
+    const res = await GET(req("GET", `?id=${MASTER}`));
     const data = await res.json();
     expect(res.status).toBe(200);
     expect(data.master.defaultMedia).toEqual(expect.any(Object));

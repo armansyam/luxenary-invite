@@ -10,7 +10,7 @@ import { auditBuilderMaster, type MasterIssue } from "@/lib/themeBuilder/audit";
 import { compileBuilderMaster, readBuilderBlueprint } from "@/lib/themeBuilder/compile";
 import { parseBuilderSpec, type BuilderEventType, type BuilderSpec } from "@/lib/themeBuilder/spec";
 import type { SimMedia } from "@/lib/themeBuilder/simSlots";
-import { DEFAULT_THEME_BY_EVENT } from "@/lib/invitationUtils";
+import { DEFAULT_THEME_BY_EVENT, resolveSubEventMeta } from "@/lib/invitationUtils";
 import { isSafePathSegment } from "@/lib/fsSafe";
 import { adminActorId } from "@/lib/adminAuth";
 import { logger } from "@/lib/logger";
@@ -135,23 +135,11 @@ const LONG_TEXT_DEMO_BY_EVENT: Record<BuilderSpec["eventType"], Record<string, s
     groomDisplayName: "Muhammad Rizky Pratama, S.Kom.",
     brideDisplayName: "Putri Rahmawati Kusuma, S.E.",
   },
-  BIRTHDAY: {
+  PERSONAL: {
     personName: "Aisyah Nabila Ramadhani Kusuma",
     personNickname: "Aisyah Nabila Ramadhani",
   },
-  KHITAN: {
-    childName: "Muhammad Al-Fatih Ramadhan Pratama",
-    childNickname: "Muhammad Al-Fatih Ramadhan",
-  },
-  AQIQAH: {
-    babyName: "Khadijah Az-Zahra Humaira Putri",
-    babyNickname: "Khadijah Az-Zahra Humaira",
-  },
-  WISUDA: {
-    graduateName: "Dr. Muhammad Fadhil Rahman, M.T.",
-    graduateNickname: "Dr. Muhammad Fadhil Rahman",
-  },
-  GATHERING: {
+  EVENT: {
     eventTitle: "Malam Apresiasi & Silaturahmi Akbar Keluarga Besar Nusantara",
   },
 };
@@ -164,29 +152,51 @@ const LONG_TEXT_DEMO_BY_EVENT: Record<BuilderSpec["eventType"], Record<string, s
  */
 export async function renderBuilderPreview(
   spec: BuilderSpec,
-  demoThemeId = DEFAULT_THEME_BY_EVENT[spec.eventType] || "kalandra",
+  demoThemeId?: string,
   mode: "demo" | "client" | "sim" = "demo",
   sim?: SimMedia,
   longText = false,
+  previewEventType?: BuilderEventType,
+  previewSubEvent?: string | null,
 ): Promise<CompiledBuilderTheme & { labels: Record<string, string> }> {
+  // Setiap kategori memiliki blueprint mandiri (WEDDING, PERSONAL, EVENT); pratinjau dapat berganti sub-acara di dalam kategori tema.
+  const effectivePreviewEvent: BuilderEventType = spec.eventType;
+  const effectiveSubEvent = effectivePreviewEvent === "WEDDING" ? null : (previewSubEvent ?? null);
+  const resolvedDemoThemeId =
+    demoThemeId ||
+    (effectivePreviewEvent !== "WEDDING" && effectiveSubEvent
+      ? resolveSubEventMeta(effectivePreviewEvent, effectiveSubEvent).demoFallbackThemeId
+      : DEFAULT_THEME_BY_EVENT[effectivePreviewEvent]) ||
+    "kalandra";
   const compiled = compileAndAudit(spec);
   const customDemo = {
     ...(mode === "demo" ? {} : { galleryPhotos: [] }),
-    ...(longText ? LONG_TEXT_DEMO_BY_EVENT[spec.eventType] : {}),
+    ...(longText ? LONG_TEXT_DEMO_BY_EVENT[effectivePreviewEvent] : {}),
   };
-  const demo = buildDemoInvitation(demoThemeId, Object.keys(customDemo).length ? customDemo : undefined);
+  const demo = buildDemoInvitation(
+    resolvedDemoThemeId,
+    Object.keys(customDemo).length ? customDemo : undefined,
+    effectivePreviewEvent,
+    effectiveSubEvent,
+  );
   if (mode === "demo" && !demo.media.some((m) => m.mediaSlot === "HOME_PHOTO")) {
     const fallbackHome = demo.media.find((m) => m.mediaSlot === "DESKTOP_SIDEBAR" || m.mediaSlot === "LANDING_COVER")?.localPath;
     if (fallbackHome) demo.media.push({ mediaSlot: "HOME_PHOTO", localPath: fallbackHome });
   }
   const simMedia = mode === "sim" && sim
-    ? [...Object.entries(sim.slots).map(([mediaSlot, localPath]) => ({ mediaSlot, localPath: localPath as string })), ...sim.gallery.map((localPath) => ({ mediaSlot: "GALLERY", localPath }))]
+    ? [
+        ...Object.entries(sim.slots).map(([mediaSlot, localPath]) => ({
+          mediaSlot,
+          localPath: localPath as string,
+        })),
+        ...sim.gallery.map((localPath) => ({ mediaSlot: "GALLERY", localPath })),
+      ]
     : [];
   const base = mode === "demo" ? demo : { ...demo, media: simMedia, themeDefaultMedia: builderDefaultMedia(spec) };
   // Rancangan belum tersimpan, jadi teks bawaan, spesifikasi, dan deklarasi slot dibawa langsung (undangan nyata membacanya dari baris Theme).
-  const data = (await composeInvitationData({ ...base, themeMediaSlots: builderMediaSlots(spec), builderTexts: spec.texts, builderSpec: spec })) as Record<string, any>;
+  const data = (await composeInvitationData({ ...base, eventType: effectivePreviewEvent, subEvent: effectiveSubEvent ?? base.subEvent ?? null, themeMediaSlots: builderMediaSlots(spec), builderTexts: spec.texts, builderSpec: spec })) as Record<string, any>;
   if (longText) data.guestName = LONG_TEXT_GUEST;
-  let html = await renderTemplateFile("builder-preview", data, { eventType: spec.eventType, templateSource: compiled.html });
+  let html = await renderTemplateFile("builder-preview", data, { eventType: effectivePreviewEvent, templateSource: compiled.html });
   if (longText) {
     const escapedGuest = LONG_TEXT_GUEST.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     html = html.replace(/(<p\b[^>]*id="coverGuestName"[^>]*>)[\s\S]*?(<\/p>)/, `$1${escapedGuest}$2`);

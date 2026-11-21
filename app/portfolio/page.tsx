@@ -5,7 +5,7 @@ import { portfolioListCache } from "@/lib/cache";
 import { BrandLogo } from "@/components/BrandLogo";
 import { getPublicPlatformSettings } from "@/lib/settings";
 import { prisma } from "@/lib/prisma";
-import { isThemeCompatible } from "@/lib/invitationUtils";
+import { isThemeInMode } from "@/lib/invitationUtils";
 import { PortfolioGallery, PortfolioGalleryItem } from "./PortfolioGallery";
 
 export const dynamic = "force-dynamic";
@@ -83,16 +83,15 @@ export default async function PortfolioPage() {
     }
   }
 
-  // Perkaya metadata dengan status tema terkini di DB (apakah tema masih aktif & kompatibel dengan jenis acara yang dibuka)
+  // Perkaya metadata dengan status tema terkini di DB (isolasi 3 kategori: tema harus aktif & dalam kategori yang dibuka)
   const portfolioItems: PortfolioGalleryItem[] = rawPortfolioItems.map((item) => {
     const themeKey = (item.themeId || "").toLowerCase();
     const themeObj = themeMap.get(themeKey);
     const resolvedEventType = (item.eventType || themeObj?.eventType || "WEDDING").toUpperCase();
-    const canUseTheme = Boolean(
-      isServiceOpen &&
-        themeObj?.isActive &&
-        enabledEventTypes.some((ev) => isThemeCompatible(themeObj.eventType, ev)),
-    );
+    const supportedEvents = themeObj?.isActive
+      ? enabledEventTypes.filter((ev) => isThemeInMode(themeObj.eventType, ev))
+      : [];
+    const canUseTheme = Boolean(isServiceOpen && supportedEvents.length > 0);
     return {
       ...item,
       themeName: themeObj?.name || item.themeId || "",

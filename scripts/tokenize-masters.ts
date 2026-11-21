@@ -1,6 +1,6 @@
 /**
  * Tokenisasi master tema tulisan tangan (lib/themeTokenize.ts): warna dan huruf yang tertulis langsung di CSS diganti
- * variabel `:root`, tanpa mengubah tampilan. Fondasi Varian Tema. Piring undangan klien (tabel invitation_drafts) tidak disentuh;
+ * variabel `:root`, tanpa mengubah tampilan. Fondasi Editor Master mandiri. Piring undangan klien (tabel invitation_drafts) tidak disentuh;
  * undangan yang sudah ada tetap memakai salinan bekunya.
  *
  *   npx tsx scripts/tokenize-masters.ts                         # laporan saja (tanpa menulis)

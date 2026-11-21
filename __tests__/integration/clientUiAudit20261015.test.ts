@@ -214,13 +214,21 @@ describe("template WhatsApp buku tamu", () => {
     expect(waPresets("WEDDING")[0].text).toBe(
       "Kepada Yth.\nBapak/Ibu/Saudara/i {nama_tamu}\n\nTanpa mengurangi rasa hormat, perkenankan kami mengundang Bapak/Ibu/Saudara/i untuk menghadiri acara pernikahan kami:\n\n{link_undangan}\n\nMerupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.\n\nTerima kasih.\n\nSalam hangat,\n{nama_mempelai}",
     );
-    for (const eventType of ["BIRTHDAY", "KHITAN", "AQIQAH", "WISUDA", "GATHERING"]) {
-      for (const preset of waPresets(eventType)) {
+    for (const [eventType, subEvent] of [
+      ["PERSONAL", "Ulang Tahun"],
+      ["PERSONAL", "Khitanan"],
+      ["PERSONAL", "Aqiqah"],
+      ["PERSONAL", "Wisuda"],
+      ["PERSONAL", "Tamatan Ngaji"],
+      ["EVENT", "Corporate"],
+      ["EVENT", undefined],
+    ] as const) {
+      for (const preset of waPresets(eventType, subEvent)) {
         expect(preset.text).not.toMatch(/pernikahan|perjalanan baru/);
         expect(preset.text).not.toContain("acara acara");
       }
     }
-    expect(waPresets("KHITAN")[0].text).toContain("menghadiri acara khitanan kami:");
+    expect(waPresets("PERSONAL", "Khitanan")[0].text).toContain("menghadiri acara khitanan kami:");
   });
 
   it.skipIf(!IS_TEST_DB)("template tetap bisa disimpan setelah undangan terbit tanpa menimpa pengaturan lain", async () => {

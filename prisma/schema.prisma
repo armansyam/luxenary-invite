@@ -114,6 +114,8 @@ model Invitation {
   userId               String
   themeId              String            @default("kalandra")
   eventType            EventType         @default(WEDDING)
+  /// Label sub-acara dinamis (opsional): mis. "Ulang Tahun", "Khataman Al-Qur'an", "Corporate", "Grand Opening".
+  subEvent             String?           @map("sub_event")
   /// Kolom jsonb: participantsJson dan featureSettings berupa objek; eventData, loveStory, dan bankAccounts berupa
   /// array (ditegakkan CHECK, migrasi 20261010120000). participantsJson satu-satunya sumber nama peserta untuk semua
   /// jenis acara; bentuk per jenis acara ada di lib/participantUtils.ts.
@@ -308,7 +310,8 @@ model Theme {
   thumbnail       String?
   category        ThemeCategory @default(minimalist)
   eventType       EventType     @default(WEDDING)
-  parentTheme     String?
+  /// Tag sub-acara dinamis untuk filter katalog & demo persona (mis. "Ulang Tahun", "Khitanan", "Corporate", "Reuni").
+  subEvent        String?       @map("sub_event")
   series          String?
   isActive        Boolean       @default(true)
   sortOrder       Int           @default(0)
@@ -319,7 +322,7 @@ model Theme {
   defaultMedia    Json?         @map("default_media")
   /// Slot media klien yang dipakai tema ({ SLOT: { places } }); lib/themeMediaSlots.ts. Null = belum dideklarasikan.
   mediaSlots      Json?         @map("media_slots")
-  /// Varian Tema (lib/themeVariants.ts): override variabel :root master induk `parentTheme`; null untuk tema biasa.
+  /// Suntingan Editor Master mandiri (lib/masterEdits.ts): override variabel :root, gambar, seksi, tata letak & CSS pada master tulisan tangan.
   masterOverrides Json?         @map("master_overrides")
   createdAt       DateTime      @default(now())
   invitations     Invitation[]
@@ -412,11 +415,8 @@ enum InvitationStatus {
 
 enum EventType {
   WEDDING
-  BIRTHDAY
-  KHITAN
-  AQIQAH
-  WISUDA
-  GATHERING
+  PERSONAL
+  EVENT
 }
 
 enum WaStatus {
@@ -446,6 +446,8 @@ enum MediaSlot {
   GLOBAL_FIXED_BG
   GROOM_PHOTO
   BRIDE_PHOTO
+  PROFILE_PHOTO
+  EVENT_PHOTO
   GALLERY
   CLOSING_COVER
 }

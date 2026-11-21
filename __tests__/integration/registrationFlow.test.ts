@@ -271,7 +271,7 @@ describe.skipIf(!IS_TEST_DB)("alur registrasi", () => {
     });
 
     it("wizard hanya memilih jenis acara: semua isian lain boleh kosong dan dilengkapi di editor", async () => {
-      for (const eventType of ["WEDDING", "BIRTHDAY", "KHITAN", "AQIQAH", "WISUDA", "GATHERING"]) {
+      for (const eventType of ["WEDDING", "PERSONAL", "EVENT"]) {
         const u = await makeUser(`min-${eventType.toLowerCase()}`);
         as(u);
         await makeOrder(u.id, { status: "PAID", paidAt: new Date() });
@@ -289,31 +289,32 @@ describe.skipIf(!IS_TEST_DB)("alur registrasi", () => {
 
     it("data peserta dari wizard tersimpan utuh di participantsJson dan menjadi dasar slug serta nama tampilan", async () => {
       // participantsJson persis seperti yang dikirim wizard (setup/page.tsx).
-      const cases: Array<[string, unknown, string, string]> = [
-        ["WEDDING", { groom: { name: "Raka Putra", nickname: "Raka" }, bride: { name: "Dewi Ayu", nickname: "Dewi" } }, "raka-dewi", "Raka Putra & Dewi Ayu"],
-        ["BIRTHDAY", { person: { name: "Nadia Putri", nickname: "Nadia", fatherName: "Rahman", motherName: "Sari" } }, "nadia-birthday", "Nadia Putri"],
-        ["KHITAN", { child: { name: "Muhammad Fatih", nickname: "Fatih" }, parents: { father: "Hasan", mother: "Aminah" } }, "fatih-khitan", "Muhammad Fatih"],
-        ["AQIQAH", { baby: { name: "Aisyah Zahra", nickname: "Aisyah" }, parents: { father: "Ilham", mother: "Rina" } }, "aisyah-aqiqah", "Aisyah Zahra"],
-        ["WISUDA", { person: { name: "Rina Andriani, S.T.", nickname: "Rina", degree: "S.T.", major: "Teknik Sipil", institution: "UNM" } }, "rina-wisuda", "Rina Andriani, S.T."],
-        ["GATHERING", { event: { title: "Reuni Akbar 2010", organizer: "Panitia Reuni" } }, "reuni-akbar-2010", "Reuni Akbar 2010"],
+      const cases: Array<[string, string | undefined, unknown, string, string]> = [
+        ["WEDDING", undefined, { groom: { name: "Raka Putra", nickname: "Raka" }, bride: { name: "Dewi Ayu", nickname: "Dewi" } }, "raka-dewi", "Raka Putra & Dewi Ayu"],
+        ["PERSONAL", "Ulang Tahun", { person: { name: "Nadia Putri", nickname: "Nadia", fatherName: "Rahman", motherName: "Sari" } }, "nadia-ulang-tahun", "Nadia Putri"],
+        ["PERSONAL", "Khitanan", { person: { name: "Muhammad Fatih", nickname: "Fatih" }, parents: { father: "Hasan", mother: "Aminah" } }, "fatih-khitanan", "Muhammad Fatih"],
+        ["PERSONAL", "Aqiqah", { person: { name: "Aisyah Zahra", nickname: "Aisyah" }, parents: { father: "Ilham", mother: "Rina" } }, "aisyah-aqiqah", "Aisyah Zahra"],
+        ["PERSONAL", "Wisuda", { person: { name: "Rina Andriani, S.T.", nickname: "Rina", detail: "S.T. · Teknik Sipil · UNM" } }, "rina-wisuda", "Rina Andriani, S.T."],
+        ["PERSONAL", "Tamatan Ngaji", { person: { name: "Bilal Al-Farisi", nickname: "Bilal", detail: "Khatam 30 Juz" } }, "bilal-tamatan-ngaji", "Bilal Al-Farisi"],
+        ["EVENT", "Reuni", { event: { title: "Reuni Akbar 2010", organizer: "Panitia Reuni" } }, "reuni-akbar-2010", "Reuni Akbar 2010"],
       ];
-      for (const [eventType, participants, slugBase, fullName] of cases) {
-        const u = await makeUser(`participants-${eventType.toLowerCase()}`);
+      for (const [eventType, subEvent, participants, slugBase, fullName] of cases) {
+        const u = await makeUser(`participants-${eventType.toLowerCase()}-${(subEvent || "main").toLowerCase().replace(/\s+/g, "-")}`);
         as(u);
         await makeOrder(u.id, { status: "PAID", paidAt: new Date() });
         const res = await createInvitation(json("/api/client/invitations/create", "POST", {
-          eventType, participantsJson: JSON.stringify(participants), weddingDate: "", city: "", planType: "TIER_1",
+          eventType, ...(subEvent ? { subEvent } : {}), participantsJson: JSON.stringify(participants), weddingDate: "", city: "", planType: "TIER_1",
         }));
-        expect(res.status, eventType).toBe(200);
+        expect(res.status, `${eventType}:${subEvent}`).toBe(200);
         const inv = await prisma.invitation.findFirstOrThrow({ where: { userId: u.id } });
-        expect(inv.participantsJson, eventType).toEqual(participants);
-        expect(inv.invitationSlug.startsWith(slugBase), `${eventType}: ${inv.invitationSlug}`).toBe(true);
-        expect(participantNames(inv.eventType, inv.participantsJson).full, eventType).toBe(fullName);
+        expect(inv.participantsJson, `${eventType}:${subEvent}`).toEqual(participants);
+        expect(inv.invitationSlug.startsWith(slugBase), `${eventType}:${subEvent}: ${inv.invitationSlug}`).toBe(true);
+        expect(participantNames(inv.eventType, inv.participantsJson).full, `${eventType}:${subEvent}`).toBe(fullName);
       }
     });
 
     it("kota dari wizard disimpan apa adanya sebagai alamat; nama tempat tetap kosong, tidak diisi teks karangan", async () => {
-      for (const eventType of ["WEDDING", "BIRTHDAY"]) {
+      for (const eventType of ["WEDDING", "PERSONAL"]) {
         const u = await makeUser(`city-${eventType.toLowerCase()}`);
         as(u);
         await makeOrder(u.id, { status: "PAID", paidAt: new Date() });
@@ -333,13 +334,16 @@ describe.skipIf(!IS_TEST_DB)("alur registrasi", () => {
     });
 
     it("wizard menandai jadwal terima tamu: Resepsi untuk pernikahan, satu-satunya sesi untuk acara lain; zona waktu tetap tersimpan tanpa jam", async () => {
-      const cases: Array<[string, string[]]> = [["WEDDING", ["Akad Nikah", "Resepsi Pernikahan"]], ["KHITAN", ["Syukuran Khitanan"]]];
-      for (const [eventType, titles] of cases) {
+      const cases: Array<[string, string | undefined, string[]]> = [
+        ["WEDDING", undefined, ["Akad Nikah", "Resepsi Pernikahan"]],
+        ["PERSONAL", "Khitanan", ["Rangkaian Acara"]],
+      ];
+      for (const [eventType, subEvent, titles] of cases) {
         const u = await makeUser(`primary-${eventType.toLowerCase()}`);
         as(u);
         await makeOrder(u.id, { status: "PAID", paidAt: new Date() });
         const res = await createInvitation(json("/api/client/invitations/create", "POST", {
-          eventType, participantsJson: { groom: { nickname: "Raka" }, bride: { nickname: "Dewi" } }, weddingDate: "2099-11-21", city: "Makassar", timeZone: "WITA", planType: "TIER_1",
+          eventType, ...(subEvent ? { subEvent } : {}), participantsJson: { groom: { nickname: "Raka" }, bride: { nickname: "Dewi" } }, weddingDate: "2099-11-21", city: "Makassar", timeZone: "WITA", planType: "TIER_1",
         }));
         expect(res.status, eventType).toBe(200);
         const inv = await prisma.invitation.findFirstOrThrow({ where: { userId: u.id } });

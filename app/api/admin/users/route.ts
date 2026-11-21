@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { adminActorId, requireAdminModule } from "@/lib/adminAuth";
+import { invalidateInvitationLookup } from "@/lib/cache";
+import { purgeInvitationEdgeCache } from "@/lib/cloudflare";
 import { removeInvitationFiles } from "@/lib/invitationFiles";
 import { deleteFile } from "@/lib/storage";
 import { routeError } from "@/lib/routeError";
@@ -91,6 +93,7 @@ export async function GET(req: NextRequest) {
               eventData: true,
               galleryExpiresAt: true,
               eventType: true,
+              subEvent: true,
               participantsJson: true,
             },
             take: 3,
@@ -209,6 +212,8 @@ export async function DELETE(req: Request) {
     ]);
 
     for (const inv of targetUser.invitations) {
+      invalidateInvitationLookup(inv.invitationSlug, inv.subdomain, inv.id);
+      await purgeInvitationEdgeCache(inv);
       await removeInvitationFiles(inv, "AdminDeleteClient");
     }
     // deleteFile mencatat galatnya sendiri dan tidak melempar.

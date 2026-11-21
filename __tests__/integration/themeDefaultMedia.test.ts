@@ -141,15 +141,15 @@ describe("engine: bawaan tema di data undangan", () => {
 
     // Tema satu nama yang dulu satu kolom di tengah kini juga split: tanpa cover landscape sampul masuk kolom.
     const single = (await composeInvitationData({ ...buildDemoInvitation("al-fariz"), media: [{ mediaSlot: "LANDING_COVER", localPath: own }], themeDefaultMedia: null })) as Record<string, any>;
-    const singleHtml = await renderTemplateFile("al-fariz", single, { eventType: "KHITAN" });
+    const singleHtml = await renderTemplateFile("al-fariz", single, { eventType: "PERSONAL" });
     expect(singleHtml).toContain('id="lux-cover-desktop-split"');
 
     // Master berilustrasi dengan sampul mendatar sendiri: layar penuh tanpa foto sampul, split lagi begitu ada foto portrait.
     const illustrated = "<!DOCTYPE html><html><head><title>x</title><style>.left-hero{width:calc(100% - 460px)}</style></head><body><div class=\"cover-screen\" data-lux-desktop-cover=\"full\"></div></body></html>";
     const noPhoto = (await composeInvitationData({ ...buildDemoInvitation("al-fariz"), media: [], themeDefaultMedia: null })) as Record<string, any>;
-    const fullHtml = await renderTemplateFile("vitest-illustrated", { ...noPhoto, landingCoverUrl: "" }, { eventType: "KHITAN", templateSource: illustrated });
+    const fullHtml = await renderTemplateFile("vitest-illustrated", { ...noPhoto, landingCoverUrl: "" }, { eventType: "PERSONAL", templateSource: illustrated });
     expect(fullHtml).not.toContain('id="lux-cover-desktop-split"');
-    const portraitHtml = await renderTemplateFile("vitest-illustrated", single, { eventType: "KHITAN", templateSource: illustrated });
+    const portraitHtml = await renderTemplateFile("vitest-illustrated", single, { eventType: "PERSONAL", templateSource: illustrated });
     expect(portraitHtml).toContain('id="lux-cover-desktop-split"');
 
     // Master tanpa hero kiri tidak memuat calc(100% - 460px); sampulnya tidak dipersempit.
@@ -160,8 +160,7 @@ describe("engine: bawaan tema di data undangan", () => {
   it("semua master tema aktif bertata letak split (hero kiri + kolom 460 px)", () => {
     const missing = Object.entries(THEME_MAP)
       .map(([id, info]) => {
-        const folder = info.eventType === "gathering" ? "general" : info.eventType;
-        const file = path.join(process.cwd(), "themes", folder, info.style, info.file);
+        const file = path.join(process.cwd(), "themes", info.eventType, info.style, info.file);
         return fs.existsSync(file) && !fs.readFileSync(file, "utf8").includes("calc(100% - 460px)") ? id : null;
       })
       .filter(Boolean);

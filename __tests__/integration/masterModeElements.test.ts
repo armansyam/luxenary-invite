@@ -4,7 +4,7 @@
  */
 import { describe, it, expect } from "vitest";
 import fs from "fs";
-import { applyMasterOverridesTo, elementEditsCss, isElementSelector, parseMasterOverrides } from "@/lib/themeVariantCss";
+import { applyMasterOverridesTo, elementEditsCss, isElementSelector, parseMasterOverrides } from "@/lib/masterOverrideCss";
 import { composeInvitationData } from "@/lib/themeEngine";
 import { buildDemoInvitation } from "@/lib/demoInvitation";
 import { renderTemplateFile, THEME_MAP } from "@/lib/renderTemplate";

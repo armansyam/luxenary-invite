@@ -13,12 +13,12 @@ import {
   MAX_ORNAMENTS_PER_SECTION,
   BUILDER_EVENT_LABELS,
   BUILDER_EVENT_TYPES,
+  convertBuilderSpecForEvent,
   BLOCK_LIMITS,
   BLOCK_PX_LIMITS,
   BUILDER_BLOCKS,
-  familyBlocks,
-  familySections,
-  familyVariantGroups,
+  sectionsForMode,
+  layoutStylesForMode,
   sectionLabelFor,
   type BuilderEventType,
   COVER_BLOCK_IDS,
@@ -64,6 +64,7 @@ import {
   type RevisionRow,
   type ThemeMeta,
 } from "@/components/admin/themeBuilder/BuilderPanels";
+import { PERSONAL_SUB_EVENT_PRESETS, EVENT_SUB_EVENT_PRESETS } from "@/lib/invitationUtils";
 
 type Issue = { code: string; message: string };
 type PreviewMode = "demo" | "client" | "sim";
@@ -128,7 +129,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
   const [spec, setSpec] = useState<BuilderSpec>(defaultBuilderSpec);
   // Salinan terbaru untuk pengendali seret dan pintasan keyboard; setiap setSpec di komponen ini memperbaruinya juga.
   const specRef = useRef<BuilderSpec>(spec);
-  const [meta, setMeta] = useState<ThemeMeta>({ id: "", name: "", category: "modern", description: "", defaultMusicUrl: "" });
+  const [meta, setMeta] = useState<ThemeMeta>({ id: "", name: "", category: "modern", description: "", subEvent: "", defaultMusicUrl: "" });
   const [isNew, setIsNew] = useState(!themeId);
   const [isActive, setIsActive] = useState(false);
   const [saved, setSaved] = useState("");
@@ -146,6 +147,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
   const [panel, setPanel] = useState<PanelId>("colors");
   const [device, setDevice] = useState<PreviewDevice>("mobile");
   const [previewMode, setPreviewMode] = useState<PreviewMode>("demo");
+  const [previewSubEvent, setPreviewSubEvent] = useState<string>("");
   const [longText, setLongText] = useState(false);
   const [sim, setSim] = useState<SimMedia>({ slots: {}, gallery: [] });
   const [simUploading, setSimUploading] = useState<string | null>(null);
@@ -168,7 +170,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
   const actionsRef = useRef<PreviewActions | null>(null);
   const [ghost, setGhost] = useState<{ src: string; x: number; y: number } | null>(null);
 
-  const snapshot = useCallback((s: BuilderSpec, m: ThemeMeta) => JSON.stringify({ s, m: { ...m, name: m.name.trim(), description: m.description.trim() } }), []);
+  const snapshot = useCallback((s: BuilderSpec, m: ThemeMeta) => JSON.stringify({ s, m: { ...m, name: m.name.trim(), description: m.description.trim(), subEvent: (m.subEvent ?? "").trim() } }), []);
   const dirty = loaded && snapshot(spec, meta) !== saved;
 
   const resetAllChanges = useCallback(async () => {
@@ -226,10 +228,18 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
             setLoadError(data.error || "Tema lama gagal dibaca.");
             return;
           }
-          const m: ThemeMeta = { id: "", name: data.theme.name, category: data.theme.category, description: data.theme.description || "", defaultMusicUrl: data.theme.defaultMusicUrl || "" };
+          const m: ThemeMeta = { id: "", name: data.theme.name, category: data.theme.category, description: data.theme.description || "", subEvent: data.theme.subEvent || "", defaultMusicUrl: data.theme.defaultMusicUrl || "" };
           specRef.current = data.spec;
           setSpec(data.spec);
           setMeta(m);
+          setPreviewSubEvent(
+            data.theme.subEvent ||
+              (data.spec?.eventType === "PERSONAL"
+                ? PERSONAL_SUB_EVENT_PRESETS[0].id
+                : data.spec?.eventType === "EVENT"
+                ? EVENT_SUB_EVENT_PRESETS[0].id
+                : ""),
+          );
           setIsNew(true);
           setSaved(snapshot(data.spec, m));
           setLoaded(true);
@@ -238,7 +248,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
           return;
         }
         const initial = defaultBuilderSpec();
-        const initialMeta: ThemeMeta = { id: "", name: "", category: "modern", description: "", defaultMusicUrl: "" };
+        const initialMeta: ThemeMeta = { id: "", name: "", category: "modern", description: "", subEvent: "", defaultMusicUrl: "" };
         setSaved(snapshot(initial, initialMeta));
         setLoaded(true);
         return;
@@ -250,10 +260,18 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
         setLoadError(data.error || "Tema gagal dimuat.");
         return;
       }
-      const m: ThemeMeta = { id: data.theme.id, name: data.theme.name, category: data.theme.category, description: data.theme.description || "", defaultMusicUrl: data.theme.defaultMusicUrl || "" };
+      const m: ThemeMeta = { id: data.theme.id, name: data.theme.name, category: data.theme.category, description: data.theme.description || "", subEvent: data.theme.subEvent || "", defaultMusicUrl: data.theme.defaultMusicUrl || "" };
       specRef.current = data.spec;
       setSpec(data.spec);
       setMeta(m);
+      setPreviewSubEvent(
+        data.theme.subEvent ||
+          (data.spec?.eventType === "PERSONAL"
+            ? PERSONAL_SUB_EVENT_PRESETS[0].id
+            : data.spec?.eventType === "EVENT"
+            ? EVENT_SUB_EVENT_PRESETS[0].id
+            : ""),
+      );
       etag.current = typeof data.etag === "string" ? data.etag : "";
       setIsActive(Boolean(data.theme.isActive));
       setIsNew(false);
@@ -307,6 +325,44 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
       router.push(`/admin/theme-builder?id=${encodeURIComponent(data.theme.id)}`);
     } catch {
       notify("Tema gagal diduplikat. Periksa koneksi.", "error");
+    } finally {
+      setSaving(false);
+    }
+  }, [confirm, meta.id, meta.name, notify, router]);
+
+  const cloneToCategory = useCallback(async (input: { name: string; targetEventType: BuilderEventType; subEvent?: string }): Promise<boolean> => {
+    if (!meta.id) return false;
+    const ok = await confirm({
+      title: `Salin "${meta.name}" ke ${BUILDER_EVENT_LABELS[input.targetEventType]}?`,
+      message: `Tema draf baru "${input.name}" akan dibuat pada kategori ${BUILDER_EVENT_LABELS[input.targetEventType]} (struktur 2-profil ↔ 1-profil disesuaikan otomatis). Anda bebas mendesain ulang tanpa memengaruhi tema asal.`,
+      confirmLabel: "Salin & Buka Editor",
+    });
+    if (!ok) return false;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/theme-builder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cloneCrossCategoryFrom: meta.id,
+          name: input.name,
+          targetEventType: input.targetEventType,
+          ...(input.subEvent ? { subEvent: input.subEvent } : {}),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        notify(data.error || "Gagal menyalin tema ke kategori lain.", "error");
+        return false;
+      }
+      allowLeave.current = true;
+      loadedFor.current = null;
+      notify(`Draf tema "${data.theme.name}" (${data.theme.id}) berhasil dibuat. Silakan rapikan desain lalu Terbitkan.`, "success");
+      router.push(`/admin/theme-builder?id=${encodeURIComponent(data.theme.id)}`);
+      return true;
+    } catch {
+      notify("Gagal menyalin tema ke kategori lain. Periksa koneksi.", "error");
+      return false;
     } finally {
       setSaving(false);
     }
@@ -414,6 +470,12 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
     if (!results) return notify("Pratinjau belum siap diperiksa.", "info");
     setSlotChecksState({ key: slotCheckKey, results });
   }, [notify, sim.slots, slotCheckKey]);
+  const effectivePreviewSubEvent =
+    spec.eventType !== "WEDDING"
+      ? previewSubEvent ||
+        meta.subEvent ||
+        (spec.eventType === "PERSONAL" ? PERSONAL_SUB_EVENT_PRESETS[0].id : EVENT_SUB_EVENT_PRESETS[0].id)
+      : "";
   const liveDesign = useMemo(() => ({ css: designCss(spec), custom: spec.customCss ?? "", preset: animationPlan(spec).htmlPreset }), [spec]);
   useEffect(() => {
     if (!loaded) return;
@@ -424,7 +486,15 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
         const res = await fetch("/api/admin/theme-builder/preview", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ spec: specRef.current, mode: previewMode, ...(longText ? { longText: true } : {}), ...(previewMode === "sim" ? { sim: JSON.parse(simKey) } : {}) }),
+          body: JSON.stringify({
+            spec: specRef.current,
+            mode: previewMode,
+            ...(specRef.current.eventType !== "WEDDING" && effectivePreviewSubEvent
+              ? { previewSubEvent: effectivePreviewSubEvent }
+              : {}),
+            ...(longText ? { longText: true } : {}),
+            ...(previewMode === "sim" ? { sim: JSON.parse(simKey) } : {}),
+          }),
           signal: controller.signal,
         });
         const data = await res.json().catch(() => ({}));
@@ -442,7 +512,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
       }
     }, PREVIEW_DEBOUNCE_MS);
     return () => { controller.abort(); window.clearTimeout(timer); };
-  }, [structure, loaded, longText, notify, previewMode, simKey]);
+  }, [structure, loaded, longText, notify, previewMode, simKey, effectivePreviewSubEvent]);
 
   /** "live" mengubah tampilan tanpa riwayat (saat menyeret); "commit" mencatat satu langkah undo. */
   const apply = useCallback((next: BuilderSpec, mode: "live" | "commit") => {
@@ -490,21 +560,26 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
   }, [apply, confirm, notify]);
 
   /**
-   * Hanya untuk tema yang belum disimpan: jenis acara menentukan blueprint. Ornamen di seksi atau blok yang tidak ada di
-   * keluarga tujuan (mis. kisah dan mempelai kedua pada satu nama) dibuang, dan varian profil yang tidak berlaku kembali ke bawaan.
+   * Hanya untuk tema yang belum disimpan: jenis acara menentukan blueprint. Seluruh elemen rancangan
+   * (ornamen, blok, frame, teks, seksi bebas, slot media dinonaktifkan, dan varian profil) dikonversi penuh
+   * melalui `convertBuilderSpecForEvent`.
    */
   const changeEventType = useCallback((eventType: BuilderEventType) => {
     const current = specRef.current;
-    const sections = familySections(eventType);
-    const blocks = new Set(familyBlocks(eventType).map((b) => b.id));
-    const ornaments = current.ornaments.filter((o) => sections.includes(o.section) && (!o.attach || blocks.has(o.attach)) && (!o.before || blocks.has(o.before)));
-    const coupleOptions = familyVariantGroups(eventType).find((g) => g.key === "couple")?.options ?? [];
-    const couple = coupleOptions.some((o) => o.id === current.variants.couple) ? current.variants.couple : defaultBuilderSpec(eventType).variants.couple;
-    patchSpec({ eventType, ornaments, variants: { ...current.variants, couple } });
+    const sections = sectionsForMode(eventType);
+    const converted = convertBuilderSpecForEvent(current, eventType);
+    apply(converted, "commit");
+    setPreviewSubEvent(
+      eventType === "PERSONAL"
+        ? PERSONAL_SUB_EVENT_PRESETS[0].id
+        : eventType === "EVENT"
+        ? EVENT_SUB_EVENT_PRESETS[0].id
+        : "",
+    );
     if (!sections.includes(viewSection)) setViewSection("cover");
-    const dropped = current.ornaments.length - ornaments.length;
+    const dropped = current.ornaments.length - converted.ornaments.length;
     if (dropped) notify(`${dropped} ornamen dilepas karena seksinya tidak ada di tema ${BUILDER_EVENT_LABELS[eventType].toLowerCase()}.`, "info");
-  }, [patchSpec, viewSection, notify]);
+  }, [apply, viewSection, notify]);
 
   /** Memuat versi lama ke editor sebagai perubahan biasa (bisa diurungkan); baru berlaku setelah disimpan. */
   const restoreRevision = useCallback(async (revisionId: string) => {
@@ -542,30 +617,35 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
     apply(next, final ? "commit" : "live");
   }, [apply]);
 
-  const [legacyThemes, setLegacyThemes] = useState<{ eventType: BuilderEventType; themes: Array<{ id: string; name: string }> } | null>(null);
+  const [legacyThemes, setLegacyThemes] = useState<Array<{ id: string; name: string; eventType?: BuilderEventType }> | null>(null);
 
-  const loadLegacyThemes = useCallback(async (eventType: BuilderEventType) => {
-    if (legacyThemes?.eventType === eventType) return;
-    const res = await fetch(`/api/admin/theme-builder?legacy=1&eventType=${eventType}`, { cache: "no-store" });
+  const loadLegacyThemes = useCallback(async () => {
+    if (legacyThemes !== null) return;
+    const res = await fetch("/api/admin/theme-builder?legacy=1&all=1", { cache: "no-store" });
     const data = await res.json().catch(() => ({}));
-    if (res.ok) setLegacyThemes({ eventType, themes: data.themes });
+    if (res.ok) setLegacyThemes(Array.isArray(data.themes) ? data.themes : []);
     else notify(data.error || "Daftar tema lama gagal dimuat.", "error");
   }, [legacyThemes, notify]);
 
   useEffect(() => {
-    if (isNew && loaded) void loadLegacyThemes(spec.eventType);
-  }, [isNew, loaded, loadLegacyThemes, spec.eventType]);
+    if (isNew && loaded) void loadLegacyThemes();
+  }, [isNew, loaded, loadLegacyThemes]);
 
-  /** Isi rancangan baru dari palet dan latar tema tulisan tangan; master lama tidak disentuh. */
+  /** Isi rancangan baru dari palet dan latar tema tulisan tangan (mendukung lintas kategori); master lama tidak disentuh. */
   const startFromLegacy = useCallback(async (id: string) => {
     if (!id) return;
     const res = await fetch(`/api/admin/theme-builder?from=${encodeURIComponent(id)}`, { cache: "no-store" });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) return notify(data.error || "Tema lama gagal dibaca.", "error");
+    const targetEventType = specRef.current.eventType;
+    const seededSpec: BuilderSpec =
+      data.spec?.eventType && data.spec.eventType !== targetEventType
+        ? convertBuilderSpecForEvent(data.spec, targetEventType)
+        : data.spec;
     history.current = { past: [], future: [] };
     syncHistory();
-    specRef.current = data.spec;
-    setSpec(data.spec);
+    specRef.current = seededSpec;
+    setSpec(seededSpec);
     setMeta((m) => ({ ...m, name: data.theme.name, category: data.theme.category, description: data.theme.description, defaultMusicUrl: data.theme.defaultMusicUrl || "" }));
     const r = data.report as { source: string; found: string[]; missing: string[]; fontsFound: string[]; mediaFound: number; hexOutsideRoot: number };
     notify(`Titik awal dari ${r.source}: ${r.found.length} dari ${r.found.length + r.missing.length} warna palet, ${r.fontsFound.length} dari 3 huruf, dan ${r.mediaFound} media bawaan terbaca${r.hexOutsideRoot ? `; ${r.hexOutsideRoot} warna lain di tema lama ditulis mati dan tidak ikut` : ""}. Tata letak mengikuti blueprint.`, "info");
@@ -849,7 +929,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
     const source = current.ornaments.find((o) => o.id === id);
     if (!source || source.attach || source.before) return;
     const flowSecs = (["opening", "couple", "countdown", "events", "story", "rsvp"] as OrnamentSection[]).filter(
-      (s) => familySections(current.eventType).includes(s) && s !== source.section
+      (s) => sectionsForMode(current.eventType).includes(s) && s !== source.section
     );
     const targets: OrnamentSection[] = target === "all-flow" ? flowSecs : [target];
     const additions: BuilderOrnament[] = [];
@@ -878,7 +958,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
     const sources = current.ornaments.filter((o) => o.section === sourceSection && !o.attach && !o.before);
     if (!sources.length) return;
     const flowSecs = (["opening", "couple", "countdown", "events", "story", "rsvp"] as OrnamentSection[]).filter(
-      (s) => familySections(current.eventType).includes(s) && s !== sourceSection
+      (s) => sectionsForMode(current.eventType).includes(s) && s !== sourceSection
     );
     const additions: BuilderOrnament[] = [];
     for (const sec of flowSecs) {
@@ -908,7 +988,16 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
       const res = await fetch("/api/admin/theme-builder", {
         method: isNew ? "POST" : "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: meta.id || undefined, name: meta.name.trim(), category: meta.category, description: meta.description.trim(), defaultMusicUrl: meta.defaultMusicUrl, spec, baseEtag: etag.current || undefined }),
+        body: JSON.stringify({
+          id: meta.id || undefined,
+          name: meta.name.trim(),
+          category: meta.category,
+          description: meta.description.trim(),
+          subEvent: spec.eventType === "WEDDING" ? null : (meta.subEvent ?? "").trim() || null,
+          defaultMusicUrl: meta.defaultMusicUrl,
+          spec,
+          baseEtag: etag.current || undefined,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -917,7 +1006,14 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
         return;
       }
       etag.current = typeof data.etag === "string" ? data.etag : "";
-      const m: ThemeMeta = { id: data.theme.id, name: data.theme.name, category: data.theme.category, description: data.theme.description || "", defaultMusicUrl: data.theme.defaultMusicUrl || "" };
+      const m: ThemeMeta = {
+        id: data.theme.id,
+        name: data.theme.name,
+        category: data.theme.category,
+        description: data.theme.description || "",
+        subEvent: data.theme.subEvent || "",
+        defaultMusicUrl: data.theme.defaultMusicUrl || "",
+      };
       setMeta(m);
       setIsActive(Boolean(data.theme.isActive));
       setSaved(snapshot(spec, m));
@@ -1098,8 +1194,8 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
           <p className="mt-2 text-[13px] text-stone-600">{loadError}</p>
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
             {themeId && (
-              <a href={`/admin/theme-variants?master=${encodeURIComponent(themeId)}`} className="inline-block rounded-xl bg-amber-600 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-700">
-                Edit di Mode Master
+              <a href={`/admin/master-editor?id=${encodeURIComponent(themeId)}`} className="inline-block rounded-xl bg-amber-600 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-700">
+                Edit di Editor Master
               </a>
             )}
             {themeId && (
@@ -1116,7 +1212,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
     );
   }
 
-  const chips = familySections(spec.eventType).filter((s) => s !== "sidebar" || device === "desktop");
+  const chips = sectionsForMode(spec.eventType).filter((s) => s !== "sidebar" || device === "desktop");
   const chipLabel = (s: OrnamentSection) => {
     if (s === "sidebar") return "Hero kiri";
     if (s === "countdown") return "Countdown";
@@ -1176,7 +1272,13 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
               className="max-w-[165px] shrink-0 truncate rounded-lg border border-stone-200 bg-white px-2 py-1 text-[11.5px] font-semibold text-stone-600 outline-none hover:border-stone-300 cursor-pointer"
             >
               <option value="">Mulai dari tema lama…</option>
-              {(legacyThemes?.eventType === spec.eventType ? legacyThemes.themes : []).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              {(legacyThemes ?? []).map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.eventType && t.eventType !== spec.eventType
+                    ? `${t.name} (${BUILDER_EVENT_LABELS[t.eventType]})`
+                    : t.name}
+                </option>
+              ))}
             </select>
           )}
           {isNew && (
@@ -1300,6 +1402,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
               music={music}
               revisions={revisions}
               onDuplicate={duplicateTheme}
+              onCloneToCategory={cloneToCategory}
               onExport={exportTheme}
               onRestoreRevision={restoreRevision}
               onToggleMediaSlot={toggleMediaSlot}
@@ -1341,6 +1444,31 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
             </div>
 
             <div className="flex shrink-0 items-center gap-1.5">
+              {spec.eventType !== "WEDDING" && (
+                <select
+                  aria-label="Contoh sub-acara pratinjau"
+                  title="Uji tampilan tema ini pada berbagai sub-acara"
+                  value={effectivePreviewSubEvent}
+                  onChange={(e) => setPreviewSubEvent(e.target.value)}
+                  className="rounded-lg border border-stone-200 bg-white px-2 py-1 text-[11px] font-semibold text-stone-700 outline-none hover:border-stone-300 cursor-pointer"
+                >
+                  {(() => {
+                    const presets = spec.eventType === "PERSONAL" ? PERSONAL_SUB_EVENT_PRESETS : EVENT_SUB_EVENT_PRESETS;
+                    const customTag = (meta.subEvent ?? "").trim();
+                    const hasCustom = customTag && !presets.some((p) => p.id.toLowerCase() === customTag.toLowerCase());
+                    return (
+                      <>
+                        {hasCustom && <option value={customTag}>Uji: {customTag}</option>}
+                        {presets.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            Uji: {p.label}
+                          </option>
+                        ))}
+                      </>
+                    );
+                  })()}
+                </select>
+              )}
               <div className="flex shrink-0 items-center rounded-lg bg-stone-100 p-0.5" title="Contoh demo memakai foto dan data contoh; Klien baru meniru undangan yang belum diunggah apa pun; Foto uji memakai foto simulasi dari tab Foto uji">
                 {([["demo", "Contoh demo"], ["client", "Klien baru"], ["sim", "Foto uji"]] as const).map(([mode, label]) => (
                   <button
@@ -1468,7 +1596,7 @@ export default function ThemeBuilder({ themeId, fromId }: { themeId: string | nu
               <dl className="mt-4 space-y-2 text-[12px]">
                 <div className="flex justify-between gap-2"><dt className="text-stone-500">Kanvas</dt><dd className="font-semibold text-stone-800">{spec.canvasMode === "dark" ? "Gelap" : "Terang"}</dd></div>
                 <div className="flex justify-between gap-2"><dt className="text-stone-500">Judul</dt><dd className="font-semibold text-stone-800">{fontLabel(spec.fonts.heading)}</dd></div>
-                {familyVariantGroups(spec.eventType).map((g) => (
+                {layoutStylesForMode(spec.eventType).map((g) => (
                   <div key={g.key} className="flex justify-between gap-2"><dt className="text-stone-500">{g.label}</dt><dd className="font-semibold text-stone-800">{g.options.find((o) => o.id === spec.variants[g.key])?.label}</dd></div>
                 ))}
                 <div className="flex justify-between gap-2"><dt className="text-stone-500">Ornamen</dt><dd className="font-semibold text-stone-800">{spec.ornaments.length} / {MAX_ORNAMENTS}</dd></div>

@@ -403,33 +403,36 @@ describe.skipIf(!IS_TEST_DB)("Security Audit & Free Draft Overhaul (DB Integrati
 
     // With non-wedding eventType + explicit themeId (e.g. from /portfolio "Gunakan Tema Ini") -> 201
     const createRes = await freeDraftPost(
-      jsonReq("/api/client/invitations/free-draft", "POST", { eventType: "BIRTHDAY", themeId: "gala" }),
+      jsonReq("/api/client/invitations/free-draft", "POST", { eventType: "PERSONAL", subEvent: "Ulang Tahun", themeId: "gala" }),
     );
     const createBody = await createRes.json();
     expect(createRes.status, JSON.stringify(createBody)).toBe(201);
     const invId = createBody.invitation.id as string;
     cleanup.invitationIds.push(invId);
-    expect(createBody.invitation.eventType).toBe("BIRTHDAY");
+    expect(createBody.invitation.eventType).toBe("PERSONAL");
+    expect(createBody.invitation.subEvent).toBe("Ulang Tahun");
     expect(createBody.invitation.themeId).toBe("gala");
     expect(createBody.invitation.isFreeDraft).toBe(true);
 
-    // Switch between compatible non-wedding eventTypes preserves chosen non-wedding themeId
+    // Switch subEvent within PERSONAL preserves chosen themeId
     const changeNonWeddingRes = await clientInvitationPut(
       jsonReq(`/api/client/invitations/${invId}`, "PUT", {
-        action: "CHANGE_FREE_DRAFT_EVENT_TYPE",
-        eventType: "KHITAN",
+        action: "CHANGE_INVITATION_MODE",
+        eventType: "PERSONAL",
+        subEvent: "Khitanan",
       }),
       { params: Promise.resolve({ id: invId }) },
     );
     const changeNonWeddingBody = await changeNonWeddingRes.json();
     expect(changeNonWeddingRes.status, JSON.stringify(changeNonWeddingBody)).toBe(200);
-    expect(changeNonWeddingBody.invitation.eventType).toBe("KHITAN");
+    expect(changeNonWeddingBody.invitation.eventType).toBe("PERSONAL");
+    expect(changeNonWeddingBody.invitation.subEvent).toBe("Khitanan");
     expect(changeNonWeddingBody.invitation.themeId).toBe("gala");
 
-    // Switch eventType while Free Draft to WEDDING with explicit themeId -> 200
+    // Switch eventType while Draft to WEDDING with explicit themeId -> 200
     const changeRes = await clientInvitationPut(
       jsonReq(`/api/client/invitations/${invId}`, "PUT", {
-        action: "CHANGE_FREE_DRAFT_EVENT_TYPE",
+        action: "CHANGE_INVITATION_MODE",
         eventType: "WEDDING",
         themeId: "aeterna",
       }),
@@ -440,7 +443,7 @@ describe.skipIf(!IS_TEST_DB)("Security Audit & Free Draft Overhaul (DB Integrati
     expect(changeBody.invitation.eventType).toBe("WEDDING");
     expect(changeBody.invitation.themeId).toBe("aeterna");
 
-    // Edit customLabel & openingQuote, then switch theme within the SAME eventType via CHANGE_FREE_DRAFT_EVENT_TYPE -> preserves edited label & quote
+    // Edit customLabel & openingQuote, then switch theme within the SAME eventType via CHANGE_INVITATION_MODE -> preserves edited label & quote
     await clientInvitationPut(
       jsonReq(`/api/client/invitations/${invId}`, "PUT", {
         openingQuote: "Kutipan Kustom Klien",
@@ -452,7 +455,7 @@ describe.skipIf(!IS_TEST_DB)("Security Audit & Free Draft Overhaul (DB Integrati
     );
     const sameEventThemeChangeRes = await clientInvitationPut(
       jsonReq(`/api/client/invitations/${invId}`, "PUT", {
-        action: "CHANGE_FREE_DRAFT_EVENT_TYPE",
+        action: "CHANGE_INVITATION_MODE",
         eventType: "WEDDING",
         themeId: "kalandra",
       }),
@@ -484,12 +487,12 @@ describe.skipIf(!IS_TEST_DB)("Security Audit & Free Draft Overhaul (DB Integrati
     expect(invListData.invitations[0].isFreeDraft).toBe(true);
     expect(invListData.invitations[0].order).toBeNull();
 
-    // Paid invitation cannot use CHANGE_FREE_DRAFT_EVENT_TYPE -> 403
-    await prisma.invitation.update({ where: { id: invId }, data: { isFreeDraft: false } });
+    // Published invitation cannot use CHANGE_INVITATION_MODE -> 403
+    await prisma.invitation.update({ where: { id: invId }, data: { isFreeDraft: false, status: "PUBLISHED" } });
     const lockedRes = await clientInvitationPut(
       jsonReq(`/api/client/invitations/${invId}`, "PUT", {
-        action: "CHANGE_FREE_DRAFT_EVENT_TYPE",
-        eventType: "KHITAN",
+        action: "CHANGE_INVITATION_MODE",
+        eventType: "PERSONAL",
       }),
       { params: Promise.resolve({ id: invId }) },
     );
@@ -653,5 +656,168 @@ describe.skipIf(!IS_TEST_DB)("Security Audit & Free Draft Overhaul (DB Integrati
     const updated = await prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { passwordHash: true } });
     expect(await bcrypt.compare("SandiKedua#2026", updated.passwordHash!)).toBe(true);
     expect(await bcrypt.compare("SandiPertama#2026", updated.passwordHash!)).toBe(false);
+  });
+
+  it("Isolasi 3 Kategori Tegas & CHANGE_SUB_EVENT: tolak tema lintas kategori (400) dan izinkan ganti subEvent dinamis (termasuk kustom Tamatan Ngaji / Corporate) saat DRAFT", async () => {
+    const user = await prisma.user.create({
+      data: { email: `${RUN}_cat3@example.test`, name: "Klien 3 Kategori", role: "CLIENT" },
+    });
+    cleanup.userIds.push(user.id);
+    activeSession = { user: { id: user.id, email: user.email, role: "CLIENT", isAdmin: false, isRemote: false } };
+
+    // 1. Free Draft PERSONAL menolak tema WEDDING ("kalandra") & tema EVENT ("sinergi") dengan 400
+    const resRejectWed = await freeDraftPost(
+      jsonReq("/api/client/invitations/free-draft", "POST", { eventType: "PERSONAL", subEvent: "Ulang Tahun", themeId: "kalandra" }),
+    );
+    expect(resRejectWed.status).toBe(400);
+
+    const resRejectEvent = await freeDraftPost(
+      jsonReq("/api/client/invitations/free-draft", "POST", { eventType: "PERSONAL", subEvent: "Ulang Tahun", themeId: "sinergi" }),
+    );
+    expect(resRejectEvent.status).toBe(400);
+
+    // 2. Buat Draf Gratis PERSONAL dengan tema Personal "festivo" -> 201
+    const resCreate = await freeDraftPost(
+      jsonReq("/api/client/invitations/free-draft", "POST", { eventType: "PERSONAL", subEvent: "Ulang Tahun", themeId: "festivo" }),
+    );
+    expect(resCreate.status).toBe(201);
+    const createJson = await resCreate.json();
+    expect(createJson.invitation.eventType).toBe("PERSONAL");
+    expect(createJson.invitation.subEvent).toBe("Ulang Tahun");
+    expect(createJson.invitation.themeId).toBe("festivo");
+    const invId = createJson.invitation.id as string;
+    cleanup.invitationIds.push(invId);
+
+    // 3. Klien Personal bisa ganti ke tema Personal lain ("cendekia"), tapi ditolak 400 ke tema EVENT ("sinergi") atau WEDDING ("bugis")
+    const resPersonalOk = await clientInvitationPut(
+      jsonReq(`/api/client/invitations/${invId}`, "PUT", { themeId: "cendekia" }),
+      { params: Promise.resolve({ id: invId }) },
+    );
+    expect(resPersonalOk.status).toBe(200);
+
+    const resCrossEvent = await clientInvitationPut(
+      jsonReq(`/api/client/invitations/${invId}`, "PUT", { themeId: "sinergi" }),
+      { params: Promise.resolve({ id: invId }) },
+    );
+    expect(resCrossEvent.status).toBe(400);
+
+    const resCrossWed = await clientInvitationPut(
+      jsonReq(`/api/client/invitations/${invId}`, "PUT", { themeId: "bugis" }),
+      { params: Promise.resolve({ id: invId }) },
+    );
+    expect(resCrossWed.status).toBe(400);
+
+    // 4. Simulasikan undangan berbayar (isFreeDraft = false, status = DRAFT) dengan data peserta terisi:
+    //    klien tetap BISA ganti subEvent (termasuk kustom bebas "Tamatan Ngaji") via CHANGE_SUB_EVENT tanpa kehilangan tema & data tokoh!
+    await prisma.invitation.update({
+      where: { id: invId },
+      data: {
+        isFreeDraft: false,
+        participantsJson: {
+          person: { name: "Nadia Putri", nickname: "Nadia", detail: "Khatam 30 Juz", fatherName: "Bpk. Arman", motherName: "Ibu Lina" },
+        },
+      },
+    });
+    const resSubSwitch = await clientInvitationPut(
+      jsonReq(`/api/client/invitations/${invId}`, "PUT", {
+        action: "CHANGE_SUB_EVENT",
+        subEvent: "Tamatan Ngaji",
+      }),
+      { params: Promise.resolve({ id: invId }) },
+    );
+    expect(resSubSwitch.status).toBe(200);
+    const afterSub = await prisma.invitation.findUniqueOrThrow({ where: { id: invId } });
+    expect(afterSub.eventType).toBe("PERSONAL");
+    expect(afterSub.subEvent).toBe("Tamatan Ngaji");
+    expect(afterSub.themeId).toBe("cendekia");
+    const kept = afterSub.participantsJson as any;
+    expect(kept.person?.name).toBe("Nadia Putri");
+    expect(kept.person?.fatherName).toBe("Bpk. Arman");
+
+    // 5. Draf berbayar (isFreeDraft = false, status = DRAFT) dapat berpindah mode + tema secara atomik lewat CHANGE_INVITATION_MODE
+    const resPaidModeSwitch = await clientInvitationPut(
+      jsonReq(`/api/client/invitations/${invId}`, "PUT", {
+        action: "CHANGE_INVITATION_MODE",
+        eventType: "EVENT",
+        subEvent: "Grand Opening",
+        themeId: "sinergi",
+      }),
+      { params: Promise.resolve({ id: invId }) },
+    );
+    expect(resPaidModeSwitch.status).toBe(200);
+    const afterPaidMode = await prisma.invitation.findUniqueOrThrow({ where: { id: invId } });
+    expect(afterPaidMode.eventType).toBe("EVENT");
+    expect(afterPaidMode.subEvent).toBe("Grand Opening");
+    expect(afterPaidMode.themeId).toBe("sinergi");
+
+    // Pindah balik ke PERSONAL (Wisuda) dengan tema cendekia + seksi Kisah & Perjalanan Hidup (showStory ON vs OFF)
+    const resBackToWisuda = await clientInvitationPut(
+      jsonReq(`/api/client/invitations/${invId}`, "PUT", {
+        action: "CHANGE_INVITATION_MODE",
+        eventType: "PERSONAL",
+        subEvent: "Wisuda",
+        themeId: "cendekia",
+      }),
+      { params: Promise.resolve({ id: invId }) },
+    );
+    expect(resBackToWisuda.status).toBe(200);
+
+    const { composeTemplateData } = await import("@/lib/themeEngine");
+    const { renderTemplateFile } = await import("@/lib/renderTemplate");
+    await prisma.invitation.update({
+      where: { id: invId },
+      data: {
+        participantsJson: { person: { name: "Nadia Putri, S.Kom.", nickname: "Nadia" } },
+        loveStory: [
+          { title: "Awal Masuk Kuliah", date: "2022", content: "Memulai perjalanan di Fakultas Ilmu Komputer." },
+          { title: "Sidang Skripsi & Kelulusan", date: "2026", content: "Lulus dengan predikat Cum Laude." },
+        ],
+        featureSettings: { showStory: true, customLabels: { storyTitle: "Perjalanan Studi" } },
+      },
+    });
+    const htmlWithStory = await renderTemplateFile(
+      "cendekia",
+      (await composeTemplateData(invId)) as Record<string, unknown>,
+      { eventType: "PERSONAL" },
+    );
+    expect(htmlWithStory).toContain('id="story"');
+    expect(htmlWithStory).toContain("Perjalanan Studi");
+    expect(htmlWithStory).toContain("Awal Masuk Kuliah");
+    expect(htmlWithStory).toContain("Sidang Skripsi &amp; Kelulusan");
+
+    // Saat showStory dimatikan klien (false), seksi #story wajib 100% disembunyikan di hasil render
+    await prisma.invitation.update({
+      where: { id: invId },
+      data: {
+        featureSettings: { showStory: false, customLabels: { storyTitle: "Perjalanan Studi" } },
+      },
+    });
+    const htmlHiddenStory = await renderTemplateFile(
+      "cendekia",
+      (await composeTemplateData(invId)) as Record<string, unknown>,
+      { eventType: "PERSONAL" },
+    );
+    expect(htmlHiddenStory).not.toContain('id="story"');
+    expect(htmlHiddenStory).not.toContain("Awal Masuk Kuliah");
+
+    // 6. CHANGE_SUB_EVENT dan CHANGE_INVITATION_MODE menolak setelah PUBLISHED (403)
+    await prisma.invitation.update({ where: { id: invId }, data: { status: "PUBLISHED" } });
+    const resAfterPub = await clientInvitationPut(
+      jsonReq(`/api/client/invitations/${invId}`, "PUT", {
+        action: "CHANGE_SUB_EVENT",
+        subEvent: "Khitanan",
+      }),
+      { params: Promise.resolve({ id: invId }) },
+    );
+    expect(resAfterPub.status).toBe(403);
+    const resModeAfterPub = await clientInvitationPut(
+      jsonReq(`/api/client/invitations/${invId}`, "PUT", {
+        action: "CHANGE_INVITATION_MODE",
+        eventType: "WEDDING",
+        themeId: "kalandra",
+      }),
+      { params: Promise.resolve({ id: invId }) },
+    );
+    expect(resModeAfterPub.status).toBe(403);
   });
 });

@@ -45,14 +45,11 @@ export function validateThemeDefaultMedia(input: unknown): { ok: true; value: Th
 
 /** Salinan tema yang disimpan di undangan saat tema dipilih: media bawaan dan slot media yang dipakai tema. */
 export async function loadThemeMediaSnapshot(themeId: string) {
-  const theme = await prisma.theme.findUnique({ where: { id: themeId.toLowerCase() }, select: { defaultMedia: true, mediaSlots: true, parentTheme: true } });
-  let slots = parseThemeMediaSlots(theme?.mediaSlots);
-  // Varian Tema merender master induknya, jadi slot yang dipakai juga milik induk.
-  if (!slots && theme?.parentTheme) {
-    const parent = await prisma.theme.findUnique({ where: { id: theme.parentTheme }, select: { mediaSlots: true } });
-    slots = parseThemeMediaSlots(parent?.mediaSlots);
-  }
-  return { themeDefaultMedia: parseThemeDefaultMedia(theme?.defaultMedia), themeMediaSlots: slots };
+  const theme = await prisma.theme.findUnique({ where: { id: themeId.toLowerCase() }, select: { defaultMedia: true, mediaSlots: true } });
+  return {
+    themeDefaultMedia: parseThemeDefaultMedia(theme?.defaultMedia),
+    themeMediaSlots: parseThemeMediaSlots(theme?.mediaSlots),
+  };
 }
 
 interface MediaRow {

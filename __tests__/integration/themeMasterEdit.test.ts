@@ -1,6 +1,6 @@
 /**
- * Editor Master (/api/admin/theme-variants mode master): suntingan master tulisan tangan disimpan di masterOverrides
- * baris master itu sendiri, diterapkan saat render di bawah override varian, membeku di piring undangan, dan tidak
+ * Editor Master (/api/admin/master-editor): suntingan master tulisan tangan disimpan di masterOverrides
+ * baris master itu sendiri, diterapkan saat render, membeku di piring undangan, dan tidak
  * pernah menulis berkas master. Database luxenary_test; master Badrika dikembalikan ke aslinya di akhir.
  */
 import { describe, it, expect, vi, afterAll } from "vitest";
@@ -15,17 +15,16 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/themeThumbnailJob", () => ({ requestThemeThumbnails: vi.fn() }));
 
 import { prisma, pool } from "@/lib/prisma";
-import { GET, POST, PUT } from "@/app/api/admin/theme-variants/route";
+import { GET, POST, PUT } from "@/app/api/admin/master-editor/route";
 import { renderTemplateFile } from "@/lib/renderTemplate";
 import { composeInvitationData } from "@/lib/themeEngine";
 import { buildDemoInvitation } from "@/lib/demoInvitation";
-import { clearVariantCache, masterTokens } from "@/lib/themeVariants";
-import { masterImageRefs, masterSections } from "@/lib/themeVariantCss";
+import { clearMasterEditsCache, masterTokens } from "@/lib/masterEdits";
+import { masterImageRefs, masterSections } from "@/lib/masterOverrideCss";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
 const TAG = Date.now();
 const MASTER = "badrika";
-const VARIANT_ID = `vitest-master-edit-varian-${TAG}`;
 const OWNER_EMAIL = `vitest_master_edit_${TAG}@t.local`;
 const masterPath = path.join(process.cwd(), "themes/wedding/modern/badrika.html");
 const masterBefore = fs.readFileSync(masterPath, "utf-8");
@@ -35,7 +34,7 @@ const color = masterTokens(masterBefore).colors.find((t) => t.name.startsWith("-
 const REPLACEMENT = "/uploads/theme-assets/abcdefabcdefabcdefabcdef.webp";
 
 const req = (method: string, query = "", body?: unknown) =>
-  new NextRequest(`http://localhost/api/admin/theme-variants${query}`, { method, headers: { "content-type": "application/json" }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+  new NextRequest(`http://localhost/api/admin/master-editor${query}`, { method, headers: { "content-type": "application/json" }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
 
 async function renderMaster(themeId: string, invitationId?: string): Promise<string> {
   const data = (await composeInvitationData(buildDemoInvitation(MASTER, undefined, "WEDDING"))) as Record<string, any>;
@@ -45,9 +44,8 @@ async function renderMaster(themeId: string, invitationId?: string): Promise<str
 describe.skipIf(!IS_TEST_DB)("Editor Master", () => {
   afterAll(async () => {
     await prisma.theme.update({ where: { id: MASTER }, data: { masterOverrides: Prisma.DbNull } });
-    await prisma.theme.deleteMany({ where: { id: VARIANT_ID } });
     await prisma.user.deleteMany({ where: { email: OWNER_EMAIL } });
-    clearVariantCache();
+    clearMasterEditsCache();
     await prisma.$disconnect();
     await pool.end();
   });
@@ -57,8 +55,8 @@ describe.skipIf(!IS_TEST_DB)("Editor Master", () => {
     expect(section).toBeTruthy();
   });
 
-  it("GET ?master mengembalikan token, gambar, seksi, dan suntingan kosong", async () => {
-    const res = await GET(req("GET", `?master=${MASTER}`));
+  it("GET ?id mengembalikan token, gambar, seksi, dan suntingan kosong", async () => {
+    const res = await GET(req("GET", `?id=${MASTER}`));
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.master).toMatchObject({ id: MASTER, overrides: { colors: {}, fonts: {} } });
@@ -81,7 +79,7 @@ describe.skipIf(!IS_TEST_DB)("Editor Master", () => {
 
   it("simpan suntingan: render memakai gambar pengganti, seksi tersembunyi, CSS, dan warna; berkas master tidak berubah", async () => {
     const owner = await prisma.user.create({ data: { email: OWNER_EMAIL, name: "Uji Editor Master" } });
-    const { id: DRAFT_ID } = await prisma.invitation.create({ data: { userId: owner.id, themeId: MASTER, invitationSlug: `vitest-master-edit-${TAG}` } });
+    const { id: DRAFT_ID } = await prisma.invitation.create({ data: { userId: owner.id, themeId: MASTER, invitationSlug: `vitest-master-edit-${TAG}`, status: "PUBLISHED" } });
     const before = await renderMaster(MASTER, DRAFT_ID);
     expect(before).not.toContain(REPLACEMENT);
 
@@ -101,25 +99,11 @@ describe.skipIf(!IS_TEST_DB)("Editor Master", () => {
     expect(html).toContain(`${color.name}: #123456;`);
     expect(fs.readFileSync(masterPath, "utf-8")).toBe(masterBefore);
 
-    // Undangan yang dirender sebelum suntingan tetap memakai piring bekunya.
+    // Undangan PUBLISHED yang dirender sebelum suntingan tetap memakai piring bekunya.
     expect(await renderMaster(MASTER, DRAFT_ID)).not.toContain(REPLACEMENT);
-  });
 
-  it("varian mewarisi suntingan master; varian sendiri hanya boleh warna dan huruf", async () => {
-    expect((await POST(req("POST", "", { parentId: MASTER, name: `Vitest Master Edit Varian ${TAG}`, overrides: { colors: {}, fonts: {}, hiddenSections: [section] } }))).status).toBe(400);
-    const created = await POST(req("POST", "", { parentId: MASTER, name: `Vitest Master Edit Varian ${TAG}`, overrides: { colors: { [color.name]: "#abcdef" }, fonts: {} } }));
-    expect(created.status).toBe(200);
-    expect((await created.json()).id).toBe(VARIANT_ID);
-
-    const html = await renderMaster(VARIANT_ID);
-    expect(html).toContain(REPLACEMENT);
-    const edits = html.indexOf('<style id="lux-master-edits">');
-    const variant = html.indexOf('<style id="lux-master-overrides">');
-    expect(edits).toBeGreaterThan(-1);
-    expect(variant).toBeGreaterThan(edits);
-    expect(html.slice(variant)).toContain(`${color.name}: #abcdef;`);
-
-    const preview = await POST(req("POST", "?preview", { parentId: MASTER, overrides: { colors: {}, fonts: {} } }));
+    // Pratinjau POST ?preview menerapkan override langsung.
+    const preview = await POST(req("POST", "?preview", { masterId: MASTER, overrides }));
     expect((await preview.json()).html).toContain(REPLACEMENT);
   });
 

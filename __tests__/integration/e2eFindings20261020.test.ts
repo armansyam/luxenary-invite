@@ -72,7 +72,7 @@ describe.skipIf(!IS_TEST_DB)("mode galeri dialihkan di host yang sama", () => {
 
 describe.skipIf(!IS_TEST_DB)("ucapan terbaru pada tema satu nama", () => {
   it("halaman terbit memuat ucapan dari API saat dibuka, dengan teks tamu di-escape", async () => {
-    const inv = await makeInvitation("WISUDA", "toga", "PUBLISHED", { person: { name: "Bima Prasetya", nickname: "Bima" } });
+    const inv = await makeInvitation("PERSONAL", "toga", "PUBLISHED", { person: { name: "Bima Prasetya", nickname: "Bima" } });
     const html = await renderTemplateFile("toga", (await composeTemplateData(inv.id)) as any, { editMode: false, invitationId: inv.id });
     const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]).find((s) => s.includes("universalWishesList") && s.includes("/api/public/rsvp?invitationId="));
     expect(script, "skrip pemuat ucapan").toBeTruthy();

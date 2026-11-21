@@ -13,6 +13,7 @@ import { applyUpgradePlan } from "./upgradeHelper";
 import { participantNames } from "./participantUtils";
 import { releaseInvitationSubdomain } from "./subdomainRelease";
 import { deleteInvitationDraft } from "./invitationDraft";
+import { invalidateInvitationLookup } from "./cache";
 import { unshareFiles } from "./sharedFiles";
 import { SIM_MEDIA_MAX_AGE_DAYS } from "./themeBuilder/simSlots";
 
@@ -63,6 +64,7 @@ async function transitionFinishedInvitations(now: Date, settings: LifecycleSetti
       try {
         await buildAndSavePublishedHtml(inv.id);
         await prisma.invitation.update({ where: { id: inv.id }, data: { status: "EVENT_FINISHED" } });
+        invalidateInvitationLookup(inv.invitationSlug, inv.subdomain, inv.id);
         await purgeInvitationEdgeCache(inv);
       } catch (err) {
         logger.error(CONTEXT, "Transisi EVENT_FINISHED gagal; undangan lain tetap diproses", err, { invitationId: inv.id });
@@ -183,16 +185,19 @@ async function archiveExpiredInvitation(inv: ExpiredInvitation, nasEnabled: bool
 
   await deletePublishedHtml(inv.id);
   await deleteInvitationDraft(inv.id);
+  await fs.promises.rm(path.join(process.cwd(), "data", "drafts", `${inv.id}.html`), { force: true }).catch(() => {});
 
-  if (nasEnabled) {
-    const media = await prisma.invitationMedia.findMany({ where: { invitationId: inv.id }, select: { localPath: true } });
-    await Promise.all(media.map((item) => (isInvitationOwnedUpload(item.localPath, inv.id) ? deleteFile(item.localPath) : Promise.resolve(false))));
-    // QRIS, logo vendor, dan musik unggahan tidak tercatat di tabel media; arsip NAS sudah menyalinnya.
-    await deleteInvitationBucketObjects(inv.id);
-  }
+  const media = await prisma.invitationMedia.findMany({ where: { invitationId: inv.id }, select: { localPath: true } });
+  await Promise.all(media.map((item) => (isInvitationOwnedUpload(item.localPath, inv.id) ? deleteFile(item.localPath) : Promise.resolve(false))));
+  // QRIS, logo vendor, dan musik unggahan tidak tercatat di tabel media; bersihkan objek R2 & direktori lokal undangan.
+  await deleteInvitationBucketObjects(inv.id);
+  await fs.promises
+    .rm(path.join(process.cwd(), "public", "uploads", "invitations", inv.id), { recursive: true, force: true })
+    .catch(() => {});
 
   await prisma.rsvp.deleteMany({ where: { invitationId: inv.id } });
   await prisma.invitation.update({ where: { id: inv.id }, data: { status: "ARCHIVED", memoriesUploadLocked: true } });
+  invalidateInvitationLookup(inv.invitationSlug, inv.subdomain, inv.id);
   await purgeInvitationEdgeCache(inv);
   return null;
 }

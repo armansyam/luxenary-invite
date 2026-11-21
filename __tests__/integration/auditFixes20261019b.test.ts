@@ -13,7 +13,7 @@ import path from "path";
 let sessionUser: Record<string, unknown> | null = null;
 vi.mock("@/auth", () => ({ auth: vi.fn(async () => (sessionUser ? { user: sessionUser } : null)) }));
 
-import { prisma } from "@/lib/prisma";
+import { prisma, pool } from "@/lib/prisma";
 import { invalidateSettingsCache } from "@/lib/settings";
 import { createDatabaseSnapshot, restoreDatabaseSnapshot } from "@/lib/databaseBackup";
 import { GET as adminOverview } from "@/app/api/admin/overview/route";
@@ -70,6 +70,8 @@ describe.skipIf(!IS_TEST_DB)("perbaikan audit 19 Okt 2026", () => {
     await prisma.adminAuditLog.deleteMany({ where: { OR: [{ adminId: actingAdminId }, { details: { contains: TAG } }] } });
     await prisma.webhookLog.deleteMany({ where: { source: "admin", payload: { path: ["approvedBy"], equals: actingAdminId } } });
     await prisma.admin.deleteMany({ where: { OR: [{ id: actingAdminId }, { username: { startsWith: TAG.toLowerCase() } }] } });
+    await prisma.$disconnect();
+    await pool.end();
   });
 
   describe("1. order transfer manual berbukti", () => {

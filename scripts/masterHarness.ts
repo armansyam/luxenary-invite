@@ -16,7 +16,7 @@ export const arg = (name: string) => process.argv.find((a) => a.startsWith(`--${
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export const FREEZE = "<style>*,*::before,*::after{animation:none!important;transition:none!important}</style>";
 
-const EVENT_OF_DIR: Record<string, string> = { wedding: "WEDDING", birthday: "BIRTHDAY", khitan: "KHITAN", aqiqah: "AQIQAH", wisuda: "WISUDA", general: "GATHERING" };
+const EVENT_OF_DIR: Record<string, string> = { wedding: "WEDDING", personal: "PERSONAL", event: "EVENT" };
 
 export interface MasterFile { id: string; rel: string; eventType: string }
 

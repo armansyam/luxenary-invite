@@ -250,12 +250,16 @@ describe.skipIf(!IS_TEST_DB)("jadwal terima tamu (sesi isPrimary) sebagai patoka
 
   it("ulang tahun dan khitan menampilkan tanggal dari jadwal terima tamu, bukan sesi pertama", async () => {
     const { userId } = await makeClient("compose", "TIER_2", false);
-    for (const eventType of ["BIRTHDAY", "KHITAN"] as const) {
+    for (const [eventType, subEvent] of [
+      ["PERSONAL", "Ulang Tahun"],
+      ["PERSONAL", "Khitanan"],
+    ] as const) {
       const inv = await prisma.invitation.create({
         data: {
           userId,
           eventType,
-          invitationSlug: `${TAG}-c${eventType.toLowerCase()}`,
+          subEvent,
+          invitationSlug: `${TAG}-c${subEvent.toLowerCase().replace(/\s+/g, "-")}`,
           status: "DRAFT",
           eventData: [
             { title: "Pengajian", date: "2099-01-05", startTime: "08:00" },
@@ -265,8 +269,8 @@ describe.skipIf(!IS_TEST_DB)("jadwal terima tamu (sesi isPrimary) sebagai patoka
       });
       invitations.push(inv.id);
       const data: any = await composeTemplateData(inv.id);
-      expect(data.eventDateFormatted, eventType).toMatch(/10 Februari 2099/);
-      if (eventType === "BIRTHDAY") expect(data.targetDate).toMatch(/^2099-02-10T10:00/);
+      expect(data.eventDateFormatted, subEvent).toMatch(/10 Februari 2099/);
+      if (subEvent === "Ulang Tahun") expect(data.targetDate).toMatch(/^2099-02-10T10:00/);
     }
   });
 });
@@ -286,7 +290,8 @@ describe.skipIf(!IS_TEST_DB)("bug terbukti: jenis acara draf dapat diganti lewat
     }
     const second = await createPost(
       json("/api/client/invitations/create", "POST", {
-        eventType: "BIRTHDAY",
+        eventType: "PERSONAL",
+        subEvent: "Ulang Tahun",
         participantsJson: JSON.stringify({ person: { name: "Rani", nickname: "Rani", age: 7 } }),
         weddingDate: "2099-01-01",
         city: "Makassar",
@@ -300,7 +305,7 @@ describe.skipIf(!IS_TEST_DB)("bug terbukti: jenis acara draf dapat diganti lewat
     expect(resubmitStatus).toBe(409);
   });
 
-  it("jenis acara draf tetap WEDDING setelah pengiriman ulang dengan BIRTHDAY", async () => {
+  it("jenis acara draf tetap WEDDING setelah pengiriman ulang dengan PERSONAL", async () => {
     const row = await prisma.invitation.findUniqueOrThrow({ where: { id: invitationId } });
     expect(row.eventType).toBe("WEDDING");
   });
@@ -316,7 +321,8 @@ describe.skipIf(!IS_TEST_DB)("bug terbukti: buku tamu klien", () => {
       data: {
         userId: sessionUser!.id,
         invitationSlug: `${TAG}-bday`,
-        eventType: "BIRTHDAY",
+        eventType: "PERSONAL",
+        subEvent: "Ulang Tahun",
         status: "DRAFT",
       },
     });
@@ -413,10 +419,10 @@ describe.skipIf(!IS_TEST_DB)("nama tokoh utama acara non-pernikahan", () => {
   it("participantsJson dari studio tersimpan utuh dan menjadi sumber nama untuk audit terbit, resepsionis, dan QR", async () => {
     const { userId } = await makeClient("khitan", "TIER_2", false);
     const draft = await prisma.invitation.create({
-      data: { userId, eventType: "KHITAN", invitationSlug: `${TAG}-khitan`, status: "DRAFT" },
+      data: { userId, eventType: "PERSONAL", subEvent: "Khitanan", invitationSlug: `${TAG}-khitan`, status: "DRAFT" },
     });
     invitations.push(draft.id);
-    const participants = { child: { name: "Muhammad Fatih", nickname: "Fatih" }, parents: { father: "Hasan", mother: "Aminah" } };
+    const participants = { person: { name: "Muhammad Fatih", nickname: "Fatih" }, parents: { father: "Hasan", mother: "Aminah" } };
     const res = await invitationPut(json(`/api/client/invitations/${draft.id}`, "PUT", { participantsJson: JSON.stringify(participants) }), ctx(draft.id));
     expect(res.status).toBe(200);
     const row = await prisma.invitation.findUniqueOrThrow({ where: { id: draft.id } });
@@ -424,16 +430,17 @@ describe.skipIf(!IS_TEST_DB)("nama tokoh utama acara non-pernikahan", () => {
     expect(participantNames(row.eventType, row.participantsJson)).toEqual({ full: "Muhammad Fatih", short: "Fatih", first: "Fatih", second: "" });
   });
 
-  it("undangan khitan boleh memakai tema satu nama milik jenis acara lain, tetapi tidak tema pernikahan", async () => {
+  it("undangan personal boleh memakai semua tema dalam kategori PERSONAL, tetapi tidak tema WEDDING atau EVENT", async () => {
     const { userId } = await makeClient("khitantheme", "TIER_2", false);
     const draft = await prisma.invitation.create({
-      data: { userId, eventType: "KHITAN", themeId: "al-fariz", invitationSlug: `${TAG}-khitantheme`, status: "DRAFT" },
+      data: { userId, eventType: "PERSONAL", subEvent: "Khitanan", themeId: "al-fariz", invitationSlug: `${TAG}-khitantheme`, status: "DRAFT" },
     });
     invitations.push(draft.id);
     const put = (themeId: string) => invitationPut(json(`/api/client/invitations/${draft.id}`, "PUT", { themeId }), ctx(draft.id));
     expect((await put("festivo")).status).toBe(200);
     expect((await put("cendekia")).status).toBe(200);
     expect((await put("kalandra")).status).toBe(400);
+    expect((await put("sinergi")).status).toBe(400);
     expect((await prisma.invitation.findUniqueOrThrow({ where: { id: draft.id } })).themeId).toBe("cendekia");
   });
 });

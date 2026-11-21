@@ -8,7 +8,7 @@ import { normalizeEventDateInput } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { releaseInvitationSubdomain } from "@/lib/subdomainRelease";
 import { featureSettingsForThemeChange, loadThemeLabelContext } from "@/lib/themeLabels";
-import { DEFAULT_THEME_BY_EVENT, isThemeCompatible } from "@/lib/invitationUtils";
+import { DEFAULT_THEME_BY_EVENT, EVENT_TYPES, isThemeInMode, resolveSubEventMeta, sanitizeSubEvent } from "@/lib/invitationUtils";
 import { participantNames } from "@/lib/participantUtils";
 import { normalizeJsonInput } from "@/lib/jsonText";
 import { parseFeatureSettings } from "@/lib/featureSettings";
@@ -26,14 +26,13 @@ function slugify(text: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-const SINGLE_NAME_SLUG_SUFFIX: Record<string, string> = {
-  BIRTHDAY: "birthday",
-  KHITAN: "khitan",
-  AQIQAH: "aqiqah",
-  WISUDA: "wisuda",
-};
-
-function buildBaseSlug(eventType: string, participants: unknown, dateSegment: string, randomId: string): string {
+function buildBaseSlug(
+  eventType: string,
+  subEvent: string | null,
+  participants: unknown,
+  dateSegment: string,
+  randomId: string,
+): string {
   const withDate = (slug: string) => `${slug}${dateSegment ? `-${dateSegment}` : ""}`;
   const { first, second } = participantNames(eventType, participants);
 
@@ -43,10 +42,9 @@ function buildBaseSlug(eventType: string, participants: unknown, dateSegment: st
     if (!groom && !bride) return `undangan-${randomId}`;
     return withDate(`${groom || "mempelai"}-${bride || "mempelai"}`);
   }
-  if (eventType === "GATHERING") return withDate(slugify(first) || "gathering");
+  if (eventType === "EVENT") return withDate(slugify(first) || "acara");
 
-  const suffix = SINGLE_NAME_SLUG_SUFFIX[eventType];
-  if (!suffix) return `undangan-${randomId}`;
+  const suffix = resolveSubEventMeta("PERSONAL", subEvent).slugSuffix || "acara";
   return withDate(`${slugify(first) || suffix}-${suffix}`);
 }
 
@@ -113,15 +111,17 @@ export async function POST(req: Request) {
     resepsiTime,
     subdomain: requestedSubdomain,
     eventType: rawEventType,
+    subEvent: rawSubEvent,
     participantsJson,
   } = body;
 
-  const validEventTypes: EventType[] = ["WEDDING", "BIRTHDAY", "KHITAN", "AQIQAH", "WISUDA", "GATHERING"];
+  const validEventTypes: readonly EventType[] = [...EVENT_TYPES];
   const cleanType = typeof rawEventType === "string" ? rawEventType.trim().toUpperCase() : "";
   if (!validEventTypes.includes(cleanType as EventType)) {
     return NextResponse.json({ error: "Jenis acara wajib dipilih." }, { status: 400 });
   }
   const eventType = cleanType as EventType;
+  const subEvent = eventType === "WEDDING" ? null : sanitizeSubEvent(rawSubEvent);
 
   // Tema, label, dan data peserta draf dibangun untuk jenis acaranya; mengganti jenis acara di sini akan
   // menyisakan tema pernikahan pada acara lain.
@@ -142,24 +142,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "participantsJson harus berupa objek JSON yang valid." }, { status: 400 });
   }
 
+  let resolvedThemeId: string | null = null;
   if (themeId && typeof themeId === "string" && themeId.trim()) {
     const cleanThemeId = themeId.trim().toLowerCase();
-    const requestedTheme = await prisma.theme.findUnique({
-      where: { id: cleanThemeId },
-      select: { isActive: true, eventType: true, name: true },
+    const activeThemesForPick = await prisma.theme.findMany({
+      where: { isActive: true },
+      select: { id: true, eventType: true, name: true },
     });
-    if (!requestedTheme || !requestedTheme.isActive) {
+    const requestedTheme = activeThemesForPick.find((t) => t.id.toLowerCase() === cleanThemeId);
+    if (!requestedTheme) {
       return NextResponse.json(
         { error: "Tema yang dipilih tidak tersedia atau sedang dinonaktifkan." },
         { status: 400 }
       );
     }
-    if (!isThemeCompatible(requestedTheme.eventType, eventType)) {
+    if (!isThemeInMode(requestedTheme.eventType, eventType)) {
       return NextResponse.json(
-        { error: `Tema '${requestedTheme.name}' tidak dapat dipakai untuk jenis acara ini: tema pernikahan hanya untuk pernikahan, tema satu nama untuk acara lain.` },
+        { error: `Tema '${requestedTheme.name}' berasal dari mode undangan yang berbeda dan tidak dapat dipakai pada mode ini.` },
         { status: 400 }
       );
     }
+    resolvedThemeId = requestedTheme.id;
   }
 
   // Undangan baru tanpa pilihan tema memakai tema bawaan acaranya hanya bila tema itu aktif; selain itu tema aktif pertama
@@ -171,7 +174,7 @@ export async function POST(req: Request) {
       select: { id: true, eventType: true },
       orderBy: { sortOrder: "asc" },
     });
-    const compatible = activeThemes.filter((t) => isThemeCompatible(t.eventType, eventType));
+    const compatible = activeThemes.filter((t) => isThemeInMode(t.eventType, eventType));
     const pick = compatible.find((t) => t.id === fallbackTheme) ?? compatible.find((t) => t.eventType === eventType) ?? compatible[0];
     if (!pick) {
       return NextResponse.json({ error: "Belum ada tema aktif untuk jenis acara ini." }, { status: 400 });
@@ -201,8 +204,8 @@ export async function POST(req: Request) {
     dateSegment = getMonthYearSlug(effectiveEventDate);
   }
 
-  const builtSlug = buildBaseSlug(eventType, participants.value, dateSegment, randomId);
-  // Acara gathering tanpa tanggal dapat menghasilkan slug seperti "demo" yang kalah oleh rute aplikasi dan tidak terbuka.
+  const builtSlug = buildBaseSlug(eventType, subEvent, participants.value, dateSegment, randomId);
+  // Acara umum tanpa tanggal dapat menghasilkan slug seperti "demo" yang kalah oleh rute aplikasi dan tidak terbuka.
   const baseSlug = isReservedSlug(builtSlug) ? `${builtSlug}-${randomId}` : builtSlug;
 
   let invitationSlug = baseSlug;
@@ -292,17 +295,11 @@ export async function POST(req: Request) {
         },
       ];
     } else {
-      const eventTitleMap: Record<string, string> = {
-        BIRTHDAY: "Pesta Ulang Tahun",
-        KHITAN: "Syukuran Khitanan",
-        AQIQAH: "Tasyakuran Aqiqah",
-        WISUDA: "Syukuran Wisuda",
-        GATHERING: "Acara Gathering",
-      };
+      const subMeta = resolveSubEventMeta(eventType, subEvent);
       const mainTime = formatTimeWithTz(body.eventTime || resepsiTime || akadTime);
       initialEvents = [
         {
-          title: eventTitleMap[eventType] || "Acara Utama",
+          title: subMeta.agendaTitle || "Acara Utama",
           date: effectiveEventDate,
           time: mainTime,
           timezone: eventTimezone,
@@ -318,8 +315,8 @@ export async function POST(req: Request) {
 
   const invitationStatus = "DRAFT";
 
-  const chosenTheme = themeId?.trim() || fallbackTheme;
-  const { customDemoData, themeMeta, blueprint, defaultCoverBadge, initialCustomLabels } = await loadThemeLabelContext(chosenTheme, eventType);
+  const chosenTheme = resolvedThemeId || fallbackTheme;
+  const { customDemoData, themeMeta, blueprint, defaultCoverBadge, initialCustomLabels } = await loadThemeLabelContext(chosenTheme, eventType, subEvent);
 
   try {
     let invitation: { id: string; subdomain: string | null; status: string };
@@ -336,17 +333,17 @@ export async function POST(req: Request) {
       if (existingDraft) {
         const existingFs = parseFeatureSettings(existingDraft.featureSettings);
 
-        const isThemeChanged = Boolean(themeId?.trim() && themeId.trim().toLowerCase() !== existingDraft.themeId?.toLowerCase());
+        const isThemeChanged = Boolean(resolvedThemeId && resolvedThemeId.toLowerCase() !== existingDraft.themeId?.toLowerCase());
         const effectiveMusicUrl = isThemeChanged
           ? (initialMusicUrl || existingDraft.musicUrl || undefined)
           : (existingDraft.musicUrl || initialMusicUrl || undefined);
 
         // Ganti tema: label yang belum pernah diubah klien mengikuti tema baru; masuk ulang di tema sama tidak menyentuh label.
-        const themed = isThemeChanged ? await featureSettingsForThemeChange(existingFs, existingDraft.themeId, chosenTheme, eventType) : null;
+        const themed = isThemeChanged ? await featureSettingsForThemeChange(existingFs, existingDraft.themeId, chosenTheme, eventType, subEvent) : null;
         const mergedFs = {
           weddingTagline: themed ? themed.weddingTagline : (existingFs.weddingTagline || defaultCoverBadge),
           musicUrl: isThemeChanged ? (initialMusicUrl || existingFs.musicUrl || undefined) : (existingFs.musicUrl || existingDraft.musicUrl || initialMusicUrl || undefined),
-          showStory: existingFs.showStory !== undefined ? existingFs.showStory : (eventType === "WEDDING"),
+          showStory: existingFs.showStory !== undefined ? existingFs.showStory : true,
           showGallery: existingFs.showGallery !== undefined ? existingFs.showGallery : true,
           showGift: existingFs.showGift !== undefined ? existingFs.showGift : true,
           showDresscode: existingFs.showDresscode !== undefined ? existingFs.showDresscode : true,
@@ -363,10 +360,11 @@ export async function POST(req: Request) {
           data: {
             orderId: paidOrder?.id ?? existingDraft.orderId ?? undefined,
             eventType: eventType || existingDraft.eventType,
+            subEvent: rawSubEvent !== undefined ? subEvent : existingDraft.subEvent,
             participantsJson: participantsJson !== undefined ? participants.value : undefined,
             invitationSlug: invitationSlug || existingDraft.invitationSlug,
             subdomain: finalSubdomain !== null ? finalSubdomain : existingDraft.subdomain,
-            themeId: themeId?.trim() ? chosenTheme.toLowerCase() : (existingDraft.themeId || chosenTheme.toLowerCase()),
+            themeId: resolvedThemeId ? chosenTheme.toLowerCase() : (existingDraft.themeId || chosenTheme.toLowerCase()),
             musicUrl: effectiveMusicUrl,
             openingQuote: blueprint.openingQuote || existingDraft.openingQuote,
             openingQuoteRef: blueprint.openingQuoteRef || existingDraft.openingQuoteRef,
@@ -377,23 +375,25 @@ export async function POST(req: Request) {
           },
         });
       } else {
+        const subMeta = isWeddingEvent ? null : resolveSubEventMeta(eventType, subEvent);
         return tx.invitation.create({
           data: {
             userId: userId,
             orderId: paidOrder?.id ?? undefined,
             eventType: eventType,
+            subEvent,
             participantsJson: participants.value,
             musicUrl: initialMusicUrl || undefined,
             invitationSlug,
             subdomain: finalSubdomain,
             themeId: chosenTheme.toLowerCase(),
-            openingQuote: blueprint.openingQuote,
-            openingQuoteRef: blueprint.openingQuoteRef,
+            openingQuote: subMeta ? subMeta.defaultQuote : blueprint.openingQuote,
+            openingQuoteRef: subMeta ? subMeta.defaultQuoteRef : blueprint.openingQuoteRef,
             eventData: initialEvents,
             featureSettings: {
               weddingTagline: defaultCoverBadge,
               musicUrl: initialMusicUrl || undefined,
-              showStory: eventType === "WEDDING",
+              showStory: true,
               showGallery: true,
               showGift: true,
               showDresscode: true,

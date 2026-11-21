@@ -547,14 +547,15 @@ export default function GuestsPage() {
 
   const renderWaText = (guestName: string, guestLimit: number = 2, sessionInfo: string = defaultSessionInfo) => {
     const isWedding = !invitationData?.eventType || invitationData.eventType === "WEDDING";
-    const names = participantNames("WEDDING", invitationData?.participantsJson);
-    const groom = names.first || "Mempelai Pria";
-    const bride = names.second || "Mempelai Wanita";
+    const names = participantNames(invitationData?.eventType, invitationData?.participantsJson);
+    const displayName = resolveInvitationDisplayName(invitationData);
+    const groom = isWedding ? (names.first || "Mempelai Pria") : (names.first || displayName);
+    const bride = isWedding ? (names.second || "Mempelai Wanita") : "";
     
     const feat: Record<string, any> = invitationData?.featureSettings ?? {};
     const displayOrder = feat.displayOrder || "GROOM_FIRST";
     const weddingCouple = displayOrder === "BRIDE_FIRST" ? `${bride} & ${groom}` : `${groom} & ${bride}`;
-    const coupleName = isWedding ? weddingCouple : resolveInvitationDisplayName(invitationData);
+    const coupleName = isWedding ? weddingCouple : displayName;
 
     const isPublished = invitationData?.status === "PUBLISHED" || invitationData?.status === "EVENT_FINISHED";
     const resolved = isPublished

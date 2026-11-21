@@ -9,7 +9,7 @@ import { describe, it, expect, vi, afterAll } from "vitest";
 let sessionUser: Record<string, unknown> | null = null;
 vi.mock("@/auth", () => ({ auth: vi.fn(async () => (sessionUser ? { user: sessionUser } : null)) }));
 
-import { prisma } from "@/lib/prisma";
+import { prisma, pool } from "@/lib/prisma";
 import { adminActorEmail } from "@/lib/adminAuth";
 import { GET as profileGet, PUT as profilePut } from "@/app/api/admin/profile/route";
 
@@ -36,6 +36,8 @@ describe.skipIf(!IS_TEST_DB)("identitas admin selama mode remote (DB)", () => {
     sessionUser = null;
     await prisma.adminAuditLog.deleteMany({ where: { adminId: { in: adminIds } } });
     await prisma.admin.deleteMany({ where: { id: { in: adminIds } } });
+    await prisma.$disconnect();
+    await pool.end();
   });
 
   it("profil dan email default berasal dari admin yang bertindak, bukan klien yang dibuka", async () => {

@@ -9,10 +9,10 @@ const block = (src: string, start: string) => { const i = src.indexOf(start); re
 
 describe("keterbacaan teks master (18 Nov 2026)", () => {
   it("tema tanpa persona demo tidak meminjam foto latar halaman persona", () => {
-    const persona = DEMO_REGISTRY[DEFAULT_THEME_BY_EVENT.GATHERING];
+    const persona = DEMO_REGISTRY[DEFAULT_THEME_BY_EVENT.EVENT];
     expect(persona.globalBgUrl).not.toBe("");
-    expect(getDemoThemeData("kalandra-acara", "GATHERING").globalBgUrl).toBe("");
-    expect(getDemoThemeData(DEFAULT_THEME_BY_EVENT.GATHERING, "GATHERING").globalBgUrl).toBe(persona.globalBgUrl);
+    expect(getDemoThemeData("tema-builder-custom-uji", "EVENT").globalBgUrl).toBe("");
+    expect(getDemoThemeData(DEFAULT_THEME_BY_EVENT.EVENT, "EVENT").globalBgUrl).toBe(persona.globalBgUrl);
   });
 
   it("blok kartu buatan mesin memakai token kartu dengan cadangan token lama", () => {
@@ -32,15 +32,14 @@ describe("keterbacaan teks master (18 Nov 2026)", () => {
   });
 
   it("Burgundy Royale memakai lapisan krem di atas tekstur merah (teksnya gelap)", () => {
-    for (const rel of ["themes/wedding/modern/burgundy-royale.html", "themes/general/modern/burgundy-royale-acara.html"]) {
-      const scrim = read(rel).match(/\.scrim-canvas\s*\{([^}]*)\}/)?.[1] ?? "";
-      expect(scrim, rel).toContain("var(--bg-light) 95%");
-      expect(scrim, rel).not.toMatch(/background:\s*transparent/);
-    }
+    const rel = "themes/wedding/modern/burgundy-royale.html";
+    const scrim = read(rel).match(/\.scrim-canvas\s*\{([^}]*)\}/)?.[1] ?? "";
+    expect(scrim, rel).toContain("var(--bg-light) 95%");
+    expect(scrim, rel).not.toMatch(/background:\s*transparent/);
   });
 
   it("Nur (kartu krem, teks kanvas krem) mendefinisikan token teks kartu", () => {
-    const root = read("themes/khitan/traditional/nur.html").match(/:root\s*\{([^}]*)\}/)?.[1] ?? "";
+    const root = read("themes/personal/traditional/nur.html").match(/:root\s*\{([^}]*)\}/)?.[1] ?? "";
     expect(root).toMatch(/--card-text:\s*var\(--ink\)/);
   });
 });

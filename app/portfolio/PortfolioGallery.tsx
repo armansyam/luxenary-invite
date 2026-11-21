@@ -10,6 +10,7 @@ export interface PortfolioGalleryItem {
   themeName?: string;
   eventType?: string;
   canUseTheme?: boolean;
+  hasMultipleEvents?: boolean;
   category: "minimalist" | "traditional" | "modern" | string;
   coverImage: string;
   publicUrl: string;
@@ -21,14 +22,18 @@ interface PortfolioGalleryProps {
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
   WEDDING: "Pernikahan",
-  BIRTHDAY: "Ulang Tahun",
-  KHITAN: "Khitanan",
-  AQIQAH: "Aqiqah",
-  WISUDA: "Wisuda",
-  GATHERING: "Gathering",
+  PERSONAL: "Personal & Keluarga",
+  EVENT: "Acara & Event Umum",
 };
 
-const EVENT_FILTER_ORDER = ["WEDDING", "BIRTHDAY", "KHITAN", "AQIQAH", "WISUDA", "GATHERING"] as const;
+const EVENT_FILTER_ORDER = ["WEDDING", "PERSONAL", "EVENT"] as const;
+
+function normalizePortfolioEventType(raw?: string | null): "WEDDING" | "PERSONAL" | "EVENT" {
+  const upper = (raw || "WEDDING").trim().toUpperCase();
+  if (upper === "EVENT") return "EVENT";
+  if (upper === "PERSONAL") return "PERSONAL";
+  return "WEDDING";
+}
 
 const INITIAL_LIMIT = 18; // 6 columns x 3 rows = 18 items max on desktop
 
@@ -45,12 +50,12 @@ export function PortfolioGallery({ items }: PortfolioGalleryProps) {
   }, []);
 
   const availableEventTypes = EVENT_FILTER_ORDER.filter((ev) =>
-    items.some((item) => (item.eventType || "WEDDING").toUpperCase() === ev),
+    items.some((item) => normalizePortfolioEventType(item.eventType) === ev),
   );
 
   // Filter items by eventType first, then by category
   const eventFilteredItems = items.filter((item) => {
-    const itemEvent = (item.eventType || "WEDDING").toUpperCase();
+    const itemEvent = normalizePortfolioEventType(item.eventType);
     return selectedEvent === "all" || itemEvent === selectedEvent.toUpperCase();
   });
 
@@ -187,7 +192,7 @@ export function PortfolioGallery({ items }: PortfolioGalleryProps) {
       {/* 6-Columns Responsive Grid Layout (Desktop: 6 cols, Mobile: 2 cols, Tablet: 3-4 cols) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 sm:gap-4 lg:gap-5">
         {displayedItems.map((item) => {
-          const eventKey = (item.eventType || "WEDDING").toUpperCase();
+          const eventKey = normalizePortfolioEventType(item.eventType);
           const eventLabel = EVENT_TYPE_LABELS[eventKey] || eventKey;
           const displayThemeName = item.themeName || item.themeId;
 

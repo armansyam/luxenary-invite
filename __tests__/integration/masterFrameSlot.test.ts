@@ -11,7 +11,7 @@ import sharp from "sharp";
 import { applyMasterLayoutHtml, masterLayoutCss, parseMasterLayout, type MasterOrnament } from "@/lib/masterLayout";
 import { fitMasterOrnaments } from "@/lib/themeBuilder/frameWindow";
 import { renderTemplateFile } from "@/lib/renderTemplate";
-import { applyMasterOverridesTo } from "@/lib/themeVariantCss";
+import { applyMasterOverridesTo } from "@/lib/masterOverrideCss";
 import { buildDemoInvitation } from "@/lib/demoInvitation";
 import { composeInvitationData } from "@/lib/themeEngine";
 import { pool } from "@/lib/prisma";
@@ -38,12 +38,16 @@ describe("ornamen master berslot", () => {
     expect(out.ornaments![1].slot).toBeUndefined();
   });
 
-  it("HTML berslot memuat foto bertoken di dalam bingkai, ornamen biasa tetap <img>", () => {
-    const ornaments = [orn({ slot: "GROOM_PHOTO", fit: { l: 0.25, t: 0.2, r: 0.75, b: 0.8, aspect: 0.55 } }), orn({ id: "orntwo2" })] as MasterOrnament[];
+  it("HTML berslot memuat foto bertoken kanonikal per mode di dalam bingkai, ornamen biasa tetap <img>", () => {
+    const ornaments = [
+      orn({ slot: "GROOM_PHOTO", fit: { l: 0.25, t: 0.2, r: 0.75, b: 0.8, aspect: 0.55 } }),
+      orn({ id: "ornprof", slot: "PROFILE_PHOTO", fit: { l: 0.25, t: 0.2, r: 0.75, b: 0.8, aspect: 0.55 } }),
+      orn({ id: "orntwo2" }),
+    ] as MasterOrnament[];
     const html = applyMasterLayoutHtml(MASTER, { ornaments });
     expect(html).toContain('<div class="lux-mo lux-mo-slot" data-lux-mo="ornone1"');
-    expect(html).toContain('{{#if firstPhotoUrl}}<img class="lux-mo-photo" src="{{firstPhotoUrl}}" alt="" style="left:25%;top:20%;width:50%;height:60%;">{{/if}}');
-    expect(html).toContain("{{#if mainPhotoUrl}}");
+    expect(html).toContain('data-lux-mo="ornone1" aria-hidden="true" style="left:50%;top:50%;width:60%;opacity:1;transform:translate(-50%,-50%) rotate(0deg);z-index:6;">{{#if firstPhotoUrl}}<img class="lux-mo-photo" src="{{firstPhotoUrl}}" alt="" style="left:25%;top:20%;width:50%;height:60%;">{{/if}}<img class="lux-mo-frame"');
+    expect(html).toContain('data-lux-mo="ornprof" aria-hidden="true" style="left:50%;top:50%;width:60%;opacity:1;transform:translate(-50%,-50%) rotate(0deg);z-index:6;">{{#if mainPhotoUrl}}<img class="lux-mo-photo" src="{{mainPhotoUrl}}" alt="" style="left:25%;top:20%;width:50%;height:60%;">{{/if}}<img class="lux-mo-frame"');
     expect(html).toMatch(/<img class="lux-mo" data-lux-mo="orntwo2" src="\/assets\/ornaments\/flowers\/flower-tl\.webp"/);
     expect(masterLayoutCss({ ornaments })).toContain(".lux-mo-slot .lux-mo-photo");
   });

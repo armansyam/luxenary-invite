@@ -1,11 +1,22 @@
 "use client";
 
 import { useState, useEffect, Suspense, useRef } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { DEFAULT_PLAN_NAMES } from "@/lib/planUtils";
-import { isThemeCompatible, selectableEventTypes, sortThemesForEvent } from "@/lib/invitationUtils";
+import {
+  EVENT_TYPE_LABELS,
+  PERSONAL_SUB_EVENT_PRESETS,
+  EVENT_SUB_EVENT_PRESETS,
+  extractSubEventOptions,
+  isThemeInMode,
+  resolveSubEventMeta,
+  sanitizeSubEvent,
+  selectableEventTypes,
+  sortThemesForEvent,
+} from "@/lib/invitationUtils";
 import { getApexRootDomain } from "@/lib/domainUtils";
 
 // Di HP baris tombol menempel di bawah layar: langkah tema bisa setinggi belasan layar, dan tombol selesai
@@ -72,6 +83,7 @@ function SetupWizardContent() {
   const queryOrder = searchParams.get("order");
   const queryTheme = searchParams.get("theme")?.trim().toLowerCase() || "";
   const queryEvent = searchParams.get("event")?.trim().toUpperCase() || "";
+  const querySubEvent = searchParams.get("subEvent")?.trim() || "";
 
   const [currentPlan, setCurrentPlan] = useState<string>(queryPlan?.toUpperCase() || "");
   const [planNames, setPlanNames] = useState<Record<string, string>>({
@@ -84,6 +96,8 @@ function SetupWizardContent() {
   const [eventOptionsFailed, setEventOptionsFailed] = useState(false);
 
   const [eventType, setEventType] = useState<string>("");
+  const [subEvent, setSubEvent] = useState<string>("");
+  const [customSubEventMode, setCustomSubEventMode] = useState<boolean>(false);
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,9 +109,10 @@ function SetupWizardContent() {
   const [groomName, setGroomName] = useState("");
   const [brideName, setBrideName] = useState("");
 
-  // Form State: Non-Wedding Persona
+  // Form State: Personal & Event Persona
   const [personName, setPersonName] = useState("");
   const [personNickname, setPersonNickname] = useState("");
+  const [personDetail, setPersonDetail] = useState("");
   const [personAge, setPersonAge] = useState("");
   const [fatherName, setFatherName] = useState("");
   const [motherName, setMotherName] = useState("");
@@ -121,6 +136,7 @@ function SetupWizardContent() {
   const [resepsiEnd, setResepsiEnd] = useState("");
   const [themeId, setThemeId] = useState("");
   const [activeCategory, setActiveCategory] = useState<"all" | "minimalist" | "modern" | "traditional">("all");
+  const [subEventFilter, setSubEventFilter] = useState<string>("all");
 
   const [isDraftLoaded, setIsDraftLoaded] = useState(false);
   const queryThemeAppliedRef = useRef(false);
@@ -149,13 +165,25 @@ function SetupWizardContent() {
       const saved = session?.user?.id ? localStorage.getItem(draftKey) : null;
       if (saved) {
         const draft = JSON.parse(saved);
-        if (draft.eventType) setEventType(draft.eventType);
+        if (draft.eventType) {
+          const rawEv = String(draft.eventType).toUpperCase();
+          if (rawEv === "EVENT") {
+            setEventType("EVENT");
+            if (draft.subEvent) setSubEvent(draft.subEvent);
+          } else if (rawEv === "PERSONAL") {
+            setEventType("PERSONAL");
+            if (draft.subEvent) setSubEvent(draft.subEvent);
+          } else {
+            setEventType("WEDDING");
+          }
+        }
         if (draft.groomNickname) setGroomNickname(draft.groomNickname);
         if (draft.brideNickname) setBrideNickname(draft.brideNickname);
         if (draft.groomName) setGroomName(draft.groomName);
         if (draft.brideName) setBrideName(draft.brideName);
         if (draft.personName) setPersonName(draft.personName);
         if (draft.personNickname) setPersonNickname(draft.personNickname);
+        if (draft.personDetail) setPersonDetail(draft.personDetail);
         if (draft.personAge) setPersonAge(draft.personAge);
         if (draft.fatherName) setFatherName(draft.fatherName);
         if (draft.motherName) setMotherName(draft.motherName);
@@ -184,9 +212,9 @@ function SetupWizardContent() {
   useEffect(() => {
     if (!isDraftLoaded || !session?.user?.id) return;
     const draft = {
-      eventType,
+      eventType, subEvent,
       groomNickname, brideNickname, groomName, brideName,
-      personName, personNickname, personAge, fatherName, motherName,
+      personName, personNickname, personDetail, personAge, fatherName, motherName,
       degree, major, institution, eventTitle, eventSubtitle, organizer,
       weddingDate, city, timeZone,
       akadStart, akadEnd, resepsiStart, resepsiEnd, themeId, step,
@@ -195,9 +223,9 @@ function SetupWizardContent() {
   }, [
     draftKey,
     session?.user?.id,
-    eventType,
+    eventType, subEvent,
     groomNickname, brideNickname, groomName, brideName,
-    personName, personNickname, personAge, fatherName, motherName,
+    personName, personNickname, personDetail, personAge, fatherName, motherName,
     degree, major, institution, eventTitle, eventSubtitle, organizer,
     weddingDate, city, timeZone,
     akadStart, akadEnd, resepsiStart, resepsiEnd, themeId, step, isDraftLoaded,
@@ -291,6 +319,7 @@ function SetupWizardContent() {
     if (!queryThemeAppliedRef.current) {
       let effectiveQueryTheme = queryTheme;
       let effectiveQueryEvent = queryEvent;
+      let effectiveQuerySubEvent = querySubEvent;
       if (!effectiveQueryTheme) {
         try {
           const pendingRaw = sessionStorage.getItem("lux_pending_setup_theme");
@@ -298,6 +327,7 @@ function SetupWizardContent() {
             const pending = JSON.parse(pendingRaw);
             if (typeof pending?.themeId === "string") effectiveQueryTheme = pending.themeId.trim().toLowerCase();
             if (typeof pending?.eventType === "string") effectiveQueryEvent = pending.eventType.trim().toUpperCase();
+            if (typeof pending?.subEvent === "string" && !effectiveQuerySubEvent) effectiveQuerySubEvent = pending.subEvent.trim();
             sessionStorage.removeItem("lux_pending_setup_theme");
           }
         } catch {}
@@ -306,7 +336,7 @@ function SetupWizardContent() {
         queryThemeAppliedRef.current = true;
         const matchedTheme = themesList.find((t: any) => String(t.id || "").toLowerCase() === effectiveQueryTheme);
         if (matchedTheme) {
-          const compatibleEvents = selectableEvents.filter((ev) => isThemeCompatible(matchedTheme.eventType, ev));
+          const compatibleEvents = selectableEvents.filter((ev) => isThemeInMode(matchedTheme.eventType, ev));
           if (compatibleEvents.length > 0) {
             const targetEv =
               effectiveQueryEvent && compatibleEvents.includes(effectiveQueryEvent)
@@ -317,17 +347,29 @@ function SetupWizardContent() {
                 ? String(matchedTheme.eventType).toUpperCase()
                 : compatibleEvents[0];
             setEventType(targetEv);
+            if (targetEv !== "WEDDING") {
+              setSubEvent(
+                effectiveQuerySubEvent ||
+                  matchedTheme.subEvent ||
+                  (targetEv === "PERSONAL" ? PERSONAL_SUB_EVENT_PRESETS[0].id : EVENT_SUB_EVENT_PRESETS[0].id),
+              );
+            } else {
+              setSubEvent("");
+            }
             setThemeId(matchedTheme.id);
             return;
           }
         }
       }
     }
-    if (!eventType && selectableEvents.length === 1) setEventType(selectableEvents[0]);
+    if (!eventType && selectableEvents.length === 1) {
+      const singleEv = selectableEvents[0];
+      setEventType(singleEv);
+      if (singleEv === "PERSONAL") setSubEvent(PERSONAL_SUB_EVENT_PRESETS[0].id);
+      else if (singleEv === "EVENT") setSubEvent(EVENT_SUB_EVENT_PRESETS[0].id);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eventOptionsReady, isDraftLoaded, eventType, selectableKey, queryTheme, queryEvent]);
-
-
+  }, [eventOptionsReady, isDraftLoaded, eventType, selectableKey, queryTheme, queryEvent, querySubEvent]);
 
   const handleCompleteSetup = async () => {
     if (!eventType) {
@@ -351,50 +393,30 @@ function SetupWizardContent() {
           nickname: brideNickname.trim() || brideName.trim(),
         },
       });
-    } else if (eventType === "BIRTHDAY") {
+    } else if (eventType === "PERSONAL") {
+      const detailLine =
+        personDetail.trim() ||
+        [degree.trim(), major.trim(), institution.trim()].filter(Boolean).join(" · ") ||
+        (personAge.trim() ? `${personAge.trim()} Tahun` : "");
       participantsJson = JSON.stringify({
         person: {
           name: personName.trim() || personNickname.trim(),
           nickname: personNickname.trim() || personName.trim(),
-          age: personAge.trim() ? parseInt(personAge.trim(), 10) : undefined,
+          detail: detailLine || undefined,
+          age: personAge.trim() && /^\d+$/.test(personAge.trim()) ? parseInt(personAge.trim(), 10) : undefined,
           fatherName: fatherName.trim() || undefined,
           motherName: motherName.trim() || undefined,
         },
+        ...(fatherName.trim() || motherName.trim()
+          ? {
+              parents: {
+                father: fatherName.trim() || undefined,
+                mother: motherName.trim() || undefined,
+              },
+            }
+          : {}),
       });
-    } else if (eventType === "KHITAN") {
-      participantsJson = JSON.stringify({
-        child: {
-          name: personName.trim() || personNickname.trim(),
-          nickname: personNickname.trim() || personName.trim(),
-          age: personAge.trim() ? parseInt(personAge.trim(), 10) : undefined,
-        },
-        parents: {
-          father: fatherName.trim() || undefined,
-          mother: motherName.trim() || undefined,
-        },
-      });
-    } else if (eventType === "AQIQAH") {
-      participantsJson = JSON.stringify({
-        baby: {
-          name: personName.trim() || personNickname.trim(),
-          nickname: personNickname.trim() || personName.trim(),
-        },
-        parents: {
-          father: fatherName.trim() || undefined,
-          mother: motherName.trim() || undefined,
-        },
-      });
-    } else if (eventType === "WISUDA") {
-      participantsJson = JSON.stringify({
-        person: {
-          name: personName.trim() || personNickname.trim(),
-          nickname: personNickname.trim() || personName.trim(),
-          degree: degree.trim() || undefined,
-          major: major.trim() || undefined,
-          institution: institution.trim() || undefined,
-        },
-      });
-    } else if (eventType === "GATHERING") {
+    } else if (eventType === "EVENT") {
       participantsJson = JSON.stringify({
         event: {
           title: eventTitle.trim(),
@@ -404,12 +426,15 @@ function SetupWizardContent() {
       });
     }
 
+    const cleanSubEvent = eventType === "WEDDING" ? null : sanitizeSubEvent(subEvent);
+
     try {
       const res = await fetch("/api/client/invitations/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           eventType,
+          ...(cleanSubEvent ? { subEvent: cleanSubEvent } : {}),
           participantsJson,
           weddingDate,
           eventDate: weddingDate,
@@ -532,101 +557,201 @@ function SetupWizardContent() {
               </p>
             )}
 
-            <div className={`grid gap-4 ${selectableEvents.length === 1 ? "grid-cols-1 max-w-sm mx-auto" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`}>
-              {[
-                {
-                  id: "WEDDING",
-                  title: "Pernikahan",
-                  subtitle: "Akad, pemberkatan & resepsi sakral",
-                  icon: (
-                    <svg className="w-6 h-6 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                  ),
-                },
-                {
-                  id: "BIRTHDAY",
-                  title: "Ulang Tahun",
-                  subtitle: "Sweet seventeen, milad & perayaan pesta",
-                  icon: (
-                    <svg className="w-6 h-6 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 15.546c-.523 0-1.046.151-1.5.454a2.704 2.704 0 01-3 0 2.704 2.704 0 00-3 0 2.704 2.704 0 01-3 0 2.704 2.704 0 00-3 0 2.704 2.704 0 01-3 0 2.701 2.701 0 00-1.5-.454M9 6v2m3-2v2m3-2v2M9 3h.01M12 3h.01M15 3h.01M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-                    </svg>
-                  ),
-                },
-                {
-                  id: "KHITAN",
-                  title: "Khitanan",
-                  subtitle: "Tasyakuran & walimatul khitan putra",
-                  icon: (
-                    <svg className="w-6 h-6 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                    </svg>
-                  ),
-                },
-                {
-                  id: "AQIQAH",
-                  title: "Aqiqah",
-                  subtitle: "Tasyakuran kelahiran & doa buah hati",
-                  icon: (
-                    <svg className="w-6 h-6 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
-                    </svg>
-                  ),
-                },
-                {
-                  id: "WISUDA",
-                  title: "Wisuda & Kelulusan",
-                  subtitle: "Syukuran wisuda & gelar akademik",
-                  icon: (
-                    <svg className="w-6 h-6 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" />
-                    </svg>
-                  ),
-                },
-                {
-                  id: "GATHERING",
-                  title: "Gathering & Reuni",
-                  subtitle: "Temu kangen, seminar & acara komunitas",
-                  icon: (
-                    <svg className="w-6 h-6 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                  ),
-                },
-              ].filter((item) => selectableEvents.includes(item.id)).map((item) => {
-                const isSelected = eventType === item.id;
-                return (
-                  <div
-                    key={item.id}
-                    onClick={() => {
-                      setEventType(item.id);
-                      setThemeId("");
-                    }}
-                    className={`p-5 rounded-2xl border cursor-pointer transition-all duration-200 flex flex-col justify-between ${
-                      isSelected
-                        ? "border-amber-800 bg-amber-50/40 ring-2 ring-amber-800/20 shadow-sm"
-                        : "border-stone-200 bg-white hover:border-stone-400 hover:shadow-xs"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-amber-100/60 flex items-center justify-center">
-                        {item.icon}
+            {(() => {
+              const allowWedding = selectableEvents.includes("WEDDING");
+              const allowPersonal = selectableEvents.includes("PERSONAL");
+              const allowEvent = selectableEvents.includes("EVENT");
+              const visibleCategoryCount = [allowWedding, allowPersonal, allowEvent].filter(Boolean).length;
+              const activePresets = eventType === "PERSONAL" ? PERSONAL_SUB_EVENT_PRESETS : EVENT_SUB_EVENT_PRESETS;
+              const activeMeta = eventType === "PERSONAL" || eventType === "EVENT" ? resolveSubEventMeta(eventType, subEvent) : null;
+
+              return (
+                <div className="space-y-4">
+                  <div className={`grid gap-4 ${visibleCategoryCount === 1 ? "grid-cols-1 max-w-sm mx-auto" : "grid-cols-1 sm:grid-cols-3"}`}>
+                    {allowWedding && (
+                      <div
+                        onClick={() => {
+                          if (eventType !== "WEDDING") setThemeId("");
+                          setEventType("WEDDING");
+                          setSubEvent("");
+                          setCustomSubEventMode(false);
+                        }}
+                        className={`p-5 rounded-2xl border cursor-pointer transition-all duration-200 flex flex-col justify-between ${
+                          eventType === "WEDDING"
+                            ? "border-amber-800 bg-amber-50/40 ring-2 ring-amber-800/20 shadow-sm"
+                            : "border-stone-200 bg-white hover:border-stone-400 hover:shadow-xs"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="w-10 h-10 rounded-xl bg-amber-100/60 flex items-center justify-center">
+                            <svg className="w-6 h-6 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                            </svg>
+                          </div>
+                          {eventType === "WEDDING" && (
+                            <span className="w-5 h-5 rounded-full bg-amber-800 text-white flex items-center justify-center text-[10px] font-bold">
+                              ✓
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 block mb-0.5">2 Profil Mempelai</span>
+                          <h3 className="text-base font-serif font-bold text-stone-900">Pernikahan</h3>
+                          <p className="text-xs text-stone-500 mt-1 leading-snug">Akad, pemberkatan, resepsi, &amp; ngunduh mantu</p>
+                        </div>
                       </div>
-                      {isSelected && (
-                        <span className="w-5 h-5 rounded-full bg-amber-800 text-white flex items-center justify-center text-[10px] font-bold">
-                          ✓
+                    )}
+
+                    {allowPersonal && (
+                      <div
+                        onClick={() => {
+                          if (eventType !== "PERSONAL") {
+                            setThemeId("");
+                            setEventType("PERSONAL");
+                            setSubEvent(PERSONAL_SUB_EVENT_PRESETS[0].id);
+                            setCustomSubEventMode(false);
+                          }
+                        }}
+                        className={`p-5 rounded-2xl border cursor-pointer transition-all duration-200 flex flex-col justify-between ${
+                          eventType === "PERSONAL"
+                            ? "border-amber-800 bg-amber-50/40 ring-2 ring-amber-800/20 shadow-sm"
+                            : "border-stone-200 bg-white hover:border-stone-400 hover:shadow-xs"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="w-10 h-10 rounded-xl bg-amber-100/60 flex items-center justify-center">
+                            <svg className="w-6 h-6 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                          </div>
+                          {eventType === "PERSONAL" && (
+                            <span className="w-5 h-5 rounded-full bg-amber-800 text-white flex items-center justify-center text-[10px] font-bold">
+                              ✓
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 block mb-0.5">1 Profil Tokoh</span>
+                          <h3 className="text-base font-serif font-bold text-stone-900">Personal &amp; Keluarga</h3>
+                          <p className="text-xs text-stone-500 mt-1 leading-snug">Ulang Tahun, Khitanan, Aqiqah, Wisuda, Tamatan Ngaji, &amp; acara personal lainnya</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {allowEvent && (
+                      <div
+                        onClick={() => {
+                          if (eventType !== "EVENT") {
+                            setThemeId("");
+                            setEventType("EVENT");
+                            setSubEvent(EVENT_SUB_EVENT_PRESETS[0].id);
+                            setCustomSubEventMode(false);
+                          }
+                        }}
+                        className={`p-5 rounded-2xl border cursor-pointer transition-all duration-200 flex flex-col justify-between ${
+                          eventType === "EVENT"
+                            ? "border-amber-800 bg-amber-50/40 ring-2 ring-amber-800/20 shadow-sm"
+                            : "border-stone-200 bg-white hover:border-stone-400 hover:shadow-xs"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="w-10 h-10 rounded-xl bg-amber-100/60 flex items-center justify-center">
+                            <svg className="w-6 h-6 text-amber-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                          </div>
+                          {eventType === "EVENT" && (
+                            <span className="w-5 h-5 rounded-full bg-amber-800 text-white flex items-center justify-center text-[10px] font-bold">
+                              ✓
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 block mb-0.5">Non-Personal</span>
+                          <h3 className="text-base font-serif font-bold text-stone-900">Acara &amp; Event Umum</h3>
+                          <p className="text-xs text-stone-500 mt-1 leading-snug">Corporate, Grand Opening, seminar, workshop, gathering, reuni, &amp; syukuran</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Pilihan sub-acara dinamis (Preset + Tulis Sendiri) untuk PERSONAL maupun EVENT */}
+                  {(eventType === "PERSONAL" || eventType === "EVENT") && (
+                    <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/50 border border-amber-200/80 space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                        <div>
+                          <p className="text-xs font-bold text-amber-950">
+                            {eventType === "PERSONAL"
+                              ? "Pilih Sub-Acara Personal & Keluarga (atau Tulis Sendiri)"
+                              : "Pilih Sub-Acara Event Umum (atau Tulis Sendiri)"}
+                          </p>
+                          <p className="text-[11px] text-stone-600">
+                            {activeMeta?.hint || "Menyesuaikan formulir & teks undangan; dapat diganti kapan saja di Studio selama status Draf."}
+                          </p>
+                        </div>
+                        <span className="text-[10px] font-semibold text-amber-900 bg-white border border-amber-200 px-2.5 py-0.5 rounded-full w-fit">
+                          Bisa diganti saat Draf
                         </span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {activePresets.map((preset) => {
+                          const activeSub = !customSubEventMode && subEvent.toLowerCase() === preset.id.toLowerCase();
+                          return (
+                            <button
+                              key={preset.id}
+                              type="button"
+                              onClick={() => {
+                                setCustomSubEventMode(false);
+                                setSubEvent(preset.id);
+                              }}
+                              className={`px-4 py-2 rounded-full text-xs font-bold transition cursor-pointer ${
+                                activeSub
+                                  ? "bg-amber-900 text-white shadow-xs"
+                                  : "bg-white text-stone-700 border border-stone-200 hover:border-amber-400"
+                              }`}
+                            >
+                              {preset.label}
+                            </button>
+                          );
+                        })}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCustomSubEventMode(true);
+                            if (activePresets.some((p) => p.id.toLowerCase() === subEvent.toLowerCase())) {
+                              setSubEvent("");
+                            }
+                          }}
+                          className={`px-4 py-2 rounded-full text-xs font-bold transition cursor-pointer ${
+                            customSubEventMode
+                              ? "bg-amber-900 text-white shadow-xs"
+                              : "bg-white text-amber-900 border border-dashed border-amber-400 hover:bg-amber-50"
+                          }`}
+                        >
+                          + Lainnya (Tulis Sendiri)
+                        </button>
+                      </div>
+                      {customSubEventMode && (
+                        <div>
+                          <input
+                            type="text"
+                            value={subEvent}
+                            onChange={(e) => setSubEvent(e.target.value)}
+                            maxLength={50}
+                            placeholder={
+                              eventType === "PERSONAL"
+                                ? "Contoh: Tamatan Ngaji, Tedak Siten, Tasyakuran Haji..."
+                                : "Contoh: Rapat Kerja Nasional, Malam Keakraban, Awarding Night..."
+                            }
+                            className="w-full px-4 py-2.5 bg-white border border-amber-300 rounded-xl text-sm font-semibold text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                          />
+                        </div>
                       )}
                     </div>
-                    <div>
-                      <h3 className="text-base font-serif font-bold text-stone-900">{item.title}</h3>
-                      <p className="text-xs text-stone-500 mt-1 leading-snug">{item.subtitle}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  )}
+                </div>
+              );
+            })()}
 
             <div className={`${WIZARD_ACTION_BAR} justify-end`}>
               <button
@@ -718,336 +843,104 @@ function SetupWizardContent() {
               </>
             )}
 
-            {/* BIRTHDAY */}
-            {eventType === "BIRTHDAY" && (
+            {/* PERSONAL (Unified 1-Profile Form + Dynamic Sub-Event Meta) */}
+            {eventType === "PERSONAL" && (() => {
+              const personalMeta = resolveSubEventMeta("PERSONAL", subEvent);
+              return (
+                <>
+                  <div className="text-center space-y-2">
+                    <span className="text-xs font-bold text-amber-800 uppercase tracking-widest">
+                      Langkah 2 {subEvent ? `· ${subEvent}` : ""}
+                    </span>
+                    <h1 className="text-2xl sm:text-3xl font-serif font-bold text-stone-900">
+                      Profil Tokoh &amp; Keluarga
+                    </h1>
+                    <p className="text-xs sm:text-sm text-stone-500 max-w-md mx-auto">
+                      Masukkan nama tokoh utama dan keterangan acara untuk tajuk utama undangan.
+                    </p>
+                  </div>
+
+                  <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                          Nama Panggilan
+                        </label>
+                        <input
+                          type="text"
+                          value={personNickname}
+                          onChange={(e) => setPersonNickname(e.target.value)}
+                          placeholder={personalMeta.personNicknamePlaceholder}
+                          className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                          {personalMeta.detailLabel} <span className="text-stone-400 font-normal">(opsional)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={personDetail}
+                          onChange={(e) => setPersonDetail(e.target.value)}
+                          placeholder={personalMeta.detailPlaceholder}
+                          className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-stone-600 mb-1.5">
+                        {personalMeta.personNameLabel} <span className="text-stone-400 font-normal">(opsional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={personName}
+                        onChange={(e) => setPersonName(e.target.value)}
+                        placeholder={personalMeta.personNamePlaceholder}
+                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-stone-100">
+                      <div>
+                        <label className="block text-xs font-medium text-stone-600 mb-1.5">
+                          Nama Ayah <span className="text-stone-400 font-normal">(opsional)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={fatherName}
+                          onChange={(e) => setFatherName(e.target.value)}
+                          placeholder="Nama Ayah / Wali"
+                          className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-stone-600 mb-1.5">
+                          Nama Ibu <span className="text-stone-400 font-normal">(opsional)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={motherName}
+                          onChange={(e) => setMotherName(e.target.value)}
+                          placeholder="Nama Ibu"
+                          className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
+
+            {/* EVENT (Non-Personal — Strictly Zero Parents) */}
+            {eventType === "EVENT" && (
               <>
                 <div className="text-center space-y-2">
-                  <span className="text-xs font-bold text-amber-800 uppercase tracking-widest">Langkah 2</span>
-                  <h1 className="text-2xl sm:text-3xl font-serif font-bold text-stone-900">Data Yang Berulang Tahun</h1>
-                  <p className="text-xs sm:text-sm text-stone-500 max-w-md mx-auto">
-                    Masukkan nama yang berulang tahun dan detail perayaan untuk tajuk utama undangan.
-                  </p>
-                </div>
-
-                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                        Nama Panggilan
-                      </label>
-                      <input
-                        type="text"
-                        value={personNickname}
-                        onChange={(e) => setPersonNickname(e.target.value)}
-                        placeholder="Contoh: Aurel"
-                        className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                        Ulang Tahun Ke- <span className="text-stone-400 font-normal">(opsional)</span>
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="120"
-                        value={personAge}
-                        onChange={(e) => setPersonAge(e.target.value)}
-                        placeholder="Contoh: 17"
-                        className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-stone-600 mb-1.5">
-                      Nama Lengkap <span className="text-stone-400 font-normal">(opsional)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={personName}
-                      onChange={(e) => setPersonName(e.target.value)}
-                      placeholder="Contoh: Aurelia Putri Sanjaya"
-                      className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-stone-100">
-                    <div>
-                      <label className="block text-xs font-medium text-stone-600 mb-1.5">
-                        Nama Ayah <span className="text-stone-400 font-normal">(opsional)</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={fatherName}
-                        onChange={(e) => setFatherName(e.target.value)}
-                        placeholder="Nama Ayah / Wali"
-                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-stone-600 mb-1.5">
-                        Nama Ibu <span className="text-stone-400 font-normal">(opsional)</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={motherName}
-                        onChange={(e) => setMotherName(e.target.value)}
-                        placeholder="Nama Ibu"
-                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* KHITAN */}
-            {eventType === "KHITAN" && (
-              <>
-                <div className="text-center space-y-2">
-                  <span className="text-xs font-bold text-amber-800 uppercase tracking-widest">Langkah 2</span>
-                  <h1 className="text-2xl sm:text-3xl font-serif font-bold text-stone-900">Data Anak &amp; Orang Tua</h1>
-                  <p className="text-xs sm:text-sm text-stone-500 max-w-md mx-auto">
-                    Masukkan nama putra yang dikhitan serta nama kedua orang tua.
-                  </p>
-                </div>
-
-                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                        Nama Panggilan Anak
-                      </label>
-                      <input
-                        type="text"
-                        value={personNickname}
-                        onChange={(e) => setPersonNickname(e.target.value)}
-                        placeholder="Contoh: Bilal"
-                        className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-stone-600 mb-1.5">
-                        Usia Anak <span className="text-stone-400 font-normal">(opsional)</span>
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="25"
-                        value={personAge}
-                        onChange={(e) => setPersonAge(e.target.value)}
-                        placeholder="Contoh: 10"
-                        className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-stone-600 mb-1.5">
-                      Nama Lengkap Anak <span className="text-stone-400 font-normal">(opsional)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={personName}
-                      onChange={(e) => setPersonName(e.target.value)}
-                      placeholder="Contoh: Bilal Al-Farisi"
-                      className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-stone-100">
-                    <div>
-                      <label className="block text-xs font-medium text-stone-600 mb-1.5">
-                        Nama Ayah <span className="text-stone-400 font-normal">(opsional)</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={fatherName}
-                        onChange={(e) => setFatherName(e.target.value)}
-                        placeholder="Nama Ayah"
-                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-stone-600 mb-1.5">
-                        Nama Ibu <span className="text-stone-400 font-normal">(opsional)</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={motherName}
-                        onChange={(e) => setMotherName(e.target.value)}
-                        placeholder="Nama Ibu"
-                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* AQIQAH */}
-            {eventType === "AQIQAH" && (
-              <>
-                <div className="text-center space-y-2">
-                  <span className="text-xs font-bold text-amber-800 uppercase tracking-widest">Langkah 2</span>
-                  <h1 className="text-2xl sm:text-3xl font-serif font-bold text-stone-900">Data Buah Hati &amp; Orang Tua</h1>
-                  <p className="text-xs sm:text-sm text-stone-500 max-w-md mx-auto">
-                    Masukkan nama buah hati yang diaqiqahkan beserta nama orang tua.
-                  </p>
-                </div>
-
-                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm space-y-6">
-                  <div>
-                    <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                      Nama Panggilan Bayi
-                    </label>
-                    <input
-                      type="text"
-                      value={personNickname}
-                      onChange={(e) => setPersonNickname(e.target.value)}
-                      placeholder="Contoh: Rayyan"
-                      className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-stone-600 mb-1.5">
-                      Nama Lengkap Bayi <span className="text-stone-400 font-normal">(opsional)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={personName}
-                      onChange={(e) => setPersonName(e.target.value)}
-                      placeholder="Contoh: Muhammad Rayyan Al-Ghazi"
-                      className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-stone-100">
-                    <div>
-                      <label className="block text-xs font-medium text-stone-600 mb-1.5">
-                        Nama Ayah <span className="text-stone-400 font-normal">(opsional)</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={fatherName}
-                        onChange={(e) => setFatherName(e.target.value)}
-                        placeholder="Nama Ayah"
-                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-stone-600 mb-1.5">
-                        Nama Ibu <span className="text-stone-400 font-normal">(opsional)</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={motherName}
-                        onChange={(e) => setMotherName(e.target.value)}
-                        placeholder="Nama Ibu"
-                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* WISUDA */}
-            {eventType === "WISUDA" && (
-              <>
-                <div className="text-center space-y-2">
-                  <span className="text-xs font-bold text-amber-800 uppercase tracking-widest">Langkah 2</span>
-                  <h1 className="text-2xl sm:text-3xl font-serif font-bold text-stone-900">Data Wisudawan / Wisudawati</h1>
-                  <p className="text-xs sm:text-sm text-stone-500 max-w-md mx-auto">
-                    Masukkan nama wisudawan, gelar akademik, dan institusi pendidikan.
-                  </p>
-                </div>
-
-                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                        Nama Panggilan
-                      </label>
-                      <input
-                        type="text"
-                        value={personNickname}
-                        onChange={(e) => setPersonNickname(e.target.value)}
-                        placeholder="Contoh: Dimas"
-                        className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-stone-600 mb-1.5">
-                        Gelar Akademik <span className="text-stone-400 font-normal">(opsional)</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={degree}
-                        onChange={(e) => setDegree(e.target.value)}
-                        placeholder="Contoh: S.Kom., M.T."
-                        className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-stone-600 mb-1.5">
-                      Nama Lengkap <span className="text-stone-400 font-normal">(opsional)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={personName}
-                      onChange={(e) => setPersonName(e.target.value)}
-                      placeholder="Contoh: Dimas Aditya Pratama, S.Kom."
-                      className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-stone-100">
-                    <div>
-                      <label className="block text-xs font-medium text-stone-600 mb-1.5">
-                        Jurusan / Program Studi <span className="text-stone-400 font-normal">(opsional)</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={major}
-                        onChange={(e) => setMajor(e.target.value)}
-                        placeholder="Contoh: Teknik Informatika"
-                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-stone-600 mb-1.5">
-                        Universitas / Institut <span className="text-stone-400 font-normal">(opsional)</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={institution}
-                        onChange={(e) => setInstitution(e.target.value)}
-                        placeholder="Contoh: Universitas Hasanuddin"
-                        className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* GATHERING */}
-            {eventType === "GATHERING" && (
-              <>
-                <div className="text-center space-y-2">
-                  <span className="text-xs font-bold text-amber-800 uppercase tracking-widest">Langkah 2</span>
+                  <span className="text-xs font-bold text-amber-800 uppercase tracking-widest">
+                    Langkah 2 {subEvent ? `· ${subEvent}` : ""}
+                  </span>
                   <h1 className="text-2xl sm:text-3xl font-serif font-bold text-stone-900">Data Acara &amp; Penyelenggara</h1>
                   <p className="text-xs sm:text-sm text-stone-500 max-w-md mx-auto">
                     Masukkan judul acara, tema pertemuan, dan pihak penyelenggara.
@@ -1063,7 +956,7 @@ function SetupWizardContent() {
                       type="text"
                       value={eventTitle}
                       onChange={(e) => setEventTitle(e.target.value)}
-                      placeholder="Contoh: Reuni Akbar Angkatan 2012"
+                      placeholder="Contoh: Reuni Akbar Angkatan 2012 / Grand Opening Cabang Baru"
                       className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                     />
                   </div>
@@ -1084,13 +977,13 @@ function SetupWizardContent() {
 
                     <div>
                       <label className="block text-xs font-medium text-stone-600 mb-1.5">
-                        Penyelenggara / Komunitas <span className="text-stone-400 font-normal">(opsional)</span>
+                        Penyelenggara / Instansi <span className="text-stone-400 font-normal">(opsional)</span>
                       </label>
                       <input
                         type="text"
                         value={organizer}
                         onChange={(e) => setOrganizer(e.target.value)}
-                        placeholder="Contoh: Ikatan Alumni SMAN 1"
+                        placeholder="Contoh: PT Nusantara Mandiri / Ikatan Alumni"
                         className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-base sm:text-xs text-stone-800 focus:bg-white focus:outline-none"
                       />
                     </div>
@@ -1129,21 +1022,19 @@ function SetupWizardContent() {
 
         {/* STEP 2: Tanggal & Lokasi Utama */}
         {step === 2 && (() => {
-          const DATE_LABELS: Record<string, string> = {
-            WEDDING: "Tanggal Pernikahan Utama",
-            BIRTHDAY: "Tanggal Ulang Tahun / Perayaan",
-            KHITAN: "Tanggal Syukuran Khitanan",
-            AQIQAH: "Tanggal Tasyakuran Aqiqah",
-            WISUDA: "Tanggal Wisuda / Syukuran",
-            GATHERING: "Tanggal Pelaksanaan Acara",
-          };
+          const dateHeadingLabel =
+            eventType === "WEDDING"
+              ? "Tanggal Pernikahan Utama"
+              : eventType === "PERSONAL"
+              ? `Tanggal ${subEvent || "Acara Personal"}`
+              : `Tanggal ${subEvent || "Pelaksanaan Acara"}`;
 
           return (
             <div className="space-y-6 animate-fadeIn">
               <div className="text-center space-y-2">
                 <span className="text-xs font-bold text-amber-800 uppercase tracking-widest">Langkah 3</span>
                 <h1 className="text-2xl sm:text-3xl font-serif font-bold text-stone-900">
-                  {DATE_LABELS[eventType] || "Hari Bahagia & Lokasi"}
+                  {dateHeadingLabel}
                 </h1>
                 <p className="text-xs sm:text-sm text-stone-500 max-w-md mx-auto">
                   Tentukan perkiraan tanggal pelaksanaan acara dan kota utama.
@@ -1153,7 +1044,7 @@ function SetupWizardContent() {
               <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm space-y-5">
                 <div>
                   <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                    {DATE_LABELS[eventType] || "Tanggal Acara Utama"}
+                    {dateHeadingLabel}
                   </label>
                   <input
                     type="date"
@@ -1356,13 +1247,29 @@ function SetupWizardContent() {
           );
         })()}
 
-        {/* STEP 3: Pilihan Tema dengan Kategori & Thumbnail Preview */}
+        {/* STEP 3: Pilihan Tema Eksklusif sesuai Mode Terpilih (Isolasi Tegas 3 Mode) */}
         {step === 3 && (() => {
-          // Pernikahan memakai tema pernikahan; acara lain boleh memilih tema satu nama mana pun.
-          const themesForDisplay = sortThemesForEvent(availableThemes.filter((t: any) => isThemeCompatible(t.eventType, eventType)), eventType);
+          const modeThemes = sortThemesForEvent(
+            availableThemes.filter((t: any) => isThemeInMode(t.eventType, eventType)),
+            eventType,
+            subEvent,
+          );
+          const dynamicSubOptions =
+            eventType === "PERSONAL" || eventType === "EVENT"
+              ? extractSubEventOptions(modeThemes, eventType)
+              : [];
+          const effectiveSubFilter =
+            subEventFilter !== "all" &&
+            !dynamicSubOptions.some((s) => s.toLowerCase() === subEventFilter.toLowerCase())
+              ? "all"
+              : subEventFilter;
+          const subFiltered =
+            (eventType === "PERSONAL" || eventType === "EVENT") && effectiveSubFilter !== "all"
+              ? modeThemes.filter((t: any) => (t.subEvent || "").toLowerCase() === effectiveSubFilter.toLowerCase())
+              : modeThemes;
 
-          // Dapatkan daftar kategori yang benar-benar ada pada tema yang ditampilkan
-          const availableCats = new Set<string>(themesForDisplay.map((t: any) => t.category?.toLowerCase() || ""));
+          // Dapatkan daftar gaya yang benar-benar ada pada tema yang ditampilkan
+          const availableCats = new Set<string>(subFiltered.map((t: any) => t.category?.toLowerCase() || ""));
           const categories: Array<{ id: "all" | "minimalist" | "modern" | "traditional"; label: string }> = [
             { id: "all", label: "Semua" },
             ...(availableCats.has("minimalist") ? [{ id: "minimalist" as const, label: "Minimalis" }] : []),
@@ -1373,22 +1280,106 @@ function SetupWizardContent() {
           const isCategoryValid = activeCategory === "all" || availableCats.has(activeCategory);
           const effectiveCategory = isCategoryValid ? activeCategory : "all";
 
-          const filteredThemes = effectiveCategory === "all"
-            ? themesForDisplay
-            : themesForDisplay.filter((t: any) => t.category?.toLowerCase() === effectiveCategory);
+          const filteredThemes =
+            effectiveCategory === "all"
+              ? subFiltered
+              : subFiltered.filter((t: any) => t.category?.toLowerCase() === effectiveCategory);
 
           // Dynamic display title for summary box
-          const displayTitle = eventType === "WEDDING"
-            ? `${groomNickname || "Mempelai Pria"} & ${brideNickname || "Mempelai Wanita"}`
-            : eventType === "BIRTHDAY"
-            ? `Ulang Tahun: ${personNickname || personName || "Spesial"}`
-            : eventType === "KHITAN"
-            ? `Khitanan: ${personNickname || personName || "Anak"}`
-            : eventType === "AQIQAH"
-            ? `Aqiqah: ${personNickname || personName || "Buah Hati"}`
-            : eventType === "WISUDA"
-            ? `Wisuda: ${personNickname || personName || "Sarjana"}`
-            : (eventTitle || "Acara Gathering");
+          const displayTitle =
+            eventType === "WEDDING"
+              ? `${groomNickname || "Mempelai Pria"} & ${brideNickname || "Mempelai Wanita"}`
+              : eventType === "PERSONAL"
+              ? `${subEvent || EVENT_TYPE_LABELS.PERSONAL}: ${personNickname || personName || "Tokoh Utama"}`
+              : eventTitle || subEvent || EVENT_TYPE_LABELS.EVENT;
+
+          const renderSetupThemeCard = (theme: any) => {
+            const isSelected = themeId === theme.id;
+            const thumbMobile: string | null = theme.thumbnailMobile || null;
+            const thumbDesktop: string | null = theme.thumbnailDesktop || null;
+            const selectedBadge = isSelected && (
+              <span className="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-amber-800 text-white flex items-center justify-center text-xs font-bold shadow-md">
+                ✓
+              </span>
+            );
+            return (
+              <div
+                key={theme.id}
+                onClick={() => setThemeId(theme.id)}
+                className={`stp-card rounded-2xl p-3 border cursor-pointer transition-all ${
+                  isSelected
+                    ? "is-selected border-amber-800 bg-amber-50/20 ring-2 ring-amber-800/15 shadow-md"
+                    : "border-stone-200 bg-white hover:border-stone-400 hover:shadow-sm"
+                }`}
+              >
+                {/* Tema tanpa thumbnail tampil sebagai kartu nama */}
+                {!thumbDesktop && !thumbMobile ? (
+                  <div className="relative flex min-h-[8rem] items-center justify-center rounded-xl bg-stone-100 px-4 text-center">
+                    <span className="font-serif text-lg font-bold leading-tight text-stone-700">{theme.name}</span>
+                    {selectedBadge}
+                  </div>
+                ) : (
+                <div className="stp-scene">
+                  {thumbDesktop && (
+                  <div className="stp-tablet">
+                    <div className="stp-tablet-bar">
+                      <div className="stp-tablet-dots"><span/><span/><span/></div>
+                      <div className="stp-tablet-url">{getApexRootDomain()}/{theme.id}</div>
+                      <div style={{ width: "18px" }}/>
+                    </div>
+                    <div className="stp-tablet-screen">
+                      <img
+                        src={thumbDesktop}
+                        alt={`${theme.name} desktop`}
+                        loading="lazy"
+                      />
+                      <div className="stp-glare"/>
+                    </div>
+                  </div>
+                  )}
+
+                  {thumbMobile && (
+                  <div className="stp-phone">
+                    <div className="stp-phone-notch"/>
+                    <div className="stp-phone-screen">
+                      <img
+                        src={thumbMobile}
+                        alt={`${theme.name} mobile`}
+                        loading="lazy"
+                      />
+                      <div className="stp-glare"/>
+                    </div>
+                  </div>
+                  )}
+
+                  {selectedBadge}
+                </div>
+                )}
+
+                {/* Info + Preview link */}
+                <div className="space-y-0.5 mt-0.5">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-stone-400">
+                      {theme.subEvent ? `${theme.series} · ${theme.subEvent}` : theme.series}
+                    </p>
+                  </div>
+                  <h3 className="text-sm font-serif font-bold text-stone-900 leading-tight">{theme.name}</h3>
+                  <p className="text-[10px] text-stone-400 line-clamp-2 leading-snug">{theme.desc}</p>
+                  {(thumbDesktop || thumbMobile) && (
+                    <a
+                      href={`/demo/${theme.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-block text-[10px] font-bold text-amber-800 hover:underline pt-0.5"
+                    >
+                      Lihat Demo
+                    </a>
+                  )}
+                </div>
+              </div>
+            );
+          };
 
           return (
             <div className="space-y-6 animate-fadeIn">
@@ -1399,9 +1390,39 @@ function SetupWizardContent() {
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-serif font-bold text-stone-900">Pilih Desain Tema Perdana</h1>
                 <p className="text-xs sm:text-sm text-stone-500 max-w-md mx-auto">
-                  Pilih tema awal yang Anda sukai untuk momen ini. Dapat diganti kapan saja di Studio Editor.
+                  Menampilkan katalog tema khusus mode <strong className="text-stone-800">{EVENT_TYPE_LABELS[eventType] || eventType}</strong>
+                  {subEvent ? ` (${subEvent})` : ""}. Dapat diganti kapan saja selama berstatus Draf di Studio Editor.
                 </p>
               </div>
+
+              {/* Filter Sub-Acara Dinamis (Personal & Keluarga maupun Acara & Event Umum) */}
+              {(eventType === "PERSONAL" || eventType === "EVENT") && dynamicSubOptions.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {[
+                    {
+                      id: "all",
+                      label: `${eventType === "PERSONAL" ? "Semua Personal" : "Semua Acara"} (${modeThemes.length})`,
+                    },
+                    ...dynamicSubOptions.map((sub) => ({
+                      id: sub,
+                      label: `${sub} (${modeThemes.filter((t: any) => (t.subEvent || "").toLowerCase() === sub.toLowerCase()).length})`,
+                    })),
+                  ].map((sub) => (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      onClick={() => setSubEventFilter(sub.id)}
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition cursor-pointer ${
+                        effectiveSubFilter.toLowerCase() === sub.id.toLowerCase()
+                          ? "bg-amber-900 text-white border-amber-900 shadow-2xs"
+                          : "bg-white text-stone-600 border-stone-200 hover:border-amber-400"
+                      }`}
+                    >
+                      {sub.label}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {/* Category Tabs (Hanya tampil jika ada > 1 gaya desain yang tersedia) */}
               {availableCats.size > 1 && (
@@ -1420,7 +1441,7 @@ function SetupWizardContent() {
                       {cat.label}
                       {cat.id !== "all" && (
                         <span className="ml-1.5 opacity-60">
-                          {themesForDisplay.filter((t: any) => t.category?.toLowerCase() === cat.id).length}
+                          {subFiltered.filter((t: any) => t.category?.toLowerCase() === cat.id).length}
                         </span>
                       )}
                     </button>
@@ -1430,89 +1451,25 @@ function SetupWizardContent() {
 
               {/* Theme Grid — Device Pair Mockup */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {filteredThemes.map((theme: any) => {
-                  const isSelected = themeId === theme.id;
-                  const thumbMobile: string | null = theme.thumbnailMobile || null;
-                  const thumbDesktop: string | null = theme.thumbnailDesktop || null;
-                  const selectedBadge = isSelected && (
-                    <span className="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-amber-800 text-white flex items-center justify-center text-xs font-bold shadow-md">
-                      ✓
-                    </span>
-                  );
-                  return (
-                    <div
-                      key={theme.id}
-                      onClick={() => setThemeId(theme.id)}
-                      className={`stp-card rounded-2xl p-3 border cursor-pointer transition-all ${
-                        isSelected
-                          ? "is-selected border-amber-800 bg-amber-50/20 ring-2 ring-amber-800/15 shadow-md"
-                          : "border-stone-200 bg-white hover:border-stone-400 hover:shadow-sm"
-                      }`}
-                    >
-                      {/* Tema tanpa thumbnail tampil sebagai kartu nama */}
-                      {!thumbDesktop && !thumbMobile ? (
-                        <div className="relative flex min-h-[8rem] items-center justify-center rounded-xl bg-stone-100 px-4 text-center">
-                          <span className="font-serif text-lg font-bold leading-tight text-stone-700">{theme.name}</span>
-                          {selectedBadge}
-                        </div>
-                      ) : (
-                      <div className="stp-scene">
-                        {thumbDesktop && (
-                        <div className="stp-tablet">
-                          <div className="stp-tablet-bar">
-                            <div className="stp-tablet-dots"><span/><span/><span/></div>
-                            <div className="stp-tablet-url">{getApexRootDomain()}/{theme.id}</div>
-                            <div style={{ width: "18px" }}/>
-                          </div>
-                          <div className="stp-tablet-screen">
-                            <img
-                              src={thumbDesktop}
-                              alt={`${theme.name} desktop`}
-                              loading="lazy"
-                            />
-                            <div className="stp-glare"/>
-                          </div>
-                        </div>
-                        )}
+                {filteredThemes.map(renderSetupThemeCard)}
+              </div>
 
-                        {thumbMobile && (
-                        <div className="stp-phone">
-                          <div className="stp-phone-notch"/>
-                          <div className="stp-phone-screen">
-                            <img
-                              src={thumbMobile}
-                              alt={`${theme.name} mobile`}
-                              loading="lazy"
-                            />
-                            <div className="stp-glare"/>
-                          </div>
-                        </div>
-                        )}
-
-                        {selectedBadge}
-                      </div>
-                      )}
-
-                      {/* Info + Preview link */}
-                      <div className="space-y-0.5 mt-0.5">
-                        <p className="text-[9px] font-bold uppercase tracking-wider text-stone-400">{theme.series}</p>
-                        <h3 className="text-sm font-serif font-bold text-stone-900 leading-tight">{theme.name}</h3>
-                        <p className="text-[10px] text-stone-400 line-clamp-2 leading-snug">{theme.desc}</p>
-                        {(thumbDesktop || thumbMobile) && (
-                          <a
-                            href={`/demo/${theme.id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="inline-block text-[10px] font-bold text-amber-800 hover:underline pt-0.5"
-                          >
-                            Lihat Demo
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+              {/* Catatan Isolasi Mode & Permintaan Adaptasi Desain via CS */}
+              <div className="p-3.5 rounded-2xl bg-stone-50 border border-stone-200/90 text-xs text-stone-600 flex flex-wrap items-center justify-between gap-2.5">
+                <p className="leading-relaxed">
+                  Setiap mode acara memiliki koleksi tema mandiri. Ingin memakai desain dari mode acara lain?{" "}
+                  <Link href="/contact" className="font-bold text-amber-900 underline hover:text-stone-900">
+                    Hubungi CS
+                  </Link>{" "}
+                  agar tim kami menyiapkan versi khusus untuk mode {EVENT_TYPE_LABELS[eventType] || eventType}.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setStep(0)}
+                  className="shrink-0 text-[11px] font-bold text-stone-700 hover:text-stone-900 underline cursor-pointer"
+                >
+                  Ubah Mode Acara
+                </button>
               </div>
 
               {/* Summary Box */}
@@ -1529,7 +1486,7 @@ function SetupWizardContent() {
                   </span>
                 </div>
                 <p className="text-xs text-stone-400">
-                  Setelah ini Anda akan langsung masuk ke Studio Editor untuk melengkapi susunan acara, galeri foto, dan daftar tamu.
+                  Setelah ini Anda akan langsung masuk ke Studio Editor (status Draf) untuk melengkapi susunan acara, galeri foto, dan daftar tamu.
                 </p>
               </div>
 
@@ -1566,8 +1523,6 @@ function SetupWizardContent() {
             </div>
           );
         })()}
-
-
 
       </main>
 

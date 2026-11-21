@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
 import { readJsonBody } from "@/lib/requestBody";
-import { parseBuilderSpec } from "@/lib/themeBuilder/spec";
+import { BUILDER_EVENT_TYPES, parseBuilderSpec, type BuilderEventType } from "@/lib/themeBuilder/spec";
 import { ensureSpecFonts } from "@/lib/themeBuilder/fonts";
 import { fitSpecFrames } from "@/lib/themeBuilder/frameWindow";
 import { renderBuilderPreview } from "@/lib/themeBuilder/server";
 import { parseSimMedia } from "@/lib/themeBuilder/simSlots";
+import { sanitizeSubEvent } from "@/lib/invitationUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,20 @@ export async function POST(req: NextRequest) {
     const spec = await fitSpecFrames(parsed.spec);
     const mode = body.mode === "client" || body.mode === "sim" ? body.mode : "demo";
     const longText = body.longText === true;
-    const { html, issues, labels } = await renderBuilderPreview(spec, undefined, mode, mode === "sim" ? parseSimMedia(body.sim) : undefined, longText);
+    const rawPreviewEv = typeof body.previewEventType === "string" ? body.previewEventType.toUpperCase() : "";
+    const previewEventType = (BUILDER_EVENT_TYPES as string[]).includes(rawPreviewEv)
+      ? (rawPreviewEv as BuilderEventType)
+      : undefined;
+    const previewSubEvent = sanitizeSubEvent(body.previewSubEvent);
+    const { html, issues, labels } = await renderBuilderPreview(
+      spec,
+      undefined,
+      mode,
+      mode === "sim" ? parseSimMedia(body.sim) : undefined,
+      longText,
+      previewEventType,
+      previewSubEvent,
+    );
     return NextResponse.json({ success: true, html, issues, labels });
   } catch (error) {
     return routeError("ThemeBuilderPreview", error);

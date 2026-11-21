@@ -3,7 +3,7 @@
  * berisi spesifikasi builder biasa (lolos `parseBuilderSpec`), jadi tidak ada logika render baru. Teks, media bawaan,
  * dan jenis acara rancangan yang sedang dibuka dipertahankan saat template dipasang.
  */
-import { builderFamilyOf, defaultBuilderSpec, PALETTE_PRESETS, peerBlocksForRole, type BuilderEventType, type BuilderSpec } from "@/lib/themeBuilder/spec";
+import { defaultBuilderSpec, PALETTE_PRESETS, peerBlocksForRole, type BuilderEventType, type BuilderSpec } from "@/lib/themeBuilder/spec";
 
 export interface BuilderTemplate {
   id: string;
@@ -99,8 +99,8 @@ export const BUILDER_TEMPLATES: BuilderTemplate[] = [
         radius: "round",
         variants: { ...base.variants, couple: "polaroid", gallery: "polaroid", countdown: "circles", headings: "script", buttons: "glass", cards: "glass" },
         sectionStyles: { events: { bg: "light", gradient: "fade-up", tone: "auto" } },
-        // Doa untuk pengantin hanya untuk keluarga pernikahan; tema satu nama (ulang tahun, khitan, dst.) tidak mendapatkannya.
-        freeSections: builderFamilyOf(eventType) === "wedding"
+        // Doa untuk pengantin hanya untuk mode pernikahan; mode Personal & Event tidak mendapatkannya.
+        freeSections: eventType === "WEDDING"
           ? [{ id: "free1", after: "couple", eyebrow: "Doa Kami", title: "", body: "", align: "center", quote: { text: "Semoga Allah menghimpun yang terserak dari keduanya, memberkahi mereka berdua, dan kiranya Allah meningkatkan kualitas keturunan mereka.", source: "Doa untuk pengantin" } }]
           : base.freeSections,
         animation: "grow",
@@ -113,8 +113,8 @@ export const BUILDER_TEMPLATES: BuilderTemplate[] = [
     hint: "Zaitun tenang, huruf sans, sampul editorial, kartu datar, kolom desktop lebar.",
     build: (eventType) => {
       const base = defaultBuilderSpec(eventType);
-      // "Berdampingan" tidak ada untuk satu nama (hanya satu kartu profil), jadi diganti potret.
-      const couple = builderFamilyOf(eventType) === "wedding" ? "side" : "portrait";
+      // "Berdampingan" khusus mode pernikahan (2 mempelai); Personal & Event memakai potret.
+      const couple = eventType === "WEDDING" ? "side" : "portrait";
       return {
         ...base,
         palette: palette("zaitun"),

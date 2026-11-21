@@ -72,7 +72,7 @@ export async function renderPublishedHtml(
     ? `Kami mengundang Anda untuk hadir di hari bahagia pernikahan kami.`
     : `Kami mengundang Anda untuk hadir di acara ${displayName}.`;
   
-  const ogSlotPriority = ["LANDING_COVER", "LANDING_COVER_DESKTOP", "HOME_PHOTO", "DESKTOP_SIDEBAR", "GROOM_PHOTO", "BRIDE_PHOTO"];
+  const ogSlotPriority = ["LANDING_COVER", "LANDING_COVER_DESKTOP", "HOME_PHOTO", "DESKTOP_SIDEBAR", "PROFILE_PHOTO", "EVENT_PHOTO", "GROOM_PHOTO", "BRIDE_PHOTO"];
   const ogCandidates = await prisma.invitationMedia.findMany({
     where: { invitationId: invitation.id, mediaSlot: { in: ogSlotPriority as any } },
     orderBy: { createdAt: "desc" },

@@ -53,6 +53,8 @@ describe.skipIf(!IS_TEST_DB)("login admin tidak peka huruf besar", () => {
     await prisma.adminAuditLog.deleteMany({ where: { adminId } });
     await prisma.admin.deleteMany({ where: { id: adminId } });
     await pool.query("DELETE FROM rate_limit_counters WHERE key LIKE 'auth_login:%'");
+    await prisma.$disconnect();
+    await pool.end();
   });
 
   it("username dan email berhuruf besar dapat login, password salah tetap ditolak", async () => {

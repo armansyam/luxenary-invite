@@ -265,9 +265,9 @@ describe("posisi blok satuan px proporsional dan responsif mobile", () => {
     expect(html).toContain('translate:calc(0 * var(--lux-ux, 1px)) calc(-60 * var(--lux-uy, 1px));');
     expect(auditBuilderMaster(html, blueprint)).toEqual([]);
 
-    const singleBp = readBuilderBlueprint("BIRTHDAY");
+    const singleBp = readBuilderBlueprint("PERSONAL");
     const singleSpec: BuilderSpec = {
-      ...defaultBuilderSpec("BIRTHDAY"),
+      ...defaultBuilderSpec("PERSONAL"),
       blocks: { "cover-names": { x: 0, y: -40, unit: "px", scale: 1, rotate: 0, hidden: false } },
     };
     const singleHtml = compileBuilderMaster(singleSpec, singleBp);
@@ -298,10 +298,10 @@ describe("posisi blok satuan px proporsional dan responsif mobile", () => {
     expect(html).toContain(".cover-bottom { margin-top: auto; }");
     expect(auditBuilderMaster(html, blueprint)).toEqual([]);
 
-    const singleBp = readBuilderBlueprint("BIRTHDAY");
+    const singleBp = readBuilderBlueprint("PERSONAL");
     const singleSpec: BuilderSpec = {
-      ...defaultBuilderSpec("BIRTHDAY"),
-      variants: { ...defaultBuilderSpec("BIRTHDAY").variants, coverAlign: "bottom", coverSubtitlePos: "bottom" },
+      ...defaultBuilderSpec("PERSONAL"),
+      variants: { ...defaultBuilderSpec("PERSONAL").variants, coverAlign: "bottom", coverSubtitlePos: "bottom" },
     };
     const singleHtml = compileBuilderMaster(singleSpec, singleBp);
     expect(singleHtml.indexOf('data-lux-block="cover-subtitle"')).toBeGreaterThan(singleHtml.indexOf('class="cover-bottom"'));
@@ -321,10 +321,10 @@ describe("posisi blok satuan px proporsional dan responsif mobile", () => {
     expect(topHtml).toContain(".opening-bottom { margin-top: auto; }");
     expect(auditBuilderMaster(topHtml, blueprint)).toEqual([]);
 
-    const singleBp = readBuilderBlueprint("WISUDA");
+    const singleBp = readBuilderBlueprint("PERSONAL");
     const botParsed = parseBuilderSpec({
-      ...defaultBuilderSpec("WISUDA"),
-      variants: { ...defaultBuilderSpec("WISUDA").variants, opening: "backdrop", openingAlign: "bottom" },
+      ...defaultBuilderSpec("PERSONAL"),
+      variants: { ...defaultBuilderSpec("PERSONAL").variants, opening: "backdrop", openingAlign: "bottom" },
     });
     expect(botParsed.ok && botParsed.spec.variants.openingAlign).toBe("bottom");
     if (!botParsed.ok) return;
@@ -370,7 +370,7 @@ describe("posisi blok satuan px proporsional dan responsif mobile", () => {
   });
 
   it("blueprint starter menjaga skala tipografi kolom split desktop setara mobile (tanpa 9.5vw atau lonjakan !important)", () => {
-    for (const bp of [blueprint, readBuilderBlueprint("BIRTHDAY")]) {
+    for (const bp of [blueprint, readBuilderBlueprint("PERSONAL")]) {
       expect(bp).not.toContain("clamp(2.6rem, 9.5vw, 3.8rem)");
       expect(bp).not.toContain("font-size: 2.8rem !important;");
       expect(bp).not.toContain("font-size: 2.1rem !important;");

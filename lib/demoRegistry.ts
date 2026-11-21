@@ -9,7 +9,7 @@
 
 import fs from "fs";
 import path from "path";
-import { DEFAULT_THEME_BY_EVENT } from "./invitationUtils";
+import { DEFAULT_THEME_BY_EVENT, resolveSubEventMeta } from "./invitationUtils";
 
 export interface BaseDemoData {
   themeId: string;
@@ -17,7 +17,8 @@ export interface BaseDemoData {
   series: string;
   category: "minimalist" | "modern" | "traditional";
   tagline: string;
-  eventType?: "WEDDING" | "BIRTHDAY" | "KHITAN" | "AQIQAH" | "WISUDA" | "GATHERING";
+  eventType?: "WEDDING" | "PERSONAL" | "EVENT";
+  subEvent?: string;
   
   // Couple Profile (optional for non-wedding events)
   groomName?: string;
@@ -118,53 +119,30 @@ export interface WeddingDemoData extends BaseDemoData {
   bridePhotoUrl: string;
 }
 
-export interface BirthdayDemoData extends BaseDemoData {
-  eventType: "BIRTHDAY";
-  personName: string;
-  personNickname: string;
-  personAge: number | string;
-  personPhotoUrl: string;
+export interface PersonalDemoData extends BaseDemoData {
+  eventType: "PERSONAL";
+  subEvent?: string;
+  personName?: string;
+  personNickname?: string;
+  personAge?: number | string;
+  personBirthOrder?: string;
+  personPhotoUrl?: string;
   personInstagram?: string;
   parentName?: string;
-  [key: string]: any;
-}
-
-export interface KhitanDemoData extends BaseDemoData {
-  eventType: "KHITAN";
-  childName: string;
-  childNickname: string;
-  childAge: number | string;
-  childBirthOrder?: string;
-  childPhotoUrl?: string;
-  [key: string]: any;
-}
-
-export interface AqiqahDemoData extends BaseDemoData {
-  eventType: "AQIQAH";
-  babyName: string;
-  babyNickname: string;
   birthDateFormatted?: string;
   birthWeight?: string;
   birthLength?: string;
-  babyPhotoUrl?: string;
-  [key: string]: any;
-}
-
-export interface WisudaDemoData extends BaseDemoData {
-  eventType: "WISUDA";
-  graduateName: string;
-  graduateNickname: string;
-  graduateDegree?: string;
-  graduateMajor?: string;
-  graduateFaculty?: string;
-  universityName?: string;
+  degree?: string;
+  major?: string;
+  faculty?: string;
+  institution?: string;
   honors?: string;
-  graduatePhotoUrl?: string;
   [key: string]: any;
 }
 
-export interface GatheringDemoData extends BaseDemoData {
-  eventType: "GATHERING";
+export interface EventDemoData extends BaseDemoData {
+  eventType: "EVENT";
+  subEvent?: string;
   eventTitle: string;
   eventSubtitle?: string;
   organizerName?: string;
@@ -174,13 +152,7 @@ export interface GatheringDemoData extends BaseDemoData {
   [key: string]: any;
 }
 
-export type DemoThemeData =
-  | WeddingDemoData
-  | BirthdayDemoData
-  | KhitanDemoData
-  | AqiqahDemoData
-  | WisudaDemoData
-  | GatheringDemoData;
+export type DemoThemeData = WeddingDemoData | PersonalDemoData | EventDemoData;
 
 export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
   kalandra: {
@@ -2529,20 +2501,14 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     series: "Modern",
     category: "modern",
     tagline: "CELEBRATING THE BIRTHDAY OF",
-    eventType: "BIRTHDAY",
+    eventType: "PERSONAL",
+    subEvent: "Ulang Tahun",
     personName: "Zara Kimberly",
     personNickname: "Zara",
     personAge: 17,
     personPhotoUrl: "/demo/festivo/hero.webp",
-    groomName: "Zara",
-    brideName: "",
-    groomDisplayName: "Zara Kimberly",
-    brideDisplayName: "",
-    groomRole: "Yang Berulang Tahun",
-    brideRole: "",
-    groomParents: "Bpk. Hendra Kimberly & Ibu Citra",
-    groomInstagram: "zarakimberly",
-    brideInstagram: "",
+    parentName: "Bpk. Hendra Kimberly & Ibu Citra",
+    personInstagram: "zarakimberly",
     monogramInitial: "ZK",
     targetDate: "2026-11-20T19:00:00",
     weddingDateFormatted: "Jumat, 20 November 2026",
@@ -2554,8 +2520,6 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     city: "Jakarta",
     globalBgUrl: "/demo/festivo/background.webp",
     homePhotoUrl: "/demo/festivo/hero.webp",
-    groomPhotoUrl: "/demo/festivo/hero.webp",
-    bridePhotoUrl: "/demo/festivo/hero.webp",
     sidebarPhotoUrl: "/demo/festivo/hero.webp",
     landingCoverUrl: "/demo/festivo/cover.webp",
     galleryPhotos: [
@@ -2604,20 +2568,14 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     series: "Minimalist",
     category: "minimalist",
     tagline: "CELEBRATING THE BIRTHDAY OF",
-    eventType: "BIRTHDAY",
+    eventType: "PERSONAL",
+    subEvent: "Ulang Tahun",
     personName: "Zara Kimberly",
     personNickname: "Zara",
     personAge: 17,
     personPhotoUrl: "/demo/kalandra-birthday/hero.webp",
-    groomName: "Zara",
-    brideName: "",
-    groomDisplayName: "Zara Kimberly",
-    brideDisplayName: "",
-    groomRole: "Yang Berulang Tahun",
-    brideRole: "",
-    groomParents: "Bpk. Hendra Kimberly & Ibu Citra",
-    groomInstagram: "zarakimberly",
-    brideInstagram: "",
+    parentName: "Bpk. Hendra Kimberly & Ibu Citra",
+    personInstagram: "zarakimberly",
     monogramInitial: "ZK",
     targetDate: "2026-11-20T19:00:00",
     weddingDateFormatted: "Jumat, 20 November 2026",
@@ -2629,8 +2587,6 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     city: "Jakarta",
     globalBgUrl: "/demo/kalandra-birthday/background.webp",
     homePhotoUrl: "/demo/kalandra-birthday/hero.webp",
-    groomPhotoUrl: "/demo/kalandra-birthday/hero.webp",
-    bridePhotoUrl: "/demo/kalandra-birthday/hero.webp",
     sidebarPhotoUrl: "/demo/kalandra-birthday/hero.webp",
     landingCoverUrl: "/demo/kalandra-birthday/cover.webp",
     galleryPhotos: [
@@ -2679,21 +2635,14 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     series: "Traditional",
     category: "traditional",
     tagline: "TASYAKURAN WALIMATUL KHITAN",
-    eventType: "KHITAN",
-    childName: "Muhammad Fariz Al-Ghifari",
-    childNickname: "Fariz",
-    childAge: 9,
-    childBirthOrder: "Putra Pertama",
-    childPhotoUrl: "/demo/al-fariz/hero.webp",
-    groomName: "Fariz",
-    brideName: "",
-    groomDisplayName: "Muhammad Fariz Al-Ghifari",
-    brideDisplayName: "",
-    groomRole: "Ananda Khitan",
-    brideRole: "",
-    groomParents: "Bpk. Arief Kusuma, S.T. & Ibu Dewi Rahayu, S.Pd.",
-    groomInstagram: "",
-    brideInstagram: "",
+    eventType: "PERSONAL",
+    subEvent: "Khitanan",
+    personName: "Muhammad Fariz Al-Ghifari",
+    personNickname: "Fariz",
+    personAge: 9,
+    personBirthOrder: "Putra Pertama",
+    personPhotoUrl: "/demo/al-fariz/hero.webp",
+    parentName: "Bpk. Arief Kusuma, S.T. & Ibu Dewi Rahayu, S.Pd.",
     monogramInitial: "MF",
     targetDate: "2026-12-12T09:00:00",
     weddingDateFormatted: "Sabtu, 12 Desember 2026",
@@ -2707,8 +2656,6 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     sidebarPhotoUrl: "/demo/al-fariz/hero.webp",
     globalBgUrl: "/demo/al-fariz/background.webp",
     homePhotoUrl: "/demo/al-fariz/hero.webp",
-    groomPhotoUrl: "/demo/al-fariz/hero.webp",
-    bridePhotoUrl: "/demo/al-fariz/hero.webp",
     galleryPhotos: [
       "/demo/al-fariz/gallery_01.webp",
       "/demo/al-fariz/gallery_02.webp",
@@ -2755,22 +2702,15 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     series: "Minimalist",
     category: "minimalist",
     tagline: "TASYAKURAN AQIQAH & KELAHIRAN",
-    eventType: "AQIQAH",
-    babyName: "Muhammad Khalid Azzam",
-    babyNickname: "Khalid",
+    eventType: "PERSONAL",
+    subEvent: "Aqiqah",
+    personName: "Muhammad Khalid Azzam",
+    personNickname: "Khalid",
     birthDateFormatted: "15 September 2026",
     birthWeight: "3.4 kg",
     birthLength: "50 cm",
-    babyPhotoUrl: "/demo/al-khalid/hero.webp",
-    groomName: "Khalid",
-    brideName: "",
-    groomDisplayName: "Muhammad Khalid Azzam",
-    brideDisplayName: "",
-    groomRole: "Buah Hati",
-    brideRole: "",
-    groomParents: "Bpk. Ahmad Fauzi & Ibu Siti Nurhaliza",
-    groomInstagram: "",
-    brideInstagram: "",
+    personPhotoUrl: "/demo/al-khalid/hero.webp",
+    parentName: "Bpk. Ahmad Fauzi & Ibu Siti Nurhaliza",
     monogramInitial: "MK",
     targetDate: "2026-10-18T10:00:00",
     weddingDateFormatted: "Ahad, 18 Oktober 2026",
@@ -2784,8 +2724,6 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     sidebarPhotoUrl: "/demo/al-khalid/hero.webp",
     globalBgUrl: "/demo/al-khalid/background.webp",
     homePhotoUrl: "/demo/al-khalid/hero.webp",
-    groomPhotoUrl: "/demo/al-khalid/hero.webp",
-    bridePhotoUrl: "/demo/al-khalid/hero.webp",
     galleryPhotos: [
       "/demo/al-khalid/gallery_01.webp",
       "/demo/al-khalid/gallery_02.webp",
@@ -2832,24 +2770,18 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     series: "Modern",
     category: "modern",
     tagline: "GRADUATION CELEBRATION",
-    eventType: "WISUDA",
-    graduateName: "Rina Oktaviani Sari, S.Kom.",
-    graduateNickname: "Rina",
-    graduateDegree: "Sarjana Komputer (S.Kom.)",
-    graduateMajor: "Teknik Informatika",
-    graduateFaculty: "Fakultas Ilmu Komputer",
-    universityName: "Universitas Hasanuddin",
+    eventType: "PERSONAL",
+    subEvent: "Wisuda",
+    personName: "Rina Oktaviani Sari, S.Kom.",
+    personNickname: "Rina",
+    degree: "Sarjana Komputer (S.Kom.)",
+    major: "Teknik Informatika",
+    faculty: "Fakultas Ilmu Komputer",
+    institution: "Universitas Hasanuddin",
     honors: "Cum Laude",
-    graduatePhotoUrl: "/demo/cendekia/hero.webp",
-    groomName: "Rina",
-    brideName: "",
-    groomDisplayName: "Rina Oktaviani Sari, S.Kom.",
-    brideDisplayName: "",
-    groomRole: "Wisudawati",
-    brideRole: "",
-    groomParents: "Drs. H. Mulyadi & Hj. Endang Suryani",
-    groomInstagram: "rinaoktaviani",
-    brideInstagram: "",
+    personPhotoUrl: "/demo/cendekia/hero.webp",
+    parentName: "Drs. H. Mulyadi & Hj. Endang Suryani",
+    personInstagram: "rinaoktaviani",
     monogramInitial: "RO",
     targetDate: "2026-10-24T11:00:00",
     weddingDateFormatted: "Sabtu, 24 Oktober 2026",
@@ -2863,8 +2795,6 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     sidebarPhotoUrl: "/demo/cendekia/hero.webp",
     globalBgUrl: "/demo/cendekia/background.webp",
     homePhotoUrl: "/demo/cendekia/hero.webp",
-    groomPhotoUrl: "/demo/cendekia/hero.webp",
-    bridePhotoUrl: "/demo/cendekia/hero.webp",
     galleryPhotos: [
       "/demo/cendekia/gallery_01.webp",
       "/demo/cendekia/gallery_02.webp",
@@ -2911,22 +2841,14 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     series: "Modern",
     category: "modern",
     tagline: "GRAND INAUGURATION & SYUKURAN",
-    eventType: "GATHERING",
+    eventType: "EVENT",
+    subEvent: "Corporate",
     eventTitle: "Peresmian Kantor Baru & Syukuran PT Sinergi Prima",
     eventSubtitle: "Melangkah Bersama Menuju Masa Depan Digital",
     organizerName: "Direksi & Manajemen PT Sinergi Prima",
     hostName: "Bpk. Hendra Gunawan (Direktur Utama)",
     dresscode: "Batik Modern / Smart Casual",
     eventPhotoUrl: "/demo/sinergi/hero.webp",
-    groomName: "PT Sinergi Prima",
-    brideName: "",
-    groomDisplayName: "PT Sinergi Prima",
-    brideDisplayName: "",
-    groomRole: "Penyelenggara",
-    brideRole: "",
-    groomParents: "Direksi & Manajemen PT Sinergi Prima",
-    groomInstagram: "sinergiprima",
-    brideInstagram: "",
     monogramInitial: "SP",
     targetDate: "2026-11-10T09:00:00",
     weddingDateFormatted: "Senin, 10 November 2026",
@@ -2940,8 +2862,6 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     sidebarPhotoUrl: "/demo/sinergi/hero.webp",
     globalBgUrl: "/demo/sinergi/background.webp",
     homePhotoUrl: "/demo/sinergi/hero.webp",
-    groomPhotoUrl: "/demo/sinergi/hero.webp",
-    bridePhotoUrl: "/demo/sinergi/hero.webp",
     galleryPhotos: [
       "/demo/sinergi/gallery_01.webp",
       "/demo/sinergi/gallery_02.webp",
@@ -3428,23 +3348,24 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     defaultPalette: "forest-emerald",
   },
 
-  // ── Master tema satu nama 20 Okt 2026. Kecuali Toga, foto memakai aset tema saudara sampai admin mengunggah lewat Studio Demo. ──
+  // ── Master tema Personal & Event 20 Okt 2026. Kecuali Toga, foto memakai aset tema saudara sampai admin mengunggah lewat Studio Demo. ──
   toga: {
     themeId: "toga",
     themeName: "Toga",
     series: "Modern",
     category: "modern",
     tagline: "SYUKURAN KELULUSAN",
-    eventType: "WISUDA",
-    graduateName: "Rizky Ananda Putra, S.T.",
-    graduateNickname: "Rizky",
-    graduateDegree: "Sarjana Teknik",
-    graduateMajor: "Teknik Arsitektur",
-    graduateFaculty: "Fakultas Teknik",
-    universityName: "Universitas Hasanuddin",
+    eventType: "PERSONAL",
+    subEvent: "Wisuda",
+    personName: "Rizky Ananda Putra, S.T.",
+    personNickname: "Rizky",
+    degree: "Sarjana Teknik",
+    major: "Teknik Arsitektur",
+    faculty: "Fakultas Teknik",
+    institution: "Universitas Hasanuddin",
     honors: "Cum Laude",
-    graduatePhotoUrl: "/demo/toga/portrait.webp",
-    groomParents: "Bpk. Ir. Rahmat Hidayat & Ibu Sri Wahyuni",
+    personPhotoUrl: "/demo/toga/portrait.webp",
+    parentName: "Bpk. Ir. Rahmat Hidayat & Ibu Sri Wahyuni",
     targetDate: "2026-12-05T10:00:00",
     weddingDateFormatted: "Sabtu, 5 Desember 2026",
     weddingDateDay: "05",
@@ -3476,14 +3397,15 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     series: "Minimalist",
     category: "minimalist",
     tagline: "TASYAKURAN AQIQAH",
-    eventType: "AQIQAH",
-    babyName: "Aisyah Humaira",
-    babyNickname: "Aisyah",
+    eventType: "PERSONAL",
+    subEvent: "Aqiqah",
+    personName: "Aisyah Humaira",
+    personNickname: "Aisyah",
     birthDateFormatted: "2 November 2026",
     birthWeight: "3,2 kg",
     birthLength: "49 cm",
-    babyPhotoUrl: "/demo/al-khalid/hero.webp",
-    groomParents: "Bpk. Fadli Rahman & Ibu Nurul Aini",
+    personPhotoUrl: "/demo/al-khalid/hero.webp",
+    parentName: "Bpk. Fadli Rahman & Ibu Nurul Aini",
     targetDate: "2026-11-29T10:00:00",
     weddingDateFormatted: "Ahad, 29 November 2026",
     weddingDateDay: "29",
@@ -3512,13 +3434,14 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     series: "Traditional",
     category: "traditional",
     tagline: "WALIMATUL KHITAN",
-    eventType: "KHITAN",
-    childName: "Muhammad Rafa Alfarizi",
-    childNickname: "Rafa",
-    childAge: 8,
-    childBirthOrder: "Putra Kedua",
-    childPhotoUrl: "/demo/al-fariz/hero.webp",
-    groomParents: "Bpk. H. Syamsul Bahri & Ibu Hj. Ratna Sari",
+    eventType: "PERSONAL",
+    subEvent: "Khitanan",
+    personName: "Muhammad Rafa Alfarizi",
+    personNickname: "Rafa",
+    personAge: 8,
+    personBirthOrder: "Putra Kedua",
+    personPhotoUrl: "/demo/al-fariz/hero.webp",
+    parentName: "Bpk. H. Syamsul Bahri & Ibu Hj. Ratna Sari",
     targetDate: "2026-12-19T09:00:00",
     weddingDateFormatted: "Sabtu, 19 Desember 2026",
     weddingDateDay: "19",
@@ -3548,12 +3471,13 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     series: "Modern",
     category: "modern",
     tagline: "BIRTHDAY PARTY",
-    eventType: "BIRTHDAY",
+    eventType: "PERSONAL",
+    subEvent: "Ulang Tahun",
     personName: "Kayla Azzahra",
     personNickname: "Kayla",
     personAge: 7,
     personPhotoUrl: "/demo/festivo/hero.webp",
-    groomParents: "Bpk. Andi Pratama & Ibu Mega Lestari",
+    parentName: "Bpk. Andi Pratama & Ibu Mega Lestari",
     targetDate: "2026-11-22T15:00:00",
     weddingDateFormatted: "Ahad, 22 November 2026",
     weddingDateDay: "22",
@@ -3582,7 +3506,8 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     series: "Modern",
     category: "modern",
     tagline: "UNDANGAN RESMI",
-    eventType: "GATHERING",
+    eventType: "EVENT",
+    subEvent: "Seminar & Workshop",
     eventTitle: "Forum Kolaborasi UMKM Sulawesi 2026",
     eventSubtitle: "Membangun ekosistem usaha digital yang berkelanjutan",
     organizerName: "Komunitas Usaha Digital Makassar",
@@ -3614,9 +3539,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
   },
   // Tema berilustrasi (5 Nov 2026): demo sengaja tanpa foto agar ilustrasi master yang tampil, bukan monogram cadangan.
   balonku: {
-    themeId: "balonku", themeName: "Balonku", series: "Modern", category: "modern", tagline: "PESTA ULANG TAHUN", eventType: "BIRTHDAY",
+    themeId: "balonku", themeName: "Balonku", series: "Modern", category: "modern", tagline: "PESTA ULANG TAHUN", eventType: "PERSONAL", subEvent: "Ulang Tahun",
     personName: "Arka Pratama", personNickname: "Arka", personAge: 5, personPhotoUrl: "",
-    groomParents: "Bpk. Reza Pratama & Ibu Laila Sari",
+    parentName: "Bpk. Reza Pratama & Ibu Laila Sari",
     targetDate: "2026-12-13T15:00:00", weddingDateFormatted: "Ahad, 13 Desember 2026", weddingDateDay: "13", weddingDateMonth: "12", weddingDateYear: "2026",
     openingQuote: "Balon terbang tinggi, tawa makin ramai. Yuk datang ke pesta Arka!", openingQuoteRef: "Arka Ulang Tahun ke-5",
     city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3625,9 +3550,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#ff7a59,#ffc94d,#4fb3a9", dressCodeNote: "Pakaian ceria warna-warni", turutMengundang: [], defaultPalette: "sky-balloon",
   },
   gala: {
-    themeId: "gala", themeName: "Gala", series: "Minimalist", category: "minimalist", tagline: "SWEET SEVENTEEN", eventType: "BIRTHDAY",
+    themeId: "gala", themeName: "Gala", series: "Minimalist", category: "minimalist", tagline: "SWEET SEVENTEEN", eventType: "PERSONAL", subEvent: "Ulang Tahun",
     personName: "Nadia Kirana Putri", personNickname: "Nadia", personAge: 17, personPhotoUrl: "",
-    groomParents: "Bpk. Arif Wibowo & Ibu Sinta Dewi",
+    parentName: "Bpk. Arif Wibowo & Ibu Sinta Dewi",
     targetDate: "2026-12-19T19:00:00", weddingDateFormatted: "Sabtu, 19 Desember 2026", weddingDateDay: "19", weddingDateMonth: "12", weddingDateYear: "2026",
     openingQuote: "Tujuh belas tahun, satu malam, dan semua orang tersayang di satu ruangan.", openingQuoteRef: "Malam Perayaan Nadia",
     city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3637,9 +3562,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
   },
   // Tema berilustrasi batch kedua (11 Nov 2026), lima per jenis acara; demo tanpa foto agar ilustrasi master yang tampil.
   lilin: {
-    themeId: "lilin", themeName: "Lilin", series: "Minimalist", category: "minimalist", tagline: "SELAMAT ULANG TAHUN", eventType: "BIRTHDAY",
+    themeId: "lilin", themeName: "Lilin", series: "Minimalist", category: "minimalist", tagline: "SELAMAT ULANG TAHUN", eventType: "PERSONAL", subEvent: "Ulang Tahun",
     personName: "Kayla Putri Ramadhani", personNickname: "Kayla", personAge: 7, personPhotoUrl: "",
-    groomParents: "Bpk. Hendra Ramadhan & Ibu Melati Sari",
+    parentName: "Bpk. Hendra Ramadhan & Ibu Melati Sari",
     targetDate: "2026-12-12T16:00:00", weddingDateFormatted: "Sabtu, 12 Desember 2026", weddingDateDay: "12", weddingDateMonth: "12", weddingDateYear: "2026",
     openingQuote: "Tujuh lilin, satu permohonan, dan semua orang tersayang di sekeliling kue.", openingQuoteRef: "Kayla Ulang Tahun ke-7",
     city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3648,9 +3573,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#e8708a,#f6c56b,#8fc9b8", dressCodeNote: "Pastel manis", turutMengundang: [], defaultPalette: "strawberry-cream",
   },
   konfeti: {
-    themeId: "konfeti", themeName: "Konfeti", series: "Modern", category: "modern", tagline: "PESTA ULANG TAHUN", eventType: "BIRTHDAY",
+    themeId: "konfeti", themeName: "Konfeti", series: "Modern", category: "modern", tagline: "PESTA ULANG TAHUN", eventType: "PERSONAL", subEvent: "Ulang Tahun",
     personName: "Rafael Adinata", personNickname: "Rafa", personAge: 12, personPhotoUrl: "",
-    groomParents: "Bpk. Bima Adinata & Ibu Clara Wulan",
+    parentName: "Bpk. Bima Adinata & Ibu Clara Wulan",
     targetDate: "2026-12-18T18:30:00", weddingDateFormatted: "Jumat, 18 Desember 2026", weddingDateDay: "18", weddingDateMonth: "12", weddingDateYear: "2026",
     openingQuote: "Musik nyala, konfeti terbang, dan semua teman datang. Ini pesta Rafa!", openingQuoteRef: "Rafa Ulang Tahun ke-12",
     city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3659,9 +3584,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#14213d,#ff6b6b,#ffd166", dressCodeNote: "Pakaian pesta warna cerah", turutMengundang: [], defaultPalette: "party-night",
   },
   antariksa: {
-    themeId: "antariksa", themeName: "Antariksa", series: "Modern", category: "modern", tagline: "MISI ULANG TAHUN", eventType: "BIRTHDAY",
+    themeId: "antariksa", themeName: "Antariksa", series: "Modern", category: "modern", tagline: "MISI ULANG TAHUN", eventType: "PERSONAL", subEvent: "Ulang Tahun",
     personName: "Bagas Aditya Pratama", personNickname: "Bagas", personAge: 6, personPhotoUrl: "",
-    groomParents: "Bpk. Dimas Pratama & Ibu Rini Astuti",
+    parentName: "Bpk. Dimas Pratama & Ibu Rini Astuti",
     targetDate: "2026-12-20T15:30:00", weddingDateFormatted: "Ahad, 20 Desember 2026", weddingDateDay: "20", weddingDateMonth: "12", weddingDateYear: "2026",
     openingQuote: "Tiga, dua, satu, meluncur! Ikut Bagas menjelajah bintang di hari ulang tahunnya.", openingQuoteRef: "Bagas Ulang Tahun ke-6",
     city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3670,9 +3595,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#0e1a3a,#ff8a3d,#5ec2e6", dressCodeNote: "Kostum astronot atau pakaian bebas", turutMengundang: [], defaultPalette: "deep-space",
   },
   rimba: {
-    themeId: "rimba", themeName: "Rimba", series: "Minimalist", category: "minimalist", tagline: "PETUALANGAN ULANG TAHUN", eventType: "BIRTHDAY",
+    themeId: "rimba", themeName: "Rimba", series: "Minimalist", category: "minimalist", tagline: "PETUALANGAN ULANG TAHUN", eventType: "PERSONAL", subEvent: "Ulang Tahun",
     personName: "Alif Rizky Maulana", personNickname: "Alif", personAge: 4, personPhotoUrl: "",
-    groomParents: "Bpk. Fajar Maulana & Ibu Annisa Putri",
+    parentName: "Bpk. Fajar Maulana & Ibu Annisa Putri",
     targetDate: "2026-12-27T10:00:00", weddingDateFormatted: "Ahad, 27 Desember 2026", weddingDateDay: "27", weddingDateMonth: "12", weddingDateYear: "2026",
     openingQuote: "Singa, jerapah, dan gajah sudah menunggu. Ayo berpetualang bersama Alif!", openingQuoteRef: "Alif Ulang Tahun ke-4",
     city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3681,9 +3606,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#3f7d58,#e9883a,#f2c14e", dressCodeNote: "Pakaian bermain warna alam", turutMengundang: [], defaultPalette: "jungle-sand",
   },
   karnaval: {
-    themeId: "karnaval", themeName: "Karnaval", series: "Modern", category: "modern", tagline: "PASAR MALAM ULANG TAHUN", eventType: "BIRTHDAY",
+    themeId: "karnaval", themeName: "Karnaval", series: "Modern", category: "modern", tagline: "PASAR MALAM ULANG TAHUN", eventType: "PERSONAL", subEvent: "Ulang Tahun",
     personName: "Salsabila Maharani", personNickname: "Salsa", personAge: 9, personPhotoUrl: "",
-    groomParents: "Bpk. Andi Maharaja & Ibu Siti Rahmah",
+    parentName: "Bpk. Andi Maharaja & Ibu Siti Rahmah",
     targetDate: "2026-12-26T16:00:00", weddingDateFormatted: "Sabtu, 26 Desember 2026", weddingDateDay: "26", weddingDateMonth: "12", weddingDateYear: "2026",
     openingQuote: "Komidi putar berputar, lampu menyala, dan tawa tak berhenti. Selamat datang di karnaval Salsa!", openingQuoteRef: "Salsa Ulang Tahun ke-9",
     city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3692,9 +3617,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#d64545,#e9b44c,#2a9d8f", dressCodeNote: "Pakaian ceria bertema karnaval", turutMengundang: [], defaultPalette: "circus-red",
   },
   domba: {
-    themeId: "domba", themeName: "Domba", series: "Minimalist", category: "minimalist", tagline: "TASYAKURAN AQIQAH", eventType: "AQIQAH",
-    babyName: "Muhammad Rayyan Al-Fatih", babyNickname: "Rayyan", birthDateFormatted: "2 November 2026", birthWeight: "3,3 kg", birthLength: "50 cm", babyPhotoUrl: "",
-    groomParents: "Bpk. Ahmad Syarif & Ibu Nurul Aini",
+    themeId: "domba", themeName: "Domba", series: "Minimalist", category: "minimalist", tagline: "TASYAKURAN AQIQAH", eventType: "PERSONAL", subEvent: "Aqiqah",
+    personName: "Muhammad Rayyan Al-Fatih", personNickname: "Rayyan", birthDateFormatted: "2 November 2026", birthWeight: "3,3 kg", birthLength: "50 cm", personPhotoUrl: "",
+    parentName: "Bpk. Ahmad Syarif & Ibu Nurul Aini",
     targetDate: "2026-12-05T10:00:00", weddingDateFormatted: "Sabtu, 5 Desember 2026", weddingDateDay: "05", weddingDateMonth: "12", weddingDateYear: "2026",
     openingQuote: "Semoga ananda tumbuh sehat, menjadi anak yang saleh, dan penyejuk hati kedua orang tuanya.", openingQuoteRef: "Doa untuk Rayyan",
     city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3703,9 +3628,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#7aa874,#f2c76e,#f1b5a6", dressCodeNote: "Warna alam lembut", turutMengundang: ["Keluarga Besar Ahmad Syarif", "Keluarga Besar Nurul Aini"], defaultPalette: "meadow",
   },
   lelap: {
-    themeId: "lelap", themeName: "Lelap", series: "Minimalist", category: "minimalist", tagline: "TASYAKURAN AQIQAH", eventType: "AQIQAH",
-    babyName: "Aisyah Humaira", babyNickname: "Aisyah", birthDateFormatted: "29 Oktober 2026", birthWeight: "3,0 kg", birthLength: "47 cm", babyPhotoUrl: "",
-    groomParents: "Bpk. Rizal Mahendra & Ibu Dewi Lestari",
+    themeId: "lelap", themeName: "Lelap", series: "Minimalist", category: "minimalist", tagline: "TASYAKURAN AQIQAH", eventType: "PERSONAL", subEvent: "Aqiqah",
+    personName: "Aisyah Humaira", personNickname: "Aisyah", birthDateFormatted: "29 Oktober 2026", birthWeight: "3,0 kg", birthLength: "47 cm", personPhotoUrl: "",
+    parentName: "Bpk. Rizal Mahendra & Ibu Dewi Lestari",
     targetDate: "2026-12-12T09:30:00", weddingDateFormatted: "Sabtu, 12 Desember 2026", weddingDateDay: "12", weddingDateMonth: "12", weddingDateYear: "2026",
     openingQuote: "Tidurlah nyenyak, buah hati. Semoga Allah selalu menjagamu dalam lelap dan terjagamu.", openingQuoteRef: "Doa untuk Aisyah",
     city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3714,9 +3639,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#2f3e5c,#f4b88e,#9fc3d9", dressCodeNote: "Warna lembut", turutMengundang: ["Keluarga Besar Rizal Mahendra"], defaultPalette: "dusk-peach",
   },
   pelangi: {
-    themeId: "pelangi", themeName: "Pelangi", series: "Modern", category: "modern", tagline: "TASYAKURAN AQIQAH", eventType: "AQIQAH",
-    babyName: "Nadhira Az-Zahra", babyNickname: "Nadhira", birthDateFormatted: "4 November 2026", birthWeight: "2,9 kg", birthLength: "48 cm", babyPhotoUrl: "",
-    groomParents: "Bpk. Yusuf Hidayat & Ibu Rahmawati",
+    themeId: "pelangi", themeName: "Pelangi", series: "Modern", category: "modern", tagline: "TASYAKURAN AQIQAH", eventType: "PERSONAL", subEvent: "Aqiqah",
+    personName: "Nadhira Az-Zahra", personNickname: "Nadhira", birthDateFormatted: "4 November 2026", birthWeight: "2,9 kg", birthLength: "48 cm", personPhotoUrl: "",
+    parentName: "Bpk. Yusuf Hidayat & Ibu Rahmawati",
     targetDate: "2026-12-13T10:00:00", weddingDateFormatted: "Ahad, 13 Desember 2026", weddingDateDay: "13", weddingDateMonth: "12", weddingDateYear: "2026",
     openingQuote: "Seperti pelangi sehabis hujan, kehadiranmu membawa warna dan syukur bagi kami.", openingQuoteRef: "Doa untuk Nadhira",
     city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3725,9 +3650,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#f29e8e,#f7cf72,#9fc7ea", dressCodeNote: "Warna pastel", turutMengundang: ["Keluarga Besar Yusuf Hidayat"], defaultPalette: "soft-rainbow",
   },
   kelopak: {
-    themeId: "kelopak", themeName: "Kelopak", series: "Modern", category: "modern", tagline: "TASYAKURAN AQIQAH", eventType: "AQIQAH",
-    babyName: "Zahira Khairunnisa", babyNickname: "Zahira", birthDateFormatted: "1 November 2026", birthWeight: "3,2 kg", birthLength: "49 cm", babyPhotoUrl: "",
-    groomParents: "Bpk. Hasan Basri & Ibu Fatimah Azzahra",
+    themeId: "kelopak", themeName: "Kelopak", series: "Modern", category: "modern", tagline: "TASYAKURAN AQIQAH", eventType: "PERSONAL", subEvent: "Aqiqah",
+    personName: "Zahira Khairunnisa", personNickname: "Zahira", birthDateFormatted: "1 November 2026", birthWeight: "3,2 kg", birthLength: "49 cm", personPhotoUrl: "",
+    parentName: "Bpk. Hasan Basri & Ibu Fatimah Azzahra",
     targetDate: "2026-12-19T10:00:00", weddingDateFormatted: "Sabtu, 19 Desember 2026", weddingDateDay: "19", weddingDateMonth: "12", weddingDateYear: "2026",
     openingQuote: "Semoga ananda tumbuh seindah bunga, harum akhlaknya, dan menjadi kebanggaan keluarga.", openingQuoteRef: "Doa untuk Zahira",
     city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3736,9 +3661,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#e7a1a7,#9db59a,#d9b26f", dressCodeNote: "Warna pastel", turutMengundang: ["Keluarga Besar Hasan Basri"], defaultPalette: "blush-floral",
   },
   embun: {
-    themeId: "embun", themeName: "Embun", series: "Traditional", category: "traditional", tagline: "TASYAKURAN AQIQAH", eventType: "AQIQAH",
-    babyName: "Abdullah Hafiz Ramadhan", babyNickname: "Hafiz", birthDateFormatted: "27 Oktober 2026", birthWeight: "3,4 kg", birthLength: "51 cm", babyPhotoUrl: "",
-    groomParents: "Bpk. H. Ilham Akbar & Ibu Hj. Sitti Hajar",
+    themeId: "embun", themeName: "Embun", series: "Traditional", category: "traditional", tagline: "TASYAKURAN AQIQAH", eventType: "PERSONAL", subEvent: "Aqiqah",
+    personName: "Abdullah Hafiz Ramadhan", personNickname: "Hafiz", birthDateFormatted: "27 Oktober 2026", birthWeight: "3,4 kg", birthLength: "51 cm", personPhotoUrl: "",
+    parentName: "Bpk. H. Ilham Akbar & Ibu Hj. Sitti Hajar",
     targetDate: "2026-12-06T09:00:00", weddingDateFormatted: "Ahad, 6 Desember 2026", weddingDateDay: "06", weddingDateMonth: "12", weddingDateYear: "2026",
     openingQuote: "Seperti embun di pagi hari, semoga kehadiranmu menyejukkan dan membawa keberkahan.", openingQuoteRef: "Doa untuk Hafiz",
     city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3747,9 +3672,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#2f6f5e,#c9a45c,#f4f1e6", dressCodeNote: "Busana muslim", turutMengundang: ["Keluarga Besar H. Ilham Akbar"], defaultPalette: "emerald-dew",
   },
   kubah: {
-    themeId: "kubah", themeName: "Kubah", series: "Traditional", category: "traditional", tagline: "WALIMATUL KHITAN", eventType: "KHITAN",
-    childName: "Muhammad Fariz Al-Ghifari", childNickname: "Fariz", childAge: 9, childBirthOrder: "Putra Pertama", childPhotoUrl: "",
-    groomParents: "Bpk. Arief Kusuma, S.T. & Ibu Dewi Rahayu, S.Pd.",
+    themeId: "kubah", themeName: "Kubah", series: "Traditional", category: "traditional", tagline: "WALIMATUL KHITAN", eventType: "PERSONAL", subEvent: "Khitanan",
+    personName: "Muhammad Fariz Al-Ghifari", personNickname: "Fariz", personAge: 9, personBirthOrder: "Putra Pertama", personPhotoUrl: "",
+    parentName: "Bpk. Arief Kusuma, S.T. & Ibu Dewi Rahayu, S.Pd.",
     targetDate: "2026-12-12T09:00:00", weddingDateFormatted: "Sabtu, 12 Desember 2026", weddingDateDay: "12", weddingDateMonth: "12", weddingDateYear: "2026",
     openingQuote: "Semoga menjadi anak yang sholeh, berbakti kepada orang tua, dan bermanfaat bagi sesama.", openingQuoteRef: "Doa Walimatul Khitan",
     city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3761,9 +3686,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#0f4c3a,#d4a94c,#fbf6e9", dressCodeNote: "Busana muslim", turutMengundang: ["Keluarga Besar Arief Kusuma"], defaultPalette: "emerald-dusk",
   },
   sajadah: {
-    themeId: "sajadah", themeName: "Sajadah", series: "Traditional", category: "traditional", tagline: "WALIMATUL KHITAN", eventType: "KHITAN",
-    childName: "Ahmad Rasyid Hidayat", childNickname: "Rasyid", childAge: 8, childBirthOrder: "Putra Kedua", childPhotoUrl: "",
-    groomParents: "Bpk. Taufik Hidayat & Ibu Nur Aisyah",
+    themeId: "sajadah", themeName: "Sajadah", series: "Traditional", category: "traditional", tagline: "WALIMATUL KHITAN", eventType: "PERSONAL", subEvent: "Khitanan",
+    personName: "Ahmad Rasyid Hidayat", personNickname: "Rasyid", personAge: 8, personBirthOrder: "Putra Kedua", personPhotoUrl: "",
+    parentName: "Bpk. Taufik Hidayat & Ibu Nur Aisyah",
     targetDate: "2026-12-19T09:00:00", weddingDateFormatted: "Sabtu, 19 Desember 2026", weddingDateDay: "19", weddingDateMonth: "12", weddingDateYear: "2026",
     openingQuote: "Semoga ananda tumbuh menjadi pribadi yang taat, berilmu, dan berakhlak mulia.", openingQuoteRef: "Doa Walimatul Khitan",
     city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3772,9 +3697,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#1f3d6b,#d6a84a,#b5583c", dressCodeNote: "Busana muslim", turutMengundang: ["Keluarga Besar Taufik Hidayat"], defaultPalette: "navy-rug",
   },
   girih: {
-    themeId: "girih", themeName: "Girih", series: "Modern", category: "modern", tagline: "WALIMATUL KHITAN", eventType: "KHITAN",
-    childName: "Raffa Al-Malik Pratama", childNickname: "Raffa", childAge: 10, childBirthOrder: "Putra Pertama", childPhotoUrl: "",
-    groomParents: "Bpk. Rizky Pratama & Ibu Siti Nurhaliza",
+    themeId: "girih", themeName: "Girih", series: "Modern", category: "modern", tagline: "WALIMATUL KHITAN", eventType: "PERSONAL", subEvent: "Khitanan",
+    personName: "Raffa Al-Malik Pratama", personNickname: "Raffa", personAge: 10, personBirthOrder: "Putra Pertama", personPhotoUrl: "",
+    parentName: "Bpk. Rizky Pratama & Ibu Siti Nurhaliza",
     targetDate: "2026-12-20T10:00:00", weddingDateFormatted: "Ahad, 20 Desember 2026", weddingDateDay: "20", weddingDateMonth: "12", weddingDateYear: "2026",
     openingQuote: "Semoga ananda menjadi anak yang sholeh, sehat, dan menjadi kebanggaan keluarga.", openingQuoteRef: "Doa Walimatul Khitan",
     city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3783,9 +3708,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#0e5e6f,#e3c58f,#f4ecdb", dressCodeNote: "Busana muslim", turutMengundang: ["Keluarga Besar Rizky Pratama"], defaultPalette: "teal-geometry",
   },
   serambi: {
-    themeId: "serambi", themeName: "Serambi", series: "Minimalist", category: "minimalist", tagline: "WALIMATUL KHITAN", eventType: "KHITAN",
-    childName: "Umar Faruq Ramadhan", childNickname: "Umar", childAge: 7, childBirthOrder: "Putra Ketiga", childPhotoUrl: "",
-    groomParents: "Bpk. Hamzah Ramadhan & Ibu Laila Fitriani",
+    themeId: "serambi", themeName: "Serambi", series: "Minimalist", category: "minimalist", tagline: "WALIMATUL KHITAN", eventType: "PERSONAL", subEvent: "Khitanan",
+    personName: "Umar Faruq Ramadhan", personNickname: "Umar", personAge: 7, personBirthOrder: "Putra Ketiga", personPhotoUrl: "",
+    parentName: "Bpk. Hamzah Ramadhan & Ibu Laila Fitriani",
     targetDate: "2026-12-26T09:00:00", weddingDateFormatted: "Sabtu, 26 Desember 2026", weddingDateDay: "26", weddingDateMonth: "12", weddingDateYear: "2026",
     openingQuote: "Semoga Allah menjadikan ananda penyejuk hati, taat beribadah, dan berbakti kepada orang tua.", openingQuoteRef: "Doa Walimatul Khitan",
     city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3794,9 +3719,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#6f8a77,#b9965b,#ece4d6", dressCodeNote: "Busana muslim warna lembut", turutMengundang: ["Keluarga Besar Hamzah Ramadhan"], defaultPalette: "stone-sage",
   },
   firdaus: {
-    themeId: "firdaus", themeName: "Firdaus", series: "Traditional", category: "traditional", tagline: "WALIMATUL KHITAN", eventType: "KHITAN",
-    childName: "Muhammad Yusuf Al-Hakim", childNickname: "Yusuf", childAge: 9, childBirthOrder: "Putra Pertama", childPhotoUrl: "",
-    groomParents: "Bpk. H. Syamsul Bahri & Ibu Hj. Rosmawati",
+    themeId: "firdaus", themeName: "Firdaus", series: "Traditional", category: "traditional", tagline: "WALIMATUL KHITAN", eventType: "PERSONAL", subEvent: "Khitanan",
+    personName: "Muhammad Yusuf Al-Hakim", personNickname: "Yusuf", personAge: 9, personBirthOrder: "Putra Pertama", personPhotoUrl: "",
+    parentName: "Bpk. H. Syamsul Bahri & Ibu Hj. Rosmawati",
     targetDate: "2026-12-27T09:00:00", weddingDateFormatted: "Ahad, 27 Desember 2026", weddingDateDay: "27", weddingDateMonth: "12", weddingDateYear: "2026",
     openingQuote: "Semoga ananda tumbuh seindah taman firdaus: teduh, harum akhlaknya, dan membawa keberkahan.", openingQuoteRef: "Doa Walimatul Khitan",
     city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3808,9 +3733,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#1e5b45,#c9a24e,#c9707a", dressCodeNote: "Busana muslim", turutMengundang: ["Keluarga Besar H. Syamsul Bahri"], defaultPalette: "garden-emerald",
   },
   nur: {
-    themeId: "nur", themeName: "Nur", series: "Traditional", category: "traditional", tagline: "WALIMATUL KHITAN", eventType: "KHITAN",
-    childName: "Muhammad Zidan Alfath", childNickname: "Zidan", childAge: 9, childBirthOrder: "Putra Pertama", childPhotoUrl: "",
-    groomParents: "Bpk. H. Iwan Setiawan & Ibu Hj. Fitri Handayani",
+    themeId: "nur", themeName: "Nur", series: "Traditional", category: "traditional", tagline: "WALIMATUL KHITAN", eventType: "PERSONAL", subEvent: "Khitanan",
+    personName: "Muhammad Zidan Alfath", personNickname: "Zidan", personAge: 9, personBirthOrder: "Putra Pertama", personPhotoUrl: "",
+    parentName: "Bpk. H. Iwan Setiawan & Ibu Hj. Fitri Handayani",
     targetDate: "2026-12-26T09:00:00", weddingDateFormatted: "Sabtu, 26 Desember 2026", weddingDateDay: "26", weddingDateMonth: "12", weddingDateYear: "2026",
     openingQuote: "Semoga ananda tumbuh menjadi cahaya bagi keluarga, taat kepada Allah, dan berbakti kepada orang tua.", openingQuoteRef: "Doa Walimatul Khitan",
     city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3822,9 +3747,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#0b3b2e,#c9a45c,#f7f2e6", dressCodeNote: "Busana muslim", turutMengundang: ["Keluarga Besar H. Iwan Setiawan"], defaultPalette: "emerald-gold",
   },
   sakinah: {
-    themeId: "sakinah", themeName: "Sakinah", series: "Minimalist", category: "minimalist", tagline: "WALIMATUL KHITAN", eventType: "KHITAN",
-    childName: "Ahmad Faqih Hanif", childNickname: "Faqih", childAge: 7, childBirthOrder: "Putra Ketiga", childPhotoUrl: "",
-    groomParents: "Bpk. Hasan Basri & Ibu Nur Aisyah",
+    themeId: "sakinah", themeName: "Sakinah", series: "Minimalist", category: "minimalist", tagline: "WALIMATUL KHITAN", eventType: "PERSONAL", subEvent: "Khitanan",
+    personName: "Ahmad Faqih Hanif", personNickname: "Faqih", personAge: 7, personBirthOrder: "Putra Ketiga", personPhotoUrl: "",
+    parentName: "Bpk. Hasan Basri & Ibu Nur Aisyah",
     targetDate: "2027-01-09T10:00:00", weddingDateFormatted: "Sabtu, 9 Januari 2027", weddingDateDay: "09", weddingDateMonth: "01", weddingDateYear: "2027",
     openingQuote: "Dengan penuh syukur kami mengundang Bapak/Ibu untuk mendoakan ananda di hari istimewanya.", openingQuoteRef: "Tasyakuran Khitan",
     city: "Gowa", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3833,9 +3758,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#6f8f76,#fbf8f1,#c07a55", dressCodeNote: "Busana muslim warna lembut", turutMengundang: ["Keluarga Besar Hasan Basri"], defaultPalette: "sage-ivory",
   },
   mungil: {
-    themeId: "mungil", themeName: "Mungil", series: "Minimalist", category: "minimalist", tagline: "TASYAKURAN AQIQAH", eventType: "AQIQAH",
-    babyName: "Hana Az-Zahra", babyNickname: "Hana", birthDateFormatted: "8 November 2026", birthWeight: "3,1 kg", birthLength: "48 cm", babyPhotoUrl: "",
-    groomParents: "Bpk. Fikri Ramadhan & Ibu Salsabila",
+    themeId: "mungil", themeName: "Mungil", series: "Minimalist", category: "minimalist", tagline: "TASYAKURAN AQIQAH", eventType: "PERSONAL", subEvent: "Aqiqah",
+    personName: "Hana Az-Zahra", personNickname: "Hana", birthDateFormatted: "8 November 2026", birthWeight: "3,1 kg", birthLength: "48 cm", personPhotoUrl: "",
+    parentName: "Bpk. Fikri Ramadhan & Ibu Salsabila",
     targetDate: "2026-12-06T10:00:00", weddingDateFormatted: "Ahad, 6 Desember 2026", weddingDateDay: "06", weddingDateMonth: "12", weddingDateYear: "2026",
     openingQuote: "Ya Allah, jadikanlah ia penyejuk mata dan hati, tumbuh sehat dalam lindungan-Mu.", openingQuoteRef: "Doa untuk Hana",
     city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3844,9 +3769,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#7fb7b0,#f2b8b5,#f7dc96", dressCodeNote: "Warna pastel", turutMengundang: ["Keluarga Besar Fikri Ramadhan", "Keluarga Besar Salsabila"], defaultPalette: "pastel-moon",
   },
   barakah: {
-    themeId: "barakah", themeName: "Barakah", series: "Traditional", category: "traditional", tagline: "TASYAKURAN AQIQAH", eventType: "AQIQAH",
-    babyName: "Muhammad Rayyan Al-Fatih", babyNickname: "Rayyan", birthDateFormatted: "1 November 2026", birthWeight: "3,4 kg", birthLength: "50 cm", babyPhotoUrl: "",
-    groomParents: "Bpk. Andi Syahrul & Ibu Andi Nurlela",
+    themeId: "barakah", themeName: "Barakah", series: "Traditional", category: "traditional", tagline: "TASYAKURAN AQIQAH", eventType: "PERSONAL", subEvent: "Aqiqah",
+    personName: "Muhammad Rayyan Al-Fatih", personNickname: "Rayyan", birthDateFormatted: "1 November 2026", birthWeight: "3,4 kg", birthLength: "50 cm", personPhotoUrl: "",
+    parentName: "Bpk. Andi Syahrul & Ibu Andi Nurlela",
     targetDate: "2026-12-12T10:00:00", weddingDateFormatted: "Sabtu, 12 Desember 2026", weddingDateDay: "12", weddingDateMonth: "12", weddingDateYear: "2026",
     openingQuote: "Setiap anak tergadai dengan aqiqahnya; dengan rasa syukur kami menunaikannya untuk ananda.", openingQuoteRef: "Tasyakuran Aqiqah",
     city: "Bone", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3855,9 +3780,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#23474a,#b8924a,#fbf6ec", dressCodeNote: "Busana muslim", turutMengundang: ["Keluarga Besar Andi Syahrul"], defaultPalette: "teal-gold",
   },
   laurel: {
-    themeId: "laurel", themeName: "Laurel", series: "Modern", category: "modern", tagline: "SYUKURAN KELULUSAN", eventType: "WISUDA",
-    graduateName: "Annisa Rahmadani, S.Psi.", graduateNickname: "Annisa", graduateDegree: "Sarjana Psikologi", graduateMajor: "Psikologi", graduateFaculty: "Fakultas Kedokteran", universityName: "Universitas Hasanuddin", honors: "Cum Laude", graduatePhotoUrl: "",
-    groomParents: "Bpk. Rudi Hartono & Ibu Wahyuni",
+    themeId: "laurel", themeName: "Laurel", series: "Modern", category: "modern", tagline: "SYUKURAN KELULUSAN", eventType: "PERSONAL", subEvent: "Wisuda",
+    personName: "Annisa Rahmadani, S.Psi.", personNickname: "Annisa", degree: "Sarjana Psikologi", major: "Psikologi", faculty: "Fakultas Kedokteran", institution: "Universitas Hasanuddin", honors: "Cum Laude", personPhotoUrl: "",
+    parentName: "Bpk. Rudi Hartono & Ibu Wahyuni",
     targetDate: "2026-12-20T11:00:00", weddingDateFormatted: "Ahad, 20 Desember 2026", weddingDateDay: "20", weddingDateMonth: "12", weddingDateYear: "2026",
     openingQuote: "Gelar ini milik Ayah dan Ibu; aku hanya menjemputnya.", openingQuoteRef: "Untuk Ayah dan Ibu",
     city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3866,9 +3791,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#101a33,#e0b354,#f5f1e8", dressCodeNote: "Formal / batik", turutMengundang: ["Keluarga Besar Rudi Hartono"], defaultPalette: "navy-gold",
   },
   akademia: {
-    themeId: "akademia", themeName: "Akademia", series: "Minimalist", category: "minimalist", tagline: "SYUKURAN KELULUSAN", eventType: "WISUDA",
-    graduateName: "Dimas Prasetyo, M.T.", graduateNickname: "Dimas", graduateDegree: "Magister Teknik", graduateMajor: "Teknik Sipil", graduateFaculty: "Fakultas Teknik", universityName: "Universitas Negeri Makassar", honors: "", graduatePhotoUrl: "",
-    groomParents: "Bpk. Bambang Prasetyo & Ibu Yuliana",
+    themeId: "akademia", themeName: "Akademia", series: "Minimalist", category: "minimalist", tagline: "SYUKURAN KELULUSAN", eventType: "PERSONAL", subEvent: "Wisuda",
+    personName: "Dimas Prasetyo, M.T.", personNickname: "Dimas", degree: "Magister Teknik", major: "Teknik Sipil", faculty: "Fakultas Teknik", institution: "Universitas Negeri Makassar", honors: "", personPhotoUrl: "",
+    parentName: "Bpk. Bambang Prasetyo & Ibu Yuliana",
     targetDate: "2027-01-16T10:00:00", weddingDateFormatted: "Sabtu, 16 Januari 2027", weddingDateDay: "16", weddingDateMonth: "01", weddingDateYear: "2027",
     openingQuote: "Belajar tidak berhenti di toga; ia baru saja dimulai.", openingQuoteRef: "Syukuran Magister",
     city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3877,9 +3802,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#7a1f2b,#fbf9f4,#1d1d1f", dressCodeNote: "Formal / batik", turutMengundang: ["Keluarga Besar Bambang Prasetyo"], defaultPalette: "maroon-paper",
   },
   pena: {
-    themeId: "pena", themeName: "Pena", series: "Minimalist", category: "minimalist", tagline: "SYUKURAN KELULUSAN", eventType: "WISUDA",
-    graduateName: "Nadia Putri Lestari, S.Pd.", graduateNickname: "Nadia", graduateDegree: "Sarjana Pendidikan", graduateMajor: "Pendidikan Bahasa Indonesia", graduateFaculty: "Fakultas Bahasa dan Sastra", universityName: "Universitas Negeri Makassar", honors: "Cum Laude", graduatePhotoUrl: "",
-    groomParents: "Bpk. Hasan Basri & Ibu Nurlina",
+    themeId: "pena", themeName: "Pena", series: "Minimalist", category: "minimalist", tagline: "SYUKURAN KELULUSAN", eventType: "PERSONAL", subEvent: "Wisuda",
+    personName: "Nadia Putri Lestari, S.Pd.", personNickname: "Nadia", degree: "Sarjana Pendidikan", major: "Pendidikan Bahasa Indonesia", faculty: "Fakultas Bahasa dan Sastra", institution: "Universitas Negeri Makassar", honors: "Cum Laude", personPhotoUrl: "",
+    parentName: "Bpk. Hasan Basri & Ibu Nurlina",
     targetDate: "2027-01-23T10:00:00", weddingDateFormatted: "Sabtu, 23 Januari 2027", weddingDateDay: "23", weddingDateMonth: "01", weddingDateYear: "2027",
     openingQuote: "Setiap halaman yang ditulis dengan sabar akhirnya menjadi sebuah buku.", openingQuoteRef: "Syukuran Sarjana",
     city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3888,9 +3813,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#24365e,#fbf6ea,#c8924a", dressCodeNote: "Formal / batik", turutMengundang: ["Keluarga Besar Hasan Basri"], defaultPalette: "navy-paper",
   },
   medali: {
-    themeId: "medali", themeName: "Medali", series: "Modern", category: "modern", tagline: "SYUKURAN KELULUSAN", eventType: "WISUDA",
-    graduateName: "Rizky Ananda Putra, S.Kom.", graduateNickname: "Rizky", graduateDegree: "Sarjana Komputer", graduateMajor: "Teknik Informatika", graduateFaculty: "Fakultas Ilmu Komputer", universityName: "Universitas Hasanuddin", honors: "Wisudawan Terbaik", graduatePhotoUrl: "",
-    groomParents: "Bpk. Ahmad Yani & Ibu Rosmiati",
+    themeId: "medali", themeName: "Medali", series: "Modern", category: "modern", tagline: "SYUKURAN KELULUSAN", eventType: "PERSONAL", subEvent: "Wisuda",
+    personName: "Rizky Ananda Putra, S.Kom.", personNickname: "Rizky", degree: "Sarjana Komputer", major: "Teknik Informatika", faculty: "Fakultas Ilmu Komputer", institution: "Universitas Hasanuddin", honors: "Wisudawan Terbaik", personPhotoUrl: "",
+    parentName: "Bpk. Ahmad Yani & Ibu Rosmiati",
     targetDate: "2027-02-06T11:00:00", weddingDateFormatted: "Sabtu, 6 Februari 2027", weddingDateDay: "06", weddingDateMonth: "02", weddingDateYear: "2027",
     openingQuote: "Medali ini milik semua yang ikut berlari di belakang layar.", openingQuoteRef: "Untuk Ayah dan Ibu",
     city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3899,9 +3824,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#1f5a48,#d4a63a,#f7f4ea", dressCodeNote: "Formal", turutMengundang: ["Keluarga Besar Ahmad Yani"], defaultPalette: "emerald-gold",
   },
   sorak: {
-    themeId: "sorak", themeName: "Sorak", series: "Modern", category: "modern", tagline: "PESTA KELULUSAN", eventType: "WISUDA",
-    graduateName: "Salsabila Aulia, S.E.", graduateNickname: "Salsa", graduateDegree: "Sarjana Ekonomi", graduateMajor: "Manajemen", graduateFaculty: "Fakultas Ekonomi dan Bisnis", universityName: "Universitas Muslim Indonesia", honors: "", graduatePhotoUrl: "",
-    groomParents: "Bpk. Syamsul Bahri & Ibu Hasmawati",
+    themeId: "sorak", themeName: "Sorak", series: "Modern", category: "modern", tagline: "PESTA KELULUSAN", eventType: "PERSONAL", subEvent: "Wisuda",
+    personName: "Salsabila Aulia, S.E.", personNickname: "Salsa", degree: "Sarjana Ekonomi", major: "Manajemen", faculty: "Fakultas Ekonomi dan Bisnis", institution: "Universitas Muslim Indonesia", honors: "", personPhotoUrl: "",
+    parentName: "Bpk. Syamsul Bahri & Ibu Hasmawati",
     targetDate: "2027-02-13T16:00:00", weddingDateFormatted: "Sabtu, 13 Februari 2027", weddingDateDay: "13", weddingDateMonth: "02", weddingDateYear: "2027",
     openingQuote: "Toga boleh dilempar tinggi, tapi rasa syukur tetap membumi.", openingQuoteRef: "Pesta Kelulusan",
     city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3910,9 +3835,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#7a1f35,#f2b33d,#fff8ef", dressCodeNote: "Semi formal / bebas rapi", turutMengundang: ["Keluarga Besar Syamsul Bahri"], defaultPalette: "maroon-gold",
   },
   ijazah: {
-    themeId: "ijazah", themeName: "Ijazah", series: "Traditional", category: "traditional", tagline: "SYUKURAN KELULUSAN", eventType: "WISUDA",
-    graduateName: "dr. Muhammad Fadhil Ramadhan", graduateNickname: "Fadhil", graduateDegree: "Dokter", graduateMajor: "Pendidikan Dokter", graduateFaculty: "Fakultas Kedokteran", universityName: "Universitas Hasanuddin", honors: "", graduatePhotoUrl: "",
-    groomParents: "Bpk. H. Abdul Rahman & Ibu Hj. Sitti Aminah",
+    themeId: "ijazah", themeName: "Ijazah", series: "Traditional", category: "traditional", tagline: "SYUKURAN KELULUSAN", eventType: "PERSONAL", subEvent: "Wisuda",
+    personName: "dr. Muhammad Fadhil Ramadhan", personNickname: "Fadhil", degree: "Dokter", major: "Pendidikan Dokter", faculty: "Fakultas Kedokteran", institution: "Universitas Hasanuddin", honors: "", personPhotoUrl: "",
+    parentName: "Bpk. H. Abdul Rahman & Ibu Hj. Sitti Aminah",
     targetDate: "2027-03-06T10:00:00", weddingDateFormatted: "Sabtu, 6 Maret 2027", weddingDateDay: "06", weddingDateMonth: "03", weddingDateYear: "2027",
     openingQuote: "Ilmu adalah amanah; gelar hanyalah tanda bahwa amanah itu mulai dipikul.", openingQuoteRef: "Syukuran Sumpah Dokter",
     city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3921,9 +3846,9 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#7b2431,#f3e6c8,#b8893f", dressCodeNote: "Formal / batik", turutMengundang: ["Keluarga Besar H. Abdul Rahman"], defaultPalette: "burgundy-parchment",
   },
   pustaka: {
-    themeId: "pustaka", themeName: "Pustaka", series: "Minimalist", category: "minimalist", tagline: "SYUKURAN KELULUSAN", eventType: "WISUDA",
-    graduateName: "Andi Tenri Ajeng, M.Hum.", graduateNickname: "Ajeng", graduateDegree: "Magister Humaniora", graduateMajor: "Ilmu Sejarah", graduateFaculty: "Fakultas Ilmu Budaya", universityName: "Universitas Hasanuddin", honors: "", graduatePhotoUrl: "",
-    groomParents: "Bpk. Andi Mappaturung & Ibu Andi Nurhayati",
+    themeId: "pustaka", themeName: "Pustaka", series: "Minimalist", category: "minimalist", tagline: "SYUKURAN KELULUSAN", eventType: "PERSONAL", subEvent: "Wisuda",
+    personName: "Andi Tenri Ajeng, M.Hum.", personNickname: "Ajeng", degree: "Magister Humaniora", major: "Ilmu Sejarah", faculty: "Fakultas Ilmu Budaya", institution: "Universitas Hasanuddin", honors: "", personPhotoUrl: "",
+    parentName: "Bpk. Andi Mappaturung & Ibu Andi Nurhayati",
     targetDate: "2027-03-20T19:00:00", weddingDateFormatted: "Sabtu, 20 Maret 2027", weddingDateDay: "20", weddingDateMonth: "03", weddingDateYear: "2027",
     openingQuote: "Di antara rak-rak buku itu, malam-malam panjang akhirnya berbuah.", openingQuoteRef: "Syukuran Magister",
     city: "Makassar", landingCoverUrl: "", sidebarPhotoUrl: "", globalBgUrl: "", galleryPhotos: [],
@@ -3932,7 +3857,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#2c4a3e,#e0a94a,#f8f3e8", dressCodeNote: "Formal / batik", turutMengundang: ["Keluarga Besar Andi Mappaturung"], defaultPalette: "library-green",
   },
   forum: {
-    themeId: "forum", themeName: "Forum", series: "Modern", category: "modern", tagline: "UNDANGAN RESMI", eventType: "GATHERING",
+    themeId: "forum", themeName: "Forum", series: "Modern", category: "modern", tagline: "UNDANGAN RESMI", eventType: "EVENT", subEvent: "Seminar & Workshop",
     eventTitle: "Konferensi Inovasi Digital 2026", eventSubtitle: "Teknologi, data, dan pertumbuhan usaha di Indonesia Timur", organizerName: "Asosiasi Startup Sulawesi", hostName: "Panitia Konferensi", dresscode: "Business Casual", eventPhotoUrl: "",
     targetDate: "2026-12-03T08:00:00", weddingDateFormatted: "Kamis, 3 Desember 2026", weddingDateDay: "03", weddingDateMonth: "12", weddingDateYear: "2026",
     openingQuote: "Ide terbaik lahir saat orang yang tepat duduk di ruangan yang sama.", openingQuoteRef: "Tema Konferensi 2026",
@@ -3945,7 +3870,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#0b2140,#19b3a6,#f2b544", dressCodeNote: "Business Casual", turutMengundang: [], defaultPalette: "corporate-teal",
   },
   temu: {
-    themeId: "temu", themeName: "Temu", series: "Minimalist", category: "minimalist", tagline: "REUNI AKBAR", eventType: "GATHERING",
+    themeId: "temu", themeName: "Temu", series: "Minimalist", category: "minimalist", tagline: "REUNI AKBAR", eventType: "EVENT", subEvent: "Reuni",
     eventTitle: "Reuni Akbar Angkatan 2010", eventSubtitle: "Sepuluh tahun lebih, cerita lama, wajah yang sama", organizerName: "Alumni SMAN 5 Makassar", hostName: "Panitia Reuni", dresscode: "Kaos angkatan", eventPhotoUrl: "",
     targetDate: "2026-12-27T16:00:00", weddingDateFormatted: "Ahad, 27 Desember 2026", weddingDateDay: "27", weddingDateMonth: "12", weddingDateYear: "2026",
     openingQuote: "Kita mungkin sudah berpencar, tapi cerita kita masih di tempat yang sama.", openingQuoteRef: "Panitia Reuni",
@@ -3955,7 +3880,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#c8643b,#5b6b3a,#e9b44c", dressCodeNote: "Kaos angkatan / santai rapi", turutMengundang: [], defaultPalette: "terracotta-sand",
   },
   cakrawala: {
-    themeId: "cakrawala", themeName: "Cakrawala", series: "Modern", category: "modern", tagline: "UNDANGAN RESMI", eventType: "GATHERING",
+    themeId: "cakrawala", themeName: "Cakrawala", series: "Modern", category: "modern", tagline: "UNDANGAN RESMI", eventType: "EVENT", subEvent: "Corporate",
     eventTitle: "Malam Apresiasi 10 Tahun", eventSubtitle: "Merayakan satu dekade bersama mitra dan karyawan", organizerName: "PT Nusantara Daya Mandiri", hostName: "Panitia HUT ke-10", dresscode: "Formal", eventPhotoUrl: "",
     targetDate: "2027-01-29T18:30:00", weddingDateFormatted: "Jumat, 29 Januari 2027", weddingDateDay: "29", weddingDateMonth: "01", weddingDateYear: "2027",
     openingQuote: "Sepuluh tahun bertumbuh bersama, dan cakrawala kita masih luas.", openingQuoteRef: "Direksi",
@@ -3968,7 +3893,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#1f3354,#e8805a,#f7f5f2", dressCodeNote: "Formal", turutMengundang: [], defaultPalette: "dusk-navy",
   },
   jamuan: {
-    themeId: "jamuan", themeName: "Jamuan", series: "Traditional", category: "traditional", tagline: "UNDANGAN JAMUAN", eventType: "GATHERING",
+    themeId: "jamuan", themeName: "Jamuan", series: "Traditional", category: "traditional", tagline: "UNDANGAN JAMUAN", eventType: "EVENT", subEvent: "Syukuran",
     eventTitle: "Buka Puasa Bersama Keluarga Besar", eventSubtitle: "Mempererat silaturahmi di bulan Ramadan", organizerName: "Keluarga Besar H. Daeng Massikki", hostName: "Panitia Bukber", dresscode: "Busana Muslim", eventPhotoUrl: "",
     targetDate: "2027-02-27T17:30:00", weddingDateFormatted: "Sabtu, 27 Februari 2027", weddingDateDay: "27", weddingDateMonth: "02", weddingDateYear: "2027",
     openingQuote: "Hidangan terbaik selalu terasa lebih nikmat bila disantap bersama.", openingQuoteRef: "Panitia",
@@ -3978,7 +3903,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#1d4a4c,#c9a14a,#f3ead6", dressCodeNote: "Busana Muslim", turutMengundang: [], defaultPalette: "teal-brass",
   },
   panggung: {
-    themeId: "panggung", themeName: "Panggung", series: "Modern", category: "modern", tagline: "SEMINAR NASIONAL", eventType: "GATHERING",
+    themeId: "panggung", themeName: "Panggung", series: "Modern", category: "modern", tagline: "SEMINAR NASIONAL", eventType: "EVENT", subEvent: "Grand Opening",
     eventTitle: "Seminar Nasional Kesehatan Digital", eventSubtitle: "Telemedisin, data pasien, dan layanan primer di daerah", organizerName: "Ikatan Dokter Muda Sulawesi", hostName: "Panitia Seminar", dresscode: "Business Casual", eventPhotoUrl: "",
     targetDate: "2027-03-13T08:00:00", weddingDateFormatted: "Sabtu, 13 Maret 2027", weddingDateDay: "13", weddingDateMonth: "03", weddingDateYear: "2027",
     openingQuote: "Satu panggung, banyak gagasan, dan ruang untuk bertanya.", openingQuoteRef: "Ketua Panitia",
@@ -3991,7 +3916,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#0f6e6a,#f2a541,#22303c", dressCodeNote: "Business Casual", turutMengundang: [], defaultPalette: "teal-amber",
   },
   lapang: {
-    themeId: "lapang", themeName: "Lapang", series: "Minimalist", category: "minimalist", tagline: "HALALBIHALAL", eventType: "GATHERING",
+    themeId: "lapang", themeName: "Lapang", series: "Minimalist", category: "minimalist", tagline: "HALALBIHALAL", eventType: "EVENT", subEvent: "Gathering",
     eventTitle: "Halalbihalal & Family Day", eventSubtitle: "Saling memaafkan, bermain, dan makan bersama", organizerName: "Keluarga Besar Alumni Teknik Unhas", hostName: "Panitia Halalbihalal", dresscode: "Santai rapi", eventPhotoUrl: "",
     targetDate: "2027-04-18T08:00:00", weddingDateFormatted: "Ahad, 18 April 2027", weddingDateDay: "18", weddingDateMonth: "04", weddingDateYear: "2027",
     openingQuote: "Hati yang lapang, tempat yang lapang, dan waktu untuk saling memaafkan.", openingQuoteRef: "Panitia",
@@ -4001,7 +3926,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#2f6a3e,#f2b84b,#d9644a", dressCodeNote: "Santai rapi / kaos keluarga", turutMengundang: [], defaultPalette: "meadow-green",
   },
   prisma: {
-    themeId: "prisma", themeName: "Prisma", series: "Minimalist", category: "minimalist", tagline: "PELUNCURAN PRODUK", eventType: "GATHERING",
+    themeId: "prisma", themeName: "Prisma", series: "Minimalist", category: "minimalist", tagline: "PELUNCURAN PRODUK", eventType: "EVENT", subEvent: "Product Launch",
     eventTitle: "Peluncuran Aplikasi Pasar Kita", eventSubtitle: "Belanja kebutuhan harian dari pasar tradisional terdekat", organizerName: "Pasar Kita Indonesia", hostName: "Tim Pasar Kita", dresscode: "Smart Casual", eventPhotoUrl: "",
     targetDate: "2027-03-27T15:00:00", weddingDateFormatted: "Sabtu, 27 Maret 2027", weddingDateDay: "27", weddingDateMonth: "03", weddingDateYear: "2027",
     openingQuote: "Satu ide yang dilihat dari banyak sudut akan memancarkan banyak warna.", openingQuoteRef: "Tim Pasar Kita",
@@ -4039,7 +3964,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     turutMengundang: ["Keluarga Besar Hendra Pratama", "Keluarga Besar Arif Rahman"],
   },
   biasan: {
-    themeId: "biasan", themeName: "Biasan", series: "Modern", category: "modern", tagline: "TEMU KOMUNITAS", eventType: "GATHERING",
+    themeId: "biasan", themeName: "Biasan", series: "Modern", category: "modern", tagline: "TEMU KOMUNITAS", eventType: "EVENT", subEvent: "Gathering",
     eventTitle: "Temu Kreatif Makassar 2027", eventSubtitle: "Satu sore untuk berbagi karya, ide, dan kolaborasi", organizerName: "Komunitas Kreatif Makassar", hostName: "Panitia Temu Kreatif", dresscode: "Smart Casual", eventPhotoUrl: "",
     targetDate: "2027-06-19T15:00:00", weddingDateFormatted: "Sabtu, 19 Juni 2027", weddingDateDay: "19", weddingDateMonth: "06", weddingDateYear: "2027",
     openingQuote: "Ide yang baik bertemu orang yang tepat, lalu menyebar seperti cahaya yang dibiaskan kaca.", openingQuoteRef: "Panitia Temu Kreatif",
@@ -4054,15 +3979,21 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
  * Tema tanpa persona di registry (tema hasil Theme Builder) memakai persona tema bawaan jenis acaranya, sama dengan
  * pratinjau builder; tanpa `eventType` persona pernikahan kalandra membuat demo tema satu nama kosong.
  */
-export function getDemoThemeData(themeId: string, eventType?: string | null): DemoThemeData {
+export function getDemoThemeData(themeId: string, eventType?: string | null, subEvent?: string | null): DemoThemeData {
   const normalized = (themeId || "kalandra").toLowerCase().trim();
-  const base = DEMO_REGISTRY[normalized] || DEMO_REGISTRY[DEFAULT_THEME_BY_EVENT[eventType || ""]] || DEMO_REGISTRY.kalandra;
+  const ev = (eventType || "").toUpperCase();
+  const fallbackThemeKey =
+    ev === "PERSONAL" || ev === "EVENT"
+      ? resolveSubEventMeta(ev, subEvent).demoFallbackThemeId
+      : DEFAULT_THEME_BY_EVENT[ev] || "kalandra";
+  const base = DEMO_REGISTRY[normalized] || DEMO_REGISTRY[fallbackThemeKey] || DEMO_REGISTRY.kalandra;
   const demo: DemoThemeData = { ...base };
   if (!DEMO_REGISTRY[normalized]) {
     demo.themeId = normalized;
     demo.themeName = normalized ? normalized.charAt(0).toUpperCase() + normalized.slice(1) : "Demo Theme";
-    // Foto latar halaman persona dibuat untuk tema persona itu; di tema lain warna teksnya tidak cocok (gradasi toska
-    // Sinergi membuat teks 33 tema -acara tidak terbaca). Latar bawaan tema yang dipakai.
+    if (ev === "WEDDING" || ev === "PERSONAL" || ev === "EVENT") demo.eventType = ev;
+    if (subEvent) demo.subEvent = subEvent;
+    // Foto latar halaman persona dibuat khusus untuk tema persona tersebut; tema lain memakai latar bawaannya sendiri.
     demo.globalBgUrl = "";
   }
 

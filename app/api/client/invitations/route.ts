@@ -22,6 +22,7 @@ export async function GET() {
       id: true,
       invitationSlug: true,
       eventType: true,
+      subEvent: true,
       participantsJson: true,
       themeId: true,
       status: true,

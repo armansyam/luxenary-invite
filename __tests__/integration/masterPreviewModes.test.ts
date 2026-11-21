@@ -14,7 +14,7 @@ vi.mock("@/lib/cloudflare", () => ({ purgeCloudflareCache: vi.fn(async () => ({ 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
 import { pool } from "@/lib/prisma";
-import { POST } from "@/app/api/admin/theme-variants/route";
+import { POST } from "@/app/api/admin/master-editor/route";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
 const SIM_NAME = "abcdef0123456789abcdef01.webp";
@@ -23,10 +23,10 @@ const SIM_FILE = path.join(process.cwd(), "public", "uploads", "builder-sim", SI
 const DEFAULT_COVER = "/uploads/theme-assets/fedcba9876543210fedcba98.webp";
 
 const preview = async (extra: Record<string, unknown>) => {
-  const res = await POST(new NextRequest("http://localhost/api/admin/theme-variants?preview", {
+  const res = await POST(new NextRequest("http://localhost/api/admin/master-editor?preview", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ parentId: "wajo", mode: "master", overrides: { colors: {}, fonts: {} }, ...extra }),
+    body: JSON.stringify({ masterId: "wajo", overrides: { colors: {}, fonts: {} }, ...extra }),
   }));
   return { status: res.status, html: (await res.json()).html as string };
 };

@@ -8,8 +8,11 @@
  */
 
 /**
- * 9 slot media resmi yang terdaftar di enum `MediaSlot` PostgreSQL.
- * Urutannya mencerminkan urutan logis tampilan undangan dari atas ke bawah.
+ * 11 slot media resmi yang terdaftar di enum `MediaSlot` PostgreSQL.
+ * Slot foto utama dipisahkan tegas sesuai 3 Mode:
+ * - WEDDING  : GROOM_PHOTO & BRIDE_PHOTO
+ * - PERSONAL : PROFILE_PHOTO
+ * - EVENT    : EVENT_PHOTO
  */
 export const VALID_MEDIA_SLOTS = [
   "LANDING_COVER",
@@ -19,6 +22,8 @@ export const VALID_MEDIA_SLOTS = [
   "GLOBAL_FIXED_BG",
   "GROOM_PHOTO",
   "BRIDE_PHOTO",
+  "PROFILE_PHOTO",
+  "EVENT_PHOTO",
   "GALLERY",
   "CLOSING_COVER",
 ] as const;
@@ -38,6 +43,16 @@ export const MEDIA_SLOT_FILE_NAMES: Record<MediaSlotKey, string> = {
   GLOBAL_FIXED_BG: "fixed-bg",
   GROOM_PHOTO: "groom-photo",
   BRIDE_PHOTO: "bride-photo",
+  PROFILE_PHOTO: "profile-photo",
+  EVENT_PHOTO: "event-photo",
   GALLERY: "gallery",
   CLOSING_COVER: "closing-cover",
 };
+
+/** Slot foto profil/identitas utama yang berlaku untuk masing-masing mode acara. */
+export function primaryPhotoSlotForEvent(eventType?: string | null): "GROOM_PHOTO" | "PROFILE_PHOTO" | "EVENT_PHOTO" {
+  const ev = (eventType || "WEDDING").toUpperCase();
+  if (ev === "PERSONAL") return "PROFILE_PHOTO";
+  if (ev === "EVENT") return "EVENT_PHOTO";
+  return "GROOM_PHOTO";
+}

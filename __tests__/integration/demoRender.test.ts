@@ -15,16 +15,15 @@ const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
 
 const masterPath = (themeId: string) => {
   const info = THEME_MAP[themeId];
-  return path.join(process.cwd(), "themes", info.eventType === "gathering" ? "general" : info.eventType, info.style, info.file);
+  return path.join(process.cwd(), "themes", info.eventType, info.style, info.file);
 };
 
-// Jenis acara dikirim seperti demoPublisher (theme.eventType): tema tanpa persona sendiri, misalnya versi satu nama
-// `<id>-acara`, memakai persona bawaan jenis acaranya.
+// Jenis acara dikirim seperti demoPublisher (theme.eventType): tema tanpa persona sendiri memakai persona bawaan jenis acaranya.
 const eventTypeOf = (themeId: string) => THEME_MAP[themeId].eventType.toUpperCase();
 
 const personaName = (themeId: string) => {
   const d = getDemoThemeData(themeId, eventTypeOf(themeId)) as any;
-  return d.groomName && (!d.eventType || d.eventType === "WEDDING") ? d.groomName : d.personNickname || d.childNickname || d.babyNickname || d.graduateNickname || d.eventTitle;
+  return d.groomName && (!d.eventType || d.eventType === "WEDDING") ? d.groomName : d.personNickname || d.eventTitle;
 };
 
 afterAll(async () => {

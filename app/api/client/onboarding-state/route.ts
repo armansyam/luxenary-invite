@@ -58,6 +58,7 @@ export async function GET() {
         isFreeDraft: true,
         themeId: true,
         eventType: true,
+        subEvent: true,
       },
     });
 

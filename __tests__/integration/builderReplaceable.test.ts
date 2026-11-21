@@ -31,7 +31,7 @@ describe("validasi gambar pengganti", () => {
     expect(parseBuilderSpec(spec({ ornaments: [orn({ id: "rep00001", replaceSlot: "HOME_PHOTO" })] })).ok).toBe(true);
     expect(parseBuilderSpec(spec({ ornaments: [orn({ id: "rep00002", replaceSlot: "HOME_PHOTO", slot: "GROOM_PHOTO" })] })).ok).toBe(false);
     expect(parseBuilderSpec(spec({ ornaments: [orn({ id: "rep00003", replaceSlot: "NOPE" as never })] })).ok).toBe(false);
-    expect(parseBuilderSpec(spec({ ornaments: [orn({ id: "rep00004", replaceSlot: "BRIDE_PHOTO" })] }, "BIRTHDAY")).ok).toBe(false);
+    expect(parseBuilderSpec(spec({ ornaments: [orn({ id: "rep00004", replaceSlot: "BRIDE_PHOTO" })] }, "PERSONAL")).ok).toBe(false);
   });
 
   it("foto seksi bebas: sumber replaceable butuh gambar pustaka dan slot sah", () => {
@@ -91,11 +91,11 @@ describe("penanda unggahan klien di engine", () => {
     );
     expect(bgOnly.clientCoverPhoto).toBe(false);
 
-    // Birthday: klien hanya mengunggah LANDING_COVER (mainPhotoUrl jatuh ke cover): clientMainPhoto harus tetap false.
+    // Personal: klien hanya mengunggah LANDING_COVER (mainPhotoUrl jatuh ke cover): clientMainPhoto harus tetap false.
     const bdayCoverOnly = clientPhotoFlags(
       { landingCoverUrl: cover, mainPhotoUrl: cover, firstPhotoUrl: cover },
       [{ mediaSlot: "LANDING_COVER", localPath: cover }],
-      { eventType: "BIRTHDAY" },
+      { eventType: "PERSONAL" },
     );
     expect(bdayCoverOnly.clientCoverPhoto).toBe(true);
     expect(bdayCoverOnly.clientMainPhoto).toBe(false);
@@ -133,9 +133,10 @@ describe("slot foto klien tema builder", () => {
     expect(slots.HOME_PHOTO).toEqual({ places: ["Ilustrasi di Kisah"], preview: ART });
     expect(slots.GROOM_PHOTO).toEqual({ places: ["Profil mempelai", "Seksi Doa Keluarga"], preview: ART_FREE });
     expect(builderSlotReuse(s).map((r) => r.slot)).toEqual(["GROOM_PHOTO"]);
-    const single = builderMediaSlots(spec({}, "BIRTHDAY"));
+    const single = builderMediaSlots(spec({}, "PERSONAL"));
     expect(single.BRIDE_PHOTO).toBeUndefined();
-    expect(single.GROOM_PHOTO?.places).toEqual(["Foto profil"]);
+    expect(single.GROOM_PHOTO).toBeUndefined();
+    expect(single.PROFILE_PHOTO?.places).toEqual(["Foto profil"]);
   });
 
   it("ornamen di blok tersembunyi dan events tersembunyi diabaikan; dua ilustrasi di seksi sama memicu peringatan", () => {

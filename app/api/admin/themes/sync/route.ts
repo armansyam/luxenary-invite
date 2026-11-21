@@ -3,10 +3,13 @@ import { revalidatePath } from "next/cache";
 import fs from "fs";
 import path from "path";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { routeError } from "@/lib/routeError";
 import { purgeCloudflareCache } from "@/lib/cloudflare";
 import { THEME_EVENT_FOLDERS } from "@/lib/themePaths";
+import { getCatalogMediaSlots } from "@/lib/themeMediaSlotsCatalog";
+import { THEME_MAP } from "@/lib/renderTemplate";
 
 export const dynamic = "force-dynamic";
 
@@ -81,54 +84,9 @@ export async function POST() {
             hasGallery,
             hasGift,
             hasQr,
-            isHealthValid: hasStory && hasGallery && hasGift,
+            isHealthValid: (ef.eventType === "WEDDING" ? hasStory : true) && hasGallery && hasGift,
           });
         }
-      }
-    }
-
-    // 2. Legacy fallback scan (themes/<style>/) jika belum dipindahkan
-    for (const sf of STYLE_FOLDERS) {
-      const targetDir = path.join(themesDir, sf.styleFolder);
-      try {
-        await fs.promises.access(targetDir);
-      } catch {
-        continue;
-      }
-
-      const files = await fs.promises.readdir(targetDir);
-      for (const file of files) {
-        if (!file.endsWith(".html") || file.startsWith("starter-blueprint") || file.startsWith("_")) continue;
-
-        const id = file.replace(".html", "").toLowerCase();
-        if (discovered.some((d) => d.id === id)) continue;
-
-        const fullPath = path.join(targetDir, file);
-        const htmlContent = await fs.promises.readFile(fullPath, "utf-8");
-
-        const formattedName = id
-          .split(/[-_]/)
-          .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-          .join(" ");
-
-        const hasStory = htmlContent.includes("{{storySectionHtml}}") || htmlContent.includes("{{storyHtml}}") || htmlContent.includes("{{storyItemsHtml}}");
-        const hasGallery = htmlContent.includes("{{gallerySectionHtml}}") || htmlContent.includes("{{galleryHtml}}") || htmlContent.includes("{{galleryPhotosHtml}}") || htmlContent.includes("{{galleryItemsHtml}}");
-        const hasGift = htmlContent.includes("{{giftSectionHtml}}") || htmlContent.includes("{{giftHtml}}") || htmlContent.includes("{{giftCardsHtml}}") || htmlContent.includes("{{bankListHtml}}");
-        const hasQr = htmlContent.includes("{{qrAccessSectionHtml}}") || htmlContent.includes("{{qrDockButtonHtml}}") || htmlContent.includes("{{qrAccessCardHtml}}") || htmlContent.includes("{{qrCoverButtonHtml}}");
-
-        discovered.push({
-          id,
-          name: formattedName,
-          category: sf.category,
-          series: sf.series,
-          eventType: "WEDDING",
-          filePath: path.relative(process.cwd(), fullPath),
-          hasStory,
-          hasGallery,
-          hasGift,
-          hasQr,
-          isHealthValid: hasStory && hasGallery && hasGift,
-        });
       }
     }
 
@@ -148,6 +106,10 @@ export async function POST() {
       const existing = await prisma.theme.findUnique({ where: { id: d.id } });
       const demoData = (DEMO_REGISTRY as any)[d.id];
       const defaultDesc = demoData?.tagline || `${d.series} — ${d.name} Exclusive Design`;
+      const catalogMediaSlots = getCatalogMediaSlots(d.id);
+      const shouldSeedMediaSlots = Boolean(catalogMediaSlots && (!existing || existing.mediaSlots === null));
+      const defaultSubEvent = THEME_MAP[d.id]?.subEvent ?? null;
+      const shouldSeedSubEvent = Boolean(defaultSubEvent && (!existing || existing.subEvent === null));
 
       await prisma.theme.upsert({
         where: { id: d.id },
@@ -160,23 +122,31 @@ export async function POST() {
           description: existing?.description || defaultDesc,
           thumbnail: existing?.thumbnail || demoData?.sidebarPhotoUrl || demoData?.landingCoverUrl || null,
           ...(existing ? {} : { isActive: true }),
+          ...(shouldSeedSubEvent ? { subEvent: defaultSubEvent } : {}),
+          ...(shouldSeedMediaSlots && catalogMediaSlots
+            ? { mediaSlots: catalogMediaSlots as unknown as Prisma.InputJsonValue }
+            : {}),
         },
         create: {
           id: d.id,
           name: d.name,
           category: d.category,
           eventType: (d.eventType as any) || "WEDDING",
+          ...(defaultSubEvent ? { subEvent: defaultSubEvent } : {}),
           series: d.series,
           description: defaultDesc,
           thumbnail: demoData?.sidebarPhotoUrl || demoData?.landingCoverUrl || null,
           sortOrder: i + 1,
           isActive: true,
+          ...(catalogMediaSlots
+            ? { mediaSlots: catalogMediaSlots as unknown as Prisma.InputJsonValue }
+            : {}),
         },
       });
       syncedCount++;
     }
 
-    // Purge any themes in Database that no longer exist in themes/ directory
+    // Purge any standalone master themes in Database that no longer exist in themes/ directory.
     const discoveredIds = discovered.map((d) => d.id);
     const existingCount = await prisma.theme.count();
     const toDeleteCount = existingCount - discoveredIds.length;

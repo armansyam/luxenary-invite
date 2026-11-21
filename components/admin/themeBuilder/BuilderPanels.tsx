@@ -11,10 +11,10 @@ import {
   BUILDER_DEFAULT_SLOTS,
   MAX_BUILDER_TEXT_LENGTH,
   blockLabelFor,
-  familyBlocks,
-  familyOrderableSections,
-  familyTexts,
-  familyVariantGroups,
+  blocksForMode,
+  orderableSectionsForMode,
+  textsForMode,
+  layoutStylesForMode,
   isDefaultSectionOrder,
   moveSectionInOrder,
   sectionLabelFor,
@@ -32,7 +32,7 @@ import {
   COVER_DESKTOP_MODES,
   DESKTOP_LAYOUTS,
   FREE_PHOTO_SHAPES,
-  familyOrnamentMediaSlots,
+  ornamentMediaSlotsForMode,
   type AnimationPreset,
   type DesktopLayout,
   type FreeSectionPhoto,
@@ -66,6 +66,7 @@ import {
   type SurfaceStyle,
 } from "@/lib/themeBuilder/spec";
 import type { BuilderEventType } from "@/lib/themeBuilder/spec";
+import { PERSONAL_SUB_EVENT_PRESETS, EVENT_SUB_EVENT_PRESETS } from "@/lib/invitationUtils";
 import { SIM_GALLERY_MAX, SIM_MEDIA_MAX_AGE_DAYS, simSlotsFor, type SimMedia, type SimSlot } from "@/lib/themeBuilder/simSlots";
 import { GoogleFontPicker } from "@/components/admin/themeBuilder/GoogleFontPicker";
 import { BUILDER_TEMPLATES, type BuilderTemplate } from "@/lib/themeBuilder/templates";
@@ -85,6 +86,8 @@ export interface ThemeMeta {
   name: string;
   category: "minimalist" | "modern" | "traditional";
   description: string;
+  /** Sub-acara / tag filter dinamis untuk kategori PERSONAL dan EVENT (mis. "Ulang Tahun", "Tamatan Ngaji", "Corporate"). */
+  subEvent?: string;
   /** URL lagu dari pustaka musik sistem; kosong memakai musik bawaan seri. */
   defaultMusicUrl: string;
 }
@@ -358,7 +361,7 @@ function SectionBackgroundsEditor({ spec, backdrops, onChange }: { spec: Builder
   return (
     <Section title="Latar per seksi" hint="Beri tiap seksi latar sendiri: warna palet, gradasi, atau gambar, dengan nada teks yang sesuai. Penutup hanya memakai latar ini bila klien tidak memasang foto penutup.">
       <div className="space-y-1.5">
-        {familyOrderableSections(spec.eventType, spec.sectionOrder).map((sec) => {
+        {orderableSectionsForMode(spec.eventType, spec.sectionOrder).map((sec) => {
           const style = spec.sectionStyles?.[sec];
           const expanded = open === sec;
           return (
@@ -731,7 +734,7 @@ const LONG_TEXT_KEYS: readonly BuilderTextKey[] = ["coverSubtitle", "coupleSub",
  * sudah diubah ditandai dan bisa dikembalikan. Klien tetap dapat mengubah tiap teks di Studio; ini hanya nilai awalnya.
  */
 export function TextsPanel({ spec, labels, onChange }: { spec: BuilderSpec; labels: Record<string, string>; onChange: (patch: Partial<BuilderSpec>) => void }) {
-  const texts = familyTexts(spec.eventType);
+  const texts = textsForMode(spec.eventType);
   const groups = [...new Set(texts.map((t) => t.group))];
   const overridden = Object.keys(spec.texts).length;
   const setText = (key: BuilderTextKey, value: string | null) => {
@@ -1332,7 +1335,7 @@ export function LayoutPanel({
     <>
       <Section title="Posisi elemen" hint="Tata posisi di Mobile (bawaan 375px) atau tarik tepi jendela pratinjau untuk menguji ukuran layar lain (320–480px maupun Desktop). Pergeseran memakai piksel proporsional kanvas sehingga tetap rapi saat teks berpindah baris.">
         <div className="grid grid-cols-1 gap-1.5">
-          {familyBlocks(spec.eventType).map((block) => {
+          {blocksForMode(spec.eventType).map((block) => {
             const custom = Boolean(spec.blocks[block.id]);
             return (
               <button
@@ -1460,7 +1463,7 @@ export function LayoutPanel({
         hint="Atur urutan alur membaca tamu. Sampul (Cover), Panel Desktop (Sidebar), dan Penutup (Closing) tetap pada posisinya."
       >
         {(() => {
-          const defaultOrder = familyOrderableSections(spec.eventType);
+          const defaultOrder = orderableSectionsForMode(spec.eventType);
           const sectionsInOrder = spec.sectionOrder && spec.sectionOrder.length ? spec.sectionOrder : defaultOrder;
           return (
             <div className="space-y-1.5">
@@ -1527,7 +1530,7 @@ export function LayoutPanel({
 
       <FreeSectionsEditor spec={spec} backdrops={backdrops} onChange={onChange} onFocusSection={onFocusSection} />
 
-      {familyVariantGroups(spec.eventType).map((group) => (
+      {layoutStylesForMode(spec.eventType).map((group) => (
         <Section key={group.key} title={group.label} hint={group.key === "sidebar" ? "Hanya tampil di layar desktop, di sebelah kiri kolom undangan." : group.key === "headings" ? "Berlaku untuk semua judul seksi." : undefined}>
           <div className="grid grid-cols-2 gap-2">
             {group.options.map((option) => {
@@ -1558,16 +1561,16 @@ export function LayoutPanel({
 }
 
 function NestingEditor({ spec, onChange, onFocusSection }: { spec: BuilderSpec; onChange: (patch: Partial<BuilderSpec>) => void; onFocusSection: (s: OrnamentSection) => void }) {
-  const family = familyOrderableSections(spec.eventType);
+  const modeSections = orderableSectionsForMode(spec.eventType);
   const nesting = spec.sectionNesting ?? {};
-  const guests = NESTABLE_GUESTS.filter((g) => family.includes(g));
+  const guests = NESTABLE_GUESTS.filter((g) => modeSections.includes(g));
   return (
     <Section title="Tumpangkan seksi" hint="Masukkan satu seksi ke dalam seksi lain, misalnya Kisah di dalam Mempelai atau RSVP di dalam Penutup. Seksi yang menumpang tampil di akhir isi seksi tuannya.">
       <div className="space-y-1.5">
         {guests.map((guest) => {
           const current = nesting[guest] ?? "";
           const hosts = NESTING_HOSTS.filter((h) =>
-            family.includes(h) && (h as string) !== guest && !(h in nesting) && !(h === "events" && spec.eventsPlacement === "home"),
+            modeSections.includes(h) && (h as string) !== guest && !(h in nesting) && !(h === "events" && spec.eventsPlacement === "home"),
           );
           return (
             <label key={guest} className="flex items-center justify-between gap-2 text-[12px] font-semibold text-stone-700">
@@ -1660,9 +1663,9 @@ function FreeSectionsEditor({
   onFocusSection: (s: OrnamentSection) => void;
 }) {
   const list = spec.freeSections ?? [];
-  const hosts = familyOrderableSections(spec.eventType, spec.sectionOrder).filter((s) => s !== "closing" && !(s === "countdown" && (spec.countdownPlacement ?? "section") !== "section") && !(s in (spec.sectionNesting ?? {})));
+  const hosts = orderableSectionsForMode(spec.eventType, spec.sectionOrder).filter((s) => s !== "closing" && !(s === "countdown" && (spec.countdownPlacement ?? "section") !== "section") && !(s in (spec.sectionNesting ?? {})));
   const [styleOpen, setStyleOpen] = useState<FreeSectionId | null>(null);
-  const slots = familyOrnamentMediaSlots(spec.eventType);
+  const slots = ornamentMediaSlotsForMode(spec.eventType);
   const save = (next: FreeSection[]) => onChange({ freeSections: next.length ? next : undefined });
   const update = (id: FreeSectionId, patch: Partial<FreeSection>) => save(list.map((f) => (f.id === id ? { ...f, ...patch } : f)));
   const freeId = FREE_SECTION_IDS.find((id) => !list.some((f) => f.id === id));
@@ -2196,7 +2199,7 @@ export function MotionPanel({ spec, onChange, onReplay }: { spec: BuilderSpec; o
     </Section>
     <Section title="Animasi per seksi" hint="Beri seksi tertentu animasi berbeda dari animasi global, misalnya Mempelai membesar sementara seksi lain naik. Animasi seksi teks bebas diatur di panel Tata letak.">
       <div className="space-y-1.5">
-        {familyOrderableSections(spec.eventType, spec.sectionOrder).map((sec) => {
+        {orderableSectionsForMode(spec.eventType, spec.sectionOrder).map((sec) => {
           const value = spec.sectionAnimations?.[sec] ?? "";
           return (
             <label key={sec} className="flex items-center justify-between gap-2 text-[12px] font-semibold text-stone-700">
@@ -2232,11 +2235,12 @@ const SLOT_LABELS: Record<string, string> = {
   GLOBAL_FIXED_BG: "Latar belakang",
   GROOM_PHOTO: "Foto mempelai pertama",
   BRIDE_PHOTO: "Foto mempelai kedua",
+  PROFILE_PHOTO: "Foto profil tokoh utama",
+  EVENT_PHOTO: "Foto / visual utama acara",
   CLOSING_COVER: "Penutup",
 };
 
-function slotLabelFor(slot: string, eventType: BuilderEventType): string {
-  if (slot === "GROOM_PHOTO" && eventType !== "WEDDING") return "Foto profil utama";
+function slotLabelFor(slot: string, _eventType: BuilderEventType): string {
   return SLOT_LABELS[slot] ?? slot;
 }
 
@@ -2250,6 +2254,7 @@ export function PublishPanel({
   music,
   revisions,
   onDuplicate,
+  onCloneToCategory,
   onExport,
   onRestoreRevision,
   onToggleMediaSlot,
@@ -2263,10 +2268,15 @@ export function PublishPanel({
   music: MusicOption[] | null;
   revisions: RevisionRow[] | null;
   onDuplicate: () => void;
+  onCloneToCategory?: (input: { name: string; targetEventType: BuilderEventType; subEvent?: string }) => Promise<boolean>;
   onExport: () => void;
   onRestoreRevision: (id: string) => void;
   onToggleMediaSlot?: (slot: DeclarableMediaSlot) => void;
 }) {
+  const defaultCloneTarget: BuilderEventType = spec.eventType === "WEDDING" ? "PERSONAL" : spec.eventType === "EVENT" ? "WEDDING" : "EVENT";
+  const [cloneName, setCloneName] = useState("");
+  const [cloneTarget, setCloneTarget] = useState<BuilderEventType>(defaultCloneTarget);
+  const [cloneSubEvent, setCloneSubEvent] = useState("");
   const contrastOk = paletteChecks(spec).every((c) => c.ok);
   const checklist: Array<{ label: string; ok: boolean; note?: string }> = [
     { label: "Nama tema diisi", ok: meta.name.trim().length >= 2 },
@@ -2301,6 +2311,32 @@ export function PublishPanel({
               <Segmented value={meta.category} options={[{ id: "minimalist", label: "Minimalist" }, { id: "modern", label: "Modern" }, { id: "traditional", label: "Traditional" }]} onChange={(category) => onMeta({ category })} />
             </div>
           </div>
+          {spec.eventType !== "WEDDING" && (
+            <label className="block">
+              <span className="text-[12px] font-semibold text-stone-700">Sub-acara / Tag filter (opsional, dinamis)</span>
+              <input
+                type="text"
+                list="builder-sub-event-presets"
+                value={meta.subEvent ?? ""}
+                onChange={(e) => onMeta({ subEvent: e.target.value })}
+                maxLength={50}
+                placeholder={
+                  spec.eventType === "PERSONAL"
+                    ? "mis. Ulang Tahun, Khitanan, Aqiqah, Wisuda, Tamatan Ngaji..."
+                    : "mis. Corporate, Grand Opening, Seminar & Workshop, Gathering..."
+                }
+                className="mt-1 w-full rounded-xl border border-stone-200 px-3 py-2 text-sm outline-none focus:border-amber-500"
+              />
+              <datalist id="builder-sub-event-presets">
+                {(spec.eventType === "PERSONAL" ? PERSONAL_SUB_EVENT_PRESETS : EVENT_SUB_EVENT_PRESETS).map((p) => (
+                  <option key={p.id} value={p.id} />
+                ))}
+              </datalist>
+              <span className="mt-1 block text-[11px] text-stone-500">
+                Menjadi tombol filter otomatis di Katalog Demo &amp; Studio. Kosongkan bila tema bersifat umum untuk seluruh {spec.eventType === "PERSONAL" ? "Personal & Keluarga" : "Acara & Event Umum"}.
+              </span>
+            </label>
+          )}
           <label className="block">
             <span className="text-[12px] font-semibold text-stone-700">Deskripsi singkat</span>
             <textarea value={meta.description} onChange={(e) => onMeta({ description: e.target.value })} maxLength={300} rows={3} placeholder="Ditampilkan di katalog tema klien" className="mt-1 w-full resize-none rounded-xl border border-stone-200 px-3 py-2 text-sm outline-none focus:border-amber-500" />
@@ -2412,6 +2448,85 @@ export function PublishPanel({
 
       {!state.isNew && (
         <>
+          {onCloneToCategory && (
+            <Section
+              title="Salin ke kategori lain (Nama baru)"
+              hint="Setiap kategori undangan terisolasi. Salin desain tersimpan ini ke kategori lain dengan nama baru untuk Anda desain ulang dan rapikan sebagai tema terpisah (2-profil ↔ 1-profil disesuaikan otomatis)."
+            >
+              <div className="space-y-2.5">
+                <label className="block">
+                  <span className="text-[11.5px] font-semibold text-stone-700">Kategori undangan tujuan</span>
+                  <select
+                    value={cloneTarget}
+                    onChange={(e) => {
+                      setCloneTarget(e.target.value as BuilderEventType);
+                      setCloneSubEvent("");
+                    }}
+                    className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-medium text-stone-800 outline-none focus:border-amber-500"
+                  >
+                    <option value="WEDDING">Pernikahan (2 Profil)</option>
+                    <option value="PERSONAL">Personal &amp; Keluarga (1 Profil)</option>
+                    <option value="EVENT">Acara &amp; Event Umum (Non-Personal)</option>
+                  </select>
+                </label>
+                {cloneTarget !== "WEDDING" && (
+                  <label className="block">
+                    <span className="text-[11.5px] font-semibold text-stone-700">Sub-acara / Tag filter tujuan (opsional)</span>
+                    <input
+                      type="text"
+                      list="builder-clone-sub-presets"
+                      value={cloneSubEvent}
+                      onChange={(e) => setCloneSubEvent(e.target.value)}
+                      maxLength={50}
+                      placeholder={
+                        cloneTarget === "PERSONAL"
+                          ? "mis. Ulang Tahun, Khitanan, Tamatan Ngaji..."
+                          : "mis. Corporate, Grand Opening, Gathering..."
+                      }
+                      className="mt-1 w-full rounded-xl border border-stone-200 px-3 py-2 text-xs outline-none focus:border-amber-500"
+                    />
+                    <datalist id="builder-clone-sub-presets">
+                      {(cloneTarget === "PERSONAL" ? PERSONAL_SUB_EVENT_PRESETS : EVENT_SUB_EVENT_PRESETS).map((p) => (
+                        <option key={p.id} value={p.id} />
+                      ))}
+                    </datalist>
+                  </label>
+                )}
+                <label className="block">
+                  <span className="text-[11.5px] font-semibold text-stone-700">Nama tema baru (wajib berbeda)</span>
+                  <input
+                    value={cloneName}
+                    onChange={(e) => setCloneName(e.target.value)}
+                    maxLength={60}
+                    placeholder={`mis. ${meta.name ? `${meta.name} Seri Baru` : "Nama Tema Baru"}`}
+                    className="mt-1 w-full rounded-xl border border-stone-200 px-3 py-2 text-xs outline-none focus:border-amber-500"
+                  />
+                </label>
+                <button
+                  type="button"
+                  disabled={state.saving || state.dirty || cloneName.trim().length < 2 || cloneName.trim().toLowerCase() === meta.name.trim().toLowerCase()}
+                  onClick={async () => {
+                    const ok = await onCloneToCategory({
+                      name: cloneName.trim(),
+                      targetEventType: cloneTarget,
+                      ...(cloneTarget !== "WEDDING" && cloneSubEvent.trim() ? { subEvent: cloneSubEvent.trim() } : {}),
+                    });
+                    if (ok) {
+                      setCloneName("");
+                      setCloneSubEvent("");
+                    }
+                  }}
+                  className="w-full rounded-xl bg-amber-600 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                >
+                  Salin &amp; Buka Draf Kategori Tujuan
+                </button>
+                {state.dirty && (
+                  <p className="text-[10.5px] text-amber-800">Simpan perubahan tema saat ini terlebih dahulu sebelum menyalin ke kategori lain.</p>
+                )}
+              </div>
+            </Section>
+          )}
+
           <Section title="Salin dan pindahkan" hint="Duplikat dan ekspor memakai versi yang sudah tersimpan, bukan perubahan yang belum disimpan.">
             <div className="grid grid-cols-2 gap-2">
               <button type="button" onClick={onDuplicate} disabled={state.saving} className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50 disabled:opacity-40 cursor-pointer">

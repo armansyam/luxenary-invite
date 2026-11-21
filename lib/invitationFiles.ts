@@ -30,6 +30,7 @@ export async function removeInvitationFiles(inv: InvitationFileOwner, context: s
       .catch((e) => logger.warn(context, "Sebagian berkas kenangan tamu gagal dihapus", { invitationId: inv.id, error: e instanceof Error ? e.message : String(e) }));
   }
 
+  await removeIfExists(path.join(process.cwd(), "data", "drafts", `${inv.id}.html`));
   await removeIfExists(path.join(process.cwd(), "public", "uploads", "invitations", inv.id), { recursive: true });
   await removeIfExists(path.join(process.cwd(), "public", "uploads", "guest-memories", inv.id), { recursive: true });
 }

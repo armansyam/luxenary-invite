@@ -3,6 +3,7 @@ import { logger } from "@/lib/logger";
 import { getThemeBlueprint, type ThemeBlueprint } from "@/lib/themeDefaults";
 import { applyBuilderTexts, builderTextsOf } from "@/lib/themeBuilder/texts";
 import { EDITABLE_TEXT_KEYS, isFreeSectionLabelKey } from "@/lib/themeBuilder/spec";
+import { resolveSubEventMeta } from "@/lib/invitationUtils";
 
 export interface ThemeLabelContext {
   customDemoData: any;
@@ -18,7 +19,7 @@ export interface ThemeLabelContext {
  * disalin ke undangan. Dipakai saat membuat undangan dan saat klien mengganti tema, sehingga keduanya memakai bawaan
  * yang sama.
  */
-export async function loadThemeLabelContext(themeId: string, eventType: string): Promise<ThemeLabelContext> {
+export async function loadThemeLabelContext(themeId: string, eventType: string, subEvent?: string | null): Promise<ThemeLabelContext> {
   const key = themeId.toLowerCase();
   let customDemoData: any = null;
   try {
@@ -47,17 +48,7 @@ export async function loadThemeLabelContext(themeId: string, eventType: string):
 
   const isWeddingEvent = eventType === "WEDDING";
   const defaultCoverBadge = blueprint.coverBadge || (
-    eventType === "BIRTHDAY"
-      ? "BIRTHDAY CELEBRATION"
-      : eventType === "KHITAN"
-      ? "WALIMATUL KHITAN"
-      : eventType === "AQIQAH"
-      ? "WALIMATUL AQIQAH"
-      : eventType === "WISUDA"
-      ? "GRADUATION CELEBRATION"
-      : eventType === "GATHERING"
-      ? "SPECIAL GATHERING"
-      : "THE WEDDING OF"
+    isWeddingEvent ? "THE WEDDING OF" : resolveSubEventMeta(eventType, subEvent).coverBadge
   );
 
   const defaultCustomLabels: Record<string, string> = {
@@ -128,10 +119,11 @@ export async function featureSettingsForThemeChange(
   oldThemeId: string | null | undefined,
   newThemeId: string,
   eventType: string,
+  subEvent?: string | null,
 ): Promise<Record<string, any>> {
   const [next, prev] = await Promise.all([
-    loadThemeLabelContext(newThemeId, eventType),
-    oldThemeId ? loadThemeLabelContext(oldThemeId, eventType) : Promise.resolve(null),
+    loadThemeLabelContext(newThemeId, eventType, subEvent),
+    oldThemeId ? loadThemeLabelContext(oldThemeId, eventType, subEvent) : Promise.resolve(null),
   ]);
   const stored = fs.labelDefaults && typeof fs.labelDefaults === "object" && !Array.isArray(fs.labelDefaults) ? (fs.labelDefaults as Record<string, string>) : undefined;
   const snapshot = stored ?? (eventType === "WEDDING" ? prev?.initialCustomLabels : undefined);

@@ -247,9 +247,10 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 1.b VALIDASI ALOKASI KUOTA SESI (dengan Smart Rollover) ──
+    let sessionStartDate: Date | null = null;
     if (schedule.currentSession && schedule.currentSession.allocatedQuota && schedule.currentSession.allocatedQuota > 0) {
       const sessionOffset = getEventTimezoneOffset(resolveEventTimezone(schedule.currentSession));
-      const sessionStartDate = new Date(`${schedule.currentSession.date}T${schedule.currentSession.startTime || "00:00"}:00${sessionOffset}`);
+      sessionStartDate = new Date(`${schedule.currentSession.date}T${schedule.currentSession.startTime || "00:00"}:00${sessionOffset}`);
       const photosBeforeThisSession = await prisma.guestMemory.count({
         where: {
           invitationId,
@@ -335,9 +336,16 @@ export async function POST(req: NextRequest) {
     const mediaUrl = await uploadFile(buffer, relativePath, detected.mimeType);
 
 
-    // Save to Database secara atomik dengan PostgreSQL Advisory Lock untuk menjamin totalEventQuota & jatah roll tamu tidak pernah bocor saat upload paralel
+    const settings = await getPublicPlatformSettings();
+    const configuredMilestones: number[] = (settings.memoriesNotifyMilestones && settings.memoriesNotifyMilestones.length > 0)
+      ? settings.memoriesNotifyMilestones
+      : [50, 80, 100];
+
+    // Save to Database secara atomik dengan PostgreSQL Advisory Lock untuk menjamin totalEventQuota, kuota sesi,
+    // jatah roll tamu, dan klaim notifikasi ambang batas tidak pernah bocor/ganda saat upload paralel.
     let memory;
     let newTotalPhotos = currentTotalPhotos + 1;
+    let targetMilestoneToNotify: number | null = null;
     try {
       const lockKey = `memories_quota:${invitationId}`;
       const saveResult = await prisma.$transaction(async (tx) => {
@@ -346,6 +354,21 @@ export async function POST(req: NextRequest) {
         const atomicTotal = await tx.guestMemory.count({ where: { invitationId } });
         if (totalEventQuota > 0 && atomicTotal >= totalEventQuota) {
           throw new Error("ERR_TOTAL_QUOTA_EXCEEDED");
+        }
+
+        if (schedule.currentSession && schedule.currentSession.allocatedQuota && schedule.currentSession.allocatedQuota > 0 && sessionStartDate) {
+          const atomicBefore = await tx.guestMemory.count({
+            where: { invitationId, createdAt: { lt: sessionStartDate } },
+          });
+          const atomicAllowedSession = calculateSessionCumulativeQuota(
+            schedule.sessions,
+            schedule.activeSessionIndex,
+            totalEventQuota,
+            atomicBefore,
+          );
+          if (atomicTotal >= atomicAllowedSession) {
+            throw new Error("ERR_SESSION_QUOTA_EXCEEDED");
+          }
         }
 
         if (senderEmail && shotsQuota > 0) {
@@ -368,11 +391,34 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        return { created, newCount: atomicTotal + 1 };
+        const nextCount = atomicTotal + 1;
+        let claimedMilestone: number | null = null;
+        if (totalEventQuota >= 5 && invitation.user?.email) {
+          const freshInv = await tx.invitation.findUnique({
+            where: { id: invitationId },
+            select: { memoriesNotifiedMilestones: true },
+          });
+          const alreadyNotified = freshInv?.memoriesNotifiedMilestones ?? [];
+          const newlyReached = configuredMilestones.filter((m) => {
+            if (alreadyNotified.includes(m)) return false;
+            const threshold = Math.floor(totalEventQuota * (m / 100));
+            return nextCount >= threshold && threshold > 0;
+          });
+          if (newlyReached.length > 0) {
+            claimedMilestone = newlyReached[newlyReached.length - 1];
+            await tx.invitation.update({
+              where: { id: invitationId },
+              data: { memoriesNotifiedMilestones: Array.from(new Set([...alreadyNotified, ...newlyReached])) },
+            });
+          }
+        }
+
+        return { created, newCount: nextCount, claimedMilestone };
       });
 
       memory = saveResult.created;
       newTotalPhotos = saveResult.newCount;
+      targetMilestoneToNotify = saveResult.claimedMilestone;
     } catch (saveErr: any) {
       // Baris tidak tersimpan (kuota penuh saat balapan atau galat DB): bersihkan berkas yang sudah terunggah.
       // deleteFile menerima URL publik hasil uploadFile, bukan path relatif; galatnya sudah dicatat di dalamnya.
@@ -384,6 +430,18 @@ export async function POST(req: NextRequest) {
             quotaExceeded: true,
             totalQuota: totalEventQuota,
             message: "Terima kasih atas momennya! Roll kamera kenangan untuk acara ini sudah penuh. Semua foto yang terkirim tersimpan di album kenangan penyelenggara.",
+          },
+          { status: 403 }
+        );
+      }
+
+      if (saveErr.message === "ERR_SESSION_QUOTA_EXCEEDED" && schedule.currentSession) {
+        return NextResponse.json(
+          {
+            quotaExceeded: true,
+            sessionName: schedule.currentSession.name,
+            sessionQuota: schedule.currentSession.allocatedQuota,
+            message: `Kuota foto untuk ${schedule.currentSession.name} telah terisi penuh (${schedule.currentSession.allocatedQuota} foto). Kamera akan dibuka kembali pada sesi berikutnya!`,
           },
           { status: 403 }
         );
@@ -410,41 +468,11 @@ export async function POST(req: NextRequest) {
       logger.warn("MemoriesUpload", "Notifikasi SSE momen baru gagal dikirim", { memoryId: memory.id, error: sseErr instanceof Error ? sseErr.message : String(sseErr) });
     }
 
-    // ── TRIGGER NOTIFIKASI AMBANG BATAS ROLL DINAMIS (NON-BLOCKING BACKGROUND) ──
-    const settings = await getPublicPlatformSettings();
-    const configuredMilestones: number[] = (settings.memoriesNotifyMilestones && settings.memoriesNotifyMilestones.length > 0)
-      ? settings.memoriesNotifyMilestones
-      : [50, 80, 100];
-
-    const alreadyNotified = invitation.memoriesNotifiedMilestones;
-
-    // Temukan milestone yang telah tercapai oleh akumulasi foto saat ini dan belum pernah ternotifikasi
-    const newlyReachedMilestones = configuredMilestones.filter((m) => {
-      if (alreadyNotified.includes(m)) return false;
-      const threshold = Math.floor(totalEventQuota * (m / 100));
-      return newTotalPhotos >= threshold && threshold > 0;
-    });
-
-    if (
-      totalEventQuota >= 5 &&
-      newlyReachedMilestones.length > 0 &&
-      invitation.user?.email
-    ) {
-      // Ambil milestone tertinggi yang tercapai dalam batch upload ini
-      const targetMilestone = newlyReachedMilestones[newlyReachedMilestones.length - 1];
-      const updatedMilestones = Array.from(new Set([...alreadyNotified, ...newlyReachedMilestones]));
-
-      // Tandai milestone di DB agar notifikasi hanya dikirim 1 kali per ambang batas
-      prisma.invitation
-        .update({
-          where: { id: invitationId },
-          data: { memoriesNotifiedMilestones: updatedMilestones },
-        })
-        .catch((e) => logger.error("MemoriesUpload", "Gagal menyimpan flag milestone notifikasi", e, { invitationId }));
-
-      // Kirim email notifikasi secara asynchronous (tidak memperlambat response upload tamu)
+    // ── TRIGGER NOTIFIKASI AMBANG BATAS ROLL DINAMIS (NON-BLOCKING BACKGROUND, HANYA PEMENANG KLAIM ATOMIK) ──
+    if (targetMilestoneToNotify !== null && invitation.user?.email) {
       const coupleNames = participantNames(invitation.eventType, invitation.participantsJson).short || invitation.invitationSlug;
       const remainingPhotos = Math.max(0, totalEventQuota - newTotalPhotos);
+      const milestonePercent = targetMilestoneToNotify;
 
       import("@/lib/mailer")
         .then(({ sendMemoriesQuotaAlertEmail }) => {
@@ -457,7 +485,7 @@ export async function POST(req: NextRequest) {
             remainingPhotos,
             recipientEmail: invitation.user.email,
             recipientName: invitation.user.name || coupleNames,
-            milestonePercent: targetMilestone,
+            milestonePercent,
           }).catch((err) => logger.error("MemoriesUpload", "Gagal mengirim email peringatan kuota roll", err, { invitationId }));
         })
         .catch((err) => logger.error("MemoriesUpload", "Modul mailer gagal dimuat", err));

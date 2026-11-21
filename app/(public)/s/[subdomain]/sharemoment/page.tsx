@@ -44,7 +44,7 @@ export default async function GuestMemoriesStandalonePage({ params, searchParams
     include: {
       order: { select: { planType: true } },
       media: {
-        where: { mediaSlot: { in: ["LANDING_COVER", "HOME_PHOTO", "GROOM_PHOTO", "BRIDE_PHOTO", "GALLERY"] } },
+        where: { mediaSlot: { in: ["LANDING_COVER", "HOME_PHOTO", "PROFILE_PHOTO", "EVENT_PHOTO", "GROOM_PHOTO", "BRIDE_PHOTO", "GALLERY"] } },
         take: 5,
       }
     },

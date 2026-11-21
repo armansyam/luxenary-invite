@@ -18,9 +18,8 @@ export default async function Home() {
   const weddingOnly = enabledEventTypes.length === 1 && enabledEventTypes[0] === "WEDDING";
   const collectionChips = [
     { id: "WEDDING", slug: "wedding", label: "Pernikahan" },
-    { id: "BIRTHDAY", slug: "birthday", label: "Ulang Tahun" },
-    { id: "KHITAN", slug: "khitan", label: "Khitanan" },
-    { id: "WISUDA", slug: "wisuda", label: "Wisuda" },
+    { id: "PERSONAL", slug: "personal", label: "Personal & Keluarga" },
+    { id: "EVENT", slug: "event", label: "Acara & Event Umum" },
   ].filter((c) => enabledEventTypes.includes(c.id));
 
   const activeDomain = await getDynamicServerRootDomain();

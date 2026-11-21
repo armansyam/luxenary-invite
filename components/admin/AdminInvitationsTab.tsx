@@ -19,6 +19,7 @@ interface InvitationItem {
   id: string;
   userId: string;
   eventType?: string | null;
+  subEvent?: string | null;
   participantsJson?: unknown;
   invitationSlug: string;
   themeId: string;
@@ -48,7 +49,7 @@ export default function AdminInvitationsTab() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "DRAFT" | "PUBLISHED" | "EVENT_FINISHED" | "ARCHIVED">("ALL");
-  const [eventTypeFilter, setEventTypeFilter] = useState<"ALL" | "WEDDING" | "BIRTHDAY" | "KHITAN" | "AQIQAH" | "WISUDA" | "GATHERING">("ALL");
+  const [eventTypeFilter, setEventTypeFilter] = useState<"ALL" | "WEDDING" | "PERSONAL" | "EVENT">("ALL");
   const [counts, setCounts] = useState({ ALL: 0, DRAFT: 0, PUBLISHED: 0, EVENT_FINISHED: 0, ARCHIVED: 0 });
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 1 });
 
@@ -363,15 +364,12 @@ export default function AdminInvitationsTab() {
 
         {/* Event Type Filter Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs font-semibold pt-2 border-t border-gray-100">
-          <span className="text-[11px] font-bold text-gray-400 mr-1 shrink-0 uppercase tracking-wider">Tipe:</span>
+          <span className="text-[11px] font-bold text-gray-400 mr-1 shrink-0 uppercase tracking-wider">Kategori:</span>
           {[
             { id: "ALL", label: "Semua Acara" },
-            { id: "WEDDING", label: "Wedding" },
-            { id: "BIRTHDAY", label: "Birthday" },
-            { id: "KHITAN", label: "Khitan" },
-            { id: "AQIQAH", label: "Aqiqah" },
-            { id: "WISUDA", label: "Wisuda" },
-            { id: "GATHERING", label: "Gathering" },
+            { id: "WEDDING", label: "Pernikahan" },
+            { id: "PERSONAL", label: "Personal & Keluarga" },
+            { id: "EVENT", label: "Acara & Event Umum" },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -464,7 +462,7 @@ export default function AdminInvitationsTab() {
                           ) : null}
                           {inv.eventType && inv.eventType !== "WEDDING" && (
                             <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md">
-                              {inv.eventType}
+                              {inv.subEvent ? `${inv.eventType} · ${inv.subEvent}` : inv.eventType}
                             </span>
                           )}
                         </div>

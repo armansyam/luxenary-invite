@@ -4,6 +4,8 @@ import { auth } from "@/auth";
 import { hasPlanCapability } from "@/lib/settings";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { routeError } from "@/lib/routeError";
+import { invalidateInvitationLookup } from "@/lib/cache";
+import { purgeInvitationEdgeCache } from "@/lib/cloudflare";
 import { checkDomainPointsToPlatform } from "@/lib/customDomainDns";
 import { normalizeCustomDomain } from "@/lib/domainUtils";
 
@@ -69,10 +71,15 @@ export async function POST(req: NextRequest) {
 
     // 4. Penanganan pelepasan domain (unlink) jika customDomain dikirim kosong/null
     if (!customDomain || typeof customDomain !== "string" || !customDomain.trim()) {
+      const previousDomain = invitation.customDomain;
       await prisma.invitation.update({
         where: { id: invitationId },
         data: { customDomain: null },
       });
+      invalidateInvitationLookup(invitation.invitationSlug, invitation.subdomain, invitation.id);
+      if (previousDomain) {
+        await purgeInvitationEdgeCache({ ...invitation, customDomain: previousDomain });
+      }
       return NextResponse.json({
         success: true,
         customDomain: null,
@@ -128,6 +135,8 @@ export async function POST(req: NextRequest) {
       where: { id: invitationId },
       data: { customDomain: cleanDomain },
     });
+    invalidateInvitationLookup(invitation.invitationSlug, invitation.subdomain, invitation.id);
+    await purgeInvitationEdgeCache({ ...invitation, customDomain: cleanDomain });
 
     return NextResponse.json({
       success: true,

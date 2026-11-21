@@ -119,6 +119,10 @@ export async function POST(
         customData.groomPhotoUrl = rawUrl;
       } else if (slot === "bride") {
         customData.bridePhotoUrl = rawUrl;
+      } else if (slot === "profile") {
+        customData.personPhotoUrl = rawUrl;
+      } else if (slot === "event") {
+        customData.eventPhotoUrl = rawUrl;
       } else if (slot === "thumbnail_mobile") {
         customData.thumbnailMobileUrl = rawUrl;
       } else if (slot === "thumbnail_desktop") {
@@ -247,6 +251,10 @@ export async function DELETE(
         customData.groomPhotoUrl = "";
       } else if (slot === "bride") {
         customData.bridePhotoUrl = "";
+      } else if (slot === "profile") {
+        customData.personPhotoUrl = "";
+      } else if (slot === "event") {
+        customData.eventPhotoUrl = "";
       } else if (slot === "thumbnail_mobile") {
         customData.thumbnailMobileUrl = "";
       } else if (slot === "thumbnail_desktop") {

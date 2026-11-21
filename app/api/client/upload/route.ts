@@ -232,7 +232,7 @@ export async function POST(req: NextRequest) {
       let maxHeight = 1600;
       let quality = 82;
 
-      if (slotKey === "BRIDE_PHOTO" || slotKey === "GROOM_PHOTO") {
+      if (slotKey === "BRIDE_PHOTO" || slotKey === "GROOM_PHOTO" || slotKey === "PROFILE_PHOTO" || slotKey === "EVENT_PHOTO") {
         maxWidth = 1200;
         maxHeight = 1200;
         quality = 82;

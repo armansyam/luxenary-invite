@@ -10,7 +10,7 @@ vi.mock("@/auth", () => ({ auth: vi.fn(async () => (sessionUser ? { user: sessio
 const { sendAlert } = vi.hoisted(() => ({ sendAlert: vi.fn(async (_input: Record<string, unknown>) => ({ success: true })) }));
 vi.mock("@/lib/mailer", async (importOriginal) => ({ ...(await importOriginal<object>()), sendProofUploadedAdminAlertEmail: sendAlert }));
 
-import { prisma } from "@/lib/prisma";
+import { prisma, pool } from "@/lib/prisma";
 import { deleteFile } from "@/lib/storage";
 import { POST as uploadProof } from "@/app/api/client/orders/[id]/upload-proof/route";
 
@@ -52,6 +52,8 @@ describe.skipIf(!IS_TEST_DB)("notifikasi email bukti transfer ke admin", () => {
     await prisma.order.deleteMany({ where: { userId } });
     await prisma.user.deleteMany({ where: { id: userId } });
     await prisma.admin.deleteMany({ where: { email: { in: [FINANCE, SUPPORT] } } });
+    await prisma.$disconnect();
+    await pool.end();
   });
 
   it("unggahan klien mengirim email ke admin berakses Order, unggah ulang ditandai", async () => {

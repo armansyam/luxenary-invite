@@ -8,23 +8,13 @@ import { DECLARABLE_MEDIA_SLOTS, type DeclarableMediaSlot } from "@/lib/themeMed
 
 export const BUILDER_SPEC_VERSION = 1;
 
-export type BuilderEventType = "WEDDING" | "BIRTHDAY" | "KHITAN" | "AQIQAH" | "WISUDA" | "GATHERING";
-export const BUILDER_EVENT_TYPES: BuilderEventType[] = ["WEDDING", "BIRTHDAY", "KHITAN", "AQIQAH", "WISUDA", "GATHERING"];
+export type BuilderEventType = "WEDDING" | "PERSONAL" | "EVENT";
+export const BUILDER_EVENT_TYPES: BuilderEventType[] = ["WEDDING", "PERSONAL", "EVENT"];
 export const BUILDER_EVENT_LABELS: Record<BuilderEventType, string> = {
   WEDDING: "Pernikahan",
-  BIRTHDAY: "Ulang tahun",
-  KHITAN: "Khitanan",
-  AQIQAH: "Aqiqah",
-  WISUDA: "Wisuda",
-  GATHERING: "Gathering / acara umum",
+  PERSONAL: "Personal & Keluarga",
+  EVENT: "Acara & Event Umum",
 };
-
-/**
- * Keluarga blueprint: "wedding" (dua mempelai) atau "single" (satu tokoh; kelima jenis acara lain berbagi kontrak data
- * applySingleNameContract di lib/themeEngine.ts dan satu blueprint).
- */
-export type BuilderFamily = "wedding" | "single";
-export const builderFamilyOf = (eventType: BuilderEventType): BuilderFamily => (eventType === "WEDDING" ? "wedding" : "single");
 
 export type CanvasMode = "light" | "dark";
 export type RadiusStyle = "sharp" | "soft" | "round";
@@ -139,20 +129,22 @@ export const ORNAMENT_TEXT_TOKENS = [
 ] as const;
 export type OrnamentTextToken = (typeof ORNAMENT_TEXT_TOKENS)[number]["id"];
 
-export function familyOrnamentTextTokens(eventType: BuilderEventType): Array<{ id: OrnamentTextToken; label: string; sample: string }> {
-  const single = builderFamilyOf(eventType) === "single";
+export function ornamentTextTokensForMode(eventType: BuilderEventType): Array<{ id: OrnamentTextToken; label: string; sample: string }> {
+  if (eventType === "WEDDING") {
+    return ORNAMENT_TEXT_TOKENS.map((t) => ({ id: t.id, label: t.label, sample: t.sampleWedding }));
+  }
+  const isEvent = eventType === "EVENT";
   return ORNAMENT_TEXT_TOKENS
-    .filter((t) => !single || (t.id !== "SECOND_INITIAL" && t.id !== "MONOGRAM_JOINED"))
+    .filter((t) => t.id !== "SECOND_INITIAL" && t.id !== "MONOGRAM_JOINED")
     .map((t) => ({
       id: t.id,
-      label: single
-        ? t.id === "MONOGRAM_AMP" || t.id === "FIRST_INITIAL"
-          ? "Inisial tokoh utama (Z)"
+      label:
+        t.id === "MONOGRAM_AMP" || t.id === "FIRST_INITIAL"
+          ? (isEvent ? "Inisial acara (S)" : "Inisial tokoh utama (Z)")
           : t.id === "COUPLE_NAMES"
-            ? "Nama panggilan utama"
-            : t.label
-        : t.label,
-      sample: single ? t.sampleSingle : t.sampleWedding,
+            ? (isEvent ? "Judul acara utama" : "Nama panggilan utama")
+            : t.label,
+      sample: isEvent && t.id === "COUPLE_NAMES" ? "Sinergi Summit" : t.sampleSingle,
     }));
 }
 
@@ -221,16 +213,29 @@ export const ORNAMENT_MEDIA_SLOTS = [
   { id: "HOME_PHOTO", label: "Foto pembuka (Home)" },
   { id: "GROOM_PHOTO", label: "Foto mempelai pertama" },
   { id: "BRIDE_PHOTO", label: "Foto mempelai kedua" },
+  { id: "PROFILE_PHOTO", label: "Foto profil tokoh utama" },
+  { id: "EVENT_PHOTO", label: "Foto / visual utama acara" },
   { id: "LANDING_COVER", label: "Foto sampul (Cover)" },
   { id: "CLOSING_COVER", label: "Foto penutup" },
 ] as const;
 export type OrnamentMediaSlot = (typeof ORNAMENT_MEDIA_SLOTS)[number]["id"];
 
-export function familyOrnamentMediaSlots(eventType: BuilderEventType): Array<{ id: OrnamentMediaSlot; label: string }> {
-  if (builderFamilyOf(eventType) === "wedding") return ORNAMENT_MEDIA_SLOTS.map((s) => ({ ...s }));
-  return ORNAMENT_MEDIA_SLOTS
-    .filter((s) => s.id !== "BRIDE_PHOTO")
-    .map((s) => (s.id === "GROOM_PHOTO" ? { ...s, label: "Foto profil utama" } : { ...s }));
+export function ornamentMediaSlotsForMode(eventType: BuilderEventType): Array<{ id: OrnamentMediaSlot; label: string }> {
+  if (eventType === "WEDDING") {
+    return ORNAMENT_MEDIA_SLOTS.filter((s) => s.id !== "PROFILE_PHOTO" && s.id !== "EVENT_PHOTO").map((s) => ({ ...s }));
+  }
+  if (eventType === "PERSONAL") {
+    return ORNAMENT_MEDIA_SLOTS.filter((s) => s.id !== "GROOM_PHOTO" && s.id !== "BRIDE_PHOTO" && s.id !== "EVENT_PHOTO").map((s) => ({ ...s }));
+  }
+  return ORNAMENT_MEDIA_SLOTS.filter((s) => s.id !== "GROOM_PHOTO" && s.id !== "BRIDE_PHOTO" && s.id !== "PROFILE_PHOTO").map((s) => ({ ...s }));
+}
+
+export function normalizeMediaSlotForEvent(raw: unknown, eventType: BuilderEventType): unknown {
+  if (typeof raw !== "string") return raw;
+  if (eventType === "PERSONAL" && (raw === "GROOM_PHOTO" || raw === "EVENT_PHOTO")) return "PROFILE_PHOTO";
+  if (eventType === "EVENT" && (raw === "GROOM_PHOTO" || raw === "PROFILE_PHOTO")) return "EVENT_PHOTO";
+  if (eventType === "WEDDING" && (raw === "PROFILE_PHOTO" || raw === "EVENT_PHOTO")) return "GROOM_PHOTO";
+  return raw;
 }
 
 export interface BuilderOrnament {
@@ -465,27 +470,40 @@ export const PROTECTED_BLOCKS: readonly BuilderBlockId[] = ["cover-names", "cove
 export const OPTIONAL_BLOCKS: readonly BuilderBlockId[] = BUILDER_BLOCKS.map((b) => b.id).filter((id) => !PROTECTED_BLOCKS.includes(id));
 
 /**
- * Blueprint satu nama tidak punya mempelai kedua, Instagram, monogram, seksi kisah, tombol kalender, dan judul RSVP
- * (judul formulir ada di dalam kartu RSVP buatan mesin). Seksi profilnya memakai kelas dan blok kartu mempelai pertama,
- * jadi hanya label yang berbeda.
+ * Daftar blok yang tidak digunakan pada masing-masing blueprint mandiri (3 mode terisolasi):
+ * - `WEDDING`  : semua blok hadir (2 mempelai + monogram + tombol kalender terpisah + story).
+ * - `PERSONAL` : 1 profil tokoh + orang tua opsional + story (tanpa blok mempelai kedua & monogram pasangan).
+ * - `EVENT`    : identitas acara non-personal + story (tanpa blok mempelai kedua, monogram pasangan, maupun orang tua).
  */
-const SINGLE_ABSENT_BLOCKS: readonly BuilderBlockId[] = [
-  "cover-monogram",
-  "couple-ig-1",
-  "couple-amp",
-  "couple-photo-2",
-  "couple-role-2",
-  "couple-name-2",
-  "couple-parents-2",
-  "couple-ig-2",
-  "countdown-btn",
-  "story-eyebrow",
-  "story-title",
-  "story-list",
-  "rsvp-title",
-];
-const SINGLE_ABSENT_SECTIONS: readonly OrnamentSection[] = ["story"];
-const SINGLE_BLOCK_LABELS: Partial<Record<BuilderBlockId, string>> = {
+export const ABSENT_BLOCKS_BY_MODE: Record<BuilderEventType, readonly BuilderBlockId[]> = {
+  WEDDING: [],
+  PERSONAL: [
+    "cover-monogram",
+    "couple-ig-1",
+    "couple-amp",
+    "couple-photo-2",
+    "couple-role-2",
+    "couple-name-2",
+    "couple-parents-2",
+    "couple-ig-2",
+    "countdown-btn",
+    "rsvp-title",
+  ],
+  EVENT: [
+    "cover-monogram",
+    "couple-ig-1",
+    "couple-parents-1",
+    "couple-amp",
+    "couple-photo-2",
+    "couple-role-2",
+    "couple-name-2",
+    "couple-parents-2",
+    "couple-ig-2",
+    "countdown-btn",
+    "rsvp-title",
+  ],
+};
+const PERSONAL_BLOCK_LABELS: Partial<Record<BuilderBlockId, string>> = {
   "couple-eyebrow": "Teks kecil profil",
   "couple-title": "Judul profil",
   "couple-sub": "Kalimat pengantar profil",
@@ -493,10 +511,25 @@ const SINGLE_BLOCK_LABELS: Partial<Record<BuilderBlockId, string>> = {
   "couple-role-1": "Keterangan (usia, gelar, tanggal lahir)",
   "couple-name-1": "Nama lengkap",
   "couple-parents-1": "Orang tua",
+  "story-eyebrow": "Teks kecil kisah",
+  "story-title": "Judul kisah & perjalanan",
+  "story-list": "Daftar kisah & perjalanan",
+};
+const EVENT_BLOCK_LABELS: Partial<Record<BuilderBlockId, string>> = {
+  "couple-eyebrow": "Teks kecil identitas acara",
+  "couple-title": "Judul identitas acara",
+  "couple-sub": "Deskripsi singkat acara",
+  "couple-photo-1": "Foto / visual acara",
+  "couple-role-1": "Penyelenggara / sub-judul",
+  "couple-name-1": "Judul acara",
+  "story-eyebrow": "Teks kecil riwayat",
+  "story-title": "Judul riwayat / milestone",
+  "story-list": "Daftar riwayat / milestone",
+  "closing-family": "Penyelenggara di penutup",
 };
 
-export function familyOrderableSections(eventType: BuilderEventType, order?: readonly OrderableSection[]): OrderableSection[] {
-  const allowed = ORDERABLE_SECTIONS.filter((s) => !(builderFamilyOf(eventType) === "single" && SINGLE_ABSENT_SECTIONS.includes(s)));
+export function orderableSectionsForMode(_eventType: BuilderEventType, order?: readonly OrderableSection[]): OrderableSection[] {
+  const allowed = ORDERABLE_SECTIONS;
   if (!order || !order.length) return [...allowed];
   const picked: OrderableSection[] = [];
   for (const s of order) {
@@ -510,8 +543,8 @@ export function familyOrderableSections(eventType: BuilderEventType, order?: rea
 
 export function isDefaultSectionOrder(order: readonly OrderableSection[] | undefined, eventType: BuilderEventType = "WEDDING"): boolean {
   if (!order || !order.length) return true;
-  const def = familyOrderableSections(eventType);
-  const cur = familyOrderableSections(eventType, order);
+  const def = orderableSectionsForMode(eventType);
+  const cur = orderableSectionsForMode(eventType, order);
   return def.length === cur.length && def.every((s, i) => s === cur[i]);
 }
 
@@ -521,7 +554,7 @@ export function moveSectionInOrder(
   section: OrderableSection,
   dir: -1 | 1,
 ): OrderableSection[] {
-  const current = familyOrderableSections(eventType, order);
+  const current = orderableSectionsForMode(eventType, order);
   const idx = current.indexOf(section);
   const nextIdx = idx + dir;
   if (idx === -1 || nextIdx < 0 || nextIdx >= current.length) return current;
@@ -531,24 +564,34 @@ export function moveSectionInOrder(
   return copy;
 }
 
-export function familySections(eventType: BuilderEventType, order?: readonly OrderableSection[]): readonly OrnamentSection[] {
+export function sectionsForMode(eventType: BuilderEventType, order?: readonly OrderableSection[]): readonly OrnamentSection[] {
   if (!order || !order.length) {
-    return builderFamilyOf(eventType) === "single" ? ORNAMENT_SECTIONS.filter((s) => !SINGLE_ABSENT_SECTIONS.includes(s)) : ORNAMENT_SECTIONS;
+    return ORNAMENT_SECTIONS;
   }
-  return ["cover", "sidebar", ...familyOrderableSections(eventType, order)];
+  return ["cover", "sidebar", ...orderableSectionsForMode(eventType, order)];
 }
 
 export function sectionLabelFor(section: OrnamentSection, eventType: BuilderEventType): string {
-  return section === "couple" && builderFamilyOf(eventType) === "single" ? "Profil" : SECTION_LABELS[section];
+  if (section === "couple") {
+    if (eventType === "PERSONAL") return "Profil";
+    if (eventType === "EVENT") return "Identitas acara";
+  }
+  if (section === "story" && eventType === "EVENT") return "Riwayat";
+  return SECTION_LABELS[section];
 }
 
-export function familyBlocks(eventType: BuilderEventType): Array<{ id: BuilderBlockId; label: string; section: OrnamentSection }> {
-  if (builderFamilyOf(eventType) === "wedding") return BUILDER_BLOCKS.map((b) => ({ ...b }));
-  return BUILDER_BLOCKS.filter((b) => !SINGLE_ABSENT_BLOCKS.includes(b.id)).map((b) => ({ ...b, label: SINGLE_BLOCK_LABELS[b.id] ?? b.label }));
+export function blocksForMode(eventType: BuilderEventType): Array<{ id: BuilderBlockId; label: string; section: OrnamentSection }> {
+  if (eventType === "WEDDING") return BUILDER_BLOCKS.map((b) => ({ ...b }));
+  const absent = ABSENT_BLOCKS_BY_MODE[eventType];
+  const labels = eventType === "EVENT" ? EVENT_BLOCK_LABELS : PERSONAL_BLOCK_LABELS;
+  return BUILDER_BLOCKS.filter((b) => !absent.includes(b.id)).map((b) => ({ ...b, label: labels[b.id] ?? b.label }));
 }
 
-export const blockLabelFor = (id: BuilderBlockId, eventType: BuilderEventType): string =>
-  (builderFamilyOf(eventType) === "single" && SINGLE_BLOCK_LABELS[id]) || BUILDER_BLOCKS.find((b) => b.id === id)?.label || id;
+export const blockLabelFor = (id: BuilderBlockId, eventType: BuilderEventType): string => {
+  if (eventType === "EVENT" && EVENT_BLOCK_LABELS[id]) return EVENT_BLOCK_LABELS[id]!;
+  if (eventType === "PERSONAL" && PERSONAL_BLOCK_LABELS[id]) return PERSONAL_BLOCK_LABELS[id]!;
+  return BUILDER_BLOCKS.find((b) => b.id === id)?.label || id;
+};
 
 export const DEFAULT_BLOCK_PROPS: BlockProps = { x: 0, y: 0, scale: 1, rotate: 0, hidden: false };
 // Persen ukuran elemen itu sendiri: elemen pendek (judul sekitar 40 px) butuh jangkauan besar untuk pindah sejauh
@@ -625,7 +668,7 @@ export function peerBlocksForRole(
 ): { label: string; peers: BuilderBlockId[] } | null {
   const grp = BLOCK_ROLE_GROUPS.find((g) => g.members.includes(blockId));
   if (!grp) return null;
-  const allowed = new Set(familyBlocks(eventType).map((b) => b.id));
+  const allowed = new Set(blocksForMode(eventType).map((b) => b.id));
   const peers = grp.members.filter((m) => allowed.has(m));
   if (peers.length < 2) return null;
   return { label: grp.label, peers };
@@ -778,7 +821,6 @@ export function photoBlockMediaInfo(blockId: FramedPhotoId, eventType: BuilderEv
   variantKey: "opening" | "couple";
   backdropVariant: string;
 } {
-  const single = builderFamilyOf(eventType) === "single";
   if (blockId === "opening-photo") {
     return {
       slot: "HOME_PHOTO",
@@ -790,9 +832,9 @@ export function photoBlockMediaInfo(blockId: FramedPhotoId, eventType: BuilderEv
   }
   if (blockId === "couple-photo-1") {
     return {
-      slot: "GROOM_PHOTO",
-      slotLabel: single ? "Foto Profil Utama" : "Foto Mempelai Pertama",
-      token: single ? "{{mainPhotoUrl}}" : "{{firstPhotoUrl}}",
+      slot: eventType === "EVENT" ? "EVENT_PHOTO" : eventType === "PERSONAL" ? "PROFILE_PHOTO" : "GROOM_PHOTO",
+      slotLabel: eventType === "EVENT" ? "Foto / Visual Utama Acara" : eventType === "PERSONAL" ? "Foto Profil Utama" : "Foto Mempelai Pertama",
+      token: eventType === "WEDDING" ? "{{firstPhotoUrl}}" : "{{mainPhotoUrl}}",
       variantKey: "couple",
       backdropVariant: "backdrop",
     };
@@ -969,25 +1011,55 @@ export const BUILDER_TEXTS = [
 export type BuilderTextKey = (typeof BUILDER_TEXTS)[number]["key"];
 export type BuilderTexts = Partial<Record<BuilderTextKey, string>>;
 
-/** Label yang ada di blueprint satu nama (rsvpTitle ada di kartu RSVP buatan mesin); dijaga builderSingleName.test.ts. */
-export const SINGLE_TEXT_KEYS: readonly BuilderTextKey[] = [
+const PERSONAL_TEXT_KEYS: readonly BuilderTextKey[] = [
   "coverBadge", "coverSubtitle", "coverGuestLabel", "openBtn", "openingGreeting", "quoteEyebrow", "quoteTitle",
   "coupleEyebrow", "coupleTitle", "coupleSub", "countdownEyebrow", "countdownTitle", "countdownSub",
-  "cdDays", "cdHours", "cdMins", "cdSecs", "eventsEyebrow", "eventsTitle", "wishesEyebrow", "wishesSub", "rsvpTitle",
-  "closingFamily", "navHome", "navCouple", "navEvents", "navWishes",
+  "cdDays", "cdHours", "cdMins", "cdSecs", "eventsEyebrow", "eventsTitle",
+  "storyEyebrow", "storyTitle", "wishesEyebrow", "wishesSub", "rsvpTitle",
+  "closingFamily", "navHome", "navCouple", "navEvents", "navStory", "navWishes",
 ];
-const SINGLE_TEXT_LABELS: Partial<Record<BuilderTextKey, string>> = {
+
+const EVENT_TEXT_KEYS: readonly BuilderTextKey[] = [
+  "coverBadge", "coverSubtitle", "coverGuestLabel", "openBtn", "openingGreeting", "quoteEyebrow", "quoteTitle",
+  "coupleEyebrow", "coupleTitle", "coupleSub", "countdownEyebrow", "countdownTitle", "countdownSub",
+  "cdDays", "cdHours", "cdMins", "cdSecs", "eventsEyebrow", "eventsTitle",
+  "storyEyebrow", "storyTitle", "wishesEyebrow", "wishesSub", "rsvpTitle",
+  "closingFamily", "navHome", "navCouple", "navEvents", "navStory", "navWishes",
+];
+
+/** Daftar kunci label teks bawaan yang aktif pada tiap blueprint mandiri (3 mode terisolasi). */
+export const TEXT_KEYS_BY_MODE: Record<BuilderEventType, readonly BuilderTextKey[]> = {
+  WEDDING: BUILDER_TEXTS.map((t) => t.key),
+  PERSONAL: PERSONAL_TEXT_KEYS,
+  EVENT: EVENT_TEXT_KEYS,
+};
+const PERSONAL_TEXT_LABELS: Partial<Record<BuilderTextKey, string>> = {
   coupleEyebrow: "Teks kecil profil",
   coupleTitle: "Judul profil",
   navCouple: "Menu profil",
 };
+const EVENT_TEXT_LABELS: Partial<Record<BuilderTextKey, string>> = {
+  coupleEyebrow: "Teks kecil identitas acara",
+  coupleTitle: "Judul identitas acara",
+  storyEyebrow: "Teks kecil riwayat",
+  storyTitle: "Judul riwayat / milestone",
+  closingFamily: "Penyelenggara di penutup",
+  navCouple: "Menu acara utama",
+  navStory: "Menu riwayat",
+};
 
-export function familyTexts(eventType: BuilderEventType): Array<{ key: BuilderTextKey; label: string; group: string; kind: "engine" | "static" }> {
-  if (builderFamilyOf(eventType) === "wedding") return BUILDER_TEXTS.map((t) => ({ ...t }));
-  return BUILDER_TEXTS.filter((t) => SINGLE_TEXT_KEYS.includes(t.key)).map((t) => ({
+export function textsForMode(eventType: BuilderEventType): Array<{ key: BuilderTextKey; label: string; group: string; kind: "engine" | "static" }> {
+  if (eventType === "WEDDING") return BUILDER_TEXTS.map((t) => ({ ...t }));
+  const allowedKeys = TEXT_KEYS_BY_MODE[eventType];
+  const labels = eventType === "EVENT" ? EVENT_TEXT_LABELS : PERSONAL_TEXT_LABELS;
+  return BUILDER_TEXTS.filter((t) => allowedKeys.includes(t.key)).map((t) => ({
     ...t,
-    label: SINGLE_TEXT_LABELS[t.key] ?? t.label,
-    group: t.group === "Mempelai" ? "Profil" : t.group,
+    label: labels[t.key] ?? t.label,
+    group: t.group === "Mempelai"
+      ? (eventType === "EVENT" ? "Identitas acara" : "Profil")
+      : t.group === "Kisah" && eventType === "EVENT"
+      ? "Riwayat"
+      : t.group,
   }));
 }
 export const MAX_BUILDER_TEXT_LENGTH = 300;
@@ -1636,12 +1708,25 @@ export function storedVariant(raw: unknown, key: keyof BuilderVariants): string 
   return typeof value === "string" && group?.options.some((o) => o.id === value) ? value : defaultBuilderSpec().variants[key];
 }
 
-/** Satu nama: grup mempelai menata seksi profil; tata letak dua kolom tidak berarti untuk satu kartu. */
-export function familyVariantGroups(eventType: BuilderEventType): typeof VARIANT_GROUPS {
-  if (builderFamilyOf(eventType) === "wedding") return VARIANT_GROUPS;
-  return VARIANT_GROUPS
-    .filter((g) => g.key !== "story")
-    .map((g) => (g.key === "couple" ? { ...g, label: "Profil", options: g.options.filter((o) => o.id !== "side") } : g));
+/** Daftar grup gaya tata letak per mode acara: Personal & Event tanpa opsi 2-kolom "side"; grup story hadir di ketiga mode. */
+export function layoutStylesForMode(eventType: BuilderEventType): typeof VARIANT_GROUPS {
+  if (eventType === "WEDDING") return VARIANT_GROUPS;
+  return VARIANT_GROUPS.map((g) => {
+    if (g.key === "couple") {
+      return {
+        ...g,
+        label: eventType === "EVENT" ? "Identitas acara" : "Profil",
+        options: g.options.filter((o) => o.id !== "side"),
+      };
+    }
+    if (g.key === "story") {
+      return {
+        ...g,
+        label: eventType === "EVENT" ? "Model riwayat / milestone" : "Model kisah & perjalanan",
+      };
+    }
+    return g;
+  });
 }
 
 export const ANIMATION_OPTIONS: Array<{ id: AnimationPreset; label: string; hint: string }> = [
@@ -1718,6 +1803,175 @@ export function defaultBuilderSpec(eventType: BuilderEventType = "WEDDING"): Bui
     animation: "rise",
     ornaments: [],
   };
+}
+
+/**
+ * Mengonversi spesifikasi Theme Builder ke kategori / jenis acara tujuan (2 arah: 2-profil <-> 1-profil)
+ * untuk aksi "Salin ke Kategori Lain (Nama Baru)" oleh admin.
+ * Palet, huruf, latar, media bawaan, surface, animasi, dan ornamen/blok yang sah pada keluarga tujuan disalin penuh,
+ * sementara elemen yang tidak relevan pada keluarga tujuan (mis. `story`/`BRIDE_PHOTO`/`SECOND_INITIAL` saat
+ * beralih ke 1-profil) dibersihkan secara aman dan struktur blok disesuaikan otomatis.
+ */
+export function convertBuilderSpecForEvent(source: BuilderSpec, targetEventType: BuilderEventType): BuilderSpec {
+  const target: BuilderEventType = targetEventType;
+  const allowedSections = new Set<OrnamentSection>(sectionsForMode(target));
+  const allowedBlocks = new Set<BuilderBlockId>(blocksForMode(target).map((b) => b.id));
+  const allowedSlots = new Set<OrnamentMediaSlot>(ornamentMediaSlotsForMode(target).map((s) => s.id));
+  const allowedTokens = new Set<OrnamentTextToken>(ornamentTextTokensForMode(target).map((t) => t.id));
+  const allowedTextKeys = new Set(textsForMode(target).map((t) => t.key));
+
+  const coupleOptions = layoutStylesForMode(target).find((g) => g.key === "couple")?.options ?? [];
+  const nextCoupleVariant = coupleOptions.some((o) => o.id === source.variants.couple)
+    ? source.variants.couple
+    : target === "WEDDING"
+    ? "side"
+    : "arch";
+
+  const blocks: BuilderBlocks = {};
+  for (const [key, props] of Object.entries(source.blocks ?? {})) {
+    if (allowedBlocks.has(key as BuilderBlockId) && props) {
+      blocks[key as BuilderBlockId] = { ...props };
+    }
+  }
+
+  const frames: BuilderFrames = {};
+  for (const [key, frame] of Object.entries(source.frames ?? {})) {
+    if (allowedBlocks.has(key as BuilderBlockId) && frame) {
+      frames[key as FramedPhotoId] = { ...frame };
+    }
+  }
+
+  const texts: BuilderTexts = {};
+  for (const [key, value] of Object.entries(source.texts ?? {})) {
+    if (allowedTextKeys.has(key as BuilderTextKey) && typeof value === "string") {
+      texts[key as BuilderTextKey] = value;
+    }
+  }
+
+  const ornaments: BuilderOrnament[] = [];
+  for (const raw of source.ornaments ?? []) {
+    if (!allowedSections.has(raw.section)) continue;
+    if (raw.attach && !allowedBlocks.has(raw.attach)) continue;
+    if (raw.before && !allowedBlocks.has(raw.before)) continue;
+    const o: BuilderOrnament = { ...raw };
+    if (o.slot) {
+      const mappedSlot = normalizeMediaSlotForEvent(o.slot, target) as OrnamentMediaSlot;
+      if (allowedSlots.has(mappedSlot)) {
+        o.slot = mappedSlot;
+      } else {
+        delete o.slot;
+        delete o.fit;
+      }
+    }
+    if (o.replaceSlot) {
+      const mappedReplace = normalizeMediaSlotForEvent(o.replaceSlot, target) as OrnamentMediaSlot;
+      if (allowedSlots.has(mappedReplace)) {
+        o.replaceSlot = mappedReplace;
+      } else {
+        delete o.replaceSlot;
+      }
+    }
+    if (o.text) {
+      const nextText: OrnamentText = { ...o.text };
+      if (nextText.token && !allowedTokens.has(nextText.token)) {
+        nextText.token = "FIRST_INITIAL";
+      }
+      o.text = nextText;
+    }
+    ornaments.push(o);
+  }
+
+  const sectionStyles: Partial<Record<OrnamentSection, SectionStyle>> = {};
+  for (const [sec, style] of Object.entries(source.sectionStyles ?? {})) {
+    if (allowedSections.has(sec as OrnamentSection) && style) {
+      sectionStyles[sec as OrnamentSection] = { ...style };
+    }
+  }
+
+  const sectionAnimations: Partial<Record<OrderableSection, AnimationPreset>> = {};
+  for (const [sec, anim] of Object.entries(source.sectionAnimations ?? {})) {
+    if (allowedSections.has(sec as OrnamentSection) && anim) {
+      sectionAnimations[sec as OrderableSection] = anim;
+    }
+  }
+
+  const sectionNesting: Partial<Record<NestableGuest, NestingHost>> = {};
+  for (const [guest, host] of Object.entries(source.sectionNesting ?? {})) {
+    if (allowedSections.has(guest as OrnamentSection) && allowedSections.has(host as OrnamentSection) && host) {
+      sectionNesting[guest as NestableGuest] = host;
+    }
+  }
+
+  const sectionOrder = source.sectionOrder
+    ? orderableSectionsForMode(target, source.sectionOrder)
+    : undefined;
+
+  const disabledMediaSlots = Array.from(
+    new Set(
+      (source.disabledMediaSlots ?? [])
+        .filter((slot) => (target === "WEDDING" ? true : slot !== "BRIDE_PHOTO"))
+        .map((slot) => normalizeMediaSlotForEvent(slot, target) as DeclarableMediaSlot),
+    ),
+  );
+
+  const freeSections: FreeSection[] = [];
+  for (const rawFs of source.freeSections ?? []) {
+    const after: OrderableSection = allowedSections.has(rawFs.after as OrnamentSection) ? rawFs.after : "events";
+    let photo: FreeSectionPhoto | undefined = rawFs.photo;
+    if (photo && photo.source !== "asset") {
+      const mapped = normalizeMediaSlotForEvent(photo.slot, target) as OrnamentMediaSlot;
+      if (allowedSlots.has(mapped)) {
+        photo = { ...photo, slot: mapped };
+      } else {
+        photo = undefined;
+      }
+    }
+    freeSections.push({
+      ...rawFs,
+      after,
+      ...(photo ? { photo } : { photo: undefined }),
+    });
+  }
+
+  const filterCoverView = (view?: Partial<Record<BuilderBlockId, CoverDesktopProps>>) => {
+    if (!view) return undefined;
+    const out: Partial<Record<BuilderBlockId, CoverDesktopProps>> = {};
+    for (const [k, v] of Object.entries(view)) {
+      if (allowedBlocks.has(k as BuilderBlockId) && v) out[k as BuilderBlockId] = { ...v };
+    }
+    return Object.keys(out).length ? out : undefined;
+  };
+  const coverDesktopFull = filterCoverView(source.coverDesktop?.full);
+  const coverDesktopSplit = filterCoverView(source.coverDesktop?.split);
+  const coverDesktop =
+    coverDesktopFull || coverDesktopSplit
+      ? { ...(coverDesktopFull ? { full: coverDesktopFull } : {}), ...(coverDesktopSplit ? { split: coverDesktopSplit } : {}) }
+      : undefined;
+
+  const next: BuilderSpec = {
+    ...source,
+    eventType: target,
+    palette: { ...source.palette },
+    ...(source.paletteExtra ? { paletteExtra: { ...source.paletteExtra } } : {}),
+    fonts: { ...source.fonts },
+    defaultMedia: { ...source.defaultMedia },
+    blocks,
+    frames,
+    texts,
+    variants: { ...source.variants, couple: nextCoupleVariant },
+    ornaments,
+    ...(freeSections.length ? { freeSections } : { freeSections: undefined }),
+    ...(coverDesktop ? { coverDesktop } : { coverDesktop: undefined }),
+    ...(Object.keys(sectionStyles).length ? { sectionStyles } : { sectionStyles: undefined }),
+    ...(Object.keys(sectionAnimations).length ? { sectionAnimations } : { sectionAnimations: undefined }),
+    ...(Object.keys(sectionNesting).length ? { sectionNesting } : { sectionNesting: undefined }),
+    ...(sectionOrder && !isDefaultSectionOrder(sectionOrder, target) ? { sectionOrder } : { sectionOrder: undefined }),
+    ...(disabledMediaSlots.length ? { disabledMediaSlots } : { disabledMediaSlots: undefined }),
+  };
+
+  // Pastikan hasil konversi lolos validasi ketat parser builder
+  const parsed = parseBuilderSpec(next);
+  return parsed.ok ? parsed.spec : { ...defaultBuilderSpec(target), palette: { ...source.palette }, fonts: { ...source.fonts }, canvasMode: source.canvasMode };
 }
 
 export const MAX_ORNAMENTS = 40;
@@ -1989,7 +2243,7 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
     if (!Array.isArray(input.sectionOrder) || input.sectionOrder.some((s: unknown) => typeof s !== "string" || !(ORDERABLE_SECTIONS as readonly string[]).includes(s))) {
       errors.push("Urutan seksi tidak dikenali.");
     } else {
-      const normalized = familyOrderableSections(eventType ?? "WEDDING", input.sectionOrder as OrderableSection[]);
+      const normalized = orderableSectionsForMode(eventType ?? "WEDDING", input.sectionOrder as OrderableSection[]);
       if (!isDefaultSectionOrder(normalized, eventType ?? "WEDDING")) sectionOrder = normalized;
     }
   }
@@ -2067,17 +2321,17 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
     const host = attach ?? before;
     const section = host ? BUILDER_BLOCKS.find((b) => b.id === host)!.section : pickEnum(o.section, ORNAMENT_SECTIONS, `${label}: seksi`, errors);
     if (!section) continue;
-    // Seksi dan blok yang tidak ada di blueprint keluarga jenis acara ini (mis. kisah pada satu nama) tidak punya penanda.
-    const family = eventType ?? "WEDDING";
-    if (!familySections(family).includes(section) || (host && !familyBlocks(family).some((b) => b.id === host))) {
-      errors.push(`${label}: seksi atau blok tidak ada di tema ${BUILDER_EVENT_LABELS[family].toLowerCase()}.`);
+    // Seksi dan blok yang tidak ada pada blueprint mode acara ini tidak punya penanda di HTML.
+    const mode = eventType ?? "WEDDING";
+    if (!sectionsForMode(mode).includes(section) || (host && !blocksForMode(mode).some((b) => b.id === host))) {
+      errors.push(`${label}: seksi atau blok tidak ada di tema ${BUILDER_EVENT_LABELS[mode].toLowerCase()}.`);
       continue;
     }
     let slot: OrnamentMediaSlot | undefined;
     let fit: FrameFit | null = null;
     if (!text && o.slot !== undefined && o.slot !== null && o.slot !== "") {
-      const allowedSlots = familyOrnamentMediaSlots(family).map((s) => s.id);
-      slot = pickEnum<OrnamentMediaSlot>(o.slot, allowedSlots, `${label}: slot media`, errors);
+      const allowedSlots = ornamentMediaSlotsForMode(mode).map((s) => s.id);
+      slot = pickEnum<OrnamentMediaSlot>(normalizeMediaSlotForEvent(o.slot, mode), allowedSlots, `${label}: slot media`, errors);
       if (!slot) continue;
       if (o.fit !== undefined && o.fit !== null) {
         fit = parseFrameFit(o.fit);
@@ -2087,7 +2341,7 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
     let replaceSlot: OrnamentMediaSlot | undefined;
     if (o.replaceSlot !== undefined && o.replaceSlot !== null && o.replaceSlot !== "") {
       if (text || slot) { errors.push(`${label}: hanya ornamen gambar tanpa slot bingkai yang bisa diganti foto klien.`); continue; }
-      replaceSlot = pickEnum<OrnamentMediaSlot>(o.replaceSlot, familyOrnamentMediaSlots(family).map((s) => s.id), `${label}: slot pengganti`, errors);
+      replaceSlot = pickEnum<OrnamentMediaSlot>(normalizeMediaSlotForEvent(o.replaceSlot, mode), ornamentMediaSlotsForMode(mode).map((s) => s.id), `${label}: slot pengganti`, errors);
       if (!replaceSlot) continue;
     }
     let loop: LoopAnimation | undefined;
@@ -2123,13 +2377,13 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
   }
 
   // Lima kolom di bawah ditambahkan 10 Nov 2026; spesifikasi lama tanpa kolom ini tetap sah dan berarti bawaan.
-  const family = eventType ?? "WEDDING";
+  const mode = eventType ?? "WEDDING";
   const sectionStyles: SectionStyles = {};
   if (input.sectionStyles !== undefined && input.sectionStyles !== null) {
     if (typeof input.sectionStyles !== "object") errors.push("Gaya seksi tidak terbaca.");
     else {
       for (const [key, raw] of Object.entries(input.sectionStyles as Record<string, unknown>)) {
-        if (!familyOrderableSections(family).includes(key as OrderableSection)) { errors.push(`Gaya seksi ${key} tidak dikenali.`); continue; }
+        if (!orderableSectionsForMode(mode).includes(key as OrderableSection)) { errors.push(`Gaya seksi ${key} tidak dikenali.`); continue; }
         const style = parseSectionStyle(raw, `Seksi ${SECTION_LABELS[key as OrderableSection]}`, errors);
         if (style && !isDefaultSectionStyle(style)) sectionStyles[key as OrderableSection] = style;
       }
@@ -2172,7 +2426,7 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
     if (typeof input.sectionAnimations !== "object") errors.push("Animasi per seksi tidak terbaca.");
     else {
       for (const [key, value] of Object.entries(input.sectionAnimations as Record<string, unknown>)) {
-        if (!familyOrderableSections(family).includes(key as OrderableSection)) { errors.push(`Animasi seksi ${key} tidak dikenali.`); continue; }
+        if (!orderableSectionsForMode(mode).includes(key as OrderableSection)) { errors.push(`Animasi seksi ${key} tidak dikenali.`); continue; }
         const preset = pickEnum<AnimationPreset>(value, animationIds, `Animasi seksi ${SECTION_LABELS[key as OrderableSection]}`, errors);
         if (preset && preset !== animation) sectionAnimations[key as OrderableSection] = preset;
       }
@@ -2183,12 +2437,12 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
   if (input.sectionNesting !== undefined && input.sectionNesting !== null) {
     if (typeof input.sectionNesting !== "object") errors.push("Penumpangan seksi tidak terbaca.");
     else {
-      const familySecs = familyOrderableSections(family);
+      const modeSections = orderableSectionsForMode(mode);
       const entries = Object.entries(input.sectionNesting as Record<string, unknown>);
       const guests = new Set(entries.map(([g]) => g));
       for (const [guest, host] of entries) {
-        const g = NESTABLE_GUESTS.find((x) => x === guest && familySecs.includes(x));
-        const h = NESTING_HOSTS.find((x) => x === host && familySecs.includes(x));
+        const g = NESTABLE_GUESTS.find((x) => x === guest && modeSections.includes(x));
+        const h = NESTING_HOSTS.find((x) => x === host && modeSections.includes(x));
         if (!g || !h) { errors.push(`Penumpangan seksi ${guest} → ${String(host)} tidak dikenali.`); continue; }
         if ((g as string) === h) { errors.push(`Seksi ${SECTION_LABELS[g]} tidak bisa menumpang pada dirinya sendiri.`); continue; }
         // Rantai (A di B, B di C) membuat urutan pemindahan bergantung urutan kunci; ditolak agar hasilnya pasti.
@@ -2206,7 +2460,7 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
     } else {
       // Penutup selalu di akhir alur (footer), jadi seksi bebas tidak bisa diletakkan sesudahnya. Hitung mundur yang
       // menumpang di seksi lain bukan seksi alur lagi; seksi bebas sesudahnya akan ikut masuk ke seksi tumpangannya.
-      const hosts = familyOrderableSections(family).filter((s) => s !== "closing" && !(s === "countdown" && countdownPlacement !== "section") && !(s in sectionNesting));
+      const hosts = orderableSectionsForMode(mode).filter((s) => s !== "closing" && !(s === "countdown" && countdownPlacement !== "section") && !(s in sectionNesting));
       const usedIds = new Set<string>();
       for (const [i, raw] of (input.freeSections as unknown[]).entries()) {
         const label = `Seksi teks bebas #${i + 1}`;
@@ -2231,14 +2485,14 @@ export function parseBuilderSpec(raw: unknown): ParseResult {
           const position = pickEnum<"top" | "bottom">(p.position ?? "top", ["top", "bottom"], `${label}: letak foto`, errors);
           if (!shape || !position) continue;
           if (p.source === "slot") {
-            const slot = pickEnum<OrnamentMediaSlot>(p.slot, familyOrnamentMediaSlots(family).map((s) => s.id), `${label}: slot foto`, errors);
+            const slot = pickEnum<OrnamentMediaSlot>(normalizeMediaSlotForEvent(p.slot, mode), ornamentMediaSlotsForMode(mode).map((s) => s.id), `${label}: slot foto`, errors);
             if (!slot) continue;
             photo = { source: "slot", slot, shape, position };
           } else if (p.source === "asset" || p.source === "replaceable") {
             if (!(isAllowedOrnamentSrc(p.src) || (isAllowedBackdropSrc(p.src) && p.src !== ""))) { errors.push(`${label}: foto harus dari pustaka gambar.`); continue; }
             if (p.source === "asset") photo = { source: "asset", src: p.src as string, shape, position };
             else {
-              const slot = pickEnum<OrnamentMediaSlot>(p.slot, familyOrnamentMediaSlots(family).map((s) => s.id), `${label}: slot pengganti`, errors);
+              const slot = pickEnum<OrnamentMediaSlot>(normalizeMediaSlotForEvent(p.slot, mode), ornamentMediaSlotsForMode(mode).map((s) => s.id), `${label}: slot pengganti`, errors);
               if (!slot) continue;
               photo = { source: "replaceable", src: p.src as string, slot, shape, position };
             }

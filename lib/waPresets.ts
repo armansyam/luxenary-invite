@@ -1,8 +1,8 @@
 import { eventNoun } from "@/lib/invitationUtils";
 
-// Preset pesan mengikuti jenis acara; teks pernikahan tetap sama persis agar template tersimpan lama tetap dikenali.
-export function waPresets(eventType?: string | null) {
-  const noun = eventNoun(eventType);
+// Preset pesan mengikuti jenis acara dan sub-acara; teks pernikahan tetap sama persis agar template tersimpan lama tetap dikenali.
+export function waPresets(eventType?: string | null, subEvent?: string | null) {
+  const noun = eventNoun(eventType, subEvent);
   const isWedding = !eventType || eventType === "WEDDING";
   const ourEvent = noun === "acara" ? "acara kami" : `${noun} kami`;
   const attendEvent = noun === "acara" ? "acara kami" : `acara ${noun} kami`;

@@ -16,9 +16,7 @@ import {
   PHOTO_FILTER_CSS,
   RADIUS_OPTIONS,
   blockStyle,
-  builderFamilyOf,
-  type BuilderFamily,
-  familyOrderableSections,
+  orderableSectionsForMode,
   fontFamily,
   frameCss,
   googleFontCssUrl,
@@ -38,19 +36,21 @@ import {
   type OrnamentTextToken,
 } from "@/lib/themeBuilder/spec";
 
-const BLUEPRINT_FILES: Record<BuilderFamily, string> = {
-  wedding: path.join("themes", "_blueprints", "wedding", "starter-blueprint.html"),
-  single: path.join("themes", "_blueprints", "single-name", "starter-blueprint-single.html"),
+const BLUEPRINT_FILES: Record<BuilderEventType, string> = {
+  WEDDING: path.join("themes", "_blueprints", "wedding", "starter-blueprint.html"),
+  PERSONAL: path.join("themes", "_blueprints", "personal", "starter-blueprint-personal.html"),
+  EVENT: path.join("themes", "_blueprints", "event", "starter-blueprint-event.html"),
 };
 
-/** Token jadwal acara di blueprint: kartu sesi pernikahan vs kartu sesi buatan mesin untuk satu nama. */
-const EVENTS_TOKEN: Record<BuilderFamily, string> = {
-  wedding: "{{eventDataHtml}}",
-  single: "{{eventSectionHtml}}",
+/** Token jadwal acara pada masing-masing blueprint mandiri (3 mode terisolasi). */
+const EVENTS_TOKEN: Record<BuilderEventType, string> = {
+  WEDDING: "{{eventDataHtml}}",
+  PERSONAL: "{{eventSectionHtml}}",
+  EVENT: "{{eventSectionHtml}}",
 };
 
 export function readBuilderBlueprint(eventType: BuilderEventType): string {
-  return fs.readFileSync(path.join(/*turbopackIgnore: true*/ process.cwd(), BLUEPRINT_FILES[builderFamilyOf(eventType)]), "utf-8");
+  return fs.readFileSync(path.join(/*turbopackIgnore: true*/ process.cwd(), BLUEPRINT_FILES[eventType]), "utf-8");
 }
 
 /** Warna tambahan disimpan sebagai variabel di :root (satu-satunya tempat hex yang lolos audit), lalu dipakai oleh `extraPaletteCss`. */
@@ -423,29 +423,43 @@ const VARIANT_CSS: Record<keyof BuilderVariants, Record<string, string>> = {
 
 const EAGER_SECTIONS = new Set(["cover", "sidebar", "opening"]);
 
+type SlotTokenBinding = { token: string; cond?: string; client: string };
+
 /**
- * `cond`: slot berisi gambar (boleh bawaan tema). `client`: gambar itu unggahan klien (lib/themeEngine.ts
- * `clientPhotoFlags`), dipakai gambar tema yang diganti foto klien (`replaceSlot`, foto bebas `replaceable`).
+ * Pemetaan ketat slot media per mode acara (tanpa slot lintas mode):
+ * - `cond`: slot berisi gambar (boleh bawaan tema).
+ * - `client`: gambar unggahan klien (`lib/themeEngine.ts`), dipakai untuk `replaceSlot` & foto bebas `replaceable`.
  */
-const ORNAMENT_SLOT_TOKEN: Record<BuilderFamily, Record<OrnamentMediaSlot, { token: string; cond?: string; client: string }>> = {
-  wedding: {
+const ORNAMENT_SLOT_TOKEN: Record<BuilderEventType, Partial<Record<OrnamentMediaSlot, SlotTokenBinding>>> = {
+  WEDDING: {
     HOME_PHOTO: { token: "homePhotoUrl", cond: "hasCustomHomePhoto", client: "clientHomePhoto" },
     GROOM_PHOTO: { token: "firstPhotoUrl", client: "clientFirstPhoto" },
     BRIDE_PHOTO: { token: "secondPhotoUrl", client: "clientSecondPhoto" },
     LANDING_COVER: { token: "landingCoverUrl", client: "clientCoverPhoto" },
     CLOSING_COVER: { token: "closingPhotoUrl", cond: "closingPhotoUrl", client: "clientClosingPhoto" },
   },
-  single: {
+  PERSONAL: {
     HOME_PHOTO: { token: "homePhotoUrl", cond: "hasCustomHomePhoto", client: "clientHomePhoto" },
-    GROOM_PHOTO: { token: "mainPhotoUrl", cond: "mainPhotoUrl", client: "clientMainPhoto" },
-    BRIDE_PHOTO: { token: "mainPhotoUrl", cond: "mainPhotoUrl", client: "clientMainPhoto" },
+    PROFILE_PHOTO: { token: "mainPhotoUrl", cond: "mainPhotoUrl", client: "clientMainPhoto" },
+    LANDING_COVER: { token: "landingCoverUrl", client: "clientCoverPhoto" },
+    CLOSING_COVER: { token: "closingPhotoUrl", cond: "closingPhotoUrl", client: "clientClosingPhoto" },
+  },
+  EVENT: {
+    HOME_PHOTO: { token: "homePhotoUrl", cond: "hasCustomHomePhoto", client: "clientHomePhoto" },
+    EVENT_PHOTO: { token: "mainPhotoUrl", cond: "mainPhotoUrl", client: "clientMainPhoto" },
     LANDING_COVER: { token: "landingCoverUrl", client: "clientCoverPhoto" },
     CLOSING_COVER: { token: "closingPhotoUrl", cond: "closingPhotoUrl", client: "clientClosingPhoto" },
   },
 };
 
-const ORNAMENT_TEXT_TOKEN_MARKUP: Record<BuilderFamily, Record<OrnamentTextToken, string>> = {
-  wedding: {
+function ornamentSlotBinding(mode: BuilderEventType, slot: OrnamentMediaSlot): SlotTokenBinding {
+  const binding = ORNAMENT_SLOT_TOKEN[mode][slot];
+  if (!binding) throw new Error(`Slot media ${slot} tidak valid untuk mode ${mode}.`);
+  return binding;
+}
+
+const ORNAMENT_TEXT_TOKEN_MARKUP: Record<BuilderEventType, Record<OrnamentTextToken, string>> = {
+  WEDDING: {
     MONOGRAM_AMP: "{{coupleMonogram}}",
     MONOGRAM_JOINED: "{{firstInitial}}{{secondInitial}}",
     FIRST_INITIAL: "{{firstInitial}}",
@@ -453,7 +467,15 @@ const ORNAMENT_TEXT_TOKEN_MARKUP: Record<BuilderFamily, Record<OrnamentTextToken
     COUPLE_NAMES: "{{firstName}} &amp; {{secondName}}",
     EVENT_DATE: "{{weddingDate}}",
   },
-  single: {
+  PERSONAL: {
+    MONOGRAM_AMP: "{{coupleMonogram}}",
+    MONOGRAM_JOINED: "{{firstInitial}}",
+    FIRST_INITIAL: "{{firstInitial}}",
+    SECOND_INITIAL: "{{firstInitial}}",
+    COUPLE_NAMES: "{{mainNickname}}",
+    EVENT_DATE: "{{eventDateFormatted}}",
+  },
+  EVENT: {
     MONOGRAM_AMP: "{{coupleMonogram}}",
     MONOGRAM_JOINED: "{{firstInitial}}",
     FIRST_INITIAL: "{{firstInitial}}",
@@ -468,7 +490,7 @@ const ORNAMENT_TEXT_TOKEN_MARKUP: Record<BuilderFamily, Record<OrnamentTextToken
  * `span` absolut tetap sah di dalam `p`, judul, dan tautan. Teks hias di-escape di sini; `{{ }}` dan kurung sudut sudah
  * ditolak oleh `parseBuilderSpec`, kecuali token dinamis dari daftar `ORNAMENT_TEXT_TOKEN_MARKUP`.
  */
-function ornamentHtml(o: BuilderOrnament, family: BuilderFamily = "wedding", blockHidden = false): string {
+function ornamentHtml(o: BuilderOrnament, mode: BuilderEventType = "WEDDING", blockHidden = false): string {
   const tag = o.attach ? "span" : "div";
   // Ornamen sebaris adalah elemen alur: kelas `lux-orn` (absolut, tembus klik) tidak dipakai, dan gambarnya diberi gaya sendiri.
   // Ia disembunyikan bersama bloknya (`lux-flow-off`), karena berada di luar elemen blok dan tidak ikut `display:none` blok.
@@ -479,11 +501,11 @@ function ornamentHtml(o: BuilderOrnament, family: BuilderFamily = "wedding", blo
   const imgStyle = o.before ? ` style="display:block;width:100%;height:auto;"` : "";
   let inner: string;
   if (o.text) {
-    inner = o.text.token ? ORNAMENT_TEXT_TOKEN_MARKUP[family][o.text.token] : escapeText(o.text.value);
+    inner = o.text.token ? ORNAMENT_TEXT_TOKEN_MARKUP[mode][o.text.token] : escapeText(o.text.value);
   } else if (o.slot) {
     const win = o.fit ?? { l: 0.12, t: 0.12, r: 0.88, b: 0.88 };
     const pct = (v: number) => Math.round(v * 1000) / 1000;
-    const slotInfo = ORNAMENT_SLOT_TOKEN[family][o.slot];
+    const slotInfo = ornamentSlotBinding(mode, o.slot);
     const clipStyle = "clip" in win && win.clip ? `clip-path:${win.clip};-webkit-clip-path:${win.clip};` : "";
     const photoStyle = `position:absolute;left:${pct(win.l * 100)}%;top:${pct(win.t * 100)}%;width:${pct((win.r - win.l) * 100)}%;height:${pct((win.b - win.t) * 100)}%;object-fit:cover;z-index:0;${clipStyle}`;
     const photoImg = `<img class="lux-orn-photo" src="{{${slotInfo.token}}}" alt="" loading="${loading}" decoding="async" draggable="false" style="${photoStyle}" />`;
@@ -493,7 +515,7 @@ function ornamentHtml(o: BuilderOrnament, family: BuilderFamily = "wedding", blo
     inner = `${wrappedPhoto}${frameImg}`;
   } else if (o.replaceSlot) {
     // Gambar tema tetap dirender (tak terlihat) agar ukuran kotak ornamen sama dengan ilustrasinya; foto klien menutup kotak itu.
-    const slotInfo = ORNAMENT_SLOT_TOKEN[family][o.replaceSlot];
+    const slotInfo = ornamentSlotBinding(mode, o.replaceSlot);
     const box = "position:relative;display:block;width:100%;height:auto;";
     // Cermin ornamen dipasang di pembungkus; foto klien dibalik lagi agar tidak tampil tercermin.
     const unflip = o.flipX || o.flipY ? `transform:${o.flipX ? "scaleX(-1)" : ""}${o.flipY ? " scaleY(-1)" : ""};` : "";
@@ -553,10 +575,10 @@ const DOCK_HREF_SECTION: Partial<Record<string, OrderableSection>> = {
 };
 
 /** Foto slot klien memakai token engine yang sama dengan ornamen berslot, dibungkus syarat bila slotnya boleh kosong. */
-function freePhotoHtml(photo: FreeSectionPhoto, family: BuilderFamily): string {
+function freePhotoHtml(photo: FreeSectionPhoto, mode: BuilderEventType): string {
   const cls = `lux-free-photo is-${photo.shape}${photo.position === "bottom" ? " is-bottom" : ""}`;
   if (photo.source === "asset") return `<figure class="${cls}" data-lux-anim="2"><img src="${photo.src}" alt="" loading="lazy" decoding="async" /></figure>`;
-  const info = ORNAMENT_SLOT_TOKEN[family][photo.slot];
+  const info = ornamentSlotBinding(mode, photo.slot);
   if (photo.source === "replaceable") {
     return `<figure class="${cls}" data-lux-anim="2">{{#if ${info.client}}}<img src="{{${info.token}}}" alt="" loading="lazy" decoding="async" />{{/if}}{{#unless ${info.client}}}<img src="${photo.src}" alt="" loading="lazy" decoding="async" />{{/unless}}</figure>`;
   }
@@ -564,9 +586,9 @@ function freePhotoHtml(photo: FreeSectionPhoto, family: BuilderFamily): string {
   return info.cond ? `{{#if ${info.cond}}}${figure}{{/if}}` : figure;
 }
 
-function freeSectionHtml(f: FreeSection, family: BuilderFamily): string {
+function freeSectionHtml(f: FreeSection, mode: BuilderEventType): string {
   const keys = freeSectionLabelKeys(f.id);
-  const photo = f.photo ? freePhotoHtml(f.photo, family) : "";
+  const photo = f.photo ? freePhotoHtml(f.photo, mode) : "";
   const cards = f.cards?.length
     ? `
         <div class="lux-free-cards" data-lux-anim="3">${f.cards.map((c, i) => {
@@ -674,14 +696,14 @@ function nestSections(html: string, nesting: NonNullable<BuilderSpec["sectionNes
 }
 
 /** Seksi bebas disisipkan sesudah seksi tuannya (setelah pengurutan ulang); beberapa seksi dengan tuan sama tetap urut. */
-function insertFreeSections(html: string, sections: FreeSection[], family: BuilderFamily): string {
+function insertFreeSections(html: string, sections: FreeSection[], mode: BuilderEventType): string {
   const byHost = new Map<OrderableSection, FreeSection[]>();
   for (const f of sections) byHost.set(f.after, [...(byHost.get(f.after) ?? []), f]);
   let out = html;
   for (const [host, items] of byHost) {
     const range = sectionRange(out, host);
     if (!range) throw new Error(`Seksi ${host} untuk seksi teks bebas tidak ada di blueprint.`);
-    out = `${out.slice(0, range.end)}${items.map((f) => freeSectionHtml(f, family)).join("")}${out.slice(range.end)}`;
+    out = `${out.slice(0, range.end)}${items.map((f) => freeSectionHtml(f, mode)).join("")}${out.slice(range.end)}`;
   }
   return out;
 }
@@ -689,7 +711,7 @@ function insertFreeSections(html: string, sections: FreeSection[], family: Build
 /** Mengurutkan ulang seksi utama di `<main>` dan tautan `<nav class="bottom-dock">` sesuai `spec.sectionOrder`. */
 function reorderSections(html: string, spec: BuilderSpec): string {
   if (!spec.sectionOrder || isDefaultSectionOrder(spec.sectionOrder, spec.eventType)) return html;
-  const defaults = familyOrderableSections(spec.eventType);
+  const defaults = orderableSectionsForMode(spec.eventType);
   const desired = spec.sectionOrder.filter((id): id is OrderableSection => defaults.includes(id));
   for (const id of defaults) if (!desired.includes(id)) desired.push(id);
 
@@ -734,7 +756,7 @@ function reorderSections(html: string, spec: BuilderSpec): string {
 }
 
 /** Memasang ornamen sebaris sebagai saudara tepat sebelum elemen blok, sehingga berlaku juga untuk blok berlabel. */
-function insertBeforeBlocks(html: string, ornaments: BuilderOrnament[], blocks: BuilderSpec["blocks"], family: BuilderFamily): string {
+function insertBeforeBlocks(html: string, ornaments: BuilderOrnament[], blocks: BuilderSpec["blocks"], mode: BuilderEventType): string {
   const byBlock = new Map<string, BuilderOrnament[]>();
   for (const o of ornaments) if (o.before) byBlock.set(o.before, [...(byBlock.get(o.before) ?? []), o]);
   let out = html;
@@ -742,21 +764,21 @@ function insertBeforeBlocks(html: string, ornaments: BuilderOrnament[], blocks: 
     const opening = openingTagOf(block);
     if (!opening.test(out)) throw new Error(`Penanda blok ${block} tidak ada di blueprint.`);
     const hidden = Boolean(blocks[block as BuilderBlockId]?.hidden);
-    const markup = items.map((o) => ornamentHtml(o, family, hidden)).join("");
+    const markup = items.map((o) => ornamentHtml(o, mode, hidden)).join("");
     out = out.replace(opening, (tag) => `${markup}${tag}`);
   }
   return out;
 }
 
 /** Memasang ornamen sebagai anak pertama elemen blok. Blok yang hilang dari blueprint adalah galat, bukan ornamen yang diam-diam hilang. */
-function attachToBlocks(html: string, ornaments: BuilderOrnament[], family: BuilderFamily): string {
+function attachToBlocks(html: string, ornaments: BuilderOrnament[], mode: BuilderEventType): string {
   const byBlock = new Map<string, BuilderOrnament[]>();
   for (const o of ornaments) if (o.attach) byBlock.set(o.attach, [...(byBlock.get(o.attach) ?? []), o]);
   let out = html;
   for (const [block, items] of byBlock) {
     const opening = openingTagOf(block);
     if (!opening.test(out)) throw new Error(`Penanda blok ${block} tidak ada di blueprint.`);
-    const markup = items.map((o) => ornamentHtml(o, family)).join("");
+    const markup = items.map((o) => ornamentHtml(o, mode)).join("");
     out = out.replace(opening, (tag) => `${tag}${markup}`);
   }
   return out;
@@ -885,7 +907,7 @@ export function compileBuilderMaster(spec: BuilderSpec, blueprint = readBuilderB
   `;
   html = html.replace("</head>", `  <style id="lux-builder-responsive">${responsiveCss}</style>\n</head>`);
 
-  const family = builderFamilyOf(spec.eventType);
+  const mode = spec.eventType;
   // Bila ornamen bingkai (atau ilustrasi pengganti) di seksi yang sama sudah mengisi slot foto pembuka, sembunyikan kotak foto pembuka bawaan
   // agar foto tidak tampil ganda (kecuali admin sudah mengatur blok opening-photo secara eksplisit).
   const autoHideHomePhoto = autoHiddenOpeningPhoto(spec);
@@ -907,7 +929,7 @@ export function compileBuilderMaster(spec: BuilderSpec, blueprint = readBuilderB
   // Jadwal acara dipindahkan (bukan digandakan) ke Home: token hanya boleh muncul sekali karena HTML-nya membawa
   // target sunting Studio. Seksi Acara tetap ada di DOM (penanda seksi dan ornamennya) tetapi disembunyikan.
   if (spec.eventsPlacement === "home") {
-    const eventsToken = EVENTS_TOKEN[family];
+    const eventsToken = EVENTS_TOKEN[mode];
     html = html.replace(eventsToken, "").replace("<!-- lux-home-schedule -->", eventsToken);
     html = html.replace("</head>", `  <style id="lux-builder-events">\n    .home-schedule { display: block; }\n    #events { display: none; }\n    a[href="#events"] { display: none !important; }\n  </style>\n</head>`);
   }
@@ -941,7 +963,7 @@ export function compileBuilderMaster(spec: BuilderSpec, blueprint = readBuilderB
   html = reorderSections(html, spec);
   html = nestCountdown(html, spec.countdownPlacement ?? "section");
   if (spec.sectionNesting && Object.keys(spec.sectionNesting).length) html = nestSections(html, spec.sectionNesting);
-  if (spec.freeSections?.length) html = insertFreeSections(html, spec.freeSections, family);
+  if (spec.freeSections?.length) html = insertFreeSections(html, spec.freeSections, mode);
 
   // CSS kustom dipasang paling akhir agar menimpa gaya builder lain; isinya sudah lolos `customCssError` di parseBuilderSpec.
   if (spec.customCss) {
@@ -956,7 +978,7 @@ export function compileBuilderMaster(spec: BuilderSpec, blueprint = readBuilderB
     );
   }
 
-  if (spec.variants.coverDate === "split" && family === "wedding") {
+  if (spec.variants.coverDate === "split" && mode === "WEDDING") {
     html = html.replace(
       /<p class="cover-date" data-lux-block="cover-date">\{\{weddingDate\}\}<\/p>/,
       `<p class="cover-date" data-lux-block="cover-date"><span class="cover-date-split">{{#if weddingDateDay}}<span class="cover-date-part cover-date-dd">{{weddingDateDay}}</span><span class="cover-date-sep">/</span><span class="cover-date-part cover-date-mm">{{weddingDateMonth}}</span><span class="cover-date-sep">•</span><span class="cover-date-part cover-date-yy">{{weddingDateYear}}</span>{{/if}}</span><span class="cover-date-full">{{weddingDate}}</span></p>`
@@ -975,14 +997,14 @@ export function compileBuilderMaster(spec: BuilderSpec, blueprint = readBuilderB
 
   html = html.replace(/<!-- lux-ornaments:([a-z]+) -->/g, (marker, section: string) => {
     const items = spec.ornaments.filter((o) => o.section === section && !o.attach && !o.before);
-    return items.length ? items.map((o) => ornamentHtml(o, family)).join("\n    ") : marker;
+    return items.length ? items.map((o) => ornamentHtml(o, mode)).join("\n    ") : marker;
   });
 
   if (spec.ornaments.some((o) => o.before)) {
     html = html.replace("</head>", `  <style id="lux-builder-flow">\n    .lux-flow-off { display: none !important; }\n  </style>\n</head>`);
   }
 
-  return applyStaticTexts(insertBeforeBlocks(attachToBlocks(html, spec.ornaments, family), spec.ornaments, spec.blocks, family), spec.texts);
+  return applyStaticTexts(insertBeforeBlocks(attachToBlocks(html, spec.ornaments, mode), spec.ornaments, spec.blocks, mode), spec.texts);
 }
 
 const escapeText = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");

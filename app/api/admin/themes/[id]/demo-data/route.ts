@@ -10,6 +10,7 @@ import { routeError } from "@/lib/routeError";
 import { readJsonBody } from "@/lib/requestBody";
 import { loadThemeArtPreview } from "@/lib/themeArtPreview";
 import { parseThemeDefaultMedia } from "@/lib/themeDefaultMedia";
+import { resolveSubEventMeta } from "@/lib/invitationUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,7 @@ export async function GET(
 
     const dbTheme = await prisma.theme.findUnique({
       where: { id: themeId },
-      select: { name: true, category: true, series: true, defaultMusicUrl: true, eventType: true },
+      select: { name: true, category: true, series: true, defaultMusicUrl: true, eventType: true, subEvent: true },
     });
 
     const { getThemeBlueprint } = await import("@/lib/themeDefaults");
@@ -60,8 +61,8 @@ export async function GET(
       resolvedData.themeId = themeId;
     }
 
-    // Cadangan blueprint hanya untuk tema pernikahan. Label demo tema satu nama ikut berlaku untuk undangan klien
-    // sejenis (applySingleNameContract); bila cadangan pernikahan ("THE COUPLE") tersimpan, label itu menimpa token
+    // Cadangan blueprint hanya untuk tema pernikahan. Label demo tema Personal & Event ikut berlaku untuk undangan klien
+    // sejenis (finalizePersonalData / finalizeEventData); bila cadangan pernikahan ("THE COUPLE") tersimpan, label itu menimpa token
     // jenis acara di master. Kolom kosong di Studio Demo berarti teks bawaan master.
     if (dbTheme && dbTheme.eventType !== "WEDDING") {
       resolvedData.customLabels = resolvedData.customLabels || {};
@@ -99,10 +100,17 @@ export async function GET(
       ...(resolvedData.customLabels || {}),
     };
 
-    if (!resolvedData.openingQuote) resolvedData.openingQuote = blueprint.openingQuote;
-    if (!resolvedData.openingQuoteRef) resolvedData.openingQuoteRef = blueprint.openingQuoteRef;
-    if (!resolvedData.closingQuote) resolvedData.closingQuote = blueprint.closingQuote;
-    if (!resolvedData.closingSub) resolvedData.closingSub = blueprint.closingSub;
+    if (dbTheme && dbTheme.eventType !== "WEDDING") {
+      const subMeta = resolveSubEventMeta(dbTheme.eventType, dbTheme.subEvent);
+      if (!resolvedData.openingQuote) resolvedData.openingQuote = subMeta.defaultQuote;
+      if (!resolvedData.openingQuoteRef) resolvedData.openingQuoteRef = subMeta.defaultQuoteRef;
+      if (!resolvedData.closingQuote) resolvedData.closingQuote = subMeta.closingText;
+    } else {
+      if (!resolvedData.openingQuote) resolvedData.openingQuote = blueprint.openingQuote;
+      if (!resolvedData.openingQuoteRef) resolvedData.openingQuoteRef = blueprint.openingQuoteRef;
+      if (!resolvedData.closingQuote) resolvedData.closingQuote = blueprint.closingQuote;
+      if (!resolvedData.closingSub) resolvedData.closingSub = blueprint.closingSub;
+    }
     if (!resolvedData.audioUrl) {
       resolvedData.audioUrl = dbTheme?.defaultMusicUrl || blueprint.defaultMusicUrl || "";
     }

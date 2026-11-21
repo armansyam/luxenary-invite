@@ -10,7 +10,7 @@ import { routeError } from "@/lib/routeError";
 import { readJsonBody } from "@/lib/requestBody";
 import { deleteInvitationDraft } from "@/lib/invitationDraft";
 import { encryptPin, decryptPin } from "@/lib/pinEncryption";
-import { DEFAULT_THEME_BY_EVENT, EVENT_TYPES, STAFF_PIN_PATTERN, isThemeCompatible, selectableEventTypes } from "@/lib/invitationUtils";
+import { DEFAULT_THEME_BY_EVENT, EVENT_TYPES, STAFF_PIN_PATTERN, isThemeInMode, resolveSubEventMeta, sanitizeSubEvent, selectableEventTypes } from "@/lib/invitationUtils";
 import { isReservedSubdomain, isSubdomainExpired } from "@/lib/domainUtils";
 import { DAY_MS, getPrimaryEventDate, getPrimaryEventDateString, isClockTimeInput, normalizeEventDateInput } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
@@ -238,12 +238,70 @@ export async function PUT(
       }
     }
 
-    // ACTION: CHANGE_FREE_DRAFT_EVENT_TYPE — khusus mode Draf Gratis (belum mengaktifkan paket)
-    if (body.action === "CHANGE_FREE_DRAFT_EVENT_TYPE") {
-      if (!currentInv.isFreeDraft || currentInv.status !== "DRAFT") {
+    // ACTION: CHANGE_SUB_EVENT — ganti label/jenis sub-acara dinamis (preset maupun tulis sendiri, mis. "Tamatan Ngaji" / "Corporate")
+    // untuk kategori Personal & Keluarga (PERSONAL) maupun Acara & Event Umum (EVENT) selama status masih DRAFT.
+    // Tema dan data peserta yang sudah diketik klien tetap utuh.
+    if (body.action === "CHANGE_SUB_EVENT") {
+      if (currentInv.eventType === "WEDDING") {
+        return NextResponse.json(
+          { error: "Pergantian sub-acara hanya tersedia untuk kategori Personal & Keluarga atau Acara & Event Umum.", code: "WEDDING_NO_SUB_EVENT" },
+          { status: 400 },
+        );
+      }
+      if (currentInv.status !== "DRAFT" && !lockStatus.isEmergencyUnlocked && !isAdmin) {
+        return NextResponse.json(
+          { error: "Sub-acara tidak dapat diubah setelah undangan diterbitkan.", code: "EVENT_TYPE_LOCKED" },
+          { status: 403 },
+        );
+      }
+
+      const nextSubEvent = sanitizeSubEvent(body.subEvent);
+      if ((nextSubEvent ?? null) === (currentInv.subEvent ?? null)) {
+        return NextResponse.json({ success: true, unchanged: true, invitation: currentInv });
+      }
+
+      const subMeta = resolveSubEventMeta(currentInv.eventType, nextSubEvent);
+      const currentFs = parseFeatureSettings(currentInv.featureSettings);
+      // Pertahankan label hasil suntingan klien dan status sakelar showStory; hanya label yang masih default ikut sub-acara baru.
+      const reconciled = (await featureSettingsForThemeChange(
+        currentFs,
+        currentInv.themeId,
+        currentInv.themeId,
+        currentInv.eventType,
+        nextSubEvent,
+      )) as Record<string, unknown>;
+      const nextFs: Record<string, unknown> = {
+        ...reconciled,
+        showStory: currentFs.showStory !== undefined ? currentFs.showStory : true,
+      };
+
+      const updated = await prisma.invitation.update({
+        where: { id },
+        data: {
+          subEvent: nextSubEvent,
+          openingQuote: subMeta.defaultQuote,
+          openingQuoteRef: subMeta.defaultQuoteRef,
+          featureSettings: nextFs as Prisma.InputJsonValue,
+        },
+      });
+
+      await deleteInvitationDraft(id);
+      invalidateInvitationLookup(updated.invitationSlug, updated.subdomain, updated.id);
+      await seedRenderedLabels(id);
+
+      return NextResponse.json({
+        success: true,
+        message: nextSubEvent ? `Sub-acara berhasil diubah menjadi "${nextSubEvent}".` : "Label sub-acara berhasil direset.",
+        invitation: updated,
+      });
+    }
+
+    // ACTION: CHANGE_INVITATION_MODE (mengganti mode acara & sub-acara selama undangan masih berstatus DRAFT)
+    if (body.action === "CHANGE_INVITATION_MODE") {
+      if (currentInv.status !== "DRAFT" && !lockStatus.isEmergencyUnlocked && !isAdmin) {
         return NextResponse.json(
           {
-            error: "Jenis acara hanya dapat diganti langsung saat masih dalam mode Draf Gratis.",
+            error: "Mode / kategori acara tidak dapat diubah setelah undangan diterbitkan.",
             code: "EVENT_TYPE_LOCKED",
           },
           { status: 403 }
@@ -255,19 +313,19 @@ export async function PUT(
         return NextResponse.json({ error: "Jenis acara tidak valid." }, { status: 400 });
       }
       const nextEventType = rawEvent as EventType;
+      const nextSubEvent = nextEventType === "WEDDING" ? null : sanitizeSubEvent(body.subEvent);
 
       const [enabledTypes, activeThemes] = await Promise.all([
         getEnabledEventTypes(),
         prisma.theme.findMany({
           where: { isActive: true },
-          select: { id: true, eventType: true, parentTheme: true },
+          select: { id: true, eventType: true },
           orderBy: { sortOrder: "asc" },
         }),
       ]);
-      const masterThemes = activeThemes.filter((t) => !t.parentTheme);
       const selectableTypes = selectableEventTypes(
         enabledTypes,
-        masterThemes.map((t) => t.eventType),
+        activeThemes.map((t) => t.eventType),
       );
       if (!enabledTypes.includes(nextEventType) || !selectableTypes.includes(nextEventType)) {
         return NextResponse.json({ error: "Jenis acara ini belum tersedia." }, { status: 400 });
@@ -276,37 +334,50 @@ export async function PUT(
       const requestedThemeId = typeof body.themeId === "string" && body.themeId.trim()
         ? body.themeId.trim().toLowerCase()
         : null;
+      let validRequestedThemeId: string | null = null;
       if (requestedThemeId) {
         const reqTheme = activeThemes.find((t) => t.id.toLowerCase() === requestedThemeId);
-        if (!reqTheme || !isThemeCompatible(reqTheme.eventType, nextEventType)) {
+        if (!reqTheme || !isThemeInMode(reqTheme.eventType, nextEventType)) {
           return NextResponse.json(
-            { error: "Tema pilihan tidak aktif atau tidak sesuai jenis acara." },
+            { error: "Tema pilihan tidak aktif atau berasal dari mode undangan yang berbeda." },
             { status: 400 },
           );
         }
+        validRequestedThemeId = reqTheme.id;
       }
 
       const isEventChanged = nextEventType !== currentInv.eventType;
-      if (!isEventChanged && (!requestedThemeId || requestedThemeId === currentInv.themeId?.toLowerCase())) {
+      const isSubEventChanged =
+        body.subEvent !== undefined && (nextSubEvent ?? null) !== (currentInv.subEvent ?? null);
+      const effectiveSubEvent = isEventChanged
+        ? nextSubEvent
+        : (body.subEvent !== undefined ? nextSubEvent : currentInv.subEvent);
+
+      if (
+        !isEventChanged &&
+        !isSubEventChanged &&
+        (!validRequestedThemeId || validRequestedThemeId.toLowerCase() === currentInv.themeId?.toLowerCase())
+      ) {
         return NextResponse.json({ success: true, unchanged: true, invitation: currentInv });
       }
 
-      // Pertahankan tema draf saat ini bila masih aktif dan kompatibel (mis. pindah antar jenis acara non-wedding).
+      // Pertahankan tema saat ini hanya bila masih dalam mode yang sama.
       const currentActiveTheme = activeThemes.find((t) => t.id.toLowerCase() === (currentInv.themeId || "").toLowerCase());
       const preserveCurrentTheme =
-        !requestedThemeId &&
-        currentActiveTheme &&
-        isThemeCompatible(currentActiveTheme.eventType, nextEventType)
+        !validRequestedThemeId && currentActiveTheme && isThemeInMode(currentActiveTheme.eventType, nextEventType)
           ? currentActiveTheme.id
           : null;
 
-      const preferredId = DEFAULT_THEME_BY_EVENT[nextEventType];
+      const preferredId =
+        nextEventType === "WEDDING"
+          ? DEFAULT_THEME_BY_EVENT.WEDDING
+          : (effectiveSubEvent ? resolveSubEventMeta(nextEventType, effectiveSubEvent).demoFallbackThemeId : DEFAULT_THEME_BY_EVENT[nextEventType]);
       const chosenTheme =
-        requestedThemeId ||
+        validRequestedThemeId ||
         preserveCurrentTheme ||
-        activeThemes.find((t) => t.id === preferredId)?.id ||
-        masterThemes.find((t) => t.eventType === nextEventType)?.id ||
-        activeThemes.find((t) => isThemeCompatible(t.eventType, nextEventType))?.id;
+        activeThemes.find((t) => t.id === preferredId && isThemeInMode(t.eventType, nextEventType))?.id ||
+        activeThemes.find((t) => t.eventType === nextEventType)?.id ||
+        activeThemes.find((t) => isThemeInMode(t.eventType, nextEventType))?.id;
 
       if (!chosenTheme) {
         return NextResponse.json({ error: "Belum ada tema aktif untuk jenis acara ini." }, { status: 503 });
@@ -319,35 +390,64 @@ export async function PUT(
       let nextOpeningQuote: string | undefined;
       let nextOpeningQuoteRef: string | undefined;
 
-      if (isEventChanged) {
-        const { defaultCoverBadge, blueprint, initialCustomLabels } = await loadThemeLabelContext(chosenTheme, nextEventType);
+      if (isEventChanged || isSubEventChanged) {
+        const { defaultCoverBadge, blueprint, initialCustomLabels } = await loadThemeLabelContext(chosenTheme, nextEventType, effectiveSubEvent);
+        const subMeta = nextEventType === "WEDDING" ? null : resolveSubEventMeta(nextEventType, effectiveSubEvent);
         nextFs = {
           ...currentFs,
           weddingTagline: defaultCoverBadge,
-          showStory: nextEventType === "WEDDING",
+          showStory: currentFs.showStory !== undefined ? currentFs.showStory : true,
           customLabels: initialCustomLabels,
           labelDefaults: initialCustomLabels,
         };
-        nextOpeningQuote = blueprint.openingQuote;
-        nextOpeningQuoteRef = blueprint.openingQuoteRef;
+        nextOpeningQuote = subMeta ? subMeta.defaultQuote : blueprint.openingQuote;
+        nextOpeningQuoteRef = subMeta ? subMeta.defaultQuoteRef : blueprint.openingQuoteRef;
       } else {
-        // Jenis acara tetap, hanya ganti tema pada Draf Gratis: pertahankan label dan kutipan yang sudah diedit klien.
+        // Kategori & sub-acara tetap, hanya ganti tema pada Draf Gratis: pertahankan label dan kutipan yang sudah diedit klien.
         nextFs = (await featureSettingsForThemeChange(
           currentFs,
           currentInv.themeId,
           chosenTheme,
           nextEventType,
+          effectiveSubEvent,
         )) as Record<string, unknown>;
+      }
+
+      // Migrasi nama peserta saat berpindah kategori draf agar isian klien tidak hilang begitu saja.
+      let migratedParticipants: Prisma.InputJsonValue | undefined = undefined;
+      if (isEventChanged) {
+        const prevNames = participantNames(currentInv.eventType, currentInv.participantsJson);
+        const prevPrimary = prevNames.first || prevNames.full;
+        if (prevPrimary) {
+          if (nextEventType === "EVENT") {
+            migratedParticipants = { event: { title: prevNames.full || prevPrimary } };
+          } else if (nextEventType === "PERSONAL") {
+            migratedParticipants = { person: { name: prevNames.full || prevPrimary, nickname: prevPrimary } };
+          } else {
+            migratedParticipants = {
+              groom: { name: prevNames.full || prevPrimary, nickname: prevPrimary },
+              ...(prevNames.second ? { bride: { name: prevNames.second, nickname: prevNames.second } } : {}),
+            };
+          }
+        } else {
+          migratedParticipants = {};
+        }
       }
 
       const updated = await prisma.invitation.update({
         where: { id },
         data: {
           eventType: nextEventType,
+          subEvent: effectiveSubEvent,
           themeId: chosenTheme,
           ...(isEventChanged
             ? {
-                participantsJson: {},
+                participantsJson: migratedParticipants ?? ({} as Prisma.InputJsonValue),
+                openingQuote: nextOpeningQuote,
+                openingQuoteRef: nextOpeningQuoteRef,
+              }
+            : isSubEventChanged
+            ? {
                 openingQuote: nextOpeningQuote,
                 openingQuoteRef: nextOpeningQuoteRef,
               }
@@ -360,6 +460,26 @@ export async function PUT(
         },
       });
 
+      // Migrasi slot foto profil utama (GROOM_PHOTO <-> PROFILE_PHOTO <-> EVENT_PHOTO) bila slot tujuan masih kosong.
+      if (isEventChanged) {
+        const slotOf = (ev: string) =>
+          ev === "PERSONAL" ? "PROFILE_PHOTO" : ev === "EVENT" ? "EVENT_PHOTO" : "GROOM_PHOTO";
+        const fromSlot = slotOf(currentInv.eventType);
+        const toSlot = slotOf(nextEventType);
+        if (fromSlot !== toSlot) {
+          const [sourcePhoto, existingTarget] = await Promise.all([
+            prisma.invitationMedia.findFirst({ where: { invitationId: id, mediaSlot: fromSlot as any } }),
+            prisma.invitationMedia.findFirst({ where: { invitationId: id, mediaSlot: toSlot as any }, select: { id: true } }),
+          ]);
+          if (sourcePhoto && !existingTarget) {
+            await prisma.invitationMedia.update({
+              where: { id: sourcePhoto.id },
+              data: { mediaSlot: toSlot as any },
+            });
+          }
+        }
+      }
+
       await deleteInvitationDraft(id);
       invalidateInvitationLookup(updated.invitationSlug, updated.subdomain, updated.id);
       if (nextEventType === "WEDDING") await copyMasterToDraft(id);
@@ -367,7 +487,7 @@ export async function PUT(
 
       return NextResponse.json({
         success: true,
-        message: "Jenis acara draf gratis berhasil diubah.",
+        message: "Mode acara berhasil diubah.",
         invitation: updated,
       });
     }
@@ -462,9 +582,10 @@ export async function PUT(
         );
       }
 
-      // 2. All-Access Themes: Seluruh paket berhak memilih seluruh tema aktif
+      // 2. Isolasi 3 Kategori Tegas: tema wajib aktif dan berada pada kategori undangan yang sama.
+      const cleanReqId = String(body.themeId || "").trim().toLowerCase();
       const requestedTheme = await prisma.theme.findUnique({
-        where: { id: body.themeId },
+        where: { id: cleanReqId },
         select: { id: true, name: true, isActive: true, eventType: true },
       });
 
@@ -475,13 +596,13 @@ export async function PUT(
         );
       }
 
-      // 3. Keluarga tema: pernikahan hanya memakai tema pernikahan; acara lain boleh memakai tema satu nama mana pun.
-      if (!isThemeCompatible(requestedTheme.eventType, currentInv.eventType)) {
+      if (!isThemeInMode(requestedTheme.eventType, currentInv.eventType)) {
         return NextResponse.json(
-          { error: `Tema '${requestedTheme.name}' tidak cocok untuk undangan Anda: tema pernikahan hanya untuk pernikahan, tema satu nama untuk acara lain.` },
+          { error: `Tema '${requestedTheme.name}' berasal dari mode undangan yang berbeda dan tidak dapat dipakai pada undangan ini.` },
           { status: 400 }
         );
       }
+      body.themeId = requestedTheme.id;
     }
     // --- END THEME VALIDATION ---
 
@@ -695,10 +816,15 @@ export async function PUT(
     }
 
     // Ganti tema: label yang belum pernah diubah klien mengikuti tema baru (hasil edit klien dipertahankan).
+    const nextSubEventOnPut =
+      body.subEvent !== undefined && currentInv.eventType !== "WEDDING"
+        ? sanitizeSubEvent(body.subEvent)
+        : undefined;
+    const effectiveSubEventOnPut = nextSubEventOnPut !== undefined ? nextSubEventOnPut : currentInv.subEvent;
     const themeChanged = body.themeId !== undefined && body.themeId !== currentInv.themeId;
     if (themeChanged) {
       const base = mergedFeatureSettings === undefined || mergedFeatureSettings === Prisma.DbNull ? currentInv.featureSettings : mergedFeatureSettings;
-      mergedFeatureSettings = (await featureSettingsForThemeChange(parseFeatureSettings(base), currentInv.themeId, String(body.themeId), currentInv.eventType)) as Prisma.InputJsonValue;
+      mergedFeatureSettings = (await featureSettingsForThemeChange(parseFeatureSettings(base), currentInv.themeId, String(body.themeId), currentInv.eventType, effectiveSubEventOnPut)) as Prisma.InputJsonValue;
     }
     const themeSnapshot = themeChanged ? await loadThemeMediaSnapshot(String(body.themeId)) : null;
 
@@ -714,6 +840,7 @@ export async function PUT(
       const candidateSlug = await buildCanonicalSlugForActivatedDraft({
         invitationId: currentInv.id,
         eventType: currentInv.eventType,
+        subEvent: effectiveSubEventOnPut,
         participantsJson: body.participantsJson !== undefined ? body.participantsJson : currentInv.participantsJson,
         eventData: eventDataToSave !== undefined ? eventDataToSave : currentInv.eventData,
       });
@@ -726,6 +853,7 @@ export async function PUT(
       where: { id },
       data: {
         ...(upgradedCanonicalSlug ? { invitationSlug: upgradedCanonicalSlug } : {}),
+        ...(nextSubEventOnPut !== undefined ? { subEvent: nextSubEventOnPut } : {}),
         openingQuote: body.openingQuote !== undefined ? body.openingQuote : undefined,
         openingQuoteRef: body.openingQuoteRef !== undefined ? body.openingQuoteRef : undefined,
         themeId: body.themeId !== undefined ? body.themeId : undefined,
@@ -752,11 +880,11 @@ export async function PUT(
       },
     });
 
-    // --- ARSITEKTUR PIRING: Hapus piring draft lama jika tema berubah ---
+    // --- ARSITEKTUR PIRING: Hapus piring draft lama jika tema berubah lalu bentuk piring baru secara eager ---
     if (body.themeId !== undefined && body.themeId !== currentInv.themeId) {
       await deleteInvitationDraft(id);
-      // Undangan non-pernikahan membekukan label dari master yang dirender; tema baru membekukan ulang label yang tidak diedit klien.
-      if (updated.eventType !== "WEDDING") await seedRenderedLabels(id);
+      if (updated.eventType === "WEDDING") await copyMasterToDraft(id);
+      else await seedRenderedLabels(id);
     }
 
     // Save media updates

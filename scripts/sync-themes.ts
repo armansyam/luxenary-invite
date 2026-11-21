@@ -5,6 +5,8 @@ import fs from "fs";
 import path from "path";
 import { THEME_EVENT_FOLDERS } from "../lib/themePaths";
 import { getCatalogMediaSlots } from "../lib/themeMediaSlotsCatalog";
+import { THEME_MAP } from "../lib/renderTemplate";
+import { resolveSubEventMeta } from "../lib/invitationUtils";
 
 async function main() {
   const themesDir = path.join(process.cwd(), "themes");
@@ -28,9 +30,7 @@ async function main() {
         const id = file.replace(".html", "").toLowerCase();
         if (discovered.some((d) => d.id === id)) continue;
 
-        // Versi satu nama dari tema pernikahan (`<id>-acara`) tampil dengan nama desain yang sama di katalog.
         const formattedName = id
-          .replace(/-acara$/, "")
           .split(/[-_]/)
           .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
           .join(" ");
@@ -53,9 +53,11 @@ async function main() {
     const existing = await prisma.theme.findUnique({ where: { id: d.id } });
     const catalogMediaSlots = getCatalogMediaSlots(d.id);
     const shouldSeedMediaSlots = Boolean(catalogMediaSlots && (!existing || existing.mediaSlots === null));
+    const defaultSubEvent = THEME_MAP[d.id]?.subEvent ?? null;
+    const shouldSeedSubEvent = Boolean(defaultSubEvent && (!existing || existing.subEvent === null));
 
-    // Nama, urutan, dan status aktif yang diubah admin lewat panel dipertahankan; skrip ini berjalan di setiap deploy.
-    // mediaSlots hanya diisi otomatis bila kolomnya masih null (belum dikustomisasi admin di Editor Master).
+    // Nama, urutan, subEvent, dan status aktif yang diubah admin lewat panel dipertahankan; skrip ini berjalan di setiap deploy.
+    // mediaSlots & subEvent hanya diisi otomatis bila kolomnya masih null.
     await prisma.theme.upsert({
       where: { id: d.id },
       update: {
@@ -63,6 +65,7 @@ async function main() {
         series: d.series,
         eventType: d.eventType,
         ...(existing ? {} : { isActive: true }),
+        ...(shouldSeedSubEvent ? { subEvent: defaultSubEvent } : {}),
         ...(shouldSeedMediaSlots && catalogMediaSlots
           ? { mediaSlots: catalogMediaSlots as unknown as Prisma.InputJsonValue }
           : {}),
@@ -73,6 +76,7 @@ async function main() {
         category: d.category,
         series: d.series,
         eventType: d.eventType,
+        ...(defaultSubEvent ? { subEvent: defaultSubEvent } : {}),
         sortOrder: i + 1,
         isActive: true,
         ...(catalogMediaSlots
@@ -91,15 +95,17 @@ async function main() {
       const demo = DEMO_REGISTRY[d.id];
       if (demo) {
         const blueprint = getThemeBlueprint(d.id, demo);
+        const isNonWedding = d.eventType !== "WEDDING";
+        const subMeta = isNonWedding ? resolveSubEventMeta(d.eventType, defaultSubEvent) : null;
         // Hanya label yang memang didefinisikan data demo. Menyalin seluruh blueprint (beserta cadangan pernikahan seperti
         // "THE COUPLE") membuat nilai itu menimpa teks master; Studio Demo sudah menampilkan blueprint sebagai cadangan.
         const customLabels = (demo as { customLabels?: Record<string, string> }).customLabels || {};
         const val = JSON.stringify({
           ...demo,
-          openingQuote: demo.openingQuote || blueprint.openingQuote,
-          openingQuoteRef: demo.openingQuoteRef || blueprint.openingQuoteRef,
-          closingQuote: blueprint.closingQuote,
-          closingSub: blueprint.closingSub,
+          openingQuote: demo.openingQuote || (subMeta ? subMeta.defaultQuote : blueprint.openingQuote),
+          openingQuoteRef: demo.openingQuoteRef || (subMeta ? subMeta.defaultQuoteRef : blueprint.openingQuoteRef),
+          closingQuote: subMeta ? subMeta.closingText : blueprint.closingQuote,
+          closingSub: isNonWedding ? "" : blueprint.closingSub,
           audioUrl: demo.audioUrl || blueprint.defaultMusicUrl,
           customLabels,
         });

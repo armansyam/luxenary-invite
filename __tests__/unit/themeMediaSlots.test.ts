@@ -8,9 +8,22 @@ import { DECLARABLE_MEDIA_SLOTS, filterDeclaredMedia, isSlotUsed, parseThemeMedi
 const ART = "/uploads/theme-assets/0123456789abcdef01234567.webp";
 
 describe("deklarasi slot media tema", () => {
-  it("galeri tidak bisa dideklarasikan; 8 slot lainnya bisa", () => {
+  it("galeri tidak bisa dideklarasikan; 10 slot lainnya bisa", () => {
     expect(DECLARABLE_MEDIA_SLOTS).not.toContain("GALLERY");
-    expect(DECLARABLE_MEDIA_SLOTS).toHaveLength(8);
+    expect(DECLARABLE_MEDIA_SLOTS).toHaveLength(10);
+    expect(DECLARABLE_MEDIA_SLOTS).toContain("PROFILE_PHOTO");
+    expect(DECLARABLE_MEDIA_SLOTS).toContain("EVENT_PHOTO");
+  });
+
+  it("slot kanonikal PROFILE_PHOTO dan EVENT_PHOTO berdiri mandiri tanpa alias GROOM_PHOTO", () => {
+    const personalSlots = parseThemeMediaSlots({ PROFILE_PHOTO: { places: ["Profil"] } });
+    expect(isSlotUsed(personalSlots, "PROFILE_PHOTO")).toBe(true);
+    expect(isSlotUsed(personalSlots, "GROOM_PHOTO")).toBe(false);
+    expect(isSlotUsed(personalSlots, "HOME_PHOTO")).toBe(false);
+
+    const eventSlots = parseThemeMediaSlots({ EVENT_PHOTO: { places: ["Acara"] } });
+    expect(isSlotUsed(eventSlots, "EVENT_PHOTO")).toBe(true);
+    expect(isSlotUsed(eventSlots, "GROOM_PHOTO")).toBe(false);
   });
 
   it("pembacaan kolom: bukan objek = null, entri tidak sah dibuang, thumbnail hanya aset tema", () => {

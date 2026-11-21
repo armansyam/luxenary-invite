@@ -61,6 +61,7 @@ export async function applyBundleFulfillment(paidOrderId: string): Promise<boole
 
   await prisma.$transaction(async (tx) => {
     // 1. Eksekusi UPGRADE jika ada
+    let effectivePlan: PlanType | null | undefined = invitation.order?.planType;
     const upgradeItem = items.find(i => i.type === "UPGRADE");
     const targetPlan = upgradeItem?.targetPlan || order.targetPlanType;
     if (targetPlan) {
@@ -68,11 +69,13 @@ export async function applyBundleFulfillment(paidOrderId: string): Promise<boole
         throw new Error(`Undangan ${invitation.id} tidak memiliki order paket dasar; upgrade dari order ${paidOrderId} tidak dapat diterapkan`);
       }
       const base = await tx.order.findUnique({ where: { id: invitation.orderId }, select: { planType: true } });
+      effectivePlan = base?.planType ?? effectivePlan;
       if (isHigherPlan(targetPlan, base?.planType)) {
         await tx.order.update({
           where: { id: invitation.orderId },
           data: { planType: targetPlan },
         });
+        effectivePlan = targetPlan;
       } else {
         logger.warn("BundleFulfillment", "Upgrade lunas tetapi paket undangan sudah sama atau lebih tinggi; paket tidak diturunkan", {
           orderId: paidOrderId, current: base?.planType, target: targetPlan,
@@ -89,18 +92,18 @@ export async function applyBundleFulfillment(paidOrderId: string): Promise<boole
     const extraDays = extItem ? Number(extItem.days) || (Number(extItem.months) ? Number(extItem.months) * 30 : 30) : 0;
     const newExpiry = extItem ? extendGalleryExpiry(invitation, extraDays, await getLifecycleSettings()) : null;
 
-    // 4. Simpan seluruh pembaruan ke invitation
+    // 4. Simpan seluruh pembaruan ke invitation (reset retentionWarningSentAt agar peringatan H-3 terkirim ulang untuk tenggat baru)
     const updated = await tx.invitation.update({
       where: { id: invitation.id },
       data: {
         extraMemoriesQuota: { increment: addedPhotos },
         extraGalleryDays: { increment: extraDays },
-        ...(newExpiry ? { galleryExpiresAt: newExpiry, memoriesUploadLocked: false } : {}),
+        ...(newExpiry ? { galleryExpiresAt: newExpiry, memoriesUploadLocked: false, retentionWarningSentAt: null } : {}),
       },
       select: { extraMemoriesQuota: true, memoriesNotifiedMilestones: true },
     });
     if (addedPhotos > 0) {
-      await rearmQuotaMilestones(tx, invitation.id, invitation.order?.planType, updated.extraMemoriesQuota, updated.memoriesNotifiedMilestones);
+      await rearmQuotaMilestones(tx, invitation.id, effectivePlan, updated.extraMemoriesQuota, updated.memoriesNotifiedMilestones);
     }
   });
 

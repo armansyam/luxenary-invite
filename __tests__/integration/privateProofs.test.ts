@@ -11,7 +11,7 @@ import sharp from "sharp";
 let sessionUser: Record<string, unknown> | null = null;
 vi.mock("@/auth", () => ({ auth: vi.fn(async () => (sessionUser ? { user: sessionUser } : null)) }));
 
-import { prisma } from "@/lib/prisma";
+import { prisma, pool } from "@/lib/prisma";
 import { deleteFile } from "@/lib/storage";
 import { createProofLink, PROOF_LINK_TTL_SECONDS } from "@/lib/proofLink";
 import { POST as uploadProof } from "@/app/api/client/orders/[id]/upload-proof/route";
@@ -66,6 +66,8 @@ describe.skipIf(!IS_TEST_DB)("bukti transfer privat", () => {
     }
     await prisma.order.deleteMany({ where: { userId } });
     await prisma.user.deleteMany({ where: { id: userId } });
+    await prisma.$disconnect();
+    await pool.end();
   });
 
   it("unggahan disimpan di data/private, bukan public/uploads", async () => {

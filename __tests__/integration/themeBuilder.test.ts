@@ -21,7 +21,7 @@ import { auditBuilderMaster } from "@/lib/themeBuilder/audit";
 import { builderDefaultMedia, renderBuilderPreview } from "@/lib/themeBuilder/server";
 import { legacyDefaultMedia, legacyFonts, seedSpecFromMaster } from "@/lib/themeBuilder/legacySeed";
 import { compileBuilderMaster, readBuilderBlueprint } from "@/lib/themeBuilder/compile";
-import { BUILDER_BLOCKS, VARIANT_GROUPS, blockStyle, defaultBuilderSpec, ornamentStyle, parseBuilderSpec, paletteChecks, PALETTE_PRESETS, peerBlocksForRole, type BuilderSpec } from "@/lib/themeBuilder/spec";
+import { BUILDER_BLOCKS, VARIANT_GROUPS, blockStyle, convertBuilderSpecForEvent, defaultBuilderSpec, ornamentStyle, parseBuilderSpec, paletteChecks, PALETTE_PRESETS, peerBlocksForRole, type BuilderSpec } from "@/lib/themeBuilder/spec";
 import { GET, POST, PUT, PATCH } from "@/app/api/admin/theme-builder/route";
 import { POST as previewPost } from "@/app/api/admin/theme-builder/preview/route";
 import { POST as assetPost, DELETE as assetDelete } from "@/app/api/admin/theme-builder/assets/route";
@@ -61,7 +61,9 @@ afterAll(async () => {
   if (IS_TEST_DB) {
     for (const id of createdThemes) {
       await prisma.theme.deleteMany({ where: { id } });
-      for (const cat of ["minimalist", "modern", "traditional"]) fs.rmSync(path.join(ROOT, "themes", "wedding", cat, `${id}.html`), { force: true });
+      for (const folder of ["wedding", "personal", "event"]) {
+        for (const cat of ["minimalist", "modern", "traditional"]) fs.rmSync(path.join(ROOT, "themes", folder, cat, `${id}.html`), { force: true });
+      }
       fs.rmSync(path.join(ROOT, "public", "demo", id), { recursive: true, force: true });
     }
     for (const url of createdAssets) fs.rmSync(path.join(ROOT, "public", url), { force: true });
@@ -726,8 +728,8 @@ describe("titik awal dari tema pernikahan lama", () => {
     expect((await get("from=tidak-ada-ini")).status).toBe(404);
   });
 
-  it("master satu nama (ulang tahun, khitan, aqiqah, wisuda, gathering) menjadi spesifikasi valid berjenis acara sama", () => {
-    const folders = { BIRTHDAY: "birthday", KHITAN: "khitan", AQIQAH: "aqiqah", WISUDA: "wisuda", GATHERING: "general" } as const;
+  it("master satu nama (personal & event) menjadi spesifikasi valid berjenis acara sama", () => {
+    const folders = { PERSONAL: "personal", EVENT: "event" } as const;
     let count = 0;
     for (const [eventType, folder] of Object.entries(folders) as Array<[keyof typeof folders, string]>) {
       for (const style of fs.readdirSync(path.join(ROOT, "themes", folder))) {
@@ -748,19 +750,19 @@ describe("titik awal dari tema pernikahan lama", () => {
 
   it.skipIf(!IS_TEST_DB)("API: daftar dan titik awal tema lama mengikuti jenis acara", async () => {
     const get = (qs: string) => GET(new Request(`http://localhost/api/admin/theme-builder?${qs}`) as never);
-    const list = await (await get("legacy=1&eventType=KHITAN")).json();
+    const list = await (await get("legacy=1&eventType=PERSONAL")).json();
     const ids = list.themes.map((t: { id: string }) => t.id);
     expect(ids).toContain("al-fariz");
     expect(ids).not.toContain("candani");
     const rows = await prisma.theme.findMany({ where: { id: { in: ids } }, select: { builderSpec: true, eventType: true } });
-    expect(rows.every((r) => r.builderSpec === null && r.eventType === "KHITAN")).toBe(true);
+    expect(rows.every((r) => r.builderSpec === null && r.eventType === "PERSONAL")).toBe(true);
 
     const res = await get("from=al-fariz");
     expect(res.status).toBe(200);
     const body = await res.json();
     const parsed = parseBuilderSpec(body.spec);
     expect(parsed.ok).toBe(true);
-    if (parsed.ok) expect(parsed.spec.eventType).toBe("KHITAN");
+    if (parsed.ok) expect(parsed.spec.eventType).toBe("PERSONAL");
   });
 
   it("5 peralatan studio tambahan: flipY ornamen, lineHeight blok, varian buttons & cards, serta peerBlocksForRole", () => {
@@ -814,8 +816,9 @@ describe("titik awal dari tema pernikahan lama", () => {
     expect(titleRole?.peers).toContain("events-title");
     expect(titleRole?.peers).toContain("story-title");
 
-    const singleTitleRole = peerBlocksForRole("couple-title", "BIRTHDAY");
-    expect(singleTitleRole?.peers).not.toContain("story-title");
+    const singleTitleRole = peerBlocksForRole("couple-title", "PERSONAL");
+    expect(singleTitleRole?.peers).toContain("story-title");
+    expect(singleTitleRole?.peers).toContain("events-title");
   });
 
   it("peralatan kelengkapan studio tambahan: scrimOpacity foto sampul/penutup dan varian kerapatan seksi (spacing)", () => {
@@ -852,5 +855,106 @@ describe("titik awal dari tema pernikahan lama", () => {
       expect(compactMaster).toContain("padding-top: 36px !important; padding-bottom: 36px !important;");
       expect(auditBuilderMaster(compactMaster, readBuilderBlueprint("WEDDING"))).toEqual([]);
     }
+  });
+
+  it("convertBuilderSpecForEvent mengonversi 2 arah (Wedding -> Event/Personal & Personal -> Wedding) secara aman", () => {
+    const weddingSpec: BuilderSpec = {
+      ...withOrnaments(),
+      palette: { ...PALETTE_PRESETS[2].palette },
+      variants: { ...defaultBuilderSpec().variants, couple: "side" },
+      disabledMediaSlots: ["HOME_PHOTO", "BRIDE_PHOTO"],
+      ornaments: [
+        ...withOrnaments().ornaments,
+        { id: "ornstory01", section: "story", src: "/assets/ornaments/flowers/flower-tl.webp", x: 50, y: 10, anchor: "top", width: 30, rotate: 0, opacity: 1, flipX: false, layer: "back" },
+        { id: "ornpar0001", section: "couple", before: "couple-parents-1", src: "/assets/ornaments/flowers/flower-tl.webp", x: 50, y: 10, anchor: "top", width: 30, rotate: 0, opacity: 1, flipX: false, layer: "back" },
+        { id: "orntxt0001", section: "cover", src: "", x: 50, y: 20, anchor: "top", width: 50, rotate: 0, opacity: 1, flipX: false, layer: "front", text: { token: "SECOND_INITIAL", value: "A", font: "script", size: 32, color: "accent", spacing: 0 } },
+      ],
+    };
+    const single = convertBuilderSpecForEvent(weddingSpec, "EVENT");
+    expect(single.eventType).toBe("EVENT");
+    expect(single.palette).toEqual(weddingSpec.palette);
+    expect(single.variants.couple).toBe("arch");
+    expect(single.disabledMediaSlots).toEqual(["HOME_PHOTO"]);
+    expect(single.ornaments.some((o) => o.section === "story")).toBe(true);
+    expect(single.ornaments.some((o) => o.before === "couple-parents-1")).toBe(false);
+    const txtOrn = single.ornaments.find((o) => o.id === "orntxt0001");
+    expect(txtOrn?.text?.token).toBe("FIRST_INITIAL");
+
+    const singleMaster = compileBuilderMaster(single);
+    expect(auditBuilderMaster(singleMaster, readBuilderBlueprint("EVENT"))).toEqual([]);
+
+    // Arah balik: 1-profil -> Pernikahan (2-profil)
+    const backToWedding = convertBuilderSpecForEvent(single, "WEDDING");
+    expect(backToWedding.eventType).toBe("WEDDING");
+    expect(backToWedding.palette).toEqual(single.palette);
+    const wedMaster = compileBuilderMaster(backToWedding);
+    expect(auditBuilderMaster(wedMaster, readBuilderBlueprint("WEDDING"))).toEqual([]);
+  });
+
+  it.skipIf(!IS_TEST_DB)("API Theme Builder menyalin tema lintas kategori 2 arah dengan nama baru & preview sub-acara Personal bekerja", async () => {
+    const wedId = `cw${Date.now().toString(36).slice(-7)}`;
+    const persId = `cp${Date.now().toString(36).slice(-7)}`;
+    const backWedId = `cb${Date.now().toString(36).slice(-7)}`;
+    createdThemes.push(wedId, persId, backWedId);
+
+    // 1. Buat tema Pernikahan di builder
+    const createRes = await POST(json("http://localhost/api/admin/theme-builder", "POST", {
+      id: wedId,
+      name: "Seri Asal Pernikahan",
+      category: "modern",
+      description: "Tema uji salin lintas kategori",
+      spec: { ...withOrnaments(), palette: { ...PALETTE_PRESETS[3].palette }, variants: { ...defaultBuilderSpec().variants, couple: "side" } },
+    }));
+    expect(createRes.status).toBe(200);
+
+    // 2. Menolak nama salinan yang sama persis dengan tema asal (400)
+    const sameNameRes = await POST(json("http://localhost/api/admin/theme-builder", "POST", {
+      cloneCrossCategoryFrom: wedId,
+      name: "Seri Asal Pernikahan",
+      targetEventType: "PERSONAL",
+    }));
+    expect(sameNameRes.status).toBe(400);
+
+    // 3. Salin ke kategori Personal & Keluarga (PERSONAL) dengan nama & ID baru
+    const clonePersonalRes = await POST(json("http://localhost/api/admin/theme-builder", "POST", {
+      cloneCrossCategoryFrom: wedId,
+      id: persId,
+      name: "Seri Personal Baru",
+      targetEventType: "PERSONAL",
+      subEvent: "Ulang Tahun",
+    }));
+    expect(clonePersonalRes.status).toBe(200);
+    const personalJson = await clonePersonalRes.json();
+    expect(personalJson.theme.id).toBe(persId);
+    expect(personalJson.theme.name).toBe("Seri Personal Baru");
+    expect(personalJson.theme.isActive).toBe(false);
+    expect(personalJson.theme.subEvent).toBe("Ulang Tahun");
+
+    const getPers = await GET(new Request(`http://localhost/api/admin/theme-builder?id=${persId}`) as never);
+    expect(getPers.status).toBe(200);
+    const persData = await getPers.json();
+    expect(persData.spec.eventType).toBe("PERSONAL");
+    expect(persData.spec.palette).toEqual(PALETTE_PRESETS[3].palette);
+
+    // 4. Salin balik dari Personal (1-profil) -> Pernikahan (2-profil) dengan nama baru
+    const cloneBackRes = await POST(json("http://localhost/api/admin/theme-builder", "POST", {
+      cloneCrossCategoryFrom: persId,
+      id: backWedId,
+      name: "Seri Pernikahan Revisi",
+      targetEventType: "WEDDING",
+    }));
+    expect(cloneBackRes.status).toBe(200);
+    const getBack = await GET(new Request(`http://localhost/api/admin/theme-builder?id=${backWedId}`) as never);
+    expect(getBack.status).toBe(200);
+    expect((await getBack.json()).spec.eventType).toBe("WEDDING");
+
+    // 5. Preview tema Personal bisa diuji lintas sub-acara Personal (mis. Aqiqah atau kustom Tamatan Ngaji)
+    const previewAqiqah = await previewPost(json("http://localhost/api/admin/theme-builder/preview", "POST", {
+      spec: persData.spec,
+      mode: "demo",
+      previewSubEvent: "Aqiqah",
+    }));
+    expect(previewAqiqah.status).toBe(200);
+    expect((await previewAqiqah.json()).html).toContain("Tasyakuran Aqiqah");
   });
 });

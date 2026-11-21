@@ -3,11 +3,10 @@ import {
   MAX_ORNAMENTS,
   MAX_ORNAMENTS_PER_SECTION,
   TEXTURE_OPTIONS,
-  builderFamilyOf,
   contrastRatio,
   defaultBuilderSpec,
-  familyBlocks,
-  familySections,
+  blocksForMode,
+  sectionsForMode,
   isAllowedBackdropSrc,
   isAllowedOrnamentSrc,
   peerBlocksForRole,
@@ -74,7 +73,7 @@ export function legacyDefaultMedia(raw: unknown): BuilderDefaultMedia {
 export function legacyFrames(html: string, eventType: BuilderEventType = "WEDDING"): BuilderFrames {
   if (html.includes('data-orn-id="')) return {};
   const frames: BuilderFrames = {};
-  const isWedding = builderFamilyOf(eventType) === "wedding";
+  const isWedding = eventType === "WEDDING";
 
   let homeOrnament = "";
   let coupleOrnament = "";
@@ -121,9 +120,9 @@ const LEGACY_SECTION_STARTS: Array<{ section: RawLegacySection; re: RegExp }> = 
 /** Ornamen gambar yang terdeteksi per seksi dari tema master tulisan tangan. */
 export function legacyOrnaments(html: string, eventType: BuilderEventType = "WEDDING"): BuilderOrnament[] {
   if (html.includes('data-orn-id="')) return [];
-  const isSingle = builderFamilyOf(eventType) === "single";
-  const allowedSections = new Set(familySections(eventType));
-  const allowedBlocks = new Set(familyBlocks(eventType).map((b) => b.id));
+  const isSingle = eventType !== "WEDDING";
+  const allowedSections = new Set(sectionsForMode(eventType));
+  const allowedBlocks = new Set(blocksForMode(eventType).map((b) => b.id));
 
   const cssBorders = new Map<string, string>();
   for (const m of html.matchAll(/\.([a-z0-9_-]+)\s*\{([^}]*)\}/gi)) {
@@ -488,7 +487,7 @@ export function seedSpecFromMaster(html: string, eventType: BuilderEventType = "
     /\bcover-monogram\b/.test(html) ||
     /\{\{coupleMonogram\}\}/.test(html) ||
     /\{\{monogramInitial\}\}/.test(html);
-  if (!hasMonogram && builderFamilyOf(eventType) === "wedding") {
+  if (!hasMonogram && eventType === "WEDDING") {
     blocks["cover-monogram"] = { x: 0, y: 0, scale: 1, rotate: 0, hidden: true };
   }
   const structure = legacyStructure(html, eventType, palette, vars, canvasMode === "dark" ? palette.bgDark : palette.bgLight);

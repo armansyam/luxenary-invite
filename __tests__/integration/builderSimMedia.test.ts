@@ -37,9 +37,13 @@ describe("parseSimMedia & simSlotsFor", () => {
   it("slot mempelai kedua hanya untuk pernikahan; profil utama tampil untuk acara satu nama", () => {
     expect(simSlotsFor("WEDDING").some((s) => s.slot === "GROOM_PHOTO")).toBe(true);
     expect(simSlotsFor("WEDDING").some((s) => s.slot === "BRIDE_PHOTO")).toBe(true);
-    const bday = simSlotsFor("BIRTHDAY");
-    expect(bday.find((s) => s.slot === "GROOM_PHOTO")?.label).toBe("Foto profil utama");
-    expect(bday.some((s) => s.slot === "BRIDE_PHOTO")).toBe(false);
+    const personal = simSlotsFor("PERSONAL");
+    expect(personal.find((s) => s.slot === "PROFILE_PHOTO")?.label).toBe("Foto profil utama");
+    expect(personal.some((s) => s.slot === "GROOM_PHOTO")).toBe(false);
+    expect(personal.some((s) => s.slot === "BRIDE_PHOTO")).toBe(false);
+    const ev = simSlotsFor("EVENT");
+    expect(ev.find((s) => s.slot === "EVENT_PHOTO")?.label).toBe("Visual utama acara");
+    expect(ev.some((s) => s.slot === "GROOM_PHOTO")).toBe(false);
   });
 });
 

@@ -9,7 +9,7 @@ import path from "path";
 let sessionUser: Record<string, unknown> | null = null;
 vi.mock("@/auth", () => ({ auth: vi.fn(async () => (sessionUser ? { user: sessionUser } : null)) }));
 
-import { prisma } from "@/lib/prisma";
+import { prisma, pool } from "@/lib/prisma";
 import { requestThemeThumbnails, themeThumbnailStatus, THUMBNAIL_JOB_DIR } from "@/lib/themeThumbnailJob";
 import { GET, POST } from "@/app/api/admin/themes/[id]/thumbnails/route";
 
@@ -38,6 +38,8 @@ describe.skipIf(!IS_TEST_DB)("thumbnail katalog otomatis", () => {
   afterAll(async () => {
     await prisma.theme.deleteMany({ where: { id: { in: [ACTIVE, INACTIVE] } } });
     for (const id of [ACTIVE, INACTIVE]) for (const ext of ["queued", "running", "json"]) fs.rmSync(marker(id, ext), { force: true });
+    await prisma.$disconnect();
+    await pool.end();
   });
 
   it("POST mengantrekan tema aktif; tema nonaktif 409, tidak ada 404, ID tidak sah 400, tanpa sesi 401", async () => {

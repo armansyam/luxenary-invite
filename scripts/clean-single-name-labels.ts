@@ -32,7 +32,7 @@ const apply = process.argv.includes("--apply");
 // Kunci label -> bidang blueprint dan cadangan tetap, sama dengan yang dipakai rute pembuatan undangan dan Studio Demo lama.
 const LABEL_SOURCES: Record<string, { field?: keyof ThemeBlueprint; fixed?: string[] }> = {
   coverSubtitle: { field: "coverSubtitle" },
-  coverBadge: { field: "coverBadge", fixed: ["BIRTHDAY CELEBRATION", "WALIMATUL KHITAN", "WALIMATUL AQIQAH", "GRADUATION CELEBRATION", "SPECIAL GATHERING", "THE WEDDING OF"] },
+  coverBadge: { field: "coverBadge", fixed: ["BIRTHDAY CELEBRATION", "WALIMATUL KHITAN", "WALIMATUL AQIQAH", "TASYAKURAN AQIQAH", "GRADUATION CELEBRATION", "SYUKURAN KELULUSAN", "OFFICIAL INVITATION", "THE WEDDING OF"] },
   coverGuestLabel: { fixed: ["Kepada Yth. Bapak/Ibu/Saudara/i"] },
   openingGreeting: { field: "openingGreeting", fixed: [""] },
   openBtn: { field: "openBtn" },

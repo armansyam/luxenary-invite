@@ -64,7 +64,8 @@ describe("penumpangan seksi", () => {
     expect(parse({ sectionNesting: { rsvp: "gallery" } }).ok).toBe(false);
     expect(parse({ sectionNesting: { opening: "couple" } }).ok).toBe(false);
     expect(parse({ sectionNesting: { story: "events" }, eventsPlacement: "home" }).ok).toBe(false);
-    expect(parse({ sectionNesting: { story: "couple" } }, "BIRTHDAY").ok).toBe(false);
+    expect(parse({ sectionNesting: { story: "couple" } }, "PERSONAL").ok).toBe(true);
+    expect(parse({ sectionNesting: { story: "couple" } }, "EVENT").ok).toBe(true);
   });
 
   it("seksi bebas tidak boleh sesudah seksi yang menumpang", () => {
@@ -123,9 +124,9 @@ describe("template awal", () => {
   });
 
   it("memasang template mempertahankan teks, media bawaan, dan jenis acara", () => {
-    const current = { ...defaultBuilderSpec("KHITAN"), texts: { coverSubtitle: "Halo" }, defaultMedia: { LANDING_COVER: "/assets/ornaments/background/bg-maroon.webp" } } as BuilderSpec;
+    const current = { ...defaultBuilderSpec("PERSONAL"), texts: { coverSubtitle: "Halo" }, defaultMedia: { LANDING_COVER: "/assets/ornaments/background/bg-maroon.webp" } } as BuilderSpec;
     const next = applyBuilderTemplate(BUILDER_TEMPLATES[0], current);
-    expect(next.eventType).toBe("KHITAN");
+    expect(next.eventType).toBe("PERSONAL");
     expect(next.texts).toEqual({ coverSubtitle: "Halo" });
     expect(next.defaultMedia).toEqual(current.defaultMedia);
   });
@@ -133,7 +134,7 @@ describe("template awal", () => {
   it("Botani Sage: doa pengantin hanya untuk pernikahan, tidak untuk tema satu nama", () => {
     const botani = BUILDER_TEMPLATES.find((t) => t.id === "botani-sage")!;
     expect(botani.build("WEDDING").freeSections?.[0]?.quote?.source).toBe("Doa untuk pengantin");
-    for (const ev of ["BIRTHDAY", "KHITAN", "AQIQAH", "WISUDA", "GATHERING"] as const) {
+    for (const ev of ["PERSONAL", "EVENT"] as const) {
       expect(JSON.stringify(botani.build(ev).freeSections ?? []), ev).not.toContain("pengantin");
     }
   });

@@ -125,10 +125,10 @@ describe.skipIf(!IS_TEST_DB)("reset jenis acara oleh admin", () => {
 
     sessionUser = { id: user.id, email: user.email, name: user.name, role: "CLIENT", isAdmin: false };
     const again = await createInvitation(json("/api/client/invitations/create", {
-      eventType: "AQIQAH", participantsJson: JSON.stringify({ baby: { name: "Aisyah", nickname: "Aisyah" } }), planType: "TIER_2",
+      eventType: "PERSONAL", subEvent: "Aqiqah", participantsJson: JSON.stringify({ baby: { name: "Aisyah", nickname: "Aisyah" } }), planType: "TIER_2",
     }));
     expect(again.status).toBe(200);
     const fresh = await prisma.invitation.findFirstOrThrow({ where: { userId: user.id } });
-    expect([fresh.eventType, fresh.orderId, (fresh.participantsJson as { baby?: { name?: string } })?.baby?.name]).toEqual(["AQIQAH", order.id, "Aisyah"]);
+    expect([fresh.eventType, fresh.subEvent, fresh.orderId, (fresh.participantsJson as { baby?: { name?: string } })?.baby?.name]).toEqual(["PERSONAL", "Aqiqah", order.id, "Aisyah"]);
   });
 });

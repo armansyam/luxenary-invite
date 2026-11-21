@@ -5,22 +5,26 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { BrandLogo } from "@/components/BrandLogo";
-import { isThemeCompatible } from "@/lib/invitationUtils";
+import {
+  EVENT_TYPE_LABELS,
+  PERSONAL_SUB_EVENT_PRESETS,
+  EVENT_SUB_EVENT_PRESETS,
+  isThemeInMode,
+  sanitizeSubEvent,
+} from "@/lib/invitationUtils";
 import { BUILDER_EVENT_LABELS, type BuilderEventType } from "@/lib/themeBuilder/spec";
 
 const FREE_DRAFT_EVENT_DESCRIPTIONS: Record<string, string> = {
-  WEDDING: "Format dua mempelai, akad & resepsi, cerita cinta, dan galeri prewedding.",
-  BIRTHDAY: "Perayaan ulang tahun personal dengan profil tuan rumah dan susunan acara.",
-  KHITAN: "Walimatul khitan dengan profil anak, orang tua, dan doa restu tamu.",
-  AQIQAH: "Tasyakuran kelahiran & aqiqah buah hati beserta detail waktu dan lokasi.",
-  WISUDA: "Perayaan kelulusan / wisuda lengkap dengan info acara dan ucapan selamat.",
-  GATHERING: "Acara kantor, reuni, komunitas, halal bihalal, atau syukuran umum.",
+  WEDDING: "Format 2 profil mempelai, akad & resepsi, cerita cinta, dan galeri prewedding.",
+  PERSONAL: "Acara personal & keluarga (1 profil tokoh + orang tua opsional): Ulang Tahun, Khitanan, Aqiqah, Wisuda, Khataman Al-Qur'an, Tamatan Ngaji, atau sub-acara kustom lainnya.",
+  EVENT: "Acara non-personal (tanpa nama orang tua): Corporate, Grand Opening, Seminar, Workshop, Gathering, Product Launch, Reuni, Halal Bihalal, Syukuran, atau acara lainnya.",
 };
 
 interface PublicThemeOption {
   id: string;
   name: string;
   eventType: string;
+  subEvent?: string | null;
 }
 
 function PackageSelectionContent() {
@@ -29,6 +33,7 @@ function PackageSelectionContent() {
   const isNewAdditional = searchParams?.get("new") === "1";
   const requestedThemeParam = searchParams?.get("theme")?.trim().toLowerCase() || "";
   const requestedEventParam = searchParams?.get("event")?.trim().toUpperCase() || "";
+  const requestedSubEventParam = searchParams?.get("subEvent")?.trim() || "";
   const { data: session, status } = useSession();
   const [packages, setPackages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,13 +41,24 @@ function PackageSelectionContent() {
   const [serviceStatus, setServiceStatus] = useState<any>(null);
   const [enabledEventTypes, setEnabledEventTypes] = useState<string[]>([]);
   const [existingFreeDraftId, setExistingFreeDraftId] = useState<string | null>(null);
-  const [existingFreeDraftMeta, setExistingFreeDraftMeta] = useState<{ themeId?: string; eventType?: string } | null>(null);
-  const [paidDraftTarget, setPaidDraftTarget] = useState<{ id: string; themeId?: string; eventType?: string } | null>(null);
+  const [existingFreeDraftMeta, setExistingFreeDraftMeta] = useState<{ themeId?: string; eventType?: string; subEvent?: string | null } | null>(null);
+  const [paidDraftTarget, setPaidDraftTarget] = useState<{
+    id: string;
+    themeId?: string;
+    eventType?: string;
+    subEvent?: string | null;
+    modeSwitchRequired?: boolean;
+    targetEventType?: string;
+  } | null>(null);
+  const [paidDraftSubEvent, setPaidDraftSubEvent] = useState<string>("");
+  const [paidDraftCustomSubMode, setPaidDraftCustomSubMode] = useState<boolean>(false);
   const [applyingPaidDraftTheme, setApplyingPaidDraftTheme] = useState(false);
   const [paidDraftError, setPaidDraftError] = useState("");
   const [requestedThemeObj, setRequestedThemeObj] = useState<PublicThemeOption | null>(null);
   const [eventPickerOpen, setEventPickerOpen] = useState(false);
   const [selectedFreeEventType, setSelectedFreeEventType] = useState<string>("");
+  const [selectedSubEvent, setSelectedSubEvent] = useState<string>("");
+  const [customSubEventMode, setCustomSubEventMode] = useState<boolean>(false);
   const [creatingDraft, setCreatingDraft] = useState(false);
   const [autoLaunchingTheme, setAutoLaunchingTheme] = useState(false);
   const [draftError, setDraftError] = useState("");
@@ -77,11 +93,23 @@ function PackageSelectionContent() {
           if (Array.isArray(settingsData.enabledEventTypes)) setEnabledEventTypes(settingsData.enabledEventTypes);
         }
 
+        const normalizedThemes: PublicThemeOption[] = Array.isArray(themesData)
+          ? themesData
+              .filter((t: any) => typeof t?.id === "string" && t.id)
+              .map((t: any) => ({
+                id: String(t.id),
+                name: String(t.name || t.id),
+                eventType: String(t.eventType || "WEDDING").toUpperCase(),
+                subEvent: t.subEvent ? String(t.subEvent) : null,
+              }))
+          : [];
+
         const matchedTheme: PublicThemeOption | null =
-          requestedThemeParam && Array.isArray(themesData)
-            ? themesData.find((t: any) => String(t?.id || "").toLowerCase() === requestedThemeParam) || null
+          requestedThemeParam && normalizedThemes.length > 0
+            ? normalizedThemes.find((t) => t.id.toLowerCase() === requestedThemeParam) || null
             : null;
         setRequestedThemeObj(matchedTheme);
+        const resolvedSubEvent = sanitizeSubEvent(requestedSubEventParam || matchedTheme?.subEvent || "");
         if (matchedTheme) {
           try {
             sessionStorage.setItem(
@@ -89,6 +117,7 @@ function PackageSelectionContent() {
               JSON.stringify({
                 themeId: matchedTheme.id,
                 eventType: requestedEventParam || matchedTheme.eventType || "WEDDING",
+                ...(resolvedSubEvent ? { subEvent: resolvedSubEvent } : {}),
               }),
             );
           } catch {}
@@ -104,7 +133,7 @@ function PackageSelectionContent() {
           const withTheme = matchedTheme
             ? `${baseSetupUrl}${sep}theme=${encodeURIComponent(matchedTheme.id)}${
                 requestedEventParam ? `&event=${encodeURIComponent(requestedEventParam)}` : ""
-              }`
+              }${resolvedSubEvent ? `&subEvent=${encodeURIComponent(resolvedSubEvent)}` : ""}`
             : baseSetupUrl;
           router.replace(withTheme);
           return;
@@ -112,16 +141,33 @@ function PackageSelectionContent() {
 
         if (onboardData?.step === "COMPLETED" && !isNewAdditional) {
           const paidInv = onboardData.invitation;
-          if (matchedTheme && paidInv?.id && paidInv.status === "DRAFT" && isThemeCompatible(matchedTheme.eventType, paidInv.eventType)) {
-            if (String(paidInv.themeId || "").toLowerCase() === matchedTheme.id.toLowerCase()) {
+          if (matchedTheme && paidInv?.id && paidInv.status === "DRAFT") {
+            const sameCategory = isThemeInMode(matchedTheme.eventType, paidInv.eventType);
+            if (sameCategory && String(paidInv.themeId || "").toLowerCase() === matchedTheme.id.toLowerCase()) {
               router.replace(`/dashboard/invitation/${paidInv.id}`);
               return;
             }
-            // Tampilkan modal konfirmasi ganti tema pada draf undangan klien (1 akun 1 undangan)
+            const targetEv = String(matchedTheme.eventType || "WEDDING").toUpperCase();
+            const initialSub =
+              resolvedSubEvent ||
+              matchedTheme.subEvent ||
+              (!sameCategory
+                ? targetEv === "PERSONAL"
+                  ? PERSONAL_SUB_EVENT_PRESETS[0].id
+                  : targetEv === "EVENT"
+                  ? EVENT_SUB_EVENT_PRESETS[0].id
+                  : ""
+                : paidInv.subEvent || "");
+            setPaidDraftSubEvent(initialSub);
+            setPaidDraftCustomSubMode(false);
+            // Tampilkan modal konfirmasi ganti tema (atau ganti mode + tema bila lintas kategori) pada draf klien
             setPaidDraftTarget({
               id: paidInv.id,
               themeId: paidInv.themeId,
               eventType: paidInv.eventType,
+              subEvent: paidInv.subEvent || null,
+              modeSwitchRequired: !sameCategory,
+              targetEventType: targetEv,
             });
             setLoading(false);
             return;
@@ -137,6 +183,7 @@ function PackageSelectionContent() {
           setExistingFreeDraftMeta({
             themeId: onboardData.invitation?.themeId,
             eventType: onboardData.invitation?.eventType,
+            subEvent: onboardData.invitation?.subEvent || null,
           });
         }
 
@@ -148,7 +195,7 @@ function PackageSelectionContent() {
           matchedTheme &&
           !intentHandledRef.current
         ) {
-          const compatibleEvents = enabledList.filter((ev) => isThemeCompatible(matchedTheme.eventType, ev));
+          const compatibleEvents = enabledList.filter((ev) => isThemeInMode(matchedTheme.eventType, ev));
           if (compatibleEvents.length > 0) {
             intentHandledRef.current = true;
             const preferredEv =
@@ -157,26 +204,41 @@ function PackageSelectionContent() {
                 : compatibleEvents.includes(String(matchedTheme.eventType || "").toUpperCase())
                 ? String(matchedTheme.eventType).toUpperCase()
                 : compatibleEvents[0];
+            const initialSub =
+              resolvedSubEvent ||
+              (preferredEv === "PERSONAL"
+                ? PERSONAL_SUB_EVENT_PRESETS[0].id
+                : preferredEv === "EVENT"
+                ? EVENT_SUB_EVENT_PRESETS[0].id
+                : "");
 
             // Kasus A: Klien sudah punya Draf Gratis
             if (onboardData?.step === "FREE_DRAFT" && onboardData?.freeDraftId) {
               const curTheme = String(onboardData.invitation?.themeId || "").toLowerCase();
               const curEvent = String(onboardData.invitation?.eventType || "WEDDING").toUpperCase();
-              // Jika tema sudah sama dan jenis acara kompatibel, langsung buka studio drafnya
-              if (curTheme === matchedTheme.id.toLowerCase() && isThemeCompatible(matchedTheme.eventType, curEvent)) {
+              if (curTheme === matchedTheme.id.toLowerCase() && compatibleEvents.includes(curEvent)) {
                 router.replace(`/dashboard/invitation/${onboardData.freeDraftId}`);
                 return;
               }
-              // Buka modal konfirmasi penerapan tema ke Draf Gratis yang sudah ada
-              setSelectedFreeEventType(compatibleEvents.includes(curEvent) ? curEvent : preferredEv);
+              const nextEv = compatibleEvents.includes(curEvent) ? curEvent : preferredEv;
+              setSelectedFreeEventType(nextEv);
+              setSelectedSubEvent(
+                resolvedSubEvent ||
+                  onboardData.invitation?.subEvent ||
+                  (nextEv === "PERSONAL"
+                    ? PERSONAL_SUB_EVENT_PRESETS[0].id
+                    : nextEv === "EVENT"
+                    ? EVENT_SUB_EVENT_PRESETS[0].id
+                    : ""),
+              );
+              setCustomSubEventMode(false);
               setEventPickerOpen(true);
               setLoading(false);
               return;
             }
 
-            // Kasus B: Klien belum punya draf/undangan -> jika hanya 1 jenis acara yang kompatibel (mis. WEDDING),
-            // langsung buat Draf Gratis dengan tema tersebut dan masuk ke Studio tanpa klik tambahan.
-            if (compatibleEvents.length === 1) {
+            // Kasus B: Pernikahan atau Acara & Event Umum -> langsung buat Draf Gratis dan masuk Studio tanpa klik tambahan.
+            if (preferredEv === "WEDDING" || preferredEv === "EVENT") {
               setAutoLaunchingTheme(true);
               setLoading(false);
               try {
@@ -184,8 +246,9 @@ function PackageSelectionContent() {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
-                    eventType: compatibleEvents[0],
+                    eventType: preferredEv,
                     themeId: matchedTheme.id,
+                    ...(preferredEv === "EVENT" && initialSub ? { subEvent: initialSub } : {}),
                   }),
                 });
                 const draftData = await res.json();
@@ -205,9 +268,10 @@ function PackageSelectionContent() {
               return;
             }
 
-            // Kasus C: Tema Non-Wedding dengan >1 pilihan jenis acara non-wedding aktif -> tampilkan modal pemilih
-            // jenis acara dengan eventType portofolio/katalog terpilih sebagai default
+            // Kasus C: Tema kategori Personal & Keluarga -> buka pemilih sub-acara (preset atau tulis sendiri)
             setSelectedFreeEventType(preferredEv);
+            setSelectedSubEvent(initialSub);
+            setCustomSubEventMode(false);
             setEventPickerOpen(true);
           }
         }
@@ -219,7 +283,7 @@ function PackageSelectionContent() {
     return () => {
       cancelled = true;
     };
-  }, [status, router, isNewAdditional, requestedThemeParam, requestedEventParam]);
+  }, [status, router, isNewAdditional, requestedThemeParam, requestedEventParam, requestedSubEventParam]);
 
   if (loading || autoLaunchingTheme) {
     return (
@@ -239,23 +303,31 @@ function PackageSelectionContent() {
   const isClosed = serviceStatus && !serviceStatus.isOpen;
 
   const modalCompatibleEventTypes = requestedThemeObj
-    ? enabledEventTypes.filter((ev) => isThemeCompatible(requestedThemeObj.eventType, ev))
+    ? enabledEventTypes.filter((ev) => isThemeInMode(requestedThemeObj.eventType, ev))
     : enabledEventTypes;
 
-  const submitFreeDraft = async (eventType: string) => {
+  const submitFreeDraft = async (eventType: string, rawSubEvent?: string) => {
     if (creatingDraft || isClosed) return;
     setDraftError("");
     setCreatingDraft(true);
     try {
+      const validTheme =
+        requestedThemeObj && isThemeInMode(requestedThemeObj.eventType, eventType)
+          ? requestedThemeObj
+          : null;
+      const cleanSubEvent =
+        eventType === "WEDDING" ? null : sanitizeSubEvent(rawSubEvent ?? selectedSubEvent);
+
       // Jika klien sudah punya Draf Gratis dan sedang menerapkan tema baru dari Portofolio / Katalog Demo
-      if (existingFreeDraftId && requestedThemeObj) {
+      if (existingFreeDraftId && validTheme) {
         const res = await fetch(`/api/client/invitations/${existingFreeDraftId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            action: "CHANGE_FREE_DRAFT_EVENT_TYPE",
+            action: "CHANGE_INVITATION_MODE",
             eventType,
-            themeId: requestedThemeObj.id,
+            themeId: validTheme.id,
+            ...(cleanSubEvent ? { subEvent: cleanSubEvent } : {}),
           }),
         });
         const data = await res.json();
@@ -276,7 +348,8 @@ function PackageSelectionContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           eventType,
-          ...(requestedThemeObj ? { themeId: requestedThemeObj.id } : {}),
+          ...(validTheme ? { themeId: validTheme.id } : {}),
+          ...(cleanSubEvent ? { subEvent: cleanSubEvent } : {}),
         }),
       });
       const data = await res.json();
@@ -300,8 +373,15 @@ function PackageSelectionContent() {
     if (creatingDraft || isClosed) return;
     setDraftError("");
     const targetEvents = modalCompatibleEventTypes.length > 0 ? modalCompatibleEventTypes : enabledEventTypes;
-    if (targetEvents.length > 1 || (existingFreeDraftId && requestedThemeObj)) {
-      setSelectedFreeEventType((prev) => (prev && targetEvents.includes(prev) ? prev : targetEvents[0]));
+    if (targetEvents.length > 1 || targetEvents[0] !== "WEDDING" || (existingFreeDraftId && requestedThemeObj)) {
+      const nextEv = selectedFreeEventType && targetEvents.includes(selectedFreeEventType) ? selectedFreeEventType : targetEvents[0];
+      setSelectedFreeEventType(nextEv);
+      if (nextEv === "PERSONAL" && !selectedSubEvent) {
+        setSelectedSubEvent(requestedSubEventParam || requestedThemeObj?.subEvent || PERSONAL_SUB_EVENT_PRESETS[0].id);
+      } else if (nextEv === "EVENT" && !selectedSubEvent) {
+        setSelectedSubEvent(requestedSubEventParam || requestedThemeObj?.subEvent || EVENT_SUB_EVENT_PRESETS[0].id);
+      }
+      setCustomSubEventMode(false);
       setEventPickerOpen(true);
       return;
     }
@@ -314,10 +394,23 @@ function PackageSelectionContent() {
     setPaidDraftError("");
     setApplyingPaidDraftTheme(true);
     try {
+      const targetEv = (paidDraftTarget.targetEventType || requestedThemeObj.eventType || "WEDDING").toUpperCase();
+      const cleanSub = targetEv === "WEDDING" ? null : sanitizeSubEvent(paidDraftSubEvent);
+      const payload = paidDraftTarget.modeSwitchRequired
+        ? {
+            action: "CHANGE_INVITATION_MODE",
+            eventType: targetEv,
+            themeId: requestedThemeObj.id,
+            ...(cleanSub ? { subEvent: cleanSub } : {}),
+          }
+        : {
+            themeId: requestedThemeObj.id,
+            ...(cleanSub ? { subEvent: cleanSub } : {}),
+          };
       const res = await fetch(`/api/client/invitations/${paidDraftTarget.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ themeId: requestedThemeObj.id }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -551,7 +644,7 @@ function PackageSelectionContent() {
                     <div className="px-3.5 py-2.5 rounded-2xl bg-amber-50/80 border border-amber-200/80 flex items-center justify-between gap-2 text-xs text-amber-950">
                       <span className="font-semibold">Tema Pilihan: {requestedThemeObj.name}</span>
                       <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white border border-amber-200 text-amber-900">
-                        {requestedThemeObj.eventType === "WEDDING" ? "Pernikahan" : "Multi-Acara Non-Wedding"}
+                        {EVENT_TYPE_LABELS[requestedThemeObj.eventType as keyof typeof EVENT_TYPE_LABELS] || requestedThemeObj.eventType}
                       </span>
                     </div>
                   )}
@@ -568,43 +661,209 @@ function PackageSelectionContent() {
                     )}
 
                   <p className="text-xs text-stone-600 leading-relaxed">
-                    Pilihan ini menentukan katalog tema dan struktur form (Pernikahan memakai dua mempelai, sedangkan acara non-pernikahan memakai format satu subjek). Anda masih dapat menggantinya selama dalam mode Draf Gratis.
+                    Setiap kategori memiliki koleksi tema dan struktur form tersendiri. Untuk kategori <strong>Personal &amp; Keluarga</strong> maupun <strong>Acara &amp; Event Umum</strong>, sub-acara (atau nama acara kustom seperti <em>Tamatan Ngaji</em> / <em>Corporate</em>) dapat diganti kapan saja selama status masih Draf.
                   </p>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {(modalCompatibleEventTypes.length > 0 ? modalCompatibleEventTypes : enabledEventTypes).map((ev) => {
-                      const isSelected = selectedFreeEventType === ev;
-                      const isWedding = ev === "WEDDING";
-                      return (
-                        <button
-                          key={ev}
-                          type="button"
-                          onClick={() => setSelectedFreeEventType(ev)}
-                          className={`p-3.5 rounded-2xl border text-left transition cursor-pointer ${isSelected
-                            ? "border-2 border-amber-800 bg-amber-50/70 shadow-2xs"
-                            : "border-stone-200 bg-white hover:border-stone-300 hover:bg-stone-50/70"
+                  {(() => {
+                    const allowed = modalCompatibleEventTypes.length > 0 ? modalCompatibleEventTypes : enabledEventTypes;
+                    const allowWedding = allowed.includes("WEDDING");
+                    const allowPersonal = allowed.includes("PERSONAL");
+                    const allowEvent = allowed.includes("EVENT");
+
+                    return (
+                      <div className="space-y-2.5">
+                        {allowWedding && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedFreeEventType("WEDDING");
+                              setSelectedSubEvent("");
+                              setCustomSubEventMode(false);
+                            }}
+                            className={`w-full p-3.5 rounded-2xl border text-left transition cursor-pointer ${
+                              selectedFreeEventType === "WEDDING"
+                                ? "border-2 border-amber-800 bg-amber-50/70 shadow-2xs"
+                                : "border-stone-200 bg-white hover:border-stone-300 hover:bg-stone-50/70"
                             }`}
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-xs font-bold text-stone-900">
-                              {BUILDER_EVENT_LABELS[ev as BuilderEventType] ?? ev}
-                            </span>
-                            <span
-                              className={`shrink-0 whitespace-nowrap text-[10px] font-semibold px-2 py-0.5 rounded-full border ${isWedding
-                                ? "bg-amber-100/80 text-amber-900 border-amber-200"
-                                : "bg-stone-100 text-stone-600 border-stone-200"
-                                }`}
-                            >
-                              {isWedding ? "Pernikahan" : "Non-Wedding"}
-                            </span>
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-bold text-stone-900">Pernikahan</span>
+                              <span className="shrink-0 whitespace-nowrap text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-amber-100/80 text-amber-900 border-amber-200">
+                                2 Profil Mempelai
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-stone-500 mt-1.5 leading-relaxed">
+                              {FREE_DRAFT_EVENT_DESCRIPTIONS.WEDDING}
+                            </p>
+                          </button>
+                        )}
+
+                        {allowPersonal && (
+                          <div
+                            onClick={() => {
+                              if (selectedFreeEventType !== "PERSONAL") {
+                                setSelectedFreeEventType("PERSONAL");
+                                setSelectedSubEvent(requestedSubEventParam || requestedThemeObj?.subEvent || PERSONAL_SUB_EVENT_PRESETS[0].id);
+                                setCustomSubEventMode(false);
+                              }
+                            }}
+                            className={`w-full p-3.5 rounded-2xl border text-left transition cursor-pointer ${
+                              selectedFreeEventType === "PERSONAL"
+                                ? "border-2 border-amber-800 bg-amber-50/70 shadow-2xs"
+                                : "border-stone-200 bg-white hover:border-stone-300 hover:bg-stone-50/70"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-bold text-stone-900">Personal &amp; Keluarga</span>
+                              <span className="shrink-0 whitespace-nowrap text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-stone-100 text-stone-700 border-stone-200">
+                                1 Profil Tokoh
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-stone-500 mt-1.5 leading-relaxed">
+                              {FREE_DRAFT_EVENT_DESCRIPTIONS.PERSONAL}
+                            </p>
+                            {selectedFreeEventType === "PERSONAL" && (
+                              <div className="mt-3 pt-2.5 border-t border-amber-200/70 space-y-2" onClick={(e) => e.stopPropagation()}>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-900 block">
+                                  Pilih Sub-Acara atau Tulis Sendiri (bisa diganti saat Draf):
+                                </span>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {PERSONAL_SUB_EVENT_PRESETS.map((preset) => {
+                                    const isSubActive = !customSubEventMode && selectedSubEvent.toLowerCase() === preset.id.toLowerCase();
+                                    return (
+                                      <button
+                                        key={preset.id}
+                                        type="button"
+                                        onClick={() => {
+                                          setCustomSubEventMode(false);
+                                          setSelectedSubEvent(preset.id);
+                                        }}
+                                        className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition cursor-pointer ${
+                                          isSubActive
+                                            ? "bg-amber-900 text-white shadow-2xs"
+                                            : "bg-white text-stone-700 border border-stone-200 hover:border-amber-400"
+                                        }`}
+                                      >
+                                        {preset.label}
+                                      </button>
+                                    );
+                                  })}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setCustomSubEventMode(true);
+                                      if (PERSONAL_SUB_EVENT_PRESETS.some((p) => p.id.toLowerCase() === selectedSubEvent.toLowerCase())) {
+                                        setSelectedSubEvent("");
+                                      }
+                                    }}
+                                    className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition cursor-pointer ${
+                                      customSubEventMode
+                                        ? "bg-amber-900 text-white shadow-2xs"
+                                        : "bg-white text-amber-900 border border-dashed border-amber-400 hover:bg-amber-50"
+                                    }`}
+                                  >
+                                    + Tulis Sendiri
+                                  </button>
+                                </div>
+                                {customSubEventMode && (
+                                  <input
+                                    type="text"
+                                    value={selectedSubEvent}
+                                    onChange={(e) => setSelectedSubEvent(e.target.value)}
+                                    maxLength={50}
+                                    placeholder="Contoh: Tamatan Ngaji, Tedak Siten, Syukuran Rumah..."
+                                    className="w-full px-3.5 py-2 bg-white border border-amber-300 rounded-xl text-xs font-semibold text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                                  />
+                                )}
+                              </div>
+                            )}
                           </div>
-                          <p className="text-[11px] text-stone-500 mt-1.5 leading-relaxed">
-                            {FREE_DRAFT_EVENT_DESCRIPTIONS[ev] || "Undangan digital dengan tema dan susunan acara fleksibel."}
-                          </p>
-                        </button>
-                      );
-                    })}
-                  </div>
+                        )}
+
+                        {allowEvent && (
+                          <div
+                            onClick={() => {
+                              if (selectedFreeEventType !== "EVENT") {
+                                setSelectedFreeEventType("EVENT");
+                                setSelectedSubEvent(requestedSubEventParam || requestedThemeObj?.subEvent || EVENT_SUB_EVENT_PRESETS[0].id);
+                                setCustomSubEventMode(false);
+                              }
+                            }}
+                            className={`w-full p-3.5 rounded-2xl border text-left transition cursor-pointer ${
+                              selectedFreeEventType === "EVENT"
+                                ? "border-2 border-amber-800 bg-amber-50/70 shadow-2xs"
+                                : "border-stone-200 bg-white hover:border-stone-300 hover:bg-stone-50/70"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-bold text-stone-900">Acara &amp; Event Umum</span>
+                              <span className="shrink-0 whitespace-nowrap text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-900 border-emerald-200">
+                                Non-Personal
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-stone-500 mt-1.5 leading-relaxed">
+                              {FREE_DRAFT_EVENT_DESCRIPTIONS.EVENT}
+                            </p>
+                            {selectedFreeEventType === "EVENT" && (
+                              <div className="mt-3 pt-2.5 border-t border-amber-200/70 space-y-2" onClick={(e) => e.stopPropagation()}>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-900 block">
+                                  Pilih Sub-Acara Event atau Tulis Sendiri (bisa diganti saat Draf):
+                                </span>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {EVENT_SUB_EVENT_PRESETS.map((preset) => {
+                                    const isSubActive = !customSubEventMode && selectedSubEvent.toLowerCase() === preset.id.toLowerCase();
+                                    return (
+                                      <button
+                                        key={preset.id}
+                                        type="button"
+                                        onClick={() => {
+                                          setCustomSubEventMode(false);
+                                          setSelectedSubEvent(preset.id);
+                                        }}
+                                        className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition cursor-pointer ${
+                                          isSubActive
+                                            ? "bg-amber-900 text-white shadow-2xs"
+                                            : "bg-white text-stone-700 border border-stone-200 hover:border-amber-400"
+                                        }`}
+                                      >
+                                        {preset.label}
+                                      </button>
+                                    );
+                                  })}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setCustomSubEventMode(true);
+                                      if (EVENT_SUB_EVENT_PRESETS.some((p) => p.id.toLowerCase() === selectedSubEvent.toLowerCase())) {
+                                        setSelectedSubEvent("");
+                                      }
+                                    }}
+                                    className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition cursor-pointer ${
+                                      customSubEventMode
+                                        ? "bg-amber-900 text-white shadow-2xs"
+                                        : "bg-white text-amber-900 border border-dashed border-amber-400 hover:bg-amber-50"
+                                    }`}
+                                  >
+                                    + Tulis Sendiri
+                                  </button>
+                                </div>
+                                {customSubEventMode && (
+                                  <input
+                                    type="text"
+                                    value={selectedSubEvent}
+                                    onChange={(e) => setSelectedSubEvent(e.target.value)}
+                                    maxLength={50}
+                                    placeholder="Contoh: Rapat Kerja Nasional, Malam Keakraban, Awarding Night..."
+                                    className="w-full px-3.5 py-2 bg-white border border-amber-300 rounded-xl text-xs font-semibold text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                                  />
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {draftError && (
                     <p className="text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
@@ -639,7 +898,7 @@ function PackageSelectionContent() {
             </div>
           )}
 
-          {/* Modal Konfirmasi Penerapan Tema pada Draf Berbayar yang Sudah Ada */}
+          {/* Modal Konfirmasi Penerapan Tema (dan Pindah Mode bila Lintas Kategori) pada Draf Berbayar yang Sudah Ada */}
           {paidDraftTarget && requestedThemeObj && (
             <div
               className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/50 backdrop-blur-xs"
@@ -652,10 +911,14 @@ function PackageSelectionContent() {
                 <div className="px-5 sm:px-6 py-4 border-b border-stone-200/80 bg-stone-50/90 flex items-center justify-between gap-3">
                   <div>
                     <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 block">
-                      Konfirmasi Pergantian Tema
+                      {paidDraftTarget.modeSwitchRequired
+                        ? "Konfirmasi Ganti Mode / Kategori Acara"
+                        : "Konfirmasi Pergantian Tema"}
                     </span>
                     <h3 className="text-base font-serif font-bold text-stone-900 mt-0.5">
-                      Gunakan Tema {requestedThemeObj.name}?
+                      {paidDraftTarget.modeSwitchRequired
+                        ? `Pindah ke Mode ${BUILDER_EVENT_LABELS[(paidDraftTarget.targetEventType || "WEDDING") as BuilderEventType]}?`
+                        : `Gunakan Tema ${requestedThemeObj.name}?`}
                     </h3>
                   </div>
                   <button
@@ -672,11 +935,99 @@ function PackageSelectionContent() {
                 </div>
 
                 <div className="p-5 sm:p-6 space-y-4">
-                  <p className="text-xs text-stone-600 leading-relaxed">
-                    Anda sudah memiliki draf undangan aktif. Apakah Anda ingin mengganti tema draf undangan Anda ke{" "}
-                    <strong className="text-stone-900">{requestedThemeObj.name}</strong>? Data peserta, jadwal acara,
-                    dan teks yang sudah Anda isi tetap tersimpan.
-                  </p>
+                  {paidDraftTarget.modeSwitchRequired ? (
+                    <>
+                      <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200/90 space-y-1.5">
+                        <div className="flex items-center gap-2 text-[11px] font-bold text-amber-950">
+                          <span className="px-2 py-0.5 rounded-full bg-white border border-amber-300">
+                            {BUILDER_EVENT_LABELS[(paidDraftTarget.eventType || "WEDDING") as BuilderEventType] ?? paidDraftTarget.eventType}
+                          </span>
+                          <span>&rarr;</span>
+                          <span className="px-2 py-0.5 rounded-full bg-amber-900 text-white">
+                            {BUILDER_EVENT_LABELS[(paidDraftTarget.targetEventType || "WEDDING") as BuilderEventType] ?? paidDraftTarget.targetEventType}
+                          </span>
+                        </div>
+                        <p className="text-xs text-amber-950 leading-relaxed">
+                          Tema <strong>{requestedThemeObj.name}</strong> berada pada mode{" "}
+                          <strong>{BUILDER_EVENT_LABELS[(paidDraftTarget.targetEventType || "WEDDING") as BuilderEventType]}</strong>, sedangkan draf Anda saat ini berada pada mode{" "}
+                          <strong>{BUILDER_EVENT_LABELS[(paidDraftTarget.eventType || "WEDDING") as BuilderEventType]}</strong>.
+                        </p>
+                      </div>
+                      <p className="text-xs text-stone-600 leading-relaxed">
+                        Setiap mode terisolasi sesuai struktur profilnya. Jika Anda melanjutkan, draf undangan Anda akan otomatis berpindah ke mode{" "}
+                        <strong className="text-stone-900">{BUILDER_EVENT_LABELS[(paidDraftTarget.targetEventType || "WEDDING") as BuilderEventType]}</strong>{" "}
+                        dengan tema <strong className="text-stone-900">{requestedThemeObj.name}</strong> dan form profil akan disesuaikan.
+                      </p>
+                      {(paidDraftTarget.targetEventType === "PERSONAL" || paidDraftTarget.targetEventType === "EVENT") && (() => {
+                        const presets = paidDraftTarget.targetEventType === "PERSONAL" ? PERSONAL_SUB_EVENT_PRESETS : EVENT_SUB_EVENT_PRESETS;
+                        return (
+                          <div className="p-3.5 rounded-2xl bg-stone-50 border border-stone-200 space-y-2">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-700 block">
+                              Pilih Sub-Acara atau Tulis Sendiri:
+                            </span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {presets.map((preset) => {
+                                const activeSub = !paidDraftCustomSubMode && paidDraftSubEvent.toLowerCase() === preset.id.toLowerCase();
+                                return (
+                                  <button
+                                    key={preset.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setPaidDraftCustomSubMode(false);
+                                      setPaidDraftSubEvent(preset.id);
+                                    }}
+                                    className={`px-3 py-1 rounded-full text-[11px] font-bold transition cursor-pointer ${
+                                      activeSub
+                                        ? "bg-amber-900 text-white"
+                                        : "bg-white text-stone-700 border border-stone-200 hover:border-amber-400"
+                                    }`}
+                                  >
+                                    {preset.label}
+                                  </button>
+                                );
+                              })}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPaidDraftCustomSubMode(true);
+                                  if (presets.some((p) => p.id.toLowerCase() === paidDraftSubEvent.toLowerCase())) {
+                                    setPaidDraftSubEvent("");
+                                  }
+                                }}
+                                className={`px-3 py-1 rounded-full text-[11px] font-bold transition cursor-pointer ${
+                                  paidDraftCustomSubMode
+                                    ? "bg-amber-900 text-white"
+                                    : "bg-white text-amber-900 border border-dashed border-amber-400 hover:bg-amber-50"
+                                }`}
+                              >
+                                + Tulis Sendiri
+                              </button>
+                            </div>
+                            {paidDraftCustomSubMode && (
+                              <input
+                                type="text"
+                                value={paidDraftSubEvent}
+                                onChange={(e) => setPaidDraftSubEvent(e.target.value)}
+                                maxLength={50}
+                                placeholder={
+                                  paidDraftTarget.targetEventType === "PERSONAL"
+                                    ? "Contoh: Tamatan Ngaji, Tedak Siten..."
+                                    : "Contoh: Rapat Kerja Nasional, Malam Keakraban..."
+                                }
+                                className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl text-xs font-semibold text-stone-900 focus:outline-none"
+                              />
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </>
+                  ) : (
+                    <p className="text-xs text-stone-600 leading-relaxed">
+                      Anda sudah memiliki draf undangan aktif. Apakah Anda ingin mengganti tema draf undangan Anda ke{" "}
+                      <strong className="text-stone-900">{requestedThemeObj.name}</strong>? Data peserta, jadwal acara,
+                      dan teks yang sudah Anda isi tetap tersimpan.
+                    </p>
+                  )}
 
                   {paidDraftError && (
                     <p className="text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
@@ -691,7 +1042,11 @@ function PackageSelectionContent() {
                       onClick={handleApplyThemeToPaidDraft}
                       className="w-full py-2.5 px-4 rounded-xl bg-amber-900 hover:bg-amber-950 text-white text-xs font-bold transition cursor-pointer disabled:opacity-50"
                     >
-                      {applyingPaidDraftTheme ? "Mengganti Tema..." : "Ganti Tema & Buka Studio"}
+                      {applyingPaidDraftTheme
+                        ? "Memproses..."
+                        : paidDraftTarget.modeSwitchRequired
+                        ? "Ya, Pindah Mode & Gunakan Tema Ini"
+                        : "Ganti Tema & Buka Studio"}
                     </button>
                     <button
                       type="button"

@@ -112,7 +112,7 @@ describe.skipIf(!IS_TEST_DB)("metadata portofolio", () => {
   it.each([
     ["kalandra", "WEDDING"],
     ["aeterna", "WEDDING"],
-    ["fajar", "KHITAN"],
+    ["fajar", "PERSONAL"],
   ] as const)("portofolio %s tidak memuat rekening, QRIS, atau alamat kirim kado klien", async (themeId, eventType) => {
     expect(created.userId).not.toBe("");
     const inv = await prisma.invitation.create({

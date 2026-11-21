@@ -11,10 +11,20 @@ export const SIM_MEDIA_MAX_AGE_DAYS = 3;
 export const SIM_GALLERY_MAX = 8;
 
 export interface SimSlot {
-  slot: "LANDING_COVER" | "LANDING_COVER_DESKTOP" | "HOME_PHOTO" | "DESKTOP_SIDEBAR" | "GLOBAL_FIXED_BG" | "GROOM_PHOTO" | "BRIDE_PHOTO" | "CLOSING_COVER";
+  slot:
+    | "LANDING_COVER"
+    | "LANDING_COVER_DESKTOP"
+    | "HOME_PHOTO"
+    | "DESKTOP_SIDEBAR"
+    | "GLOBAL_FIXED_BG"
+    | "GROOM_PHOTO"
+    | "BRIDE_PHOTO"
+    | "PROFILE_PHOTO"
+    | "EVENT_PHOTO"
+    | "CLOSING_COVER";
   label: string;
   hint: string;
-  weddingOnly?: boolean;
+  modes?: readonly BuilderEventType[];
 }
 
 export const SIM_SLOTS: SimSlot[] = [
@@ -22,18 +32,16 @@ export const SIM_SLOTS: SimSlot[] = [
   { slot: "LANDING_COVER_DESKTOP", label: "Sampul desktop", hint: "Foto mendatar: sampul desktop tampil layar penuh." },
   { slot: "HOME_PHOTO", label: "Foto utama", hint: "Foto di seksi pembuka setelah sampul." },
   { slot: "DESKTOP_SIDEBAR", label: "Panel kiri desktop", hint: "Foto panel kiri tampilan desktop terbelah." },
-  { slot: "GROOM_PHOTO", label: "Mempelai pria", hint: "Foto di kartu mempelai." },
-  { slot: "BRIDE_PHOTO", label: "Mempelai wanita", hint: "Foto di kartu mempelai.", weddingOnly: true },
+  { slot: "GROOM_PHOTO", label: "Mempelai pria", hint: "Foto di kartu mempelai.", modes: ["WEDDING"] },
+  { slot: "BRIDE_PHOTO", label: "Mempelai wanita", hint: "Foto di kartu mempelai.", modes: ["WEDDING"] },
+  { slot: "PROFILE_PHOTO", label: "Foto profil utama", hint: "Foto profil tokoh utama personal.", modes: ["PERSONAL"] },
+  { slot: "EVENT_PHOTO", label: "Visual utama acara", hint: "Foto atau visual identitas acara.", modes: ["EVENT"] },
   { slot: "CLOSING_COVER", label: "Penutup", hint: "Foto latar seksi penutup." },
   { slot: "GLOBAL_FIXED_BG", label: "Latar tetap", hint: "Latar seluruh halaman, menggantikan tekstur tema." },
 ];
 
 export function simSlotsFor(eventType: BuilderEventType): SimSlot[] {
-  return SIM_SLOTS.filter((s) => !s.weddingOnly || eventType === "WEDDING").map((s) =>
-    eventType !== "WEDDING" && s.slot === "GROOM_PHOTO"
-      ? { ...s, label: "Foto profil utama", hint: "Foto utama tokoh atau acara." }
-      : s,
-  );
+  return SIM_SLOTS.filter((s) => !s.modes || s.modes.includes(eventType));
 }
 
 export interface SimMedia {

@@ -1,7 +1,8 @@
 import { isThemeOwnedPath } from "@/lib/safeUrl";
+import { primaryPhotoSlotForEvent } from "@/lib/mediaSlots";
 import type { ThemeMediaSlots } from "@/lib/themeMediaSlots";
 import {
-  builderFamilyOf,
+  normalizeMediaSlotForEvent,
   SECTION_LABELS,
   type BuilderBlockId,
   type BuilderOrnament,
@@ -21,15 +22,15 @@ function isOrnamentHidden(spec: Pick<BuilderSpec, "blocks" | "eventsPlacement">,
 }
 
 function collectBuilderSlotUsage(spec: BuilderSpec) {
-  const single = builderFamilyOf(spec.eventType) === "single";
+  const isWedding = spec.eventType === "WEDDING";
+  const primaryPhotoSlot = primaryPhotoSlotForEvent(spec.eventType);
   const places = new Map<string, string[]>();
   const previews = new Map<string, string>();
   const add = (slot: string, place: string) => places.set(slot, [...(places.get(slot) ?? []), place]);
   const setPreview = (slot: string, src: string | undefined) => {
     if (src && !previews.has(slot) && isThemeOwnedPath(src)) previews.set(slot, src);
   };
-  // Pada tema satu nama "BRIDE_PHOTO" memakai foto tokoh yang sama dengan "GROOM_PHOTO" (lib/themeBuilder/compile.ts).
-  const slotOf = (slot: OrnamentMediaSlot) => (single && slot === "BRIDE_PHOTO" ? "GROOM_PHOTO" : slot);
+  const slotOf = (slot: OrnamentMediaSlot) => normalizeMediaSlotForEvent(slot, spec.eventType) as OrnamentMediaSlot;
   const autoHiddenOpening = autoHiddenOpeningPhoto(spec);
   const hidden = (block: BuilderBlockId) => isBlockHidden(spec, block, autoHiddenOpening);
 
@@ -38,8 +39,10 @@ function collectBuilderSlotUsage(spec: BuilderSpec) {
   if (spec.desktopLayout !== "centered") add("DESKTOP_SIDEBAR", "Panel foto desktop");
   add("GLOBAL_FIXED_BG", "Latar halaman");
   if (!hidden("opening-photo")) add("HOME_PHOTO", "Foto pembuka");
-  if (single) {
-    if (!hidden("couple-photo-1")) add("GROOM_PHOTO", "Foto profil");
+  if (!isWedding) {
+    if (!hidden("couple-photo-1")) {
+      add(primaryPhotoSlot, spec.eventType === "EVENT" ? "Visual utama acara" : "Foto profil");
+    }
   } else {
     if (!hidden("couple-photo-1") || !hidden("couple-photo-2")) {
       add("GROOM_PHOTO", "Profil mempelai");

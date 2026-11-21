@@ -39,7 +39,7 @@ vi.mock("@/lib/rateLimit", () => ({
 import { GET, POST } from "@/app/api/public/rsvp/route";
 import { prisma } from "@/lib/prisma";
 
-import { SAMPLE_WISHES } from "@/lib/demoInvitation";
+import { SAMPLE_WISHES, sampleWishesFor } from "@/lib/demoInvitation";
 
 const mockInvFindUnique = prisma.invitation.findUnique as ReturnType<typeof vi.fn>;
 const mockThemeFindUnique = prisma.theme.findUnique as ReturnType<typeof vi.fn>;
@@ -81,11 +81,11 @@ describe("GET /api/public/rsvp — validasi invitationId", () => {
   });
 
   it("demo tema acara memakai ucapan jenis acaranya, bukan ucapan pernikahan", async () => {
-    mockThemeFindUnique.mockResolvedValueOnce({ eventType: "GATHERING" });
-    const res = await GET(makeGetRequest({ invitationId: "demo-kalandra-acara" }));
+    mockThemeFindUnique.mockResolvedValueOnce({ eventType: "EVENT", subEvent: "Corporate" });
+    const res = await GET(makeGetRequest({ invitationId: "demo-sinergi" }));
     const body = await res.json();
-    expect(mockThemeFindUnique).toHaveBeenCalledWith(expect.objectContaining({ where: { id: "kalandra-acara" } }));
-    expect(body.rsvps.map((r: any) => r.message)).toEqual(SAMPLE_WISHES.GATHERING.map((w) => w.message));
+    expect(mockThemeFindUnique).toHaveBeenCalledWith(expect.objectContaining({ where: { id: "sinergi" } }));
+    expect(body.rsvps.map((r: any) => r.message)).toEqual(sampleWishesFor("EVENT", "Corporate").map((w) => w.message));
   });
 });
 

@@ -1,7 +1,7 @@
 /**
  * Tokenisasi master tema tulisan tangan: warna dan keluarga huruf yang tertulis langsung di CSS diganti variabel baru
- * di `:root` (`--lux-c-<hex>`, `--lux-font-*`), tanpa mengubah nilai yang dihitung peramban. Ini fondasi Varian Tema, yang menimpa variabel `:root` master
- * induk; tanpa tokenisasi, warna dan huruf yang tertulis langsung tidak ikut berganti.
+ * di `:root` (`--lux-c-<hex>`, `--lux-font-*`), tanpa mengubah nilai yang dihitung peramban. Ini fondasi Editor Master, yang menimpa variabel `:root`
+ * master mandiri; tanpa tokenisasi, warna dan huruf yang tertulis langsung tidak ikut berganti.
  *
  * Hanya konteks CSS yang diubah (isi `<style>` dan atribut `style=""`), dan hanya di dalam badan deklarasi `{ ... }`,
  * bukan selektor. Yang sengaja tidak disentuh:
@@ -52,7 +52,7 @@ export function tokenizeMaster(html: string): { html: string; report: TokenizeRe
   /**
    * Selalu variabel baru per nilai, bukan variabel `:root` lama yang kebetulan bernilai sama: variabel lama bisa
    * didefinisikan ulang di cakupan lain (mis. seksi yang menimpa --primary) atau ditimpa saat render, sehingga warna yang
-   * tadinya tertulis langsung ikut berubah. Pengelompokan per nilai asli dilakukan Varian Tema saat menimpa.
+   * tadinya tertulis langsung ikut berubah. Pengelompokan per nilai asli dilakukan Editor Master saat menimpa.
    */
   const colorVar = (hex: string): string => {
     let name = newColors.get(hex);
@@ -141,8 +141,8 @@ export function tokenizeMaster(html: string): { html: string; report: TokenizeRe
 }
 
 /**
- * Variabel `:root` master yang boleh ditimpa Varian Tema: warna (hex/rgb) dan tumpukan huruf. Dipakai untuk memvalidasi
- * kunci override terhadap master induknya.
+ * Variabel `:root` master yang boleh ditimpa di Editor Master: warna (hex/rgb) dan tumpukan huruf. Dipakai untuk
+ * memvalidasi kunci override terhadap file master.
  */
 export function masterTokenNames(html: string): { colors: string[]; fonts: string[] } {
   const body = html.match(/:root\s*\{([^}]*)\}/)?.[1] ?? "";

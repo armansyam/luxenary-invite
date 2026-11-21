@@ -21,7 +21,7 @@ import AdminDatabaseTab from "@/components/admin/AdminDatabaseTab";
 import { compressImageToWebP } from "@/lib/clientImageCompressor";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { BG_PHOTO_TONE_LIMIT, parseBgPhotoTone } from "@/lib/bgPhotoTone";
-import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
+import { resolveInvitationDisplayName, PERSONAL_SUB_EVENT_PRESETS, EVENT_SUB_EVENT_PRESETS } from "@/lib/invitationUtils";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { useFeedback } from "@/components/ui/Feedback";
 
@@ -540,6 +540,7 @@ export default function AdminPage() {
     id: "",
     name: "",
     eventType: "WEDDING",
+    subEvent: "",
     category: "minimalist",
     series: "Minimalist",
     description: "",
@@ -1149,6 +1150,7 @@ export default function AdminPage() {
       id: "",
       name: "",
       eventType: "WEDDING",
+      subEvent: "",
       category: "minimalist",
       series: "Minimalist",
       description: "",
@@ -1170,6 +1172,7 @@ export default function AdminPage() {
       id: th.id,
       name: th.name,
       eventType: th.eventType || "WEDDING",
+      subEvent: th.subEvent || "",
       category: th.category || "minimalist",
       series: th.series || (th.category === "traditional" ? "Traditional" : th.category === "modern" ? "Modern" : "Minimalist"),
       description: th.description || "",
@@ -1205,6 +1208,7 @@ export default function AdminPage() {
       formData.append("id", themeForm.id);
       formData.append("name", themeForm.name);
       formData.append("eventType", themeForm.eventType || "WEDDING");
+      formData.append("subEvent", themeForm.eventType === "WEDDING" ? "" : (themeForm.subEvent || "").trim());
       formData.append("category", themeForm.category);
       formData.append("series", themeForm.series);
       formData.append("description", themeForm.description);
@@ -1411,6 +1415,8 @@ export default function AdminPage() {
       }
       else if (slot === "groom") next.groomPhotoUrl = "";
       else if (slot === "bride") next.bridePhotoUrl = "";
+      else if (slot === "profile") next.personPhotoUrl = "";
+      else if (slot === "event") next.eventPhotoUrl = "";
       else if (slot === "thumbnail_mobile") next.thumbnailMobileUrl = "";
       else if (slot === "thumbnail_desktop") next.thumbnailDesktopUrl = "";
       else if (slot === "music") next.audioUrl = "";
@@ -1444,6 +1450,8 @@ export default function AdminPage() {
       }
       else if (slot === "groom") next.groomPhotoUrl = initialDemoStudioData.groomPhotoUrl;
       else if (slot === "bride") next.bridePhotoUrl = initialDemoStudioData.bridePhotoUrl;
+      else if (slot === "profile") next.personPhotoUrl = initialDemoStudioData.personPhotoUrl;
+      else if (slot === "event") next.eventPhotoUrl = initialDemoStudioData.eventPhotoUrl;
       else if (slot === "thumbnail_mobile") next.thumbnailMobileUrl = initialDemoStudioData.thumbnailMobileUrl;
       else if (slot === "thumbnail_desktop") next.thumbnailDesktopUrl = initialDemoStudioData.thumbnailDesktopUrl;
       else if (slot === "music") next.audioUrl = initialDemoStudioData.audioUrl;
@@ -1495,6 +1503,8 @@ export default function AdminPage() {
         }
         else if (slot === "groom") nextDemoData.groomPhotoUrl = "";
         else if (slot === "bride") nextDemoData.bridePhotoUrl = "";
+        else if (slot === "profile") nextDemoData.personPhotoUrl = "";
+        else if (slot === "event") nextDemoData.eventPhotoUrl = "";
         else if (slot === "thumbnail_mobile") nextDemoData.thumbnailMobileUrl = "";
         else if (slot === "thumbnail_desktop") nextDemoData.thumbnailDesktopUrl = "";
         else if (slot === "music") nextDemoData.audioUrl = "";
@@ -1535,6 +1545,8 @@ export default function AdminPage() {
           else if (slot === "footer") nextDemoData.footerPhotoUrl = targetUrl;
           else if (slot === "groom") nextDemoData.groomPhotoUrl = targetUrl;
           else if (slot === "bride") nextDemoData.bridePhotoUrl = targetUrl;
+          else if (slot === "profile") nextDemoData.personPhotoUrl = targetUrl;
+          else if (slot === "event") nextDemoData.eventPhotoUrl = targetUrl;
           else if (slot === "thumbnail_mobile") nextDemoData.thumbnailMobileUrl = targetUrl;
           else if (slot === "thumbnail_desktop") nextDemoData.thumbnailDesktopUrl = targetUrl;
           else if (slot === "music") nextDemoData.audioUrl = targetUrl;
@@ -2619,12 +2631,9 @@ export default function AdminPage() {
                   {(() => {
                     const validThemes = themes.filter((t) => t.id !== "starter-blueprint");
 
-                    const countWedding   = validThemes.filter((t) => !t.eventType || t.eventType === "WEDDING").length;
-                    const countBirthday  = validThemes.filter((t) => t.eventType === "BIRTHDAY").length;
-                    const countKhitan    = validThemes.filter((t) => t.eventType === "KHITAN").length;
-                    const countAqiqah    = validThemes.filter((t) => t.eventType === "AQIQAH").length;
-                    const countWisuda    = validThemes.filter((t) => t.eventType === "WISUDA").length;
-                    const countGathering = validThemes.filter((t) => t.eventType === "GATHERING").length;
+                    const countWedding  = validThemes.filter((t) => !t.eventType || t.eventType === "WEDDING").length;
+                    const countPersonal = validThemes.filter((t) => t.eventType === "PERSONAL").length;
+                    const countEvent    = validThemes.filter((t) => t.eventType === "EVENT").length;
 
                     const eventTypeFilteredThemes = themeEventTypeFilter === "all"
                       ? validThemes
@@ -2664,13 +2673,10 @@ export default function AdminPage() {
                         {/* 1. Master Segmented Event Bar */}
                         <div className="bg-stone-100/90 p-1.5 rounded-2xl flex items-center gap-1 overflow-x-auto no-scrollbar border border-stone-200/80">
                           {[
-                            { id: "all",       label: "Semua",         count: validThemes.length },
-                            { id: "wedding",   label: "Wedding",       count: countWedding },
-                            { id: "birthday",  label: "Birthday",      count: countBirthday },
-                            { id: "khitan",    label: "Khitan",        count: countKhitan },
-                            { id: "aqiqah",    label: "Aqiqah",        count: countAqiqah },
-                            { id: "wisuda",    label: "Wisuda",        count: countWisuda },
-                            { id: "gathering", label: "Umum / Acara",  count: countGathering },
+                            { id: "all",      label: "Semua",               count: validThemes.length },
+                            { id: "wedding",  label: "Pernikahan",          count: countWedding },
+                            { id: "personal", label: "Personal & Keluarga", count: countPersonal },
+                            { id: "event",    label: "Acara & Event Umum",  count: countEvent },
                           ].map((tab) => {
                             const isActive = themeEventTypeFilter === tab.id;
                             return (
@@ -2883,17 +2889,11 @@ export default function AdminPage() {
                                           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider border ${
                                             (!theme.eventType || theme.eventType === "WEDDING")
                                               ? "bg-amber-50 text-amber-800 border-amber-200"
-                                              : theme.eventType === "BIRTHDAY"
+                                              : theme.eventType === "PERSONAL"
                                               ? "bg-purple-50 text-purple-700 border-purple-200"
-                                              : theme.eventType === "KHITAN"
-                                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                              : theme.eventType === "AQIQAH"
-                                              ? "bg-sky-50 text-sky-700 border-sky-200"
-                                              : theme.eventType === "WISUDA"
-                                              ? "bg-indigo-50 text-indigo-700 border-indigo-200"
                                               : "bg-teal-50 text-teal-700 border-teal-200"
                                           }`}>
-                                            {theme.eventType || "WEDDING"}
+                                            {theme.subEvent ? `${theme.eventType} · ${theme.subEvent}` : (theme.eventType || "WEDDING")}
                                           </span>
                                         </div>
                                         <span className="text-[11px] font-mono text-gray-400">/{theme.id}</span>
@@ -2919,15 +2919,7 @@ export default function AdminPage() {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                       </svg>
                                     </a>
-                                    {theme.parentTheme && theme.masterOverrides != null ? (
-                                      <a
-                                        href={`/admin/theme-variants?id=${encodeURIComponent(theme.id)}`}
-                                        className="px-3 py-1.5 bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 rounded-xl text-xs font-semibold transition inline-flex items-center gap-1"
-                                        title={`Ubah warna dan huruf varian dari ${theme.parentTheme ?? "master"} di editor varian`}
-                                      >
-                                        Edit
-                                      </a>
-                                    ) : theme.builderSpec != null ? (
+                                    {theme.builderSpec != null ? (
                                       <a
                                         href={`/admin/theme-builder?id=${encodeURIComponent(theme.id)}`}
                                         className="px-3 py-1.5 bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 rounded-xl text-xs font-semibold transition inline-flex items-center gap-1"
@@ -2938,18 +2930,11 @@ export default function AdminPage() {
                                     ) : (
                                       <>
                                         <a
-                                          href={`/admin/theme-variants?master=${encodeURIComponent(theme.id)}`}
+                                          href={`/admin/master-editor?id=${encodeURIComponent(theme.id)}`}
                                           className="px-3 py-1.5 bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 rounded-xl text-xs font-semibold transition inline-flex items-center gap-1"
-                                          title="Sunting warna, huruf, gambar, seksi, dan CSS master ini di atas desain aslinya; berkas master tidak ditimpa"
+                                          title="Sunting warna, huruf, gambar, tata letak, seksi, dan CSS master ini di atas desain aslinya; berkas master tidak ditimpa"
                                         >
                                           Edit
-                                        </a>
-                                        <a
-                                          href={`/admin/theme-variants?parent=${encodeURIComponent(theme.id)}`}
-                                          className="px-3 py-1.5 bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 rounded-xl text-xs font-semibold transition inline-flex items-center gap-1"
-                                          title="Buat tema baru dari desain ini dengan warna dan huruf lain, tanpa mengubah master aslinya"
-                                        >
-                                          Buat Varian
                                         </a>
                                         <a
                                           href={`/admin/theme-builder?from=${encodeURIComponent(theme.id)}`}
@@ -3371,10 +3356,10 @@ export default function AdminPage() {
                   required
                 />
                 <p className="text-[10px] text-gray-500 mt-1">
-                  File HTML disimpan di <code className="font-mono text-gray-700 font-semibold">themes/{themeForm.eventType === "GATHERING" ? "general" : (themeForm.eventType || "wedding").toLowerCase()}/{themeForm.category}/{themeForm.id || "id"}.html</code>.{" "}
+                  File HTML disimpan di <code className="font-mono text-gray-700 font-semibold">themes/{(themeForm.eventType || "wedding").toLowerCase()}/{themeForm.category}/{themeForm.id || "id"}.html</code>.{" "}
                   <a
-                    href={`/downloads/starter-blueprint-${themeForm.eventType === "GATHERING" ? "general" : (themeForm.eventType || "wedding").toLowerCase()}.html`}
-                    download={`starter-blueprint-${themeForm.eventType === "GATHERING" ? "general" : (themeForm.eventType || "wedding").toLowerCase()}.html`}
+                    href={`/downloads/starter-blueprint-${(themeForm.eventType || "wedding").toLowerCase()}.html`}
+                    download={`starter-blueprint-${(themeForm.eventType || "wedding").toLowerCase()}.html`}
                     className="text-amber-700 font-bold hover:underline"
                   >
                     Unduh Starter Blueprint HTML ({themeForm.eventType || "WEDDING"})
@@ -3396,22 +3381,19 @@ export default function AdminPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-gray-800 mb-1">Tipe Acara</label>
+                  <label className="block text-xs font-bold text-gray-800 mb-1">Kategori Undangan</label>
                   <select
                     value={themeForm.eventType || "WEDDING"}
-                    onChange={(e) => setThemeForm({ ...themeForm, eventType: e.target.value })}
+                    onChange={(e) => setThemeForm({ ...themeForm, eventType: e.target.value, subEvent: e.target.value === "WEDDING" ? "" : themeForm.subEvent })}
                     className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 font-medium focus:outline-none focus:border-amber-500"
                   >
-                    <option value="WEDDING">Wedding</option>
-                    <option value="BIRTHDAY">Birthday</option>
-                    <option value="KHITAN">Khitan</option>
-                    <option value="AQIQAH">Aqiqah</option>
-                    <option value="WISUDA">Wisuda</option>
-                    <option value="GATHERING">Gathering</option>
+                    <option value="WEDDING">Pernikahan (2 Profil)</option>
+                    <option value="PERSONAL">Personal &amp; Keluarga (1 Profil)</option>
+                    <option value="EVENT">Acara &amp; Event Umum (Non-Personal)</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-800 mb-1">Kategori</label>
+                  <label className="block text-xs font-bold text-gray-800 mb-1">Gaya Desain</label>
                   <select
                     value={themeForm.category}
                     onChange={(e) => setThemeForm({ ...themeForm, category: e.target.value, series: e.target.value === "traditional" ? "Traditional" : e.target.value === "modern" ? "Modern" : "Minimalist" })}
@@ -3432,6 +3414,35 @@ export default function AdminPage() {
                   />
                 </div>
               </div>
+
+              {themeForm.eventType !== "WEDDING" && (
+                <div>
+                  <label className="block text-xs font-bold text-gray-800 mb-1">
+                    Sub-Acara / Tag Filter <span className="font-normal text-gray-400">(opsional, dinamis)</span>
+                  </label>
+                  <input
+                    type="text"
+                    list="admin-theme-sub-event-presets"
+                    value={themeForm.subEvent}
+                    onChange={(e) => setThemeForm({ ...themeForm, subEvent: e.target.value })}
+                    maxLength={50}
+                    placeholder={
+                      themeForm.eventType === "PERSONAL"
+                        ? "Contoh: Ulang Tahun, Khitanan, Aqiqah, Wisuda, Tamatan Ngaji..."
+                        : "Contoh: Corporate, Grand Opening, Seminar & Workshop, Gathering..."
+                    }
+                    className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500"
+                  />
+                  <datalist id="admin-theme-sub-event-presets">
+                    {(themeForm.eventType === "PERSONAL" ? PERSONAL_SUB_EVENT_PRESETS : EVENT_SUB_EVENT_PRESETS).map((p) => (
+                      <option key={p.id} value={p.id} />
+                    ))}
+                  </datalist>
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    Muncul sebagai chip filter otomatis di Katalog Demo &amp; Studio. Kosongkan bila tema bersifat umum.
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-bold text-gray-800 mb-1">Deskripsi Singkat</label>
@@ -3856,8 +3867,18 @@ export default function AdminPage() {
                             { slot: "background", label: "Background Global", file: "background.webp", allowVideo: true, desc: "Latar belakang fixed tema (Foto WebP/JPG atau Video Loop MP4)" },
                             { slot: "home", label: "Latar Home", file: "home.webp", allowVideo: false, desc: "Background khusus seksi Home (Opsional)" },
                             { slot: "footer", label: "Foto Footer", file: "footer.webp", allowVideo: false, desc: "Foto penutup di bagian akhir undangan (Opsional)" },
-                            { slot: "groom", label: "Mempelai Pria", file: "groom.webp", allowVideo: false, desc: "Foto profil pria" },
-                            { slot: "bride", label: "Mempelai Wanita", file: "bride.webp", allowVideo: false, desc: "Foto profil wanita" },
+                            ...((!demoStudioTheme?.eventType || demoStudioTheme?.eventType === "WEDDING")
+                              ? [
+                                  { slot: "groom", label: "Mempelai Pria", file: "groom.webp", allowVideo: false, desc: "Foto profil mempelai pria" },
+                                  { slot: "bride", label: "Mempelai Wanita", file: "bride.webp", allowVideo: false, desc: "Foto profil mempelai wanita" },
+                                ]
+                              : demoStudioTheme?.eventType === "PERSONAL"
+                              ? [
+                                  { slot: "profile", label: "Foto Profil Utama", file: "profile.webp", allowVideo: false, desc: "Foto tokoh utama personal & keluarga" },
+                                ]
+                              : [
+                                  { slot: "event", label: "Foto / Visual Utama Acara", file: "event.webp", allowVideo: false, desc: "Foto atau visual identitas acara" },
+                                ]),
                             { 
                               slot: "thumbnail_mobile", 
                               label: "Thumbnail Mobile (HP)", 
@@ -3889,6 +3910,8 @@ export default function AdminPage() {
                               item.slot === "footer" ? demoStudioData.footerPhotoUrl :
                               item.slot === "groom" ? demoStudioData.groomPhotoUrl :
                               item.slot === "bride" ? demoStudioData.bridePhotoUrl :
+                              item.slot === "profile" ? demoStudioData.personPhotoUrl :
+                              item.slot === "event" ? demoStudioData.eventPhotoUrl :
                               item.slot === "thumbnail_mobile" ? demoStudioData.thumbnailMobileUrl :
                               item.slot === "thumbnail_desktop" ? demoStudioData.thumbnailDesktopUrl : undefined
                             );
@@ -4507,7 +4530,7 @@ export default function AdminPage() {
                         </div>
                       </div>
 
-                      {/* Groom & Bride Info (Wedding) vs Persona Info (Non-Wedding) */}
+                      {/* 3-Mode Demo Profile: WEDDING vs PERSONAL vs EVENT */}
                       {(!demoStudioTheme?.eventType || demoStudioTheme?.eventType === "WEDDING") ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 p-4 bg-gray-50 border border-gray-200 rounded-2xl">
                           {/* Groom */}
@@ -4624,16 +4647,16 @@ export default function AdminPage() {
                             </div>
                           </div>
                         </div>
-                      ) : (
+                      ) : demoStudioTheme?.eventType === "PERSONAL" ? (
                         <div className="p-4 bg-gray-50 border border-gray-200 rounded-2xl space-y-4">
-                          <span className="text-xs font-bold text-amber-900 uppercase font-mono block">Profil Utama (Demo {demoStudioTheme.eventType})</span>
+                          <span className="text-xs font-bold text-amber-900 uppercase font-mono block">Profil Tokoh Utama (Demo PERSONAL)</span>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                               <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Panggilan</label>
                               <input
                                 type="text"
-                                value={demoStudioData.groomName || ""}
-                                onChange={(e) => setDemoStudioData({ ...demoStudioData, groomName: e.target.value })}
+                                value={demoStudioData.personNickname || ""}
+                                onChange={(e) => setDemoStudioData({ ...demoStudioData, personNickname: e.target.value })}
                                 placeholder="Farhan"
                                 className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
                               />
@@ -4642,29 +4665,55 @@ export default function AdminPage() {
                               <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Lengkap</label>
                               <input
                                 type="text"
-                                value={demoStudioData.groomDisplayName || ""}
-                                onChange={(e) => setDemoStudioData({ ...demoStudioData, groomDisplayName: e.target.value })}
+                                value={demoStudioData.personName || ""}
+                                onChange={(e) => setDemoStudioData({ ...demoStudioData, personName: e.target.value })}
                                 placeholder="Farhan Pratama"
                                 className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
                               />
                             </div>
                             <div>
-                              <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Ayah</label>
+                              <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Orang Tua (Opsional)</label>
                               <input
                                 type="text"
-                                value={demoStudioData.groomFather || ""}
-                                onChange={(e) => setDemoStudioData({ ...demoStudioData, groomFather: e.target.value })}
-                                placeholder="Bpk. Hendra"
+                                value={demoStudioData.parentName || ""}
+                                onChange={(e) => setDemoStudioData({ ...demoStudioData, parentName: e.target.value })}
+                                placeholder="Bpk. Hendra & Ibu Rina"
                                 className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
                               />
                             </div>
                             <div>
-                              <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Ibu</label>
+                              <label className="block text-[11px] font-bold text-gray-700 mb-1">Instagram (@)</label>
                               <input
                                 type="text"
-                                value={demoStudioData.groomMother || ""}
-                                onChange={(e) => setDemoStudioData({ ...demoStudioData, groomMother: e.target.value })}
-                                placeholder="Ibu Rina"
+                                value={demoStudioData.personInstagram || ""}
+                                onChange={(e) => setDemoStudioData({ ...demoStudioData, personInstagram: e.target.value })}
+                                placeholder="farhan.pratama"
+                                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-4 bg-gray-50 border border-gray-200 rounded-2xl space-y-4">
+                          <span className="text-xs font-bold text-amber-900 uppercase font-mono block">Identitas Acara (Demo EVENT)</span>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-[11px] font-bold text-gray-700 mb-1">Judul Acara</label>
+                              <input
+                                type="text"
+                                value={demoStudioData.eventTitle || ""}
+                                onChange={(e) => setDemoStudioData({ ...demoStudioData, eventTitle: e.target.value })}
+                                placeholder="Annual Gathering 2026"
+                                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-bold text-gray-700 mb-1">Subjudul / Penyelenggara</label>
+                              <input
+                                type="text"
+                                value={demoStudioData.eventSubtitle || ""}
+                                onChange={(e) => setDemoStudioData({ ...demoStudioData, eventSubtitle: e.target.value })}
+                                placeholder="PT Sinergi Nusantara"
                                 className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
                               />
                             </div>

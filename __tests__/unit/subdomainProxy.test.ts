@@ -164,4 +164,11 @@ describe("proxy: crawler, /payment, reserved partner, CSP, dan isolasi custom do
     expect(res.status).toBe(307);
     expect(res.headers.get("location")).toBe("http://localhost:3000/onboarding");
   });
+
+  it("/portfolio/<slug> diteruskan langsung ke route handler tanpa rewrite .html", async () => {
+    const res = await run("localhost:3000", "/portfolio/arif-nadia-221126");
+    expect(res.headers.get("location")).toBeNull();
+    expect(res.headers.get("x-middleware-rewrite")).toBeNull();
+    expect(res.headers.get("x-middleware-next")).toBe("1");
+  });
 });

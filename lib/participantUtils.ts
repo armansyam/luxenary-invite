@@ -24,10 +24,10 @@ export interface ParticipantNames {
 
 const trimmed = (value: unknown): string => (typeof value === "string" ? value.trim() : "");
 
-/** Tokoh utama acara satu nama di dalam objek peserta. */
-function singlePerson(eventType: string | null | undefined, p: Record<string, any>): { name: string; nickname: string } {
-  if (eventType === "GATHERING") return { name: trimmed(p.event?.title), nickname: trimmed(p.event?.title) };
-  const person = eventType === "KHITAN" ? p.child : eventType === "AQIQAH" ? p.baby : p.person;
+/** Ekstrak identitas utama untuk mode non-pernikahan (`PERSONAL`: `person`, `EVENT`: `event.title`). */
+function extractPrimaryParticipant(eventType: string | null | undefined, p: Record<string, any>): { name: string; nickname: string } {
+  if (eventType === "EVENT") return { name: trimmed(p.event?.title), nickname: trimmed(p.event?.title) };
+  const person = p.person;
   return { name: trimmed(person?.name), nickname: trimmed(person?.nickname) };
 }
 
@@ -43,7 +43,7 @@ export function participantNames(eventType: string | null | undefined, raw: unkn
       second: bride.nickname || bride.name,
     };
   }
-  const main = singlePerson(eventType, p);
+  const main = extractPrimaryParticipant(eventType, p);
   return { full: main.name, short: main.nickname || main.name, first: main.nickname || main.name, second: "" };
 }
 
