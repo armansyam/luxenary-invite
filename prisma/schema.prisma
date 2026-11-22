@@ -544,29 +544,32 @@ enum CommissionStatus {
 }
 
 model PartnerAffiliate {
-  id              String                @id @default(uuid())
-  name            String
-  phoneNumber     String?
-  email           String?
-  passwordHash    String?
-  sessionVersion  Int                   @default(0)
-  bankName        String?
-  accountNumber   String?
-  accountName     String?
-  commissionType  CommissionType        @default(PERCENT)
-  commissionValue Decimal               @db.Decimal(12, 2)
-  pendingBalance  Decimal               @default(0) @db.Decimal(12, 2)
-  totalPaidOut    Decimal               @default(0) @db.Decimal(12, 2)
-  isActive        Boolean               @default(true)
-  notes           String?
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
+  id                     String                  @id @default(uuid())
+  name                   String
+  /// Kategori vendor dinamis (mis. Wedding Organizer (WO), Fotografer, MUA, Venue, EO, atau kategori kustom dari Admin).
+  vendorCategory         String?                 @map("vendor_category")
+  phoneNumber            String?
+  email                  String?
+  passwordHash           String?
+  sessionVersion         Int                     @default(0)
+  bankName               String?
+  accountNumber          String?
+  accountName            String?
+  commissionType         CommissionType          @default(PERCENT)
+  commissionValue        Decimal                 @db.Decimal(12, 2)
+  pendingBalance         Decimal                 @default(0) @db.Decimal(12, 2)
+  totalPaidOut           Decimal                 @default(0) @db.Decimal(12, 2)
+  isActive               Boolean                 @default(true)
+  notes                  String?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
   coupons                PromoCoupon[]
   commissions            AffiliateCommission[]
   payoutExpenses         Expense[]
   provisionedClients     User[]                  @relation("PartnerProvisionedClients")
   clientActivationTokens ClientActivationToken[]
 
+  @@index([vendorCategory])
   @@map("partner_affiliates")
 }
 

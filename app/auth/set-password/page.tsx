@@ -340,7 +340,7 @@ function SetPasswordContent() {
               <h1 className="text-xl font-serif font-bold text-[#1e1c1a]">Tautan Aktivasi Kedaluwarsa</h1>
               <p className="text-xs text-stone-500 leading-relaxed">
                 Demi keamanan akun, tautan aktivasi hanya berlaku 48 jam. Silakan hubungi{" "}
-                <strong>{inspection.partnerName || "Mitra WO Anda"}</strong> agar mengirim ulang tautan aktivasi terbaru.
+                <strong>{inspection.partnerName || "Mitra Anda"}</strong> agar mengirim ulang tautan aktivasi terbaru.
               </p>
             </div>
             <Link
@@ -360,7 +360,7 @@ function SetPasswordContent() {
             <div className="space-y-1.5">
               <h1 className="text-xl font-serif font-bold text-[#1e1c1a]">Tautan Tidak Valid</h1>
               <p className="text-xs text-stone-500 leading-relaxed">
-                Tautan aktivasi tidak ditemukan atau sudah digantikan dengan tautan baru. Pastikan Anda membuka tautan terakhir dari email atau WhatsApp Mitra WO Anda.
+                Tautan aktivasi tidak ditemukan atau sudah digantikan dengan tautan baru. Pastikan Anda membuka tautan terakhir dari email atau WhatsApp Mitra Anda.
               </p>
             </div>
             <Link

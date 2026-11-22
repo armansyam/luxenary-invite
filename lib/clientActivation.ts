@@ -312,7 +312,7 @@ export async function consumeClientActivationTokenAndSetPassword(
       return {
         ok: false as const,
         reason: "EXPIRED" as const,
-        error: "Tautan aktivasi sudah kedaluwarsa (melebihi 48 jam). Hubungi Mitra WO Anda untuk mengirim ulang tautan baru.",
+        error: "Tautan aktivasi sudah kedaluwarsa (melebihi 48 jam). Hubungi Mitra Anda untuk mengirim ulang tautan baru.",
       };
     }
 

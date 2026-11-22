@@ -34,6 +34,7 @@ interface PartnerClientTransaction {
 interface PartnerInfo {
   id: string;
   name: string;
+  vendorCategory?: string | null;
   email: string | null;
   phoneNumber: string | null;
   bankName: string | null;
@@ -769,7 +770,7 @@ export default function PartnerPortalPage() {
               <BrandLogo size="md" />
             </div>
             <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-800">
-              Portal Mitra Reseller
+              Portal Mitra
             </p>
             <h1 className="text-2xl font-serif font-bold text-[#1e1c1a]">
               {authHeading}
@@ -1105,8 +1106,15 @@ export default function PartnerPortalPage() {
           <div className="flex items-center gap-3 min-w-0">
             <BrandLogo size="sm" />
             <div className="min-w-0">
-              <div className="text-xs font-bold text-stone-900 truncate">Portal Mitra Reseller</div>
-              <div className="text-[11px] text-stone-500 truncate">{partner.name}</div>
+              <div className="text-xs font-bold text-stone-900 truncate">Portal Mitra</div>
+              <div className="text-[11px] text-stone-500 truncate flex items-center gap-1.5">
+                <span className="truncate">{partner.name}</span>
+                {partner.vendorCategory && (
+                  <span className="px-1.5 py-0.5 rounded bg-stone-100 text-stone-600 text-[10px] font-semibold shrink-0">
+                    {partner.vendorCategory}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -1124,16 +1132,23 @@ export default function PartnerPortalPage() {
         {/* Partner Summary Header */}
         <section className="bg-white rounded-2xl border border-[#eadecf] p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
-            <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-amber-800">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-              <span>Mitra Resmi &middot; Potongan Harga Langsung</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-amber-800">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                <span>Mitra Resmi &middot; Potongan Harga Langsung</span>
+              </div>
+              {partner.vendorCategory && (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-stone-100 border border-stone-200 text-stone-700 text-[11px] font-semibold">
+                  {partner.vendorCategory}
+                </span>
+              )}
             </div>
             <h1 className="text-xl sm:text-2xl font-serif font-bold text-[#1e1c1a]">
               {partner.name}
             </h1>
             <p className="text-xs text-stone-500">
               Daftarkan klien dan pilih paket undangannya langsung di bawah ini dengan potongan{" "}
-              <strong className="text-stone-900">{discountRateLabel}</strong> dari harga resmi. Setelah Anda melunasi tagihan harga mitra, pengantin otomatis menerima tautan aktivasi 48 jam dan langsung masuk ke studio tanpa melihat harga modal WO.
+              <strong className="text-stone-900">{discountRateLabel}</strong> dari harga resmi. Setelah Anda melunasi tagihan harga mitra, pengantin otomatis menerima tautan aktivasi 48 jam dan langsung masuk ke studio tanpa melihat harga modal mitra.
             </p>
           </div>
 

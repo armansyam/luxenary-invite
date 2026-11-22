@@ -27,6 +27,61 @@ const EXT_TO_MIME: Record<string, string> = {
   ".pdf": "application/pdf",
 };
 const MAX_RECEIPT_BYTES = 5 * 1024 * 1024;
+const VENDOR_CATEGORIES_SETTING_KEY = "partner_vendor_categories";
+const DEFAULT_VENDOR_CATEGORIES = [
+  "Wedding Organizer (WO)",
+  "Event Organizer (EO)",
+  "Fotografer & Videografer",
+  "MUA & Busana",
+  "Venue & Gedung",
+  "Dekorasi",
+  "Catering",
+];
+
+function parseVendorCategoryList(raw: string | null | undefined, existingFromPartners: (string | null | undefined)[] = []): string[] {
+  const seen = new Map<string, string>();
+  const addUnique = (val: unknown) => {
+    if (typeof val !== "string") return;
+    const clean = val.trim().replace(/\s+/g, " ").slice(0, 60);
+    if (!clean) return;
+    const key = clean.toLowerCase();
+    if (!seen.has(key)) seen.set(key, clean);
+  };
+
+  let parsed: unknown[] = [];
+  if (raw) {
+    try {
+      const json = JSON.parse(raw);
+      if (Array.isArray(json)) parsed = json;
+    } catch {
+      parsed = [];
+    }
+  }
+
+  if (parsed.length > 0) {
+    parsed.forEach(addUnique);
+  } else {
+    DEFAULT_VENDOR_CATEGORIES.forEach(addUnique);
+  }
+  existingFromPartners.forEach(addUnique);
+  return Array.from(seen.values());
+}
+
+async function ensureVendorCategorySaved(rawCategory: string | null): Promise<string[]> {
+  const setting = await prisma.adminSetting.findUnique({ where: { key: VENDOR_CATEGORIES_SETTING_KEY } });
+  const current = parseVendorCategoryList(setting?.value);
+  const clean = typeof rawCategory === "string" ? rawCategory.trim().replace(/\s+/g, " ").slice(0, 60) : "";
+  if (clean && !current.some((c) => c.toLowerCase() === clean.toLowerCase())) {
+    const next = [...current, clean];
+    await prisma.adminSetting.upsert({
+      where: { key: VENDOR_CATEGORIES_SETTING_KEY },
+      update: { value: JSON.stringify(next) },
+      create: { key: VENDOR_CATEGORIES_SETTING_KEY, value: JSON.stringify(next) },
+    });
+    return next;
+  }
+  return current;
+}
 
 function maskAccountNumber(accountNumber: string | null): string | null {
   if (!accountNumber) return null;
@@ -90,8 +145,9 @@ export async function GET() {
   if (!guard.ok) return guard.response;
 
   try {
-    const [promoSetting, coupons, partners, commissions, payouts] = await Promise.all([
+    const [promoSetting, vendorCategoriesSetting, coupons, partners, commissions, payouts] = await Promise.all([
       prisma.adminSetting.findUnique({ where: { key: "promo_enabled" } }),
+      prisma.adminSetting.findUnique({ where: { key: VENDOR_CATEGORIES_SETTING_KEY } }),
       prisma.promoCoupon.findMany({
         orderBy: { createdAt: "desc" },
         include: {
@@ -146,8 +202,14 @@ export async function GET() {
       }),
     ]);
 
+    const vendorCategories = parseVendorCategoryList(
+      vendorCategoriesSetting?.value,
+      partners.map((p) => p.vendorCategory),
+    );
+
     return NextResponse.json({
       promoEnabled: promoSetting?.value === "true",
+      vendorCategories,
       coupons,
       partners: partners.map(sanitizePartner),
       commissions,
@@ -331,9 +393,19 @@ export async function POST(req: NextRequest) {
     // ─────────────────────────────────────────────────────────────
     // 3. KELOLA MITRA AFILIASI (CRUD)
     // ─────────────────────────────────────────────────────────────
+    if (action === "ADD_VENDOR_CATEGORY") {
+      const rawName = typeof body.name === "string" ? body.name.trim().replace(/\s+/g, " ") : "";
+      if (rawName.length < 2 || rawName.length > 60) {
+        return NextResponse.json({ error: "Nama kategori vendor harus 2–60 karakter." }, { status: 400 });
+      }
+      const vendorCategories = await ensureVendorCategorySaved(rawName);
+      return NextResponse.json({ success: true, category: rawName, vendorCategories });
+    }
+
     if (action === "CREATE_PARTNER") {
       const {
         name,
+        vendorCategory,
         phoneNumber,
         email,
         bankName,
@@ -348,12 +420,16 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Nama mitra wajib diisi" }, { status: 400 });
       }
 
-      const commissionError = commissionValue ? partnerCommissionError(commissionType, commissionValue) : "Nilai komisi tidak valid";
+      const commissionError = commissionValue ? partnerCommissionError(commissionType, commissionValue) : "Nilai potongan mitra tidak valid";
       if (commissionError) {
         return NextResponse.json({ error: commissionError }, { status: 400 });
       }
 
       const cleanEmail = typeof email === "string" && email.trim() ? email.trim().toLowerCase() : null;
+      const cleanCategory =
+        typeof vendorCategory === "string" && vendorCategory.trim()
+          ? vendorCategory.trim().replace(/\s+/g, " ").slice(0, 60)
+          : null;
       if (cleanEmail) {
         const dupEmail = await prisma.partnerAffiliate.findFirst({
           where: { email: { equals: cleanEmail, mode: "insensitive" } },
@@ -370,6 +446,7 @@ export async function POST(req: NextRequest) {
       const partner = await prisma.partnerAffiliate.create({
         data: {
           name: name.trim(),
+          vendorCategory: cleanCategory,
           phoneNumber: phoneNumber?.trim() || null,
           email: cleanEmail,
           bankName: bankName?.trim() || null,
@@ -382,13 +459,15 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      return NextResponse.json({ success: true, partner: sanitizePartner(partner) });
+      const vendorCategories = await ensureVendorCategorySaved(cleanCategory);
+      return NextResponse.json({ success: true, partner: sanitizePartner(partner), vendorCategories });
     }
 
     if (action === "UPDATE_PARTNER") {
       const {
         id,
         name,
+        vendorCategory,
         phoneNumber,
         email,
         bankName,
@@ -416,6 +495,10 @@ export async function POST(req: NextRequest) {
       }
 
       const cleanEmail = typeof email === "string" && email.trim() ? email.trim().toLowerCase() : null;
+      const cleanCategory =
+        typeof vendorCategory === "string" && vendorCategory.trim()
+          ? vendorCategory.trim().replace(/\s+/g, " ").slice(0, 60)
+          : null;
       if (cleanEmail) {
         const dupEmail = await prisma.partnerAffiliate.findFirst({
           where: {
@@ -439,6 +522,7 @@ export async function POST(req: NextRequest) {
         where: { id },
         data: {
           name: name?.trim(),
+          vendorCategory: cleanCategory,
           phoneNumber: phoneNumber?.trim() || null,
           email: cleanEmail,
           bankName: bankName?.trim() || null,
@@ -452,7 +536,8 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      return NextResponse.json({ success: true, partner: sanitizePartner(updated) });
+      const vendorCategories = await ensureVendorCategorySaved(cleanCategory);
+      return NextResponse.json({ success: true, partner: sanitizePartner(updated), vendorCategories });
     }
 
     if (action === "DELETE_PARTNER") {

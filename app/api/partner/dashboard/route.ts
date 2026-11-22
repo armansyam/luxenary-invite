@@ -29,6 +29,7 @@ export async function GET(req: NextRequest) {
       select: {
         id: true,
         name: true,
+        vendorCategory: true,
         email: true,
         phoneNumber: true,
         bankName: true,
@@ -211,6 +212,7 @@ export async function GET(req: NextRequest) {
         partner: {
           id: partner.id,
           name: partner.name,
+          vendorCategory: partner.vendorCategory,
           email: partner.email,
           phoneNumber: partner.phoneNumber,
           bankName: partner.bankName,

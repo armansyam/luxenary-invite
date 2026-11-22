@@ -6,6 +6,7 @@ import { getPlanDisplayName } from "@/lib/planUtils";
 interface PartnerAffiliate {
   id: string;
   name: string;
+  vendorCategory: string | null;
   phoneNumber: string | null;
   email: string | null;
   bankName: string | null;
@@ -118,6 +119,7 @@ export function AdminMarketingTab() {
   const [promoEnabled, setPromoEnabled] = useState<boolean>(false);
   const [coupons, setCoupons] = useState<PromoCoupon[]>([]);
   const [partners, setPartners] = useState<PartnerAffiliate[]>([]);
+  const [vendorCategories, setVendorCategories] = useState<string[]>([]);
   const [commissions, setCommissions] = useState<AffiliateCommission[]>([]);
   const [payouts, setPayouts] = useState<PartnerPayoutRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -136,6 +138,12 @@ export function AdminMarketingTab() {
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
+
+  // Dynamic vendor category adder (inside Partner modal)
+  const [showAddCategoryInput, setShowAddCategoryInput] = useState<boolean>(false);
+  const [newCategoryName, setNewCategoryName] = useState<string>("");
+  const [addingCategory, setAddingCategory] = useState<boolean>(false);
 
   // Modal states
   const [couponModalOpen, setCouponModalOpen] = useState<boolean>(false);
@@ -172,6 +180,7 @@ export function AdminMarketingTab() {
   // Form states - Partner
   const [partnerForm, setPartnerForm] = useState({
     name: "",
+    vendorCategory: "",
     phoneNumber: "",
     email: "",
     bankName: "",
@@ -201,6 +210,7 @@ export function AdminMarketingTab() {
       if (!res.ok) throw new Error(data.error || "Gagal memuat data pemasaran");
 
       setPromoEnabled(data.promoEnabled ?? false);
+      setVendorCategories(Array.isArray(data.vendorCategories) ? data.vendorCategories : []);
       setCoupons(data.coupons ?? []);
       setPartners(data.partners ?? []);
       setCommissions(data.commissions ?? []);
@@ -361,10 +371,13 @@ export function AdminMarketingTab() {
 
   // Open Create/Edit Partner Modal
   const openPartnerModal = (partner?: PartnerAffiliate) => {
+    setShowAddCategoryInput(false);
+    setNewCategoryName("");
     if (partner) {
       setEditingPartner(partner);
       setPartnerForm({
         name: partner.name,
+        vendorCategory: partner.vendorCategory || "",
         phoneNumber: partner.phoneNumber || "",
         email: partner.email || "",
         bankName: partner.bankName || "",
@@ -379,6 +392,7 @@ export function AdminMarketingTab() {
       setEditingPartner(null);
       setPartnerForm({
         name: "",
+        vendorCategory: "",
         phoneNumber: "",
         email: "",
         bankName: "",
@@ -393,6 +407,47 @@ export function AdminMarketingTab() {
     setPartnerModalOpen(true);
   };
 
+  // Add New Dynamic Vendor Category
+  const handleAddVendorCategory = async () => {
+    const clean = newCategoryName.trim().replace(/\s+/g, " ");
+    if (!clean) return;
+    setAddingCategory(true);
+    try {
+      const res = await fetch("/api/admin/marketing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "ADD_VENDOR_CATEGORY",
+          name: clean,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal menambahkan kategori vendor");
+
+      const updatedList: string[] = Array.isArray(data.vendorCategories)
+        ? data.vendorCategories
+        : Array.from(new Set([...vendorCategories, clean]));
+      const resolvedCategory =
+        updatedList.find((c) => c.toLowerCase() === clean.toLowerCase()) || clean;
+
+      setVendorCategories(updatedList);
+      setPartnerForm((prev) => ({ ...prev, vendorCategory: resolvedCategory }));
+      setNewCategoryName("");
+      setShowAddCategoryInput(false);
+      setActionFeedback({
+        type: "success",
+        message: `Kategori vendor "${resolvedCategory}" berhasil ditambahkan`,
+      });
+    } catch (err: any) {
+      setActionFeedback({
+        type: "error",
+        message: err.message || "Gagal menambahkan kategori vendor",
+      });
+    } finally {
+      setAddingCategory(false);
+    }
+  };
+
   // Submit Partner Form
   const handlePartnerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -401,6 +456,7 @@ export function AdminMarketingTab() {
       const payload: any = {
         action: editingPartner ? "UPDATE_PARTNER" : "CREATE_PARTNER",
         name: partnerForm.name.trim(),
+        vendorCategory: partnerForm.vendorCategory.trim() || null,
         phoneNumber: partnerForm.phoneNumber.trim() || null,
         email: partnerForm.email.trim() || null,
         bankName: partnerForm.bankName.trim() || null,
@@ -585,14 +641,24 @@ export function AdminMarketingTab() {
   }, [coupons, searchQuery]);
 
   const filteredPartners = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
     return partners.filter((p) => {
+      if (categoryFilter === "NONE") {
+        if (p.vendorCategory) return false;
+      } else if (categoryFilter !== "ALL") {
+        if ((p.vendorCategory || "").toLowerCase() !== categoryFilter.toLowerCase()) {
+          return false;
+        }
+      }
+      if (!q) return true;
       return (
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (p.phoneNumber && p.phoneNumber.includes(searchQuery)) ||
-        (p.email && p.email.toLowerCase().includes(searchQuery.toLowerCase()))
+        p.name.toLowerCase().includes(q) ||
+        (p.vendorCategory && p.vendorCategory.toLowerCase().includes(q)) ||
+        (p.phoneNumber && p.phoneNumber.includes(q)) ||
+        (p.email && p.email.toLowerCase().includes(q))
       );
     });
-  }, [partners, searchQuery]);
+  }, [partners, searchQuery, categoryFilter]);
 
   const filteredPayouts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -632,9 +698,9 @@ export function AdminMarketingTab() {
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Pemasaran &amp; Mitra Reseller</h2>
+          <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Pemasaran &amp; Mitra</h2>
           <p className="text-sm text-gray-500 mt-0.5">
-            Kelola kupon promo publik mandiri serta mitra WO dengan potongan harga langsung (tanpa utang komisi atau payout).
+            Kelola kupon promo publik mandiri serta mitra vendor dengan potongan harga langsung (tanpa utang komisi atau payout).
           </p>
         </div>
 
@@ -709,7 +775,7 @@ export function AdminMarketingTab() {
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-gray-200/80 shadow-xs">
-          <span className="text-xs font-semibold text-gray-500 block">Mitra WO Aktif</span>
+          <span className="text-xs font-semibold text-gray-500 block">Mitra Aktif</span>
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-2xl font-bold text-amber-600 font-mono">
               {stats.activePartnersCount}
@@ -746,14 +812,14 @@ export function AdminMarketingTab() {
           </button>
           <button
             type="button"
-            onClick={() => { setActiveSubTab("partners"); setSearchQuery(""); }}
+            onClick={() => { setActiveSubTab("partners"); setSearchQuery(""); setCategoryFilter("ALL"); }}
             className={`px-4 py-2 text-xs font-bold rounded-lg transition ${
               activeSubTab === "partners"
                 ? "bg-white text-gray-900 shadow-xs"
                 : "text-gray-600 hover:text-gray-900"
             }`}
           >
-            Mitra Reseller / WO ({partners.length})
+            Mitra ({partners.length})
           </button>
           {commissions.length > 0 && (
             <button
@@ -784,12 +850,30 @@ export function AdminMarketingTab() {
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Filter Kategori Vendor (Khusus Tab Mitra) */}
+          {activeSubTab === "partners" && (
+            <select
+              aria-label="Filter Kategori Vendor"
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="px-3 py-1.5 text-base sm:text-xs bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-amber-500 text-gray-700 font-medium"
+            >
+              <option value="ALL">Semua Kategori Vendor</option>
+              {vendorCategories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+              <option value="NONE">Tanpa Kategori</option>
+            </select>
+          )}
+
           {/* Search Input */}
           <div className="relative">
             <input
               type="text"
-              placeholder="Cari data..."
+              placeholder={activeSubTab === "partners" ? "Cari nama, kategori, email..." : "Cari data..."}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-8 pr-3 py-1.5 text-base sm:text-xs bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-amber-500 w-48 sm:w-60"
@@ -1004,14 +1088,15 @@ export function AdminMarketingTab() {
             </div>
           )}
 
-          {/* TAB 2: MITRA RESELLER / WO (POTONGAN LANGSUNG, ZERO PAYOUT) */}
+          {/* TAB 2: MITRA (POTONGAN LANGSUNG, ZERO PAYOUT) */}
           {activeSubTab === "partners" && (
             <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-xs">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs text-gray-600">
                   <thead className="bg-gray-50/80 border-b border-gray-200 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
                     <tr>
-                      <th className="py-3 px-4">Nama Mitra / WO</th>
+                      <th className="py-3 px-4">Nama Mitra</th>
+                      <th className="py-3 px-4">Kategori Vendor</th>
                       <th className="py-3 px-4">Kontak &amp; Login Portal</th>
                       <th className="py-3 px-4">Potongan Harga Mitra</th>
                       <th className="py-3 px-4">Klien Didaftarkan</th>
@@ -1022,8 +1107,10 @@ export function AdminMarketingTab() {
                   <tbody className="divide-y divide-gray-100">
                     {filteredPartners.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="py-8 text-center text-gray-400">
-                          Belum ada mitra WO yang terdaftar.
+                        <td colSpan={7} className="py-8 text-center text-gray-400">
+                          {partners.length === 0
+                            ? "Belum ada mitra yang terdaftar."
+                            : "Tidak ada mitra yang sesuai dengan pencarian atau filter kategori."}
                         </td>
                       </tr>
                     ) : (
@@ -1035,6 +1122,15 @@ export function AdminMarketingTab() {
                               <span className="text-[10px] text-gray-400 block mt-0.5 truncate max-w-xs" title={p.notes}>
                                 {p.notes}
                               </span>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            {p.vendorCategory ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-700 border border-stone-200 text-[11px] font-semibold">
+                                {p.vendorCategory}
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-gray-400 italic">Belum diatur</span>
                             )}
                           </td>
                           <td className="py-3.5 px-4 text-[11px]">
@@ -1464,7 +1560,7 @@ export function AdminMarketingTab() {
 
               {/* Catatan Kupon Promo Mandiri */}
               <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200/70 text-[11px] text-blue-900 leading-relaxed">
-                <strong>Kupon Promo Publik Mandiri:</strong> Kupon ini berlaku khusus untuk kampanye promo Luxvite dan otomatis diblokir pada akun klien Mitra WO (anti-stacking diskon ganda).
+                <strong>Kupon Promo Publik Mandiri:</strong> Kupon ini berlaku khusus untuk kampanye promo Luxvite dan otomatis diblokir pada akun klien Mitra (anti-stacking diskon ganda).
               </div>
 
               {/* Status Aktif */}
@@ -1509,7 +1605,7 @@ export function AdminMarketingTab() {
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-4">
               <h3 className="text-base font-bold text-gray-900">
-                {editingPartner ? "Edit Mitra WO / Reseller" : "Tambah Mitra WO / Reseller Baru"}
+                {editingPartner ? "Edit Mitra" : "Tambah Mitra Baru"}
               </h3>
               <button
                 type="button"
@@ -1524,15 +1620,84 @@ export function AdminMarketingTab() {
 
             <form onSubmit={handlePartnerSubmit} className="space-y-4 text-xs">
               <div>
-                <label className="font-bold text-gray-700 block mb-1">Nama Lengkap Mitra / WO *</label>
+                <label className="font-bold text-gray-700 block mb-1">Nama Lengkap Mitra *</label>
                 <input
                   type="text"
                   required
                   value={partnerForm.name}
                   onChange={(e) => setPartnerForm({ ...partnerForm, name: e.target.value })}
-                  placeholder="Contoh: Sanggar Rias Anggun / WO Berkah"
+                  placeholder="Contoh: Sanggar Rias Anggun / Berkah Wedding / Studio Cahaya"
                   className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white focus:outline-none focus:border-amber-500"
                 />
+              </div>
+
+              {/* Kategori Vendor Dinamis */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-gray-700">Kategori Vendor</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddCategoryInput((v) => !v);
+                      setNewCategoryName("");
+                    }}
+                    className="text-[11px] font-bold text-amber-700 hover:text-amber-800 hover:underline cursor-pointer"
+                  >
+                    {showAddCategoryInput ? "Tutup" : "+ Tambah Kategori Baru"}
+                  </button>
+                </div>
+                <select
+                  value={partnerForm.vendorCategory}
+                  onChange={(e) => setPartnerForm({ ...partnerForm, vendorCategory: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white focus:outline-none focus:border-amber-500"
+                >
+                  <option value="">-- Pilih Kategori Vendor (Opsional) --</option>
+                  {vendorCategories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                  {partnerForm.vendorCategory &&
+                    !vendorCategories.some(
+                      (c) => c.toLowerCase() === partnerForm.vendorCategory.toLowerCase(),
+                    ) && (
+                      <option value={partnerForm.vendorCategory}>
+                        {partnerForm.vendorCategory}
+                      </option>
+                    )}
+                </select>
+
+                {showAddCategoryInput && (
+                  <div className="mt-2 p-2.5 rounded-xl bg-stone-50 border border-stone-200 space-y-2">
+                    <span className="text-[10px] font-semibold text-stone-600 block">
+                      Tambah kategori vendor baru (otomatis tersimpan &amp; langsung dipilih):
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        maxLength={60}
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleAddVendorCategory();
+                          }
+                        }}
+                        placeholder="Misal: WO, MC, Florist, Souvenir, Band..."
+                        className="flex-1 px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs bg-white focus:outline-none focus:border-amber-500"
+                      />
+                      <button
+                        type="button"
+                        disabled={addingCategory || !newCategoryName.trim()}
+                        onClick={handleAddVendorCategory}
+                        className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold transition disabled:opacity-50 cursor-pointer shrink-0"
+                      >
+                        {addingCategory ? "Menyimpan..." : "Simpan"}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">

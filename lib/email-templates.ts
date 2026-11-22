@@ -1349,11 +1349,11 @@ export const EMAIL_TEMPLATE_CATALOG: EmailTemplateMeta[] = [
   },
   {
     key: "PARTNER_CLIENT_ACTIVATION",
-    name: "Aktivasi Akun Klien dari Mitra WO (Magic Link 48 Jam)",
+    name: "Aktivasi Akun Klien dari Mitra (Magic Link 48 Jam)",
     category: "SISTEM",
     badgeText: "Aktivasi Mitra",
-    description: "Email co-branded dikirim otomatis ke mempelai saat Mitra WO mendaftarkan akun klien baru dari Portal Mitra.",
-    triggerEvent: "Mitra WO mendaftarkan klien atau menekan Kirim Ulang Link Aktivasi di /partner",
+    description: "Email co-branded dikirim otomatis ke mempelai saat Mitra melunasi paket klien baru dari Portal Mitra.",
+    triggerEvent: "Paket klien yang didaftarkan Mitra lunas (PAID) atau Mitra menekan Kirim Ulang Link Aktivasi di /partner",
     recipientTarget: "Mempelai / Klien yang Didaftarkan Mitra",
     samplePayload: {
       recipientEmail: "nadia.bagas@gmail.com",
