@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
         where: { id: invitationId },
         data: { customDomain: null },
       });
-      invalidateInvitationLookup(invitation.invitationSlug, invitation.subdomain, invitation.id);
+      invalidateInvitationLookup(invitation.invitationSlug, invitation.subdomain, invitation.id, previousDomain);
       if (previousDomain) {
         await purgeInvitationEdgeCache({ ...invitation, customDomain: previousDomain });
       }
@@ -131,11 +131,15 @@ export async function POST(req: NextRequest) {
     }
 
     // 5. Simpan domain langsung ke undangan (Gratis tanpa invoice/pembayaran)
+    const previousDomain = invitation.customDomain;
     await prisma.invitation.update({
       where: { id: invitationId },
       data: { customDomain: cleanDomain },
     });
-    invalidateInvitationLookup(invitation.invitationSlug, invitation.subdomain, invitation.id);
+    if (previousDomain && previousDomain !== cleanDomain) {
+      invalidateInvitationLookup(invitation.invitationSlug, invitation.subdomain, invitation.id, previousDomain);
+    }
+    invalidateInvitationLookup(invitation.invitationSlug, invitation.subdomain, invitation.id, cleanDomain);
     await purgeInvitationEdgeCache({ ...invitation, customDomain: cleanDomain });
 
     return NextResponse.json({

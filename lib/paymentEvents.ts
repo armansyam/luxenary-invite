@@ -1,4 +1,5 @@
 import { EventEmitter } from "events";
+import { randomUUID } from "crypto";
 import { Client } from "pg";
 import { pool } from "./prisma";
 import { logger } from "./logger";
@@ -24,18 +25,26 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 const PG_CHANNEL = "payment_events";
+const INSTANCE_ID = randomUUID();
 
 interface PaymentEventPayload {
   status: string;
   planType?: string;
   rejectReason?: string;
   _fromPg?: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 let isSubscribing = false;
 
-function setupPgSubscriber() {
+function scheduleReconnect() {
+  const timer = setTimeout(setupPgSubscriber, 5000);
+  timer.unref?.();
+}
+
+export function setupPgSubscriber() {
+  if (typeof window !== "undefined") return;
+  if (process.env.NEXT_PHASE === "phase-production-build") return;
   if (global.pgSubscriberClient || isSubscribing) return;
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) return;
@@ -52,7 +61,8 @@ function setupPgSubscriber() {
       client.on("notification", (msg) => {
         if (msg.channel !== PG_CHANNEL || !msg.payload) return;
         try {
-          const { orderId, data } = JSON.parse(msg.payload);
+          const { origin, orderId, data } = JSON.parse(msg.payload);
+          if (origin && origin === INSTANCE_ID) return;
           if (orderId && data) {
             // Emit secara lokal di instance ini dengan flag _fromPg agar tidak re-broadcast
             originalEmit(orderId, { ...data, _fromPg: true });
@@ -66,13 +76,13 @@ function setupPgSubscriber() {
         logger.error("PaymentEvents", "Subscriber PostgreSQL terputus; menyambung ulang dalam 5 detik", err);
         global.pgSubscriberClient = undefined;
         isSubscribing = false;
-        setTimeout(setupPgSubscriber, 5000);
+        scheduleReconnect();
       });
 
       client.on("end", () => {
         global.pgSubscriberClient = undefined;
         isSubscribing = false;
-        setTimeout(setupPgSubscriber, 5000);
+        scheduleReconnect();
       });
 
       await client.query(`LISTEN ${PG_CHANNEL}`);
@@ -80,13 +90,8 @@ function setupPgSubscriber() {
     .catch((err) => {
       isSubscribing = false;
       logger.error("PaymentEvents", "Subscriber PostgreSQL gagal tersambung; mencoba ulang dalam 5 detik", err);
-      setTimeout(setupPgSubscriber, 5000);
+      scheduleReconnect();
     });
-}
-
-// Inisialisasi otomatis di lingkungan server Node.js
-if (typeof window === "undefined") {
-  setupPgSubscriber();
 }
 
 /**
@@ -94,18 +99,31 @@ if (typeof window === "undefined") {
  */
 async function broadcastToPostgres(orderId: string, data: PaymentEventPayload) {
   try {
-    const payload = JSON.stringify({ orderId, data });
+    const payload = JSON.stringify({ origin: INSTANCE_ID, orderId, data });
     await pool.query("SELECT pg_notify($1, $2)", [PG_CHANNEL, payload]);
   } catch (err) {
     logger.error("PaymentEvents", "Gagal menyiarkan notifikasi pembayaran lintas instance", err);
   }
 }
 
-// Simpan referensi emit bawaan
+// Simpan referensi bawaan
 const originalEmit = paymentEmitter.emit.bind(paymentEmitter);
+const originalOn = paymentEmitter.on.bind(paymentEmitter);
+const originalOnce = paymentEmitter.once.bind(paymentEmitter);
+
+// Aktifkan bridge LISTEN secara malas (lazy) saat listener SSE pertama dipasang agar tidak membuka koneksi saat `next build`
+paymentEmitter.on = function (event: string | symbol, listener: (...args: unknown[]) => void) {
+  setupPgSubscriber();
+  return originalOn(event, listener);
+};
+
+paymentEmitter.once = function (event: string | symbol, listener: (...args: unknown[]) => void) {
+  setupPgSubscriber();
+  return originalOnce(event, listener);
+};
 
 // Intersep emit untuk otomatis broadcast cross-process jika bukan berasal dari PG
-paymentEmitter.emit = function (event: string | symbol, ...args: any[]): boolean {
+paymentEmitter.emit = function (event: string | symbol, ...args: unknown[]): boolean {
   const data = args[0] as PaymentEventPayload | undefined;
 
   if (typeof event === "string" && (!data || !data._fromPg)) {

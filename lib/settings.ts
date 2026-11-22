@@ -48,6 +48,8 @@ export interface PublicPlatformSettings {
   galleryRetentionDays: number;
   archiveRetentionDays: number;
   customDomainRetentionDays: number;
+  freeDraftRetentionDays: number;
+  freeDraftMaxPhotos: number;
   galleryExtensionPricePerMonth: number;
   customDomainEnabled: boolean;
   enabledEventTypes: string[];
@@ -306,6 +308,11 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     galleryRetentionDays: lifecycle.galleryRetentionDays,
     archiveRetentionDays: lifecycle.archiveRetentionDays,
     customDomainRetentionDays: lifecycle.customDomainRetentionDays,
+    freeDraftRetentionDays: lifecycle.freeDraftRetentionDays,
+    freeDraftMaxPhotos: (() => {
+      const parsed = Number.parseInt(map["free_draft_max_photos"] || "", 10);
+      return Number.isFinite(parsed) && parsed >= 1 ? parsed : 3;
+    })(),
     galleryExtensionPricePerMonth: Number(map["gallery_extension_price_per_month"] || 50000),
     customDomainEnabled: map["custom_domain_enabled"] !== "false",
     enabledEventTypes: parseEnabledEventTypes(map["enabled_event_types"]),

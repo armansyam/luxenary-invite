@@ -504,7 +504,7 @@ export default function AdminInvitationsTab() {
                                 {inv.isFreeDraft ? "Draf Gratis (Trial)" : "Draft"}
                               </div>
                               <div className="text-[10px] text-stone-400">
-                                {inv.isFreeDraft ? "Uji Coba 14 Hari — Belum Bayar" : "Penyusunan Klien"}
+                                {inv.isFreeDraft ? `Uji Coba ${lifecycleSettings.freeDraftRetentionDays} Hari — Belum Bayar` : "Penyusunan Klien"}
                               </div>
                             </div>
                           </div>

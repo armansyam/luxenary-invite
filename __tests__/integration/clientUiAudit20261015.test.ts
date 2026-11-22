@@ -129,7 +129,14 @@ describe.skipIf(!IS_TEST_DB)("deskripsi tema di wizard setup", () => {
 
 describe("pengaturan admin konsisten dengan server", () => {
   it("subjudul harga tidak lagi memakai teks masa simpan yang tertanam, dan kartu ambang notifikasi memakai grupnya sendiri", () => {
-    const src = fs.readFileSync(path.join(process.cwd(), "components/admin/AdminSettingsTab.tsx"), "utf-8");
+    const src = [
+      "components/admin/AdminSettingsTab.tsx",
+      "components/admin/settings/types.ts",
+      "components/admin/settings/AdminFinanceSettings.tsx",
+      "components/admin/settings/AdminPricingSettings.tsx",
+      "components/admin/settings/AdminIntegrationsSettings.tsx",
+      "components/admin/settings/AdminOperationalSettings.tsx",
+    ].map((rel) => fs.readFileSync(path.join(process.cwd(), rel), "utf-8")).join("\n");
     expect(src).not.toContain("masa aktif undangan 1 tahun (archive), penyimpanan galeri foto tamu 30 hari");
     expect(src).toContain('saveSettings(["memories_notify_milestones"], setSavingMemoriesMilestones, "memories_milestones")');
     expect(src).not.toContain("Terkonfigurasi di .env");
@@ -152,7 +159,11 @@ describe("masa berlaku kupon promo", () => {
   });
 
   it("form kupon tidak lagi memakai nama paket bawaan yang tertanam", () => {
-    const src = fs.readFileSync(path.join(process.cwd(), "components/admin/AdminMarketingTab.tsx"), "utf-8");
+    const src = [
+      "components/admin/AdminMarketingTab.tsx",
+      "components/admin/marketing/MarketingTables.tsx",
+      "components/admin/marketing/MarketingModals.tsx",
+    ].map((rel) => fs.readFileSync(path.join(process.cwd(), rel), "utf-8")).join("\n");
     for (const name of ["Serenade", "Symphony", "Eternity"]) expect(src).not.toContain(name);
   });
 });

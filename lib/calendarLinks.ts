@@ -1,4 +1,5 @@
 import { escapeHtml } from "@/lib/escapeHtml";
+import { getApexRootDomain } from "@/lib/domainUtils";
 import { buildGoogleCalendarUrl } from "@/lib/invitationUtils";
 import { getLocaleDict, type InvitationLocale } from "@/lib/themeEngine/locale";
 
@@ -80,6 +81,7 @@ export function buildIcsCalendar(
   slug = "undangan",
 ): string {
   const safeSlug = String(slug || "undangan").replace(/[^a-zA-Z0-9._-]/g, "-");
+  const uidDomain = getApexRootDomain().split(":")[0].replace(/[^a-zA-Z0-9.-]/g, "") || "invite.local";
   const dtStamp = formatIcsUtcStamp(new Date());
   const vevents: string[] = [];
 
@@ -94,7 +96,7 @@ export function buildIcsCalendar(
 
     const lines = [
       "BEGIN:VEVENT",
-      `UID:${safeSlug}-session-${idx}@luxvite.id`,
+      `UID:${safeSlug}-session-${idx}@${uidDomain}`,
       `DTSTAMP:${dtStamp}`,
       win.allDay ? `DTSTART;VALUE=DATE:${formatIcsDateOnly(win.startDate)}` : `DTSTART:${formatIcsUtcStamp(win.startDate)}`,
       win.allDay ? `DTEND;VALUE=DATE:${formatIcsDateOnly(win.endDate)}` : `DTEND:${formatIcsUtcStamp(win.endDate)}`,

@@ -535,6 +535,22 @@ export const defaultSettings: DefaultSettingItem[] = [
     "updatedAt": "2026-09-16T06:28:33.048Z"
   },
   {
+    "id": "retention_free_draft_days",
+    "key": "retention_free_draft_days",
+    "value": "14",
+    "label": "Masa Aktif Uji Coba Draf Gratis (Hari)",
+    "group": "setup",
+    "updatedAt": "2026-11-22T00:00:00.000Z"
+  },
+  {
+    "id": "free_draft_max_photos",
+    "key": "free_draft_max_photos",
+    "value": "3",
+    "label": "Batas Maksimal Foto Draf Gratis",
+    "group": "setup",
+    "updatedAt": "2026-11-22T00:00:00.000Z"
+  },
+  {
     "id": "854e5478-1300-408e-a8fc-f29b46d7a220",
     "key": "retention_order_days",
     "value": "90",

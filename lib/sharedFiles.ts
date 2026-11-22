@@ -153,7 +153,14 @@ interface SharedRow {
 }
 
 async function applyRow(store: SharedStore, row: Pick<SharedRow, "path" | "deleted">): Promise<void> {
-  const target = path.join(process.cwd(), ...row.path.split("/"));
+  const segments = row.path.split("/");
+  if (
+    !SHARED_ROOTS.some((root) => row.path === root || row.path.startsWith(`${root}/`)) ||
+    segments.some((seg) => !seg || seg === "." || seg === "..")
+  ) {
+    throw new Error(`Path berkas bersama tidak valid: ${row.path}`);
+  }
+  const target = path.join(/*turbopackIgnore: true*/ process.cwd(), ...segments);
   if (row.deleted) {
     await fs.promises.rm(target, { force: true });
   } else {

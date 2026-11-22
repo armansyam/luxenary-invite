@@ -74,7 +74,6 @@ export async function GET(req: NextRequest) {
           email: true,
           role: true,
           phoneNumber: true,
-          avatarUrl: true,
           createdAt: true,
           orders: {
             where: { status: "PAID" },

@@ -8,6 +8,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 import { escapeHtml } from "./escapeHtml";
+import { resolvePublicAppOrigin } from "./domainUtils";
 
 export interface InvoiceEmailOptions {
   orderId: string;
@@ -1197,7 +1198,7 @@ export const EMAIL_TEMPLATE_CATALOG: EmailTemplateMeta[] = [
     triggerEvent: "Admin mengklik 'Kirim Email Uji Coba' pada pengaturan SMTP",
     recipientTarget: "Administrator",
     samplePayload: {
-      fromName: "Luxenary Undangan",
+      fromName: "Platform Undangan",
       smtpHost: "smtp.gmail.com",
       port: 587,
       isSecure: false,
@@ -1206,7 +1207,7 @@ export const EMAIL_TEMPLATE_CATALOG: EmailTemplateMeta[] = [
     },
     render: (overrides = {}) => {
       const merged = {
-        fromName: "Luxenary Undangan",
+        fromName: "Platform Undangan",
         smtpHost: "smtp.gmail.com",
         port: 587,
         isSecure: false,
@@ -1359,7 +1360,7 @@ export const EMAIL_TEMPLATE_CATALOG: EmailTemplateMeta[] = [
       recipientEmail: "nadia.bagas@gmail.com",
       clientName: "Nadia & Bagas",
       partnerName: "WO Berkah Abadi",
-      activationUrl: "https://luxvite.id/auth/set-password?token=contoh-token-aktivasi-48-jam",
+      activationUrl: `${resolvePublicAppOrigin()}/auth/set-password?token=contoh-token-aktivasi-48-jam`,
       expiresHours: 48,
     },
     render: (overrides = {}, settings = {}) =>
@@ -1368,7 +1369,7 @@ export const EMAIL_TEMPLATE_CATALOG: EmailTemplateMeta[] = [
           recipientEmail: "nadia.bagas@gmail.com",
           clientName: "Nadia & Bagas",
           partnerName: "WO Berkah Abadi",
-          activationUrl: "https://luxvite.id/auth/set-password?token=contoh-token-aktivasi-48-jam",
+          activationUrl: `${resolvePublicAppOrigin()}/auth/set-password?token=contoh-token-aktivasi-48-jam`,
           expiresHours: 48,
           ...overrides,
         },

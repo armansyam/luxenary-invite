@@ -10,6 +10,7 @@ import { escapeHtml } from "@/lib/escapeHtml";
 import { logger } from "@/lib/logger";
 import { bumpRenderVersion, currentRenderVersion, publishedVersionKey, splitVersionMarker, withVersionMarker, writeFileAtomic } from "@/lib/renderVersion";
 import { syncSharedFiles } from "@/lib/sharedFiles";
+import { resolvePublicAppOrigin } from "@/lib/domainUtils";
 
 const PUBLISHED_DIR = path.join(process.cwd(), "public", "published");
 const publishedPath = (invitationId: string) => path.join(PUBLISHED_DIR, "ids", `${invitationId}.html`);
@@ -81,7 +82,7 @@ export async function renderPublishedHtml(
   // Sebelumnya unggahan terbaru yang menang, sehingga pratinjau WhatsApp bergantung pada urutan unggah klien.
   const coverMedia = ogSlotPriority.map((slot) => ogCandidates.find((m) => m.mediaSlot === slot)).find(Boolean);
   
-  const siteOrigin = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
+  const siteOrigin = resolvePublicAppOrigin();
   const platformName = await getAdminSetting("platform_name", "Platform Undangan");
   const rawImage = coverMedia?.localPath || (data as any).landingCoverUrl || (data as any).sidebarPhotoUrl || (data as any).heroPhotoUrl || "/assets/brand/og-banner.jpg";
   const absoluteImageUrl = rawImage.startsWith("http") ? rawImage : `${siteOrigin}${rawImage.startsWith("/") ? "" : "/"}${rawImage}`;

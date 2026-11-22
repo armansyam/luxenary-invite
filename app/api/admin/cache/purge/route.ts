@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdminModule } from "@/lib/adminAuth";
 import { revalidatePath } from "next/cache";
 import { purgeCloudflareCache } from "@/lib/cloudflare";
+import { forwardException } from "@/lib/errorTracker";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -20,8 +22,10 @@ export async function POST(req: NextRequest) {
     revalidatePath("/demo");
     revalidatePath("/api/public/themes");
     results.nextjs = { success: true, paths: ["/", "/sitemap.xml", "/packages", "/demo", "/api/public/themes"] };
-  } catch (err: any) {
-    results.nextjs = { success: false, error: err.message };
+  } catch (err) {
+    logger.error("AdminCachePurge", "Gagal membersihkan ISR cache Next.js", err);
+    forwardException(err, { tags: { route: "AdminCachePurge" } });
+    results.nextjs = { success: false, error: err instanceof Error ? err.message : "Gagal membersihkan cache." };
   }
 
   // ── 2. Purge Cloudflare Edge Cache (opsional, hanya jika env tersedia) ──

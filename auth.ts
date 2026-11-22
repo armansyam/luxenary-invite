@@ -124,8 +124,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // null mengakhiri sesi. Tanpa ini JWT lama (default 30 hari) tetap membawa isAdmin dan role dari saat login.
       // Token tanpa `sv` (terbit sebelum kolom ada) tidak cocok dan berakhir sekali.
       if (!user && (token as any).isAdmin && token.id) {
-        const admin = await prisma.admin.findUnique({ where: { id: token.id as string }, select: { id: true, sessionVersion: true } });
+        const admin = await prisma.admin.findUnique({
+          where: { id: token.id as string },
+          select: { id: true, sessionVersion: true, role: true, permissions: true },
+        });
         if (!admin || admin.sessionVersion !== token.sv) return null;
+        // Sinkronkan role dan permissions terbaru di sini agar callback session() tidak perlu query DB kedua.
+        (token as any).role = admin.role;
+        (token as any).permissions = admin.permissions || [];
       }
       // Klien yang dihapus admin atau yang kata sandinya telah diatur ulang diakhiri sesinya pada perangkat lama.
       if (!user && !(token as any).isAdmin && (token.id || token.email)) {
@@ -136,13 +142,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               ...(token.email ? [{ email: token.email.toLowerCase().trim() }] : []),
             ],
           },
-          select: { id: true, passwordHash: true },
+          select: { id: true, role: true, passwordHash: true },
         });
         if (!client) return null;
         const currentPwdTag = clientPasswordTag(client.passwordHash);
         if ((token as any).pwdTag !== undefined && (token as any).pwdTag !== currentPwdTag) {
           return null;
         }
+        token.id = client.id;
+        (token as any).role = client.role || "CLIENT";
         (token as any).pwdTag = currentPwdTag;
       }
       if (user) {
@@ -157,52 +165,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async session({ session, token }) {
       if (session.user && token) {
+        // role, permissions, dan id sudah disinkronkan dari DB di callback jwt() pada request yang sama.
         (session.user as any).id = token.id || token.sub;
         (session.user as any).role = (token as any).role || "CLIENT";
         (session.user as any).isAdmin = (token as any).isAdmin || false;
         (session.user as any).permissions = (token as any).permissions || [];
-
-        // Untuk akun Admin: Sinkronkan role dan permissions terbaru dari database agar perubahan instan
-        if ((token as any).isAdmin && (token.id || (session.user as any).id)) {
-          try {
-            const { prisma } = await import("@/lib/prisma");
-            const adminId = (token.id || (session.user as any).id) as string;
-            const dbAdmin = await prisma.admin.findUnique({
-              where: { id: adminId },
-              select: { role: true, permissions: true },
-            });
-            if (dbAdmin) {
-              (session.user as any).role = dbAdmin.role;
-              (session.user as any).permissions = dbAdmin.permissions || [];
-            }
-          } catch (err) {
-            console.error("Gagal sinkronisasi admin permissions:", err);
-          }
-        }
-
-        // Untuk akun klien: Pastikan session.user.id selalu tersinkronisasi faktual dengan tabel User di database
-        if (!(token as any).isAdmin && session.user.email) {
-          try {
-            const { prisma } = await import("@/lib/prisma");
-            const cleanEmail = session.user.email.toLowerCase().trim();
-            const dbUser = await prisma.user.findFirst({
-              where: {
-                OR: [
-                  ...(token.id ? [{ id: token.id as string }] : []),
-                  { email: cleanEmail },
-                ],
-              },
-              select: { id: true, role: true, email: true },
-            });
-
-            if (dbUser) {
-              (session.user as any).id = dbUser.id;
-              (session.user as any).role = dbUser.role || "CLIENT";
-            }
-          } catch (err) {
-            console.error("Gagal sinkronisasi session user dengan database:", err);
-          }
-        }
       }
 
       // Mode Remote Admin: workspace diganti ke klien hanya bila cookie bertanda tangan milik admin ini dan admin masih

@@ -93,6 +93,15 @@ describe.skipIf(!IS_TEST_DB)("constraint skema database", () => {
       );
       expect(rows).toHaveLength(0);
     });
+
+    it("kolom warisan/duplikat sudah dibersihkan dari users dan invitations", async () => {
+      const { rows } = await pool.query(
+        `SELECT table_name, column_name FROM information_schema.columns
+         WHERE (table_name = 'users' AND column_name IN ('googleId', 'avatarUrl'))
+            OR (table_name = 'invitations' AND column_name = 'liveStreamUrl')`
+      );
+      expect(rows).toHaveLength(0);
+    });
   });
 
   describe("CHECK angka dan rentang", () => {

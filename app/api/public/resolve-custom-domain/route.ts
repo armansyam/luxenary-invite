@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { computeLifecycleDates } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { hasPlanCapability } from "@/lib/settings";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
@@ -17,62 +18,66 @@ export const dynamic = "force-dynamic";
  *   { error: "..." }                  → jika domain tidak ditemukan / tidak aktif
  */
 export async function GET(req: NextRequest) {
-  const host = req.nextUrl.searchParams.get("host") || req.nextUrl.searchParams.get("domain");
+  try {
+    const host = req.nextUrl.searchParams.get("host") || req.nextUrl.searchParams.get("domain");
 
-  if (!host) {
-    return NextResponse.json({ error: "Parameter host atau domain wajib disertakan." }, { status: 400 });
-  }
-
-  const cleanHost = host.toLowerCase().trim();
-  const hostWithoutWww = cleanHost.replace(/^www\./, "");
-  const hostWithWww = cleanHost.startsWith("www.") ? cleanHost : `www.${cleanHost}`;
-
-  const invitation = await prisma.invitation.findFirst({
-    where: {
-      OR: [
-        { customDomain: cleanHost },
-        { customDomain: hostWithoutWww },
-        { customDomain: hostWithWww },
-      ],
-      status: { in: ["DRAFT", "PUBLISHED", "EVENT_FINISHED", "ARCHIVED"] },
-    },
-    select: {
-      subdomain: true,
-      status: true,
-      invitationSlug: true,
-      eventData: true,
-      order: {
-        select: { planType: true },
-      },
-    },
-  });
-
-  if (!invitation || !invitation.invitationSlug) {
-    return NextResponse.json({ error: "Domain tidak terdaftar atau undangan belum aktif." }, { status: 404 });
-  }
-
-  // Custom domain mengikuti gerbang slug selama retention_custom_domain_days sejak acara utama
-  const lifecycle = computeLifecycleDates({ eventData: invitation.eventData }, await getLifecycleSettings());
-  if (lifecycle && Date.now() > lifecycle.customDomainExpiresAt.getTime()) {
-    return NextResponse.json({ error: "Masa aktif custom domain telah berakhir." }, { status: 404 });
-  }
-
-  const canAccessMemories =
-    invitation.status === "EVENT_FINISHED"
-      ? await hasPlanCapability(invitation.order?.planType, "guest_memories")
-      : true;
-
-  return NextResponse.json(
-    {
-      subdomain: invitation.subdomain, // Masih dikirim untuk backward compatibility jika diperlukan
-      status: invitation.status,
-      slug: invitation.invitationSlug,
-      canAccessMemories,
-    },
-    {
-      headers: {
-        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=30",
-      },
+    if (!host) {
+      return NextResponse.json({ error: "Parameter host atau domain wajib disertakan." }, { status: 400 });
     }
-  );
+
+    const cleanHost = host.toLowerCase().trim();
+    const hostWithoutWww = cleanHost.replace(/^www\./, "");
+    const hostWithWww = cleanHost.startsWith("www.") ? cleanHost : `www.${cleanHost}`;
+
+    const invitation = await prisma.invitation.findFirst({
+      where: {
+        OR: [
+          { customDomain: cleanHost },
+          { customDomain: hostWithoutWww },
+          { customDomain: hostWithWww },
+        ],
+        status: { in: ["DRAFT", "PUBLISHED", "EVENT_FINISHED", "ARCHIVED"] },
+      },
+      select: {
+        subdomain: true,
+        status: true,
+        invitationSlug: true,
+        eventData: true,
+        order: {
+          select: { planType: true },
+        },
+      },
+    });
+
+    if (!invitation || !invitation.invitationSlug) {
+      return NextResponse.json({ error: "Domain tidak terdaftar atau undangan belum aktif." }, { status: 404 });
+    }
+
+    // Custom domain mengikuti gerbang slug selama retention_custom_domain_days sejak acara utama
+    const lifecycle = computeLifecycleDates({ eventData: invitation.eventData }, await getLifecycleSettings());
+    if (lifecycle && Date.now() > lifecycle.customDomainExpiresAt.getTime()) {
+      return NextResponse.json({ error: "Masa aktif custom domain telah berakhir." }, { status: 404 });
+    }
+
+    const canAccessMemories =
+      invitation.status === "EVENT_FINISHED"
+        ? await hasPlanCapability(invitation.order?.planType, "guest_memories")
+        : true;
+
+    return NextResponse.json(
+      {
+        subdomain: invitation.subdomain, // Masih dikirim untuk backward compatibility jika diperlukan
+        status: invitation.status,
+        slug: invitation.invitationSlug,
+        canAccessMemories,
+      },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=30",
+        },
+      }
+    );
+  } catch (err) {
+    return routeError("ResolveCustomDomain", err, "Gagal memeriksa custom domain.");
+  }
 }

@@ -2,57 +2,62 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { decryptPin } from "@/lib/pinEncryption";
+import { routeError } from "@/lib/routeError";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  try {
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-  if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
-  }
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
 
-  const invitations = await prisma.invitation.findMany({
-    where: { userId: user.id },
-    select: {
-      id: true,
-      invitationSlug: true,
-      eventType: true,
-      subEvent: true,
-      participantsJson: true,
-      themeId: true,
-      status: true,
-      isFreeDraft: true,
-      subdomain: true,
-      eventData: true,
-      staffPin: true,
-      customDomain: true,
-      featureSettings: true,
-      galleryExpiresAt: true,
-      extraGalleryDays: true,
-      memoriesUploadLocked: true,
-      createdAt: true,
-      order: {
-        select: { planType: true },
+    const invitations = await prisma.invitation.findMany({
+      where: { userId: user.id },
+      select: {
+        id: true,
+        invitationSlug: true,
+        eventType: true,
+        subEvent: true,
+        participantsJson: true,
+        themeId: true,
+        status: true,
+        isFreeDraft: true,
+        subdomain: true,
+        eventData: true,
+        staffPin: true,
+        customDomain: true,
+        featureSettings: true,
+        galleryExpiresAt: true,
+        extraGalleryDays: true,
+        memoriesUploadLocked: true,
+        createdAt: true,
+        order: {
+          select: { planType: true },
+        },
       },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+      orderBy: { createdAt: "desc" },
+    });
 
-  const mapped = invitations.map((inv) => ({
-    ...inv,
-    staffPin: inv.staffPin ? decryptPin(inv.staffPin) : null,
-  }));
+    const mapped = invitations.map((inv) => ({
+      ...inv,
+      staffPin: inv.staffPin ? decryptPin(inv.staffPin) : null,
+    }));
 
-  return NextResponse.json(mapped, {
-    headers: {
-      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-      Pragma: "no-cache",
-      Expires: "0",
-    },
-  });
+    return NextResponse.json(mapped, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    });
+  } catch (err) {
+    return routeError("ClientInvitations", err, "Gagal memuat daftar undangan.");
+  }
 }

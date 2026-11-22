@@ -6,6 +6,7 @@ const LIFECYCLE_SETTING_KEYS = [
   "retention_cleanup_days",
   "nas_archive_retention_days",
   "retention_custom_domain_days",
+  "retention_free_draft_days",
   "subdomain_auto_recycle",
 ] as const;
 

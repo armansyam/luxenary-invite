@@ -3,9 +3,10 @@ import { randomUUID } from "crypto";
 import { Client } from "pg";
 import { pool } from "./prisma";
 import { logger } from "./logger";
+import { clearLocalInvitationLookup } from "./cache";
 
 /**
- * Event real-time galeri kenangan tamu.
+ * Event real-time galeri kenangan tamu, check-in resepsionis, dan invalidasi cache L1 lintas proses.
  *
  * Aplikasi berjalan sebagai PM2 cluster (beberapa proses Node), sehingga EventEmitter biasa hanya
  * menjangkau klien yang tersambung ke proses yang sama. Event dipancarkan lewat PostgreSQL
@@ -16,6 +17,13 @@ import { logger } from "./logger";
 export interface NewMemoryEvent {
   id: string;
   invitationId: string;
+}
+
+export interface CacheInvalidateEvent {
+  invitationSlug?: string | null;
+  subdomain?: string | null;
+  invitationId?: string | null;
+  customDomain?: string | null;
 }
 
 export interface GuestCheckinEvent {
@@ -49,6 +57,7 @@ let isStartingBridge = false;
 
 /** Mulai mendengarkan event dari proses lain. Idempotent; dipanggil saat stream SSE pertama dibuka. */
 export function startSseBridge(): void {
+  if (process.env.NEXT_PHASE === "phase-production-build") return;
   if (global.sseBridgeClient || isStartingBridge) return;
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) return;
@@ -59,7 +68,8 @@ export function startSseBridge(): void {
   const retry = () => {
     global.sseBridgeClient = undefined;
     isStartingBridge = false;
-    setTimeout(startSseBridge, 5000);
+    const timer = setTimeout(startSseBridge, 5000);
+    timer.unref?.();
   };
 
   client
@@ -77,6 +87,14 @@ export function startSseBridge(): void {
             sseEmitter.emit("new_memory", data as NewMemoryEvent);
           } else if (event === "guest_checkin") {
             sseEmitter.emit("guest_checkin", data as GuestCheckinEvent);
+          } else if (event === "cache_invalidate") {
+            const payload = data as CacheInvalidateEvent;
+            clearLocalInvitationLookup(
+              payload.invitationSlug,
+              payload.subdomain,
+              payload.invitationId,
+              payload.customDomain,
+            );
           }
         } catch (err) {
           logger.error("SseEmitter", "Payload notifikasi tidak valid", err);
@@ -111,5 +129,13 @@ export async function publishGuestCheckin(event: GuestCheckinEvent): Promise<voi
   await pool.query("SELECT pg_notify($1, $2)", [
     PG_CHANNEL,
     JSON.stringify({ origin: INSTANCE_ID, event: "guest_checkin", data: event }),
+  ]);
+}
+
+/** Siarkan invalidasi cache lookup L1 ke seluruh proses worker PM2 / server lain via LISTEN/NOTIFY. */
+export async function publishCacheInvalidation(event: CacheInvalidateEvent): Promise<void> {
+  await pool.query("SELECT pg_notify($1, $2)", [
+    PG_CHANNEL,
+    JSON.stringify({ origin: INSTANCE_ID, event: "cache_invalidate", data: event }),
   ]);
 }

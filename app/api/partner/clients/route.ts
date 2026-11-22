@@ -73,7 +73,6 @@ export async function GET(req: NextRequest) {
         email: true,
         phoneNumber: true,
         passwordHash: true,
-        googleId: true,
         createdAt: true,
         activationTokens: {
           orderBy: { createdAt: "desc" },
@@ -112,7 +111,7 @@ export async function GET(req: NextRequest) {
 
     const nowMs = Date.now();
     const clients = users.map((u) => {
-      const isActivated = Boolean(u.passwordHash || u.googleId);
+      const isActivated = Boolean(u.passwordHash);
       const latestToken = u.activationTokens[0] || null;
       const latestOrder = u.orders[0] || null;
       const hasPaidOrder = u.orders.some((o) => o.status === "PAID");
@@ -263,7 +262,6 @@ export async function POST(req: NextRequest) {
         email: true,
         phoneNumber: true,
         passwordHash: true,
-        googleId: true,
         provisionedByPartnerId: true,
       },
     });
@@ -271,7 +269,7 @@ export async function POST(req: NextRequest) {
     let targetUser: { id: string; name: string; email: string; phoneNumber: string | null };
 
     if (existingUser) {
-      const alreadyActivated = Boolean(existingUser.passwordHash || existingUser.googleId);
+      const alreadyActivated = Boolean(existingUser.passwordHash);
       if (existingUser.provisionedByPartnerId === partner.id && !alreadyActivated) {
         // Klien ini didaftarkan mitra yang sama & belum aktif: perbarui profil jika perlu
         targetUser = await prisma.user.update({

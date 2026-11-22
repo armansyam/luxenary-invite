@@ -12,7 +12,6 @@ async function runTest01() {
       data: {
         email: userEmail,
         name: "Test Client QA",
-        googleId: `google_dummy_${Date.now()}`, // Wajib untuk sistem ini
         role: "CLIENT"
       }
     });

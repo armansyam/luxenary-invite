@@ -48,11 +48,15 @@ const withOrnaments = (): BuilderSpec => ({
 
 function studioLabelKeys(): string[] {
   const studioDir = path.join(ROOT, "components", "client", "studio");
+  const sectionsDir = path.join(studioDir, "sections");
+  const readDirTsx = (dir: string) =>
+    fs.existsSync(dir)
+      ? fs.readdirSync(dir).filter((f) => f.endsWith(".tsx")).map((f) => fs.readFileSync(path.join(dir, f), "utf8"))
+      : [];
   const sources = [
     fs.readFileSync(path.join(ROOT, "app", "(client)", "dashboard", "invitation", "[id]", "page.tsx"), "utf8"),
-    ...(fs.existsSync(studioDir)
-      ? fs.readdirSync(studioDir).filter((f) => f.endsWith(".tsx")).map((f) => fs.readFileSync(path.join(studioDir, f), "utf8"))
-      : []),
+    ...readDirTsx(studioDir),
+    ...readDirTsx(sectionsDir),
   ].join("\n");
   return [...new Set([...sources.matchAll(/(?:updateCustomLabel|onUpdateLabel)\("([A-Za-z0-9_]+)"/g)].map((m) => m[1]))];
 }
@@ -80,7 +84,12 @@ describe("blueprint pernikahan sebagai dasar master", () => {
   });
 
   it("mendefinisikan semua variabel CSS yang dibaca potongan HTML engine", () => {
-    const engine = fs.readFileSync(path.join(ROOT, "lib", "themeEngine.ts"), "utf8");
+    const engine = [
+      "lib/themeEngine.ts",
+      "lib/themeEngine/weddingComposer.ts",
+      "lib/themeEngine/modeComposers.ts",
+      "lib/themeEngine/universalSections.ts",
+    ].map((rel) => fs.readFileSync(path.join(ROOT, rel), "utf8")).join("\n");
     // Variabel bercadangan (`var(--event-accent, var(--primary))`) adalah kait opsional master; yang wajib ada di blueprint
     // hanya yang dibaca tanpa cadangan.
     const vars = [...new Set([...engine.matchAll(/var\((--[a-z-]+)\s*\)/g)].map((m) => m[1]))];

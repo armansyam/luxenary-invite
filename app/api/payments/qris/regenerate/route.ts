@@ -5,6 +5,7 @@ import { awaitConcurrentGatewaySession } from "@/lib/paymentSession";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { logger } from "@/lib/logger";
+import { routeError } from "@/lib/routeError";
 import { rateLimitDb } from "@/lib/rateLimit";
 import { getTrustedAppUrl } from "@/lib/serverDomainUtils";
 import { NextRequest, NextResponse } from "next/server";
@@ -163,8 +164,6 @@ export async function POST(req: NextRequest) {
       serverTime: serverNow,
     });
   } catch (error) {
-    logger.error("QrisRegenerate", "Gagal memperbarui sesi QRIS", error);
-    const detail = error instanceof Error ? error.message : String(error);
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal memperbarui sesi QRIS" : detail }, { status: 500 });
+    return routeError("QrisRegenerate", error, "Gagal memperbarui sesi QRIS");
   }
 }

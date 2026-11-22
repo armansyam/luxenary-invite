@@ -93,7 +93,6 @@ export async function GET(req: NextRequest) {
           select: {
             id: true,
             passwordHash: true,
-            googleId: true,
             orders: {
               where: { orderType: "NEW" },
               orderBy: { createdAt: "desc" },
@@ -141,7 +140,7 @@ export async function GET(req: NextRequest) {
     );
     const totalClients = partner.provisionedClients.length;
     const activeClients = partner.provisionedClients.filter(
-      (c) => Boolean(c.passwordHash || c.googleId),
+      (c) => Boolean(c.passwordHash),
     ).length;
     const pendingActivationClients = totalClients - activeClients;
 

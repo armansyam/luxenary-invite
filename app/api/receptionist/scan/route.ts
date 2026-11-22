@@ -12,8 +12,9 @@ import { logger } from "@/lib/logger";
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req);
-    // Rate limit: max 30 scan per menit per IP (anti brute-force via scan endpoint, cross-process PM2 safe)
-    if (!(await rateLimitDb(`scan:${ip}`, 30, 60 * 1000))) {
+    // Pre-auth anti-flood per IP dengan ambang longgar (300/menit) agar beberapa tablet resepsionis di balik 1 Wi-Fi
+    // gedung tidak saling memblokir saat puncak kedatangan tamu.
+    if (!(await rateLimitDb(`scan:ip:${ip}`, 300, 60 * 1000))) {
       return NextResponse.json({ error: "Terlalu banyak permintaan. Silakan tunggu sebentar." }, { status: 429 });
     }
 
@@ -26,6 +27,11 @@ export async function POST(req: NextRequest) {
     // Server-side authorization check using session token
     if (!(await isReceptionistAuthorized(invitationId, token))) {
       return NextResponse.json({ error: "Akses Ditolak. Sesi tidak valid." }, { status: 401 });
+    }
+
+    // Batas operasional per undangan (300 scan/menit = 5 tamu/detik lintas semua meja resepsionis).
+    if (!(await rateLimitDb(`scan:inv:${invitationId}`, 300, 60 * 1000))) {
+      return NextResponse.json({ error: "Antrean scan sangat padat. Silakan coba lagi sebentar." }, { status: 429 });
     }
 
 

@@ -104,27 +104,35 @@ describe("simpan dari Studio", () => {
   });
 
   it("setiap pengaturan yang diubah sebuah seksi Studio ikut dipantau tombol Simpan seksi itu", () => {
-    const lines = fs.readFileSync(path.join(process.cwd(), "app/(client)/dashboard/invitation/[id]/page.tsx"), "utf-8").split("\n");
-    const dirtyStart = lines.findIndex((l) => l.includes("const isDirty = useMemo"));
-    const dirtyEnd = lines.findIndex((l, i) => i > dirtyStart && l.includes("}, [invitation, media, events"));
-    const dirtyBlock = lines.slice(dirtyStart, dirtyEnd).join("\n");
-    const sections: [number, string][] = [];
-    lines.forEach((l, i) => {
-      const m = l.match(/id="section-(sec\d+)"/);
-      if (m) sections.push([i, m[1]]);
-    });
-    const sectionAt = (i: number) => sections.filter(([start]) => start <= i).pop()?.[1];
+    const pageLines = fs.readFileSync(path.join(process.cwd(), "app/(client)/dashboard/invitation/[id]/page.tsx"), "utf-8").split("\n");
+    const dirtyStart = pageLines.findIndex((l) => l.includes("const isDirty = useMemo"));
+    const dirtyEnd = pageLines.findIndex((l, i) => i > dirtyStart && l.includes("}, [invitation, media, events"));
+    const dirtyBlock = pageLines.slice(dirtyStart, dirtyEnd).join("\n");
+    const sectionDir = path.join(process.cwd(), "components/client/studio/sections");
+    const sourceFiles = [
+      path.join(process.cwd(), "app/(client)/dashboard/invitation/[id]/page.tsx"),
+      ...fs.readdirSync(sectionDir).filter((f) => f.endsWith(".tsx")).map((f) => path.join(sectionDir, f)),
+    ];
     const untracked: string[] = [];
-    lines.forEach((l, i) => {
-      const sec = sectionAt(i);
-      if (!sec) return;
-      for (const m of l.matchAll(/update(FeatureSetting|CustomLabel)\("([\w.]+)"/g)) {
-        // Seksi 15 membandingkan seluruh customLabels sekaligus.
-        if (m[1] === "CustomLabel" && sec === "sec15") continue;
-        // Dipantau lewat getFeatureSetting("kunci") atau akses properti (invitation.musicUrl, curFs.vendors, ...).
-        if (!dirtyBlock.includes(`"${m[2]}"`) && !new RegExp(`\\.${m[2]}\\b`).test(dirtyBlock)) untracked.push(`${sec}:${m[2]}`);
-      }
-    });
+    for (const filePath of sourceFiles) {
+      const lines = fs.readFileSync(filePath, "utf-8").split("\n");
+      const sections: [number, string][] = [];
+      lines.forEach((l, i) => {
+        const m = l.match(/id="section-(sec\d+)"/);
+        if (m) sections.push([i, m[1]]);
+      });
+      const sectionAt = (i: number) => sections.filter(([start]) => start <= i).pop()?.[1];
+      lines.forEach((l, i) => {
+        const sec = sectionAt(i);
+        if (!sec) return;
+        for (const m of l.matchAll(/update(FeatureSetting|CustomLabel)\("([\w.]+)"/g)) {
+          // Seksi 15 membandingkan seluruh customLabels sekaligus.
+          if (m[1] === "CustomLabel" && sec === "sec15") continue;
+          // Dipantau lewat getFeatureSetting("kunci") atau akses properti (invitation.musicUrl, curFs.vendors, ...).
+          if (!dirtyBlock.includes(`"${m[2]}"`) && !new RegExp(`\\.${m[2]}\\b`).test(dirtyBlock)) untracked.push(`${sec}:${m[2]}`);
+        }
+      });
+    }
     expect([...new Set(untracked)]).toEqual([]);
   });
 
@@ -142,7 +150,11 @@ describe("tombol upgrade dari halaman Pengaturan", () => {
     expect(dashboard).toContain('searchParams?.get("upgrade") !== "true"');
     expect(dashboard).toContain('router.replace("/packages")');
     expect(dashboard).toContain("setIsAddonModalOpen(true)");
-    const settings = fs.readFileSync(path.join(process.cwd(), "app/(client)/dashboard/settings/page.tsx"), "utf-8");
+    const settings = [
+      "app/(client)/dashboard/settings/page.tsx",
+      "components/client/settings/PublishLaunchpadSection.tsx",
+      "components/client/settings/TechnicalSettingsSection.tsx",
+    ].map((rel) => fs.readFileSync(path.join(process.cwd(), rel), "utf-8")).join("\n");
     expect(settings.match(/\/dashboard\?upgrade=true/g)?.length).toBe(2);
     expect(settings).toContain('invitation?.isFreeDraft ? "/packages" : "/dashboard?upgrade=true"');
   });

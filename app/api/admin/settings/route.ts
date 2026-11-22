@@ -89,6 +89,18 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: "Google Analytics 4 Measurement ID harus berformat G-XXXXXXXX." }, { status: 400 });
         }
         u.value = raw;
+      } else if (u?.key === "retention_free_draft_days") {
+        const parsed = Number.parseInt(String(u.value ?? "").trim(), 10);
+        if (!Number.isInteger(parsed) || parsed < 1 || parsed > 365) {
+          return NextResponse.json({ error: "Masa aktif draf gratis harus bilangan bulat 1 sampai 365 hari." }, { status: 400 });
+        }
+        u.value = String(parsed);
+      } else if (u?.key === "free_draft_max_photos") {
+        const parsed = Number.parseInt(String(u.value ?? "").trim(), 10);
+        if (!Number.isInteger(parsed) || parsed < 1 || parsed > 50) {
+          return NextResponse.json({ error: "Batas foto draf gratis harus bilangan bulat 1 sampai 50." }, { status: 400 });
+        }
+        u.value = String(parsed);
       }
       if (u?.key !== "enabled_event_types") continue;
       const picked = String(u.value ?? "").split(",").map((s) => s.trim().toUpperCase()).filter((s) => (EVENT_TYPES as readonly string[]).includes(s));

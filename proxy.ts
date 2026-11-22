@@ -4,6 +4,7 @@ import { authConfig } from "@/auth.config";
 import { isReservedSubdomain } from "@/lib/domainUtils";
 import { safeInternalCallbackUrl } from "@/lib/safeUrl";
 import { customDomainResolutionCache } from "@/lib/cache";
+import { startSseBridge } from "@/lib/sseEmitter";
 import { LOGIN_FAILURE_LIMIT, getClientIp, isRateLimitExhausted, loginRateLimitKey } from "@/lib/rateLimit";
 import {
   buildEnforcedCsp,
@@ -130,6 +131,9 @@ function crawlerSpecialResponse(pathname: string): NextResponse | null {
 }
 
 export const proxy = auth(async (req) => {
+  // Aktifkan listener PostgreSQL LISTEN/NOTIFY sekali per worker PM2 / replika agar invalidasi cache L1 lintas proses instan.
+  startSseBridge();
+
   const { pathname } = req.nextUrl;
 
   const host = req.headers.get("host") || "";

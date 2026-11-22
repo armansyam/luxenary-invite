@@ -22,7 +22,6 @@ async function main() {
       data: {
         email: `qa_stress_${Date.now()}@luxenary.com`,
         name: "QA Stress Tester",
-        googleId: `google_qa_${Date.now()}`,
         role: "CLIENT",
       },
     });

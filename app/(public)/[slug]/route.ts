@@ -12,7 +12,7 @@ import { computeLifecycleDates } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { canPreviewInvitation } from "@/lib/previewAccess";
 import { injectFreeDraftWatermark } from "@/lib/freeDraftWatermark";
-import { isCustomDomainHost } from "@/lib/domainUtils";
+import { isCustomDomainHost, resolvePublicAppOrigin } from "@/lib/domainUtils";
 import { eventNoun } from "@/lib/invitationUtils";
 import { logger } from "@/lib/logger";
 import fs from "fs";
@@ -161,7 +161,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
 
   // Jika undangan sudah berstatus ARCHIVED (masa galeri telah berakhir)
   if (invitation.status === "ARCHIVED") {
-    const rootUrl = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
+    const rootUrl = resolvePublicAppOrigin();
 
     // Pengunjung custom domain klien tetap berada di domainnya selama masa aktif custom domain: arsip disajikan
     // langsung di sana, bukan dialihkan ke URL kanonik domain utama.

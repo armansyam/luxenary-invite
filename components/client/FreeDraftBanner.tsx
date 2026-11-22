@@ -1,22 +1,77 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
-const RETENTION_DAYS = 14;
+const DEFAULT_RETENTION_DAYS = 14;
+const DEFAULT_MAX_PHOTOS = 3;
+
+let cachedLimits: { retentionDays: number; maxPhotos: number } | null = null;
+let pendingFetch: Promise<{ retentionDays: number; maxPhotos: number }> | null = null;
+
+function loadFreeDraftLimits(): Promise<{ retentionDays: number; maxPhotos: number }> {
+  if (cachedLimits) return Promise.resolve(cachedLimits);
+  if (!pendingFetch) {
+    pendingFetch = fetch("/api/public/settings")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        const retentionDays =
+          Number.isFinite(Number(data?.freeDraftRetentionDays)) && Number(data?.freeDraftRetentionDays) >= 1
+            ? Number(data.freeDraftRetentionDays)
+            : DEFAULT_RETENTION_DAYS;
+        const maxPhotos =
+          Number.isFinite(Number(data?.freeDraftMaxPhotos)) && Number(data?.freeDraftMaxPhotos) >= 1
+            ? Number(data.freeDraftMaxPhotos)
+            : DEFAULT_MAX_PHOTOS;
+        cachedLimits = { retentionDays, maxPhotos };
+        return cachedLimits;
+      })
+      .catch(() => ({ retentionDays: DEFAULT_RETENTION_DAYS, maxPhotos: DEFAULT_MAX_PHOTOS }))
+      .finally(() => {
+        pendingFetch = null;
+      });
+  }
+  return pendingFetch;
+}
 
 export function FreeDraftBanner({
   createdAt,
   compact = false,
+  retentionDays: retentionDaysProp,
+  maxPhotos: maxPhotosProp,
 }: {
   createdAt?: string | Date | null;
   compact?: boolean;
+  retentionDays?: number;
+  maxPhotos?: number;
 }) {
-  let daysLeft = RETENTION_DAYS;
+  const [limits, setLimits] = useState<{ retentionDays: number; maxPhotos: number }>(() => ({
+    retentionDays: retentionDaysProp ?? cachedLimits?.retentionDays ?? DEFAULT_RETENTION_DAYS,
+    maxPhotos: maxPhotosProp ?? cachedLimits?.maxPhotos ?? DEFAULT_MAX_PHOTOS,
+  }));
+
+  useEffect(() => {
+    if (retentionDaysProp !== undefined && maxPhotosProp !== undefined) return;
+    let cancelled = false;
+    void loadFreeDraftLimits().then((resolved) => {
+      if (!cancelled) {
+        setLimits({
+          retentionDays: retentionDaysProp ?? resolved.retentionDays,
+          maxPhotos: maxPhotosProp ?? resolved.maxPhotos,
+        });
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [retentionDaysProp, maxPhotosProp]);
+
+  let daysLeft = limits.retentionDays;
   if (createdAt) {
     const createdMs = new Date(createdAt).getTime();
     if (!Number.isNaN(createdMs)) {
       const elapsedDays = Math.floor((Date.now() - createdMs) / (24 * 60 * 60 * 1000));
-      daysLeft = Math.max(1, RETENTION_DAYS - Math.max(0, elapsedDays));
+      daysLeft = Math.max(1, limits.retentionDays - Math.max(0, elapsedDays));
     }
   }
 
@@ -34,7 +89,7 @@ export function FreeDraftBanner({
           </span>
         </div>
         <p className="text-xs text-amber-900/90 leading-relaxed">
-          Maksimal 3 foto unggahan, unggah audio/video terkunci, pratinjau bertanda air, dan tidak dapat dipublikasikan hingga paket diaktifkan.
+          Maksimal {limits.maxPhotos} foto unggahan, unggah audio/video terkunci, pratinjau bertanda air, dan tidak dapat dipublikasikan hingga paket diaktifkan.
         </p>
       </div>
 

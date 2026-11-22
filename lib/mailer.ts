@@ -1,4 +1,6 @@
 import nodemailer from "nodemailer";
+import { prisma } from "./prisma";
+import { escapeHtml } from "./escapeHtml";
 import { getPublicPlatformSettings, getSmtpSettings } from "./settings";
 import { logger } from "./logger";
 import { getPlanDisplayName } from "./planUtils";
@@ -449,6 +451,70 @@ export async function sendClientActivationEmail(
       partnerName: opts.partnerName,
     });
     return { success: false, error: error?.message || "SEND_FAILED" };
+  }
+}
+
+export async function sendCronFailureAlertEmail(opts: {
+  jobName: string;
+  summary: string;
+  details?: string;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    const superAdmins = await prisma.admin.findMany({
+      where: { role: "SUPER_ADMIN", email: { not: "" } },
+      select: { email: true },
+    });
+    const recipients = superAdmins.map((a) => a.email.trim()).filter(Boolean);
+    if (recipients.length === 0) return { success: false, error: "NO_RECIPIENTS" };
+
+    const settings = { ...(await getPublicPlatformSettings()), ...(await getSmtpSettings()) };
+    if (!settings.smtpHost || !settings.smtpUser) {
+      return { success: false, error: "SMTP_NOT_CONFIGURED" };
+    }
+
+    const platformName = settings.platformName || "Platform Undangan";
+    const timeWib = `${new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta", dateStyle: "long", timeStyle: "medium" })} WIB`;
+    const subject = `[Peringatan Cron] ${opts.jobName} gagal — ${platformName}`;
+    const safeJob = escapeHtml(opts.jobName);
+    const safeSummary = escapeHtml(opts.summary);
+    const safeDetails = opts.details ? escapeHtml(opts.details) : "";
+
+    const html = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; color: #1c1917; padding: 24px;">
+        <h2 style="margin: 0 0 8px; font-size: 18px; color: #991b1b;">Peringatan Kegagalan Tugas Terjadwal (Cron)</h2>
+        <p style="margin: 0 0 16px; font-size: 13px; color: #57534e;">${escapeHtml(platformName)} · ${escapeHtml(timeWib)}</p>
+        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+          <p style="margin: 0 0 6px; font-size: 13px;"><strong>Tugas:</strong> ${safeJob}</p>
+          <p style="margin: 0; font-size: 13px;"><strong>Ringkasan:</strong> ${safeSummary}</p>
+        </div>
+        ${safeDetails ? `<pre style="background: #f5f5f4; border: 1px solid #e7e5e4; border-radius: 10px; padding: 12px; font-size: 12px; white-space: pre-wrap; word-break: break-word;">${safeDetails}</pre>` : ""}
+        <p style="margin: 16px 0 0; font-size: 12px; color: #78716c;">Periksa log server PM2 dan tab Monitoring / Database di panel admin untuk menindaklanjuti.</p>
+      </div>
+    `;
+    const text = `[Peringatan Cron] ${opts.jobName} (${timeWib})\nRingkasan: ${opts.summary}${opts.details ? `\n\nDetail:\n${opts.details}` : ""}`;
+
+    const transporter = nodemailer.createTransport({
+      host: settings.smtpHost,
+      port: settings.smtpPort || 587,
+      secure: settings.smtpPort === 465,
+      auth: { user: settings.smtpUser, pass: settings.smtpPassword || "" },
+      tls: { rejectUnauthorized: process.env.NODE_ENV === "production" },
+    });
+
+    const fromAddress = settings.smtpFromEmail || settings.smtpUser;
+    const fromName = settings.smtpFromName || platformName;
+    await transporter.sendMail({
+      from: `"${fromName}" <${fromAddress}>`,
+      to: recipients,
+      subject,
+      text,
+      html,
+    });
+    logger.info("Mailer", "Peringatan kegagalan cron terkirim ke SUPER_ADMIN", { jobName: opts.jobName, recipients: recipients.length });
+    return { success: true };
+  } catch (error) {
+    logger.error("Mailer", "Gagal mengirim peringatan kegagalan cron", error, { jobName: opts.jobName });
+    return { success: false, error: error instanceof Error ? error.message : "SEND_FAILED" };
   }
 }
 

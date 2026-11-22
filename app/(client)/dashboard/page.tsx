@@ -586,7 +586,7 @@ function DashboardHomeContent() {
                     <span>Masa Uji Coba Draf Gratis</span>
                   </span>
                   <span className="px-2 sm:px-2.5 py-0.5 bg-amber-100/80 border border-amber-300/70 text-amber-950 rounded-lg text-[10px] sm:text-[11px] font-bold">
-                    Retensi Draf 14 Hari
+                    Retensi Draf {platformSettings?.freeDraftRetentionDays || 14} Hari
                   </span>
                 </div>
                 <p className="hidden sm:block text-[11px] text-stone-600 leading-relaxed">
@@ -867,7 +867,7 @@ function DashboardHomeContent() {
           </div>
           <span className="text-[10px] text-stone-400 hidden sm:block">
             {isFreeDraft
-              ? "Mode uji coba 14 hari — pilih paket untuk publikasi & subdomain"
+              ? `Mode uji coba ${platformSettings?.freeDraftRetentionDays || 14} hari — pilih paket untuk publikasi & subdomain`
               : (packageConfig?.desc || getPlanDisplayDescription(invitation?.order?.planType, platformSettings?.packages) || "Belum ada paket aktif")}
           </span>
         </div>

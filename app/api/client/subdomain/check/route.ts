@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { forwardException } from "@/lib/errorTracker";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getClientIp, rateLimitDb } from "@/lib/rateLimit";
@@ -92,6 +93,7 @@ export async function GET(req: Request) {
   } catch (err) {
     // Bentuk respons dipertahankan: formulir membaca `available` dan `message`.
     logger.error("SubdomainCheck", "Gagal memeriksa ketersediaan subdomain", err);
+    forwardException(err, { tags: { route: "SubdomainCheck" } });
     return NextResponse.json(
       { available: false, message: "Gagal memeriksa subdomain." },
       { status: 500 }

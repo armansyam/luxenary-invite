@@ -89,13 +89,14 @@ describe("parseLifecycleSettings", () => {
     );
   });
 
-  it("membaca empat jam terpisah dan sakelar auto-recycle", () => {
+  it("membaca lima jam terpisah dan sakelar auto-recycle", () => {
     expect(
       parseLifecycleSettings({
         subdomain_grace_days: "10",
         retention_cleanup_days: "45",
         nas_archive_retention_days: "400",
         retention_custom_domain_days: "500",
+        retention_free_draft_days: "21",
         subdomain_auto_recycle: "false",
       })
     ).toEqual({
@@ -103,6 +104,7 @@ describe("parseLifecycleSettings", () => {
       galleryRetentionDays: 45,
       archiveRetentionDays: 400,
       customDomainRetentionDays: 500,
+      freeDraftRetentionDays: 21,
       autoRecycleSubdomain: false,
     });
   });

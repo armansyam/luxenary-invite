@@ -12,7 +12,7 @@ export async function purgeInvitationEdgeCache(inv: {
   subdomain: string | null;
   customDomain?: string | null;
 }): Promise<Awaited<ReturnType<typeof purgeCloudflareCache>> | null> {
-  invalidateInvitationLookup(inv.invitationSlug, inv.subdomain, inv.id);
+  invalidateInvitationLookup(inv.invitationSlug, inv.subdomain, inv.id, inv.customDomain);
   const rootDomain = (await getDynamicServerRootDomain("")).split(":")[0].toLowerCase();
   const urls: string[] = [];
   if (rootDomain && inv.subdomain) urls.push(`https://${inv.subdomain}.${rootDomain}/`);

@@ -5,6 +5,7 @@ import { hasAdminPermission } from "@/lib/adminPermissions";
 import { buildAndSavePublishedHtml } from "@/lib/staticPublisher";
 import { parseFeatureSettings, isValidMemoriesFilter, isValidShotsQuota } from "@/lib/featureSettings";
 import { logger } from "@/lib/logger";
+import { routeError } from "@/lib/routeError";
 import { releaseOrderPromoHold } from "@/lib/marketing";
 import { safeMediaUrl } from "@/lib/safeUrl";
 
@@ -136,8 +137,7 @@ export async function GET(
       },
     });
   } catch (err) {
-    logger.error("ClientMemories", "Gagal memuat kenangan tamu", err);
-    return NextResponse.json({ error: "Gagal memuat kenangan tamu." }, { status: 500 });
+    return routeError("ClientMemories", err, "Gagal memuat kenangan tamu.");
   }
 }
 
@@ -203,8 +203,7 @@ export async function DELETE(
       message: "Foto/video kenangan berhasil dihapus.",
     });
   } catch (err) {
-    logger.error("ClientMemories", "Gagal menghapus kenangan tamu", err);
-    return NextResponse.json({ error: "Gagal menghapus memori." }, { status: 500 });
+    return routeError("ClientMemories", err, "Gagal menghapus memori.");
   }
 }
 
@@ -332,7 +331,6 @@ export async function PATCH(
       message: "Pengaturan kamera kenangan tamu berhasil diperbarui.",
     });
   } catch (err) {
-    logger.error("ClientMemories", "Gagal memperbarui pengaturan kenangan tamu", err);
-    return NextResponse.json({ error: "Gagal memperbarui pengaturan kenangan tamu." }, { status: 500 });
+    return routeError("ClientMemories", err, "Gagal memperbarui pengaturan kenangan tamu.");
   }
 }

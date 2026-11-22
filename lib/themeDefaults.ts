@@ -2619,7 +2619,7 @@ export function getThemeBlueprint(
       "traditional"
     ).toLowerCase();
 
-    const derivedName = customData?.themeName || (cleanId ? cleanId.charAt(0).toUpperCase() + cleanId.slice(1) : "Luxenary Theme");
+    const derivedName = customData?.themeName || (cleanId ? cleanId.charAt(0).toUpperCase() + cleanId.slice(1) : "Tema Undangan");
 
     if (rawSeries.includes("modern")) {
       base = {

@@ -14,7 +14,7 @@ import { DEFAULT_THEME_BY_EVENT, EVENT_TYPES, STAFF_PIN_PATTERN, isThemeInMode, 
 import { isReservedSubdomain, isSubdomainExpired } from "@/lib/domainUtils";
 import { DAY_MS, getPrimaryEventDate, getPrimaryEventDateString, isClockTimeInput, normalizeEventDateInput } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
-import { getEnabledEventTypes, getPlanMemoriesQuota } from "@/lib/settings";
+import { getAdminSetting, getEnabledEventTypes, getPlanMemoriesQuota } from "@/lib/settings";
 import { VALID_MEDIA_SLOTS } from "@/lib/mediaSlots";
 import { invalidateInvitationLookup } from "@/lib/cache";
 import { safeExternalUrl, safeMediaUrl } from "@/lib/safeUrl";
@@ -785,10 +785,12 @@ export async function PUT(
             nonGallerySlots.delete(slot);
           }
         }
-        if (nonGallerySlots.size + projectedGalleryCount > 3) {
+        const parsedMaxPhotos = Number.parseInt(await getAdminSetting("free_draft_max_photos", "3"), 10);
+        const maxFreeDraftPhotos = Number.isFinite(parsedMaxPhotos) && parsedMaxPhotos >= 1 ? parsedMaxPhotos : 3;
+        if (nonGallerySlots.size + projectedGalleryCount > maxFreeDraftPhotos) {
           return NextResponse.json(
             {
-              error: "Draf gratis dibatasi maksimal 3 foto. Aktifkan paket untuk mengunggah lebih banyak foto.",
+              error: `Draf gratis dibatasi maksimal ${maxFreeDraftPhotos} foto. Aktifkan paket untuk mengunggah lebih banyak foto.`,
               code: "FREE_DRAFT_PHOTO_LIMIT",
             },
             { status: 403 }
@@ -869,7 +871,6 @@ export async function PUT(
         dresscode: body.dresscode !== undefined ? body.dresscode : undefined,
         bankAccounts: jsonFields.bankAccounts,
         shippingAddress: body.shippingAddress !== undefined ? body.shippingAddress : undefined,
-        liveStreamUrl: body.liveStreamUrl !== undefined ? safeExternalUrl(body.liveStreamUrl) : undefined,
         eventData: eventDataToSave,
         featureSettings: mergedFeatureSettings,
         participantsJson: jsonFields.participantsJson,

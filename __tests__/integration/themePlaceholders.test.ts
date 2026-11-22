@@ -105,7 +105,6 @@ async function makeInvitation(eventType: string, subEvent?: string | null) {
       openingQuoteRef: "QS. Ar-Rum: 21",
       musicUrl: "/music/canon-in-d.ogg",
       dresscode: "Earth Tone",
-      liveStreamUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
       participantsJson: (PARTICIPANTS[eventType] as Prisma.InputJsonObject | undefined) ?? Prisma.DbNull,
       loveStory: [{ title: "Pertama Bertemu", date: "2019", content: "Bertemu di kampus." }, { title: "Lamaran", date: "2025", content: "Keluarga datang melamar." }],
       bankAccounts: [{ bank: "BCA", number: "7890123456", name: "Andi" }],

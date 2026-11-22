@@ -105,7 +105,6 @@ async function seedInvitation(themeId: string, eventType: string, index: number)
       openingQuoteRef: xss("inv.openingQuoteRef"),
       dresscode: xss("inv.dresscode"),
       shippingAddress: xss("inv.shippingAddress"),
-      liveStreamUrl: urlXss("inv.liveStreamUrl"),
       musicUrl: urlXss("inv.musicUrl"),
       eventData: events,
       loveStory: [

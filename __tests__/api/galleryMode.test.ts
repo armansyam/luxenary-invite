@@ -162,6 +162,7 @@ describe("POST /api/client/invitations/[id]/gallery-mode", () => {
       status: "PUBLISHED",
       subdomain: "didan-nasha",
       invitationSlug: "didan-nasha-wedding",
+      customDomain: null,
       order: { planType: "TIER_2" },
     });
     mockHasPlanCapability.mockResolvedValue(true);
@@ -179,8 +180,8 @@ describe("POST /api/client/invitations/[id]/gallery-mode", () => {
       where: { id: INV_ID },
       data: { status: "EVENT_FINISHED" },
     });
-    // Tanda tangan invalidateInvitationLookup(slug, subdomain, id); dulu argumen tertukar sehingga cache tidak terhapus.
-    expect(mockInvalidateCache).toHaveBeenCalledWith("didan-nasha-wedding", "didan-nasha", INV_ID);
+    // Tanda tangan invalidateInvitationLookup(slug, subdomain, id, customDomain).
+    expect(mockInvalidateCache).toHaveBeenCalledWith("didan-nasha-wedding", "didan-nasha", INV_ID, null);
   });
 
   it("7. Sukses mengembalikan status dari EVENT_FINISHED ke PUBLISHED (Mode Undangan)", async () => {
@@ -191,6 +192,7 @@ describe("POST /api/client/invitations/[id]/gallery-mode", () => {
       status: "EVENT_FINISHED",
       subdomain: "didan-nasha",
       invitationSlug: "didan-nasha-wedding",
+      customDomain: null,
       order: { planType: "TIER_2" },
     });
     mockUpdate.mockResolvedValue({ id: INV_ID, status: "PUBLISHED" });
@@ -206,6 +208,6 @@ describe("POST /api/client/invitations/[id]/gallery-mode", () => {
       where: { id: INV_ID },
       data: { status: "PUBLISHED" },
     });
-    expect(mockInvalidateCache).toHaveBeenCalledWith("didan-nasha-wedding", "didan-nasha", INV_ID);
+    expect(mockInvalidateCache).toHaveBeenCalledWith("didan-nasha-wedding", "didan-nasha", INV_ID, null);
   });
 });

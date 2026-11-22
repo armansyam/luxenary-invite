@@ -77,7 +77,6 @@ export async function POST(
         email: true,
         phoneNumber: true,
         passwordHash: true,
-        googleId: true,
         provisionedByPartnerId: true,
       },
     });
@@ -89,7 +88,7 @@ export async function POST(
       );
     }
 
-    if (client.passwordHash || client.googleId) {
+    if (client.passwordHash) {
       return NextResponse.json(
         {
           error:

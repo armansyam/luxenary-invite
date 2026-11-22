@@ -157,6 +157,8 @@ export interface LifecycleSettings {
   archiveRetentionDays: number;
   /** Hari sejak acara utama custom domain klien tetap melayani slug (`retention_custom_domain_days`). */
   customDomainRetentionDays: number;
+  /** Hari sejak dibuat hingga draf gratis tanpa order dihapus otomatis (`retention_free_draft_days`). */
+  freeDraftRetentionDays: number;
   /** Subdomain dilepas otomatis oleh cron dan rute publik (`subdomain_auto_recycle`). */
   autoRecycleSubdomain: boolean;
 }
@@ -166,10 +168,11 @@ export const DEFAULT_LIFECYCLE_SETTINGS: LifecycleSettings = {
   galleryRetentionDays: 30,
   archiveRetentionDays: 365,
   customDomainRetentionDays: 365,
+  freeDraftRetentionDays: 14,
   autoRecycleSubdomain: true,
 };
 
-/** Empat jam retensi tanpa sakelar auto-recycle; cukup untuk seluruh perhitungan tanggal. */
+/** Lima jam retensi tanpa sakelar auto-recycle; cukup untuk seluruh perhitungan tanggal. */
 export type LifecycleDaySettings = Omit<LifecycleSettings, "autoRecycleSubdomain">;
 
 /** Membaca objek pengaturan publik (`/api/public/settings`) menjadi jam retensi, bawaan bila tidak valid. */
@@ -186,6 +189,7 @@ export function lifecycleSettingsFromPublic(
     galleryRetentionDays: pick(source?.galleryRetentionDays, d.galleryRetentionDays),
     archiveRetentionDays: pick(source?.archiveRetentionDays, d.archiveRetentionDays),
     customDomainRetentionDays: pick(source?.customDomainRetentionDays, d.customDomainRetentionDays),
+    freeDraftRetentionDays: pick(source?.freeDraftRetentionDays, d.freeDraftRetentionDays),
   };
 }
 
@@ -202,6 +206,7 @@ export function parseLifecycleSettings(map: Record<string, string | undefined>):
     galleryRetentionDays: parseDays(map["retention_cleanup_days"], d.galleryRetentionDays),
     archiveRetentionDays: parseDays(map["nas_archive_retention_days"], d.archiveRetentionDays),
     customDomainRetentionDays: parseDays(map["retention_custom_domain_days"], d.customDomainRetentionDays),
+    freeDraftRetentionDays: parseDays(map["retention_free_draft_days"], d.freeDraftRetentionDays),
     autoRecycleSubdomain: (map["subdomain_auto_recycle"] ?? "true") === "true",
   };
 }

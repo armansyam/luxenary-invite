@@ -439,9 +439,9 @@ export default function AdminDatabaseTab(props: Props) {
     </div>
   </SettingsCard>
 
-  {/* ── Card 2.5: Cold Storage & Arsip Mandiri NAS (Luxenary Vault) ── */}
+  {/* ── Card 2.5: Cold Storage & Arsip Mandiri NAS ── */}
   <SettingsCard
-    title="Cold Storage & Arsip Mandiri NAS (Luxenary Vault)"
+    title="Cold Storage & Arsip Mandiri NAS"
     description="Kelola penyimpanan arsip dingin jangka panjang (1 tahun) ke direktori mount NAS lokal pasca retensi galeri tamu berakhir."
     isEditing={Boolean(editSection["nas_archive"])}
     onEdit={() => toggleEditSection("nas_archive")}

@@ -370,7 +370,6 @@ export async function triggerPartnerClientActivationOnPaid(orderId: string): Pro
           name: true,
           email: true,
           passwordHash: true,
-          googleId: true,
           provisionedByPartner: {
             select: { id: true, name: true, isActive: true },
           },
@@ -383,7 +382,7 @@ export async function triggerPartnerClientActivationOnPaid(orderId: string): Pro
   const user = order.user;
   const partner = user?.provisionedByPartner;
   if (!user || !partner || !partner.isActive) return;
-  if (user.passwordHash || user.googleId) return;
+  if (user.passwordHash) return;
 
   // Idempotensi: jika sudah ada token aktif yang emailnya sudah terkirim, jangan kirim dobel
   const existingActiveToken = await prisma.clientActivationToken.findFirst({

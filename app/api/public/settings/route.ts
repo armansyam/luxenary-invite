@@ -22,6 +22,8 @@ export async function GET() {
         price_tier3: settings.packages?.find((p) => p.id === "TIER_3")?.price ?? 0,
       },
       custom_domain_enabled: settings.customDomainEnabled,
+      retention_free_draft_days: settings.freeDraftRetentionDays,
+      free_draft_max_photos: settings.freeDraftMaxPhotos,
       gallery_extension_price_per_month: settings.galleryExtensionPricePerMonth,
       server_public_ip: settings.serverPublicIp,
       cname_target: settings.cnameTarget,

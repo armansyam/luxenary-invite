@@ -58,6 +58,17 @@ export class BoundedMemoryCache<T> {
     return this.map.delete(key);
   }
 
+  deleteWhere(predicate: (value: T, key: string) => boolean): number {
+    let removed = 0;
+    for (const [key, entry] of this.map.entries()) {
+      if (predicate(entry.value, key)) {
+        this.map.delete(key);
+        removed++;
+      }
+    }
+    return removed;
+  }
+
   clear(): void {
     this.map.clear();
   }
@@ -118,12 +129,13 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 /**
- * Invalidate cache pencarian publik ketika undangan di-update atau di-publish
+ * Hapus entri cache lookup L1 lokal (proses ini saja) secara selektif tanpa mengosongkan seluruh custom domain klien lain.
  */
-export function invalidateInvitationLookup(
+export function clearLocalInvitationLookup(
   invitationSlug?: string | null,
   subdomain?: string | null,
   invitationId?: string | null,
+  customDomain?: string | null,
 ): void {
   if (invitationSlug) {
     invitationLookupCache.delete(`slug:${invitationSlug}`);
@@ -134,7 +146,45 @@ export function invalidateInvitationLookup(
   if (invitationId) {
     invitationLookupCache.delete(`visit-inv:${invitationId}`);
   }
-  customDomainResolutionCache.clear();
+  if (customDomain) {
+    const clean = customDomain.trim().toLowerCase();
+    const bare = clean.replace(/^www\./, "");
+    customDomainResolutionCache.delete(clean);
+    customDomainResolutionCache.delete(bare);
+    customDomainResolutionCache.delete(`www.${bare}`);
+  }
+  if (invitationSlug) {
+    customDomainResolutionCache.deleteWhere((val) => val?.slug === invitationSlug);
+  } else if (!customDomain && !subdomain && !invitationId) {
+    customDomainResolutionCache.clear();
+  }
+}
+
+/**
+ * Invalidate cache pencarian publik ketika undangan di-update atau di-publish,
+ * lalu siarkan ke seluruh worker PM2 / server lain via PostgreSQL LISTEN/NOTIFY.
+ */
+export function invalidateInvitationLookup(
+  invitationSlug?: string | null,
+  subdomain?: string | null,
+  invitationId?: string | null,
+  customDomain?: string | null,
+): void {
+  clearLocalInvitationLookup(invitationSlug, subdomain, invitationId, customDomain);
+  if (process.env.DATABASE_URL) {
+    void import("./sseEmitter")
+      .then(({ publishCacheInvalidation }) =>
+        publishCacheInvalidation({
+          invitationSlug: invitationSlug ?? null,
+          subdomain: subdomain ?? null,
+          invitationId: invitationId ?? null,
+          customDomain: customDomain ?? null,
+        })
+      )
+      .catch(() => {
+        // Non-blocking: kegagalan broadcast tidak menggagalkan mutasi utama; TTL 60 detik tetap menjadi batas akhir.
+      });
+  }
 }
 
 /**

@@ -11,7 +11,6 @@ interface ClientUser {
   email: string;
   role: string;
   phoneNumber?: string | null;
-  avatarUrl?: string | null;
   createdAt: string;
   totalSpent: number;
   latestOrder?: {

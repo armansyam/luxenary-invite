@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import crypto from "crypto";
 import { createDatabaseSnapshot } from "@/lib/databaseBackup";
 import { hasAdminPermission } from "@/lib/adminPermissions";
+import { sendCronFailureAlertEmail } from "@/lib/mailer";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +49,13 @@ async function handleBackupRequest(req: NextRequest) {
     const result = await createDatabaseSnapshot("auto_daily");
 
     const offsiteConfigured = process.env.STORAGE_PROVIDER === "r2" || process.env.STORAGE_PROVIDER === "s3";
+    if (offsiteConfigured && result.offsiteSynced === false) {
+      void sendCronFailureAlertEmail({
+        jobName: "Auto-Backup Database (Off-site R2/S3)",
+        summary: "Snapshot tersimpan lokal, tetapi unggahan off-site ke R2/S3 gagal.",
+        details: `Snapshot: ${result.filename}`,
+      });
+    }
     return NextResponse.json({
       success: true,
       message: "Auto-backup berhasil dijalankan.",
@@ -57,6 +65,11 @@ async function handleBackupRequest(req: NextRequest) {
       }),
     });
   } catch (error) {
+    void sendCronFailureAlertEmail({
+      jobName: "Auto-Backup Database",
+      summary: "Proses snapshot database terjadwal gagal total.",
+      details: error instanceof Error ? error.message : String(error),
+    });
     return routeError("CronBackup", error, "Gagal menjalankan auto-backup");
   }
 }

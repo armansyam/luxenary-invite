@@ -13,6 +13,7 @@ import { removeIfExists } from "@/lib/fsSafe";
 import { prisma } from "@/lib/prisma";
 import { getClientIp, rateLimitDb } from "@/lib/rateLimit";
 import { MEDIA_SLOT_FILE_NAMES } from "@/lib/mediaSlots";
+import { getAdminSetting } from "@/lib/settings";
 import { suggestBgScrim } from "@/lib/bgPhotoTone";
 import { getInvitationLockStatus } from "@/app/api/client/invitations/[id]/route";
 
@@ -128,10 +129,12 @@ export async function POST(req: NextRequest) {
         !isGallerySlot &&
         (existingMedia.some((m) => m.mediaSlot === slotKey) || occupiedBases.has(baseSlug));
 
-      if (!isReplacingSingleSlot && occupiedBases.size >= 3) {
+      const parsedMaxPhotos = Number.parseInt(await getAdminSetting("free_draft_max_photos", "3"), 10);
+      const maxFreeDraftPhotos = Number.isFinite(parsedMaxPhotos) && parsedMaxPhotos >= 1 ? parsedMaxPhotos : 3;
+      if (!isReplacingSingleSlot && occupiedBases.size >= maxFreeDraftPhotos) {
         return NextResponse.json(
           {
-            error: "Draf gratis dibatasi maksimal 3 foto. Aktifkan paket untuk mengunggah lebih banyak foto.",
+            error: `Draf gratis dibatasi maksimal ${maxFreeDraftPhotos} foto. Aktifkan paket untuk mengunggah lebih banyak foto.`,
             code: "FREE_DRAFT_PHOTO_LIMIT",
           },
           { status: 403 }

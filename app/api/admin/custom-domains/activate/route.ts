@@ -82,7 +82,10 @@ export async function POST(req: NextRequest) {
       }),
     ]);
 
-    invalidateInvitationLookup(targetInvitation.invitationSlug, targetInvitation.subdomain, targetInvitation.id);
+    if (targetInvitation.customDomain && targetInvitation.customDomain !== domain) {
+      invalidateInvitationLookup(targetInvitation.invitationSlug, targetInvitation.subdomain, targetInvitation.id, targetInvitation.customDomain);
+    }
+    invalidateInvitationLookup(targetInvitation.invitationSlug, targetInvitation.subdomain, targetInvitation.id, domain);
     await purgeInvitationEdgeCache({ ...targetInvitation, customDomain: domain });
 
     return NextResponse.json({

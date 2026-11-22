@@ -12,6 +12,7 @@ import { isSafePathSegment } from "./fsSafe";
 import { resolveSubEventMeta } from "./invitationUtils";
 import { bumpRenderVersion, currentRenderVersion, demoVersionKey, splitVersionMarker, withVersionMarker, writeFileAtomic } from "./renderVersion";
 import { syncSharedFiles } from "./sharedFiles";
+import { resolvePublicAppOrigin } from "./domainUtils";
 
 function cleanDemoId(themeId: string): string {
   const cleanId = themeId.toLowerCase().trim();
@@ -70,7 +71,7 @@ async function buildStaticDemo(cleanId: string, customDemoData: any, version: nu
   const data = (await composeInvitationData(buildDemoInvitation(cleanId, resolvedData, theme?.eventType, theme?.subEvent))) as Record<string, any>;
 
   // Construct absolute OpenGraph meta tags for rich WhatsApp & social share previews
-  const demoHost = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
+  const demoHost = resolvePublicAppOrigin();
   const rawCover = (data as any).landingCoverUrl || (data as any).sidebarPhotoUrl || `/demo/${cleanId}/cover.webp`;
   const absoluteCover = rawCover.startsWith("http") ? rawCover : `${demoHost}${rawCover.startsWith("/") ? "" : "/"}${rawCover}`;
   const evType = ((data as any).eventType || "WEDDING").toUpperCase();

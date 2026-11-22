@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { getApexRootDomain, isCustomDomainHost } from "@/lib/domainUtils";
+import { getApexRootDomain, isCustomDomainHost, resolvePublicAppOrigin } from "@/lib/domainUtils";
 
 /**
  * Mendeteksi URL origin aplikasi secara dinamis dari incoming request headers.
@@ -21,7 +21,7 @@ export async function getDynamicServerAppUrl(defaultFallback = "http://localhost
     // Fallback jika dipanggil di luar konteks request (misal background script / build time)
   }
 
-  const envUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "");
+  const envUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_ROOT_DOMAIN ? resolvePublicAppOrigin() : "";
   return (envUrl || defaultFallback).replace(/\/$/, "");
 }
 

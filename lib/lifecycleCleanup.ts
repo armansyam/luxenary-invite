@@ -4,7 +4,7 @@ import { prisma, pool } from "./prisma";
 import { logger } from "./logger";
 import { getAdminSetting } from "./settings";
 import { buildAndSavePublishedHtml, deletePublishedHtml } from "./staticPublisher";
-import { deleteFile, deleteInvitationBucketObjects, isInvitationOwnedUpload } from "./storage";
+import { STORAGE_PROVIDER, deleteFile, deleteInvitationBucketObjects, isInvitationOwnedUpload } from "./storage";
 import { purgeInvitationEdgeCache } from "./cloudflare";
 import { isNasArchiveEnabled, purgeNasArchive, syncInvitationToNasArchive } from "./nasArchive";
 import { DAY_MS, computeLifecycleDates, formatDateInEventTimezone, getPrimaryEventTimezone, type LifecycleSettings } from "./lifecycleDates";
@@ -169,19 +169,19 @@ interface ExpiredInvitation extends WarningTarget {
 }
 
 /**
- * Menutup masa galeri: foto tamu dibersihkan (masa simpannya memang berakhir, arsip tidak memuatnya), lalu undangan
- * diarsipkan dan DIVERIFIKASI, baru kemudian artefak hot storage lainnya dihapus. Bila arsip gagal, HTML dan media
- * undangan tidak disentuh dan undangan dicoba lagi pada eksekusi berikutnya.
+ * Menutup masa galeri: undangan diarsipkan dan DIVERIFIKASI terlebih dahulu ke NAS (bila aktif) sebelum artefak hot
+ * storage apa pun dihapus, termasuk foto candid tamu. Bila arsip gagal, tidak ada data yang terlanjur hilang dan
+ * undangan dicoba lagi pada eksekusi berikutnya. Perubahan status DB (hapus RSVP + status ARCHIVED) dibungkus transaksi.
  */
 async function archiveExpiredInvitation(inv: ExpiredInvitation, nasEnabled: boolean): Promise<ArchiveFailure | null> {
-  await purgeGuestMemories(inv.id);
-
   if (nasEnabled) {
     const sync = await syncInvitationToNasArchive(inv.id);
     if (!sync.success) {
       return { invitationId: inv.id, slug: inv.invitationSlug, reason: sync.error ?? "Sinkronisasi arsip gagal" };
     }
   }
+
+  await purgeGuestMemories(inv.id);
 
   await deletePublishedHtml(inv.id);
   await deleteInvitationDraft(inv.id);
@@ -195,9 +195,11 @@ async function archiveExpiredInvitation(inv: ExpiredInvitation, nasEnabled: bool
     .rm(path.join(process.cwd(), "public", "uploads", "invitations", inv.id), { recursive: true, force: true })
     .catch(() => {});
 
-  await prisma.rsvp.deleteMany({ where: { invitationId: inv.id } });
-  await prisma.invitation.update({ where: { id: inv.id }, data: { status: "ARCHIVED", memoriesUploadLocked: true } });
-  invalidateInvitationLookup(inv.invitationSlug, inv.subdomain, inv.id);
+  await prisma.$transaction([
+    prisma.rsvp.deleteMany({ where: { invitationId: inv.id } }),
+    prisma.invitation.update({ where: { id: inv.id }, data: { status: "ARCHIVED", memoriesUploadLocked: true } }),
+  ]);
+  invalidateInvitationLookup(inv.invitationSlug, inv.subdomain, inv.id, inv.customDomain);
   await purgeInvitationEdgeCache(inv);
   return null;
 }
@@ -303,17 +305,20 @@ export interface StaleDataCleanupResult {
 
 const FULFILLMENT_GRACE_MS = 5 * 60 * 1000;
 const WEBHOOK_LOG_RETENTION_DAYS = 365;
+/** Nilai bawaan retensi draf gratis bila `retention_free_draft_days` belum dikonfigurasi di AdminSetting. */
 export const FREE_DRAFT_RETENTION_DAYS = 14;
 
 /**
- * Menghapus draf gratis kedaluwarsa (> 14 hari sejak dibuat tanpa order terhubung).
- * Menjalankan File Cleanup Invariant 3-langkah sebelum menghapus baris undangan di DB.
+ * Menghapus draf gratis kedaluwarsa (melewati `retention_free_draft_days`, bawaan 14 hari sejak dibuat tanpa order terhubung).
+ * Menjalankan File Cleanup Invariant 3-langkah dan membersihkan cache lookup sebelum/sesudah menghapus baris undangan di DB.
  */
 export async function purgeExpiredFreeDrafts(
   now: Date = new Date(),
   dryRun: boolean = false,
 ): Promise<number> {
-  const cutoff = new Date(now.getTime() - FREE_DRAFT_RETENTION_DAYS * DAY_MS);
+  const parsedDays = Number.parseInt(await getAdminSetting("retention_free_draft_days", ""), 10);
+  const retentionDays = Number.isFinite(parsedDays) && parsedDays >= 1 ? parsedDays : FREE_DRAFT_RETENTION_DAYS;
+  const cutoff = new Date(now.getTime() - retentionDays * DAY_MS);
   const expired = await prisma.invitation.findMany({
     where: {
       isFreeDraft: true,
@@ -321,7 +326,7 @@ export async function purgeExpiredFreeDrafts(
       orderId: null,
       createdAt: { lt: cutoff },
     },
-    select: { id: true },
+    select: { id: true, invitationSlug: true, subdomain: true, customDomain: true },
   });
 
   if (dryRun || expired.length === 0) return expired.length;
@@ -340,10 +345,11 @@ export async function purgeExpiredFreeDrafts(
           force: true,
         })
         .catch(() => {});
-      if (process.env.STORAGE_PROVIDER === "r2" || process.env.STORAGE_PROVIDER === "s3") {
+      if (STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3") {
         await deleteInvitationBucketObjects(inv.id).catch(() => {});
       }
       await prisma.invitation.delete({ where: { id: inv.id } });
+      invalidateInvitationLookup(inv.invitationSlug, inv.subdomain, inv.id, inv.customDomain);
       purged++;
     } catch (err) {
       logger.error("LifecycleCleanup", `Gagal membersihkan draf gratis kedaluwarsa ${inv.id}`, err);

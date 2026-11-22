@@ -102,6 +102,32 @@ export function getApexRootDomain(): string {
 }
 
 /**
+ * Satu-satunya sumber origin publik aplikasi dari variabel lingkungan (tanpa header Host yang bisa dipalsukan).
+ * Domain publik selalu memakai `https://`; `http://` hanya dipakai untuk localhost/IP lokal.
+ */
+export function resolvePublicAppOrigin(): string {
+  const configured = (process.env.NEXT_PUBLIC_APP_URL || "").trim().replace(/\/$/, "");
+  if (configured) return configured;
+
+  const root = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || "")
+    .trim()
+    .replace(/^https?:\/\//, "")
+    .replace(/\/$/, "");
+  if (root) {
+    const hostOnly = root.split(":")[0].toLowerCase();
+    const isLocal =
+      hostOnly === "localhost" ||
+      hostOnly.endsWith(".localhost") ||
+      hostOnly.startsWith("127.") ||
+      hostOnly.startsWith("192.168.") ||
+      hostOnly.startsWith("10.");
+    return `${isLocal ? "http" : "https"}://${root}`;
+  }
+
+  return "http://localhost:3000";
+}
+
+/**
  * Returns the full, pure subdomain public invitation URL:
  * - Localhost:  http://[subdomain].localhost:3000(?to=...)
  * - Production: https://[subdomain].[apexDomain](?to=...)

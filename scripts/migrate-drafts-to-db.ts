@@ -9,6 +9,7 @@ import "dotenv/config";
 import fs from "fs";
 import path from "path";
 import { prisma, pool } from "../lib/prisma";
+import { normalizeDraftEventType } from "../lib/invitationDraft";
 
 const DRAFTS_DIR = path.join(process.cwd(), "data", "drafts");
 
@@ -31,7 +32,7 @@ async function main() {
     // dirender untuk tema dan jenis acara undangan saat ini.
     const head = raw.slice(0, 300);
     const themeId = head.match(/<!--\s*lux-theme:\s*([a-zA-Z0-9_-]+)\s*-->/)?.[1] ?? inv.themeId;
-    const eventType = (head.match(/<!--\s*lux-event:\s*([a-zA-Z0-9_-]+)\s*-->/)?.[1] ?? inv.eventType).toUpperCase();
+    const eventType = normalizeDraftEventType(head.match(/<!--\s*lux-event:\s*([a-zA-Z0-9_-]+)\s*-->/)?.[1] ?? inv.eventType);
     const html = raw.replace(/^<!--\s*lux-theme:[^>]*-->\n?/, "").replace(/^<!--\s*lux-event:[^>]*-->\n?/, "");
     const created = await prisma.invitationDraft.createMany({ data: [{ invitationId, themeId, eventType, html }], skipDuplicates: true });
     if (created.count) imported++;

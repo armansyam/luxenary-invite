@@ -38,6 +38,8 @@ function PackageSelectionContent() {
   const [packages, setPackages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [platformName, setPlatformName] = useState("");
+  const [freeDraftRetentionDays, setFreeDraftRetentionDays] = useState<number>(14);
+  const [freeDraftMaxPhotos, setFreeDraftMaxPhotos] = useState<number>(3);
   const [serviceStatus, setServiceStatus] = useState<any>(null);
   const [enabledEventTypes, setEnabledEventTypes] = useState<string[]>([]);
   const [existingFreeDraftId, setExistingFreeDraftId] = useState<string | null>(null);
@@ -89,6 +91,12 @@ function PackageSelectionContent() {
         if (settingsData) {
           if (Array.isArray(settingsData.packages)) setPackages(settingsData.packages);
           if (settingsData.platformName) setPlatformName(settingsData.platformName);
+          if (Number.isFinite(Number(settingsData.freeDraftRetentionDays)) && Number(settingsData.freeDraftRetentionDays) >= 1) {
+            setFreeDraftRetentionDays(Number(settingsData.freeDraftRetentionDays));
+          }
+          if (Number.isFinite(Number(settingsData.freeDraftMaxPhotos)) && Number(settingsData.freeDraftMaxPhotos) >= 1) {
+            setFreeDraftMaxPhotos(Number(settingsData.freeDraftMaxPhotos));
+          }
           if (settingsData.serviceStatus) setServiceStatus(settingsData.serviceStatus);
           if (Array.isArray(settingsData.enabledEventTypes)) setEnabledEventTypes(settingsData.enabledEventTypes);
         }
@@ -587,7 +595,7 @@ function PackageSelectionContent() {
                     Coba Buat Draf Gratis Terlebih Dahulu
                   </h2>
                   <p className="text-xs text-stone-600 leading-relaxed max-w-2xl">
-                    Uji coba studio editor, pilih jenis acara &amp; tema, unggah hingga 3 foto, dan lihat pratinjau undangan secara langsung selama 14 hari sebelum mengaktifkan paket.
+                    Uji coba studio editor, pilih jenis acara &amp; tema, unggah hingga {freeDraftMaxPhotos} foto, dan lihat pratinjau undangan secara langsung selama {freeDraftRetentionDays} hari sebelum mengaktifkan paket.
                   </p>
                   {draftError && !eventPickerOpen && (
                     <p className="text-xs font-semibold text-rose-700 pt-1">{draftError}</p>

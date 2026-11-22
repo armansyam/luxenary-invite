@@ -6,6 +6,7 @@ import { recompileStaleStaticDemos } from "@/lib/demoPublisher";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
+import { sendCronFailureAlertEmail } from "@/lib/mailer";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,13 @@ export async function POST(req: NextRequest) {
     const stale = await runStaleDataCleanup({ dryRun });
     const demos = dryRun ? { recompiled: 0, failed: [] as string[] } : await recompileStaleStaticDemos();
     const failedCount = lifecycle.archiveFailures.length;
+    if (!dryRun && failedCount > 0) {
+      void sendCronFailureAlertEmail({
+        jobName: "Auto-Cleanup & Arsip Undangan",
+        summary: `${failedCount} undangan gagal diarsipkan saat cron cleanup berjalan.`,
+        details: lifecycle.archiveFailures.map((f) => `${f.invitationId}: ${f.reason}`).join("\n"),
+      });
+    }
 
     return NextResponse.json({
       success: failedCount === 0,
@@ -69,6 +77,11 @@ export async function POST(req: NextRequest) {
         (failedCount > 0 ? `, ${failedCount} undangan gagal diarsipkan dan akan dicoba lagi.` : "."),
     });
   } catch (error) {
+    void sendCronFailureAlertEmail({
+      jobName: "Auto-Cleanup & Retensi",
+      summary: "Proses pembersihan terjadwal gagal total.",
+      details: error instanceof Error ? error.message : String(error),
+    });
     return routeError("CronCleanup", error, "Gagal menjalankan auto-cleanup");
   }
 }

@@ -36,10 +36,14 @@ async function makeInvitation(eventType: string, themeId: string, status: "PUBLI
 }
 
 afterAll(async () => {
-  await prisma.rsvp.deleteMany({ where: { invitationId: { in: ids.invitations } } });
-  await prisma.invitation.deleteMany({ where: { id: { in: ids.invitations } } });
-  await prisma.order.deleteMany({ where: { userId: { in: ids.users } } });
-  await prisma.user.deleteMany({ where: { id: { in: ids.users } } });
+  if (ids.invitations.length) {
+    await prisma.rsvp.deleteMany({ where: { invitationId: { in: ids.invitations } } });
+    await prisma.invitation.deleteMany({ where: { id: { in: ids.invitations } } });
+  }
+  if (ids.users.length) {
+    await prisma.order.deleteMany({ where: { userId: { in: ids.users } } });
+    await prisma.user.deleteMany({ where: { id: { in: ids.users } } });
+  }
   await prisma.$disconnect();
   await pool.end();
 });
@@ -204,7 +208,7 @@ describe("master tema: RSVP terkirim dan token tidak di dalam komentar", () => {
   });
 
   it("kartu Kado Digital universal: nama bank dan tombol Salin tidak memakai var(--primary) murni (kontras 1,9:1 di sinergi)", () => {
-    const src = fs.readFileSync(path.join(process.cwd(), "lib/themeEngine.ts"), "utf8");
+    const src = fs.readFileSync(path.join(process.cwd(), "lib/themeEngine/universalSections.ts"), "utf8");
     const start = src.indexOf("function buildUniversalGiftSection(");
     const block = src.slice(start, src.indexOf("\n}\n", start));
     expect(start).toBeGreaterThan(-1);

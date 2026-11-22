@@ -112,17 +112,15 @@ export function buildWeddingEventsHtml(params: {
     .map((ev: any, idx: number) => {
       let sessionDateFormatted = "";
       if (ev.date) {
-        try {
-          const sd = new Date(ev.date);
-          if (!isNaN(sd.getTime())) {
-            sessionDateFormatted = sd.toLocaleDateString(dict.intlLocale, {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            });
-          }
-        } catch {}
+        const sd = new Date(ev.date);
+        if (!isNaN(sd.getTime())) {
+          sessionDateFormatted = sd.toLocaleDateString(dict.intlLocale, {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          });
+        }
       }
       const showSessionDate = Boolean(sessionDateFormatted && sessionDateFormatted !== weddingDate);
 

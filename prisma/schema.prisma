@@ -36,17 +36,17 @@ model AdminAuditLog {
   admin     Admin?   @relation(fields: [adminId], references: [id], onDelete: SetNull)
 
   @@index([adminId])
+  @@index([createdAt])
+  @@index([action])
   @@map("admin_audit_logs")
 }
 
 model User {
   id                     String                  @id @default(uuid())
-  googleId               String?                 @unique
   email                  String                  @unique
   name                   String
   role                   UserRole                @default(CLIENT)
   phoneNumber            String?
-  avatarUrl              String?
   passwordHash           String?
   /// Mitra WO yang mendaftarkan akun klien ini secara langsung dari Portal Mitra (mendapat diskon grosir otomatis tanpa kupon).
   provisionedByPartnerId String?                 @map("provisioned_by_partner_id")
@@ -107,7 +107,10 @@ model Order {
 
   @@index([userId])
   @@index([status])
+  @@index([status, expiredAt])
+  @@index([status, paidAt])
   @@index([gatewayId])
+  @@index([gatewayTxId])
   @@index([promoCouponId])
   @@index([linkedInvitationId])
   @@map("orders")
@@ -144,7 +147,6 @@ model Invitation {
   openingQuoteRef      String?
   dresscode            String?
   musicUrl             String?
-  liveStreamUrl        String?
   isLockedPermanently  Boolean           @default(false)
   adminUnlockedUntil   DateTime?
   memoriesUploadLocked Boolean           @default(false)
@@ -162,7 +164,7 @@ model Invitation {
   guestMemories        GuestMemory[]
   guests               Guest[]
   giftClaims           GiftClaim[]
-  order                Order?            @relation("InvitationOrder", fields: [orderId], references: [id])
+  order                Order?            @relation("InvitationOrder", fields: [orderId], references: [id], onDelete: SetNull)
   linkedOrders         Order[]           @relation("OrderLinkedInvitation")
   user                 User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   theme                Theme             @relation(fields: [themeId], references: [id], onDelete: Restrict)
@@ -183,7 +185,7 @@ model Invitation {
 model InvitationDraft {
   invitationId String     @id @map("invitation_id")
   themeId      String     @map("theme_id")
-  eventType    String     @map("event_type")
+  eventType    EventType  @map("event_type")
   html         String
   createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz
   invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
@@ -202,6 +204,7 @@ model InvitationMedia {
   invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 
   @@index([invitationId])
+  @@index([invitationId, mediaSlot])
   @@map("media")
 }
 
@@ -243,10 +246,11 @@ model Rsvp {
   repliedAt     DateTime?  @map("replied_at")
   respondedAt   DateTime   @default(now())
   editTokenHash String?
-  guest         Guest?     @relation(fields: [guestId], references: [id])
+  guest         Guest?     @relation(fields: [guestId], references: [id], onDelete: SetNull)
   invitation    Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 
   @@index([invitationId])
+  @@index([invitationId, isHidden, respondedAt])
   @@index([guestId])
   @@map("rsvps")
 }
@@ -280,6 +284,8 @@ model GuestMemory {
   invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 
   @@index([invitationId])
+  @@index([invitationId, senderEmail])
+  @@index([invitationId, createdAt])
   @@map("guest_memories")
 }
 
@@ -333,6 +339,7 @@ model Theme {
   invitations     Invitation[]
   builderRevisions ThemeBuilderRevision[]
 
+  @@index([isActive, eventType, sortOrder])
   @@map("themes")
 }
 
@@ -687,6 +694,7 @@ model EmailOtpToken {
   createdAt  DateTime  @default(now()) @map("created_at")
 
   @@index([email, purpose, expiresAt])
+  @@index([expiresAt])
   @@map("email_otp_tokens")
 }
 
