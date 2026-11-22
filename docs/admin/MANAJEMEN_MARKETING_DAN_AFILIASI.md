@@ -63,12 +63,15 @@ Admin mengelola mitra dari tab **Mitra Reseller / WO** (`/admin?tab=marketing`):
 2. **Skema Potongan Harga Langsung:**
    - **Persentase (`PERCENT`, maks. 95%):** Memotong langsung harga dasar paket baru (contoh: 20% dari Rp 149.000 = hemat Rp 29.800).
    - **Nominal Tetap (`NOMINAL`):** Memotong langsung nominal tetap rupiah (menjamin tagihan akhir minimal Rp 1.000 agar valid di payment gateway).
-3. **Alur Aktivasi Akun Klien oleh Mitra (`/partner` → `/auth/set-password`):**
+3. **Alur B2B Reseller — WO Bayar Paket Awal & Klien Bebas Upgrade di Platform (`/partner` → `/auth/set-password` → `/dashboard/setup`):**
    - Mitra login di `/partner` (Email + Kata Sandi + OTP 6-digit SMTP saat aktivasi pertama / reset sandi).
-   - Mitra mendaftarkan klien (`Nama`, `Email`, `No. WA opsional`) melalui `POST /api/partner/clients`.
-   - Sistem membuat `User` (`passwordHash: null`, `provisionedByPartnerId: partner.id`), menerbitkan **token aktivasi sekali pakai berlaku 48 jam** (`ClientActivationToken`, hash HMAC-SHA256), dan mengirim **email co-branded `{Nama WO} × Luxvite`** via SMTP (`lib/mailer.ts`) lengkap dengan tombol salin & buka WhatsApp cadangan.
-   - Klien mengklik tautan `/auth/set-password?token=...`, membuat kata sandi (8–72 karakter, hash `bcrypt` cost 12, konsumsi atomik `pg_advisory_xact_lock`), lalu otomatis login menuju `/onboarding`.
-   - Mitra dapat memantau seluruh **Data Klien Ditangani**, mengirim ulang tautan aktivasi 48 jam (`POST /api/partner/clients/[id]/resend-activation`), memantau **Laporan Transaksi Klien** (Harga Normal → Potongan Mitra → Total Dibayar), serta **Mengunduh CSV Laporan Transaksi**.
+   - Mitra mendaftarkan klien (`Nama`, `Email`, `No. WA opsional`) **sekaligus memilih paket** (`Serenade` / `Symphony` / `Eternity`) melalui `POST /api/partner/clients`.
+   - Sistem membuat tagihan dengan **Harga Resmi − Potongan Mitra (%)** dan membuka **Modal Pembayaran Mitra** (`/api/partner/orders/[id]/pay`, `/status`, `/upload-proof`) mendukung QRIS/Snap Midtrans maupun Transfer Bank Manual.
+   - Begitu pembayaran berstatus **LUNAS (`PAID`)**:
+     - Sistem otomatis menerbitkan **token aktivasi sekali pakai berlaku 48 jam** (`ClientActivationToken`, hash HMAC-SHA256) dan mengirim **email co-branded `{Nama WO} × Luxvite`** via SMTP (`lib/mailer.ts`), lengkap dengan tombol salin/buka WhatsApp cadangan di `/partner`.
+     - Klien mengklik `/auth/set-password?token=...`, membuat kata sandi (hash `bcrypt` cost 12, konsumsi atomik `pg_advisory_xact_lock`), otomatis login, lalu diarahkan langsung ke `/dashboard/setup` (paket sudah aktif/lunas, **tanpa melihat harga modal WO**).
+   - **Upgrade & Add-On Lanjutan adalah Ranah Platform:** Jika di kemudian hari klien ingin menaikkan kelas paket (`UPGRADE`) atau menambah kuota foto/masa aktif galeri (`MEMORIES_TOPUP` / `GALLERY_EXTENSION`), transaksi dilakukan mandiri langsung di `/dashboard` klien dengan harga normal platform (tidak lagi melalui WO dan tidak muncul pada laporan tagihan WO).
+   - Mitra dapat memantau seluruh **Data Klien Ditangani**, mengirim ulang tautan aktivasi 48 jam (`POST /api/partner/clients/[id]/resend-activation`), memantau **Laporan Transaksi Paket Mitra** (Harga Normal → Potongan Mitra → Total Dibayar), serta **Mengunduh CSV Laporan Transaksi**.
 
 ---
 

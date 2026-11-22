@@ -48,6 +48,56 @@ interface PartnerInfo {
   clientStats?: PartnerClientStats;
 }
 
+interface PartnerPackageOption {
+  id: "TIER_1" | "TIER_2" | "TIER_3";
+  name: string;
+  desc: string;
+  badge: string | null;
+  isFeatured: boolean;
+  basePrice: number;
+  discountAmount: number;
+  partnerPrice: number;
+}
+
+interface PartnerPlatformConfig {
+  name: string;
+  paymentMode: "GATEWAY" | "MANUAL";
+  feePercent: number;
+  feePayer: "BUYER" | "MERCHANT";
+  bank: {
+    bankName: string;
+    bankAccountNumber: string;
+    bankAccountHolder: string;
+    bankInstructions: string;
+  };
+  packages: PartnerPackageOption[];
+}
+
+interface ActivePaymentModalState {
+  orderId: string;
+  invoiceNumber: string;
+  planType: string;
+  clientId: string;
+  clientName: string;
+  clientEmail: string;
+  amount: number;
+  chargedAmount: number | null;
+  discountAmount: number;
+  paymentMethod: "GATEWAY" | "MANUAL_TRANSFER" | string;
+  status: "PENDING" | "PAID" | "EXPIRED" | string;
+  qrString?: string | null;
+  checkoutUrl?: string | null;
+  expiryTimestamp?: number | null;
+  hasProof?: boolean;
+  rejectReason?: string | null;
+  bank?: {
+    bankName: string;
+    bankAccountNumber: string;
+    bankAccountHolder: string;
+    bankInstructions: string;
+  };
+}
+
 interface ProvisionedClient {
   id: string;
   name: string;
@@ -55,6 +105,7 @@ interface ProvisionedClient {
   phoneNumber: string | null;
   createdAt: string;
   isActivated: boolean;
+  hasPaidOrder?: boolean;
   invitationCount: number;
   activation: {
     expiresAt: string;
@@ -66,10 +117,15 @@ interface ProvisionedClient {
     id: string;
     invoiceNumber: string;
     planType: string;
+    orderType?: string;
     status: string;
+    paymentMethod?: string;
     amount: number;
     discountAmount: number;
+    hasProof?: boolean;
+    rejectReason?: string | null;
     paidAt: string | null;
+    expiredAt?: string | null;
   } | null;
 }
 
@@ -83,19 +139,6 @@ interface ActivationDeliveryResult {
   whatsappText: string;
   whatsappUrl: string;
   reissued?: boolean;
-}
-
-interface PartnerCoupon {
-  id: string;
-  code: string;
-  description: string | null;
-  discountType: "NOMINAL" | "PERCENT";
-  discountValue: number;
-  quotaLimit: number | null;
-  usageCount: number;
-  validFrom: string | null;
-  validUntil: string | null;
-  isActive: boolean;
 }
 
 interface PartnerCommission {
@@ -183,6 +226,7 @@ function EyeToggleIcon({ shown }: { shown: boolean }) {
 export default function PartnerPortalPage() {
   const [checking, setChecking] = useState(true);
   const [partner, setPartner] = useState<PartnerInfo | null>(null);
+  const [platformConfig, setPlatformConfig] = useState<PartnerPlatformConfig | null>(null);
   const [clients, setClients] = useState<ProvisionedClient[]>([]);
   const [clientTransactions, setClientTransactions] = useState<PartnerClientTransaction[]>([]);
   const [clientsLoading, setClientsLoading] = useState(false);
@@ -196,15 +240,24 @@ export default function PartnerPortalPage() {
   const [txSearch, setTxSearch] = useState("");
   const [txStatusFilter, setTxStatusFilter] = useState<"ALL" | "PAID" | "PENDING" | "EXPIRED">("ALL");
 
-  // Client Provisioning Form State
+  // Client Provisioning & Package Order Form State (Opsi A: WO Pilih Paket & Bayar Harga Potongan)
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [clientPhone, setClientPhone] = useState("");
+  const [selectedPlanType, setSelectedPlanType] = useState<"TIER_1" | "TIER_2" | "TIER_3">("TIER_2");
   const [creatingClient, setCreatingClient] = useState(false);
   const [provisionError, setProvisionError] = useState("");
   const [deliveryResult, setDeliveryResult] = useState<ActivationDeliveryResult | null>(null);
   const [resendingClientId, setResendingClientId] = useState<string | null>(null);
   const [copiedTarget, setCopiedTarget] = useState<"wa" | "link" | null>(null);
+
+  // Integrated WO Payment Modal State
+  const [activePayment, setActivePayment] = useState<ActivePaymentModalState | null>(null);
+  const [paymentInitLoading, setPaymentInitLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [uploadingProof, setUploadingProof] = useState(false);
+  const [proofSuccessMsg, setProofSuccessMsg] = useState("");
 
   // Auth state (Login Email+Password, Aktivasi Akun via OTP, Reset Sandi via OTP)
   const [authView, setAuthView] = useState<PartnerAuthView>("login");
@@ -259,6 +312,13 @@ export default function PartnerPortalPage() {
       const data = await res.json();
       if (res.ok && data.success) {
         setPartner(data.partner);
+        if (data.platform) {
+          setPlatformConfig(data.platform);
+          const featured = (data.platform.packages || []).find((p: PartnerPackageOption) => p.isFeatured);
+          if (featured) {
+            setSelectedPlanType((prev) => prev || featured.id);
+          }
+        }
         setClientTransactions(Array.isArray(data.clientTransactions) ? data.clientTransactions : []);
         setCommissions(Array.isArray(data.commissions) ? data.commissions : []);
         setPayouts(Array.isArray(data.payouts) ? data.payouts : []);
@@ -444,6 +504,164 @@ export default function PartnerPortalPage() {
     setTimeout(() => setCopiedTarget((curr) => (curr === target ? null : curr)), 2200);
   };
 
+  const openPaymentModalForOrder = useCallback(
+    async (opts: {
+      orderId: string;
+      invoiceNumber: string;
+      planType: string;
+      clientId: string;
+      clientName: string;
+      clientEmail: string;
+      amount: number;
+      discountAmount: number;
+      paymentMethod: string;
+      status: string;
+      hasProof?: boolean;
+      rejectReason?: string | null;
+    }) => {
+      setPaymentError("");
+      setProofFile(null);
+      setProofSuccessMsg("");
+      setActivePayment({
+        ...opts,
+        chargedAmount: null,
+        bank: platformConfig?.bank,
+      });
+      setPaymentInitLoading(true);
+      try {
+        const res = await fetch(`/api/partner/orders/${opts.orderId}/pay`, {
+          method: "POST",
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setPaymentError(data.error || "Gagal menyiapkan sesi pembayaran.");
+          return;
+        }
+        if (data.alreadyPaid || data.status === "PAID") {
+          setActivePayment((prev) => (prev ? { ...prev, status: "PAID" } : null));
+          await loadDashboard();
+          return;
+        }
+        setActivePayment((prev) =>
+          prev
+            ? {
+                ...prev,
+                paymentMethod: data.paymentMethod || prev.paymentMethod,
+                amount: typeof data.amount === "number" ? data.amount : prev.amount,
+                chargedAmount: typeof data.chargedAmount === "number" ? data.chargedAmount : prev.chargedAmount,
+                qrString: data.qrString || null,
+                checkoutUrl: data.checkoutUrl || null,
+                expiryTimestamp: data.expiryTimestamp || null,
+                hasProof: Boolean(data.hasProof ?? prev.hasProof),
+                bank: data.bank || prev.bank,
+              }
+            : null,
+        );
+      } catch {
+        setPaymentError("Terjadi gangguan koneksi saat menyiapkan pembayaran.");
+      } finally {
+        setPaymentInitLoading(false);
+      }
+    },
+    [platformConfig?.bank, loadDashboard],
+  );
+
+  const activePaymentOrderId = activePayment?.orderId ?? null;
+  const activePaymentStatus = activePayment?.status ?? null;
+  const activePaymentClientId = activePayment?.clientId ?? null;
+
+  // Auto-poll status pembayaran saat Modal Pembayaran Mitra terbuka & masih PENDING
+  useEffect(() => {
+    if (!activePaymentOrderId || !activePaymentClientId || activePaymentStatus !== "PENDING") return;
+    const orderId = activePaymentOrderId;
+    const clientId = activePaymentClientId;
+    let cancelled = false;
+
+    const timer = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/partner/orders/${orderId}/status`, { cache: "no-store" });
+        if (!res.ok || cancelled) return;
+        const st = await res.json();
+        if (cancelled) return;
+
+        if (st.status === "PAID") {
+          setActivePayment((prev) => (prev && prev.orderId === orderId ? { ...prev, status: "PAID" } : prev));
+          await loadDashboard();
+          // Otomatis ambil/terbitkan link aktivasi + teks WhatsApp agar WO langsung bisa salin & kirim ke pengantin!
+          try {
+            const actRes = await fetch(`/api/partner/clients/${clientId}/resend-activation`, { method: "POST" });
+            if (actRes.ok) {
+              const actData = await actRes.json();
+              if (actData.success && !cancelled) {
+                setDeliveryResult({
+                  clientName: actData.client.name,
+                  clientEmail: actData.client.email,
+                  activationUrl: actData.activationUrl,
+                  expiresAt: actData.expiresAt,
+                  emailSent: Boolean(actData.emailSent),
+                  emailError: actData.emailError || null,
+                  whatsappText: actData.whatsappText,
+                  whatsappUrl: actData.whatsappUrl,
+                  reissued: false,
+                });
+              }
+            }
+          } catch {
+            // Link sudah otomatis dikirim lewat email di backend
+          }
+        } else if (st.status === "EXPIRED") {
+          setActivePayment((prev) => (prev && prev.orderId === orderId ? { ...prev, status: "EXPIRED" } : prev));
+        } else {
+          setActivePayment((prev) =>
+            prev && prev.orderId === orderId
+              ? {
+                  ...prev,
+                  hasProof: Boolean(st.hasProof),
+                  rejectReason: st.rejectReason || null,
+                }
+              : prev,
+          );
+        }
+      } catch {
+        // Abaikan error polling sementara
+      }
+    }, 4000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [activePaymentOrderId, activePaymentStatus, activePaymentClientId, loadDashboard]);
+
+  const handleUploadPartnerProof = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activePayment || !proofFile) return;
+    setPaymentError("");
+    setProofSuccessMsg("");
+    setUploadingProof(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", proofFile);
+      const res = await fetch(`/api/partner/orders/${activePayment.orderId}/upload-proof`, {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setPaymentError(data.error || "Gagal mengunggah bukti transfer.");
+        return;
+      }
+      setProofSuccessMsg(data.message || "Bukti transfer berhasil diunggah.");
+      setProofFile(null);
+      setActivePayment((prev) => (prev ? { ...prev, hasProof: true, rejectReason: null } : null));
+      await loadDashboard();
+    } catch {
+      setPaymentError("Terjadi gangguan koneksi saat mengunggah bukti transfer.");
+    } finally {
+      setUploadingProof(false);
+    }
+  };
+
   const handleCreateClient = async (e: React.FormEvent) => {
     e.preventDefault();
     setProvisionError("");
@@ -456,31 +674,38 @@ export default function PartnerPortalPage() {
           name: clientName.trim(),
           email: clientEmail.trim(),
           phoneNumber: clientPhone.trim() || undefined,
+          planType: selectedPlanType,
         }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        setProvisionError(data.error || "Gagal mendaftarkan akun klien.");
+        setProvisionError(data.error || "Gagal membuat tagihan paket klien.");
         return;
       }
 
-      setDeliveryResult({
-        clientName: data.client.name,
-        clientEmail: data.client.email,
-        activationUrl: data.activationUrl,
-        expiresAt: data.expiresAt,
-        emailSent: Boolean(data.emailSent),
-        emailError: data.emailError || null,
-        whatsappText: data.whatsappText,
-        whatsappUrl: data.whatsappUrl,
-        reissued: Boolean(data.reissued),
-      });
       setClientName("");
       setClientEmail("");
       setClientPhone("");
-      await loadClients();
+      await loadDashboard();
+
+      // Langsung buka Modal Pembayaran Mitra WO untuk melunasi paket dengan harga potongan mitra!
+      if (data.order && data.client) {
+        await openPaymentModalForOrder({
+          orderId: data.order.id,
+          invoiceNumber: data.order.invoiceNumber,
+          planType: data.order.planType,
+          clientId: data.client.id,
+          clientName: data.client.name,
+          clientEmail: data.client.email,
+          amount: Number(data.order.amount),
+          discountAmount: Number(data.order.discountAmount || 0),
+          paymentMethod: data.order.paymentMethod || "GATEWAY",
+          status: data.order.status || "PENDING",
+          hasProof: Boolean(data.order.hasProof),
+        });
+      }
     } catch {
-      setProvisionError("Terjadi gangguan koneksi saat mendaftarkan klien.");
+      setProvisionError("Terjadi gangguan koneksi saat membuat tagihan klien.");
     } finally {
       setCreatingClient(false);
     }
@@ -868,6 +1093,11 @@ export default function PartnerPortalPage() {
   const filteredTxTotalDiscount = filteredTransactions.reduce((s, t) => s + t.discountAmount, 0);
   const filteredTxTotalFinal = filteredTransactions.reduce((s, t) => s + t.finalAmount, 0);
 
+  const selectedPkg =
+    platformConfig?.packages?.find((p) => p.id === selectedPlanType) ||
+    platformConfig?.packages?.[0] ||
+    null;
+
   return (
     <div className="min-h-screen bg-[#faf8f5] text-stone-900 font-sans">
       <header className="bg-white border-b border-[#eadecf]/80 sticky top-0 z-30">
@@ -902,8 +1132,8 @@ export default function PartnerPortalPage() {
               {partner.name}
             </h1>
             <p className="text-xs text-stone-500">
-              Setiap akun pengantin yang Anda daftarkan di bawah otomatis mendapat potongan{" "}
-              <strong className="text-stone-900">{discountRateLabel}</strong> langsung saat checkout paket baru (tanpa kode kupon, tanpa menunggu pencairan).
+              Daftarkan klien dan pilih paket undangannya langsung di bawah ini dengan potongan{" "}
+              <strong className="text-stone-900">{discountRateLabel}</strong> dari harga resmi. Setelah Anda melunasi tagihan harga mitra, pengantin otomatis menerima tautan aktivasi 48 jam dan langsung masuk ke studio tanpa melihat harga modal WO.
             </p>
           </div>
 
@@ -969,81 +1199,147 @@ export default function PartnerPortalPage() {
           </div>
         </section>
 
-        {/* Direct WO Client Provisioning Form */}
+        {/* Direct WO Client Provisioning + Package Wholesale Payment Form */}
         <section className="bg-white rounded-2xl border border-[#eadecf] overflow-hidden">
           <div className="px-5 py-4 border-b border-stone-100">
             <h2 className="text-sm font-bold text-stone-900">
-              Daftarkan Klien Pengantin &amp; Kirim Link Aktivasi (48 Jam)
+              Daftarkan Klien &amp; Pilih Paket Undangan (Harga Khusus Mitra {discountRateLabel})
             </h2>
             <p className="text-xs text-stone-500 mt-0.5">
-              Sistem otomatis mengirim email aktivasi atas nama <strong>{partner.name}</strong> serta menyediakan teks siap salin ke WhatsApp sebagai cadangan.
+              Anda membayarkan paket pilihan klien dengan harga potongan mitra. Setelah lunas, tautan aktivasi 48 jam atas nama <strong>{partner.name}</strong> langsung aktif agar mempelai bisa mulai membuat undangan tanpa melihat harga modal.
             </p>
           </div>
 
-          <div className="p-5 space-y-4">
+          <div className="p-5 space-y-5">
             {provisionError && (
               <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
                 {provisionError}
               </div>
             )}
 
-            <form onSubmit={handleCreateClient} className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-              <div>
-                <label htmlFor="client-name" className="block text-xs font-bold text-stone-700 mb-1.5">
-                  Nama Klien / Mempelai <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  id="client-name"
-                  type="text"
-                  required
-                  minLength={2}
-                  maxLength={100}
-                  value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
-                  placeholder="Contoh: Nadia & Bagas"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 bg-stone-50 text-sm text-stone-900 focus:outline-none focus:border-amber-700 focus:ring-2 focus:ring-amber-700/15"
-                />
+            <form onSubmit={handleCreateClient} className="space-y-4">
+              {/* Pilihan Paket dengan Harga Resmi vs Harga Khusus Mitra */}
+              {platformConfig?.packages && platformConfig.packages.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-xs font-bold text-stone-700">
+                    1. Pilih Paket Undangan Klien <span className="text-rose-500">*</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {platformConfig.packages.map((pkg) => {
+                      const isSelected = selectedPlanType === pkg.id;
+                      return (
+                        <button
+                          key={pkg.id}
+                          type="button"
+                          onClick={() => setSelectedPlanType(pkg.id)}
+                          className={`text-left p-4 rounded-2xl border-2 transition cursor-pointer relative ${
+                            isSelected
+                              ? "border-amber-700 bg-amber-50/70 shadow-xs"
+                              : "border-stone-200 bg-stone-50/50 hover:border-amber-300"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <span className="text-sm font-bold text-stone-900">{pkg.name}</span>
+                            {pkg.discountAmount > 0 && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                Hemat {formatRupiah(pkg.discountAmount)}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-baseline gap-2">
+                            {pkg.discountAmount > 0 && (
+                              <span className="text-xs text-stone-400 line-through font-mono">
+                                {formatRupiah(pkg.basePrice)}
+                              </span>
+                            )}
+                            <span className="text-lg font-extrabold text-amber-900 font-mono">
+                              {formatRupiah(pkg.partnerPrice)}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-stone-500 mt-1 line-clamp-2">{pkg.desc}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Data Klien Mempelai */}
+              <div className="space-y-2">
+                <div className="text-xs font-bold text-stone-700">2. Data Akun Mempelai / Klien</div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                  <div>
+                    <label htmlFor="client-name" className="block text-xs font-bold text-stone-700 mb-1.5">
+                      Nama Klien / Mempelai <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      id="client-name"
+                      type="text"
+                      required
+                      minLength={2}
+                      maxLength={100}
+                      value={clientName}
+                      onChange={(e) => setClientName(e.target.value)}
+                      placeholder="Contoh: Nadia & Bagas"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 bg-stone-50 text-sm text-stone-900 focus:outline-none focus:border-amber-700 focus:ring-2 focus:ring-amber-700/15"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="client-email" className="block text-xs font-bold text-stone-700 mb-1.5">
+                      Email Aktif Klien <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      id="client-email"
+                      type="email"
+                      required
+                      value={clientEmail}
+                      onChange={(e) => setClientEmail(e.target.value)}
+                      placeholder="nadia.bagas@gmail.com"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 bg-stone-50 text-sm text-stone-900 focus:outline-none focus:border-amber-700 focus:ring-2 focus:ring-amber-700/15"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="client-phone" className="block text-xs font-bold text-stone-700 mb-1.5">
+                      No. WhatsApp Klien <span className="text-stone-400 font-normal">(Opsional)</span>
+                    </label>
+                    <input
+                      id="client-phone"
+                      type="tel"
+                      value={clientPhone}
+                      onChange={(e) => setClientPhone(e.target.value)}
+                      placeholder="081234567890"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 bg-stone-50 text-sm text-stone-900 focus:outline-none focus:border-amber-700 focus:ring-2 focus:ring-amber-700/15"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label htmlFor="client-email" className="block text-xs font-bold text-stone-700 mb-1.5">
-                  Email Aktif Klien <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  id="client-email"
-                  type="email"
-                  required
-                  value={clientEmail}
-                  onChange={(e) => setClientEmail(e.target.value)}
-                  placeholder="nadia.bagas@gmail.com"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 bg-stone-50 text-sm text-stone-900 focus:outline-none focus:border-amber-700 focus:ring-2 focus:ring-amber-700/15"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="client-phone" className="block text-xs font-bold text-stone-700 mb-1.5">
-                  No. WhatsApp Klien <span className="text-stone-400 font-normal">(Opsional)</span>
-                </label>
-                <input
-                  id="client-phone"
-                  type="tel"
-                  value={clientPhone}
-                  onChange={(e) => setClientPhone(e.target.value)}
-                  placeholder="081234567890"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 bg-stone-50 text-sm text-stone-900 focus:outline-none focus:border-amber-700 focus:ring-2 focus:ring-amber-700/15"
-                />
-              </div>
-
-              <div className="md:col-span-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-                <p className="text-[11px] text-stone-500">
-                  Tautan aktivasi bersifat sekali pakai dan berlaku 48 jam. Akun klien otomatis tertaut potongan harga <strong>{discountRateLabel}</strong>.
-                </p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-stone-100">
+                <div className="text-[11px] text-stone-500">
+                  {selectedPkg ? (
+                    <>
+                      Paket dipilih: <strong className="text-stone-900">{selectedPkg.name}</strong> &middot; Harga Mitra:{" "}
+                      <strong className="text-amber-900 font-mono">{formatRupiah(selectedPkg.partnerPrice)}</strong>{" "}
+                      {selectedPkg.discountAmount > 0 && (
+                        <span className="text-emerald-700 font-semibold">(potongan {discountRateLabel} tanpa kupon)</span>
+                      )}
+                    </>
+                  ) : (
+                    <>Potongan harga <strong>{discountRateLabel}</strong> diterapkan otomatis tanpa kode kupon.</>
+                  )}
+                </div>
                 <button
                   type="submit"
                   disabled={creatingClient}
                   className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-700 to-amber-800 hover:from-amber-800 hover:to-amber-900 disabled:opacity-50 text-white text-xs font-bold shadow-sm transition cursor-pointer shrink-0"
                 >
-                  {creatingClient ? "Memproses & Mengirim Email..." : "Daftarkan & Kirim Link Aktivasi"}
+                  {creatingClient
+                    ? "Menyiapkan Tagihan..."
+                    : selectedPkg
+                      ? `Daftarkan & Bayar ${formatRupiah(selectedPkg.partnerPrice)}`
+                      : "Daftarkan & Bayar Paket"}
                 </button>
               </div>
             </form>
@@ -1286,19 +1582,44 @@ export default function PartnerPortalPage() {
                             )}
                           </td>
                           <td className="py-3 px-4 text-right whitespace-nowrap">
-                            {!client.isActivated ? (
+                            {client.latestOrder && client.latestOrder.status === "PENDING" ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  openPaymentModalForOrder({
+                                    orderId: client.latestOrder!.id,
+                                    invoiceNumber: client.latestOrder!.invoiceNumber,
+                                    planType: client.latestOrder!.planType,
+                                    clientId: client.id,
+                                    clientName: client.name,
+                                    clientEmail: client.email,
+                                    amount: client.latestOrder!.amount,
+                                    discountAmount: client.latestOrder!.discountAmount,
+                                    paymentMethod: client.latestOrder!.paymentMethod || "GATEWAY",
+                                    status: client.latestOrder!.status,
+                                    hasProof: client.latestOrder!.hasProof,
+                                    rejectReason: client.latestOrder!.rejectReason,
+                                  })
+                                }
+                                className="px-3 py-1.5 rounded-lg bg-amber-700 hover:bg-amber-800 text-white text-[11px] font-bold transition cursor-pointer"
+                              >
+                                {client.latestOrder.hasProof ? "Lihat Status Bukti" : "Bayar Paket"}
+                              </button>
+                            ) : !client.isActivated && (client.hasPaidOrder || client.latestOrder?.status === "PAID") ? (
                               <button
                                 type="button"
                                 disabled={resendingClientId === client.id}
                                 onClick={() => handleResendActivation(client)}
                                 className="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-[11px] font-bold transition cursor-pointer disabled:opacity-50"
                               >
-                                {resendingClientId === client.id ? "Mengirim..." : "Kirim Ulang Link"}
+                                {resendingClientId === client.id ? "Mengirim..." : "Kirim / Salin Link"}
                               </button>
-                            ) : (
+                            ) : client.isActivated ? (
                               <span className="text-[11px] text-emerald-700 font-semibold">
-                                Siap Pakai
+                                Aktif &amp; Siap Pakai
                               </span>
+                            ) : (
+                              <span className="text-[11px] text-stone-400">Menunggu Order</span>
                             )}
                           </td>
                         </tr>
@@ -1456,6 +1777,194 @@ export default function PartnerPortalPage() {
           </details>
         )}
       </main>
+
+      {/* Modal Pembayaran Paket Klien oleh Mitra WO (QRIS / Snap / Transfer Manual) */}
+      {activePayment && (
+        <div className="fixed inset-0 z-50 bg-stone-950/65 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-white rounded-3xl border border-[#eadecf] shadow-2xl overflow-hidden max-h-[92vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-stone-100 flex items-center justify-between gap-3">
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-amber-800">
+                  Pembayaran Harga Mitra ({discountRateLabel})
+                </div>
+                <h3 className="text-base font-serif font-bold text-stone-900">
+                  {activePayment.clientName}
+                </h3>
+                <p className="text-[11px] font-mono text-stone-500">
+                  {activePayment.invoiceNumber} &middot; {activePayment.planType}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActivePayment(null)}
+                className="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 cursor-pointer"
+                aria-label="Tutup modal pembayaran"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Ringkasan Tagihan */}
+              <div className="p-4 rounded-2xl bg-[#faf8f5] border border-[#eadecf] space-y-1.5 text-xs">
+                <div className="flex justify-between text-stone-500">
+                  <span>Harga Paket (Setelah Potongan Mitra)</span>
+                  <span className="font-mono font-semibold text-stone-800">{formatRupiah(activePayment.amount)}</span>
+                </div>
+                {activePayment.discountAmount > 0 && (
+                  <div className="flex justify-between text-emerald-700">
+                    <span>Hemat Potongan Mitra</span>
+                    <span className="font-mono font-bold">- {formatRupiah(activePayment.discountAmount)}</span>
+                  </div>
+                )}
+                {activePayment.chargedAmount && activePayment.chargedAmount > activePayment.amount && (
+                  <div className="flex justify-between text-stone-500">
+                    <span>Biaya Layanan Gateway</span>
+                    <span className="font-mono">{formatRupiah(activePayment.chargedAmount - activePayment.amount)}</span>
+                  </div>
+                )}
+                <div className="pt-2 border-t border-stone-200 flex justify-between items-center">
+                  <span className="font-bold text-stone-900">Total Bayar Mitra</span>
+                  <span className="text-lg font-extrabold font-mono text-amber-900">
+                    {formatRupiah(activePayment.chargedAmount || activePayment.amount)}
+                  </span>
+                </div>
+              </div>
+
+              {paymentError && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
+                  {paymentError}
+                </div>
+              )}
+
+              {activePayment.status === "PAID" ? (
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-3">
+                  <div className="w-11 h-11 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2.2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-sm font-bold text-emerald-900">Pembayaran Lunas!</div>
+                    <p className="text-xs text-emerald-800 leading-relaxed">
+                      Paket <strong>{activePayment.planType}</strong> sudah aktif untuk <strong>{activePayment.clientName}</strong>. Tautan aktivasi 48 jam telah dikirim ke email pengantin &amp; siap disalin ke WhatsApp di halaman utama portal.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActivePayment(null)}
+                    className="w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold cursor-pointer"
+                  >
+                    Tutup &amp; Lihat Link Aktivasi Pengantin
+                  </button>
+                </div>
+              ) : paymentInitLoading ? (
+                <div className="py-8 flex flex-col items-center gap-2 text-xs text-stone-500">
+                  <div className="w-7 h-7 border-2 border-amber-800 border-t-transparent rounded-full animate-spin" />
+                  <span>Menyiapkan metode pembayaran...</span>
+                </div>
+              ) : activePayment.paymentMethod === "MANUAL_TRANSFER" ? (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-1.5 text-xs">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-amber-800">
+                      Transfer Bank Resmi Platform
+                    </div>
+                    <div className="font-bold text-stone-900 text-sm">
+                      {activePayment.bank?.bankName || platformConfig?.bank?.bankName || "Bank Resmi"}
+                    </div>
+                    <div className="font-mono text-base font-extrabold text-amber-950">
+                      {activePayment.bank?.bankAccountNumber || platformConfig?.bank?.bankAccountNumber || "-"}
+                    </div>
+                    <div className="text-stone-600">
+                      a.n. <strong>{activePayment.bank?.bankAccountHolder || platformConfig?.bank?.bankAccountHolder || "-"}</strong>
+                    </div>
+                  </div>
+
+                  {activePayment.rejectReason && (
+                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700">
+                      <strong>Bukti sebelumnya ditolak:</strong> {activePayment.rejectReason}
+                    </div>
+                  )}
+
+                  {proofSuccessMsg && (
+                    <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 font-medium">
+                      {proofSuccessMsg}
+                    </div>
+                  )}
+
+                  {activePayment.hasProof && !proofSuccessMsg && (
+                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
+                      Bukti transfer sudah diunggah &amp; sedang menunggu verifikasi Admin. Setelah disetujui, email aktivasi otomatis terkirim ke pengantin.
+                    </div>
+                  )}
+
+                  <form onSubmit={handleUploadPartnerProof} className="space-y-3">
+                    <label className="block text-xs font-bold text-stone-700">
+                      {activePayment.hasProof ? "Unggah Ulang Bukti Transfer (JPG/PNG/PDF)" : "Unggah Bukti Transfer (JPG/PNG/PDF)"}
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*,application/pdf"
+                      required
+                      onChange={(e) => setProofFile(e.target.files?.[0] || null)}
+                      className="w-full text-xs text-stone-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-amber-100 file:text-amber-900 hover:file:bg-amber-200 cursor-pointer"
+                    />
+                    <button
+                      type="submit"
+                      disabled={uploadingProof || !proofFile}
+                      className="w-full py-2.5 rounded-xl bg-amber-800 hover:bg-amber-900 disabled:opacity-50 text-white text-xs font-bold cursor-pointer"
+                    >
+                      {uploadingProof ? "Mengunggah Bukti..." : "Kirim Bukti Transfer"}
+                    </button>
+                  </form>
+                </div>
+              ) : (
+                <div className="space-y-4 text-center">
+                  {activePayment.qrString ? (
+                    <div className="space-y-3">
+                      <div className="p-4 bg-white rounded-2xl border border-stone-200 inline-block shadow-xs">
+                        <img
+                          src={`/api/public/qr?size=280&data=${encodeURIComponent(activePayment.qrString)}`}
+                          alt="QRIS Pembayaran Mitra"
+                          className="w-56 h-56 object-contain mx-auto"
+                        />
+                      </div>
+                      <p className="text-xs text-stone-600">
+                        Scan QRIS di atas via m-Banking / e-Wallet. Status pembayaran diperbarui otomatis setiap 4 detik.
+                      </p>
+                    </div>
+                  ) : activePayment.checkoutUrl ? (
+                    <div className="space-y-3 py-2">
+                      <p className="text-xs text-stone-600">
+                        Selesaikan pembayaran melalui halaman pembayaran resmi Midtrans di tab baru. Status akan otomatis diperbarui di sini setelah lunas.
+                      </p>
+                      <a
+                        href={activePayment.checkoutUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center w-full py-3 rounded-xl bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold transition"
+                      >
+                        Buka Halaman Pembayaran Midtrans &rarr;
+                      </a>
+                    </div>
+                  ) : (
+                    <div className="py-4 text-xs text-stone-500">
+                      Klik tombol di bawah untuk memuat ulang sesi pembayaran.
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-center gap-2 text-[11px] text-amber-800 font-medium">
+                    <span className="w-2 h-2 rounded-full bg-amber-600 animate-ping" />
+                    <span>Menunggu konfirmasi pembayaran otomatis...</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import { Prisma, type OrderStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { processOrderPaidMarketing } from "@/lib/marketing";
+import { triggerPartnerClientActivationOnPaid } from "@/lib/clientActivation";
+import { logger } from "@/lib/logger";
 
 type AmountLike = Prisma.Decimal | number | string;
 
@@ -86,7 +88,7 @@ export async function settleOrderAsPaid(
   data: Prisma.OrderUpdateManyMutationInput = {},
   options: { from?: OrderStatus[] } = {}
 ): Promise<boolean> {
-  return prisma.$transaction(async (tx) => {
+  const settled = await prisma.$transaction(async (tx) => {
     const target = await tx.order.findUnique({ where: { id: orderId }, select: { userId: true, orderType: true } });
     if (!target) return false;
     if (target.orderType === "NEW") {
@@ -114,4 +116,17 @@ export async function settleOrderAsPaid(
     await processOrderPaidMarketing(orderId, tx);
     return true;
   });
+
+  // Setelah transaksi DB commit: jika order ini milik klien yang didaftarkan Mitra WO dan belum aktif,
+  // kirim otomatis Magic Link Aktivasi 48 jam via SMTP di latar belakang (non-blocking).
+  if (settled) {
+    triggerPartnerClientActivationOnPaid(orderId).catch((err) => {
+      logger.warn("PaymentSettlement", "Pengiriman otomatis Magic Link klien mitra pasca-PAID gagal", {
+        orderId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
+  }
+
+  return settled;
 }

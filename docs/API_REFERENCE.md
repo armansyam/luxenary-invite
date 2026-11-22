@@ -154,9 +154,12 @@ Memerlukan autentikasi admin (`role: ADMIN` atau `SUPER_ADMIN`):
 | | `POST` | `/api/admin/orders/{id}/reject` | Menolak transfer bank manual dengan alasan verifikasi. |
 | **Marketing** | `GET` | `/api/admin/marketing` | Mengambil data kupon promo publik mandiri, daftar mitra WO (beserta jumlah klien terdaftar), dan arsip historis. |
 | | `POST` | `/api/admin/marketing` | Membuat/mengubah kupon promo publik mandiri dan mendaftarkan/mengelola mitra WO (potongan harga langsung tanpa payout baru). |
-| **Portal Mitra** | `GET` | `/api/partner/dashboard` | Ringkasan tarif potongan mitra, statistik klien ditangani, serta laporan transaksi klien (Harga Normal, Potongan Mitra, Total Dibayar). |
-| | `GET` / `POST` | `/api/partner/clients` | Daftar klien yang didaftarkan mitra dan pendaftaran akun klien baru (mengirim email co-branded Magic Link 48 jam via SMTP + teks WA cadangan). |
-| | `POST` | `/api/partner/clients/{id}/resend-activation` | Menerbitkan ulang tautan aktivasi 48 jam baru (menggugurkan token lama) untuk klien yang belum aktif. |
+| **Portal Mitra** | `GET` | `/api/partner/dashboard` | Ringkasan tarif potongan mitra, katalog paket harga mitra, statistik klien, serta laporan transaksi paket awal klien (order `NEW`). |
+| | `GET` / `POST` | `/api/partner/clients` | Daftar klien yang didaftarkan mitra serta pendaftaran klien baru + pilihan paket (`TIER_1`/`TIER_2`/`TIER_3`) untuk dibayarkan langsung oleh Mitra WO dengan harga potongan. |
+| | `POST` | `/api/partner/orders/{id}/pay` | Memulai sesi pembayaran paket klien oleh Mitra WO (QRIS/Snap Midtrans atau info rekening transfer manual). |
+| | `GET` | `/api/partner/orders/{id}/status` | Memeriksa & merekonsiliasi status lunas tagihan paket mitra; begitu `PAID`, tautan aktivasi 48 jam otomatis dikirim ke pengantin. |
+| | `POST` | `/api/partner/orders/{id}/upload-proof` | Mengunggah bukti transfer manual oleh Mitra WO beserta notifikasi otomatis ke Admin. |
+| | `POST` | `/api/partner/clients/{id}/resend-activation` | Menerbitkan ulang tautan aktivasi 48 jam baru (menggugurkan token lama) untuk klien yang paketnya sudah `PAID` namun belum aktif. |
 | **Aktivasi Klien** | `GET` / `POST` | `/api/auth/set-password` | Memeriksa validitas token aktivasi 48 jam dan mengonsumsi token secara atomik untuk menetapkan kata sandi klien baru. |
 | **Finance** | `GET` | `/api/admin/finance/overview` | Ringkasan laba/rugi, pendapatan kotor, beban operasional, dan grafik arus kas SVG. |
 | | `POST` | `/api/admin/finance/expenses` | Mencatat beban pengeluaran operasional baru (server, gaji, marketing, dll). |

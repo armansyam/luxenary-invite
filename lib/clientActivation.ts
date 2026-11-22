@@ -111,9 +111,9 @@ export function buildPartnerWhatsAppInviteText(input: {
   return [
     `Halo ${client},`,
     ``,
-    `Akun undangan digital Anda di *${brand}* sudah kami siapkan melalui *${partner}*.`,
+    `Kabar baik! Paket undangan digital Anda di *${brand}* sudah disiapkan dan diaktifkan melalui *${partner}*.`,
     ``,
-    `Silakan klik tautan di bawah ini untuk membuat kata sandi dan langsung mulai menyiapkan undangan Anda:`,
+    `Silakan klik tautan di bawah ini untuk membuat kata sandi dan langsung mulai memilih tema serta melengkapi undangan Anda:`,
     input.activationUrl,
     ``,
     `Catatan: Tautan aktivasi ini bersifat pribadi, hanya dapat digunakan 1 kali, dan berlaku selama ${CLIENT_ACTIVATION_TTL_HOURS} jam.`,
@@ -350,4 +350,73 @@ export async function consumeClientActivationTokenAndSetPassword(
       name: record.user.name,
     };
   });
+}
+
+/**
+ * Dipanggil otomatis (non-blocking, pasca-commit transaksi) saat order milik klien Mitra WO menjadi PAID
+ * (baik melalui Webhook Midtrans, rekonsiliasi status, maupun persetujuan transfer manual oleh Admin).
+ * Idempoten: hanya mengirim email Magic Link 48 jam jika akun klien belum aktif & belum punya token terkirim yang masih berlaku.
+ */
+export async function triggerPartnerClientActivationOnPaid(orderId: string): Promise<void> {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: {
+      id: true,
+      status: true,
+      orderType: true,
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          passwordHash: true,
+          googleId: true,
+          provisionedByPartner: {
+            select: { id: true, name: true, isActive: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!order || order.status !== "PAID" || order.orderType !== "NEW") return;
+  const user = order.user;
+  const partner = user?.provisionedByPartner;
+  if (!user || !partner || !partner.isActive) return;
+  if (user.passwordHash || user.googleId) return;
+
+  // Idempotensi: jika sudah ada token aktif yang emailnya sudah terkirim, jangan kirim dobel
+  const existingActiveToken = await prisma.clientActivationToken.findFirst({
+    where: {
+      userId: user.id,
+      consumedAt: null,
+      emailSentAt: { not: null },
+      expiresAt: { gt: new Date() },
+    },
+    select: { id: true },
+  });
+  if (existingActiveToken) return;
+
+  const { tokenId, rawToken } = await issueClientActivationToken({
+    userId: user.id,
+    partnerId: partner.id,
+  });
+
+  const { getTrustedAppUrl } = await import("@/lib/serverDomainUtils");
+  const { sendClientActivationEmail } = await import("@/lib/mailer");
+  const appUrl = (await getTrustedAppUrl()).replace(/\/+$/, "");
+  const activationUrl = `${appUrl}/auth/set-password?token=${encodeURIComponent(rawToken)}`;
+
+  const mailRes = await sendClientActivationEmail({
+    recipientEmail: user.email,
+    clientName: user.name,
+    partnerName: partner.name,
+    activationUrl,
+    expiresHours: CLIENT_ACTIVATION_TTL_HOURS,
+    appUrl,
+  });
+
+  if (mailRes.success) {
+    await markActivationTokenEmailSent(tokenId);
+  }
 }

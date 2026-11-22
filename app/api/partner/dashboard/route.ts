@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { routeError } from "@/lib/routeError";
 import { PARTNER_COOKIE_NAME, getPartnerSessionFromRequest } from "@/lib/partnerAuth";
+import { getPublicPlatformSettings } from "@/lib/settings";
+import {
+  MIN_PAYABLE_AMOUNT_IDR,
+  calculatePartnerWholesaleDiscount,
+} from "@/lib/clientActivation";
 
 export const dynamic = "force-dynamic";
 
@@ -89,6 +94,7 @@ export async function GET(req: NextRequest) {
             passwordHash: true,
             googleId: true,
             orders: {
+              where: { orderType: "NEW" },
               orderBy: { createdAt: "desc" },
               select: {
                 id: true,
@@ -169,9 +175,39 @@ export async function GET(req: NextRequest) {
     const totalPaidNetAmount = paidTransactions.reduce((sum, t) => sum + t.finalAmount, 0);
     const totalWholesaleSavings = paidTransactions.reduce((sum, t) => sum + t.discountAmount, 0);
 
+    const platformSettings = await getPublicPlatformSettings();
+    const partnerPackages = (platformSettings.packages || []).map((pkg) => {
+      const basePrice = Number(pkg.price || 0);
+      const discountAmount = calculatePartnerWholesaleDiscount(basePrice, partner);
+      const partnerPrice = Math.max(MIN_PAYABLE_AMOUNT_IDR, basePrice - discountAmount);
+      return {
+        id: pkg.id,
+        name: pkg.name,
+        desc: pkg.desc,
+        badge: pkg.badge || null,
+        isFeatured: Boolean(pkg.isFeatured),
+        basePrice,
+        discountAmount,
+        partnerPrice,
+      };
+    });
+
     return NextResponse.json(
       {
         success: true,
+        platform: {
+          name: platformSettings.platformName,
+          paymentMode: platformSettings.paymentMode,
+          feePercent: platformSettings.paymentGatewayFeePercent,
+          feePayer: platformSettings.paymentGatewayFeePayer,
+          bank: {
+            bankName: platformSettings.bankName,
+            bankAccountNumber: platformSettings.bankAccountNumber,
+            bankAccountHolder: platformSettings.bankAccountHolder,
+            bankInstructions: platformSettings.bankInstructions,
+          },
+          packages: partnerPackages,
+        },
         partner: {
           id: partner.id,
           name: partner.name,

@@ -99,6 +99,23 @@ export async function POST(
       );
     }
 
+    // Kebijakan Reseller B2B: Link aktivasi pengantin hanya diterbitkan setelah paket dibayar lunas (PAID) oleh Mitra WO
+    const paidOrder = await prisma.order.findFirst({
+      where: { userId: client.id, status: "PAID" },
+      select: { id: true },
+    });
+
+    if (!paidOrder) {
+      return NextResponse.json(
+        {
+          error:
+            "Selesaikan pembayaran paket untuk klien ini terlebih dahulu. Tautan aktivasi 48 jam otomatis aktif begitu pembayaran berstatus LUNAS (PAID).",
+          code: "PAYMENT_REQUIRED",
+        },
+        { status: 402 },
+      );
+    }
+
     const { tokenId, rawToken, expiresAt } = await issueClientActivationToken({
       userId: client.id,
       partnerId: partner.id,
