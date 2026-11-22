@@ -20,7 +20,6 @@ export function AccountPasswordCard() {
   const [status, setStatus] = useState<"loading" | "ready" | "hidden">("loading");
   const [email, setEmail] = useState("");
   const [hasPassword, setHasPassword] = useState(false);
-  const [hasGoogle, setHasGoogle] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -46,7 +45,6 @@ export function AccountPasswordCard() {
         }
         setEmail(data.email || "");
         setHasPassword(Boolean(data.hasPassword));
-        setHasGoogle(Boolean(data.hasGoogle));
         setStatus("ready");
       })
       .catch(() => {
@@ -134,13 +132,13 @@ export function AccountPasswordCard() {
             <p className="text-xs text-stone-500 mt-0.5 leading-relaxed">
               {hasPassword
                 ? "Perbarui kata sandi akun Anda secara berkala. Perubahan kata sandi otomatis mengakhiri sesi pada perangkat lain."
-                : "Akun Anda saat ini masuk melalui Google. Buat kata sandi agar dapat juga masuk menggunakan email dan kata sandi."}
+                : "Akun Anda belum memiliki kata sandi. Buat kata sandi agar dapat masuk menggunakan email dan kata sandi."}
             </p>
           </div>
         </div>
         <div className="inline-flex items-center gap-2 text-[11px] font-medium text-stone-600 bg-stone-50 border border-stone-200/80 px-3 py-1.5 rounded-full shrink-0 self-start">
           <span className={`w-1.5 h-1.5 rounded-full ${hasPassword ? "bg-emerald-600" : "bg-amber-600"}`} />
-          <span>{hasPassword ? (hasGoogle ? "Google & Sandi" : "Email & Sandi") : "Khusus Google"}</span>
+          <span>{hasPassword ? "Email & Sandi" : "Belum Ada Sandi"}</span>
         </div>
       </div>
 

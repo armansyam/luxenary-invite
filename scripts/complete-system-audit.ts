@@ -33,7 +33,7 @@ async function runCompleteSystemAudit() {
 
   try {
     // ---------------------------------------------------------------------------
-    // KASUS 1: Role bawaan akun baru. Registrasi sungguhan lewat OAuth dan rute order diuji di
+    // KASUS 1: Role bawaan akun baru. Registrasi sungguhan lewat Email+OTP dan rute order diuji di
     // __tests__/integration/lifecycleChain.test.ts; role sengaja tidak diisi agar nilai bawaan skema yang diperiksa.
     // ---------------------------------------------------------------------------
     console.log("▶ [KASUS 1] Akun Baru Tanpa Role Eksplisit & Verifikasi Role Bawaan Skema...");

@@ -51,7 +51,7 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
      │
      ▼
 2. LOGIN + PILIH PAKET (/login → /packages)
-   Google OAuth → Pilih paket (TIER_1 Serenade / TIER_2 Symphony / TIER_3 Eternity).
+   Daftar/Masuk Email + Kata Sandi (verifikasi OTP 6 digit via SMTP) → Pilih paket (TIER_1 Serenade / TIER_2 Symphony / TIER_3 Eternity).
    *Onboarding Guard:* Jika klien memiliki tagihan aktif berstatus PENDING, akses ke /packages otomatis dicegat dan dilempar kembali ke kasir aktif (/checkout?order=...).
      │
      ▼
@@ -254,7 +254,7 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 | **Bahasa** | TypeScript 5 |
 | **Styling** | Tailwind CSS v4 + Vanilla CSS |
 | **Database** | PostgreSQL via Prisma (`@prisma/client` 7.9.1, CLI `prisma` 7.10.0) dan `pg` |
-| **Auth** | NextAuth.js v5 — Google OAuth + Credential Admin |
+| **Auth** | NextAuth.js v5 — Email + Kata Sandi + OTP 6-digit SMTP (Klien) & Credential Admin |
 | **Media Storage** | Cloudflare R2 (prod) + Local disk VPS (draft/dev) via `lib/storage.ts` (penamaan slot deterministik & clean overwrite) |
 | **Image Processing** | `sharp` — WebP, resize, compress |
 | **Video Processing** | `FFmpeg` — H.264, auto-trim 20s, no audio loop, 30fps cap, +faststart streaming (bila ffmpeg gagal atau tidak ada, unggahan video dan audio non-MP3 ditolak dengan HTTP 422 dan tidak disimpan mentah; MP3 asli disimpan tanpa kompresi; `deploy.sh` memperingatkan bila ffmpeg tidak ada atau rusak) |
@@ -288,7 +288,7 @@ Sistem mendukung 4 kondisi transaksi dengan integrasi 2-arah Midtrans yang dilen
 
 | Model | Fungsi |
 |:--|:--|
-| `User` | Akun klien (Google OAuth, role: CLIENT / ADMIN, nomor WhatsApp `phoneNumber`) |
+| `User` | Akun klien (Email + Kata Sandi + OTP SMTP, role: CLIENT / ADMIN, nomor WhatsApp `phoneNumber`) |
 | `Admin` | Akun tim admin (SUPER_ADMIN, FINANCE, SUPPORT) |
 | `Order` | Invoice pembelian paket & add-on (`NEW`, `UPGRADE`, `GALLERY_EXTENSION`, `MEMORIES_TOPUP`); `fulfilledAt` menandai pemenuhan layanan setelah `PAID` (idempoten, diulang webhook/polling/cron bila gagal); satu order `NEW` lunas per pengguna ditegakkan saat pelunasan (kunci per pengguna), pembayaran ganda dicatat di `WebhookLog` untuk pengembalian dana manual |
 | `Invitation` | Inti undangan (`DRAFT`, `PUBLISHED`, `EVENT_FINISHED`, `TAKEN_DOWN`, `ARCHIVED`); nama peserta semua jenis acara hanya di `participantsJson` (jsonb), kuota add-on di kolom `extraMemoriesQuota`/`extraGalleryDays` |
@@ -447,11 +447,7 @@ DATABASE_URL="postgresql://luxenary_user:password_rahasia@localhost:5432/luxenar
 AUTH_SECRET="min-32-chars-random"
 NEXTAUTH_URL="http://localhost:3000"
 
-# Google OAuth (Klien & Admin)
-GOOGLE_CLIENT_ID="..."
-GOOGLE_CLIENT_SECRET="..."
-
-# Google API (untuk galeri Drive pre-wedding)
+# Google API (opsional, untuk galeri Google Drive pre-wedding)
 GOOGLE_API_KEY="..."
 
 # Media Storage Provider ("local" | "r2" | "s3")
@@ -873,6 +869,7 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
 - **Perbaikan Routing Portofolio & Pengujian E2E Menyeluruh 14 Fase Frontend Chrome + Backend (`140/140` Lulus, 21 Nov 2026)**: Menghapus rewrite warisan `/portfolio/{slug} → .html` di `proxy.ts` (yang menyebabkan 404 pada R2 akibat `isSafePathSegment` menolak `.html` dan 500 `ECONNRESET` pada `next start` lokal), menambahkan dynamic route handler aset lokal `app/portfolio/assets/[slug]/[file]/route.ts` (ETag `304`, MIME whitelist, anti path-traversal) + tes regresi di `__tests__/unit/subdomainProxy.test.ts`, serta memverifikasi penuh 14 fase siklus hidup aplikasi (Registrasi sampai Arsip NAS & Purge + Portal Mitra/Promo/Payout, Webhook Midtrans, Multi-Undangan, Bulk Guest, Bilingual EN, Admin Demo Studio 3-Mode, Builder Clone, Finance/RBAC, Remote Admin, dan Host Routing) di Chrome headless (`1440×900` & `375×812`) dengan hasil **140/140 lulus** (`106/106` + `34/34`, 0 gagal, 0 JS errors, 0 HTTP 5xx, 0px overflow) beserta 5 skrip CI dan 2.200 tes Vitest (`0` di-skip). Rincian: `docs/SYSTEM_ARCHITECTURE.md` bagian 27 butir 89.
 - **Perbaikan React Hydration Error #418 Lintas Zona Waktu pada `/sharemoment` (22 Nov 2026)**: Menambahkan offset zona waktu acara pada `nextSessionIso` serta `eventDateLabel` pada `app/(public)/[slug]/sharemoment/page.tsx` dan `app/(public)/s/[subdomain]/sharemoment/page.tsx`, dan memindahkan `clientNowMs` ke `useEffect` serta menformat stempel tanggal secara deterministik di `GuestMomentOpening.tsx` sehingga SSR server (WIB) dan hidratasi browser tamu (WITA/WIT/luar negeri) identik 100% bebas React Error #418. Rincian: `docs/SYSTEM_ARCHITECTURE.md` bagian 27 butir 90.
 - **Perbaikan Kebocoran Redirect `localhost:3001` pada `EVENT_FINISHED` & `/demo/[theme]/index.html` (22 Nov 2026)**: Mengganti `NextResponse.redirect(new URL(..., req.url), 307)` pada `app/(public)/[slug]/route.ts` (`EVENT_FINISHED`) dan `app/demo/[theme]/[file]/route.ts` menjadi `Location` relatif agar tidak pernah membocorkan `https://localhost:3001` di belakang Caddy; rewrite subdomain di `proxy.ts` tetap berbasis origin `req.url` agar bebas `ERR_TOO_MANY_REDIRECTS` (ditambah tes regresi di `__tests__/unit/subdomainProxy.test.ts`), dan normalisasi `/s/{sub}/memories` di `proxy.ts` mendaratkan browser subdomain secara bersih di `https://{sub}.luxvite.id/memories`. Rincian: `docs/SYSTEM_ARCHITECTURE.md` bagian 27 butir 91.
+- **Penghapusan Penuh Google OAuth — Autentikasi Murni Email + Kata Sandi + OTP 6-Digit SMTP (22 Nov 2026)**: Melepas total `GoogleProvider`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, helper `lib/auth.ts`, tombol login/daftar Google di `/login`, kartu konfigurasi Google OAuth di Admin Pengaturan (`AdminSettingsTab.tsx`), serta properti `hasGoogle` pada `/api/client/account/password` & `AccountPasswordCard.tsx`. Autentikasi klien kini 100% mandiri berbasis **Email + Kata Sandi + OTP 6-digit SMTP** (`/api/auth/register` & `/api/auth/reset-password`) tanpa ketergantungan Google Cloud Console maupun OAuth Consent Screen saat deployment; kolom `User.googleId` dipertahankan di skema Prisma (expand-only safe) dan akun lama tanpa `passwordHash` tetap dapat menetapkan kata sandi kapan saja via *Lupa kata sandi?* (OTP). Rincian: `docs/SYSTEM_ARCHITECTURE.md` bagian 27 butir 92.
 
 
 

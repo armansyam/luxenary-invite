@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     // 1. Wajib memiliki sesi login aktif
     if (!session?.user?.id) {
       return NextResponse.json(
-        { error: "Silakan login dengan akun Google Anda untuk melanjutkan pemesanan." },
+        { error: "Silakan masuk ke akun Anda untuk melanjutkan pemesanan." },
         { status: 401 }
       );
     }
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
 
     if (!targetUser) {
       return NextResponse.json(
-        { error: "Sesi login Anda tidak valid atau telah berakhir. Silakan masuk kembali dengan akun Google Anda." },
+        { error: "Sesi login Anda tidak valid atau telah berakhir. Silakan masuk kembali ke akun Anda." },
         { status: 401 }
       );
     }

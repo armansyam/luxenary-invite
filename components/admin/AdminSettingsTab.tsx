@@ -145,7 +145,7 @@ export default function AdminSettingsTab(props: Props) {
       { id: "akun",         label: "Akun & Keamanan",      hint: "Profil & password admin" },
       { id: "keuangan",     label: "Keuangan & Gateway",   hint: "Pembayaran, QRIS, bank" },
       { id: "paket",        label: "Paket & Harga",        hint: "Tier pricing & kapabilitas" },
-      { id: "integrasi",    label: "Integrasi & API",      hint: "OAuth, SMTP, DNS, domain" },
+      { id: "integrasi",    label: "Integrasi & API",      hint: "SMTP, DNS, domain" },
       { id: "operasional",  label: "Operasional",          hint: "Status layanan, WA, landing" },
       { id: "tentang",      label: "Tentang Aplikasi",     hint: "Versi & catatan rilis" },
     ] as const).map((t) => (
@@ -1963,54 +1963,6 @@ export default function AdminSettingsTab(props: Props) {
       </FieldRow>
     </div>
   </SettingsCard>
-
-  {/* Google OAuth 2.0 Integration Info */}
-  <div className="bg-white rounded-2xl border border-gray-200/80 shadow-xs p-6 space-y-4">
-    <div className="flex items-start justify-between gap-4">
-      <div>
-        <div className="flex items-center gap-2">
-          <h3 className="text-base font-bold text-gray-900">Google OAuth 2.0 (Login & Registrasi Klien)</h3>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-600 border border-stone-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-stone-400"></span>
-            Dikelola lewat .env
-          </span>
-        </div>
-        <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-          Sesuai standar keamanan NextAuth v5, kredensial Google Client ID &amp; Client Secret dikelola terpusat melalui environment variable server (<code className="font-mono text-gray-700">.env</code>).
-        </p>
-      </div>
-    </div>
-
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-2">
-      <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200">
-        <span className="text-xs text-gray-500 block font-medium mb-1">Authorized JavaScript Origin</span>
-        <div className="flex items-center gap-2">
-          <code className="text-xs font-mono font-semibold text-gray-900 truncate flex-1">{currentOrigin}</code>
-          <button
-            type="button"
-            onClick={() => navigator.clipboard.writeText(currentOrigin)}
-            className="px-2.5 py-1 bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 rounded-lg text-xs font-medium transition cursor-pointer"
-          >
-            Salin
-          </button>
-        </div>
-      </div>
-
-      <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200">
-        <span className="text-xs text-gray-500 block font-medium mb-1">Authorized Redirect URI (Callback)</span>
-        <div className="flex items-center gap-2">
-          <code className="text-xs font-mono font-semibold text-gray-900 truncate flex-1">{`${currentOrigin}/api/auth/callback/google`}</code>
-          <button
-            type="button"
-            onClick={() => navigator.clipboard.writeText(`${currentOrigin}/api/auth/callback/google`)}
-            className="px-2.5 py-1 bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 rounded-lg text-xs font-medium transition cursor-pointer"
-          >
-            Salin
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
 
   {/* ── Purge Cache (Server ISR + Cloudflare) ── */}
   <div className="p-5 bg-white rounded-2xl border border-gray-200 shadow-xs">

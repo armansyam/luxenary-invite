@@ -30,7 +30,7 @@ export async function GET() {
 
     const user = await prisma.user.findUnique({
       where: { id: guard.userId },
-      select: { email: true, passwordHash: true, googleId: true },
+      select: { email: true, passwordHash: true },
     });
     if (!user) {
       return NextResponse.json({ error: "Akun tidak ditemukan." }, { status: 404 });
@@ -40,7 +40,6 @@ export async function GET() {
       success: true,
       email: user.email,
       hasPassword: Boolean(user.passwordHash),
-      hasGoogle: Boolean(user.googleId),
     });
   } catch (error) {
     return routeError("ClientAccountPasswordGet", error, "Gagal memuat status keamanan akun.");

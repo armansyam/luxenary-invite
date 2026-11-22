@@ -4,8 +4,8 @@
  * menerbitkan, menambah tamu; tamu membuka link personal (subdomain), tercatat sebagai kunjungan, mengisi RSVP;
  * resepsionis masuk dengan PIN dan check-in QR; tamu mengunggah foto momen; klien mengekspor tamu.
  *
- * Dijalankan di mesin server (butuh DATABASE_URL dan AUTH_SECRET yang sama dengan aplikasi): login klien hanya lewat
- * Google, jadi skrip membuat satu pengguna uji dan menerbitkan sesinya. Semua data bertanda e2e-golive-<waktu> dan
+ * Dijalankan di mesin server (butuh DATABASE_URL dan AUTH_SECRET yang sama dengan aplikasi): skrip membuat satu
+ * pengguna uji dan menerbitkan sesinya secara langsung (tanpa SMTP OTP). Semua data bertanda e2e-golive-<waktu> dan
  * dihapus per id di akhir, juga bila ada langkah yang gagal.
  *
  *   E2E_ADMIN=<username admin> E2E_ADMIN_PASSWORD=<password> APP_URL=http://localhost:3001 \
@@ -120,7 +120,7 @@ async function main() {
     const health = await call("/api/health");
     record("Server sehat", health.status === 200, `HTTP ${health.status}`);
 
-    // 1. Klien terdaftar (pengganti login Google) dan sesinya.
+    // 1. Klien terdaftar dan penerbitan sesi langsung (tanpa SMTP OTP).
     const user = await prisma.user.create({ data: { email: `${TAG}@uji.test`, name: "Klien Uji Golive" } });
     created.userId = user.id;
     const token = await encode({

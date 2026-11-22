@@ -6,7 +6,7 @@
  * tanpa galat skrip di 1440 px.
  *
  * Hanya untuk database luxenary_test dan server lokal. Sesi diterbitkan untuk akun yang sudah terdaftar di DB uji
- * (aplikasi mengakhiri sesi bila akun tidak ada), memakai AUTH_SECRET lokal; login Google tidak dipakai.
+ * (aplikasi mengakhiri sesi bila akun tidak ada), memakai AUTH_SECRET lokal tanpa interaksi formulir login.
  *
  *   APP_URL=http://localhost:3100 DATABASE_URL=...luxenary_test npx tsx scripts/e2e-browser-smoke.ts \
  *     [--client=uji-klien-pesisir@uji.test] [--admin=admin123] [--builder-theme=<id>]

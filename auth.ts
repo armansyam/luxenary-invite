@@ -1,5 +1,4 @@
 import NextAuth from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { authConfig } from "./auth.config";
 import { prisma } from "@/lib/prisma";
@@ -9,19 +8,12 @@ import { REMOTE_COOKIE_NAME, readRemoteClientId } from "@/lib/remoteSession";
 import { LOGIN_FAILURE_LIMIT, LOGIN_FAILURE_WINDOW_MS, getClientIp, loginRateLimitKey, rateLimitDb } from "@/lib/rateLimit";
 import dns from "node:dns";
 
-// Ensure IPv4 first to prevent IPv6 route-to-host timeouts (EHOSTUNREACH) on outbound OAuth discovery
+// Prioritaskan IPv4 untuk mencegah timeout EHOSTUNREACH pada koneksi keluar server (SMTP/gateway)
 try {
   dns.setDefaultResultOrder("ipv4first");
 } catch {
   // Runtime tanpa dukungan setDefaultResultOrder: urutan DNS bawaan dipakai; hanya optimasi, bukan syarat fungsi.
 }
-
-// Google OAuth credentials dibaca dari .env (bukan dari database)
-// Untuk mengubah credentials, update .env dan restart server.
-const googleCreds = {
-  clientId: process.env.GOOGLE_CLIENT_ID || "",
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-};
 
 function clientPasswordTag(passwordHash: string | null | undefined): string {
   return passwordHash ? passwordHash.slice(-12) : "";
@@ -124,63 +116,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         };
       },
     }),
-    ...(googleCreds.clientId && googleCreds.clientSecret
-      ? [
-          GoogleProvider({
-            clientId: googleCreds.clientId,
-            clientSecret: googleCreds.clientSecret,
-          }),
-        ]
-      : []),
   ],
   callbacks: {
     ...authConfig.callbacks,
-    async signIn({ account, profile }) {
-      if (account?.provider === "google" && profile) {
-        try {
-          const cleanEmail = typeof profile.email === "string" ? profile.email.toLowerCase().trim() : "";
-          const emailVerified = (profile as { email_verified?: boolean }).email_verified === true;
-          if (!cleanEmail || !profile.sub || !emailVerified) {
-            return "/login?error=EmailNotVerified";
-          }
-
-          // Verifikasi ketersediaan layanan (Buka Normal / Tutup Order / Maintenance / Coming Soon)
-          const { getServiceAvailability } = await import("@/lib/settings");
-          const availability = await getServiceAvailability();
-
-          if (!availability.isOpen) {
-            const { prisma } = await import("@/lib/prisma");
-            const existingUser = await prisma.user.findFirst({
-              where: {
-                OR: [
-                  { googleId: profile.sub },
-                  { email: { equals: cleanEmail, mode: "insensitive" } },
-                ],
-              },
-              select: { id: true },
-            });
-
-            // Calon klien baru ditolak jika registrasi/order sedang ditutup
-            if (!existingUser) {
-              return `/login?error=RegistrationClosed&mode=${encodeURIComponent(availability.mode)}`;
-            }
-          }
-
-          const { upsertGoogleUser } = await import("@/lib/auth");
-          await upsertGoogleUser({
-            sub: profile.sub,
-            email: cleanEmail,
-            name: (profile.name || "").trim() || cleanEmail.split("@")[0] || "Pengguna",
-            picture: (profile as { picture?: string }).picture,
-          });
-        } catch (err) {
-          console.error("Error upserting Google user:", err);
-          return false;
-        }
-      }
-      return true;
-    },
-    async jwt({ token, user, account, profile }) {
+    async jwt({ token, user }) {
       // Akun admin yang sudah dihapus, atau yang password/peran/izinnya berubah sesudah token terbit: mengembalikan
       // null mengakhiri sesi. Tanpa ini JWT lama (default 30 hari) tetap membawa isAdmin dan role dari saat login.
       // Token tanpa `sv` (terbit sebelum kolom ada) tidak cocok dan berakhir sekali.
@@ -213,17 +152,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         (token as any).permissions = (user as any).permissions || [];
         if ((user as any).isAdmin) token.sv = (user as any).sessionVersion ?? 0;
         else if ((user as any).pwdTag !== undefined) (token as any).pwdTag = (user as any).pwdTag;
-      }
-      if (account?.provider === "google" && profile?.sub) {
-        // Kegagalan DB di sini sengaja tidak ditelan: token dengan id/role bawaan Google akan tidak cocok dengan data pengguna.
-        const { prisma } = await import("@/lib/prisma");
-        const dbUser = await prisma.user.findUnique({ where: { googleId: profile.sub } });
-        if (dbUser) {
-          token.id = dbUser.id;
-          (token as any).role = dbUser.role;
-          (token as any).isAdmin = false;
-          (token as any).pwdTag = clientPasswordTag(dbUser.passwordHash);
-        }
       }
       return token;
     },

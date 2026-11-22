@@ -60,7 +60,6 @@ import { GET as adminUsersGet } from "@/app/api/admin/users/route";
 import { GET as adminInvitationsGet } from "@/app/api/admin/invitations/route";
 import { activateFreeDraftForOrder } from "@/lib/freeDraftActivation";
 import { customDomainResolutionCache, invalidateInvitationLookup } from "@/lib/cache";
-import { upsertGoogleUser } from "@/lib/auth";
 import { GET as clientPasswordGet, PUT as clientPasswordPut } from "@/app/api/client/account/password/route";
 import UnifiedAddonModal from "@/components/client/UnifiedAddonModal";
 
@@ -568,53 +567,7 @@ describe.skipIf(!IS_TEST_DB)("Security Audit & Free Draft Overhaul (DB Integrati
     expect(customDomainResolutionCache.get("pasangan-uji.example")).toBeNull();
   });
 
-  it("upsertGoogleUser menormalisasi huruf kecil email & menautkan akun legacy case-insensitive tanpa menimpa nama lokal", async () => {
-    const rawEmail = `Google.Case_${RUN}@Example.Test`;
-    const normalizedEmail = rawEmail.toLowerCase();
-    const googleSub = `sub-${RUN}-1`;
-
-    // 1. Registrasi langsung via Google menyimpan email huruf kecil
-    const created = await upsertGoogleUser({
-      sub: googleSub,
-      email: `  ${rawEmail}  `,
-      name: "Budi Santoso",
-      picture: "https://example.test/avatar.png",
-    });
-    cleanup.userIds.push(created.id);
-    expect(created.email).toBe(normalizedEmail);
-    expect(created.googleId).toBe(googleSub);
-    expect(created.role).toBe("CLIENT");
-
-    // 2. Klien ubah nama lokal lalu login ulang Google -> nama lokal dipertahankan
-    await prisma.user.update({ where: { id: created.id }, data: { name: "Budi Custom" } });
-    const relogged = await upsertGoogleUser({
-      sub: googleSub,
-      email: rawEmail,
-      name: "Budi Google Baru",
-      picture: "https://example.test/avatar2.png",
-    });
-    expect(relogged.id).toBe(created.id);
-    expect(relogged.name).toBe("Budi Custom");
-    expect(relogged.email).toBe(normalizedEmail);
-
-    // 3. Akun lama dengan email mixed-case ditautkan berdasarkan case-insensitive email & dinormalisasi ke lowercase
-    const legacyEmail = `Legacy.Mixed_${RUN}@Example.Test`;
-    const legacyUser = await prisma.user.create({
-      data: { email: legacyEmail, name: "Pengguna Lama", role: "CLIENT" },
-    });
-    cleanup.userIds.push(legacyUser.id);
-    const linked = await upsertGoogleUser({
-      sub: `sub-${RUN}-legacy`,
-      email: legacyEmail.toLowerCase(),
-      name: "Nama Google",
-    });
-    expect(linked.id).toBe(legacyUser.id);
-    expect(linked.email).toBe(legacyEmail.toLowerCase());
-    expect(linked.googleId).toBe(`sub-${RUN}-legacy`);
-    expect(linked.name).toBe("Pengguna Lama");
-  });
-
-  it("Client /api/client/account/password: tolak 401 anonim & 403 remote admin, izinkan akun Google buat sandi awal, dan verifikasi sandi lama saat ubah sandi", async () => {
+  it("Client /api/client/account/password: tolak 401 anonim & 403 remote admin, izinkan akun tanpa sandi buat sandi awal, dan verifikasi sandi lama saat ubah sandi", async () => {
     // 1. Anonim ditolak 401
     activeSession = null;
     expect((await clientPasswordGet()).status).toBe(401);
@@ -622,20 +575,19 @@ describe.skipIf(!IS_TEST_DB)("Security Audit & Free Draft Overhaul (DB Integrati
 
     // 2. Remote admin ditolak 403 (admin tidak boleh mengubah sandi pribadi klien)
     const user = await prisma.user.create({
-      data: { email: `${RUN}_pwsettings@example.test`, name: "Klien Sandi", googleId: `gsub-${RUN}`, role: "CLIENT" },
+      data: { email: `${RUN}_pwsettings@example.test`, name: "Klien Sandi", role: "CLIENT" },
     });
     cleanup.userIds.push(user.id);
     activeSession = { user: { id: user.id, email: user.email, role: "CLIENT", isAdmin: true, isRemote: true } };
     expect((await clientPasswordGet()).status).toBe(403);
     expect((await clientPasswordPut(jsonReq("/api/client/account/password", "PUT", { newPassword: "PasswordBaru#1" }))).status).toBe(403);
 
-    // 3. Pemilik akun Google-only bisa cek status (hasPassword=false) lalu buat sandi pertama
+    // 3. Pemilik akun tanpa sandi (passwordHash null) bisa cek status (hasPassword=false) lalu buat sandi pertama
     activeSession = { user: { id: user.id, email: user.email, role: "CLIENT", isAdmin: false, isRemote: false } };
     const statusRes = await clientPasswordGet();
     expect(statusRes.status).toBe(200);
     const statusJson = await statusRes.json();
     expect(statusJson.hasPassword).toBe(false);
-    expect(statusJson.hasGoogle).toBe(true);
 
     const setInitial = await clientPasswordPut(
       jsonReq("/api/client/account/password", "PUT", { newPassword: "SandiPertama#2026" }),

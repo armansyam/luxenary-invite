@@ -15,7 +15,7 @@ export async function GET() {
     const userEmail = session.user.email?.toLowerCase().trim();
     const currentUserId = session.user.id;
 
-    // Resolve user dari database berdasarkan ID atau Email Google
+    // Resolve user dari database berdasarkan ID atau email akun
     const dbUser = await prisma.user.findFirst({
       where: {
         OR: [
