@@ -405,6 +405,7 @@ export const proxy = auth(async (req) => {
     "/_next",
     "/static",
     "/admin",
+    "/auth",
     "/dashboard",
     "/login",
     "/partner",
