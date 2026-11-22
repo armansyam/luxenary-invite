@@ -153,8 +153,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
       const canAccessMemories = await hasPlanCapability(invitation.order?.planType, "guest_memories");
       if (canAccessMemories) {
         const search = req.nextUrl.search;
-        const redirectUrl = new URL(`/${slug}/memories${search}`, req.url);
-        return NextResponse.redirect(redirectUrl, 307);
+        // Location relatif agar tidak mewarisi origin internal reverse proxy (localhost:3001) dan tetap aman pada custom domain.
+        return new NextResponse(null, { status: 307, headers: { Location: `/${slug}/memories${search}` } });
       }
     }
   }
@@ -165,7 +165,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
 
     // Pengunjung custom domain klien tetap berada di domainnya selama masa aktif custom domain: arsip disajikan
     // langsung di sana, bukan dialihkan ke URL kanonik domain utama.
-    const viaCustomDomain = isCustomDomainHost(req.headers.get("host"), invitation.customDomain);
+    const viaCustomDomain = isCustomDomainHost(req.headers.get("x-lux-host") || req.headers.get("host"), invitation.customDomain);
 
     // 1. Portofolio pilihan admin (bila ada) menjadi tujuan utama untuk URL slug dan subdomain
     if (!viaCustomDomain && (await hasPortfolio(slug))) {

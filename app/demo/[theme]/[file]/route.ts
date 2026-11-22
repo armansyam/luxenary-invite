@@ -42,7 +42,7 @@ export async function GET(
 
     // index.html adalah cache yang dicek versinya oleh rute /demo/<tema> (lib/demoPublisher.ts serveStaticDemo).
     if (cleanFile === "index.html") {
-      return NextResponse.redirect(new URL(`/demo/${cleanTheme}`, req.url), 307);
+      return new NextResponse(null, { status: 307, headers: { Location: `/demo/${cleanTheme}` } });
     }
 
     const ext = path.extname(cleanFile).toLowerCase();

@@ -144,6 +144,8 @@ export const proxy = auth(async (req) => {
   const nonce = generateCspNonce();
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set("x-nonce", nonce);
+  // Simpan host asli sebelum rewrite (Auth.js mengubah origin req.url menjadi NEXTAUTH_URL sehingga rewrite lintas-origin menimpa header Host).
+  requestHeaders.set("x-lux-host", cleanHost);
   // Strict nonce CSP hanya untuk halaman aplikasi platform di domain utama (apex).
   // Host subdomain/custom domain merender undangan terbit yang memerlukan inline script tema.
   const strictNonceCsp =
