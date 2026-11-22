@@ -162,6 +162,14 @@ export const proxy = auth(async (req) => {
     applyCspHeaders(NextResponse.next({ request: { headers: requestHeaders } }), pathname, strictNonceCsp);
   const passRewrite = (url: URL | string) =>
     applyCspHeaders(NextResponse.rewrite(url, { request: { headers: requestHeaders } }), pathname, strictNonceCsp);
+  // Rewrite internal harus memakai origin Host asli (bukan req.url yang telah diubah Auth.js ke NEXTAUTH_URL),
+  // agar Next.js melakukan internal App Router rewrite (0 external loopback) dan mempertahankan Host + x-lux-host.
+  const internalRewriteUrl = (targetPath: string, search = req.nextUrl.search) => {
+    const base = host ? `${req.nextUrl.protocol}//${host}` : req.url;
+    const url = new URL(targetPath, base);
+    if (!url.search && search) url.search = search;
+    return url;
+  };
 
   // HTML terbit tersimpan di public/published hanya untuk dibaca rute slug/subdomain, yang memeriksa status undangan.
   // Next melayani isi public/ yang ada saat build apa adanya, sehingga undangan yang diturunkan tetap terbuka di sini.
@@ -255,32 +263,30 @@ export const proxy = auth(async (req) => {
 
         if (pathname === "/" || pathname === "") {
           if (isFinished && !viewInvitation) {
-            return passRewrite(new URL(`/${slug}/memories${req.nextUrl.search}`, req.url));
+            return passRewrite(internalRewriteUrl(`/${slug}/memories`));
           }
-          const rewriteUrl = new URL(`/${slug}`, req.url);
-          rewriteUrl.search = req.nextUrl.search;
-          return passRewrite(rewriteUrl);
+          return passRewrite(internalRewriteUrl(`/${slug}`));
         }
         if (pathname === "/memories" || pathname === "/galery" || pathname === "/gallery") {
           if (isArchived) {
-            return passRewrite(new URL(`/${slug}${req.nextUrl.search}`, req.url));
+            return passRewrite(internalRewriteUrl(`/${slug}`));
           }
-          return passRewrite(new URL(`/${slug}/memories${req.nextUrl.search}`, req.url));
+          return passRewrite(internalRewriteUrl(`/${slug}/memories`));
         }
         if (pathname === "/receptionist") {
-          return passRewrite(new URL(`/${slug}/receptionist${req.nextUrl.search}`, req.url));
+          return passRewrite(internalRewriteUrl(`/${slug}/receptionist`));
         }
         if (pathname === "/welcome") {
-          return passRewrite(new URL(`/${slug}/welcome${req.nextUrl.search}`, req.url));
+          return passRewrite(internalRewriteUrl(`/${slug}/welcome`));
         }
         if (pathname === "/sharemoment") {
-          return passRewrite(new URL(`/${slug}/sharemoment${req.nextUrl.search}`, req.url));
+          return passRewrite(internalRewriteUrl(`/${slug}/sharemoment`));
         }
         // Guest param routing
         const segments = pathname.split("/").filter(Boolean);
         if (segments.length === 1) {
           if (isFinished && !viewInvitation) {
-            return passRewrite(new URL(`/${slug}/memories${req.nextUrl.search}`, req.url));
+            return passRewrite(internalRewriteUrl(`/${slug}/memories`));
           }
           return guestPathRedirect(req, host, segments[0]);
         }
@@ -345,29 +351,19 @@ export const proxy = auth(async (req) => {
 
       // Hanya rute undangan klien yang dilayani di sini
       if (pathname === "/" || pathname === "") {
-        const rewriteUrl = new URL(`/s/${subdomain}`, req.url);
-        rewriteUrl.search = req.nextUrl.search;
-        return passRewrite(rewriteUrl);
+        return passRewrite(internalRewriteUrl(`/s/${subdomain}`));
       }
       if (pathname === "/memories" || pathname === "/galery" || pathname === "/gallery") {
-        const rewriteUrl = new URL(`/s/${subdomain}/memories`, req.url);
-        rewriteUrl.search = req.nextUrl.search;
-        return passRewrite(rewriteUrl);
+        return passRewrite(internalRewriteUrl(`/s/${subdomain}/memories`));
       }
       if (pathname === "/receptionist") {
-        const rewriteUrl = new URL(`/s/${subdomain}/receptionist`, req.url);
-        rewriteUrl.search = req.nextUrl.search;
-        return passRewrite(rewriteUrl);
+        return passRewrite(internalRewriteUrl(`/s/${subdomain}/receptionist`));
       }
       if (pathname === "/welcome") {
-        const rewriteUrl = new URL(`/s/${subdomain}/welcome`, req.url);
-        rewriteUrl.search = req.nextUrl.search;
-        return passRewrite(rewriteUrl);
+        return passRewrite(internalRewriteUrl(`/s/${subdomain}/welcome`));
       }
       if (pathname === "/sharemoment") {
-        const rewriteUrl = new URL(`/s/${subdomain}/sharemoment`, req.url);
-        rewriteUrl.search = req.nextUrl.search;
-        return passRewrite(rewriteUrl);
+        return passRewrite(internalRewriteUrl(`/s/${subdomain}/sharemoment`));
       }
       // Dynamic Path Routing for Guest Invitation (e.g. /v=Budi or /Sutejo)
       const segments = pathname.split('/').filter(Boolean);
