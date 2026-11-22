@@ -40,20 +40,25 @@ model AdminAuditLog {
 }
 
 model User {
-  id           String       @id @default(uuid())
-  googleId     String?      @unique
-  email        String       @unique
-  name         String
-  role         UserRole     @default(CLIENT)
-  phoneNumber  String?
-  avatarUrl    String?
-  passwordHash String?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @default(now()) @updatedAt
-  invitations  Invitation[]
-  orders       Order[]
-  promoHolds   PromoHold[]
+  id                     String                  @id @default(uuid())
+  googleId               String?                 @unique
+  email                  String                  @unique
+  name                   String
+  role                   UserRole                @default(CLIENT)
+  phoneNumber            String?
+  avatarUrl              String?
+  passwordHash           String?
+  /// Mitra WO yang mendaftarkan akun klien ini secara langsung dari Portal Mitra (mendapat diskon grosir otomatis tanpa kupon).
+  provisionedByPartnerId String?                 @map("provisioned_by_partner_id")
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @default(now()) @updatedAt
+  provisionedByPartner   PartnerAffiliate?       @relation("PartnerProvisionedClients", fields: [provisionedByPartnerId], references: [id], onDelete: SetNull)
+  invitations            Invitation[]
+  orders                 Order[]
+  promoHolds             PromoHold[]
+  activationTokens       ClientActivationToken[]
 
+  @@index([provisionedByPartnerId])
   @@map("users")
 }
 
@@ -556,9 +561,11 @@ model PartnerAffiliate {
   notes           String?
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
-  coupons         PromoCoupon[]
-  commissions     AffiliateCommission[]
-  payoutExpenses  Expense[]
+  coupons                PromoCoupon[]
+  commissions            AffiliateCommission[]
+  payoutExpenses         Expense[]
+  provisionedClients     User[]                  @relation("PartnerProvisionedClients")
+  clientActivationTokens ClientActivationToken[]
 
   @@map("partner_affiliates")
 }
@@ -678,6 +685,25 @@ model EmailOtpToken {
 
   @@index([email, purpose, expiresAt])
   @@map("email_otp_tokens")
+}
+
+/// Token aktivasi sekali pakai (berlaku 48 jam) untuk akun klien yang didaftarkan langsung oleh Mitra WO.
+model ClientActivationToken {
+  id          String            @id @default(uuid())
+  userId      String            @map("user_id")
+  partnerId   String?           @map("partner_id")
+  tokenHash   String            @unique @map("token_hash")
+  expiresAt   DateTime          @map("expires_at")
+  consumedAt  DateTime?         @map("consumed_at")
+  emailSentAt DateTime?         @map("email_sent_at")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  partner     PartnerAffiliate? @relation(fields: [partnerId], references: [id], onDelete: SetNull)
+
+  @@index([userId, consumedAt])
+  @@index([expiresAt])
+  @@index([partnerId])
+  @@map("client_activation_tokens")
 }
 
 model GiftClaim {

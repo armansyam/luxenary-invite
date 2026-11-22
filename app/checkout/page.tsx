@@ -72,6 +72,13 @@ function CheckoutContent() {
     discountValue: number;
     validUntil?: number | null;
   } | null>(null);
+  const [partnerDiscount, setPartnerDiscount] = useState<{
+    partnerName: string;
+    discountType: string;
+    discountValue: number;
+    discountAmount: number;
+    basePrice: number;
+  } | null>(null);
   const [promoCountdownStr, setPromoCountdownStr] = useState<string>("");
   const [confirmingOrder, setConfirmingOrder] = useState(false);
 
@@ -211,13 +218,19 @@ function CheckoutContent() {
             return;
           }
 
-          if (orderStatusData.promoCodeApplied && orderStatusData.discountAmount) {
-            setAppliedPromo({
-              code: orderStatusData.promoCodeApplied,
-              discountAmount: Number(orderStatusData.discountAmount),
-              discountType: "NOMINAL",
-              discountValue: Number(orderStatusData.discountAmount),
-            });
+          if (orderStatusData.partnerDiscount && orderStatusData.partnerDiscount.discountAmount > 0) {
+            setPartnerDiscount(orderStatusData.partnerDiscount);
+            setAppliedPromo(null);
+          } else {
+            setPartnerDiscount(null);
+            if (orderStatusData.promoCodeApplied && orderStatusData.discountAmount) {
+              setAppliedPromo({
+                code: orderStatusData.promoCodeApplied,
+                discountAmount: Number(orderStatusData.discountAmount),
+                discountType: "NOMINAL",
+                discountValue: Number(orderStatusData.discountAmount),
+              });
+            }
           }
 
           setError(null);
@@ -355,6 +368,12 @@ function CheckoutContent() {
 
       setOrderId(orderData.orderId);
       setInvoiceNumber(orderData.invoiceNumber);
+      if (orderData.partnerDiscount && orderData.partnerDiscount.discountAmount > 0) {
+        setPartnerDiscount(orderData.partnerDiscount);
+        setAppliedPromo(null);
+      } else {
+        setPartnerDiscount(null);
+      }
       if (typeof window !== "undefined" && orderData.orderId) {
         window.history.replaceState(null, "", `/checkout?order=${orderData.orderId}`);
       }
@@ -598,8 +617,11 @@ function CheckoutContent() {
 
   // Kode promo hanya berlaku untuk pendaftaran paket baru (ditegakkan juga di /api/public/promo/validate)
   const isAddonOrUpgradeOrder = ["GALLERY_EXTENSION", "MEMORIES_TOPUP", "UPGRADE"].includes(currentOrderType);
-  const subtotal = planData?.price || 0;
-  const discountAmount = appliedPromo?.discountAmount || 0;
+  const hasPartnerDiscount = !isAddonOrUpgradeOrder && Boolean(partnerDiscount && partnerDiscount.discountAmount > 0);
+  const subtotal = hasPartnerDiscount ? partnerDiscount!.basePrice : (planData?.price || 0);
+  const discountAmount = hasPartnerDiscount
+    ? partnerDiscount!.discountAmount
+    : (appliedPromo?.discountAmount || 0);
   const netSubtotal = Math.max(0, subtotal - discountAmount);
   // Biaya layanan HANYA diterapkan jika menggunakan Gateway (QRIS)
   const appFee = (feePayer === "BUYER" && paymentMode === "GATEWAY") ? Math.round(netSubtotal * (feePercent / 100)) : 0;
@@ -770,8 +792,35 @@ function CheckoutContent() {
                 )}
               </div>
 
-              {/* Promo Code Collapsible (Hanya jika Master Switch ON) */}
-              {promoEnabled && !isAddonOrUpgradeOrder && (
+              {/* Harga Khusus Mitra WO (Otomatis & Anti-Stacking dengan Kupon Publik) */}
+              {hasPartnerDiscount && partnerDiscount && (
+                <div className="pt-3 border-t border-white/10">
+                  <div className="p-3.5 rounded-2xl bg-amber-950/40 border border-amber-500/35 flex items-start gap-3">
+                    <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-300 flex items-center justify-center shrink-0 mt-0.5">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <div className="min-w-0 space-y-0.5">
+                      <p className="text-xs font-bold text-amber-200">
+                        Harga Khusus Mitra {partnerDiscount.partnerName} Aktif
+                      </p>
+                      <p className="text-[11px] text-amber-300/85 leading-relaxed">
+                        Potongan otomatis{" "}
+                        <strong className="text-white">
+                          {partnerDiscount.discountType === "PERCENT"
+                            ? `${partnerDiscount.discountValue}%`
+                            : `Rp ${partnerDiscount.discountValue.toLocaleString("id-ID")}`}
+                        </strong>{" "}
+                        (hemat Rp {partnerDiscount.discountAmount.toLocaleString("id-ID")}). Tidak dapat digabung dengan kode promo publik.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Promo Code Collapsible (Hanya jika Master Switch ON dan bukan akun potongan Mitra WO) */}
+              {promoEnabled && !isAddonOrUpgradeOrder && !hasPartnerDiscount && (
                 <div className="pt-3 border-t border-white/10 space-y-2.5">
                   {!appliedPromo ? (
                     <div>
@@ -868,7 +917,16 @@ function CheckoutContent() {
                   <span>Subtotal Layanan</span>
                   <span className="text-stone-200 font-medium font-mono">Rp {subtotal.toLocaleString("id-ID")}</span>
                 </div>
-                {appliedPromo && discountAmount > 0 && (
+                {hasPartnerDiscount && partnerDiscount && discountAmount > 0 && (
+                  <div className="flex justify-between items-center text-amber-300">
+                    <span>
+                      Potongan Mitra ({partnerDiscount.partnerName}
+                      {partnerDiscount.discountType === "PERCENT" ? ` ${partnerDiscount.discountValue}%` : ""})
+                    </span>
+                    <span className="font-medium font-mono">- Rp {discountAmount.toLocaleString("id-ID")}</span>
+                  </div>
+                )}
+                {!hasPartnerDiscount && appliedPromo && discountAmount > 0 && (
                   <div className="flex justify-between items-center text-emerald-400">
                     <span>Diskon Kupon ({appliedPromo.code})</span>
                     <span className="font-medium font-mono">- Rp {discountAmount.toLocaleString("id-ID")}</span>

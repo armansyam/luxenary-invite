@@ -95,6 +95,15 @@ export interface PartnerPayoutEmailOptions {
   appUrl?: string;
 }
 
+export interface ClientActivationEmailOptions {
+  recipientEmail: string;
+  clientName: string;
+  partnerName: string;
+  activationUrl: string;
+  expiresHours?: number;
+  appUrl?: string;
+}
+
 export interface EmailTemplateMeta {
   key: string;
   name: string;
@@ -908,6 +917,106 @@ export function buildPartnerPayoutHtml(
 }
 
 /**
+ * 7. Template Aktivasi Akun Klien dari Mitra WO (Co-branded Magic Link 48 Jam)
+ */
+export function buildClientActivationEmailHtml(
+  opts: ClientActivationEmailOptions,
+  settings?: { platformName?: string; appUrl?: string },
+): { subject: string; html: string; text: string } {
+  const platformName = settings?.platformName || "Luxvite";
+  const partnerName = opts.partnerName?.trim() || "Mitra Resmi";
+  const clientName = opts.clientName?.trim() || "Mempelai";
+  const expiresHours = opts.expiresHours || 48;
+  const activationUrl = opts.activationUrl;
+
+  const subject = `Aktivasi Akun Undangan Digital Anda — ${partnerName} × ${platformName}`;
+
+  const text = [
+    `Halo ${clientName},`,
+    ``,
+    `Akun undangan digital Anda di ${platformName} telah disiapkan oleh ${partnerName}.`,
+    ``,
+    `Klik tautan berikut untuk membuat kata sandi dan mulai menyusun undangan digital Anda:`,
+    activationUrl,
+    ``,
+    `Informasi Penting:`,
+    `- Tautan ini bersifat pribadi dan hanya dapat digunakan 1 kali.`,
+    `- Tautan berlaku selama ${expiresHours} jam sejak email ini dikirim.`,
+    `- Jika tautan sudah kedaluwarsa, silakan hubungi ${partnerName} untuk mengirim ulang tautan baru.`,
+    ``,
+    `Salam hangat,`,
+    `${partnerName} × ${platformName}`,
+  ].join("\n");
+
+  const html = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(subject)}</title>
+  <style>
+    body { margin: 0; padding: 0; background-color: #F7F5F0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #1C1917; -webkit-font-smoothing: antialiased; }
+    .container { max-width: 580px; margin: 0 auto; padding: 36px 16px; }
+    .card { background-color: #FFFFFF; border: 1px solid #EAE4D9; border-radius: 20px; padding: 36px 30px; box-shadow: 0 10px 30px rgba(44, 34, 20, 0.05); }
+    .header { text-align: center; border-bottom: 1px solid #EAE4D9; padding-bottom: 22px; margin-bottom: 24px; }
+    .cobrand { font-family: 'Cinzel', Georgia, serif; font-size: 13px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #B45309; margin-bottom: 10px; }
+    .title { font-size: 20px; font-weight: 700; color: #1C1917; margin: 0 0 10px 0; letter-spacing: -0.2px; }
+    .badge { display: inline-block; padding: 5px 14px; border-radius: 9999px; font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; background-color: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+    .steps { background-color: #FAF7F0; border: 1px solid #EAE4D9; border-radius: 14px; padding: 18px 20px; margin: 20px 0; font-size: 13px; line-height: 1.7; color: #44403C; }
+    .cta-container { text-align: center; margin: 28px 0 20px 0; }
+    .btn-primary { display: inline-block; background: linear-gradient(135deg, #C9A227 0%, #A88218 100%); color: #FFFFFF !important; text-decoration: none; padding: 15px 32px; border-radius: 12px; font-weight: 700; font-size: 14px; letter-spacing: 0.3px; box-shadow: 0 6px 18px rgba(180, 83, 9, 0.22); }
+    .fallback-box { background-color: #F8F7F4; border: 1px dashed #D6CFC2; border-radius: 10px; padding: 12px 14px; margin: 18px 0; font-size: 11px; color: #57534E; word-break: break-all; }
+    .notice { background-color: #FFFBEB; border-left: 4px solid #D97706; border-radius: 8px; padding: 12px 14px; margin: 18px 0; font-size: 12px; line-height: 1.6; color: #78350F; }
+    .footer { text-align: center; font-size: 11px; color: #8C827A; line-height: 1.6; border-top: 1px solid #EAE4D9; padding-top: 18px; margin-top: 22px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <div class="cobrand">${escapeHtml(partnerName)} &times; ${escapeHtml(platformName)}</div>
+        <h1 class="title">Selamat Datang, ${escapeHtml(clientName)}</h1>
+        <span class="badge">Undangan Aktivasi Akun</span>
+      </div>
+
+      <p style="font-size: 14px; line-height: 1.7; color: #44403C; margin: 0 0 14px 0;">
+        Akun undangan digital Anda di <strong>${escapeHtml(platformName)}</strong> telah didaftarkan secara resmi oleh <strong>${escapeHtml(partnerName)}</strong>.
+      </p>
+
+      <div class="steps">
+        <strong style="color: #1C1917; display: block; margin-bottom: 6px;">3 Langkah Mudah Memulai:</strong>
+        1. Klik tombol <strong>Aktifkan Akun &amp; Buat Kata Sandi</strong> di bawah ini.<br>
+        2. Tentukan kata sandi pribadi Anda (minimal 8 karakter).<br>
+        3. Anda langsung masuk ke studio untuk memilih tema &amp; melengkapi detail acara.
+      </div>
+
+      <div class="cta-container">
+        <a href="${escapeHtml(activationUrl)}" class="btn-primary" target="_blank">
+          Aktifkan Akun &amp; Buat Kata Sandi &rarr;
+        </a>
+      </div>
+
+      <div class="notice">
+        <strong>Keamanan &amp; Masa Berlaku:</strong> Tautan aktivasi ini bersifat pribadi, hanya dapat dipakai <strong>1 kali</strong>, dan berlaku selama <strong>${expiresHours} jam</strong>. Jika kedaluwarsa, minta <strong>${escapeHtml(partnerName)}</strong> untuk mengirim ulang tautan baru.
+      </div>
+
+      <div class="fallback-box">
+        Jika tombol tidak berfungsi, salin dan tempel tautan berikut ke browser Anda:<br>
+        <a href="${escapeHtml(activationUrl)}" style="color: #B45309;">${escapeHtml(activationUrl)}</a>
+      </div>
+
+      <div class="footer">
+        <p style="margin: 0;">Email ini dikirim otomatis oleh <strong>${escapeHtml(platformName)}</strong> atas pendaftaran akun oleh mitra <strong>${escapeHtml(partnerName)}</strong>.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  return { subject, html, text };
+}
+
+/**
  * ─────────────────────────────────────────────────────────────────────────────
  * EMAIL TEMPLATES CATALOGUE
  * Definisi seluruh varian untuk pratinjau dan pengujian di /admin/emails
@@ -1233,6 +1342,34 @@ export const EMAIL_TEMPLATE_CATALOG: EmailTemplateMeta[] = [
           referenceNumber: "TRF-20261120-001",
           notes: "Pencairan komisi periode November 2026",
           hasAttachment: true,
+          ...overrides,
+        },
+        settings,
+      ),
+  },
+  {
+    key: "PARTNER_CLIENT_ACTIVATION",
+    name: "Aktivasi Akun Klien dari Mitra WO (Magic Link 48 Jam)",
+    category: "SISTEM",
+    badgeText: "Aktivasi Mitra",
+    description: "Email co-branded dikirim otomatis ke mempelai saat Mitra WO mendaftarkan akun klien baru dari Portal Mitra.",
+    triggerEvent: "Mitra WO mendaftarkan klien atau menekan Kirim Ulang Link Aktivasi di /partner",
+    recipientTarget: "Mempelai / Klien yang Didaftarkan Mitra",
+    samplePayload: {
+      recipientEmail: "nadia.bagas@gmail.com",
+      clientName: "Nadia & Bagas",
+      partnerName: "WO Berkah Abadi",
+      activationUrl: "https://luxvite.id/auth/set-password?token=contoh-token-aktivasi-48-jam",
+      expiresHours: 48,
+    },
+    render: (overrides = {}, settings = {}) =>
+      buildClientActivationEmailHtml(
+        {
+          recipientEmail: "nadia.bagas@gmail.com",
+          clientName: "Nadia & Bagas",
+          partnerName: "WO Berkah Abadi",
+          activationUrl: "https://luxvite.id/auth/set-password?token=contoh-token-aktivasi-48-jam",
+          expiresHours: 48,
           ...overrides,
         },
         settings,

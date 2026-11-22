@@ -3,9 +3,13 @@ import { Prisma } from "@prisma/client";
 import { logger } from "@/lib/logger";
 
 /**
- * Memproses konsumsi PromoHold dan pencatatan komisi mitra saat order berubah status menjadi PAID.
- * Idempotent: Jika sudah pernah diproses (hold.status === "CONSUMED" atau commission sudah ada),
- * fungsi ini akan langsung melewati eksekusi tanpa menduplikasi data (mencegah Celah 3).
+ * Memproses konsumsi PromoHold dan pencatatan pemakaian kupon promo publik saat order berubah status menjadi PAID.
+ * Idempotent: Jika hold sudah berstatus CONSUMED, fungsi ini langsung melewati eksekusi tanpa menduplikasi data.
+ *
+ * Catatan Kebijakan Bisnis (Zero-Debt / No Payout):
+ * - Kupon Promo berdiri sendiri untuk kampanye promo publik Luxvite.
+ * - Mitra WO menerima potongan harga grosir langsung di checkout untuk akun klien yang didaftarkannya,
+ *   sehingga sistem TIDAK lagi membuat utang AffiliateCommission baru atau menambah pendingBalance.
  */
 export async function processOrderPaidMarketing(
   orderId: string,
@@ -16,9 +20,7 @@ export async function processOrderPaidMarketing(
       where: { id: orderId },
       include: {
         promoHold: true,
-        promoCoupon: {
-          include: { partner: true },
-        },
+        promoCoupon: true,
       },
     });
 
@@ -37,54 +39,15 @@ export async function processOrderPaidMarketing(
       });
     }
 
-    // 2. Update usage count kupon promo
+    // 2. Update usage count kupon promo publik (tanpa pencatatan utang/komisi mitra)
     if (order.promoCoupon) {
       await client.promoCoupon.update({
         where: { id: order.promoCoupon.id },
         data: { usageCount: { increment: 1 } },
       });
-
-      // 3. Catat komisi mitra afiliasi jika kupon terafiliasi dengan partner
-      const partner = order.promoCoupon.partner;
-      if (partner && partner.isActive) {
-        // Cek apakah komisi untuk order ini sudah pernah dicatat
-        const existingCommission = await client.affiliateCommission.findUnique({
-          where: { orderId: order.id },
-        });
-
-        if (!existingCommission) {
-          let commissionAmount = 0;
-          if (partner.commissionType === "PERCENT") {
-            commissionAmount = Math.round(Number(order.amount) * (Number(partner.commissionValue) / 100));
-          } else {
-            commissionAmount = Number(partner.commissionValue);
-          }
-
-          commissionAmount = Math.max(0, commissionAmount);
-
-          if (commissionAmount > 0) {
-            await client.affiliateCommission.create({
-              data: {
-                partnerId: partner.id,
-                orderId: order.id,
-                orderAmount: order.amount,
-                commissionAmount,
-                status: "PENDING",
-              },
-            });
-
-            await client.partnerAffiliate.update({
-              where: { id: partner.id },
-              data: {
-                pendingBalance: { increment: commissionAmount },
-              },
-            });
-          }
-        }
-      }
     }
   } catch (error) {
-    logger.error("Marketing", "Gagal memproses komisi dan kupon untuk order lunas", error, { orderId });
+    logger.error("Marketing", "Gagal memproses pemakaian kupon untuk order lunas", error, { orderId });
     throw error;
   }
 }

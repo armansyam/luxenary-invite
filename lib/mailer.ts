@@ -3,12 +3,14 @@ import { getPublicPlatformSettings, getSmtpSettings } from "./settings";
 import { logger } from "./logger";
 import { getPlanDisplayName } from "./planUtils";
 import {
+  ClientActivationEmailOptions,
   InvoiceEmailOptions,
   LoginOtpEmailOptions,
   MemoriesQuotaAlertOptions,
   PartnerPayoutEmailOptions,
   RetentionExpiryAlertOptions,
   TestSmtpOptions,
+  buildClientActivationEmailHtml,
   buildInvoiceEmailHtml,
   buildLoginOtpHtml,
   buildMemoriesQuotaHtml,
@@ -19,6 +21,7 @@ import {
 } from "./email-templates";
 
 export type {
+  ClientActivationEmailOptions,
   InvoiceEmailOptions,
   LoginOtpEmailOptions,
   MemoriesQuotaAlertOptions,
@@ -27,6 +30,7 @@ export type {
   TestSmtpOptions,
 };
 export {
+  buildClientActivationEmailHtml,
   buildInvoiceEmailHtml,
   buildLoginOtpHtml,
   buildMemoriesQuotaHtml,
@@ -387,6 +391,64 @@ export async function sendPartnerPayoutEmail(
       recipient: opts.recipientEmail,
     });
     return { success: false, error: error.message };
+  }
+}
+
+export async function sendClientActivationEmail(
+  opts: ClientActivationEmailOptions,
+): Promise<{ success: boolean; error?: string; platformName?: string }> {
+  try {
+    const settings = { ...(await getPublicPlatformSettings()), ...(await getSmtpSettings()) };
+    const platformName = settings.platformName || "Luxvite";
+
+    if (!settings.smtpHost || !settings.smtpUser) {
+      logger.warn("Mailer", "SMTP belum dikonfigurasi; email aktivasi klien mitra dilewati", {
+        recipient: opts.recipientEmail,
+        partnerName: opts.partnerName,
+      });
+      return { success: false, error: "SMTP_NOT_CONFIGURED", platformName };
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: settings.smtpHost,
+      port: settings.smtpPort || 587,
+      secure: settings.smtpPort === 465,
+      auth: {
+        user: settings.smtpUser,
+        pass: settings.smtpPassword || "",
+      },
+      tls: {
+        rejectUnauthorized: process.env.NODE_ENV === "production",
+      },
+    });
+
+    const { subject, html: htmlContent, text: textContent } = buildClientActivationEmailHtml(opts, {
+      platformName,
+      appUrl: opts.appUrl,
+    });
+
+    const fromAddress = settings.smtpFromEmail || settings.smtpUser;
+    const fromName = settings.smtpFromName || platformName;
+
+    await transporter.sendMail({
+      from: `"${fromName}" <${fromAddress}>`,
+      to: opts.recipientEmail,
+      subject,
+      text: textContent,
+      html: htmlContent,
+    });
+
+    logger.info("Mailer", "Email aktivasi klien mitra terkirim", {
+      recipient: opts.recipientEmail,
+      partnerName: opts.partnerName,
+    });
+    return { success: true, platformName };
+  } catch (error: any) {
+    logger.error("Mailer", "Gagal mengirim email aktivasi klien mitra", error, {
+      recipient: opts.recipientEmail,
+      partnerName: opts.partnerName,
+    });
+    return { success: false, error: error?.message || "SEND_FAILED" };
   }
 }
 

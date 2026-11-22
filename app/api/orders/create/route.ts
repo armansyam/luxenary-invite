@@ -8,6 +8,7 @@ import { releaseOrderPromoHold } from "@/lib/marketing";
 import { purgeObsoleteUserOrders } from "@/lib/upgradeHelper";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
+import { calculatePartnerWholesaleDiscount } from "@/lib/clientActivation";
 
 export const dynamic = "force-dynamic";
 
@@ -62,6 +63,17 @@ export async function POST(req: NextRequest) {
           ...(session.user.id ? [{ id: session.user.id }] : []),
           ...(session.user.email ? [{ email: session.user.email.toLowerCase() }] : []),
         ],
+      },
+      include: {
+        provisionedByPartner: {
+          select: {
+            id: true,
+            name: true,
+            isActive: true,
+            commissionType: true,
+            commissionValue: true,
+          },
+        },
       },
     });
 
@@ -127,6 +139,19 @@ export async function POST(req: NextRequest) {
       );
     }
     const amount = Number(priceSetting.value);
+
+    const activePartner = targetUser.provisionedByPartner?.isActive ? targetUser.provisionedByPartner : null;
+    const partnerDiscountAmount = activePartner ? calculatePartnerWholesaleDiscount(amount, activePartner) : 0;
+    const partnerDiscount =
+      activePartner && partnerDiscountAmount > 0
+        ? {
+            partnerName: activePartner.name,
+            discountType: activePartner.commissionType,
+            discountValue: Number(activePartner.commissionValue),
+            discountAmount: partnerDiscountAmount,
+            basePrice: amount,
+          }
+        : null;
 
     // Cek apakah user punya order PENDING yang belum lunas
     const existingPending = await prisma.order.findFirst({
@@ -232,6 +257,7 @@ export async function POST(req: NextRequest) {
           existing: true,
           planChanged: isPlanChanged,
           proofImageUrl: updated.proofImageUrl,
+          partnerDiscount,
           serverTime: Date.now(),
         });
       }
@@ -294,6 +320,7 @@ export async function POST(req: NextRequest) {
       amount,
       planType,
       existing: reused,
+      partnerDiscount,
       serverTime: Date.now(),
     });
   } catch (error) {

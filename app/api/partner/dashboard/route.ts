@@ -83,6 +83,30 @@ export async function GET(req: NextRequest) {
             receiptUrl: true,
           },
         },
+        provisionedClients: {
+          select: {
+            id: true,
+            passwordHash: true,
+            googleId: true,
+            orders: {
+              orderBy: { createdAt: "desc" },
+              select: {
+                id: true,
+                invoiceNumber: true,
+                planType: true,
+                orderType: true,
+                status: true,
+                amount: true,
+                discountAmount: true,
+                promoCodeApplied: true,
+                paidAt: true,
+                createdAt: true,
+              },
+            },
+            name: true,
+            email: true,
+          },
+        },
       },
     });
 
@@ -108,6 +132,42 @@ export async function GET(req: NextRequest) {
       (sum, item) => sum + Number(item.commissionAmount),
       0,
     );
+    const totalClients = partner.provisionedClients.length;
+    const activeClients = partner.provisionedClients.filter(
+      (c) => Boolean(c.passwordHash || c.googleId),
+    ).length;
+    const pendingActivationClients = totalClients - activeClients;
+
+    const allClientTransactions = partner.provisionedClients
+      .flatMap((c) =>
+        c.orders.map((o) => {
+          const finalAmount = Number(o.amount || 0);
+          const discountAmount = o.discountAmount ? Number(o.discountAmount) : 0;
+          const baseAmount = o.status === "PAID" || discountAmount > 0 ? finalAmount + discountAmount : finalAmount;
+          return {
+            id: o.id,
+            invoiceNumber: o.invoiceNumber,
+            clientId: c.id,
+            clientName: c.name,
+            clientEmail: c.email,
+            planType: o.planType,
+            orderType: o.orderType,
+            status: o.status,
+            baseAmount,
+            discountAmount,
+            finalAmount,
+            promoCodeApplied: o.promoCodeApplied,
+            paidAt: o.paidAt,
+            createdAt: o.createdAt,
+          };
+        }),
+      )
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    const paidTransactions = allClientTransactions.filter((t) => t.status === "PAID");
+    const pendingTransactions = allClientTransactions.filter((t) => t.status === "PENDING");
+    const totalPaidNetAmount = paidTransactions.reduce((sum, t) => sum + t.finalAmount, 0);
+    const totalWholesaleSavings = paidTransactions.reduce((sum, t) => sum + t.discountAmount, 0);
 
     return NextResponse.json(
       {
@@ -125,8 +185,18 @@ export async function GET(req: NextRequest) {
           pendingBalance,
           totalPaidOut,
           totalEarned,
-          totalTransactions: partner.commissions.length,
+          totalTransactions: paidTransactions.length,
+          clientStats: {
+            totalClients,
+            activeClients,
+            pendingActivationClients,
+            paidClientOrders: paidTransactions.length,
+            pendingClientOrders: pendingTransactions.length,
+            totalPaidNetAmount,
+            totalWholesaleSavings,
+          },
         },
+        clientTransactions: allClientTransactions.slice(0, 150),
         coupons: partner.coupons.map((coupon) => ({
           ...coupon,
           discountValue: Number(coupon.discountValue),

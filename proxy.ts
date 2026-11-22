@@ -93,7 +93,7 @@ async function resolveCustomDomain(host: string): Promise<CustomDomainResolution
 
 
 const PLATFORM_PATHS = [
-  "/admin", "/login", "/partner", "/packages", "/checkout", "/payment", "/onboarding",
+  "/admin", "/auth", "/login", "/partner", "/packages", "/checkout", "/payment", "/onboarding",
   "/dashboard", "/contact", "/how-it-works", "/privacy", "/terms",
   "/refund", "/portfolio", "/demo", "/archives",
 ];

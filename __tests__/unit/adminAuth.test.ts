@@ -112,6 +112,7 @@ describe("pemindai statis — rute tidak boleh terlupa guard", () => {
       "auth/otp/request",
       "auth/register",
       "auth/reset-password",
+      "auth/set-password",
       "health",
       "partner/auth/login",
       "partner/auth/logout",

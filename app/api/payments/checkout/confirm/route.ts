@@ -5,6 +5,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { normalizePlanType } from "@/lib/planUtils";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
+import {
+  calculatePartnerWholesaleDiscount,
+  formatPartnerPromoLabel,
+} from "@/lib/clientActivation";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +36,19 @@ export async function POST(req: NextRequest) {
       where: { id: orderId },
       include: {
         promoHold: true,
-        user: true,
+        user: {
+          include: {
+            provisionedByPartner: {
+              select: {
+                id: true,
+                name: true,
+                isActive: true,
+                commissionType: true,
+                commissionValue: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -100,8 +116,30 @@ export async function POST(req: NextRequest) {
     let appliedPromoCode: string | null = null;
     let promoCouponId: string | null = null;
 
-    // 3. Verifikasi PromoHold jika ada
-    if (order.promoHold && order.promoHold.status === "HELD") {
+    // 3. Prioritas Anti-Stacking: Jika akun didaftarkan oleh Mitra WO aktif (pembelian paket NEW),
+    //    terapkan Potongan Harga Grosir Mitra secara otomatis (zero-debt, tanpa kupon publik).
+    const activePartner =
+      !order.itemsJson && order.orderType === "NEW" && order.user?.provisionedByPartner?.isActive
+        ? order.user.provisionedByPartner
+        : null;
+    const partnerDiscount = activePartner
+      ? calculatePartnerWholesaleDiscount(basePrice, activePartner)
+      : 0;
+
+    if (activePartner && partnerDiscount > 0) {
+      appliedDiscount = partnerDiscount;
+      appliedPromoCode = formatPartnerPromoLabel(activePartner.name);
+      promoCouponId = null;
+
+      // Lepaskan PromoHold liar jika sempat ada sebelum kebijakan anti-stacking
+      if (order.promoHold && order.promoHold.status === "HELD") {
+        await prisma.promoHold.update({
+          where: { id: order.promoHold.id },
+          data: { status: "RELEASED" },
+        });
+      }
+    } else if (order.promoHold && order.promoHold.status === "HELD") {
+      // 3b. Verifikasi PromoHold kupon publik mandiri jika bukan akun potongan mitra
       if (order.promoHold.expiresAt > now) {
         // Cek apakah kupon masih aktif (lazy check)
         const coupon = await prisma.promoCoupon.findUnique({

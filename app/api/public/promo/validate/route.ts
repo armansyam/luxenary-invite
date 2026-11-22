@@ -7,6 +7,7 @@ import { normalizePlanType } from "@/lib/planUtils";
 import { logger } from "@/lib/logger";
 import { rateLimitDb } from "@/lib/rateLimit";
 import { HttpError, routeError } from "@/lib/routeError";
+import { calculatePartnerWholesaleDiscount } from "@/lib/clientActivation";
 
 export const dynamic = "force-dynamic";
 
@@ -56,7 +57,21 @@ export async function POST(req: NextRequest) {
     // 2. Cek Order milik user ini dan berstatus PENDING
     const order = await prisma.order.findUnique({
       where: { id: orderId },
-      include: { user: true },
+      include: {
+        user: {
+          include: {
+            provisionedByPartner: {
+              select: {
+                id: true,
+                name: true,
+                isActive: true,
+                commissionType: true,
+                commissionValue: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!order) {
@@ -77,6 +92,18 @@ export async function POST(req: NextRequest) {
     if (order.orderType !== "NEW") {
       return NextResponse.json(
         { error: "Kode promo hanya berlaku untuk pendaftaran paket baru, bukan untuk upgrade atau add-on." },
+        { status: 400 }
+      );
+    }
+
+    // 2.1 Anti-Stacking Ketat: Akun yang didaftarkan Mitra WO aktif sudah mendapat potongan harga grosir otomatis
+    const partner = order.user?.provisionedByPartner;
+    if (partner && partner.isActive && calculatePartnerWholesaleDiscount(Number(order.amount), partner) > 0) {
+      return NextResponse.json(
+        {
+          error: `Akun Anda sudah mendapatkan Harga Khusus Mitra (${partner.name}) secara otomatis dan tidak dapat digabung dengan kode promo publik.`,
+          code: "PARTNER_DISCOUNT_NO_STACK",
+        },
         { status: 400 }
       );
     }

@@ -4,6 +4,7 @@ import { routeError } from "@/lib/routeError";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { logger } from "@/lib/logger";
+import { calculatePartnerWholesaleDiscount } from "@/lib/clientActivation";
 
 export const dynamic = "force-dynamic";
 
@@ -62,6 +63,15 @@ export async function GET(
             name: true,
             email: true,
             phoneNumber: true,
+            provisionedByPartner: {
+              select: {
+                id: true,
+                name: true,
+                isActive: true,
+                commissionType: true,
+                commissionValue: true,
+              },
+            },
           },
         },
       },
@@ -227,6 +237,28 @@ export async function GET(
       }
     }
 
+    const activePartner =
+      !order.itemsJson && order.orderType === "NEW" && order.user?.provisionedByPartner?.isActive
+        ? order.user.provisionedByPartner
+        : null;
+    const basePriceForPartner =
+      order.checkoutConfirmedAt && order.discountAmount
+        ? Number(order.amount) + Number(order.discountAmount)
+        : Number(order.amount);
+    const partnerDiscountAmount = activePartner
+      ? calculatePartnerWholesaleDiscount(basePriceForPartner, activePartner)
+      : 0;
+    const partnerDiscount =
+      activePartner && partnerDiscountAmount > 0
+        ? {
+            partnerName: activePartner.name,
+            discountType: activePartner.commissionType,
+            discountValue: Number(activePartner.commissionValue),
+            discountAmount: partnerDiscountAmount,
+            basePrice: basePriceForPartner,
+          }
+        : null;
+
     return NextResponse.json({
       id: order.id,
       invoiceNumber: order.invoiceNumber,
@@ -257,6 +289,7 @@ export async function GET(
       checkoutConfirmedAt: order.checkoutConfirmedAt,
       promoCodeApplied: order.promoCodeApplied,
       discountAmount: order.discountAmount ? Number(order.discountAmount) : 0,
+      partnerDiscount,
       itemsJson: order.itemsJson || null,
       isQrisSessionExpired,
       gatewayQrString: isAuthorizedOwner ? order.gatewayQrString : null,

@@ -21,6 +21,7 @@ interface PartnerAffiliate {
   _count?: {
     coupons: number;
     commissions: number;
+    provisionedClients?: number;
   };
 }
 
@@ -606,18 +607,21 @@ export function AdminMarketingTab() {
     });
   }, [payouts, searchQuery]);
 
-  // Aggregate stats
+  // Aggregate stats (Zero-Debt Direct Wholesale Partner Model)
   const stats = useMemo(() => {
-    const totalPendingCommission = partners.reduce((sum, p) => sum + Number(p.pendingBalance || 0), 0);
-    const totalPaidCommission = partners.reduce((sum, p) => sum + Number(p.totalPaidOut || 0), 0);
     const activeCouponsCount = coupons.filter((c) => c.isActive).length;
     const totalCouponUsage = coupons.reduce((sum, c) => sum + (c.usageCount || 0), 0);
+    const activePartnersCount = partners.filter((p) => p.isActive).length;
+    const totalProvisionedClients = partners.reduce(
+      (sum, p) => sum + Number(p._count?.provisionedClients || 0),
+      0,
+    );
 
     return {
-      totalPendingCommission,
-      totalPaidCommission,
       activeCouponsCount,
       totalCouponUsage,
+      activePartnersCount,
+      totalProvisionedClients,
       totalPartners: partners.length,
       totalCoupons: coupons.length,
     };
@@ -628,9 +632,9 @@ export function AdminMarketingTab() {
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Pemasaran & Afiliasi</h2>
+          <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Pemasaran &amp; Mitra Reseller</h2>
           <p className="text-sm text-gray-500 mt-0.5">
-            Kelola kupon promo, mitra referal, pencatatan komisi, dan integrasi payout otomatis.
+            Kelola kupon promo publik mandiri serta mitra WO dengan potongan harga langsung (tanpa utang komisi atau payout).
           </p>
         </div>
 
@@ -705,20 +709,22 @@ export function AdminMarketingTab() {
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-gray-200/80 shadow-xs">
-          <span className="text-xs font-semibold text-gray-500 block">Komisi Belum Dicairkan</span>
+          <span className="text-xs font-semibold text-gray-500 block">Mitra WO Aktif</span>
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-2xl font-bold text-amber-600 font-mono">
-              Rp {stats.totalPendingCommission.toLocaleString("id-ID")}
+              {stats.activePartnersCount}
             </span>
+            <span className="text-xs text-gray-400">dari {stats.totalPartners} mitra</span>
           </div>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-gray-200/80 shadow-xs">
-          <span className="text-xs font-semibold text-gray-500 block">Total Komisi Sudah Dibayarkan</span>
+          <span className="text-xs font-semibold text-gray-500 block">Klien Didaftarkan Mitra</span>
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-2xl font-bold text-emerald-600 font-mono">
-              Rp {stats.totalPaidCommission.toLocaleString("id-ID")}
+              {stats.totalProvisionedClients}
             </span>
+            <span className="text-xs text-gray-400">akun via Portal Mitra</span>
           </div>
         </div>
       </div>
@@ -726,7 +732,7 @@ export function AdminMarketingTab() {
       {/* ── Sub-Tab Navigation & Actions Bar ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-3">
         {/* Tab Buttons */}
-        <div className="flex items-center gap-1.5 p-1 bg-gray-100 rounded-xl">
+        <div className="flex items-center gap-1.5 p-1 bg-gray-100 rounded-xl flex-wrap">
           <button
             type="button"
             onClick={() => { setActiveSubTab("coupons"); setSearchQuery(""); }}
@@ -736,7 +742,7 @@ export function AdminMarketingTab() {
                 : "text-gray-600 hover:text-gray-900"
             }`}
           >
-            Kupon & Promo ({coupons.length})
+            Kupon Promo Publik ({coupons.length})
           </button>
           <button
             type="button"
@@ -747,30 +753,34 @@ export function AdminMarketingTab() {
                 : "text-gray-600 hover:text-gray-900"
             }`}
           >
-            Mitra Afiliasi ({partners.length})
+            Mitra Reseller / WO ({partners.length})
           </button>
-          <button
-            type="button"
-            onClick={() => { setActiveSubTab("commissions"); setSearchQuery(""); }}
-            className={`px-4 py-2 text-xs font-bold rounded-lg transition ${
-              activeSubTab === "commissions"
-                ? "bg-white text-gray-900 shadow-xs"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            Riwayat Komisi ({commissions.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => { setActiveSubTab("payouts"); setSearchQuery(""); }}
-            className={`px-4 py-2 text-xs font-bold rounded-lg transition ${
-              activeSubTab === "payouts"
-                ? "bg-white text-gray-900 shadow-xs"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            Riwayat Pencairan ({payouts.length})
-          </button>
+          {commissions.length > 0 && (
+            <button
+              type="button"
+              onClick={() => { setActiveSubTab("commissions"); setSearchQuery(""); }}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition ${
+                activeSubTab === "commissions"
+                  ? "bg-white text-gray-900 shadow-xs"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Arsip Komisi Lama ({commissions.length})
+            </button>
+          )}
+          {payouts.length > 0 && (
+            <button
+              type="button"
+              onClick={() => { setActiveSubTab("payouts"); setSearchQuery(""); }}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition ${
+                activeSubTab === "payouts"
+                  ? "bg-white text-gray-900 shadow-xs"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Arsip Pencairan Lama ({payouts.length})
+            </button>
+          )}
         </div>
 
         {/* Action Controls */}
@@ -994,18 +1004,17 @@ export function AdminMarketingTab() {
             </div>
           )}
 
-          {/* TAB 2: MITRA AFILIASI */}
+          {/* TAB 2: MITRA RESELLER / WO (POTONGAN LANGSUNG, ZERO PAYOUT) */}
           {activeSubTab === "partners" && (
             <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-xs">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs text-gray-600">
                   <thead className="bg-gray-50/80 border-b border-gray-200 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
                     <tr>
-                      <th className="py-3 px-4">Nama Mitra</th>
-                      <th className="py-3 px-4">Kontak & Rekening Bank</th>
-                      <th className="py-3 px-4">Skema Komisi</th>
-                      <th className="py-3 px-4">Saldo Belum Dibayar</th>
-                      <th className="py-3 px-4">Total Sudah Dicairkan</th>
+                      <th className="py-3 px-4">Nama Mitra / WO</th>
+                      <th className="py-3 px-4">Kontak &amp; Login Portal</th>
+                      <th className="py-3 px-4">Potongan Harga Mitra</th>
+                      <th className="py-3 px-4">Klien Didaftarkan</th>
                       <th className="py-3 px-4">Status</th>
                       <th className="py-3 px-4 text-right">Aksi</th>
                     </tr>
@@ -1013,8 +1022,8 @@ export function AdminMarketingTab() {
                   <tbody className="divide-y divide-gray-100">
                     {filteredPartners.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="py-8 text-center text-gray-400">
-                          Belum ada mitra afiliasi yang terdaftar.
+                        <td colSpan={6} className="py-8 text-center text-gray-400">
+                          Belum ada mitra WO yang terdaftar.
                         </td>
                       </tr>
                     ) : (
@@ -1022,44 +1031,38 @@ export function AdminMarketingTab() {
                         <tr key={p.id} className="hover:bg-gray-50/50 transition">
                           <td className="py-3.5 px-4">
                             <span className="font-bold text-gray-900 block">{p.name}</span>
-                            <span className="text-[10px] text-gray-400 block mt-0.5">
-                              {p._count?.coupons || 0} kupon aktif • {p._count?.commissions || 0} order sukses
-                            </span>
+                            {p.notes && (
+                              <span className="text-[10px] text-gray-400 block mt-0.5 truncate max-w-xs" title={p.notes}>
+                                {p.notes}
+                              </span>
+                            )}
                           </td>
                           <td className="py-3.5 px-4 text-[11px]">
+                            {p.email ? (
+                              <span className="text-gray-800 block font-medium">{p.email}</span>
+                            ) : (
+                              <span className="text-amber-600 text-[10px] block">Belum ada email login</span>
+                            )}
                             {p.phoneNumber && (
-                              <span className="text-gray-700 block font-mono">
+                              <span className="text-gray-500 block font-mono text-[10px]">
                                 WA: {p.phoneNumber}
                               </span>
                             )}
-                            {p.bankName ? (
-                              <span className="text-gray-500 block font-mono text-[10px]">
-                                {p.bankName} - {p.accountNumber} (a.n. {p.accountName})
-                              </span>
-                            ) : (
-                              <span className="text-amber-600 text-[10px] block">
-                                Belum ada rekening
-                              </span>
-                            )}
                           </td>
                           <td className="py-3.5 px-4">
-                            <span className="font-semibold text-gray-800">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-amber-50 text-amber-900 border border-amber-200 font-bold">
                               {p.commissionType === "PERCENT"
-                                ? `${p.commissionValue}% per order`
-                                : `Rp ${Number(p.commissionValue).toLocaleString("id-ID")} / order`}
+                                ? `Potongan ${p.commissionValue}%`
+                                : `Potongan Rp ${Number(p.commissionValue).toLocaleString("id-ID")}`}
+                            </span>
+                            <span className="text-[10px] text-gray-400 block mt-0.5">
+                              Otomatis di checkout &bull; Tanpa payout
                             </span>
                           </td>
                           <td className="py-3.5 px-4">
-                            <span
-                              className={`font-mono font-bold ${
-                                Number(p.pendingBalance) > 0 ? "text-amber-600" : "text-gray-400"
-                              }`}
-                            >
-                              Rp {Number(p.pendingBalance).toLocaleString("id-ID")}
+                            <span className="font-mono font-bold text-gray-900">
+                              {p._count?.provisionedClients || 0} klien
                             </span>
-                          </td>
-                          <td className="py-3.5 px-4 font-mono text-emerald-600 font-semibold">
-                            Rp {Number(p.totalPaidOut).toLocaleString("id-ID")}
                           </td>
                           <td className="py-3.5 px-4">
                             <span
@@ -1084,8 +1087,9 @@ export function AdminMarketingTab() {
                                   type="button"
                                   onClick={() => openPayoutDialog(p)}
                                   className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-[11px] font-bold transition flex items-center gap-1"
+                                  title="Selesaikan sisa saldo lama"
                                 >
-                                  Payout
+                                  Selesaikan Saldo Lama
                                 </button>
                               )}
                               <button
@@ -1458,24 +1462,9 @@ export function AdminMarketingTab() {
                 </div>
               </div>
 
-              {/* Hubungkan ke Mitra Afiliasi */}
-              <div>
-                <label className="font-bold text-gray-700 block mb-1">Hubungkan ke Mitra Afiliasi</label>
-                <select
-                  value={couponForm.partnerId}
-                  onChange={(e) => setCouponForm({ ...couponForm, partnerId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white focus:outline-none focus:border-amber-500"
-                >
-                  <option value="">-- Tanpa Mitra (Promo Internal Toko) --</option>
-                  {partners.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({p.commissionType === "PERCENT" ? `${p.commissionValue}%` : `Rp ${Number(p.commissionValue).toLocaleString("id-ID")}`})
-                    </option>
-                  ))}
-                </select>
-                <span className="text-[10px] text-gray-400 block mt-1">
-                  Jika dihubungkan, setiap kali kupon ini dipakai hingga lunas, komisi mitra akan otomatis tercatat.
-                </span>
+              {/* Catatan Kupon Promo Mandiri */}
+              <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200/70 text-[11px] text-blue-900 leading-relaxed">
+                <strong>Kupon Promo Publik Mandiri:</strong> Kupon ini berlaku khusus untuk kampanye promo Luxvite dan otomatis diblokir pada akun klien Mitra WO (anti-stacking diskon ganda).
               </div>
 
               {/* Status Aktif */}
@@ -1520,7 +1509,7 @@ export function AdminMarketingTab() {
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-4">
               <h3 className="text-base font-bold text-gray-900">
-                {editingPartner ? "Edit Mitra Afiliasi" : "Tambah Mitra Afiliasi Baru"}
+                {editingPartner ? "Edit Mitra WO / Reseller" : "Tambah Mitra WO / Reseller Baru"}
               </h3>
               <button
                 type="button"
@@ -1535,7 +1524,7 @@ export function AdminMarketingTab() {
 
             <form onSubmit={handlePartnerSubmit} className="space-y-4 text-xs">
               <div>
-                <label className="font-bold text-gray-700 block mb-1">Nama Lengkap Mitra / Vendor *</label>
+                <label className="font-bold text-gray-700 block mb-1">Nama Lengkap Mitra / WO *</label>
                 <input
                   type="text"
                   required
@@ -1558,9 +1547,10 @@ export function AdminMarketingTab() {
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-gray-700 block mb-1">Email</label>
+                  <label className="font-bold text-gray-700 block mb-1">Email Login Portal Mitra *</label>
                   <input
                     type="email"
+                    required
                     value={partnerForm.email}
                     onChange={(e) => setPartnerForm({ ...partnerForm, email: e.target.value })}
                     placeholder="mitra@gmail.com"
@@ -1569,71 +1559,43 @@ export function AdminMarketingTab() {
                 </div>
               </div>
 
-              {/* Data Rekening Tujuan Payout */}
-              <div className="p-3.5 bg-gray-50 rounded-2xl border border-gray-200 space-y-3">
-                <span className="font-bold text-gray-800 block text-[11px]">
-                  Rekening Penerima Pembayaran Komisi
-                </span>
-                <div className="grid grid-cols-3 gap-2">
+              {/* Potongan Harga Langsung Mitra (Zero-Debt / No Payout) */}
+              <div className="p-3.5 bg-amber-50/70 rounded-2xl border border-amber-200/80 space-y-3">
+                <div>
+                  <span className="font-bold text-amber-950 block text-[11px]">
+                    Potongan Harga Khusus Mitra (Diskon Langsung di Checkout)
+                  </span>
+                  <span className="text-[10px] text-amber-900/80 block mt-0.5">
+                    Otomatis memotong harga paket baru untuk seluruh klien yang didaftarkan mitra ini dari Portal Mitra. Tanpa utang komisi &amp; tanpa payout.
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[11px] text-gray-500 block mb-1">Nama Bank</label>
+                    <label className="font-bold text-gray-700 block mb-1">Tipe Potongan</label>
+                    <select
+                      value={partnerForm.commissionType}
+                      onChange={(e) => setPartnerForm({ ...partnerForm, commissionType: e.target.value as any })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white focus:outline-none focus:border-amber-500"
+                    >
+                      <option value="PERCENT">Persentase (%)</option>
+                      <option value="NOMINAL">Nominal Tetap (Rp)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="font-bold text-gray-700 block mb-1">
+                      Nilai Potongan ({partnerForm.commissionType === "PERCENT" ? "%" : "Rp"}) *
+                    </label>
                     <input
-                      type="text"
-                      value={partnerForm.bankName}
-                      onChange={(e) => setPartnerForm({ ...partnerForm, bankName: e.target.value })}
-                      placeholder="BCA / BRI"
-                      className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                      type="number"
+                      required
+                      min="0"
+                      max={partnerForm.commissionType === "PERCENT" ? "95" : undefined}
+                      value={partnerForm.commissionValue}
+                      onChange={(e) => setPartnerForm({ ...partnerForm, commissionValue: e.target.value })}
+                      placeholder={partnerForm.commissionType === "PERCENT" ? "20" : "30000"}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-mono bg-white focus:outline-none focus:border-amber-500"
                     />
                   </div>
-                  <div className="col-span-2">
-                    <label className="text-[11px] text-gray-500 block mb-1">Nomor Rekening</label>
-                    <input
-                      type="text"
-                      value={partnerForm.accountNumber}
-                      onChange={(e) => setPartnerForm({ ...partnerForm, accountNumber: e.target.value })}
-                      placeholder="Contoh: 1234567890"
-                      className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs font-mono bg-white"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-[11px] text-gray-500 block mb-1">Nama Pemilik Rekening</label>
-                  <input
-                    type="text"
-                    value={partnerForm.accountName}
-                    onChange={(e) => setPartnerForm({ ...partnerForm, accountName: e.target.value })}
-                    placeholder="Sesuai buku tabungan"
-                    className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
-                  />
-                </div>
-              </div>
-
-              {/* Skema Komisi */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold text-gray-700 block mb-1">Tipe Komisi</label>
-                  <select
-                    value={partnerForm.commissionType}
-                    onChange={(e) => setPartnerForm({ ...partnerForm, commissionType: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white focus:outline-none focus:border-amber-500"
-                  >
-                    <option value="PERCENT">Persentase Transaksi (%)</option>
-                    <option value="NOMINAL">Nominal Tetap (Rp)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="font-bold text-gray-700 block mb-1">
-                    Nilai Komisi ({partnerForm.commissionType === "PERCENT" ? "%" : "Rp"}) *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="0"
-                    value={partnerForm.commissionValue}
-                    onChange={(e) => setPartnerForm({ ...partnerForm, commissionValue: e.target.value })}
-                    placeholder={partnerForm.commissionType === "PERCENT" ? "10" : "50000"}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-mono bg-white focus:outline-none focus:border-amber-500"
-                  />
                 </div>
               </div>
 

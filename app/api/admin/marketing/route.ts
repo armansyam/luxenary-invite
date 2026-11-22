@@ -75,8 +75,8 @@ function couponInputError(input: {
 
 function partnerCommissionError(commissionType: unknown, commissionValue: unknown): string | null {
   const value = Number(commissionValue);
-  if (!Number.isFinite(value) || value < 0) return "Nilai komisi tidak valid";
-  if (commissionType !== "NOMINAL" && value > 100) return "Komisi persen tidak boleh lebih dari 100";
+  if (!Number.isFinite(value) || value < 0) return "Nilai potongan mitra tidak valid";
+  if (commissionType !== "NOMINAL" && value > 95) return "Potongan mitra persen maksimal 95%";
   return null;
 }
 
@@ -113,6 +113,7 @@ export async function GET() {
             select: {
               coupons: true,
               commissions: true,
+              provisionedClients: true,
             },
           },
         },

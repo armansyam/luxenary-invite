@@ -39,6 +39,7 @@ export function generateCspNonce(): string {
 
 const APP_PREFIXES = [
   "/admin",
+  "/auth",
   "/dashboard",
   "/login",
   "/partner",
