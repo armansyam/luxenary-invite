@@ -65,7 +65,7 @@ Menampilkan catatan seluruh lembar penagihan (*invoice*) yang tercipta di sistem
 1. **Persetujuan (Approve):**
    - Admin menekan tombol *"Konfirmasi Lunas"* di modal struk.
    - Status order berubah menjadi `PAID`, timestamp `paidAt` tercatat.
-   - Hak akses paket aktif seketika. Persetujuan hanya menandai order `PAID` (beserta konsumsi kode promo dan komisi mitra dalam satu transaksi); undangan tidak dipublikasikan otomatis. Status `PUBLISHED` hanya diberikan saat klien menekan "Rilis Undangan Resmi" di halaman pengaturan dasbornya.
+   - Hak akses paket aktif seketika. Persetujuan hanya menandai order `PAID` (beserta konsumsi `PromoHold` & `usageCount` kupon promo publik dalam satu transaksi — tanpa pencatatan utang komisi baru); undangan tidak dipublikasikan otomatis. Status `PUBLISHED` hanya diberikan saat klien menekan "Rilis Undangan Resmi" di halaman pengaturan dasbornya.
    - Persetujuan hanya berlaku untuk order `PENDING` yang sudah memiliki bukti transfer; order lain dijawab HTTP 400, dan persetujuan ganda bersamaan dijawab HTTP 409 (satu pemenang).
 2. **Penolakan (Reject):**
    - Admin menekan tombol *"Tolak"* dan memasukkan alasan penolakan secara spesifik (misal: *Nominal tidak sesuai* atau *Mutasi belum masuk*).

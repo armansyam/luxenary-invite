@@ -152,8 +152,12 @@ Memerlukan autentikasi admin (`role: ADMIN` atau `SUPER_ADMIN`):
 | **Orders** | `GET` | `/api/admin/orders` | Riwayat pesanan dan status invoice lintas klien. |
 | | `POST` | `/api/admin/orders/{id}/approve` | Persetujuan 1-klik pembayaran transfer bank manual. |
 | | `POST` | `/api/admin/orders/{id}/reject` | Menolak transfer bank manual dengan alasan verifikasi. |
-| **Marketing** | `GET` | `/api/admin/marketing` | Mengambil data performa kupon diskon, daftar mitra afiliasi, dan log komisi. |
-| | `POST` | `/api/admin/marketing` | Membuat kupon baru, mendaftarkan mitra referral, dan mencairkan (*payout*) komisi ke buku kas. |
+| **Marketing** | `GET` | `/api/admin/marketing` | Mengambil data kupon promo publik mandiri, daftar mitra WO (beserta jumlah klien terdaftar), dan arsip historis. |
+| | `POST` | `/api/admin/marketing` | Membuat/mengubah kupon promo publik mandiri dan mendaftarkan/mengelola mitra WO (potongan harga langsung tanpa payout baru). |
+| **Portal Mitra** | `GET` | `/api/partner/dashboard` | Ringkasan tarif potongan mitra, statistik klien ditangani, serta laporan transaksi klien (Harga Normal, Potongan Mitra, Total Dibayar). |
+| | `GET` / `POST` | `/api/partner/clients` | Daftar klien yang didaftarkan mitra dan pendaftaran akun klien baru (mengirim email co-branded Magic Link 48 jam via SMTP + teks WA cadangan). |
+| | `POST` | `/api/partner/clients/{id}/resend-activation` | Menerbitkan ulang tautan aktivasi 48 jam baru (menggugurkan token lama) untuk klien yang belum aktif. |
+| **Aktivasi Klien** | `GET` / `POST` | `/api/auth/set-password` | Memeriksa validitas token aktivasi 48 jam dan mengonsumsi token secara atomik untuk menetapkan kata sandi klien baru. |
 | **Finance** | `GET` | `/api/admin/finance/overview` | Ringkasan laba/rugi, pendapatan kotor, beban operasional, dan grafik arus kas SVG. |
 | | `POST` | `/api/admin/finance/expenses` | Mencatat beban pengeluaran operasional baru (server, gaji, marketing, dll). |
 | | `DELETE` | `/api/admin/finance/expenses/{id}` | Menghapus entri beban pengeluaran operasional. |

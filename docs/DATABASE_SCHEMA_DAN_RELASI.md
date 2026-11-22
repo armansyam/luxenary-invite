@@ -314,49 +314,50 @@ Album foto momen candid yang diunggah oleh tamu di hari pernikahan:
 
 ---
 
-### E. Entitas Pemasaran, Kupon Promo & Afiliasi (`promo_coupons`, `partner_affiliates`, `affiliate_commissions`, `promo_holds`)
+### E. Entitas Pemasaran, Kupon Promo Publik & Mitra Reseller (`promo_coupons`, `partner_affiliates`, `client_activation_tokens`, `promo_holds`, `affiliate_commissions`)
 
 #### 1. Tabel `promo_coupons`
-Katalog kupon diskon dan voucher promo promosi:
-- `code` (String, Unique): Kode kupon unik (contoh: `DISCOUNT50`, `WO-SEJAHTERA`).
+Katalog kupon diskon publik mandiri (untuk kampanye promosi Luxvite; diblokir otomatis pada akun klien Mitra WO):
+- `code` (String, Unique): Kode kupon unik (contoh: `DISCOUNT50`, `FLASH20`).
 - `discountType` (Enum `DiscountType`): `PERCENT` atau `NOMINAL`.
 - `discountValue` (Decimal): Besaran diskon (persen atau rupiah).
 - `minOrderAmount` (Decimal): Batas minimum nominal pesanan.
 - `maxDiscountAmount` (Decimal, Nullable): Plafon batas diskon maksimal untuk tipe persen.
 - `quotaLimit` (Int, Nullable): Kuota total pemakaian kupon.
 - `usageCount` (Int): Jumlah pemakaian kupon yang berhasil dibayar.
-- `isSingleUse` (Boolean): Flag sekali pakai langsung hangus.
 - `perUserLimit` (Int): Batas klaim per akun user.
 - `applicablePlans` (Array `PlanType`): Daftar paket yang memenuhi syarat.
 - `validFrom` & `validUntil` (DateTime, Nullable): Periode masa berlaku kupon.
-- `partnerId` (UUID, Foreign Key, Nullable): Relasi ke mitra afiliasi pemilik kupon.
+- `partnerId` (UUID, Foreign Key, Nullable — historis): Tidak lagi dipakai untuk kupon publik baru.
 
 #### 2. Tabel `partner_affiliates`
-Data mitra referral (Wedding Organizer, Venue, Vendor MUA):
-- `name` (String): Nama mitra atau agensi rekanan.
-- `commissionType` (Enum `CommissionType`): `PERCENT` atau `FLAT`.
-- `commissionValue` (Decimal): Besaran bagi hasil komisi per transaksi lunas.
-- `pendingBalance` (Decimal): Akumulasi saldo komisi yang belum dicairkan.
-- `totalPaidOut` (Decimal): Total riwayat komisi yang telah ditransfer ke mitra.
-- `bankName`, `accountNumber`, `accountName` (String, Nullable): Rekening pencairan komisi.
+Data Mitra Reseller / Wedding Organizer (model **Potongan Harga Langsung / Zero-Debt**, tanpa pencairan komisi baru):
+- `name` (String): Nama mitra atau agensi WO rekanan.
+- `email` (String, Nullable): Email unik login Portal Mitra (`/partner`).
+- `passwordHash` & `sessionVersion` (Int): Kredensial autentikasi mandiri Portal Mitra dan pencabutan sesi instan.
+- `commissionType` (Enum `CommissionType`): Tipe potongan harga langsung mitra (`PERCENT` atau `NOMINAL`).
+- `commissionValue` (Decimal): Besaran potongan harga otomatis di checkout untuk klien yang didaftarkan mitra (`users.provisioned_by_partner_id`).
+- `pendingBalance`, `totalPaidOut`, `bankName`, `accountNumber`, `accountName`: Kolom historis (*expand-only*) yang dipertahankan demi integritas data lama; tidak lagi ditambah pada order baru.
 
-#### 3. Tabel `affiliate_commissions`
-Catatan komisi per transaksi pesanan klien:
-- `orderId` (UUID, Unique, Foreign Key): Transaksi pesanan sumber komisi.
-- `partnerId` (UUID, Foreign Key): Mitra yang berhak menerima komisi.
-- `orderAmount` (Decimal): Nilai nominal pesanan.
-- `commissionAmount` (Decimal): Nominal hak bagi hasil mitra.
-- `status` (Enum `CommissionStatus`): `PENDING` atau `PAID`.
-- `paidAt` (DateTime, Nullable): Tanggal pencairan dana.
-- `payoutExpenseId` (UUID, Nullable, Foreign Key `expenses.id`, `ON DELETE SET NULL`, terindeks): Pengeluaran kas yang dibuat saat pencairan.
+#### 3. Tabel `client_activation_tokens`
+Token aktivasi sekali pakai berlaku **48 jam** untuk akun klien yang didaftarkan langsung oleh Mitra WO melalui `/partner`:
+- `userId` (UUID, Foreign Key `users.id`, `ON DELETE CASCADE`): Akun klien yang didaftarkan (`users.provisioned_by_partner_id`).
+- `partnerId` (UUID, Nullable, Foreign Key `partner_affiliates.id`, `ON DELETE SET NULL`): Mitra pendaftar untuk co-branding email & halaman `/auth/set-password`.
+- `tokenHash` (String, Unique): Hash HMAC-SHA256 dari token mentah 32-byte (token mentah tidak pernah disimpan di DB).
+- `expiresAt` (DateTime): Batas kedaluwarsa 48 jam.
+- `consumedAt` (DateTime, Nullable): Terisi atomik (`pg_advisory_xact_lock`) saat klien menyelesaikan pengaturan kata sandi.
+- `emailSentAt` (DateTime, Nullable): Timestamp pengiriman email aktivasi via SMTP.
 
-#### 4. Tabel `promo_holds`
-Mekanisme penguncian kupon 15 menit (*Anti-Race Condition & Anti-Double Claim*):
+#### 4. Tabel `affiliate_commissions` *(Arsip Historis — Read-Only)*
+Tabel catatan komisi dari model lama yang dipertahankan tanpa dihapus (*expand-only*). Sejak kebijakan **Zero-Debt / Upfront Wholesale Discount**, `processOrderPaidMarketing()` tidak lagi menulis baris baru ke tabel ini.
+
+#### 5. Tabel `promo_holds`
+Mekanisme penguncian kupon promo publik (*Anti-Race Condition & Anti-Double Claim*, mengikuti masa aktif order 24 jam):
 - `promoCode` (String): Kode kupon yang dikunci.
 - `orderId` (UUID, Unique, Foreign Key): ID pesanan kasir yang mengunci kupon.
 - `userId` (UUID, Foreign Key): User yang sedang melakukan reservasi diskon.
-- `status` (Enum `HoldStatus`): `HELD` (sedang dikunci), `CONSUMED` (lunas), `RELEASED` (batal).
-- `expiresAt` (DateTime): Waktu kedaluwarsa reservasi kunci (15 menit).
+- `status` (Enum `HoldStatus`): `HELD` (sedang dikunci), `CONSUMED` (lunas), `RELEASED` (batal/kedaluwarsa).
+- `expiresAt` (DateTime): Waktu kedaluwarsa reservasi kunci (mengikuti `order.expiredAt`).
 
 ---
 

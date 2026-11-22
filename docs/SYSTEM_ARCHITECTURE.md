@@ -30,7 +30,7 @@
 19. [Arsitektur Pemantauan Server & Kesehatan Sistem (Monitoring Hub)](#19-arsitektur-pemantauan-server--kesehatan-sistem-monitoring-hub)
 20. [Arsitektur Antarmuka Dasbor Klien Modern (Borderless Glowing Beam & Sliding Magnetic Pill)](#20-arsitektur-antarmuka-dasbor-klien-modern-borderless-glowing-beam--sliding-magnetic-pill)
 21. [Arsitektur Status Layanan & Pembatasan Registrasi](#220--arsitektur-status-layanan--pembatasan-registrasi--order-service-availability)
-22. [Sistem Pemasaran & Afiliasi (Kupon Promo, Mitra Referral, & Payout Komisi)](#230--arsitektur-sistem-pemasaran--afiliasi-kupon-promo-mitra-referral--payout-komisi)
+22. [Sistem Pemasaran & Mitra Reseller (Kupon Publik Mandiri, Direct WO Provisioning & Potongan Langsung)](#230--arsitektur-sistem-pemasaran--mitra-reseller-kupon-publik-direct-wo-provisioning--potongan-langsung)
 23. [Arsitektur 3 Mode Struktural Abadi, Sub-Acara Dinamis & Isolasi Lintas Mode](#23-arsitektur-3-mode-struktural-abadi-sub-acara-dinamis--isolasi-lintas-mode-v700)
 24. [Invarian Bisnis Mutlak, Payment Barrier & VPS Infrastruktur](#24-invarian-bisnis-mutlak-payment-barrier--vps-infrastruktur-v633)
 25. [Hardening Produksi & Modul Keamanan](#25-hardening-produksi--modul-keamanan-v637-1-oktober-2026)
@@ -2789,45 +2789,35 @@ Fitur kontrol ketersediaan sistem terpusat yang dikelola secara dinamis oleh Adm
 
 ---
 
-### 23.0 — Arsitektur Sistem Pemasaran & Afiliasi (Kupon Promo, Mitra Referral, & Payout Komisi)
+### 23.0 — Arsitektur Sistem Pemasaran & Mitra Reseller (Kupon Publik, Direct WO Provisioning & Potongan Langsung)
 
-Sistem pemasaran terpusat yang dirancang untuk mengelola kupon diskon publik, kode promo influencer/event, dan kemitraan afiliasi (referral) dengan arsitektur anti-race condition dan integrasi modul keuangan:
+Sistem pemasaran terpusat memisahkan secara tegas antara **Kupon Promo Publik Mandiri** dan **Mitra Reseller / WO (Zero-Debt / Upfront Wholesale Discount)**:
 
 1. **Model Data Relasional (`prisma/schema.prisma`):**
-   - **`PartnerAffiliate` (`partner_affiliates`):** Entitas mitra yang dikelola secara eksklusif oleh Administrator (tanpa portal publik). Menyimpan profil mitra, rekening bank pencairan, tipe komisi (`PERCENT` atau `NOMINAL`), nilai komisi, `pendingBalance` (saldo belum dicairkan), dan `totalPaidOut` (total komisi yang sudah ditransfer).
-   - **`PromoCoupon` (`promo_coupons`):** Kupon promo/diskon (bisa mandiri atau terikat ke `partnerId`). Memiliki tipe diskon (`PERCENT` atau `NOMINAL`), `discountValue`, `minOrderAmount`, `maxDiscountAmount`, batas kuota pemakaian global (`quotaLimit`), batas pemakaian per pengguna (`perUserLimit`), masa berlaku (`validFrom` dan `validUntil`), serta target paket spesifik (`applicablePlans`).
-   - **`PromoHold` (`promo_holds`):** Alokasi sementara saat pengguna memasukkan kode promo di `/checkout`. Mencegah *race condition* penembusan kuota saat sisa kuota tinggal 1 dengan reservasi kuota berstatus `HELD` selama 15 menit. Berubah menjadi `CONSUMED` saat order PAID atau `RELEASED` saat order EXPIRED/CANCELLED.
-   - **`AffiliateCommission` (`affiliate_commissions`):** Catatan riwayat komisi per transaksi pesanan klien yang berhasil lunas (`PAID`). Berstatus `PENDING` hingga dicairkan oleh Administrator menjadi `PAID`.
-   - **Relasi ke `Order`:** `Order` menyimpan `promoCouponId`, `promoCodeApplied`, `discountAmount`, dan relasi 1:1 dengan `PromoHold` serta `AffiliateCommission`.
+   - **`PartnerAffiliate` (`partner_affiliates`):** Entitas mitra WO/vendor yang login mandiri di `/partner` (cookie sesi bertanda tangan HMAC + `sessionVersion`). Menyimpan profil mitra dan tarif potongan langsung (`commissionType`: `PERCENT` / `NOMINAL`, `commissionValue`). Tidak lagi menambah utang `pendingBalance` atau memerlukan payout baru.
+   - **`User.provisionedByPartnerId` & `ClientActivationToken` (`client_activation_tokens`):** Menautkan akun klien yang didaftarkan mitra langsung dari `/partner`, lengkap dengan token aktivasi sekali pakai berlaku **48 jam** (hash HMAC-SHA256) untuk alur `/auth/set-password`.
+   - **`PromoCoupon` (`promo_coupons`) & `PromoHold` (`promo_holds`):** Kupon promo publik mandiri (bukan untuk tracking WO) dengan proteksi *row lock* (`SELECT ... FOR UPDATE`) dan masa hold mengikuti `order.expiredAt` (24 jam). Diblokir otomatis (anti-stacking) pada akun klien yang memiliki `provisionedByPartnerId` aktif.
+   - **`AffiliateCommission` (`affiliate_commissions`):** Dipertahankan *expand-only* sebagai arsip historis semata; tidak ada baris baru yang ditulis oleh `processOrderPaidMarketing()`.
 
 2. **Split Responsibility: Pemisahan Kasir (`/checkout`) dan Pembayaran (`/payment`):**
-   - **Halaman Kasir (`/checkout`):** Fokus pada validasi pesanan, nomor WhatsApp aktif pembeli, dan input kode promo.
-     - Validasi promo atomik via database transaction dan row lock (`SELECT ... FOR UPDATE`).
-     - Perhitungan kuota efektif: `effectiveUsage = usageCount + activeHolds`. Jika `>= quotaLimit`, kupon ditolak sebelum hold dibuat.
-     - Penguncian tagihan (`/api/payments/checkout/confirm`): Menghitung diskon pasti, mencatat `checkoutConfirmedAt`, dan mengarahkan pembeli ke `/payment?order={id}`.
-   - **Halaman Pembayaran Mandiri (`/payment`):** Fokus pada penyelesaian transaksi.
-     - QRIS Mode: Render SVG/PNG QRIS dengan Server-Sent Events (SSE) realtime push listener.
-     - Sinkronisasi waktu server (`serverTimeOffset`): Menjamin countdown timer QRIS akurat terhadap waktu server, bukan jam lokal perangkat pengguna.
-     - Graceful Session Renewal (`/api/payments/qris/regenerate`): Jika sesi QRIS 15 menit kedaluwarsa sebelum pembeli scan, pembeli dapat menekan tombol regenerasi QRIS baru tanpa membatalkan order atau kehilangan diskon promo yang terkunci pada masa aktif order 24 jam.
-     - Manual Transfer Mode: Menampilkan data rekening bank resmi dan form upload bukti transfer WebP. Jika admin menolak bukti transfer, status order tetap `PENDING` sehingga pembeli dapat mengunggah ulang bukti baru tanpa kehilangan kupon promonya.
+   - **Halaman Kasir (`/checkout`):** Menampilkan detail paket, kontak WA pembeli, dan penerapan diskon:
+     - **Akun Klien Mitra WO (`provisionedByPartnerId` aktif):** Potongan harga grosir mitra (`calculatePartnerWholesaleDiscount`) otomatis diterapkan untuk order paket baru (`NEW`), input kupon publik disembunyikan, dan `POST /api/public/promo/validate` menolak keras kode promo publik (`400 PARTNER_DISCOUNT_NO_STACK`).
+     - **Akun Publik Reguler:** Dapat menerapkan kupon promo publik via `POST /api/public/promo/validate` (validasi atomik `SELECT ... FOR UPDATE`, kuota efektif `usageCount + activeHolds`).
+     - **Penguncian Tagihan (`/api/payments/checkout/confirm`):** Memprioritaskan potongan harga mitra (melepaskan `PromoHold` liar jika ada), mengunci `amount`, `discountAmount`, `promoCodeApplied` (`MITRA: {partnerName}` atau kode kupon publik), dan `checkoutConfirmedAt`, lalu mengarahkan ke `/payment?order={id}`.
+   - **Halaman Pembayaran Mandiri (`/payment`):** QRIS dinamis dengan SSE realtime, sinkronisasi `serverTimeOffset`, regenerasi sesi QRIS tanpa kehilangan diskon terkunci, serta jalur transfer manual dengan unggah bukti WebP.
 
 3. **Orkestrasi Pembayaran & Webhook Idempoten (`lib/marketing.ts`):**
-   - `settleOrderAsPaid(orderId, data)` (`lib/paymentSettlement.ts`): satu-satunya pintu transisi `PENDING` -> `PAID`, dipakai webhook Midtrans, webhook Xendit, approve manual admin, dan rekonsiliasi status klien (`/api/client/orders/[id]/status`). Untuk order `NEW`, pelunasan berjalan di bawah `pg_advisory_xact_lock` per pengguna dan ditolak (mengembalikan `false`) bila pengguna sudah punya order `NEW` berstatus `PAID`; tanpa kunci ini dua QR hidup yang dibayar bersamaan sama-sama menjadi `PAID` (terbukti 16 Okt 2026, kini dijaga `paymentScenarios.test.ts`). Pemanggil membedakan "sudah diproses" dari "ditolak" lewat `isOrderPaid(orderId)`: webhook mencatat `webhook_logs.status = paid_on_closed_order` dan membalas 200 `duplicate_payment` (uang diterima, pengembalian dana manual), approve admin membalas 409 dengan penjelasan, dan polling status klien tidak menampilkan `PAID`. Menjalankan `updateMany where status=PENDING` dan `processOrderPaidMarketing(orderId, tx)` dalam **satu transaksi Prisma**: jika marketing gagal, seluruh transisi dibatalkan (order tetap `PENDING`, webhook membalas 500 sehingga gateway mengirim ulang). Mengembalikan `false` jika order sudah diproses proses lain.
-   - `awaitConcurrentGatewaySession(orderId, gatewayId, previousTxId)` (`lib/paymentSession.ts`): dipakai `/api/payments/checkout` dan `/api/payments/qris/regenerate` bila `gateway.init` gagal. Klik ganda atau dua perangkat membuat dua `init` untuk `order_id` yang sama dan gateway menolak yang kedua; fungsi ini menunggu (6 × 400 ms) sesi baru dari permintaan pertama (bukan sesi lama `previousTxId`, berstatus `PENDING`, belum kedaluwarsa) dan mengembalikannya sebagai 200. Tanpa sesi baru, galat gateway yang asli tetap dilempar.
-   - `isGatewayAmountValid(order, paidAmount)` (`lib/paymentSettlement.ts`): validasi nominal webhook. Jika `Order.chargedAmount` terisi (nominal yang dikirim ke gateway saat `init`, termasuk biaya layanan mode `BUYER`), nominal wajib sama persis; order lama tanpa `chargedAmount` hanya boleh dibayar >= `amount`. Nominal tidak cocok: order tidak dilunasi, `WebhookLog.status = amount_mismatch`, respons 200 (`ignored`). `chargedAmount` diisi di `/api/payments/checkout` dan `/api/payments/qris/regenerate`.
-   - `processOrderPaidMarketing(orderId, client)`: Dipanggil dari dalam `settleOrderAsPaid` (Midtrans webhook `settlement`, Xendit webhook `PAID`, atau Admin manual approve). Error tidak lagi ditelan: dilempar ulang agar transaksi pemanggil dibatalkan.
-     - Mengubah status `PromoHold` menjadi `CONSUMED`.
-     - Menginkremen `PromoCoupon.usageCount` sebesar +1.
-     - Jika kupon terikat ke Mitra Afiliasi aktif, menghitung komisi, membuat record `AffiliateCommission` status `PENDING`, dan menambah `PartnerAffiliate.pendingBalance`.
-     - Bersifat idempoten murni (tidak menduplikasi komisi atau hitungan kupon jika webhook terpanggil berulang).
-   - `releaseOrderPromoHold(orderId)`: Melepaskan hold (`RELEASED`) saat pesanan dibatalkan atau kedaluwarsa 24 jam.
+   - `settleOrderAsPaid(orderId, data)` (`lib/paymentSettlement.ts`): pintu tunggal transisi `PENDING` -> `PAID` di bawah `pg_advisory_xact_lock` per pengguna dalam satu transaksi Prisma bersama `processOrderPaidMarketing(orderId, tx)`.
+   - `processOrderPaidMarketing(orderId, client)`:
+     - Mengubah status `PromoHold` menjadi `CONSUMED` (idempoten).
+     - Menginkremen `PromoCoupon.usageCount` sebesar `+1` untuk kupon promo publik.
+     - **Zero-Debt Policy:** Tidak membuat baris `AffiliateCommission` baru dan tidak menambah `PartnerAffiliate.pendingBalance`.
+   - `releaseOrderPromoHold(orderId)`: Melepaskan hold (`RELEASED`) saat pesanan dibatalkan atau kedaluwarsa.
 
-4. **Integrasi Pencairan Komisi Mitra ke Modul Keuangan (`expenses`):**
-   - Pencairan komisi dilakukan di panel Admin (`/admin?tab=marketing`).
-   - Dalam satu transaksi database atomik:
-     - Seluruh komisi `PENDING` milik mitra ditandai sebagai `PAID`.
-     - `PartnerAffiliate.pendingBalance` dikurangi dan `totalPaidOut` ditambah sebesar total nominal pencairan.
-     - Secara otomatis dibuatkan entri pengeluaran kas di tabel `expenses` dengan kategori `MARKETING`, judul `"Payout Komisi Mitra: {name}"`, dan catatan detail nomor rekening tujuan. Pengeluaran ini langsung tersinkronisasi ke laporan laba rugi dan pembukuan eksekutif di `/admin?tab=finance`.
+4. **Portal Mitra Self-Service (`/partner`):**
+   - Autentikasi mandiri Email + Kata Sandi + OTP 6-digit SMTP (`lib/partnerAuth.ts`, `sessionVersion`).
+   - **Direct Client Provisioning (`POST /api/partner/clients`):** Membuat akun klien (`passwordHash: null`), menerbitkan token aktivasi 48 jam, mengirim email co-branded `{Nama WO} × Luxvite` via SMTP (`lib/mailer.ts`), serta menyediakan tombol salin/buka WhatsApp cadangan dan tombol **Kirim Ulang Link Aktivasi** (`POST /api/partner/clients/[id]/resend-activation`).
+   - **Data Klien Ditangani & Laporan Transaksi:** Menampilkan daftar klien (status aktivasi, jumlah undangan, order terakhir), laporan transaksi lengkap (Harga Normal → Potongan Mitra → Total Dibayar), total akumulasi penghematan mitra, dan ekspor **CSV Laporan Transaksi**.
 
 ---
 

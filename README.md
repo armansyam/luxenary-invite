@@ -72,7 +72,7 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
    │  Two-Way Cancel & Zero Ghost Payment│  Upload WebP ke R2 via   │
    │  → Webhook Auto-PAID + Invoice Email│  Custom Domain Edge CDN  │
    │  → Realtime SSE Push to Client      │  → Admin Approve/Reject  │
-   │  → Idempotent Marketing & Komisi    │  → Graceful Re-upload    │
+   │  → Idempotent Promo Consumption     │  → Graceful Re-upload    │
    └─────────────────────────────────────┴──────────────────────────┘
      │
      ▼
@@ -144,7 +144,7 @@ ADMIN PORTAL (/admin)
    - Database (Database): Snapshot backup & restore PostgreSQL
    - Monitoring (Monitoring & Status Server): Pemantauan kestabilan sistem 60-hari interaktif (Interactive Uptime Status Bar), pemantauan memori fisik Host RAM VPS (`os.totalmem()`), Host OS Uptime, beban partisi root Linux (/), latensi & metrik ukuran terpakai Cloudflare R2 Media Storage (kapasitas terpakai, sisa kuota bebas biaya 10 GB), serta audit aktivitas staf & webhook gateway.
    - Tim & Akses (Team): Manajemen akun staf admin dengan sistem Dynamic Granular Permissions (Checklist Interaktif per Modul dengan Preset Template `SUPER_ADMIN`, `ADMIN`, `FINANCE`, `SUPPORT`), kemampuan edit hak akses real-time, serta proteksi keamanan mutlak untuk modul sensitif.
-   - Pemasaran & Afiliasi (Marketing): Manajemen kupon promo & diskon (potongan persen/nominal, kuota, masa berlaku, alokasi sementara promo hold saat checkout), kemitraan mitra afiliasi (Wedding Organizer, KOL, vendor) dengan perhitungan komisi otomatis, pelacakan konversi, dan pencairan saldo komisi.
+   - Pemasaran & Mitra Reseller (Marketing): Manajemen kupon promo publik mandiri (potongan persen/nominal, kuota, masa berlaku, proteksi `PromoHold` & anti-stacking), serta kemitraan WO/Reseller berbasis **Potongan Harga Langsung (%) tanpa utang komisi/payout** yang terhubung ke Portal Mitra (`/partner`) untuk pendaftaran akun klien langsung (Magic Link 48 jam via SMTP + backup WhatsApp), pemantauan data klien, dan laporan transaksi CSV.
    - **Kas & Hasil Bisnis (Finance):** Dashboard kas terpadu single-page (`AdminCashflowTab`) yang berfokus murni pada hasil bisnis riil: omzet masuk otomatis dari pesanan paket lunas (PAID), buku kas pengeluaran operasional (OPEX), visualisasi grafik batang bulanan (Jan - Des), dan kalkulasi sisa kas bersih riil tanpa birokrasi penutupan buku atau lembar pajak formalitas yang membebani.
    *(Dilengkapi Tab Memory Persistence via URL Query & LocalStorage sehingga reload halaman tidak pernah terpental kembali ke tab ringkasan)*
 ```
