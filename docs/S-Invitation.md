@@ -902,8 +902,8 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Mengontrol kunci `service_status_mode`, `service_status_title`, `service_status_message`, `service_status_reopen_date`, dan `service_status_contact_wa`.
    - Dilengkapi kartu Live Preview instan untuk mensimulasikan tampilan banner bagi pengunjung sebelum disimpan.
 3. **Pemisahan Klien Baru vs Klien Lama (Zero Locked-Out Invariant):**
-   - Klien yang telah memiliki akun di database tetap dapat masuk via Google OAuth kapan saja dan tidak terblokir.
-   - Calon klien baru yang belum terdaftar di database akan ditolak secara ramah di NextAuth `signIn` callback dan dialihkan ke `/login?error=RegistrationClosed&mode={mode}` dengan banner informasi yang jelas.
+   - Klien yang telah memiliki akun di database tetap dapat masuk via Email + Kata Sandi kapan saja dan tidak terblokir.
+   - Calon klien baru yang belum terdaftar di database akan ditolak secara ramah pada alur registrasi OTP (`/api/auth/otp/request` & `/api/auth/register`) dengan banner informasi yang jelas.
 4. **Proteksi Backend Anti-Bypass (`/api/orders/create`):**
    - Endpoint order memvalidasi `getServiceAvailability()`. Jika ketersediaan bernilai `false`, permintaan dibatalkan dengan HTTP `403 Forbidden` dan respon JSON kustom.
 5. **Invarian Isolasi Tamu & Admin:**

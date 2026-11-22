@@ -130,14 +130,15 @@ erDiagram
 ### A. Entitas Pengguna & Akses (`users`, `admins`, `admin_audit_logs`)
 
 #### 1. Tabel `users`
-Menyimpan akun klien / calon pengantin:
+Menyimpan akun klien / penyelenggara acara:
 - `id` (UUID, Primary Key): Identitas unik user.
-- `googleId` (String, Unique, Nullable): ID pengguna dari Google OAuth.
-- `email` (String, Unique): Alamat email resmi untuk login dan notifikasi invoice.
+- `email` (String, Unique): Alamat email resmi (selalu dinormalisasi huruf kecil) untuk login, OTP SMTP, dan notifikasi invoice.
+- `passwordHash` (String, Nullable): Hash kata sandi (`bcrypt` cost 12) untuk login `CLIENT_PASSWORD`. Akun eksisting tanpa sandi dapat menetapkannya via alur *Lupa kata sandi?* (OTP SMTP) atau `PUT /api/client/account/password`.
+- `googleId` (String, Unique, Nullable): Kolom legacy yang dipertahankan (expand-only) pasca penghapusan Google OAuth (22 Nov 2026); tidak lagi ditulis pada pendaftaran baru.
 - `name` (String): Nama lengkap pemilik akun.
 - `role` (Enum `UserRole`): `CLIENT` (default) atau `ADMIN`.
 - `phoneNumber` (String, Nullable): Nomor kontak WhatsApp klien.
-- `avatarUrl` (String, Nullable): URL foto profil klien dari Google.
+- `avatarUrl` (String, Nullable): URL foto profil opsional.
 
 #### 2. Tabel `admins`
 Menyimpan kredensial tim pengelola platform:
@@ -200,19 +201,17 @@ Menyimpan riwayat callback / IPN dari payment gateway untuk idempotency dan debu
 
 #### 1. Tabel `invitations`
 Entitas pusat platform yang menyimpan konfigurasi undangan:
-- **Invarian Relasi Kritis (*Hard Payment Barrier*):** Record `invitations` hanya dapat dibuat jika `userId` pemilik memiliki pesanan terkait di tabel `orders` yang berstatus `PAID`. Klien tanpa order `PAID` dilarang membuat draf (HTTP 403 Forbidden) dan dilarang mengakses Dashboard.
+- **Invarian Relasi Kritis (Free Draft vs Undangan Berbayar):** Undangan berbayar (`POST /api/client/invitations/create`) dan publikasi (`PUBLISHED`) mewajibkan order berstatus `PAID` (HTTP 403 tanpa order lunas). Pengecualian eksplisit adalah **Draf Gratis** (`isFreeDraft: true`, `POST /api/client/invitations/free-draft`, maks. 1 per akun, maks. 3 foto, ber-watermark, auto-purge 14 hari jika tidak diaktifkan via pembayaran).
 - `id` (UUID, Primary Key): Identitas unik undangan.
 - `userId` (UUID, Foreign Key): Pemilik undangan (`onDelete: Cascade`).
-- `orderId` (UUID, Foreign Key, Nullable): Relasi ke invoice pembelian paket berstatus `PAID`.
-- `eventType` (Enum `EventType` — 6 Nilai Resmi):
-  - `WEDDING`: Pernikahan sakral tradisional & modern (default).
-  - `BIRTHDAY`: Perayaan ulang tahun anak & dewasa.
-  - `KHITAN`: Tasyakuran walimatul khitan.
-  - `AQIQAH`: Syukuran aqiqah buah hati.
-  - `WISUDA`: Perayaan kelulusan sarjana & wisudawan.
-  - `GATHERING`: Acara komunitas, reuni, & family gathering.
-- `themeId` (String, FK `themes.id`, `ON DELETE RESTRICT`): ID template tema (contoh: `kalandra`, `bugis`, `festivo`, `al-fariz`). Tema yang dipakai undangan tidak dapat dihapus.
-- `participantsJson` (JSON String, Nullable): Data spesifik celebrant/partisipan (nama anak/bayi/wisudawan, usia, universitas, orang tua).
+- `orderId` (UUID, Foreign Key, Nullable): Relasi ke invoice pembelian paket berstatus `PAID` (`NULL` untuk Free Draft).
+- `eventType` (Enum `EventType` — 3 Mode Struktural Abadi):
+  - `WEDDING`: Pernikahan / Walimatul 'Urs.
+  - `PERSONAL`: Personal & Keluarga (Ulang Tahun, Khitanan, Aqiqah, Wisuda, Syukuran, Tamatan Ngaji, dll.).
+  - `EVENT`: Acara & Event Umum (Corporate, Seminar, Reuni, Grand Opening, Gathering, dll.).
+- `subEvent` (String, Nullable): Label sub-acara dinamis (preset maupun input bebas klien).
+- `themeId` (String, FK `themes.id`, `ON DELETE RESTRICT`): ID template tema (contoh: `kalandra`, `bugis`, `festivo`, `sinergi`). Tema yang dipakai undangan tidak dapat dihapus.
+- `participantsJson` (JSON String, Nullable): Data terstruktur peserta untuk semua mode acara (`groom*`/`bride*` untuk `WEDDING`, `personName`/`personNickname`/`fatherName`/`motherName`/`personAge`/`degree` untuk `PERSONAL`, `eventTitle`/`eventSubtitle`/`organizer` untuk `EVENT`).
 - `subdomain` (String, Unique, Nullable): Subdomain unik platform (contoh: `yoga-nisa`).
 - `customDomain` (String, Unique, Nullable): Domain pribadi klien (contoh: `yoganisa.com`).
 - `invitationSlug` (String, Unique): Slug publik cadangan (contoh: `yoga-dan-nisa`).
@@ -229,32 +228,36 @@ Entitas pusat platform yang menyimpan konfigurasi undangan:
 - `featureSettings` (JSON String): Pengaturan aktif/nonaktif seksi undangan, konfigurasi kamera momen (`memoriesOpeningLayout`, `memoriesCardInstruction`, `memoriesFilter`, `memoriesDateStamp`, `memoriesSessions` dengan alokasi kuota), alamat kado fisik (`shippingAddress`), dan URL gambar QRIS (`qrisImageUrl`).
 
 #### 2. Tabel `media` (Model `InvitationMedia`)
-Menyimpan daftar aset visual mempelai:
-- `mediaSlot` (Enum `MediaSlot` — 9 Nilai Resmi):
+Menyimpan daftar aset visual undangan:
+- `mediaSlot` (Enum `MediaSlot` — 11 Nilai Resmi):
   - `LANDING_COVER`: Banner sampul depan undangan (mobile/default).
   - `LANDING_COVER_DESKTOP`: Banner sampul depan layar desktop layar lebar.
   - `HOME_PHOTO`: Foto hero pembuka di awal undangan.
   - `DESKTOP_SIDEBAR`: Foto/video panel sisi kiri layar desktop.
   - `GLOBAL_FIXED_BG`: Foto latar belakang tetap (*fixed background*).
-  - `GROOM_PHOTO`: Foto potret mempelai pria (atau foto utama celebrant non-wedding).
-  - `BRIDE_PHOTO`: Foto potret mempelai wanita.
-  - `GALLERY`: Foto-foto album pre-wedding / galeri momen.
+  - `GROOM_PHOTO`: Foto potret mempelai pria (khusus mode `WEDDING`).
+  - `BRIDE_PHOTO`: Foto potret mempelai wanita (khusus mode `WEDDING`).
+  - `PROFILE_PHOTO`: Foto profil tokoh utama (khusus mode `PERSONAL`).
+  - `EVENT_PHOTO`: Foto visual/poster utama acara (khusus mode `EVENT`).
+  - `GALLERY`: Foto-foto album / galeri momen.
   - `CLOSING_COVER`: Banner visual penutup di akhir undangan.
 - `localPath` (String): URL file di Cloudflare R2 CDN atau path storage lokal.
 
 #### 3. Tabel `themes` (Model `Theme`)
-Master katalog tema fisik resmi di sistem (54 tema terdaftar lintas 6 jenis acara):
-- `id` (String, Primary Key): Identifier unik tema (contoh: `kalandra`, `artisan`, `festivo`, `al-fariz`).
+Master katalog tema fisik resmi di sistem (**81 tema fisik** lintas 3 mode acara: `34 WEDDING`, `37 PERSONAL`, `10 EVENT`):
+- `id` (String, Primary Key): Identifier unik tema (contoh: `kalandra`, `artisan`, `festivo`, `sinergi`).
 - `name` (String): Nama komersial tema.
-- `eventType` (Enum `EventType`): Afiliasi tipe acara (`WEDDING`, `BIRTHDAY`, `KHITAN`, `AQIQAH`, `WISUDA`, `GATHERING`).
+- `eventType` (Enum `EventType`): Afiliasi mode acara (`WEDDING`, `PERSONAL`, `EVENT`).
+- `subEvent` (String, Nullable): Tag sub-acara default untuk filter showroom katalog `/demo`.
 - `category` (Enum `ThemeCategory`, bawaan `minimalist`): Kategori gaya desain (`minimalist`, `modern`, `traditional`).
 - `series` (String, Nullable): Lini koleksi tema.
 - `previewUrl` (String, Nullable): Rute demo publik (contoh: `/demo/kalandra`).
 - `isActive` (Boolean): Flag status aktif di katalog showroom & kasir.
 - `sortOrder` (Int): Urutan penampilan di galeri.
 - `defaultMusicUrl` (String, Nullable): Lagu latar bawaan tema.
-- `builderSpec` (Json, Nullable, `@map("builder_spec")`): Spesifikasi rancangan Theme Builder (`BuilderSpec` dari `lib/themeBuilder/spec.ts`). Berisi palet, tipografi, tekstur, varian seksi, blok konten, bingkai, dan ornamen. Bernilai `NULL` untuk tema master yang ditulis tangan (*handcrafted*).
-- `masterOverrides` (Json, Nullable, `@map("master_overrides")`, migrasi `20261110100000_theme_master_overrides`): Varian Tema (`lib/themeVariants.ts`). Baris varian menumpang ke master tulisan tangan lewat `parentTheme` dan berisi `{ "colors": { "--var": "#rrggbb" }, "fonts": { "--lux-font-x": "<id font katalog | g:Nama>" } }` yang menimpa variabel `:root` master induk saat render. Varian tidak punya berkas master sendiri. Bernilai `NULL` untuk tema biasa.
+- `mediaSlots` (Json, Nullable): Daftar kanonikal slot media yang benar-benar dipakai tema master ini (menentukan slot upload yang tampil di Studio Klien).
+- `builderSpec` (Json, Nullable, `@map("builder_spec")`): Spesifikasi rancangan Theme Builder (`BuilderSpec` dari `lib/themeBuilder/spec.ts`). Bernilai `NULL` untuk tema master tulisan tangan (*handcrafted*).
+- `masterOverrides` (Json, Nullable, `@map("master_overrides")`): Suntingan warna/huruf/gambar/seksi oleh Editor Master (`/api/admin/master-editor`). Kolom legacy `parentTheme` telah dihapus melalui migrasi `20261121193000_drop_theme_parent_theme`.
 - `defaultMedia` (Json, Nullable, `@map("default_media")`): Media bawaan tema per slot (`{ SLOT: "/path" }`, dari `lib/themeDefaultMedia.ts`). Disalin ke undangan saat tema dipilih.
 
 Tema tidak memiliki harga atau label premium: kolom `isPremium` dan `price` dihapus (migrasi `20261001120000_drop_theme_price_and_premium`) karena paket dibedakan oleh kapabilitas fitur, bukan oleh tema, dan semua tema terbuka untuk semua paket. Kolom `isFeatured` juga dihapus (migrasi `20261001150000_db_integrity_theme_fk_amount_precision`) karena tidak dibaca dan tidak ditulis kode mana pun; `isFeatured` yang dipakai halaman harga adalah properti paket di `admin_settings`, bukan tema.

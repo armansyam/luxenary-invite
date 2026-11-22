@@ -1,23 +1,20 @@
 # PANDUAN RESMI: PENGEMBANGAN TEMA BARU (THEME DEVELOPER GUIDE)
 **Luxenary Invite Platform — Arsitektur Template Fisik HTML, Token Parser, & Standar Emas Desain Multi-Event**
 
-Dokumen ini adalah panduan teknis bagi perancang tema (*Theme Designer / Developer*) untuk membangun tema undangan digital baru lintas jenis acara (*Wedding, Birthday, Khitan, Aqiqah, Wisuda, Gathering*) yang 100% kompatibel dengan mesin render Luxenary Invite (`lib/renderTemplate.ts` & `lib/themeEngine.ts`).
+Dokumen ini adalah panduan teknis bagi perancang tema (*Theme Designer / Developer*) untuk membangun tema undangan digital baru lintas **3 Mode Acara Abadi** (`WEDDING`, `PERSONAL`, `EVENT`) yang 100% kompatibel dengan mesin render Luxenary Invite (`lib/renderTemplate.ts` & `lib/themeEngine.ts`).
 
 ---
 
 ## 1. Filosofi Arsitektur Tema: *Single File Component (HTML + CSS + JS)*
 
-Platform Luxenary Invite menggunakan arsitektur **Tema Fisik Mandiri Berjenjang (Two-Tier Event Hierarchy)**:
-- Setiap tema disimpan dalam 1 file `.html` utuh di direktori `themes/{eventType}/{style}/{nama-tema}.html`.
-  * Contoh Wedding: `themes/wedding/minimalist/kalandra.html`, `themes/wedding/traditional/bugis.html`, `themes/wedding/modern/lumina.html`
-  * Contoh Birthday: `themes/birthday/modern/festivo.html`, `themes/birthday/minimalist/kalandra-birthday.html`
-  * Contoh Khitan: `themes/khitan/traditional/al-fariz.html`
-  * Contoh Aqiqah: `themes/aqiqah/minimalist/al-khalid.html`
-  * Contoh Wisuda: `themes/wisuda/modern/cendekia.html`
-  * Contoh Gathering: `themes/general/modern/sinergi.html`
+Platform Luxenary Invite menggunakan arsitektur **Tema Fisik Mandiri Berjenjang (3 Mode × 3 Gaya)**:
+- Setiap tema disimpan dalam 1 file `.html` utuh di direktori `themes/{mode}/{style}/{nama-tema}.html` (`lib/themePaths.ts`):
+  * **`wedding` (`WEDDING`):** `themes/wedding/{minimalist,modern,traditional}/<id>.html` (contoh: `kalandra.html`, `bugis.html`, `lumina.html`)
+  * **`personal` (`PERSONAL`):** `themes/personal/{minimalist,modern,traditional}/<id>.html` (contoh: `festivo.html`, `al-fariz.html`, `al-khalid.html`, `cendekia.html`)
+  * **`event` (`EVENT`):** `themes/event/{minimalist,modern,traditional}/<id>.html` (contoh: `sinergi.html`, `forum.html`, `jamuan.html`)
 - Tidak memerlukan kompilasi JavaScript rumit di browser tamu; tema disajikan secara instan dengan performa *Core Web Vitals* maksimal.
 - Seluruh aset font menggunakan font lokal mandiri (`/fonts/fonts.css`) berlatensi 0 ms.
-- **Starter Blueprints Resmi:** Pengembang tema baru disarankan mengkloning kerangka resmi dari direktori `themes/_blueprints/{eventType}/` yang telah memiliki sanitasi XSS, responsive split-screen, dan audio handler standar.
+- **Starter Blueprints Resmi:** Pengembang tema baru disarankan mengkloning kerangka resmi dari `themes/_blueprints/{wedding,personal,event}/` yang telah memiliki sanitasi XSS, responsive split-screen, dan audio handler standar.
 
 ---
 
@@ -61,13 +58,14 @@ Mesin render [lib/renderTemplate.ts](file:///Users/macbookprom1/Documents/Projec
 - `{{brideParents}}`: Nama ayah & ibu mempelai wanita.
 - `{{brideInstagram}}`: Username / URL Instagram wanita.
 
-### B. Token Profil Non-Pernikahan (Birthday, Khitan, Aqiqah, Wisuda, Gathering)
-- `{{personName}}`: Nama lengkap yang berulang tahun / anak yang dikhitan / bayi aqiqah / wisudawan.
-- `{{personNickname}}`: Nama panggilan persona utama.
-- `{{personAge}}`: Usia / tahun kelahiran (khusus Birthday / Milad).
-- `{{fatherName}}` & `{{motherName}}`: Nama orang tua (khusus Khitan, Aqiqah, & Birthday).
-- `{{degree}}`, `{{major}}`, `{{institution}}`: Gelar akademik, program studi, dan kampus/universitas (khusus Wisuda).
-- `{{eventTitle}}`, `{{eventSubtitle}}`, `{{organizer}}`: Judul acara, tema tema turunan, dan nama institusi/komunitas penyelenggara (khusus Gathering/Umum).
+### B. Token Profil Mode `PERSONAL` & `EVENT`
+- **Mode `PERSONAL`:**
+  - `{{personName}}` & `{{personNickname}}`: Nama lengkap & panggilan tokoh utama (ulang tahun, khitan, aqiqah, wisuda, syukuran, tamatan ngaji, dll.).
+  - `{{personAge}}`, `{{fatherName}}`, `{{motherName}}`, `{{degree}}`, `{{major}}`, `{{institution}}`: Atribut opsional sesuai `subEvent`.
+  - `{{personPhotoUrl}}` / `{{mainPhotoUrl}}`: Foto profil (`PROFILE_PHOTO`).
+- **Mode `EVENT`:**
+  - `{{eventTitle}}`, `{{eventSubtitle}}`, `{{organizer}}`: Judul acara, tema/sub-judul, dan institusi/komunitas penyelenggara (murni non-personal).
+  - `{{eventPhotoUrl}}` / `{{mainPhotoUrl}}`: Foto visual/poster acara (`EVENT_PHOTO`).
 
 ### C. Token Acara & Teks
 - `{{eventDateFormatted}}`: Tanggal acara utama (contoh: "Sabtu, 28 November 2026").
@@ -144,18 +142,13 @@ menimpa variabel `:root` ini; warna atau huruf yang tertulis langsung tidak ikut
 
 ## 5. Cara Registrasi Tema Baru ke Sistem
 
-1. Buat file HTML baru di dalam folder tema yang sesuai dengan jenis acara dan gayanya:
-   - `themes/wedding/minimalist/<nama-tema>.html`
-   - `themes/wedding/traditional/<nama-tema>.html`
-   - `themes/wedding/modern/<nama-tema>.html`
-   - `themes/birthday/modern/<nama-tema>.html`
-   - `themes/khitan/traditional/<nama-tema>.html`
-   - `themes/aqiqah/minimalist/<nama-tema>.html`
-   - `themes/wisuda/modern/<nama-tema>.html`
-   - `themes/general/modern/<nama-tema>.html`
-2. Tidak perlu mendaftarkan tema ke `THEME_MAP`: `resolveThemeEntry` di `lib/renderTemplate.ts` menemukan master dari letak berkasnya (`themes/<acara>/<gaya>/<id>.html`). `THEME_MAP` hanya berisi tema bawaan repositori.
+1. Buat file HTML baru di dalam folder mode & gaya yang sesuai (`lib/themePaths.ts`):
+   - `themes/wedding/{minimalist,modern,traditional}/<nama-tema>.html`
+   - `themes/personal/{minimalist,modern,traditional}/<nama-tema>.html`
+   - `themes/event/{minimalist,modern,traditional}/<nama-tema>.html`
+2. Tidak perlu mendaftarkan tema ke `THEME_MAP`: `resolveThemeEntry` di `lib/renderTemplate.ts` menemukan master dari letak berkasnya (`themes/<mode>/<gaya>/<id>.html`).
 
-> Cara tercepat tanpa menulis HTML adalah **Theme Builder** (`/admin/theme-builder`, tombol "Buat dengan Builder" di tab Tema), untuk keenam jenis acara. Jenis acara dipilih saat tema baru dibuat dan terkunci setelah disimpan. Builder merakit master dari blueprint pernikahan atau blueprint satu nama (`themes/_blueprints/single-name/`) dan menolak terbit bila kontrak engine rusak. Lihat `docs/SYSTEM_ARCHITECTURE.md` bagian 8.1 dan bagian 27 butir 24.
+> Cara tercepat tanpa menulis HTML adalah **Theme Builder** (`/admin/theme-builder`, tombol "Buat dengan Builder" di tab Tema), untuk ketiga mode (`WEDDING`, `PERSONAL`, `EVENT`). Mode dipilih saat tema baru dibuat dan terkunci setelah disimpan. Builder merakit master dari blueprint masing-masing mode (`themes/_blueprints/{wedding,personal,event}/`) dan menolak terbit bila kontrak engine rusak.
 3. Buka browser dan login ke **Admin Dashboard** (`/admin`) -> **Themes**, lalu klik tombol **"Sinkronisasi Tema (Scan Disk)"** (atau jalankan `npm run themes:sync` dari terminal).
 4. Tema baru Anda akan langsung terdaftar di PostgreSQL tabel `themes`, terkompilasi ke demo statis (`/demo/nama-tema`), dan siap digunakan oleh klien sesuai jenis acara mereka.
 

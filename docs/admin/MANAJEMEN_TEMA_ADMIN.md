@@ -8,31 +8,25 @@ Dokumen ini adalah referensi resmi untuk operasional dan arsitektur teknis dari 
 
 Sistem undangan platform **Luxenary Invite** menggunakan arsitektur **100% Native Standalone HTML Template** dengan pengelompokan hierarki dua tingkat (*Two-Tier Event & Style Hierarchy*):
 1. **Tidak Ada Dependensi Server Runtime Luar:** Setiap tema adalah file `.html` mandiri lengkap dengan CSS dan JavaScript interaktif di dalamnya.
-2. **Koleksi Fisik Mandiri:** Semua master file tema tersimpan di direktori fisik berjenjang:
-   * `themes/wedding/` (Subfolder: `minimalist/`, `modern/`, `traditional/`)
-   * `themes/birthday/` (Subfolder: `modern/`, `minimalist/`)
-   * `themes/khitan/` (Subfolder: `traditional/`, `modern/`)
-   * `themes/aqiqah/` (Subfolder: `minimalist/`, `traditional/`)
-   * `themes/wisuda/` (Subfolder: `modern/`, `minimalist/`)
-   * `themes/general/` (Subfolder: `modern/`, `minimalist/`)
-   * `themes/_blueprints/` (Starter blueprints resmi untuk 6 jenis acara)
+2. **Koleksi Fisik Mandiri (3 Mode Abadi):** Semua master file tema tersimpan di direktori fisik berjenjang (`lib/themePaths.ts`):
+   * `themes/wedding/` (Subfolder: `minimalist/`, `modern/`, `traditional/`) — **34 tema**
+   * `themes/personal/` (Subfolder: `minimalist/`, `modern/`, `traditional/`) — **37 tema**
+   * `themes/event/` (Subfolder: `minimalist/`, `modern/`, `traditional/`) — **10 tema**
+   * `themes/_blueprints/{wedding,personal,event}/` (Starter blueprints resmi untuk 3 mode acara)
 3. **Single Source of Truth:** File fisik di folder `themes/` adalah acuan tunggal yang sah. Tidak boleh ada tema yang terdaftar di database tanpa memiliki file fisik `.html` di folder tersebut.
 
 ---
 
-## 1.1. Inventaris Faktual 54 Tema Platform (Multi-Event)
+## 1.1. Inventaris Faktual 81 Tema Master Fisik (3 Mode Abadi)
 
-Saat ini platform memiliki **54 tema fisik mandiri** yang terdaftar di database dan disk, mencakup 6 jenis acara (`THEME_MAP` di [`lib/renderTemplate.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/lib/renderTemplate.ts)):
+Saat ini platform memiliki **81 tema master fisik mandiri** yang sinkron 1:1 antara disk, katalog, dan database:
 
-| Jenis Acara (`eventType`) | Total Tema | Daftar Tema Aktif di Disk & Database |
+| Mode Acara (`eventType`) | Total Tema | Daftar Tema Aktif di Disk & Database |
 |:---|:---:|:---|
-| **WEDDING** | **33 Tema** | • **Minimalist (6):** `aeterna`, `artisan`, `aurelia`, `kalandra`, `valente`, `verona`<br>• **Modern (12):** `ameera`, `badrika`, `burgundy-royale`, `candani`, `chronicle`, `lumina`, `mayang`, `papercut`, `solaria`, `starlit-dreams`, `vintage-forest`, `wave`<br>• **Traditional (15):** `bone`, `bugis`, `bulukumba`, `dillalucky`, `gowa`, `lagaligo`, `makale`, `makassar`, `maros`, `prameswari`, `rantepao`, `soppeng`, `takalar`, `toraja`, `wajo` |
-| **BIRTHDAY** | **5 Tema** | • **Minimalist (2):** `gala`, `kalandra-birthday`<br>• **Modern (3):** `balonku`, `festivo`, `riang` |
-| **KHITAN** | **4 Tema** | • **Minimalist (1):** `sakinah`<br>• **Traditional (3):** `al-fariz`, `fajar`, `nur` |
-| **AQIQAH** | **4 Tema** | • **Minimalist (3):** `al-khalid`, `buaian`, `mungil`<br>• **Traditional (1):** `barakah` |
-| **WISUDA** | **4 Tema** | • **Minimalist (1):** `akademia`<br>• **Modern (3):** `cendekia`, `laurel`, `toga` |
-| **GATHERING** | **4 Tema** | • **Minimalist (1):** `temu`<br>• **Modern (3):** `forum`, `prakarsa`, `sinergi` |
-| **TOTAL** | **54 Tema** | **Tersinkronisasi 100% via `npm run themes:sync` & `THEME_MAP`** |
+| **`WEDDING`** (Pernikahan) | **34 Tema** | • **Minimalist (6):** `aeterna`, `artisan`, `aurelia`, `kalandra`, `valente`, `verona`<br>• **Modern (13):** `ameera`, `badrika`, `burgundy-royale`, `candani`, `chronicle`, `hablur`, `lumina`, `mayang`, `papercut`, `solaria`, `starlit-dreams`, `vintage-forest`, `wave`<br>• **Traditional (15):** `bone`, `bugis`, `bulukumba`, `dillalucky`, `gowa`, `lagaligo`, `makale`, `makassar`, `maros`, `prameswari`, `rantepao`, `soppeng`, `takalar`, `toraja`, `wajo` |
+| **`PERSONAL`** (Personal & Keluarga) | **37 Tema** | • **Minimalist (14):** `akademia`, `al-khalid`, `buaian`, `domba`, `gala`, `kalandra-birthday`, `lelap`, `lilin`, `mungil`, `pena`, `pustaka`, `rimba`, `sakinah`, `serambi`<br>• **Modern (14):** `antariksa`, `balonku`, `cendekia`, `festivo`, `girih`, `karnaval`, `kelopak`, `konfeti`, `laurel`, `medali`, `pelangi`, `riang`, `sorak`, `toga`<br>• **Traditional (9):** `al-fariz`, `barakah`, `embun`, `fajar`, `firdaus`, `ijazah`, `kubah`, `nur`, `sajadah` |
+| **`EVENT`** (Acara & Event Umum) | **10 Tema** | • **Minimalist (3):** `lapang`, `prisma`, `temu`<br>• **Modern (6):** `biasan`, `cakrawala`, `forum`, `panggung`, `prakarsa`, `sinergi`<br>• **Traditional (1):** `jamuan` |
+| **TOTAL** | **81 Tema** | **Tersinkronisasi 100% via `npm run themes:sync` (`lib/themePaths.ts`)** |
 
 ### Sistem Thumbnail Ganda Beresolusi Tinggi (Retina DevTools)
 Setiap tema di direktori `public/demo/{themeId}/` wajib dilengkapi oleh dua berkas thumbnail WebP kompresi tajam:
@@ -49,11 +43,8 @@ Selain mengunggah file template fisik `.html`, Admin memiliki instrumen visual *
 ### 1. Proteksi Mutlak Master Bawaan Handcrafted (Anti-Overwrite Protection)
 - Tema master fisik tulisan tangan (`builderSpec === null`) **DILINDUNGI MUTLAK** dari penimpaan berkas fisik blueprint:
   - Pemanggilan `GET /api/admin/theme-builder?id=<handcrafted_id>` secara tegas ditolak dengan **HTTP 409 Conflict** (`code: "HANDCRAFTED"`).
-  - Pada kartu tema di panel admin (label sejak 10 Nov 2026): tema builder dan varian menampilkan tombol **"Edit"** (membuka Theme Builder atau editor varian), sedangkan tema handcrafted menampilkan **"Edit"** (Editor Master, `/admin/theme-variants?master=<id>`), **"Buat Varian"** (`/admin/theme-variants?parent=<id>`), dan **"Salin ke Builder"** (`/admin/theme-builder?from=<id>`, sebelumnya bernama "Clone to Builder"). "Buat Varian" dan "Salin ke Builder" membuat tema baru; hanya "Edit" yang mengubah master itu sendiri.
-  - **Editor Master (10 Nov 2026):** menyunting master tulisan tangan di atas desain aslinya, tanpa menyusun ulang dari blueprint: warna, huruf, **Gambar bawaan** (unggah pengganti untuk latar/ornamen/bingkai bawaan, atau kembalikan ke asli), **Seksi yang tampil** (seksi yang dimatikan disembunyikan beserta tautan menunya), dan **CSS tambahan** (aturan sama dengan CSS kustom builder). Simpan meminta konfirmasi; perubahan berlaku untuk demo dan undangan baru, termasuk varian dari master itu. Undangan yang sudah dibuat tetap. "Kembalikan semua" lalu Simpan mengembalikan tampilan asli. Yang tidak bisa: menggeser posisi elemen; untuk merombak tata letak pakai "Salin ke Builder".
-  - **Varian Tema (10 Nov 2026):** tema baru dengan tata letak, ornamen, dan teks master yang sama tetapi warna dan huruf lain. Editor menampilkan setiap warna asli master (satu baris mengganti semua tempat yang memakai warna itu) dan setiap keluarga huruf (katalog lokal atau Google Fonts), dengan pratinjau langsung. Varian disimpan sebagai draf, lalu **Terbitkan** untuk tampil di katalog (demo dan thumbnail dibuat otomatis). Master asli tidak pernah diubah. Undangan klien membekukan tampilan varian saat dibuat, jadi perubahan varian sesudahnya hanya berlaku untuk undangan baru. Varian yang dipakai undangan tidak bisa dihapus (nonaktifkan saja). Ornamen berupa gambar dan warna di dalam skrip master tidak ikut berganti warna. Kartu varian menampilkan tombol **"Edit"**.
-    - Setiap baris warna diberi keterangan pemakaiannya di master (misalnya "Latar 17 · Teks 10") dan diurutkan dari yang paling banyak dipakai; warna yang tidak dipakai CSS master disembunyikan di balik tautan "Tampilkan". **Warnai ulang dengan palet** mengganti semua warna sekaligus dengan rona palet pilihan sambil mempertahankan terang-gelap warna asli; hasilnya tetap bisa disetel per baris.
-    - Kotak merah **"N teks menjadi sulit dibaca"** muncul bila warna baru membuat teks yang di master asli terbaca jatuh di bawah batas kontras WCAG AA. Klik baris untuk menunjukkan teksnya di pratinjau. Teks di atas foto tanpa gradasi tidak dinilai; periksa manual di pratinjau.
+  - Pada kartu tema di panel admin (pasca rekonstruksi Opsi B 21 Nov 2026 — sistem Varian Tema `parentTheme` & `/admin/theme-variants` telah dihapus penuh): tema builder menampilkan tombol **"Edit"** (`/admin/theme-builder?id=<id>`), sedangkan tema handcrafted menampilkan **"Edit"** (Editor Master, `/admin/master-editor?id=<id>`) dan **"Salin ke Builder"** (`/admin/theme-builder?from=<id>`).
+  - **Editor Master (`/admin/master-editor`):** menyunting master tulisan tangan di atas desain aslinya tanpa menyusun ulang dari blueprint: warna, huruf, **Gambar bawaan** (unggah pengganti untuk latar/ornamen/bingkai bawaan, atau kembalikan ke asli), **Seksi yang tampil** (seksi yang dimatikan disembunyikan beserta tautan menunya), dan **CSS tambahan**. Perubahan berlaku untuk demo dan undangan baru; piring draf undangan klien yang sudah ada (`invitation_drafts`) tetap utuh (tidak ditimpa). Untuk merombak tata letak dari nol, gunakan **"Salin ke Builder"** (`/admin/theme-builder?from=<id>`).
   - Fitur **Clone to Builder** membaca palet, huruf, tekstur, ornamen, dan bingkai dari tema master lama via [`lib/themeBuilder/legacySeed.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/lib/themeBuilder/legacySeed.ts), lalu membentuk draf tema baru yang independen tanpa memodifikasi berkas aslinya.
 - Tema buatan Theme Builder (`builderSpec !== null`) menampilkan tombol **"Edit"** (`/admin/theme-builder?id=<id>`) dan dapat diedit langsung di kanvas studio.
 - **Foto uji (10 Nov 2026):** tab **Foto uji** di Theme Builder menerima foto contoh untuk setiap slot media klien (sampul, sampul desktop mendatar, foto utama, panel kiri desktop, mempelai pria/wanita untuk pernikahan, penutup, latar tetap) dan galeri sampai 8 foto. Pratinjau mode **Foto uji** (di samping "Contoh demo" dan "Klien baru") menaruh foto itu persis seperti unggahan klien, termasuk sampul desktop layar penuh dari foto mendatar. Foto uji tidak masuk ke tema, tersimpan di peramban admin, dan dihapus otomatis dari server setelah 3 hari.
@@ -116,7 +107,7 @@ Mulai versi ini, Admin dapat menambahkan tema baru secara langsung dari Dashboar
 |---|---|---|
 | **ID Tema** | Teks (Slug) | Wajib unik, huruf kecil, angka, dan strip (contoh: `aurora`). ID ini menjadi nama file `aurora.html`. |
 | **Nama Tema** | Teks | Nama display tema (contoh: `Aurora Borealis`). |
-| **Jenis Acara (Event Type)** | Pilihan | `Wedding`, `Birthday`, `Khitan`, `Aqiqah`, `Wisuda`, atau `Gathering`. Menentukan direktori utama acara. |
+| **Mode Acara (Event Type)** | Pilihan | `WEDDING`, `PERSONAL`, atau `EVENT` (+ tag `subEvent` opsional). Menentukan direktori utama acara (`themes/{wedding,personal,event}/`). |
 | **Kategori / Style** | Pilihan | `Minimalist`, `Modern`, atau `Traditional`. Menentukan subfolder gaya di dalam jenis acara. |
 | **Urutan (Sort)** | Angka | Posisi urutan penampilan di katalog showroom dan daftar setup klien. |
 | **Deskripsi Singkat** | Teks | Ringkasan estetika tema yang muncul pada kartu katalog. |
@@ -207,7 +198,7 @@ Tema yang dipakai undangan tidak dapat dihapus lewat panel (lihat penjagaan di a
 
 Tombol hijau **"Sinkronisasi Tema & Cache"** di bagian atas tab Manajemen Tema berfungsi sebagai sistem pemindaian menyeluruh (*full filesystem scan*):
 
-1. **Auto-Discovery Multi-Event:** Memindai seluruh folder acara dan gayanya (`themes/wedding/`, `themes/birthday/`, `themes/khitan/`, `themes/aqiqah/`, `themes/wisuda/`, `themes/general/`). Setiap file `.html` baru yang diletakkan langsung via Git/filesystem akan otomatis didaftarkan ke tabel `themes` dengan `eventType` dan `style` yang tepat.
+1. **Auto-Discovery 3 Mode:** Memindai seluruh folder mode dan gayanya (`themes/wedding/`, `themes/personal/`, `themes/event/` via `THEME_EVENT_FOLDERS` di `lib/themePaths.ts`). Setiap file `.html` baru yang diletakkan langsung via Git/filesystem akan otomatis didaftarkan ke tabel `themes` dengan `eventType`, `subEvent`, `mediaSlots`, dan `category` yang tepat.
 2. **Safety Guard Anti-Wipeout:** Memastikan jika 0 file terdeteksi di disk (misal saat proses deploy belum selesai), operasi langsung dibatalkan secara aman tanpa merusak database.
 3. **Auto-Purge Tema Zombie:** Memeriksa seluruh baris tema di tabel database. Jika ada record di database yang file fisiknya **tidak ditemukan** di disk, record tersebut otomatis dihapus dari database demi menjaga integritas data. Record yang masih dipakai undangan tidak dihapus: tetap tersimpan dan namanya dikembalikan di `retainedWithoutFile` pada respons sync, sedangkan jumlah yang terhapus ada di `purgedCount`.
 4. **Preservasi Pengaturan Kustom:** Mempertahankan kustomisasi admin (`sortOrder`, thumbnail kustom, deskripsi, dan status aktif/nonaktif tema yang pernah diatur di dashboard).
@@ -216,23 +207,22 @@ Tombol hijau **"Sinkronisasi Tema & Cache"** di bagian atas tab Manajemen Tema b
 
 ---
 
-## 6. Standar Blueprint Template Tema Multi-Event (`themes/_blueprints/`)
+## 6. Standar Blueprint Template Tema 3 Mode (`themes/_blueprints/`)
 
-Admin atau desainer dapat mengunduh dan meniru starter blueprint resmi untuk 6 jenis acara yang tersimpan di `themes/_blueprints/{eventType}/`.
+Admin atau desainer dapat mengunduh dan meniru starter blueprint resmi untuk 3 mode acara yang tersimpan di `themes/_blueprints/{wedding,personal,event}/`.
 
-### Daftar Placeholder Universal Multi-Event:
-| Variabel Placeholder | Fungsi Injeksi | Relevansi Event |
+### Daftar Placeholder Universal 3 Mode:
+| Variabel Placeholder | Fungsi Injeksi | Mode Acara |
 |---|---|---|
-| `{{groomName}}`, `{{brideName}}` | Nama panggilan mempelai pria & wanita | Wedding |
-| `{{groomDisplayName}}`, `{{brideDisplayName}}` | Nama lengkap mempelai pria dan wanita | Wedding |
-| `{{groomParents}}`, `{{brideParents}}` | Nama orang tua / keluarga mempelai | Wedding |
-| `{{personName}}`, `{{personNickname}}` | Nama lengkap & panggilan persona utama | Birthday, Khitan, Aqiqah, Wisuda |
-| `{{fatherName}}`, `{{motherName}}` | Nama ayah & ibu kandung | Khitan, Aqiqah, Birthday |
-| `{{degree}}`, `{{major}}`, `{{institution}}` | Gelar akademik, prodi, dan perguruan tinggi | Wisuda |
-| `{{eventTitle}}`, `{{eventSubtitle}}`, `{{organizer}}` | Judul kegiatan, tema, dan institusi | Gathering / Umum |
-| `{{openingQuote}}`, `{{openingQuoteRef}}` | Ayat suci / kutipan mutiara pembuka | Seluruh Acara |
-| `{{globalBgUrl}}` | URL foto latar belakang utama | Seluruh Acara |
-| `{{groomPhotoUrl}}`, `{{bridePhotoUrl}}` / `{{personPhotoUrl}}` | URL foto profil | Seluruh Acara |
+| `{{groomName}}`, `{{brideName}}` | Nama panggilan mempelai pria & wanita | `WEDDING` |
+| `{{groomDisplayName}}`, `{{brideDisplayName}}` | Nama lengkap mempelai pria dan wanita | `WEDDING` |
+| `{{groomParents}}`, `{{brideParents}}` | Nama orang tua / keluarga mempelai | `WEDDING` |
+| `{{personName}}`, `{{personNickname}}` | Nama lengkap & panggilan tokoh utama | `PERSONAL` |
+| `{{fatherName}}`, `{{motherName}}`, `{{personAge}}`, `{{degree}}`, `{{major}}`, `{{institution}}` | Orang tua, usia, atau atribut akademik opsional sesuai `subEvent` | `PERSONAL` |
+| `{{eventTitle}}`, `{{eventSubtitle}}`, `{{organizer}}` | Judul kegiatan, sub-tema, dan penyelenggara murni non-personal | `EVENT` |
+| `{{openingQuote}}`, `{{openingQuoteRef}}` | Ayat suci / kutipan mutiara pembuka | Seluruh Mode |
+| `{{globalBgUrl}}` | URL foto latar belakang utama | Seluruh Mode |
+| `{{groomPhotoUrl}}`, `{{bridePhotoUrl}}`, `{{personPhotoUrl}}`, `{{eventPhotoUrl}}` | URL foto profil/visual (`GROOM_PHOTO`/`BRIDE_PHOTO`, `PROFILE_PHOTO`, `EVENT_PHOTO`) | Sesuai Mode |
 | `{{sidebarPhotoUrl}}`, `{{landingCoverUrl}}` | URL foto cover kartu & cover pembuka | Seluruh Acara |
 | `{{eventDataHtml}}` | Kontainer acara (Sesi 1, Sesi 2, Waktu, Lokasi & Maps) | Seluruh Acara |
 | `{{storySectionHtml}}` | Seksi perjalanan cinta / kilas balik cerita | Seluruh Acara |

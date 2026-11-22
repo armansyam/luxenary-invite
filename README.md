@@ -1,8 +1,8 @@
 # Luxenary Invite — S-Invite Platform
 
 > **Platform Undangan Digital Multi-Event B2C Self-Service (3 Mode Abadi: Pernikahan, Personal & Keluarga, Acara & Event Umum + Sub-Acara Dinamis)**  
-> Next.js 16.3.8 · Prisma 7.9/7.10 (PostgreSQL) · NextAuth v5 · Gateway 2-Arah (Midtrans) · Nodemailer SMTP · Cloudflare R2  
-> **Versi Aplikasi: 1.2.0 | Versi Dokumen: 7.0.0 | Diperbarui: 21 November 2026**  
+> Next.js 16.4.6 · Prisma 7.9/7.10 (PostgreSQL) · NextAuth v5 (Email+Password+OTP SMTP) · Gateway 2-Arah (Midtrans) · Nodemailer SMTP · Cloudflare R2  
+> **Versi Aplikasi: 1.1.0 | Versi Dokumen: 7.1.0 | Diperbarui: 22 November 2026**  
 > Versi yang sedang berjalan di server tampil di Admin > Pengaturan > Tentang Aplikasi (dibaca dari `package.json` dan commit build).
 
 > [!IMPORTANT]
@@ -209,7 +209,7 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 - **Latar Belakang Seksi Home Mandiri (`HOME_PHOTO` & `homePhotoCssUrl`):** Slot foto halaman utama terinjeksi mandiri ke Seksi 1 (`.slide-opening#home` / `.fixed-bg-layer`) dengan scrim gradient pelindung teks. Jika kosong, seksi Home mempertahankan kanvas transparan murni (`homePhotoCssUrl = ""`) tanpa dipaksa melakukan fallback ke tekstur/gambar demo latar belakang (`background.webp`). Saat klien mengunggah foto home, foto mereka langsung tampil sebagai latar belakang seksi pembuka secara presisi.
 - **Zero-Fake Fallback & Infinite Seamless Flow (Anti-Garis Potong):** Jika klien tidak mengunggah foto background global (`GLOBAL_FIXED_BG`), engine meneruskan string kosong (`""`) alih-alih memaksa aset demo. Kanvas latar belakang murni mengekspos warna dasar palet tema (`body { background: var(--bg-dark); }` / `--bg-light`) dan gradasi perlindungan kontras bawaan. Seluruh seksi aliran konten (`.slide-opening`, `.sec-flow`) terbebas dari garis pembatas pemotong layar (`border-bottom: none;`) dan panel gulir (`.main-scroll-panel`) 100% transparan, menciptakan transisi visual antar-seksi yang menyambung mulus sebagai satu kanvas utuh tanpa jahitan.
 - **Tipografi Budaya Otentik Aksara Lontara (Tema La Galigo):** Terintegrasi langsung dengan berkas font fisik `public/fonts/Lontara.ttf` via `@font-face` lokal, menyematkan aksen tipografi aksara Bugis geometris (*Sulapa Eppa'*) pada frasa sakral adat (*Salama'* di Cover/Hero/Footer, *Botti'* di Seksi Mempelai, serta petuah luhur pernikahan Bugis *Sipakatau, Sipakalebbi, Sipakainge* di kartu doa pembuka). Teks Lontara berpadu harmonis dengan teks Latin sehingga nilai estetika budaya terangkat tanpa mengurangi kemudahan baca bagi para tamu.
-- **Arsitektur Desktop Split 460px (Golden Ratio Standard):** Pada layar desktop/layar lebar (≥ 1024px atau ≥ 900px), seluruh 44 tema fisik dan starter blueprint menerapkan pembagian rasio presisi: sidebar kiri dinamis mengisi ruang panggung sisa (`width: calc(100% - 460px)`), sedangkan panel undangan utama dikunci tepat pada lebar mobile flagship ideal **460px** (`width: 460px; margin-left: calc(100% - 460px)`). Lapisan latar belakang (`.fixed-bg-layer`) dan video background berposisi fokus pada kolom undangan 460px di desktop (tidak tumpah 100vw ke belakang sidebar), dan otomatis 100% fullscreen di perangkat mobile. Navigasi floating dock bawah secara matematis dipusatkan di `left: calc(100% - 230px)`. **Sampul di desktop:** tanpa cover landscape (`LANDING_COVER_DESKTOP`) unggahan klien, sampul tema split tampil di kolom 460 px sehingga foto portrait tidak terpotong (`renderTemplate` menyisipkan `#lux-cover-desktop-split` bila master memuat `calc(100% - 460px)`); dengan cover landscape, sampul layar penuh. Aturan ini berlaku untuk semua tema: enam tema satu nama yang dulu satu kolom di tengah (al-fariz, al-khalid, cendekia, festivo, kalandra-birthday, sinergi) dimigrasi ke `.left-hero` (`{{sidebarPhotoUrl}}`) + kolom `.lux-wrapper.right-panel` 460 px pada 5 Nov 2026. Blueprint lama per jenis acara (`themes/_blueprints/{khitan,aqiqah,birthday,wisuda,general}`) masih satu kolom; tema baru memakai `single-name/starter-blueprint-single.html`.
+- **Arsitektur Desktop Split 460px (Golden Ratio Standard):** Pada layar desktop/layar lebar (≥ 1024px atau ≥ 900px), seluruh 81 tema fisik dan 3 starter blueprint menerapkan pembagian rasio presisi: sidebar kiri dinamis mengisi ruang panggung sisa (`width: calc(100% - 460px)`), sedangkan panel undangan utama dikunci tepat pada lebar mobile flagship ideal **460px** (`width: 460px; margin-left: calc(100% - 460px)`). Lapisan latar belakang (`.fixed-bg-layer`) dan video background berposisi fokus pada kolom undangan 460px di desktop (tidak tumpah 100vw ke belakang sidebar), dan otomatis 100% fullscreen di perangkat mobile. Navigasi floating dock bawah secara matematis dipusatkan di `left: calc(100% - 230px)`. **Sampul di desktop:** tanpa cover landscape (`LANDING_COVER_DESKTOP`) unggahan klien, sampul tema split tampil di kolom 460 px sehingga foto portrait tidak terpotong (`renderTemplate` menyisipkan `#lux-cover-desktop-split` bila master memuat `calc(100% - 460px)`); dengan cover landscape, sampul layar penuh. Tema baru per mode dikompilasi dari 3 blueprint mandiri (`themes/_blueprints/wedding/starter-blueprint.html`, `themes/_blueprints/personal/starter-blueprint-personal.html`, dan `themes/_blueprints/event/starter-blueprint-event.html`).
 - **Tipografi Anti-Overflow Split Desktop (Mobile-Emulation Scale):** Karena unit CSS `vw` mengevaluasi layar monitor utuh (1440–1920px), seluruh judul seksi `.sec-main-title, .sec-heading` pada mode split kanan dibatasi ketat dengan `clamp(1.75rem, 2.1rem, 2.3rem) !important;` serta proteksi `overflow-wrap: break-word !important; word-break: break-word !important;`. Padding seksi desktop dinormalisasi ke `1.8rem` (memberikan lebar efektif konten ~404px). Proteksi `overflow-wrap: break-word` terpasang di 32 dari 39 tema, serta di template developer `starter-blueprint.html` (tersedia untuk diunduh di `/downloads/starter-blueprint.html`) yang kini dilengkapi Seksi Pembuka Opening Hero 100vh `#home` dan `<nav class="bottom-dock">`.
 - **Home-Safe Audio FAB Auto-Hide & Blueprint 1:1 Synchronization:** Tombol audio mengambang (`#musicToggle` / `.audio-fab`) disembunyikan secara mutlak (`fab-hidden`) saat berada di seksi pembuka `#home` agar tidak mengotori keindahan tampilan pembuka, dan otomatis muncul menyelaraskan diri dengan `.bottom-dock` saat tamu scroll melintasi batas seksi pembuka. Seluruh berkas cetak biru sistem ([`themes/_blueprints/wedding/starter-blueprint.html`](themes/_blueprints/wedding/starter-blueprint.html) dan [`public/downloads/starter-blueprint.html`](public/downloads/starter-blueprint.html)) dijaga 100% sinkron secara identik (*zero-drift*), lengkap dengan kustomisasi seleksi kursor `::selection` berbasis token palet aktif.
 - **Standarisasi Universal Token Dinamis & Panduan Master Blueprint (`themes/_blueprints/wedding/BLUEPRINT_GUIDE.md`):** Seluruh 39 berkas tema (terverifikasi) bebas dari teks statis/hardcode kultural (`﷽`, `WALIMATUL 'URS`, dll.). Dilengkapi token dinamis universal `{{openingGreeting}}`, `{{coverBadge}}`, `{{quoteSectionEyebrow}}`, `{{quoteSectionTitle}}`, serta dukungan penghapusan bersih string kosong (`""`). Panduan teknis lengkap bagi Theme Builder tersedia di [`themes/_blueprints/wedding/BLUEPRINT_GUIDE.md`](themes/BLUEPRINT_GUIDE.md).
@@ -250,7 +250,7 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 
 | Komponen | Teknologi |
 |:--|:--|
-| **Framework** | Next.js 16.3.8 (App Router) |
+| **Framework** | Next.js 16.4.6 (App Router, Request Proxy `proxy.ts`) |
 | **Bahasa** | TypeScript 5 |
 | **Styling** | Tailwind CSS v4 + Vanilla CSS |
 | **Database** | PostgreSQL via Prisma (`@prisma/client` 7.9.1, CLI `prisma` 7.10.0) dan `pg` |
@@ -354,13 +354,10 @@ Luxenary-Invite/
 │   ├── sseEmitter.ts          # SSE emitter (momen real-time)
 │   └── videoOptimizer.ts      # Kompres video sebelum upload
 ├── themes/
-│   ├── _blueprints/           # Blueprint modular per jenis acara (wedding, birthday, khitan, aqiqah, wisuda, general)
-│   ├── wedding/               # 33 tema pernikahan: minimalist (6), modern (12), traditional (15)
-│   ├── birthday/              # 5 tema ulang tahun: festivo, kalandra-birthday, riang, balonku, gala
-│   ├── khitan/                # 4 tema walimatul khitan: al-fariz, fajar, nur, sakinah
-│   ├── aqiqah/                # 4 tema walimatul aqiqah: al-khalid, buaian, mungil, barakah
-│   ├── wisuda/                # 4 tema wisuda & kelulusan: cendekia, toga, laurel, akademia
-│   └── general/               # 4 tema gathering & reuni: sinergi, prakarsa, forum, temu
+│   ├── _blueprints/           # 3 Blueprint mandiri per mode (wedding, personal, event)
+│   ├── wedding/               # 34 tema Pernikahan: minimalist (6), modern (13), traditional (15)
+│   ├── personal/              # 37 tema Personal & Keluarga: minimalist (14), modern (14), traditional (9)
+│   └── event/                 # 10 tema Acara & Event Umum: minimalist (3), modern (6), traditional (1)
 ├── components/
 │   ├── BrandLogo.tsx
 │   ├── client/
@@ -390,7 +387,7 @@ Luxenary-Invite/
 ├── prisma.config.ts           # Prisma 7 DB URL configuration
 ├── docs/
 │   ├── README.md                              # Pusat indeks dokumentasi platform
-│   ├── ALUR_REGISTRASI_KE_DASHBOARD.md        # Alur lengkap registrasi Google hingga masuk studio
+│   ├── ALUR_REGISTRASI_KE_DASHBOARD.md        # Alur lengkap registrasi Email + OTP SMTP hingga masuk studio
 │   ├── DATABASE_SCHEMA_DAN_RELASI.md          # Kamus data, ERD & lifecycle state machine
 │   ├── API_REFERENCE.md                       # Katalog lengkap seluruh 40+ REST API, SSE & Webhook
 │   ├── PANDUAN_PEMBUATAN_TEMA_BARU.md         # Theme developer guide, kamus token & standar HTML
@@ -669,7 +666,7 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
 
 ### Aturan Baku Dokumentasi:
 1. **Dilarang keras push tanpa menyelaraskan docs:** Jika ada penambahan endpoint, migrasi kolom database, gateway baru, atau perubahan alur UI, ketiga file dokumen (`README.md`, `docs/SYSTEM_ARCHITECTURE.md`, `docs/S-Invitation.md`) wajib langsung disinkronkan di commit yang sama.
-2. **Katalog Tema Fisik:** Pastikan jumlah tema fisik yang aktif di database dan template selalu sinkron (39 tema fisik aktif: 33 Wedding, 2 Birthday, 1 Khitan, 1 Aqiqah, 1 Wisuda, 1 Gathering).
+2. **Katalog Tema Fisik:** Pastikan jumlah tema fisik yang aktif di disk, katalog, dan database selalu sinkron 1:1 (**81 tema master fisik**: `34 WEDDING`, `37 PERSONAL`, `10 EVENT` di `themes/{wedding,personal,event}/`).
 3. **No Phantom Docs:** Dokumentasi harus mencantumkan path dan nama variabel lingkungan aktual (misal format AWS SDK `S3_*` untuk R2, bukan format lama).
 4. **Standar Kontrak Placeholder Nama Mempelai:** Cover buka undangan, hero title, sidebar desktop, dan closing footer **MUTLAK** menggunakan Nama Panggilan (`{{firstName}} & {{secondName}}`). Nama lengkap beserta gelar (`{{firstDisplayName}} & {{secondDisplayName}}`) hanya digunakan pada Seksi Profil Pasangan (*The Couple*).
 5. **Standar Navigasi Imersif (Smart Auto-Hide):** Seluruh tema fisik master dan starter blueprint menerapkan interaksi smart auto-hide untuk dock navigasi dan floating audio player saat pengguna menggulir ke bawah, dan otomatis kembali meluncur masuk saat menggulir ke atas atau mencapai footer.

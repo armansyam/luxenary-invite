@@ -257,9 +257,7 @@ NEXTAUTH_SECRET=""
 CRON_SECRET=""
 PIN_ENCRYPTION_KEY=""
 
-# Google OAuth Login Klien (Dari Google Cloud Console)
-GOOGLE_CLIENT_ID="xxx.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET="GOCSPX-xxx"
+# (Catatan: GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET sudah tidak diperlukan; autentikasi klien murni Email + Kata Sandi + OTP SMTP via Admin Settings)
 
 # Penyimpanan Cloudflare R2 (Sangat Direkomendasikan)
 STORAGE_PROVIDER="r2"

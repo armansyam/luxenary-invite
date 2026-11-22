@@ -1,18 +1,18 @@
 # DOKUMENTASI RESMI: ALUR REGISTRASI DAN PEMBAYARAN
 **Luxenary Invite Platform**
 
-Dokumen ini memuat spesifikasi teknis dan alur faktual sistem dari awal pengguna mendaftar dengan Google hingga menyelesaikan pembayaran invoice.
+Dokumen ini memuat spesifikasi teknis dan alur faktual sistem dari awal pengguna mendaftar via **Email + Kata Sandi + OTP 6-digit SMTP** hingga menyelesaikan pembayaran invoice.
 
 ---
 
 ## 1. Prinsip Utama Alur Sistem
 
-1. **Google Sign-In Pertama:** Pengguna baru hanya login dengan satu klik tombol Google OAuth.
+1. **Autentikasi Murni Email + Kata Sandi + OTP SMTP (Tanpa Google OAuth):** Pengguna baru mendaftar pada tab **Daftar Akun** (`/login`) dengan verifikasi kode OTP 6 digit yang dikirim ke email via SMTP, lalu masuk dengan Email + Kata Sandi (`bcrypt`). Pemulihan akun tersedia via **Lupa kata sandi?** (OTP 6 digit).
 2. **Auto-Check Keaktifan:** Sistem memeriksa status akun di database:
-   - Jika **sudah aktif** (sudah memiliki undangan) ➔ Langsung masuk ke **Dashboard**.
-   - Jika **belum aktif** (akun baru / belum punya paket) ➔ **Langsung diarahkan memilih paket (`/packages`)**.
+   - Jika **sudah aktif** (sudah memiliki undangan atau Draf Gratis) ➔ Langsung masuk ke **Dashboard**.
+   - Jika **belum aktif** (akun baru / belum punya paket) ➔ **Langsung diarahkan memilih paket atau Draf Gratis (`/packages`)**.
 3. **Fokus 1 Metode Pembayaran (Tidak Ada Keduanya):**
-   - **Payment Gateway (QRIS) adalah Metode UTAMA:** Menampilkan output murni berupa gambar QRIS dari gateway aktif. Tidak ada pembiayaan lain (tidak ada cicilan, tidak ada kartu kredit, tidak ada VA).
+   - **Payment Gateway (QRIS) adalah Metode UTAMA:** Menampilkan output murni berupa gambar QRIS dari gateway aktif (Midtrans Core API QRIS / fallback Snap).
    - **Transfer Bank Manual adalah Metode DARURAT:** Hanya aktif jika admin sengaja mengubah mode saat gateway sedang mengalami gangguan.
    - **Aturan Kasir:** Kasir **HANYA** memunculkan salah satu metode yang sedang aktif di pengaturan admin. Tidak pernah muncul keduanya secara bersamaan.
 
@@ -22,9 +22,9 @@ Dokumen ini memuat spesifikasi teknis dan alur faktual sistem dari awal pengguna
 
 ```mermaid
 flowchart TD
-    A[Pengguna Baru Buka /login] --> B[Klik: Masuk dengan Akun Google]
-    B --> C[Otentikasi Google OAuth: auth.ts]
-    C --> D[Simpan / Update User di Database: lib/auth.ts]
+    A[Pengguna Baru Buka /login] --> B[Daftar Akun OTP 6 Digit / Masuk Email+Sandi]
+    B --> C[API: /api/auth/otp/request & /api/auth/register -> auth.ts]
+    C --> D[Sesi JWT Credentials Aktif: CLIENT_PASSWORD]
     D --> E[Redirect ke /onboarding]
     
     E --> F[API: GET /api/client/onboarding-state]
@@ -66,20 +66,16 @@ flowchart TD
 
 ## 3. Rincian Teknis per Tahap
 
-### TAHAP 1: Masuk dengan Akun Google
+### TAHAP 1: Daftar & Masuk Akun (Email + Kata Sandi + OTP 6-Digit SMTP)
 * **Halaman UI:** [`app/login/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/login/page.tsx)
-* **Aksi Pengguna:** Menekan tombol tunggal *"Masuk dengan Akun Google"*.
-* **Trigger Kode:**
-  ```typescript
-  signIn("google", { callbackUrl: "/onboarding" });
-  ```
-* **Eksekusi Backend ([`auth.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/auth.ts) & [`lib/auth.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/lib/auth.ts)):**
-  - Mengambil data profil Google: `sub` (Google ID), `email`, `name`, `picture`.
-  - Fungsi `upsertGoogleUser()` memeriksa database:
-    - Jika user baru, sistem membuat baris baru di tabel `User` dengan `role: "CLIENT"`.
-    - Jika user lama, data profil diperbarui.
-  - NextAuth membuat cookie sesi JWT (`authjs.session-token`).
-  - Browser otomatis diarahkan ke URL callback: `/onboarding`.
+* **Alur Daftar Akun Baru:**
+  1. Klien mengisi Nama, Email, Kata Sandi (min. 8 karakter), dan Konfirmasi Kata Sandi.
+  2. `POST /api/auth/otp/request` (`purpose: "CLIENT_REGISTER"`) mengirim kode OTP 6 digit melalui SMTP (beserta pengingat cek kotak masuk/Inbox dan folder Spam/Junk).
+  3. Klien memasukkan OTP ➔ `POST /api/auth/register` memverifikasi OTP, menyimpan akun ke tabel `User` (`email` huruf kecil, `passwordHash` `bcrypt` cost 12, `role: "CLIENT"`), lalu otomatis masuk via `signIn("credentials", { portal: "CLIENT_PASSWORD", ... })`.
+* **Alur Masuk & Lupa Kata Sandi:**
+  - Masuk: `signIn("credentials", { portal: "CLIENT_PASSWORD", email, password, redirect: false })` diverifikasi oleh [`auth.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/auth.ts) (`bcrypt.compare` + `rateLimitDb`).
+  - Lupa Kata Sandi: `POST /api/auth/otp/request` (`purpose: "CLIENT_RESET_PASSWORD"`) ➔ `POST /api/auth/reset-password` menetapkan sandi baru.
+  - NextAuth menerbitkan cookie sesi JWT (`__Secure-authjs.session-token`) dan mengarahkan browser ke `/onboarding` (atau `callbackUrl` internal aman).
 
 ---
 
@@ -110,7 +106,7 @@ flowchart TD
   - **Serenade (`TIER_1`):** paket dasar, tanpa kapabilitas tambahan pada bawaan seed.
   - **Symphony (`TIER_2`):** menambah kapabilitas `guest_memories` (kuota roll kamera 5 foto per tamu pada bawaan) dan `qr_checkin`.
   - **Eternity (`TIER_3`):** menambah `custom_domain` dan kuota roll kamera 15 foto per tamu.
-  - Semua paket membuka seluruh 39 tema; paket dibedakan oleh kapabilitas fitur (`capabilities_tier1..3` di `admin_settings`, dapat diubah admin), bukan oleh tema.
+  - Semua paket membuka seluruh 81 tema master sesuai mode acara undangan; paket dibedakan oleh kapabilitas fitur (`capabilities_tier1..3` di `admin_settings`, dapat diubah admin), bukan oleh tema.
 * **Fitur & Kapabilitas Paket:**
   - Hanya membatasi resource server yang nyata:
     1. `Galeri Kenangan Tamu (Live Photo Drop)` (Storage Cloudflare R2).
@@ -262,7 +258,7 @@ Setiap kali transaksi disetujui lunas (baik otomatis via Webhook QRIS maupun man
 
 | Tahap | Komponen UI | API / Endpoint Backend | Tabel Database Terkait |
 | :--- | :--- | :--- | :--- |
-| **1. Login Google** | `app/login/page.tsx` | NextAuth Google Provider (`auth.ts`) | `User` |
+| **1. Daftar / Masuk Akun** | `app/login/page.tsx` | `POST /api/auth/otp/request`, `/api/auth/register`, `/api/auth/reset-password`, & NextAuth `Credentials` (`auth.ts`) | `User`, `EmailOtpToken` |
 | **2. Cek Keaktifan** | `app/onboarding/page.tsx` | `GET /api/client/onboarding-state` | `Invitation`, `Order` |
 | **3. Pilih Paket** | `app/packages/page.tsx` | `GET /api/public/settings` | `admin_settings` |
 | **4. Buat / Reuse Order** | `app/checkout/page.tsx` | `POST /api/orders/create` | `Order` (`status: PENDING` / Single Order Reuse) |

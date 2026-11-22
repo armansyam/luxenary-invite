@@ -32,7 +32,7 @@ Diperbarui 29 Oktober 2026. Status setiap alur sebelum rilis produksi pertama, b
 | Purge cache Cloudflare | Uji lokal wajib mengosongkan `CF_ZONE_ID`/`CF_API_TOKEN` (pernah memurge zona produksi) | Terbitkan ulang undangan, lalu cek header `cf-cache-status` |
 | Transaksi Midtrans sungguhan | Kunci produksi sudah diisi (5 Nov 2026), tetapi Core API produksi belum diaktifkan Midtrans (charge 402), jadi checkout memakai Snap (GoPay QRIS dan QRIS). Notifikasi produksi `pending`/`cancel` terbukti lolos verifikasi pada 5 Nov lewat transaksi uji yang dibatalkan; pembayaran asli sampai `settlement` belum | Bayar satu order lewat halaman Snap, pastikan webhook mengubah status menjadi PAID; ulangi setelah Core API aktif untuk QR di `/payment` |
 | Penyedia SMTP sungguhan | Hanya diuji ke SMTP sink | Tombol uji SMTP di Admin > Pengaturan > Integrasi |
-| Login Google di domain produksi | Redirect URI OAuth terikat domain | Login klien baru dari domain produksi |
+| Autentikasi Klien (Email + Kata Sandi + OTP SMTP) | Google OAuth telah dihapus penuh (22 Nov 2026); login memakai `Credentials` (`CLIENT_PASSWORD`) + OTP SMTP | Uji daftar via `/login` (OTP SMTP), masuk Email+Sandi, reset sandi, dan pastikan `/api/auth/providers` hanya memuat `credentials` (Terverifikasi live di `https://luxvite.id` pada 22 Nov 2026) |
 | Backup ke bucket privat | `S3_BACKUP_BUCKET_NAME` masih kosong | Isi env, jalankan cron backup, cek objek di bucket |
 | Arsip NAS | NAS belum tersedia; arsip tidak bergantung padanya | Saat NAS siap, jalankan `npm run test:nas` di server |
 | PM2 cluster lebih dari satu worker | Diuji satu proses | Bayar order sementara halaman checkout terbuka; status harus berubah tanpa muat ulang |

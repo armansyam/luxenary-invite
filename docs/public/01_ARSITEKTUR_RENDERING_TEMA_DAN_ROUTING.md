@@ -12,7 +12,7 @@ Sistem melayani undangan publik melalui 3 skema alamat URL yang berbeda namun di
 ```mermaid
 flowchart TD
     subgraph RequestMasuk [Request Pengunjung / Tamu]
-        A[Request Masuk via HTTP / HTTPS] --> B{middleware.ts: Analisis Host & Subdomain}
+        A[Request Masuk via HTTP / HTTPS] --> B{proxy.ts: Analisis Host & Subdomain}
     end
     
     subgraph StrictSubdomainGuard [Pilar Isolasi Subdomain]
@@ -49,7 +49,7 @@ flowchart TD
 ## 2. Resolusi Jalur URL & Strict Subdomain Isolation Guard
 
 1. **Custom Domain (`https://wedding-andi-siti.com`):**
-   - Host dievaluasi oleh `middleware.ts`. Jika bukan domain utama platform (`luxvite.id`), sistem memanggil resolver internal untuk mencocokkan field `customDomain` pada tabel `Invitation`.
+   - Host dievaluasi oleh `proxy.ts`. Jika bukan domain utama platform (`luxvite.id`), sistem memanggil resolver internal untuk mencocokkan field `customDomain` pada tabel `Invitation`.
    - Menggunakan cache in-memory TTL 5 menit untuk mencegah amplifikasi self-fetch request.
    - Domain dilindungi sertifikat HTTPS otomatis via Caddy *On-Demand TLS*.
 2. **Subdomain Klien (`https://andi-siti.luxvite.id`):**

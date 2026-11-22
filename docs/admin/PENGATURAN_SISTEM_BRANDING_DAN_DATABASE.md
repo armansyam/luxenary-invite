@@ -134,10 +134,10 @@ Sistem mengadopsi arsitektur hierarki URL yang bersih dan hemat sumber daya name
 
 ---
 
-## 8. Autentikasi Google OAuth 2.0 (Single Source of Truth `.env`) (`Tab: Setup & Integrasi`)
+## 8. Autentikasi Klien & SMTP OTP (`Tab: Integrasi & API`)
 
-- **Konfigurasi Lingkungan Terpusat:** Sesuai arsitektur keamanan NextAuth v5, kredensial autentikasi Google (`GOOGLE_CLIENT_ID` dan `GOOGLE_CLIENT_SECRET`) didefinisikan secara eksklusif pada variabel lingkungan server (`.env`) saat inisialisasi boot.
-- **Informational Card di Admin:** Di panel admin tab *Setup & Integrasi*, sistem menyediakan kartu ringkas informatif yang menampilkan URL *Authorized JavaScript Origin* (`${currentOrigin}`) dan *Authorized Redirect URI (Callback)* (`${currentOrigin}/api/auth/callback/google`) lengkap dengan tombol salin 1-klik untuk pendaftaran pada Google Cloud Console.
+- **Autentikasi Mandiri Tanpa Google OAuth:** Sejak 22 November 2026, Google OAuth (`GoogleProvider`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, dan kartu informasi OAuth di panel admin) telah dihapus permanen. Seluruh pendaftaran klien, login, dan reset kata sandi menggunakan **Email + Kata Sandi (`bcrypt`) + OTP 6-digit SMTP** (`/api/auth/otp/request`, `/api/auth/register`, `/api/auth/reset-password`).
+- **Ketergantungan Tunggal pada SMTP:** Pastikan konfigurasi SMTP pada sub-tab *Integrasi & API* aktif dan lolos tombol **Uji Kirim SMTP** agar pengiriman OTP pendaftaran, reset kata sandi, aktivasi mitra, dan invoice berjalan lancar.
 
 ---
 

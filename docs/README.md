@@ -1,115 +1,103 @@
 # PUSAT DOKUMENTASI RESMI (DOCS INDEX)
-**Luxenary Invite Platform — Multi-Tenant Invitation SaaS & Online Receptionist**
+**Luxenary Invite Platform — Multi-Event Invitation SaaS & Online Receptionist**
 
-Direktori ini adalah **Pusat Dokumentasi Resmi & Sumber Kebenaran Tunggal (Single Source of Truth)** untuk seluruh developer dan AI Agent. Seluruh konten di sini mencerminkan **100% fakta kode aktual**, kamus basis data, panduan arsitektur, standar keamanan, dan manual operasional yang terbagi secara modular ke dalam 4 domain utama: **Client (Sisi Pengantin & Penyelenggara)**, **Admin (Sisi Administrator & Sistem)**, **Public (Sisi Tamu & Meja Resepsionis)**, dan **Engineering & Infrastruktur**.
+> **Panduan Cepat AI Agent:** Baca dokumen ini terlebih dahulu sebelum menelusuri berkas lain. Seluruh poin di bawah mencerminkan **fakta kode produksi aktual per 22 November 2026**.  
+> **Peringatan Arsip:** Folder `docs/archive/` berisi laporan audit dan changelog historis lama. **JANGAN** jadikan isi `docs/archive/` sebagai rujukan arsitektur saat ini.
 
 ---
 
-## 🏛️ KONTRAK BISNIS & ARSITEKTUR MUTLAK SISTEM (GROUND TRUTH)
+## KONTRAK BISNIS & ARSITEKTUR MUTLAK SISTEM (GROUND TRUTH)
 
-Sebelum membaca dokumen spesifik per modul, seluruh pihak WAJIB memahami 5 pilar kontrak mutlak berikut:
-
-1. **Pembayaran adalah Gerbang Mutlak (*Hard Payment Barrier*):**
-   - Klien yang belum menyelesaikan pembayaran (`PAID`) **DILARANG MUTLAK** membuka Dashboard Klien (`/dashboard`) atau Studio Editor.
-   - Pengecekan otomatis via [`app/api/client/onboarding-state`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/onboarding-state/route.ts):
-     - Belum ada pesanan $\rightarrow$ dialihkan paksa ke `/packages`.
-     - Pesanan berstatus `PENDING` $\rightarrow$ dialihkan paksa ke kasir `/payment` (jika checkout confirmed) atau `/checkout`.
-     - Hanya pesanan berstatus `PAID` yang diizinkan masuk ke `/dashboard/setup` lalu ke `/dashboard`.
-   - Di level backend API ([`app/api/client/invitations/create`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/invitations/create/route.ts)), jika tidak ditemukan order dengan status `PAID`, sistem menolak pembuatan draf dengan **HTTP 403 Forbidden**.
-2. **Saluran Pembayaran 100% Dikendalikan Admin (*Zero Client Decision*):**
-   - Klien **TIDAK BISA** memilih sendiri metode pembayaran (Transfer Manual vs Gateway).
-   - Saluran ditentukan secara tunggal oleh Admin via database `AdminSetting` key `payment_mode`:
-     - Mode `"GATEWAY"`: Klien hanya disajikan QRIS otomatis (Midtrans). Form transfer manual disembunyikan.
-     - Mode `"MANUAL"`: Klien hanya disajikan nomor rekening bank admin & form unggah bukti transfer. Gateway dinonaktifkan.
-3. **Arsitektur Multi-Event (6 Tipe Acara Terdaftar):**
-   - Enum `EventType` di PostgreSQL: `WEDDING`, `BIRTHDAY`, `KHITAN`, `AQIQAH`, `WISUDA`, `GATHERING`.
-   - Data persona non-wedding disimpan terstruktur di kolom `participantsJson` pada tabel `Invitation`.
-   - Setup Wizard 4 Langkah & Studio Editor beradaptasi otomatis sesuai jenis acara. Fitur pernikahan (Seksi 7: Kisah Cinta) otomatis disembunyikan untuk non-wedding.
-4. **Isolasi Tema Ketat & Theme Builder Unlimited (Total 54 Tema Fisik di DB & Disk):**
-   - Distribusi tema faktual: 33 Wedding, 5 Birthday, 4 Khitan, 4 Aqiqah, 4 Wisuda, 4 Gathering (`THEME_MAP` 54 tema).
-   - Master fisik tulisan tangan (*handcrafted*) dilindungi mutlak dari penimpaan (HTTP 409) dan dilengkapi fitur **Clone to Builder** (`?from=<id>`).
-   - Theme Builder Unlimited 3.0 (`/admin/theme-builder`) menyediakan kanvas rancang visual mandiri (11 kontrol editorial & mikro-tipografi blok, varian tombol/kartu/kerapatan seksi/scrim foto, cermin vertikal `flipY`, dan otomasi ornamen 4 sudut & lintas-seksi) yang menghasilkan tema master terkompilasi bersih tanpa nilai hardcode di luar `:root`.
-   - Klien hanya diizinkan memilih tema yang cocok dengan `eventType` acaranya. Pilihan tema dikunci permanen pasca publikasi (`status: PUBLISHED`).
-5. **Infrastruktur Produksi VPS & Gembok Layanan:**
-   - Server VPS Ubuntu live di `https://luxvite.id` (PM2 cluster 2 node port 3001, Caddy On-Demand TLS, Cloudflare reverse proxy).
-   - Pengaturan `serviceStatus` saat ini berstatus `COMING_SOON` (`isOpen: false`), mengunci registrasi publik secara aman hingga Admin memutuskan membuka layanan (`OPEN`).
-   - Crontab OS Linux berjalan otomatis: Pembersihan harian pukul 02:00 dan Pencadangan database PostgreSQL pukul 03:00.
+1. **Autentikasi Murni Email + Kata Sandi + OTP 6-Digit SMTP (Tanpa Google OAuth):**
+   - **Portal Klien (`/login`):** Daftar Akun (`/api/auth/register` via OTP 6 digit SMTP), Masuk (`Credentials` `portal: "CLIENT_PASSWORD"` di `auth.ts`), dan Lupa Kata Sandi (`/api/auth/reset-password` via OTP 6 digit). Google OAuth (`GoogleProvider`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, dan `lib/auth.ts`) **sudah dihapus total** — deployment baru tidak memerlukan konfigurasi Google Cloud Console.
+   - **Portal Admin (`/admin/login`):** Kredensial `Admin` (`SUPER_ADMIN`, `ADMIN`, `FINANCE`, `SUPPORT`) dengan RBAC granular dan `sessionVersion`.
+   - **Portal Mitra (`/partner`):** Kurasi admin terlebih dulu, aktivasi akun & reset sandi via OTP 6 digit (`/api/partner/auth/set-password`), masuk via Email + Kata Sandi.
+2. **Draf Gratis 14 Hari & Gerbang Pembayaran untuk Publikasi:**
+   - Klien baru dapat mencoba **Draf Gratis** (`POST /api/client/invitations/free-draft`, maks. 1 per akun, ber-watermark, maks. 3 foto, otomatis dihapus cron setelah 14 hari jika tidak diaktifkan) atau langsung memilih paket berbayar di `/packages`.
+   - Publikasi undangan nyata (`PUBLISHED`), fitur paket (`guest_memories`, `qr_checkin`, `custom_domain`), dan pembuatan undangan berbayar (`POST /api/client/invitations/create`) tetap dijaga ketat oleh order `PAID` (HTTP 403 tanpa order lunas). Pelunasan order otomatis mengaktifkan Draf Gratis via `activateFreeDraftForOrder`.
+   - Dispatcher status pasca-login berada di [`app/api/client/onboarding-state/route.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/onboarding-state/route.ts).
+3. **Saluran Pembayaran 100% Dikendalikan Admin (*Zero Client Decision*):**
+   - Ditentukan tunggal oleh `AdminSetting` key `payment_mode`:
+     - `"GATEWAY"`: Midtrans 2-arah (Core API QRIS + fallback Snap, SSE realtime via PostgreSQL `LISTEN/NOTIFY`, pembatalan dua arah).
+     - `"MANUAL"`: Transfer bank manual (rekening murni dari DB tanpa hardcode) + unggah bukti transfer WebP ke bucket privat R2 + persetujuan admin.
+4. **3 Mode Struktural Abadi, `subEvent` Dinamis, & 81 Tema Master Fisik:**
+   - Enum `EventType` memiliki tepat **3 nilai abadi**: `WEDDING` (Pernikahan), `PERSONAL` (Personal & Keluarga: Ulang Tahun, Khitanan, Aqiqah, Wisuda, Syukuran, Tamatan Ngaji, dll.), dan `EVENT` (Acara & Event Umum: Corporate, Seminar, Reuni, Grand Opening, Gathering, dll.) dilengkapi kolom bebas `subEvent`.
+   - Inventaris disk & DB: **81 tema master fisik** di `themes/<mode>/<gaya>/<id>.html` (`34` `wedding`, `37` `personal`, `10` `event`) + 3 starter blueprint di `themes/_blueprints/{wedding,personal,event}/`. Pemetaan folder terpusat di [`lib/themePaths.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/lib/themePaths.ts).
+   - Isolasi tema ketat per mode (`isThemeInMode`); pergantian mode selama `DRAFT` hanya via `CHANGE_INVITATION_MODE`; terkunci permanen setelah `PUBLISHED`.
+   - Master tulisan tangan (*handcrafted*) dilindungi dari overwrite (HTTP 409 di Theme Builder), dapat disunting lewat **Editor Master**, dibuat variannya (**Varian Tema**), atau disalin ke **Theme Builder Unlimited 3.0** (`?from=<id>`).
+5. **Routing, Skema DB, & Penyimpanan Hybrid:**
+   - Edge/Request proxy Next.js 16 berada di [`proxy.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/proxy.ts) (BUKAN `middleware.ts`), menangani custom domain, subdomain `*.luxvite.id`, Strict Subdomain Isolation Guard, dan CSP berbasis nonce.
+   - Database PostgreSQL via Prisma 7 (`prisma/schema.prisma`): **28 model**, **17 enum** (termasuk `MediaSlot` 11 nilai dengan `PROFILE_PHOTO` & `EVENT_PHOTO`), serta **129 API route handlers** di `app/api/`.
+   - Piring draf undangan disimpan di tabel DB `invitation_drafts`; HTML terbit statis disimpan di disk & Cloudflare R2; Portofolio adalah *full static clone* independen.
+6. **Infrastruktur Produksi VPS:**
+   - Live di `https://luxvite.id` (Next.js 16.4.6, Node.js 22, PostgreSQL, PM2 cluster 2 worker port `3001`, Caddy On-Demand TLS, Cloudflare reverse proxy, crontab otomatis cleanup `02:00`, backup `03:00`, health-watch tiap menit).
 
 ---
 
 ## 1. Dokumentasi Sisi Klien / Penyelenggara (`docs/client/`)
 
-Dokumentasi ini membedah seluruh tahapan siklus hidup klien mulai dari registrasi Google OAuth, kasir pembayaran, perancangan undangan di studio editor, manajemen tamu, hingga monitoring RSVP.
-
 | Tahap | Dokumen Spesifikasi | Ruang Lingkup & Deskripsi |
 |:---:|---|---|
-| **00** | [ALUR_REGISTRASI_KE_DASHBOARD.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/ALUR_REGISTRASI_KE_DASHBOARD.md) | **Arsitektur End-to-End**: Alur global sejak landing page, Google OAuth, dispatcher onboarding hub, gerbang pembayaran mutlak, hingga studio editor. |
-| **01** | [TAHAP_REGISTRASI_DAN_PEMBAYARAN.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/client/TAHAP_REGISTRASI_DAN_PEMBAYARAN.md) | **Kasir & Kontrol Payment Mode**: Alur kasir checkout `/checkout` dan `/payment`, integrasi QRIS otomatis gateway, transfer manual darurat, webhook, dan auto-aktivasi akun. |
-| **02** | [TAHAP_DASHBOARD_SETUP_AWAL.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/client/TAHAP_DASHBOARD_SETUP_AWAL.md) | **Wizard Setup Perdana (4 Langkah)**: Langkah 0 (Pilih 6 Event Types), Langkah 1 (Persona Adaptif / `participantsJson`), Langkah 2 (Jadwal & Lokasi), Langkah 3 (Pilih Tema Terisolasi). |
-| **03** | [TAHAP_STUDIO_EDITOR_UNDANGAN.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/client/TAHAP_STUDIO_EDITOR_UNDANGAN.md) | **Studio Editor 16 Seksi**: Panel kustomisasi `/dashboard/invitation/[id]` Dual-Native Master-Detail, form adaptif per eventType, sembunyikan Love Story untuk non-wedding, palet warna dinamis, dan kunci tema pasca publikasi. |
-| **04** | [TAHAP_GUEST_MOMENTS_DAN_MEMORIES.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/client/TAHAP_GUEST_MOMENTS_DAN_MEMORIES.md) | **Pusat Komando Moments & Kuota Pintar**: Manajemen kamera virtual `/dashboard/moments`, 3 layout kartu pembuka (`POLAROID_MINIMAL`, `VINTAGE_FILM`, `MODERN_ELEGANT`), jadwal multi-sesi dengan Smart Quota Boundary Guard, cetak QR meja 300 DPI, dan unduh master ZIP. |
-| **05** | [TAHAP_MANAJEMEN_TAMU_DAN_QR.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/client/TAHAP_MANAJEMEN_TAMU_DAN_QR.md) | **Buku Tamu & Tiket QR**: Manajemen daftar tamu `/dashboard/guests`, import CSV, generator link personal `?to=...`, enkripsi token QR check-in, dan broadcast WhatsApp dinamis. |
-| **06** | [TAHAP_RSVP_DAN_MODERASI_UCAPAN.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/client/TAHAP_RSVP_DAN_MODERASI_UCAPAN.md) | **RSVP & Feed Doa**: Pemantauan kehadiran `/dashboard/rsvp`, kalkulasi porsi katering (*pax count*), moderasi komentar tamu (*hide/show*), dan ekspor CSV. |
-| **07** | [TAHAP_PENGATURAN_AKUN_CUSTOM_DOMAIN_DAN_ADDON.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/client/TAHAP_PENGATURAN_AKUN_CUSTOM_DOMAIN_DAN_ADDON.md) | **Domain & Publikasi**: Pengaturan `/dashboard/settings`, ketersediaan subdomain real-time, panduan DNS CNAME/A custom domain, 4-digit PIN panitia, Strict Subdomain Isolation Guard, dan WOW Publish pipeline. |
+| **00** | [ALUR_REGISTRASI_KE_DASHBOARD.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/ALUR_REGISTRASI_KE_DASHBOARD.md) | **Arsitektur End-to-End**: Alur global dari `/login` (Email + Kata Sandi + OTP SMTP), dispatcher onboarding hub, Free Draft / kasir pembayaran, hingga studio editor. |
+| **01** | [TAHAP_REGISTRASI_DAN_PEMBAYARAN.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/client/TAHAP_REGISTRASI_DAN_PEMBAYARAN.md) | **Registrasi, Kasir & Kontrol Payment Mode**: Alur daftar OTP & login, kasir `/checkout` dan `/payment`, Midtrans QRIS/Snap, transfer manual, webhook, dan auto-aktivasi. |
+| **02** | [TAHAP_DASHBOARD_SETUP_AWAL.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/client/TAHAP_DASHBOARD_SETUP_AWAL.md) | **Wizard Setup Perdana (4 Langkah)**: Langkah 0 (3 Mode Abadi + Sub-Acara Dinamis), Langkah 1 (Persona Adaptif / `participantsJson`), Langkah 2 (Jadwal & Lokasi), Langkah 3 (Tema Terisolasi). |
+| **03** | [TAHAP_STUDIO_EDITOR_UNDANGAN.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/client/TAHAP_STUDIO_EDITOR_UNDANGAN.md) | **Studio Editor 16 Seksi**: `/dashboard/invitation/[id]` Dual-Native Master-Detail, form adaptif 3 mode, slot foto terisolasi (`GROOM`/`BRIDE`/`PROFILE`/`EVENT`), dan kunci pasca publikasi. |
+| **04** | [TAHAP_GUEST_MOMENTS_DAN_MEMORIES.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/client/TAHAP_GUEST_MOMENTS_DAN_MEMORIES.md) | **Pusat Komando Moments & Kuota Pintar**: `/dashboard/moments`, 3 layout kartu pembuka, jadwal multi-sesi dengan Smart Quota Boundary Guard, cetak QR meja 300 DPI, unduh ZIP. |
+| **05** | [TAHAP_MANAJEMEN_TAMU_DAN_QR.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/client/TAHAP_MANAJEMEN_TAMU_DAN_QR.md) | **Buku Tamu & Tiket QR**: `/dashboard/guests`, impor CSV/Excel `.xlsx`, tautan personal `?to=...`, QR check-in, dan broadcast WhatsApp. |
+| **06** | [TAHAP_RSVP_DAN_MODERASI_UCAPAN.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/client/TAHAP_RSVP_DAN_MODERASI_UCAPAN.md) | **RSVP & Feed Doa**: `/dashboard/rsvp`, kalkulasi pax katering, balasan tuan rumah, moderasi ucapan, dan ekspor CSV. |
+| **07** | [TAHAP_PENGATURAN_AKUN_CUSTOM_DOMAIN_DAN_ADDON.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/client/TAHAP_PENGATURAN_AKUN_CUSTOM_DOMAIN_DAN_ADDON.md) | **Domain, Sandi & Publikasi**: `/dashboard/settings`, cek subdomain real-time, DNS CNAME/A custom domain, 4-digit PIN panitia, ganti kata sandi, dan WOW Publish pipeline. |
 
 ---
 
 ## 2. Dokumentasi Sisi Administrator (`docs/admin/`)
 
-Dokumentasi ini mencakup seluruh instrumen pengelolaan bisnis, keuangan, 54 tema, Theme Builder, kontrol akses pengguna, dan infrastruktur server VPS.
-
 | Modul | Dokumen Spesifikasi | Ruang Lingkup & Deskripsi |
 |:---:|---|---|
-| **01** | [DASHBOARD_OVERVIEW_DAN_STATISTIK.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/DASHBOARD_OVERVIEW_DAN_STATISTIK.md) | **Overview & Analytics**: Pemantauan 4 metrik bisnis utama (Omset Lunas, Pending, Undangan Online/Draf, Tamu & RSVP), distribusi paket, ranking tema populer, dan aktivitas transaksi terkini. |
-| **02** | [REMOTE_DAN_MANAJEMEN_KLIEN.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/REMOTE_DAN_MANAJEMEN_KLIEN.md) | **Remote Session & Klien**: Arsitektur *Cookie-Based Workspace Override*, Server Action impersonasi klien tanpa password, banner peringatan merah, dan manajemen siklus hidup akun. |
-| **03** | [MANAJEMEN_UNDANGAN_DAN_DOMAIN.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/MANAJEMEN_UNDANGAN_DAN_DOMAIN.md) | **Undangan & Custom Domain**: Monitoring seluruh proyek undangan dengan 5 filter status, kontrol masa aktif galeri, kunci darurat 24 jam, dan integrasi Caddy On-Demand TLS. |
-| **04** | [MANAJEMEN_TRANSAKSI_DAN_GATEWAY.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/MANAJEMEN_TRANSAKSI_DAN_GATEWAY.md) | **Invoice & Payment Mode**: Pengaturan terpusat `payment_mode` (`GATEWAY` vs `MANUAL`), tata kelola penagihan pesanan (PENDING, PAID, FAILED), modal inspeksi struk manual, dan konfigurasi gateway Midtrans (Core API QRIS, fallback Snap). |
-| **05** | [MANAJEMEN_TEMA_ADMIN.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/MANAJEMEN_TEMA_ADMIN.md) | **54 Tema Fisik, Sinkronisasi & Theme Builder**: Arsitektur *Single Source of Truth* tema HTML fisik (33 Wedding + 21 Non-Wedding), Theme Builder Admin (`/admin/theme-builder`), skrip `npm run themes:sync`, auto-compile demo `/public/demo/`, dan thumbnail ganda Mobile (400×800) & Desktop (1280×800). |
-| **05B** | [CLAUDE_HANDOVER_THEME_BUILDER.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/CLAUDE_HANDOVER_THEME_BUILDER.md) | **Laporan Serah Terima Theme Builder Unlimited 3.0**: RCA isolasi tema handcrafted (HTTP 409) vs builder (`from=<id>`), 11 properti mikro-tipografi & editorial blok, varian modular, dan otomasi ornamen 4 sudut/lintas-seksi. |
-| **06** | [PENGATURAN_SISTEM_BRANDING_DAN_DATABASE.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/PENGATURAN_SISTEM_BRANDING_DAN_DATABASE.md) | **Branding, R2 & Database**: Kustomisasi identitas platform, switch `serviceStatus` (Coming Soon / Open), sinkronisasi CORS Cloudflare R2 otomatis, batas upload media dinamis, dan connection pooling PostgreSQL. |
-| **07** | [CRON_DAN_MAINTENANCE_OTOMATIS.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/CRON_DAN_MAINTENANCE_OTOMATIS.md) | **Tugas Terjadwal & Snapshot**: Siklus pembersihan harian `/api/cron/cleanup`, daur ulang subdomain, retensi foto tamu, dan auto-backup database `/api/cron/backup`. |
-| **08** | [DEPLOYMENT_VPS_CADDY.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/DEPLOYMENT_VPS_CADDY.md) | **Infrastruktur Produksi**: Panduan komprehensif setup VPS Ubuntu dari nol, Swap 2 GB, Node.js 20, PostgreSQL, Caddy auto-SSL, PM2 cluster, dan skalabilitas multi-server shared storage NFS. |
-| **09** | [MANAJEMEN_FINANCE_DAN_PEMBUKUAN.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/MANAJEMEN_FINANCE_DAN_PEMBUKUAN.md) | **Finance & Kas Terpusat**: Continuous Editorial Canvas, 3 model grafik SVG 60 FPS (Dual Bar, Smooth Area, Net Flow Baseline Rp 0), buku kas keluar OPEX, audit-safe Tutup Buku bulanan, dan rekapitulasi PPh Final 0,5% siap SPT. |
-| **10** | [MANAJEMEN_MARKETING_DAN_AFILIASI.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/MANAJEMEN_MARKETING_DAN_AFILIASI.md) | **Marketing & Afiliasi**: Manajemen kupon diskon (persen/nominal), proteksi kasir 15 menit PromoHold, kemitraan referral B2B (WO/Vendor), komisi otomatis, dan integrasi pencairan komisi ke buku kas keuangan. |
-| **11** | [AGENT_HERMES_VPS_MONITORING.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/AGENT_HERMES_VPS_MONITORING.md) | **Sentinel Monitoring & Watchdog**: Mandat otonom Agent Hermes, 5 pos pengawasan kritis (PM2 liveness, PostgreSQL latency, Caddy/Cloudflare, resource disk/RAM, dan verifikasi backup harian 03:00). |
+| **01** | [DASHBOARD_OVERVIEW_DAN_STATISTIK.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/DASHBOARD_OVERVIEW_DAN_STATISTIK.md) | **Overview & Analytics**: 4 metrik bisnis utama, distribusi paket, ranking tema populer, dan transaksi terkini. |
+| **02** | [REMOTE_DAN_MANAJEMEN_KLIEN.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/REMOTE_DAN_MANAJEMEN_KLIEN.md) | **Remote Session & Klien**: *Cookie-Based Workspace Override* (`lux_remote_client_id`), impersonasi via Server Action + `proxy.ts`, banner remote, dan siklus hidup akun. |
+| **03** | [MANAJEMEN_UNDANGAN_DAN_DOMAIN.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/MANAJEMEN_UNDANGAN_DAN_DOMAIN.md) | **Undangan & Custom Domain**: Monitoring 5 status undangan, kontrol masa aktif galeri, buka kunci darurat, dan Caddy On-Demand TLS. |
+| **04** | [MANAJEMEN_TRANSAKSI_DAN_GATEWAY.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/MANAJEMEN_TRANSAKSI_DAN_GATEWAY.md) | **Invoice & Payment Mode**: Pengaturan `payment_mode` (`GATEWAY` vs `MANUAL`), verifikasi transfer manual, dan gateway tunggal Midtrans. |
+| **05** | [MANAJEMEN_TEMA_ADMIN.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/MANAJEMEN_TEMA_ADMIN.md) | **81 Tema Fisik, Sync & Theme Builder**: Arsitektur 3 mode (`wedding`, `personal`, `event`), Theme Builder Unlimited 3.0, Editor Master, Varian Tema, `npm run themes:sync`, dan thumbnail ganda. |
+| **06** | [PENGATURAN_SISTEM_BRANDING_DAN_DATABASE.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/PENGATURAN_SISTEM_BRANDING_DAN_DATABASE.md) | **Branding, R2, SMTP & Database**: White-label, `serviceStatus`, SMTP & uji kirim, CORS Cloudflare R2, purge cache, dan backup/restore PostgreSQL. |
+| **07** | [CRON_DAN_MAINTENANCE_OTOMATIS.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/CRON_DAN_MAINTENANCE_OTOMATIS.md) | **Tugas Terjadwal & Snapshot**: `/api/cron/cleanup` (retensi, daur ulang subdomain, purge Free Draft >14 hari) dan `/api/cron/backup`. |
+| **08** | [DEPLOYMENT_VPS_CADDY.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/DEPLOYMENT_VPS_CADDY.md) | **Infrastruktur Produksi**: Setup VPS Ubuntu dari nol, PostgreSQL, Caddy auto-SSL, PM2 cluster, `.env` tanpa Google OAuth, dan `./deploy.sh`. |
+| **09** | [MANAJEMEN_FINANCE_DAN_PEMBUKUAN.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/MANAJEMEN_FINANCE_DAN_PEMBUKUAN.md) | **Finance & Kas Terpusat**: Grafik arus kas SVG, buku kas keluar OPEX, Tutup Buku bulanan, dan rekapitulasi PPh Final 0,5%. |
+| **10** | [MANAJEMEN_MARKETING_DAN_AFILIASI.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/MANAJEMEN_MARKETING_DAN_AFILIASI.md) | **Marketing, Kupon & Portal Mitra**: Kupon diskon, `PromoHold` 15 menit, kemitraan referral + Portal Mitra (`/partner`), komisi otomatis, dan payout ke kas keuangan. |
+| **11** | [AGENT_HERMES_VPS_MONITORING.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/AGENT_HERMES_VPS_MONITORING.md) | **Sentinel Monitoring & Watchdog**: 5 pos pengawasan PM2, PostgreSQL, Caddy/Cloudflare, disk/RAM, dan verifikasi backup harian. |
 
 ---
 
 ## 3. Dokumentasi Sisi Publik & Tamu Undangan (`docs/public/`)
 
-Dokumentasi ini menjelaskan pengalaman pengunjung, arsitektur penyajian tema, interaksi tamu, serta portal resepsionis di venue acara.
-
 | Fitur | Dokumen Spesifikasi | Ruang Lingkup & Deskripsi |
 |:---:|---|---|
-| **01** | [01_ARSITEKTUR_RENDERING_TEMA_DAN_ROUTING.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/public/01_ARSITEKTUR_RENDERING_TEMA_DAN_ROUTING.md) | **Engine Rendering & URL Router**: Resolusi URL multi-domain (Custom Domain, Subdomain `/s/[subdomain]`, Slug `/[slug]`), compiler token template fisik, dynamic CSS palette, 5 Pilar Strict Subdomain Isolation Guard di `middleware.ts`, dan Open Graph meta. |
-| **02** | [02_PENGALAMAN_TAMU_UNDANGAN.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/public/02_PENGALAMAN_TAMU_UNDANGAN.md) | **Guest Journey**: Alur pembukaan sampul *cover gate*, kepatuhan kebijakan Web Audio autoplay, live countdown timer, agenda acara, dan navigasi Google Maps/Waze. |
-| **03** | [03_SISTEM_RSVP_DAN_BUKU_UCAPAN.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/public/03_SISTEM_RSVP_DAN_BUKU_UCAPAN.md) | **RSVP & Buku Doa**: Formulir kehadiran publik `/api/public/rsvp`, auto-fill nama dari `?to=...`, rate limit anti-spam IP, feed ucapan real-time, dan lencana balasan pengantin. |
-| **04** | [04_AMPLOP_DIGITAL_DAN_HADIAH_PERNIKAHAN.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/public/04_AMPLOP_DIGITAL_DAN_HADIAH_PERNIKAHAN.md) | **Tanda Kasih Cashless & Dynamic Tabs**: Kartu rekening bank & e-wallet dengan tombol salin 1-klik, display & unduh QRIS statis (`public/uploads/invitations/[id]/qris.webp`), dan aturan penayangan tab cerdas. |
-| **05** | [05_SISTEM_RESEPSIONIS_DAN_CHECKIN_QR.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/public/05_SISTEM_RESEPSIONIS_DAN_CHECKIN_QR.md) | **Portal Meja Resepsionis**: Portal `/s/[subdomain]/receptionist`, kunci 4-digit Staff PIN, scanner kamera QR Code HTML5, verifikasi meja & kuota, serta pencatatan souvenir. |
-| **06** | [06_LIVE_MOMENT_DAN_CLOUD_MEMORIES.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/public/06_LIVE_MOMENT_DAN_CLOUD_MEMORIES.md) | **Live Moments & Disposable Camera**: Layar pembuka ramah tamu 3 tata letak, kamera saku retro dengan lampu kilat & 5 filter analog, pembatas kuota multi-sesi, standing banner 300 DPI, dan galeri kenangan real-time via SSE. |
+| **01** | [01_ARSITEKTUR_RENDERING_TEMA_DAN_ROUTING.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/public/01_ARSITEKTUR_RENDERING_TEMA_DAN_ROUTING.md) | **Engine Rendering & URL Router**: Resolusi multi-domain (`proxy.ts`), compiler token 3 mode, Strict Subdomain Isolation Guard, dan Open Graph meta. |
+| **02** | [02_PENGALAMAN_TAMU_UNDANGAN.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/public/02_PENGALAMAN_TAMU_UNDANGAN.md) | **Guest Journey**: Cover gate, Web Audio autoplay policy, countdown, kalender Google/`.ics`, dan peta navigasi. |
+| **03** | [03_SISTEM_RSVP_DAN_BUKU_UCAPAN.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/public/03_SISTEM_RSVP_DAN_BUKU_UCAPAN.md) | **RSVP & Buku Doa**: `/api/public/rsvp`, auto-fill `?to=...`, rate limit, cookie anti-timpa `lux_rsvp_*`, dan balasan tuan rumah. |
+| **04** | [04_AMPLOP_DIGITAL_DAN_HADIAH_PERNIKAHAN.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/public/04_AMPLOP_DIGITAL_DAN_HADIAH_PERNIKAHAN.md) | **Tanda Kasih & Gift Registry**: Kartu rekening/e-wallet salin 1-klik, QRIS statis, dan klaim kado fisik anti-duplikasi. |
+| **05** | [05_SISTEM_RESEPSIONIS_DAN_CHECKIN_QR.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/public/05_SISTEM_RESEPSIONIS_DAN_CHECKIN_QR.md) | **Portal Meja Resepsionis & Layar Sapa TV**: `/receptionist`, `/welcome` (SSE `LISTEN/NOTIFY`), PIN panitia, scanner QR, dan souvenir. |
+| **06** | [06_LIVE_MOMENT_DAN_CLOUD_MEMORIES.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/public/06_LIVE_MOMENT_DAN_CLOUD_MEMORIES.md) | **Live Moments & Disposable Camera**: Kamera retro `/sharemoment` (5 filter, date stamp lintas zona waktu), galeri real-time `/memories` (SSE), dan standing banner 300 DPI. |
 
 ---
 
 ## 4. Dokumentasi Engineering, Database & Keamanan (`docs/`)
 
-Dokumentasi tingkat dalam untuk developer, arsitek sistem, dan tim teknis:
-
 | Modul | Dokumen Spesifikasi | Ruang Lingkup & Deskripsi |
 |:---:|---|---|
-| **DB** | [DATABASE_SCHEMA_DAN_RELASI.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/DATABASE_SCHEMA_DAN_RELASI.md) | **Kamus Data & Skema PostgreSQL**: Diagram ERD lengkap, 16 model Prisma (termasuk `ThemeBuilderRevision`), enum `EventType` (6 nilai), enum `MediaSlot` (9 nilai), kolom `participantsJson`, cascading keys, indeks, dan state machine status. |
-| **API** | [API_REFERENCE.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/API_REFERENCE.md) | **Katalog API Lengkap**: Referensi seluruh 50+ rute REST API (termasuk modul Theme Builder), SSE real-time stream, kasir payment gateway, dan webhook handlers. |
-| **Theme** | [PANDUAN_PEMBUATAN_TEMA_BARU.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/PANDUAN_PEMBUATAN_TEMA_BARU.md) | **Theme Developer Guide**: Standar arsitektur HTML 14 seksi, kamus token `{{token}}`, CSS variables, standar audio autoplay, registrasi tema, validasi eventType, dan integrasi Theme Builder. |
-| **Engine Test** | [PENGUJIAN_THEME_ENGINE.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/PENGUJIAN_THEME_ENGINE.md) | **Matriks Pengujian Mesin Tema**: Cakupan pengujian master tema, varian, live edit, dan kontrak audit engine. |
-| **R2 & CDN** | [CLOUDFLARE_R2_DAN_CDN_SETUP.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/CLOUDFLARE_R2_DAN_CDN_SETUP.md) | **Object Storage, CDN & Purge**: Setup bucket Cloudflare R2, domain CDN, sinkronisasi CORS otomatis, lifecycle rules, serta konfigurasi 1-klik Purge Edge Cache API via token. |
-| **Sec** | [SECURITY_DAN_PROTEKSI_DATA.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/SECURITY_DAN_PROTEKSI_DATA.md) | **Arsitektur Keamanan**: Defense-in-depth, enkripsi AES-256-GCM PIN panitia, validasi magic bytes file biner, in-memory rate limiting anti-DDoS, dan audit logging. |
+| **DB** | [DATABASE_SCHEMA_DAN_RELASI.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/DATABASE_SCHEMA_DAN_RELASI.md) | **Kamus Data & Skema PostgreSQL**: ERD, 28 model Prisma, 17 enum (`EventType` 3 nilai, `MediaSlot` 11 nilai), relasi & state machine. |
+| **API** | [API_REFERENCE.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/API_REFERENCE.md) | **Katalog API Lengkap**: Referensi 129 rute REST/SSE/Webhook (Auth OTP, Publik, Resepsionis, Klien, Mitra, Pembayaran, Admin, Cron). |
+| **Theme** | [PANDUAN_PEMBUATAN_TEMA_BARU.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/PANDUAN_PEMBUATAN_TEMA_BARU.md) | **Theme Developer Guide**: Struktur 3 mode (`wedding`, `personal`, `event`), kamus token `{{token}}`, `:root` tokenisasi CSS, dan registrasi tema. |
+| **Engine Test** | [PENGUJIAN_THEME_ENGINE.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/PENGUJIAN_THEME_ENGINE.md) | **Matriks Pengujian Mesin Tema**: Cakupan pengujian 81 master tema, 3 mode, live edit, dan kontrak audit engine. |
+| **Go-Live** | [GO_LIVE_TEST_MATRIX.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/GO_LIVE_TEST_MATRIX.md) | **Matriks Uji Produksi**: Status verifikasi alur E2E produksi (termasuk SMTP, Midtrans Sandbox, WebRTC, R2, subdomain, & auth tanpa OAuth). |
+| **R2 & CDN** | [CLOUDFLARE_R2_DAN_CDN_SETUP.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/CLOUDFLARE_R2_DAN_CDN_SETUP.md) | **Object Storage, CDN & Purge**: Bucket publik & privat R2, domain CDN, auto-CORS, dan Purge Edge Cache API. |
+| **Sec** | [SECURITY_DAN_PROTEKSI_DATA.md](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/SECURITY_DAN_PROTEKSI_DATA.md) | **Arsitektur Keamanan**: CSP nonce, AES-256-GCM PIN panitia, validasi magic bytes, rate limiting, dan audit log. |
 
 ---
 
-## 5. Dokumen Master Proyek
+## 5. 3 Dokumen Master (Wajib Sinkron Sebelum Push)
 
-Seluruh dokumen master arsitektur dan spesifikasi teknis kini terpusat di dalam folder `docs/`:
-1. [`SYSTEM_ARCHITECTURE.md`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/SYSTEM_ARCHITECTURE.md) — Arsitektur sistem menyeluruh, diagram alur, skema database, dan API Route Map lengkap (v6.4.0).
-2. [`README.md`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/README.md) — Panduan repositori, pohon direktori, instalasi, deployment, dan lingkungan env (Root).
-3. [`S-Invitation.md`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/S-Invitation.md) — Filosofi bisnis, spesifikasi tema fisik, dan aturan integritas platform.
-4. [`CLAUDE_HANDOVER_THEME_BUILDER.md`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/CLAUDE_HANDOVER_THEME_BUILDER.md) — Laporan teknis serah terima komprehensif Theme Builder Unlimited 3.0 & audit perbaikan sistem.
+1. [`docs/SYSTEM_ARCHITECTURE.md`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/SYSTEM_ARCHITECTURE.md) — Arsitektur sistem menyeluruh, routing `proxy.ts`, autentikasi, skema, dan riwayat rilis terbaru (v7.1.0).
+2. [`README.md`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/README.md) — Panduan repositori, alur B2C, instalasi, deployment, dan `.env`.
+3. [`docs/S-Invitation.md`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/S-Invitation.md) — Filosofi bisnis, spesifikasi fitur, dan aturan integritas platform.
+4. *(Arsip historis)* [`docs/archive/`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/docs/archive) — Laporan audit lama, handover Theme Builder 9 Nov, dan arsip changelog historis (hanya untuk referensi sejarah).
 

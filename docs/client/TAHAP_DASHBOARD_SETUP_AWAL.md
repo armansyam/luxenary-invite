@@ -11,12 +11,12 @@ Dokumen ini memuat spesifikasi teknis dan alur faktual sistem pada tahap **Dashb
    ```
    /dashboard/setup?order={orderId}&plan={planType}
    ```
-2. **Setup Bertahap 4 Langkah Adaptif Multi-Event:** Wizard hanya memudahkan pengisian data awal. Satu-satunya isian yang wajib adalah jenis acara; seluruh isian lain boleh dikosongkan dan dilengkapi di Studio Editor. Syarat kelengkapan untuk rilis ada di akhir alur, pada audit pra-rilis di tab Pengaturan (`/dashboard/settings`).
-   - **Langkah 0 (wajib):** Pemilihan Jenis Acara (`eventType`: Wedding, Birthday, Khitan, Aqiqah, Wisuda, Gathering). Tidak ada kartu yang terpilih di awal dan tombol lanjut nonaktif sampai klien memilih satu. Jenis acara tidak dapat diubah setelah undangan dibuat (rute `PUT /api/client/invitations/{id}` tidak menerima `eventType`, dan tema dikunci per jenis acara).
-   - **Langkah 1 (boleh kosong):** Identitas Penyelenggara / Pasangan (formulir adaptif sesuai jenis acara).
+2. **Setup Bertahap 4 Langkah Adaptif 3 Mode Acara:** Wizard hanya memudahkan pengisian data awal. Satu-satunya isian yang wajib adalah mode acara; seluruh isian lain boleh dikosongkan dan dilengkapi di Studio Editor. Syarat kelengkapan untuk rilis ada di akhir alur, pada audit pra-rilis di tab Pengaturan (`/dashboard/settings`).
+   - **Langkah 0 (wajib):** Pemilihan **3 Mode Acara Abadi** (`eventType`: `WEDDING` Pernikahan, `PERSONAL` Personal & Keluarga, `EVENT` Acara & Event Umum) beserta **Sub-Acara Dinamis** (`subEvent`, preset populer atau tulis sendiri seperti *Ulang Tahun*, *Khitanan*, *Aqiqah*, *Wisuda*, *Tamatan Ngaji*, *Corporate*, *Grand Opening*). Selama undangan masih berstatus `DRAFT`, mode dapat diubah eksplisit di Studio via aksi `CHANGE_INVITATION_MODE`; pasca `PUBLISHED`, mode terkunci permanen (`403 EVENT_TYPE_LOCKED`).
+   - **Langkah 1 (boleh kosong):** Identitas Penyelenggara / Pasangan / Tokoh (formulir adaptif 3 mode).
    - **Langkah 2 (boleh kosong):** Hari Bahagia & Wilayah Utama (tanggal, kota, zona waktu otomatis WIB/WITA/WIT, dan waktu sesi terstruktur).
-   - **Langkah 3 (boleh kosong):** Pemilihan Desain Tema Perdana, difilter sesuai jenis acara terpilih.
-3. **Tema Bawaan per Jenis Acara:** `themes` adalah FK wajib pada `invitations.themeId`, sehingga nilai kosong tidak dapat disimpan. Bila klien tidak memilih tema, `POST /api/client/invitations/create` memakai tema bawaan jenis acara (`kalandra`, `kalandra-birthday`, `al-fariz`, `al-khalid`, `cendekia`, `sinergi`). Tema dapat diganti di Studio Editor selama undangan masih `DRAFT`.
+   - **Langkah 3 (boleh kosong):** Pemilihan Desain Tema Perdana, difilter ketat pada mode terpilih (`isThemeInMode`).
+3. **Tema Bawaan per Mode Acara:** `themes` adalah FK wajib pada `invitations.themeId`, sehingga nilai kosong tidak dapat disimpan. Bila klien tidak memilih tema, `POST /api/client/invitations/create` memakai tema bawaan mode (`DEFAULT_THEME_BY_EVENT`: `WEDDING: "kalandra"`, `PERSONAL: "festivo"`, `EVENT: "sinergi"`). Tema dapat diganti di Studio Editor selama undangan masih `DRAFT`.
 4. **Penegakan di Server:** `POST /api/client/invitations/create` menjawab HTTP 400 ("Jenis acara wajib dipilih.") bila `eventType` kosong atau tidak sah; tidak ada lagi bawaan diam-diam ke `WEDDING`. Tombol "Lewati Setup" sudah dihapus karena membuat undangan dari nol tanpa membawa jenis acara yang dipilih.
 5. **Isian Kosong Tidak Menyuntikkan Data Palsu:** Nama kosong menghasilkan `groomName`/`brideName` kosong dan slug kanonikal `undangan-{randomId}`; tanggal kosong berarti kartu acara awal (Akad/Resepsi) tidak dibuat; `eventData` tetap kosong. Kelengkapan ditegakkan oleh audit pra-rilis di `/dashboard/settings` (antara lain subdomain, tema, empat visual sampul, profil utama, foto profil, tanggal acara, lokasi, PIN petugas bila paket mendukung, dan galeri bila aktif; daftar lengkapnya adalah `AUDIT_RULES` di `app/(client)/dashboard/settings/page.tsx`). Slug kanonikal tidak ikut berubah saat nama diisi kemudian, sehingga klien yang mengosongkan nama tetap memiliki jalur kanonikal acak. Untuk pernikahan, subdomain turunan nama (`{pria}-{wanita}`) terisi otomatis saat kedua nama dilengkapi dan subdomain belum diatur.
 6. **Anti Kehilangan Data (Local Storage Persistence):** Form otomatis menyimpan draft input setiap kali ada ketikan ke `localStorage` (`luxenary_setup_draft`). Jika browser tertutup, baterai habis, atau halaman ter-refresh, seluruh ketikan klien langsung pulih seketika. Draft dibersihkan saat submit selesai.
@@ -39,7 +39,7 @@ flowchart TD
     
     H --> I0[LANGKAH 0: Pilihan Jenis Acara - Wajib]
     I0 -->|Belum memilih| I0X[Tombol Lanjut Nonaktif]
-    I0 -->|Pilih Acara| I0A[Wedding / Birthday / Khitan / Aqiqah / Wisuda / Gathering]
+    I0 -->|Pilih Mode & Sub-Acara| I0A[WEDDING / PERSONAL / EVENT + subEvent Dinamis]
     
     I0A --> I[LANGKAH 1: Profil Penyelenggara / Persona Adaptif - Boleh Kosong]
     I -->|Wedding| I1[Nama Panggilan & Lengkap Pria & Wanita]
@@ -76,31 +76,27 @@ flowchart TD
 
 ### LANGKAH 0: Pilihan Jenis Acara (Event Type Selector)
 * **Komponen:** [`app/(client)/dashboard/setup/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/(client)/dashboard/setup/page.tsx) (`step === 0`)
-* **Tujuan:** Menentukan kategori acara digital yang akan dibuat:
+* **Tujuan:** Menentukan 3 mode kategori acara digital abadi beserta label `subEvent` dinamis:
   - `WEDDING` (Pernikahan / Walimatul 'Urs)
-  - `BIRTHDAY` (Ulang Tahun / Sweet Seventeen / Milad)
-  - `KHITAN` (Khitanan / Walimatul Khitan)
-  - `AQIQAH` (Aqiqah / Tasyakuran Kelahiran)
-  - `WISUDA` (Wisuda / Graduation / Yudisium)
-  - `GATHERING` (Reuni / Halal Bihalal / Corporate Gathering)
+  - `PERSONAL` (Personal & Keluarga: Ulang Tahun, Khitanan, Aqiqah, Wisuda, Syukuran, Tamatan Ngaji, atau tulis sendiri)
+  - `EVENT` (Acara & Event Umum: Corporate, Seminar, Reuni, Grand Opening, Gathering, atau tulis sendiri)
 * **Wajib dipilih:** `eventType` kosong sejak awal; tombol lanjut nonaktif sampai satu kartu diklik. Server menolak pembuatan undangan tanpa `eventType` sah (HTTP 400).
-* **Dampak Sistem:** Mengubah skema input pada Langkah 1, format slug kanonikal, serta memfilter tema di Langkah 3. Tidak dapat diubah setelah undangan dibuat.
+* **Dampak Sistem:** Mengubah skema input pada Langkah 1, format slug kanonikal, serta memfilter katalog tema secara eksklusif di Langkah 3 (`isThemeInMode`). Dapat diganti selama status masih `DRAFT` lewat aksi `CHANGE_INVITATION_MODE` di Studio; terkunci permanen setelah `PUBLISHED`.
 
 ---
 
-### LANGKAH 1: Identitas Penyelenggara / Pasangan (Adaptif)
+### LANGKAH 1: Identitas Penyelenggara / Pasangan / Tokoh (Adaptif 3 Mode)
 * **Komponen:** [`app/(client)/dashboard/setup/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/(client)/dashboard/setup/page.tsx) (`step === 1`)
-* **Tujuan:** Menangkap profil utama penyelenggara/tokoh sesuai jenis acara.
+* **Tujuan:** Menangkap profil utama penyelenggara/tokoh sesuai mode acara.
 * **Elemen Formulir:**
-  1. **Wedding:**
+  1. **`WEDDING`:**
      - `groomNickname` & `brideNickname` (*Boleh kosong*): Nama panggilan mempelai.
      - `groomName` & `brideName` (*Boleh kosong*): Nama lengkap & gelar kedua mempelai.
-  2. **Non-Wedding (Birthday, Khitan, Aqiqah, Wisuda, Gathering):**
-     - `personName` / `eventTitle` (*Boleh kosong*): Nama tokoh utama atau nama agenda acara.
-     - `personNickname` / `eventSubtitle` (*Opsional*): Panggilan atau tema pendukung.
-     - `fatherName` & `motherName` (*Opsional*): Nama orang tua (khusus Khitan & Aqiqah).
-     - `degree`, `major`, `institution` (*Opsional*): Gelar dan almamater (khusus Wisuda).
-     - `organizer` (*Opsional*): Nama lembaga/panitia (khusus Gathering).
+  2. **`PERSONAL` (Personal & Keluarga):**
+     - `personName` & `personNickname` (*Boleh kosong*): Nama lengkap & panggilan tokoh utama.
+     - `fatherName`, `motherName`, `personAge`, `degree`, `major`, `institution` (*Opsional*): Menyesuaikan sub-acara (ulang tahun, khitan, aqiqah, wisuda, syukuran, dll.).
+  3. **`EVENT` (Acara & Event Umum):**
+     - `eventTitle`, `eventSubtitle`, & `organizer` (*Boleh kosong*): Judul acara, tema/sub-judul, dan nama lembaga/komunitas penyelenggara (murni non-personal).
 
 ---
 
@@ -160,7 +156,7 @@ Tema yang dipakai undangan tidak dapat dihapus (`DELETE /api/admin/themes` menja
 
 | Komponen Input | Kolom Tabel `Invitation` | Tipe Data | Perilaku Saat Diisi Lengkap | Perilaku Saat Dikosongkan |
 | :--- | :--- | :--- | :--- | :--- |
-| **Jenis Acara** | `eventType` | `EventType` (Enum) | `WEDDING`, `BIRTHDAY`, `KHITAN`, `AQIQAH`, `WISUDA`, `GATHERING` | Tidak boleh kosong: HTTP 400 |
+| **Mode Acara** | `eventType` | `EventType` (Enum) | `WEDDING`, `PERSONAL`, `EVENT` (+ kolom `subEvent` dinamis) | Tidak boleh kosong: HTTP 400 |
 | **Nama Panggilan Pria / Tokoh** | `groomNickname` | `String?` | Input klien (contoh: `Arman`) | `""` |
 | **Nama Panggilan Wanita** | `brideNickname` | `String?` | Input klien (contoh: `Siti`) | `""` |
 | **Data Persona Non-Wedding** | `participantsJson` | `String? (JSON)` | Disimpan JSON persona (usia, ortu, gelar, dll) | JSON dengan nama kosong (acara non-pernikahan) |

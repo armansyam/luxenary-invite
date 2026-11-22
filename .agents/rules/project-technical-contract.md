@@ -5,32 +5,38 @@ trigger: always_on
 # Luxenary-Invite: Kontrak Teknikal Proyek
 
 ## Stack Teknologi
-- **Framework:** Next.js (App Router) — baca `node_modules/next/dist/docs/` sebelum menulis kode baru
-- **Database:** PostgreSQL via Prisma ORM (`prisma/schema.prisma`)
-- **Auth:** NextAuth.js (`auth.ts`)
-- **Storage:** Hybrid — Local (`public/uploads/`) untuk DRAFT, R2/S3 untuk PUBLISHED
-- **CSS:** Vanilla CSS di `app/landing.css` — jangan pakai Tailwind kecuali diminta eksplisit
+- **Framework:** Next.js 16.4.6 (App Router, request proxy di `proxy.ts` — BUKAN `middleware.ts`) — baca `node_modules/next/dist/docs/` sebelum menulis kode baru
+- **Database:** PostgreSQL via Prisma ORM 7 (`prisma/schema.prisma`, 28 model, 17 enum, adapter `@prisma/adapter-pg`)
+- **Auth:** NextAuth.js v5 (`auth.ts`) — Klien: Email + Kata Sandi (`bcrypt`) + OTP 6-digit SMTP (`/api/auth/register`, `/api/auth/reset-password`); Admin: Credentials (`/admin/login`); Mitra: Email + Kata Sandi + OTP (`/partner`). Google OAuth & `lib/auth.ts` sudah dihapus total.
+- **Storage:** Hybrid — Local (`public/uploads/`) untuk DRAFT, Cloudflare R2/S3 untuk PUBLISHED
+- **CSS:** Vanilla CSS di `app/landing.css` (landing) & Tailwind CSS v4 (dashboard/admin)
 
 ## Arsitektur Kritis yang Wajib Dipahami
 
+### 3 Mode Acara Abadi & Katalog Tema (81 Master Fisik)
+- Enum `EventType` memiliki tepat **3 nilai abadi**: `WEDDING`, `PERSONAL`, `EVENT` (dilengkapi `subEvent` dinamis bebas/preset).
+- Direktori master: `themes/<mode>/<gaya>/<id>.html` (`34` `wedding`, `37` `personal`, `10` `event` = 81 master; 3 blueprint di `themes/_blueprints/{wedding,personal,event}/`). Pemetaan folder hanya lewat `lib/themePaths.ts`.
+- Isolasi tema ketat per mode (`isThemeInMode`); pergantian mode saat `DRAFT` hanya via aksi `CHANGE_INVITATION_MODE`.
+
 ### Sistem Undangan (Invitation Lifecycle)
 ```
-DRAFT → PUBLISHED → EVENT_FINISHED → ARCHIVED → (delete user)
+DRAFT (atau Free Draft 14 hari) → PUBLISHED → EVENT_FINISHED → ARCHIVED → (delete user)
 ```
-- File fisik media disimpan di `public/uploads/invitations/<invId>/`
-- Published HTML di `public/published/ids/<invId>.html`
-- Draft HTML di `data/drafts/<invId>.html`
+- File fisik media disimpan di `public/uploads/invitations/<invId>/` (draft) atau R2 (published)
+- Published HTML di `public/published/ids/<invId>.html` (serta salinan R2 bila aktif)
+- Piring draf undangan disimpan di tabel DB `invitation_drafts` (menggantikan berkas legacy `data/drafts/<invId>.html`)
 - Portfolio adalah **full static clone** ke `public/portfolio/assets/<slug>/` — BUKAN pointer ke uploads asli
 
 ### Prisma & Enum
-- Enum `MediaSlot` sekarang punya 9 nilai termasuk `LANDING_COVER_DESKTOP`
-- Setiap tambah enum baru: update schema → buat migration SQL → update semua VALID_ENUM_SLOTS di route
+- Enum `EventType`: 3 nilai (`WEDDING`, `PERSONAL`, `EVENT`)
+- Enum `MediaSlot`: 11 nilai (`LANDING_COVER`, `LANDING_COVER_DESKTOP`, `HOME_PHOTO`, `DESKTOP_SIDEBAR`, `GLOBAL_FIXED_BG`, `GROOM_PHOTO`, `BRIDE_PHOTO`, `PROFILE_PHOTO`, `EVENT_PHOTO`, `GALLERY`, `CLOSING_COVER`)
+- Setiap tambah enum baru: update schema → buat migration SQL expand-only → update semua VALID_ENUM_SLOTS di route
 
 ### File Cleanup Invariant (WAJIB)
-Saat menghapus Invitation (apapun pemicunya: admin delete user, cron, lifecycle), WAJIB jalankan ketiga ini secara berurutan:
-1. `deletePublishedHtml(inv.id)` → hapus `public/published/ids/<id>.html`
-2. Hapus `data/drafts/<id>.html` jika ada
-3. Hapus `public/uploads/invitations/<id>/` secara rekursif (`fs.rm(..., { recursive: true })`)
+Saat menghapus Invitation (apapun pemicunya: admin delete user, cron, lifecycle), WAJIB jalankan urutan pembersihan berikut:
+1. `deletePublishedHtml(inv.id)` → hapus `public/published/ids/<id>.html` (+ objek R2)
+2. Hapus piring draf (`invitation_drafts` di DB via CASCADE & sisa legacy `data/drafts/<id>.html` jika ada)
+3. Hapus `public/uploads/invitations/<id>/` secara rekursif (`fs.rm(..., { recursive: true })`) & objek media R2 terkait
 
 **Portfolio tidak terpengaruh** — ia sudah menyalin aset ke folder sendiri.
 

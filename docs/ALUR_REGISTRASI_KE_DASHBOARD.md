@@ -1,16 +1,16 @@
 # DOKUMENTASI LENGKAP: ALUR REGISTRASI HINGGA MASUK DASHBOARD
 
-Dokumen ini membedah arsitektur faktual dari seluruh perjalanan pengguna (User Journey) sejak pertama kali menginjakkan kaki di sistem, login via Google OAuth, pemilihan paket, checkout multi-gateway, wizard setup awal, hingga mendarat di Dashboard Klien dan Studio Editor Undangan.
+Dokumen ini membedah arsitektur faktual dari seluruh perjalanan pengguna (User Journey) sejak pertama kali menginjakkan kaki di sistem, pendaftaran/masuk via **Email + Kata Sandi + OTP 6-digit SMTP** (tanpa Google OAuth), Free Draft atau pemilihan paket, checkout, wizard setup awal 3 mode, hingga mendarat di Dashboard Klien dan Studio Editor Undangan.
 
 ---
 
 ## DAFTAR ISI
 1. [Diagram Alur End-to-End](#1-diagram-alur-end-to-end)
-2. [Fase 1: Autentikasi & Registrasi Otomatis (Google OAuth)](#fase-1-autentikasi--registrasi-otomatis-google-oauth)
+2. [Fase 1: Autentikasi & Registrasi (Email + Kata Sandi + OTP 6-Digit SMTP)](#fase-1-autentikasi--registrasi-email--kata-sandi--otp-6-digit-smtp)
 3. [Fase 2: Dispatcher Status Klien (Onboarding Hub)](#fase-2-dispatcher-status-klien-onboarding-hub)
 4. [Fase 3: Katalog & Pemilihan Paket Layanan](#fase-3-katalog--pemilihan-paket-layanan)
-5. [Fase 4: Checkout & Kasir Pembayaran Multi-Gateway](#fase-4-checkout--kasir-pembayaran-multi-gateway)
-6. [Fase 5: Wizard Penyiapan Undangan Awal (Setup Wizard)](#fase-5-wizard-penyiapan-undangan-awal-setup-wizard)
+5. [Fase 4: Checkout & Kasir Pembayaran](#fase-4-checkout--kasir-pembayaran-kontrol-penuh-admin)
+6. [Fase 5: Wizard Penyiapan Undangan Awal (Setup Wizard 3 Mode)](#fase-5-wizard-penyiapan-undangan-awal-setup-wizard-3-mode)
 7. [Fase 6: Masuk ke Dashboard Utama & Studio Editor](#fase-6-masuk-ke-dashboard-utama--studio-editor)
 8. [Matriks Path Kode & File Terkait](#matriks-path-kode--file-terkait)
 9. [Skema Basis Data (Prisma Models)](#skema-basis-data-prisma-models)
@@ -22,23 +22,26 @@ Dokumen ini membedah arsitektur faktual dari seluruh perjalanan pengguna (User J
 ```mermaid
 flowchart TD
     A[Pengunjung Baru / Login] --> B[app/login/page.tsx]
-    B -->|NextAuth Google OAuth| C[auth.ts & auth.config.ts]
-    C -->|Simpan User di DB| D[prisma.user.upsert]
-    D -->|Redirect| E[app/onboarding/page.tsx]
+    B -->|Daftar: OTP 6 Digit SMTP| R[POST /api/auth/otp/request & /api/auth/register]
+    B -->|Masuk: Email + Kata Sandi| C[auth.ts: Credentials CLIENT_PASSWORD]
+    R --> C
+    C -->|Sesi JWT Aktif| E[app/onboarding/page.tsx]
     
     E -->|GET /api/client/onboarding-state| F{Periksa Kondisi Akun}
     
-    F -->|Sudah Punya Undangan| G[app/client/dashboard/page.tsx]
+    F -->|Sudah Punya Undangan / Free Draft| G[app/client/dashboard/page.tsx]
     F -->|Belum Punya Order| H[app/packages/page.tsx]
     F -->|Order PENDING| I[app/checkout/page.tsx?order=ID]
     F -->|Order PAID tapi Belum Setup| J[app/client/dashboard/setup/page.tsx]
     
     H -->|Pilih Paket| K[app/checkout/page.tsx?plan=PLAN]
+    H -->|Coba Draf Gratis 14 Hari| FD[POST /api/client/invitations/free-draft]
+    FD --> P
     K -->|POST /api/orders/create| L[Invoice Dibuat: INV-...]
     L -->|Bayar QRIS / Transfer Bank| M[Webhook Gateway / Verifikasi Admin]
     M -->|Status Berubah Menjadi PAID| J
     
-    J -->|Wizard 4 Langkah Multi-Event + Local Draft| N[POST /api/client/invitations/create]
+    J -->|Wizard 4 Langkah 3 Mode + Local Draft| N[POST /api/client/invitations/create]
     N -->|Generate Canonical Slug + Event Context| O[Database: Record Invitation DRAFT]
     O -->|Redirect Langsung| P[app/client/dashboard/invitation/ID/page.tsx]
     P -->|Split Editor & Live Preview| Q[Selesai: Siap Desain & Sebar]
@@ -46,26 +49,22 @@ flowchart TD
 
 ---
 
-## Fase 1: Autentikasi & Registrasi Otomatis (Google OAuth)
+## Fase 1: Autentikasi & Registrasi (Email + Kata Sandi + OTP 6-Digit SMTP)
 
 ### 1. Titik Masuk UI
 *   **File:** [`app/login/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/login/page.tsx)
-*   **Mekanisme:** Tidak ada form manual username/password untuk klien. Akses menggunakan tombol tunggal Google Sign-In yang memanggil fungsi bawaan NextAuth:
-    ```typescript
-    await signIn("google", { callbackUrl: "/onboarding" });
-    ```
+*   **Mekanisme (100% Bebas Google OAuth):**
+    - **Tab Masuk:** Input Email + Kata Sandi memanggil `signIn("credentials", { portal: "CLIENT_PASSWORD", email, password, redirect: false })`.
+    - **Tab Daftar Akun:** Input Nama, Email, Kata Sandi, Konfirmasi → `POST /api/auth/otp/request` (`purpose: "CLIENT_REGISTER"`) mengirim OTP 6 digit ke email via SMTP (dengan pengingat cek Inbox & Spam/Junk) → `POST /api/auth/register` memverifikasi OTP, membuat baris `User` (`bcrypt` hash cost 12, email huruf kecil, `role: "CLIENT"`), lalu otomatis masuk.
+    - **Tab Lupa Kata Sandi:** `POST /api/auth/otp/request` (`purpose: "CLIENT_RESET_PASSWORD"`) → `POST /api/auth/reset-password` memperbarui `passwordHash` (juga dapat digunakan oleh akun legacy tanpa sandi).
 
 ### 2. Penanganan Sisi Server (NextAuth v5)
 *   **File:** [`auth.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/auth.ts) & [`auth.config.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/auth.config.ts)
 *   **Logika Faktual:**
-    1. Menggunakan adapter Prisma (`PrismaAdapter(prisma)`).
-    2. Jika email baru pertama kali masuk, record dibuat otomatis di tabel `User` dengan default role:
-       - `role: "CLIENT"`
-       - `name: profile.name`
-       - `email: profile.email`
-       - `image: profile.picture`
+    1. Satu-satunya provider aktif pada `/api/auth/providers` adalah `Credentials` (menangani `CLIENT_PASSWORD` untuk klien dan login admin pada `/admin/login`). `GoogleProvider` & `lib/auth.ts` sudah dihapus permanen.
+    2. Dilindungi `rateLimitDb` anti brute-force dan verifikasi `bcrypt.compare`.
     3. Token sesi di-encode sebagai JWT yang disematkan ke cookie aman peramban (`__Secure-authjs.session-token`).
-    4. Setelah Google menyetujui, klien dialihkan ke URL tujuan awal: `/onboarding`.
+    4. Setelah masuk, klien diarahkan ke URL tujuan awal (`callbackUrl` aman) atau `/onboarding`.
 
 ---
 
@@ -231,7 +230,7 @@ flowchart TD
 
 ---
 
-## Fase 5: Wizard Penyiapan Undangan Awal (Setup Wizard Multi-Event)
+## Fase 5: Wizard Penyiapan Undangan Awal (Setup Wizard 3 Mode)
 
 ### 1. Form Penyiapan 4 Langkah Adaptif
 *   **File:** [`app/(client)/dashboard/setup/page.tsx`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/app/%28client%29/dashboard/setup/page.tsx)
@@ -239,15 +238,13 @@ flowchart TD
     Menggunakan `localStorage ("luxenary_setup_draft")`. Jika koneksi terputus atau halaman ter-refresh di tengah jalan, seluruh data input pulih otomatis.
 *   **Tahapan Form Wizard:**
     *Wizard hanya memudahkan pengisian data awal: hanya Langkah 0 yang wajib, Langkah 1 sampai 3 boleh dikosongkan dan dilengkapi di Studio Editor.*
-    1. **Langkah 0: Pilihan Jenis Acara (`eventType`) — wajib:**
-       - Pilihan: `WEDDING`, `BIRTHDAY`, `KHITAN`, `AQIQAH`, `WISUDA`, `GATHERING`. Tidak ada kartu terpilih di awal; tombol lanjut nonaktif sampai satu dipilih.
-       - Menentukan skema formulir langkah berikutnya serta memfilter katalog tema secara eksklusif. Tidak dapat diubah setelah undangan dibuat.
+    1. **Langkah 0: Pilihan 3 Mode Acara Abadi (`eventType`) & Sub-Acara (`subEvent`) — wajib:**
+       - Pilihan 3 mode: `WEDDING` (Pernikahan), `PERSONAL` (Personal & Keluarga: Ulang Tahun, Khitanan, Aqiqah, Wisuda, Syukuran, Tamatan Ngaji, atau tulis sendiri), dan `EVENT` (Acara & Event Umum: Corporate, Seminar, Reuni, Grand Opening, Gathering, atau tulis sendiri). Tidak ada kartu terpilih di awal; tombol lanjut nonaktif sampai satu mode dipilih.
+       - Menentukan skema formulir langkah berikutnya serta memfilter katalog tema secara eksklusif (`isThemeInMode`). Selama masih `DRAFT`, klien dapat mengganti mode via tombol **Ganti Mode Acara** (`CHANGE_INVITATION_MODE`); pasca `PUBLISHED`, mode terkunci permanen (`403 EVENT_TYPE_LOCKED`).
     2. **Langkah 1: Profil Penyelenggara / Persona (Adaptif, boleh kosong):**
-       - **Wedding:** Nama lengkap & panggilan kedua mempelai (Pria & Wanita).
-       - **Birthday:** Nama lengkap, nama panggilan, dan usia/milad persona utama.
-       - **Khitan & Aqiqah:** Nama anak/bayi dan nama kedua orang tua (Ayah & Ibu).
-       - **Wisuda:** Nama wisudawan, gelar akademik, program studi, dan institusi.
-       - **Gathering:** Nama acara utama, sub-tema, dan organisasi penyelenggara.
+       - **`WEDDING`:** Nama lengkap & panggilan kedua mempelai (Pria & Wanita).
+       - **`PERSONAL`:** Nama lengkap & panggilan tokoh utama (`personName`/`personNickname`), usia/gelar/orang tua opsional sesuai `subEvent`.
+       - **`EVENT`:** Judul acara utama (`eventTitle`), sub-tema (`eventSubtitle`), dan penyelenggara (`organizer`) murni non-personal.
     3. **Langkah 2: Hari Bahagia, Wilayah & Waktu Sesi Terstruktur (boleh kosong):**
        - Tanggal acara utama dan wilayah/kota dengan pendeteksian zona waktu otomatis (`WIB`, `WITA`, `WIT`).
        - Penentuan waktu sesi terstruktur (Akad/Sesi 1 dan Resepsi/Sesi 2).
@@ -274,8 +271,8 @@ flowchart TD
 
 ## Fase 6: Masuk ke Dashboard Utama & Studio Editor
 
-### 1. Middleware Edge Guard
-*   **File:** [`middleware.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/middleware.ts)
+### 1. Request Proxy Guard (Next.js 16)
+*   **File:** [`proxy.ts`](file:///Users/macbookprom1/Documents/Project%20AmsDev/Luxenary-Invite/proxy.ts)
 *   **Aturan Akses:**
     *   Jika user mencoba mengakses rute `/dashboard/*` tanpa cookie sesi login ➔ dialihkan paksa ke `/login`.
     *   Jika user dengan role `ADMIN` login ➔ otomatis dialihkan ke `/admin`.
@@ -304,8 +301,8 @@ Klien kini memiliki akses ke 4 modul utama:
 
 | Tahapan | Tipe File | Path File Lengkap | Fungsi Utama |
 | :--- | :--- | :--- | :--- |
-| **Login** | UI | `app/login/page.tsx` | Tombol Sign-In Google dengan callback `/onboarding` |
-| **Auth** | Config | `auth.ts` & `auth.config.ts` | Konfigurasi NextAuth v5 & PrismaAdapter |
+| **Login** | UI | `app/login/page.tsx` | Masuk (Email+Sandi), Daftar Akun (OTP 6-digit SMTP), & Lupa Kata Sandi |
+| **Auth** | Config | `auth.ts` & `auth.config.ts` | NextAuth v5 `Credentials` (`CLIENT_PASSWORD` & Admin) |
 | **Onboarding** | UI Hub | `app/onboarding/page.tsx` | Layar transisi dan traffic dispatcher |
 | **Onboarding** | API Engine | `app/api/client/onboarding-state/route.ts` | Decision tree penentu rute berdasarkan status order |
 | **Katalog** | UI | `app/packages/page.tsx` | Grid pemilihan paket (Serenade, Symphony, Eternity) |
@@ -320,7 +317,7 @@ Klien kini memiliki akses ke 4 modul utama:
 | **Tamu** | UI | `app/(client)/dashboard/guests/page.tsx` | Manajemen tamu, direct WA link, & token QR |
 | **Settings** | UI | `app/(client)/dashboard/settings/page.tsx` | Validasi publish, pemilihan subdomain, & PIN panitia |
 | **Publisher** | Core Lib | `lib/staticPublisher.ts` | Kompilasi standalone HTML ke `public/published/` |
-| **Routing** | Middleware | `middleware.ts` | Rewrite subdomain, canonical flat slug, & proteksi rute |
+| **Routing** | Proxy | `proxy.ts` | Rewrite subdomain, custom domain, canonical flat slug, CSP nonce, & proteksi rute |
 
 ---
 
@@ -484,7 +481,7 @@ Master file HTML fisik yang menjadi basis kompilasi undangan tersimpan secara mo
 | `papercut` | Papercut | Wedding | Modern | `themes/wedding/modern/papercut.html` | Moody Papercut — Kraft Paper Aesthetic |
 | `solaria` | Solaria | Wedding | Modern | `themes/wedding/modern/solaria.html` | Romantic Sunset Glow |
 | `wave` | Wave | Wedding | Modern | `themes/wedding/modern/wave.html` | Dark, Moody & Dramatic Gelombang |
-| `blueprints` | Starter Blueprints | Multi-Event | Core | `themes/_blueprints/{eventType}/` | Cetak biru acuan baku untuk 6 jenis acara |
+| `blueprints` | Starter Blueprints | 3 Mode Abadi | Core | `themes/_blueprints/{wedding,personal,event}/` | Cetak biru acuan baku untuk 3 mode acara (`WEDDING`, `PERSONAL`, `EVENT`) |
 
 ---
 *Dokumentasi ini disusun secara faktual berdasarkan kode sumber yang aktif di dalam repositori Luxenary-Invite.*

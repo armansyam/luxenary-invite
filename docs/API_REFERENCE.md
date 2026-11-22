@@ -30,14 +30,27 @@ Dokumen ini memuat daftar lengkap seluruh Application Programming Interface (API
 
 ---
 
+## 1B. API Autentikasi & OTP (`/api/auth/*`)
+
+Autentikasi klien 100% berbasis **Email + Kata Sandi + OTP 6-digit SMTP** (Google OAuth & `lib/auth.ts` telah dihapus permanen):
+
+| Metode | Endpoint | Deskripsi & Kegunaan |
+|:---:|---|---|
+| `GET`/`POST` | `/api/auth/[...nextauth]` | Handler NextAuth v5 (`Credentials` tunggal untuk klien `CLIENT_PASSWORD` dan admin `/admin/login`). `/api/auth/providers` hanya mengembalikan `credentials`. |
+| `POST` | `/api/auth/otp/request` | Mengirim kode OTP 6 digit ke email via SMTP (`purpose: "CLIENT_REGISTER" \| "CLIENT_RESET_PASSWORD"`). Menolak 409 jika email sudah terdaftar pada `CLIENT_REGISTER`; respons netral anti-enumeration pada `CLIENT_RESET_PASSWORD`. |
+| `POST` | `/api/auth/register` | Memverifikasi OTP `CLIENT_REGISTER`, membuat akun `User` (`email` lowercase, `passwordHash` `bcrypt` cost 12, `role: "CLIENT"`), lalu siap masuk. |
+| `POST` | `/api/auth/reset-password` | Memverifikasi OTP `CLIENT_RESET_PASSWORD` dan memperbarui `passwordHash` (termasuk akun eksisting yang belum memiliki kata sandi). |
+
+---
+
 ## 2. API Publik (Tanpa Autentikasi Klien)
 
 Endpoint berikut dapat diakses oleh publik (tamu undangan, browser pengunjung, dan Caddy server):
 
 | Metode | Endpoint | Deskripsi & Kegunaan |
 |:---:|---|---|
-| `GET` | `/api/public/settings` | Mengambil data pengaturan publik platform (nama platform, logo, WhatsApp CS, limit upload, `packages`). `waTemplateMessage` kosong bila admin belum mengisi template WA; klien lalu memakai preset per jenis acara. |
-| `GET` | `/api/public/themes` | Mengambil katalog tema aktif untuk galeri landing page & `/demo` (tiap item memuat `desc`, `tagline`, `defaultMusicUrl`). Mendukung query parameter `?eventType=WEDDING\|BIRTHDAY\|KHITAN\|AQIQAH\|WISUDA\|GATHERING` (cached via Cloudflare `s-maxage=86400`, `max-age=60`). |
+| `GET` | `/api/public/settings` | Mengambil data pengaturan publik platform (nama platform, logo, WhatsApp CS, limit upload, `packages`). `waTemplateMessage` kosong bila admin belum mengisi template WA; klien lalu memakai preset per mode acara. |
+| `GET` | `/api/public/themes` | Mengambil katalog tema aktif (81 tema master) untuk galeri landing page & `/demo` (tiap item memuat `desc`, `tagline`, `subEvent`, `defaultMusicUrl`). Mendukung query parameter `?eventType=WEDDING\|PERSONAL\|EVENT` (cached via Cloudflare `s-maxage=86400`, `max-age=60`). |
 | `GET` | `/api/public/music` | Mengambil daftar pustaka musik latar (*audio presets*) resmi. |
 | `GET` | `/api/public/qr` | Membuat QR SVG di server sendiri. Parameter `data` (wajib, maksimal 600 karakter, UTF-8), `size` (80-400, bawaan 160), dan `mark` (opsional, maksimal 2 huruf/angka; digambar dalam lingkaran putih di tengah QR dengan koreksi level H). Rate limit 120 per menit per IP (HTTP 429). Respons di-cache 1 hari. |
 | `POST` | `/api/public/rsvp` | Mengirim konfirmasi kehadiran tamu. Rate limit 10 per menit per IP dan 200 per menit per undangan (HTTP 429). `status` dinormalkan ke `hadir`/`tidak`/`ragu` (nilai lain: 400); `guestName` maksimal 100 dan `message` maksimal 1000 karakter (lebih: 400). Respons pertama menetapkan cookie `lux_rsvp_*` (`httpOnly`); mengirim ulang dengan nama yang sama hanya memperbarui RSVP bila cookie itu ikut terkirim, selain itu 409. |
@@ -71,8 +84,10 @@ Memerlukan sesi aktif klien (`role: CLIENT` atau Admin Remote Session):
 | Modul | Metode | Endpoint | Deskripsi |
 |---|:---:|---|---|
 | **Onboarding** | `GET` | `/api/client/onboarding-state` | Decision tree penentu navigasi klien pasca-login (ke `/dashboard`, `/setup`, `/checkout`, atau `/packages`). |
-| **Undangan** | `GET` | `/api/client/invitations` | Mengambil seluruh undangan milik user aktif. |
-| | `POST` | `/api/client/invitations/create` | Membuat draf undangan baru setelah aktivasi invoice. Mendukung parameter `eventType` (`WEDDING`, `BIRTHDAY`, `KHITAN`, `AQIQAH`, `WISUDA`, `GATHERING`), `themeId`, `participantsJson`, `invitationName`, `groomName`/`brideName`/`groomNickname`/`brideNickname`, dan `eventTime`; judul dan slug diturunkan dari data peserta, bukan dikirim sebagai parameter terpisah. Memvalidasi kecocokan `theme.eventType` dengan fallback otomatis ke `DEFAULT_THEME_BY_EVENT`. Kota dari wizard disimpan sebagai `address`; `location` (nama tempat) dibiarkan kosong. Draf yang sudah ada tidak dapat berganti jenis acara (HTTP 409). |
+| **Akun** | `GET`/`PUT` | `/api/client/account/password` | Cek status `hasPassword` atau buat/ubah kata sandi klien (`bcrypt`; ditolak 403 untuk sesi remote admin). |
+| **Undangan** | `GET` | `/api/client/invitations` | Mengambil seluruh undangan milik user aktif (termasuk `subEvent`). |
+| | `POST` | `/api/client/invitations/free-draft` | Membuat 1 Draf Gratis 14 hari ber-watermark (maks. 3 foto, wajib `eventType`: `WEDDING`/`PERSONAL`/`EVENT` + `subEvent`). |
+| | `POST` | `/api/client/invitations/create` | Membuat draf undangan berbayar setelah aktivasi invoice `PAID`. Mendukung `eventType` (`WEDDING`, `PERSONAL`, `EVENT`), `subEvent`, `themeId`, `participantsJson`, `groomName`/`brideName`/`groomNickname`/`brideNickname`, dan `eventTime`; memvalidasi kecocokan `theme.eventType` dengan fallback `DEFAULT_THEME_BY_EVENT` (`kalandra`/`festivo`/`sinergi`). |
 | | `GET` | `/api/client/invitations/{id}` | Mengambil detail konfigurasi lengkap satu undangan beserta relasi media, audio, dan event. |
 | | `PUT` | `/api/client/invitations/{id}` | Memperbarui konten 16 seksi formulir Studio Editor secara menyeluruh. Draf tidak dikunci oleh tanggal acara yang sudah lewat (tanggal salah ketik dapat diperbaiki), tetapi klien tidak dapat menerbitkan undangan bertanggal lampau atau tanpa tanggal pada sesi jadwal terima tamu (`isPrimary`) (HTTP 400). Setelah terbit, jadwal tidak dapat dikosongkan dan tanggal jadwal terima tamu tidak dapat diubah klien (HTTP 403). `memoriesFilter`/`memoriesShotsQuota` yang tidak sah di `featureSettings` dikembalikan ke nilai tersimpan (`keepValidMemoriesSettings`). |
 | | `PATCH` | `/api/client/invitations/{id}` | Memperbarui atribut parsial undangan, termasuk perubahan `themeId` dengan pengawalan ketat *cross-event guard* (`theme.eventType === invitation.eventType`). Validasi kamera sama dengan PUT. |
@@ -147,21 +162,15 @@ Memerlukan autentikasi admin (`role: ADMIN` atau `SUPER_ADMIN`):
 | | `POST` | `/api/admin/finance/recurring/{id}/pay` | Melakukan pelunasan tagihan server/software berkala dalam 1-klik. |
 | | `GET` | `/api/admin/finance/tax` | Menghitung dan merekapitulasi setoran PPh Final 0,5% UMKM (PP 55/2022). |
 | | `POST` | `/api/admin/finance/upload-receipt` | Mengunggah bukti kuitansi fisik pengeluaran operasional. |
-| **Tema** | `GET` | `/api/admin/themes` | Daftar seluruh master tema di sistem lintas jenis acara (*Wedding, Birthday, Khitan, Aqiqah, Wisuda, Gathering*). |
-| | `POST` | `/api/admin/themes` | Unggah tema fisik mandiri baru (`themes/{eventType}/{style}/{id}.html`). |
+| **Tema** | `GET` | `/api/admin/themes` | Daftar seluruh 81 master tema di sistem lintas 3 mode (`WEDDING`, `PERSONAL`, `EVENT`). |
+| | `POST` | `/api/admin/themes` | Unggah tema fisik mandiri baru (`themes/{wedding,personal,event}/{style}/{id}.html`). |
 | | `DELETE` | `/api/admin/themes?id={id}` | Menghapus tema beserta berkas master dan demo-nya. Membalas HTTP 409 bila tema masih dipakai undangan (FK `ON DELETE RESTRICT`); nonaktifkan tema sebagai gantinya. |
-| | `POST` | `/api/admin/themes/sync` | Sinkronisasi master tema fisik di disk ke database, auto-compile static demo, dan auto-purge Cloudflare edge cache. Tema tanpa berkas yang masih dipakai undangan dipertahankan (`retainedWithoutFile`); sisanya dihapus (`purgedCount`). |
-| | `POST` | `/api/admin/themes/{id}/demo-asset` | Mengunggah thumbnail cover atau video demo tema resmi. |
+| | `POST` | `/api/admin/themes/sync` | Sinkronisasi master tema fisik di disk ke database (termasuk `subEvent` & `mediaSlots`), auto-compile static demo, dan auto-purge Cloudflare edge cache. Tema tanpa berkas yang masih dipakai undangan dipertahankan (`retainedWithoutFile`); sisanya dihapus (`purgedCount`). |
+| | `POST` | `/api/admin/themes/{id}/demo-asset` | Mengunggah foto demo 3 mode (`groom`/`bride`, `profile`, `event`), sampul, atau video demo tema resmi. |
 | | `POST` | `/api/admin/themes/{id}/demo-data` | Menyimpan custom mock dataset untuk rendering preview demo statis tema tertentu. |
-| **Varian Tema** | `GET` | `/api/admin/theme-variants?parent={id}` | Token master induk tulisan tangan: kelompok warna per nilai asli dan variabel huruf. Induk builder/varian ditolak 409. |
-| | `GET` | `/api/admin/theme-variants?id={id}` | Varian (nama, status, `masterOverrides`) beserta token induknya. |
-| | `POST` | `/api/admin/theme-variants` | Membuat varian nonaktif `{ parentId, name, description?, overrides }`; metadata, musik, dan media bawaan disalin dari induk; font Google diunduh. |
-| | `POST` | `/api/admin/theme-variants?preview` | HTML pratinjau master induk dengan override dan data demo induk. |
-| | `PUT` | `/api/admin/theme-variants` | Ubah nama/override atau terbitkan (`isActive`); terbit mengompilasi demo statis, mengantrekan thumbnail, dan purge cache. Varian hanya boleh warna dan huruf. |
-| **Editor Master** | `GET` | `/api/admin/theme-variants?master={id}` | Master tulisan tangan beserta suntingan tersimpannya, token warna/huruf, gambar bawaan (`images`), dan id seksi (`sections`). |
-| | `PUT` | `/api/admin/theme-variants` | `{ masterId, overrides }`: simpan suntingan master (`colors`, `fonts`, `images`, `hiddenSections`, `css`); kosong = kembali ke asli. Demo master dan varian aktifnya dibuat ulang; audit `THEME_MASTER_EDIT`. |
-| | `POST` | `/api/admin/theme-variants?preview` | Dengan `mode: "master"`: pratinjau master mentah + suntingan. |
-| | `DELETE` | `/api/admin/theme-variants?id={id}` | Hapus varian yang belum dipakai undangan (dipakai → 409). |
+| **Editor Master** | `GET` | `/api/admin/master-editor?id={id}` | Membaca master tulisan tangan beserta suntingan tersimpannya (`masterOverrides`), token warna/huruf, gambar bawaan, dan seksi. |
+| | `PUT` | `/api/admin/master-editor` | Menyimpan suntingan master (`colors`, `fonts`, `images`, `hiddenSections`, `css`) tanpa merusak piring draf klien (`invitation_drafts`); demo dikompilasi ulang; audit `THEME_MASTER_EDIT`. |
+| | `POST` | `/api/admin/master-editor?preview` | Merender pratinjau master mentah dengan suntingan override secara langsung. |
 | **Theme Builder** | `GET` | `/api/admin/theme-builder?id={id}` | Membaca spesifikasi builder tema (`Theme.builderSpec`). Tema handcrafted ditolak dengan HTTP 409 (`code: "HANDCRAFTED"`). |
 | | `GET` | `/api/admin/theme-builder?from={id}` | Mengekstrak palet, huruf, tekstur, ornamen, dan bingkai dari master fisik bawaan untuk draf baru (Clone to Builder). |
 | | `GET` | `/api/admin/theme-builder?legacy=1` | Daftar tema master bawaan yang dapat disalin menjadi draf builder baru (filter opsional: `eventType`). |
@@ -194,10 +203,23 @@ Memerlukan autentikasi admin (`role: ADMIN` atau `SUPER_ADMIN`):
 
 ---
 
-## 7. API Pemeliharaan Berkala (`/api/cron/*`)
+## 7. API Portal Mitra / Afiliasi (`/api/partner/*`)
+
+| Metode | Endpoint | Deskripsi |
+|:---:|---|---|
+| `POST` | `/api/partner/auth/request-otp` | Kirim OTP 6 digit SMTP untuk aktivasi akun mitra (yang sudah dikurasi admin) atau lupa kata sandi. |
+| `POST` | `/api/partner/auth/set-password` | Verifikasi OTP dan tetapkan/reset kata sandi mitra (`bcrypt`), sekaligus menaikkan `sessionVersion` untuk membatalkan sesi lama. |
+| `POST` | `/api/partner/auth/login` | Login mitra via Email + Kata Sandi (`lux_partner_session` HttpOnly HMAC cookie). |
+| `POST` | `/api/partner/auth/logout` | Hapus sesi mitra. |
+| `GET` | `/api/partner/dashboard` | Statistik pemakaian kupon, saldo komisi tertunda/cair, dan riwayat payout mitra. |
+| `GET` | `/api/partner/payouts/{expenseId}/receipt` | Unduh bukti transfer pencairan komisi milik mitra (terisolasi per `partnerId`). |
+
+---
+
+## 8. API Pemeliharaan Berkala (`/api/cron/*`)
 
 Endpoint otomatis yang dipanggil oleh Crontab Linux dengan proteksi `CRON_SECRET`:
-- `POST /api/cron/cleanup`: Pembersihan data kadaluarsa, foto tamu expired, dan daur ulang subdomain.
+- `POST /api/cron/cleanup`: Pembersihan data kadaluarsa, foto tamu expired, daur ulang subdomain, dan penghapusan Free Draft >14 hari.
 - `GET /api/cron/backup`: Pencadangan database PostgreSQL harian otomatis.
 
 

@@ -52,7 +52,7 @@ flowchart TD
     end
     
     subgraph Layer Gerbang
-        G --> H[middleware.ts: Periksa Path & Cookie]
+        G --> H[proxy.ts: Periksa Path & Cookie]
         H -->|isAdmin + lux_remote_client_id| I[Loloskan ke /dashboard]
         G --> J[auth.config.ts: authorized callback]
         J -->|isAdmin + lux_remote_client_id| I
@@ -145,7 +145,7 @@ const handleImpersonateClient = async (clientId: string, clientEmail: string, cl
     ...
   }
   ```
-* **`middleware.ts`**:
+* **`proxy.ts`**:
   ```typescript
   if (pathname.startsWith("/dashboard") || pathname.startsWith("/packages") || pathname.startsWith("/checkout")) {
     const remoteClientId = req.cookies.get("lux_remote_client_id")?.value;
