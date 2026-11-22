@@ -173,6 +173,11 @@ export const proxy = auth(async (req) => {
     return new NextResponse("Not Found", { status: 404 });
   }
 
+  // Endpoint Remote MCP (/api/mcp) dan manajemen admin MCP hanya boleh diakses di apex domain utama.
+  if ((pathname === "/api/mcp" || pathname.startsWith("/api/mcp/")) && (isSubdomainOfOurs || isCustomDomain)) {
+    return new NextResponse("Not Found", { status: 404 });
+  }
+
   // Unggahan dan suntingan admin ditulis ke disk server yang melayaninya dan hanya server utama yang menyalinnya ke
   // replika (lib/sharedFiles.ts); load balancer wajib mengarahkan panel admin ke server utama.
   if (process.env.LUX_SERVER_ROLE === "replica" && (pathname.startsWith("/admin") || pathname.startsWith("/api/admin"))) {

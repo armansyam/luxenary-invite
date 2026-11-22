@@ -287,7 +287,7 @@ Pemicu: Laporan rutin status operasional 24 jam terakhir.
 • Storage     : Disk terpakai {X}% | RAM terpakai {Y}%
 • Backup Harian: SUKSES (Ukuran: {Z} MB di /backups)
 • Cleanup Draf: SUKSES (Draf kedaluwarsa dibersihkan)
-• Katalog Tema: 39 Tema Aktif Terdaftar
+• Katalog Tema: 81 Tema Aktif Terdaftar (34 Wedding, 37 Personal, 10 Event)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Semua sistem beroperasi normal dan siap melayani klien.
 ```

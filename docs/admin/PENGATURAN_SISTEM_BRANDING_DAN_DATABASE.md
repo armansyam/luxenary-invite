@@ -127,8 +127,9 @@ Sistem mengadopsi arsitektur hierarki URL yang bersih dan hemat sumber daya name
    - Rute publik beralih secara cerdas ke Galeri Kenangan Tamu (`/memories`) via mode AUTO (H+1 pasca acara) atau tombol toggle MANUAL di Studio Editor Seksi 14.
    - Undangan utama ditutup, dan pengunjung langsung disuguhi dokumentasi momen candid para tamu.
 
-4. **Pembersihan Terpadu & Dasbor Memorial 1 Halaman (`ARCHIVED`):**
-   - Subdomain, custom domain, foto kenangan tamu di R2/lokal, dan RSVP dibersihkan secara bersamaan dalam 1 jadwal retensi terpadu (bawaan 30 hari pasca acara lewat `retention_cleanup_days`, atau sesuai perpanjangan `galleryExpiresAt`).
+4. **Pembersihan Terpadu, Draf Gratis Dinamis, & Dasbor Memorial 1 Halaman (`ARCHIVED`):**
+   - **Draf Gratis Dinamis (`retention_free_draft_days` & `free_draft_max_photos`):** Masa aktif Draf Gratis sebelum dibersihkan cron (bawaan `14` hari, rentang `1–365`) serta batas maksimal unggah foto pada Draf Gratis (bawaan `3` foto, rentang `1–50`) dapat diubah langsung dari sub-tab *Setup & Integrasi* dan seketika tersinkronisasi ke API, UI Klien, dan Cron Cleanup.
+   - Subdomain, custom domain, foto kenangan tamu di R2/lokal, dan RSVP dibersihkan secara bersamaan dalam 1 jadwal retensi terpadu (bawaan 30 hari pasca acara lewat `retention_cleanup_days`, atau sesuai perpanjangan `galleryExpiresAt`), dengan verifikasi arsip NAS terlebih dahulu sebelum `purgeGuestMemories` + `$transaction`.
    - Ketika berstatus `ARCHIVED`, dasbor klien bertransformasi menjadi 1 halaman memorial eksklusif berisi surat apresiasi, ringkasan 4 metrik acara, serta Pusat Unduhan Arsip Digital (.CSV Doa Restu & .CSV Tamu/Kehadiran).
    - Akun klien (`User`) di PostgreSQL tidak pernah dihapus (Zero Account Deletion) agar klien dapat login kembali sewaktu-waktu.
 

@@ -1,0 +1,1067 @@
+import fs from "fs";
+import path from "path";
+import { revalidatePath } from "next/cache";
+import { Prisma, type EventType, type InvitationStatus, type WebhookLogStatus } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { getPublicPlatformSettings, invalidateSettingsCache } from "@/lib/settings";
+import { checkDomainPointsToPlatform } from "@/lib/customDomainDns";
+import { listDatabaseSnapshots } from "@/lib/databaseBackup";
+import { purgeCloudflareCache } from "@/lib/cloudflare";
+import { getActiveRateLimitDriver } from "@/lib/rateLimit";
+import { THEME_EVENT_FOLDERS } from "@/lib/themePaths";
+import { getCatalogMediaSlots } from "@/lib/themeMediaSlotsCatalog";
+import { THEME_MAP } from "@/lib/renderTemplate";
+import { wibMonthStart, wibParts } from "@/lib/financePeriods";
+import { DAY_MS } from "@/lib/lifecycleDates";
+import { invalidateInvitationLookup, masterTemplateCache } from "@/lib/cache";
+import { MCP_SERVER_VERSION, type McpScope } from "./constants";
+
+export interface McpToolDefinition {
+  name: string;
+  description: string;
+  requiredScopes: McpScope[]; // Key hanya perlu memiliki SALAH SATU scope dalam daftar ini
+  readOnly: boolean;
+  inputSchema: Record<string, unknown>;
+  handler: (args: Record<string, unknown>) => Promise<unknown>;
+}
+
+function clampInt(raw: unknown, fallback: number, min: number, max: number): number {
+  const n = typeof raw === "number" ? raw : Number.parseInt(String(raw ?? ""), 10);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, Math.trunc(n)));
+}
+
+function normalizeEventFilter(raw: unknown): EventType | null {
+  const val = String(raw ?? "").trim().toUpperCase();
+  if (val === "WEDDING" || val === "PERSONAL" || val === "EVENT") return val;
+  return null;
+}
+
+const VALID_INVITATION_STATUSES: readonly InvitationStatus[] = [
+  "DRAFT",
+  "PUBLISHED",
+  "EVENT_FINISHED",
+  "TAKEN_DOWN",
+  "ARCHIVED",
+];
+
+const VALID_WEBHOOK_STATUSES: readonly WebhookLogStatus[] = [
+  "received",
+  "processed",
+  "amount_mismatch",
+  "paid_on_closed_order",
+  "stale_session",
+];
+
+async function scanDiskThemes(): Promise<
+  Array<{
+    id: string;
+    name: string;
+    eventType: EventType;
+    category: "minimalist" | "modern" | "traditional";
+    series: string;
+    relativePath: string;
+  }>
+> {
+  const themesDir = path.join(/*turbopackIgnore: true*/ process.cwd(), "themes");
+  const styles = [
+    { styleFolder: "minimalist", category: "minimalist" as const, series: "Minimalist" },
+    { styleFolder: "modern", category: "modern" as const, series: "Modern" },
+    { styleFolder: "traditional", category: "traditional" as const, series: "Traditional" },
+  ];
+  const discovered: Array<{
+    id: string;
+    name: string;
+    eventType: EventType;
+    category: "minimalist" | "modern" | "traditional";
+    series: string;
+    relativePath: string;
+  }> = [];
+  const seen = new Set<string>();
+
+  for (const ef of THEME_EVENT_FOLDERS) {
+    for (const sf of styles) {
+      const targetDir = path.join(/*turbopackIgnore: true*/ themesDir, ef.eventFolder, sf.styleFolder);
+      try {
+        await fs.promises.access(targetDir);
+      } catch {
+        continue;
+      }
+      const files = await fs.promises.readdir(targetDir);
+      for (const file of files) {
+        if (!file.endsWith(".html") || file.startsWith("starter-blueprint") || file.startsWith("_")) {
+          continue;
+        }
+        const id = file.replace(/\.html$/i, "").toLowerCase();
+        if (seen.has(id)) continue;
+        seen.add(id);
+        const formattedName = id
+          .split(/[-_]/)
+          .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+          .join(" ");
+        discovered.push({
+          id,
+          name: formattedName,
+          eventType: ef.eventType as EventType,
+          category: sf.category,
+          series: sf.series,
+          relativePath: `themes/${ef.eventFolder}/${sf.styleFolder}/${file}`,
+        });
+      }
+    }
+  }
+  return discovered;
+}
+
+export const MCP_TOOLS: readonly McpToolDefinition[] = [
+  {
+    name: "luxvite_get_platform_health",
+    description:
+      "Read-only: Memeriksa kesehatan real-time server produksi (koneksi & latensi PostgreSQL, memori Node.js, uptime, driver rate limit, serta jumlah & tanggal backup database terbaru).",
+    requiredScopes: ["ops:read"],
+    readOnly: true,
+    inputSchema: {
+      type: "object",
+      properties: {},
+      additionalProperties: false,
+    },
+    handler: async () => {
+      const dbStart = Date.now();
+      let dbOk = false;
+      let dbLatencyMs = 0;
+      let dbError: string | null = null;
+      try {
+        await prisma.$queryRaw`SELECT 1`;
+        dbOk = true;
+        dbLatencyMs = Date.now() - dbStart;
+      } catch (err) {
+        dbError = err instanceof Error ? err.message : String(err);
+      }
+
+      let snapshotsCount = 0;
+      let latestSnapshot: { filename: string; sizeFormatted: string; createdAt: string } | null = null;
+      try {
+        const snapshots = await listDatabaseSnapshots();
+        snapshotsCount = snapshots.length;
+        if (snapshots[0]) {
+          latestSnapshot = {
+            filename: snapshots[0].filename,
+            sizeFormatted: snapshots[0].sizeFormatted,
+            createdAt: snapshots[0].createdAt,
+          };
+        }
+      } catch {
+        // Direktori backup belum tersedia pada lingkungan dev/test
+      }
+
+      const mem = process.memoryUsage();
+      return {
+        status: dbOk ? "healthy" : "degraded",
+        version: MCP_SERVER_VERSION,
+        timestamp: new Date().toISOString(),
+        uptimeSec: Math.round(process.uptime()),
+        database: {
+          connected: dbOk,
+          latencyMs: dbLatencyMs,
+          ...(dbError ? { error: dbError } : {}),
+        },
+        rateLimitDriver: getActiveRateLimitDriver(),
+        memoryMb: {
+          rss: Math.round(mem.rss / 1024 / 1024),
+          heapUsed: Math.round(mem.heapUsed / 1024 / 1024),
+          heapTotal: Math.round(mem.heapTotal / 1024 / 1024),
+        },
+        backups: {
+          count: snapshotsCount,
+          latest: latestSnapshot,
+        },
+      };
+    },
+  },
+  {
+    name: "luxvite_get_business_kpi_report",
+    description:
+      "Read-only: Menghasilkan laporan KPI non-finansial & konversi (pengguna baru, status undangan, Draf Gratis vs berbayar, distribusi 3 mode acara WEDDING/PERSONAL/EVENT, top 10 tema terpopuler, tamu, RSVP, foto kenangan, dan custom domain aktif).",
+    requiredScopes: ["ops:read", "finance:read"],
+    readOnly: true,
+    inputSchema: {
+      type: "object",
+      properties: {
+        days: {
+          type: "integer",
+          description: "Rentang hari pengamatan metrik pertumbuhan terbaru (1–365, bawaan 30).",
+          minimum: 1,
+          maximum: 365,
+        },
+      },
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const days = clampInt(args.days, 30, 1, 365);
+      const since = new Date(Date.now() - days * DAY_MS);
+
+      const [
+        totalUsers,
+        newUsersInPeriod,
+        partnerProvisionedUsers,
+        invByStatus,
+        invByEventType,
+        freeDraftCount,
+        paidInvCount,
+        activeCustomDomains,
+        topThemesRaw,
+        totalGuests,
+        rsvpByStatus,
+        totalMemories,
+        totalActiveThemes,
+      ] = await Promise.all([
+        prisma.user.count(),
+        prisma.user.count({ where: { createdAt: { gte: since } } }),
+        prisma.user.count({ where: { provisionedByPartnerId: { not: null } } }),
+        prisma.invitation.groupBy({ by: ["status"], _count: { _all: true } }),
+        prisma.invitation.groupBy({ by: ["eventType"], _count: { _all: true } }),
+        prisma.invitation.count({ where: { isFreeDraft: true } }),
+        prisma.invitation.count({ where: { isFreeDraft: false } }),
+        prisma.invitation.count({ where: { customDomain: { not: null } } }),
+        prisma.invitation.groupBy({
+          by: ["themeId"],
+          _count: { _all: true },
+          orderBy: { _count: { themeId: "desc" } },
+          take: 10,
+        }),
+        prisma.guest.count(),
+        prisma.rsvp.groupBy({ by: ["status"], _count: { _all: true } }),
+        prisma.guestMemory.count(),
+        prisma.theme.count({ where: { isActive: true } }),
+      ]);
+
+      const invitationsByStatus: Record<string, number> = {};
+      for (const row of invByStatus) invitationsByStatus[row.status] = row._count._all;
+
+      const invitationsByMode: Record<string, number> = {};
+      for (const row of invByEventType) invitationsByMode[row.eventType] = row._count._all;
+
+      const rsvpsByStatus: Record<string, number> = {};
+      for (const row of rsvpByStatus) rsvpsByStatus[row.status] = row._count._all;
+
+      return {
+        generatedAt: new Date().toISOString(),
+        periodDays: days,
+        periodSince: since.toISOString(),
+        users: {
+          total: totalUsers,
+          newInPeriod: newUsersInPeriod,
+          provisionedByPartners: partnerProvisionedUsers,
+        },
+        invitations: {
+          total: freeDraftCount + paidInvCount,
+          freeDraftActive: freeDraftCount,
+          paidInvitations: paidInvCount,
+          activeCustomDomains,
+          byStatus: invitationsByStatus,
+          byEventType: invitationsByMode,
+        },
+        engagement: {
+          totalGuests,
+          totalRsvps: Object.values(rsvpsByStatus).reduce((a, b) => a + b, 0),
+          rsvpsByStatus,
+          totalGuestMemories: totalMemories,
+        },
+        themes: {
+          activeInCatalog: totalActiveThemes,
+          topUsed: topThemesRaw.map((t) => ({ themeId: t.themeId, invitationCount: t._count._all })),
+        },
+      };
+    },
+  },
+  {
+    name: "luxvite_get_finance_report",
+    description:
+      "Read-only: Laporan keuangan lengkap untuk Tim Finance & COO (omzet bruto/bersih per bulan WIB, rincian OrderType & PlanType, metode bayar, antrean order PENDING butuh rekonsiliasi, OPEX, komitmen tagihan rutin, margin bersih & status Anti-Rugi, estimasi PPh Final 0,5%, tutup buku, kupon promo, dan ringkasan Mitra Reseller).",
+    requiredScopes: ["finance:read"],
+    readOnly: true,
+    inputSchema: {
+      type: "object",
+      properties: {
+        year: {
+          type: "integer",
+          description: "Tahun laporan WIB (bawaan tahun berjalan, misal 2026).",
+          minimum: 2024,
+          maximum: 2100,
+        },
+        month: {
+          type: "integer",
+          description: "Bulan laporan 1–12 WIB (bawaan bulan berjalan).",
+          minimum: 1,
+          maximum: 12,
+        },
+      },
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const today = wibParts(new Date());
+      const year = clampInt(args.year, today.year, 2024, 2100);
+      const month = clampInt(args.month, today.monthIndex + 1, 1, 12);
+      const monthStart = wibMonthStart(year, month - 1);
+      const nextMonthStart = wibMonthStart(year, month);
+      const yearStart = wibMonthStart(year, 0);
+      const nextYearStart = wibMonthStart(year + 1, 0);
+
+      const [
+        paidOrdersMonth,
+        ytdRevenueAgg,
+        pendingOrders,
+        expiredCountMonth,
+        expensesMonth,
+        recurringExpenses,
+        closingRecord,
+        activeCoupons,
+        partners,
+      ] = await Promise.all([
+        prisma.order.findMany({
+          where: { status: "PAID", paidAt: { gte: monthStart, lt: nextMonthStart } },
+          select: {
+            amount: true,
+            chargedAmount: true,
+            discountAmount: true,
+            orderType: true,
+            planType: true,
+            paymentMethod: true,
+            promoCodeApplied: true,
+          },
+        }),
+        prisma.order.aggregate({
+          where: { status: "PAID", paidAt: { gte: yearStart, lt: nextYearStart } },
+          _sum: { amount: true, discountAmount: true },
+          _count: { _all: true },
+        }),
+        prisma.order.findMany({
+          where: { status: "PENDING" },
+          orderBy: { createdAt: "desc" },
+          take: 25,
+          select: {
+            id: true,
+            invoiceNumber: true,
+            planType: true,
+            orderType: true,
+            amount: true,
+            paymentMethod: true,
+            proofImageUrl: true,
+            createdAt: true,
+            expiredAt: true,
+          },
+        }),
+        prisma.order.count({
+          where: { status: "EXPIRED", createdAt: { gte: monthStart, lt: nextMonthStart } },
+        }),
+        prisma.expense.findMany({
+          where: { expenseDate: { gte: monthStart, lt: nextMonthStart } },
+          select: { amount: true, category: true, isLocked: true },
+        }),
+        prisma.recurringExpense.findMany({
+          where: { isActive: true },
+          orderBy: { dueDayOfMonth: "asc" },
+          select: {
+            name: true,
+            category: true,
+            estimatedAmount: true,
+            dueDayOfMonth: true,
+            vendorName: true,
+          },
+        }),
+        prisma.financialClosing.findUnique({
+          where: { periodMonth_periodYear: { periodMonth: month, periodYear: year } },
+          select: {
+            grossRevenue: true,
+            totalExpenses: true,
+            netProfit: true,
+            taxAmount: true,
+            taxPaid: true,
+            taxPaidAt: true,
+            closedAt: true,
+          },
+        }),
+        prisma.promoCoupon.findMany({
+          where: { isActive: true },
+          select: {
+            code: true,
+            discountType: true,
+            discountValue: true,
+            usageCount: true,
+            quotaLimit: true,
+            validUntil: true,
+          },
+          orderBy: { usageCount: "desc" },
+          take: 20,
+        }),
+        prisma.partnerAffiliate.findMany({
+          where: { isActive: true },
+          select: {
+            id: true,
+            name: true,
+            vendorCategory: true,
+            commissionType: true,
+            commissionValue: true,
+            _count: { select: { provisionedClients: true } },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 30,
+        }),
+      ]);
+
+      let grossRevenue = 0;
+      let totalCharged = 0;
+      let totalDiscount = 0;
+      const byOrderType: Record<string, { count: number; amount: number }> = {};
+      const byPlanType: Record<string, { count: number; amount: number }> = {};
+      const byPaymentMethod: Record<string, { count: number; amount: number }> = {};
+
+      for (const o of paidOrdersMonth) {
+        const amt = Number(o.amount || 0);
+        const charged = Number(o.chargedAmount ?? o.amount ?? 0);
+        const disc = Number(o.discountAmount || 0);
+        grossRevenue += amt;
+        totalCharged += charged;
+        totalDiscount += disc;
+
+        byOrderType[o.orderType] = {
+          count: (byOrderType[o.orderType]?.count || 0) + 1,
+          amount: (byOrderType[o.orderType]?.amount || 0) + amt,
+        };
+        byPlanType[o.planType] = {
+          count: (byPlanType[o.planType]?.count || 0) + 1,
+          amount: (byPlanType[o.planType]?.amount || 0) + amt,
+        };
+        byPaymentMethod[o.paymentMethod] = {
+          count: (byPaymentMethod[o.paymentMethod]?.count || 0) + 1,
+          amount: (byPaymentMethod[o.paymentMethod]?.amount || 0) + amt,
+        };
+      }
+
+      let totalExpenses = 0;
+      const expensesByCategory: Record<string, number> = {};
+      for (const e of expensesMonth) {
+        const amt = Number(e.amount || 0);
+        totalExpenses += amt;
+        expensesByCategory[e.category] = (expensesByCategory[e.category] || 0) + amt;
+      }
+
+      const estimatedPphFinal05 = Math.round(grossRevenue * 0.005);
+      const netProfit = grossRevenue - totalExpenses;
+      const netProfitAfterTax = netProfit - estimatedPphFinal05;
+      const netMarginPercent =
+        grossRevenue > 0 ? Number(((netProfitAfterTax / grossRevenue) * 100).toFixed(2)) : 0;
+      const marginHealth =
+        grossRevenue === 0
+          ? "NO_REVENUE"
+          : netMarginPercent >= 50
+            ? "SEHAT"
+            : netMarginPercent >= 20
+              ? "WASPADA"
+              : "BAHAYA_RUGI";
+
+      const monthlyRecurringCommitment = recurringExpenses.reduce(
+        (sum, r) => sum + Number(r.estimatedAmount || 0),
+        0
+      );
+
+      return {
+        period: {
+          year,
+          month,
+          timezone: "Asia/Jakarta (WIB)",
+          startIso: monthStart.toISOString(),
+          endIso: nextMonthStart.toISOString(),
+        },
+        summary: {
+          paidOrdersCount: paidOrdersMonth.length,
+          expiredOrdersCount: expiredCountMonth,
+          grossRevenue,
+          totalChargedToGateway: totalCharged,
+          totalPromoDiscount: totalDiscount,
+          totalOpex: totalExpenses,
+          netProfitBeforeTax: netProfit,
+          estimatedPphFinal05,
+          netProfitAfterTax,
+          netMarginPercent,
+          marginHealth,
+        },
+        yearToDate: {
+          year,
+          paidOrdersCount: ytdRevenueAgg._count._all,
+          grossRevenue: Number(ytdRevenueAgg._sum.amount || 0),
+          totalDiscount: Number(ytdRevenueAgg._sum.discountAmount || 0),
+        },
+        breakdown: {
+          byOrderType,
+          byPlanType,
+          byPaymentMethod,
+          expensesByCategory,
+        },
+        pendingReconciliation: {
+          count: pendingOrders.length,
+          totalPendingAmount: pendingOrders.reduce((s, o) => s + Number(o.amount || 0), 0),
+          items: pendingOrders.map((o) => ({
+            id: o.id,
+            invoiceNumber: o.invoiceNumber,
+            planType: o.planType,
+            orderType: o.orderType,
+            amount: Number(o.amount || 0),
+            paymentMethod: o.paymentMethod,
+            hasTransferProof: Boolean(o.proofImageUrl),
+            createdAt: o.createdAt.toISOString(),
+            expiredAt: o.expiredAt?.toISOString() ?? null,
+          })),
+        },
+        recurringCommitments: {
+          activeCount: recurringExpenses.length,
+          estimatedMonthlyTotal: monthlyRecurringCommitment,
+          items: recurringExpenses.map((r) => ({
+            name: r.name,
+            category: r.category,
+            estimatedAmount: Number(r.estimatedAmount || 0),
+            dueDayOfMonth: r.dueDayOfMonth,
+            vendorName: r.vendorName,
+          })),
+        },
+        financialClosing: closingRecord
+          ? {
+              closed: true,
+              grossRevenue: Number(closingRecord.grossRevenue),
+              totalExpenses: Number(closingRecord.totalExpenses),
+              netProfit: Number(closingRecord.netProfit),
+              taxAmount: Number(closingRecord.taxAmount),
+              taxPaid: closingRecord.taxPaid,
+              taxPaidAt: closingRecord.taxPaidAt?.toISOString() ?? null,
+              closedAt: closingRecord.closedAt.toISOString(),
+            }
+          : { closed: false },
+        marketingSummary: {
+          activeCouponsCount: activeCoupons.length,
+          activeCoupons: activeCoupons.map((c) => ({
+            code: c.code,
+            discountType: c.discountType,
+            discountValue: Number(c.discountValue),
+            usageCount: c.usageCount,
+            quotaLimit: c.quotaLimit,
+            validUntil: c.validUntil?.toISOString() ?? null,
+          })),
+          activePartnersCount: partners.length,
+          activePartners: partners.map((p) => ({
+            id: p.id,
+            name: p.name,
+            vendorCategory: p.vendorCategory,
+            discountType: p.commissionType,
+            discountValue: Number(p.commissionValue),
+            provisionedClientsCount: p._count.provisionedClients,
+          })),
+        },
+      };
+    },
+  },
+  {
+    name: "luxvite_list_themes_catalog",
+    description:
+      "Read-only: Mengambil katalog tema aktif dari database sekaligus mengaudit sinkronisasi 1:1 terhadap berkas fisik themes/{wedding,personal,event}/ di disk.",
+    requiredScopes: ["catalog:read"],
+    readOnly: true,
+    inputSchema: {
+      type: "object",
+      properties: {
+        eventType: {
+          type: "string",
+          enum: ["ALL", "WEDDING", "PERSONAL", "EVENT"],
+          description: "Filter mode acara (bawaan ALL).",
+        },
+      },
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const filterMode = normalizeEventFilter(args.eventType);
+      const [dbThemes, diskThemes] = await Promise.all([
+        prisma.theme.findMany({
+          where: filterMode ? { eventType: filterMode } : undefined,
+          orderBy: [{ eventType: "asc" }, { sortOrder: "asc" }, { id: "asc" }],
+          select: {
+            id: true,
+            name: true,
+            eventType: true,
+            subEvent: true,
+            category: true,
+            isActive: true,
+            defaultMusicUrl: true,
+            builderSpec: true,
+          },
+        }),
+        scanDiskThemes(),
+      ]);
+
+      const filteredDisk = filterMode
+        ? diskThemes.filter((d) => d.eventType === filterMode)
+        : diskThemes;
+
+      const dbIds = new Set(dbThemes.map((t) => t.id));
+      const diskIds = new Set(filteredDisk.map((d) => d.id));
+      const missingInDb = filteredDisk.filter((d) => !dbIds.has(d.id)).map((d) => d.id);
+      const extraInDb = dbThemes.filter((t) => !diskIds.has(t.id)).map((t) => t.id);
+
+      const countsByMode: Record<string, number> = { WEDDING: 0, PERSONAL: 0, EVENT: 0 };
+      for (const t of dbThemes) {
+        countsByMode[t.eventType] = (countsByMode[t.eventType] || 0) + 1;
+      }
+
+      return {
+        filter: filterMode || "ALL",
+        dbTotal: dbThemes.length,
+        dbActive: dbThemes.filter((t) => t.isActive).length,
+        diskTotal: filteredDisk.length,
+        isSynced: missingInDb.length === 0 && extraInDb.length === 0,
+        missingInDb,
+        extraInDb,
+        countsByMode,
+        themes: dbThemes.map((t) => ({
+          id: t.id,
+          name: t.name,
+          eventType: t.eventType,
+          subEvent: t.subEvent,
+          category: t.category,
+          isActive: t.isActive,
+          source: t.builderSpec ? "THEME_BUILDER" : "HANDCRAFTED",
+          defaultMusicUrl: t.defaultMusicUrl,
+        })),
+      };
+    },
+  },
+  {
+    name: "luxvite_get_packages_and_settings",
+    description:
+      "Read-only: Membaca paket harga aktif (Serenade, Symphony, Eternity), add-on, paymentMode, batas Draf Gratis dinamis (retentionFreeDraftDays & freeDraftMaxPhotos), status layanan, dan jumlah musik preset (tanpa secret/kredensial).",
+    requiredScopes: ["catalog:read"],
+    readOnly: true,
+    inputSchema: {
+      type: "object",
+      properties: {},
+      additionalProperties: false,
+    },
+    handler: async () => {
+      const [settings, musicPresets] = await Promise.all([
+        getPublicPlatformSettings(),
+        prisma.musicPreset.findMany({
+          where: { isActive: true },
+          orderBy: { sortOrder: "asc" },
+          select: { id: true, title: true, composer: true, genre: true, durationSec: true },
+        }),
+      ]);
+
+      return {
+        platformName: settings.platformName,
+        paymentMode: settings.paymentMode,
+        serviceStatus: settings.serviceStatus,
+        supportWhatsapp: settings.supportWhatsapp,
+        supportEmail: settings.supportEmail,
+        enabledEventTypes: settings.enabledEventTypes,
+        promoEnabled: settings.promoEnabled,
+        customDomainEnabled: settings.customDomainEnabled,
+        cnameTarget: settings.cnameTarget,
+        freeDraft: {
+          retentionDays: settings.freeDraftRetentionDays,
+          maxPhotos: settings.freeDraftMaxPhotos,
+        },
+        retention: {
+          subdomainGraceDays: settings.subdomainGraceDays,
+          galleryRetentionDays: settings.galleryRetentionDays,
+          archiveRetentionDays: settings.archiveRetentionDays,
+        },
+        addons: {
+          galleryExtensionPricePerMonth: settings.galleryExtensionPricePerMonth,
+          memoriesTopupEnabled: settings.addonMemoriesTopupEnabled,
+          memoriesTopupPhotos: settings.addonMemoriesTopupPhotos,
+          memoriesTopupPrice: settings.addonMemoriesTopupPrice,
+        },
+        packages: settings.packages.map((p) => ({
+          id: p.id,
+          name: p.name,
+          price: p.price,
+          capabilities: p.capabilities,
+          badge: p.badge ?? null,
+          isFeatured: Boolean(p.isFeatured),
+        })),
+        activeMusicPresetsCount: musicPresets.length,
+        musicPresets,
+      };
+    },
+  },
+  {
+    name: "luxvite_search_invitations",
+    description:
+      "Read-only: Mencari undangan klien berdasarkan slug, subdomain, custom domain, email klien, atau nama klien beserta status siklus hidup dan statistik ringkas (bebas kebocoran staffPin/passwordHash).",
+    requiredScopes: ["support:read"],
+    readOnly: true,
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "Kata kunci opsional (slug, subdomain, custom domain, email, atau nama klien).",
+        },
+        status: {
+          type: "string",
+          enum: ["DRAFT", "PUBLISHED", "EVENT_FINISHED", "TAKEN_DOWN", "ARCHIVED"],
+          description: "Filter status siklus hidup undangan.",
+        },
+        isFreeDraft: {
+          type: "boolean",
+          description: "Filter khusus Draf Gratis (true) atau undangan berbayar (false).",
+        },
+        limit: {
+          type: "integer",
+          description: "Jumlah maksimal hasil (1–25, bawaan 10).",
+          minimum: 1,
+          maximum: 25,
+        },
+      },
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const q = String(args.query ?? "").trim();
+      const limit = clampInt(args.limit, 10, 1, 25);
+      const rawStatus = String(args.status ?? "").trim().toUpperCase();
+      const statusFilter = (VALID_INVITATION_STATUSES as readonly string[]).includes(rawStatus)
+        ? (rawStatus as InvitationStatus)
+        : undefined;
+      const isFreeDraftFilter =
+        typeof args.isFreeDraft === "boolean" ? args.isFreeDraft : undefined;
+
+      const where: Prisma.InvitationWhereInput = {
+        ...(statusFilter ? { status: statusFilter } : {}),
+        ...(isFreeDraftFilter !== undefined ? { isFreeDraft: isFreeDraftFilter } : {}),
+        ...(q
+          ? {
+              OR: [
+                { invitationSlug: { contains: q, mode: "insensitive" } },
+                { subdomain: { contains: q, mode: "insensitive" } },
+                { customDomain: { contains: q, mode: "insensitive" } },
+                { user: { email: { contains: q, mode: "insensitive" } } },
+                { user: { name: { contains: q, mode: "insensitive" } } },
+              ],
+            }
+          : {}),
+      };
+
+      const rows = await prisma.invitation.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take: limit,
+        select: {
+          id: true,
+          invitationSlug: true,
+          subdomain: true,
+          customDomain: true,
+          status: true,
+          eventType: true,
+          subEvent: true,
+          themeId: true,
+          isFreeDraft: true,
+          publishedAt: true,
+          galleryExpiresAt: true,
+          adminUnlockedUntil: true,
+          memoriesUploadLocked: true,
+          createdAt: true,
+          user: { select: { id: true, name: true, email: true } },
+          order: { select: { invoiceNumber: true, planType: true, status: true } },
+          _count: { select: { guests: true, rsvps: true, guestMemories: true } },
+        },
+      });
+
+      return {
+        count: rows.length,
+        items: rows.map((r) => ({
+          id: r.id,
+          invitationSlug: r.invitationSlug,
+          subdomain: r.subdomain,
+          customDomain: r.customDomain,
+          status: r.status,
+          eventType: r.eventType,
+          subEvent: r.subEvent,
+          themeId: r.themeId,
+          isFreeDraft: r.isFreeDraft,
+          publishedAt: r.publishedAt?.toISOString() ?? null,
+          galleryExpiresAt: r.galleryExpiresAt?.toISOString() ?? null,
+          emergencyUnlocked: Boolean(r.adminUnlockedUntil && r.adminUnlockedUntil.getTime() > Date.now()),
+          memoriesUploadLocked: r.memoriesUploadLocked,
+          createdAt: r.createdAt.toISOString(),
+          client: r.user,
+          order: r.order,
+          counts: r._count,
+        })),
+      };
+    },
+  },
+  {
+    name: "luxvite_check_custom_domain_dns",
+    description:
+      "Read-only: Memeriksa propagasi DNS (A & CNAME record) domain kustom klien terhadap server Luxvite serta status keterdaftarannya di database undangan.",
+    requiredScopes: ["support:read", "ops:read"],
+    readOnly: true,
+    inputSchema: {
+      type: "object",
+      properties: {
+        domain: {
+          type: "string",
+          description: "Nama domain kustom klien (contoh: andisiti.com).",
+        },
+      },
+      required: ["domain"],
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const domain = String(args.domain ?? "")
+        .trim()
+        .toLowerCase()
+        .replace(/^https?:\/\//, "")
+        .replace(/\/.*$/, "")
+        .trim();
+
+      if (!domain || !domain.includes(".") || domain.length > 253) {
+        throw new Error("Parameter 'domain' tidak valid (contoh: andisiti.com).");
+      }
+
+      const bareDomain = domain.replace(/^www\./, "");
+      const [dnsResult, linkedInvitation] = await Promise.all([
+        checkDomainPointsToPlatform(domain),
+        prisma.invitation.findFirst({
+          where: {
+            OR: [
+              { customDomain: { equals: domain, mode: "insensitive" } },
+              { customDomain: { equals: bareDomain, mode: "insensitive" } },
+            ],
+          },
+          select: {
+            id: true,
+            invitationSlug: true,
+            subdomain: true,
+            customDomain: true,
+            status: true,
+          },
+        }),
+      ]);
+
+      return {
+        domain,
+        dns: dnsResult,
+        registeredInPlatform: Boolean(linkedInvitation),
+        invitation: linkedInvitation,
+      };
+    },
+  },
+  {
+    name: "luxvite_get_ops_logs",
+    description:
+      "Read-only: Mengambil log webhook pembayaran Midtrans terbaru (termasuk filter status anomali) dan log audit aktivitas admin/MCP terbaru.",
+    requiredScopes: ["ops:read"],
+    readOnly: true,
+    inputSchema: {
+      type: "object",
+      properties: {
+        webhookStatus: {
+          type: "string",
+          enum: ["ALL", "received", "processed", "amount_mismatch", "paid_on_closed_order", "stale_session"],
+          description: "Filter status webhook log (bawaan ALL).",
+        },
+        limit: {
+          type: "integer",
+          description: "Jumlah log per jenis (1–50, bawaan 15).",
+          minimum: 1,
+          maximum: 50,
+        },
+      },
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const limit = clampInt(args.limit, 15, 1, 50);
+      const rawWh = String(args.webhookStatus ?? "ALL").trim();
+      const whFilter = (VALID_WEBHOOK_STATUSES as readonly string[]).includes(rawWh)
+        ? (rawWh as WebhookLogStatus)
+        : undefined;
+
+      const [webhooks, auditLogs] = await Promise.all([
+        prisma.webhookLog.findMany({
+          where: whFilter ? { status: whFilter } : undefined,
+          orderBy: { createdAt: "desc" },
+          take: limit,
+          select: {
+            id: true,
+            source: true,
+            event: true,
+            status: true,
+            processedAt: true,
+            createdAt: true,
+          },
+        }),
+        prisma.adminAuditLog.findMany({
+          orderBy: { createdAt: "desc" },
+          take: limit,
+          select: {
+            id: true,
+            adminLabel: true,
+            action: true,
+            details: true,
+            createdAt: true,
+          },
+        }),
+      ]);
+
+      return {
+        webhooks: webhooks.map((w) => ({
+          id: w.id,
+          source: w.source,
+          event: w.event,
+          status: w.status,
+          processedAt: w.processedAt?.toISOString() ?? null,
+          createdAt: w.createdAt.toISOString(),
+        })),
+        auditLogs: auditLogs.map((a) => ({
+          id: a.id,
+          actor: a.adminLabel || "ADMIN",
+          action: a.action,
+          details: a.details ? a.details.slice(0, 300) : null,
+          createdAt: a.createdAt.toISOString(),
+        })),
+      };
+    },
+  },
+  {
+    name: "luxvite_sync_themes",
+    description:
+      "Write non-finansial (ops:write): Menyinkronkan katalog tema fisik di disk themes/{wedding,personal,event}/ ke tabel PostgreSQL themes (upsert aman tanpa menghapus tema aktif yang dipakai undangan) dan menyegarkan cache /demo.",
+    requiredScopes: ["ops:write"],
+    readOnly: false,
+    inputSchema: {
+      type: "object",
+      properties: {},
+      additionalProperties: false,
+    },
+    handler: async () => {
+      const discovered = await scanDiskThemes();
+      if (discovered.length === 0) {
+        throw new Error("Tidak ada berkas tema fisik yang terdeteksi di direktori themes/. Sinkronisasi dibatalkan.");
+      }
+
+      const { DEMO_REGISTRY } = await import("@/lib/demoRegistry");
+      let syncedCount = 0;
+
+      for (let i = 0; i < discovered.length; i++) {
+        const d = discovered[i];
+        const existing = await prisma.theme.findUnique({ where: { id: d.id } });
+        const demoData = (DEMO_REGISTRY as Record<string, any>)[d.id];
+        const defaultDesc = demoData?.tagline || `${d.series} — ${d.name} Exclusive Design`;
+        const catalogMediaSlots = getCatalogMediaSlots(d.id);
+        const shouldSeedMediaSlots = Boolean(catalogMediaSlots && (!existing || existing.mediaSlots === null));
+        const defaultSubEvent = THEME_MAP[d.id]?.subEvent ?? null;
+        const shouldSeedSubEvent = Boolean(defaultSubEvent && (!existing || existing.subEvent === null));
+
+        await prisma.theme.upsert({
+          where: { id: d.id },
+          update: {
+            name: existing?.name || d.name,
+            category: d.category,
+            eventType: d.eventType,
+            series: d.series,
+            sortOrder: existing?.sortOrder ?? i + 1,
+            description: existing?.description || defaultDesc,
+            thumbnail: existing?.thumbnail || demoData?.sidebarPhotoUrl || demoData?.landingCoverUrl || null,
+            ...(existing ? {} : { isActive: true }),
+            ...(shouldSeedSubEvent ? { subEvent: defaultSubEvent } : {}),
+            ...(shouldSeedMediaSlots && catalogMediaSlots
+              ? { mediaSlots: catalogMediaSlots as unknown as Prisma.InputJsonValue }
+              : {}),
+          },
+          create: {
+            id: d.id,
+            name: d.name,
+            category: d.category,
+            eventType: d.eventType,
+            ...(defaultSubEvent ? { subEvent: defaultSubEvent } : {}),
+            series: d.series,
+            description: defaultDesc,
+            thumbnail: demoData?.sidebarPhotoUrl || demoData?.landingCoverUrl || null,
+            sortOrder: i + 1,
+            isActive: true,
+            ...(catalogMediaSlots
+              ? { mediaSlots: catalogMediaSlots as unknown as Prisma.InputJsonValue }
+              : {}),
+          },
+        });
+        syncedCount++;
+      }
+
+      masterTemplateCache.clear();
+      try {
+        revalidatePath("/demo");
+        revalidatePath("/api/public/themes");
+      } catch {
+        // revalidatePath hanya aktif dalam request runtime Next.js
+      }
+
+      const activeCount = await prisma.theme.count({ where: { isActive: true } });
+      return {
+        success: true,
+        discoveredOnDisk: discovered.length,
+        syncedCount,
+        activeThemesInDb: activeCount,
+      };
+    },
+  },
+  {
+    name: "luxvite_purge_cache",
+    description:
+      "Write non-finansial (ops:write): Membersihkan cache ISR Next.js, cache L1 pengaturan & template lintas worker PM2, serta cache edge Cloudflare (bila aktif).",
+    requiredScopes: ["ops:write"],
+    readOnly: false,
+    inputSchema: {
+      type: "object",
+      properties: {},
+      additionalProperties: false,
+    },
+    handler: async () => {
+      const paths = ["/", "/sitemap.xml", "/packages", "/demo", "/api/public/themes"];
+      let nextjsOk = true;
+      let nextjsError: string | null = null;
+      try {
+        for (const p of paths) revalidatePath(p);
+      } catch (err) {
+        nextjsOk = false;
+        nextjsError = err instanceof Error ? err.message : String(err);
+      }
+
+      invalidateSettingsCache();
+      masterTemplateCache.clear();
+      invalidateInvitationLookup(null, null, null, null);
+      const cloudflare = await purgeCloudflareCache({ purgeEverything: true });
+
+      return {
+        success: nextjsOk,
+        nextjs: { ok: nextjsOk, paths, ...(nextjsError ? { error: nextjsError } : {}) },
+        localCachesCleared: true,
+        cloudflare,
+      };
+    },
+  },
+];
+
+const TOOL_BY_NAME = new Map<string, McpToolDefinition>(
+  MCP_TOOLS.map((tool) => [tool.name, tool])
+);
+
+export function getMcpToolByName(name: string): McpToolDefinition | undefined {
+  return TOOL_BY_NAME.get(name);
+}
+
+export function listToolsCatalogSummary() {
+  return MCP_TOOLS.map((t) => ({
+    name: t.name,
+    description: t.description,
+    requiredScopes: t.requiredScopes,
+    readOnly: t.readOnly,
+  }));
+}

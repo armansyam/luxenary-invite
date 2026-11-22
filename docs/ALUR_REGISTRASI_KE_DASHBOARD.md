@@ -35,7 +35,7 @@ flowchart TD
     F -->|Order PAID tapi Belum Setup| J[app/client/dashboard/setup/page.tsx]
     
     H -->|Pilih Paket| K[app/checkout/page.tsx?plan=PLAN]
-    H -->|Coba Draf Gratis 14 Hari| FD[POST /api/client/invitations/free-draft]
+    H -->|Coba Draf Gratis Dinamis| FD[POST /api/client/invitations/free-draft]
     FD --> P
     K -->|POST /api/orders/create| L[Invoice Dibuat: INV-...]
     L -->|Bayar QRIS / Transfer Bank| M[Webhook Gateway / Verifikasi Admin]
@@ -264,7 +264,7 @@ flowchart TD
        - Wedding: Akad & Resepsi.
        - Non-Wedding: Sesi Utama & Syukuran / Ramah Tamah.
     4. **Inisialisasi Fitur & Label Standar:**
-       - Menyimpan konfigurasi default ke `featureSettings` (`colorPalette: "champagne"`, `displayOrder`, `showMusic: true`, `showRsvp: true`, `showQrCheckin: true`, `showGift: true`).
+       - Menyimpan konfigurasi default ke `featureSettings` (`displayOrder`, `showMusic: true`, `showRsvp: true`, `showQrCheckin: true`, `showGift: true`; palet warna terkunci pada master tema).
     5. **Penerbitan ID & Pengalihan Otomatis:** Record dibuat dengan status `DRAFT`, draft lokal dibersihkan (`localStorage.removeItem("luxenary_setup_draft")`), dan klien langsung diantar masuk ke Studio Editor: `/dashboard/invitation/${invitation.id}`.
 
 ---

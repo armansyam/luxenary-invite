@@ -101,6 +101,18 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: "Batas foto draf gratis harus bilangan bulat 1 sampai 50." }, { status: 400 });
         }
         u.value = String(parsed);
+      } else if (u?.key === "mcp_enabled") {
+        const raw = String(u.value ?? "").trim().toLowerCase();
+        if (raw !== "true" && raw !== "false") {
+          return NextResponse.json({ error: "Nilai mcp_enabled harus 'true' atau 'false'." }, { status: 400 });
+        }
+        u.value = raw;
+      } else if (u?.key === "mcp_rate_limit_per_min") {
+        const parsed = Number.parseInt(String(u.value ?? "").trim(), 10);
+        if (!Number.isInteger(parsed) || parsed < 1 || parsed > 600) {
+          return NextResponse.json({ error: "Batas rate limit MCP harus bilangan bulat 1 sampai 600 request/menit." }, { status: 400 });
+        }
+        u.value = String(parsed);
       }
       if (u?.key !== "enabled_event_types") continue;
       const picked = String(u.value ?? "").split(",").map((s) => s.trim().toUpperCase()).filter((s) => (EVENT_TYPES as readonly string[]).includes(s));

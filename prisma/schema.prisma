@@ -730,3 +730,28 @@ model GiftClaim {
   @@index([invitationId, itemId])
   @@map("gift_claims")
 }
+
+/// Kunci API untuk Remote MCP Server (/api/mcp) per departemen/agen karyawan AI.
+/// Kunci mentah hanya ditampilkan sekali saat dibuat; database hanya menyimpan hash SHA-256.
+model McpApiKey {
+  id             String    @id @default(uuid())
+  name           String
+  department     String    @default("GENERAL")
+  keyPrefix      String    @map("key_prefix")
+  keyHash        String    @unique @map("key_hash")
+  scopes         String[]  @default([])
+  isActive       Boolean   @default(true) @map("is_active")
+  expiresAt      DateTime? @map("expires_at") @db.Timestamptz
+  lastUsedAt     DateTime? @map("last_used_at") @db.Timestamptz
+  usageCount     Int       @default(0) @map("usage_count")
+  createdById    String?   @map("created_by_id")
+  createdByLabel String?   @map("created_by_label")
+  revokedAt      DateTime? @map("revoked_at") @db.Timestamptz
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([isActive, revokedAt])
+  @@index([department])
+  @@index([createdAt])
+  @@map("mcp_api_keys")
+}

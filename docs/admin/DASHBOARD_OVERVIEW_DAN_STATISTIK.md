@@ -84,11 +84,10 @@ Panel Overview menyajikan 2 feed aktivitas mutakhir untuk pengawasan instan:
 
 ---
 
-## 5. Batasan Teknis Faktual & Rencana Pengembangan
+## 5. Catatan Query Overview & Tab Paginasi Terdedikasi
 
-1. **Limitasi Query (`take: 50`):**
-   - Endpoint `GET /api/admin/overview` mengambil maksimal 50 transaksi, 50 klien, dan 50 undangan terbaru untuk menjaga performa rendering dashboard.
-   - *Roadmap*: Diperlukan implementasi endpoint paginasi dan pencarian server-side terdedikasi (`/api/admin/orders`, `/api/admin/users`, `/api/admin/invitations`) agar data historis di atas 50 item dapat dicari dan difilter secara komprehensif.
-2. **Filter Rentang Waktu Omset:**
-   - Saat ini omset dihitung kumulatif dari seluruh transaksi lunas di memori.
-   - *Roadmap*: Penambahan date range picker (Hari Ini, Minggu Ini, Bulan Ini, Kustom) dan grafik kurva deret waktu (*time-series chart*).
+1. **Pemisahan Overview vs Tabel Penuh:**
+   - Endpoint `GET /api/admin/overview` (dirender oleh komponen modular `components/admin/AdminOverviewTab.tsx`) mengambil ringkasan KPI & aktivitas terkini agar ringan dan cepat.
+   - Untuk penelusuran data historis penuh di atas 50 item, masing-masing tab operasional memakai endpoint paginasi & pencarian server-side terdedikasi: `/api/admin/orders`, `/api/admin/users`, dan `/api/admin/invitations`.
+2. **Analitik Keuangan Berjangka Waktu:**
+   - Untuk analisis arus kas bulanan, buku kas OPEX, tutup buku, dan PPh Final 0,5%, admin menggunakan modul **Finance & Pembukuan** (`AdminCashflowTab.tsx` -> `/api/admin/finance/overview`).

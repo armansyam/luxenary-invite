@@ -1,7 +1,7 @@
 # DOKUMENTASI RESMI: PANDUAN REFERENSI API (API REFERENCE)
 **Luxenary Invite Platform — Katalog Lengkap REST Endpoints, SSE Stream, & Webhooks**
 
-Dokumen ini memuat daftar lengkap seluruh Application Programming Interface (API) yang tersedia di platform Luxenary Invite, dikelompokkan berdasarkan domain otorisasi dan fungsionalitas.
+Dokumen ini memuat katalog **138 route handlers** (`app/api/**/route.ts`) yang tersedia di platform Luxenary Invite v1.1.0, dikelompokkan berdasarkan domain otorisasi dan fungsionalitas. Seluruh rute API telah terhubung ke pelacakan error terpusat (`routeError` / `forwardException`).
 
 ---
 
@@ -49,12 +49,12 @@ Endpoint berikut dapat diakses oleh publik (tamu undangan, browser pengunjung, d
 
 | Metode | Endpoint | Deskripsi & Kegunaan |
 |:---:|---|---|
-| `GET` | `/api/public/settings` | Mengambil data pengaturan publik platform (nama platform, logo, WhatsApp CS, limit upload, `packages`). `waTemplateMessage` kosong bila admin belum mengisi template WA; klien lalu memakai preset per mode acara. |
+| `GET` | `/api/public/settings` | Mengambil data pengaturan publik platform (nama platform, logo, WhatsApp CS, limit upload, `packages`, serta parameter Free Draft dinamis `retentionFreeDraftDays` & `freeDraftMaxPhotos`). `waTemplateMessage` kosong bila admin belum mengisi template WA; klien lalu memakai preset per mode acara. |
 | `GET` | `/api/public/themes` | Mengambil katalog tema aktif (81 tema master) untuk galeri landing page & `/demo` (tiap item memuat `desc`, `tagline`, `subEvent`, `defaultMusicUrl`). Mendukung query parameter `?eventType=WEDDING\|PERSONAL\|EVENT` (cached via Cloudflare `s-maxage=86400`, `max-age=60`). |
 | `GET` | `/api/public/music` | Mengambil daftar pustaka musik latar (*audio presets*) resmi. |
 | `GET` | `/api/public/qr` | Membuat QR SVG di server sendiri. Parameter `data` (wajib, maksimal 600 karakter, UTF-8), `size` (80-400, bawaan 160), dan `mark` (opsional, maksimal 2 huruf/angka; digambar dalam lingkaran putih di tengah QR dengan koreksi level H). Rate limit 120 per menit per IP (HTTP 429). Respons di-cache 1 hari. |
 | `POST` | `/api/public/rsvp` | Mengirim konfirmasi kehadiran tamu. Rate limit 10 per menit per IP dan 200 per menit per undangan (HTTP 429). `status` dinormalkan ke `hadir`/`tidak`/`ragu` (nilai lain: 400); `guestName` maksimal 100 dan `message` maksimal 1000 karakter (lebih: 400). Respons pertama menetapkan cookie `lux_rsvp_*` (`httpOnly`); mengirim ulang dengan nama yang sama hanya memperbarui RSVP bila cookie itu ikut terkirim, selain itu 409. |
-| `GET` | `/api/public/resolve-custom-domain` | Verifikasi kepemilikan domain untuk Caddy On-Demand TLS & Next.js middleware rewrite. |
+| `GET` | `/api/public/resolve-custom-domain` | Verifikasi kepemilikan domain untuk Caddy On-Demand TLS & request proxy Next.js 16 (`proxy.ts`). |
 | `POST` | `/api/public/memories/upload` | Mengunggah foto kenangan candid dari tamu hari-H (murni foto: JPEG/PNG/WebP/GIF). |
 | `GET` | `/api/public/memories/{invitationId}` | Mengambil feed foto kenangan tamu untuk galeri publik. |
 | `GET` | `/api/sse/memories` | *Server-Sent Events* stream untuk notifikasi real-time momen baru di galeri kenangan tamu. |
@@ -73,7 +73,7 @@ Khusus untuk operasional panitia penerima tamu di meja pintu masuk venue:
 |:---:|---|---|
 | `POST` | `/api/receptionist/verify-pin` | Verifikasi 4-digit Staff PIN panitia untuk membuka akses scanner check-in. |
 | `GET` | `/api/receptionist/guests` | Mengambil daftar seluruh tamu undangan beserta kategori, `guestQuota`, `tableNumber`, `qrToken`, dan penanda check-in (`isTokenRedeemed`). Butuh sesi resepsionis (401), 60 permintaan per menit per IP (429), tanpa cache. |
-| `POST` | `/api/receptionist/scan` | Check-in tamu via QR `LUX\|<id undangan>\|<nama>` atau `qrToken` lama. QR acara lain ditolak (400), QR sudah check-in ditolak (400 `alreadyRedeemed`), nama yang tidak terdaftar dibuat sebagai tamu `UMUM`. Butuh sesi resepsionis (401), 30 permintaan per menit per IP (429). |
+| `POST` | `/api/receptionist/scan` | Check-in tamu via QR `LUX\|<id undangan>\|<nama>` atau `qrToken` lama. QR acara lain ditolak (400), QR sudah check-in ditolak (400 `alreadyRedeemed`), nama yang tidak terdaftar dibuat sebagai tamu `UMUM`. Butuh sesi resepsionis (401), rate limit sadar Wi-Fi gedung **300 permintaan per menit per IP dan 300 per menit per undangan** (429). |
 
 ---
 
@@ -86,7 +86,7 @@ Memerlukan sesi aktif klien (`role: CLIENT` atau Admin Remote Session):
 | **Onboarding** | `GET` | `/api/client/onboarding-state` | Decision tree penentu navigasi klien pasca-login (ke `/dashboard`, `/setup`, `/checkout`, atau `/packages`). |
 | **Akun** | `GET`/`PUT` | `/api/client/account/password` | Cek status `hasPassword` atau buat/ubah kata sandi klien (`bcrypt`; ditolak 403 untuk sesi remote admin). |
 | **Undangan** | `GET` | `/api/client/invitations` | Mengambil seluruh undangan milik user aktif (termasuk `subEvent`). |
-| | `POST` | `/api/client/invitations/free-draft` | Membuat 1 Draf Gratis 14 hari ber-watermark (maks. 3 foto, wajib `eventType`: `WEDDING`/`PERSONAL`/`EVENT` + `subEvent`). |
+| | `POST` | `/api/client/invitations/free-draft` | Membuat 1 Draf Gratis ber-watermark (wajib `eventType`: `WEDDING`/`PERSONAL`/`EVENT` + `subEvent`; masa retensi mengikuti `retention_free_draft_days` bawaan 14 hari & batas unggah foto mengikuti `free_draft_max_photos` bawaan 3 foto dari `admin_settings`). |
 | | `POST` | `/api/client/invitations/create` | Membuat draf undangan berbayar setelah aktivasi invoice `PAID`. Mendukung `eventType` (`WEDDING`, `PERSONAL`, `EVENT`), `subEvent`, `themeId`, `participantsJson`, `groomName`/`brideName`/`groomNickname`/`brideNickname`, dan `eventTime`; memvalidasi kecocokan `theme.eventType` dengan fallback `DEFAULT_THEME_BY_EVENT` (`kalandra`/`festivo`/`sinergi`). |
 | | `GET` | `/api/client/invitations/{id}` | Mengambil detail konfigurasi lengkap satu undangan beserta relasi media, audio, dan event. |
 | | `PUT` | `/api/client/invitations/{id}` | Memperbarui konten 16 seksi formulir Studio Editor secara menyeluruh. Draf tidak dikunci oleh tanggal acara yang sudah lewat (tanggal salah ketik dapat diperbaiki), tetapi klien tidak dapat menerbitkan undangan bertanggal lampau atau tanpa tanggal pada sesi jadwal terima tamu (`isPrimary`) (HTTP 400). Setelah terbit, jadwal tidak dapat dikosongkan dan tanggal jadwal terima tamu tidak dapat diubah klien (HTTP 403). `memoriesFilter`/`memoriesShotsQuota` yang tidak sah di `featureSettings` dikembalikan ke nilai tersimpan (`keepValidMemoriesSettings`). |
@@ -225,8 +225,18 @@ Memerlukan autentikasi admin (`role: ADMIN` atau `SUPER_ADMIN`):
 
 ## 8. API Pemeliharaan Berkala (`/api/cron/*`)
 
-Endpoint otomatis yang dipanggil oleh Crontab Linux dengan proteksi `CRON_SECRET`:
-- `POST /api/cron/cleanup`: Pembersihan data kadaluarsa, foto tamu expired, daur ulang subdomain, dan penghapusan Free Draft >14 hari.
-- `GET /api/cron/backup`: Pencadangan database PostgreSQL harian otomatis.
+Endpoint otomatis yang dipanggil oleh Crontab Linux dengan proteksi `CRON_SECRET` (kegagalan total/parsial otomatis mengirim email peringatan ke seluruh `SUPER_ADMIN` via `sendCronFailureAlertEmail`):
+- `POST /api/cron/cleanup`: Pembersihan data kadaluarsa, verifikasi arsip NAS sebelum `purgeGuestMemories` + `$transaction`, daur ulang subdomain, dan penghapusan Free Draft melewati `retention_free_draft_days` (bawaan 14 hari).
+- `POST /api/cron/backup`: Pencadangan database PostgreSQL harian otomatis (`pg_dump` format custom `.dump`, rotasi `backup_retention_count`, hanya menerima `POST`).
+
+---
+
+## 9. Remote MCP Server (`/api/mcp`) & Manajemen Admin MCP (`/api/admin/mcp*`)
+
+| Metode | Endpoint | Autentikasi & Kegunaan |
+|:---:|---|---|
+| `POST` | `/api/mcp` | Remote MCP Server **Streamable HTTP (JSON-RPC 2.0 Stateless)** khusus domain apex (`404` pada subdomain/custom domain via `proxy.ts`). Autentikasi `Authorization: Bearer <lux_mcp_...>`, rate limit PostgreSQL per kunci (`mcp_rate_limit_per_min`), master kill-switch (`mcp_enabled`). Mendukung `initialize`, `ping`, `notifications/initialized`, `tools/list`, `tools/call` (10 tools lintas 6 scope: `docs:read`, `catalog:read`, `support:read`, `ops:read`, `finance:read`, `ops:write`), `resources/list`, dan `resources/read` (19 dokumentasi resmi `luxvite://docs/...`). |
+| `GET` / `POST` / `PATCH` | `/api/admin/mcp` | Khusus `SUPER_ADMIN` (modul `mcp`): memuat status server/kunci/log, menerbitkan kunci baru (tampil 1x, disimpan SHA-256), mengubah `mcp_enabled` & `mcp_rate_limit_per_min`, serta menjalankan uji handshake live (`action: "test_handshake"`). |
+| `PATCH` / `DELETE` | `/api/admin/mcp/{id}` | Khusus `SUPER_ADMIN`: mengubah nama/scope/status jeda kunci MCP, mencabut kunci (`DELETE`), atau menghapus permanen riwayat kunci yang sudah dicabut (`DELETE ?permanent=1`). |
 
 

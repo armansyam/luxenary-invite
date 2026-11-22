@@ -18,6 +18,7 @@ import AdminCustomDomainsTab from "@/components/admin/AdminCustomDomainsTab";
 import AdminMonitoringTab from "@/components/admin/AdminMonitoringTab";
 import AdminSettingsTab from "@/components/admin/AdminSettingsTab";
 import AdminDatabaseTab from "@/components/admin/AdminDatabaseTab";
+import AdminMcpTab from "@/components/admin/AdminMcpTab";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { useFeedback } from "@/components/ui/Feedback";
 
@@ -87,6 +88,15 @@ const tabs = [
     ),
   },
   {
+    id: "mcp",
+    label: "MCP & AI",
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+      </svg>
+    ),
+  },
+  {
     id: "settings",
     label: "Pengaturan",
     icon: (
@@ -152,6 +162,7 @@ const VALID_ADMIN_TABS = [
   "custom_domains",
   "themes",
   "marketing",
+  "mcp",
   "settings",
   "database",
   "logs",
@@ -1275,6 +1286,11 @@ export default function AdminPage() {
               {/* ── Logs & Monitoring ── */}
               {activeTab === "logs" && (
                 <AdminMonitoringTab />
+              )}
+
+              {/* ── Remote MCP Server & AI Access ── */}
+              {activeTab === "mcp" && (
+                <AdminMcpTab onToast={showAdminToast} />
               )}
             </>
           )}

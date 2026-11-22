@@ -188,4 +188,15 @@ describe("proxy: crawler, /payment, reserved partner, CSP, dan isolasi custom do
       else process.env.NEXT_PUBLIC_ROOT_DOMAIN = prevRoot;
     }
   });
+
+  it("/api/mcp hanya diizinkan pada apex domain dan membalas 404 pada subdomain & custom domain", async () => {
+    const subRes = await run("bagas-laras.localhost:3000", "/api/mcp");
+    expect(subRes.status).toBe(404);
+
+    const customRes = await run("wedding-client.example.com", "/api/mcp");
+    expect(customRes.status).toBe(404);
+
+    const apexRes = await run("localhost:3000", "/api/mcp");
+    expect(apexRes.status).not.toBe(404);
+  });
 });

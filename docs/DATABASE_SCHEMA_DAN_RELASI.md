@@ -1,7 +1,7 @@
 # DOKUMENTASI RESMI: SKEMA DATABASE & KAMUS DATA
 **Luxenary Invite Platform — PostgreSQL Schema, Entity Relations, & Lifecycle State Machines**
 
-Dokumen ini membedah arsitektur basis data relasional PostgreSQL pada platform Luxenary Invite yang dikelola melalui ORM Prisma (`prisma/schema.prisma`).
+Dokumen ini membedah arsitektur basis data relasional PostgreSQL 17 pada platform Luxenary Invite yang dikelola melalui ORM Prisma 7 (`prisma/schema.prisma`, **30 model**, **18 enum**, **46 migrasi kronologis** per v1.1.0 — 22 November 2026).
 
 ---
 
@@ -30,11 +30,12 @@ erDiagram
 
     User {
         string id PK
-        string googleId UK
         string email UK
+        string passwordHash
         string name
         enum role
         string phoneNumber
+        string provisionedByPartnerId FK
     }
 
     Order {
@@ -134,11 +135,11 @@ Menyimpan akun klien / penyelenggara acara:
 - `id` (UUID, Primary Key): Identitas unik user.
 - `email` (String, Unique): Alamat email resmi (selalu dinormalisasi huruf kecil) untuk login, OTP SMTP, dan notifikasi invoice.
 - `passwordHash` (String, Nullable): Hash kata sandi (`bcrypt` cost 12) untuk login `CLIENT_PASSWORD`. Akun eksisting tanpa sandi dapat menetapkannya via alur *Lupa kata sandi?* (OTP SMTP) atau `PUT /api/client/account/password`.
-- `googleId` (String, Unique, Nullable): Kolom legacy yang dipertahankan (expand-only) pasca penghapusan Google OAuth (22 Nov 2026); tidak lagi ditulis pada pendaftaran baru.
 - `name` (String): Nama lengkap pemilik akun.
 - `role` (Enum `UserRole`): `CLIENT` (default) atau `ADMIN`.
 - `phoneNumber` (String, Nullable): Nomor kontak WhatsApp klien.
-- `avatarUrl` (String, Nullable): URL foto profil opsional.
+- `provisionedByPartnerId` (UUID, Nullable, FK `partner_affiliates.id`, `ON DELETE SET NULL`): ID mitra reseller/WO jika akun klien dibuat melalui Portal Mitra (`/partner`).
+- *(Catatan kebersihan skema v1.1.0)*: Kolom warisan Google OAuth (`googleId` beserta indeks `users_googleId_key`, dan `avatarUrl`) telah **dihapus permanen** melalui migrasi contract `20261122230000_schema_hardening_and_drop_legacy`.
 
 #### 2. Tabel `admins`
 Menyimpan kredensial tim pengelola platform:
@@ -201,10 +202,11 @@ Menyimpan riwayat callback / IPN dari payment gateway untuk idempotency dan debu
 
 #### 1. Tabel `invitations`
 Entitas pusat platform yang menyimpan konfigurasi undangan:
-- **Invarian Relasi Kritis (Free Draft vs Undangan Berbayar):** Undangan berbayar (`POST /api/client/invitations/create`) dan publikasi (`PUBLISHED`) mewajibkan order berstatus `PAID` (HTTP 403 tanpa order lunas). Pengecualian eksplisit adalah **Draf Gratis** (`isFreeDraft: true`, `POST /api/client/invitations/free-draft`, maks. 1 per akun, maks. 3 foto, ber-watermark, auto-purge 14 hari jika tidak diaktifkan via pembayaran).
+- **Invarian Relasi Kritis (Free Draft vs Undangan Berbayar):** Undangan berbayar (`POST /api/client/invitations/create`) dan publikasi (`PUBLISHED`) mewajibkan order berstatus `PAID` (HTTP 403 tanpa order lunas). Pengecualian eksplisit adalah **Draf Gratis** (`isFreeDraft: true`, `POST /api/client/invitations/free-draft`, maks. 1 per akun, ber-watermark) dengan batas foto (`free_draft_max_photos`, bawaan `3`, rentang `1–50`) dan masa retensi auto-purge (`retention_free_draft_days`, bawaan `14` hari, rentang `1–365`) yang **100% dinamis dari `admin_settings`**.
 - `id` (UUID, Primary Key): Identitas unik undangan.
 - `userId` (UUID, Foreign Key): Pemilik undangan (`onDelete: Cascade`).
-- `orderId` (UUID, Foreign Key, Nullable): Relasi ke invoice pembelian paket berstatus `PAID` (`NULL` untuk Free Draft).
+- `orderId` (UUID, Foreign Key, Nullable, `ON DELETE SET NULL`): Relasi ke invoice pembelian paket berstatus `PAID` (`NULL` untuk Free Draft).
+- *(Catatan kebersihan skema v1.1.0)*: Kolom duplikat `liveStreamUrl` telah dihapus melalui migrasi `20261122230000_schema_hardening_and_drop_legacy` setelah seluruh data non-null dimigrasikan ke `featureSettings.liveStreamYoutubeUrl` sebagai sumber kebenaran tunggal.
 - `eventType` (Enum `EventType` — 3 Mode Struktural Abadi):
   - `WEDDING`: Pernikahan / Walimatul 'Urs.
   - `PERSONAL`: Personal & Keluarga (Ulang Tahun, Khitanan, Aqiqah, Wisuda, Syukuran, Tamatan Ngaji, dll.).
@@ -333,7 +335,7 @@ Katalog kupon diskon publik mandiri (untuk kampanye promosi Luxvite; diblokir ot
 #### 2. Tabel `partner_affiliates`
 Data Mitra Reseller / Wedding Organizer (model **Potongan Harga Langsung / Zero-Debt**, tanpa pencairan komisi baru):
 - `name` (String): Nama mitra atau agensi WO rekanan.
-- `email` (String, Nullable): Email unik login Portal Mitra (`/partner`).
+- `email` (String, Nullable): Email unik login Portal Mitra (`/partner`), dinormalisasi huruf kecil dan dijaga oleh **partial unique index case-insensitive** `partner_affiliates_email_lower_key` (`UNIQUE (LOWER(email)) WHERE email IS NOT NULL`).
 - `passwordHash` & `sessionVersion` (Int): Kredensial autentikasi mandiri Portal Mitra dan pencabutan sesi instan.
 - `commissionType` (Enum `CommissionType`): Tipe potongan harga langsung mitra (`PERCENT` atau `NOMINAL`).
 - `commissionValue` (Decimal): Besaran potongan harga otomatis di checkout untuk klien yang didaftarkan mitra (`users.provisioned_by_partner_id`).
@@ -400,10 +402,10 @@ Laporan audit tutup buku keuangan bulanan yang terkunci:
 
 ---
 
-### G. Entitas Konfigurasi & Infrastruktur (`admin_settings`, `music_presets`, `rate_limit_counters`)
+### G. Entitas Konfigurasi, Piring Draf, OTP, Klaim Kado & Infrastruktur (`admin_settings`, `music_presets`, `rate_limit_counters`, `invitation_drafts`, `invitation_visits`, `gift_claims`, `email_otp_tokens`, `render_versions`, `shared_files`)
 
 #### 1. Tabel `admin_settings`
-Penyimpanan pasangan kunci-nilai untuk seluruh konfigurasi dinamis dari Admin Portal (brand, kontak, kredensial gateway, SMTP, tarif, gateway aktif `active_payment_gateway`, dan `theme_demo_*`):
+Penyimpanan pasangan kunci-nilai untuk seluruh konfigurasi dinamis dari Admin Portal (brand, kontak, kredensial gateway, SMTP, tarif, gateway aktif `active_payment_gateway`, `retention_free_draft_days`, `free_draft_max_photos`, dan `theme_demo_*`):
 - `key` (String, Unique): Kunci pengaturan.
 - `value` (String): Nilai pengaturan.
 - `label` (String, Nullable): Label tampilan di Admin Portal.
@@ -418,10 +420,37 @@ Pustaka musik latar bawaan yang dipilih klien pada studio:
 - `isActive` (Boolean) dan `sortOrder` (Int): Status tampil dan urutan.
 
 #### 3. Tabel `rate_limit_counters`
-Penghitung pembatasan laju permintaan Tier 2 (PostgreSQL atomic UPSERT) ketika Redis Upstash tidak dikonfigurasi:
+Penghitung pembatasan laju permintaan lintas proses PM2 (PostgreSQL atomic UPSERT):
 - `key` (String, Primary Key): Kunci pembatasan yang dibentuk oleh pemanggil `rateLimitDb` (`lib/rateLimit.ts`).
 - `count` (Int): Jumlah permintaan pada jendela aktif.
 - `expiresAt` (DateTime): Waktu jendela berakhir, terindeks untuk pembersihan.
+
+#### 4. Tabel `invitation_drafts` (Model `InvitationDraft`)
+Menyimpan piring HTML draf undangan beku di PostgreSQL (menggantikan berkas disk legacy `data/drafts/<id>.html`):
+- `invitationId` (UUID, Primary Key, FK `invitations.id`, `ON DELETE CASCADE`): Relasi 1:1 ke undangan.
+- `html` (Text): Snapshot HTML master terisolasi milik undangan.
+- `themeId` (String): ID tema saat piring dibuat.
+- `eventType` (Enum `EventType` — ketat sejak migrasi `20261122230000`, bukan teks bebas).
+
+#### 5. Tabel `invitation_visits` (Model `InvitationVisit`)
+Statistik kunjungan unik per peramban (`visitorId` lokal tanpa IP), `guestName` dari `?to=`, dan `visitCount` (dilindungi CHECK constraint `chk_invitation_visits_count_positive`: `visit_count >= 1`).
+
+#### 6. Tabel `gift_claims` (Model `GiftClaim`)
+Pencatatan klaim kado fisik pada Gift Registry anti-duplikasi (`invitationId`, `itemId`, `claimerName`, `quantity` dilindungi CHECK constraint `chk_gift_claims_quantity_positive`: `quantity >= 1`).
+
+#### 7. Tabel `email_otp_tokens` (Model `EmailOtpToken`)
+Token OTP 6 digit SMTP ter-hash untuk pendaftaran klien (`CLIENT_REGISTER`), reset sandi (`CLIENT_RESET_PASSWORD`), serta aktivasi/reset mitra (`PARTNER_*`), dengan batas percobaan (`attempts` dilindungi CHECK constraint `chk_email_otp_tokens_attempts_nonnegative`: `attempts >= 0`) dan indeks kedaluwarsa.
+
+#### 8. Tabel `render_versions`, `shared_files` & `mcp_api_keys` (Model `RenderVersion`, `SharedFile`, `McpApiKey`)
+- `render_versions`: Jejak versi hasil kompilasi HTML publikasi undangan (`invitationId`, `version`, `storageKey`, `sha256`).
+- `shared_files`: Indeks berkas terbagikan/statis terkontrol dengan validasi `SHARED_ROOTS` (`lib/sharedFiles.ts`) dan CHECK constraint `chk_shared_files_size_nonnegative` (`size_bytes >= 0`).
+- `mcp_api_keys` *(migrasi `20261122234500_add_mcp_api_keys`)*: Kunci API Remote MCP Server (`/api/mcp`) per departemen karyawan AI (`name`, `department`, `keyPrefix`, `keyHash` SHA-256 unik, `scopes[]`, `isActive`, `expiresAt`, `lastUsedAt`, `usageCount` dengan CHECK `usage_count >= 0`, `revokedAt`).
+
+### H. Ringkasan Hardening Skema & Indeks Produksi v1.1.0 (`20261122230000_schema_hardening_and_drop_legacy`)
+1. **Penghapusan Kolom Warisan & Duplikat:** Drop `users.googleId` (+ `users_googleId_key`), `users.avatarUrl`, dan `invitations.liveStreamUrl` (setelah migrasi data non-null ke `featureSettings.liveStreamYoutubeUrl`).
+2. **Integritas Referensial & Tipe Ketat:** `invitation_drafts.event_type` dikonversi ke enum `EventType`; FK `Invitation.order` dan `Rsvp.guest` memakai `ON DELETE SET NULL` eksplisit.
+3. **4 CHECK Constraints & Partial Unique Index Baru:** `chk_gift_claims_quantity_positive`, `chk_invitation_visits_count_positive`, `chk_email_otp_tokens_attempts_nonnegative`, `chk_shared_files_size_nonnegative`, dan `partner_affiliates_email_lower_key`.
+4. **11 Indeks Query Panas Produksi Baru:** Komposit & operasional pada `admin_audit_logs` (`(action, createdAt)`, `(adminId, createdAt)`, `createdAt`), `orders` (`(userId, orderType, status)`, `(orderType, status, createdAt)`, `promoCouponId`), `media` (`(invitationId, mediaSlot, sortOrder)`), `rsvps` (`(invitationId, status, createdAt)`), `guest_memories` (`(invitationId, isApproved, createdAt)`), `themes` (`(eventType, isActive, sortOrder)`), dan `email_otp_tokens` (`expiresAt`).
 
 ---
 

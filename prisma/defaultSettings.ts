@@ -127,6 +127,22 @@ export const defaultSettings: DefaultSettingItem[] = [
     "updatedAt": "2026-09-23T06:00:00.000Z"
   },
   {
+    "id": "a7f2b910-6e31-4c8d-9b24-81e5d2049c01",
+    "key": "mcp_enabled",
+    "value": "true",
+    "label": "Aktifkan Remote MCP Server (/api/mcp)",
+    "group": "mcp",
+    "updatedAt": "2026-11-22T23:45:00.000Z"
+  },
+  {
+    "id": "b8e3c021-7f42-4d9e-8c35-92f6e3150d02",
+    "key": "mcp_rate_limit_per_min",
+    "value": "60",
+    "label": "Batas Request MCP per Menit per Kunci",
+    "group": "mcp",
+    "updatedAt": "2026-11-22T23:45:00.000Z"
+  },
+  {
     "id": "cdac08d5-8351-449d-9c4f-1638e000133c",
     "key": "bank_account_holder",
     "value": "",

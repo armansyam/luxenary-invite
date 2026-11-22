@@ -1,7 +1,7 @@
 # DOKUMENTASI RESMI: TAHAP STUDIO EDITOR UNDANGAN
 **Luxenary Invite Platform — Dual-Native Studio & Kustomisasi 16 Seksi Undangan**
 
-Dokumen ini membedah arsitektur teknis, alur data, komponen UI, serta mekanisme penyimpanan pada tahap **Studio Editor Undangan** (`/dashboard/invitation/[id]`), ruang kerja utama tempat klien merancang, mengunggah media, mengonfigurasi palet warna, dan mempublikasikan undangan digital.
+Dokumen ini membedah arsitektur teknis, alur data, komponen UI modular (`components/client/studio/`), serta mekanisme penyimpanan pada tahap **Studio Editor Undangan** (`/dashboard/invitation/[id]`), ruang kerja utama tempat klien merancang, mengunggah media (dengan batas `free_draft_max_photos` dinamis pada Draf Gratis), memilih tema sesuai mode acara (palet terkunci per tema), dan mempublikasikan undangan digital.
 
 ---
 
@@ -23,7 +23,7 @@ flowchart TD
         B -->|Live Mode| D[Live Canvas Iframe & Viewport Switcher]
         
         C --> E[Upload Media: Cloudflare R2 Direct / Local]
-        C --> F[Pilihan Tema & Custom Color Palette]
+        C --> F[Pilihan Tema 81 Master Terisolasi 3 Mode & Mode Acara]
         C --> G[Snapshot State & Dirty State Tracker]
         
         G --> H[Tombol: Simpan Perubahan Seksi]
@@ -42,15 +42,16 @@ flowchart TD
 
 Studio Editor membagi form input menjadi 16 seksi terorganisir untuk kenyamanan pengantin:
 
-### Seksi 1: Tema Desain & Palet Warna (`SEC1`)
-- **Akses Tema Penuh (All-Access Themes):**
-  - Seluruh 39 tema terbuka penuh untuk semua tier paket (`TIER_1`, `TIER_2`, `TIER_3`).
-  - Klien dapat bebas memilih tema sebelum undangan dipublikasikan (`DRAFT`). Pasca publikasi (`PUBLISHED`), pergantian tema dikunci untuk menjaga integritas file HTML statis.
-- **Dynamic Color Palettes:**
-  - Pemilihan preset palet warna (Default, Romantic Blush, Royal Gold, Emerald Forest, Midnight Navy, Vintage Sepia).
-  - Menghasilkan token CSS Variables `--primary`, `--accent`, `--surface`, `--text-main` yang langsung disuntikkan ke rendering engine tema.
-- **Validasi Anti-Kosong:**
+### Seksi 1: Tema Desain & Mode Acara (`SEC1`)
+- **Akses Tema Penuh per Mode (All-Access 81 Tema Fisik — Terisolasi 3 Mode):**
+  - Seluruh **81 tema master fisik** terbuka penuh untuk semua tier paket (`TIER_1`, `TIER_2`, `TIER_3`), terisolasi ketat berdasarkan mode acara undangan (`34 WEDDING`, `37 PERSONAL`, `10 EVENT`).
+  - Klien dapat bebas memilih tema milik mode acaranya selama berstatus `DRAFT` (atau mengganti mode secara eksplisit lewat aksi `CHANGE_INVITATION_MODE`). Pasca publikasi (`PUBLISHED`), tema dan mode acara terkunci permanen.
+- **Palet Warna Terkunci per Tema (*Theme-Locked Palette*):**
+  - Setiap tema memiliki identitas palet warna kurasi desainer yang didefinisikan langsung di `:root` master HTML tema (`--primary`, `--accent`, `--bg-light`, `--bg-dark`, `color-mix(...)`).
+  - **Klien tidak memilih atau mengganti palet warna di Studio** (menjaga karakter estetika tiap tema); penyesuaian palet hanya dilakukan oleh Admin lewat **Editor Master** atau **Theme Builder**.
+- **Validasi Anti-Kosong & Arsitektur Modular v1.1.0:**
   - Jika klien belum memilih tema (`themeId = ""`), seksi ini otomatis terbuka (*auto-expanded*) dan menampilkan badge peringatan merah di header editor.
+  - Kode Studio Editor telah dimodularisasi ke `components/client/studio/` (`StudioEditorContext`, `StudioLiveWorkspace`, `StudioModals`, `StudioFormControls`, `DresscodeStudioBlock`, `studioPresets`, dan 6 modul panel di `components/client/studio/sections/`).
 
 ### Seksi 2: Sampul & Visual Utama (`SEC2`)
 - **Foto Sampul Pembuka (Cover Gate):** Gambar vertikal yang menjadi wajah pertama undangan sebelum amplop dibuka.
@@ -200,7 +201,6 @@ Studio Editor membagi form input menjadi 16 seksi terorganisir untuk kenyamanan 
   ```json
   {
     "themeId": "kalandra",
-    "colorPalette": "midnight-navy",
     "groomName": "Andi Pratama",
     "groomNickname": "Andi",
     "brideName": "Siti Nurhaliza",

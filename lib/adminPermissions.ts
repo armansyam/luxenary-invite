@@ -76,6 +76,13 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
   },
   // MODUL KHUSUS SUPER ADMIN (TERKUNCI MUTLAK)
   {
+    id: "mcp",
+    label: "MCP & AI",
+    description: "Remote MCP Server (/api/mcp), kunci API per departemen AI, scope akses, dan log aktivitas.",
+    category: "SYSTEM",
+    isSuperAdminOnly: true,
+  },
+  {
     id: "settings",
     label: "Pengaturan Platform",
     description: "Kunci API gateway pembayaran, SMTP email, dan konfigurasi master.",

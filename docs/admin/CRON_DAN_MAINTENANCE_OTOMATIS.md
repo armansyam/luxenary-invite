@@ -13,7 +13,7 @@ Platform berjalan secara *autopilot* melalui 2 endpoint cron utama yang dipicu s
 flowchart TD
     subgraph CronTrigger [Pemicu Terjadwal: Crontab VPS / Eksternal]
         A1[Setiap Pukul 02:00 Pagi] -->|POST /api/cron/cleanup| B1[Endpoint Pembersihan Otomatis]
-        A2[Setiap Pukul 03:00 Pagi] -->|GET /api/cron/backup| B2[Endpoint Auto-Backup Database]
+        A2[Setiap Pukul 03:00 Pagi] -->|POST /api/cron/backup| B2[Endpoint Auto-Backup Database]
     end
 
     subgraph AuthGuard [Lapisan Keamanan Otorisasi]
@@ -24,18 +24,18 @@ flowchart TD
     end
 
     subgraph TaskCleanup [Eksekusi Pembersihan (/api/cron/cleanup)]
-        D --> F[1. Transisi Status EVENT_FINISHED: H+7 Hari Acara]
-        D --> G[2. Daur Ulang Subdomain Undangan Kadaluarsa]
-        D --> H[3. Pembersihan File HTML Statis Subdomain]
-        D --> I[4. Hapus Foto Tamu yang Melewati Batas Retensi: H+30 Hari]
-        D --> J[5. Batalkan Order PENDING Usang: >30 Hari]
+        D --> F[1. Transisi Status EVENT_FINISHED & Peringatan H-3]
+        D --> G[2. Daur Ulang Subdomain & Purge Free Draft > retention_free_draft_days]
+        D --> H[3. Verifikasi Arsip NAS Sebelum purgeGuestMemories + $transaction ARCHIVED]
+        D --> I[4. Hapus Order PENDING/EXPIRED/FAILED > retention_order_days]
+        D --> J[5. Kegagalan Total/Parsial -> sendCronFailureAlertEmail ke SUPER_ADMIN]
     end
 
     subgraph TaskBackup [Eksekusi Pencadangan (/api/cron/backup)]
         D --> K[Cek Setting: backup_auto_enabled == true]
-        K --> L[Eksekusi pg_dump via Node.js Child Process]
-        L --> M[Simpan Snapshot ke Folder Backup: *.sql / *.backup]
-        M --> N[Rotasi Retensi: Hapus Snapshot Tua > 7 Hari]
+        K --> L[Eksekusi pg_dump Format Custom .dump]
+        L --> M[Rotasi Retensi: Pertahankan backup_retention_count Terbaru]
+        M --> N[Kegagalan -> sendCronFailureAlertEmail ke SUPER_ADMIN]
     end
 ```
 
@@ -51,18 +51,18 @@ Endpoint ini bertugas menjaga performa database dan kapasitas storage agar tetap
 - Endpoint menolak seluruh akses tanpa token rahasia yang sah (mencegah eksploitasi Denial of Service).
 
 ### B. Tahapan Pembersihan yang Dilakukan:
-1. **Pembersihan Siklus Hidup Terpadu (Single Unified Lifecycle Cleanup):**
+1. **Pembersihan Siklus Hidup Terpadu & Urutan Aman Arsip (Single Unified Lifecycle Cleanup):**
    - Mencari undangan yang telah melewati masa simpan pasca acara berdasarkan empat jam retensi terpisah dari acara utama pada zona waktu acara (`subdomain_grace_days`, `retention_cleanup_days` atau `galleryExpiresAt`, `nas_archive_retention_days`; custom domain ditegakkan resolver). Rute dan `npm run cron:cleanup` memanggil `lib/lifecycleCleanup.ts` yang sama; hasil `archiveFailures` berisi undangan yang gagal diarsipkan dan akan dicoba lagi.
-   - Menghapus seluruh foto kenangan tamu (`GuestMemory`) dari database dan Cloudflare R2 / penyimpanan lokal.
-   - Mengunci izin upload foto tamu (`memoriesUploadLocked = true`).
-   - Melepaskan subdomain kembali ke pool namespace (`subdomain = null`) jika fitur auto-recycle aktif.
-   - Melepaskan/menonaktifkan custom domain.
-   - Membersihkan data RSVP kedaluwarsa demi privasi tamu.
-   - Memperbarui status undangan menjadi `ARCHIVED`.
-2. **Kebijakan Nol Penghapusan Akun Klien (Zero Account Deletion):**
+   - **Urutan Aman Arsip (v1.1.0):** Sistem **memverifikasi sinkronisasi arsip NAS terlebih dahulu** sebelum mengeksekusi `purgeGuestMemories` dan membungkus transisi status ke `ARCHIVED` di dalam `prisma.$transaction` (mencegah kehilangan foto tamu bila salinan NAS belum tersimpan).
+   - Mengunci izin upload foto tamu (`memoriesUploadLocked = true`), melepaskan subdomain kembali ke pool (`subdomain = null`) bila auto-recycle aktif, melepaskan custom domain, membersihkan data RSVP kedaluwarsa, serta memicu invalidasi cache lintas worker (`cache_invalidate`).
+2. **Pembersihan Draf Gratis Kedaluwarsa (`retention_free_draft_days`):**
+   - Draf Gratis (`isFreeDraft = true`) yang melewati batas hari dinamis dari `admin_settings` (`retention_free_draft_days`, bawaan `14` hari, rentang `1–365`) otomatis dibersihkan beserta piring draf dan media lokal/R2-nya.
+3. **Kebijakan Nol Penghapusan Akun Klien (Zero Account Deletion):**
    - Akun pengguna (`User`) di basis data disimpan abadi (<1 KB) agar klien dapat login kembali untuk melihat dasbor memorial dan mengunduh rekapan doa (.CSV).
-3. **Pembersihan Invoice Kedaluwarsa:**
+4. **Pembersihan Invoice Kedaluwarsa:**
    - Pesanan berstatus `EXPIRED`, `FAILED`, atau `PENDING` yang berusia lebih dari `retention_order_days` (bawaan 90 hari) dihapus permanen beserta foto bukti transfernya (`lib/lifecycleCleanup.ts`). Enum `OrderStatus` hanya berisi `PENDING`, `PAID`, `EXPIRED`, `FAILED`; tidak ada status `CANCELLED`.
+5. **Email Peringatan Kegagalan Otomatis (`sendCronFailureAlertEmail`):**
+   - Bila terjadi kegagalan total maupun parsial (`archiveFailures` tidak kosong atau error saat backup/cleanup), sistem mengirim email peringatan non-blocking ke seluruh akun `SUPER_ADMIN` yang memiliki email melalui `lib/mailer.ts`.
 
 ---
 
@@ -71,7 +71,7 @@ Endpoint ini bertugas menjaga performa database dan kapasitas storage agar tetap
 Endpoint ini menjamin keselamatan data pengguna (*Disaster Recovery*) dengan membuat salinan basis data PostgreSQL secara terjadwal.
 
 ### A. Autentikasi
-- **Metode:** `GET` atau `POST`
+- **Metode:** `POST` (hanya menerima `POST`)
 - **Header:** `Authorization: Bearer <CRON_SECRET>` atau Sesi Aktif Admin.
 
 ### B. Logika & Mekanisme Backup (`lib/databaseBackup.ts`):

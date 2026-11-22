@@ -185,15 +185,16 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 
 ---
 
-## Paket & Tema (All-Access 39 Tema Fisik + Diferensiasi Kapabilitas)
+## Paket & Tema (All-Access 81 Tema Master Fisik Lintas 3 Mode + Diferensiasi Kapabilitas)
 
-> **All-Access Themes Model:** Seluruh tema fisik aktif (kategori Minimalist, Modern, maupun Traditional) **bebas dipilih oleh calon pengantin di semua paket**. Setiap tema memiliki palet warna dan identitas visualnya sendiri yang sudah dikurasi oleh desainer — tidak dapat diubah oleh klien. Diferensiasi paket difokuskan murni pada kapasitas tamu, fitur sistem (QR check-in / custom domain), plafon kuota kamera disposable kenangan tamu, dan masa retensi.
+> **All-Access Themes Model:** Seluruh **81 tema master fisik** aktif (`34 WEDDING`, `37 PERSONAL`, `10 EVENT` — masing-masing bergaya Minimalist, Modern, maupun Traditional) **bebas dipilih di semua paket**, terisolasi ketat sesuai mode acara undangan. Setiap tema memiliki palet warna dan identitas visualnya sendiri yang sudah dikurasi oleh desainer (*Theme-Locked Palette* — tidak diubah oleh klien). Diferensiasi paket difokuskan murni pada kapasitas tamu, fitur sistem (QR check-in / custom domain), plafon kuota kamera disposable kenangan tamu, dan masa retensi.
 
 | Paket | Kapasitas & Fitur Utama | Plafon Kamera Disposable (Admin Setting) | Pilihan Tema |
 |:--|:--|:--|:--|
-| **Serenade** *(TIER_1)* | Daftar Tamu & Link WhatsApp Tanpa Batas, Subdomain Platform, RSVP & Ucapan Realtime, Musik Latar Bebas, Retensi galeri sesuai Admin Setting (bawaan 30 hari) | Kamera Tamu: **Nonaktif** *(Dapat diaktifkan via Admin)* | **Bebas Semua Tema** *(Minimalist, Modern, Traditional)* |
-| **Symphony** *(TIER_2)* | Seluruh Fitur Serenade + **Sistem Resepsionis QR Check-In & PIN Staf Panitia**, Retensi galeri sesuai Admin Setting (bawaan 30 hari) | Total Kuota: **250 Foto Acara** *(Pengantin bebas atur roll per tamu)* | **Bebas Semua Tema** *(Minimalist, Modern, Traditional)* |
-| **Eternity** *(TIER_3)* | Seluruh Fitur Symphony + **Hak Integrasi Custom Domain**, Dashboard Monitoring Momen Tamu, Retensi galeri sesuai Admin Setting (bawaan 30 hari) | Total Kuota: **1.000 Foto Acara** *(Pengantin bebas atur roll per tamu)* | **Bebas Semua Tema** *(Minimalist, Modern, Traditional)* |
+| **Draf Gratis (Trial)** | Eksplorasi Studio Editor ber-watermark sebelum bayar (maks. 1/akun, konversi otomatis saat lunas). Masa retensi (`retention_free_draft_days`, bawaan `14` hari) & batas foto (`free_draft_max_photos`, bawaan `3` foto) **100% dinamis via Admin Settings** | Nonaktif (aktif setelah lunas) | **Bebas Semua Tema** sesuai Mode Acara |
+| **Serenade** *(TIER_1)* | Daftar Tamu & Link WhatsApp Tanpa Batas, Subdomain Platform, RSVP & Ucapan Realtime, Musik Latar Bebas, Retensi galeri sesuai Admin Setting (bawaan 30 hari) | Kamera Tamu: **Nonaktif** *(Dapat diaktifkan via Admin)* | **Bebas Semua Tema** sesuai Mode Acara *(Minimalist, Modern, Traditional)* |
+| **Symphony** *(TIER_2)* | Seluruh Fitur Serenade + **Sistem Resepsionis QR Check-In & PIN Staf Panitia**, Retensi galeri sesuai Admin Setting (bawaan 30 hari) | Total Kuota: **250 Foto Acara** *(Pengantin bebas atur roll per tamu)* | **Bebas Semua Tema** sesuai Mode Acara *(Minimalist, Modern, Traditional)* |
+| **Eternity** *(TIER_3)* | Seluruh Fitur Symphony + **Hak Integrasi Custom Domain**, Dashboard Monitoring Momen Tamu, Retensi galeri sesuai Admin Setting (bawaan 30 hari) | Total Kuota: **1.000 Foto Acara** *(Pengantin bebas atur roll per tamu)* | **Bebas Semua Tema** sesuai Mode Acara *(Minimalist, Modern, Traditional)* |
 
 > Seluruh nama tier, harga, subjudul pengantar paket di homepage (`pricing_subtitle`), butir-butir fitur (`features_tier1`, `features_tier2`, `features_tier3`), serta add-on top-up foto (+100 Foto - Rp35.000) dan perpanjangan (+30 Hari - Rp50.000) dapat diatur mandiri oleh Administrator di Admin Portal → tab Paket & Harga secara dinamis tanpa perlu deploy ulang.
 
@@ -240,7 +241,7 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 - **Standarisasi Ergonomi & Dimensi Mobile UI-UX (Golden Mobile Standard):** Mengadopsi `<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">` di seluruh tema master untuk menjamin kepatuhan aksesibilitas WCAG 1.4.4 (pinch-to-zoom aktif) dan transmisi variabel `env(safe-area-inset-*)`. Menstandarisasi `font-size: 16px` pada formulir input RSVP/ucapan guna mencegah auto-zoom liar pada Safari iOS, menerapkan safe-area insets pada floating dock (`bottom: calc(18px + env(safe-area-inset-bottom))`) dan tombol audio (`top: calc(18px + env(safe-area-inset-top))`), memastikan target sentuhan menu $\ge 44\times 44\text{px}$ (Apple HIG), serta mengoptimalkan masonry galeri modal mobile menjadi 2 kolom responsif.
 - **Pengerasan Keamanan Konkurensi & Anti-Race Condition Multi-Proses:** Menutup celah konkurensi pada lingkungan PM2 cluster multi-proses melalui integrasi *PostgreSQL Advisory Transaction Locks* (`pg_advisory_xact_lock`) pada mutasi buku tamu RSVP dan upload foto kenangan tamu (menjamin kuota foto dan batas pax katering tidak bocor saat ribuan tamu mengakses serentak), *Atomic Compare-and-Swap* (`updateMany`) pada sistem pemindaian QR resepsionis (mencegah souvenir ganda saat dipindai bersamaan oleh 2 tablet), serta fungsi ekstraksi IP terpercaya (`getClientIp`) untuk mencegah manipulasi rate limiter via `X-Forwarded-For`.
 - **Standarisasi Universal Fallback Background & Invarian Zero-Copy (`/assets/ornaments/background/`):** Pustaka latar belakang master berlokasi terpusat di `public/assets/ornaments/background/`. Dilarang keras menyalin berkas fallback ke direktori demo (`public/demo/*/`) atau direktori unggahan klien (`public/uploads/*/`). Master stylesheet tema memanggil langsung URL publik absolut `/assets/ornaments/background/<nama-file>` dengan visibilitas penuh (`opacity: 1; filter: none;`) dan kanvas scrim transparan (`background: transparent;`). Ketika media latar global tidak diunggah klien, engine mempertahankan kanvas fallback master yang jernih tanpa layar putih pudar atau overlay pekat yang merusak kontras.
-- **Standarisasi Kelengkapan Seksi Layout & Peran Mempelai Dinamis (39 Master Tema):** Seluruh 39 tema master (`minimalist`, `modern`, `traditional`, dan non-wedding) menjamin kelengkapan alur tata letak terpadu: Seksi Pembuka Opening Hero (`#home` dengan frame foto adaptif `{{homePhotoUrl}}` dan tanggal), Profil Pasangan (`#couple` dengan token dinamis `firstRoleLabel`/`secondRoleLabel`, `firstDisplayName`/`secondDisplayName`, dan discrete parents), Agenda Acara (`#events`), Galeri Momen (`#gallery` / `#moments`), Kisah Cinta (`#story`), Tanda Kasih Digital (`#gift`), Konfirmasi Kehadiran & Doa (`#rsvp` / `#wishes` terikat ke container live feed universal), serta Seksi Penutup Layar Penuh (`footer` / `.site-footer` 100vh).
+- **Standarisasi Kelengkapan Seksi Layout & Peran Peserta Dinamis (81 Master Tema Lintas 3 Mode):** Seluruh **81 tema master fisik** (`34` `wedding`, `37` `personal`, `10` `event`) menjamin kelengkapan alur tata letak terpadu sesuai mode acaranya: Seksi Pembuka Opening Hero (`#home` dengan frame foto adaptif `{{homePhotoUrl}}` dan tanggal), Profil Peserta (`#couple` dengan token dinamis `firstRoleLabel`/`secondRoleLabel`, `firstDisplayName`/`secondDisplayName`, dan discrete parents untuk `WEDDING`/`PERSONAL`; non-personal murni untuk `EVENT`), Agenda Acara (`#events`), Galeri Momen (`#gallery` / `#moments`), Kisah/Profil Acara (`#story`), Tanda Kasih Digital & Gift Registry (`#gift`), Konfirmasi Kehadiran & Doa (`#rsvp` / `#wishes` terikat ke container live feed universal), serta Seksi Penutup Layar Penuh (`footer` / `.site-footer` 100vh).
 - **Arsitektur Profil Pasangan Gender-Adaptif & Anti-Desinkronisasi Switch (`#couple`):** Engine memancarkan token `firstGender` (`"groom"` / `"bride"`), `secondGender` (`"bride"` / `"groom"`), `firstPhotoUrl`, `secondPhotoUrl`, dan flag `isGroomFirst`/`isBrideFirst`. Seluruh kartu profil di seksi `#couple` mengadopsi class dinamis `couple-{{firstGender}}` dan `couple-{{secondGender}}`, memastikan ornamen fisik adat (seperti Badik Pria vs Dedaunan Wanita) dan foto personal berpindah posisi secara presisi tanpa risiko tertukar saat opsi *Mempelai Wanita Pertama* (`BRIDE_FIRST`) diaktifkan.
 - **Resolusi Miss-Colour Tombol Peta & Konsistensi Kedalaman Kartu (`public/css/modules.css`):** Mengeliminasi circular reference CSS `background: currentColor; color: var(--bg-dark);` pada selektor global `.btn-map-outline:hover` yang sebelumnya menyebabkan black-on-black text disappearance saat hover. Seluruh kartu seksi acara (`.event-card`), amplop digital (`.gift-card`), form reservasi (`.rsvp-form-box`), dan ucapan (`.wish-item`) distandarisasi menggunakan translucent glassmorphism dengan dynamic tokens `color-mix(in srgb, var(--theme-card) 65%, transparent)` dan `backdrop-filter: blur(14px)`.
 
@@ -284,24 +285,32 @@ Sistem mendukung 4 kondisi transaksi dengan integrasi 2-arah Midtrans yang dilen
 
 ---
 
-## Database Models
+## Database Models (30 Model & 18 Enum · 46 Migrasi Kronologis)
 
 | Model | Fungsi |
 |:--|:--|
-| `User` | Akun klien (Email + Kata Sandi + OTP SMTP, role: CLIENT / ADMIN, nomor WhatsApp `phoneNumber`) |
-| `Admin` | Akun tim admin (SUPER_ADMIN, FINANCE, SUPPORT) |
-| `Order` | Invoice pembelian paket & add-on (`NEW`, `UPGRADE`, `GALLERY_EXTENSION`, `MEMORIES_TOPUP`); `fulfilledAt` menandai pemenuhan layanan setelah `PAID` (idempoten, diulang webhook/polling/cron bila gagal); satu order `NEW` lunas per pengguna ditegakkan saat pelunasan (kunci per pengguna), pembayaran ganda dicatat di `WebhookLog` untuk pengembalian dana manual |
-| `Invitation` | Inti undangan (`DRAFT`, `PUBLISHED`, `EVENT_FINISHED`, `TAKEN_DOWN`, `ARCHIVED`); nama peserta semua jenis acara hanya di `participantsJson` (jsonb), kuota add-on di kolom `extraMemoriesQuota`/`extraGalleryDays` |
-| `InvitationMedia` | Media per slot (9 slot: LANDING_COVER, LANDING_COVER_DESKTOP, HOME_PHOTO, GROOM_PHOTO, dll) |
-| `Guest` | Daftar tamu + nomor kontak `phone` + QR token |
-| `Rsvp` | Konfirmasi kehadiran tamu |
-| `Wish` | Ucapan & doa tamu |
-| `GuestMemory` | Foto candid kenangan tamu pasca-acara |
-| `Theme` | Katalog tema undangan |
-| `AdminSetting` | Konfigurasi platform dinamis (key-value) |
-| `WebhookLog` | Log audit webhook payment Midtrans |
-| `AdminAuditLog` | Log aktivitas staf admin |
+| `User` | Akun klien (Email + Kata Sandi + OTP SMTP, role: `CLIENT`/`ADMIN`, `phoneNumber`, `provisionedByPartnerId`; kolom legacy `googleId`/`avatarUrl` sudah di-drop v1.1.0) |
+| `Admin` | Akun tim admin (`SUPER_ADMIN`, `ADMIN`, `FINANCE`, `SUPPORT`, `permissions[]`, `sessionVersion`) |
+| `AdminAuditLog` | Log audit aktivitas sensitif staf admin (terindeks `(action, createdAt)`, `(adminId, createdAt)`, `createdAt`) |
+| `Order` | Invoice pembelian paket & add-on (`NEW`, `UPGRADE`, `GALLERY_EXTENSION`, `MEMORIES_TOPUP`); `fulfilledAt` idempoten, `chargedAmount`, `itemsJson`, `linkedInvitationId` |
+| `Invitation` | Inti undangan (`DRAFT`, `PUBLISHED`, `EVENT_FINISHED`, `TAKEN_DOWN`, `ARCHIVED`), `eventType` (`WEDDING`/`PERSONAL`/`EVENT`), `subEvent`, `participantsJson`, `isFreeDraft`, `extraMemoriesQuota`/`extraGalleryDays` (kolom duplikat `liveStreamUrl` sudah di-drop v1.1.0) |
+| `InvitationDraft` | Piring HTML draf undangan beku di DB (`eventType: EventType` ketat, cascade ke `Invitation`) |
+| `InvitationMedia` | Media per slot (**11 nilai `MediaSlot`**: `LANDING_COVER`, `LANDING_COVER_DESKTOP`, `HOME_PHOTO`, `DESKTOP_SIDEBAR`, `GLOBAL_FIXED_BG`, `GROOM_PHOTO`, `BRIDE_PHOTO`, `PROFILE_PHOTO`, `EVENT_PHOTO`, `GALLERY`, `CLOSING_COVER`) |
+| `Guest` | Daftar tamu + nomor kontak `phone`, `waStatus` (`PENDING`/`SENT`), `guestQuota`, `tableNumber`, & `qrToken` |
+| `Rsvp` | Konfirmasi kehadiran (`hadir`/`tidak`/`ragu`) & untaian doa ucapan + balasan tuan rumah (`guest` FK `ON DELETE SET NULL`) |
+| `InvitationVisit` | Statistik kunjungan per peramban (`visitorId` tanpa IP, CHECK `visit_count >= 1`) |
+| `GiftClaim` | Klaim kado fisik Gift Registry anti-duplikasi (CHECK `quantity >= 1`) |
+| `GuestMemory` | Foto candid kenangan tamu pasca-acara (disimpan terisolasi di `guest-memories/{invitationId}/`) |
+| `Theme` & `ThemeBuilderRevision` | Katalog **81 tema master fisik** (independen tanpa `parentTheme`, `builderSpec`, `masterOverrides`, `mediaSlots`) + riwayat revisi maks. 30 versi |
+| `AdminSetting` | Konfigurasi platform dinamis key-value (termasuk `retention_free_draft_days`, `free_draft_max_photos`, `payment_mode`, SMTP, R2) |
 | `MusicPreset` | Pustaka musik sistem dinamis untuk latar undangan |
+| `WebhookLog` | Log audit webhook payment Midtrans (idempotency & rekonsiliasi) |
+| `Expense`, `RecurringExpense`, `FinancialClosing` | Buku kas operasional OPEX, tagihan berkala, tutup buku bulanan & rekap PPh Final 0,5% |
+| `PartnerAffiliate`, `PromoCoupon`, `PromoHold`, `AffiliateCommission` | Mitra Reseller / WO (unique index case-insensitive email `partner_affiliates_email_lower_key`, potongan harga langsung zero-debt), kupon promo publik, hold anti-race, & arsip komisi historis |
+| `EmailOtpToken` & `ClientActivationToken` | Token OTP 6-digit SMTP ter-hash (CHECK `attempts >= 0`) & tautan aktivasi 48 jam klien mitra (HMAC-SHA256) |
+| `RateLimitCounter` | Counter rate limiter atomic lintas worker PM2 berbasis PostgreSQL |
+| `RenderVersion` & `SharedFile` | Versi render HTML terbit & indeks berkas bersama terkontrol (CHECK `size_bytes >= 0`) |
+| `McpApiKey` | Kunci API Remote MCP Server (`/api/mcp`) per departemen AI (hash SHA-256, 6 scope granular, status jeda/cabut, kedaluwarsa, CHECK `usage_count >= 0`) |
 
 ---
 
@@ -310,49 +319,53 @@ Sistem mendukung 4 kondisi transaksi dengan integrasi 2-arah Midtrans yang dilen
 ```
 Luxenary-Invite/
 ├── app/
-│   ├── (admin)/admin/         # Portal Admin (11 tab navigasi lengkap, termasuk Projek Undangan terfilter)
-│   ├── (client)/dashboard/    # Studio klien (setup, invitation, guests, rsvp)
+│   ├── (admin)/admin/         # Portal Admin (tab modular via components/admin/*)
+│   ├── (client)/dashboard/    # Dasbor klien (setup, invitation, guests, rsvp, moments, settings)
 │   ├── (public)/
-│   │   ├── [slug]/            # Canonical invitation route (memories redirect & fallback pintar ke portofolio / beranda)
+│   │   ├── [slug]/            # Canonical invitation route (memories, sharemoment, receptionist, welcome)
 │   │   └── s/[subdomain]/     # Sub-routes via subdomain
-│   ├── api/
-│   │   ├── admin/             # overview, orders, themes, settings, portfolio, invitations/[id]/lifecycle
-│   │   ├── client/            # invitations, guests, rsvps, upload, checkout-bundle
-│   │   ├── public/            # settings, themes, rsvp, memories, resolve-custom-domain, version
-│   │   ├── payments/          # checkout, status-stream
-│   │   ├── orders/            # create invoice
-│   │   ├── webhook/           # midtrans (gateway 2-arah)
-│   │   ├── cron/              # cleanup (memanggil lib/lifecycleCleanup.ts; jam retensi dari Admin Setting)
-│   │   └── sse/               # Server-Sent Events (memories real-time)
-│   ├── checkout/              # Flow pembayaran (multi-gateway 2-arah + manual transfer)
-│   ├── demo/                  # Preview tema publik
-│   ├── login/                 # Login klien
-│   ├── onboarding/            # Flow setup awal pasca bayar
-│   ├── packages/              # Halaman paket harga
-│   ├── portfolio/             # Galeri portofolio publik terisolasi
-│   ├── robots.ts              # SEO Googlebot crawler rules
-│   ├── sitemap.ts             # Dynamic XML sitemap generator
-│   ├── page.tsx               # Landing page utama
-│   └── globals.css
+│   ├── api/                   # 135 REST/SSE/Webhook route handlers (semua terhubung routeError)
+│   │   ├── admin/             # 60 route (overview, orders, themes, master-editor, theme-builder, settings, finance, marketing, portfolio, monitoring)
+│   │   ├── auth/              # 5 route (nextauth, otp/request, register, reset-password, set-password)
+│   │   ├── client/            # 28 route (invitations, free-draft, guests, rsvps, upload, memories, checkout-bundle, custom-domain)
+│   │   ├── partner/           # 11 route (auth OTP/login, dashboard, clients, orders pay/status/proof)
+│   │   ├── public/            # 13 route (settings, themes, music, qr, rsvp, memories, promo, resolve-custom-domain, version)
+│   │   ├── payments/          # 5 route (checkout, confirm, qris/regenerate, upgrade, status-stream)
+│   │   ├── receptionist/      # 4 route (verify-pin, guests, scan [300/min Wi-Fi venue], check-in)
+│   │   ├── cron/              # 2 route (POST /api/cron/cleanup, POST /api/cron/backup + alert SUPER_ADMIN)
+│   │   ├── sse/               # 2 route (memories & welcome TV real-time via PG LISTEN/NOTIFY)
+│   │   └── health|orders|webhook|security|files/ # Health probe, invoice, Midtrans webhook, CSP report
+│   ├── checkout/ payment/     # Flow kasir & pembayaran (Midtrans QRIS/Snap + transfer manual)
+│   ├── demo/ portfolio/       # Showroom 81 tema publik & etalase portofolio terisolasi
+│   ├── login/ onboarding/     # Login/Daftar OTP klien & dispatcher onboarding
+│   ├── partner/               # Portal Mitra Reseller / WO self-service
+│   ├── packages/              # Halaman paket harga & tombol Draf Gratis
+│   ├── error.tsx              # React Error Boundary rute aplikasi
+│   ├── global-error.tsx       # React Global Error Boundary root
+│   ├── not-found.tsx          # Halaman 404 kustom ramah pengguna
+│   ├── robots.ts / sitemap.ts # SEO crawler & dynamic XML sitemap
+│   └── page.tsx / globals.css / landing.css
 ├── lib/
-│   ├── themeEngine.ts         # ⭐ Mesin render HTML undangan (CORE)
-│   ├── themeDefaults.ts       # ⭐ Theme Blueprint Registry (kamus narasi budaya & editorial per tema)
-│   ├── staticPublisher.ts     # ⭐ Bake HTML statis saat Publish (CORE)
-│   ├── renderTemplate.ts      # Injeksi data, mapping tema, runtime script, Smart Dock Home Zone Guard & Hybrid Preloader Engine
+│   ├── themeEngine.ts         # ⭐ Facade mesin render tema (70 baris) -> lib/themeEngine/{shared,weddingComposer,modeComposers,universalSections}.ts
+│   ├── renderTemplate.ts      # Injeksi data & runtime -> lib/renderTemplate/{runtimeAssets,clientRuntime}.ts
+│   ├── themePaths.ts          # Peta folder tunggal 81 tema lintas 3 mode (wedding/personal/event)
+│   ├── themeDefaults.ts       # Kamus narasi budaya & editorial per tema
+│   ├── staticPublisher.ts     # ⭐ Bake HTML statis saat Publish (disk + R2)
+│   ├── invitationDraft.ts     # Pengelola piring draf DB (invitation_drafts, EventType ketat)
+│   ├── lifecycleCleanup.ts    # Cron cleanup terpadu, verifikasi NAS sebelum purge + $transaction
+│   ├── lifecycleDates.ts      # Kalkulasi retensi & Free Draft dinamis (retention_free_draft_days)
+│   ├── cache.ts               # Cache L1 + invalidasi lintas worker PM2 (PG LISTEN/NOTIFY cache_invalidate)
 │   ├── storage.ts             # Upload/delete media (R2 / S3 / Local switch)
-│   ├── mailer.ts              # ⭐ Nodemailer transactional & invoice email dispatcher
-│   ├── email-templates.ts     # ⭐ Mesin builder template email Warm White Cream (7 varian) & katalog pratinjau
-│   ├── driveHelper.ts         # Fetch foto Google Drive API v3
+│   ├── sharedFiles.ts         # Pengelola file bersama tervalidasi SHARED_ROOTS (0 Turbopack warning)
+│   ├── mailer.ts              # ⭐ Nodemailer transaksional, OTP, invoice, & sendCronFailureAlertEmail
+│   ├── email-templates.ts     # Builder template email Warm White Cream (7 varian)
 │   ├── settings.ts            # Single source of truth admin_settings dari DB
-│   ├── planUtils.ts           # ⭐ Single source of truth nama komersial paket (Serenade, Symphony, Eternity)
-│   ├── domainUtils.ts         # URL builder (subdomain, canonical di browser & client)
-│   ├── serverDomainUtils.ts   # ⭐ Deteksi otomatis host dinamis & appUrl via request headers (Zero Hardcode)
-│   ├── gatewayRegistry.ts     # Registry payment gateway 2-arah (Midtrans)
-│   ├── gateways/              # Implementasi gateway 2-arah: Midtrans
-│   ├── upgradeHelper.ts       # Upgrade paket & perpanjangan galeri (+30 hari)
-│   ├── rateLimit.ts           # Rate limiter API publik
-│   ├── sseEmitter.ts          # SSE emitter (momen real-time)
-│   └── videoOptimizer.ts      # Kompres video sebelum upload
+│   ├── domainUtils.ts         # URL builder & resolvePublicAppOrigin() HTTPS tunggal
+│   ├── gatewayRegistry.ts & gateways/ # Payment gateway 2-arah Midtrans
+│   ├── paymentEvents.ts       # Lazy PG LISTEN/NOTIFY bus pembayaran anti self-echo
+│   ├── rateLimit.ts           # Rate limiter PostgreSQL lintas worker PM2 (rateLimitDb)
+│   ├── sseEmitter.ts          # SSE emitter real-time (memories, welcome TV, cache_invalidate)
+│   └── videoOptimizer.ts      # FFmpeg H.264 auto-trim 20s seamless loop
 ├── themes/
 │   ├── _blueprints/           # 3 Blueprint mandiri per mode (wedding, personal, event)
 │   ├── wedding/               # 34 tema Pernikahan: minimalist (6), modern (13), traditional (15)
@@ -361,68 +374,37 @@ Luxenary-Invite/
 ├── components/
 │   ├── BrandLogo.tsx
 │   ├── client/
-│   │   ├── UnifiedAddonModal.tsx       # Tambah kuota & perpanjangan masa aktif galeri
-│   │   ├── PrintableQRCardModal.tsx    # Cetak standing banner & kartu QR
-│   │   └── GuestOpeningSetupModal.tsx  # Kustomisasi layar pembuka tamu smartphone
+│   │   ├── studio/            # Studio Editor modular (Context, Workspace, Modals, Controls, Dresscode, presets + sections/)
+│   │   ├── settings/          # PublishLaunchpadSection & TechnicalSettingsSection
+│   │   ├── moments/           # presets, MomentsStudioPanels, MomentsModals
+│   │   ├── guests/            # GuestPageModals
+│   │   └── UnifiedAddonModal.tsx / PrintableQRCardModal.tsx / GuestOpeningSetupModal.tsx / FreeDraftBanner.tsx
+│   ├── partner/               # Portal Mitra modular (types, PartnerAuthScreen, PartnerClientTables, PartnerPaymentModal)
 │   └── admin/
-│       ├── AdminPortfolioTab.tsx
-│       ├── AdminProfileSettings.tsx
-│       ├── AdminTeamManagement.tsx
-│       ├── AdminOrdersTab.tsx        # Transaksi terpaginasi & ekspor CSV
-│       ├── AdminClientsTab.tsx       # Klien, WhatsApp link & impersonate
-│       ├── AdminInvitationsTab.tsx   # Siklus hidup projek & emergency unlock
-│       ├── AdminCustomDomainsTab.tsx # Live DNS check & aktivasi 1-klik
-│       ├── AdminMonitoringTab.tsx    # Detak kesehatan server, kuota & ukuran riil R2 (MB/GB), disk VPS, audit staf & webhook
-│       ├── AdminCashflowTab.tsx      # Dashboard kas & hasil bisnis terpadu (uang masuk, keluar & sisa kas)
-│       └── AdminThemeFactory         # ⭐ Generator tema modular Build Custom & kompilasi demo statis otomatis
+│       ├── settings/          # Pengaturan modular (types, Finance, Pricing, Integrations, Operational)
+│       ├── demoStudio/        # Demo Studio 3-Mode modular (Context, Visual, Profile, Stories, Narratives, Vendors)
+│       ├── marketing/         # Marketing modular (types, MarketingTables, MarketingModals)
+│       ├── AdminOverviewTab.tsx / AdminThemesTab.tsx / AdminDemoStudioModal.tsx
+│       ├── AdminOrdersTab.tsx / AdminClientsTab.tsx / AdminInvitationsTab.tsx / AdminCustomDomainsTab.tsx
+│       ├── AdminMonitoringTab.tsx / AdminCashflowTab.tsx / AdminPortfolioTab.tsx / AdminAboutSettings.tsx
+│       └── AdminProfileSettings.tsx / AdminTeamManagement.tsx
 ├── public/
-│   ├── published/             # HTML baked (subdomains/, slugs/, ids/)
+│   ├── published/             # HTML baked (ids/)
 │   ├── uploads/               # Media lokal draft (disajikan dinamis via app/uploads/[...path]/route.ts)
 │   ├── portfolio/             # HTML portofolio terisolasi + aset lokal WebP
-│   ├── demo/                  # Preview tema
-│   └── music/fonts/assets/    # Aset statis sistem
+│   ├── demo/                  # Preview tema (runtime cache, gitignored)
+│   └── music/fonts/assets/    # Aset statis sistem (termasuk /assets/ornaments/background/)
 ├── prisma/
-│   ├── schema.prisma
-│   └── seed.ts
+│   ├── schema.prisma          # 29 model, 18 enum (0 kolom warisan Google OAuth / duplikat)
+│   ├── migrations/            # 45 migrasi kronologis (termasuk 20261122230000_schema_hardening_and_drop_legacy)
+│   ├── defaultSettings.ts     # 124 pengaturan bawaan sistem (termasuk Free Draft dinamis)
+│   └── seed.ts                # Seeder non-destruktif
 ├── prisma.config.ts           # Prisma 7 DB URL configuration
-├── docs/
-│   ├── README.md                              # Pusat indeks dokumentasi platform
-│   ├── ALUR_REGISTRASI_KE_DASHBOARD.md        # Alur lengkap registrasi Email + OTP SMTP hingga masuk studio
-│   ├── DATABASE_SCHEMA_DAN_RELASI.md          # Kamus data, ERD & lifecycle state machine
-│   ├── API_REFERENCE.md                       # Katalog lengkap seluruh 40+ REST API, SSE & Webhook
-│   ├── PANDUAN_PEMBUATAN_TEMA_BARU.md         # Theme developer guide, kamus token & standar HTML
-│   ├── CLOUDFLARE_R2_DAN_CDN_SETUP.md         # Setup Cloudflare R2, domain CDN & auto-CORS
-│   ├── SECURITY_DAN_PROTEKSI_DATA.md          # Arsitektur keamanan, AES-256-GCM & rate limit
-│   ├── client/
-│   │   ├── TAHAP_REGISTRASI_DAN_PEMBAYARAN.md  # Kasir checkout & pembayaran multi-gateway
-│   │   ├── TAHAP_DASHBOARD_SETUP_AWAL.md       # Wizard setup awal 3 langkah
-│   │   ├── TAHAP_STUDIO_EDITOR_UNDANGAN.md     # Studio editor 14 seksi & dual-native preview
-│   │   ├── TAHAP_MANAJEMEN_TAMU_DAN_QR.md      # Buku tamu, import CSV, personalisasi link & tiket QR
-│   │   ├── TAHAP_RSVP_DAN_MODERASI_UCAPAN.md   # Monitoring RSVP, hitung pax katering & feed doa
-│   │   └── TAHAP_PENGATURAN_AKUN_CUSTOM_DOMAIN_DAN_ADDON.md # Subdomain checker, CNAME, & WOW publish
-│   ├── SYSTEM_ARCHITECTURE.md  # ⭐ Arsitektur sistem menyeluruh, database & routing
-│   ├── S-Invitation.md         # Catatan filosofi bisnis & spesifikasi fitur
-│   ├── admin/
-│   │   ├── DASHBOARD_OVERVIEW_DAN_STATISTIK.md # Analitik metrik bisnis, pendapatan & server health
-│   │   ├── REMOTE_DAN_MANAJEMEN_KLIEN.md      # Cookie-based remote session & user lifecycle
-│   │   ├── MANAJEMEN_UNDANGAN_DAN_DOMAIN.md   # Pengelolaan undangan, force publish/suspend, CNAME
-│   │   ├── MANAJEMEN_TRANSAKSI_DAN_GATEWAY.md # Invoice, manual approval pembayaran & multi-gateway
-│   │   ├── MANAJEMEN_TEMA_ADMIN.md            # Upload master HTML fisik & auto-compile demo
-│   │   ├── PENGATURAN_SISTEM_BRANDING_DAN_DATABASE.md # White-label, Cloudflare R2 CORS & maintenance DB
-│   │   ├── CRON_DAN_MAINTENANCE_OTOMATIS.md   # Tugas terjadwal cleanup, retensi & backup DB
-│   │   └── DEPLOYMENT_VPS_CADDY.md            # Panduan deployment VPS Ubuntu & Caddy TLS (server baru: diuji dari clone bersih 29 Okt 2026)
-│   └── public/
-│       ├── 01_ARSITEKTUR_RENDERING_TEMA_DAN_ROUTING.md # Multi-domain resolution, compiler & dynamic CSS
-│       ├── 02_PENGALAMAN_TAMU_UNDANGAN.md     # Cover gate, audio autoplay policy, kalender & maps
-│       ├── 03_SISTEM_RSVP_DAN_BUKU_UCAPAN.md   # Form RSVP publik, rate limiting & nested wish reply
-│       ├── 04_AMPLOP_DIGITAL_DAN_HADIAH_PERNIKAHAN.md # Rekening bank copy button, QRIS & kado fisik
-│       ├── 05_SISTEM_RESEPSIONIS_DAN_CHECKIN_QR.md # Portal resepsionis, HTML5 QR scanner & souvenir
-│       └── 06_LIVE_MOMENT_DAN_CLOUD_MEMORIES.md # Upload foto candid tamu, galeri kenangan live real-time & cloud memories
-├── proxy.ts                    # ⭐ Edge request proxy & routing utama (Next.js 16)
-├── README.md                   # Dokumentasi induk repositori (Root)
-├── AGENTS.md                   # Aturan perilaku AI Agent (Next.js & Engine)
-├── CLAUDE.md                   # Pointer kontrak Anthropic Claude Code CLI
-└── deploy.sh                   # Script deploy VPS
+├── docs/                      # Dokumentasi lengkap (mulai baca dari docs/README.md)
+├── proxy.ts                   # ⭐ Request proxy Next.js 16 (routing, isolasi domain, CSP nonce)
+├── auth.ts / auth.config.ts   # NextAuth v5 (Credentials tunggal, bebas Google OAuth)
+├── README.md / AGENTS.md / CLAUDE.md
+└── deploy.sh                  # Script zero-downtime deploy VPS (backup, migrate, build, PM2 reload, smoke test)
 ```
 
 ---
@@ -868,6 +850,7 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
 - **Perbaikan Kebocoran Redirect `localhost:3001` pada `EVENT_FINISHED` & `/demo/[theme]/index.html` (22 Nov 2026)**: Mengganti `NextResponse.redirect(new URL(..., req.url), 307)` pada `app/(public)/[slug]/route.ts` (`EVENT_FINISHED`) dan `app/demo/[theme]/[file]/route.ts` menjadi `Location` relatif agar tidak pernah membocorkan `https://localhost:3001` di belakang Caddy; rewrite subdomain di `proxy.ts` tetap berbasis origin `req.url` agar bebas `ERR_TOO_MANY_REDIRECTS` (ditambah tes regresi di `__tests__/unit/subdomainProxy.test.ts`), dan normalisasi `/s/{sub}/memories` di `proxy.ts` mendaratkan browser subdomain secara bersih di `https://{sub}.luxvite.id/memories`. Rincian: `docs/SYSTEM_ARCHITECTURE.md` bagian 27 butir 91.
 - **Penghapusan Penuh Google OAuth — Autentikasi Murni Email + Kata Sandi + OTP 6-Digit SMTP (22 Nov 2026)**: Melepas total `GoogleProvider`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, helper `lib/auth.ts`, tombol login/daftar Google di `/login`, kartu konfigurasi Google OAuth di Admin Pengaturan, serta properti `hasGoogle` pada `/api/client/account/password` & `AccountPasswordCard.tsx`. Autentikasi klien kini 100% mandiri berbasis **Email + Kata Sandi + OTP 6-digit SMTP** (`/api/auth/register` & `/api/auth/reset-password`) tanpa ketergantungan Google Cloud Console maupun OAuth Consent Screen saat deployment; akun lama tanpa `passwordHash` tetap dapat menetapkan kata sandi kapan saja via *Lupa kata sandi?* (OTP). Rincian: `docs/SYSTEM_ARCHITECTURE.md` bagian 27 butir 92.
 - **Penyempurnaan Database Tanpa Tambalan, Hardening Arsitektur, Error Boundaries, Cron Alerting, & Modularisasi Menyeluruh v1.1.0 (22 Nov 2026)**: (1) Menjadikan `retention_free_draft_days` (bawaan `14`) dan `free_draft_max_photos` (bawaan `3`) dinamis penuh lintas 4 layer (Admin Settings, API, Client UI, dan Cron); (2) Menyempurnakan skema DB lewat migrasi kronologis tunggal `20261122230000_schema_hardening_and_drop_legacy` (`-- lux:contract`): drop kolom warisan `User.googleId`, `User.avatarUrl`, & duplikat `Invitation.liveStreamUrl` (setelah migrasi data ke `featureSettings.liveStreamYoutubeUrl`), ubah `InvitationDraft.eventType` menjadi enum `EventType`, `onDelete: SetNull` eksplisit, unique index case-insensitive email mitra, 4 CHECK constraint tabel baru, dan 11 indeks query panas; (3) Menyatukan origin HTTPS (`resolvePublicAppOrigin`), menghapus seluruh sisa hardcode nama lama `"Luxenary"` & `.DS_Store`, menambahkan `app/error.tsx`, `app/global-error.tsx`, `app/not-found.tsx`, menyambungkan `routeError`/`forwardException` ke 7 rute API tersisa, serta menambahkan email peringatan kegagalan cron ke `SUPER_ADMIN` (`sendCronFailureAlertEmail`); (4) Menutup 6 celah runtime & build hygiene (cache L1 lintas worker PM2 via PG `LISTEN/NOTIFY` + selective custom-domain clear, verifikasi NAS sebelum `purgeGuestMemories` + `$transaction`, rate limit resepsionis sadar Wi-Fi gedung, eliminasi query DB ganda NextAuth, lazy `PaymentEvents` PG subscriber anti self-echo, dan validasi path `sharedFiles.ts` 0 warning Turbopack); (5) Memecah seluruh monolith besar (`admin/page.tsx`, `AdminDemoStudioModal.tsx`, `AdminSettingsTab.tsx`, `AdminMarketingTab.tsx`, `invitation/[id]/page.tsx`, `settings/page.tsx`, `moments/page.tsx`, `guests/page.tsx`, `partner/page.tsx`, `lib/themeEngine.ts`, dan `lib/renderTemplate.ts`) serta memperbarui catatan rilis **v1.1.0** di `AdminAboutSettings.tsx`. Rincian: `docs/SYSTEM_ARCHITECTURE.md` bagian 27 butir 93.
+- **Remote MCP Server Native (`POST /api/mcp`) & Tab Admin `MCP & AI` (22 Nov 2026)**: Menghadirkan Remote MCP Server stateless (Streamable HTTP JSON-RPC 2.0, aman di PM2 cluster 2 worker) langsung di server produksi untuk seluruh 6 departemen karyawan AI. Dilengkapi tabel baru `mcp_api_keys` (migrasi expand-only `20261122234500_add_mcp_api_keys`, hash SHA-256, 6 scope granular: `docs:read`, `catalog:read`, `support:read`, `ops:read`, `finance:read`, dan `ops:write` opt-in non-finansial), **10 MCP Tools** (termasuk laporan keuangan & Anti-Rugi lengkap + KPI non-finansial + audit 81 tema + pencarian undangan bebas kebocoran PIN/sandi + DNS check + ops logs), **19 MCP Resources** dokumentasi resmi (`luxvite://docs/...`), isolasi apex domain di `proxy.ts` (`404` pada subdomain/custom domain), rate limit PostgreSQL per kunci (`mcp_rate_limit_per_min`), master kill-switch (`mcp_enabled`), audit log (`AdminAuditLog`), serta Tab Utama **`MCP & AI`** khusus `SUPER_ADMIN` (`components/admin/AdminMcpTab.tsx`, `/api/admin/mcp`, `/api/admin/mcp/[id]`) dengan preset 6 departemen, modal kunci sekali tampil + snippet JSON/cURL, dan tombol uji handshake live. Rincian: `docs/SYSTEM_ARCHITECTURE.md` bagian 27 butir 94.
 
 
 

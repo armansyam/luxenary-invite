@@ -31,12 +31,12 @@ flowchart TD
     subgraph TemplateCompiler [Engine Kompilasi Tema Fisik]
         C & D & E --> F[Fetch Record: prisma.invitation.findUnique]
         F --> G{Status Undangan}
-        G -->|PUBLISHED| H[Load File Master: themes/:category/:themeId/index.html]
+        G -->|PUBLISHED| H[Load File Master: themes/:mode/:style/:themeId.html]
         G -->|EVENT_FINISHED| I[Redirect ke /slug/memories]
         G -->|ARCHIVED| J[Redirect ke /portfolio/slug atau Halaman Graceful Expired]
         
         H --> K[Token Replacement: {{groom_name}}, {{event_date}}, dll]
-        K --> L[Injeksi Dynamic Color Palette CSS Variables]
+        K --> L[Pertahankan Token CSS Palet Bawaan Tema :root]
         K --> M[Injeksi Google Fonts & Open Graph Meta]
         K --> N[Penyuntikan Personalisasi Tamu: ?to=Nama+Tamu]
         
@@ -50,12 +50,12 @@ flowchart TD
 
 1. **Custom Domain (`https://wedding-andi-siti.com`):**
    - Host dievaluasi oleh `proxy.ts`. Jika bukan domain utama platform (`luxvite.id`), sistem memanggil resolver internal untuk mencocokkan field `customDomain` pada tabel `Invitation`.
-   - Menggunakan cache in-memory TTL 5 menit untuk mencegah amplifikasi self-fetch request.
+   - Menggunakan cache L1 (TTL 60 detik) yang terintegrasi ke invalidasi lintas worker PM2 via PostgreSQL `LISTEN/NOTIFY` (`cache_invalidate`) serta selective clearing saat status/domain berubah.
    - Domain dilindungi sertifikat HTTPS otomatis via Caddy *On-Demand TLS*.
 2. **Subdomain Klien (`https://andi-siti.luxvite.id`):**
    - Dilindungi oleh **Strict Subdomain Isolation Guard**:
-     - **Pelepasan Jalur Platform:** Jika tamu/klien membuka rute platform resmi (`/packages`, `/checkout`, `/login`, `/dashboard`, `/admin`, `/contact`, `/terms`, `/privacy`, `/refund`, `/how-it-works`, `/demo`, `/portfolio`), middleware otomatis melepaskan subdomain dan me-redirect (HTTP 307) ke `https://luxvite.id/{path}`.
-     - **Eksklusif 5 Rute Acara:** Subdomain klien hanya melayani 5 endpoint undangan: Beranda Utama (`/`), Tamu Personal (`/{guest}` atau `/?to=`), Galeri Kenangan (`/memories`), Meja Resepsionis (`/receptionist`), dan Kamera Momen Tamu (`/sharemoment`).
+     - **Pelepasan Jalur Platform:** Jika tamu/klien membuka rute platform resmi (`/packages`, `/checkout`, `/login`, `/dashboard`, `/admin`, `/contact`, `/terms`, `/privacy`, `/refund`, `/how-it-works`, `/demo`, `/portfolio`), `proxy.ts` otomatis melepaskan subdomain dan me-redirect (HTTP 307) ke `https://luxvite.id/{path}`.
+     - **Eksklusif Rute Acara:** Subdomain klien hanya melayani rute undangan: Beranda Utama (`/`), Tamu Personal (`/{guest}` atau `/?to=`), Galeri Kenangan (`/memories`), Meja Resepsionis (`/receptionist`), Layar Sapa TV (`/welcome`), dan Kamera Momen Tamu (`/sharemoment`).
      - **Pencegahan URL Collision:** Mencegah rute seperti `/packages` disalahartikan sebagai nama tamu undangan (`?to=packages`).
 3. **Subdomain Sistem Terproteksi:**
    - `demo.luxvite.id` otomatis dialihkan (HTTP 307) ke katalog resmi `https://luxvite.id/demo`.

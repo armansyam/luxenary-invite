@@ -146,7 +146,8 @@ describe("pemindai statis — rute tidak boleh terlupa guard", () => {
         const src = fs.readFileSync(f, "utf8");
         // verifyProofLink: tautan bertanda tangan (HMAC AUTH_SECRET) yang hanya diterbitkan rute admin.
         // getPartnerSession: cookie sesi mitra bertanda tangan HMAC (lib/partnerAuth.ts).
-        return !/\bauth\(\)|requireAdminModule|requireAnyAdmin|requireSuperAdmin|isReceptionistAuthorized|getPartnerSession|CRON_SECRET|verifyWebhookSignature|verifyProofLink|x-callback-token/.test(src);
+        // authenticateMcpBearer: Bearer API Key ter-hash SHA-256 per departemen AI (lib/mcp/auth.ts).
+        return !/\bauth\(\)|requireAdminModule|requireAnyAdmin|requireSuperAdmin|isReceptionistAuthorized|getPartnerSession|authenticateMcpBearer|CRON_SECRET|verifyWebhookSignature|verifyProofLink|x-callback-token/.test(src);
       })
       .map((f) => path.relative(apiRoot, path.dirname(f)));
     const unexpected = unauthenticated.filter((r) => !PUBLIC_ALLOWLIST.has(r));

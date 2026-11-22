@@ -71,12 +71,10 @@ Platform mengandalkan web server **Caddy** pada lingkungan produksi VPS:
 
 ---
 
-## 4. Batasan Teknis Faktual & Roadmap Pengembangan
+## 4. Fitur Operasional Aktif (Sudah Terimplementasi)
 
-1. **Volume Data Overview (`take: 50`):**
-   - Tabel undangan saat ini memuat maksimal 50 projek mutakhir dari API overview.
-   - *Roadmap*: Implementasi paginasi server-side dan search bar (mencari berdasarkan nama mempelai, subdomain, atau slug).
-2. **Pengecekan DNS Resolver Otomatis:**
-   - *Roadmap*: Menambahkan tombol *"Verifikasi DNS"* berbasis `dns.resolveCname` / `dns.resolve4` di tabel Custom Domain untuk menguji apakah domain klien sudah benar mengarah ke IP VPS secara instan dari UI admin.
-3. **Tombol 1-Klik Hubungkan Domain:**
-   - *Roadmap*: Menambahkan tombol aksi langsung untuk menyinkronkan `requestedDomain` ke `invitation.customDomain` setelah pembayaran lunas dan DNS terkonfirmasi.
+1. **Paginasi Server-Side & Pencarian Undangan (`AdminInvitationsTab.tsx` -> `GET /api/admin/invitations`):**
+   - Mendukung paginasi server-side, filter status (termasuk badge **Draf Gratis (Trial)** yang mengikuti masa retensi dinamis `retention_free_draft_days`), dan pencarian berdasarkan nama peserta, subdomain, atau slug.
+2. **Verifikasi DNS Live & Aktivasi 1-Klik (`AdminCustomDomainsTab.tsx`):**
+   - Tombol **"Cek DNS"** (`POST /api/admin/custom-domains/check-dns`) memeriksa langsung record `CNAME` / `A` domain klien terhadap `cname_target` dan `server_public_ip`.
+   - Tombol **"Aktifkan Domain"** (`POST /api/admin/custom-domains/activate`) memvalidasi order `PAID` & bebas konflik domain, memperbarui `invitation.customDomain`, serta langsung menyegarkan cache resolusi domain lintas worker PM2 (`invalidateInvitationLookup`).
