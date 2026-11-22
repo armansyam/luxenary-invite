@@ -198,14 +198,14 @@ describe.skipIf(!IS_TEST_DB)("Integrasi pembayaran & pemenuhan (DB luxenary_test
 
   // ── Happy path + idempotensi ───────────────────────────────────────────────
   describe("Webhook settlement + marketing", () => {
-    async function seedPromoOrder(tag: string, pendingBalance = 0) {
+    async function seedPromoOrder(tag: string, initialUsageCount = 0) {
       const u = await makeUser(tag);
       const partner = await prisma.partnerAffiliate.create({
         data: {
           name: `Mitra ${tag}`,
           commissionType: "PERCENT",
           commissionValue: 10,
-          pendingBalance,
+          pendingBalance: 0,
         },
       });
       ids.partners.push(partner.id);
@@ -213,6 +213,7 @@ describe.skipIf(!IS_TEST_DB)("Integrasi pembayaran & pemenuhan (DB luxenary_test
         data: {
           code: `${RUN}-${tag}`.toUpperCase(),
           discountValue: 0,
+          usageCount: initialUsageCount,
           partnerId: partner.id,
         },
       });
@@ -230,7 +231,7 @@ describe.skipIf(!IS_TEST_DB)("Integrasi pembayaran & pemenuhan (DB luxenary_test
       return { order, partner, coupon };
     }
 
-    it("settlement valid -> PAID, hold CONSUMED, komisi 10% tercatat, saldo mitra bertambah", async () => {
+    it("settlement valid -> PAID, hold CONSUMED, usageCount bertambah, ZERO komisi utang mitra", async () => {
       const { order, partner, coupon } = await seedPromoOrder("h1");
       const res = await midtransWebhook(signedWebhook(order.id));
       expect(res.status).toBe(200);
@@ -243,12 +244,12 @@ describe.skipIf(!IS_TEST_DB)("Integrasi pembayaran & pemenuhan (DB luxenary_test
 
       expect(o.status).toBe("PAID");
       expect(hold.status).toBe("CONSUMED");
-      expect(Number(com?.commissionAmount)).toBe(50000);
-      expect(Number(p.pendingBalance)).toBe(50000);
+      expect(com).toBeNull();
+      expect(Number(p.pendingBalance)).toBe(0);
       expect(c.usageCount).toBe(1);
     });
 
-    it("webhook dikirim 3x paralel -> tepat 1 komisi, saldo & usageCount tidak berlipat", async () => {
+    it("webhook dikirim 3x paralel -> usageCount tepat 1 dan tetap ZERO komisi utang", async () => {
       const { order, partner, coupon } = await seedPromoOrder("h2");
       await Promise.all([
         midtransWebhook(signedWebhook(order.id)),
@@ -258,15 +259,15 @@ describe.skipIf(!IS_TEST_DB)("Integrasi pembayaran & pemenuhan (DB luxenary_test
       const count = await prisma.affiliateCommission.count({ where: { orderId: order.id } });
       const p = await prisma.partnerAffiliate.findUniqueOrThrow({ where: { id: partner.id } });
       const c = await prisma.promoCoupon.findUniqueOrThrow({ where: { id: coupon.id } });
-      expect(count).toBe(1);
-      expect(Number(p.pendingBalance)).toBe(50000);
+      expect(count).toBe(0);
+      expect(Number(p.pendingBalance)).toBe(0);
       expect(c.usageCount).toBe(1);
     });
 
-    it("B. kegagalan di tengah marketing -> rollback penuh (PENDING, hold HELD, tanpa komisi), lalu pulih saat webhook diulang", async () => {
-      // Overflow Decimal(12,2) pada pendingBalance memaksa partnerAffiliate.update gagal
-      // SETELAH affiliateCommission.create berhasil — kegagalan nyata di DB, tanpa mock.
-      const { order, partner, coupon } = await seedPromoOrder("b1", 9999999999.5);
+    it("B. kegagalan di tengah marketing -> rollback penuh (PENDING, hold HELD), lalu pulih saat webhook diulang", async () => {
+      // Overflow INT4 pada usageCount (2147483647 + 1) memaksa promoCoupon.update gagal
+      // SETELAH promoHold.update(CONSUMED) berhasil — kegagalan nyata di DB, tanpa mock.
+      const { order, partner, coupon } = await seedPromoOrder("b1", 2147483647);
       const res = await midtransWebhook(signedWebhook(order.id));
 
       const o1 = await prisma.order.findUniqueOrThrow({ where: { id: order.id } });
@@ -279,19 +280,23 @@ describe.skipIf(!IS_TEST_DB)("Integrasi pembayaran & pemenuhan (DB luxenary_test
       expect(o1.status).toBe("PENDING");
       expect(hold1.status).toBe("HELD");
       expect(com1).toBeNull();
-      expect(c1.usageCount).toBe(0);
+      expect(c1.usageCount).toBe(2147483647);
 
       // Setelah penyebab kegagalan diperbaiki, webhook ulang harus menyelesaikan semuanya.
-      await prisma.partnerAffiliate.update({ where: { id: partner.id }, data: { pendingBalance: 0 } });
+      await prisma.promoCoupon.update({ where: { id: coupon.id }, data: { usageCount: 0 } });
       const retry = await midtransWebhook(signedWebhook(order.id));
       const o2 = await prisma.order.findUniqueOrThrow({ where: { id: order.id } });
+      const hold2 = await prisma.promoHold.findUniqueOrThrow({ where: { orderId: order.id } });
       const com2 = await prisma.affiliateCommission.findUnique({ where: { orderId: order.id } });
       const p2 = await prisma.partnerAffiliate.findUniqueOrThrow({ where: { id: partner.id } });
+      const c2 = await prisma.promoCoupon.findUniqueOrThrow({ where: { id: coupon.id } });
 
       expect(retry.status).toBe(200);
       expect(o2.status).toBe("PAID");
-      expect(Number(com2?.commissionAmount)).toBe(50000);
-      expect(Number(p2.pendingBalance)).toBe(50000);
+      expect(hold2.status).toBe("CONSUMED");
+      expect(com2).toBeNull();
+      expect(Number(p2.pendingBalance)).toBe(0);
+      expect(c2.usageCount).toBe(1);
     });
   });
 
