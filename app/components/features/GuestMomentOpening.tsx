@@ -28,6 +28,7 @@ export interface GuestMomentOpeningProps {
   currentSessionName?: string | null;
   nextSessionName?: string | null;
   nextSessionStartTime?: string | null;
+  eventDateLabel?: string | null;
   isSessionActive?: boolean;
   isAllFinished?: boolean;
 }
@@ -46,6 +47,7 @@ export default function GuestMomentOpening({
   currentSessionName = null,
   nextSessionName = null,
   nextSessionStartTime = null,
+  eventDateLabel = null,
   isSessionActive = true,
   isAllFinished = false,
 }: GuestMomentOpeningProps) {
@@ -56,13 +58,15 @@ export default function GuestMomentOpening({
     seconds: number;
     isPast: boolean;
   } | null>(null);
+  const [clientNowMs, setClientNowMs] = useState<number | null>(null);
 
   const parsedStartTime = startTime ? new Date(startTime) : null;
   const parsedEndTime = endTime ? new Date(endTime) : null;
   const targetCountdownIso = nextSessionStartTime || startTime;
 
-  // Real-time countdown timer untuk jadwal pembukaan / sesi berikutnya
+  // Real-time clock & countdown timer di client saja agar SSR dan initial hydration identik di semua zona waktu
   useEffect(() => {
+    setClientNowMs(Date.now());
     if (!targetCountdownIso) {
       setTimeLeft(null);
       return;
@@ -74,7 +78,8 @@ export default function GuestMomentOpening({
     }
 
     const calculateTime = () => {
-      const nowMs = new Date().getTime();
+      const nowMs = Date.now();
+      setClientNowMs(nowMs);
       const targetMs = targetDate.getTime();
       const diff = targetMs - nowMs;
 
@@ -94,17 +99,40 @@ export default function GuestMomentOpening({
     return () => clearInterval(interval);
   }, [targetCountdownIso]);
 
-  const now = new Date();
-  const isFinished = Boolean(isUploadLocked || isAllFinished || (!isTestMode && parsedEndTime && now > new Date(parsedEndTime.getTime() + 15 * 60 * 1000) && !nextSessionStartTime));
+  const isFinished = Boolean(
+    isUploadLocked ||
+      isAllFinished ||
+      (!isTestMode && clientNowMs !== null && parsedEndTime && clientNowMs > parsedEndTime.getTime() + 15 * 60 * 1000 && !nextSessionStartTime)
+  );
   const isActive = Boolean(!isFinished && (isSessionActive || isTestMode));
-  const isPending = Boolean(!isFinished && !isActive && (nextSessionStartTime || (parsedStartTime && now < parsedStartTime)));
+  const isPending = Boolean(
+    !isFinished &&
+      !isActive &&
+      (nextSessionStartTime || (clientNowMs !== null && parsedStartTime && clientNowMs < parsedStartTime.getTime()))
+  );
 
-  // Format Retro Date Stamp: "02  09  '26"
+  // Format Retro Date Stamp: "02  09  '26" (deterministik lintas zona waktu server/client agar bebas hydration mismatch)
   const getRetroDateStamp = () => {
-    const targetDate = parsedStartTime && !isNaN(parsedStartTime.getTime()) ? parsedStartTime : new Date();
-    const day = String(targetDate.getDate()).padStart(2, "0");
-    const month = String(targetDate.getMonth() + 1).padStart(2, "0");
-    const yearShort = String(targetDate.getFullYear()).slice(-2);
+    if (eventDateLabel) {
+      const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(eventDateLabel.trim());
+      if (m) return `${m[3]}  ${m[2]}  '${m[1].slice(-2)}`;
+    }
+    const targetDate =
+      parsedStartTime && !isNaN(parsedStartTime.getTime())
+        ? parsedStartTime
+        : clientNowMs !== null
+          ? new Date(clientNowMs)
+          : null;
+    if (!targetDate) return "--  --  '--";
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Jakarta",
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+    }).formatToParts(targetDate);
+    const day = parts.find((p) => p.type === "day")?.value ?? "--";
+    const month = parts.find((p) => p.type === "month")?.value ?? "--";
+    const yearShort = parts.find((p) => p.type === "year")?.value ?? "--";
     return `${day}  ${month}  '${yearShort}`;
   };
 

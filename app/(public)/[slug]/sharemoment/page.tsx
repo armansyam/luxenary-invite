@@ -5,6 +5,7 @@ import GuestMomentClient from "@/app/components/features/GuestMomentClient";
 import { hasPlanCapability, getPlanMemoriesQuota } from "@/lib/settings";
 import { invitationHomePath } from "@/lib/serverDomainUtils";
 import { getMemoriesActiveSchedule } from "@/lib/domainUtils";
+import { getEventTimezoneOffset, resolveEventTimezone } from "@/lib/lifecycleDates";
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 import { parseFeatureSettings } from "@/lib/featureSettings";
 import { canPreviewInvitation } from "@/lib/previewAccess";
@@ -107,7 +108,10 @@ export default async function FreeGuestMemoriesStandalonePage({ params, searchPa
   const effectiveShotsQuota = remainingPool > 0 ? Math.min(configuredShotsQuota, remainingPool) : configuredShotsQuota;
   const schedule = getMemoriesActiveSchedule(invitation.featureSettings, invitation.eventData);
   const isAllFinished = schedule.isAllFinished || invitation.status === "EVENT_FINISHED" || invitation.status === "ARCHIVED";
-  const nextSessionIso = schedule.nextSession ? `${schedule.nextSession.date}T${schedule.nextSession.startTime}:00` : null;
+  const nextSessionIso = schedule.nextSession
+    ? `${schedule.nextSession.date.includes("T") ? schedule.nextSession.date.split("T")[0] : schedule.nextSession.date}T${schedule.nextSession.startTime.slice(0, 5)}:00${getEventTimezoneOffset(resolveEventTimezone(schedule.nextSession))}`
+    : null;
+  const eventDateLabel = schedule.currentSession?.date || schedule.nextSession?.date || schedule.sessions[0]?.date || null;
 
   return (
     <GuestMomentClient
@@ -129,6 +133,7 @@ export default async function FreeGuestMemoriesStandalonePage({ params, searchPa
       currentSessionName={schedule.currentSession?.name || null}
       nextSessionName={schedule.nextSession?.name || null}
       nextSessionStartTime={nextSessionIso}
+      eventDateLabel={eventDateLabel}
       isSessionActive={schedule.isSessionActive}
       isAllFinished={isAllFinished}
       canSaveToDevice={!fs.memoriesDelayedReveal}

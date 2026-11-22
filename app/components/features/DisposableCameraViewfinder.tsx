@@ -25,6 +25,7 @@ export interface DisposableCameraViewfinderProps {
   currentSessionName?: string | null;
   nextSessionName?: string | null;
   nextSessionStartTime?: string | null;
+  eventDateLabel?: string | null;
   isSessionActive?: boolean;
   isAllFinished?: boolean;
   // false saat Delayed Reveal aktif: foto tidak boleh keluar dari "kamar gelap" sebelum dirilis serentak.
@@ -165,6 +166,7 @@ export default function DisposableCameraViewfinder({
   currentSessionName = null,
   nextSessionName = null,
   nextSessionStartTime = null,
+  eventDateLabel = null,
   isSessionActive = true,
   isAllFinished = false,
   canSaveToDevice = false,
@@ -837,6 +839,7 @@ export default function DisposableCameraViewfinder({
           currentSessionName={currentSessionName}
           nextSessionName={nextSessionName}
           nextSessionStartTime={nextSessionStartTime}
+          eventDateLabel={eventDateLabel}
           isSessionActive={isSessionActive}
           isAllFinished={isAllFinished}
           onStartCamera={() => {
