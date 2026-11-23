@@ -53,7 +53,7 @@ export default function AdminThemesTab({
   const [themeError, setThemeError] = useState<string | null>(null);
   const [themeCategoryFilter, setThemeCategoryFilter] = useState<string>("all");
   const [themeEventTypeFilter, setThemeEventTypeFilter] = useState<string>("all");
-  const [themeStatusFilter, setThemeStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [themeStatusFilter, setThemeStatusFilter] = useState<"active" | "inactive">("active");
   const [themeSearch, setThemeSearch] = useState<string>("");
   const [themeFile, setThemeFile] = useState<File | null>(null);
 
@@ -580,9 +580,15 @@ export default function AdminThemesTab({
                     </div>
                   )}
 
-                  {/* EventType + Category + Status Filter (Unified SaaS Control Bar) */}
+                  {/* EventType + Status Switch + Category Filter (Compact SaaS Control Bar) */}
                   {(() => {
-                    const validThemes = themes.filter((t) => t.id !== "starter-blueprint" && t.series !== "DRAFT_REVIEW");
+                    const catalogThemes = themes.filter((t) => t.id !== "starter-blueprint" && t.series !== "DRAFT_REVIEW");
+                    const totalActiveCount = catalogThemes.filter((t) => t.isActive !== false).length;
+                    const totalInactiveCount = catalogThemes.filter((t) => t.isActive === false).length;
+
+                    const validThemes = catalogThemes.filter((t) =>
+                      themeStatusFilter === "active" ? t.isActive !== false : t.isActive === false
+                    );
 
                     const countWedding  = validThemes.filter((t) => !t.eventType || t.eventType === "WEDDING").length;
                     const countPersonal = validThemes.filter((t) => t.eventType === "PERSONAL").length;
@@ -614,64 +620,86 @@ export default function AdminThemesTab({
                           return cat === themeCategoryFilter;
                         });
 
-                    const countStatusActive = categoryFilteredThemes.filter((t) => t.isActive !== false).length;
-                    const countStatusInactive = categoryFilteredThemes.filter((t) => t.isActive === false).length;
-
-                    const statusFilteredThemes = themeStatusFilter === "all"
-                      ? categoryFilteredThemes
-                      : categoryFilteredThemes.filter((t) =>
-                          themeStatusFilter === "active" ? t.isActive !== false : t.isActive === false
-                        );
-
                     const displayedThemes = themeSearch.trim()
-                      ? statusFilteredThemes.filter((t) =>
+                      ? categoryFilteredThemes.filter((t) =>
                           t.name.toLowerCase().includes(themeSearch.toLowerCase()) ||
                           t.id.toLowerCase().includes(themeSearch.toLowerCase())
                         )
-                      : statusFilteredThemes;
+                      : categoryFilteredThemes;
+
+                    const isShowingActive = themeStatusFilter === "active";
 
                     return (
-                      <div className="space-y-4">
-                        {/* 1. Master Segmented Event Bar */}
-                        <div className="bg-stone-100/90 p-1.5 rounded-2xl flex items-center gap-1 overflow-x-auto no-scrollbar border border-stone-200/80">
-                          {[
-                            { id: "all",      label: "Semua",               count: validThemes.length },
-                            { id: "wedding",  label: "Pernikahan",          count: countWedding },
-                            { id: "personal", label: "Personal & Keluarga", count: countPersonal },
-                            { id: "event",    label: "Acara & Event Umum",  count: countEvent },
-                          ].map((tab) => {
-                            const isActive = themeEventTypeFilter === tab.id;
-                            return (
-                              <button
-                                key={tab.id}
-                                type="button"
-                                onClick={() => {
-                                  setThemeEventTypeFilter(tab.id);
-                                  setThemeCategoryFilter("all");
-                                }}
-                                className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 shrink-0 ${
-                                  isActive
-                                    ? "bg-white text-stone-900 shadow-xs font-bold"
-                                    : "text-stone-600 hover:text-stone-900 hover:bg-white/60"
+                      <div className="space-y-3">
+                        {/* 1. Master Segmented Event Bar + Compact Aktif/Nonaktif Switch di sisi kanan */}
+                        <div className="bg-stone-100/90 p-1.5 rounded-2xl flex items-center justify-between gap-2 border border-stone-200/80 flex-wrap sm:flex-nowrap">
+                          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+                            {[
+                              { id: "all",      label: "Semua",               count: validThemes.length },
+                              { id: "wedding",  label: "Pernikahan",          count: countWedding },
+                              { id: "personal", label: "Personal & Keluarga", count: countPersonal },
+                              { id: "event",    label: "Acara & Event Umum",  count: countEvent },
+                            ].map((tab) => {
+                              const isActive = themeEventTypeFilter === tab.id;
+                              return (
+                                <button
+                                  key={tab.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setThemeEventTypeFilter(tab.id);
+                                    setThemeCategoryFilter("all");
+                                  }}
+                                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 shrink-0 ${
+                                    isActive
+                                      ? "bg-white text-stone-900 shadow-xs font-bold"
+                                      : "text-stone-600 hover:text-stone-900 hover:bg-white/60"
+                                  }`}
+                                >
+                                  <span>{tab.label}</span>
+                                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
+                                    isActive
+                                      ? "bg-stone-900 text-white font-bold"
+                                      : "bg-stone-200 text-stone-600 font-medium"
+                                  }`}>
+                                    {tab.count}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {/* Compact Switch Aktif / Nonaktif di samping tab */}
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={isShowingActive}
+                            onClick={() => {
+                              setThemeStatusFilter(isShowingActive ? "inactive" : "active");
+                              setThemeCategoryFilter("all");
+                            }}
+                            title={isShowingActive ? "Klik untuk melihat tema Nonaktif" : "Klik untuk kembali melihat tema Aktif"}
+                            className="shrink-0 flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-white border border-stone-200/90 hover:border-stone-300 shadow-2xs transition cursor-pointer ml-auto"
+                          >
+                            <span className={`text-[11px] font-bold transition-colors ${isShowingActive ? "text-emerald-700" : "text-stone-400"}`}>
+                              Aktif ({totalActiveCount})
+                            </span>
+                            <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${isShowingActive ? "bg-emerald-500" : "bg-stone-400"}`}>
+                              <span
+                                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-xs transition-transform ${
+                                  isShowingActive ? "translate-x-1" : "translate-x-4.5"
                                 }`}
-                              >
-                                <span>{tab.label}</span>
-                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
-                                  isActive
-                                    ? "bg-stone-900 text-white font-bold"
-                                    : "bg-stone-200 text-stone-600 font-medium"
-                                }`}>
-                                  {tab.count}
-                                </span>
-                              </button>
-                            );
-                          })}
+                              />
+                            </span>
+                            <span className={`text-[11px] font-bold transition-colors ${!isShowingActive ? "text-stone-800" : "text-stone-400"}`}>
+                              Nonaktif ({totalInactiveCount})
+                            </span>
+                          </button>
                         </div>
 
-                        {/* 2. Sub-Filter Toolbar: Search + Style Category Chips + Status Filter (Aktif / Nonaktif) */}
+                        {/* 2. Sub-Filter Toolbar: Search + Style Category Chips (1 baris rapi) */}
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-2 border-b border-stone-200/80">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <div className="relative w-full sm:w-60">
+                            <div className="relative w-full sm:w-56">
                               <input
                                 type="text"
                                 value={themeSearch}
@@ -691,29 +719,6 @@ export default function AdminThemesTab({
                                   ✕
                                 </button>
                               )}
-                            </div>
-
-                            {/* Status Filter: Semua | Aktif | Nonaktif */}
-                            <div className="inline-flex items-center bg-stone-100 p-0.5 rounded-xl border border-stone-200/80 shrink-0">
-                              {[
-                                { id: "all", label: `Semua (${categoryFilteredThemes.length})`, activeCls: "bg-white text-stone-900 shadow-2xs font-bold" },
-                                { id: "active", label: `● Aktif (${countStatusActive})`, activeCls: "bg-emerald-600 text-white shadow-2xs font-bold" },
-                                { id: "inactive", label: `○ Nonaktif (${countStatusInactive})`, activeCls: "bg-stone-700 text-white shadow-2xs font-bold" },
-                              ].map((st) => {
-                                const isSel = themeStatusFilter === st.id;
-                                return (
-                                  <button
-                                    key={st.id}
-                                    type="button"
-                                    onClick={() => setThemeStatusFilter(st.id as "all" | "active" | "inactive")}
-                                    className={`px-2.5 py-1 rounded-lg text-[11px] transition cursor-pointer whitespace-nowrap ${
-                                      isSel ? st.activeCls : "text-stone-600 hover:text-stone-900 font-medium"
-                                    }`}
-                                  >
-                                    {st.label}
-                                  </button>
-                                );
-                              })}
                             </div>
 
                             {categoryTabs.length > 0 && (
@@ -743,7 +748,7 @@ export default function AdminThemesTab({
                           </div>
 
                           <div className="text-right text-[11px] text-stone-500 font-medium shrink-0">
-                            Menampilkan <span className="font-bold text-stone-800">{displayedThemes.length}</span> dari {validThemes.length} tema
+                            Menampilkan <span className="font-bold text-stone-800">{displayedThemes.length}</span> dari {validThemes.length} tema {isShowingActive ? "aktif" : "nonaktif"}
                           </div>
                         </div>
 

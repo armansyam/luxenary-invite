@@ -283,7 +283,7 @@ export async function POST(req: NextRequest) {
             category: targetCategory,
             eventType: targetEventType,
             subEvent: targetSubEvent,
-            series: SERIES[targetCategory],
+            series: "DRAFT_REVIEW",
             isActive: false,
             sortOrder: (maxOrder._max.sortOrder ?? 0) + 1,
             builderSpec: convertedSpec as unknown as Prisma.InputJsonObject,
@@ -360,7 +360,7 @@ export async function POST(req: NextRequest) {
           category,
           eventType: parsed.spec.eventType,
           subEvent: parsed.spec.eventType === "WEDDING" ? null : (subEvent ?? null),
-          series: SERIES[category],
+          series: "DRAFT_REVIEW",
           isActive: false,
           sortOrder: (maxOrder._max.sortOrder ?? 0) + 1,
           builderSpec: spec as unknown as Prisma.InputJsonObject,
@@ -451,7 +451,7 @@ export async function PUT(req: NextRequest) {
         name,
         description,
         category,
-        series: SERIES[category],
+        series: existing.series === "DRAFT_REVIEW" ? "DRAFT_REVIEW" : SERIES[category],
         ...(subEvent !== undefined ? { subEvent: existingEventType === "WEDDING" ? null : subEvent } : {}),
         builderSpec: spec as unknown as Prisma.InputJsonObject,
         defaultMedia: builderDefaultMedia(spec),
@@ -484,9 +484,18 @@ export async function PATCH(req: NextRequest) {
     if (issues === null) return NextResponse.json({ error: "Tema builder tidak ditemukan." }, { status: 404 });
     if (body.isActive && issues.length) return NextResponse.json({ error: "Tema belum lolos pemeriksaan.", issues }, { status: 422 });
 
+    const current = await prisma.theme.findUnique({ where: { id: themeId }, select: { category: true, series: true } });
+    const nextSeries =
+      body.isActive && current?.series === "DRAFT_REVIEW"
+        ? (SERIES[current.category as BuilderCategory] ?? null)
+        : undefined;
+
     const theme = await prisma.theme.update({
       where: { id: themeId },
-      data: { isActive: body.isActive },
+      data: {
+        isActive: body.isActive,
+        ...(nextSeries !== undefined ? { series: nextSeries } : {}),
+      },
       select: { id: true, name: true, category: true, description: true, isActive: true },
     });
     await refreshPublicTheme(themeId, theme.isActive);
