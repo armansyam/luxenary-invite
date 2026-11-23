@@ -53,12 +53,13 @@ export default function AdminThemesTab({
   const [themeError, setThemeError] = useState<string | null>(null);
   const [themeCategoryFilter, setThemeCategoryFilter] = useState<string>("all");
   const [themeEventTypeFilter, setThemeEventTypeFilter] = useState<string>("all");
+  const [themeStatusFilter, setThemeStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [themeSearch, setThemeSearch] = useState<string>("");
   const [themeFile, setThemeFile] = useState<File | null>(null);
 
   const [demoStudioTheme, setDemoStudioTheme] = useState<any | null>(null);
 
-  const [themeSubTab, setThemeSubTab] = useState<"themes" | "music">("themes");
+  const [themeSubTab, setThemeSubTab] = useState<"themes" | "drafts" | "music">("themes");
   const [systemMusics, setSystemMusics] = useState<any[]>([]);
   const [musicLoading, setMusicLoading] = useState(false);
   const [musicUploading, setMusicUploading] = useState(false);
@@ -379,6 +380,29 @@ export default function AdminThemesTab({
     }
   };
 
+  const handleReleaseDraftTheme = async (th: any) => {
+    setThemes((prev) =>
+      prev.map((t) => (t.id === th.id ? { ...t, isActive: true, series: null } : t))
+    );
+    try {
+      const res = await fetch("/api/admin/themes", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: th.id, isActive: true, series: null }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Gagal merilis tema draf");
+      }
+      showAdminToast(`🚀 Tema "${th.name}" resmi dirilis & dipindahkan ke Katalog Tema!`, true);
+    } catch (err: any) {
+      setThemes((prev) =>
+        prev.map((t) => (t.id === th.id ? { ...t, isActive: false, series: "DRAFT_REVIEW" } : t))
+      );
+      showAdminToast("Gagal merilis draf: " + err.message, false);
+    }
+  };
+
   const handleSyncThemes = async () => {
     try {
       setThemeSyncing(true);
@@ -409,8 +433,12 @@ export default function AdminThemesTab({
   return (
     <>
                 <div className="space-y-6">
-                  {/* Sub-Tab Navigation: Katalog Tema vs Pustaka Musik */}
-                  <div className="flex items-center gap-2 border-b border-stone-200 pb-3">
+                  {/* Sub-Tab Navigation: Katalog Tema vs Draft Themes vs Pustaka Musik */}
+                  {(() => {
+                    const catalogCount = themes.filter((t) => t.id !== "starter-blueprint" && t.series !== "DRAFT_REVIEW").length;
+                    const draftCount = themes.filter((t) => t.id !== "starter-blueprint" && t.series === "DRAFT_REVIEW").length;
+                    return (
+                  <div className="flex items-center gap-2 border-b border-stone-200 pb-3 flex-wrap">
                     <button
                       type="button"
                       onClick={() => setThemeSubTab("themes")}
@@ -423,7 +451,29 @@ export default function AdminThemesTab({
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                       </svg>
-                      <span>Katalog Tema ({themes.filter((t) => t.id !== "starter-blueprint").length})</span>
+                      <span>Katalog Tema ({catalogCount})</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setThemeSubTab("drafts")}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+                        themeSubTab === "drafts"
+                          ? "bg-indigo-700 text-white shadow-xs"
+                          : draftCount > 0
+                            ? "bg-indigo-50 text-indigo-800 border border-indigo-200 hover:bg-indigo-100"
+                            : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                      }`}
+                    >
+                      <span>🕵️ Draft Themes</span>
+                      <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono ${
+                        themeSubTab === "drafts"
+                          ? "bg-white/20 text-white"
+                          : draftCount > 0
+                            ? "bg-indigo-600 text-white"
+                            : "bg-stone-200 text-stone-600"
+                      }`}>
+                        {draftCount}
+                      </span>
                     </button>
                     <button
                       type="button"
@@ -443,6 +493,8 @@ export default function AdminThemesTab({
                       <span>Pustaka Musik Sistem ({systemMusics.length})</span>
                     </button>
                   </div>
+                    );
+                  })()}
 
                   {themeSubTab === "themes" ? (
                     <div className="space-y-6">
@@ -528,9 +580,9 @@ export default function AdminThemesTab({
                     </div>
                   )}
 
-                  {/* EventType + Category Filter (Unified SaaS Control Bar) */}
+                  {/* EventType + Category + Status Filter (Unified SaaS Control Bar) */}
                   {(() => {
-                    const validThemes = themes.filter((t) => t.id !== "starter-blueprint");
+                    const validThemes = themes.filter((t) => t.id !== "starter-blueprint" && t.series !== "DRAFT_REVIEW");
 
                     const countWedding  = validThemes.filter((t) => !t.eventType || t.eventType === "WEDDING").length;
                     const countPersonal = validThemes.filter((t) => t.eventType === "PERSONAL").length;
@@ -562,12 +614,21 @@ export default function AdminThemesTab({
                           return cat === themeCategoryFilter;
                         });
 
+                    const countStatusActive = categoryFilteredThemes.filter((t) => t.isActive !== false).length;
+                    const countStatusInactive = categoryFilteredThemes.filter((t) => t.isActive === false).length;
+
+                    const statusFilteredThemes = themeStatusFilter === "all"
+                      ? categoryFilteredThemes
+                      : categoryFilteredThemes.filter((t) =>
+                          themeStatusFilter === "active" ? t.isActive !== false : t.isActive === false
+                        );
+
                     const displayedThemes = themeSearch.trim()
-                      ? categoryFilteredThemes.filter((t) =>
+                      ? statusFilteredThemes.filter((t) =>
                           t.name.toLowerCase().includes(themeSearch.toLowerCase()) ||
                           t.id.toLowerCase().includes(themeSearch.toLowerCase())
                         )
-                      : categoryFilteredThemes;
+                      : statusFilteredThemes;
 
                     return (
                       <div className="space-y-4">
@@ -607,10 +668,10 @@ export default function AdminThemesTab({
                           })}
                         </div>
 
-                        {/* 2. Sub-Filter Toolbar: Search + Style Category Chips + Counter */}
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-1 border-b border-stone-200/80">
+                        {/* 2. Sub-Filter Toolbar: Search + Style Category Chips + Status Filter (Aktif / Nonaktif) */}
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-2 border-b border-stone-200/80">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <div className="relative w-full sm:w-64">
+                            <div className="relative w-full sm:w-60">
                               <input
                                 type="text"
                                 value={themeSearch}
@@ -630,6 +691,29 @@ export default function AdminThemesTab({
                                   ✕
                                 </button>
                               )}
+                            </div>
+
+                            {/* Status Filter: Semua | Aktif | Nonaktif */}
+                            <div className="inline-flex items-center bg-stone-100 p-0.5 rounded-xl border border-stone-200/80 shrink-0">
+                              {[
+                                { id: "all", label: `Semua (${categoryFilteredThemes.length})`, activeCls: "bg-white text-stone-900 shadow-2xs font-bold" },
+                                { id: "active", label: `● Aktif (${countStatusActive})`, activeCls: "bg-emerald-600 text-white shadow-2xs font-bold" },
+                                { id: "inactive", label: `○ Nonaktif (${countStatusInactive})`, activeCls: "bg-stone-700 text-white shadow-2xs font-bold" },
+                              ].map((st) => {
+                                const isSel = themeStatusFilter === st.id;
+                                return (
+                                  <button
+                                    key={st.id}
+                                    type="button"
+                                    onClick={() => setThemeStatusFilter(st.id as "all" | "active" | "inactive")}
+                                    className={`px-2.5 py-1 rounded-lg text-[11px] transition cursor-pointer whitespace-nowrap ${
+                                      isSel ? st.activeCls : "text-stone-600 hover:text-stone-900 font-medium"
+                                    }`}
+                                  >
+                                    {st.label}
+                                  </button>
+                                );
+                              })}
                             </div>
 
                             {categoryTabs.length > 0 && (
@@ -902,6 +986,138 @@ export default function AdminThemesTab({
                   );
                   })()}
                 </div>
+              ) : themeSubTab === "drafts" ? (
+                /* ── Sub-Tab: Draft Themes (Tema Baru Menunggu Review & Rilis) ── */
+                (() => {
+                  const draftThemes = themes
+                    .filter((t) => t.id !== "starter-blueprint" && t.series === "DRAFT_REVIEW")
+                    .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+
+                  return (
+                    <div className="space-y-5">
+                      <div className="flex items-center justify-between flex-wrap gap-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h2 className="text-lg sm:text-2xl font-bold text-gray-900">🕵️ Draft Themes — Review Tema Baru</h2>
+                            <span className="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-xs font-bold font-mono">
+                              {draftThemes.length} Draf
+                            </span>
+                          </div>
+                          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+                            Tema baru buatan tim AI Dept 2 (MCP) maupun Theme Builder yang berstatus <b>Nonaktif (Belum Rilis)</b>. Hanya Admin yang bisa membuka Preview sebelum Anda klik <b>Rilis ke Katalog</b>.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={onSyncSuccess}
+                          className="px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold rounded-xl transition flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <span>🔄 Segarkan Daftar Draf</span>
+                        </button>
+                      </div>
+
+                      {draftThemes.length === 0 ? (
+                        <div className="bg-white rounded-2xl border border-dashed border-stone-300 p-10 text-center space-y-2">
+                          <div className="text-3xl">✨</div>
+                          <p className="text-sm font-bold text-stone-800">Belum ada Draft Themes yang menunggu review</p>
+                          <p className="text-xs text-stone-500 max-w-md mx-auto">
+                            Saat tim AI Dept 2 (Bima) mengirim tema baru melalui Remote MCP (<code>luxvite_create_draft_theme</code>), tema akan masuk ke sini terlebih dahulu untuk Anda preview &amp; rilis.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {draftThemes.map((theme) => {
+                            const isBuilder = Boolean(theme.builderSpec);
+                            const evLabel =
+                              theme.eventType === "PERSONAL"
+                                ? "Personal"
+                                : theme.eventType === "EVENT"
+                                  ? "Event"
+                                  : "Wedding";
+                            const styleLabel =
+                              (theme.category || "").toLowerCase() === "traditional"
+                                ? "Tradisional"
+                                : (theme.category || "").toLowerCase() === "modern"
+                                  ? "Modern"
+                                  : "Minimalis";
+                            return (
+                              <div
+                                key={theme.id}
+                                className="bg-white rounded-2xl border-2 border-indigo-200/90 shadow-xs p-4 flex flex-col justify-between gap-4 hover:border-indigo-400 transition"
+                              >
+                                <div className="space-y-2.5">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0">
+                                      <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                                        <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-[10px] font-bold">
+                                          🕵️ DRAFT · Belum Rilis
+                                        </span>
+                                        <span className="px-2 py-0.5 rounded-full bg-stone-100 text-stone-700 text-[10px] font-semibold">
+                                          {isBuilder ? "🧩 Builder 3.0" : "✍️ Handcrafted / AI"}
+                                        </span>
+                                      </div>
+                                      <h3 className="font-bold text-base text-stone-900 truncate">{theme.name}</h3>
+                                      <div className="text-[11px] font-mono text-stone-500">
+                                        /{theme.id} · {evLabel} · {styleLabel}
+                                        {theme.subEvent ? ` · ${theme.subEvent}` : ""}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <p className="text-xs text-stone-600 line-clamp-3 leading-relaxed">
+                                    {theme.description || "Tema draf baru siap direview oleh Admin sebelum dirilis ke katalog publik."}
+                                  </p>
+                                  <div className="text-[10.5px] font-mono text-indigo-700 bg-indigo-50/70 border border-indigo-100 rounded-lg px-2.5 py-1.5 truncate">
+                                    Preview: /demo/{theme.id}
+                                  </div>
+                                </div>
+
+                                <div className="space-y-2 pt-2 border-t border-stone-100">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <a
+                                      href={`/demo/${theme.id}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex-1 px-3 py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold text-center transition"
+                                    >
+                                      👁️ Preview Admin
+                                    </a>
+                                    <a
+                                      href={isBuilder ? `/admin/theme-builder?id=${theme.id}` : `/admin/master-editor?id=${theme.id}`}
+                                      className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl text-xs font-semibold transition"
+                                    >
+                                      ✏️ Edit
+                                    </a>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleReleaseDraftTheme(theme)}
+                                      className="flex-1 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
+                                    >
+                                      🚀 Rilis ke Katalog Tema
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (window.confirm(`Hapus draf tema "${theme.name}" secara permanen?`)) {
+                                          handleDeleteTheme(theme.id, theme.name);
+                                        }
+                                      }}
+                                      className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-semibold transition cursor-pointer"
+                                      title="Tolak & Hapus Draf"
+                                    >
+                                      🗑️
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()
               ) : (
                 /* ── Sub-Tab: Pustaka Musik Sistem ── */
                 <div className="space-y-6">

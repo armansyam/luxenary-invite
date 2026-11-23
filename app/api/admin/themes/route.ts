@@ -206,7 +206,7 @@ export async function PUT(req: NextRequest) {
     let name: string | undefined;
     let category: string | undefined;
     let description: string | undefined;
-    let series: string | undefined;
+    let series: string | null | undefined;
     let subEvent: string | null | undefined;
     let isActive: boolean | undefined;
     let sortOrder: number | undefined;
@@ -335,7 +335,7 @@ export async function PUT(req: NextRequest) {
         ...(name !== undefined && { name: name.trim() }),
         ...(category !== undefined && { category: targetCat }),
         ...(description !== undefined && { description }),
-        ...(series !== undefined && { series }),
+        ...(series !== undefined && { series: series || null }),
         ...(subEvent !== undefined && { subEvent: existing.eventType === "WEDDING" ? null : subEvent }),
         ...(isActive !== undefined && { isActive: Boolean(isActive) }),
         ...(sortOrder !== undefined && { sortOrder: Number(sortOrder) }),

@@ -8,7 +8,8 @@ import { checkDomainPointsToPlatform } from "@/lib/customDomainDns";
 import { listDatabaseSnapshots } from "@/lib/databaseBackup";
 import { purgeCloudflareCache } from "@/lib/cloudflare";
 import { getActiveRateLimitDriver } from "@/lib/rateLimit";
-import { THEME_EVENT_FOLDERS } from "@/lib/themePaths";
+import { THEME_EVENT_FOLDERS, THEME_STYLES, eventFolderOf, masterDir, masterPathOf } from "@/lib/themePaths";
+import { isSafePathSegment } from "@/lib/fsSafe";
 import { getCatalogMediaSlots } from "@/lib/themeMediaSlotsCatalog";
 import { THEME_MAP } from "@/lib/renderTemplate";
 import { wibMonthStart, wibParts } from "@/lib/financePeriods";
@@ -966,7 +967,7 @@ export const MCP_TOOLS: readonly McpToolDefinition[] = [
             name: existing?.name || d.name,
             category: d.category,
             eventType: d.eventType,
-            series: d.series,
+            series: existing?.series === "DRAFT_REVIEW" ? "DRAFT_REVIEW" : d.series,
             sortOrder: existing?.sortOrder ?? i + 1,
             description: existing?.description || defaultDesc,
             thumbnail: existing?.thumbnail || demoData?.sidebarPhotoUrl || demoData?.landingCoverUrl || null,
@@ -982,7 +983,7 @@ export const MCP_TOOLS: readonly McpToolDefinition[] = [
             category: d.category,
             eventType: d.eventType,
             ...(defaultSubEvent ? { subEvent: defaultSubEvent } : {}),
-            series: d.series,
+            series: existing?.series === "DRAFT_REVIEW" ? "DRAFT_REVIEW" : d.series,
             description: defaultDesc,
             thumbnail: demoData?.sidebarPhotoUrl || demoData?.landingCoverUrl || null,
             sortOrder: i + 1,
@@ -1044,6 +1045,115 @@ export const MCP_TOOLS: readonly McpToolDefinition[] = [
         nextjs: { ok: nextjsOk, paths, ...(nextjsError ? { error: nextjsError } : {}) },
         localCachesCleared: true,
         cloudflare,
+      };
+    },
+  },
+  {
+    name: "luxvite_create_draft_theme",
+    description:
+      "Write non-finansial (ops:write): Membuat atau memperbarui tema DRAF BARU (isActive=false, series=DRAFT_REVIEW) dari Dept 2 AI / Theme Lab langsung ke disk VPS & PostgreSQL tanpa mengganggu katalog publik. Mengembalikan URL preview khusus Admin (https://luxvite.id/demo/<slug>).",
+    requiredScopes: ["ops:write"],
+    readOnly: false,
+    inputSchema: {
+      type: "object",
+      properties: {
+        slug: { type: "string", description: "ID slug tema huruf kecil (mis: emerald-soiree). Maks 48 karakter." },
+        name: { type: "string", description: "Nama tampilan tema (mis: Emerald Soiree)." },
+        eventType: { type: "string", enum: ["WEDDING", "PERSONAL", "EVENT"], description: "Mode acara tema." },
+        style: { type: "string", enum: ["minimalist", "modern", "traditional"], description: "Gaya desain tema." },
+        description: { type: "string", description: "Deskripsi singkat atau catatan konsep tema." },
+        subEvent: { type: "string", description: "Tag sub-acara opsional (mis: Ulang Tahun, Corporate)." },
+        htmlContent: { type: "string", description: "Kode lengkap HTML master tema (wajib valid HTML dengan variabel CSS :root)." },
+      },
+      required: ["slug", "name", "eventType", "style", "htmlContent"],
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const slug = String(args.slug ?? "").trim().toLowerCase();
+      const name = String(args.name ?? "").trim();
+      const eventType = normalizeEventFilter(args.eventType) ?? "WEDDING";
+      const rawStyle = String(args.style ?? "modern").trim().toLowerCase();
+      const style = (THEME_STYLES as readonly string[]).includes(rawStyle)
+        ? (rawStyle as (typeof THEME_STYLES)[number])
+        : "modern";
+      const description = String(args.description ?? "").trim() || `${name} — Draft Theme by AI Theme Lab`;
+      const subEvent = args.subEvent ? String(args.subEvent).trim().slice(0, 60) : null;
+      const htmlContent = String(args.htmlContent ?? "");
+
+      if (!/^[a-z0-9][a-z0-9-]{1,48}$/.test(slug) || !isSafePathSegment(slug) || slug === "starter-blueprint") {
+        throw new Error("Slug tema tidak valid. Gunakan huruf kecil, angka, dan tanda hubung (2-49 karakter).");
+      }
+      if (!name || name.length > 80) {
+        throw new Error("Nama tema wajib diisi (maks 80 karakter).");
+      }
+      if (!htmlContent || htmlContent.length < 200 || htmlContent.length > 600_000) {
+        throw new Error("htmlContent wajib berupa dokumen HTML valid (200 byte - 600 KB).");
+      }
+      if (!/<html[\s>]|<!doctype\s+html/i.test(htmlContent)) {
+        throw new Error("htmlContent harus mengandung tag <!DOCTYPE html> atau <html>.");
+      }
+
+      // Safety guard: NEVER overwrite an already-active released theme!
+      const existing = await prisma.theme.findUnique({
+        where: { id: slug },
+        select: { id: true, isActive: true, series: true },
+      });
+      if (existing && existing.isActive) {
+        throw new Error(`Tema '${slug}' sudah berstatus AKTIF di katalog publik. Gunakan slug baru agar tidak menimpa tema rilis.`);
+      }
+
+      const targetDir = masterDir(eventType, style);
+      await fs.promises.mkdir(targetDir, { recursive: true });
+      const filePath = masterPathOf(eventType, style, slug);
+      await fs.promises.writeFile(filePath, htmlContent, "utf-8");
+
+      const maxOrder = await prisma.theme.aggregate({ _max: { sortOrder: true } });
+      const nextSortOrder = (maxOrder._max.sortOrder ?? 81) + 1;
+
+      await prisma.theme.upsert({
+        where: { id: slug },
+        update: {
+          name,
+          description,
+          category: style,
+          eventType,
+          subEvent,
+          series: "DRAFT_REVIEW",
+          isActive: false,
+        },
+        create: {
+          id: slug,
+          name,
+          description,
+          category: style,
+          eventType,
+          subEvent,
+          series: "DRAFT_REVIEW",
+          isActive: false,
+          sortOrder: nextSortOrder,
+        },
+      });
+
+      masterTemplateCache.clear();
+      try {
+        revalidatePath("/admin");
+      } catch {
+        // revalidatePath hanya aktif dalam request runtime Next.js
+      }
+
+      const relDiskPath = `themes/${eventFolderOf(eventType)}/${style}/${slug}.html`;
+      return {
+        success: true,
+        id: slug,
+        name,
+        eventType,
+        style,
+        status: "DRAFT_REVIEW",
+        isActive: false,
+        diskPath: relDiskPath,
+        previewUrl: `https://luxvite.id/demo/${slug}`,
+        adminReviewUrl: "https://luxvite.id/admin?tab=themes",
+        masterEditorUrl: `https://luxvite.id/admin/master-editor?id=${slug}`,
       };
     },
   },
