@@ -10,6 +10,7 @@ import { purgeCloudflareCache } from "@/lib/cloudflare";
 import { getActiveRateLimitDriver } from "@/lib/rateLimit";
 import { THEME_EVENT_FOLDERS, THEME_STYLES, eventFolderOf, masterDir, masterPathOf } from "@/lib/themePaths";
 import { isSafePathSegment } from "@/lib/fsSafe";
+import { shareFile } from "@/lib/sharedFiles";
 import { getCatalogMediaSlots } from "@/lib/themeMediaSlotsCatalog";
 import { THEME_MAP } from "@/lib/renderTemplate";
 import { wibMonthStart, wibParts } from "@/lib/financePeriods";
@@ -1051,7 +1052,7 @@ export const MCP_TOOLS: readonly McpToolDefinition[] = [
   {
     name: "luxvite_create_draft_theme",
     description:
-      "Write non-finansial (ops:write): Membuat atau memperbarui tema DRAF BARU (isActive=false, series=DRAFT_REVIEW) dari Dept 2 AI / Theme Lab langsung ke disk VPS & PostgreSQL tanpa mengganggu katalog publik. Mengembalikan URL preview khusus Admin (https://luxvite.id/demo/<slug>).",
+      "Write non-finansial (ops:write): Membuat atau memperbarui tema DRAF BARU (isActive=false, series=DRAFT_REVIEW) dari Dept 2 AI / Theme Lab langsung ke disk VPS & PostgreSQL tanpa mengganggu katalog publik. Hanya slug baru atau draf MCP yang sudah ada dengan mode & gaya yang sama; tema bawaan, tema Theme Builder, dan tema non-draf ditolak. Mengembalikan URL preview khusus Admin (https://luxvite.id/demo/<slug>, disajikan dalam sandbox tanpa akses sesi admin).",
     requiredScopes: ["ops:write"],
     readOnly: false,
     inputSchema: {
@@ -1093,19 +1094,41 @@ export const MCP_TOOLS: readonly McpToolDefinition[] = [
         throw new Error("htmlContent harus mengandung tag <!DOCTYPE html> atau <html>.");
       }
 
-      // Safety guard: NEVER overwrite an already-active released theme!
+      // Kunci MCP hanya boleh membuat slug baru atau memperbarui draf MCP miliknya sendiri di folder yang sama.
+      // Tema nonaktif lain (master tulisan tangan, draf Theme Builder yang berkasnya hanya ada di disk server) tidak boleh tertimpa.
+      if (Object.prototype.hasOwnProperty.call(THEME_MAP, slug)) {
+        throw new Error(`Slug '${slug}' dipakai tema bawaan. Gunakan slug baru.`);
+      }
       const existing = await prisma.theme.findUnique({
         where: { id: slug },
-        select: { id: true, isActive: true, series: true },
+        select: { isActive: true, series: true, eventType: true, category: true, builderSpec: true },
       });
-      if (existing && existing.isActive) {
-        throw new Error(`Tema '${slug}' sudah berstatus AKTIF di katalog publik. Gunakan slug baru agar tidak menimpa tema rilis.`);
+      const isOwnDraft =
+        existing !== null &&
+        !existing.isActive &&
+        existing.series === "DRAFT_REVIEW" &&
+        existing.builderSpec === null &&
+        existing.eventType === eventType &&
+        existing.category === style;
+      if (existing && !isOwnDraft) {
+        throw new Error(
+          `Tema '${slug}' sudah ada dan bukan draf MCP dengan mode & gaya yang sama. Gunakan slug baru agar tidak menimpa tema lain.`
+        );
+      }
+      const filePath = masterPathOf(eventType, style, slug);
+      for (const { eventType: ev } of THEME_EVENT_FOLDERS) {
+        for (const st of THEME_STYLES) {
+          const other = masterPathOf(ev, st, slug);
+          if ((other !== filePath || !existing) && fs.existsSync(other)) {
+            throw new Error(`Berkas master '${slug}' sudah ada di disk. Gunakan slug baru.`);
+          }
+        }
       }
 
       const targetDir = masterDir(eventType, style);
       await fs.promises.mkdir(targetDir, { recursive: true });
-      const filePath = masterPathOf(eventType, style, slug);
       await fs.promises.writeFile(filePath, htmlContent, "utf-8");
+      await shareFile(filePath);
 
       const maxOrder = await prisma.theme.aggregate({ _max: { sortOrder: true } });
       const nextSortOrder = (maxOrder._max.sortOrder ?? 81) + 1;

@@ -117,7 +117,7 @@ export async function POST() {
           name: existing?.name || d.name,
           category: d.category,
           eventType: (d.eventType as any) || "WEDDING",
-          series: d.series,
+          series: existing?.series === "DRAFT_REVIEW" ? "DRAFT_REVIEW" : d.series,
           sortOrder: existing?.sortOrder ?? (i + 1),
           description: existing?.description || defaultDesc,
           thumbnail: existing?.thumbnail || demoData?.sidebarPhotoUrl || demoData?.landingCoverUrl || null,

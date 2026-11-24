@@ -66,7 +66,7 @@ export const MCP_SCOPE_DEFINITIONS: readonly McpScopeDefinition[] = [
     label: "Pemeliharaan Non-Finansial (Opt-In)",
     kind: "WRITE_SAFE",
     description:
-      "Khusus sinkronisasi katalog tema disk→DB dan pembersihan cache ISR/CDN. Tidak mencakup mutasi uang, order, akun, atau database.",
+      "Khusus sinkronisasi katalog tema disk→DB, pembersihan cache ISR/CDN, dan pembuatan tema draf nonaktif (DRAFT_REVIEW) dengan slug baru. Tidak mencakup mutasi uang, order, akun, maupun tema yang sudah ada di luar draf MCP.",
   },
 ] as const;
 

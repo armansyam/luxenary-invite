@@ -62,7 +62,8 @@ async function main() {
       where: { id: d.id },
       update: {
         category: d.category,
-        series: d.series,
+        // "DRAFT_REVIEW" menandai draf yang belum dirilis (tab Draft Themes); perilisan oleh admin yang menggantinya.
+        series: existing?.series === "DRAFT_REVIEW" ? "DRAFT_REVIEW" : d.series,
         eventType: d.eventType,
         ...(existing ? {} : { isActive: true }),
         ...(shouldSeedSubEvent ? { subEvent: defaultSubEvent } : {}),

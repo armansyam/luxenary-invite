@@ -66,6 +66,8 @@ const nextConfig: NextConfig = {
             key: "Cache-Control",
             value: "public, max-age=31536000, immutable",
           },
+          // Preview tema nonaktif berjalan di sandbox (origin buram); @font-face selalu diambil dengan CORS.
+          { key: "Access-Control-Allow-Origin", value: "*" },
         ],
       },
       // ── Musik BGM statis bawaan (Canon in D, dll) ──

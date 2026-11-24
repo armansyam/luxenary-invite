@@ -3,6 +3,7 @@ import { serveStaticDemo } from "@/lib/demoPublisher";
 import { isSafePathSegment } from "@/lib/fsSafe";
 import { logger } from "@/lib/logger";
 import { requireAnyAdmin } from "@/lib/adminAuth";
+import { ADMIN_PREVIEW_PARAM } from "@/lib/csp";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +57,14 @@ export async function GET(
           }
         );
       }
+      // HTML tema nonaktif hanya disajikan di URL bertanda, yang diberi sandbox CSP oleh proxy (lib/csp.ts withAdminPreviewSandbox).
+      // Location relatif: di belakang proxy, origin req.url adalah alamat internal server.
+      if (!new URL(req.url).searchParams.has(ADMIN_PREVIEW_PARAM)) {
+        return new NextResponse(null, {
+          status: 307,
+          headers: { Location: `/demo/${cleanTheme}?${ADMIN_PREVIEW_PARAM}=1`, "Cache-Control": "no-store" },
+        });
+      }
       isAdminDraftPreview = true;
       isDraftReviewItem = themeRecord.series === "DRAFT_REVIEW";
     }
@@ -70,7 +79,8 @@ export async function GET(
       const label = isDraftReviewItem
         ? "DRAFT THEMES (Belum Rilis — Hanya Admin)"
         : "TEMA NONAKTIF (Preview Khusus Admin)";
-      const bannerHtml = `<div id="luxvite-admin-draft-banner" style="position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:2147483647;background:rgba(15,23,42,0.92);color:#fef08a;border:1px solid rgba(250,204,21,0.55);border-radius:999px;padding:7px 14px;font-family:system-ui,-apple-system,sans-serif;font-size:12px;font-weight:700;display:flex;align-items:center;gap:10px;box-shadow:0 8px 28px rgba(0,0,0,0.35);backdrop-filter:blur(8px);max-width:94vw;"><span>🕵️ ${label}</span><a href="/admin?tab=themes" style="background:#facc15;color:#0f172a;padding:3px 10px;border-radius:999px;text-decoration:none;font-size:11px;font-weight:800;white-space:nowrap;">Kelola di Admin →</a><button onclick="this.parentElement.remove()" style="background:transparent;border:none;color:#cbd5e1;cursor:pointer;font-size:13px;padding:0 2px;">✕</button></div>`;
+      // Banner menimpa tema mana pun, jadi warnanya memakai warna sistem CSS (Canvas/CanvasText), bukan token tema yang berbeda-beda.
+      const bannerHtml = `<div id="luxvite-admin-draft-banner" style="position:fixed;top:12px;left:16px;right:16px;margin:0 auto;width:fit-content;z-index:2147483647;background:color-mix(in srgb, CanvasText 90%, transparent);color:Canvas;border-radius:999px;padding:7px 8px 7px 14px;font-family:system-ui,-apple-system,sans-serif;font-size:12px;font-weight:600;line-height:1.3;display:flex;align-items:center;gap:10px;max-width:calc(100vw - 32px);box-sizing:border-box;"><span style="width:6px;height:6px;border-radius:50%;background:Canvas;flex:none;"></span><span style="min-width:0;">${label}</span><a href="/admin?tab=themes" style="background:Canvas;color:CanvasText;padding:3px 10px;border-radius:999px;text-decoration:none;font-size:11px;font-weight:700;white-space:nowrap;">Kelola di Admin</a><button type="button" aria-label="Tutup" onclick="this.parentElement.remove()" style="background:transparent;border:none;color:inherit;cursor:pointer;padding:2px;display:flex;flex:none;"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button></div>`;
       if (html.includes("</body>")) {
         html = html.replace("</body>", `${bannerHtml}</body>`);
       } else {

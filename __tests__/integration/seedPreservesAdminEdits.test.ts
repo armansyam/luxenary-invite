@@ -24,7 +24,7 @@ function runDeployDataSteps() {
 }
 
 describe.skipIf(!IS_TEST_DB)("Seed tidak menimpa atau menghapus data yang dikelola admin", () => {
-  let original: { name: string; isActive: boolean; sortOrder: number } | null = null;
+  let original: { name: string; isActive: boolean; sortOrder: number; series: string | null } | null = null;
   let themeCount = 0;
   let music: { id: string; title: string; isActive: boolean; sortOrder: number } | null = null;
   let settingKey = "";
@@ -32,8 +32,8 @@ describe.skipIf(!IS_TEST_DB)("Seed tidak menimpa atau menghapus data yang dikelo
 
   beforeAll(async () => {
     const base = await prisma.theme.findUniqueOrThrow({ where: { id: "kalandra" } });
-    original = { name: base.name, isActive: base.isActive, sortOrder: base.sortOrder };
-    await prisma.theme.update({ where: { id: "kalandra" }, data: { name: EDITED_NAME, isActive: false, sortOrder: 555 } });
+    original = { name: base.name, isActive: base.isActive, sortOrder: base.sortOrder, series: base.series };
+    await prisma.theme.update({ where: { id: "kalandra" }, data: { name: EDITED_NAME, isActive: false, sortOrder: 555, series: "DRAFT_REVIEW" } });
     await prisma.theme.create({
       data: { id: CUSTOM_THEME_ID, name: "Tema Kustom Admin", category: base.category, series: base.series, eventType: base.eventType, description: "dibuat admin", isActive: true, sortOrder: 999 },
     });
@@ -70,6 +70,11 @@ describe.skipIf(!IS_TEST_DB)("Seed tidak menimpa atau menghapus data yang dikelo
     expect(t.name).toBe(EDITED_NAME);
     expect(t.sortOrder).toBe(555);
     expect(t.isActive).toBe(false);
+  });
+
+  it("penanda draf DRAFT_REVIEW tidak ditimpa seri gaya, jadi draf tetap di tab Draft Themes", async () => {
+    const t = await prisma.theme.findUniqueOrThrow({ where: { id: "kalandra" } });
+    expect(t.series).toBe("DRAFT_REVIEW");
   });
 
   it("preset musik yang disunting admin tidak ditimpa", async () => {

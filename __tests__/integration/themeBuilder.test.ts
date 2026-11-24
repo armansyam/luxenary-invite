@@ -439,7 +439,8 @@ describe.skipIf(!IS_TEST_DB)("rute admin Theme Builder", () => {
     expect(fs.existsSync(path.join(ROOT, "themes", "wedding", "traditional", `${themeId}.html`))).toBe(true);
     expect(fs.existsSync(path.join(ROOT, "themes", "wedding", "modern", `${themeId}.html`))).toBe(false);
     const row = await prisma.theme.findUniqueOrThrow({ where: { id: themeId } });
-    expect(row).toMatchObject({ category: "traditional", series: "Traditional", name: "Vitest Builder 2" });
+    // Draf builder tetap di tab Draft Themes (series "DRAFT_REVIEW") sampai dirilis; seri gaya diisi saat terbit.
+    expect(row).toMatchObject({ category: "traditional", series: "DRAFT_REVIEW", name: "Vitest Builder 2" });
     // Slot foto klien dihitung dari spesifikasi saat simpan; tema bawaan blueprint memakai ke-8 slot.
     expect(Object.keys(row.mediaSlots as object).sort()).toEqual(["BRIDE_PHOTO", "CLOSING_COVER", "DESKTOP_SIDEBAR", "GLOBAL_FIXED_BG", "GROOM_PHOTO", "HOME_PHOTO", "LANDING_COVER", "LANDING_COVER_DESKTOP"]);
   });
@@ -461,7 +462,7 @@ describe.skipIf(!IS_TEST_DB)("rute admin Theme Builder", () => {
     expect(vi.mocked(requestThemeThumbnails)).not.toHaveBeenCalledWith(themeId);
     const ok = await PATCH(json("http://x", "PATCH", { id: themeId, isActive: true }));
     expect(ok.status).toBe(200);
-    expect((await prisma.theme.findUniqueOrThrow({ where: { id: themeId } })).isActive).toBe(true);
+    expect(await prisma.theme.findUniqueOrThrow({ where: { id: themeId } })).toMatchObject({ isActive: true, series: "Traditional" });
     expect(fs.existsSync(path.join(ROOT, "public", "demo", themeId, "index.html"))).toBe(true);
     expect(vi.mocked(requestThemeThumbnails)).toHaveBeenLastCalledWith(themeId);
   });

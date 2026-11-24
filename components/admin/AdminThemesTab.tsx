@@ -394,7 +394,7 @@ export default function AdminThemesTab({
       if (!res.ok || !data.success) {
         throw new Error(data.error || "Gagal merilis tema draf");
       }
-      showAdminToast(`🚀 Tema "${th.name}" resmi dirilis & dipindahkan ke Katalog Tema!`, true);
+      showAdminToast(`Tema "${th.name}" dirilis dan dipindahkan ke Katalog Tema.`, true);
     } catch (err: any) {
       setThemes((prev) =>
         prev.map((t) => (t.id === th.id ? { ...t, isActive: false, series: "DRAFT_REVIEW" } : t))
@@ -464,7 +464,7 @@ export default function AdminThemesTab({
                             : "bg-stone-100 text-stone-600 hover:bg-stone-200"
                       }`}
                     >
-                      <span>🕵️ Draft Themes</span>
+                      <span>Draft Themes</span>
                       <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono ${
                         themeSubTab === "drafts"
                           ? "bg-white/20 text-white"
@@ -1003,7 +1003,7 @@ export default function AdminThemesTab({
                       <div className="flex items-center justify-between flex-wrap gap-3">
                         <div>
                           <div className="flex items-center gap-2">
-                            <h2 className="text-lg sm:text-2xl font-bold text-gray-900">🕵️ Draft Themes — Review Tema Baru</h2>
+                            <h2 className="text-lg sm:text-2xl font-bold text-gray-900">Draft Themes — Review Tema Baru</h2>
                             <span className="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-xs font-bold font-mono">
                               {draftThemes.length} Draf
                             </span>
@@ -1017,13 +1017,12 @@ export default function AdminThemesTab({
                           onClick={onSyncSuccess}
                           className="px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold rounded-xl transition flex items-center gap-1.5 cursor-pointer"
                         >
-                          <span>🔄 Segarkan Daftar Draf</span>
+                          <span>Segarkan Daftar Draf</span>
                         </button>
                       </div>
 
                       {draftThemes.length === 0 ? (
                         <div className="bg-white rounded-2xl border border-dashed border-stone-300 p-10 text-center space-y-2">
-                          <div className="text-3xl">✨</div>
                           <p className="text-sm font-bold text-stone-800">Belum ada Draft Themes yang menunggu review</p>
                           <p className="text-xs text-stone-500 max-w-md mx-auto">
                             Saat tim AI Dept 2 (Bima) mengirim tema baru melalui Remote MCP (<code>luxvite_create_draft_theme</code>), tema akan masuk ke sini terlebih dahulu untuk Anda preview &amp; rilis.
@@ -1054,11 +1053,12 @@ export default function AdminThemesTab({
                                   <div className="flex items-start justify-between gap-2">
                                     <div className="min-w-0">
                                       <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                                        <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-[10px] font-bold">
-                                          🕵️ DRAFT · Belum Rilis
+                                        <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-stone-600">
+                                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" aria-hidden="true" />
+                                          Draf · Belum Rilis
                                         </span>
                                         <span className="px-2 py-0.5 rounded-full bg-stone-100 text-stone-700 text-[10px] font-semibold">
-                                          {isBuilder ? "🧩 Builder 3.0" : "✍️ Handcrafted / AI"}
+                                          {isBuilder ? "Builder 3.0" : "Handcrafted / AI"}
                                         </span>
                                       </div>
                                       <h3 className="font-bold text-base text-stone-900 truncate">{theme.name}</h3>
@@ -1084,13 +1084,13 @@ export default function AdminThemesTab({
                                       rel="noopener noreferrer"
                                       className="flex-1 px-3 py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold text-center transition"
                                     >
-                                      👁️ Preview Admin
+                                      Preview Admin
                                     </a>
                                     <a
                                       href={isBuilder ? `/admin/theme-builder?id=${theme.id}` : `/admin/master-editor?id=${theme.id}`}
                                       className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl text-xs font-semibold transition"
                                     >
-                                      ✏️ Edit
+                                      Edit
                                     </a>
                                   </div>
                                   <div className="flex items-center gap-2">
@@ -1099,7 +1099,7 @@ export default function AdminThemesTab({
                                       onClick={() => handleReleaseDraftTheme(theme)}
                                       className="flex-1 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
                                     >
-                                      🚀 Rilis ke Katalog Tema
+                                      Rilis ke Katalog Tema
                                     </button>
                                     <button
                                       type="button"
@@ -1110,8 +1110,11 @@ export default function AdminThemesTab({
                                       }}
                                       className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-semibold transition cursor-pointer"
                                       title="Tolak & Hapus Draf"
+                                      aria-label="Tolak & Hapus Draf"
                                     >
-                                      🗑️
+                                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                        <path d="M2.5 4h11M6.5 4V2.5h3V4M4 4l.7 9.5h6.6L12 4M6.75 7v4M9.25 7v4" />
+                                      </svg>
                                     </button>
                                   </div>
                                 </div>

@@ -11,6 +11,7 @@ import {
   buildStrictAppCspReportOnly,
   generateCspNonce,
   isStrictNonceAppRoute,
+  withAdminPreviewSandbox,
 } from "@/lib/csp";
 
 function shouldApplyCsp(pathname: string): boolean {
@@ -18,11 +19,11 @@ function shouldApplyCsp(pathname: string): boolean {
   return !((pathname.startsWith("/api/") && !isPreviewHtml) || pathname.startsWith("/_next/") || pathname.startsWith("/static/"));
 }
 
-function applyCspHeaders(res: NextResponse, pathname: string, strictNonceCsp: string | null): NextResponse {
+function applyCspHeaders(res: NextResponse, pathname: string, searchParams: URLSearchParams, strictNonceCsp: string | null): NextResponse {
   if (!shouldApplyCsp(pathname)) {
     return res;
   }
-  res.headers.set("Content-Security-Policy", strictNonceCsp || buildEnforcedCsp());
+  res.headers.set("Content-Security-Policy", withAdminPreviewSandbox(strictNonceCsp || buildEnforcedCsp(), pathname, searchParams));
   return res;
 }
 
@@ -163,9 +164,9 @@ export const proxy = auth(async (req) => {
   }
 
   const passNext = () =>
-    applyCspHeaders(NextResponse.next({ request: { headers: requestHeaders } }), pathname, strictNonceCsp);
+    applyCspHeaders(NextResponse.next({ request: { headers: requestHeaders } }), pathname, req.nextUrl.searchParams, strictNonceCsp);
   const passRewrite = (url: URL | string) =>
-    applyCspHeaders(NextResponse.rewrite(url, { request: { headers: requestHeaders } }), pathname, strictNonceCsp);
+    applyCspHeaders(NextResponse.rewrite(url, { request: { headers: requestHeaders } }), pathname, req.nextUrl.searchParams, strictNonceCsp);
 
   // HTML terbit tersimpan di public/published hanya untuk dibaca rute slug/subdomain, yang memeriksa status undangan.
   // Next melayani isi public/ yang ada saat build apa adanya, sehingga undangan yang diturunkan tetap terbuka di sini.

@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
@@ -326,5 +328,53 @@ describe("Remote MCP Server (/api/mcp) — Auth, RBAC, Tools, Resources & Rate L
       },
     });
     expect(auditCount).toBeGreaterThanOrEqual(4);
+  });
+
+  it("luxvite_create_draft_theme hanya membuat slug baru atau memperbarui draf MCP sendiri; tema lain tidak tertimpa", async () => {
+    const gen = generateMcpApiKey();
+    const row = await prisma.mcpApiKey.create({
+      data: { name: "Test Ops Write Key", department: "DEPT_5_ENGINEERING", keyPrefix: gen.keyPrefix, keyHash: gen.keyHash, scopes: ["ops:write"] },
+    });
+    createdKeyIds.push(row.id);
+
+    const slug = `vitest-mcp-draft-${Date.now()}`;
+    const nonDraftId = `vitest-mcp-nondraft-${Date.now()}`;
+    const html = `<!DOCTYPE html><html lang="id"><head><meta charset="utf-8"><style>:root{--primary:#123456}</style></head><body><main>${"Draf uji MCP. ".repeat(20)}</main></body></html>`;
+    const draftPath = (style: string) => path.join(process.cwd(), "themes", "wedding", style, `${slug}.html`);
+    const callTool = async (args: Record<string, unknown>) => {
+      const res = await mcpPost(
+        makeMcpReq({ jsonrpc: "2.0", id: 60, method: "tools/call", params: { name: "luxvite_create_draft_theme", arguments: args } }, gen.rawKey)
+      );
+      return (await res.json()).result as { isError: boolean; content: { text: string }[] };
+    };
+
+    try {
+      const created = await callTool({ slug, name: "Draf Uji", eventType: "WEDDING", style: "modern", htmlContent: html });
+      expect(created.isError).toBe(false);
+      expect(fs.readFileSync(draftPath("modern"), "utf8")).toBe(html);
+      expect(await prisma.theme.findUniqueOrThrow({ where: { id: slug } })).toMatchObject({ isActive: false, series: "DRAFT_REVIEW", category: "modern" });
+
+      const updatedHtml = html.replace("#123456", "#654321");
+      const updated = await callTool({ slug, name: "Draf Uji 2", eventType: "WEDDING", style: "modern", htmlContent: updatedHtml });
+      expect(updated.isError).toBe(false);
+      expect(fs.readFileSync(draftPath("modern"), "utf8")).toBe(updatedHtml);
+
+      const otherStyle = await callTool({ slug, name: "Draf Uji", eventType: "WEDDING", style: "minimalist", htmlContent: html });
+      expect(otherStyle.isError).toBe(true);
+      expect(fs.existsSync(draftPath("minimalist"))).toBe(false);
+
+      const builtIn = await callTool({ slug: "kalandra", name: "Timpa", eventType: "WEDDING", style: "modern", htmlContent: html });
+      expect(builtIn.isError).toBe(true);
+
+      await prisma.theme.create({ data: { id: nonDraftId, name: "Tema Nonaktif", category: "modern", series: "Modern", eventType: "WEDDING", isActive: false, sortOrder: 9999 } });
+      const nonDraft = await callTool({ slug: nonDraftId, name: "Timpa", eventType: "WEDDING", style: "modern", htmlContent: html });
+      expect(nonDraft.isError).toBe(true);
+      expect(fs.existsSync(path.join(process.cwd(), "themes", "wedding", "modern", `${nonDraftId}.html`))).toBe(false);
+      expect((await prisma.theme.findUniqueOrThrow({ where: { id: nonDraftId } })).series).toBe("Modern");
+    } finally {
+      fs.rmSync(draftPath("modern"), { force: true });
+      fs.rmSync(draftPath("minimalist"), { force: true });
+      await prisma.theme.deleteMany({ where: { id: { in: [slug, nonDraftId] } } });
+    }
   });
 });

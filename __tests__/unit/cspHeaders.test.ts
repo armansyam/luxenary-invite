@@ -6,7 +6,7 @@
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
-import { buildEnforcedCsp, buildStrictAppCspReportOnly, generateCspNonce, isStrictNonceAppRoute } from "@/lib/csp";
+import { buildEnforcedCsp, buildStrictAppCspReportOnly, generateCspNonce, isStrictNonceAppRoute, withAdminPreviewSandbox } from "@/lib/csp";
 
 function parseCsp(value: string): Record<string, string[]> {
   return Object.fromEntries(
@@ -63,5 +63,20 @@ describe("CSP Enforced & Nonce Strict App Routes (lib/csp.ts + proxy.ts)", () =>
     expect(csp["script-src"]).not.toContain("'unsafe-inline'");
     expect(csp["script-src"]).not.toContain("'unsafe-eval'");
     expect(csp["report-uri"]).toEqual(["/api/security/csp-report"]);
+  });
+
+  it("preview admin tema nonaktif (/demo/<id>?admin_preview=1) mendapat sandbox tanpa allow-same-origin; demo biasa tidak", () => {
+    const base = buildEnforcedCsp();
+    const preview = parseCsp(withAdminPreviewSandbox(base, "/demo/draf-baru", new URLSearchParams("admin_preview=1")));
+    expect(preview.sandbox).toEqual(expect.arrayContaining(["allow-scripts", "allow-popups"]));
+    expect(preview.sandbox).not.toContain("allow-same-origin");
+    expect(preview["script-src"]).toEqual(parseCsp(base)["script-src"]);
+    expect(withAdminPreviewSandbox(base, "/demo/draf-baru", new URLSearchParams())).toBe(base);
+    expect(withAdminPreviewSandbox(base, "/dashboard", new URLSearchParams("admin_preview=1"))).toBe(base);
+  });
+
+  it("proxy.ts memasang CSP lewat withAdminPreviewSandbox, karena header CSP proxy menimpa header CSP dari rute", () => {
+    const proxySrc = fs.readFileSync(path.join(process.cwd(), "proxy.ts"), "utf8");
+    expect(proxySrc).toMatch(/withAdminPreviewSandbox\(strictNonceCsp \|\| buildEnforcedCsp\(\), pathname, searchParams\)/);
   });
 });

@@ -55,6 +55,19 @@ const APP_PREFIXES = [
   "/archives",
 ];
 
+/** Query penanda preview admin tema nonaktif; app/demo/[theme]/route.ts mengalihkan ke URL ini sebelum menyajikan HTML-nya. */
+export const ADMIN_PREVIEW_PARAM = "admin_preview";
+const ADMIN_PREVIEW_SANDBOX = "sandbox allow-scripts allow-popups allow-popups-to-escape-sandbox";
+
+/**
+ * Tema nonaktif bisa ditulis agen MCP (luxvite_create_draft_theme) dan belum ditinjau. Sandbox tanpa allow-same-origin
+ * menjalankan skripnya di origin buram, sehingga skrip itu tidak bisa memakai cookie sesi admin untuk memanggil /api/admin.
+ * Dipasang di proxy karena header CSP dari proxy menimpa header CSP yang dikirim rute.
+ */
+export function withAdminPreviewSandbox(csp: string, pathname: string, searchParams: URLSearchParams): string {
+  return pathname.startsWith("/demo/") && searchParams.has(ADMIN_PREVIEW_PARAM) ? `${csp}; ${ADMIN_PREVIEW_SANDBOX}` : csp;
+}
+
 /** Menentukan apakah path merupakan HTML undangan / pratinjau / demo / portofolio publik. */
 export function isInvitationHtmlRoute(pathname: string): boolean {
   if (!pathname || pathname === "/") return false;
