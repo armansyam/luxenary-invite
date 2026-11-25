@@ -175,6 +175,8 @@ export async function handleMcpJsonRpc(
           ok: true,
           durationMs,
           ipAddress,
+          // Tool tulis: simpan ringkasan argumen agar jejak audit menunjukkan apa yang diubah (mis. kode & persen kupon).
+          ...(tool.readOnly ? {} : { note: JSON.stringify(toolArgs) }),
         });
       }
       return {

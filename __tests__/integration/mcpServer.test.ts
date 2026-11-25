@@ -377,4 +377,86 @@ describe("Remote MCP Server (/api/mcp) — Auth, RBAC, Tools, Resources & Rate L
       await prisma.theme.deleteMany({ where: { id: { in: [slug, nonDraftId] } } });
     }
   });
+
+  it("kupon tim AI (marketing:write) hanya dibuat dalam batas admin, menolak margin tipis, dan tidak bisa menyentuh kupon admin", async () => {
+    const gen = generateMcpApiKey();
+    const row = await prisma.mcpApiKey.create({
+      data: { name: "Test Marketing Key", department: "DEPT_GROWTH_MARKETING", keyPrefix: gen.keyPrefix, keyHash: gen.keyHash, scopes: ["marketing:write"] },
+    });
+    createdKeyIds.push(row.id);
+    const tag = `VT${Date.now().toString().slice(-8)}`;
+    const limitKeys = {
+      mcp_coupon_max_percent: "20",
+      mcp_coupon_max_quota: "50",
+      mcp_coupon_max_valid_days: "30",
+      mcp_coupon_max_active: "1",
+      mcp_coupon_min_margin_percent: "50",
+      mcp_coupon_gateway_fee_percent: "0.7",
+    };
+    const prevRows = await prisma.adminSetting.findMany({ where: { key: { in: Object.keys(limitKeys) } } });
+    const setLimits = async (patch: Record<string, string>) => {
+      for (const [key, value] of Object.entries(patch)) {
+        await prisma.adminSetting.upsert({ where: { key }, update: { value }, create: { key, value, group: "marketing" } });
+      }
+      invalidateSettingsCache();
+    };
+    const call = async (name: string, args: Record<string, unknown>, token = gen.rawKey) => {
+      const res = await mcpPost(makeMcpReq({ jsonrpc: "2.0", id: 70, method: "tools/call", params: { name, arguments: args } }, token));
+      const body = await res.json();
+      return { result: body.result as { isError: boolean; content: { text: string }[] } | undefined, error: body.error as { code: number } | undefined };
+    };
+    const base = { quotaLimit: 10, validDays: 10, purpose: "Uji vitest kampanye carousel IG" };
+
+    try {
+      await setLimits(limitKeys);
+      const ok = await call("luxvite_create_coupon", { ...base, code: `${tag}A`, discountPercent: 15 });
+      expect(ok.result?.isError).toBe(false);
+      const created = await prisma.promoCoupon.findUniqueOrThrow({ where: { code: `${tag}A` } });
+      expect(created).toMatchObject({ discountType: "PERCENT", perUserLimit: 1, quotaLimit: 10, isActive: true });
+      expect(created.description?.startsWith("[MCP]")).toBe(true);
+      expect(Number(created.discountValue)).toBe(15);
+
+      const audit = await prisma.adminAuditLog.findFirst({ where: { adminLabel: { startsWith: "MCP:Test Marketing Key" } }, orderBy: { createdAt: "desc" } });
+      expect(audit?.details).toContain(`${tag}A`);
+
+      const overActive = await call("luxvite_create_coupon", { ...base, code: `${tag}B`, discountPercent: 10 });
+      expect(overActive.result?.isError).toBe(true);
+      expect(overActive.result?.content[0].text).toContain("aktif");
+
+      await setLimits({ mcp_coupon_max_active: "5" });
+      const overPercent = await call("luxvite_create_coupon", { ...base, code: `${tag}C`, discountPercent: 25 });
+      expect(overPercent.result?.isError).toBe(true);
+      const overDays = await call("luxvite_create_coupon", { ...base, code: `${tag}D`, discountPercent: 10, validDays: 60 });
+      expect(overDays.result?.isError).toBe(true);
+      const dup = await call("luxvite_create_coupon", { ...base, code: `${tag}A`, discountPercent: 10 });
+      expect(dup.result?.isError).toBe(true);
+
+      await setLimits({ mcp_coupon_min_margin_percent: "90" });
+      const thin = await call("luxvite_create_coupon", { ...base, code: `${tag}E`, discountPercent: 15 });
+      expect(thin.result?.isError).toBe(true);
+      expect(thin.result?.content[0].text).toContain("margin");
+      expect(await prisma.promoCoupon.count({ where: { code: { startsWith: tag } } })).toBe(1);
+
+      await prisma.promoCoupon.create({ data: { code: `${tag}ADM`, description: "Kupon admin", discountType: "PERCENT", discountValue: 5 } });
+      const touchAdmin = await call("luxvite_deactivate_coupon", { code: `${tag}ADM` });
+      expect(touchAdmin.result?.isError).toBe(true);
+      expect((await prisma.promoCoupon.findUniqueOrThrow({ where: { code: `${tag}ADM` } })).isActive).toBe(true);
+
+      const off = await call("luxvite_deactivate_coupon", { code: `${tag}A` });
+      expect(off.result?.isError).toBe(false);
+      expect((await prisma.promoCoupon.findUniqueOrThrow({ where: { code: `${tag}A` } })).isActive).toBe(false);
+
+      const rules = await call("luxvite_get_coupon_rules", {}, financeToken);
+      expect(rules.result?.isError).toBe(false);
+      const financeCreate = await call("luxvite_create_coupon", { ...base, code: `${tag}F`, discountPercent: 10 }, financeToken);
+      expect(financeCreate.error?.code).toBe(-32003);
+    } finally {
+      await prisma.promoCoupon.deleteMany({ where: { code: { startsWith: tag } } });
+      await prisma.adminSetting.deleteMany({ where: { key: { in: Object.keys(limitKeys) } } });
+      for (const r of prevRows) {
+        await prisma.adminSetting.create({ data: { key: r.key, value: r.value, group: r.group, label: r.label } });
+      }
+      invalidateSettingsCache();
+    }
+  });
 });

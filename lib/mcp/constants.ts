@@ -16,7 +16,8 @@ export type McpScope =
   | "support:read"
   | "ops:read"
   | "finance:read"
-  | "ops:write";
+  | "ops:write"
+  | "marketing:write";
 
 export interface McpScopeDefinition {
   id: McpScope;
@@ -68,6 +69,13 @@ export const MCP_SCOPE_DEFINITIONS: readonly McpScopeDefinition[] = [
     description:
       "Khusus sinkronisasi katalog tema disk→DB, pembersihan cache ISR/CDN, dan pembuatan tema draf nonaktif (DRAFT_REVIEW) dengan slug baru. Tidak mencakup mutasi uang, order, akun, maupun tema yang sudah ada di luar draf MCP.",
   },
+  {
+    id: "marketing:write",
+    label: "Kupon Promo Tim Pemasaran (Opt-In)",
+    kind: "WRITE_SAFE",
+    description:
+      "Membuat dan menonaktifkan kupon persen milik tim AI dalam batas yang ditetapkan admin di tab Pemasaran (persen maksimum, kuota, masa berlaku, jumlah aktif, margin minimum). Tidak bisa mengubah kupon buatan admin, harga paket, atau potongan mitra.",
+  },
 ] as const;
 
 export const VALID_MCP_SCOPES: readonly McpScope[] = MCP_SCOPE_DEFINITIONS.map((s) => s.id);
@@ -112,6 +120,12 @@ export const MCP_DEPARTMENT_PRESETS: readonly McpDepartmentPreset[] = [
     label: "Dept 3 — General Manager / COO (Raka)",
     roleSummary: "Laporan KPI operasional, keuangan read-only, mitra & dukungan klien",
     defaultScopes: ["docs:read", "catalog:read", "support:read", "ops:read", "finance:read"],
+  },
+  {
+    id: "DEPT_GROWTH_MARKETING",
+    label: "Growth & Pemasaran (Aldo)",
+    roleSummary: "Kupon promo dalam batas admin, kampanye akuisisi, katalog & harga paket",
+    defaultScopes: ["docs:read", "catalog:read", "marketing:write"],
   },
   {
     id: "DEPT_4_SUPPORT",

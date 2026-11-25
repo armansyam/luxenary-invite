@@ -785,7 +785,7 @@ export default function AdminMcpTab({
                             <span
                               key={sc}
                               className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold ${
-                                sc === "ops:write"
+                                sc.endsWith(":write")
                                   ? "bg-amber-100 text-amber-900"
                                   : "bg-gray-100 text-gray-700"
                               }`}

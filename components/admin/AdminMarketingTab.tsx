@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import type { PartnerAffiliate, PromoCoupon, AffiliateCommission, PartnerPayoutRecord } from "@/components/admin/marketing/types";
 import { MarketingTables } from "@/components/admin/marketing/MarketingTables";
 import { MarketingModals } from "@/components/admin/marketing/MarketingModals";
+import McpCouponLimitsPanel from "@/components/admin/marketing/McpCouponLimitsPanel";
 
 export function toDateTimeLocalValue(iso: string): string {
   const d = new Date(iso);
@@ -655,6 +656,8 @@ export function AdminMarketingTab() {
           </div>
         </div>
       )}
+
+      <McpCouponLimitsPanel />
 
       {/* ── Summary Cards ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

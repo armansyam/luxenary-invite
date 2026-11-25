@@ -1,9 +1,10 @@
 import fs from "fs";
 import path from "path";
 import { revalidatePath } from "next/cache";
-import { Prisma, type EventType, type InvitationStatus, type WebhookLogStatus } from "@prisma/client";
+import { Prisma, type EventType, type InvitationStatus, type PlanType, type WebhookLogStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getPublicPlatformSettings, invalidateSettingsCache } from "@/lib/settings";
+import { getAdminSetting, getPublicPlatformSettings, invalidateSettingsCache } from "@/lib/settings";
+import { MCP_COUPON_DESCRIPTION_PREFIX, computeCouponMargins, countActiveMcpCoupons, getMcpCouponLimits } from "@/lib/mcpCouponGuard";
 import { checkDomainPointsToPlatform } from "@/lib/customDomainDns";
 import { listDatabaseSnapshots } from "@/lib/databaseBackup";
 import { purgeCloudflareCache } from "@/lib/cloudflare";
@@ -1202,6 +1203,136 @@ export const MCP_TOOLS: readonly McpToolDefinition[] = [
         adminReviewUrl: "https://luxvite.id/admin?tab=themes",
         masterEditorUrl: `https://luxvite.id/admin/master-editor?id=${slug}`,
       };
+    },
+  },
+  {
+    name: "luxvite_get_coupon_rules",
+    description:
+      "Read-only: Batas kupon tim AI yang ditetapkan admin di tab Pemasaran (potongan maksimum %, kuota maksimum, masa berlaku maksimum, jumlah kupon tim AI aktif maksimum, margin bersih minimum per paket, fee gateway untuk hitung margin), jumlah kupon tim AI yang sedang aktif, status master promo, dan daftar kupon tim AI. Baca ini sebelum mengusulkan atau membuat kupon.",
+    requiredScopes: ["marketing:write", "finance:read"],
+    readOnly: true,
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+    handler: async () => {
+      const [limits, activeCount, promoEnabled, coupons] = await Promise.all([
+        getMcpCouponLimits(),
+        countActiveMcpCoupons(),
+        getAdminSetting("promo_enabled", "false"),
+        prisma.promoCoupon.findMany({
+          where: { description: { startsWith: MCP_COUPON_DESCRIPTION_PREFIX } },
+          orderBy: { createdAt: "desc" },
+          take: 30,
+          select: { code: true, description: true, discountType: true, discountValue: true, quotaLimit: true, usageCount: true, applicablePlans: true, validUntil: true, isActive: true, createdAt: true },
+        }),
+      ]);
+      return {
+        limits,
+        activeMcpCoupons: activeCount,
+        remainingSlots: Math.max(0, limits.maxActive - activeCount),
+        promoEnabled: promoEnabled === "true",
+        coupons: coupons.map((c) => ({
+          ...c,
+          discountValue: Number(c.discountValue),
+          validUntil: c.validUntil?.toISOString() ?? null,
+          createdAt: c.createdAt.toISOString(),
+        })),
+      };
+    },
+  },
+  {
+    name: "luxvite_create_coupon",
+    description:
+      "Write (marketing:write): Membuat kupon PERSEN untuk kampanye tim pemasaran dalam batas admin (lihat luxvite_get_coupon_rules). Ditolak bila persen, kuota, masa berlaku, atau jumlah kupon aktif melewati batas, bila margin bersih paket mana pun (setelah potongan, fee gateway, dan PPh 0,5%) turun di bawah margin minimum, atau bila kode sudah dipakai. Kupon langsung aktif, berlaku sejak sekarang, maks. 1 kali per akun, dan bertanda [MCP] di daftar kupon admin.",
+    requiredScopes: ["marketing:write"],
+    readOnly: false,
+    inputSchema: {
+      type: "object",
+      properties: {
+        code: { type: "string", description: "Kode kupon 4–20 karakter huruf besar/angka (mis: AKHIRTAHUN15)." },
+        discountPercent: { type: "number", description: "Potongan dalam persen (mis: 15)." },
+        quotaLimit: { type: "integer", description: "Jumlah pemakaian maksimum kupon ini." },
+        validDays: { type: "integer", description: "Masa berlaku dalam hari sejak dibuat." },
+        applicablePlans: {
+          type: "array",
+          items: { type: "string", enum: ["TIER_1", "TIER_2", "TIER_3"] },
+          description: "Paket yang boleh memakai kupon; kosongkan untuk semua paket.",
+        },
+        purpose: { type: "string", description: "Tujuan kampanye & kanal pemakaian (mis: carousel IG akhir tahun 26 Nov), min. 10 karakter." },
+      },
+      required: ["code", "discountPercent", "quotaLimit", "validDays", "purpose"],
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const code = String(args.code ?? "").trim().toUpperCase();
+      const purpose = String(args.purpose ?? "").trim();
+      const pct = Number(args.discountPercent);
+      const quota = Number(args.quotaLimit);
+      const days = Number(args.validDays);
+      const plans = Array.isArray(args.applicablePlans)
+        ? Array.from(new Set(args.applicablePlans.map((p) => String(p).trim().toUpperCase()).filter((p): p is PlanType => p === "TIER_1" || p === "TIER_2" || p === "TIER_3")))
+        : [];
+      if (!/^[A-Z0-9]{4,20}$/.test(code)) throw new Error("Kode kupon harus 4–20 karakter huruf besar atau angka tanpa spasi.");
+      if (purpose.length < 10) throw new Error("Isi purpose (tujuan kampanye & kanal) minimal 10 karakter.");
+
+      const limits = await getMcpCouponLimits();
+      const violations: string[] = [];
+      if (!Number.isFinite(pct) || pct <= 0 || pct > limits.maxPercent) violations.push(`potongan ${args.discountPercent}% melewati batas ${limits.maxPercent}%`);
+      if (!Number.isInteger(quota) || quota < 1 || quota > limits.maxQuota) violations.push(`kuota ${args.quotaLimit} di luar 1–${limits.maxQuota}`);
+      if (!Number.isInteger(days) || days < 1 || days > limits.maxValidDays) violations.push(`masa berlaku ${args.validDays} hari di luar 1–${limits.maxValidDays}`);
+      const active = await countActiveMcpCoupons();
+      if (active >= limits.maxActive) violations.push(`sudah ada ${active} kupon tim AI aktif (batas ${limits.maxActive}); nonaktifkan yang selesai dulu`);
+      const margins = Number.isFinite(pct) && pct > 0 ? await computeCouponMargins(pct, plans, limits.gatewayFeePercent) : [];
+      const thin = margins.filter((m) => m.marginPercent < limits.minMarginPercent);
+      if (thin.length) violations.push(`margin ${thin.map((m) => `${m.name} ${m.marginPercent}%`).join(", ")} di bawah minimum ${limits.minMarginPercent}%`);
+      if (await prisma.promoCoupon.findUnique({ where: { code }, select: { id: true } })) violations.push(`kode ${code} sudah dipakai`);
+      if (violations.length) throw new Error(`Kupon ditolak: ${violations.join("; ")}.`);
+
+      const now = new Date();
+      const created = await prisma.promoCoupon.create({
+        data: {
+          code,
+          description: `${MCP_COUPON_DESCRIPTION_PREFIX} ${purpose.slice(0, 280)}`,
+          discountType: "PERCENT",
+          discountValue: new Prisma.Decimal(pct),
+          quotaLimit: quota,
+          perUserLimit: 1,
+          applicablePlans: plans,
+          validFrom: now,
+          validUntil: new Date(now.getTime() + days * DAY_MS),
+          isActive: true,
+        },
+        select: { id: true, code: true, discountValue: true, quotaLimit: true, applicablePlans: true, validFrom: true, validUntil: true },
+      });
+      const promoEnabled = (await getAdminSetting("promo_enabled", "false")) === "true";
+      return {
+        success: true,
+        coupon: { ...created, discountValue: Number(created.discountValue), validFrom: created.validFrom?.toISOString(), validUntil: created.validUntil?.toISOString() },
+        margins,
+        promoEnabled,
+        ...(promoEnabled ? {} : { warning: "Master promo (promo_enabled) sedang mati di Admin → Pemasaran; kupon belum bisa dipakai klien sampai admin menyalakannya." }),
+      };
+    },
+  },
+  {
+    name: "luxvite_deactivate_coupon",
+    description:
+      "Write (marketing:write): Menonaktifkan kupon tim AI (bertanda [MCP]) setelah kampanye selesai atau kuota habis. Kupon buatan admin tidak bisa diubah lewat tool ini.",
+    requiredScopes: ["marketing:write"],
+    readOnly: false,
+    inputSchema: {
+      type: "object",
+      properties: { code: { type: "string", description: "Kode kupon tim AI yang akan dinonaktifkan." } },
+      required: ["code"],
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const code = String(args.code ?? "").trim().toUpperCase();
+      const coupon = await prisma.promoCoupon.findUnique({ where: { code }, select: { id: true, description: true, isActive: true } });
+      if (!coupon) throw new Error(`Kupon ${code} tidak ditemukan.`);
+      if (!String(coupon.description ?? "").startsWith(MCP_COUPON_DESCRIPTION_PREFIX)) {
+        throw new Error(`Kupon ${code} dibuat admin, bukan tim AI; ubah lewat Admin → Pemasaran.`);
+      }
+      if (coupon.isActive) await prisma.promoCoupon.update({ where: { id: coupon.id }, data: { isActive: false } });
+      return { success: true, code, isActive: false, wasActive: coupon.isActive };
     },
   },
 ];

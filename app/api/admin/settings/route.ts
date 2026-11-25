@@ -8,6 +8,7 @@ import { invalidateSettingsCache } from "@/lib/settings";
 import { EVENT_TYPES } from "@/lib/invitationUtils";
 import { defaultAdminSettings } from "@/prisma/defaultSettings";
 import { sanitizeGa4MeasurementId, sanitizeMetaPixelId, sanitizeTikTokPixelId } from "@/lib/pixelValidation";
+import { validateMcpCouponLimitSetting } from "@/lib/mcpCouponLimits";
 
 export const dynamic = "force-dynamic";
 
@@ -113,6 +114,15 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: "Batas rate limit MCP harus bilangan bulat 1 sampai 600 request/menit." }, { status: 400 });
         }
         u.value = String(parsed);
+      } else if (typeof u?.key === "string" && u.key.startsWith("mcp_coupon_")) {
+        const checked = validateMcpCouponLimitSetting(u.key, u.value);
+        if (!checked) {
+          return NextResponse.json({ error: `Pengaturan kupon tim AI tidak dikenal: ${u.key}` }, { status: 400 });
+        }
+        if (!checked.ok) {
+          return NextResponse.json({ error: checked.error }, { status: 400 });
+        }
+        u.value = checked.value;
       }
       if (u?.key !== "enabled_event_types") continue;
       const picked = String(u.value ?? "").split(",").map((s) => s.trim().toUpperCase()).filter((s) => (EVENT_TYPES as readonly string[]).includes(s));
