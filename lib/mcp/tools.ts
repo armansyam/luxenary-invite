@@ -279,7 +279,7 @@ export const MCP_TOOLS: readonly McpToolDefinition[] = [
   {
     name: "luxvite_get_finance_report",
     description:
-      "Read-only: Laporan keuangan lengkap untuk Tim Finance & COO (omzet bruto/bersih per bulan WIB, rincian OrderType & PlanType, metode bayar, antrean order PENDING butuh rekonsiliasi, OPEX, komitmen tagihan rutin, margin bersih & status Anti-Rugi, estimasi PPh Final 0,5%, tutup buku, kupon promo, dan ringkasan Mitra Reseller).",
+      "Read-only: Laporan keuangan lengkap untuk Tim Finance & COO (omzet bruto/bersih per bulan WIB beserta rincian harian per tanggal WIB, rincian OrderType & PlanType, metode bayar, antrean order PENDING butuh rekonsiliasi, OPEX, komitmen tagihan rutin, margin bersih & status Anti-Rugi, estimasi PPh Final 0,5%, tutup buku, kupon promo, dan ringkasan Mitra Reseller).",
     requiredScopes: ["finance:read"],
     readOnly: true,
     inputSchema: {
@@ -330,6 +330,7 @@ export const MCP_TOOLS: readonly McpToolDefinition[] = [
             planType: true,
             paymentMethod: true,
             promoCodeApplied: true,
+            paidAt: true,
           },
         }),
         prisma.order.aggregate({
@@ -358,7 +359,7 @@ export const MCP_TOOLS: readonly McpToolDefinition[] = [
         }),
         prisma.expense.findMany({
           where: { expenseDate: { gte: monthStart, lt: nextMonthStart } },
-          select: { amount: true, category: true, isLocked: true },
+          select: { amount: true, category: true, isLocked: true, expenseDate: true },
         }),
         prisma.recurringExpense.findMany({
           where: { isActive: true },
@@ -448,6 +449,28 @@ export const MCP_TOOLS: readonly McpToolDefinition[] = [
         expensesByCategory[e.category] = (expensesByCategory[e.category] || 0) + amt;
       }
 
+      // Rincian harian per tanggal WIB dari data yang sama dengan ringkasan bulanan (jumlah harian = total bulan).
+      const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+      const daily = Array.from({ length: daysInMonth }, (_, i) => ({
+        date: `${year}-${String(month).padStart(2, "0")}-${String(i + 1).padStart(2, "0")}`,
+        paidOrdersCount: 0,
+        grossRevenue: 0,
+        totalDiscount: 0,
+        totalChargedToGateway: 0,
+        totalExpenses: 0,
+      }));
+      for (const o of paidOrdersMonth) {
+        if (!o.paidAt) continue;
+        const row = daily[wibParts(o.paidAt).day - 1];
+        row.paidOrdersCount += 1;
+        row.grossRevenue += Number(o.amount || 0);
+        row.totalDiscount += Number(o.discountAmount || 0);
+        row.totalChargedToGateway += Number(o.chargedAmount ?? o.amount ?? 0);
+      }
+      for (const e of expensesMonth) {
+        daily[wibParts(e.expenseDate).day - 1].totalExpenses += Number(e.amount || 0);
+      }
+
       const estimatedPphFinal05 = Math.round(grossRevenue * 0.005);
       const netProfit = grossRevenue - totalExpenses;
       const netProfitAfterTax = netProfit - estimatedPphFinal05;
@@ -500,6 +523,7 @@ export const MCP_TOOLS: readonly McpToolDefinition[] = [
           byPaymentMethod,
           expensesByCategory,
         },
+        daily,
         pendingReconciliation: {
           count: pendingOrders.length,
           totalPendingAmount: pendingOrders.reduce((s, o) => s + Number(o.amount || 0), 0),
