@@ -23,6 +23,7 @@ import { shareFile } from "@/lib/sharedFiles";
 import { getCatalogMediaSlots } from "@/lib/themeMediaSlotsCatalog";
 import { THEME_MAP } from "@/lib/renderTemplate";
 import { wibMonthStart, wibParts } from "@/lib/financePeriods";
+import { ADDON_KINDS, splitOrderRevenue } from "@/lib/orderRevenueSplit";
 import { DAY_MS } from "@/lib/lifecycleDates";
 import { invalidateInvitationLookup, masterTemplateCache } from "@/lib/cache";
 import { MCP_SERVER_VERSION, type McpScope } from "./constants";
@@ -340,6 +341,7 @@ export const MCP_TOOLS: readonly McpToolDefinition[] = [
             paymentMethod: true,
             promoCodeApplied: true,
             paidAt: true,
+            itemsJson: true,
           },
         }),
         prisma.order.aggregate({
@@ -467,14 +469,31 @@ export const MCP_TOOLS: readonly McpToolDefinition[] = [
         totalDiscount: 0,
         totalChargedToGateway: 0,
         totalExpenses: 0,
+        packageRevenue: 0,
+        addonRevenue: 0,
       }));
+      // Omzet per jenis dipecah per item (order bundel dibagi proporsional harga item) agar add-on tidak tercampur ke paket.
+      const revenueByKind: Record<string, { count: number; amount: number }> = {};
+      const packageRevenueByPlan: Record<string, { count: number; amount: number }> = {};
       for (const o of paidOrdersMonth) {
-        if (!o.paidAt) continue;
-        const row = daily[wibParts(o.paidAt).day - 1];
-        row.paidOrdersCount += 1;
-        row.grossRevenue += Number(o.amount || 0);
-        row.totalDiscount += Number(o.discountAmount || 0);
-        row.totalChargedToGateway += Number(o.chargedAmount ?? o.amount ?? 0);
+        const parts = splitOrderRevenue(o);
+        const row = o.paidAt ? daily[wibParts(o.paidAt).day - 1] : null;
+        if (row) {
+          row.paidOrdersCount += 1;
+          row.grossRevenue += Number(o.amount || 0);
+          row.totalDiscount += Number(o.discountAmount || 0);
+          row.totalChargedToGateway += Number(o.chargedAmount ?? o.amount ?? 0);
+        }
+        for (const part of parts) {
+          revenueByKind[part.kind] = { count: (revenueByKind[part.kind]?.count || 0) + 1, amount: (revenueByKind[part.kind]?.amount || 0) + part.amount };
+          if (part.plan) {
+            packageRevenueByPlan[part.plan] = { count: (packageRevenueByPlan[part.plan]?.count || 0) + 1, amount: (packageRevenueByPlan[part.plan]?.amount || 0) + part.amount };
+          }
+          if (row) {
+            if (ADDON_KINDS.includes(part.kind)) row.addonRevenue += part.amount;
+            else row.packageRevenue += part.amount;
+          }
+        }
       }
       for (const e of expensesMonth) {
         daily[wibParts(e.expenseDate).day - 1].totalExpenses += Number(e.amount || 0);
@@ -531,6 +550,8 @@ export const MCP_TOOLS: readonly McpToolDefinition[] = [
           byPlanType,
           byPaymentMethod,
           expensesByCategory,
+          revenueByKind,
+          packageRevenueByPlan,
         },
         daily,
         pendingReconciliation: {

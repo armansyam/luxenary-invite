@@ -264,6 +264,45 @@ describe("Remote MCP Server (/api/mcp) — Auth, RBAC, Tools, Resources & Rate L
     expect((await deniedWrite.json()).error.code).toBe(-32003);
   });
 
+  it("laporan keuangan memisahkan omzet paket dan add-on (top-up foto, perpanjangan galeri), termasuk order bundel, per bulan dan per hari", async () => {
+    const tag = `vitest-rev-${Date.now()}`;
+    const user = await prisma.user.create({ data: { email: `${tag}@example.test`, name: tag } });
+    const mk = (n: number, data: Record<string, unknown>) =>
+      prisma.order.create({ data: { userId: user.id, invoiceNumber: `${tag}-${n}`, status: "PAID", paymentMethod: "MANUAL_TRANSFER", discountAmount: 0, ...data } as never });
+    try {
+      // Maret 2025 WIB (jauh dari data uji lain): paket baru, top-up foto, dan bundel upgrade + top-up + galeri.
+      await mk(1, { planType: "TIER_2", orderType: "NEW", amount: 149000, chargedAmount: 149000, paidAt: new Date("2025-03-03T03:00:00.000Z") });
+      await mk(2, { planType: "TIER_2", orderType: "MEMORIES_TOPUP", amount: 35000, chargedAmount: 35000, paidAt: new Date("2025-03-03T05:00:00.000Z") });
+      await mk(3, {
+        planType: "TIER_1", orderType: "UPGRADE", amount: 100000, chargedAmount: 100000, paidAt: new Date("2025-03-10T05:00:00.000Z"),
+        itemsJson: [
+          { type: "UPGRADE", label: "Upgrade", price: 50000, targetPlan: "TIER_2" },
+          { type: "MEMORIES_TOPUP", label: "Top-up", price: 35000, photos: 100 },
+          { type: "GALLERY_EXTENSION", label: "Galeri", price: 15000, months: 1 },
+        ],
+      });
+      const res = await mcpPost(
+        makeMcpReq({ jsonrpc: "2.0", id: 23, method: "tools/call", params: { name: "luxvite_get_finance_report", arguments: { year: 2025, month: 3 } } }, financeToken)
+      );
+      const report = JSON.parse((await res.json()).result.content[0].text);
+      const kinds = report.breakdown.revenueByKind;
+      expect(kinds.NEW).toEqual({ count: 1, amount: 149000 });
+      expect(kinds.UPGRADE).toEqual({ count: 1, amount: 50000 });
+      expect(kinds.MEMORIES_TOPUP).toEqual({ count: 2, amount: 70000 });
+      expect(kinds.GALLERY_EXTENSION).toEqual({ count: 1, amount: 15000 });
+      expect(report.breakdown.packageRevenueByPlan.TIER_2.amount).toBe(199000);
+      expect(report.breakdown.packageRevenueByPlan.TIER_1).toBeUndefined();
+      const d3 = report.daily[2];
+      expect(d3).toMatchObject({ paidOrdersCount: 2, grossRevenue: 184000, packageRevenue: 149000, addonRevenue: 35000 });
+      const d10 = report.daily[9];
+      expect(d10).toMatchObject({ packageRevenue: 50000, addonRevenue: 50000 });
+      expect(report.summary.grossRevenue).toBe(284000);
+    } finally {
+      await prisma.order.deleteMany({ where: { invoiceNumber: { startsWith: tag } } });
+      await prisma.user.delete({ where: { id: user.id } });
+    }
+  });
+
   it("Dept 4 Support dapat mencari undangan tanpa membocorkan staffPin/passwordHash dan ditolak baca docs tanpa scope docs:read", async () => {
     const searchRes = await mcpPost(
       makeMcpReq(
