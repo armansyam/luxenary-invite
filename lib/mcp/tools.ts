@@ -4,7 +4,15 @@ import { revalidatePath } from "next/cache";
 import { Prisma, type EventType, type InvitationStatus, type PlanType, type WebhookLogStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAdminSetting, getPublicPlatformSettings, invalidateSettingsCache } from "@/lib/settings";
-import { MCP_COUPON_DESCRIPTION_PREFIX, computeCouponMargins, countActiveMcpCoupons, getMcpCouponLimits } from "@/lib/mcpCouponGuard";
+import {
+  MCP_COUPON_DESCRIPTION_PREFIX,
+  computeCouponMargins,
+  countActiveMcpCoupons,
+  getMcpCouponCeoBounds,
+  getMcpCouponLimits,
+  getStoredMcpCouponLimits,
+} from "@/lib/mcpCouponGuard";
+import { MCP_COUPON_LIMITS, ceoBoundViolations, clampToCeoBounds, validateMcpCouponLimitSetting } from "@/lib/mcpCouponLimits";
 import { checkDomainPointsToPlatform } from "@/lib/customDomainDns";
 import { listDatabaseSnapshots } from "@/lib/databaseBackup";
 import { purgeCloudflareCache } from "@/lib/cloudflare";
@@ -1209,12 +1217,14 @@ export const MCP_TOOLS: readonly McpToolDefinition[] = [
     name: "luxvite_get_coupon_rules",
     description:
       "Read-only: Batas kupon tim AI yang ditetapkan admin di tab Pemasaran (potongan maksimum %, kuota maksimum, masa berlaku maksimum, jumlah kupon tim AI aktif maksimum, margin bersih minimum per paket, fee gateway untuk hitung margin), jumlah kupon tim AI yang sedang aktif, status master promo, dan daftar kupon tim AI. Baca ini sebelum mengusulkan atau membuat kupon.",
-    requiredScopes: ["marketing:write", "finance:read"],
+    requiredScopes: ["marketing:write", "finance:read", "finance:guard"],
     readOnly: true,
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
     handler: async () => {
-      const [limits, activeCount, promoEnabled, coupons] = await Promise.all([
+      const [limits, storedLimits, ceoBounds, activeCount, promoEnabled, coupons] = await Promise.all([
         getMcpCouponLimits(),
+        getStoredMcpCouponLimits(),
+        getMcpCouponCeoBounds(),
         countActiveMcpCoupons(),
         getAdminSetting("promo_enabled", "false"),
         prisma.promoCoupon.findMany({
@@ -1226,6 +1236,8 @@ export const MCP_TOOLS: readonly McpToolDefinition[] = [
       ]);
       return {
         limits,
+        financeLimits: storedLimits,
+        ceoBounds,
         activeMcpCoupons: activeCount,
         remainingSlots: Math.max(0, limits.maxActive - activeCount),
         promoEnabled: promoEnabled === "true",
@@ -1236,6 +1248,57 @@ export const MCP_TOOLS: readonly McpToolDefinition[] = [
           createdAt: c.createdAt.toISOString(),
         })),
       };
+    },
+  },
+  {
+    name: "luxvite_set_coupon_limits",
+    description:
+      "Write (finance:guard): Tim Finance menetapkan batas kupon tim pemasaran AI (potongan maksimum %, kuota, masa berlaku, jumlah aktif, margin bersih minimum, fee gateway) berdasarkan analisis anti-rugi. Harus berada di dalam batas keras CEO (lihat ceoBounds di luxvite_get_coupon_rules); batas keras CEO hanya bisa diubah admin. Wajib menyertakan reason berisi dasar perhitungan.",
+    requiredScopes: ["finance:guard"],
+    readOnly: false,
+    inputSchema: {
+      type: "object",
+      properties: {
+        maxPercent: { type: "number", description: "Potongan maksimum per kupon (%)." },
+        maxQuota: { type: "integer", description: "Kuota pemakaian maksimum per kupon." },
+        maxValidDays: { type: "integer", description: "Masa berlaku maksimum kupon (hari)." },
+        maxActive: { type: "integer", description: "Jumlah kupon tim AI aktif maksimum." },
+        minMarginPercent: { type: "number", description: "Margin bersih minimum per paket setelah potongan, fee gateway, dan PPh 0,5% (%)." },
+        gatewayFeePercent: { type: "number", description: "Fee gateway yang dipakai untuk hitung margin (%)." },
+        reason: { type: "string", description: "Dasar perhitungan (OPEX, margin, potongan mitra, hasil rapat), min. 20 karakter." },
+      },
+      required: ["reason"],
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const reason = String(args.reason ?? "").trim();
+      if (reason.length < 20) throw new Error("Isi reason (dasar perhitungan anti-rugi) minimal 20 karakter.");
+      const names = Object.keys(MCP_COUPON_LIMITS) as (keyof typeof MCP_COUPON_LIMITS)[];
+      const proposed: Partial<Record<keyof typeof MCP_COUPON_LIMITS, number>> = {};
+      const errors: string[] = [];
+      for (const name of names) {
+        if (args[name] === undefined || args[name] === null) continue;
+        const checked = validateMcpCouponLimitSetting(MCP_COUPON_LIMITS[name].key, args[name]);
+        if (!checked || !checked.ok) errors.push(checked && !checked.ok ? checked.error : `${name} tidak dikenal`);
+        else proposed[name] = Number(checked.value);
+      }
+      if (!Object.keys(proposed).length && !errors.length) throw new Error("Tidak ada batas yang diusulkan.");
+      const ceo = await getMcpCouponCeoBounds();
+      errors.push(...ceoBoundViolations(proposed, ceo));
+      if (errors.length) throw new Error(`Batas ditolak: ${errors.join("; ")}.`);
+
+      const before = await getStoredMcpCouponLimits();
+      for (const [name, value] of Object.entries(proposed) as [keyof typeof MCP_COUPON_LIMITS, number][]) {
+        const def = MCP_COUPON_LIMITS[name];
+        await prisma.adminSetting.upsert({
+          where: { key: def.key },
+          update: { value: String(value) },
+          create: { key: def.key, value: String(value), label: def.label, group: "marketing" },
+        });
+      }
+      invalidateSettingsCache();
+      const after = await getStoredMcpCouponLimits();
+      return { success: true, before, after, effective: clampToCeoBounds(after, ceo), ceoBounds: ceo, reason };
     },
   },
   {

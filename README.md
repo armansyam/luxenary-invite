@@ -310,7 +310,7 @@ Sistem mendukung 4 kondisi transaksi dengan integrasi 2-arah Midtrans yang dilen
 | `EmailOtpToken` & `ClientActivationToken` | Token OTP 6-digit SMTP ter-hash (CHECK `attempts >= 0`) & tautan aktivasi 48 jam klien mitra (HMAC-SHA256) |
 | `RateLimitCounter` | Counter rate limiter atomic lintas worker PM2 berbasis PostgreSQL |
 | `RenderVersion` & `SharedFile` | Versi render HTML terbit & indeks berkas bersama terkontrol (CHECK `size_bytes >= 0`) |
-| `McpApiKey` | Kunci API Remote MCP Server (`/api/mcp`) per departemen AI (hash SHA-256, 7 scope granular termasuk `marketing:write`, status jeda/cabut, kedaluwarsa, CHECK `usage_count >= 0`) |
+| `McpApiKey` | Kunci API Remote MCP Server (`/api/mcp`) per departemen AI (hash SHA-256, 8 scope granular termasuk `marketing:write` & `finance:guard`, status jeda/cabut, kedaluwarsa, CHECK `usage_count >= 0`) |
 
 ---
 
@@ -854,6 +854,7 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
 - **Draft Themes & Tool MCP `luxvite_create_draft_theme` dengan Preview Admin Ber-sandbox (23–24 Nov 2026)**: Tema baru dari Theme Builder dan dari tool MCP ke-11 masuk ke sub-tab **Draft Themes** (`Theme.series = "DRAFT_REVIEW"`, nonaktif) sampai admin merilisnya. Seluruh jalur sinkronisasi katalog (`npm run themes:sync` saat deploy, tombol Sinkronkan admin, `luxvite_sync_themes`) mempertahankan penanda draf. Tool MCP hanya membuat slug baru atau memperbarui draf MCP miliknya sendiri; tema bawaan, tema Theme Builder, dan tema non-draf tidak bisa ditimpa. Preview admin tema nonaktif dialihkan ke `/demo/<id>?admin_preview=1` yang diberi CSP `sandbox` oleh `proxy.ts` (origin buram, tanpa akses cookie/`/api/admin`), dan `/fonts/*` mengirim `Access-Control-Allow-Origin: *` agar font tetap tampil. Rincian: `docs/SYSTEM_ARCHITECTURE.md` bagian 27 butir 95.
 - **Rincian Harian di Laporan Keuangan MCP (25 Nov 2026)**: `luxvite_get_finance_report` menambahkan array `daily` per tanggal WIB (order PAID, omzet bruto, diskon, tertagih gateway, pengeluaran) dari data yang sama dengan ringkasan bulanan, sehingga total harian = total bulan. Perubahan aditif untuk tab Laporan Keuangan Harian/Bulanan di kantor karyawan AI; tanpa migrasi database.
 - **Kupon Tim Pemasaran AI dalam Batas Admin (25 Nov 2026)**: Scope MCP ke-7 `marketing:write` dengan tool `luxvite_create_coupon`, `luxvite_deactivate_coupon`, dan `luxvite_get_coupon_rules`. Kupon PERSEN bertanda `[MCP]` ditolak server bila melewati batas di Admin → Pemasaran (*Batas Kupon Tim Pemasaran AI*: potongan maks., kuota, masa berlaku, jumlah aktif, margin bersih minimum per paket); kupon admin tidak bisa diubah lewat MCP; argumen tool tulis tercatat di audit log. Tanpa migrasi database (batas disimpan di `admin_settings`).
+- **Batas Kupon Ditetapkan Finance di Dalam Batas Keras CEO (25 Nov 2026)**: Scope MCP ke-8 `finance:guard` dengan tool `luxvite_set_coupon_limits` (wajib `reason`). Batas keras CEO `mcp_coupon_ceo_*` hanya bisa diubah di Admin → Pemasaran; usulan Finance di luar batas keras ditolak dan batas efektif selalu dipotong ke batas keras.
 
 
 

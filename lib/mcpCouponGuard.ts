@@ -1,7 +1,15 @@
 import type { PlanType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAdminSetting, getPublicPlatformSettings } from "@/lib/settings";
-import { MCP_COUPON_LIMITS, validateMcpCouponLimitSetting, type McpCouponLimits } from "@/lib/mcpCouponLimits";
+import {
+  MCP_COUPON_CEO_BOUNDS,
+  MCP_COUPON_LIMITS,
+  clampToCeoBounds,
+  validateMcpCouponLimitSetting,
+  type McpCouponCeoBounds,
+  type McpCouponLimitDef,
+  type McpCouponLimits,
+} from "@/lib/mcpCouponLimits";
 
 /** Penanda kupon milik tim AI (MCP `marketing:write`); hanya kupon berpenanda ini yang boleh dinonaktifkan lewat MCP. */
 export const MCP_COUPON_DESCRIPTION_PREFIX = "[MCP]";
@@ -9,14 +17,29 @@ export const MCP_COUPON_DESCRIPTION_PREFIX = "[MCP]";
 /** PPh Final UMKM 0,5% dari omzet bruto (PP 55/2022), sama dengan laporan keuangan. */
 const PPH_FINAL_PERCENT = 0.5;
 
-export async function getMcpCouponLimits(): Promise<McpCouponLimits> {
+async function readLimitGroup(defs: Record<string, McpCouponLimitDef>): Promise<Record<string, number>> {
   const entries = await Promise.all(
-    Object.entries(MCP_COUPON_LIMITS).map(async ([name, def]) => {
+    Object.entries(defs).map(async ([name, def]) => {
       const parsed = validateMcpCouponLimitSetting(def.key, await getAdminSetting(def.key, String(def.defaultValue)));
       return [name, parsed && parsed.ok ? Number(parsed.value) : def.defaultValue] as const;
     })
   );
-  return Object.fromEntries(entries) as McpCouponLimits;
+  return Object.fromEntries(entries);
+}
+
+/** Batas yang tersimpan (ditetapkan Finance/admin) sebelum dipotong batas keras CEO. */
+export async function getStoredMcpCouponLimits(): Promise<McpCouponLimits> {
+  return (await readLimitGroup(MCP_COUPON_LIMITS)) as McpCouponLimits;
+}
+
+export async function getMcpCouponCeoBounds(): Promise<McpCouponCeoBounds> {
+  return (await readLimitGroup(MCP_COUPON_CEO_BOUNDS)) as McpCouponCeoBounds;
+}
+
+/** Batas efektif yang ditegakkan saat membuat kupon: batas Finance dipotong ke batas keras CEO. */
+export async function getMcpCouponLimits(): Promise<McpCouponLimits> {
+  const [stored, ceo] = await Promise.all([getStoredMcpCouponLimits(), getMcpCouponCeoBounds()]);
+  return clampToCeoBounds(stored, ceo);
 }
 
 export interface CouponMarginRow {

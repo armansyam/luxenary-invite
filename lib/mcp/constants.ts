@@ -17,7 +17,8 @@ export type McpScope =
   | "ops:read"
   | "finance:read"
   | "ops:write"
-  | "marketing:write";
+  | "marketing:write"
+  | "finance:guard";
 
 export interface McpScopeDefinition {
   id: McpScope;
@@ -75,6 +76,13 @@ export const MCP_SCOPE_DEFINITIONS: readonly McpScopeDefinition[] = [
     kind: "WRITE_SAFE",
     description:
       "Membuat dan menonaktifkan kupon persen milik tim AI dalam batas yang ditetapkan admin di tab Pemasaran (persen maksimum, kuota, masa berlaku, jumlah aktif, margin minimum). Tidak bisa mengubah kupon buatan admin, harga paket, atau potongan mitra.",
+  },
+  {
+    id: "finance:guard",
+    label: "Batas Anti-Rugi Kupon oleh Finance (Opt-In)",
+    kind: "WRITE_SAFE",
+    description:
+      "Menetapkan batas kupon tim pemasaran AI (persen maksimum, kuota, masa berlaku, jumlah aktif, margin minimum, fee gateway) di dalam batas keras CEO di tab Pemasaran. Tidak bisa mengubah batas keras CEO, membuat kupon, harga paket, atau potongan mitra.",
   },
 ] as const;
 
@@ -142,8 +150,8 @@ export const MCP_DEPARTMENT_PRESETS: readonly McpDepartmentPreset[] = [
   {
     id: "DEPT_6_FINANCE",
     label: "Dept 6 — Finance & Anti-Rugi (Tika)",
-    roleSummary: "Laporan omzet, OPEX, margin bersih, PPh Final 0,5%, rekonsiliasi order & KPI",
-    defaultScopes: ["docs:read", "finance:read", "ops:read"],
+    roleSummary: "Laporan omzet, OPEX, margin bersih, PPh Final 0,5%, rekonsiliasi order & KPI, batas anti-rugi kupon",
+    defaultScopes: ["docs:read", "finance:read", "ops:read", "finance:guard"],
   },
   {
     id: "GENERAL",

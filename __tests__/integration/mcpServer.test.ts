@@ -459,4 +459,73 @@ describe("Remote MCP Server (/api/mcp) — Auth, RBAC, Tools, Resources & Rate L
       invalidateSettingsCache();
     }
   });
+
+  it("Finance (finance:guard) menetapkan batas kupon hanya di dalam batas keras CEO; batas efektif dipotong ke batas CEO", async () => {
+    const makeScopedKey = async (name: string, scopes: string[]) => {
+      const gen = generateMcpApiKey();
+      const row = await prisma.mcpApiKey.create({ data: { name, department: "DEPT_6_FINANCE", keyPrefix: gen.keyPrefix, keyHash: gen.keyHash, scopes } });
+      createdKeyIds.push(row.id);
+      return gen.rawKey;
+    };
+    const guardToken = await makeScopedKey("Test Finance Guard Key", ["finance:guard"]);
+    const marketingToken = await makeScopedKey("Test Marketing Only Key", ["marketing:write"]);
+    const keys = [
+      "mcp_coupon_max_percent", "mcp_coupon_max_quota", "mcp_coupon_max_valid_days", "mcp_coupon_max_active", "mcp_coupon_min_margin_percent",
+      "mcp_coupon_gateway_fee_percent", "mcp_coupon_ceo_max_percent", "mcp_coupon_ceo_max_quota", "mcp_coupon_ceo_max_valid_days",
+      "mcp_coupon_ceo_max_active", "mcp_coupon_ceo_min_margin_percent",
+    ];
+    const prevRows = await prisma.adminSetting.findMany({ where: { key: { in: keys } } });
+    const set = async (patch: Record<string, string>) => {
+      for (const [key, value] of Object.entries(patch)) {
+        await prisma.adminSetting.upsert({ where: { key }, update: { value }, create: { key, value, group: "marketing" } });
+      }
+      invalidateSettingsCache();
+    };
+    const call = async (name: string, args: Record<string, unknown>, token: string) => {
+      const res = await mcpPost(makeMcpReq({ jsonrpc: "2.0", id: 80, method: "tools/call", params: { name, arguments: args } }, token));
+      const body = await res.json();
+      return { result: body.result as { isError: boolean; content: { text: string }[] } | undefined, error: body.error as { code: number } | undefined };
+    };
+    const reason = "Uji vitest: OPEX Rp175rb/bln, margin Serenade tetap di atas 60% setelah fee & PPh";
+
+    try {
+      await prisma.adminSetting.deleteMany({ where: { key: { in: keys } } });
+      await set({ mcp_coupon_ceo_max_percent: "25", mcp_coupon_ceo_min_margin_percent: "45" });
+
+      const ok = await call("luxvite_set_coupon_limits", { maxPercent: 15, minMarginPercent: 55, maxActive: 4, reason }, guardToken);
+      expect(ok.result?.isError).toBe(false);
+      const out = JSON.parse(ok.result!.content[0].text);
+      expect(out.after).toMatchObject({ maxPercent: 15, minMarginPercent: 55, maxActive: 4 });
+      expect((await prisma.adminSetting.findUniqueOrThrow({ where: { key: "mcp_coupon_max_percent" } })).value).toBe("15");
+
+      const overCeo = await call("luxvite_set_coupon_limits", { maxPercent: 30, reason }, guardToken);
+      expect(overCeo.result?.isError).toBe(true);
+      expect(overCeo.result?.content[0].text).toContain("batas keras CEO");
+      const underFloor = await call("luxvite_set_coupon_limits", { minMarginPercent: 30, reason }, guardToken);
+      expect(underFloor.result?.isError).toBe(true);
+      const shortReason = await call("luxvite_set_coupon_limits", { maxPercent: 10, reason: "singkat" }, guardToken);
+      expect(shortReason.result?.isError).toBe(true);
+      expect((await prisma.adminSetting.findUniqueOrThrow({ where: { key: "mcp_coupon_max_percent" } })).value).toBe("15");
+
+      const ceoKeyAttempt = await call("luxvite_set_coupon_limits", { reason, mcp_coupon_ceo_max_percent: 90 } as Record<string, unknown>, guardToken);
+      expect(ceoKeyAttempt.result?.isError ?? true).toBe(true);
+      expect((await prisma.adminSetting.findUniqueOrThrow({ where: { key: "mcp_coupon_ceo_max_percent" } })).value).toBe("25");
+
+      const denied = await call("luxvite_set_coupon_limits", { maxPercent: 10, reason }, marketingToken);
+      expect(denied.error?.code).toBe(-32003);
+
+      await set({ mcp_coupon_ceo_max_percent: "10" });
+      const rules = await call("luxvite_get_coupon_rules", {}, guardToken);
+      const r = JSON.parse(rules.result!.content[0].text);
+      expect(r.financeLimits.maxPercent).toBe(15);
+      expect(r.limits.maxPercent).toBe(10);
+      expect(r.ceoBounds.maxPercent).toBe(10);
+    } finally {
+      await prisma.adminSetting.deleteMany({ where: { key: { in: keys } } });
+      for (const row of prevRows) {
+        await prisma.adminSetting.create({ data: { key: row.key, value: row.value, group: row.group, label: row.label } });
+      }
+      invalidateSettingsCache();
+    }
+  });
 });

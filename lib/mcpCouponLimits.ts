@@ -19,9 +19,48 @@ export const MCP_COUPON_LIMITS = {
 
 export type McpCouponLimits = { [K in keyof typeof MCP_COUPON_LIMITS]: number };
 
-const LIMIT_BY_SETTING_KEY = new Map<string, McpCouponLimitDef>(Object.values(MCP_COUPON_LIMITS).map((d) => [d.key, d]));
+/**
+ * Batas keras CEO: hanya bisa diubah admin di tab Pemasaran, tidak lewat MCP. Batas yang ditetapkan Finance
+ * (`finance:guard`) wajib berada di dalamnya, dan batas efektif selalu dipotong ke rentang ini.
+ */
+export const MCP_COUPON_CEO_BOUNDS = {
+  maxPercent: { key: "mcp_coupon_ceo_max_percent", label: "Batas keras: potongan maksimum (%)", min: 1, max: 90, defaultValue: 30, step: 1 },
+  maxQuota: { key: "mcp_coupon_ceo_max_quota", label: "Batas keras: kuota maksimum per kupon", min: 1, max: 10000, defaultValue: 200, step: 1 },
+  maxValidDays: { key: "mcp_coupon_ceo_max_valid_days", label: "Batas keras: masa berlaku maksimum (hari)", min: 1, max: 365, defaultValue: 90, step: 1 },
+  maxActive: { key: "mcp_coupon_ceo_max_active", label: "Batas keras: kupon tim AI aktif maksimum", min: 0, max: 100, defaultValue: 20, step: 1 },
+  minMarginPercent: { key: "mcp_coupon_ceo_min_margin_percent", label: "Batas keras: margin bersih minimum (%)", min: 0, max: 99, defaultValue: 40, step: 1 },
+} as const satisfies Partial<Record<keyof typeof MCP_COUPON_LIMITS, McpCouponLimitDef>>;
 
-/** Validasi nilai batas saat admin menyimpan; null bila key bukan batas kupon tim AI. */
+export type McpCouponCeoBounds = { [K in keyof typeof MCP_COUPON_CEO_BOUNDS]: number };
+
+/** Batas efektif = batas Finance yang dipotong ke batas keras CEO (margin minimum tidak boleh lebih rendah dari lantai CEO). */
+export function clampToCeoBounds(limits: McpCouponLimits, ceo: McpCouponCeoBounds): McpCouponLimits {
+  return {
+    ...limits,
+    maxPercent: Math.min(limits.maxPercent, ceo.maxPercent),
+    maxQuota: Math.min(limits.maxQuota, ceo.maxQuota),
+    maxValidDays: Math.min(limits.maxValidDays, ceo.maxValidDays),
+    maxActive: Math.min(limits.maxActive, ceo.maxActive),
+    minMarginPercent: Math.max(limits.minMarginPercent, ceo.minMarginPercent),
+  };
+}
+
+/** Pelanggaran usulan Finance terhadap batas keras CEO (kosong = boleh diterapkan). */
+export function ceoBoundViolations(proposed: Partial<McpCouponLimits>, ceo: McpCouponCeoBounds): string[] {
+  const out: string[] = [];
+  if (proposed.maxPercent !== undefined && proposed.maxPercent > ceo.maxPercent) out.push(`potongan maksimum ${proposed.maxPercent}% melebihi batas keras CEO ${ceo.maxPercent}%`);
+  if (proposed.maxQuota !== undefined && proposed.maxQuota > ceo.maxQuota) out.push(`kuota ${proposed.maxQuota} melebihi batas keras CEO ${ceo.maxQuota}`);
+  if (proposed.maxValidDays !== undefined && proposed.maxValidDays > ceo.maxValidDays) out.push(`masa berlaku ${proposed.maxValidDays} hari melebihi batas keras CEO ${ceo.maxValidDays} hari`);
+  if (proposed.maxActive !== undefined && proposed.maxActive > ceo.maxActive) out.push(`kupon aktif ${proposed.maxActive} melebihi batas keras CEO ${ceo.maxActive}`);
+  if (proposed.minMarginPercent !== undefined && proposed.minMarginPercent < ceo.minMarginPercent) out.push(`margin minimum ${proposed.minMarginPercent}% di bawah lantai CEO ${ceo.minMarginPercent}%`);
+  return out;
+}
+
+const LIMIT_BY_SETTING_KEY = new Map<string, McpCouponLimitDef>(
+  [...Object.values(MCP_COUPON_LIMITS), ...Object.values(MCP_COUPON_CEO_BOUNDS)].map((d) => [d.key, d])
+);
+
+/** Validasi nilai batas (Finance maupun batas keras CEO) saat disimpan; null bila key bukan batas kupon tim AI. */
 export function validateMcpCouponLimitSetting(key: string, raw: unknown): { ok: true; value: string } | { ok: false; error: string } | null {
   const def = LIMIT_BY_SETTING_KEY.get(key);
   if (!def) return null;

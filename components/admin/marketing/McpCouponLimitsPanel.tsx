@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { MCP_COUPON_LIMITS } from "@/lib/mcpCouponLimits";
+import { MCP_COUPON_CEO_BOUNDS, MCP_COUPON_LIMITS, type McpCouponLimitDef } from "@/lib/mcpCouponLimits";
 
-const LIMIT_DEFS = Object.values(MCP_COUPON_LIMITS);
+const FINANCE_DEFS: McpCouponLimitDef[] = Object.values(MCP_COUPON_LIMITS);
+const CEO_DEFS: McpCouponLimitDef[] = Object.values(MCP_COUPON_CEO_BOUNDS);
+const LIMIT_DEFS = [...CEO_DEFS, ...FINANCE_DEFS];
 
 /** Batas kupon yang boleh dibuat tim pemasaran AI lewat MCP (`marketing:write`); disimpan sebagai AdminSetting dan ditegakkan server. */
 export default function McpCouponLimitsPanel() {
@@ -78,26 +80,45 @@ export default function McpCouponLimitsPanel() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {LIMIT_DEFS.map((d) => (
-          <label key={d.key} className="block">
-            <span className="text-xs font-medium text-gray-700">{d.label}</span>
-            <input
-              type="number"
-              min={d.min}
-              max={d.max}
-              step={d.step}
-              value={values[d.key] ?? ""}
-              disabled={loading}
-              onChange={(e) => setValues((v) => ({ ...v, [d.key]: e.target.value }))}
-              className="mt-1 w-full px-3 py-2 rounded-xl border border-gray-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-200"
-            />
-            <span className="text-[11px] text-gray-400">
-              Rentang {d.min}–{d.max}
-            </span>
-          </label>
-        ))}
-      </div>
+      {[
+        {
+          title: "Batas keras CEO",
+          note: "Hanya bisa diubah di sini. Batas dari Finance tidak boleh melewatinya, dan batas efektif selalu dipotong ke rentang ini.",
+          defs: CEO_DEFS,
+        },
+        {
+          title: "Batas yang ditetapkan Finance",
+          note: "Diusulkan Tim Finance lewat MCP (scope finance:guard, setelah ACC CEO di kantor AI). Admin juga bisa mengubahnya di sini.",
+          defs: FINANCE_DEFS,
+        },
+      ].map((group) => (
+        <div key={group.title} className="space-y-2">
+          <div>
+            <div className="text-xs font-bold text-gray-800">{group.title}</div>
+            <div className="text-[11px] text-gray-500">{group.note}</div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {group.defs.map((d) => (
+              <label key={d.key} className="block">
+                <span className="text-xs font-medium text-gray-700">{d.label}</span>
+                <input
+                  type="number"
+                  min={d.min}
+                  max={d.max}
+                  step={d.step}
+                  value={values[d.key] ?? ""}
+                  disabled={loading}
+                  onChange={(e) => setValues((v) => ({ ...v, [d.key]: e.target.value }))}
+                  className="mt-1 w-full px-3 py-2 rounded-xl border border-gray-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-200"
+                />
+                <span className="text-[11px] text-gray-400">
+                  Rentang {d.min}–{d.max}
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+      ))}
 
       {feedback && (
         <div
