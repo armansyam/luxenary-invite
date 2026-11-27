@@ -148,6 +148,12 @@ function PaymentContent() {
         return;
       }
 
+      if (data.isPartnerBilled) {
+        setOrder(data);
+        setLoading(false);
+        return;
+      }
+
       // 2. Jika order belum melewati konfirmasi checkout, kembalikan ke /checkout
       if (!data.checkoutConfirmedAt) {
         router.replace(`/checkout?order=${orderId}`);
@@ -222,7 +228,7 @@ function PaymentContent() {
   }, [orderId, qrData, paymentMode, order]);
 
   useEffect(() => {
-    if (order && !qrData && !gatewayInitError && paymentMode === "GATEWAY" && order.status === "PENDING") {
+    if (order && !order.isPartnerBilled && !qrData && !gatewayInitError && paymentMode === "GATEWAY" && order.status === "PENDING") {
       initQrisGateway();
     }
   }, [order, qrData, gatewayInitError, paymentMode, initQrisGateway]);
@@ -529,6 +535,29 @@ function PaymentContent() {
               Ganti Akun / Keluar
             </button>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (order.isPartnerBilled) {
+    return (
+      <div className="min-h-screen bg-stone-950 flex flex-col items-center justify-center p-6 text-center font-sans">
+        <div className="bg-stone-900 border border-stone-800 rounded-3xl p-8 max-w-md w-full space-y-5 shadow-2xl">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 mx-auto flex items-center justify-center text-amber-400">
+            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
+          <div className="space-y-2">
+            <p className="text-white font-serif font-bold text-lg">Tagihan Dikelola Mitra Resmi</p>
+            <p className="text-xs text-stone-400 leading-relaxed">
+              Pembayaran paket ini diselesaikan langsung oleh Mitra / Wedding Organizer Anda. Hubungi Mitra Anda bila proses pembayaran belum selesai.
+            </p>
+          </div>
+          <Link href="/dashboard" className="block w-full py-3 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs rounded-xl transition">
+            Kembali ke Dasbor
+          </Link>
         </div>
       </div>
     );

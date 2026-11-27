@@ -6,7 +6,9 @@ import { csvCell } from "@/lib/csv";
 import { useClientInvitation } from "@/components/client/ClientInvitationContext";
 
 export default function RsvpPage() {
-  const { activeInvitationId, loading: ctxLoading } = useClientInvitation();
+  const { activeInvitation, activeInvitationId, loading: ctxLoading } = useClientInvitation();
+  const isArchivedOrTakenDown =
+    activeInvitation?.status === "ARCHIVED" || activeInvitation?.status === "TAKEN_DOWN";
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalResponses: 0,
@@ -233,6 +235,16 @@ export default function RsvpPage() {
 
   return (
     <div className="space-y-2.5 sm:space-y-3 font-sans">
+      {isArchivedOrTakenDown && (
+        <div className="bg-stone-100 border border-stone-200 rounded-2xl px-4 py-3 text-xs text-stone-700">
+          <p className="font-bold text-stone-900">
+            {activeInvitation?.status === "ARCHIVED" ? "Arsip Doa & Konfirmasi (Baca-Saja)" : "Undangan Dinonaktifkan"}
+          </p>
+          <p className="text-[11px] text-stone-600 mt-0.5">
+            Ucapan dan catatan kehadiran dikunci dari perubahan untuk menjaga keaslian arsip. Anda tetap dapat mengunduh seluruh rekap dalam format CSV.
+          </p>
+        </div>
+      )}
       
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white px-4 py-3 sm:px-6 sm:py-3.5 rounded-2xl border border-stone-200 shadow-xs">
@@ -487,14 +499,16 @@ export default function RsvpPage() {
                           <span className="text-[10px] font-bold uppercase tracking-wider text-amber-900">
                             Balasan Tuan Rumah
                           </span>
-                          <button
-                            type="button"
-                            disabled={isBusy}
-                            onClick={() => void handleSaveReply(rsvp.id, null)}
-                            className="text-[10px] text-rose-700 hover:underline cursor-pointer disabled:opacity-50"
-                          >
-                            Hapus Balasan
-                          </button>
+                          {!isArchivedOrTakenDown && (
+                            <button
+                              type="button"
+                              disabled={isBusy}
+                              onClick={() => void handleSaveReply(rsvp.id, null)}
+                              className="text-[10px] text-rose-700 hover:underline cursor-pointer disabled:opacity-50"
+                            >
+                              Hapus Balasan
+                            </button>
+                          )}
                         </div>
                         <p className="leading-relaxed">{rsvp.replyMessage}</p>
                       </div>
@@ -512,6 +526,7 @@ export default function RsvpPage() {
                       })}
                     </span>
 
+                    {!isArchivedOrTakenDown && (
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <button
                         type="button"
@@ -586,6 +601,7 @@ export default function RsvpPage() {
                         </span>
                       )}
                     </div>
+                    )}
                   </div>
                 </div>
 
@@ -695,6 +711,7 @@ export default function RsvpPage() {
                       )}
                     </div>
 
+                    {!isArchivedOrTakenDown && (
                     <div className="flex items-center gap-1.5 shrink-0">
                       {!isConfirming ? (
                         <button
@@ -726,6 +743,7 @@ export default function RsvpPage() {
                         </>
                       )}
                     </div>
+                    )}
                   </div>
                 );
               })}

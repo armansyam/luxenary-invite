@@ -676,8 +676,34 @@ export default function GuestsPage() {
     addError, adminWaTemplate, bulkError, bulkFileName, bulkSuccess, confirmDeleteGuest, currentTemplate, defaultSessionInfo, defaultTemplate, downloadCsvTemplate, guestToDelete, handleAddGuest, handleExecuteBulkImport, handleFileSelect, handlePickMultipleContacts, handlePickSingleContact, handleSaveTemplate, hasContactPicker, insertVariableTag, invitationData, isBulkUploading, loading, newGuest, parsedGuests, presets, renderWaText, savingTemplate, setAddError, setBulkError, setBulkFileName, setBulkSuccess, setGuestToDelete, setNewGuest, setParsedGuests, setShowAddModal, setShowBulkModal, setShowTemplateModal, setWaTemplate, showAddModal, showBulkModal, showTemplateModal, templateSaveSuccess,
   };
 
+  const isArchivedOrTakenDown =
+    invitationData?.status === "ARCHIVED" || invitationData?.status === "TAKEN_DOWN";
+  const isGuestMutationBlocked = Boolean(invitationData?.isFreeDraft || isArchivedOrTakenDown);
+
   return (
     <div className="flex flex-col gap-2.5 sm:gap-3 font-sans pb-20">
+
+      {isArchivedOrTakenDown && (
+        <div className="bg-stone-100 border border-stone-200 rounded-2xl px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs text-stone-700">
+          <div className="space-y-0.5">
+            <p className="font-bold text-stone-900">
+              {invitationData?.status === "ARCHIVED" ? "Mode Arsip (Baca-Saja)" : "Undangan Dinonaktifkan"}
+            </p>
+            <p className="text-[11px] text-stone-600">
+              Daftar tamu dikunci dan tidak dapat ditambah atau diubah. Anda tetap dapat mengunduh rekap kehadiran tamu dalam format CSV.
+            </p>
+          </div>
+          {invitationId && (
+            <a
+              href={`/api/client/invitations/${invitationId}/export?type=guests`}
+              download
+              className="shrink-0 px-3.5 py-2 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl text-[11px] transition text-center"
+            >
+              Unduh Data Tamu (.CSV)
+            </a>
+          )}
+        </div>
+      )}
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white px-4 py-3 sm:px-6 sm:py-3.5 rounded-2xl border border-stone-200 shadow-xs">
@@ -696,8 +722,12 @@ export default function GuestsPage() {
           {/* Edit WhatsApp Template Button */}
           <button
             type="button"
-            onClick={() => setShowTemplateModal(true)}
-            className="flex-1 sm:flex-none px-3.5 py-2.5 sm:py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300/80 text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+            disabled={isArchivedOrTakenDown}
+            onClick={() => {
+              if (isArchivedOrTakenDown) return;
+              setShowTemplateModal(true);
+            }}
+            className="flex-1 sm:flex-none px-3.5 py-2.5 sm:py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300/80 text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-xs disabled:opacity-45 disabled:cursor-not-allowed"
           >
             <svg className="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -708,9 +738,9 @@ export default function GuestsPage() {
           {/* Import CSV Button */}
           <button
             type="button"
-            disabled={Boolean(invitationData?.isFreeDraft)}
+            disabled={isGuestMutationBlocked}
             onClick={() => {
-              if (invitationData?.isFreeDraft) return;
+              if (isGuestMutationBlocked) return;
               setBulkError(null);
               setBulkSuccess(null);
               setParsedGuests([]);
@@ -729,7 +759,7 @@ export default function GuestsPage() {
           {hasContactPicker && (
             <button
               type="button"
-              disabled={Boolean(invitationData?.isFreeDraft)}
+              disabled={isGuestMutationBlocked}
               onClick={handlePickMultipleContacts}
               className="flex-1 sm:flex-none px-3.5 py-2.5 sm:py-2 bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-300/80 text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-xs shrink-0 disabled:opacity-45 disabled:cursor-not-allowed"
             >
@@ -743,9 +773,9 @@ export default function GuestsPage() {
           {/* Add Guest Button */}
           <button
             type="button"
-            disabled={Boolean(invitationData?.isFreeDraft)}
+            disabled={isGuestMutationBlocked}
             onClick={() => {
-              if (invitationData?.isFreeDraft) return;
+              if (isGuestMutationBlocked) return;
               setShowAddModal(true);
             }}
             className="order-first sm:order-none w-full sm:w-auto px-4 py-3 sm:py-2 bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-xs shrink-0 disabled:opacity-45 disabled:cursor-not-allowed"

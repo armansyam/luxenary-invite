@@ -97,6 +97,13 @@ export function TechnicalSettingsSection({ ctx }: { ctx: TechnicalSettingsContex
     toggleEdit,
   } = ctx;
 
+  const isArchivedOrTakenDown = formData.status === "ARCHIVED" || formData.status === "TAKEN_DOWN";
+  const isSubdomainLocked =
+    formData.status === "PUBLISHED" ||
+    formData.status === "EVENT_FINISHED" ||
+    isArchivedOrTakenDown;
+  const activeSubdomain = formData.subdomain || invitation?.subdomain || "";
+
   return (
     <>
       {/* ──────── PENGATURAN TEKNIS LAINNYA (SLIDE ATAS / GULIR MENGHILANG SECARA ELEGAN SAAT INSPEKSI) ──────── */}
@@ -111,13 +118,13 @@ export function TechnicalSettingsSection({ ctx }: { ctx: TechnicalSettingsContex
         }}
       >
         {/* CARD 1: SUBDOMAIN — setelah terbit, tautan yang sama sudah tampil di hero, jadi kartu ini disembunyikan di HP */}
-        <div className={`${formData.status === "PUBLISHED" ? "hidden sm:block" : ""} bg-white p-4 sm:p-7 rounded-2xl sm:rounded-3xl border border-stone-200 shadow-xs space-y-4`}>
+        <div className={`${isSubdomainLocked ? "hidden sm:block" : ""} bg-white p-4 sm:p-7 rounded-2xl sm:rounded-3xl border border-stone-200 shadow-xs space-y-4`}>
           <div className="flex items-center justify-between gap-3 border-b border-stone-100 pb-3">
             <div>
               <h3 className="text-sm font-bold text-stone-900">Alamat Tautan Subdomain</h3>
               <p className="text-xs text-stone-500">Tentukan alamat URL eksklusif undangan {eventNounLabel} Anda</p>
             </div>
-            {formData.status !== "PUBLISHED" && (
+            {!isSubdomainLocked && (
               <button
                 type="button"
                 onClick={() => toggleEdit("subdomain")}
@@ -128,8 +135,8 @@ export function TechnicalSettingsSection({ ctx }: { ctx: TechnicalSettingsContex
             )}
           </div>
 
-          {formData.status === "PUBLISHED" ? (
-            /* Mode Rincian Terkunci Pasca Publikasi */
+          {isSubdomainLocked ? (
+            /* Mode Rincian Terkunci Pasca Publikasi / Selesai / Arsip */
             <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2 mb-1">
@@ -138,29 +145,41 @@ export function TechnicalSettingsSection({ ctx }: { ctx: TechnicalSettingsContex
                     <svg className="w-3 h-3 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
-                    <span>Terkunci Pasca Publikasi</span>
+                    <span>{isArchivedOrTakenDown ? "Terkunci (Arsip)" : "Terkunci Pasca Publikasi"}</span>
                   </span>
                 </div>
-                <a
-                  href={getInvitationPublicUrl(formData.subdomain || invitation?.subdomain || "")}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs sm:text-sm font-mono font-bold text-amber-900 hover:underline break-all"
-                >
-                  {getInvitationPublicUrl(formData.subdomain || invitation?.subdomain || "")}
-                </a>
+                {activeSubdomain ? (
+                  <a
+                    href={getInvitationPublicUrl(activeSubdomain)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs sm:text-sm font-mono font-bold text-amber-900 hover:underline break-all"
+                  >
+                    {getInvitationPublicUrl(activeSubdomain)}
+                  </a>
+                ) : (
+                  <span className="text-xs font-mono text-stone-500 italic">
+                    {isArchivedOrTakenDown
+                      ? "Subdomain telah dilepas sesuai masa retensi (tautan kanonikal tetap berlaku)."
+                      : "Tidak menggunakan subdomain"}
+                  </span>
+                )}
                 <p className="text-[11px] text-stone-500 mt-1 leading-relaxed">
-                  Tautan ini telah terkunci secara otomatis demi melindungi keterhubungan QR Code di cetakan fisik Anda.
+                  {isArchivedOrTakenDown
+                    ? "Undangan telah diarsipkan atau dinonaktifkan sehingga pengaturan subdomain tidak dapat diubah."
+                    : "Tautan ini telah terkunci secara otomatis demi melindungi keterhubungan QR Code di cetakan fisik Anda."}
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={handleCopyOfficialUrl}
-                className="px-3.5 py-1.5 bg-white hover:bg-stone-100 text-stone-700 border border-stone-200 rounded-lg text-xs font-semibold transition cursor-pointer self-start sm:self-auto shrink-0 shadow-2xs"
-              >
-                {copiedOfficialUrl ? "Tersalin!" : "Salin Tautan"}
-              </button>
+              {activeSubdomain && (
+                <button
+                  type="button"
+                  onClick={handleCopyOfficialUrl}
+                  className="px-3.5 py-1.5 bg-white hover:bg-stone-100 text-stone-700 border border-stone-200 rounded-lg text-xs font-semibold transition cursor-pointer self-start sm:self-auto shrink-0 shadow-2xs"
+                >
+                  {copiedOfficialUrl ? "Tersalin!" : "Salin Tautan"}
+                </button>
+              )}
             </div>
           ) : !editMode.subdomain ? (
             /* Summary Mode Saat Draft */
@@ -297,31 +316,39 @@ export function TechnicalSettingsSection({ ctx }: { ctx: TechnicalSettingsContex
               <h3 className="text-sm font-bold text-stone-900">PIN Keamanan Panitia</h3>
               <p className="text-xs text-stone-500">Sandi rahasia (4–10 huruf/angka) untuk mengakses Resepsionis, Booth, dan Proyektor</p>
             </div>
-            <button
-              type="button"
-              onClick={() => toggleEdit("staffPin")}
-              className="px-3 py-1 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-lg text-xs transition cursor-pointer"
-            >
-              {editMode.staffPin ? "Tutup" : "Edit"}
-            </button>
+            {!isArchivedOrTakenDown ? (
+              <button
+                type="button"
+                onClick={() => toggleEdit("staffPin")}
+                className="px-3 py-1 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-lg text-xs transition cursor-pointer"
+              >
+                {editMode.staffPin ? "Tutup" : "Edit"}
+              </button>
+            ) : (
+              <span className="px-2.5 py-1 bg-stone-100 text-stone-500 border border-stone-200 font-semibold rounded-lg text-[10px]">
+                Terkunci
+              </span>
+            )}
           </div>
 
-          {!editMode.staffPin ? (
+          {!editMode.staffPin || isArchivedOrTakenDown ? (
             /* Summary Mode */
             <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">PIN Saat Ini:</span>
                 <span className="inline-block mt-1 text-lg font-mono font-black tracking-widest text-amber-900">
-                  {formData.staffPin}
+                  {formData.staffPin || "—"}
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={() => toggleEdit("staffPin")}
-                className="text-xs font-bold text-stone-600 hover:text-stone-900 underline cursor-pointer self-start sm:self-auto"
-              >
-                Ubah PIN
-              </button>
+              {!isArchivedOrTakenDown && (
+                <button
+                  type="button"
+                  onClick={() => toggleEdit("staffPin")}
+                  className="text-xs font-bold text-stone-600 hover:text-stone-900 underline cursor-pointer self-start sm:self-auto"
+                >
+                  Ubah PIN
+                </button>
+              )}
             </div>
           ) : (
             /* Form Edit Mode */
@@ -378,7 +405,11 @@ export function TechnicalSettingsSection({ ctx }: { ctx: TechnicalSettingsContex
           </span>
         </div>
 
-        {!canUseCustomDomain && !invitation?.customDomain ? (
+        {isArchivedOrTakenDown && !invitation?.customDomain ? (
+          <div className="p-4 rounded-xl border border-stone-200 bg-stone-50 text-xs text-stone-500">
+            Undangan ini telah diarsipkan atau dinonaktifkan sehingga tidak dapat menautkan domain kustom baru.
+          </div>
+        ) : !canUseCustomDomain && !invitation?.customDomain ? (
           /* Mode Terkunci: Memerlukan kapabilitas Custom Domain */
           <div className="p-5 rounded-2xl border border-amber-200/80 bg-amber-50/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3.5">

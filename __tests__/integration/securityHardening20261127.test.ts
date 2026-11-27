@@ -50,6 +50,10 @@ import { POST as createInvitation } from "@/app/api/client/invitations/create/ro
 import { POST as uploadMedia } from "@/app/api/client/upload/route";
 import { POST as addGuest } from "@/app/api/client/guests/route";
 import { POST as bulkGuests } from "@/app/api/client/guests/bulk/route";
+import { PUT as updateGuest, DELETE as deleteGuest } from "@/app/api/client/guests/[id]/route";
+import { PATCH as patchRsvp, DELETE as deleteRsvp } from "@/app/api/client/rsvps/[id]/route";
+import { DELETE as deleteGiftClaim } from "@/app/api/client/gift-claims/[id]/route";
+import { POST as saveCustomDomain } from "@/app/api/client/custom-domain/route";
 import { PUT as putStaffPin } from "@/app/api/client/invitations/[id]/staff-pin/route";
 import { PUT as putInvitation, PATCH as patchInvitation } from "@/app/api/client/invitations/[id]/route";
 import { PATCH as patchMemories } from "@/app/api/client/invitations/[id]/memories/route";
@@ -758,5 +762,62 @@ describe.skipIf(!IS_TEST_DB)("Security & Partner Portal Hardening (2026-11-27)",
       jsonReq("/api/payments/upgrade", "POST", { invitationId: archivedInv.id, targetPlan: "TIER_2" }),
     );
     expect(upgradeRes.status).toBe(400);
+
+    // Tambahan: tamu, RSVP, klaim kado, dan tautan custom domain baru juga ditolak 403 saat ARCHIVED
+    const addGuestRes = await addGuest(
+      jsonReq("/api/client/guests", "POST", { invitationId: archivedInv.id, name: "Tamu Arsip" }),
+    );
+    expect(addGuestRes.status).toBe(403);
+
+    const bulkGuestRes = await bulkGuests(
+      jsonReq("/api/client/guests/bulk", "POST", { invitationId: archivedInv.id, guests: [{ name: "Tamu Impor" }] }),
+    );
+    expect(bulkGuestRes.status).toBe(403);
+
+    const guestRow = await prisma.guest.create({
+      data: { invitationId: archivedInv.id, name: "Tamu Lama", slug: `${TAG}-tamu-lama`, qrToken: `${TAG}-qr` },
+    });
+    const putGuestRes = await updateGuest(
+      jsonReq(`/api/client/guests/${guestRow.id}`, "PUT", { name: "Diubah" }),
+      { params: Promise.resolve({ id: guestRow.id }) },
+    );
+    expect(putGuestRes.status).toBe(403);
+
+    const delGuestRes = await deleteGuest(
+      jsonReq(`/api/client/guests/${guestRow.id}`, "DELETE"),
+      { params: Promise.resolve({ id: guestRow.id }) },
+    );
+    expect(delGuestRes.status).toBe(403);
+
+    const rsvpRow = await prisma.rsvp.create({
+      data: { invitationId: archivedInv.id, guestName: "Pengirim Doa", status: "hadir", message: "Selamat" },
+    });
+    const patchRsvpRes = await patchRsvp(
+      jsonReq(`/api/client/rsvps/${rsvpRow.id}`, "PATCH", { isHidden: true }),
+      { params: Promise.resolve({ id: rsvpRow.id }) },
+    );
+    expect(patchRsvpRes.status).toBe(403);
+
+    const delRsvpRes = await deleteRsvp(
+      jsonReq(`/api/client/rsvps/${rsvpRow.id}`, "DELETE"),
+      { params: Promise.resolve({ id: rsvpRow.id }) },
+    );
+    expect(delRsvpRes.status).toBe(403);
+
+    const claimRow = await prisma.giftClaim.create({
+      data: { invitationId: archivedInv.id, itemId: "item-1", guestName: "Tamu Kado", quantity: 1 },
+    });
+    const delClaimRes = await deleteGiftClaim(
+      jsonReq(`/api/client/gift-claims/${claimRow.id}`, "DELETE"),
+      { params: Promise.resolve({ id: claimRow.id }) },
+    );
+    expect(delClaimRes.status).toBe(403);
+
+    const tier3Order = await prisma.order.update({ where: { id: paidOrder.id }, data: { planType: "TIER_3" } });
+    expect(tier3Order.planType).toBe("TIER_3");
+    const domainRes = await saveCustomDomain(
+      jsonReq("/api/client/custom-domain", "POST", { invitationId: archivedInv.id, customDomain: "arsip-baru.example.com" }),
+    );
+    expect(domainRes.status).toBe(403);
   });
 });

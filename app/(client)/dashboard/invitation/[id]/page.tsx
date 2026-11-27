@@ -1279,7 +1279,8 @@ export default function EditInvitation() {
   const bgScrim = parseBgScrim(getFeatureSetting("bgScrim", null));
   const showTurutMengundang = getFeatureSetting("showTurutMengundang", true);
   if (invitation.isLocked && !invitation.isEmergencyUnlocked) {
-    const isPublishedLock = invitation.lockReason === "PUBLISHED" || (!invitation.lockReason && (invitation.status === "PUBLISHED" || invitation.status === "EVENT_FINISHED"));
+    const isArchivedOrTakenDown = invitation.status === "ARCHIVED" || invitation.status === "TAKEN_DOWN";
+    const isPublishedLock = !isArchivedOrTakenDown && (invitation.lockReason === "PUBLISHED" || (!invitation.lockReason && (invitation.status === "PUBLISHED" || invitation.status === "EVENT_FINISHED")));
     const coupleName = resolveInvitationDisplayName(invitation);
 
     return (
@@ -1294,15 +1295,31 @@ export default function EditInvitation() {
           <div className="space-y-2 max-w-xl mx-auto">
             <span className="px-3 py-1 bg-stone-100 border border-stone-200 text-stone-700 text-[10px] font-bold rounded-full uppercase tracking-wider inline-flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
-              <span>{isPublishedLock ? "Terkunci Pasca Publikasi" : "Studio Terkunci Permanen"}</span>
+              <span>
+                {invitation.status === "TAKEN_DOWN"
+                  ? "Dinonaktifkan Sistem"
+                  : invitation.status === "ARCHIVED"
+                  ? "Undangan Diarsipkan"
+                  : isPublishedLock
+                  ? "Terkunci Pasca Publikasi"
+                  : "Studio Terkunci Permanen"}
+              </span>
             </span>
             <h2 className="text-2xl sm:text-3xl font-serif font-bold text-stone-900">
-              {isPublishedLock ? "Studio Editor Terkunci" : "Studio Terkunci Permanen"}
+              {invitation.status === "TAKEN_DOWN"
+                ? "Undangan Dinonaktifkan"
+                : invitation.status === "ARCHIVED"
+                ? "Studio Ditutup (Arsip)"
+                : isPublishedLock
+                ? "Studio Editor Terkunci"
+                : "Studio Terkunci Permanen"}
             </h2>
             <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
-              {isPublishedLock
+              {invitation.status === "TAKEN_DOWN"
+                ? "Undangan ini sedang dinonaktifkan oleh Administrator. Silakan hubungi tim CS bila memerlukan informasi lebih lanjut."
+                : isPublishedLock
                 ? `Undangan resmi ${coupleName} saat ini telah aktif mengudara. Untuk melindungi keutuhan data dan keterhubungan QR Code fisik yang telah disebar kepada para tamu, form editor dikunci secara otomatis.`
-                : "Acara telah lewat dan undangan ini kini tersimpan sebagai arsip. Akses edit ditutup untuk menjaga keaslian arsip."}
+                : "Acara telah selesai dan undangan ini kini tersimpan sebagai arsip. Akses edit ditutup untuk menjaga keaslian arsip."}
             </p>
           </div>
 
@@ -1354,17 +1371,38 @@ export default function EditInvitation() {
               <span>{isPublishedLock ? "Ajukan Buka Kunci Darurat" : "Hubungi CS untuk Bantuan"}</span>
             </a>
 
-            <a
-              href={`/api/client/invitations/${invitationId}/preview?mode=preview`}
-              target="_blank"
-              rel="noreferrer"
-              className="w-full sm:w-auto px-5 py-3 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-xl transition border border-stone-200 flex items-center justify-center gap-1.5"
-            >
-              <span>Lihat Undangan Online</span>
-              <svg className="w-3.5 h-3.5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-              </svg>
-            </a>
+            {isArchivedOrTakenDown ? (
+              <>
+                <Link
+                  href="/dashboard"
+                  className="w-full sm:w-auto px-5 py-3 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-xl transition border border-stone-200 flex items-center justify-center gap-1.5"
+                >
+                  <span>Kembali ke Beranda Arsip</span>
+                </Link>
+                {invitation.status === "ARCHIVED" && invitation.invitationSlug && (
+                  <a
+                    href={`/${invitation.invitationSlug}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full sm:w-auto px-5 py-3 bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5"
+                  >
+                    <span>Lihat Arsip Undangan</span>
+                  </a>
+                )}
+              </>
+            ) : (
+              <a
+                href={`/api/client/invitations/${invitationId}/preview?mode=preview`}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full sm:w-auto px-5 py-3 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-xl transition border border-stone-200 flex items-center justify-center gap-1.5"
+              >
+                <span>Lihat Undangan Online</span>
+                <svg className="w-3.5 h-3.5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+            )}
           </div>
         </div>
       </div>

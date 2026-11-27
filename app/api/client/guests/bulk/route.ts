@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 
     const invitation = await prisma.invitation.findUnique({
       where: { id: invitationId },
-      select: { userId: true, eventData: true, eventType: true, isFreeDraft: true },
+      select: { userId: true, status: true, eventData: true, eventType: true, isFreeDraft: true },
     });
 
     if (!invitation) {
@@ -38,6 +38,13 @@ export async function POST(req: NextRequest) {
     const isAdmin = hasAdminPermission(session.user, "invitations");
     if (invitation.userId !== session.user.id && !isAdmin) {
       return NextResponse.json({ error: "Forbidden. Anda bukan pemilik undangan ini." }, { status: 403 });
+    }
+
+    if (!isAdmin && (invitation.status === "ARCHIVED" || invitation.status === "TAKEN_DOWN")) {
+      return NextResponse.json(
+        { error: "Undangan ini telah diarsipkan atau dinonaktifkan sehingga daftar tamu tidak dapat diimpor." },
+        { status: 403 }
+      );
     }
 
     if (invitation.isFreeDraft && !isAdmin) {

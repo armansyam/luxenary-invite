@@ -115,7 +115,7 @@ export async function PUT(
 
     const existingGuest = await prisma.guest.findUnique({
       where: { id },
-      include: { invitation: { select: { userId: true, eventData: true } } },
+      include: { invitation: { select: { userId: true, status: true, eventData: true } } },
     });
 
     if (!existingGuest) {
@@ -127,6 +127,13 @@ export async function PUT(
 
     if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    if (!isAdmin && (existingGuest.invitation?.status === "ARCHIVED" || existingGuest.invitation?.status === "TAKEN_DOWN")) {
+      return NextResponse.json(
+        { error: "Undangan ini telah diarsipkan atau dinonaktifkan sehingga data tamu tidak dapat diubah." },
+        { status: 403 }
+      );
     }
 
     // Sama dengan tambah tamu: mulai hari terima tamu, nama dan kuota yang tercetak di QR tidak boleh berubah dari dasbor.
@@ -191,7 +198,7 @@ export async function DELETE(
 
     const existingGuest = await prisma.guest.findUnique({
       where: { id },
-      include: { invitation: { select: { userId: true } } },
+      include: { invitation: { select: { userId: true, status: true } } },
     });
 
     if (!existingGuest) {
@@ -203,6 +210,13 @@ export async function DELETE(
 
     if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    if (!isAdmin && (existingGuest.invitation?.status === "ARCHIVED" || existingGuest.invitation?.status === "TAKEN_DOWN")) {
+      return NextResponse.json(
+        { error: "Undangan ini telah diarsipkan atau dinonaktifkan sehingga data tamu tidak dapat dihapus." },
+        { status: 403 }
+      );
     }
 
     if (existingGuest.isTokenRedeemed && !isAdmin) {

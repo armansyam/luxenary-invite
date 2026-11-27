@@ -304,7 +304,7 @@ describe.skipIf(!IS_TEST_DB)("rantai klien dan admin: daftar paket sampai hapus 
     expect(late.status).toBe(410);
   });
 
-  it("arsip oleh cron: tanpa rahasia 401, dengan rahasia status ARCHIVED dan RSVP dibersihkan", async () => {
+  it("arsip oleh cron: tanpa rahasia 401, dengan rahasia status ARCHIVED dan catatan RSVP dipertahankan untuk CSV arsip", async () => {
     // Acara dimundurkan jauh melewati retention_cleanup_days; route cron memakai jam sistem.
     const past = [{ title: "Resepsi", date: "2020-01-10", time: "11:00", timezone: "WIB", isPrimary: true }];
     await prisma.invitation.update({ where: { id: state.invitationId }, data: { eventData: past } });
@@ -318,7 +318,7 @@ describe.skipIf(!IS_TEST_DB)("rantai klien dan admin: daftar paket sampai hapus 
     expect(run.status).toBe(200);
     const after = await prisma.invitation.findUniqueOrThrow({ where: { id: state.invitationId } });
     expect(after.status).toBe("ARCHIVED");
-    expect(await prisma.rsvp.count({ where: { invitationId: state.invitationId } })).toBe(0);
+    expect(await prisma.rsvp.count({ where: { invitationId: state.invitationId } })).toBe(1);
   });
 
   it("hapus klien oleh admin: klien 401, punya transaksi lunas 409, setelah tidak lunas admin 200 tanpa data yatim dan jejak audit tercatat", async () => {

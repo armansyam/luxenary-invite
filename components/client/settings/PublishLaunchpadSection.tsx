@@ -106,21 +106,73 @@ export function PublishLaunchpadSection({ ctx }: { ctx: PublishLaunchpadContext 
     startSequentialAudit,
   } = ctx;
 
+  const isArchivedOrTakenDown = formData.status === "ARCHIVED" || formData.status === "TAKEN_DOWN";
+  const isEventFinished = formData.status === "EVENT_FINISHED";
+  const isLiveOrFinished = formData.status === "PUBLISHED" || isEventFinished;
+
   return (
     <>
       {/* ──────── HERO LAUNCHPAD: STATUS PUBLIKASI & AUDIT SEKUANSIAL ──────── */}
-      {formData.status === "PUBLISHED" ? (
-        /* BANNER SELEBRASI RESMI: KATA SAMBUTAN FORMAL & HUB TAUTAN RESMI */
+      {isArchivedOrTakenDown ? (
+        <div className="bg-stone-900 text-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-xl border border-stone-800 relative overflow-hidden space-y-5">
+          <div className="absolute top-0 right-0 w-72 h-72 bg-amber-600/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative z-10 space-y-4">
+            <span className="px-3 py-1 bg-stone-800 border border-stone-700 text-stone-200 text-[11px] font-bold rounded-full uppercase tracking-wider inline-flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+              <span>{formData.status === "ARCHIVED" ? "Status: Diarsipkan (Baca-Saja)" : "Status: Dinonaktifkan Sistem"}</span>
+            </span>
+            <div className="space-y-1.5">
+              <h2 className="text-xl sm:text-2xl font-serif font-bold text-stone-100 leading-tight">
+                {formData.status === "ARCHIVED"
+                  ? `Undangan ${resolveInvitationDisplayName(invitation)} Telah Diarsipkan`
+                  : `Undangan ${resolveInvitationDisplayName(invitation)} Sedang Dinonaktifkan`}
+              </h2>
+              <p className="text-xs sm:text-sm text-stone-300 leading-relaxed max-w-2xl">
+                {formData.status === "ARCHIVED"
+                  ? "Masa aktif undangan dan galeri foto tamu telah selesai. Pengaturan publikasi, subdomain, dan PIN panitia dikunci otomatis. Rekap doa & daftar tamu tetap dapat diunduh dari Beranda Arsip."
+                  : "Undangan ini sedang dinonaktifkan oleh Administrator sehingga seluruh perubahan pengaturan dikunci sementara."}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2.5 pt-1">
+              <Link
+                href="/dashboard"
+                className="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold rounded-xl text-xs transition"
+              >
+                Kembali ke Beranda Arsip
+              </Link>
+              {formData.status === "ARCHIVED" && invitation?.invitationSlug && (
+                <a
+                  href={`/${invitation.invitationSlug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-4 py-2.5 bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700 font-semibold rounded-xl text-xs transition"
+                >
+                  Lihat Tautan Arsip
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : isLiveOrFinished ? (
+        /* BANNER SELEBRASI RESMI / PASCA-ACARA: KATA SAMBUTAN FORMAL & HUB TAUTAN RESMI */
         <div className="bg-stone-900 text-white rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-xl border border-stone-800 relative overflow-hidden space-y-6">
           <div className="absolute top-0 right-0 w-80 h-80 bg-amber-600/10 rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative z-10 space-y-4 sm:space-y-5">
             {/* Header Lencana */}
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <span className="px-3 py-1 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold rounded-full uppercase tracking-wider flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span className="sm:hidden">Sudah Terbit</span>
-                <span className="hidden sm:inline">Undangan Resmi Telah Mengudara · Terverifikasi Sistem</span>
+              <span className={`px-3 py-1 text-[11px] font-bold rounded-full uppercase tracking-wider flex items-center gap-2 border ${
+                isEventFinished
+                  ? "bg-purple-500/15 border-purple-500/30 text-purple-200"
+                  : "bg-emerald-500/15 border-emerald-500/30 text-emerald-300"
+              }`}>
+                <span className={`w-2 h-2 rounded-full ${isEventFinished ? "bg-purple-400" : "bg-emerald-400 animate-pulse"}`}></span>
+                <span className="sm:hidden">{isEventFinished ? "Acara Selesai" : "Sudah Terbit"}</span>
+                <span className="hidden sm:inline">
+                  {isEventFinished
+                    ? "Acara Selesai · Mode Galeri Kenangan Pasca-Acara"
+                    : "Undangan Resmi Telah Mengudara · Terverifikasi Sistem"}
+                </span>
               </span>
               <span className="hidden sm:inline text-[11px] text-stone-400 font-mono">
                 {invitation?.themeId ? `Tema: ${invitation.themeId}` : ""}
@@ -130,12 +182,16 @@ export function PublishLaunchpadSection({ ctx }: { ctx: PublishLaunchpadContext 
             {/* Sambutan Formal & Netral Layanan Klien */}
             <div className="space-y-1.5">
               <h2 className="text-xl sm:text-3xl font-serif font-bold text-stone-100 leading-tight">
-                {(!invitation?.eventType || invitation.eventType === "WEDDING")
+                {isEventFinished
+                  ? `Rangkaian Acara ${resolveInvitationDisplayName(invitation)} Telah Usai`
+                  : (!invitation?.eventType || invitation.eventType === "WEDDING")
                   ? `Selamat Berbahagia untuk ${resolveInvitationDisplayName(invitation)}`
                   : `Selamat & Sukses untuk ${resolveInvitationDisplayName(invitation)}`}
               </h2>
               <p className="hidden sm:block text-sm text-stone-300/90 leading-relaxed max-w-2xl">
-                {(!invitation?.eventType || invitation.eventType === "WEDDING")
+                {isEventFinished
+                  ? "Undangan kini berada pada masa pasca-acara sebelum diarsipkan otomatis. Anda masih dapat mengunduh galeri momen dan rekap tamu sebelum masa retensi berakhir."
+                  : (!invitation?.eventType || invitation.eventType === "WEDDING")
                   ? "Website undangan pernikahan resmi Anda kini telah aktif mengudara dan siap dibagikan kepada keluarga, sahabat, serta seluruh tamu kehormatan."
                   : "Website undangan resmi Anda kini telah aktif mengudara dan siap dibagikan kepada keluarga, sahabat, serta seluruh tamu kehormatan."}
               </p>

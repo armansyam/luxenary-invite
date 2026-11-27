@@ -509,10 +509,12 @@ export async function PUT(
       });
     }
 
-    // If completely locked, reject edit
-    if (lockStatus.isLocked) {
+    // If completely locked, reject edit (admin tetap dapat memulihkan status TAKEN_DOWN/ARCHIVED)
+    if (lockStatus.isLocked && !isAdmin) {
       const errMsg = lockStatus.lockReason === "PUBLISHED"
         ? "Undangan ini telah diterbitkan dan studio terkunci. Silakan ajukan Buka Kunci Darurat kepada Administrator."
+        : lockStatus.lockReason === "ARCHIVED" || lockStatus.lockReason === "TAKEN_DOWN"
+        ? "Undangan ini telah diarsipkan atau dinonaktifkan sehingga tidak dapat diubah."
         : "Undangan ini telah terkunci permanen karena tanggal acara telah terlewati. Hubungi Administrator untuk membuka kunci darurat.";
       return NextResponse.json(
         { error: errMsg },

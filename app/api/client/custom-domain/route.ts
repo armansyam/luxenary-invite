@@ -87,6 +87,13 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    if (!isAdmin && (invitation.status === "ARCHIVED" || invitation.status === "TAKEN_DOWN")) {
+      return NextResponse.json(
+        { error: "Undangan ini telah diarsipkan atau dinonaktifkan sehingga tidak dapat menautkan domain kustom baru." },
+        { status: 403 }
+      );
+    }
+
     const cleanDomain = normalizeCustomDomain(customDomain);
     if (!cleanDomain) {
       return NextResponse.json({ error: "Format domain tidak valid. Contoh: namakamu.com" }, { status: 400 });

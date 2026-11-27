@@ -22,7 +22,7 @@ async function loadAuthorizedRsvp(rsvpId: string) {
   const rsvp = await prisma.rsvp.findUnique({
     where: { id: rsvpId },
     include: {
-      invitation: { select: { id: true, userId: true } },
+      invitation: { select: { id: true, userId: true, status: true } },
     },
   });
   if (!rsvp) {
@@ -32,6 +32,15 @@ async function loadAuthorizedRsvp(rsvpId: string) {
   const isAdmin = hasAdminPermission(session.user, "invitations");
   if (rsvp.invitation.userId !== userId && !isAdmin) {
     return { error: NextResponse.json({ error: "Forbidden: Anda tidak memiliki akses ke ucapan ini." }, { status: 403 }) } as const;
+  }
+
+  if (!isAdmin && (rsvp.invitation.status === "ARCHIVED" || rsvp.invitation.status === "TAKEN_DOWN")) {
+    return {
+      error: NextResponse.json(
+        { error: "Undangan ini telah diarsipkan atau dinonaktifkan sehingga data RSVP tidak dapat diubah." },
+        { status: 403 },
+      ),
+    } as const;
   }
 
   return { rsvp } as const;
@@ -68,7 +77,10 @@ export async function PATCH(
     }
 
     const authz = await loadAuthorizedRsvp(id);
-    if ("error" in authz) return authz.error;
+    if ("error" in authz && authz.error) return authz.error;
+    if (!("rsvp" in authz)) {
+      return NextResponse.json({ error: "Akses ditolak." }, { status: 403 });
+    }
 
     const body = await readJsonBody(req);
     if (!body || typeof body !== "object" || Array.isArray(body)) {
@@ -139,7 +151,10 @@ export async function DELETE(
     }
 
     const authz = await loadAuthorizedRsvp(id);
-    if ("error" in authz) return authz.error;
+    if ("error" in authz && authz.error) return authz.error;
+    if (!("rsvp" in authz)) {
+      return NextResponse.json({ error: "Akses ditolak." }, { status: 403 });
+    }
 
     await prisma.rsvp.delete({ where: { id } });
     invalidateRsvpListCache(authz.rsvp.invitationId);

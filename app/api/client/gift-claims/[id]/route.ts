@@ -49,6 +49,13 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    if (!isAdmin && (claim.invitation.status === "ARCHIVED" || claim.invitation.status === "TAKEN_DOWN")) {
+      return NextResponse.json(
+        { error: "Undangan ini telah diarsipkan atau dinonaktifkan sehingga klaim kado tidak dapat diubah." },
+        { status: 403 },
+      );
+    }
+
     await prisma.giftClaim.delete({ where: { id: claim.id } });
 
     if (claim.invitation.status === "PUBLISHED") {

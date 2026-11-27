@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const invitation = await prisma.invitation.findUnique({ where: { invitationSlug: slug } });
 
-  if (!invitation || invitation.status === "TAKEN_DOWN" || invitation.status === "DRAFT") return {};
+  if (!invitation || invitation.status === "TAKEN_DOWN" || invitation.status === "ARCHIVED" || invitation.status === "DRAFT") return {};
 
   const displayName = resolveInvitationDisplayName(invitation);
   const isWedding = !invitation.eventType || invitation.eventType === "WEDDING";
@@ -50,7 +50,7 @@ export default async function FreeGuestMemoriesStandalonePage({ params, searchPa
     },
   });
 
-  if (!invitation || invitation.status === "TAKEN_DOWN") {
+  if (!invitation || invitation.status === "TAKEN_DOWN" || invitation.status === "ARCHIVED") {
     notFound();
   }
 
@@ -107,7 +107,7 @@ export default async function FreeGuestMemoriesStandalonePage({ params, searchPa
   // Jatah efektif tamu: tidak boleh melampaui sisa pool yang tersedia
   const effectiveShotsQuota = remainingPool > 0 ? Math.min(configuredShotsQuota, remainingPool) : configuredShotsQuota;
   const schedule = getMemoriesActiveSchedule(invitation.featureSettings, invitation.eventData);
-  const isAllFinished = schedule.isAllFinished || invitation.status === "EVENT_FINISHED" || invitation.status === "ARCHIVED";
+  const isAllFinished = schedule.isAllFinished || invitation.status === "EVENT_FINISHED";
   const nextSessionIso = schedule.nextSession
     ? `${schedule.nextSession.date.includes("T") ? schedule.nextSession.date.split("T")[0] : schedule.nextSession.date}T${schedule.nextSession.startTime.slice(0, 5)}:00${getEventTimezoneOffset(resolveEventTimezone(schedule.nextSession))}`
     : null;

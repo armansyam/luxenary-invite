@@ -585,6 +585,50 @@ export default function MomentsSetupPage() {
     activeFilterId, activeOpeningName, activeSchedule, coupleTitle, coverPhoto, downloadPhase, downloadProgress, events, fetchGuestMemories, getFeatureSetting, getRetroDateStamp, guestMemoriesList, handleAddSession, handleAutoBalanceQuota, handleAutoSyncSessions, handleBlurSession, handleDeletePhoto, handleRemoveSession, handleStartDownloadZip, handleUpdateSession, instructionText, invitation, isReadyForDownload, loadingMemories, openingLayoutId, sessionSaveStatus, sessions, setIsOpeningModalOpen, setIsPrintQrModalOpen, totalAllocated, totalEventQuota, updateSettingFast, updatingSetting, zipDownloadHint, daysRemaining, handleSaveRollQuota, hasExtended, isAddonModalOpen, isOpeningModalOpen, isPrintQrModalOpen, isRollModalOpen, isSavingRoll, isSyncHelpModalOpen, memoriesQuota, planType, platformSettings, rollModalInput, rollModalMsg, setInvitation, setIsAddonModalOpen, setIsRollModalOpen, setIsSyncHelpModalOpen, setRollModalInput, setStatusToast, sharemomentUrl, testCameraUrl,
   };
 
+  if (invitation?.status === "ARCHIVED" || invitation?.status === "TAKEN_DOWN") {
+    return (
+      <div className="max-w-3xl mx-auto py-8 sm:py-12 font-sans">
+        <div className="bg-white rounded-3xl border border-stone-200 p-6 sm:p-10 text-center space-y-5 shadow-xs">
+          <div className="w-14 h-14 bg-stone-100 text-stone-700 rounded-2xl flex items-center justify-center mx-auto border border-stone-200">
+            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+            </svg>
+          </div>
+          <div className="space-y-2 max-w-lg mx-auto">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-stone-100 text-stone-700 border border-stone-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
+              <span>{invitation.status === "ARCHIVED" ? "Galeri Momen Diarsipkan" : "Undangan Dinonaktifkan"}</span>
+            </span>
+            <h1 className="text-xl sm:text-2xl font-serif font-bold text-stone-900">
+              {invitation.status === "ARCHIVED"
+                ? "Periode Galeri Foto Tamu Telah Berakhir"
+                : "Galeri Momen Tidak Tersedia"}
+            </h1>
+            <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
+              {invitation.status === "ARCHIVED"
+                ? "Sesuai kebijakan retensi privasi, kamera tamu dan penyimpanan foto candid untuk undangan ini telah ditutup secara permanen. Rekap doa & daftar tamu tetap tersedia di Beranda Arsip."
+                : "Undangan ini sedang dinonaktifkan oleh Administrator sehingga pengaturan galeri tidak dapat diubah."}
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-2">
+            <Link
+              href="/dashboard"
+              className="w-full sm:w-auto px-5 py-2.5 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl text-xs transition"
+            >
+              Kembali ke Beranda Arsip
+            </Link>
+            <Link
+              href="/packages?new=1"
+              className="w-full sm:w-auto px-5 py-2.5 bg-amber-800 hover:bg-amber-900 text-white font-bold rounded-xl text-xs transition"
+            >
+              Buat Undangan Baru
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3 sm:space-y-6 pb-36">
       {/* Toast Notifikasi */}

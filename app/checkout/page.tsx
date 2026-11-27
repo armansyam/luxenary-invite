@@ -52,6 +52,7 @@ function CheckoutContent() {
   const [invoiceNumber, setInvoiceNumber] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isPartnerBilledOrder, setIsPartnerBilledOrder] = useState(false);
 
   // Expiry State (Hanya jika order expired)
   const [isGatewayExpired, setIsGatewayExpired] = useState(false);
@@ -209,6 +210,12 @@ function CheckoutContent() {
 
           if (orderStatusData.status === "PAID") {
             router.replace(getPostPaymentRedirect(orderStatusData.orderType, orderStatusData.id, orderStatusData.planType, orderStatusData.activatedInvitationId));
+            return;
+          }
+
+          if (orderStatusData.isPartnerBilled) {
+            setIsPartnerBilledOrder(true);
+            setLoading(false);
             return;
           }
 
@@ -610,6 +617,32 @@ function CheckoutContent() {
         <div className="text-center space-y-3">
           <div className="animate-spin rounded-full h-10 w-10 border-2 border-amber-500 border-t-transparent mx-auto"></div>
           <p className="text-xs text-stone-400 font-mono">Menyiapkan Sesi Pembayaran...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isPartnerBilledOrder) {
+    return (
+      <div className="min-h-screen bg-stone-950 flex flex-col items-center justify-center p-6 text-center font-sans">
+        <div className="max-w-md w-full bg-stone-900 border border-stone-800 rounded-3xl p-8 space-y-5 shadow-2xl">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 mx-auto flex items-center justify-center text-amber-400">
+            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-lg font-serif font-bold text-white">Tagihan Dikelola Mitra Resmi</h1>
+            <p className="text-xs text-stone-400 leading-relaxed">
+              Pembayaran paket ini dikelola langsung oleh Mitra / Wedding Organizer Anda. Setelah pembayaran diselesaikan Mitra, akun Anda dapat langsung masuk ke persiapan undangan.
+            </p>
+          </div>
+          <Link
+            href="/dashboard"
+            className="block w-full py-3 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold rounded-xl text-xs transition"
+          >
+            Kembali ke Dasbor
+          </Link>
         </div>
       </div>
     );
