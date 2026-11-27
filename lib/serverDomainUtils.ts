@@ -90,7 +90,9 @@ export async function getDynamicServerRootDomain(defaultFallback = "localhost:30
  * bernama <slug>.
  */
 export async function invitationHomePath(invitation: { invitationSlug: string; subdomain: string | null; customDomain: string | null }): Promise<string> {
-  const hostHeader = (await headers()).get("host");
+  const headerList = await headers();
+  // Utamakan x-lux-host yang disimpan proxy.ts sebelum rewrite lintas-origin (Auth.js menimpa header host menjadi apex).
+  const hostHeader = headerList.get("x-lux-host") || headerList.get("x-forwarded-host") || headerList.get("host");
   const host = (hostHeader || "").split(":")[0].toLowerCase();
   // Dicocokkan persis dengan <subdomain>.<apex>: awalan saja juga cocok dengan apex itu sendiri bila subdomain klien
   // sama dengan label pertama domain utama (mis. subdomain "luxenary" di luxenary.id).

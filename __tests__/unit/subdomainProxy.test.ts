@@ -44,6 +44,16 @@ describe("proxy: tautan /s/<sub>/... di host subdomain milik undangan itu", () =
     expect(res.headers.get("location")).toBeNull();
     expect(res.headers.get("x-middleware-rewrite")).toMatch(/\/s\/bagas-laras\/memories$/);
   });
+
+  it("permintaan RSC prefetch pada /s/<sub>/memories tidak memicu redirect loop 307", async () => {
+    const req = new NextRequest("http://bagas-laras.localhost:3000/s/bagas-laras/memories?_rsc=abc123", {
+      headers: { host: "bagas-laras.localhost:3000", rsc: "1" },
+    });
+    (req as unknown as { auth: unknown }).auth = null;
+    const res = (await (proxy as unknown as (r: NextRequest) => Promise<Response>)(req)) as Response;
+    expect(res.headers.get("location")).toBeNull();
+    expect(res.headers.get("x-middleware-next")).toBe("1");
+  });
 });
 
 describe("proxy: batas pengalihan tetap", () => {

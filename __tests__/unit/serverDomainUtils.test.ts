@@ -10,7 +10,7 @@ vi.mock("next/headers", () => ({
   }),
 }));
 
-import { getDynamicServerApexUrl } from "@/lib/serverDomainUtils";
+import { getDynamicServerApexUrl, invitationHomePath } from "@/lib/serverDomainUtils";
 
 const savedAppUrl = process.env.NEXT_PUBLIC_APP_URL;
 const savedRoot = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
@@ -62,5 +62,31 @@ describe("getDynamicServerApexUrl", () => {
     requestHeaders = "outside-request";
     process.env.NEXT_PUBLIC_APP_URL = "https://domain-platform.com/";
     expect(await getDynamicServerApexUrl("budi-sari")).toBe("https://domain-platform.com");
+  });
+});
+
+describe("invitationHomePath", () => {
+  beforeEach(() => {
+    process.env.NEXT_PUBLIC_ROOT_DOMAIN = "luxvite.id";
+  });
+
+  afterEach(() => {
+    if (savedRoot === undefined) delete process.env.NEXT_PUBLIC_ROOT_DOMAIN;
+    else process.env.NEXT_PUBLIC_ROOT_DOMAIN = savedRoot;
+  });
+
+  it("mengutamakan x-lux-host dari proxy ketika header host telah ditimpa Auth.js menjadi apex (subdomain)", async () => {
+    requestHeaders = { host: "luxvite.id", "x-lux-host": "qa-uji.luxvite.id" };
+    expect(await invitationHomePath({ invitationSlug: "qa-uji-281126", subdomain: "qa-uji", customDomain: null })).toBe("/");
+  });
+
+  it("mengutamakan x-lux-host untuk custom domain klien setelah rewrite proxy", async () => {
+    requestHeaders = { host: "luxvite.id", "x-lux-host": "undangan-klien.com" };
+    expect(await invitationHomePath({ invitationSlug: "qa-uji-281126", subdomain: "qa-uji", customDomain: "undangan-klien.com" })).toBe("/");
+  });
+
+  it("mengembalikan /<slug> saat benar-benar diakses lewat domain apex", async () => {
+    requestHeaders = { host: "luxvite.id", "x-lux-host": "luxvite.id" };
+    expect(await invitationHomePath({ invitationSlug: "qa-uji-281126", subdomain: "qa-uji", customDomain: null })).toBe("/qa-uji-281126");
   });
 });

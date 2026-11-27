@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
-import { getPrimaryEventDate } from "@/lib/lifecycleDates";
 import { cleanGuestName, cleanGuestTextFields, guestQuotaFrom } from "@/lib/guestInput";
 import { HttpError, routeError } from "@/lib/routeError";
 import { readJsonBody } from "@/lib/requestBody";
@@ -28,7 +27,7 @@ export async function POST(req: NextRequest) {
 
     const invitation = await prisma.invitation.findUnique({
       where: { id: invitationId },
-      select: { userId: true, status: true, eventData: true, eventType: true, isFreeDraft: true },
+      select: { userId: true, status: true, eventType: true, isFreeDraft: true },
     });
 
     if (!invitation) {
@@ -40,9 +39,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden. Anda bukan pemilik undangan ini." }, { status: 403 });
     }
 
-    if (!isAdmin && (invitation.status === "ARCHIVED" || invitation.status === "TAKEN_DOWN")) {
+    if (!isAdmin && (invitation.status === "EVENT_FINISHED" || invitation.status === "ARCHIVED" || invitation.status === "TAKEN_DOWN")) {
       return NextResponse.json(
-        { error: "Undangan ini telah diarsipkan atau dinonaktifkan sehingga daftar tamu tidak dapat diimpor." },
+        { error: "Acara telah selesai, diarsipkan, atau dinonaktifkan sehingga daftar tamu tidak dapat diimpor." },
         { status: 403 }
       );
     }
@@ -61,15 +60,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Terlalu banyak permintaan impor tamu. Silakan tunggu beberapa menit." },
         { status: 429 }
-      );
-    }
-
-    // Mulai hari terima tamu (pada zona waktu acara) tamu baru hanya dicatat Resepsionis di lokasi.
-    const guestDay = getPrimaryEventDate(invitation.eventData);
-    if (guestDay && Date.now() >= guestDay.getTime()) {
-      return NextResponse.json(
-        { error: "Daftar tamu sudah dikunci karena acara sedang/telah berlangsung. Tamu tambahan hanya dapat diinput oleh Resepsionis di lokasi." },
-        { status: 403 }
       );
     }
 

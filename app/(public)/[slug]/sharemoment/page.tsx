@@ -60,10 +60,12 @@ export default async function FreeGuestMemoriesStandalonePage({ params, searchPa
     if (!canPreview) notFound();
   }
 
+  const homePath = await invitationHomePath(invitation);
+
   // Cek kapabilitas guest_memories secara dinamis berdasarkan konfigurasi admin
   const canAccessMemories = await hasPlanCapability(invitation.order?.planType, "guest_memories");
   if (!canAccessMemories) {
-    redirect(await invitationHomePath(invitation));
+    redirect(homePath);
   }
 
   const coupleName = resolveInvitationDisplayName(invitation);
@@ -74,8 +76,8 @@ export default async function FreeGuestMemoriesStandalonePage({ params, searchPa
   const coverMedia = invitation.media && invitation.media.length > 0 ? invitation.media[0] : null;
   const coverUrl = fs.memoriesCoverPhoto || coverMedia?.localPath || undefined;
 
-  const backUrl = `/${slug}`;
-  const galleryUrl = `/${slug}/memories`;
+  const backUrl = homePath;
+  const galleryUrl = homePath === "/" ? "/memories" : `/${slug}/memories`;
 
   const distinctContributors = await prisma.guestMemory.findMany({
     where: { invitationId: invitation.id },

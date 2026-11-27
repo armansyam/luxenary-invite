@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { routeError } from "@/lib/routeError";
 import { prisma } from "@/lib/prisma";
+import { PARTNER_WHOLESALE_INVOICE_PREFIX } from "@/lib/clientActivation";
 
 export const dynamic = "force-dynamic";
 
@@ -86,9 +87,12 @@ export async function GET() {
       });
     }
 
-    // 3. Cek transaksi order terakhir user (misal masih PENDING)
+    // 3. Cek transaksi order mandiri terakhir user (kecualikan tagihan grosir mitra INV-WO- yang belum lunas agar harga modal tidak bocor)
     const latestOrder = await prisma.order.findFirst({
-      where: { userId: targetUserId },
+      where: {
+        userId: targetUserId,
+        NOT: { invoiceNumber: { startsWith: PARTNER_WHOLESALE_INVOICE_PREFIX } },
+      },
       orderBy: { createdAt: "desc" },
     });
 

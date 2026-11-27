@@ -218,23 +218,28 @@ describe.skipIf(!IS_TEST_DB)("hapus mitra dan lagu yang masih dirujuk", () => {
   });
 });
 
-describe.skipIf(!IS_TEST_DB)("ubah tamu pada hari acara", () => {
-  it("klien ditolak 403 mulai hari terima tamu, admin tetap dapat mengubah; sebelum hari itu klien dapat mengubah", async () => {
+describe.skipIf(!IS_TEST_DB)("ubah tamu pada Hari-H vs pasca acara selesai & pasca check-in", () => {
+  it("klien tetap boleh ubah tamu saat PUBLISHED di Hari-H; ditolak 409 jika tamu sudah check-in & ditolak 403 saat EVENT_FINISHED; admin tetap boleh", async () => {
     const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
     const { user, inv } = await makeInvitation("tamu", { eventData: [{ title: "Resepsi", date: yesterday, time: "10:00", isPrimary: true }] });
     const guest = await prisma.guest.create({ data: { invitationId: inv.id, name: "Budi", slug: `${RUN}-budi` } });
     const put = (body: unknown) => updateGuest(new Request(`http://localhost/api/client/guests/${guest.id}`, { method: "PUT", body: JSON.stringify(body) }), { params: Promise.resolve({ id: guest.id }) });
 
+    // Hari-H saat PUBLISHED (belum check-in): klien tetap dapat mengubah tamu
     sessionUser = { id: user.id, email: user.email, role: "CLIENT", isAdmin: false };
-    expect((await put({ name: "Budi Santoso" })).status).toBe(403);
-    expect((await prisma.guest.findUniqueOrThrow({ where: { id: guest.id } })).name).toBe("Budi");
+    expect((await put({ name: "Budi Santoso" })).status).toBe(200);
+
+    // Setelah tamu check-in: klien tidak dapat ubah nama/kuota (409), tetapi tetap dapat update waStatus
+    await prisma.guest.update({ where: { id: guest.id }, data: { isTokenRedeemed: true } });
+    expect((await put({ name: "Nama Palsu" })).status).toBe(409);
+    expect((await put({ waStatus: "SENT" })).status).toBe(200);
+
+    // Setelah acara selesai (EVENT_FINISHED): klien ditolak 403, admin tetap dapat mengubah
+    await prisma.invitation.update({ where: { id: inv.id }, data: { status: "EVENT_FINISHED" } });
+    expect((await put({ tableNumber: "B2" })).status).toBe(403);
 
     await asAdmin("SUPPORT", ["invitations"]);
     expect((await put({ tableNumber: "A1" })).status).toBe(200);
-
-    await prisma.invitation.update({ where: { id: inv.id }, data: { eventData: [{ title: "Resepsi", date: "2099-01-01", time: "10:00", isPrimary: true }] } });
-    sessionUser = { id: user.id, email: user.email, role: "CLIENT", isAdmin: false };
-    expect((await put({ name: "Budi Santoso" })).status).toBe(200);
   });
 });
 

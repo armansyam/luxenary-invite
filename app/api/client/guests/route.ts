@@ -6,7 +6,6 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
-import { getPrimaryEventDate } from "@/lib/lifecycleDates";
 import { cleanGuestName, cleanGuestTextFields, guestQuotaFrom } from "@/lib/guestInput";
 
 const MAX_GUESTS_PER_INVITATION = 5000;
@@ -27,7 +26,7 @@ export async function POST(req: Request) {
 
     const invitation = await prisma.invitation.findUnique({
       where: { id: invitationId },
-      select: { userId: true, status: true, eventData: true, isFreeDraft: true },
+      select: { userId: true, status: true, isFreeDraft: true },
     });
 
     if (!invitation) {
@@ -42,9 +41,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Forbidden. Anda tidak memiliki akses ke undangan ini." }, { status: 403 });
     }
 
-    if (!isAdmin && (invitation.status === "ARCHIVED" || invitation.status === "TAKEN_DOWN")) {
+    if (!isAdmin && (invitation.status === "EVENT_FINISHED" || invitation.status === "ARCHIVED" || invitation.status === "TAKEN_DOWN")) {
       return NextResponse.json(
-        { error: "Undangan ini telah diarsipkan atau dinonaktifkan sehingga daftar tamu tidak dapat diubah." },
+        { error: "Acara telah selesai, diarsipkan, atau dinonaktifkan sehingga daftar tamu tidak dapat diubah." },
         { status: 403 }
       );
     }
@@ -55,15 +54,6 @@ export async function POST(req: Request) {
           error: "Manajemen buku tamu hanya tersedia setelah paket diaktifkan. Silakan pilih paket terlebih dahulu.",
           code: "FREE_DRAFT_GUESTS_BLOCKED",
         },
-        { status: 403 }
-      );
-    }
-
-    // 2. Mulai hari terima tamu (pada zona waktu acara) tamu baru hanya dicatat Resepsionis di lokasi.
-    const guestDay = getPrimaryEventDate(invitation.eventData);
-    if (guestDay && Date.now() >= guestDay.getTime()) {
-      return NextResponse.json(
-        { error: "Daftar tamu sudah dikunci karena acara sedang/telah berlangsung. Tamu tambahan hanya dapat diinput oleh Resepsionis di lokasi." },
         { status: 403 }
       );
     }

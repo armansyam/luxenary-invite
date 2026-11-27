@@ -1,6 +1,7 @@
 /**
- * Setelah undangan terbit, studio terkunci tetapi PIN panitia dan daftar tamu tetap dapat diubah klien
- * (keputusan pemilik 10 Okt 2026). Daftar tamu terkunci mulai hari terima tamu pada zona waktu acara.
+ * Setelah undangan terbit, studio terkunci tetapi PIN panitia dan daftar tamu tetap dapat diubah klien.
+ * Daftar tamu tetap terbuka selama acara berlangsung (termasuk pagi Hari-H) dan baru dikunci setelah
+ * acara berakhir (EVENT_FINISHED / ARCHIVED / TAKEN_DOWN) atau pada tamu yang sudah check-in.
  * (hanya berjalan di database `luxenary_test`)
  */
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from "vitest";
@@ -103,19 +104,13 @@ describe.skipIf(!IS_TEST_DB)("perubahan klien setelah undangan terbit", () => {
     expect(await prisma.guest.count({ where: { invitationId: inv.id } })).toBe(3);
   });
 
-  it("kunci daftar tamu mengikuti zona waktu acara, bukan zona server", async () => {
-    // 11 Des 2099 15:30 UTC = 12 Des 00:30 WIT (hari acara sudah mulai) = 11 Des 22:30 WIB (belum).
-    const wit = await makeInvitation("PUBLISHED", "2099-12-12", "WIT");
-    const witOwner = sessionUser;
-    const wib = await makeInvitation("PUBLISHED", "2099-12-12", "WIB");
-    const wibOwner = sessionUser;
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2099-12-11T15:30:00Z"));
+  it("daftar tamu tetap dapat ditambah saat Hari-H selama PUBLISHED, dan terkunci 403 setelah EVENT_FINISHED", async () => {
+    const todayInv = await makeInvitation("PUBLISHED", "2020-01-10", "WITA");
+    expect((await addGuest(todayInv.id, "Tamu Susulan Hari-H")).status).toBe(200);
+    expect((await addGuestsBulk(todayInv.id, ["Tamu Susulan 2"])).status).toBe(200);
 
-    sessionUser = witOwner;
-    expect((await addGuest(wit.id, "Tamu WIT")).status).toBe(403);
-    expect((await addGuestsBulk(wit.id, ["Tamu WIT 2"])).status).toBe(403);
-    sessionUser = wibOwner;
-    expect((await addGuest(wib.id, "Tamu WIB")).status).toBe(200);
+    const finishedInv = await makeInvitation("EVENT_FINISHED", "2020-01-10", "WITA");
+    expect((await addGuest(finishedInv.id, "Tamu Setelah Selesai")).status).toBe(403);
+    expect((await addGuestsBulk(finishedInv.id, ["Tamu Setelah Selesai 2"])).status).toBe(403);
   });
 });

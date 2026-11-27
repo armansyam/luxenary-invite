@@ -677,7 +677,9 @@ export default function GuestsPage() {
   };
 
   const isArchivedOrTakenDown =
-    invitationData?.status === "ARCHIVED" || invitationData?.status === "TAKEN_DOWN";
+    invitationData?.status === "EVENT_FINISHED" ||
+    invitationData?.status === "ARCHIVED" ||
+    invitationData?.status === "TAKEN_DOWN";
   const isGuestMutationBlocked = Boolean(invitationData?.isFreeDraft || isArchivedOrTakenDown);
 
   return (
@@ -687,7 +689,11 @@ export default function GuestsPage() {
         <div className="bg-stone-100 border border-stone-200 rounded-2xl px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs text-stone-700">
           <div className="space-y-0.5">
             <p className="font-bold text-stone-900">
-              {invitationData?.status === "ARCHIVED" ? "Mode Arsip (Baca-Saja)" : "Undangan Dinonaktifkan"}
+              {invitationData?.status === "EVENT_FINISHED"
+                ? "Acara Telah Selesai (Baca-Saja)"
+                : invitationData?.status === "ARCHIVED"
+                  ? "Mode Arsip (Baca-Saja)"
+                  : "Undangan Dinonaktifkan"}
             </p>
             <p className="text-[11px] text-stone-600">
               Daftar tamu dikunci dan tidak dapat ditambah atau diubah. Anda tetap dapat mengunduh rekap kehadiran tamu dalam format CSV.

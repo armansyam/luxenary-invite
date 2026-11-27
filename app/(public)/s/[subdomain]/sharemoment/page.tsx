@@ -8,6 +8,7 @@ import { getEventTimezoneOffset, resolveEventTimezone } from "@/lib/lifecycleDat
 import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 import { parseFeatureSettings } from "@/lib/featureSettings";
 import { canPreviewInvitation } from "@/lib/previewAccess";
+import { invitationHomePath } from "@/lib/serverDomainUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -51,7 +52,7 @@ export default async function GuestMemoriesStandalonePage({ params, searchParams
     },
   });
 
-  if (!invitation || invitation.status === "TAKEN_DOWN") {
+  if (!invitation || invitation.status === "TAKEN_DOWN" || invitation.status === "ARCHIVED") {
     notFound();
   }
 
@@ -60,10 +61,14 @@ export default async function GuestMemoriesStandalonePage({ params, searchParams
     if (!canPreview) notFound();
   }
 
+  const homePath = await invitationHomePath(invitation);
+  const backUrl = homePath === "/" ? "/" : `/s/${invitation.subdomain!}`;
+  const galleryUrl = homePath === "/" ? "/memories" : `/s/${invitation.subdomain!}/memories`;
+
   // Cek kapabilitas guest_memories secara dinamis berdasarkan konfigurasi admin
   const canAccessMemories = await hasPlanCapability(invitation.order?.planType, "guest_memories");
   if (!canAccessMemories) {
-    redirect(`/s/${subdomain}`);
+    redirect(backUrl);
   }
 
   const coupleName = resolveInvitationDisplayName(invitation);
@@ -73,9 +78,6 @@ export default async function GuestMemoriesStandalonePage({ params, searchParams
 
   const coverMedia = invitation.media && invitation.media.length > 0 ? invitation.media[0] : null;
   const coverUrl = fs.memoriesCoverPhoto || coverMedia?.localPath || undefined;
-
-  const backUrl = `/s/${invitation.subdomain!}`;
-  const galleryUrl = `/s/${invitation.subdomain!}/memories`;
 
   const distinctContributors = await prisma.guestMemory.findMany({
     where: { invitationId: invitation.id },
@@ -107,7 +109,7 @@ export default async function GuestMemoriesStandalonePage({ params, searchParams
   // Jatah efektif tamu: tidak boleh melampaui sisa pool yang tersedia
   const effectiveShotsQuota = remainingPool > 0 ? Math.min(configuredShotsQuota, remainingPool) : configuredShotsQuota;
   const schedule = getMemoriesActiveSchedule(invitation.featureSettings, invitation.eventData);
-  const isAllFinished = schedule.isAllFinished || invitation.status === "EVENT_FINISHED" || invitation.status === "ARCHIVED";
+  const isAllFinished = schedule.isAllFinished || invitation.status === "EVENT_FINISHED";
   const nextSessionIso = schedule.nextSession
     ? `${schedule.nextSession.date.includes("T") ? schedule.nextSession.date.split("T")[0] : schedule.nextSession.date}T${schedule.nextSession.startTime.slice(0, 5)}:00${getEventTimezoneOffset(resolveEventTimezone(schedule.nextSession))}`
     : null;

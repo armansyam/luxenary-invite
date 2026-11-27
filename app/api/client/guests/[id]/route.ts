@@ -4,7 +4,6 @@ import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { logger } from "@/lib/logger";
 import { cleanGuestName, cleanGuestTextFields, guestQuotaFrom } from "@/lib/guestInput";
-import { getPrimaryEventDate } from "@/lib/lifecycleDates";
 import { HttpError, routeError } from "@/lib/routeError";
 import { readJsonBody } from "@/lib/requestBody";
 import { withGuestNameLock } from "@/lib/guestNameLock";
@@ -115,7 +114,7 @@ export async function PUT(
 
     const existingGuest = await prisma.guest.findUnique({
       where: { id },
-      include: { invitation: { select: { userId: true, status: true, eventData: true } } },
+      include: { invitation: { select: { userId: true, status: true } } },
     });
 
     if (!existingGuest) {
@@ -129,19 +128,18 @@ export async function PUT(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    if (!isAdmin && (existingGuest.invitation?.status === "ARCHIVED" || existingGuest.invitation?.status === "TAKEN_DOWN")) {
+    if (!isAdmin && (existingGuest.invitation?.status === "EVENT_FINISHED" || existingGuest.invitation?.status === "ARCHIVED" || existingGuest.invitation?.status === "TAKEN_DOWN")) {
       return NextResponse.json(
-        { error: "Undangan ini telah diarsipkan atau dinonaktifkan sehingga data tamu tidak dapat diubah." },
+        { error: "Acara telah selesai, diarsipkan, atau dinonaktifkan sehingga data tamu tidak dapat diubah." },
         { status: 403 }
       );
     }
 
-    // Sama dengan tambah tamu: mulai hari terima tamu, nama dan kuota yang tercetak di QR tidak boleh berubah dari dasbor.
-    const guestDay = getPrimaryEventDate(existingGuest.invitation.eventData);
-    if (!isAdmin && guestDay && Date.now() >= guestDay.getTime()) {
+    // Lindungi catatan kehadiran: tamu yang sudah check-in tidak boleh diubah nama/kuotanya oleh klien (status WA tetap boleh diperbarui).
+    if (!isAdmin && existingGuest.isTokenRedeemed && (body.name !== undefined || body.guestQuota !== undefined)) {
       return NextResponse.json(
-        { error: "Daftar tamu sudah dikunci karena acara sedang/telah berlangsung. Perubahan data tamu hanya dapat dilakukan Resepsionis di lokasi." },
-        { status: 403 }
+        { error: "Tamu ini sudah check-in. Nama dan kuota kehadirannya tidak dapat diubah." },
+        { status: 409 }
       );
     }
 
@@ -212,9 +210,9 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    if (!isAdmin && (existingGuest.invitation?.status === "ARCHIVED" || existingGuest.invitation?.status === "TAKEN_DOWN")) {
+    if (!isAdmin && (existingGuest.invitation?.status === "EVENT_FINISHED" || existingGuest.invitation?.status === "ARCHIVED" || existingGuest.invitation?.status === "TAKEN_DOWN")) {
       return NextResponse.json(
-        { error: "Undangan ini telah diarsipkan atau dinonaktifkan sehingga data tamu tidak dapat dihapus." },
+        { error: "Acara telah selesai, diarsipkan, atau dinonaktifkan sehingga data tamu tidak dapat dihapus." },
         { status: 403 }
       );
     }
