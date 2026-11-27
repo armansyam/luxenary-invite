@@ -171,7 +171,8 @@ interface ExpiredInvitation extends WarningTarget {
 /**
  * Menutup masa galeri: undangan diarsipkan dan DIVERIFIKASI terlebih dahulu ke NAS (bila aktif) sebelum artefak hot
  * storage apa pun dihapus, termasuk foto candid tamu. Bila arsip gagal, tidak ada data yang terlanjur hilang dan
- * undangan dicoba lagi pada eksekusi berikutnya. Perubahan status DB (hapus RSVP + status ARCHIVED) dibungkus transaksi.
+ * undangan dicoba lagi pada eksekusi berikutnya. Catatan teks RSVP/doa & tamu dipertahankan agar rekap CSV pada
+ * layar arsip klien tetap dapat diunduh kapan saja.
  */
 async function archiveExpiredInvitation(inv: ExpiredInvitation, nasEnabled: boolean): Promise<ArchiveFailure | null> {
   if (nasEnabled) {
@@ -195,10 +196,10 @@ async function archiveExpiredInvitation(inv: ExpiredInvitation, nasEnabled: bool
     .rm(path.join(process.cwd(), "public", "uploads", "invitations", inv.id), { recursive: true, force: true })
     .catch(() => {});
 
-  await prisma.$transaction([
-    prisma.rsvp.deleteMany({ where: { invitationId: inv.id } }),
-    prisma.invitation.update({ where: { id: inv.id }, data: { status: "ARCHIVED", memoriesUploadLocked: true } }),
-  ]);
+  await prisma.invitation.update({
+    where: { id: inv.id },
+    data: { status: "ARCHIVED", memoriesUploadLocked: true },
+  });
   invalidateInvitationLookup(inv.invitationSlug, inv.subdomain, inv.id, inv.customDomain);
   await purgeInvitationEdgeCache(inv);
   return null;

@@ -6,6 +6,12 @@ import { validateAccountPassword } from "@/lib/emailOtp";
 export const CLIENT_ACTIVATION_TTL_HOURS = 48;
 export const CLIENT_ACTIVATION_TTL_MS = CLIENT_ACTIVATION_TTL_HOURS * 60 * 60 * 1000;
 export const MIN_PAYABLE_AMOUNT_IDR = 1000;
+export const PARTNER_WHOLESALE_INVOICE_PREFIX = "INV-WO-";
+
+/** Menentukan apakah sebuah nomor invoice diterbitkan lewat jalur grosir B2B Portal Mitra. */
+export function isPartnerWholesaleInvoice(invoiceNumber: string | null | undefined): boolean {
+  return Boolean(invoiceNumber && invoiceNumber.startsWith(PARTNER_WHOLESALE_INVOICE_PREFIX));
+}
 
 function getActivationSecret(): string {
   const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
@@ -362,6 +368,7 @@ export async function triggerPartnerClientActivationOnPaid(orderId: string): Pro
     where: { id: orderId },
     select: {
       id: true,
+      invoiceNumber: true,
       status: true,
       orderType: true,
       user: {
@@ -378,7 +385,7 @@ export async function triggerPartnerClientActivationOnPaid(orderId: string): Pro
     },
   });
 
-  if (!order || order.status !== "PAID" || order.orderType !== "NEW") return;
+  if (!order || order.status !== "PAID" || order.orderType !== "NEW" || !isPartnerWholesaleInvoice(order.invoiceNumber)) return;
   const user = order.user;
   const partner = user?.provisionedByPartner;
   if (!user || !partner || !partner.isActive) return;

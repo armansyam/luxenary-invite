@@ -95,6 +95,7 @@ export async function GET(req: NextRequest) {
               subEvent: true,
               participantsJson: true,
             },
+            orderBy: { createdAt: "desc" },
             take: 3,
           },
           _count: {

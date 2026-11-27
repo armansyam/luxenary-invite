@@ -51,8 +51,18 @@ import { POST as uploadMedia } from "@/app/api/client/upload/route";
 import { POST as addGuest } from "@/app/api/client/guests/route";
 import { POST as bulkGuests } from "@/app/api/client/guests/bulk/route";
 import { PUT as putStaffPin } from "@/app/api/client/invitations/[id]/staff-pin/route";
-import { PUT as putInvitation } from "@/app/api/client/invitations/[id]/route";
+import { PUT as putInvitation, PATCH as patchInvitation } from "@/app/api/client/invitations/[id]/route";
+import { PATCH as patchMemories } from "@/app/api/client/invitations/[id]/memories/route";
+import { POST as createOrder } from "@/app/api/orders/create/route";
+import { POST as confirmCheckout } from "@/app/api/payments/checkout/confirm/route";
+import { GET as getClientOrders } from "@/app/api/client/orders/route";
+import { GET as getClientOrderStatus } from "@/app/api/client/orders/[id]/status/route";
+import { POST as cancelClientOrder } from "@/app/api/client/orders/[id]/cancel/route";
+import { POST as checkoutBundle } from "@/app/api/client/orders/checkout-bundle/route";
+import { POST as paymentsUpgrade } from "@/app/api/payments/upgrade/route";
 import { POST as otpRequest } from "@/app/api/auth/otp/request/route";
+import { GET as getPartnerClients } from "@/app/api/partner/clients/route";
+import { GET as partnerOrderStatus } from "@/app/api/partner/orders/[id]/status/route";
 import { POST as partnerCancelOrder } from "@/app/api/partner/orders/[id]/cancel/route";
 import { DELETE as partnerDeleteClient } from "@/app/api/partner/clients/[id]/route";
 import { purgeStaleLeadUsers } from "@/lib/lifecycleCleanup";
@@ -384,7 +394,7 @@ describe.skipIf(!IS_TEST_DB)("Security & Partner Portal Hardening (2026-11-27)",
     const pendingOrder = await prisma.order.create({
       data: {
         userId: unpaidClient.id,
-        invoiceNumber: `${TAG}-WO-PEND`,
+        invoiceNumber: `INV-WO-${TAG}-PEND`,
         planType: "TIER_1",
         amount: 50000,
         status: "PENDING",
@@ -418,7 +428,7 @@ describe.skipIf(!IS_TEST_DB)("Security & Partner Portal Hardening (2026-11-27)",
     await prisma.order.create({
       data: {
         userId: paidClient.id,
-        invoiceNumber: `${TAG}-WO-PAID`,
+        invoiceNumber: `INV-WO-${TAG}-PAID`,
         planType: "TIER_1",
         amount: 50000,
         status: "PAID",
@@ -478,7 +488,7 @@ describe.skipIf(!IS_TEST_DB)("Security & Partner Portal Hardening (2026-11-27)",
     const order = await prisma.order.create({
       data: {
         userId: bride.id,
-        invoiceNumber: `${TAG}-WO-PRIV`,
+        invoiceNumber: `INV-WO-${TAG}-PRIV`,
         planType: "TIER_1",
         orderType: "NEW",
         amount: 4950,
@@ -505,5 +515,248 @@ describe.skipIf(!IS_TEST_DB)("Security & Partner Portal Hardening (2026-11-27)",
     const actCall = mailSpies.sendClientActivationEmail.mock.calls[0]?.[0] as { recipientEmail?: string };
     expect(actCall?.recipientEmail).toBe(bride.email);
     expect(await prisma.clientActivationToken.count({ where: { userId: bride.id, consumedAt: null } })).toBe(1);
+  });
+
+  it("10. Pembelian undangan ke-2 oleh klien eks-mitra memakai harga normal (tanpa diskon grosir) dan invoice PAID dikirim ke klien", async () => {
+    mailSpies.sendInvoiceEmail.mockClear();
+    mailSpies.sendClientActivationEmail.mockClear();
+
+    const priceSetting = await prisma.adminSetting.findUnique({ where: { key: "price_tier1" } });
+    const regularTier1Price = Number(priceSetting?.value || 99000);
+
+    const partner = await prisma.partnerAffiliate.create({
+      data: {
+        name: "WO Isolasi Diskon",
+        email: `${TAG}_wo_iso@example.test`,
+        commissionType: "PERCENT",
+        commissionValue: 95,
+        isActive: true,
+        sessionVersion: 1,
+      },
+    });
+    createdPartnerIds.push(partner.id);
+
+    const bride = await makeUser("bride2nd", { provisionedByPartnerId: partner.id });
+    const firstOrder = await prisma.order.create({
+      data: {
+        userId: bride.id,
+        invoiceNumber: `INV-WO-${TAG}-FIRST`,
+        planType: "TIER_1",
+        orderType: "NEW",
+        amount: 4950,
+        discountAmount: Math.max(0, regularTier1Price - 4950),
+        status: "PAID",
+        paidAt: new Date(),
+      },
+    });
+    const theme = await prisma.theme.findFirstOrThrow({ where: { isActive: true, eventType: "WEDDING" }, select: { id: true } });
+    const firstInv = await prisma.invitation.create({
+      data: {
+        userId: bride.id,
+        orderId: firstOrder.id,
+        themeId: theme.id,
+        invitationSlug: `${TAG}-bride-first`,
+        eventType: "WEDDING",
+        status: "PUBLISHED",
+        isFreeDraft: false,
+      },
+    });
+    createdInvIds.push(firstInv.id);
+
+    session.user = { id: bride.id, email: bride.email, role: "CLIENT" };
+
+    const createRes = await createOrder(jsonReq("/api/orders/create", "POST", { planType: "TIER_1", allowAdditional: true }));
+    expect(createRes.status).toBe(200);
+    const createdOrderBody = await createRes.json();
+    expect(String(createdOrderBody.invoiceNumber)).toMatch(/^INV-LUX-/);
+    expect(createdOrderBody.amount).toBe(regularTier1Price);
+    expect(createdOrderBody.partnerDiscount).toBeNull();
+
+    const confirmRes = await confirmCheckout(jsonReq("/api/payments/checkout/confirm", "POST", { orderId: createdOrderBody.orderId }));
+    expect(confirmRes.status).toBe(200);
+    const confirmedBody = await confirmRes.json();
+    expect(confirmedBody.amount).toBe(regularTier1Price);
+    expect(confirmedBody.discountAmount).toBe(0);
+
+    const settled = await settleOrderAsPaid(createdOrderBody.orderId, { paymentMethod: "GATEWAY" });
+    expect(settled).toBe(true);
+    await applyUpgradePlan(createdOrderBody.orderId);
+    await new Promise((r) => setTimeout(r, 100));
+
+    // Invoice undangan ke-2 (INV-LUX-...) WAJIB masuk ke email klien, bukan email mitra
+    expect(mailSpies.sendInvoiceEmail).toHaveBeenCalledTimes(1);
+    const invoiceCall = mailSpies.sendInvoiceEmail.mock.calls[0]?.[0] as { recipientEmail?: string; amount?: number };
+    expect(invoiceCall?.recipientEmail).toBe(bride.email);
+    expect(invoiceCall?.recipientEmail).not.toBe(partner.email);
+    expect(invoiceCall?.amount).toBe(regularTier1Price);
+    expect(mailSpies.sendClientActivationEmail).not.toHaveBeenCalled();
+  });
+
+  it("11. Isolasi API tagihan 2 arah: klien tidak melihat harga INV-WO-... dan mitra tidak melihat/mengganggu order pribadi klien", async () => {
+    const partner = await prisma.partnerAffiliate.create({
+      data: {
+        name: "WO Isolasi API",
+        email: `${TAG}_wo_api@example.test`,
+        commissionType: "PERCENT",
+        commissionValue: 80,
+        isActive: true,
+        sessionVersion: 1,
+      },
+    });
+    createdPartnerIds.push(partner.id);
+
+    const bride = await makeUser("brideapi", { provisionedByPartnerId: partner.id });
+    const woPaid = await prisma.order.create({
+      data: {
+        userId: bride.id,
+        invoiceNumber: `INV-WO-${TAG}-API1`,
+        planType: "TIER_2",
+        orderType: "NEW",
+        amount: 39800,
+        chargedAmount: 40079,
+        discountAmount: 159200,
+        status: "PAID",
+        paidAt: new Date(),
+        fulfilledAt: new Date(),
+      },
+    });
+    const woPending = await prisma.order.create({
+      data: {
+        userId: bride.id,
+        invoiceNumber: `INV-WO-${TAG}-APIP`,
+        planType: "TIER_1",
+        orderType: "NEW",
+        amount: 19800,
+        status: "PENDING",
+      },
+    });
+    const clientSelfOrder = await prisma.order.create({
+      data: {
+        userId: bride.id,
+        invoiceNumber: `INV-LUX-${TAG}-SELF`,
+        planType: "TIER_1",
+        orderType: "NEW",
+        amount: 99000,
+        status: "PENDING",
+      },
+    });
+
+    // Sisi klien: GET /api/client/orders menyembunyikan seluruh INV-WO-...
+    session.user = { id: bride.id, email: bride.email, role: "CLIENT" };
+    const ordersRes = await getClientOrders();
+    expect(ordersRes.status).toBe(200);
+    const ordersList = (await ordersRes.json()) as Array<{ invoiceNumber: string }>;
+    expect(ordersList.map((o) => o.invoiceNumber)).toEqual([clientSelfOrder.invoiceNumber]);
+
+    // Sisi klien: GET /api/client/orders/[id]/status menyamarkan harga grosir INV-WO-... tapi tetap mengirim status & planType
+    const woStatusRes = await getClientOrderStatus(
+      jsonReq(`/api/client/orders/${woPaid.id}/status`, "GET"),
+      { params: Promise.resolve({ id: woPaid.id }) },
+    );
+    expect(woStatusRes.status).toBe(200);
+    const woStatusBody = await woStatusRes.json();
+    expect(woStatusBody.isPartnerBilled).toBe(true);
+    expect(woStatusBody.status).toBe("PAID");
+    expect(woStatusBody.planType).toBe("TIER_2");
+    expect(woStatusBody.invoiceNumber).toBeNull();
+    expect(woStatusBody.amount).toBeNull();
+    expect(woStatusBody.chargedAmount).toBeNull();
+    expect(woStatusBody.discountAmount).toBe(0);
+    expect(woStatusBody.partnerDiscount).toBeNull();
+
+    // Sisi klien dilarang membatalkan/mengonfirmasi tagihan INV-WO-...
+    const clientCancelWo = await cancelClientOrder(
+      jsonReq(`/api/client/orders/${woPending.id}/cancel`, "POST"),
+      { params: Promise.resolve({ id: woPending.id }) },
+    );
+    expect(clientCancelWo.status).toBe(403);
+
+    const clientConfirmWo = await confirmCheckout(
+      jsonReq("/api/payments/checkout/confirm", "POST", { orderId: woPending.id }),
+    );
+    expect(clientConfirmWo.status).toBe(403);
+
+    // Sisi mitra: GET /api/partner/clients hanya memuat order INV-WO-... (tidak tertimpa INV-LUX-... klien)
+    partnerSession.current = { partnerId: partner.id, sv: 1 };
+    const pClientsRes = await getPartnerClients(jsonReq("/api/partner/clients", "GET"));
+    expect(pClientsRes.status).toBe(200);
+    const pClientsBody = (await pClientsRes.json()) as {
+      clients: Array<{ id: string; latestOrder: { invoiceNumber: string } | null }>;
+    };
+    const row = pClientsBody.clients.find((c) => c.id === bride.id);
+    expect(row?.latestOrder?.invoiceNumber).toMatch(/^INV-WO-/);
+
+    // Sisi mitra: status/cancel terhadap INV-LUX-... pribadi klien WAJIB 404
+    const pStatusSelf = await partnerOrderStatus(
+      jsonReq(`/api/partner/orders/${clientSelfOrder.id}/status`, "GET"),
+      { params: Promise.resolve({ id: clientSelfOrder.id }) },
+    );
+    expect(pStatusSelf.status).toBe(404);
+
+    const pCancelSelf = await partnerCancelOrder(
+      jsonReq(`/api/partner/orders/${clientSelfOrder.id}/cancel`, "POST"),
+      { params: Promise.resolve({ id: clientSelfOrder.id }) },
+    );
+    expect(pCancelSelf.status).toBe(404);
+  });
+
+  it("12. Status ARCHIVED mengunci edit Studio, PATCH pengaturan, PATCH galeri, serta pembelian upgrade/add-on", async () => {
+    const owner = await makeUser("archivedlock");
+    const paidOrder = await prisma.order.create({
+      data: {
+        userId: owner.id,
+        invoiceNumber: `INV-LUX-${TAG}-ARC`,
+        planType: "TIER_1",
+        orderType: "NEW",
+        amount: 99000,
+        status: "PAID",
+        paidAt: new Date(),
+      },
+    });
+    const theme = await prisma.theme.findFirstOrThrow({ where: { isActive: true, eventType: "WEDDING" }, select: { id: true } });
+    // Sengaja gunakan tanggal acara masa depan untuk memastikan status ARCHIVED tetap mengunci tanpa bergantung tanggal lewat.
+    const archivedInv = await prisma.invitation.create({
+      data: {
+        userId: owner.id,
+        orderId: paidOrder.id,
+        themeId: theme.id,
+        invitationSlug: `${TAG}-archived-lock`,
+        eventType: "WEDDING",
+        status: "ARCHIVED",
+        isFreeDraft: false,
+        eventData: [{ title: "Resepsi", date: "2028-12-20", timezone: "WIB", isPrimary: true }],
+      },
+    });
+    createdInvIds.push(archivedInv.id);
+
+    session.user = { id: owner.id, email: owner.email, role: "CLIENT" };
+
+    const putRes = await putInvitation(
+      jsonReq(`/api/client/invitations/${archivedInv.id}`, "PUT", { openingQuote: "Coba ubah" }),
+      { params: Promise.resolve({ id: archivedInv.id }) },
+    );
+    expect(putRes.status).toBe(403);
+
+    const patchRes = await patchInvitation(
+      jsonReq(`/api/client/invitations/${archivedInv.id}`, "PATCH", { featureSettings: { showStory: false } }),
+      { params: Promise.resolve({ id: archivedInv.id }) },
+    );
+    expect(patchRes.status).toBe(403);
+
+    const memPatchRes = await patchMemories(
+      jsonReq(`/api/client/invitations/${archivedInv.id}/memories`, "PATCH", { showGuestMemories: true }),
+      { params: Promise.resolve({ id: archivedInv.id }) },
+    );
+    expect(memPatchRes.status).toBe(403);
+
+    const bundleRes = await checkoutBundle(
+      jsonReq("/api/client/orders/checkout-bundle", "POST", { invitationId: archivedInv.id, targetPlan: "TIER_2" }),
+    );
+    expect(bundleRes.status).toBe(400);
+
+    const upgradeRes = await paymentsUpgrade(
+      jsonReq("/api/payments/upgrade", "POST", { invitationId: archivedInv.id, targetPlan: "TIER_2" }),
+    );
+    expect(upgradeRes.status).toBe(400);
   });
 });

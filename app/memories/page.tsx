@@ -17,7 +17,6 @@ export default async function RootMemoriesRedirectPage() {
     include: {
       invitations: {
         orderBy: { updatedAt: "desc" },
-        take: 1,
         select: {
           id: true,
           subdomain: true,
@@ -33,7 +32,10 @@ export default async function RootMemoriesRedirectPage() {
     redirect("/demo/memories");
   }
 
-  const inv = user.invitations[0];
+  const inv =
+    user.invitations.find((item) => item.status === "PUBLISHED" || item.status === "EVENT_FINISHED") ||
+    user.invitations.find((item) => item.status !== "ARCHIVED" && item.status !== "TAKEN_DOWN") ||
+    user.invitations[0];
   const resolved = resolveEffectiveInvitationUrl({
     customDomain: inv.customDomain,
     subdomain: inv.subdomain,

@@ -429,21 +429,33 @@ function DashboardHomeContent() {
 
         {/* Action Options */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-          <button
-            type="button"
-            onClick={() => {
-              if (typeof window !== "undefined") {
-                navigator.clipboard.writeText(window.location.origin);
-                feedback.notify("Tautan website disalin. Terima kasih telah merekomendasikan layanan kami.", "success");
-              }
-            }}
-            className="w-full sm:w-auto px-4 py-2.5 bg-stone-100 hover:bg-stone-200/80 text-stone-700 font-semibold rounded-xl text-xs transition border border-stone-200 flex items-center justify-center gap-1.5 cursor-pointer"
-          >
-            <svg className="w-4 h-4 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-            </svg>
-            <span>Rekomendasikan ke Teman / Keluarga</span>
-          </button>
+          <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto">
+            <Link
+              href="/packages?new=1"
+              className="w-full sm:w-auto px-4 py-2.5 bg-amber-800 hover:bg-amber-900 text-white font-bold rounded-xl text-xs transition shadow-xs flex items-center justify-center gap-1.5"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Buat Undangan Baru</span>
+            </Link>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== "undefined") {
+                  navigator.clipboard.writeText(window.location.origin);
+                  feedback.notify("Tautan website disalin. Terima kasih telah merekomendasikan layanan kami.", "success");
+                }
+              }}
+              className="w-full sm:w-auto px-4 py-2.5 bg-stone-100 hover:bg-stone-200/80 text-stone-700 font-semibold rounded-xl text-xs transition border border-stone-200 flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <svg className="w-4 h-4 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+              <span>Rekomendasikan ke Teman / Keluarga</span>
+            </button>
+          </div>
 
           <button
             type="button"

@@ -29,7 +29,7 @@ async function verifyClientAccess(invitationId: string) {
 
   if (!isOwner && !isAdmin) return null;
 
-  return { invitation, userId: session.user.id };
+  return { invitation, userId: session.user.id, isAdmin };
 }
 
 export async function GET(
@@ -154,7 +154,13 @@ export async function DELETE(
     if (!access) {
       return NextResponse.json({ error: "Unauthorized / Not Found" }, { status: 403 });
     }
-    const { invitation } = access;
+    const { invitation, isAdmin } = access;
+    if (!isAdmin && (invitation.status === "ARCHIVED" || invitation.status === "TAKEN_DOWN")) {
+      return NextResponse.json(
+        { error: "Undangan ini telah diarsipkan atau dinonaktifkan sehingga galeri tidak dapat diubah." },
+        { status: 403 },
+      );
+    }
 
     // Dashboard Momen mengirim { memoryId } di body JSON; query string tetap diterima untuk pemanggil lain.
     const { searchParams } = new URL(req.url);
@@ -220,7 +226,13 @@ export async function PATCH(
     if (!access) {
       return NextResponse.json({ error: "Unauthorized / Not Found" }, { status: 403 });
     }
-    const { invitation } = access;
+    const { invitation, isAdmin } = access;
+    if (!isAdmin && (invitation.status === "ARCHIVED" || invitation.status === "TAKEN_DOWN")) {
+      return NextResponse.json(
+        { error: "Undangan ini telah diarsipkan atau dinonaktifkan sehingga galeri tidak dapat diubah." },
+        { status: 403 },
+      );
+    }
 
     const body = await req.json().catch(() => ({}));
     const rawQuota = body.shotsQuota ?? body.memoriesShotsQuota;

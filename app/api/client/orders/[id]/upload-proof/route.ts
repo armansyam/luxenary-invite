@@ -10,6 +10,7 @@ import { routeError } from "@/lib/routeError";
 import { logger } from "@/lib/logger";
 import { getTrustedAppUrl } from "@/lib/serverDomainUtils";
 import { exceedsDeclaredBodySize } from "@/lib/requestLimits";
+import { isPartnerWholesaleInvoice } from "@/lib/clientActivation";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,13 @@ export async function POST(
 
     if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: "Akses ditolak. Order ini bukan milik akun Anda." }, { status: 403 });
+    }
+
+    if (isPartnerWholesaleInvoice(order.invoiceNumber) && !isAdmin) {
+      return NextResponse.json(
+        { error: "Tagihan ini dikelola langsung oleh Mitra resmi Anda." },
+        { status: 403 },
+      );
     }
 
     if (order.status === "PAID") {

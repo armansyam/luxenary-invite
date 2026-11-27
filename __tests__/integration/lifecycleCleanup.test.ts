@@ -142,7 +142,61 @@ describe.skipIf(!IS_TEST_DB)("Siklus hidup undangan (DB luxenary_test)", () => {
 
     expect(await statusOf(plain.id)).toBe("ARCHIVED");
     expect(await prisma.guestMemory.count({ where: { invitationId: plain.id } })).toBe(0);
-    expect(await prisma.rsvp.count({ where: { invitationId: plain.id } })).toBe(0);
+    // Catatan teks RSVP/doa dipertahankan agar rekap CSV pada layar ARCHIVED klien tetap dapat diunduh.
+    expect(await prisma.rsvp.count({ where: { invitationId: plain.id } })).toBe(1);
+  });
+
+  it("multi-undangan pada 1 akun: mengarsipkan undangan lama tidak mengganggu undangan ke-2 yang masih aktif", async () => {
+    const owner = await prisma.user.create({ data: { email: `${TAG}_multi@t.local`, name: "Multi Owner" } });
+    created.users.push(owner.id);
+
+    const oldInv = await prisma.invitation.create({
+      data: {
+        userId: owner.id,
+        themeId,
+        status: "EVENT_FINISHED",
+        invitationSlug: `${TAG}-multi-old`,
+        subdomain: `${TAG}-multi-old`,
+        participantsJson: { groom: { name: "Adi" }, bride: { name: "Dina" } },
+        eventData: EVENT_DATA,
+      },
+    });
+    const activeInv = await prisma.invitation.create({
+      data: {
+        userId: owner.id,
+        themeId,
+        status: "PUBLISHED",
+        invitationSlug: `${TAG}-multi-new`,
+        subdomain: `${TAG}-multi-new`,
+        participantsJson: { name: "Aqiqah Putra" },
+        eventType: "PERSONAL",
+        eventData: [{ title: "Aqiqah", date: "2027-06-20", timezone: "WIB", isPrimary: true }],
+      },
+    });
+    created.invitations.push(oldInv.id, activeInv.id);
+
+    await prisma.guestMemory.create({
+      data: { invitationId: oldInv.id, senderName: "Tamu 1", senderEmail: "t1@t.local", mediaUrl: "/old.webp" },
+    });
+    await prisma.guestMemory.create({
+      data: { invitationId: activeInv.id, senderName: "Tamu 2", senderEmail: "t2@t.local", mediaUrl: "/new.webp" },
+    });
+    await prisma.rsvp.create({ data: { invitationId: oldInv.id, guestName: "Tamu Lama", status: "hadir", message: "Selamat!" } });
+
+    const res = await cleanup({ now: at(31 * DAY) });
+    expect(res.archiveFailures).toEqual([]);
+
+    const oldAfter = await prisma.invitation.findUniqueOrThrow({ where: { id: oldInv.id } });
+    const activeAfter = await prisma.invitation.findUniqueOrThrow({ where: { id: activeInv.id } });
+    expect(oldAfter.status).toBe("ARCHIVED");
+    expect(oldAfter.subdomain).toBeNull();
+    expect(await prisma.guestMemory.count({ where: { invitationId: oldInv.id } })).toBe(0);
+    expect(await prisma.rsvp.count({ where: { invitationId: oldInv.id } })).toBe(1);
+
+    expect(activeAfter.status).toBe("PUBLISHED");
+    expect(activeAfter.subdomain).toBe(`${TAG}-multi-new`);
+    expect(await prisma.guestMemory.count({ where: { invitationId: activeInv.id } })).toBe(1);
+    expect(await prisma.user.findUnique({ where: { id: owner.id } })).not.toBeNull();
   });
 
   describe("dengan arsip NAS aktif", () => {

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
+import { isPartnerWholesaleInvoice } from "@/lib/clientActivation";
 
 export async function POST(
   req: Request,
@@ -28,6 +29,13 @@ export async function POST(
     // Must be the owner
     if (order.userId !== session.user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    if (isPartnerWholesaleInvoice(order.invoiceNumber)) {
+      return NextResponse.json(
+        { error: "Tagihan ini dikelola langsung oleh Mitra resmi Anda." },
+        { status: 403 },
+      );
     }
 
     // Must be pending

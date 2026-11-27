@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { routeError } from "@/lib/routeError";
 import { PARTNER_COOKIE_NAME, getPartnerSessionFromRequest } from "@/lib/partnerAuth";
 import { rateLimitDb } from "@/lib/rateLimit";
+import { isPartnerWholesaleInvoice } from "@/lib/clientActivation";
 import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
@@ -50,7 +51,7 @@ export async function POST(
       },
     });
 
-    if (!order || order.user?.provisionedByPartnerId !== partner.id) {
+    if (!order || order.user?.provisionedByPartnerId !== partner.id || !isPartnerWholesaleInvoice(order.invoiceNumber)) {
       return NextResponse.json({ error: "Tagihan tidak ditemukan pada akun mitra Anda." }, { status: 404 });
     }
 

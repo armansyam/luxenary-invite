@@ -4,7 +4,7 @@ import { routeError } from "@/lib/routeError";
 import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { logger } from "@/lib/logger";
-import { calculatePartnerWholesaleDiscount } from "@/lib/clientActivation";
+import { calculatePartnerWholesaleDiscount, isPartnerWholesaleInvoice } from "@/lib/clientActivation";
 
 export const dynamic = "force-dynamic";
 
@@ -237,8 +237,11 @@ export async function GET(
       }
     }
 
+    const isPartnerOrder = isPartnerWholesaleInvoice(order.invoiceNumber);
+    const hidePartnerPricing = !isAdmin && isPartnerOrder;
+
     const activePartner =
-      !order.itemsJson && order.orderType === "NEW" && order.user?.provisionedByPartner?.isActive
+      isPartnerOrder && !hidePartnerPricing && !order.itemsJson && order.orderType === "NEW" && order.user?.provisionedByPartner?.isActive
         ? order.user.provisionedByPartner
         : null;
     const basePriceForPartner =
@@ -261,7 +264,8 @@ export async function GET(
 
     return NextResponse.json({
       id: order.id,
-      invoiceNumber: order.invoiceNumber,
+      invoiceNumber: hidePartnerPricing ? null : order.invoiceNumber,
+      isPartnerBilled: isPartnerOrder,
       status: finalStatus,
       isExpired: finalStatus === "EXPIRED",
       isSuperseded,
@@ -269,32 +273,32 @@ export async function GET(
       isUserPaid,
       paidOrderId,
       paidPlanType,
-      amount: Number(order.amount),
+      amount: hidePartnerPricing ? null : Number(order.amount),
       // Nominal yang ditagihkan gateway (harga + biaya layanan bila ditanggung pembeli); null sebelum sesi gateway terbit.
-      chargedAmount: order.chargedAmount !== null ? Number(order.chargedAmount) : null,
+      chargedAmount: hidePartnerPricing ? null : (order.chargedAmount !== null ? Number(order.chargedAmount) : null),
       planType: order.planType,
       orderType: order.orderType,
-      paymentMethod: order.paymentMethod,
+      paymentMethod: hidePartnerPricing ? null : order.paymentMethod,
       requestedDomain: order.requestedDomain,
       linkedInvitationId: order.linkedInvitationId,
       activatedInvitationId,
       buyerName: order.user?.name || null,
       buyerEmail: order.user?.email || null,
       buyerPhone: order.user?.phoneNumber || null,
-      proofImageUrl: isAuthorizedOwner ? order.proofImageUrl : null,
-      proofUploadedAt: isAuthorizedOwner ? order.proofUploadedAt : null,
-      rejectReason: isAuthorizedOwner ? order.rejectReason : null,
+      proofImageUrl: isAuthorizedOwner && !hidePartnerPricing ? order.proofImageUrl : null,
+      proofUploadedAt: isAuthorizedOwner && !hidePartnerPricing ? order.proofUploadedAt : null,
+      rejectReason: isAuthorizedOwner && !hidePartnerPricing ? order.rejectReason : null,
       paidAt: order.paidAt,
       expiredAt: order.expiredAt,
       checkoutConfirmedAt: order.checkoutConfirmedAt,
-      promoCodeApplied: order.promoCodeApplied,
-      discountAmount: order.discountAmount ? Number(order.discountAmount) : 0,
+      promoCodeApplied: hidePartnerPricing ? null : order.promoCodeApplied,
+      discountAmount: hidePartnerPricing ? 0 : (order.discountAmount ? Number(order.discountAmount) : 0),
       partnerDiscount,
       itemsJson: order.itemsJson || null,
       isQrisSessionExpired,
-      gatewayQrString: isAuthorizedOwner ? order.gatewayQrString : null,
-      gatewayCheckoutUrl: isAuthorizedOwner ? order.gatewayCheckoutUrl : null,
-      gatewaySessionExpiresAt: isAuthorizedOwner ? order.gatewaySessionExpiresAt?.getTime() ?? null : null,
+      gatewayQrString: isAuthorizedOwner && !hidePartnerPricing ? order.gatewayQrString : null,
+      gatewayCheckoutUrl: isAuthorizedOwner && !hidePartnerPricing ? order.gatewayCheckoutUrl : null,
+      gatewaySessionExpiresAt: isAuthorizedOwner && !hidePartnerPricing ? order.gatewaySessionExpiresAt?.getTime() ?? null : null,
       serverTime: Date.now(),
     });
   } catch (error) {

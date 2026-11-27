@@ -78,6 +78,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Anda tidak memiliki akses ke undangan ini." }, { status: 403 });
     }
 
+    if (invitation.status === "ARCHIVED" || invitation.status === "TAKEN_DOWN") {
+      return NextResponse.json(
+        { error: "Undangan ini sudah diarsipkan atau dinonaktifkan sehingga tidak dapat di-upgrade atau diperpanjang." },
+        { status: 400 },
+      );
+    }
+
     const currentOrder = invitation.order;
     if (!currentOrder || currentOrder.status !== "PAID") {
       return NextResponse.json({ error: "Undangan ini belum memiliki paket aktif yang lunas." }, { status: 400 });

@@ -32,6 +32,16 @@ import { buildCanonicalSlugForActivatedDraft, isPlaceholderFreeDraftSlug } from 
 
 
 export function getInvitationLockStatus(inv: any) {
+  // 0. Undangan yang sudah diarsipkan atau diturunkan sistem selalu terkunci untuk klien.
+  if (inv.status === "ARCHIVED" || inv.status === "TAKEN_DOWN") {
+    return {
+      isLocked: true,
+      isEmergencyUnlocked: false,
+      unlockExpiresAt: null,
+      lockReason: inv.status,
+    };
+  }
+
   // 1. Check if Admin Emergency Unlock is actively running
   if (inv.adminUnlockedUntil && new Date(inv.adminUnlockedUntil) > new Date()) {
     return {
@@ -179,6 +189,13 @@ export async function PUT(
 
     if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: "Forbidden. Anda tidak memiliki hak mengedit undangan ini." }, { status: 403 });
+    }
+
+    if (!isAdmin && (currentInv.status === "ARCHIVED" || currentInv.status === "TAKEN_DOWN")) {
+      return NextResponse.json(
+        { error: "Undangan ini telah diarsipkan atau dinonaktifkan sehingga pengaturannya tidak dapat diubah." },
+        { status: 403 },
+      );
     }
 
     const lockStatus = getInvitationLockStatus(currentInv);
@@ -995,6 +1012,13 @@ export async function PATCH(
 
     if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: "Forbidden. Anda tidak memiliki hak mengedit undangan ini." }, { status: 403 });
+    }
+
+    if (!isAdmin && (currentInv.status === "ARCHIVED" || currentInv.status === "TAKEN_DOWN")) {
+      return NextResponse.json(
+        { error: "Undangan ini telah diarsipkan atau dinonaktifkan sehingga pengaturannya tidak dapat diubah." },
+        { status: 403 },
+      );
     }
 
     const updateData: Prisma.InvitationUpdateInput = {};

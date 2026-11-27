@@ -8,6 +8,7 @@ import { logger } from "@/lib/logger";
 import { rateLimitDb } from "@/lib/rateLimit";
 import { getTrustedAppUrl } from "@/lib/serverDomainUtils";
 import { routeError } from "@/lib/routeError";
+import { isPartnerWholesaleInvoice } from "@/lib/clientActivation";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -56,6 +57,13 @@ export async function POST(req: Request) {
 
     if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: "Akses ditolak. Bukan order Anda." }, { status: 403 });
+    }
+
+    if (isPartnerWholesaleInvoice(order.invoiceNumber) && !isAdmin) {
+      return NextResponse.json(
+        { error: "Tagihan ini dikelola langsung oleh Mitra resmi Anda." },
+        { status: 403 },
+      );
     }
 
     // Sinkronisasi data kontak pembeli (Nama & WhatsApp) jika dikirimkan dari UI checkout

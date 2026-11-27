@@ -377,7 +377,7 @@ export default function AdminClientsTab({ platformName }: { platformName?: strin
                         {usr.totalSpent > 0 ? `Rp ${usr.totalSpent.toLocaleString("id-ID")}` : "-"}
                       </td>
 
-                      {/* Undangan Pengantin (1 Akun = 1 Undangan) */}
+                      {/* Undangan Klien (mendukung multi-undangan per akun) */}
                       <td className="px-5 py-3.5 whitespace-nowrap">
                         {usr.invitations && usr.invitations.length > 0 ? (
                           <div className="flex items-center gap-2">
@@ -406,6 +406,14 @@ export default function AdminClientsTab({ platformName }: { platformName?: strin
                                 ? "Draft"
                                 : usr.invitations[0].status}
                             </span>
+                            {(usr._count?.invitations ?? usr.invitations.length) > 1 && (
+                              <span
+                                className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-900 border border-amber-200"
+                                title={usr.invitations.map((inv) => `${resolveInvitationDisplayName(inv)} (${inv.status})`).join(" • ")}
+                              >
+                                +{(usr._count?.invitations ?? usr.invitations.length) - 1}
+                              </span>
+                            )}
                           </div>
                         ) : (
                           <span className="text-gray-400 italic text-[11px]">Belum Dibuat</span>

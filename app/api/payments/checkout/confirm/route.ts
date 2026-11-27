@@ -8,6 +8,7 @@ import { routeError } from "@/lib/routeError";
 import {
   calculatePartnerWholesaleDiscount,
   formatPartnerPromoLabel,
+  isPartnerWholesaleInvoice,
 } from "@/lib/clientActivation";
 
 export const dynamic = "force-dynamic";
@@ -60,6 +61,14 @@ export async function POST(req: NextRequest) {
 
     if (order.userId !== userId && !isAdmin) {
       return NextResponse.json({ error: "Akses ditolak. Bukan pesanan Anda." }, { status: 403 });
+    }
+
+    const isPartnerOrder = isPartnerWholesaleInvoice(order.invoiceNumber);
+    if (isPartnerOrder && !isAdmin) {
+      return NextResponse.json(
+        { error: "Tagihan ini dikelola langsung oleh Mitra resmi Anda." },
+        { status: 403 },
+      );
     }
 
     if (order.status !== "PENDING") {
@@ -116,10 +125,10 @@ export async function POST(req: NextRequest) {
     let appliedPromoCode: string | null = null;
     let promoCouponId: string | null = null;
 
-    // 3. Prioritas Anti-Stacking: Jika akun didaftarkan oleh Mitra WO aktif (pembelian paket NEW),
-    //    terapkan Potongan Harga Grosir Mitra secara otomatis (zero-debt, tanpa kupon publik).
+    // 3. Prioritas Anti-Stacking: Diskon grosir Mitra WO hanya berlaku untuk tagihan resmi mitra (INV-WO-...),
+    //    tidak pernah berlaku pada pembelian mandiri klien (INV-LUX-...) termasuk undangan ke-2 dst.
     const activePartner =
-      !order.itemsJson && order.orderType === "NEW" && order.user?.provisionedByPartner?.isActive
+      isPartnerOrder && !order.itemsJson && order.orderType === "NEW" && order.user?.provisionedByPartner?.isActive
         ? order.user.provisionedByPartner
         : null;
     const partnerDiscount = activePartner

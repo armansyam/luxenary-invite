@@ -8,6 +8,7 @@ import { rateLimitDb } from "@/lib/rateLimit";
 import { normalizePlanType } from "@/lib/planUtils";
 import {
   MIN_PAYABLE_AMOUNT_IDR,
+  PARTNER_WHOLESALE_INVOICE_PREFIX,
   calculatePartnerWholesaleDiscount,
   formatPartnerPromoLabel,
 } from "@/lib/clientActivation";
@@ -86,6 +87,7 @@ export async function GET(req: NextRequest) {
           },
         },
         orders: {
+          where: { invoiceNumber: { startsWith: PARTNER_WHOLESALE_INVOICE_PREFIX } },
           orderBy: { createdAt: "desc" },
           take: 5,
           select: {
@@ -323,7 +325,12 @@ export async function POST(req: NextRequest) {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`order_create:${targetUser.id}`}))`;
 
       const existingPending = await tx.order.findFirst({
-        where: { userId: targetUser.id, status: "PENDING", orderType: "NEW" },
+        where: {
+          userId: targetUser.id,
+          status: "PENDING",
+          orderType: "NEW",
+          invoiceNumber: { startsWith: PARTNER_WHOLESALE_INVOICE_PREFIX },
+        },
         orderBy: { createdAt: "desc" },
       });
 

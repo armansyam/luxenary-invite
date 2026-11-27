@@ -8,7 +8,7 @@ import { releaseOrderPromoHold } from "@/lib/marketing";
 import { purgeObsoleteUserOrders } from "@/lib/upgradeHelper";
 import { logger } from "@/lib/logger";
 import { routeError } from "@/lib/routeError";
-import { calculatePartnerWholesaleDiscount } from "@/lib/clientActivation";
+import { PARTNER_WHOLESALE_INVOICE_PREFIX } from "@/lib/clientActivation";
 
 export const dynamic = "force-dynamic";
 
@@ -63,17 +63,6 @@ export async function POST(req: NextRequest) {
           ...(session.user.id ? [{ id: session.user.id }] : []),
           ...(session.user.email ? [{ email: session.user.email.toLowerCase() }] : []),
         ],
-      },
-      include: {
-        provisionedByPartner: {
-          select: {
-            id: true,
-            name: true,
-            isActive: true,
-            commissionType: true,
-            commissionValue: true,
-          },
-        },
       },
     });
 
@@ -140,25 +129,16 @@ export async function POST(req: NextRequest) {
     }
     const amount = Number(priceSetting.value);
 
-    const activePartner = targetUser.provisionedByPartner?.isActive ? targetUser.provisionedByPartner : null;
-    const partnerDiscountAmount = activePartner ? calculatePartnerWholesaleDiscount(amount, activePartner) : 0;
-    const partnerDiscount =
-      activePartner && partnerDiscountAmount > 0
-        ? {
-            partnerName: activePartner.name,
-            discountType: activePartner.commissionType,
-            discountValue: Number(activePartner.commissionValue),
-            discountAmount: partnerDiscountAmount,
-            basePrice: amount,
-          }
-        : null;
+    // Pembelian mandiri klien (INV-LUX-...) selalu memakai harga reguler platform, bukan diskon grosir Mitra WO.
+    const partnerDiscount = null;
 
-    // Cek apakah user punya order PENDING yang belum lunas
+    // Cek apakah user punya order PENDING mandiri (kecualikan tagihan grosir Mitra INV-WO-...)
     const existingPending = await prisma.order.findFirst({
       where: {
         userId: validUserId,
         status: "PENDING",
         orderType: "NEW",
+        NOT: { invoiceNumber: { startsWith: PARTNER_WHOLESALE_INVOICE_PREFIX } },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -275,7 +255,12 @@ export async function POST(req: NextRequest) {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`order_create:${validUserId}`}))`;
 
       const draft = await tx.order.findFirst({
-        where: { userId: validUserId, status: "PENDING", orderType: "NEW" },
+        where: {
+          userId: validUserId,
+          status: "PENDING",
+          orderType: "NEW",
+          NOT: { invoiceNumber: { startsWith: PARTNER_WHOLESALE_INVOICE_PREFIX } },
+        },
         orderBy: { createdAt: "desc" },
       });
       if (draft) {

@@ -59,6 +59,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Forbidden. Bukan undangan Anda." }, { status: 403 });
     }
 
+    if (invitation.status === "ARCHIVED" || invitation.status === "TAKEN_DOWN") {
+      return NextResponse.json(
+        { error: "Undangan ini sudah diarsipkan atau dinonaktifkan sehingga tidak dapat di-upgrade." },
+        { status: 400 },
+      );
+    }
+
     const currentOrder = invitation.order;
     if (!currentOrder || currentOrder.status !== "PAID") {
       return NextResponse.json({ error: "Undangan ini belum memiliki paket aktif yang lunas." }, { status: 400 });

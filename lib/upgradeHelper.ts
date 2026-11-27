@@ -4,6 +4,7 @@ import { getPlanMemoriesQuota } from "./settings";
 import { extendGalleryExpiry } from "@/lib/lifecycleDates";
 import { getLifecycleSettings } from "@/lib/lifecycleSettings";
 import { activateFreeDraftForOrder } from "@/lib/freeDraftActivation";
+import { isPartnerWholesaleInvoice, PARTNER_WHOLESALE_INVOICE_PREFIX } from "@/lib/clientActivation";
 import type { PlanType, Prisma } from "@prisma/client";
 import { logger } from "@/lib/logger";
 
@@ -135,11 +136,20 @@ async function rearmQuotaMilestones(
 
 /**
  * purgeObsoleteUserOrders
- * Satu paket aktif per pengguna: saat order PAID, order paket lain yang masih PENDING milik pengguna ditutup.
+ * Menutup draf order paket baru (NEW) lain yang masih PENDING pada kanal penagihan yang sama
+ * (mandiri INV-LUX-... tidak menyentuh tagihan grosir Mitra INV-WO-..., dan sebaliknya).
  */
 export async function purgeObsoleteUserOrders(userId: string, currentOrderId: string): Promise<void> {
   try {
-    const others = { userId, id: { not: currentOrderId }, orderType: "NEW" as const };
+    const current = await prisma.order.findUnique({
+      where: { id: currentOrderId },
+      select: { invoiceNumber: true },
+    });
+    const isPartnerChannel = isPartnerWholesaleInvoice(current?.invoiceNumber);
+    const channelFilter = isPartnerChannel
+      ? { invoiceNumber: { startsWith: PARTNER_WHOLESALE_INVOICE_PREFIX } }
+      : { NOT: { invoiceNumber: { startsWith: PARTNER_WHOLESALE_INVOICE_PREFIX } } };
+    const others = { userId, id: { not: currentOrderId }, orderType: "NEW" as const, ...channelFilter };
     // Hanya draf yang tidak pernah sampai ke gateway dan tanpa bukti transfer yang dihapus. Order yang pernah punya sesi
     // gateway atau bukti tetap disimpan (ditandai EXPIRED): QR lamanya bisa saja tetap dibayar, dan webhook
     // pelunasan (settlementSourceStatuses) membutuhkan barisnya. Baris lama dibersihkan runStaleDataCleanup.
@@ -206,12 +216,11 @@ async function runPaidOrderFulfillment(paidOrderId: string): Promise<void> {
 
   if (!order) return;
 
-  // Single State Enforcement: Bersihkan order usang non-PAID milik user ini
-  if (order.userId) {
+  // Hanya order paket baru (NEW) yang menutup draf paket NEW lain & mengaktifkan Draf Gratis;
+  // pembayaran upgrade/add-on pada undangan #1 tidak boleh menghapus draf pembelian undangan #2.
+  if (order.userId && order.orderType === "NEW") {
     await purgeObsoleteUserOrders(order.userId, paidOrderId);
-    if (order.orderType === "NEW") {
-      await activateFreeDraftForOrder(paidOrderId, order.userId);
-    }
+    await activateFreeDraftForOrder(paidOrderId, order.userId);
   }
 
   // Add-on dan upgrade dari checkout terpadu selalu membawa itemsJson; upgrade lama (/api/payments/upgrade) tidak.
@@ -239,9 +248,13 @@ async function runPaidOrderFulfillment(paidOrderId: string): Promise<void> {
 
   // Email lunas dikirim setelah pemenuhan berhasil: bila pemenuhan gagal, klaim dilepas dan dicoba ulang (cron),
   // sehingga email sebelum pemenuhan akan terkirim berulang kali.
-  // Privasi harga grosir B2B: untuk order paket baru (NEW) klien binaan Mitra WO, kuitansi harga potongan dikirim
-  // ke email Mitra (pembayar), bukan ke email pengantin agar harga modal mitra tidak bocor.
-  const isPartnerWholesaleOrder = Boolean(order.orderType === "NEW" && order.user?.provisionedByPartnerId);
+  // Privasi harga grosir B2B: hanya tagihan grosir resmi Mitra WO (INV-WO-...) yang kuitansinya dikirim ke
+  // email Mitra (pembayar). Pembelian mandiri klien (INV-LUX-..., UPG-..., BDL-...) tetap dikirim langsung ke klien.
+  const isPartnerWholesaleOrder = Boolean(
+    order.orderType === "NEW" &&
+    isPartnerWholesaleInvoice(order.invoiceNumber) &&
+    order.user?.provisionedByPartnerId,
+  );
   const invoiceRecipientEmail = isPartnerWholesaleOrder
     ? order.user?.provisionedByPartner?.email?.trim() || null
     : order.user?.email?.trim() || null;

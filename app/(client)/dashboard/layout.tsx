@@ -295,7 +295,7 @@ function DashboardShellInner({
             </Link>
 
             {invitations.length > 1 && (
-              <div className="flex items-center">
+              <div className="hidden sm:flex items-center">
                 <label htmlFor="client-inv-switcher" className="sr-only">Pilih Undangan Aktif</label>
                 <select
                   id="client-inv-switcher"
@@ -374,6 +374,44 @@ function DashboardShellInner({
             </button>
           </div>
         </div>
+
+        {(invitations.length > 1 || invitations.some((inv) => !inv.isFreeDraft)) && (
+          <div className="sm:hidden border-t border-stone-100 px-4 py-1.5 flex items-center justify-between gap-2 bg-stone-50/70">
+            {invitations.length > 1 ? (
+              <div className="flex-1 min-w-0">
+                <label htmlFor="client-inv-switcher-mobile" className="sr-only">Pilih Undangan Aktif</label>
+                <select
+                  id="client-inv-switcher-mobile"
+                  value={activeInvitationId}
+                  onChange={(e) => setActiveInvitationId(e.target.value)}
+                  className="w-full px-2.5 py-1.5 text-[11px] font-semibold text-stone-800 bg-white border border-stone-200 rounded-lg focus:outline-none focus:border-amber-700 cursor-pointer truncate"
+                >
+                  {invitations.map((inv) => (
+                    <option key={inv.id} value={inv.id}>
+                      {resolveInvitationDisplayName(inv)} ({inv.isFreeDraft ? "Draf Gratis" : inv.status})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <span className="text-[11px] font-medium text-stone-500 truncate">
+                {activeInvitation ? resolveInvitationDisplayName(activeInvitation) : "Undangan Aktif"}
+              </span>
+            )}
+            {invitations.some((inv) => !inv.isFreeDraft) && (
+              <Link
+                href="/packages?new=1"
+                title="Pesan undangan baru tambahan"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-semibold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 rounded-lg transition shrink-0"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Undangan Baru</span>
+              </Link>
+            )}
+          </div>
+        )}
       </header>
 
       {remoteBanner}

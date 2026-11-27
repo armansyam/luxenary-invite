@@ -7,7 +7,7 @@ import { normalizePlanType } from "@/lib/planUtils";
 import { logger } from "@/lib/logger";
 import { rateLimitDb } from "@/lib/rateLimit";
 import { HttpError, routeError } from "@/lib/routeError";
-import { calculatePartnerWholesaleDiscount } from "@/lib/clientActivation";
+import { calculatePartnerWholesaleDiscount, isPartnerWholesaleInvoice } from "@/lib/clientActivation";
 
 export const dynamic = "force-dynamic";
 
@@ -96,9 +96,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2.1 Anti-Stacking Ketat: Akun yang didaftarkan Mitra WO aktif sudah mendapat potongan harga grosir otomatis
+    // 2.1 Anti-Stacking Ketat: Hanya blokir kupon publik pada tagihan grosir Mitra WO (INV-WO-...).
+    //     Pembelian mandiri klien (INV-LUX-..., misal undangan ke-2) tetap bebas memakai kode promo publik.
     const partner = order.user?.provisionedByPartner;
-    if (partner && partner.isActive && calculatePartnerWholesaleDiscount(Number(order.amount), partner) > 0) {
+    if (
+      isPartnerWholesaleInvoice(order.invoiceNumber) &&
+      partner &&
+      partner.isActive &&
+      calculatePartnerWholesaleDiscount(Number(order.amount), partner) > 0
+    ) {
       return NextResponse.json(
         {
           error: `Akun Anda sudah mendapatkan Harga Khusus Mitra (${partner.name}) secara otomatis dan tidak dapat digabung dengan kode promo publik.`,
