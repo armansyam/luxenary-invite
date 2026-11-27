@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import NextAuth from "next-auth";
 import { authConfig } from "@/auth.config";
 import { isReservedSubdomain } from "@/lib/domainUtils";
@@ -131,7 +131,12 @@ function crawlerSpecialResponse(pathname: string): NextResponse | null {
   return null;
 }
 
-export const proxy = auth(async (req) => {
+export async function proxy(originalReq: NextRequest, ctx?: unknown) {
+  // NextAuth v5 (reqWithEnvURL) menimpa origin req.url menjadi NEXTAUTH_URL (apex).
+  // Simpan origin initUrl asli dari Next.js agar NextResponse.rewrite() selalu diproses internal in-process,
+  // bukan keluar lewat proxy HTTP ganda ke Cloudflare/Caddy (yang menimpa x-lux-host & memicu loop RSC 307).
+  const internalOrigin = originalReq.nextUrl.origin;
+  const wrapped = auth(async (req) => {
   // Aktifkan listener PostgreSQL LISTEN/NOTIFY sekali per worker PM2 / replika agar invalidasi cache L1 lintas proses instan.
   startSseBridge();
 
@@ -176,8 +181,11 @@ export const proxy = auth(async (req) => {
 
   const passNext = () =>
     applyCspHeaders(NextResponse.next({ request: { headers: requestHeaders } }), pathname, req.nextUrl.searchParams, strictNonceCsp);
-  const passRewrite = (url: URL | string) =>
-    applyCspHeaders(NextResponse.rewrite(url, { request: { headers: requestHeaders } }), pathname, req.nextUrl.searchParams, strictNonceCsp);
+  const passRewrite = (url: URL | string) => {
+    const parsed = typeof url === "string" ? new URL(url, internalOrigin) : url;
+    const internalTarget = new URL(`${parsed.pathname}${parsed.search}`, internalOrigin);
+    return applyCspHeaders(NextResponse.rewrite(internalTarget, { request: { headers: requestHeaders } }), pathname, req.nextUrl.searchParams, strictNonceCsp);
+  };
 
   // HTML terbit tersimpan di public/published hanya untuk dibaca rute slug/subdomain, yang memeriksa status undangan.
   // Next melayani isi public/ yang ada saat build apa adanya, sehingga undangan yang diturunkan tetap terbuka di sini.
@@ -493,7 +501,9 @@ export const proxy = auth(async (req) => {
   // Jangan rewrite ke .html karena isSafePathSegment menolak segmen bertitik dan memutus R2 maupun runtime lokal.
 
   return passNext();
-});
+  });
+  return (wrapped as unknown as (r: NextRequest, c?: unknown) => Promise<Response>)(originalReq, ctx);
+}
 
 export default proxy;
 

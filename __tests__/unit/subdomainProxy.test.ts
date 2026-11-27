@@ -182,17 +182,17 @@ describe("proxy: crawler, /payment, reserved partner, CSP, dan isolasi custom do
     expect(res.headers.get("x-middleware-next")).toBe("1");
   });
 
-  it("rewrite subdomain tetap memakai origin req.url agar tidak memicu external redirect loop saat Auth.js mengubah req.url", async () => {
+  it("rewrite subdomain memakai origin internal initUrl (originalReq) agar tidak menjadi external proxy hop ke apex", async () => {
     const prevRoot = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
     process.env.NEXT_PUBLIC_ROOT_DOMAIN = "luxvite.id";
     try {
-      const req = new NextRequest("https://luxvite.id/?to=Budi", {
+      const req = new NextRequest("https://127.0.0.1:3001/memories?to=Budi", {
         headers: { host: "bagas-laras.luxvite.id" },
       });
       (req as unknown as { auth: unknown }).auth = null;
       const res = (await (proxy as unknown as (r: NextRequest) => Promise<Response>)(req)) as Response;
       const rewrite = res.headers.get("x-middleware-rewrite");
-      expect(rewrite).toBe("https://luxvite.id/s/bagas-laras?to=Budi");
+      expect(rewrite).toBe("https://127.0.0.1:3001/s/bagas-laras/memories?to=Budi");
     } finally {
       if (prevRoot === undefined) delete process.env.NEXT_PUBLIC_ROOT_DOMAIN;
       else process.env.NEXT_PUBLIC_ROOT_DOMAIN = prevRoot;
