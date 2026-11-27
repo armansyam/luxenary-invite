@@ -105,7 +105,7 @@ const PLATFORM_PATHS = [
  * sehingga NextResponse.redirect() menganggap target apex berada pada origin yang sama dan memotongnya menjadi
  * Location relatif (memicu redirect loop di host subdomain). Header Location absolut mencegah pemotongan tersebut.
  */
-function absoluteRedirect(url: URL | string, status: 301 | 307 = 307): NextResponse {
+function absoluteRedirect(url: URL | string, status: 301 | 307 | 308 = 307): NextResponse {
   return new NextResponse(null, {
     status,
     headers: { Location: typeof url === "string" ? url : url.toString() },
@@ -141,6 +141,17 @@ export const proxy = auth(async (req) => {
   const cleanHost = host.split(":")[0].toLowerCase(); // remove port & normalize
   const envRootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost:3000").split(":")[0].toLowerCase();
   const rootDomains = [envRootDomain, "localhost", "127.0.0.1"].filter(Boolean);
+
+  // Pengalihan kanonikal www.<rootDomain> -> <rootDomain> agar cookie __Host- Auth.js tidak terbelah lintas host dan SEO tidak duplikat.
+  const matchedWwwRoot = rootDomains.find((d) => cleanHost === `www.${d}`);
+  if (matchedWwwRoot && !pathname.startsWith("/api/") && !pathname.startsWith("/_next/") && !pathname.startsWith("/static/")) {
+    const forwardedProto = req.headers.get("x-forwarded-proto")?.split(",")[0]?.trim().toLowerCase();
+    const protocol = forwardedProto === "https" || forwardedProto === "http" ? `${forwardedProto}:` : req.nextUrl.protocol;
+    const portSuffix = host.includes(":") ? `:${host.split(":")[1]}` : "";
+    const targetUrl = new URL(pathname, `${protocol}//${matchedWwwRoot}${portSuffix}`);
+    targetUrl.search = req.nextUrl.search;
+    return absoluteRedirect(targetUrl, req.method === "GET" || req.method === "HEAD" ? 301 : 308);
+  }
 
   const isRootDomain = rootDomains.some((d) => cleanHost === d || cleanHost === `www.${d}`);
   const isSubdomainOfOurs = rootDomains.some((d) => cleanHost.endsWith(`.${d}`) && cleanHost !== d && cleanHost !== `www.${d}`);

@@ -199,4 +199,37 @@ describe("proxy: crawler, /payment, reserved partner, CSP, dan isolasi custom do
     const apexRes = await run("localhost:3000", "/api/mcp");
     expect(apexRes.status).not.toBe(404);
   });
+
+  it("www.<rootDomain> dialihkan kanonikal 301 ke apex domain dengan path & query utuh (308 untuk POST, tanpa memotong /api/)", async () => {
+    const prevRoot = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
+    process.env.NEXT_PUBLIC_ROOT_DOMAIN = "luxvite.id";
+    try {
+      const getReq = new NextRequest("https://luxvite.id/packages?theme=kalandra", {
+        headers: { host: "www.luxvite.id", "x-forwarded-proto": "https" },
+      });
+      (getReq as unknown as { auth: unknown }).auth = null;
+      const getRes = (await (proxy as unknown as (r: NextRequest) => Promise<Response>)(getReq)) as Response;
+      expect(getRes.status).toBe(301);
+      expect(getRes.headers.get("location")).toBe("https://luxvite.id/packages?theme=kalandra");
+
+      const postReq = new NextRequest("https://luxvite.id/login", {
+        method: "POST",
+        headers: { host: "www.luxvite.id", "x-forwarded-proto": "https" },
+      });
+      (postReq as unknown as { auth: unknown }).auth = null;
+      const postRes = (await (proxy as unknown as (r: NextRequest) => Promise<Response>)(postReq)) as Response;
+      expect(postRes.status).toBe(308);
+      expect(postRes.headers.get("location")).toBe("https://luxvite.id/login");
+
+      const apiReq = new NextRequest("https://luxvite.id/api/health", {
+        headers: { host: "www.luxvite.id", "x-forwarded-proto": "https" },
+      });
+      (apiReq as unknown as { auth: unknown }).auth = null;
+      const apiRes = (await (proxy as unknown as (r: NextRequest) => Promise<Response>)(apiReq)) as Response;
+      expect(apiRes.headers.get("location")).toBeNull();
+    } finally {
+      if (prevRoot === undefined) delete process.env.NEXT_PUBLIC_ROOT_DOMAIN;
+      else process.env.NEXT_PUBLIC_ROOT_DOMAIN = prevRoot;
+    }
+  });
 });

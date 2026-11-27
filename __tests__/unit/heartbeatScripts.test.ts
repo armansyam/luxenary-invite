@@ -12,7 +12,7 @@ import http from "http";
 import type { AddressInfo } from "net";
 
 const run = promisify(execFile);
-const SCRIPTS = ["health-watch.sh", "cron-backup.sh", "lib-heartbeat.sh"];
+const SCRIPTS = ["health-watch.sh", "cron-backup.sh", "cron-cleanup.sh", "lib-heartbeat.sh"];
 
 let server: http.Server;
 let base = "";
@@ -20,6 +20,7 @@ let workDir = "";
 let hits: string[] = [];
 let healthStatus = 200;
 let backupBody = "";
+let cleanupBody = "";
 
 async function runScript(script: string, env: Record<string, string> = {}) {
   try {
@@ -29,6 +30,7 @@ async function runScript(script: string, env: Record<string, string> = {}) {
         ...process.env,
         HEALTHCHECK_PING_URL: "",
         HEALTHCHECK_BACKUP_PING_URL: "",
+        HEALTHCHECK_CLEANUP_PING_URL: "",
         HEALTH_URL: `${base}/api/health`,
         APP_URL: base,
         ...env,
@@ -51,6 +53,8 @@ describe("heartbeat ke pemantau eksternal", () => {
         res.end('{"status":"x"}');
       } else if (req.url === "/api/cron/backup") {
         res.end(backupBody);
+      } else if (req.url === "/api/cron/cleanup") {
+        res.end(cleanupBody);
       } else {
         res.end("OK");
       }
@@ -67,6 +71,7 @@ describe("heartbeat ke pemantau eksternal", () => {
     hits = [];
     healthStatus = 200;
     backupBody = "";
+    cleanupBody = "";
     workDir = fs.mkdtempSync(path.join(os.tmpdir(), "heartbeat-"));
     for (const dir of ["scripts", "data", "logs"]) fs.mkdirSync(path.join(workDir, dir));
     for (const name of SCRIPTS) fs.copyFileSync(path.join(process.cwd(), "scripts", name), path.join(workDir, "scripts", name));
@@ -145,6 +150,38 @@ describe("heartbeat ke pemantau eksternal", () => {
       backupBody = '{"success":true}';
       await runScript("cron-backup.sh", { HEALTHCHECK_BACKUP_PING_URL: `${base}/ping/rahasia-xyz` });
       expect(read("logs/cron-backup.log")).not.toContain("rahasia-xyz");
+    });
+  });
+
+  describe("cron-cleanup.sh", () => {
+    it("cleanup sukses -> ringkasan dicatat ke logs/cron-cleanup.log dan kirim denyut sukses", async () => {
+      cleanupBody = '{"success":true,"message":"Pembersihan selesai: 1 undangan diarsipkan."}';
+      const res = await runScript("cron-cleanup.sh", { HEALTHCHECK_CLEANUP_PING_URL: `${base}/ping/cl` });
+      expect(res.code).toBe(0);
+      expect(hits).toContain("POST /api/cron/cleanup");
+      expect(hits).toContain("GET /ping/cl");
+      expect(read("logs/cron-cleanup.log")).toContain("cleanup berhasil: Pembersihan selesai: 1 undangan diarsipkan.");
+    });
+
+    it("cleanup gagal (success:false) -> catat GAGAL, kirim /fail, dan exit 1", async () => {
+      cleanupBody = '{"success":false,"archiveFailures":[{"invitationId":"i1","reason":"disk penuh"}]}';
+      const res = await runScript("cron-cleanup.sh", { HEALTHCHECK_CLEANUP_PING_URL: `${base}/ping/cl` });
+      expect(res.code).toBe(1);
+      expect(hits).toContain("GET /ping/cl/fail");
+      expect(read("logs/cron-cleanup.log")).toContain("cleanup GAGAL");
+    });
+
+    it("aplikasi tidak menjawab -> catat GAGAL, kirim /fail, dan exit 1", async () => {
+      const res = await runScript("cron-cleanup.sh", { APP_URL: "http://127.0.0.1:1", HEALTHCHECK_CLEANUP_PING_URL: `${base}/ping/cl` });
+      expect(res.code).toBe(1);
+      expect(hits).toContain("GET /ping/cl/fail");
+      expect(read("logs/cron-cleanup.log")).toContain("cleanup GAGAL");
+    });
+
+    it("URL pemantau tidak ditulis ke log", async () => {
+      cleanupBody = '{"success":true,"message":"OK"}';
+      await runScript("cron-cleanup.sh", { HEALTHCHECK_CLEANUP_PING_URL: `${base}/ping/rahasia-cleanup` });
+      expect(read("logs/cron-cleanup.log")).not.toContain("rahasia-cleanup");
     });
   });
 });

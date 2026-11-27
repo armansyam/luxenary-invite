@@ -431,14 +431,14 @@ if command -v crontab &> /dev/null; then
   ACTUAL_CRON_SECRET=$(grep -E "^CRON_SECRET=" .env | cut -d '=' -f2- | tr -d '"' | tr -d "'")
   if [ -n "$ACTUAL_CRON_SECRET" ] && [ "$ACTUAL_CRON_SECRET" != '""' ]; then
     CURRENT_CRON=$(crontab -l 2>/dev/null || true)
-    FILTERED_CRON=$(echo "$CURRENT_CRON" | grep -v "api/cron/cleanup" | grep -v "api/cron/backup" | grep -v "scripts/cron-backup.sh" | grep -v "scripts/health-watch.sh" | grep -v "scripts/sync-shared-files.ts" || true)
+    FILTERED_CRON=$(echo "$CURRENT_CRON" | grep -v "api/cron/cleanup" | grep -v "scripts/cron-cleanup.sh" | grep -v "api/cron/backup" | grep -v "scripts/cron-backup.sh" | grep -v "scripts/health-watch.sh" | grep -v "scripts/sync-shared-files.ts" || true)
     
     # Secret disimpan di berkas ber-izin 600 dan dibaca curl lewat -H @berkas, agar tidak tampil di 'crontab -l' maupun daftar proses.
     CRON_AUTH_FILE="$(pwd)/data/.cron-auth"
     (umask 077 && printf 'Authorization: Bearer %s\n' "$ACTUAL_CRON_SECRET" > "$CRON_AUTH_FILE")
     chmod 600 "$CRON_AUTH_FILE"
 
-    CLEANUP_LINE="0 2 * * * curl -s -X POST -H @$CRON_AUTH_FILE http://localhost:3001/api/cron/cleanup > /dev/null 2>&1"
+    CLEANUP_LINE="0 2 * * * PATH=/usr/local/bin:/usr/bin:/bin bash $(pwd)/scripts/cron-cleanup.sh > /dev/null 2>&1"
     BACKUP_LINE="0 3 * * * PATH=/usr/local/bin:/usr/bin:/bin bash $(pwd)/scripts/cron-backup.sh > /dev/null 2>&1"
     
     WATCH_LINE="* * * * * PATH=/usr/local/bin:/usr/bin:/bin bash $(pwd)/scripts/health-watch.sh"
