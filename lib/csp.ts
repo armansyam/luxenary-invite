@@ -9,6 +9,7 @@ const PAYMENT_SCRIPT_HOSTS = [
   "https://app.midtrans.com",
   "https://app.sandbox.midtrans.com",
   "https://static.cloudflareinsights.com",
+  "https://challenges.cloudflare.com",
 ];
 
 const BASE_DIRECTIVES = [
@@ -18,7 +19,7 @@ const BASE_DIRECTIVES = [
   "media-src 'self' blob: https:",
   "font-src 'self' data: https://fonts.gstatic.com",
   "connect-src 'self' https:",
-  "frame-src 'self' https://app.midtrans.com https://app.sandbox.midtrans.com https://www.youtube.com https://player.vimeo.com https://www.google.com",
+  "frame-src 'self' https://app.midtrans.com https://app.sandbox.midtrans.com https://challenges.cloudflare.com https://www.youtube.com https://player.vimeo.com https://www.google.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

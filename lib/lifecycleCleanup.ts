@@ -301,12 +301,15 @@ export interface StaleDataCleanupResult {
   purgedWebhookLogs: number;
   purgedSimMedia: number;
   purgedFreeDrafts: number;
+  purgedLeadUsers: number;
 }
 
 const FULFILLMENT_GRACE_MS = 5 * 60 * 1000;
 const WEBHOOK_LOG_RETENTION_DAYS = 365;
 /** Nilai bawaan retensi draf gratis bila `retention_free_draft_days` belum dikonfigurasi di AdminSetting. */
 export const FREE_DRAFT_RETENTION_DAYS = 14;
+/** Nilai bawaan retensi akun leads kosong bila `retention_leads_days` belum dikonfigurasi di AdminSetting. */
+export const DEFAULT_LEADS_RETENTION_DAYS = 90;
 
 /**
  * Menghapus draf gratis kedaluwarsa (melewati `retention_free_draft_days`, bawaan 14 hari sejak dibuat tanpa order terhubung).
@@ -356,6 +359,37 @@ export async function purgeExpiredFreeDrafts(
     }
   }
   return purged;
+}
+
+/**
+ * Menghapus akun klien kosong (leads) yang melewati `retention_leads_days` (bawaan 90 hari, minimal 30 hari)
+ * tanpa order apa pun, tanpa undangan apa pun, tanpa promo hold, dan tanpa tautan aktivasi mitra yang masih berlaku.
+ */
+export async function purgeStaleLeadUsers(
+  now: Date = new Date(),
+  dryRun: boolean = false,
+  userIds?: string[],
+): Promise<number> {
+  const parsedDays = Number.parseInt(await getAdminSetting("retention_leads_days", ""), 10);
+  const retentionDays = Number.isFinite(parsedDays) && parsedDays >= 30 ? parsedDays : DEFAULT_LEADS_RETENTION_DAYS;
+  const cutoff = new Date(now.getTime() - retentionDays * DAY_MS);
+
+  const where = {
+    role: "CLIENT" as const,
+    createdAt: { lt: cutoff },
+    orders: { none: {} },
+    invitations: { none: {} },
+    promoHolds: { none: {} },
+    activationTokens: { none: { consumedAt: null, expiresAt: { gt: now } } },
+    ...(userIds ? { id: { in: userIds } } : {}),
+  };
+
+  if (dryRun) {
+    return prisma.user.count({ where });
+  }
+
+  const deleted = await prisma.user.deleteMany({ where });
+  return deleted.count;
 }
 
 /** Order PAID yang pemenuhan layanannya tidak pernah selesai (kegagalan setelah webhook) dijalankan ulang. */
@@ -416,13 +450,15 @@ export async function runStaleDataCleanup(options: LifecycleCleanupOptions = {})
   const staleOrders = await prisma.order.findMany({ where: staleWhere, select: { proofImageUrl: true } });
   if (dryRun) {
     const purgedWebhookLogs = await prisma.webhookLog.count({ where: staleWebhookWhere });
-    return { deletedOrders: staleOrders.length, refulfilledOrders, purgedRateLimitRows, purgedWebhookLogs, purgedSimMedia, purgedFreeDrafts };
+    const purgedLeadUsers = await purgeStaleLeadUsers(now, true);
+    return { deletedOrders: staleOrders.length, refulfilledOrders, purgedRateLimitRows, purgedWebhookLogs, purgedSimMedia, purgedFreeDrafts, purgedLeadUsers };
   }
 
   await Promise.all(staleOrders.map((order) => deleteFile(order.proofImageUrl)));
   const deleted = await prisma.order.deleteMany({ where: staleWhere });
   const purgedWebhookLogs = (await prisma.webhookLog.deleteMany({ where: staleWebhookWhere })).count;
-  return { deletedOrders: deleted.count, refulfilledOrders, purgedRateLimitRows, purgedWebhookLogs, purgedSimMedia, purgedFreeDrafts };
+  const purgedLeadUsers = await purgeStaleLeadUsers(now, false);
+  return { deletedOrders: deleted.count, refulfilledOrders, purgedRateLimitRows, purgedWebhookLogs, purgedSimMedia, purgedFreeDrafts, purgedLeadUsers };
 }
 
 /** Foto simulasi pratinjau builder (public/uploads/builder-sim) yang lebih tua dari SIM_MEDIA_MAX_AGE_DAYS. */

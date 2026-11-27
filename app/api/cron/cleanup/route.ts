@@ -68,6 +68,7 @@ export async function POST(req: NextRequest) {
       purgedRateLimitRows: stale.purgedRateLimitRows,
       purgedWebhookLogs: stale.purgedWebhookLogs,
       purgedFreeDrafts: stale.purgedFreeDrafts,
+      purgedLeadUsers: stale.purgedLeadUsers,
       recompiledDemos: demos.recompiled,
       demoRecompileFailures: demos.failed,
       message:

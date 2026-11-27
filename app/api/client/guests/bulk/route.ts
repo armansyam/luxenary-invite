@@ -3,11 +3,14 @@ import { auth } from "@/auth";
 import { hasAdminPermission } from "@/lib/adminPermissions";
 import { getPrimaryEventDate } from "@/lib/lifecycleDates";
 import { cleanGuestName, cleanGuestTextFields, guestQuotaFrom } from "@/lib/guestInput";
-import { routeError } from "@/lib/routeError";
+import { HttpError, routeError } from "@/lib/routeError";
 import { readJsonBody } from "@/lib/requestBody";
 import { withGuestNameLock } from "@/lib/guestNameLock";
+import { rateLimitDb } from "@/lib/rateLimit";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
+
+const MAX_GUESTS_PER_INVITATION = 5000;
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,7 +28,7 @@ export async function POST(req: NextRequest) {
 
     const invitation = await prisma.invitation.findUnique({
       where: { id: invitationId },
-      select: { userId: true, eventData: true, eventType: true },
+      select: { userId: true, eventData: true, eventType: true, isFreeDraft: true },
     });
 
     if (!invitation) {
@@ -35,6 +38,23 @@ export async function POST(req: NextRequest) {
     const isAdmin = hasAdminPermission(session.user, "invitations");
     if (invitation.userId !== session.user.id && !isAdmin) {
       return NextResponse.json({ error: "Forbidden. Anda bukan pemilik undangan ini." }, { status: 403 });
+    }
+
+    if (invitation.isFreeDraft && !isAdmin) {
+      return NextResponse.json(
+        {
+          error: "Impor daftar tamu hanya tersedia setelah paket diaktifkan. Silakan pilih paket terlebih dahulu.",
+          code: "FREE_DRAFT_GUESTS_BLOCKED",
+        },
+        { status: 403 }
+      );
+    }
+
+    if (!isAdmin && !(await rateLimitDb(`guest_bulk:${invitationId}`, 15, 10 * 60_000))) {
+      return NextResponse.json(
+        { error: "Terlalu banyak permintaan impor tamu. Silakan tunggu beberapa menit." },
+        { status: 429 }
+      );
     }
 
     // Mulai hari terima tamu (pada zona waktu acara) tamu baru hanya dicatat Resepsionis di lokasi.
@@ -101,6 +121,13 @@ export async function POST(req: NextRequest) {
         takenNames.add(key);
         return true;
       });
+      if (existing.length + uniqueRows.length > MAX_GUESTS_PER_INVITATION) {
+        const remaining = Math.max(0, MAX_GUESTS_PER_INVITATION - existing.length);
+        throw new HttpError(
+          400,
+          `Total tamu melebihi batas maksimal ${MAX_GUESTS_PER_INVITATION.toLocaleString("id-ID")} tamu per undangan (sisa kuota: ${remaining} tamu).`,
+        );
+      }
       return tx.guest.createMany({ data: uniqueRows });
     });
 

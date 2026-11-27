@@ -6,6 +6,7 @@ import { routeError } from "@/lib/routeError";
 import { getServiceAvailability } from "@/lib/settings";
 import { createAndStoreOtp, normalizeOtpEmail } from "@/lib/emailOtp";
 import { sendLoginOtpEmail } from "@/lib/mailer";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,12 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await readJsonBody<{ email?: string; purpose?: string }>(req);
+    const body = await readJsonBody<{
+      email?: string;
+      purpose?: string;
+      turnstileToken?: string;
+      "cf-turnstile-response"?: string;
+    }>(req);
     const cleanEmail = normalizeOtpEmail(body?.email || "");
     const rawPurpose = typeof body?.purpose === "string" ? body.purpose.trim().toUpperCase() : "CLIENT_REGISTER";
     const purpose =
@@ -38,6 +44,23 @@ export async function POST(req: NextRequest) {
         { status: 429 },
       );
     }
+
+    const expectedAction = purpose === "CLIENT_REGISTER" ? "client_register_otp" : "client_reset_otp";
+    const turnstile = await verifyTurnstileToken({
+      token: body?.turnstileToken ?? body?.["cf-turnstile-response"],
+      remoteIp: ip,
+      expectedAction,
+    });
+    if (!turnstile.ok) {
+      return NextResponse.json(
+        {
+          error: "Verifikasi keamanan anti-bot gagal atau kedaluwarsa. Selesaikan verifikasi lalu coba lagi.",
+          code: "TURNSTILE_FAILED",
+        },
+        { status: 403 },
+      );
+    }
+
     if (!(await rateLimitDb(`otp_req:email:${purpose}:${cleanEmail}`, 3, 10 * 60_000))) {
       return NextResponse.json(
         { error: "Kode OTP baru saja dikirim ke email ini. Tunggu beberapa menit sebelum meminta ulang." },

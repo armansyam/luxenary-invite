@@ -813,6 +813,15 @@ export async function PUT(
     }
 
     // PIN membuka portal resepsionis; batas percobaan verify-pin (30 per 15 menit) hanya berarti bila ruang tebakannya cukup besar.
+    if (currentInv.isFreeDraft && !isAdmin && body.staffPin !== undefined && String(body.staffPin).trim()) {
+      return NextResponse.json(
+        {
+          error: "PIN Panitia & Portal Resepsionis hanya tersedia setelah paket diaktifkan.",
+          code: "FREE_DRAFT_STAFF_PIN_BLOCKED",
+        },
+        { status: 403 },
+      );
+    }
     if (body.staffPin && !STAFF_PIN_PATTERN.test(String(body.staffPin))) {
       return NextResponse.json({ error: "PIN harus 4–10 karakter berupa huruf atau angka." }, { status: 400 });
     }

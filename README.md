@@ -191,7 +191,7 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 
 | Paket | Kapasitas & Fitur Utama | Plafon Kamera Disposable (Admin Setting) | Pilihan Tema |
 |:--|:--|:--|:--|
-| **Draf Gratis (Trial)** | Eksplorasi Studio Editor ber-watermark sebelum bayar (maks. 1/akun, konversi otomatis saat lunas). Masa retensi (`retention_free_draft_days`, bawaan `14` hari) & batas foto (`free_draft_max_photos`, bawaan `3` foto) **100% dinamis via Admin Settings** | Nonaktif (aktif setelah lunas) | **Bebas Semua Tema** sesuai Mode Acara |
+| **Draf Gratis (Trial)** | Eksplorasi Studio Editor ber-watermark sebelum bayar (maks. 1/akun ditegakkan *partial unique index* + *advisory lock*, buku tamu/PIN/subdomain terkunci hingga paket aktif, konversi otomatis saat lunas). Masa retensi (`retention_free_draft_days`, bawaan `14` hari), batas foto (`free_draft_max_photos`, bawaan `3` foto), & retensi akun *leads* kosong (`retention_leads_days`, bawaan `90` hari) **100% dinamis via Admin Settings** | Nonaktif (aktif setelah lunas) | **Bebas Semua Tema** sesuai Mode Acara |
 | **Serenade** *(TIER_1)* | Daftar Tamu & Link WhatsApp Tanpa Batas, Subdomain Platform, RSVP & Ucapan Realtime, Musik Latar Bebas, Retensi galeri sesuai Admin Setting (bawaan 30 hari) | Kamera Tamu: **Nonaktif** *(Dapat diaktifkan via Admin)* | **Bebas Semua Tema** sesuai Mode Acara *(Minimalist, Modern, Traditional)* |
 | **Symphony** *(TIER_2)* | Seluruh Fitur Serenade + **Sistem Resepsionis QR Check-In & PIN Staf Panitia**, Retensi galeri sesuai Admin Setting (bawaan 30 hari) | Total Kuota: **250 Foto Acara** *(Pengantin bebas atur roll per tamu)* | **Bebas Semua Tema** sesuai Mode Acara *(Minimalist, Modern, Traditional)* |
 | **Eternity** *(TIER_3)* | Seluruh Fitur Symphony + **Hak Integrasi Custom Domain**, Dashboard Monitoring Momen Tamu, Retensi galeri sesuai Admin Setting (bawaan 30 hari) | Total Kuota: **1.000 Foto Acara** *(Pengantin bebas atur roll per tamu)* | **Bebas Semua Tema** sesuai Mode Acara *(Minimalist, Modern, Traditional)* |
@@ -285,7 +285,7 @@ Sistem mendukung 4 kondisi transaksi dengan integrasi 2-arah Midtrans yang dilen
 
 ---
 
-## Database Models (30 Model & 18 Enum · 46 Migrasi Kronologis)
+## Database Models (30 Model & 18 Enum · 47 Migrasi Kronologis)
 
 | Model | Fungsi |
 |:--|:--|
@@ -302,7 +302,7 @@ Sistem mendukung 4 kondisi transaksi dengan integrasi 2-arah Midtrans yang dilen
 | `GiftClaim` | Klaim kado fisik Gift Registry anti-duplikasi (CHECK `quantity >= 1`) |
 | `GuestMemory` | Foto candid kenangan tamu pasca-acara (disimpan terisolasi di `guest-memories/{invitationId}/`) |
 | `Theme` & `ThemeBuilderRevision` | Katalog **81 tema master fisik** (independen tanpa `parentTheme`, `builderSpec`, `masterOverrides`, `mediaSlots`) + riwayat revisi maks. 30 versi |
-| `AdminSetting` | Konfigurasi platform dinamis key-value (termasuk `retention_free_draft_days`, `free_draft_max_photos`, `payment_mode`, SMTP, R2) |
+| `AdminSetting` | Konfigurasi platform dinamis key-value (termasuk `retention_free_draft_days`, `free_draft_max_photos`, `retention_leads_days`, `payment_mode`, SMTP, R2) |
 | `MusicPreset` | Pustaka musik sistem dinamis untuk latar undangan |
 | `WebhookLog` | Log audit webhook payment Midtrans (idempotency & rekonsiliasi) |
 | `Expense`, `RecurringExpense`, `FinancialClosing` | Buku kas operasional OPEX, tagihan berkala, tutup buku bulanan & rekap PPh Final 0,5% |

@@ -5,6 +5,7 @@ import { useState, Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { BrandLogo } from "@/components/BrandLogo";
+import { TurnstileWidget } from "@/components/auth/TurnstileWidget";
 import { safeInternalCallbackUrl } from "@/lib/safeUrl";
 
 interface ServiceStatus {
@@ -31,8 +32,20 @@ function EyeToggleIcon({ shown }: { shown: boolean }) {
   );
 }
 
-function LoginForm({ platformName, serviceStatus }: { platformName: string; serviceStatus: ServiceStatus | null }) {
+function LoginForm({
+  platformName,
+  serviceStatus,
+  turnstileSiteKey,
+}: {
+  platformName: string;
+  serviceStatus: ServiceStatus | null;
+  turnstileSiteKey: string;
+}) {
   const [view, setView] = useState<AuthView>("login");
+  const [regTurnstileToken, setRegTurnstileToken] = useState("");
+  const [regTurnstileReset, setRegTurnstileReset] = useState(0);
+  const [resetTurnstileToken, setResetTurnstileToken] = useState("");
+  const [resetTurnstileReset, setResetTurnstileReset] = useState(0);
 
   // Login state
   const [loginEmail, setLoginEmail] = useState("");
@@ -126,12 +139,21 @@ function LoginForm({ platformName, serviceStatus }: { platformName: string; serv
       return;
     }
 
+    if (turnstileSiteKey && !regTurnstileToken) {
+      setErrorMsg("Selesaikan verifikasi keamanan anti-bot terlebih dahulu.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const res = await fetch("/api/auth/otp/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: regEmail.trim(), purpose: "CLIENT_REGISTER" }),
+        body: JSON.stringify({
+          email: regEmail.trim(),
+          purpose: "CLIENT_REGISTER",
+          ...(turnstileSiteKey ? { turnstileToken: regTurnstileToken } : {}),
+        }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
@@ -147,6 +169,9 @@ function LoginForm({ platformName, serviceStatus }: { platformName: string; serv
       setErrorMsg("Kesalahan jaringan saat mengirim kode verifikasi.");
     } finally {
       setSubmitting(false);
+      if (turnstileSiteKey) {
+        setRegTurnstileReset((n) => n + 1);
+      }
     }
   };
 
@@ -200,6 +225,10 @@ function LoginForm({ platformName, serviceStatus }: { platformName: string; serv
   const handleRequestResetOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!resetEmail.trim() || submitting) return;
+    if (turnstileSiteKey && !resetTurnstileToken) {
+      setErrorMsg("Selesaikan verifikasi keamanan anti-bot terlebih dahulu.");
+      return;
+    }
     setSubmitting(true);
     setErrorMsg(null);
     setNoticeMsg(null);
@@ -207,7 +236,11 @@ function LoginForm({ platformName, serviceStatus }: { platformName: string; serv
       const res = await fetch("/api/auth/otp/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: resetEmail.trim(), purpose: "CLIENT_RESET_PASSWORD" }),
+        body: JSON.stringify({
+          email: resetEmail.trim(),
+          purpose: "CLIENT_RESET_PASSWORD",
+          ...(turnstileSiteKey ? { turnstileToken: resetTurnstileToken } : {}),
+        }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
@@ -223,6 +256,9 @@ function LoginForm({ platformName, serviceStatus }: { platformName: string; serv
       setErrorMsg("Kesalahan jaringan saat mengirim kode reset.");
     } finally {
       setSubmitting(false);
+      if (turnstileSiteKey) {
+        setResetTurnstileReset((n) => n + 1);
+      }
     }
   };
 
@@ -549,10 +585,26 @@ function LoginForm({ platformName, serviceStatus }: { platformName: string; serv
                       className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-stone-50/60 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-700 focus:bg-white transition"
                     />
                   </div>
+                  {turnstileSiteKey && (
+                    <TurnstileWidget
+                      siteKey={turnstileSiteKey}
+                      action="client_register_otp"
+                      onTokenChange={setRegTurnstileToken}
+                      resetSignal={regTurnstileReset}
+                    />
+                  )}
                   <button
                     id="btn-register-otp"
                     type="submit"
-                    disabled={submitting || Boolean(isClosed) || !regName.trim() || !regEmail.trim() || !regPassword || !regConfirm}
+                    disabled={
+                      submitting ||
+                      Boolean(isClosed) ||
+                      !regName.trim() ||
+                      !regEmail.trim() ||
+                      !regPassword ||
+                      !regConfirm ||
+                      (Boolean(turnstileSiteKey) && !regTurnstileToken)
+                    }
                     className="w-full py-3 rounded-xl bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {submitting ? "Mengirim Kode Verifikasi..." : "Daftar & Kirim Kode OTP"}
@@ -603,7 +655,15 @@ function LoginForm({ platformName, serviceStatus }: { platformName: string; serv
                 <button
                   type="button"
                   disabled={submitting}
-                  onClick={handleRequestRegisterOtp}
+                  onClick={(e) => {
+                    if (turnstileSiteKey && !regTurnstileToken) {
+                      setRegStep("form");
+                      setNoticeMsg("Selesaikan verifikasi keamanan lalu tekan Daftar & Kirim Kode OTP untuk mengirim ulang.");
+                      setErrorMsg(null);
+                      return;
+                    }
+                    void handleRequestRegisterOtp(e);
+                  }}
                   className="w-full py-1.5 text-xs font-semibold text-stone-500 hover:text-stone-800 cursor-pointer"
                 >
                   Kirim Ulang Kode OTP
@@ -630,10 +690,18 @@ function LoginForm({ platformName, serviceStatus }: { platformName: string; serv
                   placeholder="nama@email.com"
                   className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-stone-50/60 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-700 focus:bg-white transition"
                 />
+                {turnstileSiteKey && (
+                  <TurnstileWidget
+                    siteKey={turnstileSiteKey}
+                    action="client_reset_otp"
+                    onTokenChange={setResetTurnstileToken}
+                    resetSignal={resetTurnstileReset}
+                  />
+                )}
                 <button
                   id="btn-reset-otp"
                   type="submit"
-                  disabled={submitting || !resetEmail.trim()}
+                  disabled={submitting || !resetEmail.trim() || (Boolean(turnstileSiteKey) && !resetTurnstileToken)}
                   className="w-full py-3 rounded-xl bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold transition cursor-pointer disabled:opacity-50"
                 >
                   {submitting ? "Mengirim Kode..." : "Kirim Kode Verifikasi"}
@@ -743,6 +811,7 @@ function LoginForm({ platformName, serviceStatus }: { platformName: string; serv
 export default function ClientLoginPage() {
   const [platformName, setPlatformName] = useState("");
   const [serviceStatus, setServiceStatus] = useState<ServiceStatus | null>(null);
+  const [turnstileSiteKey, setTurnstileSiteKey] = useState("");
   
   useEffect(() => {
     fetch("/api/public/settings", { cache: "no-store" })
@@ -753,6 +822,9 @@ export default function ClientLoginPage() {
         if (data.serviceStatus) {
           setServiceStatus(data.serviceStatus);
         }
+        if (typeof data.turnstileSiteKey === "string") {
+          setTurnstileSiteKey(data.turnstileSiteKey);
+        }
         document.title = `Masuk Akun | ${name}`;
       })
       .catch(() => {});
@@ -760,7 +832,7 @@ export default function ClientLoginPage() {
 
   return (
     <Suspense fallback={<div className="min-h-screen bg-[#faf7f2] flex items-center justify-center"><div className="w-8 h-8 border-2 border-amber-800 border-t-transparent rounded-full animate-spin"></div></div>}>
-      <LoginForm platformName={platformName} serviceStatus={serviceStatus} />
+      <LoginForm platformName={platformName} serviceStatus={serviceStatus} turnstileSiteKey={turnstileSiteKey} />
     </Suspense>
   );
 }

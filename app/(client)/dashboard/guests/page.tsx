@@ -708,14 +708,16 @@ export default function GuestsPage() {
           {/* Import CSV Button */}
           <button
             type="button"
+            disabled={Boolean(invitationData?.isFreeDraft)}
             onClick={() => {
+              if (invitationData?.isFreeDraft) return;
               setBulkError(null);
               setBulkSuccess(null);
               setParsedGuests([]);
               setBulkFileName("");
               setShowBulkModal(true);
             }}
-            className="flex-1 sm:flex-none px-3.5 py-2.5 sm:py-2 bg-stone-50 hover:bg-stone-100 text-stone-700 border border-stone-300 text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-xs shrink-0"
+            className="flex-1 sm:flex-none px-3.5 py-2.5 sm:py-2 bg-stone-50 hover:bg-stone-100 text-stone-700 border border-stone-300 text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-xs shrink-0 disabled:opacity-45 disabled:cursor-not-allowed"
           >
             <svg className="w-4 h-4 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -727,8 +729,9 @@ export default function GuestsPage() {
           {hasContactPicker && (
             <button
               type="button"
+              disabled={Boolean(invitationData?.isFreeDraft)}
               onClick={handlePickMultipleContacts}
-              className="flex-1 sm:flex-none px-3.5 py-2.5 sm:py-2 bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-300/80 text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-xs shrink-0"
+              className="flex-1 sm:flex-none px-3.5 py-2.5 sm:py-2 bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-300/80 text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-xs shrink-0 disabled:opacity-45 disabled:cursor-not-allowed"
             >
               <svg className="w-4 h-4 text-purple-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -740,8 +743,12 @@ export default function GuestsPage() {
           {/* Add Guest Button */}
           <button
             type="button"
-            onClick={() => setShowAddModal(true)}
-            className="order-first sm:order-none w-full sm:w-auto px-4 py-3 sm:py-2 bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-xs shrink-0"
+            disabled={Boolean(invitationData?.isFreeDraft)}
+            onClick={() => {
+              if (invitationData?.isFreeDraft) return;
+              setShowAddModal(true);
+            }}
+            className="order-first sm:order-none w-full sm:w-auto px-4 py-3 sm:py-2 bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-xs shrink-0 disabled:opacity-45 disabled:cursor-not-allowed"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -753,7 +760,27 @@ export default function GuestsPage() {
 
 
       {/* Draft Status Notification */}
-      {invitationData && invitationData.status === "DRAFT" && (
+      {invitationData && invitationData.isFreeDraft ? (
+        <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex gap-3 items-start">
+            <svg className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            <div className="flex-1 min-w-0 text-xs">
+              <h4 className="text-xs sm:text-sm font-bold text-amber-950">Buku Tamu Aktif Setelah Paket Dipilih</h4>
+              <p className="text-[11px] text-amber-900/80 mt-1 leading-relaxed">
+                Penambahan tamu, impor CSV/Excel, dan pengiriman link personal WhatsApp terbuka setelah paket undangan diaktifkan.
+              </p>
+            </div>
+          </div>
+          <a
+            href="/packages"
+            className="px-4 py-2 rounded-xl bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold transition shrink-0 text-center"
+          >
+            Aktifkan Paket
+          </a>
+        </div>
+      ) : invitationData && invitationData.status === "DRAFT" && (
         <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-4 flex gap-3 shadow-xs items-start">
           <svg className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />

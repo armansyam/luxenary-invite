@@ -85,6 +85,9 @@ export interface ActivePaymentModalState {
   qrString?: string | null;
   checkoutUrl?: string | null;
   expiryTimestamp?: number | null;
+  expiredAt?: string | null;
+  serverTimeOffsetMs?: number;
+  isQrisSessionExpired?: boolean;
   hasProof?: boolean;
   rejectReason?: string | null;
   bank?: {

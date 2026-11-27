@@ -88,58 +88,14 @@ export async function POST(req: NextRequest) {
     const isAudio = file.type.startsWith("audio/") || file.name.endsWith(".mp3") || file.name.endsWith(".wav") || file.name.endsWith(".m4a") || slotKey === "MUSIC";
     const isVideo = !isAudio && (file.type.startsWith("video/") || file.name.endsWith(".mp4") || file.name.endsWith(".webm") || file.name.endsWith(".mov"));
 
-    if (inv.isFreeDraft && !isAdmin) {
-      if (isAudio || isVideo) {
-        return NextResponse.json(
-          {
-            error: "Unggah audio dan video hanya tersedia setelah paket diaktifkan. Aktifkan paket untuk membuka seluruh fitur media.",
-            code: "FREE_DRAFT_MEDIA_BLOCKED",
-          },
-          { status: 403 }
-        );
-      }
-
-      const [existingMedia, storedBases] = await Promise.all([
-        prisma.invitationMedia.findMany({
-          where: { invitationId: safeInvitationId },
-          select: { mediaSlot: true, localPath: true },
-        }),
-        listInvitationImageBases(safeInvitationId),
-      ]);
-
-      const occupiedBases = new Set<string>(storedBases);
-      for (const m of existingMedia) {
-        const cleanUrl = (m.localPath || "").split("?")[0];
-        if (cleanUrl && cleanUrl.includes(`/invitations/${safeInvitationId}/`)) {
-          const baseName = path.parse(path.basename(cleanUrl)).name;
-          if (baseName) {
-            occupiedBases.add(baseName);
-            continue;
-          }
-        }
-        if (m.mediaSlot === "GALLERY") {
-          occupiedBases.add(`gallery-ext:${cleanUrl || m.mediaSlot}`);
-        } else {
-          occupiedBases.add(MEDIA_SLOT_FILE_NAMES[m.mediaSlot as keyof typeof MEDIA_SLOT_FILE_NAMES] || m.mediaSlot.toLowerCase());
-        }
-      }
-
-      const isGallerySlot = slotKey === "GALLERY" || slotKey.startsWith("GALLERY");
-      const isReplacingSingleSlot =
-        !isGallerySlot &&
-        (existingMedia.some((m) => m.mediaSlot === slotKey) || occupiedBases.has(baseSlug));
-
-      const parsedMaxPhotos = Number.parseInt(await getAdminSetting("free_draft_max_photos", "3"), 10);
-      const maxFreeDraftPhotos = Number.isFinite(parsedMaxPhotos) && parsedMaxPhotos >= 1 ? parsedMaxPhotos : 3;
-      if (!isReplacingSingleSlot && occupiedBases.size >= maxFreeDraftPhotos) {
-        return NextResponse.json(
-          {
-            error: `Draf gratis dibatasi maksimal ${maxFreeDraftPhotos} foto. Aktifkan paket untuk mengunggah lebih banyak foto.`,
-            code: "FREE_DRAFT_PHOTO_LIMIT",
-          },
-          { status: 403 }
-        );
-      }
+    if (inv.isFreeDraft && !isAdmin && (isAudio || isVideo)) {
+      return NextResponse.json(
+        {
+          error: "Unggah audio dan video hanya tersedia setelah paket diaktifkan. Aktifkan paket untuk membuka seluruh fitur media.",
+          code: "FREE_DRAFT_MEDIA_BLOCKED",
+        },
+        { status: 403 }
+      );
     }
 
     // ── Magic Bytes Validation (F-06) ──
@@ -273,27 +229,90 @@ export async function POST(req: NextRequest) {
     const relativePath = `${relativePathBase}/${finalFileName}`;
     let contentType = isAudio ? "audio/mpeg" : isVideo ? "video/mp4" : "image/webp";
 
-    // Unggahan undangan DRAFT juga langsung ke R2: disk satu server tidak terlihat oleh server aplikasi lain.
-    // Berkas format lain milik slot ini hanya dibersihkan pada penyimpanan lokal; di R2 terhapus bersama undangannya.
-    if (process.env.STORAGE_PROVIDER !== "r2" && process.env.STORAGE_PROVIDER !== "s3") {
-      const uploadsDir = path.join(process.cwd(), "public", "uploads", "invitations", safeInvitationId);
-      try {
-        const fs = await import("fs");
-        const existingFiles = await fs.promises.readdir(uploadsDir).catch((err: NodeJS.ErrnoException) => {
-          if (err.code === "ENOENT") return [] as string[]; // folder belum ada pada unggahan pertama
-          throw err;
-        });
-        for (const f of existingFiles) {
-          const fileBase = path.parse(f).name;
-          const isMatchingSlot = fileBase === baseSlug || (baseSlug === "wedding-song" && f.startsWith("wedding-song"));
-          if (isMatchingSlot && f !== finalFileName) await removeIfExists(path.join(uploadsDir, f));
+    const performUpload = async () => {
+      // Unggahan undangan DRAFT juga langsung ke R2: disk satu server tidak terlihat oleh server aplikasi lain.
+      // Berkas format lain milik slot ini hanya dibersihkan pada penyimpanan lokal; di R2 terhapus bersama undangannya.
+      if (process.env.STORAGE_PROVIDER !== "r2" && process.env.STORAGE_PROVIDER !== "s3") {
+        const uploadsDir = path.join(process.cwd(), "public", "uploads", "invitations", safeInvitationId);
+        try {
+          const fs = await import("fs");
+          const existingFiles = await fs.promises.readdir(uploadsDir).catch((err: NodeJS.ErrnoException) => {
+            if (err.code === "ENOENT") return [] as string[]; // folder belum ada pada unggahan pertama
+            throw err;
+          });
+          for (const f of existingFiles) {
+            const fileBase = path.parse(f).name;
+            const isMatchingSlot = fileBase === baseSlug || (baseSlug === "wedding-song" && f.startsWith("wedding-song"));
+            if (isMatchingSlot && f !== finalFileName) await removeIfExists(path.join(uploadsDir, f));
+          }
+        } catch (err) {
+          logger.warn("ClientUpload", "Pembersihan file lama untuk slot ini gagal", { uploadsDir, error: err instanceof Error ? err.message : String(err) });
         }
-      } catch (err) {
-        logger.warn("ClientUpload", "Pembersihan file lama untuk slot ini gagal", { uploadsDir, error: err instanceof Error ? err.message : String(err) });
       }
-    }
 
-    const uploadedUrl = await uploadFile(finalBuffer, relativePath, contentType);
+      return uploadFile(finalBuffer, relativePath, contentType);
+    };
+
+    let uploadedUrl: string;
+    if (inv.isFreeDraft && !isAdmin) {
+      const parsedMaxPhotos = Number.parseInt(await getAdminSetting("free_draft_max_photos", "3"), 10);
+      const maxFreeDraftPhotos = Number.isFinite(parsedMaxPhotos) && parsedMaxPhotos >= 1 ? parsedMaxPhotos : 3;
+
+      // Kunci per undangan mencegah unggahan paralel menembus batas foto draf gratis.
+      const lockedUpload = await prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`free_draft_media:${safeInvitationId}`}))`;
+
+        const [existingMedia, storedBases] = await Promise.all([
+          tx.invitationMedia.findMany({
+            where: { invitationId: safeInvitationId },
+            select: { mediaSlot: true, localPath: true },
+          }),
+          listInvitationImageBases(safeInvitationId),
+        ]);
+
+        const occupiedBases = new Set<string>(storedBases);
+        for (const m of existingMedia) {
+          const cleanUrl = (m.localPath || "").split("?")[0];
+          if (cleanUrl && cleanUrl.includes(`/invitations/${safeInvitationId}/`)) {
+            const baseName = path.parse(path.basename(cleanUrl)).name;
+            if (baseName) {
+              occupiedBases.add(baseName);
+              continue;
+            }
+          }
+          if (m.mediaSlot === "GALLERY") {
+            occupiedBases.add(`gallery-ext:${cleanUrl || m.mediaSlot}`);
+          } else {
+            occupiedBases.add(MEDIA_SLOT_FILE_NAMES[m.mediaSlot as keyof typeof MEDIA_SLOT_FILE_NAMES] || m.mediaSlot.toLowerCase());
+          }
+        }
+
+        const isGallerySlot = slotKey === "GALLERY" || slotKey.startsWith("GALLERY");
+        const isReplacingSingleSlot =
+          !isGallerySlot &&
+          (existingMedia.some((m) => m.mediaSlot === slotKey) || occupiedBases.has(baseSlug));
+
+        if (!isReplacingSingleSlot && occupiedBases.size >= maxFreeDraftPhotos) {
+          return { blocked: true as const, maxFreeDraftPhotos };
+        }
+
+        const url = await performUpload();
+        return { blocked: false as const, url };
+      }, { timeout: 20_000 });
+
+      if (lockedUpload.blocked) {
+        return NextResponse.json(
+          {
+            error: `Draf gratis dibatasi maksimal ${lockedUpload.maxFreeDraftPhotos} foto. Aktifkan paket untuk mengunggah lebih banyak foto.`,
+            code: "FREE_DRAFT_PHOTO_LIMIT",
+          },
+          { status: 403 }
+        );
+      }
+      uploadedUrl = lockedUpload.url;
+    } else {
+      uploadedUrl = await performUpload();
+    }
     
     // Add cache buster timestamp
     const publicUrl = `${uploadedUrl}?t=${Date.now()}`;

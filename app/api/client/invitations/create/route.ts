@@ -90,10 +90,10 @@ export async function POST(req: Request) {
     ? null
     : paidOrder?.invitation ||
       (await prisma.invitation.findFirst({
-        where: { userId: userId, status: "DRAFT" },
+        where: { userId: userId, status: "DRAFT", isFreeDraft: false },
       }));
 
-  if (!paidOrder && !existingDraft) {
+  if ((!paidOrder && !existingDraft) || existingDraft?.isFreeDraft) {
     return NextResponse.json(
       { error: "Anda belum memiliki paket yang aktif. Silakan selesaikan pembayaran terlebih dahulu." },
       { status: 403 }

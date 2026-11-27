@@ -639,10 +639,10 @@ export function AdminIntegrationsSettings(props: AdminSettingsTabProps) {
     description="Atur jam retensi yang terpisah, seluruhnya dihitung dari tanggal acara utama sesuai zona waktu acara: pelepasan subdomain, pembersihan galeri foto tamu, dan masa custom domain. Masa simpan arsip undangan diatur di tab Database."
     isEditing={Boolean(editSection["subdomain"])}
     onEdit={() => toggleEditSection("subdomain")}
-    onCancel={() => cancelEdit("subdomain", ["subdomain_grace_days", "retention_cleanup_days", "retention_custom_domain_days", "retention_free_draft_days", "free_draft_max_photos", "subdomain_auto_recycle"])}
-    onSave={() => saveSettings(["subdomain_grace_days", "retention_cleanup_days", "retention_custom_domain_days", "retention_free_draft_days", "free_draft_max_photos", "subdomain_auto_recycle"], setSavingSubdomainSettings, "subdomain")}
+    onCancel={() => cancelEdit("subdomain", ["subdomain_grace_days", "retention_cleanup_days", "retention_custom_domain_days", "retention_free_draft_days", "free_draft_max_photos", "retention_leads_days", "subdomain_auto_recycle"])}
+    onSave={() => saveSettings(["subdomain_grace_days", "retention_cleanup_days", "retention_custom_domain_days", "retention_free_draft_days", "free_draft_max_photos", "retention_leads_days", "subdomain_auto_recycle"], setSavingSubdomainSettings, "subdomain")}
     saving={savingSubdomainSettings}
-    isDirty={isSectionDirty(["subdomain_grace_days", "retention_cleanup_days", "retention_custom_domain_days", "retention_free_draft_days", "free_draft_max_photos", "subdomain_auto_recycle"])}
+    isDirty={isSectionDirty(["subdomain_grace_days", "retention_cleanup_days", "retention_custom_domain_days", "retention_free_draft_days", "free_draft_max_photos", "retention_leads_days", "subdomain_auto_recycle"])}
     saveSuccess={settingsSaved["subdomain"]}
     saveSuccessMessage="Pengaturan siklus hidup &amp; retensi berhasil disimpan"
     viewContent={
@@ -670,6 +670,10 @@ export function AdminIntegrationsSettings(props: AdminSettingsTabProps) {
               <div className="flex items-baseline justify-between gap-3">
                 <dt>Batas foto draf gratis</dt>
                 <dd className="font-mono font-bold text-amber-900">{settingsMap["free_draft_max_photos"] || "3"} foto</dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-3">
+                <dt>Retensi akun leads kosong</dt>
+                <dd className="font-mono font-bold text-amber-900">{settingsMap["retention_leads_days"] || "90"} hari</dd>
               </div>
             </dl>
             <p className="text-[11px] text-stone-500">
@@ -796,6 +800,17 @@ export function AdminIntegrationsSettings(props: AdminSettingsTabProps) {
           max="50"
           value={settingsMap["free_draft_max_photos"] || "3"}
           onChange={(e) => setSetting("free_draft_max_photos", e.target.value)}
+          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
+        />
+      </FieldRow>
+
+      <FieldRow label="Retensi Akun Leads Kosong (Hari)" description="Hari sejak pendaftaran hingga akun klien kosong tanpa order, tanpa undangan, dan tanpa tautan aktivasi aktif dibersihkan otomatis oleh cron (Minimal 30 hari, Default: 90 hari).">
+        <input
+          type="number"
+          min="30"
+          max="3650"
+          value={settingsMap["retention_leads_days"] || "90"}
+          onChange={(e) => setSetting("retention_leads_days", e.target.value)}
           className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
         />
       </FieldRow>

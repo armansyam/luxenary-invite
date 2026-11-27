@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { routeError } from "@/lib/routeError";
 import { encryptPin } from "@/lib/pinEncryption";
 import { STAFF_PIN_PATTERN } from "@/lib/invitationUtils";
+import { hasPlanCapability } from "@/lib/settings";
 import { getInvitationLockStatus } from "../route";
 
 export const dynamic = "force-dynamic";
@@ -30,12 +31,32 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: "PIN harus 4–10 karakter berupa huruf atau angka." }, { status: 400 });
     }
 
-    const invitation = await prisma.invitation.findUnique({ where: { id } });
+    const invitation = await prisma.invitation.findUnique({
+      where: { id },
+      include: { order: { select: { planType: true } } },
+    });
     if (!invitation) {
       return NextResponse.json({ error: "Undangan tidak ditemukan" }, { status: 404 });
     }
-    if (invitation.userId !== session.user.id && !hasAdminPermission(session.user, "invitations")) {
+    const isAdmin = hasAdminPermission(session.user, "invitations");
+    if (invitation.userId !== session.user.id && !isAdmin) {
       return NextResponse.json({ error: "Forbidden. Anda tidak memiliki akses ke undangan ini." }, { status: 403 });
+    }
+
+    if (!isAdmin && invitation.isFreeDraft) {
+      return NextResponse.json(
+        {
+          error: "PIN Panitia & Portal Resepsionis hanya tersedia setelah paket diaktifkan.",
+          code: "FREE_DRAFT_STAFF_PIN_BLOCKED",
+        },
+        { status: 403 },
+      );
+    }
+    if (!isAdmin && !(await hasPlanCapability(invitation.order?.planType, "qr_checkin"))) {
+      return NextResponse.json(
+        { error: "Fitur PIN Panitia & Resepsionis QR tidak termasuk dalam paket Anda. Silakan upgrade paket terlebih dahulu." },
+        { status: 403 },
+      );
     }
 
     if (invitation.status === "TAKEN_DOWN" || invitation.status === "ARCHIVED") {

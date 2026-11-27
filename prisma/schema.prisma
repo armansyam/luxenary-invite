@@ -157,6 +157,7 @@ model Invitation {
   memoriesNotifiedMilestones Int[] @default([])
   /// Email peringatan berakhirnya masa galeri sudah terkirim (sekali per undangan).
   retentionWarningSentAt     DateTime?
+  /// Maksimal 1 draf gratis aktif per userId ditegakkan partial unique index (migrasi 20261127223000).
   isFreeDraft                Boolean           @default(false) @map("is_free_draft")
   createdAt            DateTime          @default(now())
   updatedAt            DateTime          @updatedAt

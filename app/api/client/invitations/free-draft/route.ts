@@ -187,47 +187,120 @@ export async function POST(req: Request) {
     const invitationSlug = `draf-${crypto.randomBytes(4).toString("hex")}`;
     const subMeta = eventType === "WEDDING" ? null : resolveSubEventMeta(eventType, subEvent);
 
-    const created = await prisma.invitation.create({
-      data: {
-        userId,
-        orderId: null,
-        isFreeDraft: true,
-        status: "DRAFT",
-        eventType,
-        subEvent,
-        themeId: chosenTheme,
-        invitationSlug,
-        subdomain: null,
-        participantsJson: participants.value,
-        musicUrl: initialMusicUrl || undefined,
-        openingQuote: subMeta ? subMeta.defaultQuote : blueprint.openingQuote,
-        openingQuoteRef: subMeta ? subMeta.defaultQuoteRef : blueprint.openingQuoteRef,
-        eventData: [],
-        featureSettings: {
-          weddingTagline: defaultCoverBadge,
+    const txOutcome = await prisma.$transaction(async (tx) => {
+      // Kunci per akun mencegah race condition permintaan paralel membuat lebih dari 1 draf gratis.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`free_draft_create:${userId}`}))`;
+
+      const [lockedInvitations, lockedPaidOrder] = await Promise.all([
+        tx.invitation.findMany({
+          where: { userId },
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            isFreeDraft: true,
+            status: true,
+            eventType: true,
+            subEvent: true,
+            themeId: true,
+            invitationSlug: true,
+          },
+        }),
+        tx.order.findFirst({
+          where: { userId, orderType: "NEW", status: "PAID" },
+          select: { id: true },
+        }),
+      ]);
+
+      if (lockedPaidOrder || lockedInvitations.some((inv) => !inv.isFreeDraft)) {
+        return { kind: "has_paid" as const };
+      }
+
+      const lockedFree = lockedInvitations.find((inv) => inv.isFreeDraft);
+      if (lockedFree) {
+        return { kind: "exists" as const, invitation: lockedFree };
+      }
+
+      const created = await tx.invitation.create({
+        data: {
+          userId,
+          orderId: null,
+          isFreeDraft: true,
+          status: "DRAFT",
+          eventType,
+          subEvent,
+          themeId: chosenTheme,
+          invitationSlug,
+          subdomain: null,
+          participantsJson: participants.value,
           musicUrl: initialMusicUrl || undefined,
-          showStory: true,
-          showGallery: true,
-          showGift: true,
-          showDresscode: true,
-          showMusic: true,
-          customLabels: initialCustomLabels,
-          labelDefaults: initialCustomLabels,
+          openingQuote: subMeta ? subMeta.defaultQuote : blueprint.openingQuote,
+          openingQuoteRef: subMeta ? subMeta.defaultQuoteRef : blueprint.openingQuoteRef,
+          eventData: [],
+          featureSettings: {
+            weddingTagline: defaultCoverBadge,
+            musicUrl: initialMusicUrl || undefined,
+            showStory: true,
+            showGallery: true,
+            showGift: true,
+            showDresscode: true,
+            showMusic: true,
+            customLabels: initialCustomLabels,
+            labelDefaults: initialCustomLabels,
+          },
+          themeDefaultMedia,
+          themeMediaSlots,
         },
-        themeDefaultMedia,
-        themeMediaSlots,
-      },
-      select: {
-        id: true,
-        isFreeDraft: true,
-        status: true,
-        eventType: true,
-        subEvent: true,
-        themeId: true,
-        invitationSlug: true,
-      },
+        select: {
+          id: true,
+          isFreeDraft: true,
+          status: true,
+          eventType: true,
+          subEvent: true,
+          themeId: true,
+          invitationSlug: true,
+        },
+      });
+
+      return { kind: "created" as const, invitation: created };
+    }).catch(async (err: unknown) => {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+        const existing = await prisma.invitation.findFirst({
+          where: { userId, isFreeDraft: true },
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            isFreeDraft: true,
+            status: true,
+            eventType: true,
+            subEvent: true,
+            themeId: true,
+            invitationSlug: true,
+          },
+        });
+        if (existing) return { kind: "exists" as const, invitation: existing };
+      }
+      throw err;
     });
 
+    if (txOutcome.kind === "has_paid") {
+      return NextResponse.json(
+        { error: "Akun Anda sudah memiliki paket atau undangan aktif." },
+        { status: 409 },
+      );
+    }
+
+    if (txOutcome.kind === "exists") {
+      return NextResponse.json(
+        {
+          success: true,
+          alreadyExists: true,
+          invitation: txOutcome.invitation,
+        },
+        { status: 200 },
+      );
+    }
+
+    const created = txOutcome.invitation;
     if (eventType === "WEDDING") await copyMasterToDraft(created.id);
     else await seedRenderedLabels(created.id);
 

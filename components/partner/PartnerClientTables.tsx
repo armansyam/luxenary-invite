@@ -1,6 +1,6 @@
 "use client";
 
-import type { Dispatch, SetStateAction } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import {
   formatDate,
   formatDateTimeWib,
@@ -13,23 +13,35 @@ import {
   type ProvisionedClient,
 } from "@/components/partner/types";
 
+export type PartnerClientStatusFilter =
+  | "ALL"
+  | "ACTIVE"
+  | "PENDING_PAYMENT"
+  | "PENDING_ACTIVATION"
+  | "EXPIRED";
+
 export interface PartnerClientTablesContext {
+  cancellingOrderId: string | null;
   clientEmail: string;
   clientName: string;
   clientSearch: string;
-  clientStatusFilter: "ALL" | "ACTIVE" | "PENDING";
+  clientStatusFilter: PartnerClientStatusFilter;
   clientTransactions: PartnerClientTransaction[];
   clients: ProvisionedClient[];
   clientsLoading: boolean;
   commissions: PartnerCommission[];
   dashboardTab: "clients" | "transactions";
+  deletingClientId: string | null;
   email: string;
   filteredClients: ProvisionedClient[];
   filteredTransactions: PartnerClientTransaction[];
   filteredTxTotalBase: number;
   filteredTxTotalDiscount: number;
   filteredTxTotalFinal: number;
+  handleCancelPartnerOrder: (orderId: string) => Promise<void>;
+  handleDeletePartnerClient: (client: ProvisionedClient) => Promise<void>;
   handleExportTransactionsCsv: (rows: PartnerClientTransaction[]) => void;
+  handleReorderClient: (client: ProvisionedClient) => Promise<void>;
   handleResendActivation: (client: ProvisionedClient) => Promise<void>;
   loadDashboard: () => Promise<void>;
   openPaymentModalForOrder: (opts: {
@@ -48,9 +60,10 @@ export interface PartnerClientTablesContext {
   }) => Promise<void>;
   partner: PartnerInfo;
   payouts: PartnerPayout[];
+  reorderingClientId: string | null;
   resendingClientId: string | null;
   setClientSearch: Dispatch<SetStateAction<string>>;
-  setClientStatusFilter: Dispatch<SetStateAction<"ALL" | "ACTIVE" | "PENDING">>;
+  setClientStatusFilter: Dispatch<SetStateAction<PartnerClientStatusFilter>>;
   setDashboardTab: Dispatch<SetStateAction<"clients" | "transactions">>;
   setTxSearch: Dispatch<SetStateAction<string>>;
   setTxStatusFilter: Dispatch<SetStateAction<"ALL" | "PAID" | "PENDING" | "EXPIRED">>;
@@ -60,6 +73,7 @@ export interface PartnerClientTablesContext {
 
 export function PartnerClientTables({ ctx }: { ctx: PartnerClientTablesContext }) {
   const {
+    cancellingOrderId,
     clientEmail,
     clientName,
     clientSearch,
@@ -69,18 +83,23 @@ export function PartnerClientTables({ ctx }: { ctx: PartnerClientTablesContext }
     clientsLoading,
     commissions,
     dashboardTab,
+    deletingClientId,
     email,
     filteredClients,
     filteredTransactions,
     filteredTxTotalBase,
     filteredTxTotalDiscount,
     filteredTxTotalFinal,
+    handleCancelPartnerOrder,
+    handleDeletePartnerClient,
     handleExportTransactionsCsv,
+    handleReorderClient,
     handleResendActivation,
     loadDashboard,
     openPaymentModalForOrder,
     partner,
     payouts,
+    reorderingClientId,
     resendingClientId,
     setClientSearch,
     setClientStatusFilter,
@@ -90,6 +109,7 @@ export function PartnerClientTables({ ctx }: { ctx: PartnerClientTablesContext }
     txSearch,
     txStatusFilter,
   } = ctx;
+  const [confirmRowAction, setConfirmRowAction] = useState<{ kind: "cancel" | "delete"; id: string } | null>(null);
 
   return (
     <>
@@ -132,12 +152,14 @@ export function PartnerClientTables({ ctx }: { ctx: PartnerClientTablesContext }
                 />
                 <select
                   value={clientStatusFilter}
-                  onChange={(e) => setClientStatusFilter(e.target.value as "ALL" | "ACTIVE" | "PENDING")}
+                  onChange={(e) => setClientStatusFilter(e.target.value as PartnerClientStatusFilter)}
                   className="px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white text-xs text-stone-700 cursor-pointer"
                 >
                   <option value="ALL">Semua Status</option>
                   <option value="ACTIVE">Sudah Aktif</option>
-                  <option value="PENDING">Menunggu Aktivasi</option>
+                  <option value="PENDING_PAYMENT">Menunggu Pembayaran</option>
+                  <option value="PENDING_ACTIVATION">Menunggu Aktivasi</option>
+                  <option value="EXPIRED">Tagihan Kedaluwarsa / Batal</option>
                 </select>
                 <button
                   type="button"
@@ -200,7 +222,18 @@ export function PartnerClientTables({ ctx }: { ctx: PartnerClientTablesContext }
                   </thead>
                   <tbody className="divide-y divide-stone-100">
                     {filteredClients.map((client) => {
-                      const isExpiredLink = !client.isActivated && Boolean(client.activation?.isExpired);
+                      const hasPaid = Boolean(client.hasPaidOrder || client.latestOrder?.status === "PAID");
+                      const latestStatus = client.latestOrder?.status || null;
+                      const isExpiredLink = !client.isActivated && hasPaid && Boolean(client.activation?.isExpired);
+                      const isCancelledManually =
+                        latestStatus === "EXPIRED" &&
+                        Boolean(client.latestOrder?.rejectReason?.toLowerCase().includes("dibatalkan"));
+                      const canDeleteClient =
+                        !client.isActivated &&
+                        !hasPaid &&
+                        client.invitationCount === 0 &&
+                        !(latestStatus === "PENDING" && client.latestOrder?.hasProof);
+
                       return (
                         <tr key={client.id} className="hover:bg-stone-50/70">
                           <td className="py-3 px-4">
@@ -224,10 +257,25 @@ export function PartnerClientTables({ ctx }: { ctx: PartnerClientTablesContext }
                                 <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />
                                 Link Kedaluwarsa
                               </span>
-                            ) : (
+                            ) : hasPaid ? (
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900">
                                 <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
                                 Menunggu Aktivasi
+                              </span>
+                            ) : latestStatus === "PENDING" ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-100 text-sky-900">
+                                <span className="w-1.5 h-1.5 rounded-full bg-sky-600" />
+                                Menunggu Pembayaran
+                              </span>
+                            ) : latestStatus === "EXPIRED" ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-stone-200/80 text-stone-700">
+                                <span className="w-1.5 h-1.5 rounded-full bg-stone-500" />
+                                {isCancelledManually ? "Tagihan Dibatalkan" : "Tagihan Kedaluwarsa"}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-stone-100 text-stone-600">
+                                <span className="w-1.5 h-1.5 rounded-full bg-stone-400" />
+                                Belum Ada Tagihan
                               </span>
                             )}
                           </td>
@@ -238,9 +286,13 @@ export function PartnerClientTables({ ctx }: { ctx: PartnerClientTablesContext }
                             <div className="text-[10px] text-stone-400 mt-0.5">
                               {client.isActivated
                                 ? "Akun sudah aktif"
-                                : client.activation?.expiresAt
+                                : hasPaid && client.activation?.expiresAt
                                   ? `Link s.d. ${formatDateTimeWib(client.activation.expiresAt)}`
-                                  : "-"}
+                                  : latestStatus === "PENDING"
+                                    ? "Tautan terbit setelah pembayaran lunas"
+                                    : latestStatus === "EXPIRED"
+                                      ? "Buat tagihan baru untuk melanjutkan"
+                                      : "-"}
                             </div>
                           </td>
                           <td className="py-3 px-4 whitespace-nowrap">
@@ -272,29 +324,64 @@ export function PartnerClientTables({ ctx }: { ctx: PartnerClientTablesContext }
                           </td>
                           <td className="py-3 px-4 text-right whitespace-nowrap">
                             {client.latestOrder && client.latestOrder.status === "PENDING" ? (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  openPaymentModalForOrder({
-                                    orderId: client.latestOrder!.id,
-                                    invoiceNumber: client.latestOrder!.invoiceNumber,
-                                    planType: client.latestOrder!.planType,
-                                    clientId: client.id,
-                                    clientName: client.name,
-                                    clientEmail: client.email,
-                                    amount: client.latestOrder!.amount,
-                                    discountAmount: client.latestOrder!.discountAmount,
-                                    paymentMethod: client.latestOrder!.paymentMethod || "GATEWAY",
-                                    status: client.latestOrder!.status,
-                                    hasProof: client.latestOrder!.hasProof,
-                                    rejectReason: client.latestOrder!.rejectReason,
-                                  })
-                                }
-                                className="px-3 py-1.5 rounded-lg bg-amber-700 hover:bg-amber-800 text-white text-[11px] font-bold transition cursor-pointer"
-                              >
-                                {client.latestOrder.hasProof ? "Lihat Status Bukti" : "Bayar Paket"}
-                              </button>
-                            ) : !client.isActivated && (client.hasPaidOrder || client.latestOrder?.status === "PAID") ? (
+                              <div className="inline-flex items-center justify-end gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    openPaymentModalForOrder({
+                                      orderId: client.latestOrder!.id,
+                                      invoiceNumber: client.latestOrder!.invoiceNumber,
+                                      planType: client.latestOrder!.planType,
+                                      clientId: client.id,
+                                      clientName: client.name,
+                                      clientEmail: client.email,
+                                      amount: client.latestOrder!.amount,
+                                      discountAmount: client.latestOrder!.discountAmount,
+                                      paymentMethod: client.latestOrder!.paymentMethod || "GATEWAY",
+                                      status: client.latestOrder!.status,
+                                      hasProof: client.latestOrder!.hasProof,
+                                      rejectReason: client.latestOrder!.rejectReason,
+                                    })
+                                  }
+                                  className="px-3 py-1.5 rounded-lg bg-amber-700 hover:bg-amber-800 text-white text-[11px] font-bold transition cursor-pointer"
+                                >
+                                  {client.latestOrder.hasProof ? "Lihat Status Bukti" : "Bayar Paket"}
+                                </button>
+                                {!client.latestOrder.hasProof && (
+                                  confirmRowAction?.kind === "cancel" && confirmRowAction.id === client.latestOrder.id ? (
+                                    <>
+                                      <button
+                                        type="button"
+                                        disabled={cancellingOrderId === client.latestOrder.id}
+                                        onClick={async () => {
+                                          await handleCancelPartnerOrder(client.latestOrder!.id);
+                                          setConfirmRowAction(null);
+                                        }}
+                                        className="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-[11px] font-bold transition cursor-pointer"
+                                      >
+                                        {cancellingOrderId === client.latestOrder.id ? "..." : "Ya, Batal"}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setConfirmRowAction(null)}
+                                        className="px-2 py-1.5 rounded-lg border border-stone-200 bg-white text-stone-600 text-[11px] font-semibold cursor-pointer"
+                                      >
+                                        Tidak
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      disabled={cancellingOrderId === client.latestOrder.id}
+                                      onClick={() => setConfirmRowAction({ kind: "cancel", id: client.latestOrder!.id })}
+                                      className="px-2.5 py-1.5 rounded-lg border border-rose-200 bg-rose-50/70 hover:bg-rose-100 text-rose-700 text-[11px] font-semibold transition cursor-pointer disabled:opacity-50"
+                                    >
+                                      Batalkan
+                                    </button>
+                                  )
+                                )}
+                              </div>
+                            ) : !client.isActivated && hasPaid ? (
                               <button
                                 type="button"
                                 disabled={resendingClientId === client.id}
@@ -308,7 +395,49 @@ export function PartnerClientTables({ ctx }: { ctx: PartnerClientTablesContext }
                                 Aktif &amp; Siap Pakai
                               </span>
                             ) : (
-                              <span className="text-[11px] text-stone-400">Menunggu Order</span>
+                              <div className="inline-flex items-center justify-end gap-1.5">
+                                <button
+                                  type="button"
+                                  disabled={reorderingClientId === client.id}
+                                  onClick={() => handleReorderClient(client)}
+                                  className="px-3 py-1.5 rounded-lg bg-amber-700 hover:bg-amber-800 disabled:opacity-50 text-white text-[11px] font-bold transition cursor-pointer"
+                                >
+                                  {reorderingClientId === client.id ? "Membuat..." : "Buat Tagihan Baru"}
+                                </button>
+                                {canDeleteClient && (
+                                  confirmRowAction?.kind === "delete" && confirmRowAction.id === client.id ? (
+                                    <>
+                                      <button
+                                        type="button"
+                                        disabled={deletingClientId === client.id}
+                                        onClick={async () => {
+                                          await handleDeletePartnerClient(client);
+                                          setConfirmRowAction(null);
+                                        }}
+                                        className="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-[11px] font-bold transition cursor-pointer"
+                                      >
+                                        {deletingClientId === client.id ? "..." : "Ya, Hapus"}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setConfirmRowAction(null)}
+                                        className="px-2 py-1.5 rounded-lg border border-stone-200 bg-white text-stone-600 text-[11px] font-semibold cursor-pointer"
+                                      >
+                                        Tidak
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      disabled={deletingClientId === client.id}
+                                      onClick={() => setConfirmRowAction({ kind: "delete", id: client.id })}
+                                      className="px-2.5 py-1.5 rounded-lg border border-stone-200 hover:border-rose-200 hover:bg-rose-50 text-stone-500 hover:text-rose-700 text-[11px] font-semibold transition cursor-pointer disabled:opacity-50"
+                                    >
+                                      Hapus
+                                    </button>
+                                  )
+                                )}
+                              </div>
                             )}
                           </td>
                         </tr>

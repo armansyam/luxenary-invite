@@ -105,6 +105,7 @@ export async function POST(
           bankInstructions: settings.bankInstructions,
         },
         hasProof: Boolean(order.proofImageUrl),
+        expiredAt: order.expiredAt?.toISOString() ?? null,
         serverTime: Date.now(),
       });
     }
@@ -133,6 +134,7 @@ export async function POST(
         checkoutUrl: order.gatewayCheckoutUrl ?? undefined,
         sessionId: order.gatewayTxId,
         expiryTimestamp: order.gatewaySessionExpiresAt.getTime(),
+        expiredAt: order.expiredAt?.toISOString() ?? null,
         gateway: activeGatewayId,
         serverTime: now,
       });
@@ -220,6 +222,7 @@ export async function POST(
       checkoutUrl,
       sessionId,
       expiryTimestamp: expiryMs,
+      expiredAt: order.expiredAt?.toISOString() ?? null,
       gateway: activeGatewayId,
       serverTime: serverNow,
     });

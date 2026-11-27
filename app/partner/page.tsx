@@ -21,7 +21,7 @@ import {
   formatDateTimeWib,
 } from "@/components/partner/types";
 import { PartnerAuthScreen } from "@/components/partner/PartnerAuthScreen";
-import { PartnerClientTables } from "@/components/partner/PartnerClientTables";
+import { PartnerClientTables, type PartnerClientStatusFilter } from "@/components/partner/PartnerClientTables";
 import { PartnerPaymentModal } from "@/components/partner/PartnerPaymentModal";
 
 export default function PartnerPortalPage() {
@@ -37,7 +37,7 @@ export default function PartnerPortalPage() {
   // Dashboard Filter & Tab State
   const [dashboardTab, setDashboardTab] = useState<"clients" | "transactions">("clients");
   const [clientSearch, setClientSearch] = useState("");
-  const [clientStatusFilter, setClientStatusFilter] = useState<"ALL" | "ACTIVE" | "PENDING">("ALL");
+  const [clientStatusFilter, setClientStatusFilter] = useState<PartnerClientStatusFilter>("ALL");
   const [txSearch, setTxSearch] = useState("");
   const [txStatusFilter, setTxStatusFilter] = useState<"ALL" | "PAID" | "PENDING" | "EXPIRED">("ALL");
 
@@ -50,6 +50,9 @@ export default function PartnerPortalPage() {
   const [provisionError, setProvisionError] = useState("");
   const [deliveryResult, setDeliveryResult] = useState<ActivationDeliveryResult | null>(null);
   const [resendingClientId, setResendingClientId] = useState<string | null>(null);
+  const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
+  const [reorderingClientId, setReorderingClientId] = useState<string | null>(null);
+  const [deletingClientId, setDeletingClientId] = useState<string | null>(null);
   const [copiedTarget, setCopiedTarget] = useState<"wa" | "link" | null>(null);
 
   // Integrated WO Payment Modal State
@@ -326,6 +329,7 @@ export default function PartnerPortalPage() {
       setActivePayment({
         ...opts,
         chargedAmount: null,
+        isQrisSessionExpired: false,
         bank: platformConfig?.bank,
       });
       setPaymentInitLoading(true);
@@ -335,6 +339,10 @@ export default function PartnerPortalPage() {
         });
         const data = await res.json();
         if (!res.ok) {
+          if (data.isExpired) {
+            setActivePayment((prev) => (prev ? { ...prev, status: "EXPIRED" } : null));
+            await loadDashboard();
+          }
           setPaymentError(data.error || "Gagal menyiapkan sesi pembayaran.");
           return;
         }
@@ -343,6 +351,7 @@ export default function PartnerPortalPage() {
           await loadDashboard();
           return;
         }
+        const serverOffset = typeof data.serverTime === "number" ? data.serverTime - Date.now() : 0;
         setActivePayment((prev) =>
           prev
             ? {
@@ -352,7 +361,10 @@ export default function PartnerPortalPage() {
                 chargedAmount: typeof data.chargedAmount === "number" ? data.chargedAmount : prev.chargedAmount,
                 qrString: data.qrString || null,
                 checkoutUrl: data.checkoutUrl || null,
-                expiryTimestamp: data.expiryTimestamp || null,
+                expiryTimestamp: typeof data.expiryTimestamp === "number" ? data.expiryTimestamp : null,
+                expiredAt: data.expiredAt ?? prev.expiredAt ?? null,
+                serverTimeOffsetMs: serverOffset,
+                isQrisSessionExpired: false,
                 hasProof: Boolean(data.hasProof ?? prev.hasProof),
                 bank: data.bank || prev.bank,
               }
@@ -412,13 +424,20 @@ export default function PartnerPortalPage() {
           }
         } else if (st.status === "EXPIRED") {
           setActivePayment((prev) => (prev && prev.orderId === orderId ? { ...prev, status: "EXPIRED" } : prev));
+          await loadDashboard();
         } else {
+          const pollOffset = typeof st.serverTime === "number" ? st.serverTime - Date.now() : undefined;
           setActivePayment((prev) =>
             prev && prev.orderId === orderId
               ? {
                   ...prev,
                   hasProof: Boolean(st.hasProof),
                   rejectReason: st.rejectReason || null,
+                  isQrisSessionExpired: Boolean(st.isQrisSessionExpired),
+                  expiryTimestamp:
+                    typeof st.gatewaySessionExpiresAt === "number" ? st.gatewaySessionExpiresAt : prev.expiryTimestamp,
+                  expiredAt: st.expiredAt ?? prev.expiredAt ?? null,
+                  ...(pollOffset !== undefined ? { serverTimeOffsetMs: pollOffset } : {}),
                 }
               : prev,
           );
@@ -543,6 +562,146 @@ export default function PartnerPortalPage() {
     }
   };
 
+  const handleCancelPartnerOrder = async (orderId: string) => {
+    setPaymentError("");
+    setProvisionError("");
+    setCancellingOrderId(orderId);
+    try {
+      const res = await fetch(`/api/partner/orders/${orderId}/cancel`, { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        const msg = data.error || "Gagal membatalkan tagihan.";
+        if (activePayment?.orderId === orderId) setPaymentError(msg);
+        else setProvisionError(msg);
+        return;
+      }
+      if (activePayment?.orderId === orderId) {
+        setActivePayment((prev) => (prev ? { ...prev, status: "EXPIRED", qrString: null, checkoutUrl: null } : null));
+      }
+      await loadDashboard();
+    } catch {
+      const msg = "Terjadi gangguan koneksi saat membatalkan tagihan.";
+      if (activePayment?.orderId === orderId) setPaymentError(msg);
+      else setProvisionError(msg);
+    } finally {
+      setCancellingOrderId(null);
+    }
+  };
+
+  const handleRetryPartnerPayment = async () => {
+    if (!activePayment) return;
+    await openPaymentModalForOrder({
+      orderId: activePayment.orderId,
+      invoiceNumber: activePayment.invoiceNumber,
+      planType: activePayment.planType,
+      clientId: activePayment.clientId,
+      clientName: activePayment.clientName,
+      clientEmail: activePayment.clientEmail,
+      amount: activePayment.amount,
+      discountAmount: activePayment.discountAmount,
+      paymentMethod: activePayment.paymentMethod,
+      status: "PENDING",
+      hasProof: activePayment.hasProof,
+      rejectReason: activePayment.rejectReason,
+    });
+  };
+
+  const handleReorderClient = async (client: ProvisionedClient) => {
+    setProvisionError("");
+    setPaymentError("");
+    setReorderingClientId(client.id);
+    try {
+      const planCandidate = client.latestOrder?.planType;
+      const planToOrder: "TIER_1" | "TIER_2" | "TIER_3" =
+        planCandidate === "TIER_1" || planCandidate === "TIER_2" || planCandidate === "TIER_3"
+          ? planCandidate
+          : selectedPlanType;
+
+      const res = await fetch("/api/partner/clients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: client.name,
+          email: client.email,
+          phoneNumber: client.phoneNumber || undefined,
+          planType: planToOrder,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        setProvisionError(data.error || "Gagal membuat tagihan baru untuk klien ini.");
+        return;
+      }
+      await loadDashboard();
+      if (data.order && data.client) {
+        await openPaymentModalForOrder({
+          orderId: data.order.id,
+          invoiceNumber: data.order.invoiceNumber,
+          planType: data.order.planType,
+          clientId: data.client.id,
+          clientName: data.client.name,
+          clientEmail: data.client.email,
+          amount: Number(data.order.amount),
+          discountAmount: Number(data.order.discountAmount || 0),
+          paymentMethod: data.order.paymentMethod || "GATEWAY",
+          status: data.order.status || "PENDING",
+          hasProof: Boolean(data.order.hasProof),
+        });
+      }
+    } catch {
+      setProvisionError("Terjadi gangguan koneksi saat membuat tagihan baru.");
+    } finally {
+      setReorderingClientId(null);
+    }
+  };
+
+  const handleReorderFromModal = async () => {
+    if (!activePayment) return;
+    const matched = clients.find((c) => c.id === activePayment.clientId);
+    if (matched) {
+      await handleReorderClient(matched);
+      return;
+    }
+    await handleReorderClient({
+      id: activePayment.clientId,
+      name: activePayment.clientName,
+      email: activePayment.clientEmail,
+      phoneNumber: null,
+      createdAt: new Date().toISOString(),
+      isActivated: false,
+      invitationCount: 0,
+      activation: null,
+      latestOrder: {
+        id: activePayment.orderId,
+        invoiceNumber: activePayment.invoiceNumber,
+        planType: activePayment.planType,
+        status: activePayment.status,
+        amount: activePayment.amount,
+        discountAmount: activePayment.discountAmount,
+        paidAt: null,
+      },
+    });
+  };
+
+  const handleDeletePartnerClient = async (client: ProvisionedClient) => {
+    setProvisionError("");
+    setDeletingClientId(client.id);
+    try {
+      const res = await fetch(`/api/partner/clients/${client.id}`, { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        setProvisionError(data.error || "Gagal menghapus data klien.");
+        return;
+      }
+      if (activePayment?.clientId === client.id) setActivePayment(null);
+      await loadDashboard();
+    } catch {
+      setProvisionError("Terjadi gangguan koneksi saat menghapus data klien.");
+    } finally {
+      setDeletingClientId(null);
+    }
+  };
+
   if (checking) {
     return (
       <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center font-sans">
@@ -564,7 +723,10 @@ export default function PartnerPortalPage() {
     clients.length > 0
       ? clients.filter((c) => c.isActivated).length
       : (partner.clientStats?.activeClients ?? 0);
-  const pendingActivationClients = Math.max(0, totalClients - activeClients);
+  const pendingActivationClients =
+    clients.length > 0
+      ? clients.filter((c) => !c.isActivated && (c.hasPaidOrder || c.latestOrder?.status === "PAID")).length
+      : Math.max(0, totalClients - activeClients);
   const paidOrdersCount = partner.clientStats?.paidClientOrders ?? clientTransactions.filter((t) => t.status === "PAID").length;
   const totalPaidNetAmount =
     partner.clientStats?.totalPaidNetAmount ??
@@ -578,8 +740,12 @@ export default function PartnerPortalPage() {
       : formatRupiah(partner.commissionValue);
 
   const filteredClients = clients.filter((c) => {
+    const hasPaid = Boolean(c.hasPaidOrder || c.latestOrder?.status === "PAID");
+    const latestStatus = c.latestOrder?.status || null;
     if (clientStatusFilter === "ACTIVE" && !c.isActivated) return false;
-    if (clientStatusFilter === "PENDING" && c.isActivated) return false;
+    if (clientStatusFilter === "PENDING_ACTIVATION" && (c.isActivated || !hasPaid)) return false;
+    if (clientStatusFilter === "PENDING_PAYMENT" && (c.isActivated || hasPaid || latestStatus !== "PENDING")) return false;
+    if (clientStatusFilter === "EXPIRED" && (c.isActivated || hasPaid || latestStatus !== "EXPIRED")) return false;
     const q = clientSearch.trim().toLowerCase();
     if (!q) return true;
     return (
@@ -610,7 +776,7 @@ export default function PartnerPortalPage() {
     platformConfig?.packages?.[0] ||
     null;
 
-  const dashCtx = { clientEmail, clientName, clientSearch, clientStatusFilter, clientTransactions, clients, clientsLoading, commissions, dashboardTab, email, filteredClients, filteredTransactions, filteredTxTotalBase, filteredTxTotalDiscount, filteredTxTotalFinal, handleExportTransactionsCsv, handleResendActivation, loadDashboard, openPaymentModalForOrder, partner, payouts, resendingClientId, setClientSearch, setClientStatusFilter, setDashboardTab, setTxSearch, setTxStatusFilter, txSearch, txStatusFilter, activePayment, discountRateLabel, handleUploadPartnerProof, paymentError, paymentInitLoading, platformConfig, proofFile, proofSuccessMsg, setActivePayment, setProofFile, uploadingProof };
+  const dashCtx = { activePayment, cancellingOrderId, clientEmail, clientName, clientSearch, clientStatusFilter, clientTransactions, clients, clientsLoading, commissions, dashboardTab, deletingClientId, discountRateLabel, email, filteredClients, filteredTransactions, filteredTxTotalBase, filteredTxTotalDiscount, filteredTxTotalFinal, handleCancelPartnerOrder, handleDeletePartnerClient, handleExportTransactionsCsv, handleReorderClient, handleReorderFromModal, handleResendActivation, handleRetryPartnerPayment, handleUploadPartnerProof, loadDashboard, openPaymentModalForOrder, partner, paymentError, paymentInitLoading, payouts, platformConfig, proofFile, proofSuccessMsg, reorderingClientId, resendingClientId, setActivePayment, setClientSearch, setClientStatusFilter, setDashboardTab, setProofFile, setTxSearch, setTxStatusFilter, txSearch, txStatusFilter, uploadingProof };
 
   return (
     <div className="min-h-screen bg-[#faf8f5] text-stone-900 font-sans">

@@ -34,15 +34,16 @@ export class MidtransGateway implements PaymentGateway {
       const map: Record<string, string> = {};
       settings.forEach((s) => (map[s.key] = s.value?.trim() || ""));
 
-      environment = map["midtrans_environment"] || (process.env.MIDTRANS_IS_PRODUCTION === "true" ? "production" : "sandbox");
+      // Panel Admin (midtrans_environment) selalu didahulukan; MIDTRANS_IS_PRODUCTION di .env hanya cadangan bila DB kosong.
+      const dbEnv = (map["midtrans_environment"] || "").toLowerCase();
+      environment =
+        dbEnv === "production" || dbEnv === "sandbox"
+          ? dbEnv
+          : process.env.MIDTRANS_IS_PRODUCTION === "true"
+          ? "production"
+          : "sandbox";
 
-      const isProd =
-        process.env.MIDTRANS_IS_PRODUCTION === "true"
-          ? true
-          : process.env.MIDTRANS_IS_PRODUCTION === "false"
-          ? false
-          : environment.toLowerCase() === "production";
-
+      const isProd = environment === "production";
       const mode = isProd ? "production" : "sandbox";
       serverKey = map[`midtrans_${mode}_server_key`] || process.env.MIDTRANS_SERVER_KEY || "";
       clientKey = map[`midtrans_${mode}_client_key`] || process.env.MIDTRANS_CLIENT_KEY || "";
@@ -63,13 +64,8 @@ export class MidtransGateway implements PaymentGateway {
       clientKey = temp;
     }
 
-    // Penentuan endpoint deterministik berdasarkan setting Admin Portal (default: sandbox)
-    const isProduction =
-      process.env.MIDTRANS_IS_PRODUCTION === "true"
-        ? true
-        : process.env.MIDTRANS_IS_PRODUCTION === "false"
-        ? false
-        : environment.toLowerCase() === "production";
+    // Penentuan endpoint deterministik mengikuti hasil resolusi environment di atas (DB prioritas utama, .env cadangan).
+    const isProduction = environment.toLowerCase() === "production";
 
     const snapUrl = isProduction
       ? "https://app.midtrans.com/snap/v1/transactions"

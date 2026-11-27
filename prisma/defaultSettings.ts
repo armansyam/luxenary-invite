@@ -567,6 +567,14 @@ export const defaultSettings: DefaultSettingItem[] = [
     "updatedAt": "2026-11-22T00:00:00.000Z"
   },
   {
+    "id": "retention_leads_days",
+    "key": "retention_leads_days",
+    "value": "90",
+    "label": "Retensi Akun Leads Kosong Tanpa Order & Undangan (Hari)",
+    "group": "setup",
+    "updatedAt": "2026-11-27T00:00:00.000Z"
+  },
+  {
     "id": "854e5478-1300-408e-a8fc-f29b46d7a220",
     "key": "retention_order_days",
     "value": "90",

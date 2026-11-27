@@ -9,6 +9,8 @@ import { hasAdminPermission } from "@/lib/adminPermissions";
 import { getPrimaryEventDate } from "@/lib/lifecycleDates";
 import { cleanGuestName, cleanGuestTextFields, guestQuotaFrom } from "@/lib/guestInput";
 
+const MAX_GUESTS_PER_INVITATION = 5000;
+
 export async function POST(req: Request) {
   try {
     const session = await auth();
@@ -25,7 +27,7 @@ export async function POST(req: Request) {
 
     const invitation = await prisma.invitation.findUnique({
       where: { id: invitationId },
-      select: { userId: true, eventData: true },
+      select: { userId: true, eventData: true, isFreeDraft: true },
     });
 
     if (!invitation) {
@@ -40,6 +42,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Forbidden. Anda tidak memiliki akses ke undangan ini." }, { status: 403 });
     }
 
+    if (invitation.isFreeDraft && !isAdmin) {
+      return NextResponse.json(
+        {
+          error: "Manajemen buku tamu hanya tersedia setelah paket diaktifkan. Silakan pilih paket terlebih dahulu.",
+          code: "FREE_DRAFT_GUESTS_BLOCKED",
+        },
+        { status: 403 }
+      );
+    }
+
     // 2. Mulai hari terima tamu (pada zona waktu acara) tamu baru hanya dicatat Resepsionis di lokasi.
     const guestDay = getPrimaryEventDate(invitation.eventData);
     if (guestDay && Date.now() >= guestDay.getTime()) {
@@ -52,6 +64,11 @@ export async function POST(req: Request) {
     // Duplicate Name Validation: QR, RSVP, dan resepsionis mencocokkan nama tanpa membedakan huruf besar/kecil.
     const trimmedName = cleanGuestName(name)!;
     const guest = await withGuestNameLock(invitationId, async (tx) => {
+      const currentCount = await tx.guest.count({ where: { invitationId } });
+      if (currentCount >= MAX_GUESTS_PER_INVITATION) {
+        throw new HttpError(400, `Jumlah tamu mencapai batas maksimal ${MAX_GUESTS_PER_INVITATION.toLocaleString("id-ID")} tamu per undangan.`);
+      }
+
       const existingGuest = await tx.guest.findFirst({
         where: {
           invitationId,

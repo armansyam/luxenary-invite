@@ -102,6 +102,12 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: "Batas foto draf gratis harus bilangan bulat 1 sampai 50." }, { status: 400 });
         }
         u.value = String(parsed);
+      } else if (u?.key === "retention_leads_days") {
+        const parsed = Number.parseInt(String(u.value ?? "").trim(), 10);
+        if (!Number.isInteger(parsed) || parsed < 30 || parsed > 3650) {
+          return NextResponse.json({ error: "Retensi akun leads kosong harus bilangan bulat 30 sampai 3650 hari." }, { status: 400 });
+        }
+        u.value = String(parsed);
       } else if (u?.key === "mcp_enabled") {
         const raw = String(u.value ?? "").trim().toLowerCase();
         if (raw !== "true" && raw !== "false") {

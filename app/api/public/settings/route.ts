@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { routeError } from "@/lib/routeError";
 import { getPublicPlatformSettings } from "@/lib/settings";
+import { getTurnstileSiteKey, isTurnstileConfigured } from "@/lib/turnstile";
 import fs from "fs";
 import path from "path";
 
@@ -32,6 +33,7 @@ export async function GET() {
       max_upload_mb: settings.maxUploadMb,
       logo: logoExists ? "/brand/logo.webp" : null,
       favicon: faviconExists ? "/brand/favicon.png" : null,
+      turnstileSiteKey: isTurnstileConfigured() ? getTurnstileSiteKey() : "",
     });
   } catch (error) {
     return routeError("PublicSettings", error, "Gagal memuat pengaturan platform");
