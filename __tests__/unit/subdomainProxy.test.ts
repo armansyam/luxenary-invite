@@ -39,20 +39,11 @@ describe("proxy: tautan /s/<sub>/... di host subdomain milik undangan itu", () =
     expect(upper.headers.get("location")).toBe("http://bagas-laras.localhost:3000/memories");
   });
 
-  it("bentuk pendek /memories di-rewrite ke rute /s/<sub>/memories", async () => {
+  it("bentuk pendek /memories di-rewrite ke rute /s/<sub>/memories dengan header x-lux-host utuh", async () => {
     const res = await run("bagas-laras.localhost:3000", "/memories");
     expect(res.headers.get("location")).toBeNull();
     expect(res.headers.get("x-middleware-rewrite")).toMatch(/\/s\/bagas-laras\/memories$/);
-  });
-
-  it("permintaan RSC prefetch pada /s/<sub>/memories tidak memicu redirect loop 307", async () => {
-    const req = new NextRequest("http://bagas-laras.localhost:3000/s/bagas-laras/memories?_rsc=abc123", {
-      headers: { host: "bagas-laras.localhost:3000", rsc: "1" },
-    });
-    (req as unknown as { auth: unknown }).auth = null;
-    const res = (await (proxy as unknown as (r: NextRequest) => Promise<Response>)(req)) as Response;
-    expect(res.headers.get("location")).toBeNull();
-    expect(res.headers.get("x-middleware-next")).toBe("1");
+    expect(res.headers.get("x-middleware-request-x-lux-host")).toBe("bagas-laras.localhost");
   });
 });
 
@@ -182,17 +173,25 @@ describe("proxy: crawler, /payment, reserved partner, CSP, dan isolasi custom do
     expect(res.headers.get("x-middleware-next")).toBe("1");
   });
 
-  it("rewrite subdomain memakai origin internal initUrl (originalReq) agar tidak menjadi external proxy hop ke apex", async () => {
+  it("rewrite subdomain memakai origin internal initUrl (localhost & replika Tailscale) agar selalu in-process, bukan external hop ke apex", async () => {
     const prevRoot = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
     process.env.NEXT_PUBLIC_ROOT_DOMAIN = "luxvite.id";
     try {
-      const req = new NextRequest("https://127.0.0.1:3001/memories?to=Budi", {
+      const localReq = new NextRequest("https://localhost:3001/memories?to=Budi", {
         headers: { host: "bagas-laras.luxvite.id" },
       });
-      (req as unknown as { auth: unknown }).auth = null;
-      const res = (await (proxy as unknown as (r: NextRequest) => Promise<Response>)(req)) as Response;
-      const rewrite = res.headers.get("x-middleware-rewrite");
-      expect(rewrite).toBe("https://127.0.0.1:3001/s/bagas-laras/memories?to=Budi");
+      (localReq as unknown as { auth: unknown }).auth = null;
+      const localRes = (await (proxy as unknown as (r: NextRequest) => Promise<Response>)(localReq)) as Response;
+      expect(localRes.headers.get("x-middleware-rewrite")).toBe("https://localhost:3001/s/bagas-laras/memories?to=Budi");
+      expect(localRes.headers.get("x-middleware-request-x-lux-host")).toBe("bagas-laras.luxvite.id");
+
+      const replicaReq = new NextRequest("https://100.64.0.5:3001/sharemoment", {
+        headers: { host: "bagas-laras.luxvite.id" },
+      });
+      (replicaReq as unknown as { auth: unknown }).auth = null;
+      const replicaRes = (await (proxy as unknown as (r: NextRequest) => Promise<Response>)(replicaReq)) as Response;
+      expect(replicaRes.headers.get("x-middleware-rewrite")).toBe("https://100.64.0.5:3001/s/bagas-laras/sharemoment");
+      expect(replicaRes.headers.get("x-middleware-request-x-lux-host")).toBe("bagas-laras.luxvite.id");
     } finally {
       if (prevRoot === undefined) delete process.env.NEXT_PUBLIC_ROOT_DOMAIN;
       else process.env.NEXT_PUBLIC_ROOT_DOMAIN = prevRoot;

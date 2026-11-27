@@ -11,6 +11,13 @@ const nodeBinDir = dotenvValues.NODE_BIN_DIR;
 // Server replika mendengarkan di alamat Tailscale-nya agar Caddy server utama dapat menjangkaunya; deploy.sh hanya
 // menerima 127.0.0.1 atau alamat Tailscale (100.64.0.0/10), jadi port aplikasi tidak pernah terbuka ke internet.
 const bindHost = dotenvValues.LUX_BIND_HOST || '127.0.0.1';
+// Next.js 16 (NextURL) menormalisasi 127.0.0.1 -> localhost, sedangkan resolve-routes.js membangun initUrl dari
+// argumen --hostname apa adanya. Memakai --hostname 127.0.0.1 membuat x-middleware-rewrite (localhost:3001) tidak
+// cocok dengan initUrl (127.0.0.1:3001) sehingga rewrite diperlakukan sebagai proxy eksternal. Memakai --hostname
+// localhost + --dns-result-order=ipv4first menjaga binding khusus di 127.0.0.1 (IPv4 loopback) sekaligus menyamakan
+// origin initUrl & NextURL agar rewrite subdomain/custom domain berjalan 100% internal in-process.
+const isLoopbackBind = bindHost === '127.0.0.1';
+const nextHostname = isLoopbackBind ? 'localhost' : bindHost;
 // Direktori build aktif (.next-a atau .next-b) ditulis deploy.sh setelah migrasi berhasil; tanpa berkas ini Next memakai .next.
 const distFile = `${__dirname}/data/.dist-dir`;
 const distDir = fs.existsSync(distFile) ? fs.readFileSync(distFile, 'utf8').trim() : '';
@@ -20,10 +27,10 @@ module.exports = {
     {
       name: 'luxenary-invite',
       script: 'node_modules/next/dist/bin/next',
-      // Hanya Caddy (localhost) yang boleh menjangkau aplikasi. Tanpa --hostname Next mendengarkan di semua antarmuka,
-      // sehingga port 3001 bisa dipanggil langsung dari internet dan header X-Real-IP (dipercaya TRUSTED_PROXY=nginx)
-      // dapat dipalsukan untuk melewati pembatas laju login dan RSVP.
-      args: `start --hostname ${bindHost}`,
+      // Hanya Caddy (loopback 127.0.0.1) yang boleh menjangkau aplikasi. Tanpa --hostname Next mendengarkan di semua
+      // antarmuka, sehingga port 3001 bisa dipanggil langsung dari internet dan header X-Real-IP dapat dipalsukan.
+      args: `start --hostname ${nextHostname}`,
+      ...(isLoopbackBind ? { node_args: '--dns-result-order=ipv4first' } : {}),
       ...(nodeBinDir
         ? { interpreter: `${nodeBinDir}/node`, instances: 1, exec_mode: 'fork' }
         : { instances: 'max', exec_mode: 'cluster' }),
@@ -31,6 +38,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3001,
+        ...(isLoopbackBind ? { NODE_OPTIONS: '--dns-result-order=ipv4first' } : {}),
         ...(['.next-a', '.next-b'].includes(distDir) ? { NEXT_DIST_DIR: distDir } : {})
       },
       log_date_format: "YYYY-MM-DD HH:mm Z",

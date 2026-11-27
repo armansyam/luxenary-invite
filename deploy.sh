@@ -372,13 +372,20 @@ if command -v pm2 &> /dev/null; then
   # ecosystem.config.js (jeda beberapa detik); aplikasi lain di PM2 tidak disentuh.
   CURRENT_INTERPRETER=$(pm2 jlist 2>/dev/null | node -e 'try{const s=require("fs").readFileSync(0,"utf8");const j=JSON.parse(s.slice(s.indexOf("[")));const p=j.find(x=>x.name==="luxenary-invite");process.stdout.write(p?String(p.pm2_env.exec_interpreter||""):"-")}catch{process.stdout.write("?")}')
   # 'pm2 reload' juga tidak membaca ulang argumen proses. Bila port aplikasi masih mendengarkan di semua antarmuka
-  # (bukan 127.0.0.1/::1), proses dibuat ulang dari ecosystem.config.js yang mengikatnya ke loopback.
+  # (bukan 127.0.0.1/::1) atau argumen --hostname di PM2 berubah (mis. 127.0.0.1 -> localhost), proses dibuat ulang
+  # dari ecosystem.config.js agar argumen & node_args terbaru diterapkan.
+  EXPECTED_NEXT_HOST="$LUX_BIND_HOST"
+  [ "$LUX_BIND_HOST" = "127.0.0.1" ] && EXPECTED_NEXT_HOST="localhost"
+  CURRENT_ARGS=$(pm2 jlist 2>/dev/null | node -e 'try{const s=require("fs").readFileSync(0,"utf8");const j=JSON.parse(s.slice(s.indexOf("[")));const p=j.find(x=>x.name==="luxenary-invite");process.stdout.write(p?JSON.stringify(p.pm2_env.args||[]):"-")}catch{process.stdout.write("?")}')
   EXPOSED_LISTENER=$(ss -ltn 2>/dev/null | awk -v bind="$LUX_BIND_HOST:" '$4 ~ /(^|:|\])3001$/ && $4 !~ /^127\.0\.0\.1:/ && $4 !~ /^\[::1\]:/ && index($4, bind) != 1 {print $4}' | head -1)
   if [ -n "$NODE_BIN_DIR" ] && [ "$CURRENT_INTERPRETER" != "?" ] && [ "$CURRENT_INTERPRETER" != "-" ] && [ "$CURRENT_INTERPRETER" != "$NODE_BIN_DIR/node" ]; then
     echo "↻ Interpreter PM2 berubah ($CURRENT_INTERPRETER -> $NODE_BIN_DIR/node): menjalankan ulang luxenary-invite dari ecosystem.config.js"
     pm2 delete luxenary-invite && pm2 start ecosystem.config.js
   elif [ -n "$EXPOSED_LISTENER" ]; then
     echo "↻ Port 3001 mendengarkan di $EXPOSED_LISTENER (terbuka ke jaringan): menjalankan ulang luxenary-invite agar terikat ke 127.0.0.1"
+    pm2 delete luxenary-invite && pm2 start ecosystem.config.js
+  elif [ "$CURRENT_ARGS" != "?" ] && [ "$CURRENT_ARGS" != "-" ] && ! echo "$CURRENT_ARGS" | grep -q "\"$EXPECTED_NEXT_HOST\""; then
+    echo "↻ Argumen --hostname PM2 berubah ($CURRENT_ARGS -> $EXPECTED_NEXT_HOST): menjalankan ulang luxenary-invite dari ecosystem.config.js"
     pm2 delete luxenary-invite && pm2 start ecosystem.config.js
   else
     pm2 reload luxenary-invite --update-env || pm2 restart luxenary-invite || pm2 start ecosystem.config.js

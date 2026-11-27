@@ -410,10 +410,6 @@ export async function proxy(originalReq: NextRequest, ctx?: unknown) {
       if (segments[0] === "s" && segments[1]?.toLowerCase() === subdomain) {
         const rest = segments.slice(2).join("/");
         if (rest === "" || ["memories", "sharemoment", "receptionist", "welcome", "galery", "gallery"].includes(rest)) {
-          // Permintaan RSC prefetch tidak boleh dialihkan 307 ke bentuk pendek karena rewrite RSC lintas-origin memicu loop 307.
-          if (req.headers.get("rsc") === "1" || req.nextUrl.searchParams.has("_rsc")) {
-            return passNext();
-          }
           const shortUrl = new URL(`/${rest}`, `${req.nextUrl.protocol}//${host}`);
           shortUrl.search = req.nextUrl.search;
           return NextResponse.redirect(shortUrl, 307);
