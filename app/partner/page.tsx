@@ -381,13 +381,11 @@ export default function PartnerPortalPage() {
 
   const activePaymentOrderId = activePayment?.orderId ?? null;
   const activePaymentStatus = activePayment?.status ?? null;
-  const activePaymentClientId = activePayment?.clientId ?? null;
 
   // Auto-poll status pembayaran saat Modal Pembayaran Mitra terbuka & masih PENDING
   useEffect(() => {
-    if (!activePaymentOrderId || !activePaymentClientId || activePaymentStatus !== "PENDING") return;
+    if (!activePaymentOrderId || activePaymentStatus !== "PENDING") return;
     const orderId = activePaymentOrderId;
-    const clientId = activePaymentClientId;
     let cancelled = false;
 
     const timer = setInterval(async () => {
@@ -398,30 +396,10 @@ export default function PartnerPortalPage() {
         if (cancelled) return;
 
         if (st.status === "PAID") {
+          // Email Magic Link 48 jam sudah dikirim otomatis sekali oleh backend saat pelunasan (settleOrderAsPaid).
+          // Jangan memanggil resend-activation otomatis agar tidak menimpa token pertama dan mengirim email ganda ke pengantin.
           setActivePayment((prev) => (prev && prev.orderId === orderId ? { ...prev, status: "PAID" } : prev));
           await loadDashboard();
-          // Otomatis ambil/terbitkan link aktivasi + teks WhatsApp agar WO langsung bisa salin & kirim ke pengantin!
-          try {
-            const actRes = await fetch(`/api/partner/clients/${clientId}/resend-activation`, { method: "POST" });
-            if (actRes.ok) {
-              const actData = await actRes.json();
-              if (actData.success && !cancelled) {
-                setDeliveryResult({
-                  clientName: actData.client.name,
-                  clientEmail: actData.client.email,
-                  activationUrl: actData.activationUrl,
-                  expiresAt: actData.expiresAt,
-                  emailSent: Boolean(actData.emailSent),
-                  emailError: actData.emailError || null,
-                  whatsappText: actData.whatsappText,
-                  whatsappUrl: actData.whatsappUrl,
-                  reissued: false,
-                });
-              }
-            }
-          } catch {
-            // Link sudah otomatis dikirim lewat email di backend
-          }
         } else if (st.status === "EXPIRED") {
           setActivePayment((prev) => (prev && prev.orderId === orderId ? { ...prev, status: "EXPIRED" } : prev));
           await loadDashboard();
@@ -451,7 +429,7 @@ export default function PartnerPortalPage() {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [activePaymentOrderId, activePaymentStatus, activePaymentClientId, loadDashboard]);
+  }, [activePaymentOrderId, activePaymentStatus, loadDashboard]);
 
   const handleUploadPartnerProof = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -683,6 +661,25 @@ export default function PartnerPortalPage() {
     });
   };
 
+  const handleCopyActivationFromModal = async () => {
+    if (!activePayment) return;
+    const matched = clients.find((c) => c.id === activePayment.clientId);
+    const targetClient: ProvisionedClient = matched || {
+      id: activePayment.clientId,
+      name: activePayment.clientName,
+      email: activePayment.clientEmail,
+      phoneNumber: null,
+      createdAt: new Date().toISOString(),
+      isActivated: false,
+      hasPaidOrder: true,
+      invitationCount: 0,
+      activation: null,
+      latestOrder: null,
+    };
+    await handleResendActivation(targetClient);
+    setActivePayment(null);
+  };
+
   const handleDeletePartnerClient = async (client: ProvisionedClient) => {
     setProvisionError("");
     setDeletingClientId(client.id);
@@ -776,7 +773,7 @@ export default function PartnerPortalPage() {
     platformConfig?.packages?.[0] ||
     null;
 
-  const dashCtx = { activePayment, cancellingOrderId, clientEmail, clientName, clientSearch, clientStatusFilter, clientTransactions, clients, clientsLoading, commissions, dashboardTab, deletingClientId, discountRateLabel, email, filteredClients, filteredTransactions, filteredTxTotalBase, filteredTxTotalDiscount, filteredTxTotalFinal, handleCancelPartnerOrder, handleDeletePartnerClient, handleExportTransactionsCsv, handleReorderClient, handleReorderFromModal, handleResendActivation, handleRetryPartnerPayment, handleUploadPartnerProof, loadDashboard, openPaymentModalForOrder, partner, paymentError, paymentInitLoading, payouts, platformConfig, proofFile, proofSuccessMsg, reorderingClientId, resendingClientId, setActivePayment, setClientSearch, setClientStatusFilter, setDashboardTab, setProofFile, setTxSearch, setTxStatusFilter, txSearch, txStatusFilter, uploadingProof };
+  const dashCtx = { activePayment, cancellingOrderId, clientEmail, clientName, clientSearch, clientStatusFilter, clientTransactions, clients, clientsLoading, commissions, dashboardTab, deletingClientId, discountRateLabel, email, filteredClients, filteredTransactions, filteredTxTotalBase, filteredTxTotalDiscount, filteredTxTotalFinal, handleCancelPartnerOrder, handleCopyActivationFromModal, handleDeletePartnerClient, handleExportTransactionsCsv, handleReorderClient, handleReorderFromModal, handleResendActivation, handleRetryPartnerPayment, handleUploadPartnerProof, loadDashboard, openPaymentModalForOrder, partner, paymentError, paymentInitLoading, payouts, platformConfig, proofFile, proofSuccessMsg, reorderingClientId, resendingClientId, setActivePayment, setClientSearch, setClientStatusFilter, setDashboardTab, setProofFile, setTxSearch, setTxStatusFilter, txSearch, txStatusFilter, uploadingProof };
 
   return (
     <div className="min-h-screen bg-[#faf8f5] text-stone-900 font-sans">

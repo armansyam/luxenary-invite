@@ -193,7 +193,14 @@ async function runPaidOrderFulfillment(paidOrderId: string): Promise<void> {
   const order = await prisma.order.findUnique({
     where: { id: paidOrderId },
     include: {
-      user: { select: { email: true, name: true } },
+      user: {
+        select: {
+          email: true,
+          name: true,
+          provisionedByPartnerId: true,
+          provisionedByPartner: { select: { email: true, name: true } },
+        },
+      },
     },
   });
 
@@ -232,15 +239,25 @@ async function runPaidOrderFulfillment(paidOrderId: string): Promise<void> {
 
   // Email lunas dikirim setelah pemenuhan berhasil: bila pemenuhan gagal, klaim dilepas dan dicoba ulang (cron),
   // sehingga email sebelum pemenuhan akan terkirim berulang kali.
-  if (order.user?.email) {
+  // Privasi harga grosir B2B: untuk order paket baru (NEW) klien binaan Mitra WO, kuitansi harga potongan dikirim
+  // ke email Mitra (pembayar), bukan ke email pengantin agar harga modal mitra tidak bocor.
+  const isPartnerWholesaleOrder = Boolean(order.orderType === "NEW" && order.user?.provisionedByPartnerId);
+  const invoiceRecipientEmail = isPartnerWholesaleOrder
+    ? order.user?.provisionedByPartner?.email?.trim() || null
+    : order.user?.email?.trim() || null;
+  const invoiceRecipientName = isPartnerWholesaleOrder
+    ? order.user?.provisionedByPartner?.name || undefined
+    : order.user?.name || undefined;
+
+  if (invoiceRecipientEmail) {
     sendInvoiceEmail({
       orderId: order.id,
       orderType: order.orderType,
       plan: order.planType,
       amount: Number(order.amount),
       paymentMethod: order.paymentMethod || "QRIS / Payment Gateway",
-      recipientEmail: order.user.email,
-      recipientName: order.user.name || undefined,
+      recipientEmail: invoiceRecipientEmail,
+      recipientName: invoiceRecipientName,
       type: "PAID",
     }).catch((err) => logger.error("PaymentFulfillment", "Email invoice PAID gagal dikirim", err));
   }

@@ -10,6 +10,7 @@ export interface PartnerPaymentModalContext {
   discountRateLabel: string;
   email: string;
   handleCancelPartnerOrder: (orderId: string) => Promise<void>;
+  handleCopyActivationFromModal: () => Promise<void>;
   handleReorderFromModal: () => Promise<void>;
   handleRetryPartnerPayment: () => Promise<void>;
   handleUploadPartnerProof: (e: FormEvent) => Promise<void>;
@@ -19,6 +20,7 @@ export interface PartnerPaymentModalContext {
   proofFile: File | null;
   proofSuccessMsg: string;
   reorderingClientId: string | null;
+  resendingClientId: string | null;
   setActivePayment: Dispatch<SetStateAction<ActivePaymentModalState | null>>;
   setProofFile: Dispatch<SetStateAction<File | null>>;
   uploadingProof: boolean;
@@ -40,6 +42,7 @@ export function PartnerPaymentModal({ ctx }: { ctx: PartnerPaymentModalContext }
     cancellingOrderId,
     discountRateLabel,
     handleCancelPartnerOrder,
+    handleCopyActivationFromModal,
     handleReorderFromModal,
     handleRetryPartnerPayment,
     handleUploadPartnerProof,
@@ -49,6 +52,7 @@ export function PartnerPaymentModal({ ctx }: { ctx: PartnerPaymentModalContext }
     proofFile,
     proofSuccessMsg,
     reorderingClientId,
+    resendingClientId,
     setActivePayment,
     setProofFile,
     uploadingProof,
@@ -158,16 +162,31 @@ export function PartnerPaymentModal({ ctx }: { ctx: PartnerPaymentModalContext }
                   <div className="space-y-1">
                     <div className="text-sm font-bold text-emerald-900">Pembayaran Lunas!</div>
                     <p className="text-xs text-emerald-800 leading-relaxed">
-                      Paket <strong>{activePayment.planType}</strong> sudah aktif untuk <strong>{activePayment.clientName}</strong>. Tautan aktivasi 48 jam telah dikirim ke email pengantin &amp; siap disalin ke WhatsApp di halaman utama portal.
+                      Paket <strong>{activePayment.planType}</strong> sudah aktif untuk <strong>{activePayment.clientName}</strong>. Tautan aktivasi 48 jam telah dikirim otomatis ke <strong>{activePayment.clientEmail}</strong>, dan kuitansi pembayaran dikirim ke email mitra (tanpa menampilkan harga mitra ke pengantin).
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setActivePayment(null)}
-                    className="w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold cursor-pointer"
-                  >
-                    Tutup &amp; Lihat Link Aktivasi Pengantin
-                  </button>
+                  <div className="space-y-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setActivePayment(null)}
+                      className="w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold cursor-pointer"
+                    >
+                      Selesai &amp; Tutup
+                    </button>
+                    <button
+                      type="button"
+                      disabled={resendingClientId === activePayment.clientId}
+                      onClick={() => handleCopyActivationFromModal()}
+                      className="w-full py-2 rounded-xl bg-white hover:bg-emerald-100/60 border border-emerald-300 text-emerald-900 text-xs font-semibold disabled:opacity-50 cursor-pointer"
+                    >
+                      {resendingClientId === activePayment.clientId
+                        ? "Menyiapkan Tautan Baru..."
+                        : "Terbitkan Tautan Baru & Salin untuk WhatsApp"}
+                    </button>
+                    <p className="text-[10px] text-emerald-800/75">
+                      Catatan: tombol salin WhatsApp menerbitkan tautan baru yang menggantikan tautan pada email sebelumnya.
+                    </p>
+                  </div>
                 </div>
               ) : activePayment.status === "EXPIRED" ? (
                 <div className="p-5 rounded-2xl bg-rose-50/70 border border-rose-200 text-center space-y-3">

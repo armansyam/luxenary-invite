@@ -31,9 +31,16 @@ vi.mock("@/lib/gatewayRegistry", () => ({
   getActiveGatewayId: vi.fn(async () => "midtrans"),
 }));
 
+const mailSpies = vi.hoisted(() => ({
+  sendLoginOtpEmail: vi.fn(async (_opts?: Record<string, unknown>) => ({ success: true })),
+  sendInvoiceEmail: vi.fn(async (_opts?: Record<string, unknown>) => ({ success: true })),
+  sendClientActivationEmail: vi.fn(async (_opts?: Record<string, unknown>) => ({ success: true })),
+}));
 vi.mock("@/lib/mailer", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/mailer")>()),
-  sendLoginOtpEmail: vi.fn(async () => ({ success: true })),
+  sendLoginOtpEmail: mailSpies.sendLoginOtpEmail,
+  sendInvoiceEmail: mailSpies.sendInvoiceEmail,
+  sendClientActivationEmail: mailSpies.sendClientActivationEmail,
 }));
 
 import { prisma, pool } from "@/lib/prisma";
@@ -52,6 +59,8 @@ import { purgeStaleLeadUsers } from "@/lib/lifecycleCleanup";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 import { buildEnforcedCsp, buildStrictAppCspReportOnly, generateCspNonce } from "@/lib/csp";
 import { MidtransGateway } from "@/lib/gateways/midtrans";
+import { settleOrderAsPaid } from "@/lib/paymentSettlement";
+import { applyUpgradePlan } from "@/lib/upgradeHelper";
 
 const IS_TEST_DB = /\/luxenary_test(\?|$)/.test(process.env.DATABASE_URL || "");
 const TAG = `sec261127_${Date.now()}`;
@@ -447,5 +456,54 @@ describe.skipIf(!IS_TEST_DB)("Security & Partner Portal Hardening (2026-11-27)",
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     const calledUrl = String(fetchSpy.mock.calls[0]?.[0] || "");
     expect(calledUrl).toContain("https://api.sandbox.midtrans.com/v2/");
+  });
+
+  it("9. Pelunasan order Mitra WO mengirim invoice harga grosir ke email Mitra (bukan pengantin) dan tepat 1 email aktivasi ke pengantin", async () => {
+    mailSpies.sendInvoiceEmail.mockClear();
+    mailSpies.sendClientActivationEmail.mockClear();
+
+    const partner = await prisma.partnerAffiliate.create({
+      data: {
+        name: "WO Privasi Harga",
+        email: `${TAG}_wo_privacy@example.test`,
+        commissionType: "PERCENT",
+        commissionValue: 95,
+        isActive: true,
+        sessionVersion: 1,
+      },
+    });
+    createdPartnerIds.push(partner.id);
+
+    const bride = await makeUser("brideprivacy", { provisionedByPartnerId: partner.id, passwordHash: null });
+    const order = await prisma.order.create({
+      data: {
+        userId: bride.id,
+        invoiceNumber: `${TAG}-WO-PRIV`,
+        planType: "TIER_1",
+        orderType: "NEW",
+        amount: 4950,
+        discountAmount: 94050,
+        status: "PENDING",
+      },
+    });
+
+    const settled = await settleOrderAsPaid(order.id, { paymentMethod: "GATEWAY" });
+    expect(settled).toBe(true);
+    await applyUpgradePlan(order.id);
+    // Beri jeda singkat bagi promise non-blocking triggerPartnerClientActivationOnPaid & sendInvoiceEmail
+    await new Promise((r) => setTimeout(r, 150));
+
+    // 1. Invoice harga grosir (Rp 4.950) WAJIB dikirim ke email Mitra, TIDAK ke email pengantin
+    expect(mailSpies.sendInvoiceEmail).toHaveBeenCalledTimes(1);
+    const invoiceCall = mailSpies.sendInvoiceEmail.mock.calls[0]?.[0] as { recipientEmail?: string; amount?: number };
+    expect(invoiceCall?.recipientEmail).toBe(partner.email);
+    expect(invoiceCall?.recipientEmail).not.toBe(bride.email);
+    expect(invoiceCall?.amount).toBe(4950);
+
+    // 2. Email aktivasi dikirim tepat 1 kali ke email pengantin dengan 1 token aktif
+    expect(mailSpies.sendClientActivationEmail).toHaveBeenCalledTimes(1);
+    const actCall = mailSpies.sendClientActivationEmail.mock.calls[0]?.[0] as { recipientEmail?: string };
+    expect(actCall?.recipientEmail).toBe(bride.email);
+    expect(await prisma.clientActivationToken.count({ where: { userId: bride.id, consumedAt: null } })).toBe(1);
   });
 });

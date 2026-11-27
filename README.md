@@ -306,7 +306,7 @@ Sistem mendukung 4 kondisi transaksi dengan integrasi 2-arah Midtrans yang dilen
 | `MusicPreset` | Pustaka musik sistem dinamis untuk latar undangan |
 | `WebhookLog` | Log audit webhook payment Midtrans (idempotency & rekonsiliasi) |
 | `Expense`, `RecurringExpense`, `FinancialClosing` | Buku kas operasional OPEX, tagihan berkala, tutup buku bulanan & rekap PPh Final 0,5% |
-| `PartnerAffiliate`, `PromoCoupon`, `PromoHold`, `AffiliateCommission` | Mitra Reseller / WO (unique index case-insensitive email `partner_affiliates_email_lower_key`, potongan harga langsung zero-debt), kupon promo publik, hold anti-race, & arsip komisi historis |
+| `PartnerAffiliate`, `PromoCoupon`, `PromoHold`, `AffiliateCommission` | Mitra Reseller / WO (unique index case-insensitive email `partner_affiliates_email_lower_key`, potongan harga langsung zero-debt, privasi kuitansi harga grosir khusus Mitra & 1 email aktivasi ke pengantin), kupon promo publik, hold anti-race, & arsip komisi historis |
 | `EmailOtpToken` & `ClientActivationToken` | Token OTP 6-digit SMTP ter-hash (CHECK `attempts >= 0`) & tautan aktivasi 48 jam klien mitra (HMAC-SHA256) |
 | `RateLimitCounter` | Counter rate limiter atomic lintas worker PM2 berbasis PostgreSQL |
 | `RenderVersion` & `SharedFile` | Versi render HTML terbit & indeks berkas bersama terkontrol (CHECK `size_bytes >= 0`) |
